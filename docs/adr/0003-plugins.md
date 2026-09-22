@@ -44,6 +44,7 @@ Un plugin de source aporta su catálogo a la biblioteca de Chilpa: playlists, á
 - **Un source ausente nunca borra datos.** Si el plugin está apagado, en cuarentena o sin red, su contenido se muestra como no disponible, pero no se borra. Es la lección de `scan.rs:1351`, donde un root desmontado borraba todos sus tracks.
 - **Mezclar sources en una playlist propia.** Una playlist de Chilpa puede incluir tracks de varios sources. Cada track se guarda como referencia (`source` + id externo) y se resuelve al reproducirlo.
 - **Emparejado con lo local.** Por ISRC o MBID, un track de un plugin se puede ligar a un archivo local. Así las stats, las smart lists y la deduplicación los tratan como la misma canción.
+- **La búsqueda también.** Un plugin con capacidad de búsqueda inyecta sus resultados en la búsqueda global y en la página de resultados. Lo local sale al instante, y cada source llega conforme responde, con timeout. Chilpa ordena y agrupa; ningún plugin reordena ni oculta los resultados de otros.
 - **Stats de todo.** Las reproducciones de tracks de plugins entran al mismo log de eventos, con su `source`.
 - **Escritura solo si se declara.** Crear, editar o borrar una playlist en el servicio requiere que el plugin declare esa capacidad. Si no la declara, sus playlists son de solo lectura en Chilpa.
 - **Al desinstalar,** Chilpa ofrece borrar la copia de su metadata; no la borra sin preguntar.
