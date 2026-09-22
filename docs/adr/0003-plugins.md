@@ -34,6 +34,20 @@ Un plugin tiene su propio almacén de secretos, por ejemplo para guardar el toke
 
 Un plugin de source entrega una URL, un stream o bytes codificados. Chilpa los decodifica y los manda por su propia ruta de salida. Ningún plugin toca el dispositivo de audio, el hilo de tiempo real ni la configuración bit-perfect. Así, el audio de un plugin es tan bit-perfect como el de un archivo local.
 
+### El contenido de un plugin es de primera clase
+
+Un plugin de source aporta su catálogo a la biblioteca de Chilpa: playlists, álbumes, artistas y tracks. Ese contenido aparece en las mismas vistas que el local y el de los servidores, no en una esquina aparte.
+
+- **Todo lleva procedencia.** Cada entidad lleva una `source`, formada por el plugin o tipo de servidor más la instancia (la cuenta). Las vistas filtran y agrupan por plataforma y por cuenta: "solo mis playlists de X", "todo menos X".
+- **Varias instancias por plugin.** Dos cuentas del mismo servicio son dos sources distintas. Esto corrige un defecto que encontró la auditoría en `qbz-source`.
+- **Chilpa guarda una copia de la metadata**, en el espacio del plugin, para que las vistas no dependan de que el plugin responda. El plugin avisa cuando algo cambia, y Chilpa refresca con un límite de frecuencia.
+- **Un source ausente nunca borra datos.** Si el plugin está apagado, en cuarentena o sin red, su contenido se muestra como no disponible, pero no se borra. Es la lección de `scan.rs:1351`, donde un root desmontado borraba todos sus tracks.
+- **Mezclar sources en una playlist propia.** Una playlist de Chilpa puede incluir tracks de varios sources. Cada track se guarda como referencia (`source` + id externo) y se resuelve al reproducirlo.
+- **Emparejado con lo local.** Por ISRC o MBID, un track de un plugin se puede ligar a un archivo local. Así las stats, las smart lists y la deduplicación los tratan como la misma canción.
+- **Stats de todo.** Las reproducciones de tracks de plugins entran al mismo log de eventos, con su `source`.
+- **Escritura solo si se declara.** Crear, editar o borrar una playlist en el servicio requiere que el plugin declare esa capacidad. Si no la declara, sus playlists son de solo lectura en Chilpa.
+- **Al desinstalar,** Chilpa ofrece borrar la copia de su metadata; no la borra sin preguntar.
+
 ### UI: descriptores, no código Qt
 
 Un plugin de UI entrega datos más un descriptor de vista, armado con un conjunto limitado de componentes (lista, grid, detalle, acciones). El shell lo dibuja con los mismos componentes que las vistas propias. En la v1 no se permite QML ni código Qt arbitrario dentro del proceso, porque eso rompería el aislamiento y el ADR-001.
