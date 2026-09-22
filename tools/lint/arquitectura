@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""Candados del ADR-001: grafo de dependencias, nada de Qt fuera del shell y
+límites de LOC.
+
+La lista permitida vive en este archivo, a propósito: cambiarla se ve en el
+diff y obliga a tocar el ADR en el mismo commit.
+"""
+import re
+import subprocess
+import sys
+import tomllib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+# Quién puede depender de quién, dentro del workspace.
+ALLOWED = {
+    "chilpa-models": set(),
+    "chilpa-core": {"chilpa-models"},
+    "chilpa-api": {"chilpa-core", "chilpa-models"},
+    # El shell solo ve la fachada. Nunca el core ni los modelos.
+    "chilpa-qt": {"chilpa-api"},
+}
+
+# Los únicos crates que pueden tener tipos de Qt.
+SHELLS = {"chilpa-qt"}
+QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
+
+MAX_LOC_FILE = 1500
+MAX_LOC_UI_CRATE = 10_000
+
+CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
+
+
+def tracked_files():
+    out = subprocess.run(["git", "-C", str(ROOT), "ls-files"], capture_output=True, text=True, check=True)
+    return [ROOT / line for line in out.stdout.split()]
+
+
+def crate_manifests():
+    return sorted((ROOT / "crates").glob("*/Cargo.toml"))
+
+
+def check_deps(errors):
+    for manifest in crate_manifests():
+        data = tomllib.loads(manifest.read_text())
+        name = data["package"]["name"]
+        if name not in ALLOWED:
+            errors.append(f"{manifest.relative_to(ROOT)}: el crate {name} no está en la lista del ADR-001")
+            continue
+        deps = {d for d in data.get("dependencies", {}) if d.startswith("chilpa-")}
+        for dep in sorted(deps - ALLOWED[name]):
+            errors.append(f"{name}: no puede depender de {dep} (ADR-001)")
+
+
+def check_qt(errors):
+    for path in tracked_files():
+        if path.suffix not in CODE_SUFFIXES or not path.exists():
+            continue
+        crate = path.relative_to(ROOT).parts
+        in_shell = len(crate) > 1 and crate[0] == "crates" and crate[1] in SHELLS
+        if in_shell or path.parts[-2:] == ("lint", "arquitectura"):
+            continue
+        for n, line in enumerate(path.read_text(errors="replace").splitlines(), 1):
+            if QT_RE.search(line):
+                errors.append(f"{path.relative_to(ROOT)}:{n}: tipos de Qt fuera de un shell (ADR-001)")
+
+
+def check_loc(errors):
+    per_crate = {}
+    for path in tracked_files():
+        if path.suffix not in CODE_SUFFIXES or not path.exists():
+            continue
+        loc = len(path.read_text(errors="replace").splitlines())
+        if loc > MAX_LOC_FILE:
+            errors.append(f"{path.relative_to(ROOT)}: {loc} LOC, el máximo es {MAX_LOC_FILE} (ADR-001)")
+        parts = path.relative_to(ROOT).parts
+        if len(parts) > 1 and parts[0] == "crates":
+            per_crate[parts[1]] = per_crate.get(parts[1], 0) + loc
+    for crate in sorted(SHELLS):
+        loc = per_crate.get(crate, 0)
+        if loc > MAX_LOC_UI_CRATE:
+            errors.append(f"{crate}: {loc} LOC, el máximo de un crate de UI es {MAX_LOC_UI_CRATE} (ADR-001)")
+
+
+def main():
+    errors = []
+    check_deps(errors)
+    check_qt(errors)
+    check_loc(errors)
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"arquitectura: {len(errors)} error(es)", file=sys.stderr)
+        sys.exit(1)
+    print("arquitectura: todo en orden")
+
+
+if __name__ == "__main__":
+    main()

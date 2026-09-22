@@ -1,0 +1,59 @@
+#!/usr/bin/env python3
+"""Chilpa es GPL-2.0-only: ninguna dependencia puede ser incompatible.
+
+Fuera quedan GPL-3.0, AGPL, LGPL-3.0 y lo que solo ofrece Apache-2.0 sin la
+excepción de LLVM. Cuando un crate ofrece varias licencias ("MIT OR
+Apache-2.0"), basta con que una sea compatible.
+
+Lee `cargo metadata`, así que no necesita cargo-deny instalado. El CI correrá
+además cargo-deny con deny.toml.
+"""
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+COMPATIBLES = {
+    "MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD", "CC0-1.0",
+    "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "MPL-2.0",
+    "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
+    "LGPL-2.0-only", "LGPL-2.0-or-later", "LGPL-2.1-only", "LGPL-2.1-or-later",
+    # La excepción de LLVM existe justo para poder combinar con GPL-2.0.
+    "Apache-2.0 WITH LLVM-exception",
+}
+
+SPLIT = re.compile(r"\s+OR\s+|\s*/\s*", re.IGNORECASE)
+
+
+def opciones(expr):
+    """Las alternativas de una expresión SPDX, sin resolver los AND."""
+    return [parte.strip().strip("()") for parte in SPLIT.split(expr) if parte.strip()]
+
+
+def main():
+    meta = json.loads(subprocess.run(
+        ["cargo", "metadata", "--format-version", "1", "--all-features"],
+        cwd=ROOT, capture_output=True, text=True, check=True).stdout)
+    propios = {p["name"] for p in meta["packages"] if p.get("source") is None}
+    errores = []
+    for pkg in sorted(meta["packages"], key=lambda p: p["name"]):
+        if pkg["name"] in propios:
+            continue
+        licencia = pkg.get("license")
+        if not licencia:
+            errores.append(f"{pkg['name']} {pkg['version']}: sin licencia declarada; revísala a mano")
+            continue
+        if not any(o in COMPATIBLES for o in opciones(licencia)):
+            errores.append(f"{pkg['name']} {pkg['version']}: {licencia} no es compatible con GPL-2.0-only")
+    if errores:
+        print("\n".join(errores), file=sys.stderr)
+        print(f"licencias: {len(errores)} problema(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"licencias: {len(meta['packages']) - len(propios)} dependencias, todas compatibles")
+
+
+if __name__ == "__main__":
+    main()

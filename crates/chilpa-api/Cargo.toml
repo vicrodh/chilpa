@@ -1,0 +1,10 @@
+[package]
+name = "chilpa-api"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-core.workspace = true
+chilpa-models.workspace = true

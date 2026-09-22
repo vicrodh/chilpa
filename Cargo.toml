@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/chilpa-models",
+    "crates/chilpa-core",
+    "crates/chilpa-api",
+    "crates/chilpa-qt",
+]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2021"
+license = "GPL-2.0-only"
+rust-version = "1.90"
+
+[workspace.dependencies]
+chilpa-models = { path = "crates/chilpa-models" }
+chilpa-core = { path = "crates/chilpa-core" }
+chilpa-api = { path = "crates/chilpa-api" }
