@@ -5,7 +5,7 @@
 
 ## Contexto
 
-En QBZ la regla "no hagamos un frontend monolítico" existía y se rompió igual. Al cierre de 2.1.2, `qbz-qt` tenía ~165k LOC y dependía directo de 38 crates del workspace, incluidos los internos del player, la biblioteca y Qobuz. Tres agentes distintos (Claude, Kimi, Codex) la ignoraron, porque la regla solo vivía en un documento y nada fallaba al romperla.
+En QBZ la regla "no hagamos un frontend monolítico" existía y se rompió igual. Al cierre de 2.1.2, `qbz-qt` tenía ~165k LOC y dependía directo de 38 crates del workspace, incluidos los internos del player, de la biblioteca y del cliente de streaming. Tres agentes distintos (Claude, Kimi, Codex) la ignoraron, porque la regla solo vivía en un documento y nada fallaba al romperla.
 
 **Lección:** una regla de arquitectura sin candado automático no es una regla.
 

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+root=$(git rev-parse --show-toplevel)
+"$root/tools/lint/no-platform-names" --message "$1"
