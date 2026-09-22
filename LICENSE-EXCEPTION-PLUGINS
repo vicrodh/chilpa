@@ -1,0 +1,19 @@
+Chilpa Plugin Exception
+
+Chilpa is licensed under the GNU General Public License, version 2 only
+(see LICENSE). As a special exception, the copyright holders of Chilpa give
+you permission to combine Chilpa with independent modules ("plugins") that
+communicate with Chilpa solely through the Chilpa Plugin API, and to
+distribute those plugins under terms of your choice, regardless of the
+license terms of these independent modules.
+
+An independent module is a module which is not derived from or based on
+Chilpa, and which interacts with Chilpa only through the interfaces that
+Chilpa documents as its Plugin API (the WebAssembly host interface and the
+out-of-process IPC protocol). Using any other interface, or incorporating
+code from Chilpa into the module, is not covered by this exception.
+
+This exception does not change the terms of the GPL for Chilpa itself.
+If you modify Chilpa, you may extend this exception to your version, but
+you are not obliged to do so. If you do not wish to do so, delete this
+exception statement from your version.
