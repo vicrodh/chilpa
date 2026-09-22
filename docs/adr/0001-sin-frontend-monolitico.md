@@ -22,10 +22,10 @@ En QBZ la regla "no hagamos un frontend monolítico" existía y se rompió igual
 | --- | --- |
 | Grafo de dependencias | Un chequeo sobre `cargo metadata` compara cada arista contra una lista permitida. Un frontend que dependa de un crate interno rompe el build. |
 | Core sin Qt | Si aparece `cxx_qt`, `cxx-qt-lib` o `QString` fuera de los crates de shell, es error. |
-| Tamaño por crate de UI | Límite de LOC por crate de UI. Pasarlo rompe el build y obliga a partir la vista. |
-| Tamaño por archivo | Límite de LOC por archivo en todo el workspace, con excepciones explícitas y justificadas en la lista. |
+| Tamaño por crate de UI | Máximo 10,000 LOC por crate de UI. Pasarlo rompe el build y obliga a partir la vista. |
+| Tamaño por archivo | Máximo 1,500 LOC por archivo en **todo** el workspace, no solo en la UI (en QBZ, `database.rs` llegó a 9,164). Las excepciones van explícitas y justificadas en la lista. |
 
-Los números de los límites se deciden al crear el workspace. Cambiar la lista permitida o los límites requiere editar este ADR en el mismo commit.
+El límite por archivo también descentraliza el core: una capa de datos o un player no pueden volver a crecer como un solo archivo. Cambiar la lista permitida o los límites requiere editar este ADR en el mismo commit.
 
 ## Consecuencias
 
@@ -36,4 +36,4 @@ Los números de los límites se deciden al crear el workspace. Cambiar la lista 
 ## Pendiente
 
 - [ ] Nombre final de la fachada.
-- [ ] Límite de LOC por crate de UI y por archivo.
+- [x] Límites: 10,000 LOC por crate de UI y 1,500 LOC por archivo (decidido el 2026-09-21).
