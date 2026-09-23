@@ -107,7 +107,10 @@ Rectangle {
                     Label {
                         Layout.fillWidth: true
                         text: (datos[3] ? datos[3] + " · " : "") + datos[4] +
-                              (datos[4] === "1" ? " pista" : " pistas")
+                              (datos[4] === "1" ? " pista" : " pistas") +
+                              (parseInt(datos[6]) > 0
+                                  ? " · " + datos[6] + (datos[6] === "1" ? " escucha" : " escuchas")
+                                  : "")
                         font.pixelSize: 11
                         color: "#7a411d1f"
                     }
