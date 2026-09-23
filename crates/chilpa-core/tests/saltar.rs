@@ -4,7 +4,7 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, SinkError};
-use chilpa_core::queue_playback::{play_queue_with, Controls};
+use chilpa_core::queue_playback::{play_queue_with, Controls, SharedQueue};
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -73,7 +73,7 @@ fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
     let mut posiciones = Vec::new();
 
     play_queue_with(
-        std::slice::from_ref(&path),
+        &SharedQueue::new(vec![path.clone()]),
         &caps(),
         Policy::BitPerfect,
         &Controls { seek: seek.clone(), ..Controls::new() },
@@ -101,7 +101,7 @@ fn saltar_mas_alla_del_final_termina_la_pista_sin_tronar() {
     seek.request(Duration::from_secs(60));
     let cap = Capturador::default();
     let resultados = play_queue_with(
-        std::slice::from_ref(&path),
+        &SharedQueue::new(vec![path.clone()]),
         &caps(),
         Policy::BitPerfect,
         &Controls { seek: seek.clone(), ..Controls::new() },

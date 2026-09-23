@@ -60,6 +60,53 @@ impl RepeatMode {
     }
 }
 
+/// La lista de pistas, compartida con quien maneja la cola.
+///
+/// Se puede agregar mientras suena: encolar algo no debería cortar lo que
+/// está sonando ni obligar a rearmar la cola desde el principio. El lazo
+/// vuelve a leer el largo en cada pista, así que lo agregado entra solo.
+#[derive(Clone, Default)]
+pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<PathBuf>>>);
+
+impl SharedQueue {
+    pub fn new(paths: Vec<PathBuf>) -> Self {
+        Self(std::sync::Arc::new(std::sync::Mutex::new(paths)))
+    }
+
+    pub fn set(&self, paths: Vec<PathBuf>) {
+        if let Ok(mut g) = self.0.lock() {
+            *g = paths;
+        }
+    }
+
+    /// Agrega al final. Regresa el largo nuevo.
+    pub fn extend(&self, paths: &[PathBuf]) -> usize {
+        match self.0.lock() {
+            Ok(mut g) => {
+                g.extend_from_slice(paths);
+                g.len()
+            }
+            Err(_) => 0,
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.lock().map(|g| g.len()).unwrap_or(0)
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
+    pub fn get(&self, i: usize) -> Option<PathBuf> {
+        self.0.lock().ok()?.get(i).cloned()
+    }
+
+    pub fn to_vec(&self) -> Vec<PathBuf> {
+        self.0.lock().map(|g| g.clone()).unwrap_or_default()
+    }
+}
+
 /// El orden en que se recorre la cola, compartido.
 ///
 /// Se puede cambiar mientras algo suena: al terminar la pista se busca dónde
@@ -324,7 +371,7 @@ where
 {
     let controls = Controls { stop: stop.clone(), ..Controls::new() };
     play_queue_with(
-        paths,
+        &SharedQueue::new(paths.to_vec()),
         caps,
         policy,
         &controls,
@@ -340,7 +387,7 @@ where
 /// el índice y los frames entregados de esa pista.
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_with<F, K>(
-    paths: &[PathBuf],
+    queue: &SharedQueue,
     caps: &DeviceCaps,
     policy: Policy,
     controls: &Controls,
@@ -355,14 +402,16 @@ where
     let Controls { stop, pause, seek, skip, repeat, order } = controls;
     let mut resultados = Vec::new();
     let mut abierto: Option<(StreamFormat, K)> = None;
-    let mut indice = order.primera(paths.len());
+    let mut indice = order.primera(queue.len());
     // Un archivo que no entrega un solo frame y una repetición encendida
     // serían un lazo que gira para siempre. Se cuenta cuántas pistas
     // seguidas no sonaron y se corta al dar una vuelta completa.
     let mut mudas_seguidas = 0usize;
 
-    while indice < paths.len() {
-        let path = &paths[indice];
+    // El largo se vuelve a leer en cada vuelta: la cola puede crecer
+    // mientras suena.
+    while let Some(path) = queue.get(indice) {
+        let path = &path;
         let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
         let delivery = negotiate(decoded.stream_format(), caps, policy)
             .map_err(PlayError::Negotiation)?;
@@ -413,14 +462,14 @@ where
             outcome,
             transition: paso,
         });
-        if !termino_bien || mudas_seguidas > paths.len() {
+        if !termino_bien || mudas_seguidas > queue.len() {
             break;
         }
         let modo = repeat.get();
         if modo == Repeat::One && !salto {
             continue;
         }
-        match order.siguiente(indice, paths.len(), modo == Repeat::All) {
+        match order.siguiente(indice, queue.len(), modo == Repeat::All) {
             Some(n) => indice = n,
             None => break,
         }

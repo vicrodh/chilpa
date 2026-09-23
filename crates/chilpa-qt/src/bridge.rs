@@ -178,6 +178,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn close_album(self: Pin<&mut Chilpa>);
 
+        /// Encola lo que encontró la búsqueda, desde esa posición.
+        #[qinvokable]
+        fn enqueue_results(self: Pin<&mut Chilpa>, from: i32);
+
+        /// Encola un álbum completo, sin cortar lo que suena.
+        #[qinvokable]
+        fn enqueue_album(self: Pin<&mut Chilpa>, album_id: i64);
+
         /// Pone a sonar un álbum completo.
         #[qinvokable]
         fn play_album(self: Pin<&mut Chilpa>, album_id: i64);
@@ -641,6 +649,34 @@ impl Chilpa {
         self.as_mut().set_open_album_id(0);
         self.as_mut().set_results(QStringList::default());
         self.as_mut().rust_mut().result_paths.clear();
+    }
+
+    /// Deja la cola que reporta la fachada en las propiedades de la vista.
+    fn refrescar_cola(mut self: Pin<&mut Self>, titulos: &[String]) {
+        let mut lista = QList::<QString>::default();
+        for t in titulos {
+            lista.append(QString::from(t));
+        }
+        self.as_mut().set_queue(QStringList::from(&lista));
+    }
+
+    pub fn enqueue_results(mut self: Pin<&mut Self>, from: i32) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let desde = from.max(0) as usize;
+        let rutas: Vec<String> =
+            self.as_mut().rust_mut().result_paths.iter().skip(desde).cloned().collect();
+        self.as_mut().rust_mut().api.enqueue(&rutas, &dispositivo, bit_perfect);
+        let cola = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refrescar_cola(&cola);
+        self.as_mut().set_playing(true);
+    }
+
+    pub fn enqueue_album(mut self: Pin<&mut Self>, album_id: i64) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        self.as_mut().rust_mut().api.enqueue_album(album_id, &dispositivo, bit_perfect);
+        let cola = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refrescar_cola(&cola);
+        self.as_mut().set_playing(true);
     }
 
     pub fn play_album(mut self: Pin<&mut Self>, album_id: i64) {

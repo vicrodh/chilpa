@@ -7,7 +7,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::sink::{AudioSink, SinkError};
-use chilpa_core::queue_playback::{play_queue_with, Controls, Repeat};
+use chilpa_core::queue_playback::{play_queue_with, Controls, Repeat, SharedQueue};
 use std::cell::RefCell;
 use std::io::Write;
 use std::path::PathBuf;
@@ -84,7 +84,7 @@ fn sonadas(pistas: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
         stop: controls.stop.clone(),
     };
     let resultados =
-        play_queue_with(pistas, &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
+        play_queue_with(&SharedQueue::new(pistas.to_vec()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
             .expect("la cola corre");
     resultados.into_iter().map(|r| r.path).collect()
@@ -148,7 +148,7 @@ fn en_repeat_one_saltar_si_avanza() {
         stop: controls.stop.clone(),
     };
     let resultados =
-        play_queue_with(&pistas, &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
+        play_queue_with(&SharedQueue::new(pistas.clone()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
             .expect("la cola corre");
     let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
@@ -174,7 +174,7 @@ fn un_orden_propio_cambia_lo_que_suena() {
         stop: controls.stop.clone(),
     };
     let resultados = play_queue_with(
-        &pistas,
+        &SharedQueue::new(pistas.clone()),
         &caps(),
         Policy::BitPerfect,
         &controls,
@@ -188,4 +188,41 @@ fn un_orden_propio_cambia_lo_que_suena() {
     for p in pistas {
         let _ = std::fs::remove_file(p);
     }
+}
+
+#[test]
+fn lo_que_se_encola_a_media_cola_si_suena() {
+    let a = onda("crece-a", 4_410);
+    let b = onda("crece-b", 4_410);
+
+    let cola = SharedQueue::new(vec![a.clone()]);
+    let controls = Controls::new();
+    let sink = Topado {
+        frames: Rc::new(RefCell::new(0)),
+        tope: 1_000_000,
+        stop: controls.stop.clone(),
+    };
+    // La segunda entra cuando la primera ya arrancó: la cola no se rearma,
+    // le crece la cola.
+    let mut agregada = false;
+    let resultados = play_queue_with(
+        &cola,
+        &caps(),
+        Policy::BitPerfect,
+        &controls,
+        |_| Ok(sink.clone()),
+        &mut |_, _, _| {
+            if !agregada {
+                agregada = true;
+                cola.extend(std::slice::from_ref(&b));
+            }
+        },
+        &mut |_, _| {},
+    )
+    .expect("la cola corre");
+
+    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
+    assert_eq!(rutas, vec![a.clone(), b.clone()], "la agregada también sonó");
+    let _ = std::fs::remove_file(a);
+    let _ = std::fs::remove_file(b);
 }

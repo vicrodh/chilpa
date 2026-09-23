@@ -556,6 +556,44 @@ impl Chilpa {
         pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
+    /// Los títulos de la cola, en el orden en que se encoló.
+    pub fn queue_titles(&self) -> Vec<String> {
+        self.cola.iter().map(|r| titulo_de(std::path::Path::new(r))).collect()
+    }
+
+    /// Agrega pistas al final de la cola. Si no hay nada sonando, arranca.
+    ///
+    /// Encolar no corta lo que suena: la cola le crece por atrás y lo
+    /// agregado entra cuando le toca.
+    pub fn enqueue(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
+        let pistas: Vec<std::path::PathBuf> =
+            paths.iter().map(std::path::PathBuf::from).collect();
+        if pistas.is_empty() {
+            return Vec::new();
+        }
+        let sonando = self.now.playing && self.player.is_some();
+        if !sonando {
+            return self.play_tracks(paths, device, bit_perfect);
+        }
+        self.cola.extend(pistas.iter().map(|p| p.display().to_string()));
+        if let Some(p) = &self.player {
+            p.enqueue(&pistas);
+        }
+        self.now.queue_len = self.cola.len();
+        pistas.iter().map(|p| titulo_de(p)).collect()
+    }
+
+    /// Encola un álbum completo.
+    pub fn enqueue_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
+        let rutas: Vec<String> = self
+            .album_tracks(album_id)
+            .into_iter()
+            .filter(|t| t.present)
+            .map(|t| t.path)
+            .collect();
+        self.enqueue(&rutas, device, bit_perfect)
+    }
+
     /// Si la cola suena barajada.
     pub fn shuffle(&self) -> bool {
         self.shuffle
