@@ -120,6 +120,7 @@ dependencies = [
  "chilpa-alsa",
  "chilpa-audio",
  "chilpa-decode",
+ "chilpa-dsd",
  "chilpa-models",
  "chilpa-tags",
 ]
