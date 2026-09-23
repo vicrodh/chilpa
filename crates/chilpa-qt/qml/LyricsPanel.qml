@@ -8,13 +8,13 @@ import QtQuick.Controls
 import com.blitzfc.chilpa
 
 Rectangle {
-    id: raiz
+    id: root
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
 
     ListView {
-        id: lista
+        id: list
         anchors.fill: parent
         anchors.margins: 14
         clip: true
@@ -24,15 +24,15 @@ Rectangle {
             positionViewAtIndex(currentIndex, ListView.Center)
 
         delegate: Label {
-            width: lista.width
+            width: list.width
             padding: 3
             wrapMode: Text.Wrap
             text: modelData
-            font.pixelSize: activo ? 16 : 14
-            font.weight: activo ? Font.DemiBold : Font.Normal
-            color: activo ? "#d7272b" : "#411d1f"
-            opacity: !Chilpa.lyricsSynced || activo ? 1 : 0.55
-            readonly property bool activo: index === Chilpa.lyricsLine
+            font.pixelSize: active ? 16 : 14
+            font.weight: active ? Font.DemiBold : Font.Normal
+            color: active ? "#d7272b" : "#411d1f"
+            opacity: !Chilpa.lyricsSynced || active ? 1 : 0.55
+            readonly property bool active: index === Chilpa.lyricsLine
             Behavior on opacity { NumberAnimation { duration: 150 } }
         }
     }

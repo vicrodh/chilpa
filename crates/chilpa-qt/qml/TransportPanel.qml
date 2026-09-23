@@ -6,17 +6,17 @@ import QtQuick.Window
 import com.blitzfc.chilpa
 
 RowLayout {
-    id: raiz
+    id: root
     spacing: 8
 
     // Con el cursor dentro de un campo de texto, la barra espaciadora
     // escribe un espacio; no pausa.
-    readonly property bool escribiendo:
+    readonly property bool typing:
         Window.window !== null && Window.window.activeFocusItem instanceof TextInput
 
     Shortcut {
         sequence: "Space"
-        enabled: !raiz.escribiendo && Chilpa.playing
+        enabled: !root.typing && Chilpa.playing
         onActivated: Chilpa.pause(!Chilpa.paused)
     }
     Shortcut {
@@ -31,12 +31,12 @@ RowLayout {
     }
     Shortcut {
         sequence: StandardKey.MoveToNextChar
-        enabled: !raiz.escribiendo && Chilpa.playing
+        enabled: !root.typing && Chilpa.playing
         onActivated: Chilpa.seek(Math.min(Chilpa.seconds + 10, Chilpa.totalSeconds))
     }
     Shortcut {
         sequence: StandardKey.MoveToPreviousChar
-        enabled: !raiz.escribiendo && Chilpa.playing
+        enabled: !root.typing && Chilpa.playing
         onActivated: Chilpa.seek(Math.max(Chilpa.seconds - 10, 0))
     }
 

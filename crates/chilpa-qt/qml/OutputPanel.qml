@@ -10,13 +10,13 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 RowLayout {
-    id: raiz
+    id: root
     spacing: 10
 
     // Para que un layout decida si quiere la caja de búsqueda aquí o aparte.
-    property bool conBusqueda: true
+    property bool withSearch: true
     // Lo mismo con el selector de acomodo.
-    property bool conLayout: true
+    property bool withLayout: true
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
@@ -29,7 +29,7 @@ RowLayout {
     Label { text: "Salida"; color: "#411d1f" }
 
     ComboBox {
-        id: salidas
+        id: outputs
         Layout.fillWidth: true
         model: Chilpa.outputs
         // Lo elegido vive en el puente; esto solo lo muestra. Así la lista
@@ -43,14 +43,14 @@ RowLayout {
             bitPerfect.checked)
     }
 
-    CajaDeBusqueda {
+    SearchBox {
         Layout.preferredWidth: 200
-        visible: raiz.conBusqueda
+        visible: root.withSearch
     }
 
-    SelectorDeLayout {
+    LayoutSelector {
         Layout.preferredWidth: 130
-        visible: raiz.conLayout
+        visible: root.withLayout
     }
 
     CheckBox {

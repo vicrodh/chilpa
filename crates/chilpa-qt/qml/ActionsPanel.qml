@@ -17,23 +17,23 @@ import com.blitzfc.chilpa
 // sobra espacio a un lado; un relleno aquí adentro se comería la barra de
 // un acomodo que ponga algo más en el mismo renglón.
 RowLayout {
-    id: raiz
+    id: root
     spacing: 8
 
     // Los diálogos piden una URL, no una ruta.
-    readonly property url desde:
+    readonly property url from_:
         Chilpa.lastFolder === "" ? "" : "file://" + Chilpa.lastFolder
 
     Component.onCompleted: Chilpa.refreshCdDrives()
 
     Shortcut {
         sequence: "Ctrl+O"
-        onActivated: dialogoArchivo.open()
+        onActivated: fileDialog.open()
     }
 
     FileDialog {
-        id: dialogoArchivo
-        currentFolder: raiz.desde
+        id: fileDialog
+        currentFolder: root.from_
         title: "Abrir un archivo de audio"
         nameFilters: [
             "Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.oga *.aiff *.aif *.dsf *.dff)",
@@ -44,23 +44,23 @@ RowLayout {
     }
 
     FolderDialog {
-        id: dialogoCarpeta
-        currentFolder: raiz.desde
+        id: folderDialog
+        currentFolder: root.from_
         title: "Abrir una carpeta"
         onAccepted: Chilpa.playFolder(selectedFolder)
     }
 
     FileDialog {
-        id: dialogoLista
-        currentFolder: raiz.desde
+        id: playlistDialog
+        currentFolder: root.from_
         title: "Abrir una lista"
         nameFilters: ["Listas (*.m3u *.m3u8)"]
         onAccepted: Chilpa.playPlaylist(selectedFile)
     }
 
     FileDialog {
-        id: dialogoGuardar
-        currentFolder: raiz.desde
+        id: saveDialog
+        currentFolder: root.from_
         title: "Guardar la cola"
         fileMode: FileDialog.SaveFile
         defaultSuffix: "m3u"
@@ -69,25 +69,25 @@ RowLayout {
     }
 
     FolderDialog {
-        id: dialogoEscaneo
-        currentFolder: raiz.desde
+        id: scanDialog
+        currentFolder: root.from_
         title: "Escanear una carpeta a la biblioteca"
         onAccepted: Chilpa.scanFolder(selectedFolder)
     }
 
     // Abrir una radio: una dirección y ya.
     Dialog {
-        id: dialogoStream
+        id: streamDialog
         title: "Abrir un stream"
         anchors.centerIn: Overlay.overlay
         width: 420
         standardButtons: Dialog.Ok | Dialog.Cancel
-        onAccepted: if (direccion.text !== "") Chilpa.playUrl(direccion.text)
+        onAccepted: if (address.text !== "") Chilpa.playUrl(address.text)
 
         ColumnLayout {
             anchors.fill: parent
             TextField {
-                id: direccion
+                id: address
                 Layout.fillWidth: true
                 placeholderText: "http://..."
             }
@@ -96,20 +96,20 @@ RowLayout {
 
     Button {
         text: "Abrir archivo"
-        onClicked: dialogoArchivo.open()
+        onClicked: fileDialog.open()
     }
     Button {
         text: "Abrir carpeta"
-        onClicked: dialogoCarpeta.open()
+        onClicked: folderDialog.open()
     }
     Button {
         text: "Abrir lista"
-        onClicked: dialogoLista.open()
+        onClicked: playlistDialog.open()
     }
     Button {
         text: "Guardar cola"
         enabled: Chilpa.queue.length > 0
-        onClicked: dialogoGuardar.open()
+        onClicked: saveDialog.open()
     }
     Button {
         text: "Vaciar cola"
@@ -118,7 +118,7 @@ RowLayout {
     }
     Button {
         text: "Abrir stream"
-        onClicked: dialogoStream.open()
+        onClicked: streamDialog.open()
     }
     // Solo aparece si hay una unidad: un botón que nunca va a servir
     // estorba más de lo que ayuda.
@@ -129,7 +129,7 @@ RowLayout {
     }
     Button {
         text: "Escanear a la biblioteca"
-        onClicked: dialogoEscaneo.open()
+        onClicked: scanDialog.open()
     }
     Button {
         text: "Volver a escanear"

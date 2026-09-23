@@ -9,7 +9,7 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 Rectangle {
-    id: raiz
+    id: root
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
@@ -20,14 +20,14 @@ Rectangle {
     property var scope: Chilpa.scope
     property var spectrum: Chilpa.spectrum
     property var pairs: Chilpa.pairs
-    onScopeChanged: onda.requestPaint()
-    onSpectrumChanged: barras.requestPaint()
+    onScopeChanged: wave.requestPaint()
+    onSpectrumChanged: bars.requestPaint()
     onPairsChanged: gonio.requestPaint()
 
     /// Qué se dibuja. Lo decide el puente, que lo recuerda entre sesiones.
-    readonly property string cual: Chilpa.visualizer
-    readonly property bool porEspectro: cual === "espectro"
-    readonly property bool porGoniometro: cual === "goniometro"
+    readonly property string which: Chilpa.visualizer
+    readonly property bool asSpectrum: which === "spectrum"
+    readonly property bool asGoniometer: which === "goniometer"
 
     ColumnLayout {
         anchors.fill: parent
@@ -35,25 +35,25 @@ Rectangle {
         spacing: 8
 
         Canvas {
-            id: barras
+            id: bars
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.porEspectro
+            visible: root.asSpectrum
 
             onPaint: {
                 const ctx = getContext("2d")
                 ctx.reset()
-                const bandas = raiz.spectrum
-                if (!bandas || bandas.length === 0) return
-                const ancho = width / bandas.length
-                for (let i = 0; i < bandas.length; i++) {
-                    const v = Math.min(1, parseFloat(bandas[i]) || 0)
-                    const alto = Math.max(1, v * height)
+                const bands = root.spectrum
+                if (!bands || bands.length === 0) return
+                const barW = width / bands.length
+                for (let i = 0; i < bands.length; i++) {
+                    const v = Math.min(1, parseFloat(bands[i]) || 0)
+                    const barH = Math.max(1, v * height)
                     // Los graves en rojo, los agudos en vino: el degradado
                     // dice en qué parte del espectro se está mirando.
-                    const t = i / bandas.length
+                    const t = i / bands.length
                     ctx.fillStyle = Qt.rgba(0.84 - 0.6 * t, 0.15 + 0.05 * t, 0.17 + 0.05 * t, 1)
-                    ctx.fillRect(i * ancho, height - alto, Math.max(1, ancho - 2), alto)
+                    ctx.fillRect(i * barW, height - barH, Math.max(1, barW - 2), barH)
                 }
             }
         }
@@ -66,7 +66,7 @@ Rectangle {
             id: gonio
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.porGoniometro
+            visible: root.asGoniometer
 
             onPaint: {
                 const ctx = getContext("2d")
@@ -82,11 +82,11 @@ Rectangle {
                 ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy)
                 ctx.stroke()
 
-                const puntos = raiz.pairs
-                if (!puntos || puntos.length === 0) return
+                const points = root.pairs
+                if (!points || points.length === 0) return
                 ctx.fillStyle = "#66d7272b"
-                for (let n = 0; n < puntos.length; n++) {
-                    const p = puntos[n].split("\t")
+                for (let n = 0; n < points.length; n++) {
+                    const p = points[n].split("\t")
                     const i = parseFloat(p[0]) || 0
                     const d = parseFloat(p[1]) || 0
                     // Girado 45 grados: mono queda vertical, que es como se
@@ -99,36 +99,36 @@ Rectangle {
         }
 
         Canvas {
-            id: onda
+            id: wave
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !raiz.porEspectro && !raiz.porGoniometro
+            visible: !root.asSpectrum && !root.asGoniometer
 
             onPaint: {
                 const ctx = getContext("2d")
                 ctx.reset()
                 const w = width
                 const h = height
-                const medio = h / 2
+                const mid = h / 2
 
                 ctx.strokeStyle = "#1a411d1f"
                 ctx.lineWidth = 1
                 ctx.beginPath()
-                ctx.moveTo(0, medio)
-                ctx.lineTo(w, medio)
+                ctx.moveTo(0, mid)
+                ctx.lineTo(w, mid)
                 ctx.stroke()
 
-                const puntos = raiz.scope
-                if (!puntos || puntos.length === 0) return
+                const points = root.scope
+                if (!points || points.length === 0) return
 
-                const ancho = w / puntos.length
+                const barW = w / points.length
                 ctx.fillStyle = "#d7272b"
-                for (let i = 0; i < puntos.length; i++) {
+                for (let i = 0; i < points.length; i++) {
                     // Cada punto es el pico de su tajada: se dibuja
                     // simétrico, como una onda.
-                    const v = Math.min(1, parseFloat(puntos[i]) || 0)
-                    const alto = Math.max(1, v * medio)
-                    ctx.fillRect(i * ancho, medio - alto, Math.max(1, ancho - 1), alto * 2)
+                    const v = Math.min(1, parseFloat(points[i]) || 0)
+                    const barH = Math.max(1, v * mid)
+                    ctx.fillRect(i * barW, mid - barH, Math.max(1, barW - 1), barH * 2)
                 }
             }
         }
@@ -143,9 +143,9 @@ Rectangle {
                 model: Chilpa.levels
                 delegate: RowLayout {
                     spacing: 6
-                    readonly property var datos: modelData.split("\t")
-                    readonly property real pico: parseFloat(datos[0]) || 0
-                    readonly property real rms: parseFloat(datos[1]) || 0
+                    readonly property var cols: modelData.split("\t")
+                    readonly property real peak: parseFloat(cols[0]) || 0
+                    readonly property real rms: parseFloat(cols[1]) || 0
 
                     Label {
                         text: index === 0 ? "I" : (index === 1 ? "D" : (index + 1))
@@ -164,16 +164,16 @@ Rectangle {
                             color: "#2e7d32"
                         }
                         Rectangle {
-                            x: Math.min(parent.width - 2, parent.width * Math.min(1, pico))
+                            x: Math.min(parent.width - 2, parent.width * Math.min(1, peak))
                             width: 2
                             height: parent.height
-                            color: pico > 0.999 ? "#d7272b" : "#411d1f"
+                            color: peak > 0.999 ? "#d7272b" : "#411d1f"
                         }
                     }
                     Label {
-                        text: pico > 0 ? (20 * Math.log(pico) / Math.LN10).toFixed(1) + " dB" : "—"
+                        text: peak > 0 ? (20 * Math.log(peak) / Math.LN10).toFixed(1) + " dB" : "—"
                         font.pixelSize: 10
-                        color: pico > 0.999 ? "#d7272b" : "#7a411d1f"
+                        color: peak > 0.999 ? "#d7272b" : "#7a411d1f"
                     }
                 }
             }
@@ -190,7 +190,7 @@ Rectangle {
 
             // Cambiar de dibujo sin menús: un clic en el nombre.
             Label {
-                text: raiz.cual
+                text: root.which
                 font.pixelSize: 10
                 color: "#7a411d1f"
                 MouseArea {
@@ -198,9 +198,9 @@ Rectangle {
                     anchors.margins: -6
                     cursorShape: Qt.PointingHandCursor
                     onClicked: {
-                        const orden = ["onda", "espectro", "goniometro"]
-                        const i = Math.max(0, orden.indexOf(raiz.cual))
-                        Chilpa.chooseVisualizer(orden[(i + 1) % orden.length])
+                        const order = ["wave", "spectrum", "goniometer"]
+                        const i = Math.max(0, order.indexOf(root.which))
+                        Chilpa.chooseVisualizer(order[(i + 1) % order.length])
                     }
                 }
             }

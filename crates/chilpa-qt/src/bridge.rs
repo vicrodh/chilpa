@@ -84,7 +84,7 @@ pub mod chilpa_bridge {
         #[qproperty(QString, last_folder)]
         /// La envolvente de lo que sale: un valor de 0 a 1 por punto.
         #[qproperty(QStringList, scope)]
-        /// Qué visualizador se dibuja: "onda" o "espectro".
+        /// Qué visualizador se dibuja: "wave", "spectrum" o "goniometer".
         #[qproperty(QString, visualizer)]
         /// El espectro de lo que sale: un valor de 0 a 1 por banda.
         #[qproperty(QStringList, spectrum)]

@@ -30,10 +30,10 @@ pub struct Settings {
 }
 
 /// El visualizador con el que arranca quien no ha elegido ninguno.
-pub const DEFAULT_VISUALIZER: &str = "onda";
+pub const DEFAULT_VISUALIZER: &str = "wave";
 
 /// El acomodo con el que arranca quien no ha elegido ninguno.
-pub const DEFAULT_LAYOUT: &str = "Clasico";
+pub const DEFAULT_LAYOUT: &str = "Classic";
 
 impl Default for Settings {
     fn default() -> Self {
@@ -79,7 +79,7 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     // Un layout vacío en el archivo no deja la ventana sin nada que cargar.
     if let Some(v) = pares.get("layout") {
         if !v.is_empty() {
-            s.layout = v.clone();
+            s.layout = renamed(v, OLD_LAYOUTS);
         }
     }
     if let Some(v) = pares.get("album_sort") {
@@ -87,10 +87,23 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     }
     if let Some(v) = pares.get("visualizer") {
         if !v.is_empty() {
-            s.visualizer = v.clone();
+            s.visualizer = renamed(v, OLD_VISUALIZERS);
         }
     }
     s
+}
+
+/// Los nombres que estos valores tenían antes de que el código pasara a
+/// inglés. Un archivo viejo sigue abriendo la misma ventana.
+const OLD_LAYOUTS: &[(&str, &str)] = &[("Clasico", "Classic"), ("Compacto", "Compact")];
+const OLD_VISUALIZERS: &[(&str, &str)] =
+    &[("onda", "wave"), ("espectro", "spectrum"), ("goniometro", "goniometer")];
+
+fn renamed(value: &str, old: &[(&str, &str)]) -> String {
+    old.iter()
+        .find(|(from, _)| *from == value)
+        .map(|(_, to)| (*to).to_string())
+        .unwrap_or_else(|| value.to_string())
 }
 
 /// Guarda las preferencias, creando el directorio si hace falta.
@@ -150,10 +163,22 @@ mod tests {
             last_folder: "/musica/albumes".into(),
             layout: "Columna".into(),
             album_sort: "played".into(),
-            visualizer: "espectro".into(),
+            visualizer: "spectrum".into(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn the_old_spanish_names_still_open_the_same_window() {
+        // Un settings.conf escrito antes de que el código pasara a inglés
+        // no puede dejar la ventana sin layout ni sin visualizador.
+        let file = temporal("nombres-viejos");
+        std::fs::write(&file, "layout = Clasico\nvisualizer = espectro\n").unwrap();
+        let s = load_from(&file);
+        assert_eq!(s.layout, "Classic");
+        assert_eq!(s.visualizer, "spectrum");
         let _ = std::fs::remove_file(file);
     }
 

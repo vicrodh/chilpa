@@ -8,14 +8,14 @@ import QtQuick.Controls
 import com.blitzfc.chilpa
 
 TextField {
-    id: caja
+    id: box
     placeholderText: "Buscar"
     text: Chilpa.searchText
     onTextEdited: Chilpa.search(text)
 
     Shortcut {
         sequence: "Ctrl+F"
-        onActivated: caja.forceActiveFocus()
+        onActivated: box.forceActiveFocus()
     }
     Shortcut {
         sequence: "Escape"
