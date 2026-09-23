@@ -14,7 +14,11 @@ pub mod dop;
 pub mod format;
 pub mod negotiate;
 pub mod pack;
+pub mod render;
+pub mod sink;
 
 pub use format::{SampleFormat, StreamFormat};
 pub use negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy, Transform};
 pub use pack::{pack, PackError, Samples};
+pub use render::{render, FrameSource, Outcome};
+pub use sink::{AudioSink, SinkError, StopSignal};
