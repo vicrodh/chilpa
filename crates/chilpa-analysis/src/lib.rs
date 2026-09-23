@@ -17,10 +17,15 @@ pub use tempo::{detect as detect_tempo, Tempo};
 
 /// La versión de este analizador.
 ///
-/// Sube cuando el resultado cambia para la misma entrada. La biblioteca
-/// guarda este número junto a cada feature, así que subirlo es lo que
-/// permite recalcular sin borrar lo anterior.
-pub const VERSION: i64 = 1;
+/// Sube cuando el resultado cambia para la misma entrada, y también cuando
+/// se saca algo nuevo: una fila de la versión 1 no trae tonalidad ni
+/// sonoridad, y dejarla como buena sería tener media biblioteca coja. La
+/// biblioteca guarda este número junto a cada feature, así que subirlo es lo
+/// que permite recalcular sin borrar lo anterior.
+///
+/// - 1: tempo.
+/// - 2: tempo, tonalidad y sonoridad.
+pub const VERSION: i64 = 2;
 
 /// Cómo se llama este analizador en la base.
 pub const NOMBRE: &str = "chilpa";
