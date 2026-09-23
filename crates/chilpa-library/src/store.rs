@@ -155,6 +155,52 @@ impl Library {
         filas.collect()
     }
 
+    /// Los álbumes más escuchados, con su cuenta de reproducciones.
+    ///
+    /// Cuenta solo lo que sonó más de la mitad, igual que
+    /// [`Library::play_count`]. Es la primera smart list: sale del log de
+    /// eventos, no de un contador que haya que mantener a mano.
+    pub fn most_played_albums(&self, limit: usize) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        let mut stmt = self.db.prepare(
+            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
+                    count(DISTINCT t.id), count(p.id)
+             FROM albums a
+             JOIN tracks t ON t.album_id = a.id
+             JOIN play_events p ON p.track_id = t.id
+                  AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms)
+             GROUP BY a.id
+             ORDER BY count(p.id) DESC, a.title COLLATE NOCASE
+             LIMIT ?1",
+        )?;
+        let filas = stmt.query_map(params![limit as i64], |r| {
+            Ok((
+                StoredAlbum {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    album_artist: r.get(2)?,
+                    year: r.get(3)?,
+                    artwork_path: r.get(4)?,
+                    track_count: r.get::<_, i64>(5)? as usize,
+                },
+                r.get::<_, i64>(6)? as usize,
+            ))
+        })?;
+        filas.collect()
+    }
+
+    /// Cuántas veces se ha escuchado cada pista de un álbum.
+    pub fn album_play_count(&self, album_id: i64) -> rusqlite::Result<usize> {
+        let n: i64 = self.db.query_row(
+            "SELECT count(*) FROM play_events p
+             JOIN tracks t ON t.id = p.track_id
+             WHERE t.album_id = ?1
+               AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms)",
+            params![album_id],
+            |r| r.get(0),
+        )?;
+        Ok(n as usize)
+    }
+
     /// Busca por título, artista o álbum.
     pub fn search(&self, texto: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
         let patron = format!("%{texto}%");
@@ -281,6 +327,42 @@ mod tests {
 
         assert_eq!(lib.track_count(true).unwrap(), 1, "la fila sigue ahí");
         assert_eq!(lib.track_count(false).unwrap(), 0, "pero ya no cuenta como presente");
+    }
+
+    #[test]
+    fn los_mas_escuchados_salen_del_log_y_en_orden() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for (album, titulo) in [(1, "Uno"), (2, "Dos")] {
+            lib.db
+                .execute(
+                    "INSERT INTO albums (id, title, album_artist) VALUES (?1, ?2, 'Artista')",
+                    params![album, titulo],
+                )
+                .unwrap();
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
+                     VALUES (?1, ?2, 'Pista', ?3, 1000, 0)",
+                    params![source, format!("/{titulo}.flac"), album],
+                )
+                .unwrap();
+        }
+        // El álbum 2 se escucha tres veces; el 1, una.
+        lib.log_play(Some(1), Some(source), 1, 1000, 1000, false, None, None, true).unwrap();
+        for i in 0..3 {
+            lib.log_play(Some(2), Some(source), 10 + i, 1000, 1000, false, None, None, true)
+                .unwrap();
+        }
+        // Y una a medias, que no cuenta.
+        lib.log_play(Some(1), Some(source), 20, 100, 1000, true, None, None, true).unwrap();
+
+        let top = lib.most_played_albums(10).unwrap();
+        assert_eq!(top.len(), 2);
+        assert_eq!(top[0].0.title, "Dos");
+        assert_eq!(top[0].1, 3);
+        assert_eq!(top[1].1, 1, "la escucha a medias no suma");
+        assert_eq!(lib.album_play_count(2).unwrap(), 3);
     }
 
     #[test]
