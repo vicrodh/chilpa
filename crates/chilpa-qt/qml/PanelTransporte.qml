@@ -60,4 +60,17 @@ RowLayout {
         enabled: Chilpa.playing
         onClicked: Chilpa.stop()
     }
+
+    // Aleatorio y repetición cambian lo que sigue, no lo que suena: se
+    // pueden tocar con la cola andando.
+    Button {
+        text: "Aleatorio"
+        checkable: true
+        checked: Chilpa.shuffle
+        onToggled: Chilpa.shuffle = checked
+    }
+    Button {
+        text: ["Repetir: no", "Repetir: cola", "Repetir: pista"][Chilpa.repeat]
+        onClicked: Chilpa.cycleRepeat()
+    }
 }

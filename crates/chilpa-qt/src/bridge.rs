@@ -60,6 +60,10 @@ pub mod chilpa_bridge {
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
+        /// Cómo se recorre la cola: barajada o no, y la repetición como
+        /// 0 = ninguna, 1 = toda la cola, 2 = la pista.
+        #[qproperty(bool, shuffle, READ = shuffle, WRITE = shuffle_queue, NOTIFY = shuffle_changed)]
+        #[qproperty(i32, repeat)]
         /// Lo elegido para reproducir: la salida y si se exige bit-perfect.
         /// Vive aquí, no en un control de la ventana, para que cualquier
         /// layout lo lea sin depender de dónde quedó el selector.
@@ -142,6 +146,21 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString);
 
+        /// El lector y el asignador de `shuffle`: QML escribe la propiedad
+        /// y el asignador la aplica en la fachada.
+        #[cxx_name = "shuffle"]
+        fn shuffle(self: &Chilpa) -> bool;
+        #[cxx_name = "setShuffle"]
+        fn shuffle_queue(self: Pin<&mut Chilpa>, shuffle: bool);
+
+        #[qsignal]
+        #[cxx_name = "shuffleChanged"]
+        fn shuffle_changed(self: Pin<&mut Chilpa>);
+
+        /// Cambia la repetición: 0 ninguna, 1 toda la cola, 2 la pista.
+        #[qinvokable]
+        fn cycle_repeat(self: Pin<&mut Chilpa>);
+
         /// Salta a la siguiente pista de la cola.
         #[qinvokable]
         fn next_track(self: Pin<&mut Chilpa>);
@@ -198,6 +217,8 @@ pub struct ChilpaRust {
     scanning: bool,
     layout: QString,
     layouts: QStringList,
+    shuffle: bool,
+    repeat: i32,
     search_text: QString,
     device: QString,
     want_bit_perfect: bool,
@@ -236,6 +257,8 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            shuffle: false,
+            repeat: 0,
             layout: QString::from(&recordado.layout),
             layouts: {
                 let mut l = QList::<QString>::default();
@@ -481,6 +504,30 @@ impl Chilpa {
         self.as_mut().set_device(device.clone());
         self.as_mut().set_want_bit_perfect(bit_perfect);
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
+    }
+
+    pub fn shuffle(&self) -> bool {
+        self.shuffle
+    }
+
+    pub fn shuffle_queue(mut self: Pin<&mut Self>, shuffle: bool) {
+        if self.shuffle == shuffle {
+            return;
+        }
+        self.as_mut().rust_mut().shuffle = shuffle;
+        self.as_mut().rust_mut().api.set_shuffle(shuffle);
+        self.as_mut().shuffle_changed();
+    }
+
+    pub fn cycle_repeat(mut self: Pin<&mut Self>) {
+        let siguiente = (self.repeat + 1) % 3;
+        let modo = match siguiente {
+            1 => chilpa_api::Repeat::All,
+            2 => chilpa_api::Repeat::One,
+            _ => chilpa_api::Repeat::Off,
+        };
+        self.as_mut().set_repeat(siguiente);
+        self.as_mut().rust_mut().api.set_repeat(modo);
     }
 
     pub fn next_track(mut self: Pin<&mut Self>) {
