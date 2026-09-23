@@ -29,10 +29,11 @@ What QBZ never got to:
 
 - `crates/` — the workspace. `chilpa-api` is the only surface a frontend may
   use.
-- `docs/adr/` — the decisions that constrain the code.
 - `tools/lint/` — the checks that enforce them.
 
-Agent rules, plans and internal documents are not part of this repository.
+Agent rules, design decisions, plans and internal documents are not part of
+this repository. Public docs for contributors and plugin authors will live
+here once the project opens up.
 
 Before working on this repo:
 
