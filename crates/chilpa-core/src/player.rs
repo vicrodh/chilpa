@@ -31,6 +31,8 @@ pub enum PlayerEvent {
         /// Qué lugar ocupa en la cola y de cuántas.
         index: usize,
         queue_len: usize,
+        /// Para DSD: el múltiplo que lo nombra (64, 128…). `None` en PCM.
+        dsd_multiple: Option<u32>,
     },
     /// Frames entregados hasta ahora.
     Progress { frames: u64 },
@@ -192,6 +194,14 @@ fn reproducir(
     let caps = probe(device).map_err(PlayError::Sink)?;
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
     let total = paths.len();
+
+    // DSD no pasa por el decodificador de PCM: va por DoP, y hoy se
+    // reproduce de a una pista.
+    if let Some(primera) = paths.first() {
+        if es_dsd(primera) {
+            return reproducir_dsd(primera, device, &caps, stop, pause, open, events);
+        }
+    }
     let resultados = crate::queue_playback::play_queue_with(
         paths,
         &caps,
@@ -216,6 +226,7 @@ fn reproducir(
                 artwork,
                 index: indice,
                 queue_len: total,
+                dsd_multiple: None,
             });
         },
         &mut |_, frames| {
@@ -228,6 +239,68 @@ fn reproducir(
         .last()
         .map(|r| r.outcome.clone())
         .unwrap_or(Outcome::Finished { frames: 0 }))
+}
+
+/// Cierto si el archivo es DSD por su extensión.
+fn es_dsd(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("dsf"))
+        .unwrap_or(false)
+}
+
+/// Reproduce un archivo DSD y cuenta lo mismo que la ruta de PCM.
+#[allow(clippy::too_many_arguments)]
+fn reproducir_dsd(
+    path: &Path,
+    device: &str,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    open: &mut OpenSink,
+    events: &Sender<PlayerEvent>,
+) -> Result<Outcome, PlayError> {
+    let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
+    let artwork = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
+    use chilpa_dsd::DsdSource as _;
+    let info = chilpa_dsd::DsfReader::open(path)
+        .map(|r| r.info().clone())
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+
+    let ruta = path.to_path_buf();
+    let eventos = events.clone();
+    let multiplo = info.multiple();
+    let total_frames = Some(info.samples / 16);
+
+    let played = crate::dsd_playback::play_dsf(
+        path,
+        caps,
+        stop,
+        pause,
+        |formato| {
+            let sink = open(device, formato);
+            if let Ok(_) = &sink {
+                let _ = eventos.send(PlayerEvent::Started {
+                    path: ruta.clone(),
+                    opened: formato,
+                    bit_perfect: true,
+                    total_frames,
+                    tags: tags.clone(),
+                    artwork: artwork.clone(),
+                    index: 0,
+                    queue_len: 1,
+                    dsd_multiple: Some(multiplo),
+                });
+            }
+            sink
+        },
+        &mut |frames| {
+            let _ = events.send(PlayerEvent::Progress { frames });
+        },
+    )
+    .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+
+    Ok(played.outcome)
 }
 
 #[cfg(test)]

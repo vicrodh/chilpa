@@ -234,6 +234,7 @@ impl Chilpa {
                     artwork,
                     index,
                     queue_len,
+                    dsd_multiple,
                 } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
@@ -265,12 +266,22 @@ impl Chilpa {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
                         _ => 0.0,
                     };
-                    self.now.format = format!(
-                        "{} Hz · {} bits · {}",
-                        opened.sample_rate_hz,
-                        opened.sample_format.valid_bits(),
-                        canales(opened.channels)
-                    );
+                    self.now.format = match dsd_multiple {
+                        // En DSD lo que importa es la tasa de DSD; el
+                        // portador de DoP se dice aparte, porque es el
+                        // formato con el que se abrió el dispositivo.
+                        Some(multiplo) => format!(
+                            "DSD{multiplo} · DoP a {} Hz · {}",
+                            opened.sample_rate_hz,
+                            canales(opened.channels)
+                        ),
+                        None => format!(
+                            "{} Hz · {} bits · {}",
+                            opened.sample_rate_hz,
+                            opened.sample_format.valid_bits(),
+                            canales(opened.channels)
+                        ),
+                    };
                 }
                 PlayerEvent::Progress { frames } => {
                     self.now.frames = frames;
