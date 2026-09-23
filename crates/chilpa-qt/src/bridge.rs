@@ -60,6 +60,9 @@ pub mod chilpa_bridge {
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
+        /// La última carpeta que se abrió, para que los diálogos no
+        /// empiecen en el home cada vez.
+        #[qproperty(QString, last_folder)]
         /// Las vistas rápidas de la biblioteca y cuál está puesta.
         #[qproperty(QStringList, album_views)]
         #[qproperty(i32, album_view, READ = album_view, WRITE = choose_album_view, NOTIFY = album_view_changed)]
@@ -241,6 +244,7 @@ pub struct ChilpaRust {
     scanning: bool,
     layout: QString,
     layouts: QStringList,
+    last_folder: QString,
     album_views: QStringList,
     album_view: i32,
     shuffle: bool,
@@ -283,6 +287,7 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            last_folder: QString::from(&recordado.last_folder),
             album_views: {
                 let mut l = QList::<QString>::default();
                 for v in VISTAS {
@@ -350,6 +355,7 @@ impl Chilpa {
             .rust_mut()
             .api
             .play_file(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
+        self.as_mut().recordar_carpeta(&ruta);
     }
 
     pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
@@ -357,6 +363,7 @@ impl Chilpa {
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
         // El escaneo corre en su propio hilo: una biblioteca grande dejaría
         // la ventana congelada si se hiciera aquí.
+        self.as_mut().recordar_carpeta(&format!("{ruta}/."));
         self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&ruta));
         self.as_mut().set_scanning(true);
         self.as_mut().set_scan_progress(0.0);
@@ -415,6 +422,20 @@ impl Chilpa {
 
     pub fn album_view(&self) -> i32 {
         self.album_view
+    }
+
+    /// Recuerda dónde estaba el usuario: lo que se abre es, casi siempre,
+    /// vecino de lo último que se abrió.
+    fn recordar_carpeta(mut self: Pin<&mut Self>, ruta: &str) {
+        let carpeta = std::path::Path::new(ruta)
+            .parent()
+            .map(|p| p.display().to_string())
+            .unwrap_or_default();
+        if carpeta.is_empty() {
+            return;
+        }
+        self.as_mut().set_last_folder(QString::from(&carpeta));
+        self.as_mut().rust_mut().api.remember_folder(&carpeta);
     }
 
     pub fn choose_album_view(mut self: Pin<&mut Self>, view: i32) {
@@ -502,6 +523,7 @@ impl Chilpa {
         let ruta = path.to_string();
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
         let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        self.as_mut().recordar_carpeta(&ruta);
         let titulos = self.as_mut().rust_mut().api.play_playlist(
             std::path::Path::new(&ruta),
             &dispositivo,
@@ -530,6 +552,7 @@ impl Chilpa {
         let ruta = folder.to_string();
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
         let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        self.as_mut().recordar_carpeta(&format!("{ruta}/."));
         let pistas = self
             .as_mut()
             .rust_mut()
