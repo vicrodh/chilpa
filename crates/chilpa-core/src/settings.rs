@@ -23,6 +23,8 @@ pub struct Settings {
     pub last_folder: String,
     /// El acomodo de la ventana, por nombre.
     pub layout: String,
+    /// La vista rápida con la que se mira la biblioteca.
+    pub album_sort: String,
 }
 
 /// El acomodo con el que arranca quien no ha elegido ninguno.
@@ -35,6 +37,7 @@ impl Default for Settings {
             bit_perfect: true,
             last_folder: String::new(),
             layout: LAYOUT_POR_OMISION.to_string(),
+            album_sort: String::new(),
         }
     }
 }
@@ -73,6 +76,9 @@ pub fn load_from(file: &std::path::Path) -> Settings {
             s.layout = v.clone();
         }
     }
+    if let Some(v) = pares.get("album_sort") {
+        s.album_sort = v.clone();
+    }
     s
 }
 
@@ -86,8 +92,8 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         std::fs::create_dir_all(dir)?;
     }
     let texto = format!(
-        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\n",
-        settings.output, settings.bit_perfect, settings.last_folder, settings.layout
+        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\n",
+        settings.output, settings.bit_perfect, settings.last_folder, settings.layout, settings.album_sort
     );
     std::fs::write(file, texto)
 }
@@ -127,6 +133,7 @@ mod tests {
             bit_perfect: false,
             last_folder: "/musica/albumes".into(),
             layout: "Columna".into(),
+            album_sort: "played".into(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);

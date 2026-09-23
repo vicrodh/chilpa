@@ -13,8 +13,6 @@ Rectangle {
     color: "#ffffff"
     border.color: "#1a411d1f"
 
-    // Qué salida y con qué política se reproduce; las decide la ventana.
-
     // Cada renglón viene como "id, título, artista, año, pistas, portada".
     function campos(renglon) {
         return renglon.split("\t")
@@ -35,6 +33,15 @@ Rectangle {
                 font.weight: Font.DemiBold
                 color: "#411d1f"
             }
+
+            // Las vistas rápidas: lo mismo de siempre, mirado de otra forma.
+            ComboBox {
+                Layout.preferredWidth: 180
+                model: Chilpa.albumViews
+                currentIndex: Chilpa.albumView
+                onActivated: Chilpa.albumView = index
+            }
+
             Item { Layout.fillWidth: true }
             ProgressBar {
                 visible: Chilpa.scanning

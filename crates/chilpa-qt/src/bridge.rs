@@ -60,6 +60,9 @@ pub mod chilpa_bridge {
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
+        /// Las vistas rápidas de la biblioteca y cuál está puesta.
+        #[qproperty(QStringList, album_views)]
+        #[qproperty(i32, album_view, READ = album_view, WRITE = choose_album_view, NOTIFY = album_view_changed)]
         /// Cómo se recorre la cola: barajada o no, y la repetición como
         /// 0 = ninguna, 1 = toda la cola, 2 = la pista.
         #[qproperty(bool, shuffle, READ = shuffle, WRITE = shuffle_queue, NOTIFY = shuffle_changed)]
@@ -113,6 +116,17 @@ pub mod chilpa_bridge {
         /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
         #[qinvokable]
         fn scan_folder(self: Pin<&mut Chilpa>, folder: &QString);
+
+        /// El lector y el asignador de `album_view`: cambiar la vista
+        /// vuelve a leer la biblioteca en ese orden.
+        #[cxx_name = "albumView"]
+        fn album_view(self: &Chilpa) -> i32;
+        #[cxx_name = "setAlbumView"]
+        fn choose_album_view(self: Pin<&mut Chilpa>, view: i32);
+
+        #[qsignal]
+        #[cxx_name = "albumViewChanged"]
+        fn album_view_changed(self: Pin<&mut Chilpa>);
 
         /// Vuelve a leer los álbumes de la biblioteca.
         #[qinvokable]
@@ -191,6 +205,16 @@ pub mod chilpa_bridge {
 
 use chilpa_bridge::Chilpa;
 
+/// Las vistas rápidas de la biblioteca, con su nombre para la lista.
+const VISTAS: &[(chilpa_api::AlbumSort, &str)] = &[
+    (chilpa_api::AlbumSort::Artist, "Por artista"),
+    (chilpa_api::AlbumSort::Title, "Por título"),
+    (chilpa_api::AlbumSort::Year, "Por año"),
+    (chilpa_api::AlbumSort::Added, "Agregados"),
+    (chilpa_api::AlbumSort::Played, "Más escuchados"),
+    (chilpa_api::AlbumSort::LastPlayed, "Escuchados hace poco"),
+];
+
 /// La lista de acomodos, generada por `build.rs` a partir de los QML.
 mod acomodos {
     include!(concat!(env!("OUT_DIR"), "/layouts.rs"));
@@ -217,6 +241,8 @@ pub struct ChilpaRust {
     scanning: bool,
     layout: QString,
     layouts: QStringList,
+    album_views: QStringList,
+    album_view: i32,
     shuffle: bool,
     repeat: i32,
     search_text: QString,
@@ -257,6 +283,17 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            album_views: {
+                let mut l = QList::<QString>::default();
+                for v in VISTAS {
+                    l.append(QString::from(v.1));
+                }
+                QStringList::from(&l)
+            },
+            album_view: {
+                let actual = chilpa_api::Chilpa::new().album_sort();
+                VISTAS.iter().position(|v| v.0 == actual).unwrap_or(0) as i32
+            },
             shuffle: false,
             repeat: 0,
             layout: QString::from(&recordado.layout),
@@ -374,6 +411,19 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
+    }
+
+    pub fn album_view(&self) -> i32 {
+        self.album_view
+    }
+
+    pub fn choose_album_view(mut self: Pin<&mut Self>, view: i32) {
+        let Some((orden, _)) = VISTAS.get(view.max(0) as usize) else { return };
+        let orden = *orden;
+        self.as_mut().rust_mut().album_view = view;
+        self.as_mut().rust_mut().api.set_album_sort(orden);
+        self.as_mut().album_view_changed();
+        self.as_mut().refresh_albums();
     }
 
     pub fn refresh_albums(mut self: Pin<&mut Self>) {

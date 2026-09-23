@@ -5,6 +5,7 @@
 //! primero se amplía esta API.
 
 pub use chilpa_core::queue_playback::Repeat;
+pub use chilpa_library::AlbumSort;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -197,6 +198,7 @@ pub struct Chilpa {
     base: usize,
     shuffle: bool,
     repeat: Repeat,
+    album_sort: AlbumSort,
     /// El escaneo en segundo plano, mientras corre.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -221,6 +223,7 @@ impl Chilpa {
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,
+            album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
             scan: None,
             scan_status: ScanStatus::default(),
             player: None,
@@ -316,21 +319,42 @@ impl Chilpa {
 
     /// Los álbumes de la biblioteca.
     pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
+        let vista = self.album_sort;
+        self.albums_sorted(vista, limit, offset)
+    }
+
+    /// La vista rápida con la que se está mirando la biblioteca.
+    pub fn album_sort(&self) -> AlbumSort {
+        self.album_sort
+    }
+
+    /// Cambia la vista y la recuerda para la próxima sesión.
+    pub fn set_album_sort(&mut self, orden: AlbumSort) {
+        self.album_sort = orden;
+        let mut s = chilpa_core::settings::load();
+        s.album_sort = orden.name().to_string();
+        let _ = chilpa_core::settings::save(&s);
+    }
+
+    /// Los álbumes en el orden que se pida, con su cuenta de escuchas.
+    pub fn albums_sorted(
+        &mut self,
+        orden: AlbumSort,
+        limit: usize,
+        offset: usize,
+    ) -> Vec<Album> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums(limit, offset)
+        lib.albums_sorted(orden, limit, offset)
             .unwrap_or_default()
             .into_iter()
-            .map(|a| {
-                let escuchas = lib.album_play_count(a.id).unwrap_or(0);
-                Album {
-                    id: a.id,
-                    title: a.title,
-                    artist: a.album_artist,
-                    year: a.year,
-                    track_count: a.track_count,
-                    artwork_path: a.artwork_path.unwrap_or_default(),
-                    play_count: escuchas,
-                }
+            .map(|(a, escuchas)| Album {
+                id: a.id,
+                title: a.title,
+                artist: a.album_artist,
+                year: a.year,
+                track_count: a.track_count,
+                artwork_path: a.artwork_path.unwrap_or_default(),
+                play_count: escuchas,
             })
             .collect()
     }

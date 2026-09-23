@@ -33,6 +33,78 @@ pub struct Library {
     pub(crate) db: Connection,
 }
 
+/// Cómo ordenar la reja de álbumes.
+///
+/// Son las vistas rápidas: lo mismo de siempre, mirado de otra forma. Todas
+/// salen de la misma consulta, con otro `ORDER BY`; ninguna agrega la
+/// biblioteca entera dos veces.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum AlbumSort {
+    /// Artista, año y título: el orden de una repisa.
+    #[default]
+    Artist,
+    Title,
+    /// Del más nuevo al más viejo.
+    Year,
+    /// Lo último que entró a la biblioteca.
+    Added,
+    /// Lo más escuchado.
+    Played,
+    /// Lo último que sonó.
+    LastPlayed,
+}
+
+impl AlbumSort {
+    /// Cómo se llama esta vista, para guardarla y para leerla.
+    pub fn name(&self) -> &'static str {
+        match self {
+            AlbumSort::Artist => "artist",
+            AlbumSort::Title => "title",
+            AlbumSort::Year => "year",
+            AlbumSort::Added => "added",
+            AlbumSort::Played => "played",
+            AlbumSort::LastPlayed => "last_played",
+        }
+    }
+
+    /// Lo contrario. Un nombre que no se reconoce da el orden de siempre, no
+    /// un error: una preferencia vieja no debe dejar la reja vacía.
+    pub fn from_name(nombre: &str) -> Self {
+        match nombre {
+            "title" => AlbumSort::Title,
+            "year" => AlbumSort::Year,
+            "added" => AlbumSort::Added,
+            "played" => AlbumSort::Played,
+            "last_played" => AlbumSort::LastPlayed,
+            _ => AlbumSort::Artist,
+        }
+    }
+
+    /// Todas, en el orden en que se ofrecen.
+    pub fn all() -> [AlbumSort; 6] {
+        [
+            AlbumSort::Artist,
+            AlbumSort::Title,
+            AlbumSort::Year,
+            AlbumSort::Added,
+            AlbumSort::Played,
+            AlbumSort::LastPlayed,
+        ]
+    }
+
+    fn order_by(&self) -> &'static str {
+        match self {
+            AlbumSort::Artist => "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE",
+            AlbumSort::Title => "a.title COLLATE NOCASE",
+            AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
+            AlbumSort::Added => "max(t.added_at) DESC, a.title COLLATE NOCASE",
+            AlbumSort::Played => "escuchas DESC, a.title COLLATE NOCASE",
+            AlbumSort::LastPlayed => "ultima DESC, a.title COLLATE NOCASE",
+        }
+    }
+}
+
+
 impl Library {
     /// Abre (o crea) la biblioteca en ese archivo.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
@@ -138,6 +210,56 @@ impl Library {
                 artwork_path: r.get(4)?,
                 track_count: r.get::<_, i64>(5)? as usize,
             })
+        })?;
+        filas.collect()
+    }
+
+    /// Los álbumes con su cuenta de escuchas, en el orden que se pida.
+    ///
+    /// Una sola consulta: las escuchas salen de un `GROUP BY` sobre el log
+    /// unido una vez, no de una consulta por álbum. Preguntarle a la base
+    /// una vez por cada fila de una reja es justo lo que hacía lenta a la
+    /// biblioteca de QBZ.
+    pub fn albums_sorted(
+        &self,
+        orden: AlbumSort,
+        limit: usize,
+        offset: usize,
+    ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        let sql = format!(
+            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
+                    count(t.id),
+                    COALESCE(e.escuchas, 0) AS escuchas,
+                    e.ultima AS ultima
+             FROM albums a
+             JOIN tracks t ON t.album_id = a.id AND t.present = 1
+             LEFT JOIN (
+                 SELECT t2.album_id AS aid,
+                        count(*) AS escuchas,
+                        max(p.started_at) AS ultima
+                 FROM play_events p
+                 JOIN tracks t2 ON t2.id = p.track_id
+                 WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+                 GROUP BY t2.album_id
+             ) e ON e.aid = a.id
+             GROUP BY a.id
+             ORDER BY {}
+             LIMIT ?1 OFFSET ?2",
+            orden.order_by()
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let filas = stmt.query_map(params![limit as i64, offset as i64], |r| {
+            Ok((
+                StoredAlbum {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    album_artist: r.get(2)?,
+                    year: r.get(3)?,
+                    artwork_path: r.get(4)?,
+                    track_count: r.get::<_, i64>(5)? as usize,
+                },
+                r.get::<_, i64>(6)? as usize,
+            ))
         })?;
         filas.collect()
     }
@@ -327,6 +449,88 @@ mod tests {
 
         assert_eq!(lib.track_count(true).unwrap(), 1, "la fila sigue ahí");
         assert_eq!(lib.track_count(false).unwrap(), 0, "pero ya no cuenta como presente");
+    }
+
+    /// Tres álbumes con distinto artista, año, fecha de alta y escuchas.
+    fn biblioteca_de_muestra() -> Library {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        // (id, título, artista, año, added_at)
+        for (id, titulo, artista, año, alta) in [
+            (1, "Bayou", "Creedence", 1969, 100),
+            (2, "Aqualung", "Tull", 1971, 300),
+            (3, "Cosmo", "Creedence", 1970, 200),
+        ] {
+            lib.db
+                .execute(
+                    "INSERT INTO albums (id, title, album_artist, year)
+                     VALUES (?1, ?2, ?3, ?4)",
+                    params![id, titulo, artista, año],
+                )
+                .unwrap();
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
+                     VALUES (?1, ?2, 'Pista', ?3, 1000, ?4)",
+                    params![source, format!("/{titulo}.flac"), id, alta],
+                )
+                .unwrap();
+        }
+        // El 3 se escucha dos veces, y la última de todas; el 1, una.
+        lib.log_play(Some(1), Some(source), 10, 1000, 1000, false, None, None, true).unwrap();
+        lib.log_play(Some(3), Some(source), 20, 1000, 1000, false, None, None, true).unwrap();
+        lib.log_play(Some(3), Some(source), 30, 1000, 1000, false, None, None, true).unwrap();
+        lib
+    }
+
+    fn titulos(lib: &Library, orden: AlbumSort) -> Vec<String> {
+        lib.albums_sorted(orden, 50, 0)
+            .unwrap()
+            .into_iter()
+            .map(|(a, _)| a.title)
+            .collect()
+    }
+
+    #[test]
+    fn cada_vista_ordena_la_reja_a_su_manera() {
+        let lib = biblioteca_de_muestra();
+        assert_eq!(
+            titulos(&lib, AlbumSort::Artist),
+            ["Bayou", "Cosmo", "Aqualung"],
+            "artista, luego año"
+        );
+        assert_eq!(titulos(&lib, AlbumSort::Title), ["Aqualung", "Bayou", "Cosmo"]);
+        assert_eq!(titulos(&lib, AlbumSort::Year), ["Aqualung", "Cosmo", "Bayou"], "del más nuevo");
+        assert_eq!(titulos(&lib, AlbumSort::Added), ["Aqualung", "Cosmo", "Bayou"], "lo último que entró");
+        assert_eq!(titulos(&lib, AlbumSort::Played), ["Cosmo", "Bayou", "Aqualung"]);
+        assert_eq!(
+            titulos(&lib, AlbumSort::LastPlayed),
+            ["Cosmo", "Bayou", "Aqualung"],
+            "lo último que sonó, y lo que nunca sonó al final"
+        );
+    }
+
+    #[test]
+    fn la_reja_trae_las_escuchas_en_la_misma_consulta() {
+        let lib = biblioteca_de_muestra();
+        let escuchas: Vec<(String, usize)> = lib
+            .albums_sorted(AlbumSort::Played, 50, 0)
+            .unwrap()
+            .into_iter()
+            .map(|(a, n)| (a.title, n))
+            .collect();
+        assert_eq!(
+            escuchas,
+            vec![("Cosmo".into(), 2), ("Bayou".into(), 1), ("Aqualung".into(), 0)]
+        );
+    }
+
+    #[test]
+    fn un_nombre_de_vista_desconocido_no_deja_la_reja_vacia() {
+        assert_eq!(AlbumSort::from_name("lo que sea"), AlbumSort::Artist);
+        for v in AlbumSort::all() {
+            assert_eq!(AlbumSort::from_name(v.name()), v, "{} va y viene", v.name());
+        }
     }
 
     #[test]
