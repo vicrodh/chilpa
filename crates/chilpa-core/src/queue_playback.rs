@@ -12,7 +12,7 @@ use chilpa_audio::format::StreamFormat;
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
-use chilpa_audio::render::{render, FrameSource, Outcome};
+use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
@@ -88,7 +88,28 @@ pub fn play_queue<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     stop: &StopSignal,
+    open_sink: F,
+) -> Result<Vec<TrackResult>, PlayError>
+where
+    F: FnMut(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
+    play_queue_with(paths, caps, policy, stop, open_sink, &mut |_, _, _| {}, &mut |_, _| {})
+}
+
+/// Lo mismo, avisando cuándo arranca cada pista y cuántos frames lleva.
+///
+/// `on_track` recibe el índice, la ruta y cómo quedó la entrega; `on_progress`
+/// el índice y los frames entregados de esa pista.
+#[allow(clippy::too_many_arguments)]
+pub fn play_queue_with<F, K>(
+    paths: &[PathBuf],
+    caps: &DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
     mut open_sink: F,
+    on_track: &mut dyn FnMut(usize, &Path, &Delivery),
+    on_progress: &mut dyn FnMut(usize, u64),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
@@ -97,7 +118,7 @@ where
     let mut resultados = Vec::new();
     let mut abierto: Option<(StreamFormat, K)> = None;
 
-    for path in paths {
+    for (indice, path) in paths.iter().enumerate() {
         let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
         let delivery = negotiate(decoded.stream_format(), caps, policy)
             .map_err(PlayError::Negotiation)?;
@@ -122,7 +143,10 @@ where
         );
         let mut frames =
             TrackFrames { decoded: &mut decoded, opened: delivery.opened, trimmer, agotado: false };
-        let outcome = render(&mut frames, sink, stop);
+        on_track(indice, path, &delivery);
+        let outcome = chilpa_audio::render::render_with(&mut frames, sink, stop, &mut |f| {
+            on_progress(indice, f)
+        });
         let termino_bien = outcome.may_advance_queue();
         resultados.push(TrackResult {
             path: path.clone(),

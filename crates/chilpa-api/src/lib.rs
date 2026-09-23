@@ -61,8 +61,37 @@ pub struct NowPlaying {
     /// Con qué se abrió el dispositivo, ya listo para mostrar.
     pub format: String,
     pub bit_perfect: bool,
+    /// Qué lugar ocupa en la cola y cuántas pistas tiene.
+    pub index: usize,
+    pub queue_len: usize,
     /// El último problema, vacío si no hay.
     pub error: String,
+}
+
+/// Las extensiones que Chilpa sabe abrir hoy.
+const EXTENSIONES: &[&str] =
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
+
+/// Los archivos de audio de una carpeta, en orden alfabético.
+///
+/// No entra a subcarpetas: eso es trabajo de la biblioteca, no de una vista.
+pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
+    let Ok(dir) = std::fs::read_dir(folder) else {
+        return Vec::new();
+    };
+    let mut archivos: Vec<_> = dir
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| EXTENSIONES.contains(&e.to_lowercase().as_str()))
+                    .unwrap_or(false)
+        })
+        .collect();
+    archivos.sort();
+    archivos
 }
 
 /// Cómo se nombra un número de canales, ya en plural cuando toca.
@@ -118,6 +147,30 @@ impl Chilpa {
         player.play(path, device, bit_perfect);
     }
 
+    /// Pone a sonar una carpeta completa, en orden alfabético.
+    ///
+    /// Regresa las rutas encoladas, para que la vista las muestre.
+    pub fn play_folder(
+        &mut self,
+        folder: &std::path::Path,
+        device: &str,
+        bit_perfect: bool,
+    ) -> Vec<String> {
+        let pistas = audio_files_in(folder);
+        if pistas.is_empty() {
+            self.now.error = format!("no hay audio en {}", folder.display());
+            return Vec::new();
+        }
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        self.now = NowPlaying {
+            playing: true,
+            queue_len: pistas.len(),
+            ..NowPlaying::default()
+        };
+        player.play_all(&pistas, device, bit_perfect);
+        pistas.iter().map(|p| p.display().to_string()).collect()
+    }
+
     /// Para lo que esté sonando.
     pub fn stop(&mut self) {
         if let Some(p) = &self.player {
@@ -131,7 +184,16 @@ impl Chilpa {
         let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for evento in eventos {
             match evento {
-                PlayerEvent::Started { path, opened, bit_perfect, total_frames, tags, artwork } => {
+                PlayerEvent::Started {
+                    path,
+                    opened,
+                    bit_perfect,
+                    total_frames,
+                    tags,
+                    artwork,
+                    index,
+                    queue_len,
+                } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
                     let nombre = path
@@ -156,6 +218,8 @@ impl Chilpa {
                     }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
+                    self.now.index = index;
+                    self.now.queue_len = queue_len;
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
                         _ => 0.0,
@@ -227,6 +291,22 @@ mod tests {
         assert_eq!(canales(1), "mono");
         assert_eq!(canales(2), "estéreo");
         assert_eq!(canales(6), "6 canales");
+    }
+
+    #[test]
+    fn de_una_carpeta_solo_salen_archivos_de_audio_y_en_orden() {
+        let mut dir = std::env::temp_dir();
+        dir.push("chilpa-api-carpeta");
+        let _ = std::fs::create_dir_all(&dir);
+        for nombre in ["b.flac", "a.wav", "notas.txt", "c.MP3"] {
+            std::fs::write(dir.join(nombre), b"x").unwrap();
+        }
+        let encontrados: Vec<String> = audio_files_in(&dir)
+            .iter()
+            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
+            .collect();
+        assert_eq!(encontrados, vec!["a.wav", "b.flac", "c.MP3"], "sin el .txt y ordenados");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
