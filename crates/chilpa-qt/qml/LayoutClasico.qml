@@ -20,9 +20,14 @@ ColumnLayout {
     PanelTransporte { Layout.alignment: Qt.AlignLeft }
 
     // Lo que suena y, a un lado, su letra cuando la hay.
+    //
+    // Con mínimo, no solo con preferido: cuando la ventana se queda corta,
+    // un ColumnLayout encoge lo que puede, y esta tarjeta encogida se come
+    // el reloj.
     RowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 152
+        Layout.minimumHeight: 152
         Layout.alignment: Qt.AlignTop
         spacing: 14
 
@@ -38,6 +43,7 @@ ColumnLayout {
     PanelVisualizador {
         Layout.fillWidth: true
         Layout.preferredHeight: 110
+        Layout.minimumHeight: 110
         visible: Chilpa.playing
     }
 
@@ -53,10 +59,10 @@ ColumnLayout {
     Biblioteca {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        // Una fila de portadas cabe completa, con sus tres renglones de
-        // texto, y arriba el renglón de pestañas: menos que esto recorta el
-        // último renglón de cada ficha.
-        Layout.minimumHeight: 320
+        // Una fila de portadas con sus renglones de texto y, arriba, las
+        // pestañas. Por debajo de esto se recorta el último renglón de cada
+        // ficha, que es lo primero que se puede perder sin que estorbe.
+        Layout.minimumHeight: 260
         visible: Chilpa.albums.length > 0 && Chilpa.searchText === "" && Chilpa.openAlbum === ""
     }
 
@@ -64,6 +70,9 @@ ColumnLayout {
     PanelCola {
         Layout.fillWidth: true
         Layout.preferredHeight: 150
+        // La cola es lo que cede primero cuando la ventana se queda corta:
+        // siempre se puede desplazar por dentro.
+        Layout.minimumHeight: 60
         visible: Chilpa.queue.length > 1
     }
 

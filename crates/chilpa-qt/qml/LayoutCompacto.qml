@@ -54,6 +54,7 @@ ColumnLayout {
         PanelAhoraSuena {
             Layout.fillWidth: true
             Layout.preferredHeight: 112
+            Layout.minimumHeight: 112
             compacto: true
         }
         PanelVisualizador {

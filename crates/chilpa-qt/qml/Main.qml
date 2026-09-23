@@ -12,7 +12,10 @@ import com.blitzfc.chilpa
 ApplicationWindow {
     id: ventana
     width: 980
-    height: 760
+    // Alto para que el acomodo clásico quepa entero con la reja, la cola y
+    // el visualizador; si la pantalla es más chica, Qt recorta la ventana y
+    // lo último en ceder es la cola.
+    height: 860
     visible: true
     // El título dice qué suena: en una barra de tareas es lo único que se
     // ve de la ventana.
