@@ -56,6 +56,20 @@ pub fn outputs() -> Vec<Output> {
     salidas
 }
 
+/// Abre la biblioteca del usuario, creándola si hace falta.
+pub fn open_library() -> rusqlite::Result<chilpa_library::Library> {
+    chilpa_library::Library::open(&chilpa_library::Library::default_path())
+}
+
+/// Escanea una carpeta hacia la biblioteca, dejando las portadas en la
+/// caché.
+pub fn scan_into_library(
+    lib: &chilpa_library::Library,
+    root: &std::path::Path,
+) -> rusqlite::Result<chilpa_library::ScanReport> {
+    chilpa_library::scan_root_with_cache(lib, root, Some(&artwork_cache()))
+}
+
 /// Dónde se guardan las portadas que se sacan de los archivos.
 pub fn artwork_cache() -> std::path::PathBuf {
     let base = std::env::var_os("XDG_CACHE_HOME")

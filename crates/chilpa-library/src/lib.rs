@@ -10,5 +10,5 @@ pub mod schema;
 pub mod scan;
 pub mod store;
 
-pub use scan::{scan_root, ScanReport};
-pub use store::Library;
+pub use scan::{scan_root, scan_root_with_cache, ScanReport};
+pub use store::{Library, StoredAlbum, StoredTrack};
