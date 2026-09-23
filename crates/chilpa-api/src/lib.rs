@@ -310,6 +310,19 @@ impl Chilpa {
         pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
+    /// Pone a sonar una radio o cualquier stream por HTTP.
+    pub fn play_url(&mut self, url: &str, device: &str, bit_perfect: bool) {
+        let url = url.trim().to_string();
+        if !url.starts_with("http://") && !url.starts_with("https://") {
+            self.now.error = "eso no parece una dirección de stream".into();
+            return;
+        }
+        self.cola = vec![url.clone()];
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        self.now = NowPlaying { playing: true, queue_len: 1, ..NowPlaying::default() };
+        player.play_all(&[std::path::PathBuf::from(&url)], device, bit_perfect);
+    }
+
     /// Abre una lista M3U y la pone a sonar.
     ///
     /// Regresa los títulos encolados; lo que la lista menciona y ya no está
@@ -579,6 +592,11 @@ impl Chilpa {
                             canales(opened.channels)
                         ),
                     };
+                }
+                PlayerEvent::StreamTitle { title } => {
+                    // En una radio, el título lo manda la estación y cambia
+                    // con cada canción.
+                    self.now.title = title;
                 }
                 PlayerEvent::Progress { frames } => {
                     self.now.frames = frames;

@@ -114,6 +114,26 @@ ApplicationWindow {
         onAccepted: Chilpa.playFolder(selectedFolder, salidas.deviceId, bitPerfect.checked)
     }
 
+    // Abrir una radio: una dirección y ya.
+    Dialog {
+        id: dialogoStream
+        title: "Abrir un stream"
+        anchors.centerIn: parent
+        width: 420
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        onAccepted: if (direccion.text !== "")
+            Chilpa.playUrl(direccion.text, salidas.deviceId, bitPerfect.checked)
+
+        ColumnLayout {
+            anchors.fill: parent
+            TextField {
+                id: direccion
+                Layout.fillWidth: true
+                placeholderText: "http://..."
+            }
+        }
+    }
+
     FileDialog {
         id: dialogoLista
         title: "Abrir una lista"
@@ -190,6 +210,10 @@ ApplicationWindow {
                 text: "Guardar cola"
                 enabled: Chilpa.queue.length > 0
                 onClicked: dialogoGuardar.open()
+            }
+            Button {
+                text: "Abrir stream"
+                onClicked: dialogoStream.open()
             }
             Button {
                 text: "Escanear a la biblioteca"

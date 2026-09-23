@@ -81,6 +81,44 @@ pub struct Played {
     pub total_frames: Option<u64>,
 }
 
+/// Reproduce un stream de red.
+///
+/// No hay duración ni búsqueda: un stream se oye hasta que se corta o hasta
+/// que alguien lo para.
+///
+/// `on_delivery` se llama con la entrega ya negociada, antes de abrir el
+/// dispositivo: es el único momento en que se sabe si el stream va
+/// bit-perfect, porque en una radio no hay un final donde decirlo después.
+#[allow(clippy::too_many_arguments)]
+pub fn play_stream<F, K>(
+    stream: chilpa_stream::HttpStream,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    open_sink: F,
+    on_delivery: &mut dyn FnMut(&Delivery),
+    on_progress: &mut dyn FnMut(u64),
+) -> Result<Played, PlayError>
+where
+    F: FnOnce(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
+    let mut decoded = Decoded::open_stream(stream).map_err(PlayError::Decode)?;
+    let delivery =
+        negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
+    on_delivery(&delivery);
+    let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
+    let mut frames = Frames { decoded: &mut decoded, opened: delivery.opened, error: None };
+    let outcome =
+        chilpa_audio::render::render_paused(&mut frames, &mut sink, stop, pause, on_progress);
+    if let Some(e) = frames.error {
+        return Err(PlayError::Pack(e));
+    }
+    sink.close().map_err(PlayError::Sink)?;
+    Ok(Played { delivery, outcome, total_frames: None })
+}
+
 /// Reproduce un archivo en un dispositivo, con la política dada.
 ///
 /// `open_sink` recibe el formato negociado y entrega el dispositivo abierto;
