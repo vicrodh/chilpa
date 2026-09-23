@@ -60,6 +60,7 @@ pub struct Player {
     orders: Sender<Order>,
     events: Receiver<PlayerEvent>,
     stop: StopSignal,
+    pause: chilpa_audio::sink::PauseSignal,
     seek: chilpa_audio::seek::SeekSignal,
     thread: Option<JoinHandle<()>>,
 }
@@ -73,6 +74,8 @@ impl Player {
         let stop_hilo = stop.clone();
         let seek = chilpa_audio::seek::SeekSignal::new();
         let seek_hilo = seek.clone();
+        let pause = chilpa_audio::sink::PauseSignal::new();
+        let pause_hilo = pause.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -85,12 +88,14 @@ impl Player {
                             // Cada pista arranca con la bandera limpia: una
                             // orden de paro vieja no mata la siguiente.
                             stop_hilo.reset();
+                            pause_hilo.set(false);
                             let stop = stop_hilo.clone();
                             let resultado = reproducir(
                                 &paths,
                                 &device,
                                 bit_perfect,
                                 &stop,
+                                &pause_hilo,
                                 &seek_hilo,
                                 &mut probe,
                                 &mut open,
@@ -111,7 +116,7 @@ impl Player {
             })
             .expect("el hilo del reproductor arranca");
 
-        Self { orders: orders_tx, events: events_rx, stop, seek, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, stop, pause, seek, thread: Some(thread) }
     }
 
     /// Pide reproducir un archivo. Regresa de inmediato.
@@ -126,6 +131,15 @@ impl Player {
             device: device.to_string(),
             bit_perfect,
         });
+    }
+
+    /// Pausa o reanuda. La pista no pierde su lugar.
+    pub fn set_paused(&self, paused: bool) {
+        self.pause.set(paused);
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.pause.is_paused()
     }
 
     /// Pide saltar a ese punto de la pista que suena. El salto se atiende
@@ -169,6 +183,7 @@ fn reproducir(
     device: &str,
     bit_perfect: bool,
     stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
     seek: &chilpa_audio::seek::SeekSignal,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
@@ -182,6 +197,7 @@ fn reproducir(
         &caps,
         policy,
         stop,
+        pause,
         seek,
         |formato| open(device, formato),
         &mut |indice, ruta, delivery| {

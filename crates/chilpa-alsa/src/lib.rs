@@ -121,6 +121,16 @@ impl AudioSink for AlsaSink {
         }
     }
 
+    fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
+        // Con hardware que sabe pausar, el stream se queda listo y no hay
+        // xrun al reanudar. El que no sabe se queda sin datos y se recupera
+        // con el xrun normal, que ya se maneja arriba.
+        if self.pcm.hw_params_current().map(|p| p.can_pause()).unwrap_or(false) {
+            self.pcm.pause(paused).map_err(backend)?;
+        }
+        Ok(())
+    }
+
     fn close(&mut self) -> Result<(), SinkError> {
         // Sin `drain`: soltar el dispositivo no espera a que termine de
         // vaciarse, porque un endpoint que dejó de responder colgaría el

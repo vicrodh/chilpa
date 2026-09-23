@@ -52,9 +52,22 @@ pub trait AudioSink {
     /// Suelta el dispositivo. No espera a que se vacíe el búfer ni a que el
     /// dispositivo conteste.
     fn close(&mut self) -> Result<(), SinkError>;
+
+    /// Pausa o reanuda en el dispositivo, cuando sabe hacerlo.
+    ///
+    /// Por omisión no hace nada: quien reproduce deja de escribir y con eso
+    /// basta para que se detenga. Un backend que pueda pausar de verdad lo
+    /// implementa y así evita que el dispositivo se quede sin datos.
+    fn set_paused(&mut self, _paused: bool) -> Result<(), SinkError> {
+        Ok(())
+    }
 }
 
 impl AudioSink for Box<dyn AudioSink + Send> {
+    fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
+        (**self).set_paused(paused)
+    }
+
     fn format(&self) -> StreamFormat {
         (**self).format()
     }
@@ -65,6 +78,28 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn close(&mut self) -> Result<(), SinkError> {
         (**self).close()
+    }
+}
+
+/// La bandera con la que se pausa desde otro hilo.
+///
+/// Pausar no suelta el dispositivo ni pierde el lugar: el lazo de entrega
+/// deja de escribir y espera, mirando también la señal de paro para no
+/// quedarse dormido si le piden parar mientras está en pausa.
+#[derive(Clone, Debug, Default)]
+pub struct PauseSignal(Arc<AtomicBool>);
+
+impl PauseSignal {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn set(&self, paused: bool) {
+        self.0.store(paused, Ordering::Release);
+    }
+
+    pub fn is_paused(&self) -> bool {
+        self.0.load(Ordering::Acquire)
     }
 }
 
@@ -105,6 +140,16 @@ mod tests {
         assert!(SinkError::Xrun.is_recoverable());
         assert!(!SinkError::DeviceLost.is_recoverable());
         assert!(!SinkError::Timeout(Duration::from_millis(200)).is_recoverable());
+    }
+
+    #[test]
+    fn la_pausa_se_pone_y_se_quita() {
+        let p = PauseSignal::new();
+        assert!(!p.is_paused());
+        p.set(true);
+        assert!(p.is_paused());
+        p.set(false);
+        assert!(!p.is_paused());
     }
 
     #[test]

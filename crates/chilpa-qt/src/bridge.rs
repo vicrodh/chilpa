@@ -40,6 +40,7 @@ pub mod chilpa_bridge {
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
+        #[qproperty(bool, paused)]
         #[qproperty(bool, bit_perfect)]
         #[qproperty(f64, seconds)]
         #[qproperty(f64, total_seconds)]
@@ -60,6 +61,10 @@ pub mod chilpa_bridge {
         /// Encola una carpeta entera.
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
+
+        /// Pausa o reanuda.
+        #[qinvokable]
+        fn set_paused(self: Pin<&mut Chilpa>, paused: bool);
 
         /// Salta a ese segundo de lo que suena.
         #[qinvokable]
@@ -92,6 +97,7 @@ pub struct ChilpaRust {
     format: QString,
     error: QString,
     playing: bool,
+    paused: bool,
     bit_perfect: bool,
     seconds: f64,
     total_seconds: f64,
@@ -115,6 +121,7 @@ impl Default for ChilpaRust {
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
+            paused: false,
             bit_perfect: false,
             seconds: 0.0,
             total_seconds: 0.0,
@@ -177,6 +184,11 @@ impl Chilpa {
         self.as_mut().set_playing(!pistas.is_empty());
     }
 
+    pub fn set_paused(mut self: Pin<&mut Self>, paused: bool) {
+        self.as_mut().rust_mut().api.set_paused(paused);
+        self.as_mut().set_paused(paused);
+    }
+
     pub fn seek(mut self: Pin<&mut Self>, seconds: f64) {
         self.as_mut().rust_mut().api.seek(seconds);
     }
@@ -188,6 +200,7 @@ impl Chilpa {
     pub fn poll(mut self: Pin<&mut Self>) {
         let ahora = self.as_mut().rust_mut().api.poll().clone();
         self.as_mut().set_playing(ahora.playing);
+        self.as_mut().set_paused(ahora.paused);
         self.as_mut().set_seconds(ahora.seconds);
         self.as_mut().set_total_seconds(ahora.total_seconds);
         self.as_mut().set_bit_perfect(ahora.bit_perfect);

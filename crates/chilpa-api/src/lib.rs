@@ -53,6 +53,7 @@ pub struct NowPlaying {
     /// La portada ya en disco, lista para mostrarse. Vacío si no hay.
     pub artwork_path: String,
     pub playing: bool,
+    pub paused: bool,
     /// Frames entregados y su equivalente en segundos.
     pub frames: u64,
     pub seconds: f64,
@@ -171,6 +172,14 @@ impl Chilpa {
         pistas.iter().map(|p| p.display().to_string()).collect()
     }
 
+    /// Pausa o reanuda lo que suena.
+    pub fn set_paused(&mut self, paused: bool) {
+        if let Some(p) = &self.player {
+            p.set_paused(paused);
+            self.now.paused = paused;
+        }
+    }
+
     /// Salta a ese segundo de la pista que suena.
     pub fn seek(&mut self, seconds: f64) {
         if let Some(p) = &self.player {
@@ -189,6 +198,7 @@ impl Chilpa {
     /// Recoge lo que haya pasado y actualiza el estado que ve la vista.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
+        self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
         let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for evento in eventos {
             match evento {
