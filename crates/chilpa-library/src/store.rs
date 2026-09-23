@@ -414,6 +414,83 @@ impl Library {
         Ok(())
     }
 
+    /// Pistas presentes a las que les falta el análisis de esa versión.
+    ///
+    /// Se piden por tanda: analizar una biblioteca grande no puede empezar
+    /// cargando su lista entera en memoria.
+    pub fn tracks_pending_analysis(
+        &self,
+        analyzer: &str,
+        version: i64,
+        limit: usize,
+    ) -> rusqlite::Result<Vec<StoredTrack>> {
+        let mut stmt = self.db.prepare(
+            "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
+                    t.track_number, t.duration_ms, t.present
+             FROM tracks t
+             LEFT JOIN albums a ON a.id = t.album_id
+             WHERE t.present = 1
+               AND NOT EXISTS (
+                   SELECT 1 FROM audio_features f
+                   WHERE f.track_id = t.id AND f.analyzer = ?1 AND f.version = ?2
+               )
+             ORDER BY t.id
+             LIMIT ?3",
+        )?;
+        let filas = stmt.query_map(params![analyzer, version, limit as i64], fila_a_track)?;
+        filas.collect()
+    }
+
+    /// Cuántas pistas presentes ya tienen análisis de esa versión.
+    pub fn analyzed_count(&self, analyzer: &str, version: i64) -> rusqlite::Result<usize> {
+        let n: i64 = self.db.query_row(
+            "SELECT count(*) FROM audio_features f
+             JOIN tracks t ON t.id = f.track_id AND t.present = 1
+             WHERE f.analyzer = ?1 AND f.version = ?2",
+            params![analyzer, version],
+            |r| r.get(0),
+        )?;
+        Ok(n as usize)
+    }
+
+    /// Guarda lo que el análisis sacó de una pista.
+    ///
+    /// Una fila por analizador y versión: un analizador mejor escribe la
+    /// suya y no revuelve la vieja.
+    pub fn save_features(
+        &self,
+        track_id: i64,
+        analyzer: &str,
+        version: i64,
+        bpm: Option<f32>,
+        tempo_confidence: Option<f32>,
+    ) -> rusqlite::Result<()> {
+        self.db.execute(
+            "INSERT INTO audio_features
+                 (track_id, analyzer, version, bpm, tempo_confidence, analyzed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+             ON CONFLICT(track_id, analyzer, version) DO UPDATE SET
+               bpm = excluded.bpm, tempo_confidence = excluded.tempo_confidence,
+               analyzed_at = excluded.analyzed_at",
+            params![track_id, analyzer, version, bpm, tempo_confidence, ahora_unix()],
+        )?;
+        Ok(())
+    }
+
+    /// El BPM que el análisis le puso a una pista, si se lo puso.
+    pub fn track_bpm(&self, track_id: i64, analyzer: &str) -> rusqlite::Result<Option<f32>> {
+        self.db
+            .query_row(
+                "SELECT bpm FROM audio_features
+                 WHERE track_id = ?1 AND analyzer = ?2
+                 ORDER BY version DESC LIMIT 1",
+                params![track_id, analyzer],
+                |r| r.get(0),
+            )
+            .optional()
+            .map(|v| v.flatten())
+    }
+
     /// El resumen de todo lo que se ha escuchado.
     pub fn stats(&self) -> rusqlite::Result<Stats> {
         self.db.query_row(

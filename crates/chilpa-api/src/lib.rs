@@ -215,6 +215,20 @@ pub struct LibraryTrack {
     pub present: bool,
 }
 
+/// Cómo va el análisis que corre en segundo plano.
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct AnalysisStatus {
+    pub running: bool,
+    pub done: usize,
+    pub total: usize,
+    /// La última pista que se miró, para que se vea que avanza.
+    pub last: String,
+    /// Cuántas quedaron analizadas, sin pulso y sin poder leerse.
+    pub analyzed: usize,
+    pub without_pulse: usize,
+    pub failed: usize,
+}
+
 /// Cómo va el escaneo que corre en segundo plano.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanStatus {
@@ -262,6 +276,8 @@ pub struct Chilpa {
     /// El escaneo en segundo plano, mientras corre.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
+    analysis: Option<chilpa_core::analysis_job::AnalysisJob>,
+    analysis_status: AnalysisStatus,
     player: Option<chilpa_core::player::Player>,
     now: NowPlaying,
     sample_rate: u32,
@@ -290,6 +306,8 @@ impl Chilpa {
             tap: chilpa_core::tap::Tap::new(),
             scan: None,
             scan_status: ScanStatus::default(),
+            analysis: None,
+            analysis_status: AnalysisStatus::default(),
             player: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -347,6 +365,61 @@ impl Chilpa {
             Some(chilpa_core::artwork_cache()),
         ));
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
+    }
+
+    /// Arranca el análisis de lo que falte, en segundo plano.
+    pub fn start_analysis(&mut self) {
+        if self.analysis.is_some() {
+            self.now.error = "ya hay un análisis corriendo".into();
+            return;
+        }
+        self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start(
+            chilpa_library::Library::default_path(),
+        ));
+        self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
+    }
+
+    /// Pide que el análisis se detenga.
+    pub fn cancel_analysis(&mut self) {
+        if let Some(j) = &self.analysis {
+            j.cancel();
+        }
+    }
+
+    /// Cómo va el análisis.
+    pub fn analysis_status(&mut self) -> &AnalysisStatus {
+        use chilpa_core::analysis_job::AnalysisProgress;
+        let eventos = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
+        let mut termino = false;
+        for evento in eventos {
+            match evento {
+                AnalysisProgress::Counted { total } => self.analysis_status.total = total,
+                AnalysisProgress::Advanced { done, total, title, bpm } => {
+                    self.analysis_status.done = done;
+                    self.analysis_status.total = total;
+                    self.analysis_status.last = match bpm {
+                        Some(b) => format!("{title} · {b:.0} BPM"),
+                        None => format!("{title} · sin pulso"),
+                    };
+                }
+                AnalysisProgress::Done { analyzed, without_pulse, failed } => {
+                    self.analysis_status.running = false;
+                    self.analysis_status.analyzed = analyzed;
+                    self.analysis_status.without_pulse = without_pulse;
+                    self.analysis_status.failed = failed;
+                    termino = true;
+                }
+                AnalysisProgress::Failed(e) => {
+                    self.analysis_status.running = false;
+                    self.now.error = format!("el análisis se detuvo: {e}");
+                    termino = true;
+                }
+            }
+        }
+        if termino {
+            self.analysis = None;
+        }
+        &self.analysis_status
     }
 
     /// Las carpetas que forman la biblioteca.

@@ -41,6 +41,37 @@ ColumnLayout {
         nombre.text = ""
     }
 
+    // El análisis: lo que llena las listas de tempo.
+    RowLayout {
+        Layout.fillWidth: true
+        spacing: 8
+
+        Button {
+            text: Chilpa.analyzing ? "Detener el análisis" : "Analizar la biblioteca"
+            onClicked: Chilpa.analyzing ? Chilpa.cancelAnalysis() : Chilpa.analyzeLibrary()
+        }
+        Rectangle {
+            visible: Chilpa.analyzing
+            Layout.preferredWidth: 140
+            Layout.preferredHeight: 6
+            radius: 3
+            color: "#e6ddd5"
+            Rectangle {
+                height: parent.height
+                width: parent.width * Math.max(0, Math.min(1, Chilpa.analysisProgress))
+                radius: parent.radius
+                color: "#d7272b"
+            }
+        }
+        Label {
+            Layout.fillWidth: true
+            text: Chilpa.analysisStatus
+            elide: Text.ElideRight
+            font.pixelSize: 11
+            color: "#7a411d1f"
+        }
+    }
+
     // Las inteligentes primero: no se guardan, se vuelven a resolver cada
     // vez que se miran, así que siempre traen lo que cumple hoy.
     Label {

@@ -143,6 +143,7 @@ name = "chilpa-core"
 version = "0.0.0"
 dependencies = [
  "chilpa-alsa",
+ "chilpa-analysis",
  "chilpa-audio",
  "chilpa-cd",
  "chilpa-decode",

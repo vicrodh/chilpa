@@ -54,6 +54,10 @@ pub mod chilpa_bridge {
         #[qproperty(QString, open_album_art)]
         #[qproperty(QString, open_album_line)]
         #[qproperty(QString, library_status)]
+        /// Cómo va el análisis: de 0 a 1, si corre, y qué se está mirando.
+        #[qproperty(f64, analysis_progress)]
+        #[qproperty(bool, analyzing)]
+        #[qproperty(QString, analysis_status)]
         /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
         #[qproperty(f64, scan_progress)]
         #[qproperty(bool, scanning)]
@@ -133,6 +137,8 @@ pub mod chilpa_bridge {
         #[qproperty(QString, initial_tab)]
         /// Cierto para volver a escanear al arrancar, sin tocar un botón.
         #[qproperty(bool, initial_rescan)]
+        /// Cierto para analizar al arrancar, igual de útil para probar.
+        #[qproperty(bool, initial_analysis)]
         type Chilpa = super::ChilpaRust;
 
         /// Elige el visualizador y lo recuerda.
@@ -162,6 +168,14 @@ pub mod chilpa_bridge {
         /// Pone a sonar lo que encontró la búsqueda, desde esa posición.
         #[qinvokable]
         fn play_results(self: Pin<&mut Chilpa>, from: i32);
+
+        /// Arranca el análisis de lo que falte, en segundo plano.
+        #[qinvokable]
+        fn analyze_library(self: Pin<&mut Chilpa>);
+
+        /// Pide que el análisis se detenga.
+        #[qinvokable]
+        fn cancel_analysis(self: Pin<&mut Chilpa>);
 
         /// Vuelve a escanear las carpetas que ya están en la biblioteca.
         #[qinvokable]
@@ -385,6 +399,9 @@ pub struct ChilpaRust {
     open_album_art: QString,
     open_album_line: QString,
     library_status: QString,
+    analysis_progress: f64,
+    analyzing: bool,
+    analysis_status: QString,
     scan_progress: f64,
     scanning: bool,
     layout: QString,
@@ -430,6 +447,7 @@ pub struct ChilpaRust {
     initial_album: i64,
     initial_tab: QString,
     initial_rescan: bool,
+    initial_analysis: bool,
     api: chilpa_api::Chilpa,
 }
 
@@ -456,6 +474,9 @@ impl Default for ChilpaRust {
             open_album_art: QString::from(""),
             open_album_line: QString::from(""),
             library_status: QString::from(""),
+            analysis_progress: 0.0,
+            analyzing: false,
+            analysis_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
             lyrics: QStringList::default(),
@@ -516,6 +537,7 @@ impl Default for ChilpaRust {
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             initial_tab: QString::from(&std::env::var("CHILPA_PESTANA").unwrap_or_default()),
             initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
+            initial_analysis: std::env::var("CHILPA_ANALIZAR").is_ok(),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -576,6 +598,17 @@ impl Chilpa {
         let nombre = name.to_string();
         self.as_mut().set_layout(name.clone());
         self.as_mut().rust_mut().api.remember_layout(&nombre);
+    }
+
+    pub fn analyze_library(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().api.start_analysis();
+        self.as_mut().set_analyzing(true);
+        self.as_mut().set_analysis_progress(0.0);
+        self.as_mut().set_analysis_status(QString::from("analizando..."));
+    }
+
+    pub fn cancel_analysis(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().api.cancel_analysis();
     }
 
     pub fn rescan(mut self: Pin<&mut Self>) {
@@ -1081,6 +1114,32 @@ impl Chilpa {
     }
 
     pub fn poll(mut self: Pin<&mut Self>) {
+        // El análisis avanza solo; lo único que hace falta es contarlo.
+        if self.analyzing {
+            let estado = self.as_mut().rust_mut().api.analysis_status().clone();
+            let avance = if estado.total > 0 {
+                estado.done as f64 / estado.total as f64
+            } else {
+                0.0
+            };
+            self.as_mut().set_analysis_progress(avance);
+            if estado.running {
+                self.as_mut().set_analysis_status(QString::from(&format!(
+                    "{} de {} · {}",
+                    estado.done, estado.total, estado.last
+                )));
+            } else {
+                self.as_mut().set_analyzing(false);
+                self.as_mut().set_analysis_progress(1.0);
+                self.as_mut().set_analysis_status(QString::from(&format!(
+                    "{} analizadas, {} sin pulso, {} sin leer",
+                    estado.analyzed, estado.without_pulse, estado.failed
+                )));
+                // Las listas de tempo ya tienen con qué llenarse.
+                self.as_mut().refresh_playlists();
+            }
+        }
+
         // El escaneo primero: al terminar refresca los álbumes.
         if self.scanning {
             let estado = self.as_mut().rust_mut().api.scan_status().clone();
