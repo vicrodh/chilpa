@@ -62,9 +62,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
 
-        /// Pausa o reanuda.
+        /// Pausa o reanuda. No se llama set_paused: ese nombre ya lo usa el
+        /// asignador que genera la propiedad `paused`.
         #[qinvokable]
-        fn set_paused(self: Pin<&mut Chilpa>, paused: bool);
+        fn pause(self: Pin<&mut Chilpa>, paused: bool);
 
         /// Salta a ese segundo de lo que suena.
         #[qinvokable]
@@ -184,7 +185,7 @@ impl Chilpa {
         self.as_mut().set_playing(!pistas.is_empty());
     }
 
-    pub fn set_paused(mut self: Pin<&mut Self>, paused: bool) {
+    pub fn pause(mut self: Pin<&mut Self>, paused: bool) {
         self.as_mut().rust_mut().api.set_paused(paused);
         self.as_mut().set_paused(paused);
     }
