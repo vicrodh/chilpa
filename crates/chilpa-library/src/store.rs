@@ -28,6 +28,16 @@ pub struct StoredAlbum {
     pub track_count: usize,
 }
 
+/// Una carpeta que forma parte de la biblioteca.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct StoredRoot {
+    pub id: i64,
+    pub path: std::path::PathBuf,
+    /// Cuándo se escaneó por última vez, en segundos unix.
+    pub last_scan: Option<i64>,
+    pub reachable: bool,
+}
+
 /// Un artista de la biblioteca, con lo que tiene.
 ///
 /// Sale de `albums.album_artist`, que es lo que el disco dice de sí mismo.
@@ -171,6 +181,25 @@ impl Library {
         )?;
         self.db
             .query_row("SELECT id FROM roots WHERE path = ?1", params![ruta], |r| r.get(0))
+    }
+
+    /// Las carpetas que se han escaneado alguna vez, con cuándo fue.
+    ///
+    /// Es lo que hace falta para volver a escanear sin que el usuario tenga
+    /// que acordarse de dónde está su música.
+    pub fn roots(&self) -> rusqlite::Result<Vec<StoredRoot>> {
+        let mut stmt = self.db.prepare(
+            "SELECT id, path, last_scan, reachable FROM roots ORDER BY path COLLATE NOCASE",
+        )?;
+        let filas = stmt.query_map([], |r| {
+            Ok(StoredRoot {
+                id: r.get(0)?,
+                path: r.get::<_, String>(1)?.into(),
+                last_scan: r.get(2)?,
+                reachable: r.get::<_, i64>(3)? != 0,
+            })
+        })?;
+        filas.collect()
     }
 
     /// Marca si un root está alcanzable. Un root ausente NO poda nada.

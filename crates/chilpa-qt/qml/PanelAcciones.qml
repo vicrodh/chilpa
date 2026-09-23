@@ -113,4 +113,9 @@ RowLayout {
         text: "Escanear a la biblioteca"
         onClicked: dialogoEscaneo.open()
     }
+    Button {
+        text: "Volver a escanear"
+        enabled: !Chilpa.scanning
+        onClicked: Chilpa.rescan()
+    }
 }

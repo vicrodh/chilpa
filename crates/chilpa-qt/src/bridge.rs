@@ -129,6 +129,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_results(self: Pin<&mut Chilpa>, from: i32);
 
+        /// Vuelve a escanear las carpetas que ya están en la biblioteca.
+        #[qinvokable]
+        fn rescan(self: Pin<&mut Chilpa>);
+
         /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
         #[qinvokable]
         fn scan_folder(self: Pin<&mut Chilpa>, folder: &QString);
@@ -413,6 +417,13 @@ impl Chilpa {
         let nombre = name.to_string();
         self.as_mut().set_layout(name.clone());
         self.as_mut().rust_mut().api.remember_layout(&nombre);
+    }
+
+    pub fn rescan(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().api.rescan();
+        self.as_mut().set_scanning(true);
+        self.as_mut().set_scan_progress(0.0);
+        self.as_mut().set_library_status(QString::from("escaneando..."));
     }
 
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {

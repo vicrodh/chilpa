@@ -286,6 +286,35 @@ impl Chilpa {
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
     }
 
+    /// Vuelve a escanear todas las carpetas que ya están en la biblioteca.
+    ///
+    /// Es lo normal después del primer día: la música vive donde vive, y
+    /// volver a buscarla a mano cada vez es trabajo del usuario que la
+    /// biblioteca ya tiene anotado.
+    pub fn rescan(&mut self) {
+        if self.scan.is_some() {
+            self.now.error = "ya hay un escaneo corriendo".into();
+            return;
+        }
+        let carpetas = self.roots();
+        if carpetas.is_empty() {
+            self.now.error = "todavía no hay ninguna carpeta en la biblioteca".into();
+            return;
+        }
+        self.scan = Some(chilpa_library::ScanJob::start_all(
+            chilpa_library::Library::default_path(),
+            carpetas,
+            Some(chilpa_core::artwork_cache()),
+        ));
+        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
+    }
+
+    /// Las carpetas que forman la biblioteca.
+    pub fn roots(&mut self) -> Vec<std::path::PathBuf> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
+    }
+
     /// Cómo va el escaneo. Al terminar, refresca lo que la vista muestra.
     pub fn scan_status(&mut self) -> &ScanStatus {
         let eventos = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
