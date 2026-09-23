@@ -19,7 +19,14 @@ use crate::playback::{play_file_with, PlayError};
 pub enum PlayerEvent {
     /// Empezó a sonar: con qué formato se abrió el dispositivo y si la
     /// entrega es bit-perfect.
-    Started { path: PathBuf, opened: StreamFormat, bit_perfect: bool, total_frames: Option<u64> },
+    Started {
+        path: PathBuf,
+        opened: StreamFormat,
+        bit_perfect: bool,
+        total_frames: Option<u64>,
+        /// Lo que el archivo dice de sí mismo, cuando se pudo leer.
+        tags: Option<chilpa_tags::Tags>,
+    },
     /// Frames entregados hasta ahora.
     Progress { frames: u64 },
     /// Terminó de forma natural.
@@ -151,6 +158,8 @@ fn reproducir(
     let ruta = path.to_path_buf();
     let eventos = events.clone();
     let duracion = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
+    let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
+    let tags_para_arranque = tags.clone();
     play_file_with(
         path,
         &caps,
@@ -163,6 +172,7 @@ fn reproducir(
                 opened: formato,
                 bit_perfect: false,
                 total_frames: duracion,
+                tags: tags_para_arranque.clone(),
             });
             Ok(sink)
         },
@@ -178,6 +188,7 @@ fn reproducir(
             opened: played.delivery.opened,
             bit_perfect: played.delivery.is_bit_perfect(),
             total_frames: played.total_frames,
+            tags: tags.clone(),
         });
         played.outcome
     })

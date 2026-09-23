@@ -121,6 +121,7 @@ dependencies = [
  "chilpa-audio",
  "chilpa-decode",
  "chilpa-models",
+ "chilpa-tags",
 ]
 
 [[package]]

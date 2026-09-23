@@ -46,6 +46,10 @@ pub struct Output {
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct NowPlaying {
     pub path: String,
+    /// El título que dice el archivo; si no dice nada, su nombre.
+    pub title: String,
+    pub artist: String,
+    pub album: String,
     pub playing: bool,
     /// Frames entregados y su equivalente en segundos.
     pub frames: u64,
@@ -57,6 +61,15 @@ pub struct NowPlaying {
     pub bit_perfect: bool,
     /// El último problema, vacío si no hay.
     pub error: String,
+}
+
+/// Cómo se nombra un número de canales, ya en plural cuando toca.
+fn canales(n: u16) -> String {
+    match n {
+        1 => "mono".to_string(),
+        2 => "estéreo".to_string(),
+        otros => format!("{otros} canales"),
+    }
 }
 
 /// La instancia de Chilpa con la que habla un frontend.
@@ -116,9 +129,25 @@ impl Chilpa {
         let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for evento in eventos {
             match evento {
-                PlayerEvent::Started { path, opened, bit_perfect, total_frames } => {
+                PlayerEvent::Started { path, opened, bit_perfect, total_frames, tags } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
+                    let nombre = path
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    match &tags {
+                        Some(t) => {
+                            self.now.title = t.title.clone().unwrap_or(nombre);
+                            self.now.artist = t.artist_line();
+                            self.now.album = t.album.clone().unwrap_or_default();
+                        }
+                        None => {
+                            self.now.title = nombre;
+                            self.now.artist = String::new();
+                            self.now.album = String::new();
+                        }
+                    }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
@@ -126,10 +155,10 @@ impl Chilpa {
                         _ => 0.0,
                     };
                     self.now.format = format!(
-                        "{} Hz · {} bits · {} canales",
+                        "{} Hz · {} bits · {}",
                         opened.sample_rate_hz,
                         opened.sample_format.valid_bits(),
-                        opened.channels
+                        canales(opened.channels)
                     );
                 }
                 PlayerEvent::Progress { frames } => {
@@ -185,6 +214,13 @@ mod tests {
     fn listar_sources_regresa_la_biblioteca_local() {
         let mut chilpa = Chilpa::new();
         assert_eq!(chilpa.dispatch(Command::ListSources), Event::Sources(vec![SourceId::local()]));
+    }
+
+    #[test]
+    fn los_canales_se_nombran_como_se_dicen() {
+        assert_eq!(canales(1), "mono");
+        assert_eq!(canales(2), "estéreo");
+        assert_eq!(canales(6), "6 canales");
     }
 
     #[test]
