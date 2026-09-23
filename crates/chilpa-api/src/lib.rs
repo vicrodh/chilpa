@@ -686,6 +686,21 @@ impl Chilpa {
             .collect()
     }
 
+    /// Un álbum por su id, con su portada y su cuenta de escuchas.
+    pub fn album(&mut self, album_id: i64) -> Option<Album> {
+        let lib = self.library()?;
+        let (a, escuchas) = lib.album(album_id).ok().flatten()?;
+        Some(Album {
+            id: a.id,
+            title: a.title,
+            artist: a.album_artist,
+            year: a.year,
+            track_count: a.track_count,
+            artwork_path: a.artwork_path.unwrap_or_default(),
+            play_count: escuchas,
+        })
+    }
+
     /// Las pistas de un álbum, en el orden del disco.
     pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
         let Some(lib) = self.library() else { return Vec::new() };

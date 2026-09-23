@@ -47,6 +47,10 @@ pub mod chilpa_bridge {
         /// El álbum que se está mirando, vacío si no hay ninguno abierto.
         #[qproperty(QString, open_album)]
         #[qproperty(i64, open_album_id)]
+        /// Lo demás del álbum abierto, para su encabezado.
+        #[qproperty(QString, open_album_artist)]
+        #[qproperty(QString, open_album_art)]
+        #[qproperty(QString, open_album_line)]
         #[qproperty(QString, library_status)]
         /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
         #[qproperty(f64, scan_progress)]
@@ -286,6 +290,10 @@ use chilpa_bridge::Chilpa;
 /// Un tiempo largo dicho como se dice: "3 h 21 min", no 12 060 000 ms.
 fn duracion_larga(ms: u64) -> String {
     let minutos = ms / 60_000;
+    if minutos == 0 {
+        // Un disco de prueba de seis segundos no dura "0 min".
+        return format!("{} s", ms / 1000);
+    }
     let (horas, resto) = (minutos / 60, minutos % 60);
     if horas == 0 {
         return format!("{minutos} min");
@@ -340,6 +348,9 @@ pub struct ChilpaRust {
     result_paths: Vec<String>,
     open_album: QString,
     open_album_id: i64,
+    open_album_artist: QString,
+    open_album_art: QString,
+    open_album_line: QString,
     library_status: QString,
     scan_progress: f64,
     scanning: bool,
@@ -402,6 +413,9 @@ impl Default for ChilpaRust {
             result_paths: Vec::new(),
             open_album: QString::from(""),
             open_album_id: 0,
+            open_album_artist: QString::from(""),
+            open_album_art: QString::from(""),
+            open_album_line: QString::from(""),
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
@@ -754,11 +768,55 @@ impl Chilpa {
         self.as_mut().rust_mut().result_paths = rutas;
         self.as_mut().set_open_album(title.clone());
         self.as_mut().set_open_album_id(album_id);
+
+        // El encabezado del álbum: portada, artista y una línea con año,
+        // pistas, duración y escuchas.
+        let duracion: u64 = pistas.iter().map(|t| t.duration_ms).sum();
+        match self.as_mut().rust_mut().api.album(album_id) {
+            Some(a) => {
+                let portada = if a.artwork_path.is_empty() {
+                    String::new()
+                } else {
+                    format!("file://{}", a.artwork_path)
+                };
+                let mut partes: Vec<String> = Vec::new();
+                if let Some(año) = a.year {
+                    partes.push(año.to_string());
+                }
+                partes.push(format!(
+                    "{} {}",
+                    a.track_count,
+                    if a.track_count == 1 { "pista" } else { "pistas" }
+                ));
+                partes.push(duracion_larga(duracion));
+                if a.play_count > 0 {
+                    partes.push(format!(
+                        "{} {}",
+                        a.play_count,
+                        if a.play_count == 1 { "escucha" } else { "escuchas" }
+                    ));
+                }
+                // El título sale de la biblioteca, no de quien abrió la
+                // vista: así siempre dice lo que dice el disco.
+                self.as_mut().set_open_album(QString::from(&a.title));
+                self.as_mut().set_open_album_artist(QString::from(&a.artist));
+                self.as_mut().set_open_album_art(QString::from(&portada));
+                self.as_mut().set_open_album_line(QString::from(&partes.join(" · ")));
+            }
+            None => {
+                self.as_mut().set_open_album_artist(QString::from(""));
+                self.as_mut().set_open_album_art(QString::from(""));
+                self.as_mut().set_open_album_line(QString::from(""));
+            }
+        }
     }
 
     pub fn close_album(mut self: Pin<&mut Self>) {
         self.as_mut().set_open_album(QString::from(""));
         self.as_mut().set_open_album_id(0);
+        self.as_mut().set_open_album_artist(QString::from(""));
+        self.as_mut().set_open_album_art(QString::from(""));
+        self.as_mut().set_open_album_line(QString::from(""));
         self.as_mut().set_results(QStringList::default());
         self.as_mut().rust_mut().result_paths.clear();
     }

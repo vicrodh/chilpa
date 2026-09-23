@@ -24,13 +24,48 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             visible: Chilpa.openAlbum !== ""
-            Label {
-                text: Chilpa.openAlbum
-                font.pixelSize: 15
-                font.weight: Font.DemiBold
-                color: "#411d1f"
-                elide: Text.ElideRight
+            spacing: 12
+
+            Rectangle {
+                Layout.preferredWidth: 64
+                Layout.preferredHeight: 64
+                radius: 8
+                color: "#f0eae4"
+                visible: Chilpa.openAlbumArt !== ""
+                Image {
+                    anchors.fill: parent
+                    source: Chilpa.openAlbumArt
+                    fillMode: Image.PreserveAspectCrop
+                    asynchronous: true
+                }
+            }
+
+            ColumnLayout {
                 Layout.fillWidth: true
+                spacing: 2
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.openAlbum
+                    font.pixelSize: 16
+                    font.weight: Font.DemiBold
+                    color: "#411d1f"
+                    elide: Text.ElideRight
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: Chilpa.openAlbumArtist !== ""
+                    text: Chilpa.openAlbumArtist
+                    font.pixelSize: 13
+                    color: "#411d1f"
+                    elide: Text.ElideRight
+                }
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.openAlbumLine
+                    font.pixelSize: 11
+                    color: "#7a411d1f"
+                    elide: Text.ElideRight
+                }
             }
             Button {
                 text: "Reproducir"

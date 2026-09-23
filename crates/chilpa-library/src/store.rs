@@ -641,6 +641,38 @@ impl Library {
         filas.collect()
     }
 
+    /// Un álbum por su id, con su cuenta de escuchas.
+    pub fn album(&self, album_id: i64) -> rusqlite::Result<Option<(StoredAlbum, usize)>> {
+        let album = self
+            .db
+            .query_row(
+                "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, count(t.id)
+                 FROM albums a
+                 JOIN tracks t ON t.album_id = a.id AND t.present = 1
+                 WHERE a.id = ?1
+                 GROUP BY a.id",
+                params![album_id],
+                |r| {
+                    Ok(StoredAlbum {
+                        id: r.get(0)?,
+                        title: r.get(1)?,
+                        album_artist: r.get(2)?,
+                        year: r.get(3)?,
+                        artwork_path: r.get(4)?,
+                        track_count: r.get::<_, i64>(5)? as usize,
+                    })
+                },
+            )
+            .optional()?;
+        match album {
+            Some(a) => {
+                let escuchas = self.album_play_count(album_id)?;
+                Ok(Some((a, escuchas)))
+            }
+            None => Ok(None),
+        }
+    }
+
     /// Las pistas de un álbum, en el orden del disco.
     pub fn album_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
@@ -1024,6 +1056,17 @@ mod tests {
         assert_eq!(reciente[0].at, Some(30), "primero la última que sonó");
         assert_eq!(reciente[1].at, Some(10));
         assert_eq!(reciente.len(), 2, "una pista por renglón, no una por escucha");
+    }
+
+    #[test]
+    fn un_album_suelto_trae_lo_suyo_y_sus_escuchas() {
+        let lib = biblioteca_de_muestra();
+        let (album, escuchas) = lib.album(3).unwrap().expect("el álbum existe");
+        assert_eq!(album.title, "Cosmo");
+        assert_eq!(album.album_artist, "Creedence");
+        assert_eq!(album.track_count, 1);
+        assert_eq!(escuchas, 2);
+        assert!(lib.album(99).unwrap().is_none(), "uno que no existe no es un error");
     }
 
     #[test]
