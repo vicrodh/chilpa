@@ -11,8 +11,8 @@ import com.blitzfc.chilpa
 
 ApplicationWindow {
     id: ventana
-    width: 640
-    height: 520
+    width: 860
+    height: 620
     visible: true
     title: "Chilpa"
     color: "#faf6f2"
@@ -31,6 +31,7 @@ ApplicationWindow {
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
+        Chilpa.refreshAlbums()
         const guardada = Chilpa.outputIds.indexOf(Chilpa.rememberedOutput)
         if (guardada >= 0) salidas.currentIndex = guardada
         bitPerfect.checked = Chilpa.rememberedBitPerfect
@@ -53,6 +54,12 @@ ApplicationWindow {
         running: true
         repeat: true
         onTriggered: Chilpa.poll()
+    }
+
+    FolderDialog {
+        id: dialogoEscaneo
+        title: "Escanear una carpeta a la biblioteca"
+        onAccepted: Chilpa.scanFolder(selectedFolder)
     }
 
     FolderDialog {
@@ -105,6 +112,10 @@ ApplicationWindow {
             Button {
                 text: "Abrir carpeta"
                 onClicked: dialogoCarpeta.open()
+            }
+            Button {
+                text: "Escanear a la biblioteca"
+                onClicked: dialogoEscaneo.open()
             }
             Button {
                 text: Chilpa.paused ? "Reanudar" : "Pausa"
@@ -213,11 +224,20 @@ ApplicationWindow {
             }
         }
 
+        // La biblioteca, con sus álbumes.
+        Biblioteca {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            deviceId: salidas.deviceId
+            bitPerfect: bitPerfect.checked
+            visible: Chilpa.albums.length > 0
+        }
+
         // La cola. Se asoma solo cuando hay más de una pista, y solo
         // entonces se queda con el espacio que sobra.
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: visible
+            Layout.preferredHeight: 150
             radius: 14
             color: "#ffffff"
             border.color: "#1a411d1f"
@@ -255,7 +275,7 @@ ApplicationWindow {
         // Layout, así que desaparece en cuanto hay cola.
         Item {
             Layout.fillHeight: true
-            visible: Chilpa.queue.length <= 1
+            visible: Chilpa.queue.length <= 1 && Chilpa.albums.length === 0
         }
     }
 }

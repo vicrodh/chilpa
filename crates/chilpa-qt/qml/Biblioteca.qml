@@ -1,0 +1,115 @@
+// La cuadrícula de álbumes.
+//
+// Es el primer pedazo de la vista de biblioteca: portada, título, artista y
+// cuántas pistas trae. Un clic la pone a sonar completa.
+import QtQuick
+import QtQuick.Controls
+import QtQuick.Layouts
+import com.blitzfc.chilpa
+
+Rectangle {
+    id: raiz
+    radius: 14
+    color: "#ffffff"
+    border.color: "#1a411d1f"
+
+    // Qué salida y con qué política se reproduce; las decide la ventana.
+    property string deviceId: ""
+    property bool bitPerfect: true
+
+    // Cada renglón viene como "id, título, artista, año, pistas, portada".
+    function campos(renglon) {
+        return renglon.split("\t")
+    }
+
+    ColumnLayout {
+        anchors.fill: parent
+        anchors.margins: 12
+        spacing: 8
+
+        RowLayout {
+            Layout.fillWidth: true
+            Label {
+                text: Chilpa.albums.length === 0
+                    ? "La biblioteca está vacía"
+                    : Chilpa.albums.length + (Chilpa.albums.length === 1 ? " álbum" : " álbumes")
+                font.pixelSize: 14
+                font.weight: Font.DemiBold
+                color: "#411d1f"
+            }
+            Item { Layout.fillWidth: true }
+            Label {
+                text: Chilpa.libraryStatus
+                color: "#7a411d1f"
+                font.pixelSize: 12
+                elide: Text.ElideLeft
+                Layout.maximumWidth: 320
+            }
+        }
+
+        GridView {
+            id: cuadricula
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            clip: true
+            cellWidth: 160
+            cellHeight: 200
+            model: Chilpa.albums
+
+            delegate: Item {
+                width: cuadricula.cellWidth - 8
+                height: cuadricula.cellHeight - 8
+
+                readonly property var datos: raiz.campos(modelData)
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    spacing: 6
+
+                    Rectangle {
+                        Layout.preferredWidth: parent.width
+                        Layout.preferredHeight: parent.width
+                        radius: 8
+                        color: "#f0eae4"
+                        Image {
+                            anchors.fill: parent
+                            source: datos[5] ? "file://" + datos[5] : ""
+                            fillMode: Image.PreserveAspectCrop
+                            asynchronous: true
+                            visible: datos[5] !== ""
+                        }
+                        Label {
+                            anchors.centerIn: parent
+                            text: "sin portada"
+                            font.pixelSize: 11
+                            color: "#7a411d1f"
+                            visible: datos[5] === ""
+                        }
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: datos[1]
+                        elide: Text.ElideRight
+                        font.pixelSize: 13
+                        font.weight: Font.DemiBold
+                        color: "#411d1f"
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: datos[2] + (datos[3] ? " · " + datos[3] : "")
+                        elide: Text.ElideRight
+                        font.pixelSize: 12
+                        color: "#7a411d1f"
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Chilpa.playAlbum(parseInt(datos[0]), raiz.deviceId, raiz.bitPerfect)
+                }
+            }
+        }
+    }
+}
