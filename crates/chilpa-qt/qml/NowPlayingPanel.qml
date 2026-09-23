@@ -21,9 +21,9 @@ Rectangle {
     property bool compact: false
 
     // mm:ss, que es como se lee una duración.
-    function clock(segundos) {
-        const m = Math.floor(segundos / 60)
-        const s = Math.floor(segundos % 60)
+    function clock(seconds) {
+        const m = Math.floor(seconds / 60)
+        const s = Math.floor(seconds % 60)
         return m + ":" + (s < 10 ? "0" : "") + s
     }
 

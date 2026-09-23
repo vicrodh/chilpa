@@ -4,4 +4,5 @@ set -e
 root=$(git rev-parse --show-toplevel)
 "$root/tools/lint/no-platform-names"
 "$root/tools/lint/arquitectura"
+"$root/tools/lint/idioma"
 "$root/tools/lint/licencias"

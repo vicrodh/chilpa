@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""El código va en inglés; los comentarios y lo que lee el usuario, en español.
+
+Este candado revisa lo primero. Mira solo las regiones de código de cada
+archivo -- nunca los comentarios ni las cadenas -- y marca todo identificador
+con una palabra española adentro.
+
+Una palabra se considera española si el diccionario es_MX la acepta y el
+en_US la rechaza. Sin hunspell instalado se usa `palabras-es.txt`, que trae
+las que ya aparecieron en este repo: alcanza para lo de siempre, pero no ve
+palabras nuevas, y por eso el mensaje lo dice.
+
+Lo que no es español y el diccionario marca igual (abreviaturas, jerga de
+audio, nombres de la API de Rust) vive en `permitidas-idioma.txt`.
+"""
+import re
+import subprocess
+import sys
+import unicodedata
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+BASE = Path(__file__).resolve().parent
+
+
+def sin_acentos(s):
+    return "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
+
+
+def trozos_rust(src):
+    """(tipo, texto) con tipo en code|comment|string. Reconoce r#"..."# y 'a."""
+    out, i, n, ini = [], 0, len(src), 0
+    while i < n:
+        c = src[i]
+        if c == "/" and src[i : i + 2] == "//":
+            out.append(("code", src[ini:i]))
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c == "/" and src[i : i + 2] == "/*":
+            out.append(("code", src[ini:i]))
+            depth, j = 1, i + 2
+            while j < n and depth:
+                if src[j : j + 2] == "/*":
+                    depth, j = depth + 1, j + 2
+                elif src[j : j + 2] == "*/":
+                    depth, j = depth - 1, j + 2
+                else:
+                    j += 1
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c in "rb" and (m := re.match(r'(?:b?r|rb)(#*)"', src[i:])):
+            out.append(("code", src[ini:i]))
+            cierra = '"' + m.group(1)
+            j = src.find(cierra, i + m.end())
+            j = n if j < 0 else j + len(cierra)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        elif c == '"':
+            out.append(("code", src[ini:i]))
+            j = i + 1
+            while j < n and src[j] != '"':
+                j += 2 if src[j] == "\\" else 1
+            j = min(j + 1, n)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        elif c == "'":
+            # Un lifetime no es un char.
+            m = re.match(r"'(?:\\.|[^\\'])'", src[i:])
+            if m:
+                out.append(("code", src[ini:i]))
+                out.append(("string", m.group(0)))
+                i = ini = i + m.end()
+            else:
+                i += 1
+        else:
+            i += 1
+    out.append(("code", src[ini:]))
+    return [t for t in out if t[1]]
+
+
+def trozos_qml(src):
+    out, i, n, ini = [], 0, len(src), 0
+    while i < n:
+        c = src[i]
+        if c == "/" and src[i : i + 2] == "//":
+            out.append(("code", src[ini:i]))
+            j = src.find("\n", i)
+            j = n if j < 0 else j
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c == "/" and src[i : i + 2] == "/*":
+            out.append(("code", src[ini:i]))
+            j = src.find("*/", i + 2)
+            j = n if j < 0 else j + 2
+            out.append(("comment", src[i:j]))
+            i = ini = j
+        elif c in "\"'`":
+            out.append(("code", src[ini:i]))
+            q, j = c, i + 1
+            while j < n and src[j] != q:
+                j += 2 if src[j] == "\\" else 1
+            j = min(j + 1, n)
+            out.append(("string", src[i:j]))
+            i = ini = j
+        else:
+            i += 1
+    out.append(("code", src[ini:]))
+    return [t for t in out if t[1]]
+
+
+def palabras(ident):
+    partes = []
+    for t in ident.split("_"):
+        partes += re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z]+|[a-z]+", t)
+    return [p.lower() for p in partes if len(p) > 2]
+
+
+def hunspell(dic, tokens):
+    """Los que ESE diccionario rechaza. None si no se puede preguntar."""
+    try:
+        r = subprocess.run(
+            ["hunspell", "-d", dic, "-l"],
+            input="\n".join(tokens),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+    return set(r.stdout.split())
+
+
+def lista(nombre):
+    f = BASE / nombre
+    if not f.exists():
+        return set()
+    return {
+        l.strip().lower()
+        for l in f.read_text().splitlines()
+        if l.strip() and not l.startswith("#")
+    }
+
+
+def main():
+    permitidas = lista("permitidas-idioma.txt")
+    archivos = sorted(ROOT.glob("crates/*/**/*.rs")) + sorted(ROOT.glob("crates/*/qml/*.qml"))
+
+    # Identificador -> dónde salió la primera vez.
+    donde = {}
+    for f in archivos:
+        src = f.read_text()
+        piezas = trozos_qml(src) if f.suffix == ".qml" else trozos_rust(src)
+        linea = 1
+        for tipo, texto in piezas:
+            if tipo == "code":
+                for m in re.finditer(r"\b[A-Za-z_][A-Za-z0-9_]*\b", texto):
+                    donde.setdefault(
+                        m.group(0),
+                        (f.relative_to(ROOT), linea + texto[: m.start()].count("\n")),
+                    )
+            linea += texto.count("\n")
+
+    tokens = sorted({p for i in donde for p in palabras(i)} - permitidas)
+    no_es = hunspell("es_MX", tokens)
+    no_en = hunspell("en_US", tokens)
+    if no_es is None or no_en is None:
+        base = {sin_acentos(w) for w in lista("palabras-es.txt")}
+        espanol = {t for t in tokens if t in base}
+        aviso = "idioma: sin hunspell; solo se revisó la lista base"
+    else:
+        espanol = {t for t in tokens if t not in no_es and t in no_en}
+        aviso = None
+
+    malos = sorted(
+        (donde[i], i) for i in donde if any(p in espanol for p in palabras(i))
+    )
+    if malos:
+        print("idioma: el código va en inglés; estos identificadores no lo están:")
+        for (f, n), ident in malos:
+            print(f"  {f}:{n}: {ident}")
+        print()
+        print("Si alguno no es español, agrégalo a tools/lint/permitidas-idioma.txt.")
+        return 1
+    print(f"idioma: {len(donde)} identificadores, todos en inglés")
+    if aviso:
+        print(aviso)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
