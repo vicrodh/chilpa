@@ -7,8 +7,10 @@
 //! Nada de esto toca la ruta de reproducción. El análisis lee archivos y
 //! escribe números; el audio que suena no se entera.
 
+pub mod key;
 pub mod tempo;
 
+pub use key::{detect as detect_key, Key};
 pub use tempo::{detect as detect_tempo, Tempo};
 
 /// La versión de este analizador.
@@ -22,18 +24,33 @@ pub const VERSION: i64 = 1;
 pub const NOMBRE: &str = "chilpa";
 
 /// Lo que el análisis saca de una pista.
-#[derive(Clone, Copy, PartialEq, Debug, Default)]
-pub struct Features {
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct Analysis {
     pub bpm: Option<f32>,
     /// De 0 a 1: qué tan marcado está el pulso.
     pub tempo_confidence: Option<f32>,
+    /// La tonalidad, cuando se pudo decidir.
+    pub key: Option<Key>,
 }
 
+/// Confianza mínima para afirmar una tonalidad.
+///
+/// Por debajo de esto el cromagrama encaja casi igual de bien en dos tonos,
+/// y decir uno sería inventar.
+pub const CONFIANZA_MINIMA_TONALIDAD: f32 = 0.05;
+
 /// Analiza una señal mono ya decodificada.
-pub fn analyze(samples: &[f32], sample_rate_hz: u32) -> Features {
-    match tempo::detect(samples, sample_rate_hz) {
-        Some(t) => Features { bpm: Some(t.bpm), tempo_confidence: Some(t.confidence) },
-        None => Features::default(),
+pub fn analyze(samples: &[f32], sample_rate_hz: u32) -> Analysis {
+    let t = tempo::detect(samples, sample_rate_hz);
+    // La tonalidad se busca sobre la señal remuestreada, que es donde los
+    // bins caen del tamaño que le conviene al cromagrama.
+    let bajada = tempo::remuestrear_para_analisis(samples, sample_rate_hz);
+    let k = key::detect(&bajada, tempo::HZ_ANALISIS)
+        .filter(|k| k.confidence >= CONFIANZA_MINIMA_TONALIDAD);
+    Analysis {
+        bpm: t.map(|t| t.bpm),
+        tempo_confidence: t.map(|t| t.confidence),
+        key: k,
     }
 }
 
@@ -42,9 +59,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sin_pulso_no_se_reporta_bpm() {
+    fn sin_pulso_ni_tono_no_se_reporta_nada() {
         let f = analyze(&vec![0.0; 44_100 * 10], 44_100);
-        assert_eq!(f, Features::default(), "ceros, no un número inventado");
-        assert!(f.bpm.is_none());
+        assert_eq!(f, Analysis::default(), "ceros, no números inventados");
+        assert!(f.bpm.is_none() && f.key.is_none());
     }
 }

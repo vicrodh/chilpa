@@ -90,7 +90,10 @@ fn potencia_de_dos(n: usize) -> usize {
 
 /// FFT de radix-2, en el lugar. `re` e `im` tienen que medir lo mismo y ser
 /// una potencia de dos.
-fn fft(re: &mut [f32], im: &mut [f32]) {
+///
+/// Es pública porque el análisis de tonalidad la necesita y escribirla dos
+/// veces sería tener dos FFT que se pueden desincronizar.
+pub fn fft(re: &mut [f32], im: &mut [f32]) {
     let n = re.len();
     if n <= 1 {
         return;

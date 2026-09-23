@@ -76,7 +76,9 @@ Rectangle {
                 color: "#411d1f"
             }
             Label {
-                text: Chilpa.format
+                // El formato de verdad, y lo que el análisis sacó de la
+                // pista cuando ya se analizó.
+                text: [Chilpa.format, Chilpa.analysis].filter(t => t !== "").join("  ·  ")
                 color: "#7a411d1f"
                 visible: !raiz.compacto
             }

@@ -36,7 +36,13 @@ pub enum AnalysisProgress {
     /// Ya se sabe cuántas faltan.
     Counted { total: usize },
     /// Van `done` de `total`, y esta fue la última que se miró.
-    Advanced { done: usize, total: usize, title: String, bpm: Option<f32> },
+    Advanced {
+        done: usize,
+        total: usize,
+        title: String,
+        bpm: Option<f32>,
+        key: Option<String>,
+    },
     Done { analyzed: usize, without_pulse: usize, failed: usize },
     Failed(String),
 }
@@ -103,6 +109,10 @@ impl AnalysisJob {
                             version,
                             features.as_ref().and_then(|f| f.bpm),
                             features.as_ref().and_then(|f| f.tempo_confidence),
+                            features
+                                .as_ref()
+                                .and_then(|f| f.key.as_ref())
+                                .map(|k| format!("{} · {}", k.name, k.camelot)),
                         );
                         match (&features, &guardado) {
                             (_, Err(e)) => {
@@ -118,7 +128,11 @@ impl AnalysisJob {
                             done: hechas,
                             total,
                             title: pista.title.clone(),
-                            bpm: features.and_then(|f| f.bpm),
+                            bpm: features.as_ref().and_then(|f| f.bpm),
+                            key: features
+                                .as_ref()
+                                .and_then(|f| f.key.as_ref())
+                                .map(|k| k.camelot.clone()),
                         });
                     }
                 }
@@ -167,7 +181,7 @@ impl Drop for AnalysisJob {
 ///
 /// `None` cuando el archivo no se pudo abrir o leer. Que no se le encuentre
 /// pulso no es una falla: es una respuesta.
-pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Features> {
+pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Analysis> {
     let mut decoded = chilpa_decode::Decoded::open(path).ok()?;
     let formato = decoded.stream_format();
     let canales = formato.channels.max(1) as usize;
