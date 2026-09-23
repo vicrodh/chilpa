@@ -73,7 +73,7 @@ fn la_mezcla_necesita_tempos_y_reordena_cuando_los_hay() {
             .track_by_path(source, std::path::Path::new(ruta))
             .unwrap()
             .expect("la pista quedó registrada en el escaneo");
-        lib.save_features(id, "chilpa", 1, Some(bpm), Some(0.8), None).unwrap();
+        lib.save_features(id, "chilpa", 1, Some(bpm), Some(0.8), None, None).unwrap();
     }
     drop(lib);
 

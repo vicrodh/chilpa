@@ -148,6 +148,28 @@ fn orden_por_tempo(bpms: &[Option<f32>], desde: usize) -> Vec<usize> {
     orden
 }
 
+/// Lo que el análisis sacó, en una línea.
+///
+/// La sonoridad se dice, no se aplica: corregirla cambiaría las muestras, y
+/// ahí se acabó el bit-perfect.
+pub(crate) fn describir_analisis(
+    bpm: Option<f32>,
+    tono: Option<&str>,
+    lufs: Option<f32>,
+) -> String {
+    let mut partes: Vec<String> = Vec::new();
+    if let Some(b) = bpm {
+        partes.push(format!("{b:.0} BPM"));
+    }
+    if let Some(t) = tono {
+        partes.push(t.to_string());
+    }
+    if let Some(l) = lufs {
+        partes.push(format!("{l:.1} LUFS"));
+    }
+    partes.join(" · ")
+}
+
 /// Traduce una pista de la biblioteca a lo que necesita una vista.
 fn pista_de(t: chilpa_library::StoredTrack) -> LibraryTrack {
     LibraryTrack {
@@ -408,19 +430,12 @@ impl Chilpa {
         let Some(lib) = self.library() else { return };
         let Ok(source) = lib.source_id("local", "default") else { return };
         let Some(id) = lib.track_by_path(source, path).ok().flatten() else { return };
-        let Some((bpm, tono)) =
+        let Some((bpm, tono, sonoridad)) =
             lib.track_features(id, chilpa_core::analysis_job::ANALIZADOR).ok().flatten()
         else {
             return;
         };
-        let mut partes: Vec<String> = Vec::new();
-        if let Some(b) = bpm {
-            partes.push(format!("{b:.0} BPM"));
-        }
-        if let Some(t) = tono {
-            partes.push(t);
-        }
-        self.now.analysis = partes.join(" · ");
+        self.now.analysis = describir_analisis(bpm, tono.as_deref(), sonoridad);
     }
 
     /// Busca la letra de lo que empieza a sonar.
