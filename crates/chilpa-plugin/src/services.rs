@@ -48,7 +48,7 @@ pub trait HostServices: Send {
     fn store_get(&mut self, plugin: &str, key: &str) -> Option<Vec<u8>>;
 
     /// Escribe en el almacén del plugin. Falso si no se pudo.
-    fn store_set(&mut self, plugin: &str, key: &str, valor: &[u8]) -> bool;
+    fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool;
 
     /// Hace una petición por el plugin.
     ///
@@ -135,10 +135,10 @@ impl HostServices for TestHost {
         save.reads.push((plugin.to_string(), key.to_string()));
         save.store.get(key).cloned()
     }
-    fn store_set(&mut self, plugin: &str, key: &str, valor: &[u8]) -> bool {
+    fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool {
         let mut save = self.0.lock().expect("el candado del host de prueba");
-        save.writes.push((plugin.to_string(), key.to_string(), valor.to_vec()));
-        save.store.insert(key.to_string(), valor.to_vec());
+        save.writes.push((plugin.to_string(), key.to_string(), value.to_vec()));
+        save.store.insert(key.to_string(), value.to_vec());
         true
     }
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8> {

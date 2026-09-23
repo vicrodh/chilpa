@@ -98,9 +98,9 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         return None;
     }
 
-    let lag_de = |bpm: f32| (frames_per_second * 60.0 / bpm).round() as usize;
-    let lag_min = lag_de(BPM_MAX).max(1);
-    let lag_max = lag_de(BPM_MIN).min(centered.len() / 2);
+    let lag_for = |bpm: f32| (frames_per_second * 60.0 / bpm).round() as usize;
+    let lag_min = lag_for(BPM_MAX).max(1);
+    let lag_max = lag_for(BPM_MIN).min(centered.len() / 2);
     if lag_max <= lag_min {
         return None;
     }

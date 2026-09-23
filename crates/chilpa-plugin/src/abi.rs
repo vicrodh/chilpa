@@ -14,14 +14,27 @@
 //! y no dos que se puedan contradecir.
 
 /// El nombre de la memoria que un plugin tiene que exportar.
-pub const MEMORIA: &str = "memory";
+pub const MEMORY: &str = "memory";
 
 /// Las funciones que todo plugin exporta, pase lo que pase.
 pub const F_VERSION: &str = "chilpa_api_version";
 pub const F_ALLOC: &str = "chilpa_alloc";
 
 /// El módulo bajo el que se importan las funciones del host.
-pub const MODULO_HOST: &str = "chilpa";
+pub const HOST_MODULE: &str = "chilpa";
+
+/// **Todo** lo que un plugin puede pedirle al mundo.
+///
+/// Esta lista es la superficie completa del sandbox: lo que no está aquí no
+/// existe para el guest, porque en WASM no hay syscalls. Por eso está
+/// escrita en un solo lugar y hay una prueba que falla si el linker ofrece
+/// algo que no aparezca.
+///
+/// **Nunca se agrega una importación que devuelva un secreto** (ADR-008).
+/// Nada de `credential()`. El plugin dice a dónde quiere ir con `http` y
+/// Chilpa pone el permiso; si pudiera pedir el token, lo tendría, y lo
+/// sacaría en la siguiente petición a su propio dominio.
+pub const HOST_IMPORTS: &[&str] = &["log", "now", "store_get", "store_set", "http"];
 
 /// Empaca una dirección y un largo en el `i64` que contesta el guest.
 pub fn pack(ptr: u32, len: u32) -> i64 {

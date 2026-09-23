@@ -16,3 +16,18 @@ catalogue
 doy
 num
 linux
+
+# De dos letras: abreviaturas y palabras inglesas que el diccionario
+# español también acepta. Sin esto, mirar las de dos letras es puro ruido.
+cd
+os
+is
+ti
+si
+pl
+on
+of
+ne
+hi
+ch
+by

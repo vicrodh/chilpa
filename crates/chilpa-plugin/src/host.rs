@@ -123,7 +123,7 @@ impl Host {
         // Tiene que exportar lo mínimo, o no se carga. Preguntarlo aquí y no
         // a media llamada es la diferencia entre "no cargó" y "se rompió
         // mientras lo usabas".
-        for export in [abi::MEMORIA, abi::F_VERSION, abi::F_ALLOC] {
+        for export in [abi::MEMORY, abi::F_VERSION, abi::F_ALLOC] {
             if module.get_export(export).is_none() {
                 return Err(PluginError::MissingExport(export.to_string()));
             }
@@ -197,8 +197,8 @@ impl Plugin {
             .map_err(|e| PluginError::Crashed(e.to_string()))?;
 
         let memoria = instance
-            .get_memory(&mut store, abi::MEMORIA)
-            .ok_or_else(|| PluginError::MissingExport(abi::MEMORIA.to_string()))?;
+            .get_memory(&mut store, abi::MEMORY)
+            .ok_or_else(|| PluginError::MissingExport(abi::MEMORY.to_string()))?;
         let alloc = instance
             .get_typed_func::<i32, i32>(&mut store, abi::F_ALLOC)
             .map_err(|_| PluginError::MissingExport(abi::F_ALLOC.to_string()))?;
@@ -281,7 +281,7 @@ impl Plugin {
 
     fn build_linker(&self, host: &Host) -> Result<Linker<State>, PluginError> {
         let mut linker = Linker::new(&host.engine);
-        let m = abi::MODULO_HOST;
+        let m = abi::HOST_MODULE;
 
         linker
             .func_wrap(m, "log", |mut caller: Caller<'_, State>, level: i32, ptr: i32, len: i32| {
@@ -318,8 +318,8 @@ impl Plugin {
                         };
                         let id = caller.data().plugin.clone();
                         let services = Arc::clone(&caller.data().services);
-                        let valor = services.lock().ok().and_then(|mut s| s.store_get(&id, &key));
-                        deliver(&mut caller, valor.as_deref(), out, room)
+                        let value = services.lock().ok().and_then(|mut s| s.store_get(&id, &key));
+                        deliver(&mut caller, value.as_deref(), out, room)
                     },
                 )
             })
@@ -337,12 +337,12 @@ impl Plugin {
                             return 0;
                         }
                         let Some(key) = text_of(&mut caller, kptr, klen) else { return 0 };
-                        let Some(valor) = bytes_de(&mut caller, vptr, vlen) else { return 0 };
+                        let Some(value) = bytes_at(&mut caller, vptr, vlen) else { return 0 };
                         let id = caller.data().plugin.clone();
                         let services = Arc::clone(&caller.data().services);
                         let ok = services
                             .lock()
-                            .map(|mut s| s.store_set(&id, &key, &valor))
+                            .map(|mut s| s.store_set(&id, &key, &value))
                             .unwrap_or(false);
                         i32::from(ok)
                     },
@@ -358,7 +358,7 @@ impl Plugin {
                      out: i32,
                      room: i32|
                      -> i32 {
-                        let Some(request) = bytes_de(&mut caller, rptr, rlen) else {
+                        let Some(request) = bytes_at(&mut caller, rptr, rlen) else {
                             return abi::Room::Nothing.code();
                         };
                         let denied = |reason: &str| -> Vec<u8> {
@@ -397,11 +397,11 @@ impl Plugin {
 fn domain_of(request: &[u8]) -> Option<String> {
     let v: serde_json::Value = serde_json::from_slice(request).ok()?;
     let url = v.get("url")?.as_str()?;
-    host_de_url(url)
+    host_of_url(url)
 }
 
 /// Saca la máquina de una URL sin arrastrar un parser de URLs entero.
-pub fn host_de_url(url: &str) -> Option<String> {
+pub fn host_of_url(url: &str) -> Option<String> {
     let rest = url.split_once("://")?.1;
     let fin = rest.find(['/', '?', '#']).unwrap_or(rest.len());
     let authority = &rest[..fin];
@@ -423,22 +423,22 @@ fn allowed(host: &str, domains: &[String]) -> bool {
     })
 }
 
-fn memoria_de(caller: &mut Caller<'_, State>) -> Option<wasmtime::Memory> {
-    caller.get_export(abi::MEMORIA).and_then(|e| e.into_memory())
+fn memory_of(caller: &mut Caller<'_, State>) -> Option<wasmtime::Memory> {
+    caller.get_export(abi::MEMORY).and_then(|e| e.into_memory())
 }
 
-fn bytes_de(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<Vec<u8>> {
+fn bytes_at(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<Vec<u8>> {
     if ptr < 0 || len < 0 {
         return None;
     }
-    let mem = memoria_de(caller)?;
+    let mem = memory_of(caller)?;
     let data = mem.data(&caller);
     let (from, hasta) = (ptr as usize, (ptr as usize).checked_add(len as usize)?);
     data.get(from..hasta).map(<[u8]>::to_vec)
 }
 
 fn text_of(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<String> {
-    let bytes = bytes_de(caller, ptr, len)?;
+    let bytes = bytes_at(caller, ptr, len)?;
     String::from_utf8(bytes).ok()
 }
 
@@ -447,7 +447,7 @@ fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: 
     let room_u = room.max(0) as u32;
     let verdict = abi::Room::para(data, room_u);
     if let (abi::Room::Fits(n), Some(d)) = (verdict, data) {
-        let Some(mem) = memoria_de(caller) else { return abi::Room::Nothing.code() };
+        let Some(mem) = memory_of(caller) else { return abi::Room::Nothing.code() };
         let target = mem.data_mut(caller);
         let (from, hasta) = (out.max(0) as usize, out.max(0) as usize + n as usize);
         match target.get_mut(from..hasta) {
@@ -498,18 +498,79 @@ pub fn network_capability(domains: &[&str]) -> Capability {
 mod tests {
     use super::*;
 
+    /// Todo lo que el sandbox le ofrece al guest, y nada más.
+    ///
+    /// Esta prueba es el candado del ADR-008. Si alguien agrega una
+    /// importación al linker, falla hasta que la escriba en
+    /// `abi::HOST_IMPORTS`, que es donde está dicho que **nunca** se agrega
+    /// una que devuelva un secreto.
+    ///
+    /// No revisa una lista contra otra lista escrita a mano: le pregunta al
+    /// linker qué tiene. Una prueba que repitiera la lista no vería nada.
+    #[test]
+    fn the_sandbox_offers_exactly_what_is_declared_and_nothing_more() {
+        let host = Host::new().unwrap();
+        let manifest = crate::manifest::Manifest::parse(
+            r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source"}"#,
+        )
+        .unwrap();
+        // Un guest que no importa nada: alcanza para armar el linker.
+        let wasm = wat::parse_str(
+            r#"(module (memory (export "memory") 1)
+                 (func (export "chilpa_api_version") (result i32) (i32.const 1))
+                 (func (export "chilpa_alloc") (param i32) (result i32) (i32.const 0)))"#,
+        )
+        .unwrap();
+        let plugin = host.load(manifest, &wasm).unwrap();
+        let services: Services = Arc::new(Mutex::new(crate::services::NoServices));
+        let mut store = plugin.build_store(&host, &services, Limits::default()).unwrap();
+        let linker = plugin.build_linker(&host).unwrap();
+
+        let mut offered: Vec<String> = linker
+            .iter(&mut store)
+            .map(|(module, name, _)| format!("{module}.{name}"))
+            .collect();
+        offered.sort();
+
+        let mut declared: Vec<String> = abi::HOST_IMPORTS
+            .iter()
+            .map(|n| format!("{}.{n}", abi::HOST_MODULE))
+            .collect();
+        declared.sort();
+
+        assert_eq!(
+            offered, declared,
+            "el sandbox ofrece algo que no está en abi::HOST_IMPORTS, o al revés"
+        );
+    }
+
+    #[test]
+    fn nothing_the_sandbox_offers_hands_over_a_secret() {
+        // No es una prueba de comportamiento: es un recordatorio con
+        // dientes. Si alguien llama "credential" a una importación nueva,
+        // esto falla antes de que llegue a una revisión.
+        for name in abi::HOST_IMPORTS {
+            for forbidden in ["credential", "secret", "token", "password", "keyring"] {
+                assert!(
+                    !name.contains(forbidden),
+                    "\"{name}\" suena a entregarle un secreto al plugin (ADR-008)"
+                );
+            }
+        }
+    }
+
     #[test]
     fn a_url_yields_its_host() {
-        assert_eq!(host_de_url("https://api.ejemplo.com/v1/buscar"), Some("api.ejemplo.com".into()));
-        assert_eq!(host_de_url("http://API.Ejemplo.COM"), Some("api.ejemplo.com".into()));
-        assert_eq!(host_de_url("https://api.ejemplo.com:8443/x"), Some("api.ejemplo.com".into()));
+        assert_eq!(host_of_url("https://api.ejemplo.com/v1/buscar"), Some("api.ejemplo.com".into()));
+        assert_eq!(host_of_url("http://API.Ejemplo.COM"), Some("api.ejemplo.com".into()));
+        assert_eq!(host_of_url("https://api.ejemplo.com:8443/x"), Some("api.ejemplo.com".into()));
         assert_eq!(
-            host_de_url("https://usuario:clave@api.ejemplo.com/x"),
+            host_of_url("https://usuario:clave@api.ejemplo.com/x"),
             Some("api.ejemplo.com".into()),
             "el usuario no es la máquina"
         );
-        assert_eq!(host_de_url("api.ejemplo.com/x"), None, "sin esquema no se adivina");
-        assert_eq!(host_de_url("https:///x"), None);
+        assert_eq!(host_of_url("api.ejemplo.com/x"), None, "sin esquema no se adivina");
+        assert_eq!(host_of_url("https:///x"), None);
     }
 
     #[test]

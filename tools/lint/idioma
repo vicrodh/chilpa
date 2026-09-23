@@ -123,7 +123,9 @@ def palabras(ident):
     partes = []
     for t in ident.split("_"):
         partes += re.findall(r"[A-Z]+(?![a-z])|[A-Z][a-z]+|[a-z]+", t)
-    return [p.lower() for p in partes if len(p) > 2]
+    # Dos letras alcanzan para "de" y "la", que es como se colaba
+    # `host_de_url` con sus dos mitades en inglés.
+    return [p.lower() for p in partes if len(p) > 1]
 
 
 def hunspell(dic, tokens):
