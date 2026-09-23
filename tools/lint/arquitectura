@@ -26,6 +26,9 @@ ALLOWED = {
     # El host de plugins. No conoce el core ni la biblioteca: lo que un
     # plugin puede ver se lo pasa la fachada, nunca se lo toma él.
     "chilpa-plugin": set(),
+    # Dónde se guarda un secreto sin dejarlo en claro. No depende de nadie:
+    # no conoce plugins ni biblioteca, solo cierra y abre bytes.
+    "chilpa-secrets": set(),
     "chilpa-library": {"chilpa-models", "chilpa-tags"},
     "chilpa-stream": set(),
     "chilpa-decode": {"chilpa-audio", "chilpa-stream"},
@@ -34,7 +37,7 @@ ALLOWED = {
     "chilpa-cd": {"chilpa-audio"},
     "chilpa-alsa": {"chilpa-audio"},
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa"},
-    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin"},
+    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},
 }

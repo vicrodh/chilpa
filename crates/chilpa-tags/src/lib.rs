@@ -95,8 +95,8 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
         return Ok(info);
     };
 
-    let several = |clave: ItemKey| -> Vec<String> {
-        tag.get_strings(clave).map(str::to_string).collect()
+    let several = |key: ItemKey| -> Vec<String> {
+        tag.get_strings(key).map(str::to_string).collect()
     };
 
     info.tags = Tags {

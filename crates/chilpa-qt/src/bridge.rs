@@ -845,7 +845,7 @@ impl Chilpa {
         let s = self.as_mut().rust_mut().api.stats();
         let mut summary = QList::<QString>::default();
         let mut line = |tag: &str, value: String| {
-            summary.append(QString::from(&format!("{tag}\t{valor}")));
+            summary.append(QString::from(&format!("{tag}\t{value}")));
         };
         line("Escuchas", s.plays.to_string());
         line("Pistas distintas", s.distinct_tracks.to_string());

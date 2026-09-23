@@ -11,6 +11,7 @@
 use super::*;
 use crate::approvals::Approvals;
 use chilpa_plugin::{Host, HostServices, Limits, Level, Registry, Services};
+use chilpa_secrets::{BackendKind, SecretBox};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -19,11 +20,15 @@ use std::sync::{Arc, Mutex};
 /// Lo que no está aquí, no existe para el guest.
 pub struct ChilpaServices {
     root: PathBuf,
+    /// Donde se abren las credenciales. Compartida con `Plugins`, que es
+    /// quien las guarda: una sola caja para que las dos orillas usen la
+    /// misma llave maestra.
+    secrets: Option<Arc<SecretBox>>,
 }
 
 impl ChilpaServices {
-    pub fn new(root: PathBuf) -> Self {
-        Self { root }
+    pub fn new(root: PathBuf, secrets: Option<Arc<SecretBox>>) -> Self {
+        Self { root, secrets }
     }
 
     /// El archivo donde vive una llave del almacén de un plugin.
@@ -40,15 +45,29 @@ impl ChilpaServices {
 
     /// La credencial guardada para un plugin, si hay.
     ///
-    /// Vive en la carpeta del plugin pero **fuera de su almacén**, y el
-    /// guest no tiene forma de leerla: no hay una llave con la que pedirla.
+    /// Vive cifrada en la carpeta del plugin pero **fuera de su almacén**, y
+    /// el guest no tiene forma de pedirla: no hay una importación que la
+    /// devuelva, y su `store_get` no alcanza este archivo (ADR-008).
+    ///
+    /// Que no se pueda abrir no se rescata de ninguna forma: se contesta que
+    /// no hay credencial, y la petición sale sin `Authorization`. Inventar
+    /// algo aquí sería mandar basura al servicio del usuario.
     fn credential(&self, plugin: &str) -> Option<String> {
-        if !valid_id(plugin) {
-            return None;
-        }
-        let path = self.root.join(plugin).join("credencial");
-        std::fs::read_to_string(path).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+        let path = credential_file(&self.root, plugin)?;
+        let sealed = std::fs::read(path).ok()?;
+        let plain = self.secrets.as_ref()?.open_sealed(&sealed).ok()?;
+        let text = String::from_utf8(plain).ok()?;
+        let text = text.trim().to_string();
+        (!text.is_empty()).then_some(text)
     }
+}
+
+/// Dónde vive la credencial cifrada de un plugin.
+///
+/// El id se revisa antes de volverse una ruta, igual que una llave del
+/// almacén: uno con barras saldría de su carpeta.
+fn credential_file(root: &Path, plugin: &str) -> Option<PathBuf> {
+    valid_id(plugin).then(|| root.join(plugin).join("credential.sealed"))
 }
 
 impl HostServices for ChilpaServices {
@@ -126,6 +145,9 @@ pub struct PluginInfo {
     /// Cierto si ya se le había aprobado algo y ahora pide más. Es distinto
     /// de uno nuevo, y se dice distinto.
     pub wants_more: bool,
+    /// Cierto si tiene una credencial guardada. No dice cuál, ni la fachada
+    /// la muestra nunca: solo si hay cuenta conectada o no.
+    pub connected: bool,
 }
 
 /// Todo lo de plugins que la fachada guarda.
@@ -134,6 +156,9 @@ pub struct Plugins {
     registry: Registry,
     services: Services,
     approvals: Approvals,
+    /// La caja de secretos, o `None` si no se pudo abrir ninguna. Sin ella
+    /// no se guarda nada: antes que dejar un token en claro, no se guarda.
+    secrets: Option<Arc<SecretBox>>,
     root: PathBuf,
 }
 
@@ -142,9 +167,11 @@ impl Plugins {
     /// problema de la máquina y no de un plugin.
     pub fn new(root: PathBuf) -> Option<Self> {
         let host = Host::new().ok()?;
-        let services: Services = Arc::new(Mutex::new(ChilpaServices::new(root.clone())));
+        let secrets = SecretBox::open("chilpa", &root).ok().map(Arc::new);
+        let services: Services =
+            Arc::new(Mutex::new(ChilpaServices::new(root.clone(), secrets.clone())));
         let approvals = Approvals::load(&root);
-        Some(Self { host, registry: Registry::new(), services, approvals, root })
+        Some(Self { host, registry: Registry::new(), services, approvals, secrets, root })
     }
 
     /// Lee la carpeta de plugins y carga lo que encuentre.
@@ -204,6 +231,7 @@ impl Plugins {
                         .map(|m| self.approvals.beyond(m))
                         .unwrap_or_default(),
                     wants_more: self.approvals.knows(&i.id),
+                    connected: self.has_credential(&i.id),
                 }
             })
             .collect()
@@ -212,6 +240,41 @@ impl Plugins {
     /// Lo saca de cuarentena. Solo lo llama el usuario.
     pub fn reactivate(&mut self, id: &str) {
         self.registry.reactivate(id);
+    }
+
+    /// Guarda la credencial de un plugin, cifrada.
+    ///
+    /// El plugin nunca la ve: lo único que hace con ella es que Chilpa la
+    /// ponga en sus peticiones (ADR-008).
+    pub fn set_credential(&mut self, id: &str, value: &str) -> Result<(), String> {
+        let Some(secrets) = &self.secrets else {
+            return Err("no hay dónde guardar un secreto en este equipo".into());
+        };
+        let Some(path) = credential_file(&self.root, id) else {
+            return Err(format!("\"{id}\" no es un id que pueda ser una carpeta"));
+        };
+        let sealed = secrets.seal(value.as_bytes()).map_err(|e| e.to_string())?;
+        if let Some(dir) = path.parent() {
+            std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+        }
+        std::fs::write(path, sealed).map_err(|e| e.to_string())
+    }
+
+    /// Borra la credencial de un plugin. Revocarlo la borra también.
+    pub fn forget_credential(&mut self, id: &str) {
+        if let Some(path) = credential_file(&self.root, id) {
+            let _ = std::fs::remove_file(path);
+        }
+    }
+
+    /// Cierto si ese plugin tiene una credencial guardada.
+    pub fn has_credential(&self, id: &str) -> bool {
+        credential_file(&self.root, id).is_some_and(|p| p.exists())
+    }
+
+    /// Dónde se están guardando los secretos, para poder decirlo.
+    pub fn secrets_backend(&self) -> Option<BackendKind> {
+        self.secrets.as_ref().map(|s| s.backend())
     }
 
     /// Olvida todo lo cargado. Se usa al revocar: un plugin que dejó de
@@ -341,8 +404,48 @@ impl Chilpa {
             self.now.error = format!("no se pudo quitar la aprobación: {e}");
             return 0;
         }
+        // Quitar el permiso borra el secreto: dejarlo guardado para un
+        // plugin que ya no corre es guardar un token por nada.
+        p.forget_credential(id);
         p.forget();
         p.load_all()
+    }
+
+    /// Guarda la credencial de un plugin, cifrada, y dice dónde quedó.
+    ///
+    /// El plugin no la recibe nunca: lo único que cambia para él es que sus
+    /// peticiones salen autenticadas (ADR-008).
+    pub fn connect_plugin(&mut self, id: &str, credential: &str) -> bool {
+        let Some(p) = self.plugins.clone() else {
+            self.now.error = "el sandbox de plugins no está arrancado".into();
+            return false;
+        };
+        let Ok(mut p) = p.lock() else { return false };
+        match p.set_credential(id, credential) {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error = format!("no se pudo guardar la credencial: {e}");
+                false
+            }
+        }
+    }
+
+    /// Borra la credencial de un plugin. El plugin sigue instalado.
+    pub fn disconnect_plugin(&mut self, id: &str) {
+        if let Some(mut p) = self.plugins.as_ref().and_then(|p| p.lock().ok()) {
+            p.forget_credential(id);
+        }
+    }
+
+    /// Dónde se están guardando los secretos en este equipo, en palabras.
+    /// Vacío si no hay dónde.
+    pub fn secrets_location(&self) -> String {
+        self.plugins
+            .as_ref()
+            .and_then(|p| p.lock().ok())
+            .and_then(|p| p.secrets_backend())
+            .map(|b| b.describe().to_string())
+            .unwrap_or_default()
     }
 
     /// Saca un plugin de cuarentena.
@@ -375,7 +478,7 @@ mod tests {
 
     #[test]
     fn a_key_with_slashes_or_dot_dots_never_becomes_a_file() {
-        let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"));
+        let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"), None);
         for bad in ["../fuera", "con/barra", "..", "CON.MAYUSCULAS", "", &"x".repeat(65)] {
             assert!(s.file("com.a.b", bad).is_none(), "\"{bad}\" no debería pasar");
         }
@@ -385,7 +488,7 @@ mod tests {
 
     #[test]
     fn nor_does_an_id_with_slashes() {
-        let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"));
+        let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"), None);
         assert!(s.file("../otro", "token").is_none());
         assert!(s.file("con/barra", "token").is_none());
     }
@@ -394,7 +497,7 @@ mod tests {
     fn a_plugin_store_round_trips() {
         let dir = std::env::temp_dir().join("chilpa-plugins-almacen");
         let _ = std::fs::remove_dir_all(&dir);
-        let mut s = ChilpaServices::new(dir.clone());
+        let mut s = ChilpaServices::new(dir.clone(), None);
         assert!(s.store_set("com.a.b", "token", b"abc"));
         assert_eq!(s.store_get("com.a.b", "token").as_deref(), Some(&b"abc"[..]));
         assert_eq!(s.store_get("com.a.b", "otra"), None);
@@ -407,7 +510,7 @@ mod tests {
     fn the_store_is_not_for_keeping_a_catalogue() {
         let dir = std::env::temp_dir().join("chilpa-plugins-grande");
         let _ = std::fs::remove_dir_all(&dir);
-        let mut s = ChilpaServices::new(dir.clone());
+        let mut s = ChilpaServices::new(dir.clone(), None);
         assert!(!s.store_set("com.a.b", "enorme", &vec![0u8; 2 * 1024 * 1024]));
         let _ = std::fs::remove_dir_all(dir);
     }

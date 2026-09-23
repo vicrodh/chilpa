@@ -31,3 +31,7 @@ ne
 hi
 ch
 by
+
+# Nombres de crates y algoritmos que el diccionario no conoce.
+aes
+gcm

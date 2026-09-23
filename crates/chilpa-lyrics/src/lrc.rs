@@ -124,13 +124,13 @@ fn time(s: &str) -> Option<u64> {
 fn tag(line: &str) -> Option<(&str, &str)> {
     let l = line.trim();
     let inside = l.strip_prefix('[')?.strip_suffix(']')?;
-    let (clave, value) = inside.split_once(':')?;
-    let clave = clave.trim();
+    let (key, value) = inside.split_once(':')?;
+    let key = key.trim();
     // Solo letras: así `[01:23]` no pasa por etiqueta.
-    if clave.is_empty() || !clave.chars().all(|c| c.is_ascii_alphabetic()) {
+    if key.is_empty() || !key.chars().all(|c| c.is_ascii_alphabetic()) {
         return None;
     }
-    Some((clave, value))
+    Some((key, value))
 }
 
 #[cfg(test)]
