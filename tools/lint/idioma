@@ -5,15 +5,19 @@ Este candado revisa lo primero. Mira solo las regiones de código de cada
 archivo -- nunca los comentarios ni las cadenas -- y marca todo identificador
 con una palabra española adentro.
 
-Una palabra se considera española si el diccionario es_MX la acepta y el
-en_US la rechaza. Sin hunspell instalado se usa `palabras-es.txt`, que trae
-las que ya aparecieron en este repo: alcanza para lo de siempre, pero no ve
-palabras nuevas, y por eso el mensaje lo dice.
+Una palabra se considera española si el inglés la rechaza y el es_MX la
+acepta, o la aceptaría con acentos. Lo segundo hace falta porque un
+identificador no lleva acentos: `titulos` y `razon` no están en ningún
+diccionario, pero `títulos` y `razón` sí, y el corrector las sugiere.
+
+Sin hunspell instalado se usa `palabras-es.txt`, que trae las que ya
+aparecieron en este repo: alcanza para lo de siempre, pero no ve palabras
+nuevas, y por eso el mensaje lo dice.
 
 Lo que no es español y el diccionario marca igual (abreviaturas, jerga de
 audio, nombres de la API de Rust) vive en `permitidas-idioma.txt`.
 
-Tiene un punto ciego y conviene saberlo: una palabra que los dos
+Le queda un punto ciego y conviene saberlo: una palabra que los dos
 diccionarios aceptan no se puede distinguir. `cola`, `hasta` y `linux` pasan
 sin que nadie las vea. Este candado atrapa la deriva, no la sustituye por
 leer el diff.
@@ -137,6 +141,37 @@ def hunspell(dic, tokens):
     return set(r.stdout.split())
 
 
+def solo_les_falta_el_acento(tokens):
+    """Los que serían españoles con acentos: `titulos` -> `títulos`.
+
+    Se le pide al corrector qué quiso decir; si alguna sugerencia es la
+    misma palabra con acentos, era español escrito como se escribe un
+    identificador.
+    """
+    if not tokens:
+        return set()
+    try:
+        r = subprocess.run(
+            ["hunspell", "-d", "es_MX", "-a"],
+            input="\n".join(tokens),
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return set()
+    out = set()
+    for linea in r.stdout.splitlines():
+        # "& palabra N offset: sug1, sug2, ..."
+        if not linea.startswith("& "):
+            continue
+        cabeza, _, cola = linea.partition(":")
+        palabra = cabeza.split()[1]
+        if any(sin_acentos(s.strip().lower()) == palabra for s in cola.split(",")):
+            out.add(palabra)
+    return out
+
+
 def lista(nombre):
     f = BASE / nombre
     if not f.exists():
@@ -175,7 +210,10 @@ def main():
         espanol = {t for t in tokens if t in base}
         aviso = "idioma: sin hunspell; solo se revisó la lista base"
     else:
-        espanol = {t for t in tokens if t not in no_es and t in no_en}
+        # Solo se le pregunta por los que ningún diccionario reconoce:
+        # pedir sugerencias es lo caro de esto.
+        acentos = solo_les_falta_el_acento(sorted(no_es & no_en))
+        espanol = {t for t in tokens if t in no_en and (t not in no_es or t in acentos)}
         aviso = None
 
     malos = sorted(

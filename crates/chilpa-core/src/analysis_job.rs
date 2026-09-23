@@ -205,9 +205,9 @@ pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
     // La sonoridad se mide al vuelo, con la señal como viene: mezclarla a
     // mono o bajarle la frecuencia cambiaría el número.
     let mut meter = chilpa_analysis::LoudnessMeter::new(rate, format.channels.max(1));
-    let mut leidos = 0u64;
+    let mut read_frames = 0u64;
     let mut interleaved: Vec<f32> = Vec::new();
-    while leidos < want {
+    while read_frames < want {
         let block = match decoded.next_block() {
             Ok(Some(b)) => b,
             Ok(None) | Err(_) => break,
@@ -229,7 +229,7 @@ pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
         for frame in interleaved.chunks_exact(channels) {
             mono.push(frame.iter().sum::<f32>() / channels as f32);
         }
-        leidos += (interleaved.len() / channels) as u64;
+        read_frames += (interleaved.len() / channels) as u64;
     }
     if mono.is_empty() {
         return None;

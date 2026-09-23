@@ -117,15 +117,15 @@ pub fn builtins() -> Vec<SmartList> {
 
 /// El pedazo de `WHERE` de una regla, con sus parámetros.
 fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
-    let dias = |d: u32| Value::Integer(now - i64::from(d) * 86_400);
+    let days_ago = |d: u32| Value::Integer(now - i64::from(d) * 86_400);
     match rule {
         Rule::NeverPlayed => ("COALESCE(e.escuchas, 0) = 0".into(), vec![]),
         Rule::PlayedAtLeast(n) => (
             "COALESCE(e.escuchas, 0) >= ?".into(),
             vec![Value::Integer(*n as i64)],
         ),
-        Rule::AddedWithinDays(d) => ("t.added_at >= ?".into(), vec![dias(*d)]),
-        Rule::PlayedWithinDays(d) => ("e.ultima >= ?".into(), vec![dias(*d)]),
+        Rule::AddedWithinDays(d) => ("t.added_at >= ?".into(), vec![days_ago(*d)]),
+        Rule::PlayedWithinDays(d) => ("e.ultima >= ?".into(), vec![days_ago(*d)]),
         // Alta resolución es cualquier cosa por encima del CD.
         Rule::HiRes => (
             "(t.bit_depth > 16 OR t.sample_rate_hz > 48000)".into(),
@@ -271,14 +271,14 @@ mod tests {
         lib
     }
 
-    fn titulos(lib: &Library, list: &SmartList) -> Vec<String> {
+    fn titles(lib: &Library, list: &SmartList) -> Vec<String> {
         lib.smart_tracks(list).unwrap().into_iter().map(|t| t.title).collect()
     }
 
     #[test]
     fn never_played_means_the_ones_that_never_played() {
         let lib = library();
-        let mut come_out = titulos(
+        let mut come_out = titles(
             &lib,
             &SmartList::new("x", vec![Rule::NeverPlayed], Order::Artist, 50),
         );
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn recently_added_leaves_the_old_ones_out() {
         let lib = library();
-        let mut come_out = titulos(
+        let mut come_out = titles(
             &lib,
             &SmartList::new("x", vec![Rule::AddedWithinDays(30)], Order::NewestFirst, 50),
         );
@@ -301,7 +301,7 @@ mod tests {
     fn this_week_looks_at_when_it_played_not_when_it_arrived() {
         let lib = library();
         assert_eq!(
-            titulos(&lib, &SmartList::new("x", vec![Rule::PlayedWithinDays(7)], Order::MostPlayed, 50)),
+            titles(&lib, &SmartList::new("x", vec![Rule::PlayedWithinDays(7)], Order::MostPlayed, 50)),
             ["Nueva"],
             "la vieja sonó hace trescientos días"
         );
@@ -311,7 +311,7 @@ mod tests {
     fn high_resolution_is_whatever_goes_beyond_cd() {
         let lib = library();
         assert_eq!(
-            titulos(&lib, &SmartList::new("x", vec![Rule::HiRes], Order::Artist, 50)),
+            titles(&lib, &SmartList::new("x", vec![Rule::HiRes], Order::Artist, 50)),
             ["Nueva"]
         );
     }
@@ -325,7 +325,7 @@ mod tests {
             Order::Artist,
             50,
         );
-        assert_eq!(titulos(&lib, &list), ["Larga"], "nueva y larga a la vez");
+        assert_eq!(titles(&lib, &list), ["Larga"], "nueva y larga a la vez");
     }
 
     #[test]
@@ -343,15 +343,15 @@ mod tests {
         // La 3 se analizó y no se le encontró pulso.
         lib.save_features(3, "chilpa", 1, None, None, None, None).unwrap();
 
-        let rapidas = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
-        assert_eq!(titulos(&lib, &rapidas), ["Vieja"]);
+        let fast = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
+        assert_eq!(titles(&lib, &fast), ["Vieja"]);
 
         let slow = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
-        assert_eq!(titulos(&lib, &slow), ["Nueva"]);
+        assert_eq!(titles(&lib, &slow), ["Nueva"]);
 
         // Y sin análisis, la lista sale vacía en vez de traerlo todo.
         let clean = Library::in_memory().unwrap();
-        assert!(clean.smart_tracks(&rapidas).unwrap().is_empty());
+        assert!(clean.smart_tracks(&fast).unwrap().is_empty());
     }
 
     #[test]

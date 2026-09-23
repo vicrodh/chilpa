@@ -91,6 +91,7 @@ barajar
 barata
 barato
 barras
+basicos
 biblioteca
 bien
 bloque
@@ -154,6 +155,7 @@ circulo
 claro
 clase
 codigo
+codigos
 coincida
 columna
 comentarios
@@ -192,6 +194,7 @@ convertir
 copia
 copiar
 corre
+correlacion
 corren
 correr
 corrimiento
@@ -261,6 +264,7 @@ devuelve
 diagnosticar
 diagnostico
 dialogo
+dias
 dibuja
 dicen
 dicho
@@ -303,6 +307,7 @@ encola
 encolar
 encontradas
 encontrados
+encontro
 encuentra
 endereza
 energia
@@ -354,6 +359,7 @@ esquema
 esta
 estaba
 estacion
+estadisticas
 estado
 estereo
 estorban
@@ -402,6 +408,7 @@ fuerte
 gana
 ganancia
 genero
+generos
 girando
 golpe
 goniometro
@@ -426,6 +433,7 @@ huecos
 iba
 ida
 identico
+identicos
 identificador
 identificadores
 ignora
@@ -470,6 +478,8 @@ lectura
 lecturas
 leen
 leida
+leidas
+leidos
 lejos
 lentas
 letra
@@ -509,6 +519,7 @@ marca
 marcado
 marcar
 maximo
+mayusculas
 medias
 medida
 medidor
@@ -549,6 +560,7 @@ muestras
 muestreo
 mueven
 multiplo
+multiplos
 musica
 muy
 nada
@@ -627,6 +639,7 @@ pestana
 peticion
 peticiones
 pide
+pidio
 pierde
 pilon
 piso
@@ -683,6 +696,7 @@ raiz
 rampa
 rango
 ranuras
+rapidas
 raro
 rato
 raton
@@ -728,10 +742,12 @@ remoto
 renglon
 renglones
 reordena
+repeticion
 repetir
 repite
 reporta
 reporte
+reproduccion
 reproducciones
 reproducir
 reproducirla
@@ -806,6 +822,7 @@ sola
 sonadas
 sonando
 sonaron
+sono
 sonoridad
 soporte
 subdominios
@@ -847,6 +864,7 @@ tira
 tiran
 tirar
 titulo
+titulos
 toca
 toda
 todas
@@ -879,8 +897,11 @@ uno
 usa
 usan
 usuario
+utiles
 utilizables
+vacia
 vacio
+vacios
 valida
 validacion
 validar

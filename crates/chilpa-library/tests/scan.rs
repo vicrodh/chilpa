@@ -182,8 +182,8 @@ fn the_genres_in_the_file_reach_the_library() {
     let lib = Library::in_memory().unwrap();
     scan_root(&lib, &dir).unwrap();
 
-    let generos = lib.genres().unwrap();
-    assert_eq!(generos, vec![("Rock".to_string(), 2)], "un género con sus dos pistas");
+    let genres = lib.genres().unwrap();
+    assert_eq!(genres, vec![("Rock".to_string(), 2)], "un género con sus dos pistas");
 
     // Y cada pista lo trae.
     let source = lib.source_id("local", "default").unwrap();

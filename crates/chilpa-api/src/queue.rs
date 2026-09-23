@@ -228,9 +228,9 @@ impl Chilpa {
         }
         let paths: Vec<String> = list.tracks.iter().map(|p| p.display().to_string()).collect();
         let error = std::mem::take(&mut self.now.error);
-        let titulos = self.play_tracks(&paths, device, bit_perfect);
+        let titles = self.play_tracks(&paths, device, bit_perfect);
         self.now.error = error;
-        titulos
+        titles
     }
 
     /// Guarda la cola actual como una lista M3U.

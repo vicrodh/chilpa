@@ -62,13 +62,13 @@ fn the_icy_metadata_comes_out_of_the_audio_and_leaves_the_title() {
         &body,
     ));
     let mut stream = open(&url).unwrap();
-    let titulos = stream.now_playing();
+    let titles = stream.now_playing();
 
     let mut audio = Vec::new();
     stream.read_to_end(&mut audio).unwrap();
 
     assert_eq!(audio, [[7u8; 16], [9u8; 16]].concat(), "el audio salió sin la metadata");
-    assert_eq!(titulos.get().as_deref(), Some("Radio Chilpa - Una"));
+    assert_eq!(titles.get().as_deref(), Some("Radio Chilpa - Una"));
 }
 
 #[test]

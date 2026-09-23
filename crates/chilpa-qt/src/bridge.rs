@@ -380,9 +380,9 @@ fn long_duration(ms: u64) -> String {
 fn short_date(unix: i64) -> String {
     // Días desde 1970 a fecha civil (Howard Hinnant). Son cuatro líneas y
     // evitan una dependencia para mostrar un renglón.
-    let dias = unix.div_euclid(86_400) + 719_468;
-    let era = dias.div_euclid(146_097);
-    let doe = dias - era * 146_097;
+    let days_ago = unix.div_euclid(86_400) + 719_468;
+    let era = days_ago.div_euclid(146_097);
+    let doe = days_ago - era * 146_097;
     let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
@@ -694,14 +694,14 @@ impl Chilpa {
             .skip(from)
             .cloned()
             .collect();
-        let titulos = self.as_mut().rust_mut().api.play_tracks(&paths, &device, bit_perfect);
+        let titles = self.as_mut().rust_mut().api.play_tracks(&paths, &device, bit_perfect);
         let mut list = QList::<QString>::default();
-        for t in &titulos {
+        for t in &titles {
             list.append(QString::from(t));
         }
         self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titulos.is_empty());
+        self.as_mut().set_playing(!titles.is_empty());
     }
 
     pub fn album_view(&self) -> i32 {
@@ -732,9 +732,9 @@ impl Chilpa {
     }
 
     pub fn refresh_playlists(mut self: Pin<&mut Self>) {
-        let generos = self.as_mut().rust_mut().api.genres(40);
+        let genres = self.as_mut().rust_mut().api.genres(40);
         let mut g = QList::<QString>::default();
-        for (name, n) in &generos {
+        for (name, n) in &genres {
             g.append(QString::from(&format!("{name}\t{n}")));
         }
         self.as_mut().set_genres(QStringList::from(&g));
@@ -760,20 +760,20 @@ impl Chilpa {
     pub fn play_genre(mut self: Pin<&mut Self>, genre: &QString) {
         let name = genre.to_string();
         let (device, bit_perfect) = self.as_mut().chosen();
-        let titulos = self.as_mut().rust_mut().api.play_genre(&name, &device, bit_perfect);
-        self.as_mut().refresh_queue(&titulos);
+        let titles = self.as_mut().rust_mut().api.play_genre(&name, &device, bit_perfect);
+        self.as_mut().refresh_queue(&titles);
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titulos.is_empty());
+        self.as_mut().set_playing(!titles.is_empty());
     }
 
     pub fn play_smart_list(mut self: Pin<&mut Self>, name: &QString) {
         let name = name.to_string();
         let (device, bit_perfect) = self.as_mut().chosen();
-        let titulos =
+        let titles =
             self.as_mut().rust_mut().api.play_smart_list(&name, &device, bit_perfect);
-        self.as_mut().refresh_queue(&titulos);
+        self.as_mut().refresh_queue(&titles);
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titulos.is_empty());
+        self.as_mut().set_playing(!titles.is_empty());
     }
 
     pub fn save_queue_as(mut self: Pin<&mut Self>, name: &QString) {
@@ -788,14 +788,14 @@ impl Chilpa {
 
     pub fn play_saved_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
         let (device, bit_perfect) = self.as_mut().chosen();
-        let titulos = self
+        let titles = self
             .as_mut()
             .rust_mut()
             .api
             .play_saved_playlist(playlist_id, &device, bit_perfect);
-        self.as_mut().refresh_queue(&titulos);
+        self.as_mut().refresh_queue(&titles);
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titulos.is_empty());
+        self.as_mut().set_playing(!titles.is_empty());
     }
 
     pub fn delete_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
@@ -953,9 +953,9 @@ impl Chilpa {
     }
 
     /// Deja la cola que reporta la fachada en las propiedades de la vista.
-    fn refresh_queue(mut self: Pin<&mut Self>, titulos: &[String]) {
+    fn refresh_queue(mut self: Pin<&mut Self>, titles: &[String]) {
         let mut list = QList::<QString>::default();
-        for t in titulos {
+        for t in titles {
             list.append(QString::from(t));
         }
         self.as_mut().set_queue(QStringList::from(&list));
@@ -1111,18 +1111,18 @@ impl Chilpa {
         let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
         let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().remember_folder(&path);
-        let titulos = self.as_mut().rust_mut().api.play_playlist(
+        let titles = self.as_mut().rust_mut().api.play_playlist(
             std::path::Path::new(&path),
             &device,
             bit_perfect,
         );
         let mut list = QList::<QString>::default();
-        for t in &titulos {
+        for t in &titles {
             list.append(QString::from(t));
         }
         self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titulos.is_empty());
+        self.as_mut().set_playing(!titles.is_empty());
     }
 
     pub fn save_queue(mut self: Pin<&mut Self>, path: &QString) {
@@ -1303,8 +1303,8 @@ impl Chilpa {
                 pl.append(QString::from(&format!("{i:.4}\t{d:.4}")));
             }
             self.as_mut().set_pairs(QStringList::from(&pl));
-            let correlacion = self.api.scope_correlation();
-            self.as_mut().set_correlation(f64::from(correlacion.unwrap_or(999.0)));
+            let correlation = self.api.scope_correlation();
+            self.as_mut().set_correlation(f64::from(correlation.unwrap_or(999.0)));
 
             let levels = self.api.scope_levels();
             let mut l = QList::<QString>::default();

@@ -64,8 +64,8 @@ fn save_the_queue_play_it_and_delete_it() {
     assert_eq!(lists[0].track_count, 3);
     assert_eq!(lists[0].provider, "local", "es de aquí");
 
-    let titulos = chilpa.play_saved_playlist(id, OUTPUT, true);
-    assert_eq!(titulos.len(), 3, "vuelve a sonar completa");
+    let titles = chilpa.play_saved_playlist(id, OUTPUT, true);
+    assert_eq!(titles.len(), 3, "vuelve a sonar completa");
     assert_eq!(chilpa.queue_titles().len(), 3);
 
     chilpa.rename_playlist(id, "De la noche");
