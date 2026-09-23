@@ -162,6 +162,16 @@ impl Player {
         self.controls.repeat.get()
     }
 
+    /// Baraja la cola que suena. Toma efecto al terminar la pista.
+    pub fn shuffle(&self, len: usize) {
+        self.controls.order.set(crate::queue_playback::shuffled_now(len), len);
+    }
+
+    /// Vuelve al orden en que se encoló.
+    pub fn clear_order(&self) {
+        self.controls.order.clear();
+    }
+
     /// Pide parar. No espera al dispositivo.
     pub fn stop(&self) {
         self.controls.stop.stop();

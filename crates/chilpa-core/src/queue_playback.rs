@@ -128,6 +128,33 @@ impl Order {
     }
 }
 
+/// Una permutación al azar de `0..len`.
+///
+/// El generador es un xorshift de tres líneas: para barajar una cola no hace
+/// falta nada mejor, y una dependencia más es una dependencia más.
+pub fn shuffled(len: usize, semilla: u64) -> Vec<usize> {
+    let mut orden: Vec<usize> = (0..len).collect();
+    let mut x = semilla | 1;
+    // Fisher-Yates, de atrás hacia adelante: cada permutación sale con la
+    // misma probabilidad.
+    for i in (1..len).rev() {
+        x ^= x << 13;
+        x ^= x >> 7;
+        x ^= x << 17;
+        orden.swap(i, (x % (i as u64 + 1)) as usize);
+    }
+    orden
+}
+
+/// Lo mismo, sembrado con el reloj.
+pub fn shuffled_now(len: usize) -> Vec<usize> {
+    let semilla = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0x2545_F491_4F6C_DD1D);
+    shuffled(len, semilla)
+}
+
 fn es_permutacion(orden: &[usize], len: usize) -> bool {
     if orden.len() != len {
         return false;
@@ -457,6 +484,18 @@ mod tests {
         assert!(!o.set(vec![0, 1], 3), "incompleta");
         assert!(!o.set(vec![0, 1, 5], 3), "fuera de rango");
         assert!(o.get().is_empty(), "nada de eso se guardó");
+    }
+
+    #[test]
+    fn barajar_da_una_permutacion_y_no_siempre_la_misma() {
+        for semilla in [1u64, 42, 99_999] {
+            let o = shuffled(8, semilla);
+            assert!(es_permutacion(&o, 8), "{o:?} no es una permutación");
+        }
+        assert_ne!(shuffled(16, 1), shuffled(16, 2), "semillas distintas, barajas distintas");
+        assert_eq!(shuffled(16, 7), shuffled(16, 7), "la misma semilla siempre da lo mismo");
+        assert_eq!(shuffled(1, 3), vec![0], "una sola pista no se baraja");
+        assert!(shuffled(0, 3).is_empty());
     }
 
     #[test]

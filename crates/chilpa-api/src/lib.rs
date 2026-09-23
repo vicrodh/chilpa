@@ -4,6 +4,8 @@
 //! biblioteca, ni el player. Si una vista necesita algo que no está aquí,
 //! primero se amplía esta API.
 
+pub use chilpa_core::queue_playback::Repeat;
+
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
 
@@ -186,8 +188,15 @@ pub struct Chilpa {
     library: Option<chilpa_library::Library>,
     /// Lo que hace falta para registrar la reproducción cuando termine.
     en_curso: Option<EnCurso>,
-    /// Las rutas de la cola actual, para poder volver atrás.
+    /// Las rutas de la cola actual, completa y en el orden en que se
+    /// encoló. Volver atrás no la recorta.
     cola: Vec<String>,
+    /// Qué posición de `cola` fue la primera que se le dio al reproductor.
+    /// Volver atrás relanza desde ahí, y la posición que ve la vista se
+    /// cuenta sobre la cola entera.
+    base: usize,
+    shuffle: bool,
+    repeat: Repeat,
     /// El escaneo en segundo plano, mientras corre.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -209,6 +218,9 @@ impl Chilpa {
             library: None,
             en_curso: None,
             cola: Vec::new(),
+            base: 0,
+            shuffle: false,
+            repeat: Repeat::Off,
             scan: None,
             scan_status: ScanStatus::default(),
             player: None,
@@ -364,6 +376,29 @@ impl Chilpa {
             .collect()
     }
 
+    /// Echa a andar la cola que ya está en `self.cola`, desde esa posición.
+    ///
+    /// Todo lo que reproduce una lista pasa por aquí: así la repetición, el
+    /// aleatorio y la cuenta de posiciones se aplican en un solo lugar.
+    fn lanzar(&mut self, desde: usize, device: &str, bit_perfect: bool) {
+        let pistas: Vec<std::path::PathBuf> =
+            self.cola.iter().skip(desde).map(std::path::PathBuf::from).collect();
+        if pistas.is_empty() {
+            return;
+        }
+        self.base = desde;
+        let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.cola.len());
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        player.set_repeat(repeat);
+        if shuffle {
+            player.shuffle(pistas.len());
+        } else {
+            player.clear_order();
+        }
+        self.now = NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() };
+        player.play_all(&pistas, device, bit_perfect);
+    }
+
     /// Pone a sonar lo que encontró una búsqueda, en ese orden.
     pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
         let pistas: Vec<std::path::PathBuf> =
@@ -372,10 +407,39 @@ impl Chilpa {
             return Vec::new();
         }
         self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
-        self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
-        player.play_all(&pistas, device, bit_perfect);
+        self.lanzar(0, device, bit_perfect);
         pistas.iter().map(|p| titulo_de(p)).collect()
+    }
+
+    /// Si la cola suena barajada.
+    pub fn shuffle(&self) -> bool {
+        self.shuffle
+    }
+
+    /// Baraja la cola o la devuelve a su orden. Toma efecto al terminar la
+    /// pista que suena: barajar no corta el audio.
+    pub fn set_shuffle(&mut self, shuffle: bool) {
+        self.shuffle = shuffle;
+        let restantes = self.cola.len().saturating_sub(self.base);
+        if let Some(p) = &self.player {
+            if shuffle {
+                p.shuffle(restantes);
+            } else {
+                p.clear_order();
+            }
+        }
+    }
+
+    pub fn repeat(&self) -> Repeat {
+        self.repeat
+    }
+
+    /// Cambia la repetición. También toma efecto al terminar la pista.
+    pub fn set_repeat(&mut self, repeat: Repeat) {
+        self.repeat = repeat;
+        if let Some(p) = &self.player {
+            p.set_repeat(repeat);
+        }
     }
 
     /// Pone a sonar una radio o cualquier stream por HTTP.
@@ -386,9 +450,7 @@ impl Chilpa {
             return;
         }
         self.cola = vec![url.clone()];
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
-        self.now = NowPlaying { playing: true, queue_len: 1, ..NowPlaying::default() };
-        player.play_all(&[std::path::PathBuf::from(&url)], device, bit_perfect);
+        self.lanzar(0, device, bit_perfect);
     }
 
     /// Abre una lista M3U y la pone a sonar.
@@ -458,9 +520,7 @@ impl Chilpa {
         let pistas: Vec<std::path::PathBuf> =
             disponibles.iter().map(|t| std::path::PathBuf::from(&t.path)).collect();
         self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
-        self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
-        player.play_all(&pistas, device, bit_perfect);
+        self.lanzar(0, device, bit_perfect);
         disponibles.into_iter().map(|t| t.title).collect()
     }
 
@@ -529,13 +589,10 @@ impl Chilpa {
             self.now.error = format!("no hay audio en {}", folder.display());
             return Vec::new();
         }
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
-        self.now = NowPlaying {
-            playing: true,
-            queue_len: pistas.len(),
-            ..NowPlaying::default()
-        };
-        player.play_all(&pistas, device, bit_perfect);
+        // La carpeta también entra a la cola: si no, guardarla o volver
+        // atrás no tendrían de dónde leer.
+        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
+        self.lanzar(0, device, bit_perfect);
         pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
@@ -564,18 +621,19 @@ impl Chilpa {
 
     /// Vuelve a la pista anterior.
     ///
-    /// No hay una señal para esto: la cola se vuelve a lanzar desde la
-    /// pista de antes, que es lo que el reproductor sabe hacer.
+    /// No hay una señal para esto: la cola se vuelve a lanzar desde la pista
+    /// de antes, que es lo que el reproductor sabe hacer. La cola no se
+    /// recorta, solo cambia por dónde empieza.
+    ///
+    /// Con el aleatorio encendido no hay "la de antes" que valga: lo que se
+    /// hace es reiniciar la que suena.
     pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
-        if self.cola.is_empty() || self.now.index == 0 {
+        if self.cola.is_empty() || self.now.index == 0 || self.shuffle {
             // En la primera pista, "anterior" es volver a empezarla.
             self.seek(0.0);
             return;
         }
-        let desde = self.now.index - 1;
-        let restantes: Vec<String> = self.cola[desde..].to_vec();
-        let titulos = self.play_tracks(&restantes, device, bit_perfect);
-        let _ = titulos;
+        self.lanzar(self.now.index - 1, device, bit_perfect);
     }
 
     /// Para lo que esté sonando.
@@ -627,8 +685,14 @@ impl Chilpa {
                     }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
-                    self.now.index = index;
-                    self.now.queue_len = queue_len;
+                    // El reproductor cuenta sobre lo que se le dio; la vista
+                    // cuenta sobre la cola entera.
+                    self.now.index = self.base + index;
+                    self.now.queue_len = if self.cola.is_empty() {
+                        queue_len
+                    } else {
+                        self.cola.len()
+                    };
                     // Cada arranque cierra lo anterior: en una cola, la
                     // pista que empieza es la prueba de que la de antes
                     // terminó.
