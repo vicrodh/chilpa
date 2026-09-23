@@ -66,16 +66,25 @@ impl RepeatMode {
 /// está sonando ni obligar a rearmar la cola desde el principio. El lazo
 /// vuelve a leer el largo en cada pista, así que lo agregado entra solo.
 #[derive(Clone, Default)]
-pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<PathBuf>>>);
+pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<Entrada>>>);
+
+/// Una pista de la cola. Quitarla no la saca del arreglo: se marca, y así
+/// las posiciones de las demás no se mueven bajo los pies de quien está
+/// reproduciendo.
+#[derive(Clone, PartialEq, Eq, Debug)]
+struct Entrada {
+    path: PathBuf,
+    removed: bool,
+}
 
 impl SharedQueue {
     pub fn new(paths: Vec<PathBuf>) -> Self {
-        Self(std::sync::Arc::new(std::sync::Mutex::new(paths)))
+        Self(std::sync::Arc::new(std::sync::Mutex::new(entradas(paths))))
     }
 
     pub fn set(&self, paths: Vec<PathBuf>) {
         if let Ok(mut g) = self.0.lock() {
-            *g = paths;
+            *g = entradas(paths);
         }
     }
 
@@ -83,13 +92,14 @@ impl SharedQueue {
     pub fn extend(&self, paths: &[PathBuf]) -> usize {
         match self.0.lock() {
             Ok(mut g) => {
-                g.extend_from_slice(paths);
+                g.extend(entradas(paths.to_vec()));
                 g.len()
             }
             Err(_) => 0,
         }
     }
 
+    /// Cuántas posiciones tiene, incluyendo las quitadas.
     pub fn len(&self) -> usize {
         self.0.lock().map(|g| g.len()).unwrap_or(0)
     }
@@ -98,13 +108,41 @@ impl SharedQueue {
         self.len() == 0
     }
 
-    pub fn get(&self, i: usize) -> Option<PathBuf> {
-        self.0.lock().ok()?.get(i).cloned()
+    /// Quita una pista de la cola. La posición se conserva vacía.
+    pub fn remove(&self, i: usize) -> bool {
+        match self.0.lock() {
+            Ok(mut g) => match g.get_mut(i) {
+                Some(e) if !e.removed => {
+                    e.removed = true;
+                    true
+                }
+                _ => false,
+            },
+            Err(_) => false,
+        }
     }
 
-    pub fn to_vec(&self) -> Vec<PathBuf> {
-        self.0.lock().map(|g| g.clone()).unwrap_or_default()
+    /// Cierto si esa posición ya se quitó.
+    pub fn is_removed(&self, i: usize) -> bool {
+        self.0.lock().ok().and_then(|g| g.get(i).map(|e| e.removed)).unwrap_or(false)
     }
+
+    /// La pista de esa posición, o `None` si no existe o si se quitó.
+    pub fn get(&self, i: usize) -> Option<PathBuf> {
+        let g = self.0.lock().ok()?;
+        let e = g.get(i)?;
+        (!e.removed).then(|| e.path.clone())
+    }
+
+    /// Todas las rutas, incluyendo las quitadas, para que quien muestre la
+    /// cola sepa de qué posición habla.
+    pub fn to_vec(&self) -> Vec<PathBuf> {
+        self.0.lock().map(|g| g.iter().map(|e| e.path.clone()).collect()).unwrap_or_default()
+    }
+}
+
+fn entradas(paths: Vec<PathBuf>) -> Vec<Entrada> {
+    paths.into_iter().map(|path| Entrada { path, removed: false }).collect()
 }
 
 /// El orden en que se recorre la cola, compartido.
@@ -410,7 +448,10 @@ where
 
     // El largo se vuelve a leer en cada vuelta: la cola puede crecer
     // mientras suena.
-    while let Some(path) = queue.get(indice) {
+    loop {
+        // Una pista quitada se salta sin sonar; si ya no queda ninguna, se
+        // acabó la cola.
+        let Some(path) = siguiente_viva(queue, order, repeat, &mut indice) else { break };
         let path = &path;
         let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
         let delivery = negotiate(decoded.stream_format(), caps, policy)
@@ -479,6 +520,30 @@ where
         sink.close().map_err(PlayError::Sink)?;
     }
     Ok(resultados)
+}
+
+/// La pista de `indice`, saltándose las que se quitaron.
+///
+/// Avanza `indice` hasta dar con una viva. Devuelve `None` cuando ya no
+/// queda ninguna, contando las vueltas para no girar para siempre si se
+/// quitó la cola entera con la repetición encendida.
+fn siguiente_viva(
+    queue: &SharedQueue,
+    order: &Order,
+    repeat: &RepeatMode,
+    indice: &mut usize,
+) -> Option<PathBuf> {
+    let vuelta = repeat.get() == Repeat::All;
+    for _ in 0..=queue.len() {
+        if let Some(p) = queue.get(*indice) {
+            return Some(p);
+        }
+        if *indice >= queue.len() {
+            return None;
+        }
+        *indice = order.siguiente(*indice, queue.len(), vuelta)?;
+    }
+    None
 }
 
 /// Cuántas veces se reabrió el dispositivo en una cola ya reproducida.

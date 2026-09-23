@@ -106,6 +106,11 @@ RowLayout {
         onClicked: dialogoGuardar.open()
     }
     Button {
+        text: "Vaciar cola"
+        enabled: Chilpa.queue.length > 0
+        onClicked: Chilpa.clearQueue()
+    }
+    Button {
         text: "Abrir stream"
         onClicked: dialogoStream.open()
     }

@@ -253,6 +253,8 @@ pub struct Chilpa {
     album_sort: AlbumSort,
     /// El artista al que está filtrada la reja, vacío si no hay filtro.
     artista: String,
+    /// Qué posiciones de `cola` se quitaron, para que la vista las apague.
+    quitadas: Vec<bool>,
     /// La letra de lo que suena, para no releerla en cada pulso.
     letra: Option<chilpa_lyrics::Lyrics>,
     /// El escaneo en segundo plano, mientras corre.
@@ -281,6 +283,7 @@ impl Chilpa {
             repeat: Repeat::Off,
             album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
             artista: String::new(),
+            quitadas: Vec::new(),
             letra: None,
             scan: None,
             scan_status: ScanStatus::default(),
@@ -727,6 +730,7 @@ impl Chilpa {
             return;
         }
         self.base = desde;
+        self.quitadas = vec![false; self.cola.len()];
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.cola.len());
         let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
         player.set_repeat(repeat);
@@ -756,6 +760,40 @@ impl Chilpa {
         self.cola.iter().map(|r| titulo_de(std::path::Path::new(r))).collect()
     }
 
+    /// Qué posiciones de la cola se quitaron.
+    pub fn queue_removed(&self) -> &[bool] {
+        &self.quitadas
+    }
+
+    /// Quita de la cola la pista en esa posición.
+    ///
+    /// La que suena no se quita: para esa está el botón de siguiente. Y una
+    /// que ya pasó tampoco, porque no cambiaría nada.
+    pub fn remove_from_queue(&mut self, index: usize) -> bool {
+        if index <= self.now.index || index >= self.cola.len() {
+            return false;
+        }
+        let Some(p) = &self.player else { return false };
+        // El reproductor cuenta desde donde arrancó; la vista, desde el
+        // principio de la cola.
+        if !p.remove_from_queue(index - self.base) {
+            return false;
+        }
+        if let Some(q) = self.quitadas.get_mut(index) {
+            *q = true;
+        }
+        true
+    }
+
+    /// Para y vacía la cola.
+    pub fn clear_queue(&mut self) {
+        self.stop();
+        self.cola.clear();
+        self.quitadas.clear();
+        self.base = 0;
+        self.now.queue_len = 0;
+    }
+
     /// Agrega pistas al final de la cola. Si no hay nada sonando, arranca.
     ///
     /// Encolar no corta lo que suena: la cola le crece por atrás y lo
@@ -771,6 +809,7 @@ impl Chilpa {
             return self.play_tracks(paths, device, bit_perfect);
         }
         self.cola.extend(pistas.iter().map(|p| p.display().to_string()));
+        self.quitadas.resize(self.cola.len(), false);
         if let Some(p) = &self.player {
             p.enqueue(&pistas);
         }

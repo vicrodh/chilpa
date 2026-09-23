@@ -48,8 +48,9 @@ ColumnLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
         // Una fila de portadas cabe completa, con sus tres renglones de
-        // texto; menos que esto los recorta.
-        Layout.minimumHeight: 260
+        // texto, y arriba el renglón de pestañas: menos que esto recorta el
+        // último renglón de cada ficha.
+        Layout.minimumHeight: 320
         visible: Chilpa.albums.length > 0 && Chilpa.searchText === "" && Chilpa.openAlbum === ""
     }
 

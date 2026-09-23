@@ -226,3 +226,66 @@ fn lo_que_se_encola_a_media_cola_si_suena() {
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
 }
+
+#[test]
+fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
+    let a = onda("quita-a", 4_410);
+    let b = onda("quita-b", 4_410);
+    let c = onda("quita-c", 4_410);
+
+    let cola = SharedQueue::new(vec![a.clone(), b.clone(), c.clone()]);
+    // Se quita la de en medio antes de empezar.
+    assert!(cola.remove(1));
+    assert!(!cola.remove(1), "quitarla dos veces no cuenta");
+    assert_eq!(cola.len(), 3, "la posición se conserva vacía");
+
+    let controls = Controls::new();
+    let sink = Topado {
+        frames: Rc::new(RefCell::new(0)),
+        tope: 1_000_000,
+        stop: controls.stop.clone(),
+    };
+    let resultados = play_queue_with(
+        &cola,
+        &caps(),
+        Policy::BitPerfect,
+        &controls,
+        |_| Ok(sink.clone()),
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
+    .expect("la cola corre");
+
+    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
+    assert_eq!(rutas, vec![a.clone(), c.clone()], "la de en medio se saltó");
+    for p in [a, b, c] {
+        let _ = std::fs::remove_file(p);
+    }
+}
+
+#[test]
+fn quitar_toda_la_cola_con_repeticion_no_deja_girando_el_hilo() {
+    let a = onda("vacia-a", 4_410);
+    let cola = SharedQueue::new(vec![a.clone()]);
+    cola.remove(0);
+
+    let controls = Controls::new();
+    controls.repeat.set(Repeat::All);
+    let sink = Topado {
+        frames: Rc::new(RefCell::new(0)),
+        tope: 1_000_000,
+        stop: controls.stop.clone(),
+    };
+    let resultados = play_queue_with(
+        &cola,
+        &caps(),
+        Policy::BitPerfect,
+        &controls,
+        |_| Ok(sink.clone()),
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
+    .expect("la cola corre");
+    assert!(resultados.is_empty(), "no sonó nada, y terminó");
+    let _ = std::fs::remove_file(a);
+}
