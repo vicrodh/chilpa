@@ -28,6 +28,20 @@ pub struct StoredAlbum {
     pub track_count: usize,
 }
 
+/// Un artista de la biblioteca, con lo que tiene.
+///
+/// Sale de `albums.album_artist`, que es lo que el disco dice de sí mismo.
+/// La tabla `artists` está para cuando haya identidades de MusicBrainz; hoy
+/// inventar filas ahí no agregaría nada que el tag no diga.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct StoredArtist {
+    pub name: String,
+    pub album_count: usize,
+    pub track_count: usize,
+    /// La portada de uno de sus discos, para no mostrar un hueco.
+    pub artwork_path: Option<String>,
+}
+
 /// La biblioteca abierta.
 pub struct Library {
     pub(crate) db: Connection,
@@ -226,6 +240,19 @@ impl Library {
         limit: usize,
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        self.albums_filtered(orden, None, limit, offset)
+    }
+
+    /// Lo mismo, pero solo los de un artista cuando se pide uno.
+    pub fn albums_filtered(
+        &self,
+        orden: AlbumSort,
+        artist: Option<&str>,
+        limit: usize,
+        offset: usize,
+    ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        // El filtro va como parámetro, nunca interpolado: un nombre con
+        // comillas no tiene por qué romper una consulta.
         let sql = format!(
             "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
                     count(t.id),
@@ -242,13 +269,14 @@ impl Library {
                  WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
                  GROUP BY t2.album_id
              ) e ON e.aid = a.id
+             WHERE ?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE
              GROUP BY a.id
              ORDER BY {}
              LIMIT ?1 OFFSET ?2",
             orden.order_by()
         );
         let mut stmt = self.db.prepare(&sql)?;
-        let filas = stmt.query_map(params![limit as i64, offset as i64], |r| {
+        let filas = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
             Ok((
                 StoredAlbum {
                     id: r.get(0)?,
@@ -260,6 +288,34 @@ impl Library {
                 },
                 r.get::<_, i64>(6)? as usize,
             ))
+        })?;
+        filas.collect()
+    }
+
+    /// Los artistas de la biblioteca, por nombre.
+    ///
+    /// Un artista sin pistas presentes no aparece: la vista muestra lo que
+    /// se puede poner a sonar, no lo que alguna vez estuvo.
+    pub fn artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredArtist>> {
+        let mut stmt = self.db.prepare(
+            "SELECT a.album_artist,
+                    count(DISTINCT a.id),
+                    count(t.id),
+                    max(a.artwork_path)
+             FROM albums a
+             JOIN tracks t ON t.album_id = a.id AND t.present = 1
+             WHERE a.album_artist <> ''
+             GROUP BY a.album_artist COLLATE NOCASE
+             ORDER BY a.album_artist COLLATE NOCASE
+             LIMIT ?1 OFFSET ?2",
+        )?;
+        let filas = stmt.query_map(params![limit as i64, offset as i64], |r| {
+            Ok(StoredArtist {
+                name: r.get(0)?,
+                album_count: r.get::<_, i64>(1)? as usize,
+                track_count: r.get::<_, i64>(2)? as usize,
+                artwork_path: r.get(3)?,
+            })
         })?;
         filas.collect()
     }
@@ -523,6 +579,45 @@ mod tests {
             escuchas,
             vec![("Cosmo".into(), 2), ("Bayou".into(), 1), ("Aqualung".into(), 0)]
         );
+    }
+
+    #[test]
+    fn los_artistas_salen_con_lo_que_tienen() {
+        let lib = biblioteca_de_muestra();
+        let artistas = lib.artists(50, 0).unwrap();
+        assert_eq!(
+            artistas.iter().map(|a| a.name.as_str()).collect::<Vec<_>>(),
+            ["Creedence", "Tull"],
+            "por nombre"
+        );
+        assert_eq!(artistas[0].album_count, 2, "Creedence trae dos discos");
+        assert_eq!(artistas[0].track_count, 2, "con una pista cada uno");
+        assert_eq!(artistas[1].album_count, 1);
+    }
+
+    #[test]
+    fn la_reja_se_puede_filtrar_por_artista() {
+        let lib = biblioteca_de_muestra();
+        let suyos: Vec<String> = lib
+            .albums_filtered(AlbumSort::Title, Some("Creedence"), 50, 0)
+            .unwrap()
+            .into_iter()
+            .map(|(a, _)| a.title)
+            .collect();
+        assert_eq!(suyos, ["Bayou", "Cosmo"]);
+
+        // Sin filtro, salen todos.
+        assert_eq!(lib.albums_filtered(AlbumSort::Title, None, 50, 0).unwrap().len(), 3);
+        // Y un nombre que no existe no trae nada, sin tronar.
+        assert!(lib.albums_filtered(AlbumSort::Title, Some("Nadie"), 50, 0).unwrap().is_empty());
+    }
+
+    #[test]
+    fn un_nombre_con_comillas_no_rompe_la_consulta() {
+        let lib = biblioteca_de_muestra();
+        let raro = "O'Connor'; DROP TABLE albums; --";
+        assert!(lib.albums_filtered(AlbumSort::Title, Some(raro), 50, 0).unwrap().is_empty());
+        assert_eq!(lib.albums_sorted(AlbumSort::Title, 50, 0).unwrap().len(), 3, "la tabla sigue");
     }
 
     #[test]

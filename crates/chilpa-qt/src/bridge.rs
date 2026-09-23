@@ -69,6 +69,11 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// Los artistas de la biblioteca: un renglón con
+        /// "nombre\tdiscos\tpistas\tportada".
+        #[qproperty(QStringList, artists)]
+        /// El artista al que está filtrada la reja, vacío si se ven todos.
+        #[qproperty(QString, open_artist)]
         /// Las vistas rápidas de la biblioteca y cuál está puesta.
         #[qproperty(QStringList, album_views)]
         #[qproperty(i32, album_view, READ = album_view, WRITE = choose_album_view, NOTIFY = album_view_changed)]
@@ -96,6 +101,8 @@ pub mod chilpa_bridge {
         #[qproperty(QString, initial_search)]
         /// Un álbum de arranque, por id, para probar la vista sin ratón.
         #[qproperty(i64, initial_album)]
+        /// Con qué pestaña de la biblioteca arranca: "artistas" o vacío.
+        #[qproperty(QString, initial_tab)]
         type Chilpa = super::ChilpaRust;
 
         /// Elige el layout de la ventana y lo recuerda.
@@ -136,6 +143,14 @@ pub mod chilpa_bridge {
         #[qsignal]
         #[cxx_name = "albumViewChanged"]
         fn album_view_changed(self: Pin<&mut Chilpa>);
+
+        /// Vuelve a leer los artistas de la biblioteca.
+        #[qinvokable]
+        fn refresh_artists(self: Pin<&mut Chilpa>);
+
+        /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
+        #[qinvokable]
+        fn open_artist_albums(self: Pin<&mut Chilpa>, name: &QString);
 
         /// Vuelve a leer los álbumes de la biblioteca.
         #[qinvokable]
@@ -258,6 +273,8 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    artists: QStringList,
+    open_artist: QString,
     album_views: QStringList,
     album_view: i32,
     shuffle: bool,
@@ -276,6 +293,7 @@ pub struct ChilpaRust {
     autoplay_device: QString,
     initial_search: QString,
     initial_album: i64,
+    initial_tab: QString,
     api: chilpa_api::Chilpa,
 }
 
@@ -306,6 +324,8 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            artists: QStringList::default(),
+            open_artist: QString::from(""),
             album_views: {
                 let mut l = QList::<QString>::default();
                 for v in VISTAS {
@@ -343,6 +363,7 @@ impl Default for ChilpaRust {
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             initial_search: QString::from(&std::env::var("CHILPA_BUSCAR").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
+            initial_tab: QString::from(&std::env::var("CHILPA_PESTANA").unwrap_or_default()),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -462,6 +483,25 @@ impl Chilpa {
         self.as_mut().rust_mut().album_view = view;
         self.as_mut().rust_mut().api.set_album_sort(orden);
         self.as_mut().album_view_changed();
+        self.as_mut().refresh_albums();
+    }
+
+    pub fn refresh_artists(mut self: Pin<&mut Self>) {
+        let artistas = self.as_mut().rust_mut().api.artists(1000, 0);
+        let mut lista = QList::<QString>::default();
+        for a in &artistas {
+            lista.append(QString::from(&format!(
+                "{}\t{}\t{}\t{}",
+                a.name, a.album_count, a.track_count, a.artwork_path
+            )));
+        }
+        self.as_mut().set_artists(QStringList::from(&lista));
+    }
+
+    pub fn open_artist_albums(mut self: Pin<&mut Self>, name: &QString) {
+        let nombre = name.to_string();
+        self.as_mut().rust_mut().api.set_open_artist(&nombre);
+        self.as_mut().set_open_artist(name.clone());
         self.as_mut().refresh_albums();
     }
 

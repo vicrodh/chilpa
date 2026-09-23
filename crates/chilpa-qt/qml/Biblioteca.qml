@@ -10,6 +10,18 @@ import com.blitzfc.chilpa
 Rectangle {
     id: raiz
     radius: 14
+
+    // Qué se está mirando: la reja de discos o la de artistas. Entrar a un
+    // artista devuelve a los discos, ya filtrados.
+    property bool porArtista: false
+
+    Component.onCompleted: {
+        // Para probar la vista sin ratón: CHILPA_PESTANA=artistas.
+        if (Chilpa.initialTab === "artistas") {
+            porArtista = true
+            Chilpa.refreshArtists()
+        }
+    }
     color: "#ffffff"
     border.color: "#1a411d1f"
 
@@ -26,17 +38,44 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Label {
-                text: Chilpa.albums.length === 0
-                    ? "La biblioteca está vacía"
-                    : Chilpa.albums.length + (Chilpa.albums.length === 1 ? " álbum" : " álbumes")
+                text: raiz.porArtista
+                    ? Chilpa.artists.length + (Chilpa.artists.length === 1 ? " artista" : " artistas")
+                    : (Chilpa.albums.length === 0
+                        ? "La biblioteca está vacía"
+                        : Chilpa.albums.length + (Chilpa.albums.length === 1 ? " álbum" : " álbumes"))
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
                 color: "#411d1f"
             }
 
+            Button {
+                text: raiz.porArtista ? "Álbumes" : "Artistas"
+                onClicked: {
+                    raiz.porArtista = !raiz.porArtista
+                    if (raiz.porArtista) {
+                        // Entrar a los artistas quita el filtro: si no, se
+                        // vería la lista completa y la reja de uno solo.
+                        Chilpa.openArtistAlbums("")
+                        Chilpa.refreshArtists()
+                    }
+                }
+            }
+
+            // El artista al que está filtrada la reja, con su salida.
+            Button {
+                visible: !raiz.porArtista && Chilpa.openArtist !== ""
+                text: "← " + Chilpa.openArtist
+                onClicked: {
+                    Chilpa.openArtistAlbums("")
+                    raiz.porArtista = true
+                    Chilpa.refreshArtists()
+                }
+            }
+
             // Las vistas rápidas: lo mismo de siempre, mirado de otra forma.
             ComboBox {
                 Layout.preferredWidth: 180
+                visible: !raiz.porArtista
                 model: Chilpa.albumViews
                 currentIndex: Chilpa.albumView
                 onActivated: Chilpa.albumView = index
@@ -59,10 +98,17 @@ Rectangle {
             }
         }
 
+        RejaDeArtistas {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.porArtista
+        }
+
         GridView {
             id: cuadricula
             Layout.fillWidth: true
             Layout.fillHeight: true
+            visible: !raiz.porArtista
             clip: true
             cellWidth: 160
             cellHeight: 216

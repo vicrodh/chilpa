@@ -145,6 +145,15 @@ struct EnCurso {
     duration_ms: u64,
 }
 
+/// Un artista de la biblioteca, listo para mostrar.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Artist {
+    pub name: String,
+    pub album_count: usize,
+    pub track_count: usize,
+    pub artwork_path: String,
+}
+
 /// Un álbum como lo necesita una vista.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Album {
@@ -208,6 +217,8 @@ pub struct Chilpa {
     shuffle: bool,
     repeat: Repeat,
     album_sort: AlbumSort,
+    /// El artista al que está filtrada la reja, vacío si no hay filtro.
+    artista: String,
     /// La letra de lo que suena, para no releerla en cada pulso.
     letra: Option<chilpa_lyrics::Lyrics>,
     /// El escaneo en segundo plano, mientras corre.
@@ -235,6 +246,7 @@ impl Chilpa {
             shuffle: false,
             repeat: Repeat::Off,
             album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
+            artista: String::new(),
             letra: None,
             scan: None,
             scan_status: ScanStatus::default(),
@@ -362,6 +374,31 @@ impl Chilpa {
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
+    /// Los artistas de la biblioteca.
+    pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.artists(limit, offset)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| Artist {
+                name: a.name,
+                album_count: a.album_count,
+                track_count: a.track_count,
+                artwork_path: a.artwork_path.unwrap_or_default(),
+            })
+            .collect()
+    }
+
+    /// El artista que se está mirando, vacío si se ven todos.
+    pub fn open_artist(&self) -> &str {
+        &self.artista
+    }
+
+    /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
+    pub fn set_open_artist(&mut self, name: &str) {
+        self.artista = name.to_string();
+    }
+
     /// La vista rápida con la que se está mirando la biblioteca.
     pub fn album_sort(&self) -> AlbumSort {
         self.album_sort
@@ -382,8 +419,10 @@ impl Chilpa {
         limit: usize,
         offset: usize,
     ) -> Vec<Album> {
+        let artista = self.artista.clone();
+        let filtro = (!artista.is_empty()).then_some(artista.as_str());
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_sorted(orden, limit, offset)
+        lib.albums_filtered(orden, filtro, limit, offset)
             .unwrap_or_default()
             .into_iter()
             .map(|(a, escuchas)| Album {
