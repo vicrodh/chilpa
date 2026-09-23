@@ -201,11 +201,15 @@ fn guardar_archivo(
             ahora
         ],
     )?;
-    lib.db.query_row(
+    let track_id: i64 = lib.db.query_row(
         "SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2",
         params![source, path.display().to_string()],
         |r| r.get(0),
-    )
+    )?;
+    // Los géneros van en su tabla: un archivo declara varios, y juntarlos en
+    // una cadena hace que ninguno sirva para filtrar.
+    lib.set_track_genres(track_id, &tags.genres)?;
+    Ok(track_id)
 }
 
 /// Nombres de portada que se usan en las carpetas de música.

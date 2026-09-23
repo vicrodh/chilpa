@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// La versión del esquema que entiende este código.
-pub const VERSION: i64 = 2;
+pub const VERSION: i64 = 3;
 
 /// Los pasos, en orden. El índice es la versión a la que llevan: el primero
 /// lleva de 0 a 1, el segundo de 1 a 2.
@@ -25,7 +25,7 @@ pub const VERSION: i64 = 2;
 /// Cada paso corre una sola vez y nunca se edita después de salir: una base
 /// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
 /// crearía dos formas distintas de la misma versión.
-const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2];
+const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3];
 
 /// Crea o actualiza el esquema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -217,6 +217,27 @@ CREATE TABLE playlist_tracks (
 CREATE INDEX playlist_tracks_track ON playlist_tracks(track_id);
 "#;
 
+/// De 2 a 3: los géneros.
+///
+/// En una tabla aparte porque un archivo declara varios y juntarlos en una
+/// cadena hace que "Rock; Blues" no sea ni Rock ni Blues a la hora de
+/// filtrar. `COLLATE NOCASE` en el nombre para que "rock" y "Rock" sean el
+/// mismo género, que es lo que quiere decir quien los escribió.
+const MIGRACION_V3: &str = r#"
+CREATE TABLE genres (
+    id   INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+
+CREATE TABLE track_genres (
+    track_id INTEGER NOT NULL REFERENCES tracks(id),
+    genre_id INTEGER NOT NULL REFERENCES genres(id),
+    PRIMARY KEY (track_id, genre_id)
+);
+
+CREATE INDEX track_genres_genre ON track_genres(genre_id);
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -272,6 +293,16 @@ mod tests {
             [],
         )
         .unwrap();
+    }
+
+    #[test]
+    fn un_genero_es_el_mismo_sin_importar_como_se_escriba() {
+        let db = memoria();
+        db.execute("INSERT INTO genres (name) VALUES ('Rock')", []).unwrap();
+        assert!(
+            db.execute("INSERT INTO genres (name) VALUES ('rock')", []).is_err(),
+            "mayúsculas distintas no son dos géneros"
+        );
     }
 
     #[test]

@@ -237,6 +237,59 @@ impl Library {
             .query_row("SELECT id FROM roots WHERE path = ?1", params![ruta], |r| r.get(0))
     }
 
+    /// Deja esos géneros como los de una pista, quitando los que ya no.
+    ///
+    /// Se reemplazan, no se suman: si un archivo se reetiquetó, los géneros
+    /// viejos ya no son suyos.
+    pub fn set_track_genres(&self, track_id: i64, genres: &[String]) -> rusqlite::Result<()> {
+        let tx = self.db.unchecked_transaction()?;
+        tx.execute("DELETE FROM track_genres WHERE track_id = ?1", params![track_id])?;
+        {
+            let mut inserta = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
+            let mut busca = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
+            let mut liga = tx.prepare(
+                "INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)",
+            )?;
+            for nombre in genres {
+                let nombre = nombre.trim();
+                if nombre.is_empty() {
+                    continue;
+                }
+                inserta.execute(params![nombre])?;
+                let id: i64 = busca.query_row(params![nombre], |r| r.get(0))?;
+                liga.execute(params![track_id, id])?;
+            }
+        }
+        tx.commit()
+    }
+
+    /// Los géneros de la biblioteca, con cuántas pistas presentes tienen.
+    pub fn genres(&self) -> rusqlite::Result<Vec<(String, usize)>> {
+        let mut stmt = self.db.prepare(
+            "SELECT g.name, count(t.id)
+             FROM genres g
+             JOIN track_genres tg ON tg.genre_id = g.id
+             JOIN tracks t ON t.id = tg.track_id AND t.present = 1
+             GROUP BY g.id
+             ORDER BY count(t.id) DESC, g.name COLLATE NOCASE",
+        )?;
+        let filas =
+            stmt.query_map([], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? as usize)))?;
+        filas.collect()
+    }
+
+    /// Los géneros de una pista.
+    pub fn track_genres(&self, track_id: i64) -> rusqlite::Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "SELECT g.name FROM genres g
+             JOIN track_genres tg ON tg.genre_id = g.id
+             WHERE tg.track_id = ?1
+             ORDER BY g.name COLLATE NOCASE",
+        )?;
+        let filas = stmt.query_map(params![track_id], |r| r.get(0))?;
+        filas.collect()
+    }
+
     /// Crea una lista, o devuelve la que ya existe con ese id externo.
     ///
     /// `external_id` vacío quiere decir que la lista es de aquí: dos listas

@@ -67,6 +67,30 @@ ColumnLayout {
 
     Label {
         Layout.topMargin: 6
+        visible: Chilpa.genres.length > 0
+        text: "Géneros"
+        font.pixelSize: 12
+        font.weight: Font.DemiBold
+        color: "#7a411d1f"
+    }
+
+    Flow {
+        Layout.fillWidth: true
+        spacing: 8
+        visible: Chilpa.genres.length > 0
+
+        Repeater {
+            model: Chilpa.genres
+            delegate: Button {
+                readonly property var datos: modelData.split("\t")
+                text: datos[0] + "  (" + datos[1] + ")"
+                onClicked: Chilpa.playGenre(datos[0])
+            }
+        }
+    }
+
+    Label {
+        Layout.topMargin: 6
         text: "Guardadas"
         font.pixelSize: 12
         font.weight: Font.DemiBold

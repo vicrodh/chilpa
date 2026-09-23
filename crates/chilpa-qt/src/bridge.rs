@@ -69,6 +69,8 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// Los géneros de la biblioteca, como "nombre\tpistas".
+        #[qproperty(QStringList, genres)]
         /// Las listas inteligentes, como "nombre\tpistas".
         #[qproperty(QStringList, smart_lists)]
         /// Las listas guardadas, como "id\tnombre\tde dónde\tpistas".
@@ -113,6 +115,8 @@ pub mod chilpa_bridge {
         #[qproperty(i64, initial_album)]
         /// Con qué pestaña de la biblioteca arranca: "artistas" o vacío.
         #[qproperty(QString, initial_tab)]
+        /// Cierto para volver a escanear al arrancar, sin tocar un botón.
+        #[qproperty(bool, initial_rescan)]
         type Chilpa = super::ChilpaRust;
 
         /// Elige el layout de la ventana y lo recuerda.
@@ -161,6 +165,10 @@ pub mod chilpa_bridge {
         /// Vuelve a leer las listas guardadas.
         #[qinvokable]
         fn refresh_playlists(self: Pin<&mut Chilpa>);
+
+        /// Pone a sonar un género, revuelto.
+        #[qinvokable]
+        fn play_genre(self: Pin<&mut Chilpa>, genre: &QString);
 
         /// Pone a sonar una lista inteligente, por su nombre.
         #[qinvokable]
@@ -345,6 +353,7 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    genres: QStringList,
     smart_lists: QStringList,
     playlists: QStringList,
     stats: QStringList,
@@ -371,6 +380,7 @@ pub struct ChilpaRust {
     initial_search: QString,
     initial_album: i64,
     initial_tab: QString,
+    initial_rescan: bool,
     api: chilpa_api::Chilpa,
 }
 
@@ -401,6 +411,7 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            genres: QStringList::default(),
             smart_lists: QStringList::default(),
             playlists: QStringList::default(),
             stats: QStringList::default(),
@@ -446,6 +457,7 @@ impl Default for ChilpaRust {
             initial_search: QString::from(&std::env::var("CHILPA_BUSCAR").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             initial_tab: QString::from(&std::env::var("CHILPA_PESTANA").unwrap_or_default()),
+            initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -576,6 +588,13 @@ impl Chilpa {
     }
 
     pub fn refresh_playlists(mut self: Pin<&mut Self>) {
+        let generos = self.as_mut().rust_mut().api.genres(40);
+        let mut g = QList::<QString>::default();
+        for (nombre, n) in &generos {
+            g.append(QString::from(&format!("{nombre}\t{n}")));
+        }
+        self.as_mut().set_genres(QStringList::from(&g));
+
         let inteligentes = self.as_mut().rust_mut().api.smart_lists();
         let mut si = QList::<QString>::default();
         for l in &inteligentes {
@@ -592,6 +611,15 @@ impl Chilpa {
             )));
         }
         self.as_mut().set_playlists(QStringList::from(&l));
+    }
+
+    pub fn play_genre(mut self: Pin<&mut Self>, genre: &QString) {
+        let nombre = genre.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let titulos = self.as_mut().rust_mut().api.play_genre(&nombre, &dispositivo, bit_perfect);
+        self.as_mut().refrescar_cola(&titulos);
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn play_smart_list(mut self: Pin<&mut Self>, name: &QString) {
@@ -917,6 +945,9 @@ impl Chilpa {
                 self.as_mut().set_scanning(false);
                 self.as_mut().set_scan_progress(1.0);
                 self.as_mut().refresh_albums();
+                // Los géneros y las cuentas de las listas cambian con lo que
+                // acaba de entrar.
+                self.as_mut().refresh_playlists();
             }
         }
 
