@@ -75,6 +75,10 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// La envolvente de lo que sale: un valor de 0 a 1 por punto.
+        #[qproperty(QStringList, scope)]
+        /// El nivel por canal, como "pico\trms".
+        #[qproperty(QStringList, levels)]
         /// Las unidades de CD que hay en la máquina.
         #[qproperty(QStringList, cd_drives)]
         /// Los géneros de la biblioteca, como "nombre\tpistas".
@@ -385,6 +389,8 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    scope: QStringList,
+    levels: QStringList,
     cd_drives: QStringList,
     genres: QStringList,
     smart_lists: QStringList,
@@ -448,6 +454,8 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            scope: QStringList::default(),
+            levels: QStringList::default(),
             cd_drives: QStringList::default(),
             genres: QStringList::default(),
             smart_lists: QStringList::default(),
@@ -526,6 +534,11 @@ impl Chilpa {
             .rust_mut()
             .api
             .play_file(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
+        // Un archivo suelto también es una cola de una pista: la vista tiene
+        // que poder guardarla y vaciarla como cualquier otra.
+        let cola = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refrescar_cola(&cola);
+        self.as_mut().set_queue_index(0);
         self.as_mut().recordar_carpeta(&ruta);
     }
 
@@ -1077,6 +1090,24 @@ impl Chilpa {
                 // acaba de entrar.
                 self.as_mut().refresh_playlists();
             }
+        }
+
+        // Lo que sale, para los visualizadores. Solo mientras suena: leer
+        // el círculo con el reproductor quieto es trabajo tirado.
+        if self.playing {
+            let envolvente = self.api.scope_envelope(120);
+            let mut e = QList::<QString>::default();
+            for v in &envolvente {
+                e.append(QString::from(&format!("{v:.4}")));
+            }
+            self.as_mut().set_scope(QStringList::from(&e));
+
+            let niveles = self.api.scope_levels();
+            let mut l = QList::<QString>::default();
+            for (pico, rms) in &niveles {
+                l.append(QString::from(&format!("{pico:.4}\t{rms:.4}")));
+            }
+            self.as_mut().set_levels(QStringList::from(&l));
         }
 
         let ahora = self.as_mut().rust_mut().api.poll().clone();

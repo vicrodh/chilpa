@@ -11,6 +11,9 @@ pub mod player;
 pub mod settings;
 pub mod queue_playback;
 
+/// Lo que sale por el dispositivo, para quien lo quiera dibujar.
+pub use chilpa_audio::tap;
+
 use chilpa_models::SourceId;
 
 /// Estado del proceso, por ahora vacío. Crece conforme entran los crates
@@ -94,6 +97,16 @@ pub fn outputs() -> Vec<Output> {
 /// Arranca un reproductor conectado a las salidas reales de la máquina.
 #[cfg(target_os = "linux")]
 pub fn spawn_player() -> player::Player {
+    spawn_player_with(chilpa_audio::tap::Tap::new())
+}
+
+/// Lo mismo, mirando lo que sale por ese `tap`.
+///
+/// El tap envuelve al dispositivo: copia lo entregado y lo pasa tal cual.
+/// Quien dibuja lee de ahí, y el audio no se entera.
+#[cfg(target_os = "linux")]
+pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
+    let del_hilo = tap.clone();
     player::Player::spawn(
         Box::new(|id| {
             if id == chilpa_audio::CAPTURE_ID {
@@ -102,14 +115,14 @@ pub fn spawn_player() -> player::Player {
                 chilpa_alsa::probe(id)
             }
         }),
-        Box::new(|id, formato| {
-            if id == chilpa_audio::CAPTURE_ID {
-                chilpa_audio::CaptureSink::create(&capture_path(), formato)
-                    .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
-            } else {
-                chilpa_alsa::AlsaSink::open(id, formato)
-                    .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
-            }
+        Box::new(move |id, formato| {
+            let abierto: Box<dyn chilpa_audio::sink::AudioSink + Send> =
+                if id == chilpa_audio::CAPTURE_ID {
+                    Box::new(chilpa_audio::CaptureSink::create(&capture_path(), formato)?)
+                } else {
+                    Box::new(chilpa_alsa::AlsaSink::open(id, formato)?)
+                };
+            Ok(Box::new(del_hilo.wrap(abierto)) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
         }),
     )
 }

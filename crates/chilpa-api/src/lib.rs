@@ -257,6 +257,8 @@ pub struct Chilpa {
     quitadas: Vec<bool>,
     /// La letra de lo que suena, para no releerla en cada pulso.
     letra: Option<chilpa_lyrics::Lyrics>,
+    /// Lo que de verdad sale por el dispositivo, para los visualizadores.
+    tap: chilpa_core::tap::Tap,
     /// El escaneo en segundo plano, mientras corre.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -285,6 +287,7 @@ impl Chilpa {
             artista: String::new(),
             quitadas: Vec::new(),
             letra: None,
+            tap: chilpa_core::tap::Tap::new(),
             scan: None,
             scan_status: ScanStatus::default(),
             player: None,
@@ -732,7 +735,10 @@ impl Chilpa {
         self.base = desde;
         self.quitadas = vec![false; self.cola.len()];
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.cola.len());
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        let tap = self.tap.clone();
+        let player = self
+            .player
+            .get_or_insert_with(move || chilpa_core::spawn_player_with(tap));
         player.set_repeat(repeat);
         if shuffle {
             player.shuffle(pistas.len());
@@ -1016,13 +1022,56 @@ impl Chilpa {
     /// Pone a sonar un archivo. Regresa de inmediato: lo que pase después
     /// llega por [`Chilpa::poll`].
     pub fn play_file(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) {
-        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
-        self.now = NowPlaying {
-            path: path.display().to_string(),
-            playing: true,
-            ..NowPlaying::default()
-        };
-        player.play(path, device, bit_perfect);
+        // Un archivo suelto también es una cola de una pista: así pasa por
+        // el mismo camino y hereda el tap, la repetición y el orden.
+        self.cola = vec![path.display().to_string()];
+        self.quitadas = vec![false];
+        self.lanzar(0, device, bit_perfect);
+        self.now.path = path.display().to_string();
+    }
+
+    /// La envolvente de lo que acaba de salir, en `puntos` valores de 0 a 1.
+    ///
+    /// Es el pico de cada tajada, no el promedio: una onda dibujada con
+    /// promedios se ve plana y no se parece a lo que se oye.
+    pub fn scope_envelope(&self, puntos: usize) -> Vec<f32> {
+        let foto = self.tap.snapshot();
+        let canales = foto.channels.max(1) as usize;
+        let frames = foto.samples.len() / canales;
+        if frames == 0 || puntos == 0 {
+            return Vec::new();
+        }
+        let por_punto = (frames / puntos).max(1);
+        let mut salida = Vec::with_capacity(puntos);
+        for i in 0..puntos {
+            let desde = i * por_punto;
+            if desde >= frames {
+                break;
+            }
+            let hasta = (desde + por_punto).min(frames);
+            let mut pico = 0.0f32;
+            for f in desde..hasta {
+                for c in 0..canales {
+                    pico = pico.max(foto.samples[f * canales + c].abs());
+                }
+            }
+            salida.push(pico);
+        }
+        salida
+    }
+
+    /// El nivel por canal, de 0 a 1: pico y rms.
+    pub fn scope_levels(&self) -> Vec<(f32, f32)> {
+        let foto = self.tap.snapshot();
+        foto.peaks.iter().copied().zip(foto.rms.iter().copied()).collect()
+    }
+
+    /// Lo que de verdad está saliendo por el dispositivo, para dibujarlo.
+    ///
+    /// Son las muestras entregadas, copiadas después de empaquetarlas: lo
+    /// que se ve es lo que sonó, no lo que se decodificó.
+    pub fn scope(&self) -> chilpa_core::tap::Snapshot {
+        self.tap.snapshot()
     }
 
     /// Pone a sonar una carpeta completa, en orden alfabético.

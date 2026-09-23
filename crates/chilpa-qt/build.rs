@@ -16,6 +16,7 @@ const QML: &[&str] = &[
     "qml/PanelAhoraSuena.qml",
     "qml/PanelCola.qml",
     "qml/PanelLetra.qml",
+    "qml/PanelVisualizador.qml",
     "qml/CajaDeBusqueda.qml",
     "qml/SelectorDeLayout.qml",
     "qml/Biblioteca.qml",
