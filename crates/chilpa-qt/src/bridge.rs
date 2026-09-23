@@ -34,6 +34,9 @@ pub mod chilpa_bridge {
         #[qproperty(QString, album)]
         /// La portada como URL de archivo, lista para un Image de QML.
         #[qproperty(QString, artwork)]
+        /// Las pistas encoladas y cuál suena.
+        #[qproperty(QStringList, queue)]
+        #[qproperty(i32, queue_index)]
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
@@ -53,6 +56,10 @@ pub mod chilpa_bridge {
         /// Pone a sonar un archivo en la salida elegida.
         #[qinvokable]
         fn play(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+
+        /// Encola una carpeta entera.
+        #[qinvokable]
+        fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
 
         /// Para lo que esté sonando.
         #[qinvokable]
@@ -76,6 +83,8 @@ pub struct ChilpaRust {
     artist: QString,
     album: QString,
     artwork: QString,
+    queue: QStringList,
+    queue_index: i32,
     format: QString,
     error: QString,
     playing: bool,
@@ -97,6 +106,8 @@ impl Default for ChilpaRust {
             artist: QString::from(""),
             album: QString::from(""),
             artwork: QString::from(""),
+            queue: QStringList::default(),
+            queue_index: 0,
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -139,6 +150,29 @@ impl Chilpa {
             .play_file(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
     }
 
+    /// Encola una carpeta entera y la echa a andar.
+    pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString, device: &QString, bit_perfect: bool) {
+        let ruta = folder.to_string();
+        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
+        let dispositivo = device.to_string();
+        let pistas = self
+            .as_mut()
+            .rust_mut()
+            .api
+            .play_folder(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
+        let mut lista = QList::<QString>::default();
+        for pista in &pistas {
+            let nombre = std::path::Path::new(pista)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| pista.clone());
+            lista.append(QString::from(&nombre));
+        }
+        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!pistas.is_empty());
+    }
+
     pub fn stop(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().api.stop();
     }
@@ -159,6 +193,7 @@ impl Chilpa {
             format!("file://{}", ahora.artwork_path)
         };
         self.as_mut().set_artwork(QString::from(&portada));
+        self.as_mut().set_queue_index(ahora.index as i32);
         self.as_mut().set_error(QString::from(&ahora.error));
         if !ahora.path.is_empty() {
             self.as_mut().set_track(QString::from(&ahora.path));

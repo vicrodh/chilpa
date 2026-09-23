@@ -12,7 +12,7 @@ import com.blitzfc.chilpa
 ApplicationWindow {
     id: ventana
     width: 640
-    height: 320
+    height: 520
     visible: true
     title: "Chilpa"
     color: "#faf6f2"
@@ -32,7 +32,11 @@ ApplicationWindow {
                 const i = Chilpa.outputIds.indexOf(Chilpa.autoplayDevice)
                 if (i >= 0) salidas.currentIndex = i
             }
-            Chilpa.play(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
+            // Si apunta a una carpeta, se encola entera.
+            if (Chilpa.autoplayPath.endsWith("/"))
+                Chilpa.playFolder(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
+            else
+                Chilpa.play(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
         }
     }
 
@@ -41,6 +45,12 @@ ApplicationWindow {
         running: true
         repeat: true
         onTriggered: Chilpa.poll()
+    }
+
+    FolderDialog {
+        id: dialogoCarpeta
+        title: "Abrir una carpeta"
+        onAccepted: Chilpa.playFolder(selectedFolder, salidas.deviceId, bitPerfect.checked)
     }
 
     FileDialog {
@@ -83,6 +93,10 @@ ApplicationWindow {
                 onClicked: dialogo.open()
             }
             Button {
+                text: "Abrir carpeta"
+                onClicked: dialogoCarpeta.open()
+            }
+            Button {
                 text: "Parar"
                 enabled: Chilpa.playing
                 onClicked: Chilpa.stop()
@@ -91,7 +105,7 @@ ApplicationWindow {
 
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.preferredHeight: 152
             radius: 14
             color: "#ffffff"
             border.color: "#1a411d1f"
@@ -177,6 +191,42 @@ ApplicationWindow {
 
                 Item { Layout.fillHeight: true }
             }
+            }
+        }
+
+        // La cola. Se asoma solo cuando hay más de una pista.
+        Rectangle {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            radius: 14
+            color: "#ffffff"
+            border.color: "#1a411d1f"
+            visible: Chilpa.queue.length > 1
+
+            ListView {
+                id: listaCola
+                anchors.fill: parent
+                anchors.margins: 10
+                clip: true
+                model: Chilpa.queue
+                currentIndex: Chilpa.queueIndex
+                onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
+
+                delegate: Rectangle {
+                    width: listaCola.width
+                    height: 26
+                    radius: 6
+                    color: index === Chilpa.queueIndex ? "#f3e7e7" : "transparent"
+                    Label {
+                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.left: parent.left
+                        anchors.leftMargin: 8
+                        anchors.right: parent.right
+                        elide: Text.ElideRight
+                        text: (index + 1) + ".  " + modelData
+                        color: index === Chilpa.queueIndex ? "#d7272b" : "#411d1f"
+                    }
+                }
             }
         }
     }
