@@ -9,7 +9,7 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 Rectangle {
-    id: raiz
+    id: root
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
@@ -91,9 +91,9 @@ Rectangle {
             width: ListView.view.width
             height: 30
             radius: 6
-            color: fila.containsMouse ? "#f7f1ec" : "transparent"
+            color: row.containsMouse ? "#f7f1ec" : "transparent"
 
-            readonly property var datos: modelData.split("\t")
+            readonly property var cols: modelData.split("\t")
 
             RowLayout {
                 anchors.fill: parent
@@ -103,19 +103,19 @@ Rectangle {
 
                 Label {
                     Layout.preferredWidth: parent.width * 0.40
-                    text: datos[1]
+                    text: cols[1]
                     elide: Text.ElideRight
                     color: "#411d1f"
                 }
                 Label {
                     Layout.preferredWidth: parent.width * 0.22
-                    text: datos[2]
+                    text: cols[2]
                     elide: Text.ElideRight
                     color: "#7a411d1f"
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: datos[3]
+                    text: cols[3]
                     elide: Text.ElideRight
                     color: "#7a411d1f"
                 }
@@ -124,25 +124,25 @@ Rectangle {
                 Label {
                     Layout.preferredWidth: parent.width * 0.16
                     horizontalAlignment: Text.AlignRight
-                    text: datos.length > 5 ? datos[5] : ""
+                    text: cols.length > 5 ? cols[5] : ""
                     elide: Text.ElideRight
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }
                 Label {
-                    text: datos[4]
+                    text: cols[4]
                     color: "#7a411d1f"
                 }
             }
 
             MouseArea {
-                id: fila
+                id: row
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                onClicked: (evento) => {
-                    if (evento.button === Qt.MiddleButton)
+                onClicked: (event) => {
+                    if (event.button === Qt.MiddleButton)
                         Chilpa.enqueueResults(index)
                     else
                         Chilpa.playResults(index)

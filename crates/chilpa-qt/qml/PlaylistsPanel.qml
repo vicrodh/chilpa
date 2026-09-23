@@ -9,12 +9,12 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ColumnLayout {
-    id: raiz
+    id: root
     spacing: 8
 
     // Cada renglón viene como "id, nombre, de dónde, pistas".
-    function campos(renglon) {
-        return renglon.split("\t")
+    function fields(line) {
+        return line.split("\t")
     }
 
     RowLayout {
@@ -22,23 +22,23 @@ ColumnLayout {
         spacing: 8
 
         TextField {
-            id: nombre
+            id: name
             Layout.preferredWidth: 220
             placeholderText: "Nombre de la lista"
-            onAccepted: raiz.guardar()
+            onAccepted: root.save()
         }
         Button {
             text: "Guardar la cola"
-            enabled: Chilpa.queue.length > 0 && nombre.text.trim() !== ""
-            onClicked: raiz.guardar()
+            enabled: Chilpa.queue.length > 0 && name.text.trim() !== ""
+            onClicked: root.save()
         }
         Item { Layout.fillWidth: true }
     }
 
-    function guardar() {
-        if (nombre.text.trim() === "") return
-        Chilpa.saveQueueAs(nombre.text)
-        nombre.text = ""
+    function save() {
+        if (name.text.trim() === "") return
+        Chilpa.saveQueueAs(name.text)
+        name.text = ""
     }
 
     // El análisis: lo que llena las listas de tempo.
@@ -88,10 +88,10 @@ ColumnLayout {
         Repeater {
             model: Chilpa.smartLists
             delegate: Button {
-                readonly property var datos: modelData.split("\t")
-                text: datos[0] + "  (" + datos[1] + ")"
-                enabled: datos[1] !== "0"
-                onClicked: Chilpa.playSmartList(datos[0])
+                readonly property var cols: modelData.split("\t")
+                text: cols[0] + "  (" + cols[1] + ")"
+                enabled: cols[1] !== "0"
+                onClicked: Chilpa.playSmartList(cols[0])
             }
         }
     }
@@ -113,9 +113,9 @@ ColumnLayout {
         Repeater {
             model: Chilpa.genres
             delegate: Button {
-                readonly property var datos: modelData.split("\t")
-                text: datos[0] + "  (" + datos[1] + ")"
-                onClicked: Chilpa.playGenre(datos[0])
+                readonly property var cols: modelData.split("\t")
+                text: cols[0] + "  (" + cols[1] + ")"
+                onClicked: Chilpa.playGenre(cols[0])
             }
         }
     }
@@ -135,19 +135,19 @@ ColumnLayout {
     }
 
     ListView {
-        id: lista
+        id: list
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
         model: Chilpa.playlists
 
         delegate: Rectangle {
-            width: lista.width
+            width: list.width
             height: 40
             radius: 8
-            color: fila.containsMouse ? "#f6f1ec" : "transparent"
+            color: row.containsMouse ? "#f6f1ec" : "transparent"
 
-            readonly property var datos: raiz.campos(modelData)
+            readonly property var cols: root.fields(modelData)
 
             RowLayout {
                 anchors.fill: parent
@@ -160,29 +160,29 @@ ColumnLayout {
                     spacing: 0
                     Label {
                         Layout.fillWidth: true
-                        text: datos[1]
+                        text: cols[1]
                         elide: Text.ElideRight
                         font.pixelSize: 13
                         color: "#411d1f"
                     }
                     Label {
-                        text: datos[3] + (datos[3] === "1" ? " pista · " : " pistas · ") + datos[2]
+                        text: cols[3] + (cols[3] === "1" ? " pista · " : " pistas · ") + cols[2]
                         font.pixelSize: 10
                         color: "#7a411d1f"
                     }
                 }
                 Button {
                     text: "Reproducir"
-                    onClicked: Chilpa.playSavedPlaylist(parseInt(datos[0]))
+                    onClicked: Chilpa.playSavedPlaylist(parseInt(cols[0]))
                 }
                 Button {
                     text: "Borrar"
-                    onClicked: Chilpa.deletePlaylist(parseInt(datos[0]))
+                    onClicked: Chilpa.deletePlaylist(parseInt(cols[0]))
                 }
             }
 
             MouseArea {
-                id: fila
+                id: row
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.NoButton

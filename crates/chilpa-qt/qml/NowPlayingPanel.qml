@@ -10,18 +10,18 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 Rectangle {
-    id: raiz
+    id: root
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
-    implicitHeight: compacto ? 112 : 152
+    implicitHeight: compact ? 112 : 152
 
     // En una barra de abajo la tarjeta no cabe entera: la portada se
     // encoge y el reloj deja de gritar.
-    property bool compacto: false
+    property bool compact: false
 
     // mm:ss, que es como se lee una duración.
-    function reloj(segundos) {
+    function clock(segundos) {
         const m = Math.floor(segundos / 60)
         const s = Math.floor(segundos % 60)
         return m + ":" + (s < 10 ? "0" : "") + s
@@ -29,12 +29,12 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: raiz.compacto ? 10 : 16
+        anchors.margins: root.compact ? 10 : 16
         spacing: 14
 
         Rectangle {
-            Layout.preferredWidth: raiz.compacto ? 64 : 120
-            Layout.preferredHeight: raiz.compacto ? 64 : 120
+            Layout.preferredWidth: root.compact ? 64 : 120
+            Layout.preferredHeight: root.compact ? 64 : 120
             radius: 8
             color: "#f0eae4"
             visible: Chilpa.playing || Chilpa.artwork !== ""
@@ -50,14 +50,14 @@ Rectangle {
                 text: "sin portada"
                 color: "#7a411d1f"
                 font.pixelSize: 11
-                visible: Chilpa.artwork === "" && !raiz.compacto
+                visible: Chilpa.artwork === "" && !root.compact
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: raiz.compacto ? 2 : 6
+            spacing: root.compact ? 2 : 6
 
             Label {
                 Layout.fillWidth: true
@@ -80,13 +80,13 @@ Rectangle {
                 // pista cuando ya se analizó.
                 text: [Chilpa.format, Chilpa.analysis].filter(t => t !== "").join("  ·  ")
                 color: "#7a411d1f"
-                visible: !raiz.compacto
+                visible: !root.compact
             }
             Label {
                 text: Chilpa.totalSeconds > 0
-                    ? reloj(Chilpa.seconds) + " / " + reloj(Chilpa.totalSeconds)
-                    : reloj(Chilpa.seconds)
-                font.pixelSize: raiz.compacto ? 13 : 26
+                    ? clock(Chilpa.seconds) + " / " + clock(Chilpa.totalSeconds)
+                    : clock(Chilpa.seconds)
+                font.pixelSize: root.compact ? 13 : 26
                 color: "#411d1f"
             }
 

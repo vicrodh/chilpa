@@ -10,22 +10,22 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 GridView {
-    id: reja
+    id: grid
     clip: true
     cellWidth: 160
     cellHeight: 216
     model: Chilpa.artists
 
     // Cada renglón viene como "nombre, discos, pistas, portada".
-    function campos(renglon) {
-        return renglon.split("\t")
+    function fields(line) {
+        return line.split("\t")
     }
 
     delegate: Item {
-        width: reja.cellWidth - 8
-        height: reja.cellHeight - 8
+        width: grid.cellWidth - 8
+        height: grid.cellHeight - 8
 
-        readonly property var datos: reja.campos(modelData)
+        readonly property var cols: grid.fields(modelData)
 
         ColumnLayout {
             anchors.fill: parent
@@ -38,23 +38,23 @@ GridView {
                 color: "#f0eae4"
                 Image {
                     anchors.fill: parent
-                    source: datos[3] ? "file://" + datos[3] : ""
+                    source: cols[3] ? "file://" + cols[3] : ""
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
-                    visible: datos[3] !== ""
+                    visible: cols[3] !== ""
                 }
                 Label {
                     anchors.centerIn: parent
                     text: "sin portada"
                     font.pixelSize: 11
                     color: "#7a411d1f"
-                    visible: datos[3] === ""
+                    visible: cols[3] === ""
                 }
             }
 
             Label {
                 Layout.fillWidth: true
-                text: datos[0]
+                text: cols[0]
                 elide: Text.ElideRight
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: 13
@@ -63,8 +63,8 @@ GridView {
             }
             Label {
                 Layout.fillWidth: true
-                text: datos[1] + (datos[1] === "1" ? " disco · " : " discos · ") +
-                      datos[2] + (datos[2] === "1" ? " pista" : " pistas")
+                text: cols[1] + (cols[1] === "1" ? " disco · " : " discos · ") +
+                      cols[2] + (cols[2] === "1" ? " pista" : " pistas")
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: 11
                 color: "#7a411d1f"
@@ -74,7 +74,7 @@ GridView {
         MouseArea {
             anchors.fill: parent
             cursorShape: Qt.PointingHandCursor
-            onClicked: Chilpa.openArtistAlbums(datos[0])
+            onClicked: Chilpa.openArtistAlbums(cols[0])
         }
     }
 }

@@ -8,42 +8,42 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 Rectangle {
-    id: raiz
+    id: root
     radius: 14
 
     // Qué se está mirando: los discos, los artistas o las estadísticas.
     // Entrar a un artista devuelve a los discos, ya filtrados.
-    property string pestana: "albumes"
-    readonly property bool porArtista: pestana === "artistas"
+    property string tab: "albumes"
+    readonly property bool byArtist: tab === "artistas"
 
-    function verPestana(cual) {
-        pestana = cual
-        if (cual === "artistas") {
+    function showTab(which) {
+        tab = which
+        if (which === "artistas") {
             // Entrar a los artistas quita el filtro: si no, se vería la
             // lista completa y la reja de uno solo.
             Chilpa.openArtistAlbums("")
             Chilpa.refreshArtists()
-        } else if (cual === "estadisticas") {
+        } else if (which === "estadisticas") {
             Chilpa.refreshStats()
-        } else if (cual === "listas") {
+        } else if (which === "listas") {
             Chilpa.refreshPlaylists()
-        } else if (cual === "asistente") {
+        } else if (which === "asistente") {
             Chilpa.runWizard()
-        } else if (cual === "plugins") {
+        } else if (which === "plugins") {
             Chilpa.loadPlugins()
         }
     }
 
     Component.onCompleted: {
         // Para probar la vista sin ratón: CHILPA_PESTANA=artistas.
-        if (Chilpa.initialTab !== "") verPestana(Chilpa.initialTab)
+        if (Chilpa.initialTab !== "") showTab(Chilpa.initialTab)
     }
     color: "#ffffff"
     border.color: "#1a411d1f"
 
     // Cada renglón viene como "id, título, artista, año, pistas, portada".
-    function campos(renglon) {
-        return renglon.split("\t")
+    function fields(line) {
+        return line.split("\t")
     }
 
     ColumnLayout {
@@ -55,13 +55,13 @@ Rectangle {
             Layout.fillWidth: true
             Label {
                 text: {
-                    if (raiz.pestana === "artistas")
+                    if (root.tab === "artistas")
                         return Chilpa.artists.length +
                             (Chilpa.artists.length === 1 ? " artista" : " artistas")
-                    if (raiz.pestana === "estadisticas") return "Estadísticas"
-                    if (raiz.pestana === "asistente") return "Asistente de salida"
-                    if (raiz.pestana === "plugins") return "Plugins"
-                    if (raiz.pestana === "listas")
+                    if (root.tab === "estadisticas") return "Estadísticas"
+                    if (root.tab === "asistente") return "Asistente de salida"
+                    if (root.tab === "plugins") return "Plugins"
+                    if (root.tab === "listas")
                         return Chilpa.playlists.length +
                             (Chilpa.playlists.length === 1 ? " lista" : " listas")
                     return Chilpa.albums.length === 0
@@ -76,32 +76,32 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { clave: "albumes", texto: "Álbumes" },
-                    { clave: "artistas", texto: "Artistas" },
-                    { clave: "listas", texto: "Listas" },
-                    { clave: "estadisticas", texto: "Estadísticas" },
-                    { clave: "asistente", texto: "Salida" },
-                    { clave: "plugins", texto: "Plugins" }
+                    { clave: "albumes", text: "Álbumes" },
+                    { clave: "artistas", text: "Artistas" },
+                    { clave: "listas", text: "Listas" },
+                    { clave: "estadisticas", text: "Estadísticas" },
+                    { clave: "asistente", text: "Salida" },
+                    { clave: "plugins", text: "Plugins" }
                 ]
                 delegate: Button {
-                    text: modelData.texto
+                    text: modelData.text
                     checkable: true
-                    checked: raiz.pestana === modelData.clave
-                    onClicked: raiz.verPestana(modelData.clave)
+                    checked: root.tab === modelData.clave
+                    onClicked: root.showTab(modelData.clave)
                 }
             }
 
             // El artista al que está filtrada la reja, con su salida.
             Button {
-                visible: raiz.pestana === "albumes" && Chilpa.openArtist !== ""
+                visible: root.tab === "albumes" && Chilpa.openArtist !== ""
                 text: "← " + Chilpa.openArtist
-                onClicked: raiz.verPestana("artistas")
+                onClicked: root.showTab("artistas")
             }
 
             // Las vistas rápidas: lo mismo de siempre, mirado de otra forma.
             ComboBox {
                 Layout.preferredWidth: 180
-                visible: raiz.pestana === "albumes"
+                visible: root.tab === "albumes"
                 model: Chilpa.albumViews
                 currentIndex: Chilpa.albumView
                 onActivated: Chilpa.albumView = index
@@ -133,51 +133,51 @@ Rectangle {
             }
         }
 
-        RejaDeArtistas {
+        ArtistGrid {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "artistas"
+            visible: root.tab === "artistas"
         }
 
-        PanelEstadisticas {
+        StatsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "estadisticas"
+            visible: root.tab === "estadisticas"
         }
 
-        PanelListas {
+        PlaylistsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "listas"
+            visible: root.tab === "listas"
         }
 
-        PanelAsistente {
+        WizardPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "asistente"
+            visible: root.tab === "asistente"
         }
 
-        PanelPlugins {
+        PluginsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "plugins"
+            visible: root.tab === "plugins"
         }
 
         GridView {
-            id: cuadricula
+            id: grid
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.pestana === "albumes"
+            visible: root.tab === "albumes"
             clip: true
             cellWidth: 160
             cellHeight: 216
             model: Chilpa.albums
 
             delegate: Item {
-                width: cuadricula.cellWidth - 8
-                height: cuadricula.cellHeight - 8
+                width: grid.cellWidth - 8
+                height: grid.cellHeight - 8
 
-                readonly property var datos: raiz.campos(modelData)
+                readonly property var cols: root.fields(modelData)
 
                 ColumnLayout {
                     anchors.fill: parent
@@ -190,23 +190,23 @@ Rectangle {
                         color: "#f0eae4"
                         Image {
                             anchors.fill: parent
-                            source: datos[5] ? "file://" + datos[5] : ""
+                            source: cols[5] ? "file://" + cols[5] : ""
                             fillMode: Image.PreserveAspectCrop
                             asynchronous: true
-                            visible: datos[5] !== ""
+                            visible: cols[5] !== ""
                         }
                         Label {
                             anchors.centerIn: parent
                             text: "sin portada"
                             font.pixelSize: 11
                             color: "#7a411d1f"
-                            visible: datos[5] === ""
+                            visible: cols[5] === ""
                         }
                     }
 
                     Label {
                         Layout.fillWidth: true
-                        text: datos[1]
+                        text: cols[1]
                         elide: Text.ElideRight
                         font.pixelSize: 13
                         font.weight: Font.DemiBold
@@ -214,7 +214,7 @@ Rectangle {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: datos[2]
+                        text: cols[2]
                         elide: Text.ElideRight
                         font.pixelSize: 12
                         color: "#7a411d1f"
@@ -223,10 +223,10 @@ Rectangle {
                     // artista se los comía el elide.
                     Label {
                         Layout.fillWidth: true
-                        text: (datos[3] ? datos[3] + " · " : "") + datos[4] +
-                              (datos[4] === "1" ? " pista" : " pistas") +
-                              (parseInt(datos[6]) > 0
-                                  ? " · " + datos[6] + (datos[6] === "1" ? " escucha" : " escuchas")
+                        text: (cols[3] ? cols[3] + " · " : "") + cols[4] +
+                              (cols[4] === "1" ? " pista" : " pistas") +
+                              (parseInt(cols[6]) > 0
+                                  ? " · " + cols[6] + (cols[6] === "1" ? " escucha" : " escuchas")
                                   : "")
                         font.pixelSize: 11
                         color: "#7a411d1f"
@@ -239,13 +239,13 @@ Rectangle {
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                     // Un clic abre el álbum, el doble clic lo echa a andar y
                     // el de en medio lo encola sin cortar lo que suena.
-                    onClicked: (evento) => {
-                        if (evento.button === Qt.MiddleButton)
-                            Chilpa.enqueueAlbum(parseInt(datos[0]))
+                    onClicked: (event) => {
+                        if (event.button === Qt.MiddleButton)
+                            Chilpa.enqueueAlbum(parseInt(cols[0]))
                         else
-                            Chilpa.openAlbumTracks(parseInt(datos[0]), datos[1])
+                            Chilpa.openAlbumTracks(parseInt(cols[0]), cols[1])
                     }
-                    onDoubleClicked: Chilpa.playAlbum(parseInt(datos[0]))
+                    onDoubleClicked: Chilpa.playAlbum(parseInt(cols[0]))
                 }
             }
         }

@@ -8,34 +8,34 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ColumnLayout {
-    id: raiz
+    id: root
     spacing: 6
 
-    property string titulo: ""
+    property string title: ""
     /// Renglones "título, artista, álbum, veces, ruta".
-    property var pistas: []
+    property var tracks: []
     /// Si se muestra la cuenta de escuchas.
-    property bool conVeces: true
+    property bool withPlayCounts: true
 
     Label {
-        text: raiz.titulo
+        text: root.title
         font.pixelSize: 13
         font.weight: Font.DemiBold
         color: "#411d1f"
     }
 
     ListView {
-        id: lista
+        id: list
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
-        model: raiz.pistas
+        model: root.tracks
 
         delegate: Item {
-            width: lista.width
+            width: list.width
             height: 34
 
-            readonly property var datos: modelData.split("\t")
+            readonly property var cols: modelData.split("\t")
 
             RowLayout {
                 anchors.fill: parent
@@ -53,22 +53,22 @@ ColumnLayout {
                     spacing: 0
                     Label {
                         Layout.fillWidth: true
-                        text: datos[0]
+                        text: cols[0]
                         elide: Text.ElideRight
                         font.pixelSize: 12
                         color: "#411d1f"
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: [datos[1], datos[2]].filter(t => t !== "").join(" · ")
+                        text: [cols[1], cols[2]].filter(t => t !== "").join(" · ")
                         elide: Text.ElideRight
                         font.pixelSize: 10
                         color: "#7a411d1f"
                     }
                 }
                 Label {
-                    visible: raiz.conVeces
-                    text: datos[3] + (datos[3] === "1" ? " escucha" : " escuchas")
+                    visible: root.withPlayCounts
+                    text: cols[3] + (cols[3] === "1" ? " escucha" : " escuchas")
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }
@@ -77,7 +77,7 @@ ColumnLayout {
             MouseArea {
                 anchors.fill: parent
                 cursorShape: Qt.PointingHandCursor
-                onDoubleClicked: Chilpa.play(datos[4])
+                onDoubleClicked: Chilpa.play(cols[4])
             }
         }
     }

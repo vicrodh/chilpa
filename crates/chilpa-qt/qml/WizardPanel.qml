@@ -10,11 +10,11 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ColumnLayout {
-    id: raiz
+    id: root
     spacing: 8
 
-    function campos(renglon) {
-        return renglon.split("\t")
+    function fields(line) {
+        return line.split("\t")
     }
 
     RowLayout {
@@ -40,19 +40,19 @@ ColumnLayout {
     }
 
     ListView {
-        id: lista
+        id: list
         Layout.fillWidth: true
         Layout.fillHeight: true
         clip: true
         model: Chilpa.wizardRows
 
         delegate: Item {
-            width: lista.width
+            width: list.width
             height: 26
 
-            readonly property var datos: raiz.campos(modelData)
-            readonly property bool perfecto: datos[2] === "bit-perfect"
-            readonly property bool imposible: datos[2] === "no se puede"
+            readonly property var cols: root.fields(modelData)
+            readonly property bool perfect: cols[2] === "bit-perfect"
+            readonly property bool impossible: cols[2] === "no se puede"
 
             RowLayout {
                 anchors.fill: parent
@@ -60,23 +60,23 @@ ColumnLayout {
                 spacing: 10
                 Label {
                     Layout.preferredWidth: 140
-                    text: datos[0]
+                    text: cols[0]
                     elide: Text.ElideRight
                     font.pixelSize: 12
                     color: "#411d1f"
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: datos[1]
+                    text: cols[1]
                     elide: Text.ElideRight
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }
                 Label {
-                    text: datos[2]
+                    text: cols[2]
                     font.pixelSize: 11
-                    font.weight: perfecto ? Font.DemiBold : Font.Normal
-                    color: perfecto ? "#2e7d32" : (imposible ? "#d7272b" : "#7a411d1f")
+                    font.weight: perfect ? Font.DemiBold : Font.Normal
+                    color: perfect ? "#2e7d32" : (impossible ? "#d7272b" : "#7a411d1f")
                 }
             }
         }

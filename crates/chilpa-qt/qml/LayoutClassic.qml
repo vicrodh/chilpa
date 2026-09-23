@@ -13,11 +13,11 @@ ColumnLayout {
     anchors.margins: 20
     spacing: 14
 
-    PanelSalida { Layout.fillWidth: true }
+    OutputPanel { Layout.fillWidth: true }
 
-    PanelAcciones { Layout.alignment: Qt.AlignLeft }
+    ActionsPanel { Layout.alignment: Qt.AlignLeft }
 
-    PanelTransporte { Layout.alignment: Qt.AlignLeft }
+    TransportPanel { Layout.alignment: Qt.AlignLeft }
 
     // Lo que suena y, a un lado, su letra cuando la hay.
     //
@@ -31,16 +31,16 @@ ColumnLayout {
         Layout.alignment: Qt.AlignTop
         spacing: 14
 
-        PanelAhoraSuena { Layout.fillWidth: true; Layout.fillHeight: true }
+        NowPlayingPanel { Layout.fillWidth: true; Layout.fillHeight: true }
 
-        PanelLetra {
+        LyricsPanel {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
             visible: Chilpa.lyrics.length > 0
         }
     }
 
-    PanelVisualizador {
+    VisualizerPanel {
         Layout.fillWidth: true
         Layout.preferredHeight: 110
         Layout.minimumHeight: 110
@@ -49,14 +49,14 @@ ColumnLayout {
 
     // Los resultados, cuando hay algo escrito en la búsqueda o un álbum
     // abierto.
-    Resultados {
+    Results {
         Layout.fillWidth: true
         Layout.fillHeight: true
         Layout.minimumHeight: 200
         visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
     }
 
-    Biblioteca {
+    Library {
         Layout.fillWidth: true
         Layout.fillHeight: true
         // Una fila de portadas con sus renglones de texto y, arriba, las
@@ -67,7 +67,7 @@ ColumnLayout {
     }
 
     // La cola se asoma solo cuando hay más de una pista.
-    PanelCola {
+    QueuePanel {
         Layout.fillWidth: true
         Layout.preferredHeight: 150
         // La cola es lo que cede primero cuando la ventana se queda corta:

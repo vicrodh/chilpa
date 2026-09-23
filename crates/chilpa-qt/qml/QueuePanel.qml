@@ -13,7 +13,7 @@ Rectangle {
     border.color: "#1a411d1f"
 
     ListView {
-        id: lista
+        id: list
         anchors.fill: parent
         anchors.margins: 10
         clip: true
@@ -23,18 +23,18 @@ Rectangle {
         onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
         delegate: Rectangle {
-            width: lista.width
+            width: list.width
             height: 26
             radius: 6
             color: index === Chilpa.queueIndex
                 ? "#f3e7e7"
-                : (raton.containsMouse ? "#f8f4f0" : "transparent")
+                : (mouse.containsMouse ? "#f8f4f0" : "transparent")
 
-            readonly property bool quitada: Chilpa.queueRemoved[index] === "1"
-            readonly property bool sonando: index === Chilpa.queueIndex
+            readonly property bool removed: Chilpa.queueRemoved[index] === "1"
+            readonly property bool playing: index === Chilpa.queueIndex
 
             MouseArea {
-                id: raton
+                id: mouse
                 anchors.fill: parent
                 hoverEnabled: true
                 acceptedButtons: Qt.NoButton
@@ -44,24 +44,24 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.left: parent.left
                 anchors.leftMargin: 8
-                anchors.right: quitar.left
+                anchors.right: remove.left
                 anchors.rightMargin: 6
                 elide: Text.ElideRight
                 text: (index + 1) + ".  " + modelData
-                font.strikeout: parent.quitada
-                opacity: parent.quitada ? 0.45 : 1
-                color: parent.sonando ? "#d7272b" : "#411d1f"
+                font.strikeout: parent.removed
+                opacity: parent.removed ? 0.45 : 1
+                color: parent.playing ? "#d7272b" : "#411d1f"
             }
 
             Label {
-                id: quitar
+                id: remove
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: 8
                 text: "quitar"
                 font.pixelSize: 11
                 color: "#7a411d1f"
-                visible: raton.containsMouse && !parent.quitada
+                visible: mouse.containsMouse && !parent.removed
                     && index > Chilpa.queueIndex
                 MouseArea {
                     anchors.fill: parent

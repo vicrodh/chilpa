@@ -10,7 +10,7 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ApplicationWindow {
-    id: ventana
+    id: window
     width: 980
     // Alto para que el acomodo clásico quepa entero con la reja, la cola y
     // el visualizador; si la pantalla es más chica, Qt recorta la ventana y
@@ -28,12 +28,12 @@ ApplicationWindow {
     // nombre guardado no existe, se cae al clásico en vez de dejar la
     // ventana vacía.
     Loader {
-        id: acomodo
+        id: layout
         anchors.fill: parent
         source: "Layout" + Chilpa.layout + ".qml"
-        onStatusChanged: if (status === Loader.Error && Chilpa.layout !== "Clasico") {
+        onStatusChanged: if (status === Loader.Error && Chilpa.layout !== "Classic") {
             console.warn("no se pudo cargar el layout", Chilpa.layout)
-            Chilpa.layout = "Clasico"
+            Chilpa.layout = "Classic"
         }
     }
 
@@ -59,7 +59,7 @@ ApplicationWindow {
 
     // La lista de atajos, que si no hay que adivinarla.
     Dialog {
-        id: ayuda
+        id: help
         title: "Atajos"
         anchors.centerIn: Overlay.overlay
         width: 380
@@ -100,14 +100,14 @@ ApplicationWindow {
                 Layout.alignment: Qt.AlignRight
                 Layout.topMargin: 6
                 text: "Cerrar"
-                onClicked: ayuda.close()
+                onClicked: help.close()
             }
         }
     }
 
     Shortcut {
         sequence: "F1"
-        onActivated: ayuda.open()
+        onActivated: help.open()
     }
 
     Timer {

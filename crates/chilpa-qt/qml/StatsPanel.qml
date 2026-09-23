@@ -9,11 +9,11 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ColumnLayout {
-    id: raiz
+    id: root
     spacing: 10
 
-    function campos(renglon) {
-        return renglon.split("\t")
+    function fields(line) {
+        return line.split("\t")
     }
 
     // El resumen, en renglones de etiqueta y valor.
@@ -25,15 +25,15 @@ ColumnLayout {
             model: Chilpa.stats
             delegate: ColumnLayout {
                 spacing: 0
-                readonly property var datos: raiz.campos(modelData)
+                readonly property var cols: root.fields(modelData)
                 Label {
-                    text: datos[1]
+                    text: cols[1]
                     font.pixelSize: 20
                     font.weight: Font.DemiBold
                     color: "#411d1f"
                 }
                 Label {
-                    text: datos[0]
+                    text: cols[0]
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }
@@ -46,19 +46,19 @@ ColumnLayout {
         Layout.fillHeight: true
         spacing: 16
 
-        ListaDePistas {
+        TrackList {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            titulo: "Más escuchadas"
-            pistas: Chilpa.topTracks
+            title: "Más escuchadas"
+            tracks: Chilpa.topTracks
         }
 
-        ListaDePistas {
+        TrackList {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            titulo: "Lo último que sonó"
-            pistas: Chilpa.recentTracks
-            conVeces: false
+            title: "Lo último que sonó"
+            tracks: Chilpa.recentTracks
+            withPlayCounts: false
         }
     }
 }

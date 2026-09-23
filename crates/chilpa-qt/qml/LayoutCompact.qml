@@ -10,9 +10,9 @@ ColumnLayout {
     anchors.margins: 16
     spacing: 10
 
-    PanelSalida { Layout.fillWidth: true }
+    OutputPanel { Layout.fillWidth: true }
 
-    PanelAcciones { Layout.alignment: Qt.AlignLeft }
+    ActionsPanel { Layout.alignment: Qt.AlignLeft }
 
     // El grueso de la ventana: lo que se está mirando y, a la derecha, la
     // letra de lo que suena.
@@ -21,26 +21,26 @@ ColumnLayout {
         Layout.fillHeight: true
         spacing: 10
 
-        Resultados {
+        Results {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
         }
 
-        Biblioteca {
+        Library {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
         }
 
-        PanelLetra {
+        LyricsPanel {
             Layout.preferredWidth: 300
             Layout.fillHeight: true
             visible: Chilpa.lyrics.length > 0
         }
     }
 
-    PanelCola {
+    QueuePanel {
         Layout.fillWidth: true
         Layout.preferredHeight: 110
         visible: Chilpa.queue.length > 1
@@ -50,14 +50,14 @@ ColumnLayout {
     RowLayout {
         Layout.fillWidth: true
         spacing: 10
-        PanelTransporte { Layout.alignment: Qt.AlignVCenter }
-        PanelAhoraSuena {
+        TransportPanel { Layout.alignment: Qt.AlignVCenter }
+        NowPlayingPanel {
             Layout.fillWidth: true
             Layout.preferredHeight: 112
             Layout.minimumHeight: 112
-            compacto: true
+            compact: true
         }
-        PanelVisualizador {
+        VisualizerPanel {
             Layout.preferredWidth: 260
             Layout.preferredHeight: 112
             visible: Chilpa.playing
