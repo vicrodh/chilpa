@@ -9,8 +9,10 @@
 pub mod playlist;
 pub mod schema;
 pub mod scan;
+pub mod scan_job;
 pub mod store;
 
 pub use scan::{scan_root, scan_root_with_cache, ScanReport};
+pub use scan_job::{ScanJob, ScanProgress};
 pub use playlist::Playlist;
 pub use store::{Library, StoredAlbum, StoredTrack};

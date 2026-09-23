@@ -39,16 +39,35 @@ pub fn scan_root_with_cache(
     root: &Path,
     cache: Option<&Path>,
 ) -> rusqlite::Result<ScanReport> {
-    let reporte = escanear(lib, root, cache)?;
-    Ok(reporte)
+    escanear(lib, root, cache, &|_| {})
 }
 
 /// Escanea una carpeta y sus subcarpetas.
 pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
-    escanear(lib, root, None)
+    escanear(lib, root, None, &|_| {})
 }
 
-fn escanear(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Result<ScanReport> {
+/// Lo mismo, avisando cuántos archivos lleva mirados.
+pub fn scan_root_reporting(
+    lib: &Library,
+    root: &Path,
+    cache: Option<&Path>,
+    on_progress: &dyn Fn(usize),
+) -> rusqlite::Result<ScanReport> {
+    escanear(lib, root, cache, on_progress)
+}
+
+/// Cuántos archivos de audio hay bajo una carpeta. No toca la base.
+pub fn count_audio_files(root: &Path) -> usize {
+    recorrer(root).len()
+}
+
+fn escanear(
+    lib: &Library,
+    root: &Path,
+    cache: Option<&Path>,
+    on_progress: &dyn Fn(usize),
+) -> rusqlite::Result<ScanReport> {
     let mut reporte = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
     let source = lib.source_id("local", "default")?;
     let root_id = lib.root_id(source, root)?;
@@ -64,7 +83,12 @@ fn escanear(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Resul
     let archivos = recorrer(root);
     reporte.seen = archivos.len();
 
-    for archivo in &archivos {
+    for (mirados, archivo) in archivos.iter().enumerate() {
+        // Se avisa cada 25 archivos: uno por uno inunda el canal sin que la
+        // interfaz pueda dibujar más rápido.
+        if mirados % 25 == 0 {
+            on_progress(mirados);
+        }
         let Ok(meta) = std::fs::metadata(archivo) else { continue };
         // En nanosegundos, no en segundos: dos versiones distintas de un
         // archivo escritas dentro del mismo segundo se verían iguales, y el
@@ -110,6 +134,8 @@ fn escanear(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Resul
         )?;
         reporte.read += 1;
     }
+
+    on_progress(archivos.len());
 
     // Lo que estaba y ya no: se marca ausente, nunca se borra.
     let vistos: Vec<String> = archivos.iter().map(|p| p.display().to_string()).collect();

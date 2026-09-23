@@ -48,6 +48,9 @@ pub mod chilpa_bridge {
         #[qproperty(QString, open_album)]
         #[qproperty(i64, open_album_id)]
         #[qproperty(QString, library_status)]
+        /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
+        #[qproperty(f64, scan_progress)]
+        #[qproperty(bool, scanning)]
         /// Lo que se recordó de la última sesión.
         #[qproperty(QString, remembered_output)]
         #[qproperty(bool, remembered_bit_perfect)]
@@ -171,6 +174,8 @@ pub struct ChilpaRust {
     open_album: QString,
     open_album_id: i64,
     library_status: QString,
+    scan_progress: f64,
+    scanning: bool,
     remembered_output: QString,
     remembered_bit_perfect: bool,
     format: QString,
@@ -206,6 +211,8 @@ impl Default for ChilpaRust {
             open_album: QString::from(""),
             open_album_id: 0,
             library_status: QString::from(""),
+            scan_progress: 0.0,
+            scanning: false,
             remembered_output: QString::from(&recordado.output),
             remembered_bit_perfect: recordado.bit_perfect,
             format: QString::from(""),
@@ -256,17 +263,12 @@ impl Chilpa {
     pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let ruta = folder.to_string();
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let resumen = self.as_mut().rust_mut().api.scan(std::path::Path::new(&ruta));
-        let texto = if resumen.unreachable {
-            format!("no se pudo leer {ruta}; no se tocó nada")
-        } else {
-            format!(
-                "{} archivos: {} leídos, {} sin cambios, {} ausentes",
-                resumen.seen, resumen.read, resumen.unchanged, resumen.missing
-            )
-        };
-        self.as_mut().set_library_status(QString::from(&texto));
-        self.as_mut().refresh_albums();
+        // El escaneo corre en su propio hilo: una biblioteca grande dejaría
+        // la ventana congelada si se hiciera aquí.
+        self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&ruta));
+        self.as_mut().set_scanning(true);
+        self.as_mut().set_scan_progress(0.0);
+        self.as_mut().set_library_status(QString::from("escaneando..."));
     }
 
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
@@ -463,6 +465,32 @@ impl Chilpa {
     }
 
     pub fn poll(mut self: Pin<&mut Self>) {
+        // El escaneo primero: al terminar refresca los álbumes.
+        if self.scanning {
+            let estado = self.as_mut().rust_mut().api.scan_status().clone();
+            let avance = if estado.total > 0 {
+                estado.done as f64 / estado.total as f64
+            } else {
+                0.0
+            };
+            self.as_mut().set_scan_progress(avance);
+            if !estado.running {
+                let r = &estado.summary;
+                let texto = if r.unreachable {
+                    "no se pudo leer esa carpeta; no se tocó nada".to_string()
+                } else {
+                    format!(
+                        "{} archivos: {} leídos, {} sin cambios, {} ausentes",
+                        r.seen, r.read, r.unchanged, r.missing
+                    )
+                };
+                self.as_mut().set_library_status(QString::from(&texto));
+                self.as_mut().set_scanning(false);
+                self.as_mut().set_scan_progress(1.0);
+                self.as_mut().refresh_albums();
+            }
+        }
+
         let ahora = self.as_mut().rust_mut().api.poll().clone();
         self.as_mut().set_playing(ahora.playing);
         self.as_mut().set_paused(ahora.paused);

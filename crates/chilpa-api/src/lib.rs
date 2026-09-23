@@ -160,6 +160,16 @@ pub struct LibraryTrack {
     pub present: bool,
 }
 
+/// Cómo va el escaneo que corre en segundo plano.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct ScanStatus {
+    pub running: bool,
+    pub done: usize,
+    pub total: usize,
+    /// Lo que dejó el último escaneo terminado.
+    pub summary: ScanSummary,
+}
+
 /// Qué pasó en un escaneo, en una línea para la vista.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanSummary {
@@ -178,6 +188,9 @@ pub struct Chilpa {
     en_curso: Option<EnCurso>,
     /// Las rutas de la cola actual, para poder volver atrás.
     cola: Vec<String>,
+    /// El escaneo en segundo plano, mientras corre.
+    scan: Option<chilpa_library::ScanJob>,
+    scan_status: ScanStatus,
     player: Option<chilpa_core::player::Player>,
     now: NowPlaying,
     sample_rate: u32,
@@ -196,6 +209,8 @@ impl Chilpa {
             library: None,
             en_curso: None,
             cola: Vec::new(),
+            scan: None,
+            scan_status: ScanStatus::default(),
             player: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -216,7 +231,60 @@ impl Chilpa {
         self.library.as_ref()
     }
 
-    /// Escanea una carpeta hacia la biblioteca.
+    /// Arranca un escaneo en segundo plano. La interfaz no se bloquea.
+    pub fn start_scan(&mut self, folder: &std::path::Path) {
+        if self.scan.is_some() {
+            self.now.error = "ya hay un escaneo corriendo".into();
+            return;
+        }
+        // La conexión de la interfaz se suelta: el escaneo abre la suya, y
+        // dos conexiones a la misma base en WAL conviven sin pelearse.
+        self.scan = Some(chilpa_library::ScanJob::start(
+            chilpa_library::Library::default_path(),
+            folder.to_path_buf(),
+            Some(chilpa_core::artwork_cache()),
+        ));
+        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
+    }
+
+    /// Cómo va el escaneo. Al terminar, refresca lo que la vista muestra.
+    pub fn scan_status(&mut self) -> &ScanStatus {
+        let eventos = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
+        for evento in eventos {
+            match evento {
+                chilpa_library::ScanProgress::Counted { total } => {
+                    self.scan_status.total = total;
+                }
+                chilpa_library::ScanProgress::Advanced { done, total } => {
+                    self.scan_status.done = done;
+                    self.scan_status.total = total;
+                }
+                chilpa_library::ScanProgress::Done(r) => {
+                    self.scan_status = ScanStatus {
+                        running: false,
+                        done: r.seen,
+                        total: r.seen,
+                        summary: ScanSummary {
+                            seen: r.seen,
+                            read: r.read,
+                            unchanged: r.unchanged,
+                            missing: r.missing,
+                            unreachable: r.unreachable,
+                        },
+                    };
+                    self.scan = None;
+                }
+                chilpa_library::ScanProgress::Failed(e) => {
+                    self.now.error = format!("el escaneo falló: {e}");
+                    self.scan_status.running = false;
+                    self.scan = None;
+                }
+            }
+        }
+        &self.scan_status
+    }
+
+    /// Escanea una carpeta hacia la biblioteca, esperando a que termine.
     pub fn scan(&mut self, folder: &std::path::Path) -> ScanSummary {
         let Some(lib) = self.library() else { return ScanSummary::default() };
         match chilpa_core::scan_into_library(lib, folder) {
