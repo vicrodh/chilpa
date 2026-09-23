@@ -17,6 +17,13 @@ ApplicationWindow {
     title: "Chilpa"
     color: "#faf6f2"
 
+    // mm:ss, que es como se lee una duración.
+    function reloj(segundos) {
+        const m = Math.floor(segundos / 60)
+        const s = Math.floor(segundos % 60)
+        return m + ":" + (s < 10 ? "0" : "") + s
+    }
+
     Component.onCompleted: {
         Chilpa.refreshOutputs()
         // Arrancada con un archivo: se elige la salida pedida y suena sola.
@@ -106,9 +113,19 @@ ApplicationWindow {
                     color: "#7a411d1f"
                 }
                 Label {
-                    text: Chilpa.seconds.toFixed(2) + " s"
+                    text: Chilpa.totalSeconds > 0
+                        ? reloj(Chilpa.seconds) + " / " + reloj(Chilpa.totalSeconds)
+                        : reloj(Chilpa.seconds)
                     font.pixelSize: 26
                     color: "#411d1f"
+                }
+
+                ProgressBar {
+                    Layout.fillWidth: true
+                    visible: Chilpa.totalSeconds > 0
+                    from: 0
+                    to: Chilpa.totalSeconds
+                    value: Chilpa.seconds
                 }
                 Label {
                     text: Chilpa.bitPerfect ? "bit-perfect" : (Chilpa.playing ? "convertido" : "")
