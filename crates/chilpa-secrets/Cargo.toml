@@ -1,0 +1,47 @@
+[package]
+name = "chilpa-secrets"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# AES-256-GCM para el cifrado en reposo.
+aes-gcm = "0.10"
+# La derivación del respaldo cuando no hay keyring.
+hkdf = "0.12"
+sha2 = "0.10"
+# Nonces y la llave maestra nueva.
+rand = "0.10"
+# El identificador de instalación, que es sal y no secreto.
+uuid = { version = "1", features = ["v4"] }
+# El keyring guarda texto, así que la llave viaja en base64.
+base64 = "0.22"
+thiserror = "2"
+
+[dev-dependencies]
+tempfile = "3"
+
+# El almacén del sistema: Secret Service en Linux, Keychain en macOS,
+# Credential Manager en Windows. Cada uno se habilita a mano.
+#
+# `keyring` 3.x no trae nada en su feature `default`: cada plataforma lee
+# `not(feature = "…-native")` y exporta el `mock`, un almacén en memoria cuyas
+# escrituras TIENEN ÉXITO. Depender de él no falla ruidosamente: entrega una
+# llave maestra que muere con el proceso, y todo lo cifrado en una corrida
+# queda ilegible en la siguiente mientras el backend se reporta como
+# "keyring". Cualquier otro target se va derecho al camino derivado.
+#
+# `async-secret-service` y no `sync-secret-service`: keyring rechaza tener las
+# dos. `crypto-rust` lo pide el backend de Secret Service.
+[target.'cfg(target_os = "linux")'.dependencies]
+keyring = { version = "3", default-features = false, features = [
+  "async-secret-service",
+  "crypto-rust",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["apple-native"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+keyring = { version = "3", default-features = false, features = ["windows-native"] }
