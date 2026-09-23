@@ -6,7 +6,6 @@
 //! segundo también: un root cuyo mountpoint no estaba montado se veía vacío
 //! y el prune borraba todos sus tracks.
 
-pub mod fingerprints;
 pub mod playlist;
 pub mod schema;
 pub mod scan;
