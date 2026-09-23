@@ -997,6 +997,13 @@ impl Chilpa {
         let _ = chilpa_core::settings::save(&s);
     }
 
+    /// Recuerda qué visualizador se está dibujando.
+    pub fn remember_visualizer(&mut self, visualizer: &str) {
+        let mut s = chilpa_core::settings::load();
+        s.visualizer = visualizer.to_string();
+        let _ = chilpa_core::settings::save(&s);
+    }
+
     /// Recuerda el acomodo elegido para la ventana.
     pub fn remember_layout(&mut self, layout: &str) {
         let mut s = chilpa_core::settings::load();
@@ -1058,6 +1065,24 @@ impl Chilpa {
             salida.push(pico);
         }
         salida
+    }
+
+    /// El espectro de lo que sale, en `bandas` valores de 0 a 1.
+    ///
+    /// Los canales se mezclan a mono: un espectro por canal se ve igual en
+    /// casi toda la música y ocupa el doble de pantalla.
+    pub fn scope_spectrum(&self, bandas: usize) -> Vec<f32> {
+        let foto = self.tap.snapshot();
+        let canales = foto.channels.max(1) as usize;
+        if foto.samples.is_empty() {
+            return Vec::new();
+        }
+        let mono: Vec<f32> = foto
+            .samples
+            .chunks_exact(canales)
+            .map(|f| f.iter().sum::<f32>() / canales as f32)
+            .collect();
+        chilpa_core::spectrum::bands(&mono, foto.sample_rate_hz, bandas)
     }
 
     /// El nivel por canal, de 0 a 1: pico y rms.
