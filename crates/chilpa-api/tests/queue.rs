@@ -14,25 +14,25 @@ use std::path::PathBuf;
 /// escuchas y, lo que de verdad duele, le migra el esquema a la versión del
 /// código que se está probando. Eso ya rompió un binario viejo que seguía
 /// abierto.
-fn biblioteca_aparte(dir: &std::path::Path) {
+fn other_library(dir: &std::path::Path) {
     std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
 }
 
 /// La salida de captura escribe a un archivo, así que esto corre sin sonido
 /// y sin hardware.
-const SALIDA: &str = "capture";
+const OUTPUT: &str = "capture";
 
-fn carpeta(nombre: &str) -> PathBuf {
+fn folder(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-api-cola-{nombre}"));
+    p.push(format!("chilpa-api-cola-{name}"));
     let _ = std::fs::remove_dir_all(&p);
     std::fs::create_dir_all(&p).unwrap();
     p
 }
 
 /// Un WAV corto, con un tono constante.
-fn onda(dir: &PathBuf, nombre: &str, frames: u32) -> PathBuf {
-    let p = dir.join(nombre);
+fn wave(dir: &PathBuf, name: &str, frames: u32) -> PathBuf {
+    let p = dir.join(name);
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -61,10 +61,10 @@ fn onda(dir: &PathBuf, nombre: &str, frames: u32) -> PathBuf {
 /// rápido como puede, así que una cola corta puede pasar por varias pistas
 /// entre dos lecturas. Por eso se espera "al menos" y no una posición
 /// exacta, que sería una prueba que falla según el día.
-fn esperar_al_menos(chilpa: &mut chilpa_api::Chilpa, indice: usize) -> bool {
-    let limite = std::time::Instant::now() + std::time::Duration::from_secs(10);
-    while std::time::Instant::now() < limite {
-        if chilpa.poll().index >= indice {
+fn wait_at_least(chilpa: &mut chilpa_api::Chilpa, index: usize) -> bool {
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < limit {
+        if chilpa.poll().index >= index {
             return true;
         }
         std::thread::sleep(std::time::Duration::from_millis(20));
@@ -74,29 +74,29 @@ fn esperar_al_menos(chilpa: &mut chilpa_api::Chilpa, indice: usize) -> bool {
 
 #[test]
 fn volver_atras_no_recorta_la_cola() {
-    let dir = carpeta("atras");
-    biblioteca_aparte(&dir);
+    let dir = folder("atras");
+    other_library(&dir);
     // Pistas de medio segundo: alcanza para que la cola avance sola.
     for n in ["01.wav", "02.wav", "03.wav"] {
-        onda(&dir, n, 22_050);
+        wave(&dir, n, 22_050);
     }
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let titulos = chilpa.play_folder(&dir, SALIDA, true);
+    let titulos = chilpa.play_folder(&dir, OUTPUT, true);
     assert_eq!(titulos.len(), 3, "se encolaron las tres");
 
-    assert!(esperar_al_menos(&mut chilpa, 2), "la cola avanzó sola");
+    assert!(wait_at_least(&mut chilpa, 2), "la cola avanzó sola");
     let antes = chilpa.now_playing().index;
-    chilpa.previous_track(SALIDA, true);
-    assert!(esperar_al_menos(&mut chilpa, antes - 1), "volvió a sonar");
+    chilpa.previous_track(OUTPUT, true);
+    assert!(wait_at_least(&mut chilpa, antes - 1), "volvió a sonar");
     assert_eq!(chilpa.now_playing().queue_len, 3, "la cola sigue completa");
 
     // Y con la cola completa, guardarla guarda las tres.
-    let lista = dir.join("cola.m3u");
-    assert!(chilpa.save_queue(&lista), "se guardó");
-    let texto = std::fs::read_to_string(&lista).unwrap();
+    let list = dir.join("cola.m3u");
+    assert!(chilpa.save_queue(&list), "se guardó");
+    let text = std::fs::read_to_string(&list).unwrap();
     for n in ["01.wav", "02.wav", "03.wav"] {
-        assert!(texto.contains(n), "falta {n} en:\n{texto}");
+        assert!(text.contains(n), "falta {n} en:\n{text}");
     }
 
     chilpa.stop();
@@ -116,17 +116,17 @@ fn el_aleatorio_y_la_repeticion_se_recuerdan_en_la_fachada() {
 
 #[test]
 fn encolar_sin_nada_sonando_arranca_la_cola() {
-    let dir = carpeta("encolar");
-    biblioteca_aparte(&dir);
-    let rutas: Vec<String> = ["01.wav", "02.wav"]
+    let dir = folder("encolar");
+    other_library(&dir);
+    let paths: Vec<String> = ["01.wav", "02.wav"]
         .iter()
-        .map(|n| onda(&dir, n, 4_410).display().to_string())
+        .map(|n| wave(&dir, n, 4_410).display().to_string())
         .collect();
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let titulos = chilpa.enqueue(&rutas, SALIDA, true);
+    let titulos = chilpa.enqueue(&paths, OUTPUT, true);
     assert_eq!(titulos.len(), 2, "encolar con nada sonando es reproducir");
-    assert!(esperar_al_menos(&mut chilpa, 1), "la cola avanzó");
+    assert!(wait_at_least(&mut chilpa, 1), "la cola avanzó");
     assert_eq!(chilpa.queue_titles().len(), 2);
 
     chilpa.stop();

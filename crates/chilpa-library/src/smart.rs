@@ -116,9 +116,9 @@ pub fn builtins() -> Vec<SmartList> {
 }
 
 /// El pedazo de `WHERE` de una regla, con sus parámetros.
-fn condicion(regla: &Rule, ahora: i64) -> (String, Vec<Value>) {
-    let dias = |d: u32| Value::Integer(ahora - i64::from(d) * 86_400);
-    match regla {
+fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
+    let dias = |d: u32| Value::Integer(now - i64::from(d) * 86_400);
+    match rule {
         Rule::NeverPlayed => ("COALESCE(e.escuchas, 0) = 0".into(), vec![]),
         Rule::PlayedAtLeast(n) => (
             "COALESCE(e.escuchas, 0) >= ?".into(),
@@ -141,9 +141,9 @@ fn condicion(regla: &Rule, ahora: i64) -> (String, Vec<Value>) {
             "(t.duration_ms > 0 AND t.duration_ms < ?)".into(),
             vec![Value::Integer(*ms as i64)],
         ),
-        Rule::ArtistIs(nombre) => (
+        Rule::ArtistIs(name) => (
             "t.artist = ? COLLATE NOCASE".into(),
-            vec![Value::Text(nombre.clone())],
+            vec![Value::Text(name.clone())],
         ),
         Rule::BpmBetween(min, max) => (
             // Cualquier versión del analizador sirve: la lista dice qué
@@ -153,18 +153,18 @@ fn condicion(regla: &Rule, ahora: i64) -> (String, Vec<Value>) {
                 .into(),
             vec![Value::Real(f64::from(*min)), Value::Real(f64::from(*max))],
         ),
-        Rule::GenreIs(nombre) => (
+        Rule::GenreIs(name) => (
             "EXISTS (SELECT 1 FROM track_genres tg
                      JOIN genres g ON g.id = tg.genre_id
                      WHERE tg.track_id = t.id AND g.name = ?)"
                 .into(),
-            vec![Value::Text(nombre.clone())],
+            vec![Value::Text(name.clone())],
         ),
     }
 }
 
-fn orden_sql(orden: Order) -> &'static str {
-    match orden {
+fn sql_order(order: Order) -> &'static str {
+    match order {
         Order::Artist => "t.artist COLLATE NOCASE, t.title COLLATE NOCASE",
         Order::NewestFirst => "t.added_at DESC, t.title COLLATE NOCASE",
         Order::MostPlayed => "COALESCE(e.escuchas, 0) DESC, t.title COLLATE NOCASE",
@@ -177,20 +177,20 @@ impl Library {
     ///
     /// Solo pistas presentes: una lista que ofrece lo que no se puede poner
     /// a sonar no sirve de nada.
-    pub fn smart_tracks(&self, lista: &SmartList) -> rusqlite::Result<Vec<StoredTrack>> {
-        let ahora = std::time::SystemTime::now()
+    pub fn smart_tracks(&self, list: &SmartList) -> rusqlite::Result<Vec<StoredTrack>> {
+        let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
 
-        let mut condiciones = vec!["t.present = 1".to_string()];
-        let mut valores: Vec<Value> = Vec::new();
-        for regla in &lista.rules {
-            let (sql, params) = condicion(regla, ahora);
-            condiciones.push(sql);
-            valores.extend(params);
+        let mut conditions = vec!["t.present = 1".to_string()];
+        let mut values: Vec<Value> = Vec::new();
+        for rule in &list.rules {
+            let (sql, params) = condition(rule, now);
+            conditions.push(sql);
+            values.extend(params);
         }
-        valores.push(Value::Integer(lista.limit.max(1) as i64));
+        values.push(Value::Integer(list.limit.max(1) as i64));
 
         let sql = format!(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
@@ -208,13 +208,13 @@ impl Library {
              WHERE {}
              ORDER BY {}
              LIMIT ?",
-            condiciones.join(" AND "),
-            orden_sql(lista.order)
+            conditions.join(" AND "),
+            sql_order(list.order)
         );
 
         let mut stmt = self.db.prepare(&sql)?;
-        let filas = stmt.query_map(rusqlite::params_from_iter(valores), crate::store::fila_a_track)?;
-        filas.collect()
+        let rows = stmt.query_map(rusqlite::params_from_iter(values), crate::store::row_to_track)?;
+        rows.collect()
     }
 }
 
@@ -224,21 +224,21 @@ mod tests {
     use rusqlite::params;
 
     /// Cuatro pistas con historias distintas.
-    fn biblioteca() -> Library {
+    fn library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        let ahora = std::time::SystemTime::now()
+        let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs() as i64;
         // (id, título, artista, duración, bits, rate, added_at)
-        let filas = [
-            (1, "Vieja", "Uno", 200_000i64, 16, 44_100, ahora - 400 * 86_400),
-            (2, "Nueva", "Dos", 200_000, 24, 96_000, ahora - 2 * 86_400),
-            (3, "Larga", "Uno", 10 * 60_000, 16, 44_100, ahora - 2 * 86_400),
-            (4, "Ausente", "Tres", 100_000, 16, 44_100, ahora - 2 * 86_400),
+        let rows = [
+            (1, "Vieja", "Uno", 200_000i64, 16, 44_100, now - 400 * 86_400),
+            (2, "Nueva", "Dos", 200_000, 24, 96_000, now - 2 * 86_400),
+            (3, "Larga", "Uno", 10 * 60_000, 16, 44_100, now - 2 * 86_400),
+            (4, "Ausente", "Tres", 100_000, 16, 44_100, now - 2 * 86_400),
         ];
-        for (id, titulo, artista, dur, bits, rate, alta) in filas {
+        for (id, title, artist, dur, bits, rate, high) in rows {
             lib.db
                 .execute(
                     "INSERT INTO tracks (id, source_id, external_id, title, artist, duration_ms,
@@ -247,13 +247,13 @@ mod tests {
                     params![
                         id,
                         source,
-                        format!("/{titulo}.flac"),
-                        titulo,
-                        artista,
+                        format!("/{title}.flac"),
+                        title,
+                        artist,
                         dur,
                         bits,
                         rate,
-                        alta,
+                        high,
                         i64::from(id != 4)
                     ],
                 )
@@ -261,45 +261,45 @@ mod tests {
         }
         // La vieja sonó tres veces, hace mucho; la nueva, dos, ayer.
         for i in 0..3 {
-            lib.log_play(Some(1), Some(source), ahora - 300 * 86_400 + i, 200_000, 200_000, false, None, None, true)
+            lib.log_play(Some(1), Some(source), now - 300 * 86_400 + i, 200_000, 200_000, false, None, None, true)
                 .unwrap();
         }
         for i in 0..2 {
-            lib.log_play(Some(2), Some(source), ahora - 86_400 + i, 200_000, 200_000, false, None, None, true)
+            lib.log_play(Some(2), Some(source), now - 86_400 + i, 200_000, 200_000, false, None, None, true)
                 .unwrap();
         }
         lib
     }
 
-    fn titulos(lib: &Library, lista: &SmartList) -> Vec<String> {
-        lib.smart_tracks(lista).unwrap().into_iter().map(|t| t.title).collect()
+    fn titulos(lib: &Library, list: &SmartList) -> Vec<String> {
+        lib.smart_tracks(list).unwrap().into_iter().map(|t| t.title).collect()
     }
 
     #[test]
     fn nunca_escuchadas_son_las_que_nunca_sonaron() {
-        let lib = biblioteca();
-        let mut salen = titulos(
+        let lib = library();
+        let mut come_out = titulos(
             &lib,
             &SmartList::new("x", vec![Rule::NeverPlayed], Order::Artist, 50),
         );
-        salen.sort();
-        assert_eq!(salen, ["Larga"], "la ausente no cuenta aunque nunca sonó");
+        come_out.sort();
+        assert_eq!(come_out, ["Larga"], "la ausente no cuenta aunque nunca sonó");
     }
 
     #[test]
     fn lo_agregado_hace_poco_deja_fuera_lo_viejo() {
-        let lib = biblioteca();
-        let mut salen = titulos(
+        let lib = library();
+        let mut come_out = titulos(
             &lib,
             &SmartList::new("x", vec![Rule::AddedWithinDays(30)], Order::NewestFirst, 50),
         );
-        salen.sort();
-        assert_eq!(salen, ["Larga", "Nueva"]);
+        come_out.sort();
+        assert_eq!(come_out, ["Larga", "Nueva"]);
     }
 
     #[test]
     fn lo_de_esta_semana_mira_cuando_sono_no_cuando_entro() {
-        let lib = biblioteca();
+        let lib = library();
         assert_eq!(
             titulos(&lib, &SmartList::new("x", vec![Rule::PlayedWithinDays(7)], Order::MostPlayed, 50)),
             ["Nueva"],
@@ -309,7 +309,7 @@ mod tests {
 
     #[test]
     fn alta_resolucion_es_lo_que_pasa_del_cd() {
-        let lib = biblioteca();
+        let lib = library();
         assert_eq!(
             titulos(&lib, &SmartList::new("x", vec![Rule::HiRes], Order::Artist, 50)),
             ["Nueva"]
@@ -318,26 +318,26 @@ mod tests {
 
     #[test]
     fn las_reglas_se_suman_todas() {
-        let lib = biblioteca();
-        let lista = SmartList::new(
+        let lib = library();
+        let list = SmartList::new(
             "x",
             vec![Rule::AddedWithinDays(30), Rule::LongerThanMs(8 * 60_000)],
             Order::Artist,
             50,
         );
-        assert_eq!(titulos(&lib, &lista), ["Larga"], "nueva y larga a la vez");
+        assert_eq!(titulos(&lib, &list), ["Larga"], "nueva y larga a la vez");
     }
 
     #[test]
     fn el_limite_se_respeta() {
-        let lib = biblioteca();
-        let lista = SmartList::new("x", vec![], Order::Artist, 2);
-        assert_eq!(lib.smart_tracks(&lista).unwrap().len(), 2);
+        let lib = library();
+        let list = SmartList::new("x", vec![], Order::Artist, 2);
+        assert_eq!(lib.smart_tracks(&list).unwrap().len(), 2);
     }
 
     #[test]
     fn el_bpm_filtra_lo_que_el_analisis_encontro() {
-        let lib = biblioteca();
+        let lib = library();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         lib.save_features(2, "chilpa", 1, Some(72.0), None, None, None).unwrap();
         // La 3 se analizó y no se le encontró pulso.
@@ -346,17 +346,17 @@ mod tests {
         let rapidas = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
         assert_eq!(titulos(&lib, &rapidas), ["Vieja"]);
 
-        let lentas = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
-        assert_eq!(titulos(&lib, &lentas), ["Nueva"]);
+        let slow = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
+        assert_eq!(titulos(&lib, &slow), ["Nueva"]);
 
         // Y sin análisis, la lista sale vacía en vez de traerlo todo.
-        let limpia = Library::in_memory().unwrap();
-        assert!(limpia.smart_tracks(&rapidas).unwrap().is_empty());
+        let clean = Library::in_memory().unwrap();
+        assert!(clean.smart_tracks(&rapidas).unwrap().is_empty());
     }
 
     #[test]
     fn analizar_de_nuevo_la_misma_version_reemplaza_su_fila() {
-        let lib = biblioteca();
+        let lib = library();
         lib.save_features(1, "chilpa", 1, Some(100.0), None, None, None).unwrap();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.track_bpm(1, "chilpa").unwrap(), Some(128.0));
@@ -365,7 +365,7 @@ mod tests {
 
     #[test]
     fn lo_pendiente_es_lo_que_no_tiene_esa_version() {
-        let lib = biblioteca();
+        let lib = library();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 2);
@@ -375,19 +375,19 @@ mod tests {
 
     #[test]
     fn un_nombre_de_artista_raro_es_un_nombre_y_ya() {
-        let lib = biblioteca();
-        let raro = "Uno'; DROP TABLE tracks; --";
-        let lista = SmartList::new("x", vec![Rule::ArtistIs(raro.into())], Order::Artist, 50);
-        assert!(lib.smart_tracks(&lista).unwrap().is_empty());
+        let lib = library();
+        let odd = "Uno'; DROP TABLE tracks; --";
+        let list = SmartList::new("x", vec![Rule::ArtistIs(odd.into())], Order::Artist, 50);
+        assert!(lib.smart_tracks(&list).unwrap().is_empty());
         assert_eq!(lib.track_count(true).unwrap(), 4, "la tabla sigue");
     }
 
     #[test]
     fn las_de_fabrica_corren_todas() {
-        let lib = biblioteca();
-        for lista in builtins() {
-            lib.smart_tracks(&lista)
-                .unwrap_or_else(|e| panic!("la lista \"{}\" no corrió: {e}", lista.name));
+        let lib = library();
+        for list in builtins() {
+            lib.smart_tracks(&list)
+                .unwrap_or_else(|e| panic!("la lista \"{}\" no corrió: {e}", list.name));
         }
     }
 }

@@ -64,33 +64,33 @@ impl ScanJob {
                 let total: usize = roots.iter().map(|r| crate::scan::count_audio_files(r)).sum();
                 let _ = tx.send(ScanProgress::Counted { total });
 
-                let mut acumulado = ScanReport {
+                let mut accumulated = ScanReport {
                     root: roots.first().cloned().unwrap_or_default(),
                     unreachable: true,
                     ..ScanReport::default()
                 };
                 // Lo que ya llevan las carpetas anteriores, para que el
                 // avance no vuelva a empezar en cada una.
-                let mut previos = 0usize;
+                let mut previous = 0usize;
                 for root in &roots {
-                    let avisar = |done: usize| {
-                        let _ = tx.send(ScanProgress::Advanced { done: previos + done, total });
+                    let warn = |done: usize| {
+                        let _ = tx.send(ScanProgress::Advanced { done: previous + done, total });
                     };
                     match crate::scan::scan_root_reporting(
                         &lib,
                         root,
                         artwork_cache.as_deref(),
-                        &avisar,
+                        &warn,
                     ) {
                         Ok(r) => {
-                            previos += r.seen;
-                            acumulado.seen += r.seen;
-                            acumulado.read += r.read;
-                            acumulado.unchanged += r.unchanged;
-                            acumulado.missing += r.missing;
+                            previous += r.seen;
+                            accumulated.seen += r.seen;
+                            accumulated.read += r.read;
+                            accumulated.unchanged += r.unchanged;
+                            accumulated.missing += r.missing;
                             // Con que una carpeta se haya podido leer, el
                             // escaneo sirvió de algo.
-                            acumulado.unreachable &= r.unreachable;
+                            accumulated.unreachable &= r.unreachable;
                         }
                         Err(e) => {
                             let _ = tx.send(ScanProgress::Failed(e.to_string()));
@@ -99,9 +99,9 @@ impl ScanJob {
                     }
                 }
                 if roots.is_empty() {
-                    acumulado.unreachable = false;
+                    accumulated.unreachable = false;
                 }
-                let _ = tx.send(ScanProgress::Done(acumulado));
+                let _ = tx.send(ScanProgress::Done(accumulated));
             })
             .expect("el hilo de escaneo arranca");
         Self { events: rx, thread: Some(thread) }
@@ -145,18 +145,18 @@ mod tests {
     use super::*;
 
     /// Espera a que el escaneo termine y regresa todo lo que reportó.
-    fn hasta_el_final(job: &ScanJob) -> Vec<ScanProgress> {
-        let limite = std::time::Instant::now() + std::time::Duration::from_secs(10);
-        let mut eventos = Vec::new();
-        while std::time::Instant::now() < limite {
-            eventos.extend(job.poll());
-            if eventos.iter().any(|e| matches!(e, ScanProgress::Done(_) | ScanProgress::Failed(_)))
+    fn to_the_end(job: &ScanJob) -> Vec<ScanProgress> {
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+        let mut events = Vec::new();
+        while std::time::Instant::now() < limit {
+            events.extend(job.poll());
+            if events.iter().any(|e| matches!(e, ScanProgress::Done(_) | ScanProgress::Failed(_)))
             {
                 break;
             }
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-        eventos
+        events
     }
 
     #[test]
@@ -171,26 +171,26 @@ mod tests {
 
         let db = dir.join("lib.db");
         let job = ScanJob::start(db, dir.clone(), None);
-        let eventos = hasta_el_final(&job);
+        let events = to_the_end(&job);
 
         // El total llega primero: una barra sin total inventa su avance.
-        match eventos.first() {
+        match events.first() {
             Some(ScanProgress::Counted { total }) => {
                 assert_eq!(*total, 4, "se cuentan los de audio, no el .txt")
             }
-            otro => panic!("lo primero es la cuenta: {otro:?}"),
+            other => panic!("lo primero es la cuenta: {other:?}"),
         }
-        let mut visto = 0;
-        for e in &eventos {
+        let mut seen = 0;
+        for e in &events {
             if let ScanProgress::Advanced { done, total } = e {
                 assert_eq!(*total, 4, "el total no se mueve a media cuenta");
-                assert!(*done >= visto, "el avance no retrocede");
-                visto = *done;
+                assert!(*done >= seen, "el avance no retrocede");
+                seen = *done;
             }
         }
-        match eventos.last() {
+        match events.last() {
             Some(ScanProgress::Done(r)) => assert_eq!(r.seen, 4),
-            otro => panic!("debía terminar: {otro:?}"),
+            other => panic!("debía terminar: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -211,25 +211,25 @@ mod tests {
         }
 
         let job = ScanJob::start_all(dir.join("lib.db"), vec![a, b], None);
-        let eventos = hasta_el_final(&job);
+        let events = to_the_end(&job);
 
-        match eventos.first() {
+        match events.first() {
             Some(ScanProgress::Counted { total }) => assert_eq!(*total, 5, "las dos juntas"),
-            otro => panic!("lo primero es la cuenta: {otro:?}"),
+            other => panic!("lo primero es la cuenta: {other:?}"),
         }
-        let mut visto = 0;
-        for e in &eventos {
+        let mut seen = 0;
+        for e in &events {
             if let ScanProgress::Advanced { done, .. } = e {
-                assert!(*done >= visto, "el avance no reinicia entre carpetas");
-                visto = *done;
+                assert!(*done >= seen, "el avance no reinicia entre carpetas");
+                seen = *done;
             }
         }
-        match eventos.last() {
+        match events.last() {
             Some(ScanProgress::Done(r)) => {
                 assert_eq!(r.seen, 5, "se vieron las cinco");
                 assert!(!r.unreachable);
             }
-            otro => panic!("debía terminar: {otro:?}"),
+            other => panic!("debía terminar: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -247,13 +247,13 @@ mod tests {
             vec![PathBuf::from("/no/existe"), dir.clone()],
             None,
         );
-        let eventos = hasta_el_final(&job);
-        match eventos.last() {
+        let events = to_the_end(&job);
+        match events.last() {
             Some(ScanProgress::Done(r)) => {
                 assert_eq!(r.seen, 1);
                 assert!(!r.unreachable, "una sí se pudo leer");
             }
-            otro => panic!("debía terminar: {otro:?}"),
+            other => panic!("debía terminar: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -264,19 +264,19 @@ mod tests {
         let db = std::env::temp_dir().join("chilpa-scanjob-test.db");
         let _ = std::fs::remove_file(&db);
         let job = ScanJob::start(db.clone(), PathBuf::from("/no/existe"), None);
-        let limite = std::time::Instant::now() + std::time::Duration::from_secs(5);
-        let mut eventos = Vec::new();
-        while std::time::Instant::now() < limite {
-            eventos.extend(job.poll());
-            if eventos.iter().any(|e| matches!(e, ScanProgress::Done(_) | ScanProgress::Failed(_)))
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        let mut events = Vec::new();
+        while std::time::Instant::now() < limit {
+            events.extend(job.poll());
+            if events.iter().any(|e| matches!(e, ScanProgress::Done(_) | ScanProgress::Failed(_)))
             {
                 break;
             }
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
-        match eventos.last() {
+        match events.last() {
             Some(ScanProgress::Done(r)) => assert!(r.unreachable, "se marcó inalcanzable"),
-            otro => panic!("debía terminar con un reporte: {otro:?}"),
+            other => panic!("debía terminar con un reporte: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_file(db);

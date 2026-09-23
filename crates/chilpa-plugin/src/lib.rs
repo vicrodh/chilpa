@@ -23,14 +23,18 @@ pub mod abi;
 pub mod host;
 pub mod limits;
 pub mod manifest;
+pub mod messages;
 pub mod registry;
 pub mod services;
 pub mod watchdog;
 
-pub use abi::Respuesta;
-pub use host::{Host, Plugin, PluginError, Servicios};
-pub use limits::{Detencion, Limits};
+pub use abi::Reply;
+pub use host::{Host, Plugin, PluginError, Services};
+pub use limits::{Halt, Limits};
 pub use manifest::{Capability, Kind, Manifest, ManifestError, Runtime, API_VERSION};
-pub use registry::{Instalado, Registry};
-pub use services::{Anotado, HostDePrueba, HostServices, Nivel};
-pub use watchdog::{Estado, Watchdog};
+pub use messages::{
+    op, RemoteAlbum, Quality, Query, RemotePlaylist, Results, Stream, RemoteTrack,
+};
+pub use registry::{Installed, Registry};
+pub use services::{Recorded, TestHost, HostServices, Level};
+pub use watchdog::{State, Watchdog};

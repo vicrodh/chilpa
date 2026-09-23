@@ -363,21 +363,21 @@ pub mod chilpa_bridge {
 use chilpa_bridge::Chilpa;
 
 /// Un tiempo largo dicho como se dice: "3 h 21 min", no 12 060 000 ms.
-fn duracion_larga(ms: u64) -> String {
-    let minutos = ms / 60_000;
-    if minutos == 0 {
+fn long_duration(ms: u64) -> String {
+    let minutes = ms / 60_000;
+    if minutes == 0 {
         // Un disco de prueba de seis segundos no dura "0 min".
         return format!("{} s", ms / 1000);
     }
-    let (horas, resto) = (minutos / 60, minutos % 60);
-    if horas == 0 {
-        return format!("{minutos} min");
+    let (hours, rest) = (minutes / 60, minutes % 60);
+    if hours == 0 {
+        return format!("{minutes} min");
     }
-    format!("{horas} h {resto} min")
+    format!("{hours} h {rest} min")
 }
 
 /// Una fecha unix en año-mes-día, sin arrastrar una biblioteca de fechas.
-fn fecha_corta(unix: i64) -> String {
+fn short_date(unix: i64) -> String {
     // Días desde 1970 a fecha civil (Howard Hinnant). Son cuatro líneas y
     // evitan una dependencia para mostrar un renglón.
     let dias = unix.div_euclid(86_400) + 719_468;
@@ -403,7 +403,7 @@ const VISTAS: &[(chilpa_api::AlbumSort, &str)] = &[
 ];
 
 /// La lista de acomodos, generada por `build.rs` a partir de los QML.
-mod acomodos {
+mod layouts {
     include!(concat!(env!("OUT_DIR"), "/layouts.rs"));
 }
 
@@ -439,7 +439,7 @@ pub struct ChilpaRust {
     lyrics: QStringList,
     /// De qué pista es la letra que está armada, para no rearmarla en cada
     /// pulso.
-    letra_de: String,
+    lyrics_of: String,
     lyrics_line: i32,
     lyrics_synced: bool,
     lyrics_source: QString,
@@ -488,7 +488,7 @@ pub struct ChilpaRust {
 
 impl Default for ChilpaRust {
     fn default() -> Self {
-        let recordado = chilpa_api::Chilpa::new().settings();
+        let remembered = chilpa_api::Chilpa::new().settings();
         Self {
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
@@ -516,13 +516,13 @@ impl Default for ChilpaRust {
             scanning: false,
             analysis: QString::from(""),
             lyrics: QStringList::default(),
-            letra_de: String::new(),
+            lyrics_of: String::new(),
             lyrics_line: -1,
             lyrics_synced: false,
             lyrics_source: QString::from(""),
-            last_folder: QString::from(&recordado.last_folder),
+            last_folder: QString::from(&remembered.last_folder),
             scope: QStringList::default(),
-            visualizer: QString::from(&recordado.visualizer),
+            visualizer: QString::from(&remembered.visualizer),
             spectrum: QStringList::default(),
             pairs: QStringList::default(),
             correlation: 999.0,
@@ -552,17 +552,17 @@ impl Default for ChilpaRust {
             },
             shuffle: false,
             repeat: 0,
-            layout: QString::from(&recordado.layout),
+            layout: QString::from(&remembered.layout),
             layouts: {
                 let mut l = QList::<QString>::default();
-                for n in acomodos::LAYOUTS {
+                for n in layouts::LAYOUTS {
                     l.append(QString::from(*n));
                 }
                 QStringList::from(&l)
             },
             search_text: QString::from(""),
-            device: QString::from(&recordado.output),
-            want_bit_perfect: recordado.bit_perfect,
+            device: QString::from(&remembered.output),
+            want_bit_perfect: remembered.bit_perfect,
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -586,59 +586,59 @@ impl Default for ChilpaRust {
 
 impl Chilpa {
     pub fn refresh_outputs(mut self: Pin<&mut Self>) {
-        let salidas = self.api.outputs();
-        let mut etiquetas = QList::<QString>::default();
+        let outputs = self.api.outputs();
+        let mut tags = QList::<QString>::default();
         let mut ids = QList::<QString>::default();
-        for salida in &salidas {
-            etiquetas.append(QString::from(&salida.label));
-            ids.append(QString::from(&salida.id));
+        for output in &outputs {
+            tags.append(QString::from(&output.label));
+            ids.append(QString::from(&output.id));
         }
-        self.as_mut().set_outputs(QStringList::from(&etiquetas));
+        self.as_mut().set_outputs(QStringList::from(&tags));
         self.as_mut().set_output_ids(QStringList::from(&ids));
     }
 
     pub fn play(mut self: Pin<&mut Self>, path: &QString) {
-        let ruta = path.to_string();
+        let path = path.to_string();
         // QML entrega la ruta de un diálogo de archivo como URL.
-        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().set_error(QString::from(""));
-        self.as_mut().set_track(QString::from(&ruta));
+        self.as_mut().set_track(QString::from(&path));
         self.as_mut().set_playing(true);
         self.as_mut()
             .rust_mut()
             .api
-            .play_file(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
+            .play_file(std::path::Path::new(&path), &device, bit_perfect);
         // Un archivo suelto también es una cola de una pista: la vista tiene
         // que poder guardarla y vaciarla como cualquier otra.
-        let cola = self.as_mut().rust_mut().api.queue_titles();
-        self.as_mut().refrescar_cola(&cola);
+        let queue = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refresh_queue(&queue);
         self.as_mut().set_queue_index(0);
-        self.as_mut().recordar_carpeta(&ruta);
+        self.as_mut().remember_folder(&path);
     }
 
     pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
-        let ruta = folder.to_string();
-        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
+        let path = folder.to_string();
+        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
         // El escaneo corre en su propio hilo: una biblioteca grande dejaría
         // la ventana congelada si se hiciera aquí.
-        self.as_mut().recordar_carpeta(&format!("{ruta}/."));
-        self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&ruta));
+        self.as_mut().remember_folder(&format!("{path}/."));
+        self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&path));
         self.as_mut().set_scanning(true);
         self.as_mut().set_scan_progress(0.0);
         self.as_mut().set_library_status(QString::from("escaneando..."));
     }
 
     pub fn choose_visualizer(mut self: Pin<&mut Self>, name: &QString) {
-        let nombre = name.to_string();
+        let owned = name.to_string();
         self.as_mut().set_visualizer(name.clone());
-        self.as_mut().rust_mut().api.remember_visualizer(&nombre);
+        self.as_mut().rust_mut().api.remember_visualizer(&owned);
     }
 
     pub fn choose_layout(mut self: Pin<&mut Self>, name: &QString) {
-        let nombre = name.to_string();
+        let owned = name.to_string();
         self.as_mut().set_layout(name.clone());
-        self.as_mut().rust_mut().api.remember_layout(&nombre);
+        self.as_mut().rust_mut().api.remember_layout(&owned);
     }
 
     pub fn analyze_library(mut self: Pin<&mut Self>) {
@@ -660,46 +660,46 @@ impl Chilpa {
     }
 
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
-        let texto = text.to_string();
+        let owned = text.to_string();
         self.as_mut().set_search_text(text.clone());
-        let encontrados = self.as_mut().rust_mut().api.search(&texto, 200);
-        let mut lista = QList::<QString>::default();
-        let mut rutas = Vec::with_capacity(encontrados.len());
-        for t in &encontrados {
-            let segundos = t.duration_ms / 1000;
-            lista.append(QString::from(&format!(
+        let found = self.as_mut().rust_mut().api.search(&owned, 200);
+        let mut list = QList::<QString>::default();
+        let mut paths = Vec::with_capacity(found.len());
+        for t in &found {
+            let seconds = t.duration_ms / 1000;
+            list.append(QString::from(&format!(
                 "{}\t{}\t{}\t{}\t{}:{:02}\t{}",
                 t.path,
                 t.title,
                 t.artist,
                 t.album,
-                segundos / 60,
-                segundos % 60,
+                seconds / 60,
+                seconds % 60,
                 t.analysis
             )));
-            rutas.push(t.path.clone());
+            paths.push(t.path.clone());
         }
-        self.as_mut().set_results(QStringList::from(&lista));
-        self.as_mut().rust_mut().result_paths = rutas;
+        self.as_mut().set_results(QStringList::from(&list));
+        self.as_mut().rust_mut().result_paths = paths;
     }
 
     pub fn play_results(mut self: Pin<&mut Self>, from: i32) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        let desde = from.max(0) as usize;
-        let rutas: Vec<String> = self
+        let (device, bit_perfect) = self.as_mut().chosen();
+        let from = from.max(0) as usize;
+        let paths: Vec<String> = self
             .as_mut()
             .rust_mut()
             .result_paths
             .iter()
-            .skip(desde)
+            .skip(from)
             .cloned()
             .collect();
-        let titulos = self.as_mut().rust_mut().api.play_tracks(&rutas, &dispositivo, bit_perfect);
-        let mut lista = QList::<QString>::default();
+        let titulos = self.as_mut().rust_mut().api.play_tracks(&paths, &device, bit_perfect);
+        let mut list = QList::<QString>::default();
         for t in &titulos {
-            lista.append(QString::from(t));
+            list.append(QString::from(t));
         }
-        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
     }
@@ -710,23 +710,23 @@ impl Chilpa {
 
     /// Recuerda dónde estaba el usuario: lo que se abre es, casi siempre,
     /// vecino de lo último que se abrió.
-    fn recordar_carpeta(mut self: Pin<&mut Self>, ruta: &str) {
-        let carpeta = std::path::Path::new(ruta)
+    fn remember_folder(mut self: Pin<&mut Self>, path: &str) {
+        let folder = std::path::Path::new(path)
             .parent()
             .map(|p| p.display().to_string())
             .unwrap_or_default();
-        if carpeta.is_empty() {
+        if folder.is_empty() {
             return;
         }
-        self.as_mut().set_last_folder(QString::from(&carpeta));
-        self.as_mut().rust_mut().api.remember_folder(&carpeta);
+        self.as_mut().set_last_folder(QString::from(&folder));
+        self.as_mut().rust_mut().api.remember_folder(&folder);
     }
 
     pub fn choose_album_view(mut self: Pin<&mut Self>, view: i32) {
-        let Some((orden, _)) = VISTAS.get(view.max(0) as usize) else { return };
-        let orden = *orden;
+        let Some((order, _)) = VISTAS.get(view.max(0) as usize) else { return };
+        let order = *order;
         self.as_mut().rust_mut().album_view = view;
-        self.as_mut().rust_mut().api.set_album_sort(orden);
+        self.as_mut().rust_mut().api.set_album_sort(order);
         self.as_mut().album_view_changed();
         self.as_mut().refresh_albums();
     }
@@ -734,21 +734,21 @@ impl Chilpa {
     pub fn refresh_playlists(mut self: Pin<&mut Self>) {
         let generos = self.as_mut().rust_mut().api.genres(40);
         let mut g = QList::<QString>::default();
-        for (nombre, n) in &generos {
-            g.append(QString::from(&format!("{nombre}\t{n}")));
+        for (name, n) in &generos {
+            g.append(QString::from(&format!("{name}\t{n}")));
         }
         self.as_mut().set_genres(QStringList::from(&g));
 
-        let inteligentes = self.as_mut().rust_mut().api.smart_lists();
-        let mut si = QList::<QString>::default();
-        for l in &inteligentes {
-            si.append(QString::from(&format!("{}\t{}", l.name, l.track_count)));
+        let smart = self.as_mut().rust_mut().api.smart_lists();
+        let mut out = QList::<QString>::default();
+        for l in &smart {
+            out.append(QString::from(&format!("{}\t{}", l.name, l.track_count)));
         }
-        self.as_mut().set_smart_lists(QStringList::from(&si));
+        self.as_mut().set_smart_lists(QStringList::from(&out));
 
-        let listas = self.as_mut().rust_mut().api.playlists();
+        let lists = self.as_mut().rust_mut().api.playlists();
         let mut l = QList::<QString>::default();
-        for p in &listas {
+        for p in &lists {
             l.append(QString::from(&format!(
                 "{}\t{}\t{}\t{}",
                 p.id, p.name, p.provider, p.track_count
@@ -758,42 +758,42 @@ impl Chilpa {
     }
 
     pub fn play_genre(mut self: Pin<&mut Self>, genre: &QString) {
-        let nombre = genre.to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        let titulos = self.as_mut().rust_mut().api.play_genre(&nombre, &dispositivo, bit_perfect);
-        self.as_mut().refrescar_cola(&titulos);
+        let name = genre.to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
+        let titulos = self.as_mut().rust_mut().api.play_genre(&name, &device, bit_perfect);
+        self.as_mut().refresh_queue(&titulos);
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn play_smart_list(mut self: Pin<&mut Self>, name: &QString) {
-        let nombre = name.to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let name = name.to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
         let titulos =
-            self.as_mut().rust_mut().api.play_smart_list(&nombre, &dispositivo, bit_perfect);
-        self.as_mut().refrescar_cola(&titulos);
+            self.as_mut().rust_mut().api.play_smart_list(&name, &device, bit_perfect);
+        self.as_mut().refresh_queue(&titulos);
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn save_queue_as(mut self: Pin<&mut Self>, name: &QString) {
-        let nombre = name.to_string();
-        let guardada = self.as_mut().rust_mut().api.save_queue_as(&nombre).is_some();
-        if guardada {
+        let name = name.to_string();
+        let saved = self.as_mut().rust_mut().api.save_queue_as(&name).is_some();
+        if saved {
             self.as_mut()
-                .set_library_status(QString::from(&format!("lista \"{nombre}\" guardada")));
+                .set_library_status(QString::from(&format!("lista \"{name}\" guardada")));
             self.as_mut().refresh_playlists();
         }
     }
 
     pub fn play_saved_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let (device, bit_perfect) = self.as_mut().chosen();
         let titulos = self
             .as_mut()
             .rust_mut()
             .api
-            .play_saved_playlist(playlist_id, &dispositivo, bit_perfect);
-        self.as_mut().refrescar_cola(&titulos);
+            .play_saved_playlist(playlist_id, &device, bit_perfect);
+        self.as_mut().refresh_queue(&titulos);
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
     }
@@ -805,15 +805,15 @@ impl Chilpa {
 
     pub fn refresh_stats(mut self: Pin<&mut Self>) {
         let s = self.as_mut().rust_mut().api.stats();
-        let mut resumen = QList::<QString>::default();
-        let mut renglon = |etiqueta: &str, valor: String| {
-            resumen.append(QString::from(&format!("{etiqueta}\t{valor}")));
+        let mut summary = QList::<QString>::default();
+        let mut line = |tag: &str, valor: String| {
+            summary.append(QString::from(&format!("{tag}\t{valor}")));
         };
-        renglon("Escuchas", s.plays.to_string());
-        renglon("Pistas distintas", s.distinct_tracks.to_string());
-        renglon("Tiempo escuchado", duracion_larga(s.listened_ms));
-        renglon("Saltos", s.skips.to_string());
-        renglon(
+        line("Escuchas", s.plays.to_string());
+        line("Pistas distintas", s.distinct_tracks.to_string());
+        line("Tiempo escuchado", long_duration(s.listened_ms));
+        line("Saltos", s.skips.to_string());
+        line(
             "Bit-perfect",
             if s.plays + s.skips == 0 {
                 "—".to_string()
@@ -821,107 +821,107 @@ impl Chilpa {
                 format!("{} de {}", s.bit_perfect, s.plays + s.skips)
             },
         );
-        renglon("Desde", s.since.map(fecha_corta).unwrap_or_else(|| "—".into()));
-        self.as_mut().set_stats(QStringList::from(&resumen));
+        line("Desde", s.since.map(short_date).unwrap_or_else(|| "—".into()));
+        self.as_mut().set_stats(QStringList::from(&summary));
 
-        let a_renglones = |pistas: Vec<(chilpa_api::LibraryTrack, usize)>| {
+        let to_lines = |tracks: Vec<(chilpa_api::LibraryTrack, usize)>| {
             let mut l = QList::<QString>::default();
-            for (t, veces) in pistas {
+            for (t, times) in tracks {
                 l.append(QString::from(&format!(
                     "{}\t{}\t{}\t{}\t{}",
-                    t.title, t.artist, t.album, veces, t.path
+                    t.title, t.artist, t.album, times, t.path
                 )));
             }
             QStringList::from(&l)
         };
         let top = self.as_mut().rust_mut().api.top_tracks(20);
-        self.as_mut().set_top_tracks(a_renglones(top));
-        let recientes = self.as_mut().rust_mut().api.recently_played(20);
-        self.as_mut().set_recent_tracks(a_renglones(recientes));
+        self.as_mut().set_top_tracks(to_lines(top));
+        let recent = self.as_mut().rust_mut().api.recently_played(20);
+        self.as_mut().set_recent_tracks(to_lines(recent));
     }
 
     pub fn refresh_artists(mut self: Pin<&mut Self>) {
-        let artistas = self.as_mut().rust_mut().api.artists(1000, 0);
-        let mut lista = QList::<QString>::default();
-        for a in &artistas {
-            lista.append(QString::from(&format!(
+        let artists = self.as_mut().rust_mut().api.artists(1000, 0);
+        let mut list = QList::<QString>::default();
+        for a in &artists {
+            list.append(QString::from(&format!(
                 "{}\t{}\t{}\t{}",
                 a.name, a.album_count, a.track_count, a.artwork_path
             )));
         }
-        self.as_mut().set_artists(QStringList::from(&lista));
+        self.as_mut().set_artists(QStringList::from(&list));
     }
 
     pub fn open_artist_albums(mut self: Pin<&mut Self>, name: &QString) {
-        let nombre = name.to_string();
-        self.as_mut().rust_mut().api.set_open_artist(&nombre);
+        let owned = name.to_string();
+        self.as_mut().rust_mut().api.set_open_artist(&owned);
         self.as_mut().set_open_artist(name.clone());
         self.as_mut().refresh_albums();
     }
 
     pub fn refresh_albums(mut self: Pin<&mut Self>) {
-        let albumes = self.as_mut().rust_mut().api.albums(500, 0);
-        let mut lista = QList::<QString>::default();
-        for a in &albumes {
+        let albums = self.as_mut().rust_mut().api.albums(500, 0);
+        let mut list = QList::<QString>::default();
+        for a in &albums {
             let año = a.year.map(|y| y.to_string()).unwrap_or_default();
             // Un renglón por álbum, separado por tabuladores: QML lo parte y
             // arma su modelo sin que el puente invente un tipo nuevo.
-            let renglon = format!(
+            let line = format!(
                 "{}\t{}\t{}\t{}\t{}\t{}\t{}",
                 a.id, a.title, a.artist, año, a.track_count, a.artwork_path, a.play_count
             );
-            lista.append(QString::from(&renglon));
+            list.append(QString::from(&line));
         }
-        self.as_mut().set_albums(QStringList::from(&lista));
+        self.as_mut().set_albums(QStringList::from(&list));
     }
 
     pub fn open_album_tracks(mut self: Pin<&mut Self>, album_id: i64, title: &QString) {
-        let pistas = self.as_mut().rust_mut().api.album_tracks(album_id);
-        let mut lista = QList::<QString>::default();
-        let mut rutas = Vec::with_capacity(pistas.len());
-        for t in &pistas {
-            let segundos = t.duration_ms / 1000;
-            let numero = t.track_number.map(|n| format!("{n}. ")).unwrap_or_default();
-            lista.append(QString::from(&format!(
+        let tracks = self.as_mut().rust_mut().api.album_tracks(album_id);
+        let mut list = QList::<QString>::default();
+        let mut paths = Vec::with_capacity(tracks.len());
+        for t in &tracks {
+            let seconds = t.duration_ms / 1000;
+            let number = t.track_number.map(|n| format!("{n}. ")).unwrap_or_default();
+            list.append(QString::from(&format!(
                 "{}\t{}{}\t{}\t{}\t{}:{:02}\t{}",
                 t.path,
-                numero,
+                number,
                 t.title,
                 t.artist,
                 t.album,
-                segundos / 60,
-                segundos % 60,
+                seconds / 60,
+                seconds % 60,
                 t.analysis
             )));
-            rutas.push(t.path.clone());
+            paths.push(t.path.clone());
         }
-        self.as_mut().set_results(QStringList::from(&lista));
-        self.as_mut().rust_mut().result_paths = rutas;
+        self.as_mut().set_results(QStringList::from(&list));
+        self.as_mut().rust_mut().result_paths = paths;
         self.as_mut().set_open_album(title.clone());
         self.as_mut().set_open_album_id(album_id);
 
         // El encabezado del álbum: portada, artista y una línea con año,
         // pistas, duración y escuchas.
-        let duracion: u64 = pistas.iter().map(|t| t.duration_ms).sum();
+        let duration: u64 = tracks.iter().map(|t| t.duration_ms).sum();
         match self.as_mut().rust_mut().api.album(album_id) {
             Some(a) => {
-                let portada = if a.artwork_path.is_empty() {
+                let cover = if a.artwork_path.is_empty() {
                     String::new()
                 } else {
                     format!("file://{}", a.artwork_path)
                 };
-                let mut partes: Vec<String> = Vec::new();
+                let mut parts: Vec<String> = Vec::new();
                 if let Some(año) = a.year {
-                    partes.push(año.to_string());
+                    parts.push(año.to_string());
                 }
-                partes.push(format!(
+                parts.push(format!(
                     "{} {}",
                     a.track_count,
                     if a.track_count == 1 { "pista" } else { "pistas" }
                 ));
-                partes.push(duracion_larga(duracion));
+                parts.push(long_duration(duration));
                 if a.play_count > 0 {
-                    partes.push(format!(
+                    parts.push(format!(
                         "{} {}",
                         a.play_count,
                         if a.play_count == 1 { "escucha" } else { "escuchas" }
@@ -931,8 +931,8 @@ impl Chilpa {
                 // vista: así siempre dice lo que dice el disco.
                 self.as_mut().set_open_album(QString::from(&a.title));
                 self.as_mut().set_open_album_artist(QString::from(&a.artist));
-                self.as_mut().set_open_album_art(QString::from(&portada));
-                self.as_mut().set_open_album_line(QString::from(&partes.join(" · ")));
+                self.as_mut().set_open_album_art(QString::from(&cover));
+                self.as_mut().set_open_album_line(QString::from(&parts.join(" · ")));
             }
             None => {
                 self.as_mut().set_open_album_artist(QString::from(""));
@@ -953,20 +953,20 @@ impl Chilpa {
     }
 
     /// Deja la cola que reporta la fachada en las propiedades de la vista.
-    fn refrescar_cola(mut self: Pin<&mut Self>, titulos: &[String]) {
-        let mut lista = QList::<QString>::default();
+    fn refresh_queue(mut self: Pin<&mut Self>, titulos: &[String]) {
+        let mut list = QList::<QString>::default();
         for t in titulos {
-            lista.append(QString::from(t));
+            list.append(QString::from(t));
         }
-        self.as_mut().set_queue(QStringList::from(&lista));
-        self.as_mut().refrescar_quitadas();
+        self.as_mut().set_queue(QStringList::from(&list));
+        self.as_mut().refresh_removed();
     }
 
     /// Qué posiciones de la cola están apagadas.
-    fn refrescar_quitadas(mut self: Pin<&mut Self>) {
-        let quitadas: Vec<bool> = self.api.queue_removed().to_vec();
+    fn refresh_removed(mut self: Pin<&mut Self>) {
+        let removed: Vec<bool> = self.api.queue_removed().to_vec();
         let mut l = QList::<QString>::default();
-        for q in quitadas {
+        for q in removed {
             l.append(QString::from(if q { "1" } else { "0" }));
         }
         self.as_mut().set_queue_removed(QStringList::from(&l));
@@ -977,7 +977,7 @@ impl Chilpa {
             return;
         }
         if self.as_mut().rust_mut().api.remove_from_queue(index as usize) {
-            self.as_mut().refrescar_quitadas();
+            self.as_mut().refresh_removed();
         }
     }
 
@@ -990,57 +990,57 @@ impl Chilpa {
     }
 
     pub fn enqueue_results(mut self: Pin<&mut Self>, from: i32) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        let desde = from.max(0) as usize;
-        let rutas: Vec<String> =
-            self.as_mut().rust_mut().result_paths.iter().skip(desde).cloned().collect();
-        self.as_mut().rust_mut().api.enqueue(&rutas, &dispositivo, bit_perfect);
-        let cola = self.as_mut().rust_mut().api.queue_titles();
-        self.as_mut().refrescar_cola(&cola);
+        let (device, bit_perfect) = self.as_mut().chosen();
+        let from = from.max(0) as usize;
+        let paths: Vec<String> =
+            self.as_mut().rust_mut().result_paths.iter().skip(from).cloned().collect();
+        self.as_mut().rust_mut().api.enqueue(&paths, &device, bit_perfect);
+        let queue = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refresh_queue(&queue);
         self.as_mut().set_playing(true);
     }
 
     pub fn enqueue_album(mut self: Pin<&mut Self>, album_id: i64) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        self.as_mut().rust_mut().api.enqueue_album(album_id, &dispositivo, bit_perfect);
-        let cola = self.as_mut().rust_mut().api.queue_titles();
-        self.as_mut().refrescar_cola(&cola);
+        let (device, bit_perfect) = self.as_mut().chosen();
+        self.as_mut().rust_mut().api.enqueue_album(album_id, &device, bit_perfect);
+        let queue = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refresh_queue(&queue);
         self.as_mut().set_playing(true);
     }
 
     pub fn play_album(mut self: Pin<&mut Self>, album_id: i64) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        let pistas = self.as_mut().rust_mut().api.play_album(album_id, &dispositivo, bit_perfect);
-        let mut lista = QList::<QString>::default();
-        for pista in &pistas {
-            lista.append(QString::from(pista));
+        let (device, bit_perfect) = self.as_mut().chosen();
+        let tracks = self.as_mut().rust_mut().api.play_album(album_id, &device, bit_perfect);
+        let mut list = QList::<QString>::default();
+        for track in &tracks {
+            list.append(QString::from(track));
         }
-        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!pistas.is_empty());
+        self.as_mut().set_playing(!tracks.is_empty());
     }
 
     pub fn load_plugins(mut self: Pin<&mut Self>) {
-        let cuantos = self.as_mut().rust_mut().api.load_plugins();
-        self.as_mut().refrescar_plugins();
+        let count = self.as_mut().rust_mut().api.load_plugins();
+        self.as_mut().refresh_plugins();
         let total = self.as_mut().rust_mut().api.plugins().len();
         if total > 0 {
             self.as_mut().set_library_status(QString::from(&format!(
-                "{cuantos} de {total} plugins cargados"
+                "{count} de {total} plugins cargados"
             )));
         }
     }
 
     pub fn reactivate_plugin(mut self: Pin<&mut Self>, id: &QString) {
-        let nombre = id.to_string();
-        self.as_mut().rust_mut().api.reactivate_plugin(&nombre);
-        self.as_mut().refrescar_plugins();
+        let name = id.to_string();
+        self.as_mut().rust_mut().api.reactivate_plugin(&name);
+        self.as_mut().refresh_plugins();
     }
 
-    fn refrescar_plugins(mut self: Pin<&mut Self>) {
-        let lista = self.as_mut().rust_mut().api.plugins();
+    fn refresh_plugins(mut self: Pin<&mut Self>) {
+        let list = self.as_mut().rust_mut().api.plugins();
         let mut l = QList::<QString>::default();
-        for p in &lista {
+        for p in &list {
             l.append(QString::from(&format!(
                 "{}\t{}\t{}\t{}",
                 p.id, p.name, p.state, p.problem
@@ -1050,112 +1050,112 @@ impl Chilpa {
     }
 
     pub fn run_wizard(mut self: Pin<&mut Self>) {
-        let (dispositivo, _) = self.as_mut().elegido();
-        let reporte = self.as_mut().rust_mut().api.wizard(&dispositivo);
+        let (device, _) = self.as_mut().chosen();
+        let report = self.as_mut().rust_mut().api.wizard(&device);
         let mut l = QList::<QString>::default();
         // Primero lo que el dispositivo dijo de sí mismo.
-        if reporte.probed {
+        if report.probed {
             l.append(QString::from(&format!(
                 "Frecuencias\t{}\t",
-                reporte
+                report
                     .rates
                     .iter()
                     .map(|r| r.to_string())
                     .collect::<Vec<_>>()
                     .join(", ")
             )));
-            l.append(QString::from(&format!("Formatos\t{}\t", reporte.formats.join(", "))));
+            l.append(QString::from(&format!("Formatos\t{}\t", report.formats.join(", "))));
         }
-        for f in &reporte.rows {
+        for f in &report.rows {
             l.append(QString::from(&format!("{}\t{}\t{}", f.name, f.format, f.verdict)));
         }
         self.as_mut().set_wizard_rows(QStringList::from(&l));
         self.as_mut().set_wizard_summary(QString::from(&format!(
             "{}: {}",
-            reporte.device, reporte.summary
+            report.device, report.summary
         )));
     }
 
     pub fn refresh_cd_drives(mut self: Pin<&mut Self>) {
-        let unidades = self.api.cd_drives();
+        let units = self.api.cd_drives();
         let mut l = QList::<QString>::default();
-        for u in &unidades {
+        for u in &units {
             l.append(QString::from(u));
         }
         self.as_mut().set_cd_drives(QStringList::from(&l));
     }
 
     pub fn play_cd(mut self: Pin<&mut Self>, drive: &QString) {
-        let unidad = drive.to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let unit = drive.to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().set_error(QString::from(""));
-        if self.as_mut().rust_mut().api.play_cd(&unidad, &dispositivo, bit_perfect) {
+        if self.as_mut().rust_mut().api.play_cd(&unit, &device, bit_perfect) {
             self.as_mut().set_playing(true);
         }
     }
 
     pub fn play_url(mut self: Pin<&mut Self>, url: &QString) {
-        let direccion = url.to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        self.as_mut().rust_mut().api.play_url(&direccion, &dispositivo, bit_perfect);
-        let mut lista = QList::<QString>::default();
-        lista.append(QString::from(&direccion));
-        self.as_mut().set_queue(QStringList::from(&lista));
+        let address = url.to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
+        self.as_mut().rust_mut().api.play_url(&address, &device, bit_perfect);
+        let mut list = QList::<QString>::default();
+        list.append(QString::from(&address));
+        self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(true);
-        self.as_mut().set_track(QString::from(&direccion));
+        self.as_mut().set_track(QString::from(&address));
     }
 
     pub fn play_playlist(mut self: Pin<&mut Self>, path: &QString) {
-        let ruta = path.to_string();
-        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        self.as_mut().recordar_carpeta(&ruta);
+        let path = path.to_string();
+        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
+        self.as_mut().remember_folder(&path);
         let titulos = self.as_mut().rust_mut().api.play_playlist(
-            std::path::Path::new(&ruta),
-            &dispositivo,
+            std::path::Path::new(&path),
+            &device,
             bit_perfect,
         );
-        let mut lista = QList::<QString>::default();
+        let mut list = QList::<QString>::default();
         for t in &titulos {
-            lista.append(QString::from(t));
+            list.append(QString::from(t));
         }
-        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn save_queue(mut self: Pin<&mut Self>, path: &QString) {
-        let ruta = path.to_string();
-        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let ok = self.as_mut().rust_mut().api.save_queue(std::path::Path::new(&ruta));
+        let path = path.to_string();
+        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let ok = self.as_mut().rust_mut().api.save_queue(std::path::Path::new(&path));
         if ok {
-            self.as_mut().set_library_status(QString::from(&format!("lista guardada en {ruta}")));
+            self.as_mut().set_library_status(QString::from(&format!("lista guardada en {path}")));
         }
     }
 
     /// Encola una carpeta entera y la echa a andar.
     pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString) {
-        let ruta = folder.to_string();
-        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        self.as_mut().recordar_carpeta(&format!("{ruta}/."));
-        let pistas = self
+        let path = folder.to_string();
+        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let (device, bit_perfect) = self.as_mut().chosen();
+        self.as_mut().remember_folder(&format!("{path}/."));
+        let tracks = self
             .as_mut()
             .rust_mut()
             .api
-            .play_folder(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
-        let mut lista = QList::<QString>::default();
-        for pista in &pistas {
-            lista.append(QString::from(pista));
+            .play_folder(std::path::Path::new(&path), &device, bit_perfect);
+        let mut list = QList::<QString>::default();
+        for track in &tracks {
+            list.append(QString::from(track));
         }
-        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue(QStringList::from(&list));
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!pistas.is_empty());
+        self.as_mut().set_playing(!tracks.is_empty());
     }
 
     /// La salida y la política elegidas, que es lo que usa todo lo que suena.
-    fn elegido(self: Pin<&mut Self>) -> (String, bool) {
+    fn chosen(self: Pin<&mut Self>) -> (String, bool) {
         (self.device.to_string(), self.want_bit_perfect)
     }
 
@@ -1167,10 +1167,10 @@ impl Chilpa {
     }
 
     pub fn automix(mut self: Pin<&mut Self>) {
-        let mezcladas = self.as_mut().rust_mut().api.automix();
-        if mezcladas > 0 {
+        let mixed = self.as_mut().rust_mut().api.automix();
+        if mixed > 0 {
             self.as_mut().set_library_status(QString::from(&format!(
-                "mezcla por tempo: {mezcladas} pistas"
+                "mezcla por tempo: {mixed} pistas"
             )));
             // La mezcla apaga el aleatorio: son dos formas de lo mismo.
             self.as_mut().rust_mut().shuffle = false;
@@ -1192,14 +1192,14 @@ impl Chilpa {
     }
 
     pub fn cycle_repeat(mut self: Pin<&mut Self>) {
-        let siguiente = (self.repeat + 1) % 3;
-        let modo = match siguiente {
+        let next = (self.repeat + 1) % 3;
+        let mode = match next {
             1 => chilpa_api::Repeat::All,
             2 => chilpa_api::Repeat::One,
             _ => chilpa_api::Repeat::Off,
         };
-        self.as_mut().set_repeat(siguiente);
-        self.as_mut().rust_mut().api.set_repeat(modo);
+        self.as_mut().set_repeat(next);
+        self.as_mut().rust_mut().api.set_repeat(mode);
     }
 
     pub fn next_track(mut self: Pin<&mut Self>) {
@@ -1207,8 +1207,8 @@ impl Chilpa {
     }
 
     pub fn previous_track(mut self: Pin<&mut Self>) {
-        let (dispositivo, bit_perfect) = self.as_mut().elegido();
-        self.as_mut().rust_mut().api.previous_track(&dispositivo, bit_perfect);
+        let (device, bit_perfect) = self.as_mut().chosen();
+        self.as_mut().rust_mut().api.previous_track(&device, bit_perfect);
     }
 
     pub fn pause(mut self: Pin<&mut Self>, paused: bool) {
@@ -1227,24 +1227,24 @@ impl Chilpa {
     pub fn poll(mut self: Pin<&mut Self>) {
         // El análisis avanza solo; lo único que hace falta es contarlo.
         if self.analyzing {
-            let estado = self.as_mut().rust_mut().api.analysis_status().clone();
-            let avance = if estado.total > 0 {
-                estado.done as f64 / estado.total as f64
+            let state = self.as_mut().rust_mut().api.analysis_status().clone();
+            let progress = if state.total > 0 {
+                state.done as f64 / state.total as f64
             } else {
                 0.0
             };
-            self.as_mut().set_analysis_progress(avance);
-            if estado.running {
+            self.as_mut().set_analysis_progress(progress);
+            if state.running {
                 self.as_mut().set_analysis_status(QString::from(&format!(
                     "{} de {} · {}",
-                    estado.done, estado.total, estado.last
+                    state.done, state.total, state.last
                 )));
             } else {
                 self.as_mut().set_analyzing(false);
                 self.as_mut().set_analysis_progress(1.0);
                 self.as_mut().set_analysis_status(QString::from(&format!(
                     "{} analizadas, {} sin pulso, {} sin leer",
-                    estado.analyzed, estado.without_pulse, estado.failed
+                    state.analyzed, state.without_pulse, state.failed
                 )));
                 // Las listas de tempo ya tienen con qué llenarse.
                 self.as_mut().refresh_playlists();
@@ -1253,16 +1253,16 @@ impl Chilpa {
 
         // El escaneo primero: al terminar refresca los álbumes.
         if self.scanning {
-            let estado = self.as_mut().rust_mut().api.scan_status().clone();
-            let avance = if estado.total > 0 {
-                estado.done as f64 / estado.total as f64
+            let state = self.as_mut().rust_mut().api.scan_status().clone();
+            let progress = if state.total > 0 {
+                state.done as f64 / state.total as f64
             } else {
                 0.0
             };
-            self.as_mut().set_scan_progress(avance);
-            if !estado.running {
-                let r = &estado.summary;
-                let texto = if r.unreachable {
+            self.as_mut().set_scan_progress(progress);
+            if !state.running {
+                let r = &state.summary;
+                let text = if r.unreachable {
                     "no se pudo leer esa carpeta; no se tocó nada".to_string()
                 } else {
                     format!(
@@ -1270,7 +1270,7 @@ impl Chilpa {
                         r.seen, r.read, r.unchanged, r.missing
                     )
                 };
-                self.as_mut().set_library_status(QString::from(&texto));
+                self.as_mut().set_library_status(QString::from(&text));
                 self.as_mut().set_scanning(false);
                 self.as_mut().set_scan_progress(1.0);
                 self.as_mut().refresh_albums();
@@ -1283,16 +1283,16 @@ impl Chilpa {
         // Lo que sale, para los visualizadores. Solo mientras suena: leer
         // el círculo con el reproductor quieto es trabajo tirado.
         if self.playing {
-            let envolvente = self.api.scope_envelope(120);
+            let envelope = self.api.scope_envelope(120);
             let mut e = QList::<QString>::default();
-            for v in &envolvente {
+            for v in &envelope {
                 e.append(QString::from(&format!("{v:.4}")));
             }
             self.as_mut().set_scope(QStringList::from(&e));
 
-            let espectro = self.api.scope_spectrum(32);
+            let spectrum = self.api.scope_spectrum(32);
             let mut b = QList::<QString>::default();
-            for v in &espectro {
+            for v in &spectrum {
                 b.append(QString::from(&format!("{v:.4}")));
             }
             self.as_mut().set_spectrum(QStringList::from(&b));
@@ -1306,48 +1306,48 @@ impl Chilpa {
             let correlacion = self.api.scope_correlation();
             self.as_mut().set_correlation(f64::from(correlacion.unwrap_or(999.0)));
 
-            let niveles = self.api.scope_levels();
+            let levels = self.api.scope_levels();
             let mut l = QList::<QString>::default();
-            for (pico, rms) in &niveles {
+            for (pico, rms) in &levels {
                 l.append(QString::from(&format!("{pico:.4}\t{rms:.4}")));
             }
             self.as_mut().set_levels(QStringList::from(&l));
         }
 
-        let ahora = self.as_mut().rust_mut().api.poll().clone();
-        self.as_mut().set_playing(ahora.playing);
-        self.as_mut().set_paused(ahora.paused);
-        self.as_mut().set_seconds(ahora.seconds);
-        self.as_mut().set_total_seconds(ahora.total_seconds);
-        self.as_mut().set_bit_perfect(ahora.bit_perfect);
-        self.as_mut().set_format(QString::from(&ahora.format));
-        self.as_mut().set_title(QString::from(&ahora.title));
-        self.as_mut().set_artist(QString::from(&ahora.artist));
-        self.as_mut().set_album(QString::from(&ahora.album));
-        let portada = if ahora.artwork_path.is_empty() {
+        let now = self.as_mut().rust_mut().api.poll().clone();
+        self.as_mut().set_playing(now.playing);
+        self.as_mut().set_paused(now.paused);
+        self.as_mut().set_seconds(now.seconds);
+        self.as_mut().set_total_seconds(now.total_seconds);
+        self.as_mut().set_bit_perfect(now.bit_perfect);
+        self.as_mut().set_format(QString::from(&now.format));
+        self.as_mut().set_title(QString::from(&now.title));
+        self.as_mut().set_artist(QString::from(&now.artist));
+        self.as_mut().set_album(QString::from(&now.album));
+        let cover = if now.artwork_path.is_empty() {
             String::new()
         } else {
-            format!("file://{}", ahora.artwork_path)
+            format!("file://{}", now.artwork_path)
         };
-        self.as_mut().set_artwork(QString::from(&portada));
-        self.as_mut().set_queue_index(ahora.index as i32);
+        self.as_mut().set_artwork(QString::from(&cover));
+        self.as_mut().set_queue_index(now.index as i32);
         // La letra solo se vuelve a armar cuando cambia: rehacer una lista
         // de QString sesenta veces por minuto es tirar trabajo.
-        if self.letra_de != ahora.path {
-            let mut lista = QList::<QString>::default();
-            for l in &ahora.lyrics {
-                lista.append(QString::from(l));
+        if self.lyrics_of != now.path {
+            let mut list = QList::<QString>::default();
+            for l in &now.lyrics {
+                list.append(QString::from(l));
             }
-            self.as_mut().set_lyrics(QStringList::from(&lista));
-            self.as_mut().set_lyrics_synced(ahora.lyrics_synced);
-            self.as_mut().set_lyrics_source(QString::from(&ahora.lyrics_source));
-            self.as_mut().rust_mut().letra_de = ahora.path.clone();
+            self.as_mut().set_lyrics(QStringList::from(&list));
+            self.as_mut().set_lyrics_synced(now.lyrics_synced);
+            self.as_mut().set_lyrics_source(QString::from(&now.lyrics_source));
+            self.as_mut().rust_mut().lyrics_of = now.path.clone();
         }
-        self.as_mut().set_lyrics_line(ahora.lyrics_line);
-        self.as_mut().set_analysis(QString::from(&ahora.analysis));
-        self.as_mut().set_error(QString::from(&ahora.error));
-        if !ahora.path.is_empty() {
-            self.as_mut().set_track(QString::from(&ahora.path));
+        self.as_mut().set_lyrics_line(now.lyrics_line);
+        self.as_mut().set_analysis(QString::from(&now.analysis));
+        self.as_mut().set_error(QString::from(&now.error));
+        if !now.path.is_empty() {
+            self.as_mut().set_track(QString::from(&now.path));
         }
     }
 }

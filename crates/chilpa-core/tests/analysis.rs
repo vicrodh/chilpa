@@ -4,16 +4,16 @@
 //! `chilpa-analysis`. Esta comprueba el camino completo: abrir el archivo,
 //! decodificarlo, mezclarlo a mono y contar.
 
-use chilpa_core::analysis_job::analizar_archivo;
+use chilpa_core::analysis_job::analyze_file;
 use std::io::Write;
 use std::path::PathBuf;
 
 /// Un WAV de 16 bits en estéreo con golpes a ese tempo.
-fn pulso(nombre: &str, bpm: f32, segundos: u32) -> PathBuf {
+fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
     let rate = 44_100u32;
-    let frames = rate * segundos;
+    let frames = rate * seconds;
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-analisis-{nombre}.wav"));
+    p.push(format!("chilpa-analisis-{name}.wav"));
 
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
@@ -30,15 +30,15 @@ fn pulso(nombre: &str, bpm: f32, segundos: u32) -> PathBuf {
     f.write_all(b"data").unwrap();
     f.write_all(&data.to_le_bytes()).unwrap();
 
-    let periodo = (rate as f32 * 60.0 / bpm) as usize;
-    let cola = (rate / 33) as usize;
+    let period = (rate as f32 * 60.0 / bpm) as usize;
+    let tail = (rate / 33) as usize;
     for i in 0..frames as usize {
-        let desde_golpe = i % periodo;
-        let v = if desde_golpe < cola {
-            let caida = 1.0 - desde_golpe as f32 / cola as f32;
+        let from_beat = i % period;
+        let v = if from_beat < tail {
+            let decay = 1.0 - from_beat as f32 / tail as f32;
             // Un golpe con algo de tono, para que no sea un clic puro.
-            let tono = (2.0 * std::f32::consts::PI * 80.0 * i as f32 / rate as f32).sin();
-            (caida * caida * tono * 20_000.0) as i16
+            let tone = (2.0 * std::f32::consts::PI * 80.0 * i as f32 / rate as f32).sin();
+            (decay * decay * tone * 20_000.0) as i16
         } else {
             0
         };
@@ -50,8 +50,8 @@ fn pulso(nombre: &str, bpm: f32, segundos: u32) -> PathBuf {
 
 #[test]
 fn el_pulso_de_un_archivo_sale_por_el_camino_completo() {
-    let ruta = pulso("128", 128.0, 25);
-    let features = analizar_archivo(&ruta).expect("se pudo leer y analizar");
+    let path = pulse("128", 128.0, 25);
+    let features = analyze_file(&path).expect("se pudo leer y analizar");
     let bpm = features.bpm.expect("se le encontró pulso");
     assert!((bpm - 128.0).abs() < 3.0, "salió {bpm}");
     assert!(
@@ -59,23 +59,23 @@ fn el_pulso_de_un_archivo_sale_por_el_camino_completo() {
         "confianza: {:?}",
         features.tempo_confidence
     );
-    let _ = std::fs::remove_file(ruta);
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn un_archivo_sin_pulso_se_analiza_y_no_dice_nada() {
     // Silencio: se lee bien, pero no hay qué contar.
-    let ruta = pulso("silencio", 128.0, 25);
+    let path = pulse("silencio", 128.0, 25);
     // Se sobrescribe el audio con ceros dejando el encabezado.
-    let mut datos = std::fs::read(&ruta).unwrap();
-    for b in datos.iter_mut().skip(44) {
+    let mut data = std::fs::read(&path).unwrap();
+    for b in data.iter_mut().skip(44) {
         *b = 0;
     }
-    std::fs::write(&ruta, &datos).unwrap();
+    std::fs::write(&path, &data).unwrap();
 
-    let features = analizar_archivo(&ruta).expect("el archivo se leyó");
+    let features = analyze_file(&path).expect("el archivo se leyó");
     assert_eq!(features.bpm, None, "no se inventó un tempo");
-    let _ = std::fs::remove_file(ruta);
+    let _ = std::fs::remove_file(path);
 }
 
 #[test]
@@ -83,6 +83,6 @@ fn un_archivo_que_no_es_audio_no_tumba_nada() {
     let mut p = std::env::temp_dir();
     p.push("chilpa-analisis-basura.wav");
     std::fs::write(&p, b"esto no es un WAV").unwrap();
-    assert!(analizar_archivo(&p).is_none());
+    assert!(analyze_file(&p).is_none());
     let _ = std::fs::remove_file(p);
 }

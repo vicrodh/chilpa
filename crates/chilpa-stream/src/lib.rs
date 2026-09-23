@@ -11,10 +11,10 @@
 //!   adivinar por la extensión de una URL que muchas veces no tiene.
 
 pub mod icy;
-pub mod peticion;
+pub mod request;
 
 pub use icy::IcyReader;
-pub use peticion::hacer as hacer_peticion;
+pub use request::send as send_request;
 
 use std::io::{self, Read, Seek, SeekFrom};
 use std::sync::{Arc, Mutex};
@@ -54,9 +54,9 @@ impl StreamInfo {
     /// La extensión que le pasamos al probador de formatos.
     pub fn extension_hint(&self) -> Option<String> {
         self.hint.clone().or_else(|| {
-            let tipo = self.content_type.as_deref()?;
+            let kind = self.content_type.as_deref()?;
             Some(
-                match tipo.split(';').next()?.trim() {
+                match kind.split(';').next()?.trim() {
                     "audio/mpeg" | "audio/mp3" => "mp3",
                     "audio/aac" | "audio/aacp" => "aac",
                     "audio/flac" | "audio/x-flac" => "flac",
@@ -79,9 +79,9 @@ impl NowPlaying {
         Self::default()
     }
 
-    pub fn set(&self, titulo: Option<String>) {
+    pub fn set(&self, title: Option<String>) {
         if let Ok(mut g) = self.0.lock() {
-            *g = titulo;
+            *g = title;
         }
     }
 
@@ -159,35 +159,35 @@ impl symphonia::core::io::MediaSource for HttpStream {
 /// Pide la metadata ICY: si el servidor la ofrece, el lector la saca del
 /// flujo y publica el título; si no, el audio pasa tal cual.
 pub fn open(url: &str) -> Result<HttpStream, StreamError> {
-    let respuesta = ureq::get(url)
+    let reply = ureq::get(url)
         .header("Icy-MetaData", "1")
         .header("User-Agent", "Chilpa")
         .call()
         .map_err(|e| StreamError::Open(e.to_string()))?;
 
-    let encabezado = |nombre: &str| respuesta.headers().get(nombre)
+    let header = |name: &str| reply.headers().get(name)
         .and_then(|v| v.to_str().ok())
         .map(str::to_string);
 
     let info = StreamInfo {
-        name: encabezado("icy-name"),
-        content_type: encabezado("content-type"),
+        name: header("icy-name"),
+        content_type: header("content-type"),
         hint: None,
-        icy_metaint: encabezado("icy-metaint").and_then(|v| v.parse().ok()),
+        icy_metaint: header("icy-metaint").and_then(|v| v.parse().ok()),
     };
-    if let Some(tipo) = &info.content_type {
-        if tipo.starts_with("text/") || tipo.contains("html") {
-            return Err(StreamError::NotAudio(tipo.clone()));
+    if let Some(kind) = &info.content_type {
+        if kind.starts_with("text/") || kind.contains("html") {
+            return Err(StreamError::NotAudio(kind.clone()));
         }
     }
 
     let now_playing = NowPlaying::new();
-    let cuerpo = respuesta.into_body().into_reader();
+    let body = reply.into_body().into_reader();
     let lector: Box<dyn Read + Send + Sync> = match info.icy_metaint {
         Some(metaint) if metaint > 0 => {
-            Box::new(IcyReader::new(cuerpo, metaint, now_playing.clone()))
+            Box::new(IcyReader::new(body, metaint, now_playing.clone()))
         }
-        _ => Box::new(cuerpo),
+        _ => Box::new(body),
     };
     Ok(HttpStream::new(lector, info, now_playing))
 }
@@ -208,9 +208,9 @@ mod tests {
 
     #[test]
     fn un_stream_no_se_rebobina() {
-        let datos: Vec<u8> = (0..100u8).collect();
+        let data: Vec<u8> = (0..100u8).collect();
         let mut s = HttpStream::new(
-            Box::new(std::io::Cursor::new(datos)),
+            Box::new(std::io::Cursor::new(data)),
             StreamInfo::default(),
             NowPlaying::new(),
         );
@@ -223,8 +223,8 @@ mod tests {
     #[test]
     fn el_titulo_de_la_estacion_se_comparte_entre_hilos() {
         let np = NowPlaying::new();
-        let copia = np.clone();
-        std::thread::spawn(move || copia.set(Some("Una canción".into()))).join().unwrap();
+        let copy = np.clone();
+        std::thread::spawn(move || copy.set(Some("Una canción".into()))).join().unwrap();
         assert_eq!(np.get().as_deref(), Some("Una canción"));
     }
 }

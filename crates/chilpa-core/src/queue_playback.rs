@@ -41,14 +41,14 @@ pub enum Repeat {
 pub struct RepeatMode(std::sync::Arc<std::sync::atomic::AtomicU8>);
 
 impl RepeatMode {
-    pub fn new(modo: Repeat) -> Self {
+    pub fn new(mode: Repeat) -> Self {
         let m = Self::default();
-        m.set(modo);
+        m.set(mode);
         m
     }
 
-    pub fn set(&self, modo: Repeat) {
-        self.0.store(modo as u8, std::sync::atomic::Ordering::Relaxed);
+    pub fn set(&self, mode: Repeat) {
+        self.0.store(mode as u8, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn get(&self) -> Repeat {
@@ -66,25 +66,25 @@ impl RepeatMode {
 /// está sonando ni obligar a rearmar la cola desde el principio. El lazo
 /// vuelve a leer el largo en cada pista, así que lo agregado entra solo.
 #[derive(Clone, Default)]
-pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<Entrada>>>);
+pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<Entry>>>);
 
 /// Una pista de la cola. Quitarla no la saca del arreglo: se marca, y así
 /// las posiciones de las demás no se mueven bajo los pies de quien está
 /// reproduciendo.
 #[derive(Clone, PartialEq, Eq, Debug)]
-struct Entrada {
+struct Entry {
     path: PathBuf,
     removed: bool,
 }
 
 impl SharedQueue {
     pub fn new(paths: Vec<PathBuf>) -> Self {
-        Self(std::sync::Arc::new(std::sync::Mutex::new(entradas(paths))))
+        Self(std::sync::Arc::new(std::sync::Mutex::new(entries(paths))))
     }
 
     pub fn set(&self, paths: Vec<PathBuf>) {
         if let Ok(mut g) = self.0.lock() {
-            *g = entradas(paths);
+            *g = entries(paths);
         }
     }
 
@@ -92,7 +92,7 @@ impl SharedQueue {
     pub fn extend(&self, paths: &[PathBuf]) -> usize {
         match self.0.lock() {
             Ok(mut g) => {
-                g.extend(entradas(paths.to_vec()));
+                g.extend(entries(paths.to_vec()));
                 g.len()
             }
             Err(_) => 0,
@@ -141,8 +141,8 @@ impl SharedQueue {
     }
 }
 
-fn entradas(paths: Vec<PathBuf>) -> Vec<Entrada> {
-    paths.into_iter().map(|path| Entrada { path, removed: false }).collect()
+fn entries(paths: Vec<PathBuf>) -> Vec<Entry> {
+    paths.into_iter().map(|path| Entry { path, removed: false }).collect()
 }
 
 /// El orden en que se recorre la cola, compartido.
@@ -160,12 +160,12 @@ impl Order {
 
     /// Pone un orden. Uno que no sea una permutación de `0..len` se ignora:
     /// un orden a medias dejaría pistas sin sonar o sonando dos veces.
-    pub fn set(&self, orden: Vec<usize>, len: usize) -> bool {
-        if !es_permutacion(&orden, len) {
+    pub fn set(&self, order: Vec<usize>, len: usize) -> bool {
+        if !is_permutation(&order, len) {
             return false;
         }
         if let Ok(mut g) = self.0.lock() {
-            *g = orden;
+            *g = order;
             return true;
         }
         false
@@ -183,14 +183,14 @@ impl Order {
     }
 
     /// Qué pista sigue después de `actual`, o `None` si ahí se acaba.
-    fn siguiente(&self, actual: usize, len: usize, vuelta: bool) -> Option<usize> {
-        let orden = self.get();
-        if orden.len() != len {
+    fn next(&self, actual: usize, len: usize, wrap: bool) -> Option<usize> {
+        let order = self.get();
+        if order.len() != len {
             // Sin orden propio, la cola va como viene.
             let n = actual + 1;
             return if n < len {
                 Some(n)
-            } else if vuelta {
+            } else if wrap {
                 Some(0)
             } else {
                 None
@@ -198,18 +198,18 @@ impl Order {
         }
         // Se busca dónde quedó la pista actual: si el orden cambió a media
         // reproducción, se sigue desde su lugar nuevo.
-        let pos = orden.iter().position(|i| *i == actual)?;
-        match orden.get(pos + 1) {
+        let pos = order.iter().position(|i| *i == actual)?;
+        match order.get(pos + 1) {
             Some(n) => Some(*n),
-            None if vuelta => orden.first().copied(),
+            None if wrap => order.first().copied(),
             None => None,
         }
     }
 
     /// Por dónde empieza.
-    fn primera(&self, len: usize) -> usize {
-        let orden = self.get();
-        if orden.len() == len { orden.first().copied().unwrap_or(0) } else { 0 }
+    fn first(&self, len: usize) -> usize {
+        let order = self.get();
+        if order.len() == len { order.first().copied().unwrap_or(0) } else { 0 }
     }
 }
 
@@ -217,36 +217,36 @@ impl Order {
 ///
 /// El generador es un xorshift de tres líneas: para barajar una cola no hace
 /// falta nada mejor, y una dependencia más es una dependencia más.
-pub fn shuffled(len: usize, semilla: u64) -> Vec<usize> {
-    let mut orden: Vec<usize> = (0..len).collect();
-    let mut x = semilla | 1;
+pub fn shuffled(len: usize, seed: u64) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..len).collect();
+    let mut x = seed | 1;
     // Fisher-Yates, de atrás hacia adelante: cada permutación sale con la
     // misma probabilidad.
     for i in (1..len).rev() {
         x ^= x << 13;
         x ^= x >> 7;
         x ^= x << 17;
-        orden.swap(i, (x % (i as u64 + 1)) as usize);
+        order.swap(i, (x % (i as u64 + 1)) as usize);
     }
-    orden
+    order
 }
 
 /// Lo mismo, sembrado con el reloj.
 pub fn shuffled_now(len: usize) -> Vec<usize> {
-    let semilla = std::time::SystemTime::now()
+    let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_nanos() as u64)
         .unwrap_or(0x2545_F491_4F6C_DD1D);
-    shuffled(len, semilla)
+    shuffled(len, seed)
 }
 
-fn es_permutacion(orden: &[usize], len: usize) -> bool {
-    if orden.len() != len {
+fn is_permutation(order: &[usize], len: usize) -> bool {
+    if order.len() != len {
         return false;
     }
-    let mut vistos = vec![false; len];
-    for i in orden {
-        match vistos.get_mut(*i) {
+    let mut seen = vec![false; len];
+    for i in order {
+        match seen.get_mut(*i) {
             Some(v) if !*v => *v = true,
             _ => return false,
         }
@@ -294,7 +294,7 @@ struct TrackFrames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
     trimmer: Trimmer,
-    agotado: bool,
+    exhausted: bool,
     /// Dónde se piden los saltos. Se atienden entre bloques, nunca a media
     /// escritura.
     seek: SeekSignal,
@@ -303,9 +303,9 @@ struct TrackFrames<'a> {
     skip: SkipSignal,
     /// Cierto si esta pista terminó porque alguien saltó, no porque se
     /// acabara.
-    salto: bool,
+    skipped: bool,
     /// Frames que hay que tirar para caer en el punto exacto pedido.
-    descartar: u64,
+    discard: u64,
     /// Dónde cayó el último salto. La posición que ve la interfaz cuenta
     /// desde el archivo, así que a los frames entregados se les suma esto.
     base: std::sync::Arc<std::sync::atomic::AtomicU64>,
@@ -314,20 +314,20 @@ struct TrackFrames<'a> {
 impl FrameSource for TrackFrames<'_> {
     fn next_block(&mut self) -> Option<Vec<u8>> {
         loop {
-            if self.agotado {
+            if self.exhausted {
                 return None;
             }
             if self.skip.take() {
-                self.salto = true;
-                self.agotado = true;
+                self.skipped = true;
+                self.exhausted = true;
                 self.trimmer.finish();
                 return None;
             }
-            if let Some(destino) = self.seek.take() {
-                let frame = chilpa_audio::seek::frames_at(destino, self.opened.sample_rate_hz);
+            if let Some(target) = self.seek.take() {
+                let frame = chilpa_audio::seek::frames_at(target, self.opened.sample_rate_hz);
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
-                        self.descartar = plan.discard;
+                        self.discard = plan.discard;
                         // La base es el punto PEDIDO, no donde aterrizó el
                         // contenedor: los frames que se descartan no salen,
                         // así que sumarlos aparte dejaría la posición corta.
@@ -335,13 +335,13 @@ impl FrameSource for TrackFrames<'_> {
                     }
                     // Un contenedor que no sabe saltar sigue sonando desde
                     // donde iba, en vez de tirar la pista.
-                    Err(_) => self.descartar = 0,
+                    Err(_) => self.discard = 0,
                 }
             }
-            let recortado = match self.decoded.next_block() {
+            let clipped = match self.decoded.next_block() {
                 Ok(Some(Block::Int { data, bits })) => {
-                    let canales = self.opened.channels.max(1) as usize;
-                    let data = self.tirar_descarte(data, canales);
+                    let channels = self.opened.channels.max(1) as usize;
+                    let data = self.drop_discard(data, channels);
                     if data.is_empty() {
                         continue;
                     }
@@ -361,14 +361,14 @@ impl FrameSource for TrackFrames<'_> {
                 }
                 Ok(None) => {
                     // Lo que quedó retenido era relleno del codificador.
-                    self.agotado = true;
+                    self.exhausted = true;
                     self.trimmer.finish();
                     return None;
                 }
                 Err(_) => return None,
             };
-            if !recortado.is_empty() {
-                return Some(recortado);
+            if !clipped.is_empty() {
+                return Some(clipped);
             }
         }
     }
@@ -377,18 +377,18 @@ impl FrameSource for TrackFrames<'_> {
 impl TrackFrames<'_> {
     /// Tira los frames que sobran de un salto, que pueden abarcar varios
     /// bloques.
-    fn tirar_descarte(&mut self, data: Vec<i32>, canales: usize) -> Vec<i32> {
-        if self.descartar == 0 {
+    fn drop_discard(&mut self, data: Vec<i32>, channels: usize) -> Vec<i32> {
+        if self.discard == 0 {
             return data;
         }
-        let frames = (data.len() / canales) as u64;
-        if self.descartar >= frames {
-            self.descartar -= frames;
+        let frames = (data.len() / channels) as u64;
+        if self.discard >= frames {
+            self.discard -= frames;
             return Vec::new();
         }
-        let corte = self.descartar as usize * canales;
-        self.descartar = 0;
-        data[corte..].to_vec()
+        let cut = self.discard as usize * channels;
+        self.discard = 0;
+        data[cut..].to_vec()
     }
 }
 
@@ -438,37 +438,37 @@ where
     K: AudioSink,
 {
     let Controls { stop, pause, seek, skip, repeat, order } = controls;
-    let mut resultados = Vec::new();
-    let mut abierto: Option<(StreamFormat, K)> = None;
-    let mut indice = order.primera(queue.len());
+    let mut results = Vec::new();
+    let mut opened: Option<(StreamFormat, K)> = None;
+    let mut index = order.first(queue.len());
     // Un archivo que no entrega un solo frame y una repetición encendida
     // serían un lazo que gira para siempre. Se cuenta cuántas pistas
     // seguidas no sonaron y se corta al dar una vuelta completa.
-    let mut mudas_seguidas = 0usize;
+    let mut consecutive_silent = 0usize;
 
     // El largo se vuelve a leer en cada vuelta: la cola puede crecer
     // mientras suena.
     loop {
         // Una pista quitada se salta sin sonar; si ya no queda ninguna, se
         // acabó la cola.
-        let Some(path) = siguiente_viva(queue, order, repeat, &mut indice) else { break };
+        let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
         let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
         let delivery = negotiate(decoded.stream_format(), caps, policy)
             .map_err(PlayError::Negotiation)?;
 
-        let paso = match &abierto {
+        let paso = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
             None => Transition::Seamless,
         };
-        if !paso.is_seamless() || abierto.is_none() {
-            if let Some((_, mut viejo)) = abierto.take() {
-                viejo.close().map_err(PlayError::Sink)?;
+        if !paso.is_seamless() || opened.is_none() {
+            if let Some((_, mut old)) = opened.take() {
+                old.close().map_err(PlayError::Sink)?;
             }
-            let nuevo = open_sink(delivery.opened).map_err(PlayError::Sink)?;
-            abierto = Some((delivery.opened, nuevo));
+            let new = open_sink(delivery.opened).map_err(PlayError::Sink)?;
+            opened = Some((delivery.opened, new));
         }
-        let (_, sink) = abierto.as_mut().expect("recién abierto");
+        let (_, sink) = opened.as_mut().expect("recién abierto");
 
         let trimmer = Trimmer::new(
             decoded.encoder_delay(),
@@ -479,47 +479,47 @@ where
             decoded: &mut decoded,
             opened: delivery.opened,
             trimmer,
-            agotado: false,
+            exhausted: false,
             seek: seek.clone(),
             skip: skip.clone(),
-            salto: false,
-            descartar: 0,
+            skipped: false,
+            discard: 0,
             base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         };
         let base = std::sync::Arc::clone(&frames.base);
-        on_track(indice, path, &delivery);
+        on_track(index, path, &delivery);
         let outcome =
             chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
-                on_progress(indice, f + base.load(std::sync::atomic::Ordering::Relaxed))
+                on_progress(index, f + base.load(std::sync::atomic::Ordering::Relaxed))
             });
-        let termino_bien = outcome.may_advance_queue();
-        mudas_seguidas = if outcome.frames() == 0 { mudas_seguidas + 1 } else { 0 };
+        let finished_ok = outcome.may_advance_queue();
+        consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
         // Saltar de pista termina la fuente igual que un final natural, así
         // que hay que preguntarle: con repeat-one, saltar avanza.
-        let salto = frames.salto;
-        resultados.push(TrackResult {
+        let skipped = frames.skipped;
+        results.push(TrackResult {
             path: path.clone(),
             delivery,
             outcome,
             transition: paso,
         });
-        if !termino_bien || mudas_seguidas > queue.len() {
+        if !finished_ok || consecutive_silent > queue.len() {
             break;
         }
-        let modo = repeat.get();
-        if modo == Repeat::One && !salto {
+        let mode = repeat.get();
+        if mode == Repeat::One && !skipped {
             continue;
         }
-        match order.siguiente(indice, queue.len(), modo == Repeat::All) {
-            Some(n) => indice = n,
+        match order.next(index, queue.len(), mode == Repeat::All) {
+            Some(n) => index = n,
             None => break,
         }
     }
 
-    if let Some((_, mut sink)) = abierto.take() {
+    if let Some((_, mut sink)) = opened.take() {
         sink.close().map_err(PlayError::Sink)?;
     }
-    Ok(resultados)
+    Ok(results)
 }
 
 /// La pista de `indice`, saltándose las que se quitaron.
@@ -527,21 +527,21 @@ where
 /// Avanza `indice` hasta dar con una viva. Devuelve `None` cuando ya no
 /// queda ninguna, contando las vueltas para no girar para siempre si se
 /// quitó la cola entera con la repetición encendida.
-fn siguiente_viva(
+fn next_live(
     queue: &SharedQueue,
     order: &Order,
     repeat: &RepeatMode,
-    indice: &mut usize,
+    index: &mut usize,
 ) -> Option<PathBuf> {
-    let vuelta = repeat.get() == Repeat::All;
+    let wrap = repeat.get() == Repeat::All;
     for _ in 0..=queue.len() {
-        if let Some(p) = queue.get(*indice) {
+        if let Some(p) = queue.get(*index) {
             return Some(p);
         }
-        if *indice >= queue.len() {
+        if *index >= queue.len() {
             return None;
         }
-        *indice = order.siguiente(*indice, queue.len(), vuelta)?;
+        *index = order.next(*index, queue.len(), wrap)?;
     }
     None
 }
@@ -566,20 +566,20 @@ mod tests {
     #[test]
     fn sin_orden_propio_la_cola_va_como_viene() {
         let o = Order::new();
-        assert_eq!(o.primera(3), 0);
-        assert_eq!(o.siguiente(0, 3, false), Some(1));
-        assert_eq!(o.siguiente(2, 3, false), None, "ahí se acaba");
-        assert_eq!(o.siguiente(2, 3, true), Some(0), "con vuelta, vuelve a la primera");
+        assert_eq!(o.first(3), 0);
+        assert_eq!(o.next(0, 3, false), Some(1));
+        assert_eq!(o.next(2, 3, false), None, "ahí se acaba");
+        assert_eq!(o.next(2, 3, true), Some(0), "con vuelta, vuelve a la primera");
     }
 
     #[test]
     fn un_orden_propio_manda() {
         let o = Order::new();
         assert!(o.set(vec![2, 0, 1], 3));
-        assert_eq!(o.primera(3), 2);
-        assert_eq!(o.siguiente(2, 3, false), Some(0));
-        assert_eq!(o.siguiente(1, 3, false), None, "la 1 es la última del orden");
-        assert_eq!(o.siguiente(1, 3, true), Some(2));
+        assert_eq!(o.first(3), 2);
+        assert_eq!(o.next(2, 3, false), Some(0));
+        assert_eq!(o.next(1, 3, false), None, "la 1 es la última del orden");
+        assert_eq!(o.next(1, 3, true), Some(2));
     }
 
     #[test]
@@ -588,7 +588,7 @@ mod tests {
         assert!(o.set(vec![0, 1, 2, 3], 4));
         // Suena la 1 y se reordena: lo que sigue es lo que la siga ahora.
         assert!(o.set(vec![3, 1, 0, 2], 4));
-        assert_eq!(o.siguiente(1, 4, false), Some(0));
+        assert_eq!(o.next(1, 4, false), Some(0));
     }
 
     #[test]
@@ -602,9 +602,9 @@ mod tests {
 
     #[test]
     fn barajar_da_una_permutacion_y_no_siempre_la_misma() {
-        for semilla in [1u64, 42, 99_999] {
-            let o = shuffled(8, semilla);
-            assert!(es_permutacion(&o, 8), "{o:?} no es una permutación");
+        for seed in [1u64, 42, 99_999] {
+            let o = shuffled(8, seed);
+            assert!(is_permutation(&o, 8), "{o:?} no es una permutación");
         }
         assert_ne!(shuffled(16, 1), shuffled(16, 2), "semillas distintas, barajas distintas");
         assert_eq!(shuffled(16, 7), shuffled(16, 7), "la misma semilla siempre da lo mismo");
@@ -617,6 +617,6 @@ mod tests {
         let o = Order::new();
         assert!(o.set(vec![1, 0], 2));
         o.clear();
-        assert_eq!(o.primera(2), 0);
+        assert_eq!(o.first(2), 0);
     }
 }

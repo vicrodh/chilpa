@@ -7,20 +7,20 @@ use super::*;
 
 impl Chilpa {
     /// Le pega a cada pista lo que el análisis sacó, en una sola consulta.
-    fn con_analisis(&mut self, mut pistas: Vec<LibraryTrack>) -> Vec<LibraryTrack> {
-        if pistas.is_empty() {
-            return pistas;
+    fn with_analysis(&mut self, mut tracks: Vec<LibraryTrack>) -> Vec<LibraryTrack> {
+        if tracks.is_empty() {
+            return tracks;
         }
-        let ids: Vec<i64> = pistas.iter().map(|t| t.id).collect();
-        let Some(lib) = self.library() else { return pistas };
-        let Ok(mapa) = lib.features_for(&ids, chilpa_core::analysis_job::ANALIZADOR) else {
-            return pistas;
+        let ids: Vec<i64> = tracks.iter().map(|t| t.id).collect();
+        let Some(lib) = self.library() else { return tracks };
+        let Ok(map) = lib.features_for(&ids, chilpa_core::analysis_job::ANALYZER) else {
+            return tracks;
         };
-        for pista in pistas.iter_mut() {
-            let Some((bpm, tono, sonoridad)) = mapa.get(&pista.id) else { continue };
-            pista.analysis = describir_analisis(*bpm, tono.as_deref(), *sonoridad);
+        for track in tracks.iter_mut() {
+            let Some((bpm, tone, loudness)) = map.get(&track.id) else { continue };
+            track.analysis = describe_analysis(*bpm, tone.as_deref(), *loudness);
         }
-        pistas
+        tracks
     }
 
     /// Arranca un escaneo en segundo plano. La interfaz no se bloquea.
@@ -49,14 +49,14 @@ impl Chilpa {
             self.now.error = "ya hay un escaneo corriendo".into();
             return;
         }
-        let carpetas = self.roots();
-        if carpetas.is_empty() {
+        let folders = self.roots();
+        if folders.is_empty() {
             self.now.error = "todavía no hay ninguna carpeta en la biblioteca".into();
             return;
         }
         self.scan = Some(chilpa_library::ScanJob::start_all(
             chilpa_library::Library::default_path(),
-            carpetas,
+            folders,
             Some(chilpa_core::artwork_cache()),
         ));
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
@@ -84,10 +84,10 @@ impl Chilpa {
     /// Cómo va el análisis.
     pub fn analysis_status(&mut self) -> &AnalysisStatus {
         use chilpa_core::analysis_job::AnalysisProgress;
-        let eventos = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
-        let mut termino = false;
-        for evento in eventos {
-            match evento {
+        let events = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
+        let mut finished = false;
+        for event in events {
+            match event {
                 AnalysisProgress::Counted { total } => self.analysis_status.total = total,
                 AnalysisProgress::Advanced { done, total, title, bpm, key } => {
                     self.analysis_status.done = done;
@@ -106,16 +106,16 @@ impl Chilpa {
                     self.analysis_status.analyzed = analyzed;
                     self.analysis_status.without_pulse = without_pulse;
                     self.analysis_status.failed = failed;
-                    termino = true;
+                    finished = true;
                 }
                 AnalysisProgress::Failed(e) => {
                     self.analysis_status.running = false;
                     self.now.error = format!("el análisis se detuvo: {e}");
-                    termino = true;
+                    finished = true;
                 }
             }
         }
-        if termino {
+        if finished {
             self.analysis = None;
         }
         &self.analysis_status
@@ -129,9 +129,9 @@ impl Chilpa {
 
     /// Cómo va el escaneo. Al terminar, refresca lo que la vista muestra.
     pub fn scan_status(&mut self) -> &ScanStatus {
-        let eventos = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
-        for evento in eventos {
-            match evento {
+        let events = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
+        for event in events {
+            match event {
                 chilpa_library::ScanProgress::Counted { total } => {
                     self.scan_status.total = total;
                 }
@@ -224,7 +224,7 @@ impl Chilpa {
         lib.top_tracks(limit)
             .unwrap_or_default()
             .into_iter()
-            .map(|t| (pista_de(t.track), t.count))
+            .map(|t| (track_of(t.track), t.count))
             .collect()
     }
 
@@ -234,7 +234,7 @@ impl Chilpa {
         lib.recently_played(limit)
             .unwrap_or_default()
             .into_iter()
-            .map(|t| (pista_de(t.track), t.count))
+            .map(|t| (track_of(t.track), t.count))
             .collect()
     }
 
@@ -255,12 +255,12 @@ impl Chilpa {
 
     /// El artista que se está mirando, vacío si se ven todos.
     pub fn open_artist(&self) -> &str {
-        &self.artista
+        &self.artist
     }
 
     /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
     pub fn set_open_artist(&mut self, name: &str) {
-        self.artista = name.to_string();
+        self.artist = name.to_string();
     }
 
     /// La vista rápida con la que se está mirando la biblioteca.
@@ -269,34 +269,34 @@ impl Chilpa {
     }
 
     /// Cambia la vista y la recuerda para la próxima sesión.
-    pub fn set_album_sort(&mut self, orden: AlbumSort) {
-        self.album_sort = orden;
+    pub fn set_album_sort(&mut self, order: AlbumSort) {
+        self.album_sort = order;
         let mut s = chilpa_core::settings::load();
-        s.album_sort = orden.name().to_string();
+        s.album_sort = order.name().to_string();
         let _ = chilpa_core::settings::save(&s);
     }
 
     /// Los álbumes en el orden que se pida, con su cuenta de escuchas.
     pub fn albums_sorted(
         &mut self,
-        orden: AlbumSort,
+        order: AlbumSort,
         limit: usize,
         offset: usize,
     ) -> Vec<Album> {
-        let artista = self.artista.clone();
-        let filtro = (!artista.is_empty()).then_some(artista.as_str());
+        let artist = self.artist.clone();
+        let filter = (!artist.is_empty()).then_some(artist.as_str());
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_filtered(orden, filtro, limit, offset)
+        lib.albums_filtered(order, filter, limit, offset)
             .unwrap_or_default()
             .into_iter()
-            .map(|(a, escuchas)| Album {
+            .map(|(a, listens)| Album {
                 id: a.id,
                 title: a.title,
                 artist: a.album_artist,
                 year: a.year,
                 track_count: a.track_count,
                 artwork_path: a.artwork_path.unwrap_or_default(),
-                play_count: escuchas,
+                play_count: listens,
             })
             .collect()
     }
@@ -304,7 +304,7 @@ impl Chilpa {
     /// Un álbum por su id, con su portada y su cuenta de escuchas.
     pub fn album(&mut self, album_id: i64) -> Option<Album> {
         let lib = self.library()?;
-        let (a, escuchas) = lib.album(album_id).ok().flatten()?;
+        let (a, listens) = lib.album(album_id).ok().flatten()?;
         Some(Album {
             id: a.id,
             title: a.title,
@@ -312,26 +312,26 @@ impl Chilpa {
             year: a.year,
             track_count: a.track_count,
             artwork_path: a.artwork_path.unwrap_or_default(),
-            play_count: escuchas,
+            play_count: listens,
         })
     }
 
     /// Las pistas de un álbum, en el orden del disco.
     pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
         let Some(lib) = self.library() else { return Vec::new() };
-        let pistas: Vec<LibraryTrack> =
-            lib.album_tracks(album_id).unwrap_or_default().into_iter().map(pista_de).collect();
-        self.con_analisis(pistas)
+        let tracks: Vec<LibraryTrack> =
+            lib.album_tracks(album_id).unwrap_or_default().into_iter().map(track_of).collect();
+        self.with_analysis(tracks)
     }
 
     /// Busca en la biblioteca por título, artista o álbum.
-    pub fn search(&mut self, texto: &str, limit: usize) -> Vec<LibraryTrack> {
-        if texto.trim().is_empty() {
+    pub fn search(&mut self, text: &str, limit: usize) -> Vec<LibraryTrack> {
+        if text.trim().is_empty() {
             return Vec::new();
         }
         let Some(lib) = self.library() else { return Vec::new() };
-        let pistas: Vec<LibraryTrack> =
-            lib.search(texto.trim(), limit).unwrap_or_default().into_iter().map(pista_de).collect();
-        self.con_analisis(pistas)
+        let tracks: Vec<LibraryTrack> =
+            lib.search(text.trim(), limit).unwrap_or_default().into_iter().map(track_of).collect();
+        self.with_analysis(tracks)
     }
 }

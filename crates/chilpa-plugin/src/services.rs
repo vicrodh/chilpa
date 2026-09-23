@@ -15,20 +15,20 @@
 
 /// Qué tan importante es una línea de log.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Nivel {
+pub enum Level {
     Debug,
     Info,
-    Aviso,
+    Warn,
     Error,
 }
 
-impl Nivel {
-    pub fn de_codigo(n: i32) -> Self {
+impl Level {
+    pub fn from_code(n: i32) -> Self {
         match n {
-            0 => Nivel::Debug,
-            2 => Nivel::Aviso,
-            3 => Nivel::Error,
-            _ => Nivel::Info,
+            0 => Level::Debug,
+            2 => Level::Warn,
+            3 => Level::Error,
+            _ => Level::Info,
         }
     }
 }
@@ -39,16 +39,16 @@ impl Nivel {
 /// es suyo y de nadie más.
 pub trait HostServices: Send {
     /// Una línea al log, con el plugin por delante.
-    fn log(&mut self, plugin: &str, nivel: Nivel, mensaje: &str);
+    fn log(&mut self, plugin: &str, level: Level, message: &str);
 
     /// La hora, en segundos unix.
     fn now_unix(&mut self) -> i64;
 
     /// Lee del almacén del plugin. `None` si no hay nada con esa llave.
-    fn store_get(&mut self, plugin: &str, llave: &str) -> Option<Vec<u8>>;
+    fn store_get(&mut self, plugin: &str, key: &str) -> Option<Vec<u8>>;
 
     /// Escribe en el almacén del plugin. Falso si no se pudo.
-    fn store_set(&mut self, plugin: &str, llave: &str, valor: &[u8]) -> bool;
+    fn store_set(&mut self, plugin: &str, key: &str, valor: &[u8]) -> bool;
 
     /// Hace una petición por el plugin.
     ///
@@ -56,26 +56,26 @@ pub trait HostServices: Send {
     /// el plugin solo dijo a dónde y con qué cuerpo. Y no puede quedarse
     /// esperando para siempre: el guest se puede cortar por combustible o
     /// por reloj, pero una llamada del host que se cuelga cuelga el hilo.
-    fn http(&mut self, plugin: &str, peticion: &[u8]) -> Vec<u8>;
+    fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8>;
 }
 
 /// Un host que no deja hacer nada. Sirve para plugins que no pidieron
 /// ninguna capacidad, y para las pruebas.
 #[derive(Default)]
-pub struct SinServicios;
+pub struct NoServices;
 
-impl HostServices for SinServicios {
-    fn log(&mut self, _plugin: &str, _nivel: Nivel, _mensaje: &str) {}
+impl HostServices for NoServices {
+    fn log(&mut self, _plugin: &str, _level: Level, _message: &str) {}
     fn now_unix(&mut self) -> i64 {
         0
     }
-    fn store_get(&mut self, _plugin: &str, _llave: &str) -> Option<Vec<u8>> {
+    fn store_get(&mut self, _plugin: &str, _key: &str) -> Option<Vec<u8>> {
         None
     }
-    fn store_set(&mut self, _plugin: &str, _llave: &str, _valor: &[u8]) -> bool {
+    fn store_set(&mut self, _plugin: &str, _key: &str, _valor: &[u8]) -> bool {
         false
     }
-    fn http(&mut self, _plugin: &str, _peticion: &[u8]) -> Vec<u8> {
+    fn http(&mut self, _plugin: &str, _request: &[u8]) -> Vec<u8> {
         br#"{"error":"este plugin no tiene permiso de red"}"#.to_vec()
     }
 }
@@ -89,67 +89,67 @@ impl HostServices for SinServicios {
 /// para mirar lo que pasó. Por eso lo anotado vive detrás de su propio
 /// candado y no del que envuelve al host.
 #[derive(Default, Clone)]
-pub struct HostDePrueba(std::sync::Arc<std::sync::Mutex<Anotado>>);
+pub struct TestHost(std::sync::Arc<std::sync::Mutex<Recorded>>);
 
 /// Todo lo que un plugin le pidió al host de prueba.
 #[derive(Default)]
-pub struct Anotado {
-    pub logs: Vec<(String, Nivel, String)>,
-    pub lecturas: Vec<(String, String)>,
-    pub escrituras: Vec<(String, String, Vec<u8>)>,
-    pub peticiones: Vec<(String, String)>,
+pub struct Recorded {
+    pub logs: Vec<(String, Level, String)>,
+    pub reads: Vec<(String, String)>,
+    pub writes: Vec<(String, String, Vec<u8>)>,
+    pub requests: Vec<(String, String)>,
     /// Lo que `store_get` contesta, por llave.
-    pub almacen: std::collections::HashMap<String, Vec<u8>>,
+    pub store: std::collections::HashMap<String, Vec<u8>>,
     /// Lo que `http` contesta. Vacío da una respuesta de relleno.
-    pub respuesta_http: Vec<u8>,
-    pub reloj: i64,
+    pub http_reply: Vec<u8>,
+    pub clock: i64,
 }
 
-impl HostDePrueba {
+impl TestHost {
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Mira lo anotado sin poder cambiarlo.
-    pub fn mirar<T>(&self, f: impl FnOnce(&Anotado) -> T) -> T {
-        let guarda = self.0.lock().expect("el candado del host de prueba");
-        f(&guarda)
+    pub fn examine<T>(&self, f: impl FnOnce(&Recorded) -> T) -> T {
+        let save = self.0.lock().expect("el candado del host de prueba");
+        f(&save)
     }
 
     /// Prepara algo antes de correr.
-    pub fn preparar(&self, f: impl FnOnce(&mut Anotado)) {
-        let mut guarda = self.0.lock().expect("el candado del host de prueba");
-        f(&mut guarda);
+    pub fn prepare(&self, f: impl FnOnce(&mut Recorded)) {
+        let mut save = self.0.lock().expect("el candado del host de prueba");
+        f(&mut save);
     }
 }
 
-impl HostServices for HostDePrueba {
-    fn log(&mut self, plugin: &str, nivel: Nivel, mensaje: &str) {
-        self.preparar(|a| a.logs.push((plugin.to_string(), nivel, mensaje.to_string())));
+impl HostServices for TestHost {
+    fn log(&mut self, plugin: &str, level: Level, message: &str) {
+        self.prepare(|a| a.logs.push((plugin.to_string(), level, message.to_string())));
     }
     fn now_unix(&mut self) -> i64 {
-        self.mirar(|a| a.reloj)
+        self.examine(|a| a.clock)
     }
-    fn store_get(&mut self, plugin: &str, llave: &str) -> Option<Vec<u8>> {
-        let mut guarda = self.0.lock().expect("el candado del host de prueba");
-        guarda.lecturas.push((plugin.to_string(), llave.to_string()));
-        guarda.almacen.get(llave).cloned()
+    fn store_get(&mut self, plugin: &str, key: &str) -> Option<Vec<u8>> {
+        let mut save = self.0.lock().expect("el candado del host de prueba");
+        save.reads.push((plugin.to_string(), key.to_string()));
+        save.store.get(key).cloned()
     }
-    fn store_set(&mut self, plugin: &str, llave: &str, valor: &[u8]) -> bool {
-        let mut guarda = self.0.lock().expect("el candado del host de prueba");
-        guarda.escrituras.push((plugin.to_string(), llave.to_string(), valor.to_vec()));
-        guarda.almacen.insert(llave.to_string(), valor.to_vec());
+    fn store_set(&mut self, plugin: &str, key: &str, valor: &[u8]) -> bool {
+        let mut save = self.0.lock().expect("el candado del host de prueba");
+        save.writes.push((plugin.to_string(), key.to_string(), valor.to_vec()));
+        save.store.insert(key.to_string(), valor.to_vec());
         true
     }
-    fn http(&mut self, plugin: &str, peticion: &[u8]) -> Vec<u8> {
-        let mut guarda = self.0.lock().expect("el candado del host de prueba");
-        guarda
-            .peticiones
-            .push((plugin.to_string(), String::from_utf8_lossy(peticion).to_string()));
-        if guarda.respuesta_http.is_empty() {
+    fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8> {
+        let mut save = self.0.lock().expect("el candado del host de prueba");
+        save
+            .requests
+            .push((plugin.to_string(), String::from_utf8_lossy(request).to_string()));
+        if save.http_reply.is_empty() {
             br#"{"status":200,"body":""}"#.to_vec()
         } else {
-            guarda.respuesta_http.clone()
+            save.http_reply.clone()
         }
     }
 }
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn sin_servicios_la_red_contesta_que_no() {
-        let mut s = SinServicios;
+        let mut s = NoServices;
         let r = s.http("com.a.b", b"{}");
         assert!(String::from_utf8_lossy(&r).contains("no tiene permiso"));
         assert_eq!(s.store_get("com.a.b", "x"), None);
@@ -169,38 +169,38 @@ mod tests {
 
     #[test]
     fn el_host_de_prueba_se_acuerda_de_todo() {
-        let mut h = HostDePrueba::new();
-        h.preparar(|a| a.reloj = 1234);
-        h.log("com.a.b", Nivel::Aviso, "algo");
+        let mut h = TestHost::new();
+        h.prepare(|a| a.clock = 1234);
+        h.log("com.a.b", Level::Warn, "algo");
         h.store_set("com.a.b", "token", b"secreto");
         assert_eq!(h.store_get("com.a.b", "token").as_deref(), Some(&b"secreto"[..]));
         h.http("com.a.b", br#"{"url":"https://api.ejemplo.com"}"#);
 
-        h.mirar(|a| {
+        h.examine(|a| {
             assert_eq!(a.logs.len(), 1);
-            assert_eq!(a.logs[0].1, Nivel::Aviso);
-            assert_eq!(a.escrituras.len(), 1);
-            assert_eq!(a.lecturas.len(), 1);
-            assert_eq!(a.peticiones.len(), 1);
-            assert!(a.peticiones[0].1.contains("api.ejemplo.com"));
+            assert_eq!(a.logs[0].1, Level::Warn);
+            assert_eq!(a.writes.len(), 1);
+            assert_eq!(a.reads.len(), 1);
+            assert_eq!(a.requests.len(), 1);
+            assert!(a.requests[0].1.contains("api.ejemplo.com"));
         });
         assert_eq!(h.now_unix(), 1234);
     }
 
     #[test]
     fn una_copia_del_host_de_prueba_ve_lo_mismo() {
-        let mut h = HostDePrueba::new();
-        let copia = h.clone();
-        h.log("com.a.b", Nivel::Info, "algo");
-        assert_eq!(copia.mirar(|a| a.logs.len()), 1, "la copia mira el mismo cuaderno");
+        let mut h = TestHost::new();
+        let copy = h.clone();
+        h.log("com.a.b", Level::Info, "algo");
+        assert_eq!(copy.examine(|a| a.logs.len()), 1, "la copia mira el mismo cuaderno");
     }
 
     #[test]
     fn los_niveles_desconocidos_caen_en_info() {
-        assert_eq!(Nivel::de_codigo(0), Nivel::Debug);
-        assert_eq!(Nivel::de_codigo(1), Nivel::Info);
-        assert_eq!(Nivel::de_codigo(2), Nivel::Aviso);
-        assert_eq!(Nivel::de_codigo(3), Nivel::Error);
-        assert_eq!(Nivel::de_codigo(99), Nivel::Info, "lo raro no se pierde, se degrada");
+        assert_eq!(Level::from_code(0), Level::Debug);
+        assert_eq!(Level::from_code(1), Level::Info);
+        assert_eq!(Level::from_code(2), Level::Warn);
+        assert_eq!(Level::from_code(3), Level::Error);
+        assert_eq!(Level::from_code(99), Level::Info, "lo raro no se pierde, se degrada");
     }
 }

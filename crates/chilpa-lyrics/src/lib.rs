@@ -82,16 +82,16 @@ pub struct Found {
 /// Devuelve `None` cuando no hay ninguna, que es distinto de una letra
 /// vacía: una letra vacía en los tags no debe tapar al `.lrc` de al lado.
 pub fn find(track: &Path) -> Option<Found> {
-    if let Some(ruta) = sidecar(track) {
-        if let Ok(texto) = std::fs::read_to_string(&ruta) {
-            let lyrics = lrc::parse(&texto);
+    if let Some(path) = sidecar(track) {
+        if let Ok(text) = std::fs::read_to_string(&path) {
+            let lyrics = lrc::parse(&text);
             if !lyrics.is_empty() {
-                return Some(Found { lyrics, source: Source::Sidecar(ruta) });
+                return Some(Found { lyrics, source: Source::Sidecar(path) });
             }
         }
     }
-    let texto = embedded(track)?;
-    let lyrics = lrc::parse(&texto);
+    let text = embedded(track)?;
+    let lyrics = lrc::parse(&text);
     (!lyrics.is_empty()).then_some(Found { lyrics, source: Source::Embedded })
 }
 
@@ -101,9 +101,9 @@ pub fn find(track: &Path) -> Option<Found> {
 /// puede estar en mayúsculas, y en Linux eso sí importa.
 pub fn sidecar(track: &Path) -> Option<PathBuf> {
     for ext in ["lrc", "LRC", "Lrc"] {
-        let candidato = track.with_extension(ext);
-        if candidato.is_file() {
-            return Some(candidato);
+        let candidate = track.with_extension(ext);
+        if candidate.is_file() {
+            return Some(candidate);
         }
     }
     None
@@ -114,19 +114,19 @@ fn embedded(track: &Path) -> Option<String> {
     use lofty::file::TaggedFileExt;
     use lofty::prelude::ItemKey;
 
-    let archivo = lofty::probe::Probe::open(track).ok()?.read().ok()?;
-    let tag = archivo.primary_tag().or_else(|| archivo.first_tag())?;
-    let texto = tag.get_string(ItemKey::Lyrics)?;
-    (!texto.trim().is_empty()).then(|| texto.to_string())
+    let file = lofty::probe::Probe::open(track).ok()?.read().ok()?;
+    let tag = file.primary_tag().or_else(|| file.first_tag())?;
+    let text = tag.get_string(ItemKey::Lyrics)?;
+    (!text.trim().is_empty()).then(|| text.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn carpeta(nombre: &str) -> PathBuf {
+    fn folder(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!("chilpa-lyrics-{nombre}"));
+        p.push(format!("chilpa-lyrics-{name}"));
         let _ = std::fs::remove_dir_all(&p);
         std::fs::create_dir_all(&p).unwrap();
         p
@@ -152,38 +152,38 @@ mod tests {
 
     #[test]
     fn el_lrc_de_al_lado_es_el_que_manda() {
-        let dir = carpeta("sidecar");
-        let pista = dir.join("cancion.flac");
-        std::fs::write(&pista, b"no importa el contenido").unwrap();
+        let dir = folder("sidecar");
+        let track = dir.join("cancion.flac");
+        std::fs::write(&track, b"no importa el contenido").unwrap();
         std::fs::write(dir.join("cancion.lrc"), "[00:01.00]De al lado\n").unwrap();
 
-        let hallada = find(&pista).expect("se encontró");
-        assert_eq!(hallada.source, Source::Sidecar(dir.join("cancion.lrc")));
-        assert!(hallada.lyrics.synced);
-        assert_eq!(hallada.lyrics.lines[0].text, "De al lado");
+        let found = find(&track).expect("se encontró");
+        assert_eq!(found.source, Source::Sidecar(dir.join("cancion.lrc")));
+        assert!(found.lyrics.synced);
+        assert_eq!(found.lyrics.lines[0].text, "De al lado");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn sin_letra_no_se_inventa_nada() {
-        let dir = carpeta("vacio");
-        let pista = dir.join("cancion.flac");
-        std::fs::write(&pista, b"tampoco importa").unwrap();
-        assert!(find(&pista).is_none());
+        let dir = folder("vacio");
+        let track = dir.join("cancion.flac");
+        std::fs::write(&track, b"tampoco importa").unwrap();
+        assert!(find(&track).is_none());
 
         // Un .lrc vacío tampoco cuenta como letra.
         std::fs::write(dir.join("cancion.lrc"), "\n\n").unwrap();
-        assert!(find(&pista).is_none());
+        assert!(find(&track).is_none());
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn la_extension_en_mayusculas_tambien_se_encuentra() {
-        let dir = carpeta("mayusculas");
-        let pista = dir.join("cancion.flac");
-        std::fs::write(&pista, b"x").unwrap();
+        let dir = folder("mayusculas");
+        let track = dir.join("cancion.flac");
+        std::fs::write(&track, b"x").unwrap();
         std::fs::write(dir.join("cancion.LRC"), "[00:01.00]Arriba\n").unwrap();
-        assert!(find(&pista).is_some(), "en Linux la extensión distingue");
+        assert!(find(&track).is_some(), "en Linux la extensión distingue");
         let _ = std::fs::remove_dir_all(dir);
     }
 }

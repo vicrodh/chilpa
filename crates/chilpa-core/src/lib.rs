@@ -18,7 +18,7 @@ pub use chilpa_audio::{spectrum, tap};
 
 /// Una petición hecha por cuenta de un plugin. La credencial la pone quien
 /// llama, nunca el plugin (ADR-007).
-pub use chilpa_stream::hacer_peticion;
+pub use chilpa_stream::send_request;
 
 use chilpa_models::SourceId;
 
@@ -54,15 +54,15 @@ pub struct Output {
 /// archivo que produce.
 #[cfg(target_os = "linux")]
 pub fn outputs() -> Vec<Output> {
-    let mut salidas: Vec<Output> = chilpa_alsa::list()
+    let mut outputs: Vec<Output> = chilpa_alsa::list()
         .into_iter()
         .map(|d| Output { id: d.id.clone(), label: d.label() })
         .collect();
-    salidas.push(Output {
+    outputs.push(Output {
         id: chilpa_audio::CAPTURE_ID.to_string(),
         label: format!("Captura a archivo ({})", capture_path().display()),
     });
-    salidas
+    outputs
 }
 
 /// Abre la biblioteca del usuario, creándola si hace falta.
@@ -125,7 +125,7 @@ pub fn spawn_player() -> player::Player {
 /// Quien dibuja lee de ahí, y el audio no se entera.
 #[cfg(target_os = "linux")]
 pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
-    let del_hilo = tap.clone();
+    let from_thread = tap.clone();
     player::Player::spawn(
         Box::new(|id| {
             if id == chilpa_audio::CAPTURE_ID {
@@ -134,14 +134,14 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
                 chilpa_alsa::probe(id)
             }
         }),
-        Box::new(move |id, formato| {
-            let abierto: Box<dyn chilpa_audio::sink::AudioSink + Send> =
+        Box::new(move |id, format| {
+            let opened: Box<dyn chilpa_audio::sink::AudioSink + Send> =
                 if id == chilpa_audio::CAPTURE_ID {
-                    Box::new(chilpa_audio::CaptureSink::create(&capture_path(), formato)?)
+                    Box::new(chilpa_audio::CaptureSink::create(&capture_path(), format)?)
                 } else {
-                    Box::new(chilpa_alsa::AlsaSink::open(id, formato)?)
+                    Box::new(chilpa_alsa::AlsaSink::open(id, format)?)
                 };
-            Ok(Box::new(del_hilo.wrap(abierto)) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
+            Ok(Box::new(from_thread.wrap(opened)) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
         }),
     )
 }

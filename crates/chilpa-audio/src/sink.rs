@@ -194,9 +194,9 @@ mod tests {
     #[test]
     fn la_señal_de_paro_se_ve_desde_otro_hilo() {
         let signal = StopSignal::new();
-        let copia = signal.clone();
+        let copy = signal.clone();
         assert!(!signal.is_stopped());
-        std::thread::spawn(move || copia.stop()).join().unwrap();
+        std::thread::spawn(move || copy.stop()).join().unwrap();
         assert!(signal.is_stopped());
     }
 }

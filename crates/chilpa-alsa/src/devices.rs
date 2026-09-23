@@ -32,60 +32,60 @@ impl Device {
 /// abrir nada: abrir un dispositivo ocupado se lo quita a quien lo esté
 /// usando. Medir capacidades sí abre, y por eso va aparte ([`capabilities`]).
 pub fn list() -> Vec<Device> {
-    let mut salidas = Vec::new();
+    let mut outputs = Vec::new();
     let Ok(cards) = fs::read_to_string("/proc/asound/cards") else {
-        return salidas;
+        return outputs;
     };
-    for linea in cards.lines() {
+    for line in cards.lines() {
         // " 0 [PCH            ]: HDA-Intel - HDA Intel PCH"
-        let Some((numero, resto)) = linea.trim_start().split_once(' ') else {
+        let Some((number, rest)) = line.trim_start().split_once(' ') else {
             continue;
         };
-        let Ok(card) = numero.parse::<u32>() else {
+        let Ok(card) = number.parse::<u32>() else {
             continue;
         };
-        let nombre_tarjeta = resto
+        let card_name = rest
             .split_once(':')
             .map(|(_, d)| d.trim())
-            .unwrap_or(resto)
+            .unwrap_or(rest)
             .to_string();
-        for dispositivo in dispositivos_de_la_tarjeta(card) {
-            salidas.push(Device {
-                id: format!("hw:{card},{}", dispositivo.0),
-                card: nombre_tarjeta.clone(),
-                name: dispositivo.1,
+        for device in card_devices(card) {
+            outputs.push(Device {
+                id: format!("hw:{card},{}", device.0),
+                card: card_name.clone(),
+                name: device.1,
             });
         }
     }
-    salidas
+    outputs
 }
 
 /// Los dispositivos de reproducción de una tarjeta, con su nombre.
-fn dispositivos_de_la_tarjeta(card: u32) -> Vec<(u32, String)> {
+fn card_devices(card: u32) -> Vec<(u32, String)> {
     let mut out = Vec::new();
     let Ok(dir) = fs::read_dir(format!("/proc/asound/card{card}")) else {
         return out;
     };
-    let mut entradas: Vec<_> = dir
+    let mut entries: Vec<_> = dir
         .flatten()
         .filter_map(|e| {
-            let nombre = e.file_name().to_string_lossy().to_string();
+            let name = e.file_name().to_string_lossy().to_string();
             // Los de reproducción terminan en "p": pcm0p, pcm3p...
-            let resto = nombre.strip_prefix("pcm")?.strip_suffix('p')?;
-            resto.parse::<u32>().ok().map(|n| (n, nombre))
+            let rest = name.strip_prefix("pcm")?.strip_suffix('p')?;
+            rest.parse::<u32>().ok().map(|n| (n, name))
         })
         .collect();
-    entradas.sort_by_key(|(n, _)| *n);
-    for (numero, carpeta) in entradas {
-        let info = fs::read_to_string(format!("/proc/asound/card{card}/{carpeta}/info"))
+    entries.sort_by_key(|(n, _)| *n);
+    for (number, folder) in entries {
+        let info = fs::read_to_string(format!("/proc/asound/card{card}/{folder}/info"))
             .unwrap_or_default();
-        let nombre = info
+        let name = info
             .lines()
             .find_map(|l| l.strip_prefix("name: "))
             .unwrap_or("salida")
             .trim()
             .to_string();
-        out.push((numero, nombre));
+        out.push((number, name));
     }
     out
 }

@@ -8,13 +8,13 @@ use std::path::PathBuf;
 const AREA_TOC_LSN: u32 = 540;
 const AUDIO_START: u32 = 550;
 const AUDIO_END: u32 = 569;
-const SECTORES: usize = 600;
+const SECTORS: usize = 600;
 
-struct Imagen(Vec<u8>);
+struct TestImage(Vec<u8>);
 
-impl Imagen {
-    fn nueva() -> Self {
-        Self(vec![0u8; SECTORES * SECTOR])
+impl TestImage {
+    fn new() -> Self {
+        Self(vec![0u8; SECTORS * SECTOR])
     }
 
     fn sector(&mut self, lsn: u32) -> &mut [u8] {
@@ -22,9 +22,9 @@ impl Imagen {
         &mut self.0[at..at + SECTOR]
     }
 
-    fn escribir(&self, nombre: &str) -> PathBuf {
+    fn write(&self, name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!("chilpa-sacd-{nombre}.iso"));
+        p.push(format!("chilpa-sacd-{name}.iso"));
         std::fs::write(&p, &self.0).unwrap();
         p
     }
@@ -35,8 +35,8 @@ fn be32(v: u32) -> [u8; 4] {
 }
 
 /// Arma una imagen con dos pistas; `dst` marca el área como comprimida.
-fn armar(dst: bool) -> Imagen {
-    let mut img = Imagen::nueva();
+fn build(dst: bool) -> TestImage {
+    let mut img = TestImage::new();
 
     {
         let m = img.sector(510);
@@ -64,15 +64,15 @@ fn armar(dst: bool) -> Imagen {
         a[0x4c..0x50].copy_from_slice(&be32(AUDIO_END));
     }
 
-    const SEGUNDO: usize = 8 + 255 * 4;
+    const SECOND_ARRAY: usize = 8 + 255 * 4;
     {
         let t1 = img.sector(AREA_TOC_LSN + 1);
         t1[..8].copy_from_slice(b"SACDTRL1");
         // Pista 1: sectores 550..559. Pista 2: 560..569.
         t1[8..12].copy_from_slice(&be32(AUDIO_START));
         t1[12..16].copy_from_slice(&be32(AUDIO_START + 10));
-        t1[SEGUNDO..SEGUNDO + 4].copy_from_slice(&be32(10));
-        t1[SEGUNDO + 4..SEGUNDO + 8].copy_from_slice(&be32(10));
+        t1[SECOND_ARRAY..SECOND_ARRAY + 4].copy_from_slice(&be32(10));
+        t1[SECOND_ARRAY + 4..SECOND_ARRAY + 8].copy_from_slice(&be32(10));
     }
     {
         let t2 = img.sector(AREA_TOC_LSN + 2);
@@ -80,8 +80,8 @@ fn armar(dst: bool) -> Imagen {
         // Arranques en 0:00:00 y 0:01:00; duraciones de 1 segundo cada una.
         t2[8..12].copy_from_slice(&[0, 0, 0, 0]);
         t2[12..16].copy_from_slice(&[0, 1, 0, 0]);
-        t2[SEGUNDO..SEGUNDO + 4].copy_from_slice(&[0, 1, 0, 0]);
-        t2[SEGUNDO + 4..SEGUNDO + 4 + 4].copy_from_slice(&[0, 1, 0, 0]);
+        t2[SECOND_ARRAY..SECOND_ARRAY + 4].copy_from_slice(&[0, 1, 0, 0]);
+        t2[SECOND_ARRAY + 4..SECOND_ARRAY + 4 + 4].copy_from_slice(&[0, 1, 0, 0]);
     }
 
     // Sectores de audio: uno por sector, con su registro de frame-info.
@@ -99,8 +99,8 @@ fn armar(dst: bool) -> Imagen {
         // La carga: el byte n del canal izquierdo vale n y el derecho su
         // complemento, intercalados byte a byte.
         for (k, b) in s[header_len..].iter_mut().enumerate() {
-            let muestra = ((i * len + k) / 2 % 251) as u8;
-            *b = if k % 2 == 0 { muestra } else { !muestra };
+            let sample = ((i * len + k) / 2 % 251) as u8;
+            *b = if k % 2 == 0 { sample } else { !sample };
         }
     }
     img
@@ -108,7 +108,7 @@ fn armar(dst: bool) -> Imagen {
 
 #[test]
 fn se_leen_las_dos_pistas_del_area_estereo() {
-    let path = armar(false).escribir("dos-pistas");
+    let path = build(false).write("dos-pistas");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dsd3In14);
     assert_eq!(img.area.tracks.len(), 2);
@@ -121,33 +121,33 @@ fn se_leen_las_dos_pistas_del_area_estereo() {
 
 #[test]
 fn una_pista_entrega_dsd64_estereo_con_los_canales_separados() {
-    let path = armar(false).escribir("audio");
+    let path = build(false).write("audio");
     let img = open(&path).unwrap();
-    let pista = img.area.tracks[0].clone();
-    let mut lector = SacdTrackReader::open(img, &pista).unwrap();
+    let track = img.area.tracks[0].clone();
+    let mut lector = SacdTrackReader::open(img, &track).unwrap();
 
     assert_eq!(lector.info().dsd_rate_hz, 2_822_400, "DSD64");
     assert_eq!(lector.info().channels, 2);
 
-    let bloque = lector.next_block().unwrap().expect("hay audio");
-    assert_eq!(bloque.len(), 2);
-    assert_eq!(bloque[0].len(), 9408 / 2, "medio frame por canal");
+    let block = lector.next_block().unwrap().expect("hay audio");
+    assert_eq!(block.len(), 2);
+    assert_eq!(block[0].len(), 9408 / 2, "medio frame por canal");
     // El izquierdo lleva la muestra y el derecho su complemento.
     for i in 0..16 {
-        assert_eq!(bloque[1][i], !bloque[0][i], "los canales no se revolvieron");
+        assert_eq!(block[1][i], !block[0][i], "los canales no se revolvieron");
     }
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn una_pista_comprimida_se_rechaza_con_un_mensaje_claro() {
-    let path = armar(true).escribir("dst");
+    let path = build(true).write("dst");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dst);
-    let pista = img.area.tracks[0].clone();
-    match SacdTrackReader::open(img, &pista) {
+    let track = img.area.tracks[0].clone();
+    match SacdTrackReader::open(img, &track) {
         Err(SacdError::Unsupported(msg)) => assert!(msg.contains("DST"), "{msg}"),
-        Err(otro) => panic!("debía rechazarse por DST: {otro:?}"),
+        Err(other) => panic!("debía rechazarse por DST: {other:?}"),
         Ok(_) => panic!("una pista con DST no se puede reproducir todavía"),
     }
     let _ = std::fs::remove_file(path);
@@ -155,8 +155,8 @@ fn una_pista_comprimida_se_rechaza_con_un_mensaje_claro() {
 
 #[test]
 fn una_imagen_que_no_es_sacd_se_rechaza() {
-    let img = Imagen::nueva();
-    let path = img.escribir("vacia");
+    let img = TestImage::new();
+    let path = img.write("vacia");
     assert!(matches!(open(&path), Err(SacdError::MalformedToc(_))));
     let _ = std::fs::remove_file(path);
 }

@@ -77,46 +77,46 @@ pub struct FileInfo {
 
 /// Lee tags y propiedades de un archivo.
 pub fn read(path: &Path) -> Result<FileInfo, TagError> {
-    let archivo = Probe::open(path)
+    let file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?
         .read()
         .map_err(|e| TagError::Unreadable(e.to_string()))?;
 
-    let propiedades = archivo.properties();
+    let properties = file.properties();
     let mut info = FileInfo {
         tags: Tags::default(),
-        duration: propiedades.duration(),
-        sample_rate_hz: propiedades.sample_rate(),
-        bit_depth: propiedades.bit_depth(),
-        channels: propiedades.channels(),
+        duration: properties.duration(),
+        sample_rate_hz: properties.sample_rate(),
+        bit_depth: properties.bit_depth(),
+        channels: properties.channels(),
     };
 
-    let Some(tag) = archivo.primary_tag().or_else(|| archivo.first_tag()) else {
+    let Some(tag) = file.primary_tag().or_else(|| file.first_tag()) else {
         return Ok(info);
     };
 
-    let varios = |clave: ItemKey| -> Vec<String> {
+    let several = |clave: ItemKey| -> Vec<String> {
         tag.get_strings(clave).map(str::to_string).collect()
     };
 
     info.tags = Tags {
         title: tag.title().map(|t| t.to_string()),
         artists: {
-            let todos = varios(ItemKey::TrackArtist);
-            if todos.is_empty() {
+            let all = several(ItemKey::TrackArtist);
+            if all.is_empty() {
                 tag.artist().map(|a| vec![a.to_string()]).unwrap_or_default()
             } else {
-                todos
+                all
             }
         },
         album: tag.album().map(|a| a.to_string()),
         album_artist: tag.get_string(ItemKey::AlbumArtist).map(str::to_string),
         genres: {
-            let todos = varios(ItemKey::Genre);
-            if todos.is_empty() {
+            let all = several(ItemKey::Genre);
+            if all.is_empty() {
                 tag.genre().map(|g| vec![g.to_string()]).unwrap_or_default()
             } else {
-                todos
+                all
             }
         },
         date: tag
@@ -141,37 +141,37 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
 /// y de su fecha de modificación, así que cambiar los tags produce otro
 /// nombre y la vista no se queda con la portada vieja.
 pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>, TagError> {
-    let archivo = Probe::open(path)
+    let file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?
         .read()
         .map_err(|e| TagError::Unreadable(e.to_string()))?;
-    let Some(tag) = archivo.primary_tag().or_else(|| archivo.first_tag()) else {
+    let Some(tag) = file.primary_tag().or_else(|| file.first_tag()) else {
         return Ok(None);
     };
-    let Some(portada) = tag.pictures().first() else {
+    let Some(cover) = tag.pictures().first() else {
         return Ok(None);
     };
-    let extension = match portada.mime_type().map(|m| m.as_str()) {
+    let extension = match cover.mime_type().map(|m| m.as_str()) {
         Some("image/png") => "png",
         _ => "jpg",
     };
-    let sello = std::fs::metadata(path)
+    let label = std::fs::metadata(path)
         .and_then(|m| m.modified())
         .ok()
         .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let nombre = format!("{:x}-{sello}.{extension}", hash_ruta(path));
+    let name = format!("{:x}-{label}.{extension}", path_hash(path));
     std::fs::create_dir_all(cache_dir).map_err(TagError::Open)?;
-    let destino = cache_dir.join(nombre);
-    if !destino.exists() {
-        std::fs::write(&destino, portada.data()).map_err(TagError::Open)?;
+    let target = cache_dir.join(name);
+    if !target.exists() {
+        std::fs::write(&target, cover.data()).map_err(TagError::Open)?;
     }
-    Ok(Some(destino))
+    Ok(Some(target))
 }
 
 /// Un hash corto y estable de la ruta, para nombrar el archivo de caché.
-fn hash_ruta(path: &Path) -> u64 {
+fn path_hash(path: &Path) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = std::collections::hash_map::DefaultHasher::new();
     path.hash(&mut h);
@@ -181,10 +181,10 @@ fn hash_ruta(path: &Path) -> u64 {
 /// Arma un [`Track`] de la biblioteca local a partir de un archivo.
 pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
     let info = read(path)?;
-    let titulo = info.tags.title.clone().unwrap_or_else(|| {
+    let title = info.tags.title.clone().unwrap_or_else(|| {
         path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default()
     });
-    let mut track = Track::new(id, titulo);
+    let mut track = Track::new(id, title);
     track.duration = info.duration;
     track.track_number = info.tags.track_number;
     track.isrc = info.tags.isrc.clone();
@@ -193,13 +193,13 @@ pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
         .tags
         .artists
         .iter()
-        .map(|nombre| chilpa_models::ArtistRef::named(nombre))
+        .map(|name| chilpa_models::ArtistRef::named(name))
         .collect();
     track.album = info
         .tags
         .album
         .as_ref()
-        .map(|titulo| chilpa_models::AlbumRef::titled(titulo));
+        .map(|title| chilpa_models::AlbumRef::titled(title));
     track.artwork = if info.tags.pictures > 0 {
         ArtworkRef::Embedded { path: path.to_path_buf(), index: 0 }
     } else {
@@ -229,8 +229,8 @@ mod tests {
     #[test]
     fn el_nombre_de_la_portada_cambia_si_cambia_el_archivo() {
         // Dos rutas distintas no pueden compartir archivo de caché.
-        assert_ne!(hash_ruta(Path::new("/a.flac")), hash_ruta(Path::new("/b.flac")));
-        assert_eq!(hash_ruta(Path::new("/a.flac")), hash_ruta(Path::new("/a.flac")));
+        assert_ne!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/b.flac")));
+        assert_eq!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/a.flac")));
     }
 
     #[test]

@@ -62,7 +62,7 @@ pub struct Decoded {
     frames: Option<u64>,
     /// El primer bloque, cuando hubo que decodificarlo para saber con
     /// cuántos canales y a qué frecuencia suena el archivo.
-    pendiente: Option<Block>,
+    pending: Option<Block>,
     /// Bits útiles que declara el archivo. Mandan sobre el ancho del búfer
     /// que entrega el decodificador: symphonia acomoda un FLAC de 16 bits en
     /// un búfer de 32, y quedarse con el 32 haría que el empaquetado creyera
@@ -94,10 +94,10 @@ impl Decoded {
     }
 
     fn from_source(
-        fuente: Box<dyn symphonia::core::io::MediaSource>,
+        source: Box<dyn symphonia::core::io::MediaSource>,
         hint: Hint,
     ) -> Result<Self, DecodeError> {
-        let mss = MediaSourceStream::new(fuente, Default::default());
+        let mss = MediaSourceStream::new(source, Default::default());
         let probed = symphonia::default::get_probe()
             .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
@@ -110,7 +110,7 @@ impl Decoded {
         // Un MP4 no siempre declara canales ni frecuencia en el contenedor:
         // los trae el primer bloque decodificado. Por eso, si faltan, se
         // decodifica un bloque de entrada y se guarda para entregarlo luego.
-        let declarados = (params.sample_rate, params.channels.map(|c| c.count() as u16));
+        let declared = (params.sample_rate, params.channels.map(|c| c.count() as u16));
         // Los bits del archivo mandan: 16 bits salen en S16, 24 en S24In32.
         let sample_format = match params.bits_per_sample.unwrap_or(16) {
             0..=16 => SampleFormat::S16,
@@ -128,13 +128,13 @@ impl Decoded {
             .map(|b| b.min(32) as u8)
             .or_else(|| alac_bit_depth(params));
         let mut format = format;
-        let mut pendiente = None;
-        let (sample_rate_hz, channels) = match declarados {
+        let mut pending = None;
+        let (sample_rate_hz, channels) = match declared {
             (Some(rate), Some(channels)) => (rate, channels),
             _ => {
                 let (rate, channels, block) =
-                    primer_bloque(&mut *format, &mut *decoder, track_id, declared_bits)?;
-                pendiente = Some(block);
+                    first_block(&mut *format, &mut *decoder, track_id, declared_bits)?;
+                pending = Some(block);
                 (rate, channels)
             }
         };
@@ -147,7 +147,7 @@ impl Decoded {
             padding,
             frames,
             declared_bits,
-            pendiente,
+            pending,
         })
     }
 
@@ -170,7 +170,7 @@ impl Decoded {
     /// plan para quedar exactamente ahí: el contenedor casi siempre aterriza
     /// antes, y esos frames se decodifican y se tiran.
     pub fn seek_to_frame(&mut self, frame: u64) -> Result<chilpa_audio::seek::SeekPlan, DecodeError> {
-        self.pendiente = None;
+        self.pending = None;
         let to = SeekTo::TimeStamp { ts: frame, track_id: self.track_id };
         let landed = self
             .format
@@ -188,7 +188,7 @@ impl Decoded {
 
     /// El siguiente bloque. `None` cuando se acabó el archivo.
     pub fn next_block(&mut self) -> Result<Option<Block>, DecodeError> {
-        if let Some(block) = self.pendiente.take() {
+        if let Some(block) = self.pending.take() {
             return Ok(Some(block));
         }
         loop {
@@ -227,7 +227,7 @@ fn alac_bit_depth(params: &symphonia::core::codecs::CodecParameters) -> Option<u
 
 /// Decodifica hasta el primer bloque con audio y regresa frecuencia, canales
 /// y ese bloque, para los contenedores que no lo declaran.
-fn primer_bloque(
+fn first_block(
     format: &mut dyn FormatReader,
     decoder: &mut dyn Decoder,
     track_id: u32,
@@ -267,13 +267,13 @@ fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>) -> Block {
     macro_rules! ints {
         ($buf:expr, $ancho:expr, $conv:expr) => {{
             let bits = declared_bits.unwrap_or($ancho).min($ancho);
-            let corrimiento = $ancho - bits;
+            let offset = $ancho - bits;
             let frames = $buf.frames();
             let channels = $buf.spec().channels.count();
             let mut data = Vec::with_capacity(frames * channels);
             for f in 0..frames {
                 for c in 0..channels {
-                    data.push($conv($buf.chan(c)[f]) >> corrimiento);
+                    data.push($conv($buf.chan(c)[f]) >> offset);
                 }
             }
             Block::Int { data, bits }

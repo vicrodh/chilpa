@@ -140,10 +140,10 @@ mod tests {
 
     #[test]
     fn los_markers_alternan_y_los_dos_canales_llevan_el_mismo() {
-        let izq = dsd(&[0xAB, 0xCD, 0x12, 0x34]);
+        let left = dsd(&[0xAB, 0xCD, 0x12, 0x34]);
         let der = dsd(&[0x55, 0xAA, 0x9C, 0x63]);
         let mut out = Vec::new();
-        DopPacker::new().pack(&[&izq, &der], &mut out);
+        DopPacker::new().pack(&[&left, &der], &mut out);
         assert_eq!(out[0], ((0x05 << 16) | 0xABCD) << 8);
         assert_eq!(out[1], ((0x05 << 16) | 0x55AA) << 8);
         assert_eq!(out[2], ((0xFA << 16) | 0x1234) << 8);
@@ -175,18 +175,18 @@ mod tests {
         let mut packer = DopPacker::new();
         let mut words = Vec::new();
         packer.pack(&[&dsd(&[1, 2, 3, 4, 5, 6]), &dsd(&[7, 8, 9, 10, 11, 12])], &mut words);
-        let escritas = std::cell::RefCell::new(Vec::new());
+        let written = std::cell::RefCell::new(Vec::new());
         let writer = DopWriter::new(2);
-        let mut primera = true;
+        let mut first = true;
         writer.write_all(&mut packer, &words, |chunk| {
-            let frames = if primera { 1 } else { chunk.len() / 2 };
-            escritas.borrow_mut().extend_from_slice(&chunk[..frames * 2]);
-            if primera {
-                primera = false;
+            let frames = if first { 1 } else { chunk.len() / 2 };
+            written.borrow_mut().extend_from_slice(&chunk[..frames * 2]);
+            if first {
+                first = false;
             }
             WriteOutcome::Wrote(frames)
         });
-        assert_eq!(escritas.borrow().len(), 6, "los tres frames estéreo salieron en dos escrituras");
+        assert_eq!(written.borrow().len(), 6, "los tres frames estéreo salieron en dos escrituras");
     }
 
     #[test]
@@ -195,16 +195,16 @@ mod tests {
         let mut words = Vec::new();
         packer.pack(&[&dsd(&[1, 2]), &dsd(&[3, 4])], &mut words);
         let mut vistas: Vec<i32> = Vec::new();
-        let mut fallar = true;
-        let recuperados = DopWriter::new(2).write_all(&mut packer, &words, |chunk| {
-            if fallar {
-                fallar = false;
+        let mut fail = true;
+        let recovered = DopWriter::new(2).write_all(&mut packer, &words, |chunk| {
+            if fail {
+                fail = false;
                 return WriteOutcome::Xrun;
             }
             vistas.extend_from_slice(chunk);
             WriteOutcome::Wrote(chunk.len() / 2)
         });
-        assert_eq!(recuperados, 1);
+        assert_eq!(recovered, 1);
         assert_eq!(vistas[0], ((0xFA << 16) | 0x6969) << 8, "el relleno continúa la alternancia");
     }
 }

@@ -14,7 +14,7 @@ use chilpa_audio::negotiate::{negotiate, DeviceCaps, Policy};
 
 /// Los formatos que vale la pena preguntar: lo que trae la música que
 /// existe, del CD a lo que sale de un estudio.
-pub const FORMATOS: &[(&str, SampleFormat, u32, u16)] = &[
+pub const FORMATS: &[(&str, SampleFormat, u32, u16)] = &[
     ("CD", SampleFormat::S16, 44_100, 2),
     ("DAT", SampleFormat::S16, 48_000, 2),
     ("Estudio 24/48", SampleFormat::S24In32, 48_000, 2),
@@ -30,27 +30,27 @@ pub const FORMATOS: &[(&str, SampleFormat, u32, u16)] = &[
 
 /// Qué pasa con un formato en este dispositivo.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum Veredicto {
+pub enum Verdict {
     /// Sale tal cual entró.
     BitPerfect,
     /// El dispositivo no lo acepta y habría que convertirlo. Se dice a qué.
-    Convertido { a: String },
+    Converted { a: String },
     /// Ni convirtiendo: el dispositivo no ofrece nada parecido.
-    NoSePuede,
+    Unsupported,
 }
 
 /// Un renglón del diagnóstico.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Fila {
-    pub nombre: String,
+pub struct Row {
+    pub name: String,
     /// Como se dice: "24 bits a 96000 Hz, estéreo".
-    pub formato: String,
-    pub veredicto: Veredicto,
+    pub format: String,
+    pub verdict: Verdict,
 }
 
 /// Lo que el asistente encontró.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Diagnostico {
+pub struct Diagnosis {
     pub device: String,
     /// Cierto si las capacidades se midieron abriendo el dispositivo.
     pub probed: bool,
@@ -58,54 +58,54 @@ pub struct Diagnostico {
     pub sample_rates: Vec<u32>,
     pub formats: Vec<String>,
     pub channels: Vec<u16>,
-    pub filas: Vec<Fila>,
+    pub rows: Vec<Row>,
     /// Lo que hay que decirle al usuario, en una línea.
-    pub resumen: String,
+    pub summary: String,
 }
 
 /// Arma el diagnóstico de un dispositivo ya medido.
-pub fn diagnosticar(device: &str, caps: &DeviceCaps) -> Diagnostico {
-    let mut filas = Vec::with_capacity(FORMATOS.len());
-    for (nombre, formato, rate, canales) in FORMATOS {
-        let pedido = StreamFormat::new(*formato, *rate, *canales);
-        let veredicto = if negotiate(pedido, caps, Policy::BitPerfect).is_ok() {
-            Veredicto::BitPerfect
+pub fn diagnose(device: &str, caps: &DeviceCaps) -> Diagnosis {
+    let mut rows = Vec::with_capacity(FORMATS.len());
+    for (name, format, rate, channels) in FORMATS {
+        let request = StreamFormat::new(*format, *rate, *channels);
+        let verdict = if negotiate(request, caps, Policy::BitPerfect).is_ok() {
+            Verdict::BitPerfect
         } else {
-            match negotiate(pedido, caps, Policy::AllowAnything) {
-                Ok(d) => Veredicto::Convertido { a: describir(d.opened) },
-                Err(_) => Veredicto::NoSePuede,
+            match negotiate(request, caps, Policy::AllowAnything) {
+                Ok(d) => Verdict::Converted { a: describe(d.opened) },
+                Err(_) => Verdict::Unsupported,
             }
         };
-        filas.push(Fila {
-            nombre: nombre.to_string(),
-            formato: describir(pedido),
-            veredicto,
+        rows.push(Row {
+            name: name.to_string(),
+            format: describe(request),
+            verdict,
         });
     }
 
-    let bit_perfect = filas.iter().filter(|f| f.veredicto == Veredicto::BitPerfect).count();
-    let resumen = if !caps.probed {
+    let bit_perfect = rows.iter().filter(|f| f.verdict == Verdict::BitPerfect).count();
+    let summary = if !caps.probed {
         // Sin medir no hay nada que prometer.
         "no se pudo medir el dispositivo; nada de lo de abajo está comprobado".to_string()
     } else if bit_perfect == 0 {
         "este dispositivo no entrega bit-perfect en ningún formato común".to_string()
     } else {
-        format!("{bit_perfect} de {} formatos salen tal cual", filas.len())
+        format!("{bit_perfect} de {} formatos salen tal cual", rows.len())
     };
 
-    Diagnostico {
+    Diagnosis {
         device: device.to_string(),
         probed: caps.probed,
         sample_rates: caps.sample_rates.clone(),
-        formats: caps.formats.iter().map(|f| nombre_formato(*f)).collect(),
+        formats: caps.formats.iter().map(|f| format_name(*f)).collect(),
         channels: caps.channels.clone(),
-        filas,
-        resumen,
+        rows,
+        summary,
     }
 }
 
 /// Un formato dicho como se dice.
-pub fn describir(f: StreamFormat) -> String {
+pub fn describe(f: StreamFormat) -> String {
     format!(
         "{} bits a {} Hz, {}",
         f.sample_format.valid_bits(),
@@ -118,7 +118,7 @@ pub fn describir(f: StreamFormat) -> String {
     )
 }
 
-fn nombre_formato(f: SampleFormat) -> String {
+fn format_name(f: SampleFormat) -> String {
     match f {
         SampleFormat::S16 => "16 bits".into(),
         SampleFormat::S24Packed => "24 bits en 3 bytes".into(),
@@ -143,36 +143,36 @@ mod tests {
 
     #[test]
     fn un_dispositivo_de_cd_solo_entrega_cd() {
-        let d = diagnosticar("hw:0,0", &caps(&[44_100], &[SampleFormat::S16], true));
-        let cd = d.filas.iter().find(|f| f.nombre == "CD").unwrap();
-        assert_eq!(cd.veredicto, Veredicto::BitPerfect);
+        let d = diagnose("hw:0,0", &caps(&[44_100], &[SampleFormat::S16], true));
+        let cd = d.rows.iter().find(|f| f.name == "CD").unwrap();
+        assert_eq!(cd.verdict, Verdict::BitPerfect);
 
-        let alta = d.filas.iter().find(|f| f.nombre == "Alta 24/96").unwrap();
-        match &alta.veredicto {
-            Veredicto::Convertido { a } => assert!(a.contains("44100"), "se convierte a {a}"),
-            otro => panic!("24/96 no cabe en un dispositivo de CD: {otro:?}"),
+        let high = d.rows.iter().find(|f| f.name == "Alta 24/96").unwrap();
+        match &high.verdict {
+            Verdict::Converted { a } => assert!(a.contains("44100"), "se convierte a {a}"),
+            other => panic!("24/96 no cabe en un dispositivo de CD: {other:?}"),
         }
-        assert!(d.resumen.contains("1 de"), "{}", d.resumen);
+        assert!(d.summary.contains("1 de"), "{}", d.summary);
     }
 
     #[test]
     fn un_dispositivo_sin_medir_no_promete_nada() {
-        let d = diagnosticar(
+        let d = diagnose(
             "hw:0,0",
             &caps(&[44_100, 96_000], &[SampleFormat::S16, SampleFormat::S24In32], false),
         );
         assert!(!d.probed);
-        assert!(d.resumen.contains("no se pudo medir"), "{}", d.resumen);
+        assert!(d.summary.contains("no se pudo medir"), "{}", d.summary);
         // Y ninguna fila dice bit-perfect: sin medir, no se promete.
         assert!(
-            d.filas.iter().all(|f| f.veredicto != Veredicto::BitPerfect),
+            d.rows.iter().all(|f| f.verdict != Verdict::BitPerfect),
             "prometió bit-perfect sin haber medido"
         );
     }
 
     #[test]
     fn un_dac_de_los_buenos_entrega_casi_todo() {
-        let d = diagnosticar(
+        let d = diagnose(
             "hw:1,0",
             &caps(
                 &[44_100, 48_000, 88_200, 96_000, 176_400, 192_000, 352_800],
@@ -181,25 +181,25 @@ mod tests {
             ),
         );
         let perfectos: Vec<&str> = d
-            .filas
+            .rows
             .iter()
-            .filter(|f| f.veredicto == Veredicto::BitPerfect)
-            .map(|f| f.nombre.as_str())
+            .filter(|f| f.verdict == Verdict::BitPerfect)
+            .map(|f| f.name.as_str())
             .collect();
         assert!(perfectos.contains(&"CD"));
         assert!(perfectos.contains(&"Alta 24/192"));
         assert!(perfectos.contains(&"DSD64 por DoP"), "DoP va a 176.4 kHz");
         assert!(perfectos.contains(&"DSD128 por DoP"), "y DSD128 a 352.8");
         // 384 kHz no está en la lista del dispositivo.
-        let maximo = d.filas.iter().find(|f| f.nombre == "Máximo 32/384").unwrap();
-        assert_ne!(maximo.veredicto, Veredicto::BitPerfect);
+        let max = d.rows.iter().find(|f| f.name == "Máximo 32/384").unwrap();
+        assert_ne!(max.verdict, Verdict::BitPerfect);
     }
 
     #[test]
     fn un_formato_dicho_como_se_dice() {
         let f = StreamFormat::new(SampleFormat::S24In32, 96_000, 2);
-        assert_eq!(describir(f), "24 bits a 96000 Hz, estéreo");
+        assert_eq!(describe(f), "24 bits a 96000 Hz, estéreo");
         let mono = StreamFormat::new(SampleFormat::S16, 44_100, 1);
-        assert_eq!(describir(mono), "16 bits a 44100 Hz, mono");
+        assert_eq!(describe(mono), "16 bits a 44100 Hz, mono");
     }
 }

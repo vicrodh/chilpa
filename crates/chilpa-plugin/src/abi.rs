@@ -24,12 +24,12 @@ pub const F_ALLOC: &str = "chilpa_alloc";
 pub const MODULO_HOST: &str = "chilpa";
 
 /// Empaca una dirección y un largo en el `i64` que contesta el guest.
-pub fn empacar(ptr: u32, len: u32) -> i64 {
+pub fn pack(ptr: u32, len: u32) -> i64 {
     ((u64::from(ptr) << 32) | u64::from(len)) as i64
 }
 
 /// Lo contrario. Un cero quiere decir "no contesté nada".
-pub fn desempacar(v: i64) -> Option<(u32, u32)> {
+pub fn unpack(v: i64) -> Option<(u32, u32)> {
     if v == 0 {
         return None;
     }
@@ -39,7 +39,7 @@ pub fn desempacar(v: i64) -> Option<(u32, u32)> {
 
 /// Lo que un plugin contestó, ya leído.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum Respuesta {
+pub enum Reply {
     /// Contestó, y esto es su JSON.
     Ok(Vec<u8>),
     /// Contestó un error suyo, con su texto.
@@ -50,15 +50,15 @@ pub enum Respuesta {
 ///
 /// Un JSON con `error` es un error del plugin, no una falla del plugin: son
 /// cosas distintas y se cuentan distinto.
-pub fn leer_respuesta(bytes: Vec<u8>) -> Respuesta {
+pub fn read_reply(bytes: Vec<u8>) -> Reply {
     let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
-        return Respuesta::Error("contestó algo que no es JSON".into());
+        return Reply::Error("contestó algo que no es JSON".into());
     };
     if let Some(e) = v.get("error") {
-        let texto = e.as_str().map(str::to_string).unwrap_or_else(|| e.to_string());
-        return Respuesta::Error(texto);
+        let text = e.as_str().map(str::to_string).unwrap_or_else(|| e.to_string());
+        return Reply::Error(text);
     }
-    Respuesta::Ok(bytes)
+    Reply::Ok(bytes)
 }
 
 /// Lo que una función del host contesta cuando devuelve datos.
@@ -66,32 +66,32 @@ pub fn leer_respuesta(bytes: Vec<u8>) -> Respuesta {
 /// El guest da un búfer y su tamaño; si no cabe, no se escribe nada y se
 /// contesta cuánto hacía falta. Así nunca hay una escritura a medias.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum Cupo {
+pub enum Room {
     /// Cupo, y se escribieron tantos bytes.
-    Cabe(u32),
+    Fits(u32),
     /// No cupo; hacían falta tantos.
-    NoCabe(u32),
+    TooBig(u32),
     /// No había nada que dar.
-    Nada,
+    Nothing,
 }
 
-impl Cupo {
+impl Room {
     /// Lo que se le contesta al guest: positivo cabe, negativo no cabe,
     /// menos uno no hay nada.
-    pub fn codigo(self) -> i32 {
+    pub fn code(self) -> i32 {
         match self {
-            Cupo::Cabe(n) => n as i32,
-            Cupo::NoCabe(n) => -(n as i32),
-            Cupo::Nada => -1,
+            Room::Fits(n) => n as i32,
+            Room::TooBig(n) => -(n as i32),
+            Room::Nothing => -1,
         }
     }
 
     /// Decide si unos datos caben en el búfer que dio el guest.
-    pub fn para(datos: Option<&[u8]>, cupo: u32) -> Self {
-        match datos {
-            None => Cupo::Nada,
-            Some(d) if d.len() as u32 <= cupo => Cupo::Cabe(d.len() as u32),
-            Some(d) => Cupo::NoCabe(d.len() as u32),
+    pub fn para(data: Option<&[u8]>, room: u32) -> Self {
+        match data {
+            None => Room::Nothing,
+            Some(d) if d.len() as u32 <= room => Room::Fits(d.len() as u32),
+            Some(d) => Room::TooBig(d.len() as u32),
         }
     }
 }
@@ -103,51 +103,51 @@ mod tests {
     #[test]
     fn empacar_y_desempacar_son_lo_contrario() {
         for (ptr, len) in [(0u32, 5u32), (1024, 0), (0xdead_beef, 0x1234)] {
-            let v = empacar(ptr, len);
-            assert_eq!(desempacar(v), Some((ptr, len)), "con ({ptr}, {len})");
+            let v = pack(ptr, len);
+            assert_eq!(unpack(v), Some((ptr, len)), "con ({ptr}, {len})");
         }
     }
 
     #[test]
     fn un_cero_quiere_decir_que_no_contesto() {
-        assert_eq!(desempacar(0), None);
+        assert_eq!(unpack(0), None);
         // Y una dirección cero con largo cero es lo mismo que nada.
-        assert_eq!(empacar(0, 0), 0);
+        assert_eq!(pack(0, 0), 0);
     }
 
     #[test]
     fn una_respuesta_con_error_se_lee_como_error() {
-        let r = leer_respuesta(r#"{"error":"no encontré esa pista"}"#.as_bytes().to_vec());
-        assert_eq!(r, Respuesta::Error("no encontré esa pista".into()));
+        let r = read_reply(r#"{"error":"no encontré esa pista"}"#.as_bytes().to_vec());
+        assert_eq!(r, Reply::Error("no encontré esa pista".into()));
     }
 
     #[test]
     fn una_respuesta_buena_se_entrega_tal_cual() {
         let json = br#"{"tracks":[]}"#.to_vec();
-        assert_eq!(leer_respuesta(json.clone()), Respuesta::Ok(json));
+        assert_eq!(read_reply(json.clone()), Reply::Ok(json));
     }
 
     #[test]
     fn lo_que_no_es_json_es_un_error_del_plugin() {
-        let r = leer_respuesta(b"basura".to_vec());
-        assert!(matches!(r, Respuesta::Error(e) if e.contains("no es JSON")));
+        let r = read_reply(b"basura".to_vec());
+        assert!(matches!(r, Reply::Error(e) if e.contains("no es JSON")));
     }
 
     #[test]
     fn el_cupo_dice_cuanto_hacia_falta() {
-        assert_eq!(Cupo::para(Some(b"hola"), 10), Cupo::Cabe(4));
-        assert_eq!(Cupo::para(Some(b"hola"), 4), Cupo::Cabe(4), "justo cabe");
-        assert_eq!(Cupo::para(Some(b"hola"), 2), Cupo::NoCabe(4));
-        assert_eq!(Cupo::para(None, 10), Cupo::Nada);
+        assert_eq!(Room::para(Some(b"hola"), 10), Room::Fits(4));
+        assert_eq!(Room::para(Some(b"hola"), 4), Room::Fits(4), "justo cabe");
+        assert_eq!(Room::para(Some(b"hola"), 2), Room::TooBig(4));
+        assert_eq!(Room::para(None, 10), Room::Nothing);
     }
 
     #[test]
     fn los_codigos_del_cupo_no_se_confunden_entre_si() {
-        assert_eq!(Cupo::Cabe(4).codigo(), 4);
-        assert_eq!(Cupo::NoCabe(4).codigo(), -4);
-        assert_eq!(Cupo::Nada.codigo(), -1);
+        assert_eq!(Room::Fits(4).code(), 4);
+        assert_eq!(Room::TooBig(4).code(), -4);
+        assert_eq!(Room::Nothing.code(), -1);
         // Cupo cero que sí cupo es cero, y no se confunde con "nada".
-        assert_eq!(Cupo::Cabe(0).codigo(), 0);
-        assert_ne!(Cupo::Cabe(0).codigo(), Cupo::Nada.codigo());
+        assert_eq!(Room::Fits(0).code(), 0);
+        assert_ne!(Room::Fits(0).code(), Room::Nothing.code());
     }
 }

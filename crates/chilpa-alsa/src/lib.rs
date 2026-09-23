@@ -53,9 +53,9 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
             caps.sample_rates.push(rate);
         }
     }
-    for (nuestro, suyo) in FORMATS {
-        if params.test_format(*suyo).is_ok() {
-            caps.formats.push(*nuestro);
+    for (ours, own) in FORMATS {
+        if params.test_format(*own).is_ok() {
+            caps.formats.push(*ours);
         }
     }
     for ch in [1u32, 2, 4, 6, 8] {
@@ -164,7 +164,7 @@ mod tests {
     fn solo_se_abren_dispositivos_directos() {
         match AlsaSink::open("plughw:0,0", StreamFormat::new(SampleFormat::S16, 44_100, 2)) {
             Err(SinkError::Backend(msg)) => assert!(msg.contains("plughw")),
-            Err(otro) => panic!("debía rechazarse por no ser hw:, salió {otro:?}"),
+            Err(other) => panic!("debía rechazarse por no ser hw:, salió {other:?}"),
             Ok(_) => panic!("plughw no se debe abrir nunca"),
         }
         assert!(matches!(probe("default"), Err(SinkError::Backend(_))));

@@ -11,7 +11,7 @@
 use std::path::{Path, PathBuf};
 
 /// Lo mínimo que un plugin tiene que exportar, más un bloc de notas.
-const PRELUDIO: &str = r#"
+const PRELUDE: &str = r#"
   (memory (export "memory") 1)
   (global $siguiente (mut i32) (i32.const 1024))
   (func (export "chilpa_alloc") (param i32) (result i32)
@@ -24,8 +24,8 @@ const PRELUDIO: &str = r#"
   (data (i32.const 96) "42")
 "#;
 
-fn instalar(raiz: &Path, id: &str, capacidades: &str, cuerpo: &str) {
-    let dir = raiz.join(id);
+fn install(root: &Path, id: &str, capabilities: &str, body: &str) {
+    let dir = root.join(id);
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(
         dir.join("manifest.json"),
@@ -36,7 +36,7 @@ fn instalar(raiz: &Path, id: &str, capacidades: &str, cuerpo: &str) {
                 "version": "0.1.0",
                 "api_version": 1,
                 "kind": "source",
-                "capabilities": [{capacidades}]
+                "capabilities": [{capabilities}]
             }}"#
         ),
     )
@@ -47,9 +47,9 @@ fn instalar(raiz: &Path, id: &str, capacidades: &str, cuerpo: &str) {
             (import "chilpa" "store_set" (func $set (param i32 i32 i32 i32) (result i32)))
             (import "chilpa" "log" (func $log (param i32 i32 i32)))
             (import "chilpa" "now" (func $now (result i64)))
-            {PRELUDIO}
+            {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
-            {cuerpo})"#
+            {body})"#
     );
     std::fs::write(dir.join("plugin.wasm"), wat::parse_str(&wat).expect("compila")).unwrap();
 }
@@ -60,12 +60,12 @@ fn un_plugin_en_su_carpeta_carga_y_contesta() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
-    let raiz: PathBuf = chilpa_api::Chilpa::plugins_dir();
-    std::fs::create_dir_all(&raiz).unwrap();
+    let root: PathBuf = chilpa_api::Chilpa::plugins_dir();
+    std::fs::create_dir_all(&root).unwrap();
 
     // Uno que guarda algo, lo vuelve a leer, anota en el log y contesta.
-    instalar(
-        &raiz,
+    install(
+        &root,
         "com.prueba.bueno",
         r#"{"tipo": "storage"}"#,
         r#"(func (export "saludar") (param i32 i32) (result i64)
@@ -76,32 +76,32 @@ fn un_plugin_en_su_carpeta_carga_y_contesta() {
              (i64.const 17))"#,
     );
     // Y uno que pide una versión de API que no existe.
-    instalar(&raiz, "com.prueba.viejo", "", "(func (export \"saludar\") (param i32 i32) (result i64) (i64.const 17))");
-    let viejo = raiz.join("com.prueba.viejo").join("manifest.json");
-    let m = std::fs::read_to_string(&viejo).unwrap().replace(r#""api_version": 1"#, r#""api_version": 42"#);
-    std::fs::write(&viejo, m).unwrap();
+    install(&root, "com.prueba.viejo", "", "(func (export \"saludar\") (param i32 i32) (result i64) (i64.const 17))");
+    let old = root.join("com.prueba.viejo").join("manifest.json");
+    let m = std::fs::read_to_string(&old).unwrap().replace(r#""api_version": 1"#, r#""api_version": 42"#);
+    std::fs::write(&old, m).unwrap();
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let utilizables = chilpa.load_plugins();
-    assert_eq!(utilizables, 1, "uno cargó y el otro no");
+    let usable = chilpa.load_plugins();
+    assert_eq!(usable, 1, "uno cargó y el otro no");
 
-    let lista = chilpa.plugins();
-    assert_eq!(lista.len(), 2, "los dos se listan, cargue o no");
-    let bueno = lista.iter().find(|p| p.id == "com.prueba.bueno").unwrap();
-    let viejo = lista.iter().find(|p| p.id == "com.prueba.viejo").unwrap();
-    assert_eq!(bueno.state, "bien");
-    assert_eq!(bueno.name, "Plugin de prueba");
-    assert_eq!(viejo.state, "en cuarentena");
-    assert!(viejo.problem.contains("versión"), "{}", viejo.problem);
+    let list = chilpa.plugins();
+    assert_eq!(list.len(), 2, "los dos se listan, cargue o no");
+    let good = list.iter().find(|p| p.id == "com.prueba.bueno").unwrap();
+    let old = list.iter().find(|p| p.id == "com.prueba.viejo").unwrap();
+    assert_eq!(good.state, "bien");
+    assert_eq!(good.name, "Plugin de prueba");
+    assert_eq!(old.state, "en cuarentena");
+    assert!(old.problem.contains("versión"), "{}", old.problem);
 
     // Se le pide algo y contesta su JSON.
     let r = chilpa.call_plugin("com.prueba.bueno", "saludar", b"{}").expect("contesta");
     assert_eq!(String::from_utf8_lossy(&r), r#"{"saludo":"hola"}"#);
 
     // Y lo que guardó quedó en su carpeta, no en la de nadie más.
-    let guardado = raiz.join("com.prueba.bueno").join("almacen").join("ultima-sync");
-    assert_eq!(std::fs::read(&guardado).unwrap(), b"42");
-    assert!(!raiz.join("com.prueba.viejo").join("almacen").exists());
+    let saved = root.join("com.prueba.bueno").join("store").join("ultima-sync");
+    assert_eq!(std::fs::read(&saved).unwrap(), b"42");
+    assert!(!root.join("com.prueba.viejo").join("store").exists());
 
     // Al que está en cuarentena no se le pide nada, ni aunque se insista.
     let e = chilpa.call_plugin("com.prueba.viejo", "saludar", b"{}").expect_err("no se le llama");

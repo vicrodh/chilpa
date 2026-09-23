@@ -9,25 +9,25 @@ fn hay_ffmpeg() -> bool {
 }
 
 /// Un FLAC de un segundo con los tags que se le pidan.
-fn archivo(nombre: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
+fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
     if !hay_ffmpeg() {
         return None;
     }
-    let mut destino = std::env::temp_dir();
-    destino.push(format!("chilpa-tags-{nombre}.flac"));
+    let mut target = std::env::temp_dir();
+    target.push(format!("chilpa-tags-{name}.flac"));
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1"]);
     cmd.args(["-c:a", "flac"]);
     for (clave, valor) in tags {
         cmd.arg("-metadata").arg(format!("{clave}={valor}"));
     }
-    cmd.arg(&destino);
-    cmd.output().ok()?.status.success().then_some(destino)
+    cmd.arg(&target);
+    cmd.output().ok()?.status.success().then_some(target)
 }
 
 #[test]
 fn se_leen_los_campos_basicos_y_la_duracion() {
-    let Some(path) = archivo(
+    let Some(path) = file(
         "basico",
         &[
             ("title", "Cancion de prueba"),
@@ -54,7 +54,7 @@ fn se_leen_los_campos_basicos_y_la_duracion() {
 
 #[test]
 fn un_archivo_sin_tags_no_falla_y_reporta_sus_propiedades() {
-    let Some(path) = archivo("sin-tags", &[]) else {
+    let Some(path) = file("sin-tags", &[]) else {
         eprintln!("sin ffmpeg: se salta");
         return;
     };
@@ -67,7 +67,7 @@ fn un_archivo_sin_tags_no_falla_y_reporta_sus_propiedades() {
 
 #[test]
 fn el_genero_se_lee_como_lista() {
-    let Some(path) = archivo("generos", &[("GENRE", "Rock")]) else {
+    let Some(path) = file("generos", &[("GENRE", "Rock")]) else {
         eprintln!("sin ffmpeg: se salta");
         return;
     };

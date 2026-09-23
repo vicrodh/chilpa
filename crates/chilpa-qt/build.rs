@@ -30,8 +30,8 @@ const QML: &[&str] = &[
 ];
 
 /// Escribe la lista de acomodos para que el puente la incluya.
-fn escribir_layouts() {
-    let nombres: Vec<String> = QML
+fn write_layouts() {
+    let names: Vec<String> = QML
         .iter()
         .filter_map(|f| f.strip_prefix("qml/Layout"))
         .filter_map(|f| f.strip_suffix(".qml"))
@@ -40,13 +40,13 @@ fn escribir_layouts() {
     let out = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("layouts.rs");
     std::fs::write(
         out,
-        format!("pub const LAYOUTS: &[&str] = &[\n{}];\n", nombres.concat()),
+        format!("pub const LAYOUTS: &[&str] = &[\n{}];\n", names.concat()),
     )
     .expect("se escribe la lista de acomodos");
 }
 
 fn main() {
-    escribir_layouts();
+    write_layouts();
     CxxQtBuilder::new()
         .qt_module("Qml")
         .qt_module("Quick")

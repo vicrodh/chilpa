@@ -47,21 +47,21 @@ struct DopFrames<'a> {
 
 impl FrameSource for DopFrames<'_> {
     fn next_block(&mut self) -> Option<Vec<u8>> {
-        let canales = match self.source.next_block() {
+        let channels = match self.source.next_block() {
             Ok(Some(c)) => c,
             Ok(None) | Err(_) => return None,
         };
-        let refs: Vec<&[u8]> = canales.iter().map(|c| c.as_slice()).collect();
-        let mut palabras = Vec::new();
-        self.packer.pack(&refs, &mut palabras);
-        if palabras.is_empty() {
+        let refs: Vec<&[u8]> = channels.iter().map(|c| c.as_slice()).collect();
+        let mut words = Vec::new();
+        self.packer.pack(&refs, &mut words);
+        if words.is_empty() {
             return None;
         }
         // Las palabras ya vienen justificadas a la izquierda dentro de 32
         // bits: al cable van tal cual, sin tocar un bit.
-        let mut bytes = Vec::with_capacity(palabras.len() * 4);
-        for palabra in palabras {
-            bytes.extend_from_slice(&palabra.to_le_bytes());
+        let mut bytes = Vec::with_capacity(words.len() * 4);
+        for word in words {
+            bytes.extend_from_slice(&word.to_le_bytes());
         }
         let _ = self.channels;
         Some(bytes)
@@ -95,11 +95,11 @@ where
 
     let info = source.info().clone();
     let carrier_hz = carrier_rate(info.dsd_rate_hz);
-    let pedido = StreamFormat::new(SampleFormat::S32, carrier_hz, info.channels);
+    let request = StreamFormat::new(SampleFormat::S32, carrier_hz, info.channels);
 
     // Bit-perfect siempre: convertir DoP lo vuelve ruido, así que aquí no hay
     // política que elegir.
-    let delivery = match negotiate(pedido, caps, Policy::BitPerfect) {
+    let delivery = match negotiate(request, caps, Policy::BitPerfect) {
         Ok(d) => d,
         Err(NegotiationError::Unsupported { .. }) | Err(NegotiationError::CapsNotProbed) => {
             return Err(DsdPlayError::Unsupported { carrier_hz })
@@ -136,17 +136,17 @@ mod tests {
     use chilpa_dsd::DsdInfo;
 
     /// Una fuente de DSD de mentiras con bloques conocidos.
-    struct Fuente {
+    struct TestSource {
         info: DsdInfo,
-        bloques: Vec<Vec<Vec<u8>>>,
+        blocks: Vec<Vec<Vec<u8>>>,
     }
 
-    impl DsdSource for Fuente {
+    impl DsdSource for TestSource {
         fn info(&self) -> &DsdInfo {
             &self.info
         }
         fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, DsdError> {
-            Ok(if self.bloques.is_empty() { None } else { Some(self.bloques.remove(0)) })
+            Ok(if self.blocks.is_empty() { None } else { Some(self.blocks.remove(0)) })
         }
     }
 
@@ -180,24 +180,24 @@ mod tests {
         }
     }
 
-    fn fuente() -> Fuente {
-        Fuente {
+    fn source() -> TestSource {
+        TestSource {
             info: DsdInfo { dsd_rate_hz: 2_822_400, channels: 2, samples: 32 },
-            bloques: vec![vec![vec![0xAB, 0xCD, 0x12, 0x34], vec![0x55, 0xAA, 0x9C, 0x63]]],
+            blocks: vec![vec![vec![0xAB, 0xCD, 0x12, 0x34], vec![0x55, 0xAA, 0x9C, 0x63]]],
         }
     }
 
     #[test]
     fn dsd64_se_abre_a_176_400_y_los_bits_salen_intactos() {
         let mut cap = Capturador::default();
-        let mut f = fuente();
+        let mut f = source();
         let played = play_dsd(
             &mut f,
             &caps(&[176_400]),
             &StopSignal::new(),
             &PauseSignal::new(),
-            |formato| {
-                cap.stream = Some(formato);
+            |format| {
+                cap.stream = Some(format);
                 Ok(Handle(&mut cap))
             },
             &mut |_| {},
@@ -209,28 +209,28 @@ mod tests {
         assert!(played.delivery.is_bit_perfect());
 
         // Primera palabra: marker 0x05 y la carga del archivo, justificada.
-        let primera = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
-        assert_eq!(primera, ((0x05 << 16) | 0xABCD) << 8);
+        let first = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
+        assert_eq!(first, ((0x05 << 16) | 0xABCD) << 8);
     }
 
     #[test]
     fn un_dispositivo_que_no_llega_a_la_portadora_se_rechaza() {
         let mut cap = Capturador::default();
-        let mut f = fuente();
+        let mut f = source();
         let r = play_dsd(
             &mut f,
             &caps(&[44_100, 48_000]),
             &StopSignal::new(),
             &PauseSignal::new(),
-            |formato| {
-                cap.stream = Some(formato);
+            |format| {
+                cap.stream = Some(format);
                 Ok(Handle(&mut cap))
             },
             &mut |_| {},
         );
         match r {
             Err(DsdPlayError::Unsupported { carrier_hz }) => assert_eq!(carrier_hz, 176_400),
-            otro => panic!("debía rechazarse: {otro:?}"),
+            other => panic!("debía rechazarse: {other:?}"),
         }
         assert!(cap.bytes.is_empty(), "no se le escribió nada al dispositivo");
     }

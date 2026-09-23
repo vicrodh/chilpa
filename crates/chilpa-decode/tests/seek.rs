@@ -10,7 +10,7 @@ use std::path::PathBuf;
 
 const RATE: u32 = 44_100;
 
-fn escribir_rampa(path: &PathBuf, frames: u32) {
+fn write_ramp(path: &PathBuf, frames: u32) {
     let data_len = frames * 4; // 2 canales de 16 bits
     let mut f = std::fs::File::create(path).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -35,39 +35,39 @@ fn escribir_rampa(path: &PathBuf, frames: u32) {
 
 /// Lee bloques, tira los frames que el plan indica y regresa la primera
 /// muestra de música que queda.
-fn primera_muestra(decoded: &mut Decoded, mut descartar: u64) -> i32 {
+fn first_sample(decoded: &mut Decoded, mut discard: u64) -> i32 {
     loop {
-        let bloque = decoded.next_block().unwrap().expect("hay música");
-        let Block::Int { data, .. } = bloque else { panic!("el WAV es entero") };
+        let block = decoded.next_block().unwrap().expect("hay música");
+        let Block::Int { data, .. } = block else { panic!("el WAV es entero") };
         let frames = (data.len() / 2) as u64;
-        if descartar >= frames {
-            descartar -= frames;
+        if discard >= frames {
+            discard -= frames;
             continue;
         }
-        return data[(descartar as usize) * 2];
+        return data[(discard as usize) * 2];
     }
 }
 
-fn temporal(nombre: &str) -> PathBuf {
+fn temporal(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-seek-{nombre}.wav"));
+    p.push(format!("chilpa-seek-{name}.wav"));
     p
 }
 
 #[test]
 fn buscar_deja_la_lectura_en_el_frame_pedido() {
     let path = temporal("rampa");
-    escribir_rampa(&path, 60_000);
+    write_ramp(&path, 60_000);
     let mut decoded = Decoded::open(&path).unwrap();
 
-    for objetivo in [0u64, 1, 44_100, 12_345, 59_999] {
-        let plan = decoded.seek_to_frame(objetivo).unwrap();
-        assert!(plan.request <= objetivo, "el contenedor nunca se pasa del objetivo");
-        let muestra = primera_muestra(&mut decoded, plan.discard);
+    for target in [0u64, 1, 44_100, 12_345, 59_999] {
+        let plan = decoded.seek_to_frame(target).unwrap();
+        assert!(plan.request <= target, "el contenedor nunca se pasa del objetivo");
+        let sample = first_sample(&mut decoded, plan.discard);
         assert_eq!(
-            muestra,
-            (objetivo % 30_000) as i32,
-            "tras buscar a {objetivo} la música empieza en ese frame"
+            sample,
+            (target % 30_000) as i32,
+            "tras buscar a {target} la música empieza en ese frame"
         );
     }
     let _ = std::fs::remove_file(path);
@@ -76,7 +76,7 @@ fn buscar_deja_la_lectura_en_el_frame_pedido() {
 #[test]
 fn el_archivo_declara_su_duracion_en_frames() {
     let path = temporal("duracion");
-    escribir_rampa(&path, 1_000);
+    write_ramp(&path, 1_000);
     let decoded = Decoded::open(&path).unwrap();
     assert_eq!(decoded.frame_count(), Some(1_000));
     assert_eq!(decoded.encoder_delay(), 0, "un WAV no trae relleno de codificador");

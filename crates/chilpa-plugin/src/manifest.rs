@@ -82,38 +82,38 @@ pub struct Manifest {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ManifestError {
     /// No es JSON, o le falta algo que no tiene valor por omisión.
-    NoSeEntiende(String),
+    Unreadable(String),
     /// El `id` no sirve como identidad ni como nombre de carpeta.
-    IdInvalido(String),
+    BadId(String),
     /// Un campo obligatorio vino vacío.
-    Vacio(&'static str),
+    Empty(&'static str),
     /// Pide una versión de la API que este Chilpa no entiende.
-    ApiIncompatible { pide: u32, tenemos: u32 },
+    ApiIncompatible { wants: u32, have: u32 },
     /// Pide un runtime que todavía no existe.
-    RuntimeNoImplementado(Runtime),
+    RuntimeNotImplemented(Runtime),
     /// Un dominio de la lista de red no es un dominio.
-    DominioInvalido(String),
+    BadDomain(String),
 }
 
 impl std::fmt::Display for ManifestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ManifestError::NoSeEntiende(e) => write!(f, "el manifest no se entiende: {e}"),
-            ManifestError::IdInvalido(id) => write!(
+            ManifestError::Unreadable(e) => write!(f, "el manifest no se entiende: {e}"),
+            ManifestError::BadId(id) => write!(
                 f,
                 "\"{id}\" no sirve como id: se usa como nombre de carpeta, así que va en \
                  minúsculas, con puntos, guiones o dígitos, y sin barras ni puntos dobles"
             ),
-            ManifestError::Vacio(campo) => write!(f, "falta {campo}"),
-            ManifestError::ApiIncompatible { pide, tenemos } => write!(
+            ManifestError::Empty(field) => write!(f, "falta {field}"),
+            ManifestError::ApiIncompatible { wants, have } => write!(
                 f,
-                "pide la versión {pide} de la API y este Chilpa entiende la {tenemos}; \
+                "pide la versión {wants} de la API y este Chilpa entiende la {have}; \
                  no se carga"
             ),
-            ManifestError::RuntimeNoImplementado(r) => {
+            ManifestError::RuntimeNotImplemented(r) => {
                 write!(f, "pide el runtime {r:?}, que todavía no existe")
             }
-            ManifestError::DominioInvalido(d) => {
+            ManifestError::BadDomain(d) => {
                 write!(f, "\"{d}\" no es un dominio al que se pueda dar permiso")
             }
         }
@@ -124,35 +124,35 @@ impl Manifest {
     /// Lee un manifest y lo valida entero.
     pub fn parse(json: &str) -> Result<Self, ManifestError> {
         let m: Manifest =
-            serde_json::from_str(json).map_err(|e| ManifestError::NoSeEntiende(e.to_string()))?;
-        m.validar()?;
+            serde_json::from_str(json).map_err(|e| ManifestError::Unreadable(e.to_string()))?;
+        m.validate()?;
         Ok(m)
     }
 
-    fn validar(&self) -> Result<(), ManifestError> {
+    fn validate(&self) -> Result<(), ManifestError> {
         if self.name.trim().is_empty() {
-            return Err(ManifestError::Vacio("el nombre"));
+            return Err(ManifestError::Empty("el nombre"));
         }
         if self.version.trim().is_empty() {
-            return Err(ManifestError::Vacio("la versión"));
+            return Err(ManifestError::Empty("la versión"));
         }
-        if !id_valido(&self.id) {
-            return Err(ManifestError::IdInvalido(self.id.clone()));
+        if !valid_id(&self.id) {
+            return Err(ManifestError::BadId(self.id.clone()));
         }
         if self.api_version != API_VERSION {
             return Err(ManifestError::ApiIncompatible {
-                pide: self.api_version,
-                tenemos: API_VERSION,
+                wants: self.api_version,
+                have: API_VERSION,
             });
         }
         if self.runtime == Runtime::Process {
-            return Err(ManifestError::RuntimeNoImplementado(self.runtime));
+            return Err(ManifestError::RuntimeNotImplemented(self.runtime));
         }
         for c in &self.capabilities {
             if let Capability::Network { domains } = c {
                 for d in domains {
-                    if !dominio_valido(d) {
-                        return Err(ManifestError::DominioInvalido(d.clone()));
+                    if !valid_domain(d) {
+                        return Err(ManifestError::BadDomain(d.clone()));
                     }
                 }
             }
@@ -173,17 +173,17 @@ impl Manifest {
     }
 
     /// Cierto si pidió esa capacidad.
-    pub fn tiene(&self, cual: &Capability) -> bool {
-        self.capabilities.contains(cual)
+    pub fn has(&self, which: &Capability) -> bool {
+        self.capabilities.contains(which)
     }
 
     /// Cierto si puede guardar cosas.
-    pub fn puede_guardar(&self) -> bool {
+    pub fn can_store(&self) -> bool {
         self.capabilities.iter().any(|c| matches!(c, Capability::Storage))
     }
 
     /// Cierto si puede salir a la red.
-    pub fn puede_salir(&self) -> bool {
+    pub fn can_go_out(&self) -> bool {
         !self.allowed_domains().is_empty()
     }
 }
@@ -193,7 +193,7 @@ impl Manifest {
 /// Nada de barras, nada de `..`, nada de mayúsculas —dos ids que solo se
 /// distinguen por eso serían la misma carpeta en un sistema que no
 /// distingue— y nada vacío entre puntos.
-fn id_valido(id: &str) -> bool {
+fn valid_id(id: &str) -> bool {
     if id.is_empty() || id.len() > 128 {
         return false;
     }
@@ -207,7 +207,7 @@ fn id_valido(id: &str) -> bool {
 }
 
 /// Un dominio sirve si es un nombre de máquina, no un comodín ni una URL.
-fn dominio_valido(d: &str) -> bool {
+fn valid_domain(d: &str) -> bool {
     if d.is_empty() || d.len() > 253 || d.contains('/') || d.contains(':') {
         return false;
     }
@@ -248,7 +248,7 @@ mod tests {
         assert_eq!(m.kind, Kind::Source);
         assert_eq!(m.runtime, Runtime::Wasm, "el runtime por omisión es wasm");
         assert_eq!(m.allowed_domains(), vec!["api.ejemplo.com"]);
-        assert!(m.puede_guardar() && m.puede_salir());
+        assert!(m.can_store() && m.can_go_out());
     }
 
     #[test]
@@ -261,8 +261,8 @@ mod tests {
             r#""capabilities": []"#,
         );
         let m = Manifest::parse(&json).unwrap();
-        assert!(!m.puede_salir(), "sin red declarada no hay red");
-        assert!(!m.puede_guardar());
+        assert!(!m.can_go_out(), "sin red declarada no hay red");
+        assert!(!m.can_store());
     }
 
     #[test]
@@ -271,20 +271,20 @@ mod tests {
         // peligroso.
         let json = base().replace(r#"{"tipo": "storage"}"#, r#"{"tipo": "leer_todo_el_disco"}"#);
         let e = Manifest::parse(&json).expect_err("no se acepta");
-        assert!(matches!(e, ManifestError::NoSeEntiende(_)), "{e}");
+        assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
     }
 
     #[test]
     fn una_version_de_api_distinta_no_carga() {
         let json = base().replace(r#""api_version": 1"#, r#""api_version": 99"#);
         let e = Manifest::parse(&json).expect_err("no se acepta");
-        assert_eq!(e, ManifestError::ApiIncompatible { pide: 99, tenemos: 1 });
+        assert_eq!(e, ManifestError::ApiIncompatible { wants: 99, have: 1 });
         assert!(e.to_string().contains("no se carga"), "{e}");
     }
 
     #[test]
     fn un_id_que_no_sirve_de_carpeta_no_pasa() {
-        for malo in [
+        for bad in [
             "sin-punto",
             "../escapar",
             "con/barra",
@@ -294,10 +294,10 @@ mod tests {
             "doble..punto",
             "",
         ] {
-            let json = base().replace("com.ejemplo.prueba", malo);
+            let json = base().replace("com.ejemplo.prueba", bad);
             assert!(
-                matches!(Manifest::parse(&json), Err(ManifestError::IdInvalido(_))),
-                "\"{malo}\" no debería pasar"
+                matches!(Manifest::parse(&json), Err(ManifestError::BadId(_))),
+                "\"{bad}\" no debería pasar"
             );
         }
         // Y uno que sí.
@@ -307,11 +307,11 @@ mod tests {
 
     #[test]
     fn un_comodin_en_los_dominios_no_pasa() {
-        for malo in ["*", "*.ejemplo.com", "https://api.ejemplo.com", "api.ejemplo.com/v1", "localhost"] {
-            let json = base().replace("api.ejemplo.com", malo);
+        for bad in ["*", "*.ejemplo.com", "https://api.ejemplo.com", "api.ejemplo.com/v1", "localhost"] {
+            let json = base().replace("api.ejemplo.com", bad);
             assert!(
-                matches!(Manifest::parse(&json), Err(ManifestError::DominioInvalido(_))),
-                "\"{malo}\" no debería pasar"
+                matches!(Manifest::parse(&json), Err(ManifestError::BadDomain(_))),
+                "\"{bad}\" no debería pasar"
             );
         }
     }
@@ -326,16 +326,16 @@ mod tests {
     #[test]
     fn un_manifest_que_no_es_json_se_rechaza_con_su_razon() {
         let e = Manifest::parse("esto no es json").expect_err("no es json");
-        assert!(matches!(e, ManifestError::NoSeEntiende(_)));
+        assert!(matches!(e, ManifestError::Unreadable(_)));
         let e = Manifest::parse(r#"{"id": "com.a.b"}"#).expect_err("le faltan campos");
-        assert!(matches!(e, ManifestError::NoSeEntiende(_)), "{e}");
+        assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
     }
 
     #[test]
     fn un_nombre_o_una_version_vacios_no_pasan() {
         let json = base().replace(r#""name": "Prueba""#, r#""name": "   ""#);
-        assert_eq!(Manifest::parse(&json), Err(ManifestError::Vacio("el nombre")));
+        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty("el nombre")));
         let json = base().replace(r#""version": "0.1.0""#, r#""version": """#);
-        assert_eq!(Manifest::parse(&json), Err(ManifestError::Vacio("la versión")));
+        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty("la versión")));
     }
 }

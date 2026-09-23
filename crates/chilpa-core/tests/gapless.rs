@@ -29,9 +29,9 @@ impl AudioSink for Capturador {
 }
 
 /// Un WAV cuyo canal izquierdo cuenta desde `desde`.
-fn rampa(nombre: &str, desde: i32, frames: u32) -> PathBuf {
+fn ramp(name: &str, from: i32, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-gapless-{nombre}.wav"));
+    p.push(format!("chilpa-gapless-{name}.wav"));
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -47,7 +47,7 @@ fn rampa(nombre: &str, desde: i32, frames: u32) -> PathBuf {
     f.write_all(b"data").unwrap();
     f.write_all(&data.to_le_bytes()).unwrap();
     for i in 0..frames {
-        let v = ((desde + i as i32) % 30_000) as i16;
+        let v = ((from + i as i32) % 30_000) as i16;
         f.write_all(&v.to_le_bytes()).unwrap();
         f.write_all(&(-v).to_le_bytes()).unwrap();
     }
@@ -63,40 +63,40 @@ fn caps(rates: &[u32]) -> DeviceCaps {
     }
 }
 
-fn reproducir(pistas: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
+fn play(tracks: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
     let cap = Capturador::default();
-    let mut aperturas = 0;
+    let mut opens = 0;
     play_queue_with(
-        &SharedQueue::new(pistas.to_vec()),
+        &SharedQueue::new(tracks.to_vec()),
         caps,
         Policy::BitPerfect,
         &Controls::new(),
         |_| {
-            aperturas += 1;
+            opens += 1;
             Ok(cap.clone())
         },
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
     .expect("la cola corre");
-    let muestras = cap.0.borrow().clone();
-    (muestras, aperturas)
+    let samples = cap.0.borrow().clone();
+    (samples, opens)
 }
 
 #[test]
 fn dos_pistas_del_mismo_formato_salen_pegadas() {
     // La segunda continúa la cuenta de la primera: si hubiera hueco,
     // repetición o recorte, la secuencia se rompe en la unión.
-    let a = rampa("a", 0, 5_000);
-    let b = rampa("b", 5_000, 5_000);
-    let (muestras, aperturas) = reproducir(&[a.clone(), b.clone()], &caps(&[44_100]));
+    let a = ramp("a", 0, 5_000);
+    let b = ramp("b", 5_000, 5_000);
+    let (samples, opens) = play(&[a.clone(), b.clone()], &caps(&[44_100]));
 
-    assert_eq!(aperturas, 1, "el dispositivo se abrió una sola vez");
-    assert_eq!(muestras.len(), 20_000, "salieron los 10 000 frames estéreo");
+    assert_eq!(opens, 1, "el dispositivo se abrió una sola vez");
+    assert_eq!(samples.len(), 20_000, "salieron los 10 000 frames estéreo");
 
-    let izquierdo: Vec<i16> = muestras.iter().step_by(2).copied().collect();
-    let esperado: Vec<i16> = (0..10_000).map(|i| (i % 30_000) as i16).collect();
-    assert_eq!(izquierdo, esperado, "la unión entre pistas no es continua");
+    let left: Vec<i16> = samples.iter().step_by(2).copied().collect();
+    let expected: Vec<i16> = (0..10_000).map(|i| (i % 30_000) as i16).collect();
+    assert_eq!(left, expected, "la unión entre pistas no es continua");
 
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
@@ -104,7 +104,7 @@ fn dos_pistas_del_mismo_formato_salen_pegadas() {
 
 #[test]
 fn si_cambia_el_formato_se_reabre_y_no_se_pierde_nada() {
-    let a = rampa("cd", 0, 4_000);
+    let a = ramp("cd", 0, 4_000);
     // La segunda pista es de otra frecuencia: encadenar sin hueco es
     // imposible, pero no debe perderse ni una muestra.
     let b = {
@@ -133,9 +133,9 @@ fn si_cambia_el_formato_se_reabre_y_no_se_pierde_nada() {
         p
     };
 
-    let (muestras, aperturas) = reproducir(&[a.clone(), b.clone()], &caps(&[44_100, 96_000]));
-    assert_eq!(aperturas, 2, "cambiar de frecuencia obliga a reabrir");
-    assert_eq!(muestras.len(), (4_000 + 3_000) * 2, "no se perdió ninguna muestra");
+    let (samples, opens) = play(&[a.clone(), b.clone()], &caps(&[44_100, 96_000]));
+    assert_eq!(opens, 2, "cambiar de frecuencia obliga a reabrir");
+    assert_eq!(samples.len(), (4_000 + 3_000) * 2, "no se perdió ninguna muestra");
 
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);

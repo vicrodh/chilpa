@@ -28,7 +28,7 @@ pub use tempo::{detect as detect_tempo, Tempo};
 pub const VERSION: i64 = 2;
 
 /// Cómo se llama este analizador en la base.
-pub const NOMBRE: &str = "chilpa";
+pub const NAME: &str = "chilpa";
 
 /// Lo que el análisis saca de una pista.
 #[derive(Clone, PartialEq, Debug, Default)]
@@ -46,16 +46,16 @@ pub struct Analysis {
 ///
 /// Por debajo de esto el cromagrama encaja casi igual de bien en dos tonos,
 /// y decir uno sería inventar.
-pub const CONFIANZA_MINIMA_TONALIDAD: f32 = 0.05;
+pub const MIN_KEY_CONFIDENCE: f32 = 0.05;
 
 /// Analiza una señal mono ya decodificada.
 pub fn analyze(samples: &[f32], sample_rate_hz: u32) -> Analysis {
     let t = tempo::detect(samples, sample_rate_hz);
     // La tonalidad se busca sobre la señal remuestreada, que es donde los
     // bins caen del tamaño que le conviene al cromagrama.
-    let bajada = tempo::remuestrear_para_analisis(samples, sample_rate_hz);
-    let k = key::detect(&bajada, tempo::HZ_ANALISIS)
-        .filter(|k| k.confidence >= CONFIANZA_MINIMA_TONALIDAD);
+    let bajada = tempo::resample_for_analysis(samples, sample_rate_hz);
+    let k = key::detect(&bajada, tempo::ANALYSIS_HZ)
+        .filter(|k| k.confidence >= MIN_KEY_CONFIDENCE);
     Analysis {
         bpm: t.map(|t| t.bpm),
         tempo_confidence: t.map(|t| t.confidence),

@@ -87,20 +87,20 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
     }
 
     // Dos ranuras de área: la estéreo y la multicanal. Se prueba cada copia.
-    let ranuras = [
+    let slots = [
         (be32(&master, 0x40), be32(&master, 0x44), be16(&master, 0x54)),
         (be32(&master, 0x48), be32(&master, 0x4c), be16(&master, 0x56)),
     ];
     let mut area_toc = None;
-    for (primaria, respaldo, tamaño) in ranuras {
+    for (primary, backup, tamaño) in slots {
         if tamaño == 0 || tamaño > MAX_AREA_TOC_SECTORS {
             continue;
         }
-        for inicio in [primaria, respaldo].into_iter().filter(|s| *s != 0) {
+        for start in [primary, backup].into_iter().filter(|s| *s != 0) {
             let mut toc = vec![0u8; SECTOR * tamaño as usize];
             let mut ok = true;
-            for (i, trozo) in toc.chunks_mut(SECTOR).enumerate() {
-                if image.read_sector(u64::from(inicio) + i as u64, trozo).is_err() {
+            for (i, chunk) in toc.chunks_mut(SECTOR).enumerate() {
+                if image.read_sector(u64::from(start) + i as u64, chunk).is_err() {
                     ok = false;
                     break;
                 }
@@ -122,9 +122,9 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
 }
 
 fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
-    let canales = toc[0x20];
-    if canales != 2 || toc[0x21] & 0x1f != 0 {
-        return Err(SacdError::Unsupported(format!("{canales} canales en el área estéreo")));
+    let channels = toc[0x20];
+    if channels != 2 || toc[0x21] & 0x1f != 0 {
+        return Err(SacdError::Unsupported(format!("{channels} canales en el área estéreo")));
     }
     if toc[0x14] != 4 {
         return Err(SacdError::Unsupported(format!("frecuencia código {}", toc[0x14])));
@@ -133,7 +133,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
         0 => Encoding::Dst,
         2 => Encoding::Dsd3In14,
         3 => Encoding::Dsd3In16,
-        otro => return Err(SacdError::Unsupported(format!("formato de frame {otro}"))),
+        other => return Err(SacdError::Unsupported(format!("formato de frame {other}"))),
     };
     let track_count = toc[0x45] as usize;
     if track_count == 0 {
@@ -150,18 +150,18 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
     let trl2 = find_block(toc, b"SACDTRL2")
         .ok_or_else(|| SacdError::MalformedToc("falta SACDTRL2".into()))?;
     // Cada bloque trae dos arreglos de 255 entradas de 4 bytes.
-    const SEGUNDO_ARREGLO: usize = 8 + 255 * 4;
+    const SECOND_ARRAY: usize = 8 + 255 * 4;
 
     let mut tracks = Vec::with_capacity(track_count);
     let mut anterior: Option<u32> = None;
     for i in 0..track_count {
         let start_lsn = be32(trl1, 8 + i * 4);
-        let length_lsn = be32(trl1, SEGUNDO_ARREGLO + i * 4);
-        let duration_frames = timecode_frames(trl2, SEGUNDO_ARREGLO + i * 4);
+        let length_lsn = be32(trl1, SECOND_ARRAY + i * 4);
+        let duration_frames = timecode_frames(trl2, SECOND_ARRAY + i * 4);
         if trl2[8 + i * 4 + 1] >= 60
             || trl2[8 + i * 4 + 2] >= 75
-            || trl2[SEGUNDO_ARREGLO + i * 4 + 1] >= 60
-            || trl2[SEGUNDO_ARREGLO + i * 4 + 2] >= 75
+            || trl2[SECOND_ARRAY + i * 4 + 1] >= 60
+            || trl2[SECOND_ARRAY + i * 4 + 2] >= 75
         {
             return Err(SacdError::MalformedToc(format!("código de tiempo inválido en la pista {}", i + 1)));
         }
@@ -169,7 +169,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
         if length_lsn == 0
             || start_lsn < audio_start_lsn
             || fin > u64::from(audio_end_lsn) + 1
-            || anterior.is_some_and(|previo| start_lsn <= previo)
+            || anterior.is_some_and(|previous| start_lsn <= previous)
         {
             return Err(SacdError::MalformedToc(format!(
                 "la pista {} cae fuera del área o desordenada",
@@ -190,6 +190,6 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
 }
 
 /// Busca un bloque con esa firma dentro de la tabla del área.
-fn find_block<'a>(toc: &'a [u8], firma: &[u8; 8]) -> Option<&'a [u8]> {
-    toc.chunks(SECTOR).find(|s| s.len() >= 8 && &s[..8] == firma)
+fn find_block<'a>(toc: &'a [u8], signature: &[u8; 8]) -> Option<&'a [u8]> {
+    toc.chunks(SECTOR).find(|s| s.len() >= 8 && &s[..8] == signature)
 }

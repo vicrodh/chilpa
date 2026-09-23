@@ -40,10 +40,10 @@ impl AudioSink for Handle<'_> {
 }
 
 /// Escribe un WAV PCM con esas muestras enteras.
-fn escribir_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u16) {
-    let bytes_por_muestra = u32::from(bits) / 8;
-    let data_len = samples.len() as u32 * bytes_por_muestra;
-    let byte_rate = rate * u32::from(channels) * bytes_por_muestra;
+fn write_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u16) {
+    let bytes_per_sample = u32::from(bits) / 8;
+    let data_len = samples.len() as u32 * bytes_per_sample;
+    let byte_rate = rate * u32::from(channels) * bytes_per_sample;
     let block_align = channels * bits / 8;
     let mut f = std::fs::File::create(path).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -67,15 +67,15 @@ fn escribir_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u1
     }
 }
 
-fn temporal(nombre: &str) -> PathBuf {
+fn temporal(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-bitperfect-{nombre}.wav"));
+    p.push(format!("chilpa-bitperfect-{name}.wav"));
     p
 }
 
 /// Muestras que pegan en los bordes: silencio, ±1 LSB, y los extremos del
 /// rango, que es justo donde el escalado por flotante se equivocaba.
-fn muestras(bits: u8) -> Vec<i32> {
+fn samples(bits: u8) -> Vec<i32> {
     let max = (1i64 << (bits - 1)) as i32 - 1;
     let min = -(1i64 << (bits - 1)) as i32;
     let mut v = vec![0, 1, -1, max, min, max - 1, min + 1];
@@ -88,10 +88,10 @@ fn muestras(bits: u8) -> Vec<i32> {
     v.iter().flat_map(|&s| [s, if s == min { max } else { -s }]).collect()
 }
 
-fn caps(formato: SampleFormat, rate: u32) -> DeviceCaps {
+fn caps(format: SampleFormat, rate: u32) -> DeviceCaps {
     DeviceCaps {
         sample_rates: vec![rate],
-        formats: vec![formato],
+        formats: vec![format],
         channels: vec![2],
         probed: true,
     }
@@ -99,9 +99,9 @@ fn caps(formato: SampleFormat, rate: u32) -> DeviceCaps {
 
 #[test]
 fn un_wav_de_16_bits_sale_identico_por_el_cable() {
-    let originales = muestras(16);
+    let originals = samples(16);
     let path = temporal("16");
-    escribir_wav(&path, &originales, 16, 44_100, 2);
+    write_wav(&path, &originals, 16, 44_100, 2);
 
     let mut cap = Capturador { stream: None, bytes: Vec::new() };
     let played = play_file(
@@ -119,21 +119,21 @@ fn un_wav_de_16_bits_sale_identico_por_el_cable() {
     assert!(played.delivery.is_bit_perfect(), "la entrega se declara bit-perfect");
     assert!(matches!(played.outcome, Outcome::Finished { .. }));
 
-    let salieron: Vec<i32> = cap
+    let came_out: Vec<i32> = cap
         .bytes
         .chunks_exact(2)
         .map(|c| i32::from(i16::from_le_bytes([c[0], c[1]])))
         .collect();
-    assert_eq!(salieron.len(), originales.len(), "salieron todas las muestras");
-    assert_eq!(salieron, originales, "ni un LSB de diferencia");
+    assert_eq!(came_out.len(), originals.len(), "salieron todas las muestras");
+    assert_eq!(came_out, originals, "ni un LSB de diferencia");
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn un_wav_de_24_bits_sale_identico_por_el_cable() {
-    let originales = muestras(24);
+    let originals = samples(24);
     let path = temporal("24");
-    escribir_wav(&path, &originales, 24, 96_000, 2);
+    write_wav(&path, &originals, 24, 96_000, 2);
 
     let mut cap = Capturador { stream: None, bytes: Vec::new() };
     let played = play_file(
@@ -150,19 +150,19 @@ fn un_wav_de_24_bits_sale_identico_por_el_cable() {
 
     assert!(played.delivery.is_bit_perfect());
     // S24In32 va justificado a la izquierda: los 24 bits válidos arriba.
-    let salieron: Vec<i32> = cap
+    let came_out: Vec<i32> = cap
         .bytes
         .chunks_exact(4)
         .map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) >> 8)
         .collect();
-    assert_eq!(salieron, originales, "ni un LSB de diferencia a 24 bits");
+    assert_eq!(came_out, originals, "ni un LSB de diferencia a 24 bits");
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn con_un_dispositivo_que_no_puede_se_falla_en_vez_de_resamplear() {
     let path = temporal("rechazo");
-    escribir_wav(&path, &muestras(16), 16, 44_100, 2);
+    write_wav(&path, &samples(16), 16, 44_100, 2);
     let solo_48k = caps(SampleFormat::S16, 48_000);
 
     let mut cap = Capturador { stream: None, bytes: Vec::new() };

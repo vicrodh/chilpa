@@ -78,7 +78,7 @@ impl Queue {
         let mut seen = vec![false; self.items.len()];
         for &i in &order {
             match seen.get_mut(i) {
-                Some(visto) if !*visto => *visto = true,
+                Some(seen) if !*seen => *seen = true,
                 Some(_) => return Err(OrderError::Repeated(i)),
                 None => return Err(OrderError::OutOfRange(i)),
             }
@@ -146,7 +146,7 @@ mod tests {
     use super::*;
     use crate::source::SourceId;
 
-    fn cola(n: usize) -> Queue {
+    fn queue(n: usize) -> Queue {
         Queue::new(
             (0..n)
                 .map(|i| QueueItem::new(TrackRef::new(SourceId::local(), i.to_string())))
@@ -156,12 +156,12 @@ mod tests {
 
     #[test]
     fn la_cola_arranca_en_el_primero() {
-        assert_eq!(cola(3).current().unwrap().track.external_id, "0");
+        assert_eq!(queue(3).current().unwrap().track.external_id, "0");
     }
 
     #[test]
     fn un_orden_de_afuera_no_cambia_lo_que_suena() {
-        let mut q = cola(3);
+        let mut q = queue(3);
         q.set_order(vec![2, 0, 1]).unwrap();
         assert_eq!(q.current().unwrap().track.external_id, "0", "sigue sonando el mismo track");
         assert_eq!(q.advance().unwrap().track.external_id, "1");
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn se_rechaza_un_orden_que_no_es_permutacion() {
-        let mut q = cola(3);
+        let mut q = queue(3);
         assert_eq!(q.set_order(vec![0, 1]), Err(OrderError::WrongLength { expected: 3, got: 2 }));
         assert_eq!(q.set_order(vec![0, 1, 1]), Err(OrderError::Repeated(1)));
         assert_eq!(q.set_order(vec![0, 1, 9]), Err(OrderError::OutOfRange(9)));
@@ -178,18 +178,18 @@ mod tests {
 
     #[test]
     fn sin_repeticion_la_cola_se_acaba() {
-        let mut q = cola(2);
+        let mut q = queue(2);
         assert!(q.advance().is_some());
         assert!(q.advance().is_none());
     }
 
     #[test]
     fn repetir_todo_da_la_vuelta_y_repetir_una_se_queda() {
-        let mut q = cola(2);
+        let mut q = queue(2);
         q.repeat = RepeatMode::All;
         q.advance();
         assert_eq!(q.advance().unwrap().track.external_id, "0");
-        let mut q = cola(2);
+        let mut q = queue(2);
         q.repeat = RepeatMode::One;
         assert_eq!(q.advance().unwrap().track.external_id, "0");
     }

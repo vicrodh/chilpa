@@ -38,10 +38,10 @@ impl<R: Read> IcyReader<R> {
             // Lo normal: el servidor no tiene nada nuevo que decir.
             return Ok(());
         }
-        let mut bloque = vec![0u8; bytes];
-        self.inner.read_exact(&mut bloque)?;
-        if let Some(titulo) = titulo_de(&bloque) {
-            self.now_playing.set(Some(titulo));
+        let mut block = vec![0u8; bytes];
+        self.inner.read_exact(&mut block)?;
+        if let Some(title) = title_of(&block) {
+            self.now_playing.set(Some(title));
         }
         Ok(())
     }
@@ -69,57 +69,57 @@ impl<R: Read> Read for IcyReader<R> {
 ///
 /// El bloque viene como `StreamTitle='Artista - Canción';StreamUrl='...';`
 /// rellenado con ceros hasta un múltiplo de 16.
-pub fn titulo_de(bloque: &[u8]) -> Option<String> {
-    let texto = String::from_utf8_lossy(bloque);
-    let texto = texto.trim_end_matches('\0');
-    let inicio = texto.find("StreamTitle=")? + "StreamTitle=".len();
-    let resto = &texto[inicio..];
-    let resto = resto.strip_prefix('\'').unwrap_or(resto);
-    let fin = resto.find("';").unwrap_or(resto.len());
-    let titulo = resto[..fin].trim();
-    (!titulo.is_empty()).then(|| titulo.to_string())
+pub fn title_of(block: &[u8]) -> Option<String> {
+    let text = String::from_utf8_lossy(block);
+    let text = text.trim_end_matches('\0');
+    let start = text.find("StreamTitle=")? + "StreamTitle=".len();
+    let rest = &text[start..];
+    let rest = rest.strip_prefix('\'').unwrap_or(rest);
+    let fin = rest.find("';").unwrap_or(rest.len());
+    let title = rest[..fin].trim();
+    (!title.is_empty()).then(|| title.to_string())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn bloque(texto: &str) -> Vec<u8> {
-        let mut datos = texto.as_bytes().to_vec();
-        while datos.len() % 16 != 0 {
-            datos.push(0);
+    fn block(text: &str) -> Vec<u8> {
+        let mut data = text.as_bytes().to_vec();
+        while data.len() % 16 != 0 {
+            data.push(0);
         }
-        let mut salida = vec![(datos.len() / 16) as u8];
-        salida.extend_from_slice(&datos);
-        salida
+        let mut output = vec![(data.len() / 16) as u8];
+        output.extend_from_slice(&data);
+        output
     }
 
     #[test]
     fn se_saca_el_titulo_del_bloque() {
         let b = "StreamTitle='Creedence - Born On The Bayou';StreamUrl='';";
         assert_eq!(
-            titulo_de(b.as_bytes()).as_deref(),
+            title_of(b.as_bytes()).as_deref(),
             Some("Creedence - Born On The Bayou")
         );
     }
 
     #[test]
     fn un_bloque_sin_titulo_no_dice_nada() {
-        assert_eq!(titulo_de(b"StreamUrl='http://x';"), None);
-        assert_eq!(titulo_de(b"StreamTitle='';"), None);
+        assert_eq!(title_of(b"StreamUrl='http://x';"), None);
+        assert_eq!(title_of(b"StreamTitle='';"), None);
     }
 
     #[test]
     fn la_metadata_sale_del_audio_y_el_titulo_se_publica() {
         // 16 bytes de audio, un bloque con título, y otros 16 de audio.
-        let mut datos = Vec::new();
-        datos.extend_from_slice(&[1u8; 16]);
-        datos.extend_from_slice(&bloque("StreamTitle='Una canción';"));
-        datos.extend_from_slice(&[2u8; 16]);
-        datos.push(0); // el bloque vacío que toca después
+        let mut data = Vec::new();
+        data.extend_from_slice(&[1u8; 16]);
+        data.extend_from_slice(&block("StreamTitle='Una canción';"));
+        data.extend_from_slice(&[2u8; 16]);
+        data.push(0); // el bloque vacío que toca después
 
         let np = NowPlaying::new();
-        let mut lector = IcyReader::new(std::io::Cursor::new(datos), 16, np.clone());
+        let mut lector = IcyReader::new(std::io::Cursor::new(data), 16, np.clone());
 
         let mut audio = Vec::new();
         lector.read_to_end(&mut audio).unwrap();
@@ -130,11 +130,11 @@ mod tests {
 
     #[test]
     fn sin_metaint_el_flujo_pasa_tal_cual() {
-        let datos: Vec<u8> = (0..50u8).collect();
+        let data: Vec<u8> = (0..50u8).collect();
         let mut lector =
-            IcyReader::new(std::io::Cursor::new(datos.clone()), 0, NowPlaying::new());
-        let mut salida = Vec::new();
-        lector.read_to_end(&mut salida).unwrap();
-        assert_eq!(salida, datos);
+            IcyReader::new(std::io::Cursor::new(data.clone()), 0, NowPlaying::new());
+        let mut output = Vec::new();
+        lector.read_to_end(&mut output).unwrap();
+        assert_eq!(output, data);
     }
 }
