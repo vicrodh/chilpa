@@ -47,6 +47,9 @@ pub mod chilpa_bridge {
         /// renglón por pista, con "ruta, título, artista, álbum, duración y
         /// lo que el análisis sacó".
         #[qproperty(QStringList, results)]
+        /// Los sources que contestaron mal, ya redactado para mostrarse.
+        /// Vacío cuando todos contestaron bien.
+        #[qproperty(QString, search_problems)]
         /// El álbum que se está mirando, vacío si no hay ninguno abierto.
         #[qproperty(QString, open_album)]
         #[qproperty(i64, open_album_id)]
@@ -421,6 +424,7 @@ pub struct ChilpaRust {
     queue_removed: QStringList,
     albums: QStringList,
     results: QStringList,
+    search_problems: QString,
     result_paths: Vec<String>,
     open_album: QString,
     open_album_id: i64,
@@ -502,6 +506,7 @@ impl Default for ChilpaRust {
             queue_removed: QStringList::default(),
             albums: QStringList::default(),
             results: QStringList::default(),
+            search_problems: QString::from(""),
             result_paths: Vec::new(),
             open_album: QString::from(""),
             open_album_id: 0,
@@ -574,7 +579,7 @@ impl Default for ChilpaRust {
             // probarla sin tocar nada: chilpa-qt <archivo> [salida].
             autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
-            initial_search: QString::from(&std::env::var("CHILPA_BUSCAR").unwrap_or_default()),
+            initial_search: QString::from(&std::env::var("CHILPA_SEARCH").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             initial_tab: QString::from(&std::env::var("CHILPA_PESTANA").unwrap_or_default()),
             initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
@@ -662,24 +667,47 @@ impl Chilpa {
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
         let owned = text.to_string();
         self.as_mut().set_search_text(text.clone());
-        let found = self.as_mut().rust_mut().api.search(&owned, 200);
+        // Esto solo trae lo local, que sale al instante. Lo que aporten los
+        // sources llega después, y `tick` lo recoge.
+        self.as_mut().rust_mut().api.search_all(&owned, 200);
+        self.as_mut().refresh_results();
+    }
+
+    /// Pasa a la vista lo que la búsqueda lleva junto ahora.
+    ///
+    /// Se llama al buscar y en cada pulso mientras algún source siga
+    /// contestando: los resultados crecen solos, sin que el usuario tenga
+    /// que volver a escribir.
+    pub fn refresh_results(mut self: Pin<&mut Self>) {
+        // Se toma la marca aquí para que quien llame directo no deje un
+        // refresco pendiente para el siguiente pulso.
+        let _ = self.as_mut().rust_mut().api.search_changed();
+        let hits = self.as_mut().rust_mut().api.found().to_vec();
         let mut list = QList::<QString>::default();
-        let mut paths = Vec::with_capacity(found.len());
-        for t in &found {
-            let seconds = t.duration_ms / 1000;
+        // Va alineado renglón a renglón con la lista, con una ruta vacía
+        // donde no hay nada que tocar: si se saltaran renglones, "reproducir
+        // desde aquí" arrancaría en otra pista.
+        let mut paths = Vec::with_capacity(hits.len());
+        for h in &hits {
+            let seconds = h.duration_ms / 1000;
             list.append(QString::from(&format!(
-                "{}\t{}\t{}\t{}\t{}:{:02}\t{}",
-                t.path,
-                t.title,
-                t.artist,
-                t.album,
+                "{}\t{}\t{}\t{}\t{}:{:02}\t{}\t{}\t{}\t{}",
+                h.id,
+                h.title,
+                h.artist,
+                h.album,
                 seconds / 60,
                 seconds % 60,
-                t.analysis
+                h.analysis,
+                h.source_name,
+                h.also_in.join(", "),
+                if h.playable { "1" } else { "" },
             )));
-            paths.push(t.path.clone());
+            paths.push(if h.playable { h.id.clone() } else { String::new() });
         }
         self.as_mut().set_results(QStringList::from(&list));
+        let problems = self.as_mut().rust_mut().api.search_problems();
+        self.as_mut().set_search_problems(QString::from(&problems.join(" · ")));
         self.as_mut().rust_mut().result_paths = paths;
     }
 
@@ -692,6 +720,7 @@ impl Chilpa {
             .result_paths
             .iter()
             .skip(from)
+            .filter(|p| !p.is_empty())
             .cloned()
             .collect();
         let titles = self.as_mut().rust_mut().api.play_tracks(&paths, &device, bit_perfect);
@@ -1348,6 +1377,14 @@ impl Chilpa {
         self.as_mut().set_error(QString::from(&now.error));
         if !now.path.is_empty() {
             self.as_mut().set_track(QString::from(&now.path));
+        }
+
+        // Cuando llega lo de un source, la lista se vuelve a armar: es lo
+        // que hace que los resultados aparezcan solos. Se pregunta si
+        // cambiaron y no si la consulta sigue viva, porque puede empezar y
+        // acabar entre dos pulsos.
+        if self.as_mut().rust_mut().api.search_changed() {
+            self.as_mut().refresh_results();
         }
     }
 }

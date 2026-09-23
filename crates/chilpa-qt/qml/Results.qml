@@ -81,6 +81,17 @@ Rectangle {
             }
         }
 
+        // Lo que un source no pudo contestar se dice, no se esconde: una
+        // lista corta sin explicación parece una biblioteca pobre.
+        Label {
+            Layout.fillWidth: true
+            visible: Chilpa.searchProblems !== ""
+            text: "No contestaron: " + Chilpa.searchProblems
+            font.pixelSize: 11
+            color: "#a05a2c"
+            elide: Text.ElideRight
+        }
+
     ListView {
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -94,6 +105,15 @@ Rectangle {
             color: row.containsMouse ? "#f7f1ec" : "transparent"
 
             readonly property var cols: modelData.split("\t")
+            // Columnas 6 a 8 solo vienen de la búsqueda; al abrir un álbum
+            // la fila es más corta y estas quedan vacías.
+            readonly property string sourceName: cols.length > 6 ? cols[6] : ""
+            readonly property string alsoIn: cols.length > 7 ? cols[7] : ""
+            // Lo que todavía no se puede tocar se ve apagado en lugar de
+            // fingir que un clic va a sonar.
+            readonly property bool playable: cols.length > 8 ? cols[8] === "1" : true
+
+            opacity: playable ? 1.0 : 0.55
 
             RowLayout {
                 anchors.fill: parent
@@ -102,13 +122,13 @@ Rectangle {
                 spacing: 10
 
                 Label {
-                    Layout.preferredWidth: parent.width * 0.40
+                    Layout.preferredWidth: parent.width * 0.30
                     text: cols[1]
                     elide: Text.ElideRight
                     color: "#411d1f"
                 }
                 Label {
-                    Layout.preferredWidth: parent.width * 0.22
+                    Layout.preferredWidth: parent.width * 0.20
                     text: cols[2]
                     elide: Text.ElideRight
                     color: "#7a411d1f"
@@ -122,11 +142,21 @@ Rectangle {
                 // Lo que el análisis sacó. Solo sale cuando ya se analizó:
                 // una columna vacía no le dice nada a nadie.
                 Label {
-                    Layout.preferredWidth: parent.width * 0.16
+                    Layout.preferredWidth: parent.width * 0.12
                     horizontalAlignment: Text.AlignRight
                     text: cols.length > 5 ? cols[5] : ""
                     elide: Text.ElideRight
                     font.pixelSize: 11
+                    color: "#7a411d1f"
+                }
+                // De dónde salió, y en qué otros sources está la misma
+                // canción. Solo se dibuja si hay más de uno en juego.
+                Label {
+                    visible: alsoIn !== "" || (sourceName !== "" && sourceName !== "Mi biblioteca")
+                    text: alsoIn !== "" ? sourceName + " + " + alsoIn : sourceName
+                    font.pixelSize: 11
+                    elide: Text.ElideRight
+                    Layout.preferredWidth: parent.width * 0.18
                     color: "#7a411d1f"
                 }
                 Label {
@@ -139,7 +169,10 @@ Rectangle {
                 id: row
                 anchors.fill: parent
                 hoverEnabled: true
-                cursorShape: Qt.PointingHandCursor
+                // Sobre lo que no se puede tocar, el cursor no promete un
+                // clic que no va a hacer nada.
+                cursorShape: playable ? Qt.PointingHandCursor : Qt.ArrowCursor
+                enabled: playable
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton
                 onClicked: (event) => {
                     if (event.button === Qt.MiddleButton)

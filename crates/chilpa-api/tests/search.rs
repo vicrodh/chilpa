@@ -137,10 +137,18 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     assert!(immediate[0].playable, "lo que está en disco sí se puede tocar");
 
     // Y lo de los sources llega por poll, cuando pasa el descanso de tecleo.
-    let arrived = wait_for(&mut chilpa, |c| c.found().len() >= 2);
-    assert!(arrived, "los sources contestaron: {:?}", chilpa.found());
-
-    let hits = chilpa.found();
+    // Se mira como lo mira la ventana: solo cuando avisan que cambió. Una
+    // consulta puede empezar y acabar entre dos pulsos, y aun así el último
+    // source en contestar tiene que quedar dibujado.
+    let mut hits = Vec::new();
+    let arrived = wait_for(&mut chilpa, |c| {
+        if c.search_changed() {
+            hits = c.found().to_vec();
+        }
+        hits.len() >= 2
+    });
+    assert!(arrived, "los sources contestaron: {hits:?}");
+    assert!(!chilpa.search_running(), "y ya no falta nadie");
     assert_eq!(hits.len(), 2, "la misma canción no se muestra dos veces: {hits:?}");
 
     let suzie = &hits[0];
@@ -157,9 +165,6 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     assert!(!other.playable, "lo de un plugin todavía no se resuelve a un stream");
     assert_eq!(other.quality, "", "esa no declaró calidad y no se le inventa");
 
-    // Con los dos sources contestados, ya no falta nadie.
-    assert!(wait_for(&mut chilpa, |c| !c.search_running()), "la consulta terminó");
-
     // El que contestó mal se dice, y no se llevó a nadie.
     let problems = chilpa.search_problems();
     assert_eq!(problems.len(), 1, "{problems:?}");
@@ -175,7 +180,10 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
 }
 
 /// Llama a `poll` deadline que se cumpla la condición, o se acabe la paciencia.
-fn wait_for(chilpa: &mut chilpa_api::Chilpa, cond: impl Fn(&chilpa_api::Chilpa) -> bool) -> bool {
+fn wait_for(
+    chilpa: &mut chilpa_api::Chilpa,
+    mut cond: impl FnMut(&mut chilpa_api::Chilpa) -> bool,
+) -> bool {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(5);
     while std::time::Instant::now() < deadline {
         chilpa.poll();

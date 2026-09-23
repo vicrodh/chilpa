@@ -49,6 +49,9 @@ pub struct Hit {
     pub source_name: String,
     /// La calidad que ofrece, vacía si no se sabe.
     pub quality: String,
+    /// Lo que el análisis sacó de una pista local, vacío si no se ha
+    /// analizado. De lo remoto no hay nada que analizar todavía.
+    pub analysis: String,
     /// Los demás sources donde está la misma canción.
     pub also_in: Vec<String>,
     /// Cierto si se puede poner a sonar hoy. Lo de un plugin todavía no.
@@ -66,6 +69,7 @@ impl Hit {
             source: LOCAL.into(),
             source_name: "Mi biblioteca".into(),
             quality: String::new(),
+            analysis: t.analysis,
             also_in: Vec::new(),
             playable: t.present,
         }
@@ -81,6 +85,7 @@ impl Hit {
             source: source.to_string(),
             source_name: source_name.to_string(),
             quality: t.quality.describe(),
+            analysis: String::new(),
             also_in: Vec::new(),
             // Reproducir lo de un plugin necesita `chilpa_resolver` y la
             // ruta de stream; todavía no está, y decir que sí se puede
@@ -253,6 +258,11 @@ pub(crate) struct SearchState {
     pub fingerprints: HashMap<String, Vec<String>>,
     /// Lo local y lo remoto ya juntos, que es lo que la vista dibuja.
     pub hits: Vec<Hit>,
+    /// Cierto desde que los resultados cambiaron hasta que alguien los
+    /// recoge. Sin esto la vista tendría que adivinar cuándo mirar: una
+    /// consulta puede empezar y acabar entre dos pulsos, y el último source
+    /// en contestar se quedaría sin dibujar.
+    pub changed: bool,
 }
 
 impl Chilpa {
@@ -281,6 +291,7 @@ impl Chilpa {
             local,
             fingerprints,
             hits: Vec::new(),
+            changed: false,
         };
         self.rebuild_hits();
         self.search.hits.clone()
@@ -289,6 +300,12 @@ impl Chilpa {
     /// Lo último que se juntó, para que la vista lo dibuje.
     pub fn found(&self) -> &[Hit] {
         &self.search.hits
+    }
+
+    /// Cierto si los resultados cambiaron desde la última vez que se
+    /// preguntó. Preguntar los marca como vistos.
+    pub fn search_changed(&mut self) -> bool {
+        std::mem::take(&mut self.search.changed)
     }
 
     /// Cierto mientras algún source siga sin contestar, para que la vista
@@ -347,6 +364,7 @@ impl Chilpa {
     }
 
     fn rebuild_hits(&mut self) {
+        self.search.changed = true;
         self.search.hits = merge(
             self.search.local.clone(),
             &self.search.fingerprints,

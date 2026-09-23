@@ -38,7 +38,13 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        // Para probar sin teclado ni ratón: CHILPA_BUSCAR deja la búsqueda
+        // Los plugins se cargan aquí y no al abrir su pestaña: la búsqueda
+        // le pregunta a los sources, y no puede depender de que el usuario
+        // haya pasado por ahí primero. Uno roto no carga y se anota; el
+        // arranque nunca se detiene por eso (ADR-003).
+        Chilpa.loadPlugins()
+
+        // Para probar sin teclado ni ratón: CHILPA_SEARCH deja la búsqueda
         // escrita y CHILPA_ALBUM abre un álbum por id.
         if (Chilpa.initialSearch !== "") Chilpa.search(Chilpa.initialSearch)
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
