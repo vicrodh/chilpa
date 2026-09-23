@@ -25,6 +25,10 @@ pub const WINDOW: Duration = Duration::from_secs(60);
 /// Cómo está un plugin.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum State {
+    /// Encontrado en disco, pero el usuario todavía no aprueba lo que pide.
+    /// No se compiló ni se instanció: existe como una carpeta y nada más
+    /// (ADR-008).
+    PendingApproval,
     /// Funcionando.
     Healthy,
     /// Ha fallado, pero todavía no lo suficiente.
@@ -35,7 +39,7 @@ pub enum State {
 
 impl State {
     pub fn usable(&self) -> bool {
-        !matches!(self, State::Quarantined { .. })
+        matches!(self, State::Healthy | State::Stumbling { .. })
     }
 }
 

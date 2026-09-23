@@ -9,6 +9,7 @@
 //! razón y no impide que los demás carguen.
 
 use super::*;
+use crate::approvals::Approvals;
 use chilpa_plugin::{Host, HostServices, Limits, Level, Registry, Services};
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
@@ -113,10 +114,18 @@ fn valid_id(id: &str) -> bool {
 pub struct PluginInfo {
     pub id: String,
     pub name: String,
-    /// "bien", "tropezando" o "en cuarentena".
+    /// "pendiente de aprobación", "bien", "tropezando" o "en cuarentena".
     pub state: String,
     /// Por qué está castigado, o vacío.
     pub problem: String,
+    /// Lo que pide, en palabras, para poder aprobarlo o negarlo.
+    pub asks: Vec<String>,
+    /// De lo que pide, lo que todavía no se ha aprobado. Vacío en uno que
+    /// ya está aprobado; todo lo que pide en uno nuevo.
+    pub pending: Vec<String>,
+    /// Cierto si ya se le había aprobado algo y ahora pide más. Es distinto
+    /// de uno nuevo, y se dice distinto.
+    pub wants_more: bool,
 }
 
 /// Todo lo de plugins que la fachada guarda.
@@ -124,6 +133,7 @@ pub struct Plugins {
     host: Host,
     registry: Registry,
     services: Services,
+    approvals: Approvals,
     root: PathBuf,
 }
 
@@ -133,7 +143,8 @@ impl Plugins {
     pub fn new(root: PathBuf) -> Option<Self> {
         let host = Host::new().ok()?;
         let services: Services = Arc::new(Mutex::new(ChilpaServices::new(root.clone())));
-        Some(Self { host, registry: Registry::new(), services, root })
+        let approvals = Approvals::load(&root);
+        Some(Self { host, registry: Registry::new(), services, approvals, root })
     }
 
     /// Lee la carpeta de plugins y carga lo que encuentre.
@@ -160,7 +171,10 @@ impl Plugins {
             Err(_) => return,
         };
         let wasm = std::fs::read(dir.join("plugin.wasm")).unwrap_or_default();
-        self.registry.install(&self.host, &manifest, &wasm);
+        // Un plugin que nadie aprobó no se compila siquiera: el cierre
+        // contesta que no y su wasm nunca se toca (ADR-008).
+        let approvals = &self.approvals;
+        self.registry.install(&self.host, &manifest, &wasm, |m| approvals.covers(m));
     }
 
     /// Lo que hay, para mostrarlo.
@@ -173,6 +187,7 @@ impl Plugins {
                     id: i.id.clone(),
                     name: if i.name.is_empty() { i.id.clone() } else { i.name.clone() },
                     state: match &state {
+                        chilpa_plugin::State::PendingApproval => "pendiente de aprobación".into(),
                         chilpa_plugin::State::Healthy => "bien".into(),
                         chilpa_plugin::State::Stumbling { .. } => "tropezando".into(),
                         chilpa_plugin::State::Quarantined { .. } => "en cuarentena".into(),
@@ -182,6 +197,13 @@ impl Plugins {
                         (_, Some(p)) => p.clone(),
                         _ => String::new(),
                     },
+                    asks: i.asks(),
+                    pending: i
+                        .manifest
+                        .as_ref()
+                        .map(|m| self.approvals.beyond(m))
+                        .unwrap_or_default(),
+                    wants_more: self.approvals.knows(&i.id),
                 }
             })
             .collect()
@@ -190,6 +212,33 @@ impl Plugins {
     /// Lo saca de cuarentena. Solo lo llama el usuario.
     pub fn reactivate(&mut self, id: &str) {
         self.registry.reactivate(id);
+    }
+
+    /// Olvida todo lo cargado. Se usa al revocar: un plugin que dejó de
+    /// estar aprobado tiene que dejar de existir en esta sesión, no
+    /// quedarse instanciado hasta el siguiente arranque.
+    pub fn forget(&mut self) {
+        self.registry = Registry::new();
+    }
+
+    /// El usuario aprueba lo que ese plugin pide hoy.
+    ///
+    /// No lo carga: cargar es releer la carpeta, y eso lo hace quien llama,
+    /// para que aprobar dos seguidos no recompile todo dos veces.
+    pub fn approve(&mut self, id: &str) -> Result<(), String> {
+        let manifest = self
+            .registry
+            .installed()
+            .find(|i| i.id == id)
+            .and_then(|i| i.manifest.clone())
+            .ok_or_else(|| format!("no hay un plugin \"{id}\" con manifest que aprobar"))?;
+        self.approvals.approve(&manifest).map_err(|e| e.to_string())
+    }
+
+    /// Quita la aprobación. El plugin deja de cargar y lo que pida se
+    /// vuelve a preguntar.
+    pub fn revoke(&mut self, id: &str) -> Result<(), String> {
+        self.approvals.revoke(id).map_err(|e| e.to_string())
     }
 
     /// Los plugins de catálogo que sirven ahora, con su nombre.
@@ -264,6 +313,36 @@ impl Chilpa {
             .and_then(|p| p.lock().ok())
             .map(|p| p.list())
             .unwrap_or_default()
+    }
+
+    /// El usuario aprueba lo que un plugin pide, y se vuelve a leer la
+    /// carpeta para que entre a correr sin reiniciar.
+    ///
+    /// Devuelve cuántos quedaron utilizables, igual que cargar.
+    pub fn approve_plugin(&mut self, id: &str) -> usize {
+        let Some(p) = self.plugins.clone() else {
+            self.now.error = "el sandbox de plugins no está arrancado".into();
+            return 0;
+        };
+        let Ok(mut p) = p.lock() else { return 0 };
+        if let Err(e) = p.approve(id) {
+            self.now.error = format!("no se pudo guardar la aprobación: {e}");
+            return 0;
+        }
+        p.load_all()
+    }
+
+    /// Quita la aprobación de un plugin: deja de correr ahora mismo y lo
+    /// que pida se volverá a preguntar.
+    pub fn revoke_plugin(&mut self, id: &str) -> usize {
+        let Some(p) = self.plugins.clone() else { return 0 };
+        let Ok(mut p) = p.lock() else { return 0 };
+        if let Err(e) = p.revoke(id) {
+            self.now.error = format!("no se pudo quitar la aprobación: {e}");
+            return 0;
+        }
+        p.forget();
+        p.load_all()
     }
 
     /// Saca un plugin de cuarentena.

@@ -66,7 +66,7 @@ fn run(
     let host = Host::new().unwrap();
     let mut reg = Registry::new();
     let (svc, notes) = services();
-    assert!(reg.install(&host, &manifest(capabilities), &compile(wat)), "debía cargar");
+    assert!(reg.install(&host, &manifest(capabilities), &compile(wat), |_| true), "debía cargar");
     let r = reg.call(&host, &svc, "com.prueba.hostil", operation, b"{}", Limits::short());
     (reg, notes, r)
 }
@@ -177,7 +177,7 @@ fn one_lying_about_its_version_does_not_load() {
     );
     let host = Host::new().unwrap();
     let mut reg = Registry::new();
-    assert!(!reg.install(&host, &manifest(""), &compile(&wat)), "no debía cargar");
+    assert!(!reg.install(&host, &manifest(""), &compile(&wat), |_| true), "no debía cargar");
     let inst = reg.installed().next().unwrap();
     assert!(!inst.loaded());
     assert!(inst.problem.as_ref().unwrap().contains("no se carga"), "{:?}", inst.problem);
@@ -190,7 +190,7 @@ fn one_missing_exports_does_not_load() {
     let wat = r#"(module (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#;
     let host = Host::new().unwrap();
     let mut reg = Registry::new();
-    assert!(!reg.install(&host, &manifest(""), &compile(wat)));
+    assert!(!reg.install(&host, &manifest(""), &compile(wat), |_| true));
     let problem = reg.installed().next().unwrap().problem.clone().unwrap();
     assert!(problem.contains("memory"), "{problem}");
 }
@@ -219,7 +219,7 @@ fn one_reaching_a_domain_it_did_not_declare_never_reaches_the_host() {
     // Declara ejemplo.com y pide otra-cosa.net.
     let wat = plugin_that_requests("https://otra-cosa.net/robar");
     let (_reg, notes, r) =
-        run(r#"{"tipo": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
+        run(r#"{"type": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
     assert!(r.is_ok(), "la llamada termina; lo que se niega es la salida: {r:?}");
     let requests = notes.examine(|a| a.requests.len());
     assert_eq!(requests, 0, "el host nunca vio esa petición");
@@ -229,7 +229,7 @@ fn one_reaching_a_domain_it_did_not_declare_never_reaches_the_host() {
 fn one_reaching_the_domain_it_did_declare_gets_through() {
     let wat = plugin_that_requests("https://api.ejemplo.com/buscar");
     let (_reg, notes, r) =
-        run(r#"{"tipo": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
+        run(r#"{"type": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
     assert!(r.is_ok(), "{r:?}");
     let (how_many, who) = notes.examine(|a| {
         (a.requests.len(), a.requests.first().map(|p| p.0.clone()).unwrap_or_default())
@@ -279,7 +279,7 @@ fn a_plugin_store_always_goes_under_its_own_name() {
               (drop (call $set (i32.const 256) (i32.const 5) (i32.const 256) (i32.const 5)))
               {FIXED_REPLY}))"#
     );
-    let (_reg, notes, r) = run(r#"{"tipo": "storage"}"#, &wat, "buscar");
+    let (_reg, notes, r) = run(r#"{"type": "storage"}"#, &wat, "buscar");
     assert!(r.is_ok(), "{r:?}");
     let who = notes.examine(|a| a.writes.first().map(|e| e.0.clone()).unwrap_or_default());
     assert_eq!(
@@ -341,8 +341,8 @@ fn a_broken_plugin_does_not_take_the_others_with_it() {
     );
     let m = |id: &str| manifest("").replace("com.prueba.hostil", id);
 
-    assert!(reg.install(&host, &m("com.bueno.plugin"), &compile(&good)));
-    assert!(reg.install(&host, &m("com.roto.plugin"), &compile(&broken)));
+    assert!(reg.install(&host, &m("com.bueno.plugin"), &compile(&good), |_| true));
+    assert!(reg.install(&host, &m("com.roto.plugin"), &compile(&broken), |_| true));
 
     for _ in 0..3 {
         let _ = reg.call(&host, &svc, "com.roto.plugin", "buscar", b"{}", Limits::short());
@@ -366,7 +366,7 @@ fn only_the_user_gets_it_out_of_quarantine() {
     let host = Host::new().unwrap();
     let (svc, _) = services();
     let mut reg = Registry::new();
-    reg.install(&host, &manifest(""), &compile(&wat));
+    reg.install(&host, &manifest(""), &compile(&wat), |_| true);
     for _ in 0..3 {
         let _ = reg.call(&host, &svc, "com.prueba.hostil", "buscar", b"{}", Limits::short());
     }

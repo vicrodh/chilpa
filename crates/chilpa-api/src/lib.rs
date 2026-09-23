@@ -12,6 +12,7 @@ pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 mod library;
 mod queue;
 mod playlists;
+mod approvals;
 mod plugins;
 mod search;
 

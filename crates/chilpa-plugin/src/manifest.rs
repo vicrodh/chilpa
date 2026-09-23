@@ -44,7 +44,7 @@ pub enum Runtime {
 /// El usuario las aprueba al instalarlo. Lo que no está aquí, no se puede:
 /// no hay una capacidad "todo lo demás".
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
-#[serde(tag = "tipo", rename_all = "snake_case")]
+#[serde(tag = "type", rename_all = "snake_case")]
 pub enum Capability {
     /// Salir a la red, solo a estos dominios.
     Network { domains: Vec<String> },
@@ -58,6 +58,25 @@ pub enum Capability {
     RegisterPanel,
     /// Registrar un comando que el usuario puede disparar.
     RegisterCommand,
+}
+
+impl Capability {
+    /// Qué pide, dicho para que alguien lo pueda aprobar o negar.
+    ///
+    /// Va en palabras y no en JSON a propósito: una lista de `{"type":
+    /// "network"}` no es una decisión informada, es un trámite.
+    pub fn describe(&self) -> String {
+        match self {
+            Capability::Network { domains } => {
+                format!("salir a internet, solo a {}", domains.join(", "))
+            }
+            Capability::Storage => "guardar sus propias cosas en disco".into(),
+            Capability::LibraryRead => "leer tu biblioteca, sin poder cambiarla".into(),
+            Capability::RegisterSource => "aportar catálogo: buscar y traer música".into(),
+            Capability::RegisterPanel => "poner un panel suyo en la ventana".into(),
+            Capability::RegisterCommand => "agregar un comando que tú disparas".into(),
+        }
+    }
 }
 
 /// Lo que un plugin dice de sí mismo.
@@ -186,6 +205,41 @@ impl Manifest {
     pub fn can_go_out(&self) -> bool {
         !self.allowed_domains().is_empty()
     }
+
+    /// Lo que el usuario aprobó cuando dijo que sí (ADR-008).
+    ///
+    /// Es el tipo de plugin y lo que pide, no el manifest entero: subir de
+    /// versión sin pedir nada nuevo no tiene por qué volver a preguntar,
+    /// pero agregar un dominio sí. Se compara tal cual, así que un cambio
+    /// se puede mostrar diciendo qué es lo nuevo.
+    pub fn asks_for(&self) -> Asked {
+        let mut capabilities = self.capabilities.clone();
+        capabilities.sort_by_key(|c| c.describe());
+        Asked { kind: self.kind, capabilities }
+    }
+}
+
+/// Lo que se aprueba de un plugin, y lo que se guarda para saber si sigue
+/// valiendo.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Asked {
+    pub kind: Kind,
+    pub capabilities: Vec<Capability>,
+}
+
+impl Asked {
+    /// Lo que pide ahora y no estaba aprobado. Vacío quiere decir que la
+    /// aprobación anterior alcanza.
+    pub fn beyond(&self, approved: &Asked) -> Vec<String> {
+        if self.kind != approved.kind {
+            return vec![format!("ser un plugin de otro tipo: {:?}", self.kind)];
+        }
+        self.capabilities
+            .iter()
+            .filter(|c| !approved.capabilities.contains(c))
+            .map(Capability::describe)
+            .collect()
+    }
 }
 
 /// Un id sirve si se puede usar como nombre de carpeta sin pensarlo.
@@ -234,8 +288,8 @@ mod tests {
             "api_version": 1,
             "kind": "source",
             "capabilities": [
-                {"tipo": "network", "domains": ["api.ejemplo.com"]},
-                {"tipo": "storage"}
+                {"type": "network", "domains": ["api.ejemplo.com"]},
+                {"type": "storage"}
             ]
         }"#
         .to_string()
@@ -255,8 +309,8 @@ mod tests {
     fn with_no_capabilities_it_can_do_nothing() {
         let json = base().replace(
             r#""capabilities": [
-                {"tipo": "network", "domains": ["api.ejemplo.com"]},
-                {"tipo": "storage"}
+                {"type": "network", "domains": ["api.ejemplo.com"]},
+                {"type": "storage"}
             ]"#,
             r#""capabilities": []"#,
         );
@@ -269,7 +323,7 @@ mod tests {
     fn an_unknown_capability_is_not_ignored() {
         // Fallar cerrado: si no se sabe qué pide, no se puede saber si es
         // peligroso.
-        let json = base().replace(r#"{"tipo": "storage"}"#, r#"{"tipo": "leer_todo_el_disco"}"#);
+        let json = base().replace(r#"{"type": "storage"}"#, r#"{"type": "leer_todo_el_disco"}"#);
         let e = Manifest::parse(&json).expect_err("no se acepta");
         assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
     }

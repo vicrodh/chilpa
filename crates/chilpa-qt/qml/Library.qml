@@ -35,7 +35,7 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        // Para probar la vista sin ratón: CHILPA_PESTANA=artistas.
+        // Para probar la vista sin ratón: CHILPA_TAB=artistas.
         if (Chilpa.initialTab !== "") showTab(Chilpa.initialTab)
     }
     color: "#ffffff"
@@ -76,18 +76,18 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { clave: "albumes", text: "Álbumes" },
-                    { clave: "artistas", text: "Artistas" },
-                    { clave: "listas", text: "Listas" },
-                    { clave: "estadisticas", text: "Estadísticas" },
-                    { clave: "asistente", text: "Salida" },
-                    { clave: "plugins", text: "Plugins" }
+                    { key: "albumes", text: "Álbumes" },
+                    { key: "artistas", text: "Artistas" },
+                    { key: "listas", text: "Listas" },
+                    { key: "estadisticas", text: "Estadísticas" },
+                    { key: "asistente", text: "Salida" },
+                    { key: "plugins", text: "Plugins" }
                 ]
                 delegate: Button {
                     text: modelData.text
                     checkable: true
-                    checked: root.tab === modelData.clave
-                    onClicked: root.showTab(modelData.clave)
+                    checked: root.tab === modelData.key
+                    onClicked: root.showTab(modelData.key)
                 }
             }
 
