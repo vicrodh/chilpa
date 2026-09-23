@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
 use std::thread::JoinHandle;
 
-use crate::playback::{play_file_with, PlayError};
+use crate::playback::PlayError;
 
 /// Lo que el reproductor le cuenta a quien lo controla.
 #[derive(Clone, PartialEq, Debug)]
@@ -28,6 +28,9 @@ pub enum PlayerEvent {
         tags: Option<chilpa_tags::Tags>,
         /// La portada ya extraída a disco, cuando el archivo trae una.
         artwork: Option<PathBuf>,
+        /// Qué lugar ocupa en la cola y de cuántas.
+        index: usize,
+        queue_len: usize,
     },
     /// Frames entregados hasta ahora.
     Progress { frames: u64 },
@@ -40,7 +43,7 @@ pub enum PlayerEvent {
 }
 
 enum Order {
-    Play { path: PathBuf, device: String, bit_perfect: bool },
+    Play { paths: Vec<PathBuf>, device: String, bit_perfect: bool },
     Stop,
     Quit,
 }
@@ -75,13 +78,13 @@ impl Player {
                     match order {
                         Order::Quit => break,
                         Order::Stop => {}
-                        Order::Play { path, device, bit_perfect } => {
+                        Order::Play { paths, device, bit_perfect } => {
                             // Cada pista arranca con la bandera limpia: una
                             // orden de paro vieja no mata la siguiente.
                             stop_hilo.reset();
                             let stop = stop_hilo.clone();
                             let resultado = reproducir(
-                                &path,
+                                &paths,
                                 &device,
                                 bit_perfect,
                                 &stop,
@@ -109,8 +112,13 @@ impl Player {
 
     /// Pide reproducir un archivo. Regresa de inmediato.
     pub fn play(&self, path: &Path, device: &str, bit_perfect: bool) {
+        self.play_all(&[path.to_path_buf()], device, bit_perfect);
+    }
+
+    /// Pide reproducir varias pistas en orden, encadenadas.
+    pub fn play_all(&self, paths: &[PathBuf], device: &str, bit_perfect: bool) {
         let _ = self.orders.send(Order::Play {
-            path: path.to_path_buf(),
+            paths: paths.to_vec(),
             device: device.to_string(),
             bit_perfect,
         });
@@ -147,7 +155,7 @@ impl Drop for Player {
 
 #[allow(clippy::too_many_arguments)]
 fn reproducir(
-    path: &Path,
+    paths: &[PathBuf],
     device: &str,
     bit_perfect: bool,
     stop: &StopSignal,
@@ -157,47 +165,41 @@ fn reproducir(
 ) -> Result<Outcome, PlayError> {
     let caps = probe(device).map_err(PlayError::Sink)?;
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
-    let ruta = path.to_path_buf();
-    let eventos = events.clone();
-    let duracion = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
-    let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
-    let tags_para_arranque = tags.clone();
-    let portada = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
-    let portada_para_arranque = portada.clone();
-    play_file_with(
-        path,
+    let total = paths.len();
+    let resultados = crate::queue_playback::play_queue_with(
+        paths,
         &caps,
         policy,
         stop,
-        |formato| {
-            let sink = open(device, formato)?;
-            let _ = eventos.send(PlayerEvent::Started {
-                path: ruta.clone(),
-                opened: formato,
-                bit_perfect: false,
-                total_frames: duracion,
-                tags: tags_para_arranque.clone(),
-                artwork: portada_para_arranque.clone(),
+        |formato| open(device, formato),
+        &mut |indice, ruta, delivery| {
+            // Los tags y la portada se leen al arrancar cada pista, no al
+            // encolarla: una cola larga no debe leer cientos de archivos
+            // antes de que suene el primero.
+            let tags = chilpa_tags::read(ruta).ok().map(|info| info.tags);
+            let artwork = chilpa_tags::extract_artwork(ruta, &crate::artwork_cache()).ok().flatten();
+            let total_frames = chilpa_decode::Decoded::open(ruta).ok().and_then(|d| d.frame_count());
+            let _ = events.send(PlayerEvent::Started {
+                path: ruta.to_path_buf(),
+                opened: delivery.opened,
+                bit_perfect: delivery.is_bit_perfect(),
+                total_frames,
+                tags,
+                artwork,
+                index: indice,
+                queue_len: total,
             });
-            Ok(sink)
         },
-        &mut |frames| {
+        &mut |_, frames| {
             let _ = events.send(PlayerEvent::Progress { frames });
         },
-    )
-    .map(|played| {
-        // El aviso de arranque sale antes de saber el veredicto, así que la
-        // verdad sobre bit-perfect se manda ya con la entrega abierta.
-        let _ = events.send(PlayerEvent::Started {
-            path: path.to_path_buf(),
-            opened: played.delivery.opened,
-            bit_perfect: played.delivery.is_bit_perfect(),
-            total_frames: played.total_frames,
-            tags: tags.clone(),
-            artwork: portada.clone(),
-        });
-        played.outcome
-    })
+    )?;
+
+    // El final de la cola es el final de su última pista.
+    Ok(resultados
+        .last()
+        .map(|r| r.outcome.clone())
+        .unwrap_or(Outcome::Finished { frames: 0 }))
 }
 
 #[cfg(test)]
@@ -298,6 +300,28 @@ mod tests {
         assert!(matches!(eventos.last(), Some(PlayerEvent::Finished { frames: 5_000 })));
         assert_eq!(escritos.load(Ordering::Relaxed), 5_000);
         let _ = std::fs::remove_file(archivo);
+    }
+
+    #[test]
+    fn una_cola_suena_en_orden_y_avisa_el_lugar_de_cada_pista() {
+        let escritos = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&escritos));
+        let a = wav("cola-a", 1_000);
+        let b = wav("cola-b", 2_000);
+        p.play_all(&[a.clone(), b.clone()], "falso", true);
+
+        let eventos = esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        let arranques: Vec<(usize, usize)> = eventos
+            .iter()
+            .filter_map(|e| match e {
+                PlayerEvent::Started { index, queue_len, .. } => Some((*index, *queue_len)),
+                _ => None,
+            })
+            .collect();
+        assert_eq!(arranques, vec![(0, 2), (1, 2)], "las dos pistas, en orden");
+        assert_eq!(escritos.load(Ordering::Relaxed), 3_000, "salieron todos los frames");
+        let _ = std::fs::remove_file(a);
+        let _ = std::fs::remove_file(b);
     }
 
     #[test]
