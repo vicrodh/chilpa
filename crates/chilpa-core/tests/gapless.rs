@@ -2,9 +2,8 @@
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
-use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
-use chilpa_audio::seek::SeekSignal;
-use chilpa_core::queue_playback::play_queue_with;
+use chilpa_audio::sink::{AudioSink, SinkError};
+use chilpa_core::queue_playback::{play_queue_with, Controls};
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -71,10 +70,7 @@ fn reproducir(pistas: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
         pistas,
         caps,
         Policy::BitPerfect,
-        &StopSignal::new(),
-        &PauseSignal::new(),
-        &SeekSignal::new(),
-        &SkipSignal::new(),
+        &Controls::new(),
         |_| {
             aperturas += 1;
             Ok(cap.clone())

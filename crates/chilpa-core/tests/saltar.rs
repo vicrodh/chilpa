@@ -3,8 +3,8 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::seek::SeekSignal;
-use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
-use chilpa_core::queue_playback::play_queue_with;
+use chilpa_audio::sink::{AudioSink, SinkError};
+use chilpa_core::queue_playback::{play_queue_with, Controls};
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -76,10 +76,7 @@ fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
         std::slice::from_ref(&path),
         &caps(),
         Policy::BitPerfect,
-        &StopSignal::new(),
-        &chilpa_audio::sink::PauseSignal::new(),
-        &seek,
-        &chilpa_audio::sink::SkipSignal::new(),
+        &Controls { seek: seek.clone(), ..Controls::new() },
         |_| Ok(cap.clone()),
         &mut |_, _, _| {},
         &mut |_, frames| posiciones.push(frames),
@@ -107,10 +104,7 @@ fn saltar_mas_alla_del_final_termina_la_pista_sin_tronar() {
         std::slice::from_ref(&path),
         &caps(),
         Policy::BitPerfect,
-        &StopSignal::new(),
-        &chilpa_audio::sink::PauseSignal::new(),
-        &seek,
-        &chilpa_audio::sink::SkipSignal::new(),
+        &Controls { seek: seek.clone(), ..Controls::new() },
         |_| Ok(cap.clone()),
         &mut |_, _, _| {},
         &mut |_, _| {},
