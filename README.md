@@ -29,7 +29,9 @@ What QBZ never got to:
   use.
 - `docs/adr/` — the decisions that constrain the code.
 - `tools/lint/` — the checks that enforce them.
-- `AGENTS.md` — rules for any agent working here.
+
+Agent rules are not kept in this repo; they live in the internal docs and are
+symlinked here as `AGENTS.md`, untracked.
 
 Before working on this repo:
 
