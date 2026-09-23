@@ -19,6 +19,7 @@ const QML: &[&str] = &[
     "qml/CajaDeBusqueda.qml",
     "qml/SelectorDeLayout.qml",
     "qml/Biblioteca.qml",
+    "qml/RejaDeArtistas.qml",
     "qml/Resultados.qml",
 ];
 
