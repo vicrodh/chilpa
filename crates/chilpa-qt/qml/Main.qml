@@ -115,6 +115,22 @@ ApplicationWindow {
     }
 
     FileDialog {
+        id: dialogoLista
+        title: "Abrir una lista"
+        nameFilters: ["Listas (*.m3u *.m3u8)"]
+        onAccepted: Chilpa.playPlaylist(selectedFile, salidas.deviceId, bitPerfect.checked)
+    }
+
+    FileDialog {
+        id: dialogoGuardar
+        title: "Guardar la cola"
+        fileMode: FileDialog.SaveFile
+        defaultSuffix: "m3u"
+        nameFilters: ["Listas (*.m3u)"]
+        onAccepted: Chilpa.saveQueue(selectedFile)
+    }
+
+    FileDialog {
         id: dialogo
         title: "Abrir un archivo de audio"
         nameFilters: ["Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.aiff *.dsf)"]
@@ -164,6 +180,15 @@ ApplicationWindow {
             Button {
                 text: "Abrir carpeta"
                 onClicked: dialogoCarpeta.open()
+            }
+            Button {
+                text: "Abrir lista"
+                onClicked: dialogoLista.open()
+            }
+            Button {
+                text: "Guardar cola"
+                enabled: Chilpa.queue.length > 0
+                onClicked: dialogoGuardar.open()
             }
             Button {
                 text: "Escanear a la biblioteca"

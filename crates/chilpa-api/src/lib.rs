@@ -310,6 +310,59 @@ impl Chilpa {
         pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
+    /// Abre una lista M3U y la pone a sonar.
+    ///
+    /// Regresa los títulos encolados; lo que la lista menciona y ya no está
+    /// se reporta en el error, en vez de desaparecer sin decir nada.
+    pub fn play_playlist(
+        &mut self,
+        path: &std::path::Path,
+        device: &str,
+        bit_perfect: bool,
+    ) -> Vec<String> {
+        let lista = match chilpa_library::playlist::read(path) {
+            Ok(l) => l,
+            Err(e) => {
+                self.now.error = format!("no se pudo leer la lista: {e}");
+                return Vec::new();
+            }
+        };
+        if !lista.missing.is_empty() {
+            self.now.error = format!(
+                "{} de las pistas de la lista ya no están",
+                lista.missing.len()
+            );
+        }
+        if lista.tracks.is_empty() {
+            if self.now.error.is_empty() {
+                self.now.error = "la lista no trae pistas".into();
+            }
+            return Vec::new();
+        }
+        let rutas: Vec<String> = lista.tracks.iter().map(|p| p.display().to_string()).collect();
+        let error = std::mem::take(&mut self.now.error);
+        let titulos = self.play_tracks(&rutas, device, bit_perfect);
+        self.now.error = error;
+        titulos
+    }
+
+    /// Guarda la cola actual como una lista M3U.
+    pub fn save_queue(&mut self, path: &std::path::Path) -> bool {
+        if self.cola.is_empty() {
+            self.now.error = "no hay cola que guardar".into();
+            return false;
+        }
+        let pistas: Vec<std::path::PathBuf> =
+            self.cola.iter().map(std::path::PathBuf::from).collect();
+        match chilpa_library::playlist::write_m3u(path, &pistas) {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error = format!("no se pudo guardar la lista: {e}");
+                false
+            }
+        }
+    }
+
     /// Pone a sonar un álbum completo, en el orden del disco.
     ///
     /// Regresa los títulos de la cola, no las rutas: una cola que muestra
