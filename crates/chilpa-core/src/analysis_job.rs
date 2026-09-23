@@ -113,6 +113,7 @@ impl AnalysisJob {
                                 .as_ref()
                                 .and_then(|f| f.key.as_ref())
                                 .map(|k| format!("{} · {}", k.name, k.camelot)),
+                            features.as_ref().and_then(|f| f.loudness_lufs),
                         );
                         match (&features, &guardado) {
                             (_, Err(e)) => {
@@ -201,31 +202,41 @@ pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Analysis> {
 
     let quiero = SEGUNDOS_QUE_SE_MIRAN * u64::from(rate);
     let mut mono: Vec<f32> = Vec::with_capacity(quiero as usize / 4);
+    // La sonoridad se mide al vuelo, con la señal como viene: mezclarla a
+    // mono o bajarle la frecuencia cambiaría el número.
+    let mut medidor = chilpa_analysis::LoudnessMeter::new(rate, formato.channels.max(1));
     let mut leidos = 0u64;
+    let mut intercalado: Vec<f32> = Vec::new();
     while leidos < quiero {
-        match decoded.next_block() {
-            Ok(Some(chilpa_decode::Block::Int { data, bits })) => {
+        let bloque = match decoded.next_block() {
+            Ok(Some(b)) => b,
+            Ok(None) | Err(_) => break,
+        };
+        intercalado.clear();
+        match bloque {
+            chilpa_decode::Block::Int { data, bits } => {
                 let escala = 1.0f32 / (1i64 << (bits.max(1) - 1)) as f32;
-                for frame in data.chunks_exact(canales) {
-                    let suma: f32 = frame.iter().map(|m| *m as f32 * escala).sum();
-                    mono.push(suma / canales as f32);
-                }
-                leidos += (data.len() / canales) as u64;
+                intercalado.extend(data.iter().map(|m| *m as f32 * escala));
             }
-            Ok(Some(chilpa_decode::Block::Float(data))) => {
-                for frame in data.chunks_exact(canales) {
-                    mono.push(frame.iter().sum::<f32>() / canales as f32);
-                }
-                leidos += (data.len() / canales) as u64;
-            }
-            Ok(None) => break,
-            Err(_) => break,
+            chilpa_decode::Block::Float(data) => intercalado.extend(data),
         }
+        if intercalado.is_empty() {
+            continue;
+        }
+        if let Some(m) = medidor.as_mut() {
+            m.push(&intercalado);
+        }
+        for frame in intercalado.chunks_exact(canales) {
+            mono.push(frame.iter().sum::<f32>() / canales as f32);
+        }
+        leidos += (intercalado.len() / canales) as u64;
     }
     if mono.is_empty() {
         return None;
     }
-    Some(chilpa_analysis::analyze(&mono, rate))
+    let mut features = chilpa_analysis::analyze(&mono, rate);
+    features.loudness_lufs = medidor.and_then(|m| m.integrated()).map(|l| l as f32);
+    Some(features)
 }
 
 #[cfg(test)]

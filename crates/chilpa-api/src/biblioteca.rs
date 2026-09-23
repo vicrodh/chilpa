@@ -17,15 +17,8 @@ impl Chilpa {
             return pistas;
         };
         for pista in pistas.iter_mut() {
-            let Some((bpm, tono)) = mapa.get(&pista.id) else { continue };
-            let mut partes: Vec<String> = Vec::new();
-            if let Some(b) = bpm {
-                partes.push(format!("{b:.0} BPM"));
-            }
-            if let Some(t) = tono {
-                partes.push(t.clone());
-            }
-            pista.analysis = partes.join(" · ");
+            let Some((bpm, tono, sonoridad)) = mapa.get(&pista.id) else { continue };
+            pista.analysis = describir_analisis(*bpm, tono.as_deref(), *sonoridad);
         }
         pistas
     }

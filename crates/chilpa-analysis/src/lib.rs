@@ -8,9 +8,11 @@
 //! escribe números; el audio que suena no se entera.
 
 pub mod key;
+pub mod loudness;
 pub mod tempo;
 
 pub use key::{detect as detect_key, Key};
+pub use loudness::Meter as LoudnessMeter;
 pub use tempo::{detect as detect_tempo, Tempo};
 
 /// La versión de este analizador.
@@ -31,6 +33,8 @@ pub struct Analysis {
     pub tempo_confidence: Option<f32>,
     /// La tonalidad, cuando se pudo decidir.
     pub key: Option<Key>,
+    /// Qué tan fuerte suena, en LUFS. Se mide, no se corrige.
+    pub loudness_lufs: Option<f32>,
 }
 
 /// Confianza mínima para afirmar una tonalidad.
@@ -51,6 +55,9 @@ pub fn analyze(samples: &[f32], sample_rate_hz: u32) -> Analysis {
         bpm: t.map(|t| t.bpm),
         tempo_confidence: t.map(|t| t.confidence),
         key: k,
+        // La sonoridad se mide con la señal como viene, no con la que se
+        // remuestreó para contar golpes; quien llama la pone.
+        loudness_lufs: None,
     }
 }
 

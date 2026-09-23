@@ -338,10 +338,10 @@ mod tests {
     #[test]
     fn el_bpm_filtra_lo_que_el_analisis_encontro() {
         let lib = biblioteca();
-        lib.save_features(1, "chilpa", 1, Some(128.0), None, None).unwrap();
-        lib.save_features(2, "chilpa", 1, Some(72.0), None, None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
+        lib.save_features(2, "chilpa", 1, Some(72.0), None, None, None).unwrap();
         // La 3 se analizó y no se le encontró pulso.
-        lib.save_features(3, "chilpa", 1, None, None, None).unwrap();
+        lib.save_features(3, "chilpa", 1, None, None, None, None).unwrap();
 
         let rapidas = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
         assert_eq!(titulos(&lib, &rapidas), ["Vieja"]);
@@ -357,8 +357,8 @@ mod tests {
     #[test]
     fn analizar_de_nuevo_la_misma_version_reemplaza_su_fila() {
         let lib = biblioteca();
-        lib.save_features(1, "chilpa", 1, Some(100.0), None, None).unwrap();
-        lib.save_features(1, "chilpa", 1, Some(128.0), None, None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(100.0), None, None, None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.track_bpm(1, "chilpa").unwrap(), Some(128.0));
         assert_eq!(lib.analyzed_count("chilpa", 1).unwrap(), 1, "una fila, no dos");
     }
@@ -367,7 +367,7 @@ mod tests {
     fn lo_pendiente_es_lo_que_no_tiene_esa_version() {
         let lib = biblioteca();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
-        lib.save_features(1, "chilpa", 1, Some(128.0), None, None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 2);
         // Un analizador nuevo las vuelve a pedir todas.
         assert_eq!(lib.tracks_pending_analysis("chilpa", 2, 50).unwrap().len(), 3);

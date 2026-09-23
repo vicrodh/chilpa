@@ -465,15 +465,27 @@ impl Library {
         bpm: Option<f32>,
         tempo_confidence: Option<f32>,
         musical_key: Option<String>,
+        loudness_lufs: Option<f32>,
     ) -> rusqlite::Result<()> {
         self.db.execute(
             "INSERT INTO audio_features
-                 (track_id, analyzer, version, bpm, tempo_confidence, musical_key, analyzed_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                 (track_id, analyzer, version, bpm, tempo_confidence, musical_key,
+                  loudness_lufs, analyzed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
              ON CONFLICT(track_id, analyzer, version) DO UPDATE SET
                bpm = excluded.bpm, tempo_confidence = excluded.tempo_confidence,
-               musical_key = excluded.musical_key, analyzed_at = excluded.analyzed_at",
-            params![track_id, analyzer, version, bpm, tempo_confidence, musical_key, ahora_unix()],
+               musical_key = excluded.musical_key, loudness_lufs = excluded.loudness_lufs,
+               analyzed_at = excluded.analyzed_at",
+            params![
+                track_id,
+                analyzer,
+                version,
+                bpm,
+                tempo_confidence,
+                musical_key,
+                loudness_lufs,
+                ahora_unix()
+            ],
         )?;
         Ok(())
     }
@@ -486,7 +498,8 @@ impl Library {
         &self,
         track_ids: &[i64],
         analyzer: &str,
-    ) -> rusqlite::Result<std::collections::HashMap<i64, (Option<f32>, Option<String>)>> {
+    ) -> rusqlite::Result<std::collections::HashMap<i64, (Option<f32>, Option<String>, Option<f32>)>>
+    {
         let mut salida = std::collections::HashMap::new();
         if track_ids.is_empty() {
             return Ok(salida);
@@ -495,7 +508,7 @@ impl Library {
         // parámetros, para no tener dos formas de armar una consulta.
         let huecos = vec!["?"; track_ids.len()].join(",");
         let sql = format!(
-            "SELECT track_id, bpm, musical_key FROM audio_features
+            "SELECT track_id, bpm, musical_key, loudness_lufs FROM audio_features
              WHERE analyzer = ?1 AND track_id IN ({huecos})
              ORDER BY version",
         );
@@ -504,7 +517,7 @@ impl Library {
             vec![rusqlite::types::Value::Text(analyzer.to_string())];
         valores.extend(track_ids.iter().map(|i| rusqlite::types::Value::Integer(*i)));
         let filas = stmt.query_map(rusqlite::params_from_iter(valores), |r| {
-            Ok((r.get::<_, i64>(0)?, (r.get(1)?, r.get(2)?)))
+            Ok((r.get::<_, i64>(0)?, (r.get(1)?, r.get(2)?, r.get(3)?)))
         })?;
         for fila in filas {
             let (id, datos) = fila?;
@@ -515,19 +528,20 @@ impl Library {
         Ok(salida)
     }
 
-    /// Lo que el análisis le puso a una pista: tempo y tonalidad.
+    /// Lo que el análisis le puso a una pista: tempo, tonalidad y sonoridad.
+    #[allow(clippy::type_complexity)]
     pub fn track_features(
         &self,
         track_id: i64,
         analyzer: &str,
-    ) -> rusqlite::Result<Option<(Option<f32>, Option<String>)>> {
+    ) -> rusqlite::Result<Option<(Option<f32>, Option<String>, Option<f32>)>> {
         self.db
             .query_row(
-                "SELECT bpm, musical_key FROM audio_features
+                "SELECT bpm, musical_key, loudness_lufs FROM audio_features
                  WHERE track_id = ?1 AND analyzer = ?2
                  ORDER BY version DESC LIMIT 1",
                 params![track_id, analyzer],
-                |r| Ok((r.get(0)?, r.get(1)?)),
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)),
             )
             .optional()
     }
@@ -1211,15 +1225,18 @@ mod tests {
     #[test]
     fn las_features_de_varias_pistas_salen_en_una_consulta() {
         let lib = biblioteca_de_muestra();
-        lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into())).unwrap();
-        lib.save_features(2, "chilpa", 1, Some(90.0), None, None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into()), Some(-9.5))
+            .unwrap();
+        lib.save_features(2, "chilpa", 1, Some(90.0), None, None, None).unwrap();
         // Una versión más nueva de la misma pista gana.
-        lib.save_features(1, "chilpa", 2, Some(129.0), None, Some("G · 9B".into())).unwrap();
+        lib.save_features(1, "chilpa", 2, Some(129.0), None, Some("G · 9B".into()), Some(-8.0))
+            .unwrap();
 
         let mapa = lib.features_for(&[1, 2, 3], "chilpa").unwrap();
         assert_eq!(mapa.len(), 2, "la 3 no tiene análisis");
         assert_eq!(mapa[&1].0, Some(129.0), "la versión más nueva");
         assert_eq!(mapa[&1].1.as_deref(), Some("G · 9B"));
+        assert_eq!(mapa[&1].2, Some(-8.0), "la sonoridad también viene");
         assert_eq!(mapa[&2].1, None);
         assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
     }
