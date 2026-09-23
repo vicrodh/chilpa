@@ -69,6 +69,12 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// El resumen de lo escuchado, ya en renglones de "etiqueta\tvalor".
+        #[qproperty(QStringList, stats)]
+        /// Las más escuchadas y lo último que sonó, como
+        /// "título\tartista\tálbum\tveces\truta".
+        #[qproperty(QStringList, top_tracks)]
+        #[qproperty(QStringList, recent_tracks)]
         /// Los artistas de la biblioteca: un renglón con
         /// "nombre\tdiscos\tpistas\tportada".
         #[qproperty(QStringList, artists)]
@@ -147,6 +153,10 @@ pub mod chilpa_bridge {
         #[qsignal]
         #[cxx_name = "albumViewChanged"]
         fn album_view_changed(self: Pin<&mut Chilpa>);
+
+        /// Vuelve a leer las estadísticas de escucha.
+        #[qinvokable]
+        fn refresh_stats(self: Pin<&mut Chilpa>);
 
         /// Vuelve a leer los artistas de la biblioteca.
         #[qinvokable]
@@ -233,6 +243,32 @@ pub mod chilpa_bridge {
 
 use chilpa_bridge::Chilpa;
 
+/// Un tiempo largo dicho como se dice: "3 h 21 min", no 12 060 000 ms.
+fn duracion_larga(ms: u64) -> String {
+    let minutos = ms / 60_000;
+    let (horas, resto) = (minutos / 60, minutos % 60);
+    if horas == 0 {
+        return format!("{minutos} min");
+    }
+    format!("{horas} h {resto} min")
+}
+
+/// Una fecha unix en año-mes-día, sin arrastrar una biblioteca de fechas.
+fn fecha_corta(unix: i64) -> String {
+    // Días desde 1970 a fecha civil (Howard Hinnant). Son cuatro líneas y
+    // evitan una dependencia para mostrar un renglón.
+    let dias = unix.div_euclid(86_400) + 719_468;
+    let era = dias.div_euclid(146_097);
+    let doe = dias - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146_096) / 365;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let d = doy - (153 * mp + 2) / 5 + 1;
+    let m = if mp < 10 { mp + 3 } else { mp - 9 };
+    let y = yoe + era * 400 + i64::from(m <= 2);
+    format!("{y:04}-{m:02}-{d:02}")
+}
+
 /// Las vistas rápidas de la biblioteca, con su nombre para la lista.
 const VISTAS: &[(chilpa_api::AlbumSort, &str)] = &[
     (chilpa_api::AlbumSort::Artist, "Por artista"),
@@ -277,6 +313,9 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    stats: QStringList,
+    top_tracks: QStringList,
+    recent_tracks: QStringList,
     artists: QStringList,
     open_artist: QString,
     album_views: QStringList,
@@ -328,6 +367,9 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            stats: QStringList::default(),
+            top_tracks: QStringList::default(),
+            recent_tracks: QStringList::default(),
             artists: QStringList::default(),
             open_artist: QString::from(""),
             album_views: {
@@ -495,6 +537,43 @@ impl Chilpa {
         self.as_mut().rust_mut().api.set_album_sort(orden);
         self.as_mut().album_view_changed();
         self.as_mut().refresh_albums();
+    }
+
+    pub fn refresh_stats(mut self: Pin<&mut Self>) {
+        let s = self.as_mut().rust_mut().api.stats();
+        let mut resumen = QList::<QString>::default();
+        let mut renglon = |etiqueta: &str, valor: String| {
+            resumen.append(QString::from(&format!("{etiqueta}\t{valor}")));
+        };
+        renglon("Escuchas", s.plays.to_string());
+        renglon("Pistas distintas", s.distinct_tracks.to_string());
+        renglon("Tiempo escuchado", duracion_larga(s.listened_ms));
+        renglon("Saltos", s.skips.to_string());
+        renglon(
+            "Bit-perfect",
+            if s.plays + s.skips == 0 {
+                "—".to_string()
+            } else {
+                format!("{} de {}", s.bit_perfect, s.plays + s.skips)
+            },
+        );
+        renglon("Desde", s.since.map(fecha_corta).unwrap_or_else(|| "—".into()));
+        self.as_mut().set_stats(QStringList::from(&resumen));
+
+        let a_renglones = |pistas: Vec<(chilpa_api::LibraryTrack, usize)>| {
+            let mut l = QList::<QString>::default();
+            for (t, veces) in pistas {
+                l.append(QString::from(&format!(
+                    "{}\t{}\t{}\t{}\t{}",
+                    t.title, t.artist, t.album, veces, t.path
+                )));
+            }
+            QStringList::from(&l)
+        };
+        let top = self.as_mut().rust_mut().api.top_tracks(20);
+        self.as_mut().set_top_tracks(a_renglones(top));
+        let recientes = self.as_mut().rust_mut().api.recently_played(20);
+        self.as_mut().set_recent_tracks(a_renglones(recientes));
     }
 
     pub fn refresh_artists(mut self: Pin<&mut Self>) {

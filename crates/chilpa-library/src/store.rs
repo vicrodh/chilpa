@@ -28,6 +28,35 @@ pub struct StoredAlbum {
     pub track_count: usize,
 }
 
+/// Lo que el log de reproducciones dice en conjunto.
+///
+/// Sale del log, no de contadores: un contador se desincroniza y nadie se
+/// entera; el log se puede volver a sumar siempre.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct Stats {
+    /// Escuchas completas: las que sonaron más de la mitad.
+    pub plays: usize,
+    /// Todo lo que se ha entregado, en milisegundos, completas o no.
+    pub listened_ms: u64,
+    /// Cuántas pistas distintas se han escuchado.
+    pub distinct_tracks: usize,
+    /// Cuántas veces se saltó algo.
+    pub skips: usize,
+    /// Cuántas de las escuchas salieron bit-perfect.
+    pub bit_perfect: usize,
+    /// Cuándo fue la primera escucha registrada, en segundos unix.
+    pub since: Option<i64>,
+}
+
+/// Una pista con su cuenta, para los tops y el historial.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct TrackStat {
+    pub track: StoredTrack,
+    /// Escuchas, o el momento de la última, según qué lista sea.
+    pub count: usize,
+    pub at: Option<i64>,
+}
+
 /// Una carpeta que forma parte de la biblioteca.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredRoot {
@@ -181,6 +210,67 @@ impl Library {
         )?;
         self.db
             .query_row("SELECT id FROM roots WHERE path = ?1", params![ruta], |r| r.get(0))
+    }
+
+    /// El resumen de todo lo que se ha escuchado.
+    pub fn stats(&self) -> rusqlite::Result<Stats> {
+        self.db.query_row(
+            "SELECT
+                 COALESCE(sum(CASE WHEN duration_ms = 0 OR played_ms * 2 >= duration_ms
+                                   THEN 1 ELSE 0 END), 0),
+                 COALESCE(sum(played_ms), 0),
+                 count(DISTINCT track_id),
+                 COALESCE(sum(skipped), 0),
+                 COALESCE(sum(bit_perfect), 0),
+                 min(started_at)
+             FROM play_events",
+            [],
+            |r| {
+                Ok(Stats {
+                    plays: r.get::<_, i64>(0)? as usize,
+                    listened_ms: r.get::<_, i64>(1)?.max(0) as u64,
+                    distinct_tracks: r.get::<_, i64>(2)? as usize,
+                    skips: r.get::<_, i64>(3)? as usize,
+                    bit_perfect: r.get::<_, i64>(4)? as usize,
+                    since: r.get(5)?,
+                })
+            },
+        )
+    }
+
+    /// Las pistas más escuchadas.
+    pub fn top_tracks(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
+        let mut stmt = self.db.prepare(
+            "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
+                    t.track_number, t.duration_ms, t.present,
+                    count(p.id), max(p.started_at)
+             FROM play_events p
+             JOIN tracks t ON t.id = p.track_id
+             LEFT JOIN albums a ON a.id = t.album_id
+             WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+             GROUP BY t.id
+             ORDER BY count(p.id) DESC, max(p.started_at) DESC
+             LIMIT ?1",
+        )?;
+        let filas = stmt.query_map(params![limit as i64], fila_a_track_stat)?;
+        filas.collect()
+    }
+
+    /// Lo último que sonó, sin repetir pista.
+    pub fn recently_played(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
+        let mut stmt = self.db.prepare(
+            "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
+                    t.track_number, t.duration_ms, t.present,
+                    count(p.id), max(p.started_at) AS ultima
+             FROM play_events p
+             JOIN tracks t ON t.id = p.track_id
+             LEFT JOIN albums a ON a.id = t.album_id
+             GROUP BY t.id
+             ORDER BY ultima DESC
+             LIMIT ?1",
+        )?;
+        let filas = stmt.query_map(params![limit as i64], fila_a_track_stat)?;
+        filas.collect()
     }
 
     /// Las carpetas que se han escaneado alguna vez, con cuándo fue.
@@ -495,6 +585,14 @@ fn fila_a_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
     })
 }
 
+fn fila_a_track_stat(r: &rusqlite::Row<'_>) -> rusqlite::Result<TrackStat> {
+    Ok(TrackStat {
+        track: fila_a_track(r)?,
+        count: r.get::<_, i64>(8)? as usize,
+        at: r.get(9)?,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -608,6 +706,40 @@ mod tests {
             escuchas,
             vec![("Cosmo".into(), 2), ("Bayou".into(), 1), ("Aqualung".into(), 0)]
         );
+    }
+
+    #[test]
+    fn las_estadisticas_salen_del_log_completo() {
+        let lib = biblioteca_de_muestra();
+        let s = lib.stats().unwrap();
+        assert_eq!(s.plays, 3, "tres escuchas completas");
+        assert_eq!(s.distinct_tracks, 2, "de dos pistas distintas");
+        assert_eq!(s.listened_ms, 3_000);
+        assert_eq!(s.bit_perfect, 3);
+        assert_eq!(s.skips, 0);
+        assert_eq!(s.since, Some(10), "la primera fue en el segundo 10");
+    }
+
+    #[test]
+    fn sin_una_sola_escucha_las_estadisticas_son_ceros() {
+        let lib = Library::in_memory().unwrap();
+        let s = lib.stats().unwrap();
+        assert_eq!(s, Stats::default(), "ceros, no un error");
+    }
+
+    #[test]
+    fn el_top_y_el_historial_miran_lo_mismo_por_distinto_lado() {
+        let lib = biblioteca_de_muestra();
+        // La pista del álbum 3 suena dos veces; la del 1, una, y antes.
+        let top = lib.top_tracks(10).unwrap();
+        assert_eq!(top.len(), 2);
+        assert_eq!(top[0].count, 2, "primero la más escuchada");
+        assert_eq!(top[1].count, 1);
+
+        let reciente = lib.recently_played(10).unwrap();
+        assert_eq!(reciente[0].at, Some(30), "primero la última que sonó");
+        assert_eq!(reciente[1].at, Some(10));
+        assert_eq!(reciente.len(), 2, "una pista por renglón, no una por escucha");
     }
 
     #[test]
