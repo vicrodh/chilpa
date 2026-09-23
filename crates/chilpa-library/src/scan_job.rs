@@ -37,6 +37,18 @@ pub struct ScanJob {
 impl ScanJob {
     /// Arranca el escaneo de una carpeta sobre la base que está en `db_path`.
     pub fn start(db_path: PathBuf, root: PathBuf, artwork_cache: Option<PathBuf>) -> Self {
+        Self::start_all(db_path, vec![root], artwork_cache)
+    }
+
+    /// Lo mismo con varias carpetas, una tras otra.
+    ///
+    /// La cuenta se hace primero sobre todas, para que la barra avance de
+    /// principio a fin y no se reinicie en cada carpeta.
+    pub fn start_all(
+        db_path: PathBuf,
+        roots: Vec<PathBuf>,
+        artwork_cache: Option<PathBuf>,
+    ) -> Self {
         let (tx, rx) = channel();
         let thread = std::thread::Builder::new()
             .name("chilpa-scan".into())
@@ -49,22 +61,47 @@ impl ScanJob {
                     }
                 };
                 // Contar primero: sin total, una barra de progreso inventa.
-                let total = crate::scan::count_audio_files(&root);
+                let total: usize = roots.iter().map(|r| crate::scan::count_audio_files(r)).sum();
                 let _ = tx.send(ScanProgress::Counted { total });
 
-                let avisar = |done: usize| {
-                    let _ = tx.send(ScanProgress::Advanced { done, total });
+                let mut acumulado = ScanReport {
+                    root: roots.first().cloned().unwrap_or_default(),
+                    unreachable: true,
+                    ..ScanReport::default()
                 };
-                let resultado = crate::scan::scan_root_reporting(
-                    &lib,
-                    &root,
-                    artwork_cache.as_deref(),
-                    &avisar,
-                );
-                let _ = tx.send(match resultado {
-                    Ok(r) => ScanProgress::Done(r),
-                    Err(e) => ScanProgress::Failed(e.to_string()),
-                });
+                // Lo que ya llevan las carpetas anteriores, para que el
+                // avance no vuelva a empezar en cada una.
+                let mut previos = 0usize;
+                for root in &roots {
+                    let avisar = |done: usize| {
+                        let _ = tx.send(ScanProgress::Advanced { done: previos + done, total });
+                    };
+                    match crate::scan::scan_root_reporting(
+                        &lib,
+                        root,
+                        artwork_cache.as_deref(),
+                        &avisar,
+                    ) {
+                        Ok(r) => {
+                            previos += r.seen;
+                            acumulado.seen += r.seen;
+                            acumulado.read += r.read;
+                            acumulado.unchanged += r.unchanged;
+                            acumulado.missing += r.missing;
+                            // Con que una carpeta se haya podido leer, el
+                            // escaneo sirvió de algo.
+                            acumulado.unreachable &= r.unreachable;
+                        }
+                        Err(e) => {
+                            let _ = tx.send(ScanProgress::Failed(e.to_string()));
+                            return;
+                        }
+                    }
+                }
+                if roots.is_empty() {
+                    acumulado.unreachable = false;
+                }
+                let _ = tx.send(ScanProgress::Done(acumulado));
             })
             .expect("el hilo de escaneo arranca");
         Self { events: rx, thread: Some(thread) }
@@ -153,6 +190,69 @@ mod tests {
         }
         match eventos.last() {
             Some(ScanProgress::Done(r)) => assert_eq!(r.seen, 4),
+            otro => panic!("debía terminar: {otro:?}"),
+        }
+        drop(job);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn varias_carpetas_cuentan_juntas_y_el_avance_no_reinicia() {
+        let dir = std::env::temp_dir().join("chilpa-scanjob-varias");
+        let _ = std::fs::remove_dir_all(&dir);
+        let (a, b) = (dir.join("a"), dir.join("b"));
+        std::fs::create_dir_all(&a).unwrap();
+        std::fs::create_dir_all(&b).unwrap();
+        for n in 0..3 {
+            std::fs::write(a.join(format!("{n}.flac")), b"x").unwrap();
+        }
+        for n in 0..2 {
+            std::fs::write(b.join(format!("{n}.flac")), b"x").unwrap();
+        }
+
+        let job = ScanJob::start_all(dir.join("lib.db"), vec![a, b], None);
+        let eventos = hasta_el_final(&job);
+
+        match eventos.first() {
+            Some(ScanProgress::Counted { total }) => assert_eq!(*total, 5, "las dos juntas"),
+            otro => panic!("lo primero es la cuenta: {otro:?}"),
+        }
+        let mut visto = 0;
+        for e in &eventos {
+            if let ScanProgress::Advanced { done, .. } = e {
+                assert!(*done >= visto, "el avance no reinicia entre carpetas");
+                visto = *done;
+            }
+        }
+        match eventos.last() {
+            Some(ScanProgress::Done(r)) => {
+                assert_eq!(r.seen, 5, "se vieron las cinco");
+                assert!(!r.unreachable);
+            }
+            otro => panic!("debía terminar: {otro:?}"),
+        }
+        drop(job);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn si_una_carpeta_falta_las_demas_igual_se_escanean() {
+        let dir = std::env::temp_dir().join("chilpa-scanjob-falta");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        std::fs::write(dir.join("una.flac"), b"x").unwrap();
+
+        let job = ScanJob::start_all(
+            dir.join("lib.db"),
+            vec![PathBuf::from("/no/existe"), dir.clone()],
+            None,
+        );
+        let eventos = hasta_el_final(&job);
+        match eventos.last() {
+            Some(ScanProgress::Done(r)) => {
+                assert_eq!(r.seen, 1);
+                assert!(!r.unreachable, "una sí se pudo leer");
+            }
             otro => panic!("debía terminar: {otro:?}"),
         }
         drop(job);

@@ -15,4 +15,4 @@ pub mod store;
 pub use scan::{scan_root, scan_root_with_cache, ScanReport};
 pub use scan_job::{ScanJob, ScanProgress};
 pub use playlist::Playlist;
-pub use store::{AlbumSort, Library, StoredAlbum, StoredArtist, StoredTrack};
+pub use store::{AlbumSort, Library, StoredAlbum, StoredArtist, StoredRoot, StoredTrack};
