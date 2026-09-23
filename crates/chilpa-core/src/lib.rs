@@ -27,6 +27,39 @@ impl Core {
     }
 }
 
+/// Una salida disponible, vista desde la fachada.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Output {
+    pub id: String,
+    pub label: String,
+}
+
+/// Las salidas de la máquina.
+#[cfg(target_os = "linux")]
+pub fn outputs() -> Vec<Output> {
+    chilpa_alsa::list()
+        .into_iter()
+        .map(|d| Output { id: d.id.clone(), label: d.label() })
+        .collect()
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn outputs() -> Vec<Output> {
+    Vec::new()
+}
+
+/// Arranca un reproductor conectado a las salidas reales de la máquina.
+#[cfg(target_os = "linux")]
+pub fn spawn_player() -> player::Player {
+    player::Player::spawn(
+        Box::new(|id| chilpa_alsa::probe(id)),
+        Box::new(|id, formato| {
+            chilpa_alsa::AlsaSink::open(id, formato)
+                .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
+        }),
+    )
+}
+
 /// Lo que el core le cuenta a la fachada cuando terminó de sonar algo.
 pub struct PlayedSummary {
     pub frames: u64,
