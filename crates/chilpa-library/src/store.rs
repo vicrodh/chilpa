@@ -740,7 +740,10 @@ impl Library {
                     t.track_number, t.duration_ms, t.present
              FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
              WHERE t.present = 1
-               AND (t.title LIKE ?1 OR t.artist LIKE ?1 OR a.title LIKE ?1)
+               AND (t.title LIKE ?1 OR t.artist LIKE ?1 OR a.title LIKE ?1
+                    OR EXISTS (SELECT 1 FROM track_genres tg
+                               JOIN genres g ON g.id = tg.genre_id
+                               WHERE tg.track_id = t.id AND g.name LIKE ?1))
              ORDER BY t.artist COLLATE NOCASE, t.title COLLATE NOCASE
              LIMIT ?2",
         )?;
@@ -1056,6 +1059,21 @@ mod tests {
         assert_eq!(reciente[0].at, Some(30), "primero la última que sonó");
         assert_eq!(reciente[1].at, Some(10));
         assert_eq!(reciente.len(), 2, "una pista por renglón, no una por escucha");
+    }
+
+    #[test]
+    fn la_busqueda_tambien_mira_el_genero() {
+        let lib = biblioteca_de_muestra();
+        // La pista del álbum 1 es de blues; las demás, no.
+        let id: i64 = lib
+            .db
+            .query_row("SELECT id FROM tracks WHERE album_id = 1", [], |r| r.get(0))
+            .unwrap();
+        lib.set_track_genres(id, &["Delta Blues".to_string()]).unwrap();
+
+        let encontradas = lib.search("blues", 50).unwrap();
+        assert_eq!(encontradas.len(), 1, "salió por su género, no por su título");
+        assert_eq!(encontradas[0].id, id);
     }
 
     #[test]

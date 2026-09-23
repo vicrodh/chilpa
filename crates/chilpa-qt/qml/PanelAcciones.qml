@@ -35,7 +35,11 @@ RowLayout {
         id: dialogoArchivo
         currentFolder: raiz.desde
         title: "Abrir un archivo de audio"
-        nameFilters: ["Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.aiff *.dsf)"]
+        nameFilters: [
+            "Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.oga *.aiff *.aif *.dsf *.dff)",
+            "Imágenes de SACD (*.iso *.dat)",
+            "Todo (*)"
+        ]
         onAccepted: Chilpa.play(selectedFile)
     }
 
