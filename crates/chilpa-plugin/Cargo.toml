@@ -1,0 +1,20 @@
+[package]
+name = "chilpa-plugin"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# serde y serde_json ya estaban en el árbol por el crate de streams, así que
+# el formato de mensajes no agrega dependencias nuevas. Un parser de JSON
+# escrito a mano sería la superficie de ataque más obvia del proyecto.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+wasmtime = { version = "49", default-features = false, features = ["cranelift", "runtime", "std"] }
+
+[dev-dependencies]
+# Los plugins de prueba se escriben en texto de wasm, así que la suite de
+# hostiles no necesita una cadena de compilación aparte para correr.
+wat = "1"
+
