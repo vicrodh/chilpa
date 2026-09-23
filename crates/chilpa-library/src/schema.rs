@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// La versión del esquema que entiende este código.
-pub const VERSION: i64 = 3;
+pub const VERSION: i64 = 4;
 
 /// Los pasos, en orden. El índice es la versión a la que llevan: el primero
 /// lleva de 0 a 1, el segundo de 1 a 2.
@@ -25,7 +25,7 @@ pub const VERSION: i64 = 3;
 /// Cada paso corre una sola vez y nunca se edita después de salir: una base
 /// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
 /// crearía dos formas distintas de la misma versión.
-const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3];
+const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3, MIGRACION_V4];
 
 /// Crea o actualiza el esquema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -238,6 +238,15 @@ CREATE TABLE track_genres (
 CREATE INDEX track_genres_genre ON track_genres(genre_id);
 "#;
 
+/// De 3 a 4: qué tan seguro está el analizador del tempo.
+///
+/// Va en su propia columna y no dentro de `energy`, que es otra cosa.
+/// Guardar un número bajo el nombre de otro es la clase de mentira
+/// silenciosa que después nadie encuentra.
+const MIGRACION_V4: &str = r#"
+ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -293,6 +302,32 @@ mod tests {
             [],
         )
         .unwrap();
+    }
+
+    #[test]
+    fn la_confianza_del_tempo_tiene_su_propia_columna() {
+        let db = memoria();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        db.execute(
+            "INSERT INTO tracks (id, source_id, external_id, title, added_at)
+             VALUES (1, 1, '/a.flac', 'Una', 0)",
+            [],
+        )
+        .unwrap();
+        db.execute(
+            "INSERT INTO audio_features (track_id, analyzer, version, bpm, tempo_confidence, analyzed_at)
+             VALUES (1, 'chilpa', 1, 128.0, 0.8, 0)",
+            [],
+        )
+        .unwrap();
+        let (bpm, conf): (f64, f64) = db
+            .query_row("SELECT bpm, tempo_confidence FROM audio_features", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!(bpm, 128.0);
+        assert_eq!(conf, 0.8);
     }
 
     #[test]

@@ -17,7 +17,7 @@ use crate::store::{Library, StoredTrack};
 use rusqlite::types::Value;
 
 /// Una condición que una pista tiene que cumplir.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Rule {
     /// Nunca ha sonado completa.
     NeverPlayed,
@@ -37,6 +37,8 @@ pub enum Rule {
     ArtistIs(String),
     /// De ese género.
     GenreIs(String),
+    /// Con un tempo analizado dentro de ese rango.
+    BpmBetween(f32, f32),
 }
 
 /// Cómo se ordena lo que sale.
@@ -54,7 +56,7 @@ pub enum Order {
 }
 
 /// Una lista inteligente: un nombre y sus condiciones.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct SmartList {
     pub name: String,
     /// Todas se tienen que cumplir. Un "o" se arma con dos listas.
@@ -101,6 +103,15 @@ pub fn builtins() -> Vec<SmartList> {
             Order::Artist,
             200,
         ),
+        // Estas dos necesitan el análisis; sin él salen vacías, que es lo
+        // honesto: no hay con qué llenarlas todavía.
+        SmartList::new("Tranquilo", vec![Rule::BpmBetween(50.0, 95.0)], Order::Random, 200),
+        SmartList::new(
+            "Para moverse",
+            vec![Rule::BpmBetween(118.0, 145.0)],
+            Order::Random,
+            200,
+        ),
     ]
 }
 
@@ -133,6 +144,14 @@ fn condicion(regla: &Rule, ahora: i64) -> (String, Vec<Value>) {
         Rule::ArtistIs(nombre) => (
             "t.artist = ? COLLATE NOCASE".into(),
             vec![Value::Text(nombre.clone())],
+        ),
+        Rule::BpmBetween(min, max) => (
+            // Cualquier versión del analizador sirve: la lista dice qué
+            // cumple hoy, no con qué analizador se midió.
+            "EXISTS (SELECT 1 FROM audio_features f
+                     WHERE f.track_id = t.id AND f.bpm BETWEEN ? AND ?)"
+                .into(),
+            vec![Value::Real(f64::from(*min)), Value::Real(f64::from(*max))],
         ),
         Rule::GenreIs(nombre) => (
             "EXISTS (SELECT 1 FROM track_genres tg
@@ -314,6 +333,44 @@ mod tests {
         let lib = biblioteca();
         let lista = SmartList::new("x", vec![], Order::Artist, 2);
         assert_eq!(lib.smart_tracks(&lista).unwrap().len(), 2);
+    }
+
+    #[test]
+    fn el_bpm_filtra_lo_que_el_analisis_encontro() {
+        let lib = biblioteca();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None).unwrap();
+        lib.save_features(2, "chilpa", 1, Some(72.0), None).unwrap();
+        // La 3 se analizó y no se le encontró pulso.
+        lib.save_features(3, "chilpa", 1, None, None).unwrap();
+
+        let rapidas = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
+        assert_eq!(titulos(&lib, &rapidas), ["Vieja"]);
+
+        let lentas = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
+        assert_eq!(titulos(&lib, &lentas), ["Nueva"]);
+
+        // Y sin análisis, la lista sale vacía en vez de traerlo todo.
+        let limpia = Library::in_memory().unwrap();
+        assert!(limpia.smart_tracks(&rapidas).unwrap().is_empty());
+    }
+
+    #[test]
+    fn analizar_de_nuevo_la_misma_version_reemplaza_su_fila() {
+        let lib = biblioteca();
+        lib.save_features(1, "chilpa", 1, Some(100.0), None).unwrap();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None).unwrap();
+        assert_eq!(lib.track_bpm(1, "chilpa").unwrap(), Some(128.0));
+        assert_eq!(lib.analyzed_count("chilpa", 1).unwrap(), 1, "una fila, no dos");
+    }
+
+    #[test]
+    fn lo_pendiente_es_lo_que_no_tiene_esa_version() {
+        let lib = biblioteca();
+        assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
+        lib.save_features(1, "chilpa", 1, Some(128.0), None).unwrap();
+        assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 2);
+        // Un analizador nuevo las vuelve a pedir todas.
+        assert_eq!(lib.tracks_pending_analysis("chilpa", 2, 50).unwrap().len(), 3);
     }
 
     #[test]

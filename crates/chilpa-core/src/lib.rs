@@ -4,6 +4,7 @@
 //! `chilpa-api` (ADR-001); aquí adentro vive la implementación.
 
 #[cfg(target_os = "linux")]
+pub mod analysis_job;
 pub mod cd_playback;
 pub mod dsd_playback;
 pub mod playback;
