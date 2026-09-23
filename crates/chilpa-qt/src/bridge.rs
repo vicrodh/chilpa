@@ -51,6 +51,12 @@ pub mod chilpa_bridge {
         /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
         #[qproperty(f64, scan_progress)]
         #[qproperty(bool, scanning)]
+        /// El layout de la ventana. Es el nombre de un `Layout<nombre>.qml`,
+        /// para que agregar un acomodo sea agregar un archivo.
+        #[qproperty(QString, layout)]
+        /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
+        /// ve, y la caja donde se escribe cambia de lugar con cada layout.
+        #[qproperty(QString, search_text)]
         /// Lo elegido para reproducir: la salida y si se exige bit-perfect.
         /// Vive aquí, no en un control de la ventana, para que cualquier
         /// layout lo lea sin depender de dónde quedó el selector.
@@ -72,6 +78,10 @@ pub mod chilpa_bridge {
         /// Un álbum de arranque, por id, para probar la vista sin ratón.
         #[qproperty(i64, initial_album)]
         type Chilpa = super::ChilpaRust;
+
+        /// Elige el layout de la ventana y lo recuerda.
+        #[qinvokable]
+        fn choose_layout(self: Pin<&mut Chilpa>, name: &QString);
 
         /// Elige la salida y la política, y las recuerda para la próxima vez.
         #[qinvokable]
@@ -178,6 +188,8 @@ pub struct ChilpaRust {
     library_status: QString,
     scan_progress: f64,
     scanning: bool,
+    layout: QString,
+    search_text: QString,
     device: QString,
     want_bit_perfect: bool,
     format: QString,
@@ -215,6 +227,8 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            layout: QString::from(&recordado.layout),
+            search_text: QString::from(""),
             device: QString::from(&recordado.output),
             want_bit_perfect: recordado.bit_perfect,
             format: QString::from(""),
@@ -273,8 +287,15 @@ impl Chilpa {
         self.as_mut().set_library_status(QString::from("escaneando..."));
     }
 
+    pub fn choose_layout(mut self: Pin<&mut Self>, name: &QString) {
+        let nombre = name.to_string();
+        self.as_mut().set_layout(name.clone());
+        self.as_mut().rust_mut().api.remember_layout(&nombre);
+    }
+
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
         let texto = text.to_string();
+        self.as_mut().set_search_text(text.clone());
         let encontrados = self.as_mut().rust_mut().api.search(&texto, 200);
         let mut lista = QList::<QString>::default();
         let mut rutas = Vec::with_capacity(encontrados.len());

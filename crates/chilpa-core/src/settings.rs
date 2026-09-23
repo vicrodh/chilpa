@@ -21,11 +21,21 @@ pub struct Settings {
     pub bit_perfect: bool,
     /// La última carpeta que se abrió, para no empezar en el home cada vez.
     pub last_folder: String,
+    /// El acomodo de la ventana, por nombre.
+    pub layout: String,
 }
+
+/// El acomodo con el que arranca quien no ha elegido ninguno.
+pub const LAYOUT_POR_OMISION: &str = "Clasico";
 
 impl Default for Settings {
     fn default() -> Self {
-        Self { output: String::new(), bit_perfect: true, last_folder: String::new() }
+        Self {
+            output: String::new(),
+            bit_perfect: true,
+            last_folder: String::new(),
+            layout: LAYOUT_POR_OMISION.to_string(),
+        }
     }
 }
 
@@ -57,6 +67,12 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     if let Some(v) = pares.get("last_folder") {
         s.last_folder = v.clone();
     }
+    // Un layout vacío en el archivo no deja la ventana sin nada que cargar.
+    if let Some(v) = pares.get("layout") {
+        if !v.is_empty() {
+            s.layout = v.clone();
+        }
+    }
     s
 }
 
@@ -70,8 +86,8 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         std::fs::create_dir_all(dir)?;
     }
     let texto = format!(
-        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\n",
-        settings.output, settings.bit_perfect, settings.last_folder
+        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\n",
+        settings.output, settings.bit_perfect, settings.last_folder, settings.layout
     );
     std::fs::write(file, texto)
 }
@@ -110,6 +126,7 @@ mod tests {
             output: "hw:1,0".into(),
             bit_perfect: false,
             last_folder: "/musica/albumes".into(),
+            layout: "Columna".into(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);
@@ -123,6 +140,14 @@ mod tests {
         let s = load_from(&file);
         assert_eq!(s.output, "hw:0,0", "se rescata lo que sí se entiende");
         assert!(s.bit_perfect, "lo demás toma su valor por omisión");
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn sin_layout_guardado_la_ventana_tiene_con_que_arrancar() {
+        let file = temporal("sin-layout");
+        std::fs::write(&file, "layout =\n").unwrap();
+        assert_eq!(load_from(&file).layout, LAYOUT_POR_OMISION);
         let _ = std::fs::remove_file(file);
     }
 
