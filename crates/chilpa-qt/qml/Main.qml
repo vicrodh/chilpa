@@ -99,7 +99,7 @@ ApplicationWindow {
             Button {
                 text: Chilpa.paused ? "Reanudar" : "Pausa"
                 enabled: Chilpa.playing
-                onClicked: Chilpa.setPaused(!Chilpa.paused)
+                onClicked: Chilpa.pause(!Chilpa.paused)
             }
             Button {
                 text: "Parar"
