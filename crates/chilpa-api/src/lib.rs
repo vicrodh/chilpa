@@ -35,9 +35,34 @@ pub enum Event {
     Failed { message: String },
 }
 
+/// Una salida de audio que el usuario puede elegir.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Output {
+    pub id: String,
+    pub label: String,
+}
+
+/// Lo que está sonando, como lo necesita una vista.
+#[derive(Clone, PartialEq, Debug, Default)]
+pub struct NowPlaying {
+    pub path: String,
+    pub playing: bool,
+    /// Frames entregados y su equivalente en segundos.
+    pub frames: u64,
+    pub seconds: f64,
+    /// Con qué se abrió el dispositivo, ya listo para mostrar.
+    pub format: String,
+    pub bit_perfect: bool,
+    /// El último problema, vacío si no hay.
+    pub error: String,
+}
+
 /// La instancia de Chilpa con la que habla un frontend.
 pub struct Chilpa {
     core: chilpa_core::Core,
+    player: Option<chilpa_core::player::Player>,
+    now: NowPlaying,
+    sample_rate: u32,
 }
 
 impl Default for Chilpa {
@@ -48,7 +73,81 @@ impl Default for Chilpa {
 
 impl Chilpa {
     pub fn new() -> Self {
-        Self { core: chilpa_core::Core::new() }
+        Self {
+            core: chilpa_core::Core::new(),
+            player: None,
+            now: NowPlaying::default(),
+            sample_rate: 0,
+        }
+    }
+
+    /// Las salidas que el usuario puede elegir.
+    pub fn outputs(&self) -> Vec<Output> {
+        chilpa_core::outputs()
+            .into_iter()
+            .map(|o| Output { id: o.id, label: o.label })
+            .collect()
+    }
+
+    /// Pone a sonar un archivo. Regresa de inmediato: lo que pase después
+    /// llega por [`Chilpa::poll`].
+    pub fn play_file(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) {
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        self.now = NowPlaying {
+            path: path.display().to_string(),
+            playing: true,
+            ..NowPlaying::default()
+        };
+        player.play(path, device, bit_perfect);
+    }
+
+    /// Para lo que esté sonando.
+    pub fn stop(&mut self) {
+        if let Some(p) = &self.player {
+            p.stop();
+        }
+    }
+
+    /// Recoge lo que haya pasado y actualiza el estado que ve la vista.
+    pub fn poll(&mut self) -> &NowPlaying {
+        use chilpa_core::player::PlayerEvent;
+        let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
+        for evento in eventos {
+            match evento {
+                PlayerEvent::Started { path, opened, bit_perfect } => {
+                    self.sample_rate = opened.sample_rate_hz;
+                    self.now.path = path.display().to_string();
+                    self.now.playing = true;
+                    self.now.bit_perfect = bit_perfect;
+                    self.now.format = format!(
+                        "{} Hz · {} bits · {} canales",
+                        opened.sample_rate_hz,
+                        opened.sample_format.valid_bits(),
+                        opened.channels
+                    );
+                }
+                PlayerEvent::Progress { frames } => {
+                    self.now.frames = frames;
+                    if self.sample_rate > 0 {
+                        self.now.seconds = frames as f64 / f64::from(self.sample_rate);
+                    }
+                }
+                PlayerEvent::Finished { frames } | PlayerEvent::Stopped { frames } => {
+                    self.now.frames = frames;
+                    self.now.playing = false;
+                }
+                PlayerEvent::Failed { message } => {
+                    self.now.playing = false;
+                    self.now.error = message;
+                }
+            }
+        }
+        &self.now
+    }
+
+    /// El estado actual, sin recoger eventos.
+    pub fn now_playing(&self) -> &NowPlaying {
+        &self.now
     }
 
     /// Ejecuta un comando y regresa lo que el frontend debe saber.
@@ -80,6 +179,22 @@ mod tests {
     fn listar_sources_regresa_la_biblioteca_local() {
         let mut chilpa = Chilpa::new();
         assert_eq!(chilpa.dispatch(Command::ListSources), Event::Sources(vec![SourceId::local()]));
+    }
+
+    #[test]
+    fn el_estado_arranca_vacio_y_sin_error() {
+        let chilpa = Chilpa::new();
+        assert!(!chilpa.now_playing().playing);
+        assert!(chilpa.now_playing().error.is_empty());
+        assert_eq!(chilpa.now_playing().frames, 0);
+    }
+
+    #[test]
+    fn las_salidas_que_se_listan_son_directas() {
+        for salida in Chilpa::new().outputs() {
+            assert!(salida.id.starts_with("hw:"), "{} no es directa", salida.id);
+            assert!(salida.label.contains(&salida.id));
+        }
     }
 
     #[test]
