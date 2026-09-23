@@ -64,6 +64,9 @@ pub struct Player {
     orders: Sender<Order>,
     events: Receiver<PlayerEvent>,
     controls: crate::queue_playback::Controls,
+    /// La cola que está sonando. Se comparte con el hilo para poder
+    /// agregarle sin cortar lo que suena.
+    queue: crate::queue_playback::SharedQueue,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -74,6 +77,8 @@ impl Player {
         let (events_tx, events_rx) = channel::<PlayerEvent>();
         let controls = crate::queue_playback::Controls::new();
         let controls_hilo = controls.clone();
+        let queue = crate::queue_playback::SharedQueue::default();
+        let queue_hilo = queue.clone();
         let stop_hilo = controls.stop.clone();
         let pause_hilo = controls.pause.clone();
         let skip_hilo = controls.skip.clone();
@@ -91,8 +96,9 @@ impl Player {
                             stop_hilo.reset();
                             pause_hilo.set(false);
                             skip_hilo.take();
+                            queue_hilo.set(paths.clone());
                             let resultado = reproducir(
-                                &paths,
+                                &queue_hilo,
                                 &device,
                                 bit_perfect,
                                 &controls_hilo,
@@ -115,7 +121,7 @@ impl Player {
             })
             .expect("el hilo del reproductor arranca");
 
-        Self { orders: orders_tx, events: events_rx, controls, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, controls, queue, thread: Some(thread) }
     }
 
     /// Pide reproducir un archivo. Regresa de inmediato.
@@ -162,6 +168,19 @@ impl Player {
         self.controls.repeat.get()
     }
 
+    /// Agrega pistas al final de la cola que suena, sin cortarla.
+    ///
+    /// Regresa cuántas quedaron en la cola. Si no hay nada sonando, la cola
+    /// compartida está vacía y quien llama decide si arrancarla.
+    pub fn enqueue(&self, paths: &[PathBuf]) -> usize {
+        self.queue.extend(paths)
+    }
+
+    /// Cuántas pistas trae la cola que suena.
+    pub fn queue_len(&self) -> usize {
+        self.queue.len()
+    }
+
     /// Baraja la cola que suena. Toma efecto al terminar la pista.
     pub fn shuffle(&self, len: usize) {
         self.controls.order.set(crate::queue_playback::shuffled_now(len), len);
@@ -202,7 +221,7 @@ impl Drop for Player {
 }
 
 fn reproducir(
-    paths: &[PathBuf],
+    queue: &crate::queue_playback::SharedQueue,
     device: &str,
     bit_perfect: bool,
     controls: &crate::queue_playback::Controls,
@@ -211,6 +230,8 @@ fn reproducir(
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
     let (stop, pause, skip) = (&controls.stop, &controls.pause, &controls.skip);
+    let paths = queue.to_vec();
+    let paths = paths.as_slice();
     let caps = probe(device).map_err(PlayError::Sink)?;
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
     let total = paths.len();
@@ -229,7 +250,7 @@ fn reproducir(
         }
     }
     let resultados = crate::queue_playback::play_queue_with(
-        paths,
+        queue,
         &caps,
         policy,
         controls,

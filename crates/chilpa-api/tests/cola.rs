@@ -102,3 +102,21 @@ fn el_aleatorio_y_la_repeticion_se_recuerdan_en_la_fachada() {
     assert!(chilpa.shuffle());
     assert_eq!(chilpa.repeat(), chilpa_api::Repeat::All);
 }
+
+#[test]
+fn encolar_sin_nada_sonando_arranca_la_cola() {
+    let dir = carpeta("encolar");
+    let rutas: Vec<String> = ["01.wav", "02.wav"]
+        .iter()
+        .map(|n| onda(&dir, n, 4_410).display().to_string())
+        .collect();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    let titulos = chilpa.enqueue(&rutas, SALIDA, true);
+    assert_eq!(titulos.len(), 2, "encolar con nada sonando es reproducir");
+    assert!(esperar_al_menos(&mut chilpa, 1), "la cola avanzó");
+    assert_eq!(chilpa.queue_titles().len(), 2);
+
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}

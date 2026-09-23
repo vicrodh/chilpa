@@ -1,7 +1,8 @@
 // Los resultados de la búsqueda.
 //
 // Una lista simple: título, artista y duración. Un clic reproduce desde ahí,
-// encolando lo que sigue, que es como se espera de una búsqueda.
+// encolando lo que sigue, que es como se espera de una búsqueda. Un clic
+// con el botón de en medio encola sin cortar lo que suena.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -34,6 +35,10 @@ Rectangle {
             Button {
                 text: "Reproducir"
                 onClicked: Chilpa.playAlbum(Chilpa.openAlbumId)
+            }
+            Button {
+                text: "Encolar"
+                onClicked: Chilpa.enqueueAlbum(Chilpa.openAlbumId)
             }
             Button {
                 text: "Cerrar"
@@ -90,7 +95,13 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: Chilpa.playResults(index)
+                acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                onClicked: (evento) => {
+                    if (evento.button === Qt.MiddleButton)
+                        Chilpa.enqueueResults(index)
+                    else
+                        Chilpa.playResults(index)
+                }
             }
         }
     }

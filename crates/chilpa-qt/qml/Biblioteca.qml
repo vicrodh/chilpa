@@ -195,8 +195,15 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    // Un clic abre el álbum; el doble clic lo echa a andar.
-                    onClicked: Chilpa.openAlbumTracks(parseInt(datos[0]), datos[1])
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                    // Un clic abre el álbum, el doble clic lo echa a andar y
+                    // el de en medio lo encola sin cortar lo que suena.
+                    onClicked: (evento) => {
+                        if (evento.button === Qt.MiddleButton)
+                            Chilpa.enqueueAlbum(parseInt(datos[0]))
+                        else
+                            Chilpa.openAlbumTracks(parseInt(datos[0]), datos[1])
+                    }
                     onDoubleClicked: Chilpa.playAlbum(parseInt(datos[0]))
                 }
             }

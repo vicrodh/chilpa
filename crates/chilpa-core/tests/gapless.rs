@@ -3,7 +3,7 @@
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::sink::{AudioSink, SinkError};
-use chilpa_core::queue_playback::{play_queue_with, Controls};
+use chilpa_core::queue_playback::{play_queue_with, Controls, SharedQueue};
 use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
@@ -67,7 +67,7 @@ fn reproducir(pistas: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
     let cap = Capturador::default();
     let mut aperturas = 0;
     play_queue_with(
-        pistas,
+        &SharedQueue::new(pistas.to_vec()),
         caps,
         Policy::BitPerfect,
         &Controls::new(),
