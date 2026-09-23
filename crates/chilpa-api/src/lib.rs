@@ -480,6 +480,13 @@ impl Chilpa {
         let _ = chilpa_core::settings::save(&s);
     }
 
+    /// Recuerda el acomodo elegido para la ventana.
+    pub fn remember_layout(&mut self, layout: &str) {
+        let mut s = chilpa_core::settings::load();
+        s.layout = layout.to_string();
+        let _ = chilpa_core::settings::save(&s);
+    }
+
     /// Recuerda la última carpeta abierta.
     pub fn remember_folder(&mut self, folder: &str) {
         let mut s = chilpa_core::settings::load();
