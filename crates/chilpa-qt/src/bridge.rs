@@ -37,6 +37,10 @@ pub mod chilpa_bridge {
         /// Las pistas encoladas y cuál suena.
         #[qproperty(QStringList, queue)]
         #[qproperty(i32, queue_index)]
+        /// La biblioteca: un renglón por álbum, ya listo para la vista.
+        /// Cada entrada es "id\ttítulo\tartista\taño\tpistas\tportada".
+        #[qproperty(QStringList, albums)]
+        #[qproperty(QString, library_status)]
         /// Lo que se recordó de la última sesión.
         #[qproperty(QString, remembered_output)]
         #[qproperty(bool, remembered_bit_perfect)]
@@ -64,6 +68,18 @@ pub mod chilpa_bridge {
         /// Pone a sonar un archivo en la salida elegida.
         #[qinvokable]
         fn play(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+
+        /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
+        #[qinvokable]
+        fn scan_folder(self: Pin<&mut Chilpa>, folder: &QString);
+
+        /// Vuelve a leer los álbumes de la biblioteca.
+        #[qinvokable]
+        fn refresh_albums(self: Pin<&mut Chilpa>);
+
+        /// Pone a sonar un álbum completo.
+        #[qinvokable]
+        fn play_album(self: Pin<&mut Chilpa>, album_id: i64, device: &QString, bit_perfect: bool);
 
         /// Encola una carpeta entera.
         #[qinvokable]
@@ -102,6 +118,8 @@ pub struct ChilpaRust {
     artwork: QString,
     queue: QStringList,
     queue_index: i32,
+    albums: QStringList,
+    library_status: QString,
     remembered_output: QString,
     remembered_bit_perfect: bool,
     format: QString,
@@ -129,6 +147,8 @@ impl Default for ChilpaRust {
             artwork: QString::from(""),
             queue: QStringList::default(),
             queue_index: 0,
+            albums: QStringList::default(),
+            library_status: QString::from(""),
             remembered_output: QString::from(&recordado.output),
             remembered_bit_perfect: recordado.bit_perfect,
             format: QString::from(""),
@@ -172,6 +192,54 @@ impl Chilpa {
             .rust_mut()
             .api
             .play_file(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
+    }
+
+    pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
+        let ruta = folder.to_string();
+        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
+        let resumen = self.as_mut().rust_mut().api.scan(std::path::Path::new(&ruta));
+        let texto = if resumen.unreachable {
+            format!("no se pudo leer {ruta}; no se tocó nada")
+        } else {
+            format!(
+                "{} archivos: {} leídos, {} sin cambios, {} ausentes",
+                resumen.seen, resumen.read, resumen.unchanged, resumen.missing
+            )
+        };
+        self.as_mut().set_library_status(QString::from(&texto));
+        self.as_mut().refresh_albums();
+    }
+
+    pub fn refresh_albums(mut self: Pin<&mut Self>) {
+        let albumes = self.as_mut().rust_mut().api.albums(500, 0);
+        let mut lista = QList::<QString>::default();
+        for a in &albumes {
+            let año = a.year.map(|y| y.to_string()).unwrap_or_default();
+            // Un renglón por álbum, separado por tabuladores: QML lo parte y
+            // arma su modelo sin que el puente invente un tipo nuevo.
+            let renglon = format!(
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                a.id, a.title, a.artist, año, a.track_count, a.artwork_path
+            );
+            lista.append(QString::from(&renglon));
+        }
+        self.as_mut().set_albums(QStringList::from(&lista));
+    }
+
+    pub fn play_album(mut self: Pin<&mut Self>, album_id: i64, device: &QString, bit_perfect: bool) {
+        let dispositivo = device.to_string();
+        let pistas = self.as_mut().rust_mut().api.play_album(album_id, &dispositivo, bit_perfect);
+        let mut lista = QList::<QString>::default();
+        for pista in &pistas {
+            let nombre = std::path::Path::new(pista)
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_else(|| pista.clone());
+            lista.append(QString::from(&nombre));
+        }
+        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!pistas.is_empty());
     }
 
     /// Encola una carpeta entera y la echa a andar.
