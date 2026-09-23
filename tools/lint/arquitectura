@@ -20,8 +20,9 @@ ALLOWED = {
     "chilpa-decode": {"chilpa-audio"},
     "chilpa-dsd": {"chilpa-audio"},
     "chilpa-sacd": {"chilpa-dsd"},
+    "chilpa-cd": {"chilpa-audio"},
     "chilpa-alsa": {"chilpa-audio"},
-    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-decode", "chilpa-dsd", "chilpa-sacd", "chilpa-alsa"},
+    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-decode", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa"},
     "chilpa-api": {"chilpa-core", "chilpa-models"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},

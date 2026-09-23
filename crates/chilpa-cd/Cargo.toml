@@ -1,0 +1,12 @@
+[package]
+name = "chilpa-cd"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-audio.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"

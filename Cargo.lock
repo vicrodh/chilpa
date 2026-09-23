@@ -86,6 +86,14 @@ name = "chilpa-audio"
 version = "0.0.0"
 
 [[package]]
+name = "chilpa-cd"
+version = "0.0.0"
+dependencies = [
+ "chilpa-audio",
+ "libc",
+]
+
+[[package]]
 name = "chilpa-core"
 version = "0.0.0"
 dependencies = [
