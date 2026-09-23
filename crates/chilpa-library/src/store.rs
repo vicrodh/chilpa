@@ -464,17 +464,35 @@ impl Library {
         version: i64,
         bpm: Option<f32>,
         tempo_confidence: Option<f32>,
+        musical_key: Option<String>,
     ) -> rusqlite::Result<()> {
         self.db.execute(
             "INSERT INTO audio_features
-                 (track_id, analyzer, version, bpm, tempo_confidence, analyzed_at)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+                 (track_id, analyzer, version, bpm, tempo_confidence, musical_key, analyzed_at)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
              ON CONFLICT(track_id, analyzer, version) DO UPDATE SET
                bpm = excluded.bpm, tempo_confidence = excluded.tempo_confidence,
-               analyzed_at = excluded.analyzed_at",
-            params![track_id, analyzer, version, bpm, tempo_confidence, ahora_unix()],
+               musical_key = excluded.musical_key, analyzed_at = excluded.analyzed_at",
+            params![track_id, analyzer, version, bpm, tempo_confidence, musical_key, ahora_unix()],
         )?;
         Ok(())
+    }
+
+    /// Lo que el análisis le puso a una pista: tempo y tonalidad.
+    pub fn track_features(
+        &self,
+        track_id: i64,
+        analyzer: &str,
+    ) -> rusqlite::Result<Option<(Option<f32>, Option<String>)>> {
+        self.db
+            .query_row(
+                "SELECT bpm, musical_key FROM audio_features
+                 WHERE track_id = ?1 AND analyzer = ?2
+                 ORDER BY version DESC LIMIT 1",
+                params![track_id, analyzer],
+                |r| Ok((r.get(0)?, r.get(1)?)),
+            )
+            .optional()
     }
 
     /// El BPM que el análisis le puso a una pista, si se lo puso.

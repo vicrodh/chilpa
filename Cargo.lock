@@ -114,6 +114,9 @@ dependencies = [
 [[package]]
 name = "chilpa-analysis"
 version = "0.0.0"
+dependencies = [
+ "chilpa-audio",
+]
 
 [[package]]
 name = "chilpa-api"

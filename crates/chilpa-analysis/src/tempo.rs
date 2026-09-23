@@ -195,6 +195,11 @@ fn interpolar(puntajes: &[f32], lag: usize) -> f32 {
     lag as f32 + ajuste
 }
 
+/// La señal a la frecuencia con la que trabaja el análisis.
+pub fn remuestrear_para_analisis(samples: &[f32], sample_rate_hz: u32) -> Vec<f32> {
+    remuestrear(samples, sample_rate_hz.max(1), HZ_ANALISIS)
+}
+
 /// Baja la frecuencia de muestreo promediando. No es un remuestreador fino;
 /// para contar golpes no hace falta.
 fn remuestrear(samples: &[f32], de: u32, a: u32) -> Vec<f32> {

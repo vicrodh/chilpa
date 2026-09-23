@@ -72,6 +72,9 @@ pub struct NowPlaying {
     /// Qué lugar ocupa en la cola y cuántas pistas tiene.
     pub index: usize,
     pub queue_len: usize,
+    /// Lo que el análisis dice de lo que suena: "128 BPM · 8B". Vacío si
+    /// todavía no se ha analizado.
+    pub analysis: String,
     /// La letra de lo que suena, un renglón por entrada. Vacía si no hay.
     pub lyrics: Vec<String>,
     /// Qué renglón va, o -1 cuando la letra no trae tiempos o todavía no
@@ -374,6 +377,27 @@ impl Chilpa {
 
 
 
+
+    /// Lo que el análisis ya sabía de la pista que empieza.
+    fn cargar_analisis(&mut self, path: &std::path::Path) {
+        self.now.analysis = String::new();
+        let Some(lib) = self.library() else { return };
+        let Ok(source) = lib.source_id("local", "default") else { return };
+        let Some(id) = lib.track_by_path(source, path).ok().flatten() else { return };
+        let Some((bpm, tono)) =
+            lib.track_features(id, chilpa_core::analysis_job::ANALIZADOR).ok().flatten()
+        else {
+            return;
+        };
+        let mut partes: Vec<String> = Vec::new();
+        if let Some(b) = bpm {
+            partes.push(format!("{b:.0} BPM"));
+        }
+        if let Some(t) = tono {
+            partes.push(t);
+        }
+        self.now.analysis = partes.join(" · ");
+    }
 
     /// Busca la letra de lo que empieza a sonar.
     ///
@@ -714,6 +738,7 @@ impl Chilpa {
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     self.cargar_letra(&path);
+                    self.cargar_analisis(&path);
                     // El reproductor cuenta sobre lo que se le dio; la vista
                     // cuenta sobre la cola entera.
                     self.now.index = self.base + index;

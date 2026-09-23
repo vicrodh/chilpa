@@ -70,6 +70,8 @@ pub mod chilpa_bridge {
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
+        /// Lo que el análisis dice de lo que suena: "128 BPM · 8B".
+        #[qproperty(QString, analysis)]
         /// La letra de lo que suena: un renglón por entrada, qué renglón
         /// va (-1 si ninguno) y de dónde salió.
         #[qproperty(QStringList, lyrics)]
@@ -410,6 +412,7 @@ pub struct ChilpaRust {
     scanning: bool,
     layout: QString,
     layouts: QStringList,
+    analysis: QString,
     lyrics: QStringList,
     /// De qué pista es la letra que está armada, para no rearmarla en cada
     /// pulso.
@@ -483,6 +486,7 @@ impl Default for ChilpaRust {
             analysis_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            analysis: QString::from(""),
             lyrics: QStringList::default(),
             letra_de: String::new(),
             lyrics_line: -1,
@@ -1240,6 +1244,7 @@ impl Chilpa {
             self.as_mut().rust_mut().letra_de = ahora.path.clone();
         }
         self.as_mut().set_lyrics_line(ahora.lyrics_line);
+        self.as_mut().set_analysis(QString::from(&ahora.analysis));
         self.as_mut().set_error(QString::from(&ahora.error));
         if !ahora.path.is_empty() {
             self.as_mut().set_track(QString::from(&ahora.path));

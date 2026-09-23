@@ -72,12 +72,16 @@ impl Chilpa {
         for evento in eventos {
             match evento {
                 AnalysisProgress::Counted { total } => self.analysis_status.total = total,
-                AnalysisProgress::Advanced { done, total, title, bpm } => {
+                AnalysisProgress::Advanced { done, total, title, bpm, key } => {
                     self.analysis_status.done = done;
                     self.analysis_status.total = total;
-                    self.analysis_status.last = match bpm {
-                        Some(b) => format!("{title} · {b:.0} BPM"),
-                        None => format!("{title} · sin pulso"),
+                    let tempo = match bpm {
+                        Some(b) => format!("{b:.0} BPM"),
+                        None => "sin pulso".to_string(),
+                    };
+                    self.analysis_status.last = match key {
+                        Some(k) => format!("{title} · {tempo} · {k}"),
+                        None => format!("{title} · {tempo}"),
                     };
                 }
                 AnalysisProgress::Done { analyzed, without_pulse, failed } => {
