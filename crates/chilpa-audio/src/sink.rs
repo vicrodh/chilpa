@@ -54,6 +54,20 @@ pub trait AudioSink {
     fn close(&mut self) -> Result<(), SinkError>;
 }
 
+impl AudioSink for Box<dyn AudioSink + Send> {
+    fn format(&self) -> StreamFormat {
+        (**self).format()
+    }
+
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        (**self).write(frames)
+    }
+
+    fn close(&mut self) -> Result<(), SinkError> {
+        (**self).close()
+    }
+}
+
 /// La bandera con la que se para desde otro hilo.
 ///
 /// Parar no manda un comando por un canal que pueda quedarse lleno, ni toma
@@ -74,6 +88,12 @@ impl StopSignal {
     pub fn is_stopped(&self) -> bool {
         self.0.load(Ordering::Acquire)
     }
+
+    /// Limpia la bandera para la siguiente pista. Una orden de paro vieja no
+    /// debe matar lo que empieza después.
+    pub fn reset(&self) {
+        self.0.store(false, Ordering::Release);
+    }
 }
 
 #[cfg(test)]
@@ -85,6 +105,14 @@ mod tests {
         assert!(SinkError::Xrun.is_recoverable());
         assert!(!SinkError::DeviceLost.is_recoverable());
         assert!(!SinkError::Timeout(Duration::from_millis(200)).is_recoverable());
+    }
+
+    #[test]
+    fn limpiar_la_bandera_deja_lista_la_siguiente_pista() {
+        let signal = StopSignal::new();
+        signal.stop();
+        signal.reset();
+        assert!(!signal.is_stopped());
     }
 
     #[test]
