@@ -103,9 +103,18 @@ ApplicationWindow {
 
                 Label {
                     Layout.fillWidth: true
-                    text: Chilpa.track === "" ? "Nada sonando" : Chilpa.track
-                    elide: Text.ElideMiddle
-                    font.pixelSize: 15
+                    text: Chilpa.title === "" ? "Nada sonando" : Chilpa.title
+                    elide: Text.ElideRight
+                    font.pixelSize: 18
+                    font.weight: Font.DemiBold
+                    color: "#411d1f"
+                }
+                Label {
+                    Layout.fillWidth: true
+                    visible: Chilpa.artist !== "" || Chilpa.album !== ""
+                    text: [Chilpa.artist, Chilpa.album].filter(t => t !== "").join(" · ")
+                    elide: Text.ElideRight
+                    font.pixelSize: 14
                     color: "#411d1f"
                 }
                 Label {

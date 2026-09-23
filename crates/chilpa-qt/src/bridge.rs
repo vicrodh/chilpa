@@ -29,6 +29,9 @@ pub mod chilpa_bridge {
         #[qproperty(QStringList, output_ids)]
         /// Lo que suena y su estado.
         #[qproperty(QString, track)]
+        #[qproperty(QString, title)]
+        #[qproperty(QString, artist)]
+        #[qproperty(QString, album)]
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
@@ -67,6 +70,9 @@ pub struct ChilpaRust {
     outputs: QStringList,
     output_ids: QStringList,
     track: QString,
+    title: QString,
+    artist: QString,
+    album: QString,
     format: QString,
     error: QString,
     playing: bool,
@@ -84,6 +90,9 @@ impl Default for ChilpaRust {
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
             track: QString::from(""),
+            title: QString::from(""),
+            artist: QString::from(""),
+            album: QString::from(""),
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -137,6 +146,9 @@ impl Chilpa {
         self.as_mut().set_total_seconds(ahora.total_seconds);
         self.as_mut().set_bit_perfect(ahora.bit_perfect);
         self.as_mut().set_format(QString::from(&ahora.format));
+        self.as_mut().set_title(QString::from(&ahora.title));
+        self.as_mut().set_artist(QString::from(&ahora.artist));
+        self.as_mut().set_album(QString::from(&ahora.album));
         self.as_mut().set_error(QString::from(&ahora.error));
         if !ahora.path.is_empty() {
             self.as_mut().set_track(QString::from(&ahora.path));

@@ -9,6 +9,7 @@ rust-version.workspace = true
 chilpa-models.workspace = true
 chilpa-audio.workspace = true
 chilpa-decode.workspace = true
+chilpa-tags.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 chilpa-alsa.workspace = true
