@@ -700,6 +700,53 @@ impl Chilpa {
         chilpa_core::spectrum::bands(&mono, foto.sample_rate_hz, bandas)
     }
 
+    /// Pares (izquierdo, derecho) de lo que acaba de salir, para el
+    /// goniómetro. En mono se devuelve el mismo valor dos veces, que es lo
+    /// que dibuja una línea a 45 grados, como debe ser.
+    pub fn scope_pairs(&self, puntos: usize) -> Vec<(f32, f32)> {
+        let foto = self.tap.snapshot();
+        let canales = foto.channels.max(1) as usize;
+        let frames = foto.samples.len() / canales;
+        if frames == 0 || puntos == 0 {
+            return Vec::new();
+        }
+        // Se toma uno de cada tantos: dibujar ocho mil puntos por cuadro no
+        // se ve distinto y sí se siente.
+        let salto = (frames / puntos).max(1);
+        (0..frames)
+            .step_by(salto)
+            .take(puntos)
+            .map(|f| {
+                let i = foto.samples[f * canales];
+                let d = if canales > 1 { foto.samples[f * canales + 1] } else { i };
+                (i, d)
+            })
+            .collect()
+    }
+
+    /// La correlación entre los dos canales, de -1 a 1.
+    ///
+    /// Uno es mono, cero es estéreo ancho y por debajo de cero hay algo en
+    /// contrafase, que en mono se cancela. Es el número que un medidor de
+    /// fase enseña, y el que dice si una mezcla va a sobrevivir a un
+    /// altavoz solo.
+    pub fn scope_correlation(&self) -> Option<f32> {
+        let foto = self.tap.snapshot();
+        let canales = foto.channels.max(1) as usize;
+        if canales < 2 || foto.samples.is_empty() {
+            return None;
+        }
+        let (mut si, mut sd, mut sid) = (0.0f64, 0.0f64, 0.0f64);
+        for f in foto.samples.chunks_exact(canales) {
+            let (i, d) = (f64::from(f[0]), f64::from(f[1]));
+            si += i * i;
+            sd += d * d;
+            sid += i * d;
+        }
+        let den = (si * sd).sqrt();
+        (den > 0.0).then(|| (sid / den) as f32)
+    }
+
     /// El nivel por canal, de 0 a 1: pico y rms.
     pub fn scope_levels(&self) -> Vec<(f32, f32)> {
         let foto = self.tap.snapshot();

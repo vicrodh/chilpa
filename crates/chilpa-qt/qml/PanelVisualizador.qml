@@ -19,11 +19,15 @@ Rectangle {
     // dos relojes desacompasados se ven peor que uno solo.
     property var scope: Chilpa.scope
     property var spectrum: Chilpa.spectrum
+    property var pairs: Chilpa.pairs
     onScopeChanged: onda.requestPaint()
     onSpectrumChanged: barras.requestPaint()
+    onPairsChanged: gonio.requestPaint()
 
     /// Qué se dibuja. Lo decide el puente, que lo recuerda entre sesiones.
-    readonly property bool porEspectro: Chilpa.visualizer === "espectro"
+    readonly property string cual: Chilpa.visualizer
+    readonly property bool porEspectro: cual === "espectro"
+    readonly property bool porGoniometro: cual === "goniometro"
 
     ColumnLayout {
         anchors.fill: parent
@@ -54,11 +58,51 @@ Rectangle {
             }
         }
 
+        // El goniómetro: cada muestra es un punto, el izquierdo contra el
+        // derecho, girado 45 grados. Una raya vertical es mono; una mancha
+        // ancha es estéreo; una raya horizontal es contrafase, que en mono
+        // se cancela.
+        Canvas {
+            id: gonio
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.porGoniometro
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                const cx = width / 2
+                const cy = height / 2
+                const r = Math.min(cx, cy) - 2
+
+                ctx.strokeStyle = "#1a411d1f"
+                ctx.lineWidth = 1
+                ctx.beginPath()
+                ctx.moveTo(cx, cy - r); ctx.lineTo(cx, cy + r)
+                ctx.moveTo(cx - r, cy); ctx.lineTo(cx + r, cy)
+                ctx.stroke()
+
+                const puntos = raiz.pairs
+                if (!puntos || puntos.length === 0) return
+                ctx.fillStyle = "#66d7272b"
+                for (let n = 0; n < puntos.length; n++) {
+                    const p = puntos[n].split("\t")
+                    const i = parseFloat(p[0]) || 0
+                    const d = parseFloat(p[1]) || 0
+                    // Girado 45 grados: mono queda vertical, que es como se
+                    // mira un goniómetro.
+                    const x = cx + (d - i) * r * 0.7071
+                    const y = cy - (d + i) * r * 0.7071
+                    ctx.fillRect(x, y, 2, 2)
+                }
+            }
+        }
+
         Canvas {
             id: onda
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !raiz.porEspectro
+            visible: !raiz.porEspectro && !raiz.porGoniometro
 
             onPaint: {
                 const ctx = getContext("2d")
@@ -135,17 +179,29 @@ Rectangle {
             }
             Item { Layout.fillWidth: true }
 
+            // La correlación entre canales: uno es mono, cero es ancho, y
+            // abajo de cero hay algo en contrafase.
+            Label {
+                visible: Chilpa.correlation <= 1.0
+                text: "fase " + Chilpa.correlation.toFixed(2)
+                font.pixelSize: 10
+                color: Chilpa.correlation < 0 ? "#d7272b" : "#7a411d1f"
+            }
+
             // Cambiar de dibujo sin menús: un clic en el nombre.
             Label {
-                text: raiz.porEspectro ? "espectro" : "onda"
+                text: raiz.cual
                 font.pixelSize: 10
                 color: "#7a411d1f"
                 MouseArea {
                     anchors.fill: parent
                     anchors.margins: -6
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Chilpa.chooseVisualizer(
-                        raiz.porEspectro ? "onda" : "espectro")
+                    onClicked: {
+                        const orden = ["onda", "espectro", "goniometro"]
+                        const i = Math.max(0, orden.indexOf(raiz.cual))
+                        Chilpa.chooseVisualizer(orden[(i + 1) % orden.length])
+                    }
                 }
             }
         }
