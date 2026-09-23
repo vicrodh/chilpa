@@ -295,6 +295,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn cycle_repeat(self: Pin<&mut Chilpa>);
 
+        /// Reordena la cola para que el tempo cambie poco entre pistas.
+        #[qinvokable]
+        fn automix(self: Pin<&mut Chilpa>);
+
         /// Quita de la cola la pista en esa posición.
         #[qinvokable]
         fn remove_from_queue(self: Pin<&mut Chilpa>, index: i32);
