@@ -88,6 +88,10 @@ pub mod chilpa_bridge {
         #[qproperty(QString, visualizer)]
         /// El espectro de lo que sale: un valor de 0 a 1 por banda.
         #[qproperty(QStringList, spectrum)]
+        /// Pares "izquierdo\tderecho" para el goniómetro, y la correlación
+        /// entre canales de -1 a 1 (999 cuando no hay dos canales).
+        #[qproperty(QStringList, pairs)]
+        #[qproperty(f64, correlation)]
         /// El nivel por canal, como "pico\trms".
         #[qproperty(QStringList, levels)]
         /// El diagnóstico de la salida: una línea de resumen y un renglón
@@ -433,6 +437,8 @@ pub struct ChilpaRust {
     scope: QStringList,
     visualizer: QString,
     spectrum: QStringList,
+    pairs: QStringList,
+    correlation: f64,
     levels: QStringList,
     wizard_summary: QString,
     wizard_rows: QStringList,
@@ -507,6 +513,8 @@ impl Default for ChilpaRust {
             scope: QStringList::default(),
             visualizer: QString::from(&recordado.visualizer),
             spectrum: QStringList::default(),
+            pairs: QStringList::default(),
+            correlation: 999.0,
             levels: QStringList::default(),
             wizard_summary: QString::from(""),
             wizard_rows: QStringList::default(),
@@ -1247,6 +1255,15 @@ impl Chilpa {
                 b.append(QString::from(&format!("{v:.4}")));
             }
             self.as_mut().set_spectrum(QStringList::from(&b));
+
+            let pares = self.api.scope_pairs(400);
+            let mut pl = QList::<QString>::default();
+            for (i, d) in &pares {
+                pl.append(QString::from(&format!("{i:.4}\t{d:.4}")));
+            }
+            self.as_mut().set_pairs(QStringList::from(&pl));
+            let correlacion = self.api.scope_correlation();
+            self.as_mut().set_correlation(f64::from(correlacion.unwrap_or(999.0)));
 
             let niveles = self.api.scope_levels();
             let mut l = QList::<QString>::default();
