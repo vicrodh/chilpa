@@ -35,7 +35,7 @@ struct Request {
 /// Nunca devuelve `Err`: un problema de red es una respuesta con `error`,
 /// porque del otro lado hay un plugin que solo entiende JSON.
 pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
-    let p = match leer(request_json) {
+    let p = match read(request_json) {
         Ok(p) => p,
         Err(e) => return error(&e),
     };
@@ -111,7 +111,7 @@ fn read_reply(r: ureq::http::Response<ureq::Body>) -> Vec<u8> {
     .unwrap_or_else(|_| error("no se pudo armar la respuesta"))
 }
 
-fn leer(json: &[u8]) -> Result<Request, String> {
+fn read(json: &[u8]) -> Result<Request, String> {
     let v: serde_json::Value =
         serde_json::from_slice(json).map_err(|e| format!("la petición no es JSON: {e}"))?;
     let url = v
@@ -175,7 +175,7 @@ mod tests {
 
     #[test]
     fn what_the_plugin_asked_for_is_read() {
-        let p = leer(br#"{"url":"https://a.b/c","method":"post","headers":{"X":"1"},"body":"hola"}"#)
+        let p = read(br#"{"url":"https://a.b/c","method":"post","headers":{"X":"1"},"body":"hola"}"#)
             .unwrap();
         assert_eq!(p.url, "https://a.b/c");
         assert_eq!(p.method, "POST", "el método se normaliza");
@@ -185,7 +185,7 @@ mod tests {
 
     #[test]
     fn no_method_means_a_get() {
-        let p = leer(br#"{"url":"https://a.b"}"#).unwrap();
+        let p = read(br#"{"url":"https://a.b"}"#).unwrap();
         assert_eq!(p.method, "GET");
         assert!(p.headers.is_empty() && p.body.is_empty());
     }

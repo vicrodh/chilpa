@@ -21,8 +21,8 @@ use serde::{Deserialize, Serialize};
 /// Un plugin exporta las que sepa hacer; Chilpa le pregunta solo por las que
 /// su manifest declaró.
 pub mod op {
-    /// Buscar. Entra [`super::Consulta`], sale [`super::Resultados`].
-    pub const SEARCH: &str = "chilpa_buscar";
+    /// Buscar. Entra [`super::Query`], sale [`super::Results`].
+    pub const SEARCH: &str = "chilpa_search";
     /// Las listas del usuario en ese source.
     pub const PLAYLISTS: &str = "chilpa_playlists";
     /// Las pistas de una de esas listas.
@@ -107,25 +107,35 @@ pub struct RemoteTrack {
 
 impl RemoteTrack {
     /// Cierto si tiene lo mínimo para mostrarse y volverse a pedir.
-    pub fn utilizable(&self) -> bool {
+    pub fn usable(&self) -> bool {
         !self.external_id.trim().is_empty() && !self.title.trim().is_empty()
     }
 
     /// Con qué se puede emparejar contra lo local. `None` si no trae nada
     /// firme: emparejar por nombre es como no emparejar.
+    ///
+    /// Se prefiere el MBID porque identifica la grabación; el ISRC puede
+    /// repetirse entre reediciones del mismo master.
     pub fn fingerprint(&self) -> Option<String> {
-        if let Some(m) = &self.musicbrainz_recording_id {
-            if !m.trim().is_empty() {
-                return Some(format!("mbid:{}", m.trim().to_ascii_lowercase()));
-            }
-        }
-        if let Some(i) = &self.isrc {
-            if !i.trim().is_empty() {
-                return Some(format!("isrc:{}", i.trim().to_ascii_uppercase()));
-            }
-        }
-        None
+        self.musicbrainz_recording_id
+            .as_deref()
+            .and_then(mbid_fingerprint)
+            .or_else(|| self.isrc.as_deref().and_then(isrc_fingerprint))
     }
+}
+
+/// La huella de un MBID, normalizada. Vive suelta porque la biblioteca
+/// local tiene que escribir exactamente la misma cadena para que emparejar
+/// signifique algo; dos normalizaciones parecidas no emparejan nada.
+pub fn mbid_fingerprint(mbid: &str) -> Option<String> {
+    let m = mbid.trim();
+    (!m.is_empty()).then(|| format!("mbid:{}", m.to_ascii_lowercase()))
+}
+
+/// Lo mismo para un ISRC, que por norma se escribe en mayúsculas.
+pub fn isrc_fingerprint(isrc: &str) -> Option<String> {
+    let i = isrc.trim();
+    (!i.is_empty()).then(|| format!("isrc:{}", i.to_ascii_uppercase()))
 }
 
 /// Un álbum que vive en un source.
@@ -146,7 +156,7 @@ pub struct RemoteAlbum {
 }
 
 impl RemoteAlbum {
-    pub fn utilizable(&self) -> bool {
+    pub fn usable(&self) -> bool {
         !self.external_id.trim().is_empty() && !self.title.trim().is_empty()
     }
 }
@@ -165,7 +175,7 @@ pub struct RemotePlaylist {
 }
 
 impl RemotePlaylist {
-    pub fn utilizable(&self) -> bool {
+    pub fn usable(&self) -> bool {
         !self.external_id.trim().is_empty() && !self.name.trim().is_empty()
     }
 }
@@ -188,9 +198,9 @@ impl Results {
     /// plugin puede contestar lo que quiera; lo que pase de aquí ya está
     /// limpio.
     pub fn clean(mut self) -> Self {
-        self.tracks.retain(RemoteTrack::utilizable);
-        self.albums.retain(RemoteAlbum::utilizable);
-        self.playlists.retain(RemotePlaylist::utilizable);
+        self.tracks.retain(RemoteTrack::usable);
+        self.albums.retain(RemoteAlbum::usable);
+        self.playlists.retain(RemotePlaylist::usable);
         self.tracks.truncate(MAX_PER_REPLY);
         self.albums.truncate(MAX_PER_REPLY);
         self.playlists.truncate(MAX_PER_REPLY);
@@ -228,7 +238,7 @@ pub struct Stream {
 
 impl Stream {
     /// Cierto si se puede intentar abrir.
-    pub fn utilizable(&self) -> bool {
+    pub fn usable(&self) -> bool {
         self.url.starts_with("https://") || self.url.starts_with("http://")
     }
 
@@ -239,7 +249,7 @@ impl Stream {
 }
 
 /// Lee lo que contestó un plugin, sin confiar en nada.
-pub fn leer<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
+pub fn read<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
     serde_json::from_slice(bytes).map_err(|e| format!("contestó algo que no se entiende: {e}"))
 }
 
@@ -312,9 +322,9 @@ mod tests {
     #[test]
     fn a_stream_that_is_not_http_is_not_attempted() {
         let bad = Stream { url: "file:///etc/passwd".into(), codec: None, quality: Quality::default(), expires_at: None };
-        assert!(!bad.utilizable());
+        assert!(!bad.usable());
         let good = Stream { url: "https://a.b/c".into(), codec: None, quality: Quality::default(), expires_at: None };
-        assert!(good.utilizable());
+        assert!(good.usable());
     }
 
     #[test]
@@ -335,11 +345,11 @@ mod tests {
 
     #[test]
     fn what_a_plugin_answers_is_read_or_it_says_why_not() {
-        let r: Results = leer(br#"{"tracks":[{"external_id":"a","title":"Una"}]}"#).unwrap();
+        let r: Results = read(br#"{"tracks":[{"external_id":"a","title":"Una"}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);
         assert_eq!(r.tracks[0].artist, "", "lo que falta toma su valor por omisión");
 
-        let e = leer::<Results>(b"esto no es json").expect_err("no se entiende");
+        let e = read::<Results>(b"esto no es json").expect_err("no se entiende");
         assert!(e.contains("no se entiende"), "{e}");
     }
 
@@ -348,7 +358,7 @@ mod tests {
         // Un plugin de una versión más nueva puede mandar campos que este
         // Chilpa no conoce; se ignoran en vez de rechazar todo.
         let r: Results =
-            leer(br#"{"tracks":[{"external_id":"a","title":"Una","algo_nuevo":42}]}"#).unwrap();
+            read(br#"{"tracks":[{"external_id":"a","title":"Una","algo_nuevo":42}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);
     }
 }

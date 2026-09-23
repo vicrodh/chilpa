@@ -17,3 +17,8 @@ chilpa-plugin.workspace = true
 # Los plugins de prueba se escriben en texto de wasm, para no necesitar una
 # cadena de compilación aparte.
 wat = "1"
+# Para dejar un ISRC en una pista escaneada, que es lo que hace que la
+# búsqueda pueda emparejar lo local con lo de un source. Es el mismo
+# rusqlite que ya usa chilpa-library.
+chilpa-library.workspace = true
+rusqlite = "0.40"

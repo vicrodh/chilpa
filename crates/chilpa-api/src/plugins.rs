@@ -192,16 +192,35 @@ impl Plugins {
         self.registry.reactivate(id);
     }
 
+    /// Los plugins de catálogo que sirven ahora, con su nombre.
+    pub fn searchers(&self) -> Vec<(String, String)> {
+        self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
+    }
+
     /// Le pide algo a un plugin.
     pub fn call(&mut self, id: &str, operation: &str, input: &[u8]) -> Result<Vec<u8>, String> {
-        match self.registry.call(
-            &self.host,
-            &self.services,
-            id,
-            operation,
-            input,
-            Limits::default(),
-        ) {
+        self.call_with(id, operation, input, Limits::default())
+    }
+
+    /// Lo mismo, con los límites cortos: es lo que se usa cuando alguien
+    /// está esperando frente a la ventana, como al buscar.
+    pub fn call_short(
+        &mut self,
+        id: &str,
+        operation: &str,
+        input: &[u8],
+    ) -> Result<Vec<u8>, String> {
+        self.call_with(id, operation, input, Limits::short())
+    }
+
+    fn call_with(
+        &mut self,
+        id: &str,
+        operation: &str,
+        input: &[u8],
+        limits: Limits,
+    ) -> Result<Vec<u8>, String> {
+        match self.registry.call(&self.host, &self.services, id, operation, input, limits) {
             Ok(chilpa_plugin::Reply::Ok(bytes)) => Ok(bytes),
             Ok(chilpa_plugin::Reply::Error(e)) => Err(e),
             Err(e) => Err(e.to_string()),
@@ -227,10 +246,10 @@ impl Chilpa {
     /// normal hoy y no es un problema.
     pub fn load_plugins(&mut self) -> usize {
         if self.plugins.is_none() {
-            self.plugins = Plugins::new(Self::plugins_dir());
+            self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
         }
-        match &mut self.plugins {
-            Some(p) => p.load_all(),
+        match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
+            Some(mut p) => p.load_all(),
             None => {
                 self.now.error = "no se pudo arrancar el sandbox de plugins".into();
                 0
@@ -240,12 +259,16 @@ impl Chilpa {
 
     /// Los plugins instalados, cargados o no.
     pub fn plugins(&self) -> Vec<PluginInfo> {
-        self.plugins.as_ref().map(|p| p.list()).unwrap_or_default()
+        self.plugins
+            .as_ref()
+            .and_then(|p| p.lock().ok())
+            .map(|p| p.list())
+            .unwrap_or_default()
     }
 
     /// Saca un plugin de cuarentena.
     pub fn reactivate_plugin(&mut self, id: &str) {
-        if let Some(p) = &mut self.plugins {
+        if let Some(mut p) = self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             p.reactivate(id);
         }
     }
@@ -260,8 +283,8 @@ impl Chilpa {
         operation: &str,
         input: &[u8],
     ) -> Result<Vec<u8>, String> {
-        match &mut self.plugins {
-            Some(p) => p.call(id, operation, input),
+        match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
+            Some(mut p) => p.call(id, operation, input),
             None => Err("el sandbox de plugins no está arrancado".into()),
         }
     }

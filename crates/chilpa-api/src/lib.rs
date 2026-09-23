@@ -7,11 +7,13 @@
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::PluginInfo;
+pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod library;
 mod queue;
 mod playlists;
 mod plugins;
+mod search;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -360,8 +362,10 @@ pub struct Chilpa {
     removed: Vec<bool>,
     /// La letra de lo que suena, para no releerla en cada pulso.
     lyrics: Option<chilpa_lyrics::Lyrics>,
-    /// El sandbox de plugins, armado la primera vez que se pide.
-    plugins: Option<plugins::Plugins>,
+    /// El sandbox de plugins, armado la primera vez que se pide. Va
+    /// compartido porque la búsqueda lo consulta desde su propio hilo: un
+    /// source lento no puede dejar la ventana esperando.
+    plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
     /// Lo que de verdad sale por el dispositivo, para los visualizadores.
     tap: chilpa_core::tap::Tap,
     /// El escaneo en segundo plano, mientras corre.
@@ -370,6 +374,9 @@ pub struct Chilpa {
     analysis: Option<chilpa_core::analysis_job::AnalysisJob>,
     analysis_status: AnalysisStatus,
     player: Option<chilpa_core::player::Player>,
+    /// La búsqueda en curso: lo local, lo que aportaron los sources y lo
+    /// que la vista dibuja.
+    search: search::SearchState,
     now: NowPlaying,
     sample_rate: u32,
 }
@@ -401,6 +408,7 @@ impl Chilpa {
             analysis: None,
             analysis_status: AnalysisStatus::default(),
             player: None,
+            search: search::SearchState::default(),
             now: NowPlaying::default(),
             sample_rate: 0,
         }
@@ -838,6 +846,7 @@ impl Chilpa {
     /// Recoge lo que haya pasado y actualiza el estado que ve la vista.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
+        self.advance_search();
         self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {

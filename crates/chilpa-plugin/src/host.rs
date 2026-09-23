@@ -219,7 +219,7 @@ impl Plugin {
         let Some((rptr, rlen)) = abi::unpack(packed) else {
             return Ok(abi::Reply::Error("no contestó nada".into()));
         };
-        let bytes = leer(&memoria, &mut store, rptr, rlen)?;
+        let bytes = read(&memoria, &mut store, rptr, rlen)?;
         Ok(abi::read_reply(bytes))
     }
 
@@ -475,7 +475,7 @@ fn write(
     Ok(())
 }
 
-fn leer(
+fn read(
     memoria: &wasmtime::Memory,
     store: &mut Store<State>,
     ptr: u32,

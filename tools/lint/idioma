@@ -12,6 +12,11 @@ palabras nuevas, y por eso el mensaje lo dice.
 
 Lo que no es español y el diccionario marca igual (abreviaturas, jerga de
 audio, nombres de la API de Rust) vive en `permitidas-idioma.txt`.
+
+Tiene un punto ciego y conviene saberlo: una palabra que los dos
+diccionarios aceptan no se puede distinguir. `cola`, `hasta` y `linux` pasan
+sin que nadie las vea. Este candado atrapa la deriva, no la sustituye por
+leer el diff.
 """
 import re
 import subprocess
