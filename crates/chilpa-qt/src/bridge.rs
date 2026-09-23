@@ -69,6 +69,8 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// Las listas inteligentes, como "nombre\tpistas".
+        #[qproperty(QStringList, smart_lists)]
         /// Las listas guardadas, como "id\tnombre\tde dónde\tpistas".
         #[qproperty(QStringList, playlists)]
         /// El resumen de lo escuchado, ya en renglones de "etiqueta\tvalor".
@@ -159,6 +161,10 @@ pub mod chilpa_bridge {
         /// Vuelve a leer las listas guardadas.
         #[qinvokable]
         fn refresh_playlists(self: Pin<&mut Chilpa>);
+
+        /// Pone a sonar una lista inteligente, por su nombre.
+        #[qinvokable]
+        fn play_smart_list(self: Pin<&mut Chilpa>, name: &QString);
 
         /// Guarda la cola como una lista con ese nombre.
         #[qinvokable]
@@ -339,6 +345,7 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    smart_lists: QStringList,
     playlists: QStringList,
     stats: QStringList,
     top_tracks: QStringList,
@@ -394,6 +401,7 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            smart_lists: QStringList::default(),
             playlists: QStringList::default(),
             stats: QStringList::default(),
             top_tracks: QStringList::default(),
@@ -568,6 +576,13 @@ impl Chilpa {
     }
 
     pub fn refresh_playlists(mut self: Pin<&mut Self>) {
+        let inteligentes = self.as_mut().rust_mut().api.smart_lists();
+        let mut si = QList::<QString>::default();
+        for l in &inteligentes {
+            si.append(QString::from(&format!("{}\t{}", l.name, l.track_count)));
+        }
+        self.as_mut().set_smart_lists(QStringList::from(&si));
+
         let listas = self.as_mut().rust_mut().api.playlists();
         let mut l = QList::<QString>::default();
         for p in &listas {
@@ -577,6 +592,16 @@ impl Chilpa {
             )));
         }
         self.as_mut().set_playlists(QStringList::from(&l));
+    }
+
+    pub fn play_smart_list(mut self: Pin<&mut Self>, name: &QString) {
+        let nombre = name.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let titulos =
+            self.as_mut().rust_mut().api.play_smart_list(&nombre, &dispositivo, bit_perfect);
+        self.as_mut().refrescar_cola(&titulos);
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn save_queue_as(mut self: Pin<&mut Self>, name: &QString) {

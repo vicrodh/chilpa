@@ -41,6 +41,38 @@ ColumnLayout {
         nombre.text = ""
     }
 
+    // Las inteligentes primero: no se guardan, se vuelven a resolver cada
+    // vez que se miran, así que siempre traen lo que cumple hoy.
+    Label {
+        text: "Inteligentes"
+        font.pixelSize: 12
+        font.weight: Font.DemiBold
+        color: "#7a411d1f"
+    }
+
+    Flow {
+        Layout.fillWidth: true
+        spacing: 8
+
+        Repeater {
+            model: Chilpa.smartLists
+            delegate: Button {
+                readonly property var datos: modelData.split("\t")
+                text: datos[0] + "  (" + datos[1] + ")"
+                enabled: datos[1] !== "0"
+                onClicked: Chilpa.playSmartList(datos[0])
+            }
+        }
+    }
+
+    Label {
+        Layout.topMargin: 6
+        text: "Guardadas"
+        font.pixelSize: 12
+        font.weight: Font.DemiBold
+        color: "#7a411d1f"
+    }
+
     Label {
         visible: Chilpa.playlists.length === 0
         text: "Todavía no hay listas guardadas"
