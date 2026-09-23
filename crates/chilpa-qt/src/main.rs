@@ -1,44 +1,26 @@
-//! El shell de escritorio. Hoy solo levanta la fachada y se sale; el
-//! frontend de Qt entra cuando cierre el spike de Widgets contra Quick.
+//! El shell de escritorio.
 //!
-//! Este crate es el ÚNICO que puede tener tipos de Qt (ADR-001).
+//! Hoy es un smoke test visual: elegir salida, abrir un archivo y ver la
+//! posición avanzar con el veredicto de bit-perfect. La decisión de Widgets
+//! contra Quick sigue abierta, así que esta ventana es desechable; lo que no
+//! lo es son la fachada y el puente, que ya tienen la forma del ADR-001.
+//!
+//! Este crate es el ÚNICO que puede tener tipos de Qt.
 
-use chilpa_api::{Chilpa, Command, Event};
-use std::path::PathBuf;
+mod bridge;
+
+use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
 
 fn main() {
-    let mut chilpa = Chilpa::new();
-    let mut args = std::env::args().skip(1);
-    if let Some(path) = args.next() {
-        // Ruta mínima mientras no hay UI: chilpa-qt <archivo> [hw:0,0]
-        let device = args.next().unwrap_or_else(|| "hw:0,0".to_string());
-        let event = chilpa.dispatch(Command::PlayFile {
-            path: PathBuf::from(path),
-            device,
-            bit_perfect: true,
-        });
-        match event {
-            Event::Played { frames, quality, bit_perfect } => println!(
-                "{frames} frames a {} Hz, {} bits, {} canales; bit-perfect: {}",
-                quality.sample_rate_hz,
-                quality.bit_depth.map_or("-".to_string(), |b| b.to_string()),
-                quality.channels,
-                if bit_perfect { "sí" } else { "no" }
-            ),
-            Event::Failed { message } => {
-                eprintln!("{message}");
-                std::process::exit(1);
-            }
-            other => eprintln!("respuesta inesperada: {other:?}"),
-        }
-        return;
+    let mut app = QGuiApplication::new();
+    #[cfg(target_os = "linux")]
+    QGuiApplication::set_desktop_file_name(&QString::from("com.blitzfc.chilpa"));
+
+    let mut engine = QQmlApplicationEngine::new();
+    if let Some(engine) = engine.as_mut() {
+        engine.load(&QUrl::from("qrc:/qt/qml/com/blitzfc/chilpa/qml/Main.qml"));
     }
-    match chilpa.dispatch(Command::ListSources) {
-        Event::Sources(sources) => {
-            for source in sources {
-                println!("{source}");
-            }
-        }
-        other => eprintln!("respuesta inesperada: {other:?}"),
+    if let Some(app) = app.as_mut() {
+        app.exec();
     }
 }
