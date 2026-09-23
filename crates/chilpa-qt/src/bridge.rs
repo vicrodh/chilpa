@@ -38,7 +38,8 @@ pub mod chilpa_bridge {
         #[qproperty(QStringList, queue)]
         #[qproperty(i32, queue_index)]
         /// La biblioteca: un renglón por álbum, ya listo para la vista.
-        /// Cada entrada es "id\ttítulo\tartista\taño\tpistas\tportada".
+        /// Cada entrada es
+        /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
         #[qproperty(QStringList, albums)]
         #[qproperty(QString, library_status)]
         /// Lo que se recordó de la última sesión.
@@ -218,8 +219,8 @@ impl Chilpa {
             // Un renglón por álbum, separado por tabuladores: QML lo parte y
             // arma su modelo sin que el puente invente un tipo nuevo.
             let renglon = format!(
-                "{}\t{}\t{}\t{}\t{}\t{}",
-                a.id, a.title, a.artist, año, a.track_count, a.artwork_path
+                "{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                a.id, a.title, a.artist, año, a.track_count, a.artwork_path, a.play_count
             );
             lista.append(QString::from(&renglon));
         }

@@ -143,6 +143,8 @@ pub struct Album {
     pub track_count: usize,
     /// La portada en disco, vacío si no hay.
     pub artwork_path: String,
+    /// Cuántas escuchas lleva, contadas del log.
+    pub play_count: usize,
 }
 
 /// Una pista de la biblioteca.
@@ -234,13 +236,17 @@ impl Chilpa {
         lib.albums(limit, offset)
             .unwrap_or_default()
             .into_iter()
-            .map(|a| Album {
-                id: a.id,
-                title: a.title,
-                artist: a.album_artist,
-                year: a.year,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
+            .map(|a| {
+                let escuchas = lib.album_play_count(a.id).unwrap_or(0);
+                Album {
+                    id: a.id,
+                    title: a.title,
+                    artist: a.album_artist,
+                    year: a.year,
+                    track_count: a.track_count,
+                    artwork_path: a.artwork_path.unwrap_or_default(),
+                    play_count: escuchas,
+                }
             })
             .collect()
     }
