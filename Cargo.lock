@@ -122,6 +122,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-sacd"
+version = "0.0.0"
+dependencies = [
+ "chilpa-dsd",
+]
+
+[[package]]
 name = "core_detect"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
