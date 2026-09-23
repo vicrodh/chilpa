@@ -53,6 +53,25 @@ where
     S: FrameSource,
     K: AudioSink,
 {
+    render_with(source, sink, stop, &mut |_| {})
+}
+
+/// Lo mismo, avisando cuántos frames llevan entregados.
+///
+/// El aviso sale del lazo de entrega, así que la posición que ve la interfaz
+/// es la que de verdad salió por el cable y no una cuenta del reloj. Se llama
+/// una vez por escritura aceptada, y nunca desde el hilo de audio del
+/// sistema.
+pub fn render_with<S, K>(
+    source: &mut S,
+    sink: &mut K,
+    stop: &StopSignal,
+    on_progress: &mut dyn FnMut(u64),
+) -> Outcome
+where
+    S: FrameSource,
+    K: AudioSink,
+{
     let frame_bytes = sink.format().frame_bytes();
     let mut frames: u64 = 0;
     let mut xruns = 0;
@@ -72,6 +91,7 @@ where
                     xruns = 0;
                     offset += written * frame_bytes;
                     frames += written as u64;
+                    on_progress(frames);
                 }
                 Err(e) if e.is_recoverable() => {
                     xruns += 1;
@@ -91,6 +111,17 @@ mod tests {
     use super::*;
     use crate::format::{SampleFormat, StreamFormat};
     use std::time::Duration;
+
+    #[test]
+    fn el_progreso_avisa_los_frames_que_de_verdad_salieron() {
+        let mut fuente = Bloques(vec![bloque(10), bloque(6)]);
+        let mut sink = Falso::nuevo(4);
+        let mut avisos = Vec::new();
+        let out = render_with(&mut fuente, &mut sink, &StopSignal::new(), &mut |f| avisos.push(f));
+        assert_eq!(out, Outcome::Finished { frames: 16 });
+        assert_eq!(avisos.last(), Some(&16));
+        assert!(avisos.windows(2).all(|p| p[0] < p[1]), "el progreso solo avanza");
+    }
 
     struct Bloques(Vec<Vec<u8>>);
 

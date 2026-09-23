@@ -22,7 +22,7 @@ pub mod sink;
 pub use format::{SampleFormat, StreamFormat};
 pub use negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy, Transform};
 pub use pack::{pack, PackError, Samples};
-pub use render::{render, FrameSource, Outcome};
+pub use render::{render, render_with, FrameSource, Outcome};
 pub use gapless::{transition, Transition, Trimmer};
 pub use seek::{Cursor, SeekPlan};
 pub use sink::{AudioSink, SinkError, StopSignal};
