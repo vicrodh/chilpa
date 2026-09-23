@@ -16,5 +16,6 @@ pub use scan::{scan_root, scan_root_with_cache, ScanReport};
 pub use scan_job::{ScanJob, ScanProgress};
 pub use playlist::Playlist;
 pub use store::{
-    AlbumSort, Library, Stats, StoredAlbum, StoredArtist, StoredRoot, StoredTrack, TrackStat,
+    AlbumSort, Library, PlaylistEntry, Stats, StoredAlbum, StoredArtist, StoredPlaylist,
+    StoredRoot, StoredTrack, TrackStat,
 };

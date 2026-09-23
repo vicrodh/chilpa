@@ -1,4 +1,4 @@
-//! El esquema de la biblioteca, versión 1.
+//! El esquema de la biblioteca.
 //!
 //! Cuatro decisiones vienen de la auditoría de QBZ (CHD-0001), donde la base
 //! de datos era el cuello de botella y la fuente de las pérdidas de datos:
@@ -17,7 +17,15 @@
 use rusqlite::Connection;
 
 /// La versión del esquema que entiende este código.
-pub const VERSION: i64 = 1;
+pub const VERSION: i64 = 2;
+
+/// Los pasos, en orden. El índice es la versión a la que llevan: el primero
+/// lleva de 0 a 1, el segundo de 1 a 2.
+///
+/// Cada paso corre una sola vez y nunca se edita después de salir: una base
+/// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
+/// crearía dos formas distintas de la misma versión.
+const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2];
 
 /// Crea o actualiza el esquema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -27,11 +35,15 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         // pierde datos en silencio.
         return Err(rusqlite::Error::InvalidQuery);
     }
-    if actual == VERSION {
-        return Ok(());
+    for (i, paso) in PASOS.iter().enumerate() {
+        let destino = i as i64 + 1;
+        if actual >= destino {
+            continue;
+        }
+        // Cada paso va en su transacción: si truena a la mitad, la versión
+        // no avanza y la base queda como estaba.
+        db.execute_batch(&format!("BEGIN; {paso} PRAGMA user_version = {destino}; COMMIT;"))?;
     }
-    db.execute_batch(SCHEMA_V1)?;
-    db.pragma_update(None, "user_version", VERSION)?;
     Ok(())
 }
 
@@ -173,6 +185,38 @@ CREATE TABLE audio_features (
 );
 "#;
 
+/// De 1 a 2: las listas de reproducción.
+///
+/// Una lista puede ser de aquí o traída por un source; por eso lleva su id
+/// externo, para poder volver a sincronizarla sin duplicarla. Y una entrada
+/// guarda la ruta además del track: una lista no se rompe porque algo
+/// todavía no esté escaneado.
+const MIGRACION_V2: &str = r#"
+CREATE TABLE playlists (
+    id           INTEGER PRIMARY KEY,
+    source_id    INTEGER NOT NULL REFERENCES sources(id),
+    external_id  TEXT,
+    name         TEXT NOT NULL,
+    description  TEXT NOT NULL DEFAULT '',
+    artwork_path TEXT,
+    created_at   INTEGER NOT NULL,
+    updated_at   INTEGER NOT NULL,
+    UNIQUE (source_id, external_id)
+);
+
+CREATE TABLE playlist_tracks (
+    playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    position    INTEGER NOT NULL,
+    track_id    INTEGER REFERENCES tracks(id),
+    -- Lo que la lista dice que va aquí, aunque el track no esté en la
+    -- biblioteca: una ruta local, o el id que le da su source.
+    external_id TEXT NOT NULL DEFAULT '',
+    PRIMARY KEY (playlist_id, position)
+);
+
+CREATE INDEX playlist_tracks_track ON playlist_tracks(track_id);
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -198,6 +242,59 @@ mod tests {
             .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
             .unwrap();
         assert!(tablas >= 8, "hay {tablas} tablas");
+    }
+
+    #[test]
+    fn una_base_de_la_version_uno_sube_sin_perder_nada() {
+        let db = Connection::open_in_memory().unwrap();
+        // Una base como la dejaba la versión 1.
+        db.execute_batch(SCHEMA_V1).unwrap();
+        db.pragma_update(None, "user_version", 1).unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        db.execute(
+            "INSERT INTO tracks (source_id, external_id, title, added_at)
+             VALUES (1, '/musica/a.flac', 'Una', 0)",
+            [],
+        )
+        .unwrap();
+
+        migrate(&db).unwrap();
+
+        let v: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, VERSION, "quedó en la versión de hoy");
+        let n: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0)).unwrap();
+        assert_eq!(n, 1, "lo que había sigue ahí");
+        // Y la tabla nueva existe.
+        db.execute(
+            "INSERT INTO playlists (source_id, name, created_at, updated_at)
+             VALUES (1, 'Una lista', 0, 0)",
+            [],
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn una_lista_no_repite_posicion() {
+        let db = memoria();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        db.execute(
+            "INSERT INTO playlists (source_id, name, created_at, updated_at)
+             VALUES (1, 'Mía', 0, 0)",
+            [],
+        )
+        .unwrap();
+        let poner = |pos: i64| {
+            db.execute(
+                "INSERT INTO playlist_tracks (playlist_id, position, external_id)
+                 VALUES (1, ?1, '/a.flac')",
+                [pos],
+            )
+        };
+        poner(0).unwrap();
+        assert!(poner(0).is_err(), "el orden de una lista no se duplica");
+        poner(1).unwrap();
     }
 
     #[test]
