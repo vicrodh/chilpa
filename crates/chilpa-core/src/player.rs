@@ -176,6 +176,12 @@ impl Player {
         self.queue.extend(paths)
     }
 
+    /// Quita una pista de la cola que suena, por su posición dentro de lo
+    /// que se le dio al reproductor. La que ya está sonando no se quita.
+    pub fn remove_from_queue(&self, index: usize) -> bool {
+        self.queue.remove(index)
+    }
+
     /// Cuántas pistas trae la cola que suena.
     pub fn queue_len(&self) -> usize {
         self.queue.len()

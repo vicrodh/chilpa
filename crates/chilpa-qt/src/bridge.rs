@@ -37,6 +37,8 @@ pub mod chilpa_bridge {
         /// Las pistas encoladas y cuál suena.
         #[qproperty(QStringList, queue)]
         #[qproperty(i32, queue_index)]
+        /// Qué posiciones de la cola se quitaron, como "0" o "1".
+        #[qproperty(QStringList, queue_removed)]
         /// La biblioteca: un renglón por álbum, ya listo para la vista.
         /// Cada entrada es
         /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
@@ -257,6 +259,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn cycle_repeat(self: Pin<&mut Chilpa>);
 
+        /// Quita de la cola la pista en esa posición.
+        #[qinvokable]
+        fn remove_from_queue(self: Pin<&mut Chilpa>, index: i32);
+
+        /// Para y vacía la cola.
+        #[qinvokable]
+        fn clear_queue(self: Pin<&mut Chilpa>);
+
         /// Salta a la siguiente pista de la cola.
         #[qinvokable]
         fn next_track(self: Pin<&mut Chilpa>);
@@ -343,6 +353,7 @@ pub struct ChilpaRust {
     artwork: QString,
     queue: QStringList,
     queue_index: i32,
+    queue_removed: QStringList,
     albums: QStringList,
     results: QStringList,
     result_paths: Vec<String>,
@@ -408,6 +419,7 @@ impl Default for ChilpaRust {
             artwork: QString::from(""),
             queue: QStringList::default(),
             queue_index: 0,
+            queue_removed: QStringList::default(),
             albums: QStringList::default(),
             results: QStringList::default(),
             result_paths: Vec::new(),
@@ -828,6 +840,34 @@ impl Chilpa {
             lista.append(QString::from(t));
         }
         self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().refrescar_quitadas();
+    }
+
+    /// Qué posiciones de la cola están apagadas.
+    fn refrescar_quitadas(mut self: Pin<&mut Self>) {
+        let quitadas: Vec<bool> = self.api.queue_removed().to_vec();
+        let mut l = QList::<QString>::default();
+        for q in quitadas {
+            l.append(QString::from(if q { "1" } else { "0" }));
+        }
+        self.as_mut().set_queue_removed(QStringList::from(&l));
+    }
+
+    pub fn remove_from_queue(mut self: Pin<&mut Self>, index: i32) {
+        if index < 0 {
+            return;
+        }
+        if self.as_mut().rust_mut().api.remove_from_queue(index as usize) {
+            self.as_mut().refrescar_quitadas();
+        }
+    }
+
+    pub fn clear_queue(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().api.clear_queue();
+        self.as_mut().set_queue(QStringList::default());
+        self.as_mut().set_queue_removed(QStringList::default());
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(false);
     }
 
     pub fn enqueue_results(mut self: Pin<&mut Self>, from: i32) {
