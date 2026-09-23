@@ -91,14 +91,14 @@ impl Watchdog {
 
     /// Lo mismo, con el momento a la mano. Es lo que hace que esto se pueda
     /// probar sin dormir un minuto.
-    pub fn failure_at(&mut self, id: &str, reason: &str, cuando: Instant) -> State {
+    pub fn failure_at(&mut self, id: &str, reason: &str, at: Instant) -> State {
         let c = self.tallies.entry(id.to_string()).or_default();
         if c.quarantine.is_some() {
             return self.state(id);
         }
         // Lo viejo se olvida: lo que se castiga es fallar seguido.
-        c.failures.retain(|t| cuando.duration_since(*t) < WINDOW);
-        c.failures.push(cuando);
+        c.failures.retain(|t| at.duration_since(*t) < WINDOW);
+        c.failures.push(at);
         if c.failures.len() >= FAILURES_TO_QUARANTINE {
             c.quarantine = Some(format!(
                 "falló {FAILURES_TO_QUARANTINE} veces seguidas; la última: {reason}"

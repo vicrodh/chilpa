@@ -1,0 +1,18 @@
+# Palabras que el diccionario marca como españolas y no lo son:
+# abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
+
+# Rust y std
+acq
+rel
+dir
+len
+pos
+res
+
+# Inglés que el diccionario español también acepta
+catalogue
+
+# doy: "day of year", del algoritmo de fecha civil en bridge.rs
+doy
+num
+linux
