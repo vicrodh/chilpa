@@ -17,6 +17,36 @@ ApplicationWindow {
     title: "Chilpa"
     color: "#faf6f2"
 
+    // Los atajos de siempre. Espacio pausa, Escape limpia la búsqueda, y las
+    // flechas mueven la posición diez segundos.
+    Shortcut {
+        sequence: "Space"
+        enabled: !busqueda.activeFocus
+        onActivated: if (Chilpa.playing) Chilpa.pause(!Chilpa.paused)
+    }
+    Shortcut {
+        sequence: "Escape"
+        onActivated: busqueda.text = ""
+    }
+    Shortcut {
+        sequence: "Ctrl+F"
+        onActivated: busqueda.forceActiveFocus()
+    }
+    Shortcut {
+        sequence: "Ctrl+O"
+        onActivated: dialogo.open()
+    }
+    Shortcut {
+        sequence: StandardKey.MoveToNextChar
+        enabled: !busqueda.activeFocus && Chilpa.playing
+        onActivated: Chilpa.seek(Math.min(Chilpa.seconds + 10, Chilpa.totalSeconds))
+    }
+    Shortcut {
+        sequence: StandardKey.MoveToPreviousChar
+        enabled: !busqueda.activeFocus && Chilpa.playing
+        onActivated: Chilpa.seek(Math.max(Chilpa.seconds - 10, 0))
+    }
+
     // mm:ss, que es como se lee una duración.
     function reloj(segundos) {
         const m = Math.floor(segundos / 60)
