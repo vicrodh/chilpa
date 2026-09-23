@@ -50,6 +50,8 @@ pub struct NowPlaying {
     pub title: String,
     pub artist: String,
     pub album: String,
+    /// La portada ya en disco, lista para mostrarse. Vacío si no hay.
+    pub artwork_path: String,
     pub playing: bool,
     /// Frames entregados y su equivalente en segundos.
     pub frames: u64,
@@ -129,12 +131,16 @@ impl Chilpa {
         let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for evento in eventos {
             match evento {
-                PlayerEvent::Started { path, opened, bit_perfect, total_frames, tags } => {
+                PlayerEvent::Started { path, opened, bit_perfect, total_frames, tags, artwork } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
                     let nombre = path
                         .file_stem()
                         .map(|s| s.to_string_lossy().to_string())
+                        .unwrap_or_default();
+                    self.now.artwork_path = artwork
+                        .as_ref()
+                        .map(|p| p.display().to_string())
                         .unwrap_or_default();
                     match &tags {
                         Some(t) => {

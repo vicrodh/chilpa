@@ -15,7 +15,7 @@ use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::prelude::ItemKey;
 use lofty::probe::Probe;
 use lofty::tag::Accessor;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 #[derive(Debug)]
@@ -135,6 +135,49 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
     Ok(info)
 }
 
+/// Saca la portada embebida a un archivo, para que la interfaz la muestre.
+///
+/// Se escribe una sola vez por archivo de origen: el nombre sale de la ruta
+/// y de su fecha de modificación, así que cambiar los tags produce otro
+/// nombre y la vista no se queda con la portada vieja.
+pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>, TagError> {
+    let archivo = Probe::open(path)
+        .map_err(|e| TagError::Unreadable(e.to_string()))?
+        .read()
+        .map_err(|e| TagError::Unreadable(e.to_string()))?;
+    let Some(tag) = archivo.primary_tag().or_else(|| archivo.first_tag()) else {
+        return Ok(None);
+    };
+    let Some(portada) = tag.pictures().first() else {
+        return Ok(None);
+    };
+    let extension = match portada.mime_type().map(|m| m.as_str()) {
+        Some("image/png") => "png",
+        _ => "jpg",
+    };
+    let sello = std::fs::metadata(path)
+        .and_then(|m| m.modified())
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+    let nombre = format!("{:x}-{sello}.{extension}", hash_ruta(path));
+    std::fs::create_dir_all(cache_dir).map_err(TagError::Open)?;
+    let destino = cache_dir.join(nombre);
+    if !destino.exists() {
+        std::fs::write(&destino, portada.data()).map_err(TagError::Open)?;
+    }
+    Ok(Some(destino))
+}
+
+/// Un hash corto y estable de la ruta, para nombrar el archivo de caché.
+fn hash_ruta(path: &Path) -> u64 {
+    use std::hash::{Hash, Hasher};
+    let mut h = std::collections::hash_map::DefaultHasher::new();
+    path.hash(&mut h);
+    h.finish()
+}
+
 /// Arma un [`Track`] de la biblioteca local a partir de un archivo.
 pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
     let info = read(path)?;
@@ -181,6 +224,13 @@ mod tests {
         let tags = Tags { artists: vec!["Uno".into(), "Dos".into()], ..Tags::default() };
         assert_eq!(tags.artist_line(), "Uno, Dos");
         assert_eq!(tags.artists.len(), 2, "siguen siendo dos, no una cadena");
+    }
+
+    #[test]
+    fn el_nombre_de_la_portada_cambia_si_cambia_el_archivo() {
+        // Dos rutas distintas no pueden compartir archivo de caché.
+        assert_ne!(hash_ruta(Path::new("/a.flac")), hash_ruta(Path::new("/b.flac")));
+        assert_eq!(hash_ruta(Path::new("/a.flac")), hash_ruta(Path::new("/a.flac")));
     }
 
     #[test]
