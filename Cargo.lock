@@ -104,6 +104,7 @@ name = "chilpa-api"
 version = "0.0.0"
 dependencies = [
  "chilpa-core",
+ "chilpa-library",
  "chilpa-models",
 ]
 
@@ -128,8 +129,10 @@ dependencies = [
  "chilpa-cd",
  "chilpa-decode",
  "chilpa-dsd",
+ "chilpa-library",
  "chilpa-models",
  "chilpa-tags",
+ "rusqlite",
 ]
 
 [[package]]

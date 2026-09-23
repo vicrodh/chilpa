@@ -104,9 +104,44 @@ fn canales(n: u16) -> String {
     }
 }
 
+/// Un álbum como lo necesita una vista.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Album {
+    pub id: i64,
+    pub title: String,
+    pub artist: String,
+    pub year: Option<i32>,
+    pub track_count: usize,
+    /// La portada en disco, vacío si no hay.
+    pub artwork_path: String,
+}
+
+/// Una pista de la biblioteca.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct LibraryTrack {
+    pub id: i64,
+    pub path: String,
+    pub title: String,
+    pub artist: String,
+    pub track_number: Option<u16>,
+    pub duration_ms: u64,
+    pub present: bool,
+}
+
+/// Qué pasó en un escaneo, en una línea para la vista.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct ScanSummary {
+    pub seen: usize,
+    pub read: usize,
+    pub unchanged: usize,
+    pub missing: usize,
+    pub unreachable: bool,
+}
+
 /// La instancia de Chilpa con la que habla un frontend.
 pub struct Chilpa {
     core: chilpa_core::Core,
+    library: Option<chilpa_library::Library>,
     player: Option<chilpa_core::player::Player>,
     now: NowPlaying,
     sample_rate: u32,
@@ -122,10 +157,96 @@ impl Chilpa {
     pub fn new() -> Self {
         Self {
             core: chilpa_core::Core::new(),
+            library: None,
             player: None,
             now: NowPlaying::default(),
             sample_rate: 0,
         }
+    }
+
+    /// La biblioteca, abriéndola la primera vez que se usa.
+    fn library(&mut self) -> Option<&chilpa_library::Library> {
+        if self.library.is_none() {
+            match chilpa_core::open_library() {
+                Ok(lib) => self.library = Some(lib),
+                Err(e) => {
+                    self.now.error = format!("no se pudo abrir la biblioteca: {e}");
+                    return None;
+                }
+            }
+        }
+        self.library.as_ref()
+    }
+
+    /// Escanea una carpeta hacia la biblioteca.
+    pub fn scan(&mut self, folder: &std::path::Path) -> ScanSummary {
+        let Some(lib) = self.library() else { return ScanSummary::default() };
+        match chilpa_core::scan_into_library(lib, folder) {
+            Ok(r) => ScanSummary {
+                seen: r.seen,
+                read: r.read,
+                unchanged: r.unchanged,
+                missing: r.missing,
+                unreachable: r.unreachable,
+            },
+            Err(e) => {
+                self.now.error = format!("el escaneo falló: {e}");
+                ScanSummary::default()
+            }
+        }
+    }
+
+    /// Los álbumes de la biblioteca.
+    pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.albums(limit, offset)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| Album {
+                id: a.id,
+                title: a.title,
+                artist: a.album_artist,
+                year: a.year,
+                track_count: a.track_count,
+                artwork_path: a.artwork_path.unwrap_or_default(),
+            })
+            .collect()
+    }
+
+    /// Las pistas de un álbum, en el orden del disco.
+    pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.album_tracks(album_id)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| LibraryTrack {
+                id: t.id,
+                path: t.external_id,
+                title: t.title,
+                artist: t.artist,
+                track_number: t.track_number,
+                duration_ms: t.duration_ms,
+                present: t.present,
+            })
+            .collect()
+    }
+
+    /// Pone a sonar un álbum completo, en el orden del disco.
+    pub fn play_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
+        let pistas: Vec<std::path::PathBuf> = self
+            .album_tracks(album_id)
+            .into_iter()
+            .filter(|t| t.present)
+            .map(|t| std::path::PathBuf::from(t.path))
+            .collect();
+        if pistas.is_empty() {
+            self.now.error = "ese álbum no tiene pistas disponibles".into();
+            return Vec::new();
+        }
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
+        player.play_all(&pistas, device, bit_perfect);
+        pistas.iter().map(|p| p.display().to_string()).collect()
     }
 
     /// Lo que Chilpa recuerda: la última salida, si se pide bit-perfect y

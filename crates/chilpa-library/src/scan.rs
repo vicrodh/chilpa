@@ -33,8 +33,22 @@ pub struct ScanReport {
 const EXTENSIONES: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
 
+/// Escanea una carpeta y sus subcarpetas, dejando las portadas en `cache`.
+pub fn scan_root_with_cache(
+    lib: &Library,
+    root: &Path,
+    cache: Option<&Path>,
+) -> rusqlite::Result<ScanReport> {
+    let reporte = escanear(lib, root, cache)?;
+    Ok(reporte)
+}
+
 /// Escanea una carpeta y sus subcarpetas.
 pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
+    escanear(lib, root, None)
+}
+
+fn escanear(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Result<ScanReport> {
     let mut reporte = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
     let source = lib.source_id("local", "default")?;
     let root_id = lib.root_id(source, root)?;
@@ -85,7 +99,7 @@ pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
             }
         }
 
-        let track_id = guardar_archivo(lib, source, archivo, ahora)?;
+        let track_id = guardar_archivo(lib, source, archivo, ahora, cache)?;
         lib.db.execute(
             "INSERT INTO scanned_files (root_id, path, mtime, size, inode, track_id, scanned_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
@@ -110,6 +124,7 @@ fn guardar_archivo(
     source: i64,
     path: &Path,
     ahora: i64,
+    cache: Option<&Path>,
 ) -> rusqlite::Result<i64> {
     let info = chilpa_tags::read(path).ok();
     let tags = info.as_ref().map(|i| i.tags.clone()).unwrap_or_default();
@@ -120,7 +135,12 @@ fn guardar_archivo(
     let album_id = match &tags.album {
         Some(titulo_album) => {
             let album_artist = tags.album_artist.clone().unwrap_or_else(|| artista.clone());
-            Some(album_id(lib, titulo_album, &album_artist, tags.year())?)
+            let id = album_id(lib, titulo_album, &album_artist, tags.year())?;
+            // La portada del álbum sale del primer archivo que traiga una.
+            if let Some(cache) = cache {
+                guardar_portada(lib, id, path, cache)?;
+            }
+            Some(id)
         }
         None => None,
     };
@@ -160,6 +180,24 @@ fn guardar_archivo(
         params![source, path.display().to_string()],
         |r| r.get(0),
     )
+}
+
+/// Le pone portada al álbum si todavía no tiene y este archivo trae una.
+fn guardar_portada(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite::Result<()> {
+    let tiene: Option<String> = lib
+        .db
+        .query_row("SELECT artwork_path FROM albums WHERE id = ?1", params![album], |r| r.get(0))
+        .unwrap_or(None);
+    if tiene.is_some() {
+        return Ok(());
+    }
+    if let Ok(Some(portada)) = chilpa_tags::extract_artwork(path, cache) {
+        lib.db.execute(
+            "UPDATE albums SET artwork_path = ?2 WHERE id = ?1",
+            params![album, portada.display().to_string()],
+        )?;
+    }
+    Ok(())
 }
 
 fn album_id(lib: &Library, titulo: &str, artista: &str, año: Option<u32>) -> rusqlite::Result<i64> {
