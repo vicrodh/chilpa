@@ -159,6 +159,13 @@ struct EnCurso {
     duration_ms: u64,
 }
 
+/// Una lista inteligente, con lo que le sale hoy.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct SmartListInfo {
+    pub name: String,
+    pub track_count: usize,
+}
+
 /// Una lista de reproducción, lista para mostrar.
 ///
 /// `provider` dice de dónde vino. La vista puede filtrar por él: es lo que
@@ -428,6 +435,48 @@ impl Chilpa {
         let Some(letra) = &self.letra else { return -1 };
         let ms = (segundos.max(0.0) * 1000.0) as u64;
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
+    }
+
+    /// Las listas inteligentes que Chilpa trae de fábrica, con cuántas
+    /// pistas les salen hoy.
+    ///
+    /// Una lista inteligente no guarda pistas: guarda reglas y se vuelve a
+    /// resolver cada vez. Por eso la cuenta cambia sola.
+    pub fn smart_lists(&mut self) -> Vec<SmartListInfo> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        chilpa_library::smart_builtins()
+            .into_iter()
+            .map(|l| {
+                let n = lib.smart_tracks(&l).map(|t| t.len()).unwrap_or(0);
+                SmartListInfo { name: l.name, track_count: n }
+            })
+            .collect()
+    }
+
+    /// Pone a sonar una lista inteligente, por su nombre.
+    pub fn play_smart_list(
+        &mut self,
+        name: &str,
+        device: &str,
+        bit_perfect: bool,
+    ) -> Vec<String> {
+        let Some(lista) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
+        else {
+            self.now.error = format!("no conozco la lista \"{name}\"");
+            return Vec::new();
+        };
+        let Some(lib) = self.library() else { return Vec::new() };
+        let rutas: Vec<String> = lib
+            .smart_tracks(&lista)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| t.external_id)
+            .collect();
+        if rutas.is_empty() {
+            self.now.error = format!("\"{name}\" no trae nada hoy");
+            return Vec::new();
+        }
+        self.play_tracks(&rutas, device, bit_perfect)
     }
 
     /// Las listas guardadas, las de aquí y las que traiga un source.

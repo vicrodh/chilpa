@@ -728,7 +728,7 @@ fn ahora_unix() -> i64 {
         .unwrap_or(0)
 }
 
-fn fila_a_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
+pub(crate) fn fila_a_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
     Ok(StoredTrack {
         id: r.get(0)?,
         external_id: r.get(1)?,

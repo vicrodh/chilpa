@@ -10,11 +10,13 @@ pub mod playlist;
 pub mod schema;
 pub mod scan;
 pub mod scan_job;
+pub mod smart;
 pub mod store;
 
 pub use scan::{scan_root, scan_root_with_cache, ScanReport};
 pub use scan_job::{ScanJob, ScanProgress};
 pub use playlist::Playlist;
+pub use smart::{builtins as smart_builtins, Order as SmartOrder, Rule, SmartList};
 pub use store::{
     AlbumSort, Library, PlaylistEntry, Stats, StoredAlbum, StoredArtist, StoredPlaylist,
     StoredRoot, StoredTrack, TrackStat,
