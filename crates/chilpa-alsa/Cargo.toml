@@ -1,0 +1,12 @@
+[package]
+name = "chilpa-alsa"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[target.'cfg(target_os = "linux")'.dependencies]
+alsa = "0.12"
+
+[dependencies]
+chilpa-audio.workspace = true

@@ -3,6 +3,8 @@ resolver = "2"
 members = [
     "crates/chilpa-models",
     "crates/chilpa-audio",
+    "crates/chilpa-decode",
+    "crates/chilpa-alsa",
     "crates/chilpa-core",
     "crates/chilpa-api",
     "crates/chilpa-qt",
@@ -17,5 +19,7 @@ rust-version = "1.90"
 [workspace.dependencies]
 chilpa-models = { path = "crates/chilpa-models" }
 chilpa-audio = { path = "crates/chilpa-audio" }
+chilpa-decode = { path = "crates/chilpa-decode" }
+chilpa-alsa = { path = "crates/chilpa-alsa" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }

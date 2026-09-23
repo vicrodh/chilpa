@@ -5,6 +5,7 @@
 //! primero se amplía esta API.
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
+use std::path::PathBuf;
 
 /// Lo que un frontend le pide a Chilpa.
 #[derive(Clone, PartialEq, Debug)]
@@ -15,6 +16,9 @@ pub enum Command {
     Resume,
     /// Listar los sources registrados.
     ListSources,
+    /// Reproducir un archivo local en un dispositivo, con la política de
+    /// salida dada. Es la ruta mínima mientras la biblioteca no existe.
+    PlayFile { path: PathBuf, device: String, bit_perfect: bool },
 }
 
 /// Lo que Chilpa le cuenta al frontend.
@@ -24,6 +28,9 @@ pub enum Event {
     /// Empezó a sonar algo, con la calidad real de la salida.
     Playing { track: TrackRef, quality: AudioQuality },
     Paused,
+    /// Terminó de sonar un archivo: cuántos frames salieron, con qué formato
+    /// se abrió el dispositivo y si fue bit-perfect.
+    Played { frames: u64, quality: AudioQuality, bit_perfect: bool },
     /// Algo salió mal, en un texto que la UI puede mostrar.
     Failed { message: String },
 }
@@ -48,6 +55,16 @@ impl Chilpa {
     pub fn dispatch(&mut self, command: Command) -> Event {
         match command {
             Command::ListSources => Event::Sources(self.core.sources().to_vec()),
+            Command::PlayFile { path, device, bit_perfect } => {
+                match self.core.play_local(&path, &device, bit_perfect) {
+                    Ok(played) => Event::Played {
+                        frames: played.frames,
+                        quality: played.quality,
+                        bit_perfect: played.bit_perfect,
+                    },
+                    Err(message) => Event::Failed { message },
+                }
+            }
             Command::Play(_) | Command::Pause | Command::Resume => {
                 Event::Failed { message: "el player todavía no se porta".into() }
             }

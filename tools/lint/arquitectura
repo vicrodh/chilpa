@@ -17,7 +17,9 @@ ROOT = Path(__file__).resolve().parents[2]
 ALLOWED = {
     "chilpa-models": set(),
     "chilpa-audio": {"chilpa-models"},
-    "chilpa-core": {"chilpa-models", "chilpa-audio"},
+    "chilpa-decode": {"chilpa-audio"},
+    "chilpa-alsa": {"chilpa-audio"},
+    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-decode", "chilpa-alsa"},
     "chilpa-api": {"chilpa-core", "chilpa-models"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},

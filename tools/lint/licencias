@@ -25,12 +25,60 @@ COMPATIBLES = {
     "Apache-2.0 WITH LLVM-exception",
 }
 
-SPLIT = re.compile(r"\s+OR\s+|\s*/\s*", re.IGNORECASE)
+TOKEN = re.compile(r"\(|\)|\bAND\b|\bOR\b|[^()\s]+", re.IGNORECASE)
 
 
-def opciones(expr):
-    """Las alternativas de una expresión SPDX, sin resolver los AND."""
-    return [parte.strip().strip("()") for parte in SPLIT.split(expr) if parte.strip()]
+def compatible(expr):
+    """Evalúa una expresión SPDX: ¿se puede cumplir con licencias compatibles?
+
+    Entiende AND, OR y paréntesis, y trata `/` como OR, que es la forma vieja
+    que todavía usan algunos crates. Una licencia con excepción
+    ("Apache-2.0 WITH LLVM-exception") llega como tres tokens y se vuelve a
+    unir.
+    """
+    tokens = [t for t in TOKEN.findall(expr.replace("/", " OR ")) if t.strip()]
+    unidos = []
+    i = 0
+    while i < len(tokens):
+        if i + 2 < len(tokens) and tokens[i + 1].upper() == "WITH":
+            unidos.append(f"{tokens[i]} WITH {tokens[i + 2]}")
+            i += 3
+        else:
+            unidos.append(tokens[i])
+            i += 1
+    pos = 0
+
+    def expresion():
+        nonlocal pos
+        valor = termino()
+        while pos < len(unidos) and unidos[pos].upper() == "OR":
+            pos += 1
+            valor = termino() or valor
+        return valor
+
+    def termino():
+        nonlocal pos
+        valor = factor()
+        while pos < len(unidos) and unidos[pos].upper() == "AND":
+            pos += 1
+            valor = factor() and valor
+        return valor
+
+    def factor():
+        nonlocal pos
+        if pos < len(unidos) and unidos[pos] == "(":
+            pos += 1
+            valor = expresion()
+            if pos < len(unidos) and unidos[pos] == ")":
+                pos += 1
+            return valor
+        if pos >= len(unidos):
+            return False
+        licencia = unidos[pos].strip("+")
+        pos += 1
+        return licencia in COMPATIBLES
+
+    return expresion()
 
 
 def main():
@@ -46,7 +94,7 @@ def main():
         if not licencia:
             errores.append(f"{pkg['name']} {pkg['version']}: sin licencia declarada; revísala a mano")
             continue
-        if not any(o in COMPATIBLES for o in opciones(licencia)):
+        if not compatible(licencia):
             errores.append(f"{pkg['name']} {pkg['version']}: {licencia} no es compatible con GPL-2.0-only")
     if errores:
         print("\n".join(errores), file=sys.stderr)
