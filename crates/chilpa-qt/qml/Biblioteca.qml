@@ -38,6 +38,13 @@ Rectangle {
                 color: "#411d1f"
             }
             Item { Layout.fillWidth: true }
+            ProgressBar {
+                visible: Chilpa.scanning
+                Layout.preferredWidth: 160
+                from: 0
+                to: 1
+                value: Chilpa.scanProgress
+            }
             Label {
                 text: Chilpa.libraryStatus
                 color: "#7a411d1f"
