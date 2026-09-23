@@ -6,6 +6,30 @@
 use super::*;
 
 impl Chilpa {
+    /// Le pega a cada pista lo que el análisis sacó, en una sola consulta.
+    fn con_analisis(&mut self, mut pistas: Vec<LibraryTrack>) -> Vec<LibraryTrack> {
+        if pistas.is_empty() {
+            return pistas;
+        }
+        let ids: Vec<i64> = pistas.iter().map(|t| t.id).collect();
+        let Some(lib) = self.library() else { return pistas };
+        let Ok(mapa) = lib.features_for(&ids, chilpa_core::analysis_job::ANALIZADOR) else {
+            return pistas;
+        };
+        for pista in pistas.iter_mut() {
+            let Some((bpm, tono)) = mapa.get(&pista.id) else { continue };
+            let mut partes: Vec<String> = Vec::new();
+            if let Some(b) = bpm {
+                partes.push(format!("{b:.0} BPM"));
+            }
+            if let Some(t) = tono {
+                partes.push(t.clone());
+            }
+            pista.analysis = partes.join(" · ");
+        }
+        pistas
+    }
+
     /// Arranca un escaneo en segundo plano. La interfaz no se bloquea.
     pub fn start_scan(&mut self, folder: &std::path::Path) {
         if self.scan.is_some() {
@@ -302,7 +326,9 @@ impl Chilpa {
     /// Las pistas de un álbum, en el orden del disco.
     pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.album_tracks(album_id).unwrap_or_default().into_iter().map(pista_de).collect()
+        let pistas: Vec<LibraryTrack> =
+            lib.album_tracks(album_id).unwrap_or_default().into_iter().map(pista_de).collect();
+        self.con_analisis(pistas)
     }
 
     /// Busca en la biblioteca por título, artista o álbum.
@@ -311,6 +337,8 @@ impl Chilpa {
             return Vec::new();
         }
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.search(texto.trim(), limit).unwrap_or_default().into_iter().map(pista_de).collect()
+        let pistas: Vec<LibraryTrack> =
+            lib.search(texto.trim(), limit).unwrap_or_default().into_iter().map(pista_de).collect();
+        self.con_analisis(pistas)
     }
 }

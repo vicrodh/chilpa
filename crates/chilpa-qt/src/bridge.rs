@@ -44,7 +44,8 @@ pub mod chilpa_bridge {
         /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
         #[qproperty(QStringList, albums)]
         /// Los resultados de la última búsqueda o del álbum abierto: un
-        /// renglón por pista, con "ruta, título, artista, álbum, duración".
+        /// renglón por pista, con "ruta, título, artista, álbum, duración y
+        /// lo que el análisis sacó".
         #[qproperty(QStringList, results)]
         /// El álbum que se está mirando, vacío si no hay ninguno abierto.
         #[qproperty(QString, open_album)]
@@ -647,13 +648,14 @@ impl Chilpa {
         for t in &encontrados {
             let segundos = t.duration_ms / 1000;
             lista.append(QString::from(&format!(
-                "{}\t{}\t{}\t{}\t{}:{:02}",
+                "{}\t{}\t{}\t{}\t{}:{:02}\t{}",
                 t.path,
                 t.title,
                 t.artist,
                 t.album,
                 segundos / 60,
-                segundos % 60
+                segundos % 60,
+                t.analysis
             )));
             rutas.push(t.path.clone());
         }
@@ -861,14 +863,15 @@ impl Chilpa {
             let segundos = t.duration_ms / 1000;
             let numero = t.track_number.map(|n| format!("{n}. ")).unwrap_or_default();
             lista.append(QString::from(&format!(
-                "{}\t{}{}\t{}\t{}\t{}:{:02}",
+                "{}\t{}{}\t{}\t{}\t{}:{:02}\t{}",
                 t.path,
                 numero,
                 t.title,
                 t.artist,
                 t.album,
                 segundos / 60,
-                segundos % 60
+                segundos % 60,
+                t.analysis
             )));
             rutas.push(t.path.clone());
         }
