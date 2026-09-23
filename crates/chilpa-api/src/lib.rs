@@ -128,6 +128,29 @@ impl Chilpa {
         }
     }
 
+    /// Lo que Chilpa recuerda: la última salida, si se pide bit-perfect y
+    /// la última carpeta abierta.
+    pub fn settings(&self) -> chilpa_core::settings::Settings {
+        chilpa_core::settings::load()
+    }
+
+    /// Recuerda la salida y la política elegidas.
+    pub fn remember(&mut self, output: &str, bit_perfect: bool) {
+        let mut s = chilpa_core::settings::load();
+        s.output = output.to_string();
+        s.bit_perfect = bit_perfect;
+        // Si no se puede guardar, la sesión sigue: es una preferencia, no
+        // una parte del reproductor.
+        let _ = chilpa_core::settings::save(&s);
+    }
+
+    /// Recuerda la última carpeta abierta.
+    pub fn remember_folder(&mut self, folder: &str) {
+        let mut s = chilpa_core::settings::load();
+        s.last_folder = folder.to_string();
+        let _ = chilpa_core::settings::save(&s);
+    }
+
     /// Las salidas que el usuario puede elegir.
     pub fn outputs(&self) -> Vec<Output> {
         chilpa_core::outputs()

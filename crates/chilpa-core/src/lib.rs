@@ -5,6 +5,7 @@
 
 pub mod playback;
 pub mod player;
+pub mod settings;
 pub mod queue_playback;
 
 use chilpa_models::SourceId;
