@@ -7,24 +7,38 @@
 
 use crate::host::{Host, Plugin, PluginError, Services};
 use crate::limits::Limits;
-use crate::manifest::{Kind, Manifest};
+use crate::manifest::{Asked, Kind, Manifest};
 use crate::watchdog::{State, Watchdog};
 use crate::Reply;
 use std::collections::BTreeMap;
 
-/// Un plugin que se intentó cargar.
+/// Un plugin que se encontró en disco.
 pub struct Installed {
     pub id: String,
     pub name: String,
-    /// El plugin listo, o `None` si no cargó.
+    /// Lo que dice de sí mismo, si su manifest se pudo leer. Hace falta
+    /// aunque no cargue: es lo que se le muestra al usuario para que
+    /// apruebe o niegue.
+    pub manifest: Option<Manifest>,
+    /// El plugin listo, o `None` si no cargó o si nadie lo ha aprobado.
     pub plugin: Option<Plugin>,
     /// Por qué no cargó, si no cargó.
     pub problem: Option<String>,
+    /// Cierto si está esperando que el usuario apruebe lo que pide.
+    pub pending: bool,
 }
 
 impl Installed {
     pub fn loaded(&self) -> bool {
         self.plugin.is_some()
+    }
+
+    /// Lo que pide, en palabras, para preguntar.
+    pub fn asks(&self) -> Vec<String> {
+        match &self.manifest {
+            Some(m) => m.capabilities.iter().map(crate::manifest::Capability::describe).collect(),
+            None => Vec::new(),
+        }
     }
 }
 
@@ -43,8 +57,20 @@ impl Registry {
     /// Intenta cargar un plugin. Nunca falla hacia afuera: lo que no se pudo
     /// se anota y se sigue.
     ///
+    /// `approved` recibe el manifest ya leído y contesta si el usuario
+    /// aprobó eso mismo. Si dice que no, el wasm **no se compila**: el
+    /// plugin queda anotado como pendiente y su código nunca se toca
+    /// (ADR-008). El registro no sabe dónde viven las aprobaciones; eso lo
+    /// resuelve quien lo llama.
+    ///
     /// Devuelve cierto si quedó utilizable.
-    pub fn install(&mut self, host: &Host, manifest_json: &str, wasm: &[u8]) -> bool {
+    pub fn install(
+        &mut self,
+        host: &Host,
+        manifest_json: &str,
+        wasm: &[u8],
+        approved: impl FnOnce(&Manifest) -> bool,
+    ) -> bool {
         let manifest = match Manifest::parse(manifest_json) {
             Ok(m) => m,
             Err(e) => {
@@ -55,16 +81,49 @@ impl Registry {
                 self.watchdog.quarantine(&id, &e.to_string());
                 self.plugins.insert(
                     id.clone(),
-                    Installed { id, name, plugin: None, problem: Some(e.to_string()) },
+                    Installed {
+                        id,
+                        name,
+                        manifest: None,
+                        plugin: None,
+                        problem: Some(e.to_string()),
+                        pending: false,
+                    },
                 );
                 return false;
             }
         };
         let (id, name) = (manifest.id.clone(), manifest.name.clone());
+
+        if !approved(&manifest) {
+            self.plugins.insert(
+                id.clone(),
+                Installed {
+                    id,
+                    name,
+                    manifest: Some(manifest),
+                    plugin: None,
+                    problem: None,
+                    pending: true,
+                },
+            );
+            return false;
+        }
+
+        let shown = manifest.clone();
         match host.load(manifest, wasm) {
             Ok(p) => {
-                self.plugins
-                    .insert(id.clone(), Installed { id, name, plugin: Some(p), problem: None });
+                self.plugins.insert(
+                    id.clone(),
+                    Installed {
+                        id,
+                        name,
+                        manifest: Some(shown),
+                        plugin: Some(p),
+                        problem: None,
+                        pending: false,
+                    },
+                );
                 true
             }
             Err(e) => {
@@ -72,11 +131,29 @@ impl Registry {
                 self.watchdog.quarantine(&id, &reason);
                 self.plugins.insert(
                     id.clone(),
-                    Installed { id, name, plugin: None, problem: Some(reason) },
+                    Installed {
+                        id,
+                        name,
+                        manifest: Some(shown),
+                        plugin: None,
+                        problem: Some(reason),
+                        pending: false,
+                    },
                 );
                 false
             }
         }
+    }
+
+    /// Lo que un plugin pide, para preguntarle al usuario. Vacío si no está
+    /// o si su manifest no se pudo leer.
+    pub fn asks(&self, id: &str) -> Vec<String> {
+        self.plugins.get(id).map(Installed::asks).unwrap_or_default()
+    }
+
+    /// Lo que habría que aprobar de ese plugin, tal como se guarda.
+    pub fn asked(&self, id: &str) -> Option<Asked> {
+        self.plugins.get(id)?.manifest.as_ref().map(Manifest::asks_for)
     }
 
     /// Los plugins instalados, cargados o no.
@@ -113,8 +190,11 @@ impl Registry {
     }
 
     pub fn state(&self, id: &str) -> State {
-        if !self.plugins.contains_key(id) {
+        let Some(inst) = self.plugins.get(id) else {
             return State::Quarantined { reason: "no está instalado".into() };
+        };
+        if inst.pending {
+            return State::PendingApproval;
         }
         self.watchdog.state(id)
     }
@@ -150,6 +230,11 @@ impl Registry {
         let Some(inst) = self.plugins.get(id) else {
             return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no está instalado")));
         };
+        if inst.pending {
+            return Err(PluginError::NotAllowed(format!(
+                "llamar a \"{id}\", que nadie ha aprobado"
+            )));
+        }
         let Some(plugin) = &inst.plugin else {
             return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no cargó")));
         };
@@ -186,7 +271,7 @@ mod tests {
     fn an_unreadable_manifest_is_recorded_and_does_not_bring_the_registry_down() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
-        assert!(!r.install(&host, "esto no es json", b""));
+        assert!(!r.install(&host, "esto no es json", b"", |_| true));
         assert_eq!(r.installed().count(), 1);
         assert!(!r.usable().is_empty() == false);
         let inst = r.installed().next().unwrap();
@@ -199,7 +284,7 @@ mod tests {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         // Tiene id pero le falta todo lo demás.
-        assert!(!r.install(&host, r#"{"id":"com.a.b"}"#, b""));
+        assert!(!r.install(&host, r#"{"id":"com.a.b"}"#, b"", |_| true));
         assert_eq!(r.installed().next().unwrap().id, "com.a.b");
         assert!(matches!(r.state("com.a.b"), State::Quarantined { .. }));
     }
@@ -211,7 +296,7 @@ mod tests {
         // El JSON se lee; lo que no pasa es la versión de la API.
         let json = r#"{"id":"com.a.b","name":"Se llama así","version":"1",
                        "api_version":42,"kind":"source"}"#;
-        assert!(!r.install(&host, json, b""));
+        assert!(!r.install(&host, json, b"", |_| true));
         let inst = r.installed().next().unwrap();
         assert_eq!(inst.name, "Se llama así", "en la lista sale con su nombre");
         assert!(inst.problem.as_ref().unwrap().contains("versión"));

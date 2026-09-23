@@ -128,7 +128,9 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     );
     source_plugin(&plugins, "com.prueba.roto", "esto no es json");
 
-    assert_eq!(chilpa.load_plugins(), 2, "los dos cargaron");
+    assert_eq!(chilpa.load_plugins(), 0, "nadie busca sin aprobación (ADR-008)");
+    chilpa.approve_plugin("com.prueba.bueno");
+    assert_eq!(chilpa.approve_plugin("com.prueba.roto"), 2, "los dos cargaron");
 
     // Lo local sale de inmediato, sin esperar a nadie.
     let immediate = chilpa.search_all("Suzie", 20);

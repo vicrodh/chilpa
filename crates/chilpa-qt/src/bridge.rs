@@ -280,6 +280,15 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn load_plugins(self: Pin<&mut Chilpa>);
 
+        /// El usuario aprueba lo que un plugin pide; hasta entonces no
+        /// corre, ni se compila su wasm (ADR-008).
+        #[qinvokable]
+        fn approve_plugin(self: Pin<&mut Chilpa>, id: &QString);
+
+        /// Le quita la aprobación: deja de correr en el momento.
+        #[qinvokable]
+        fn revoke_plugin(self: Pin<&mut Chilpa>, id: &QString);
+
         /// Saca un plugin de cuarentena. Solo lo pide el usuario.
         #[qinvokable]
         fn reactivate_plugin(self: Pin<&mut Chilpa>, id: &QString);
@@ -581,7 +590,7 @@ impl Default for ChilpaRust {
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             initial_search: QString::from(&std::env::var("CHILPA_SEARCH").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
-            initial_tab: QString::from(&std::env::var("CHILPA_PESTANA").unwrap_or_default()),
+            initial_tab: QString::from(&std::env::var("CHILPA_TAB").unwrap_or_default()),
             initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
             initial_analysis: std::env::var("CHILPA_ANALIZAR").is_ok(),
             api: chilpa_api::Chilpa::new(),
@@ -1066,13 +1075,36 @@ impl Chilpa {
         self.as_mut().refresh_plugins();
     }
 
+    pub fn approve_plugin(mut self: Pin<&mut Self>, id: &QString) {
+        let name = id.to_string();
+        let count = self.as_mut().rust_mut().api.approve_plugin(&name);
+        self.as_mut().refresh_plugins();
+        self.as_mut()
+            .set_library_status(QString::from(&format!("{count} plugins corriendo")));
+    }
+
+    pub fn revoke_plugin(mut self: Pin<&mut Self>, id: &QString) {
+        let name = id.to_string();
+        let count = self.as_mut().rust_mut().api.revoke_plugin(&name);
+        self.as_mut().refresh_plugins();
+        self.as_mut()
+            .set_library_status(QString::from(&format!("{count} plugins corriendo")));
+    }
+
     fn refresh_plugins(mut self: Pin<&mut Self>) {
         let list = self.as_mut().rust_mut().api.plugins();
         let mut l = QList::<QString>::default();
         for p in &list {
             l.append(QString::from(&format!(
-                "{}\t{}\t{}\t{}",
-                p.id, p.name, p.state, p.problem
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                p.id,
+                p.name,
+                p.state,
+                p.problem,
+                // Lo que falta aprobar, que es lo que hay que leer antes de
+                // decir que sí. Con " · " porque un renglón no lleva tabs.
+                p.pending.join(" · "),
+                if p.wants_more { "mas" } else { "" }
             )));
         }
         self.as_mut().set_plugins(QStringList::from(&l));

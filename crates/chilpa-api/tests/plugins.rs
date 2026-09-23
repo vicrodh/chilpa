@@ -67,7 +67,7 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     install(
         &root,
         "com.prueba.bueno",
-        r#"{"tipo": "storage"}"#,
+        r#"{"type": "storage"}"#,
         r#"(func (export "saludar") (param i32 i32) (result i64)
              (drop (call $set (i32.const 64) (i32.const 11) (i32.const 96) (i32.const 2)))
              (drop (call $get (i32.const 64) (i32.const 11) (i32.const 2048) (i32.const 64)))
@@ -82,7 +82,12 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     std::fs::write(&old, m).unwrap();
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let usable = chilpa.load_plugins();
+    assert_eq!(chilpa.load_plugins(), 0, "nadie corre sin aprobación (ADR-008)");
+
+    // Al viejo no se le puede aprobar nada: su manifest ni siquiera se lee,
+    // así que no hay qué mostrarle al usuario para que decida.
+    assert_eq!(chilpa.approve_plugin("com.prueba.viejo"), 0);
+    let usable = chilpa.approve_plugin("com.prueba.bueno");
     assert_eq!(usable, 1, "uno cargó y el otro no");
 
     let list = chilpa.plugins();

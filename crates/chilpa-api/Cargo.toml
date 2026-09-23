@@ -12,6 +12,8 @@ chilpa-library.workspace = true
 chilpa-tags.workspace = true
 chilpa-lyrics.workspace = true
 chilpa-plugin.workspace = true
+# Las aprobaciones se guardan en JSON, legible a mano a propósito.
+serde_json = "1"
 
 [dev-dependencies]
 # Los plugins de prueba se escriben en texto de wasm, para no necesitar una

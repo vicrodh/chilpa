@@ -63,7 +63,12 @@ ColumnLayout {
         // pestañas. Por debajo de esto se recorta el último renglón de cada
         // ficha, que es lo primero que se puede perder sin que estorbe.
         Layout.minimumHeight: 260
-        visible: Chilpa.albums.length > 0 && Chilpa.searchText === "" && Chilpa.openAlbum === ""
+        // Se esconde solo cuando hay resultados o un álbum abierto ocupando
+        // su lugar. Antes se escondía también con la biblioteca vacía, y eso
+        // dejaba sin camino a sus otras pestañas: en una instalación nueva no
+        // se podía llegar a aprobar un plugin (ADR-008) sin escanear música
+        // primero.
+        visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
     }
 
     // La cola se asoma solo cuando hay más de una pista.
