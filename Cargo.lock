@@ -132,6 +132,7 @@ dependencies = [
  "chilpa-dsd",
  "chilpa-library",
  "chilpa-models",
+ "chilpa-sacd",
  "chilpa-tags",
  "rusqlite",
 ]

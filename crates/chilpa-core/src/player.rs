@@ -210,6 +210,9 @@ fn reproducir(
     // DSD no pasa por el decodificador de PCM: va por DoP, y hoy se
     // reproduce de a una pista.
     if let Some(primera) = paths.first() {
+        if es_sacd(primera) {
+            return reproducir_sacd(primera, device, &caps, stop, pause, skip, open, events);
+        }
         if es_dsd(primera) {
             return reproducir_dsd(primera, device, &caps, stop, pause, open, events);
         }
@@ -252,6 +255,92 @@ fn reproducir(
         .last()
         .map(|r| r.outcome.clone())
         .unwrap_or(Outcome::Finished { frames: 0 }))
+}
+
+/// Cierto si el archivo es una imagen de SACD.
+fn es_sacd(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .map(|e| e.eq_ignore_ascii_case("iso"))
+        .unwrap_or(false)
+}
+
+/// Reproduce las pistas del área estéreo de una imagen de SACD, en orden.
+#[allow(clippy::too_many_arguments)]
+fn reproducir_sacd(
+    path: &Path,
+    device: &str,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    skip: &chilpa_audio::sink::SkipSignal,
+    open: &mut OpenSink,
+    events: &Sender<PlayerEvent>,
+) -> Result<Outcome, PlayError> {
+    let imagen = chilpa_sacd::open(path)
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+    let pistas = imagen.area.tracks.clone();
+    if pistas.is_empty() {
+        return Err(PlayError::Sink(SinkError::Backend("el disco no trae pistas".into())));
+    }
+    let total = pistas.len();
+    let mut ultimo = Outcome::Finished { frames: 0 };
+
+    for (indice, pista) in pistas.iter().enumerate() {
+        if stop.is_stopped() {
+            return Ok(Outcome::Stopped { frames: ultimo.frames() });
+        }
+        skip.take();
+        // Cada pista abre la imagen otra vez: el lector se queda con ella, y
+        // así una pista que falla no se lleva el resto del disco.
+        let imagen = chilpa_sacd::open(path)
+            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+        let mut lector = chilpa_sacd::SacdTrackReader::open(imagen, pista)
+            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+
+        let etiqueta = chilpa_tags::Tags {
+            title: Some(format!("Pista {}", pista.number)),
+            album: path.file_stem().map(|s| s.to_string_lossy().to_string()),
+            ..chilpa_tags::Tags::default()
+        };
+        let eventos = events.clone();
+        let ruta = path.to_path_buf();
+        let duracion = Some(u64::from(pista.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16);
+
+        let played = crate::dsd_playback::play_dsd(
+            &mut lector,
+            caps,
+            stop,
+            pause,
+            |formato| {
+                let sink = open(device, formato);
+                if sink.is_ok() {
+                    let _ = eventos.send(PlayerEvent::Started {
+                        path: ruta.clone(),
+                        opened: formato,
+                        bit_perfect: true,
+                        total_frames: duracion,
+                        tags: Some(etiqueta.clone()),
+                        artwork: None,
+                        index: indice,
+                        queue_len: total,
+                        dsd_multiple: Some(64),
+                    });
+                }
+                sink
+            },
+            &mut |frames| {
+                let _ = events.send(PlayerEvent::Progress { frames });
+            },
+        )
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+
+        ultimo = played.outcome;
+        if !ultimo.may_advance_queue() {
+            break;
+        }
+    }
+    Ok(ultimo)
 }
 
 /// Cierto si el archivo es DSD por su extensión.
