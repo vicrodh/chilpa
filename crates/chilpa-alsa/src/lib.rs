@@ -5,6 +5,10 @@
 //! formato, se dice y punto. En QBZ esa caída era silenciosa y la UI seguía
 //! diciendo "bit-perfect".
 
+pub mod devices;
+
+pub use devices::{list, Device};
+
 use alsa::pcm::{Access, Format, HwParams, State, PCM};
 use alsa::{Direction, ValueOr};
 use chilpa_audio::format::{SampleFormat, StreamFormat};
