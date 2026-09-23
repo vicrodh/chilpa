@@ -844,7 +844,7 @@ impl Chilpa {
     pub fn refresh_stats(mut self: Pin<&mut Self>) {
         let s = self.as_mut().rust_mut().api.stats();
         let mut summary = QList::<QString>::default();
-        let mut line = |tag: &str, valor: String| {
+        let mut line = |tag: &str, value: String| {
             summary.append(QString::from(&format!("{tag}\t{valor}")));
         };
         line("Escuchas", s.plays.to_string());

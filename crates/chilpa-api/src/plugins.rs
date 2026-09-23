@@ -69,11 +69,11 @@ impl HostServices for ChilpaServices {
         std::fs::read(self.file(plugin, key)?).ok()
     }
 
-    fn store_set(&mut self, plugin: &str, key: &str, valor: &[u8]) -> bool {
+    fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool {
         let Some(path) = self.file(plugin, key) else { return false };
         // Un plugin no puede llenar el disco de a poquito: el almacén es
         // para ajustes y marcas, no para una copia del catálogo.
-        if valor.len() > 1024 * 1024 {
+        if value.len() > 1024 * 1024 {
             return false;
         }
         if let Some(dir) = path.parent() {
@@ -81,7 +81,7 @@ impl HostServices for ChilpaServices {
                 return false;
             }
         }
-        std::fs::write(path, valor).is_ok()
+        std::fs::write(path, value).is_ok()
     }
 
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8> {

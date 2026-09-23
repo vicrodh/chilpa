@@ -18,7 +18,7 @@ fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
     let mut cmd = Command::new("ffmpeg");
     cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1"]);
     cmd.args(["-c:a", "flac"]);
-    for (clave, valor) in tags {
+    for (clave, value) in tags {
         cmd.arg("-metadata").arg(format!("{clave}={valor}"));
     }
     cmd.arg(&target);
