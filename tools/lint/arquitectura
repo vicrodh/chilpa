@@ -23,6 +23,9 @@ ALLOWED = {
     # Lo que se puede saber de una pista escuchándola. No toca la salida;
     # usa de chilpa-audio nada más la FFT, para no tener dos.
     "chilpa-analysis": {"chilpa-audio"},
+    # El host de plugins. No conoce el core ni la biblioteca: lo que un
+    # plugin puede ver se lo pasa la fachada, nunca se lo toma él.
+    "chilpa-plugin": set(),
     "chilpa-library": {"chilpa-models", "chilpa-tags"},
     "chilpa-stream": set(),
     "chilpa-decode": {"chilpa-audio", "chilpa-stream"},
@@ -31,7 +34,7 @@ ALLOWED = {
     "chilpa-cd": {"chilpa-audio"},
     "chilpa-alsa": {"chilpa-audio"},
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa"},
-    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics"},
+    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},
 }

@@ -6,6 +6,7 @@ members = [
     "crates/chilpa-tags",
     "crates/chilpa-lyrics",
     "crates/chilpa-analysis",
+    "crates/chilpa-plugin",
     "crates/chilpa-library",
     "crates/chilpa-stream",
     "crates/chilpa-decode",
@@ -30,6 +31,7 @@ chilpa-audio = { path = "crates/chilpa-audio" }
 chilpa-tags = { path = "crates/chilpa-tags" }
 chilpa-lyrics = { path = "crates/chilpa-lyrics" }
 chilpa-analysis = { path = "crates/chilpa-analysis" }
+chilpa-plugin = { path = "crates/chilpa-plugin" }
 chilpa-library = { path = "crates/chilpa-library" }
 chilpa-stream = { path = "crates/chilpa-stream" }
 chilpa-decode = { path = "crates/chilpa-decode" }
