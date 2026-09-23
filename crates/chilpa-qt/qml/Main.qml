@@ -24,8 +24,16 @@ ApplicationWindow {
         return m + ":" + (s < 10 ? "0" : "") + s
     }
 
+    // La salida y la política se recuerdan entre sesiones.
+    function recordar() {
+        Chilpa.remember(salidas.deviceId, bitPerfect.checked)
+    }
+
     Component.onCompleted: {
         Chilpa.refreshOutputs()
+        const guardada = Chilpa.outputIds.indexOf(Chilpa.rememberedOutput)
+        if (guardada >= 0) salidas.currentIndex = guardada
+        bitPerfect.checked = Chilpa.rememberedBitPerfect
         // Arrancada con un archivo: se elige la salida pedida y suena sola.
         if (Chilpa.autoplayPath !== "") {
             if (Chilpa.autoplayDevice !== "") {
@@ -74,6 +82,7 @@ ApplicationWindow {
                 model: Chilpa.outputs
                 // El id de la salida elegida. No se llama currentValue:
                 // ComboBox ya declara esa propiedad como final.
+                onActivated: ventana.recordar()
                 readonly property string deviceId:
                     currentIndex >= 0 && currentIndex < Chilpa.outputIds.length
                         ? Chilpa.outputIds[currentIndex]
@@ -83,6 +92,7 @@ ApplicationWindow {
                 id: bitPerfect
                 text: "Bit-perfect"
                 checked: true
+                onToggled: ventana.recordar()
             }
         }
 

@@ -37,6 +37,9 @@ pub mod chilpa_bridge {
         /// Las pistas encoladas y cuál suena.
         #[qproperty(QStringList, queue)]
         #[qproperty(i32, queue_index)]
+        /// Lo que se recordó de la última sesión.
+        #[qproperty(QString, remembered_output)]
+        #[qproperty(bool, remembered_bit_perfect)]
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
@@ -49,6 +52,10 @@ pub mod chilpa_bridge {
         #[qproperty(QString, autoplay_path)]
         #[qproperty(QString, autoplay_device)]
         type Chilpa = super::ChilpaRust;
+
+        /// Guarda la salida y la política elegidas.
+        #[qinvokable]
+        fn remember(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
 
         /// Vuelve a leer las salidas de la máquina.
         #[qinvokable]
@@ -95,6 +102,8 @@ pub struct ChilpaRust {
     artwork: QString,
     queue: QStringList,
     queue_index: i32,
+    remembered_output: QString,
+    remembered_bit_perfect: bool,
     format: QString,
     error: QString,
     playing: bool,
@@ -109,6 +118,7 @@ pub struct ChilpaRust {
 
 impl Default for ChilpaRust {
     fn default() -> Self {
+        let recordado = chilpa_api::Chilpa::new().settings();
         Self {
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
@@ -119,6 +129,8 @@ impl Default for ChilpaRust {
             artwork: QString::from(""),
             queue: QStringList::default(),
             queue_index: 0,
+            remembered_output: QString::from(&recordado.output),
+            remembered_bit_perfect: recordado.bit_perfect,
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -183,6 +195,11 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn remember(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
+        let id = device.to_string();
+        self.as_mut().rust_mut().api.remember(&id, bit_perfect);
     }
 
     pub fn pause(mut self: Pin<&mut Self>, paused: bool) {
