@@ -41,6 +41,9 @@ pub mod chilpa_bridge {
         /// Cada entrada es
         /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
         #[qproperty(QStringList, albums)]
+        /// Los resultados de la última búsqueda: un renglón por pista, con
+        /// "ruta, título, artista, álbum, duración".
+        #[qproperty(QStringList, results)]
         #[qproperty(QString, library_status)]
         /// Lo que se recordó de la última sesión.
         #[qproperty(QString, remembered_output)]
@@ -56,6 +59,8 @@ pub mod chilpa_bridge {
         /// de comandos. Vacío cuando no.
         #[qproperty(QString, autoplay_path)]
         #[qproperty(QString, autoplay_device)]
+        /// Una búsqueda de arranque, para probar la vista sin teclear.
+        #[qproperty(QString, initial_search)]
         type Chilpa = super::ChilpaRust;
 
         /// Guarda la salida y la política elegidas.
@@ -69,6 +74,14 @@ pub mod chilpa_bridge {
         /// Pone a sonar un archivo en la salida elegida.
         #[qinvokable]
         fn play(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+
+        /// Busca en la biblioteca.
+        #[qinvokable]
+        fn search(self: Pin<&mut Chilpa>, text: &QString);
+
+        /// Pone a sonar lo que encontró la búsqueda, desde esa posición.
+        #[qinvokable]
+        fn play_results(self: Pin<&mut Chilpa>, from: i32, device: &QString, bit_perfect: bool);
 
         /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
         #[qinvokable]
@@ -120,6 +133,8 @@ pub struct ChilpaRust {
     queue: QStringList,
     queue_index: i32,
     albums: QStringList,
+    results: QStringList,
+    result_paths: Vec<String>,
     library_status: QString,
     remembered_output: QString,
     remembered_bit_perfect: bool,
@@ -132,6 +147,7 @@ pub struct ChilpaRust {
     total_seconds: f64,
     autoplay_path: QString,
     autoplay_device: QString,
+    initial_search: QString,
     api: chilpa_api::Chilpa,
 }
 
@@ -149,6 +165,8 @@ impl Default for ChilpaRust {
             queue: QStringList::default(),
             queue_index: 0,
             albums: QStringList::default(),
+            results: QStringList::default(),
+            result_paths: Vec::new(),
             library_status: QString::from(""),
             remembered_output: QString::from(&recordado.output),
             remembered_bit_perfect: recordado.bit_perfect,
@@ -163,6 +181,7 @@ impl Default for ChilpaRust {
             // probarla sin tocar nada: chilpa-qt <archivo> [salida].
             autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
+            initial_search: QString::from(&std::env::var("CHILPA_BUSCAR").unwrap_or_default()),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -209,6 +228,49 @@ impl Chilpa {
         };
         self.as_mut().set_library_status(QString::from(&texto));
         self.as_mut().refresh_albums();
+    }
+
+    pub fn search(mut self: Pin<&mut Self>, text: &QString) {
+        let texto = text.to_string();
+        let encontrados = self.as_mut().rust_mut().api.search(&texto, 200);
+        let mut lista = QList::<QString>::default();
+        let mut rutas = Vec::with_capacity(encontrados.len());
+        for t in &encontrados {
+            let segundos = t.duration_ms / 1000;
+            lista.append(QString::from(&format!(
+                "{}\t{}\t{}\t{}\t{}:{:02}",
+                t.path,
+                t.title,
+                t.artist,
+                t.album,
+                segundos / 60,
+                segundos % 60
+            )));
+            rutas.push(t.path.clone());
+        }
+        self.as_mut().set_results(QStringList::from(&lista));
+        self.as_mut().rust_mut().result_paths = rutas;
+    }
+
+    pub fn play_results(mut self: Pin<&mut Self>, from: i32, device: &QString, bit_perfect: bool) {
+        let dispositivo = device.to_string();
+        let desde = from.max(0) as usize;
+        let rutas: Vec<String> = self
+            .as_mut()
+            .rust_mut()
+            .result_paths
+            .iter()
+            .skip(desde)
+            .cloned()
+            .collect();
+        let titulos = self.as_mut().rust_mut().api.play_tracks(&rutas, &dispositivo, bit_perfect);
+        let mut lista = QList::<QString>::default();
+        for t in &titulos {
+            lista.append(QString::from(t));
+        }
+        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!titulos.is_empty());
     }
 
     pub fn refresh_albums(mut self: Pin<&mut Self>) {
