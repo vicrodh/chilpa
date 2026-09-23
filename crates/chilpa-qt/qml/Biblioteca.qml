@@ -119,7 +119,9 @@ Rectangle {
                 MouseArea {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Chilpa.playAlbum(parseInt(datos[0]), raiz.deviceId, raiz.bitPerfect)
+                    // Un clic abre el álbum; el doble clic lo echa a andar.
+                    onClicked: Chilpa.openAlbumTracks(parseInt(datos[0]), datos[1])
+                    onDoubleClicked: Chilpa.playAlbum(parseInt(datos[0]), raiz.deviceId, raiz.bitPerfect)
                 }
             }
         }

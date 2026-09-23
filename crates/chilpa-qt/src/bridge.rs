@@ -41,9 +41,12 @@ pub mod chilpa_bridge {
         /// Cada entrada es
         /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
         #[qproperty(QStringList, albums)]
-        /// Los resultados de la última búsqueda: un renglón por pista, con
-        /// "ruta, título, artista, álbum, duración".
+        /// Los resultados de la última búsqueda o del álbum abierto: un
+        /// renglón por pista, con "ruta, título, artista, álbum, duración".
         #[qproperty(QStringList, results)]
+        /// El álbum que se está mirando, vacío si no hay ninguno abierto.
+        #[qproperty(QString, open_album)]
+        #[qproperty(i64, open_album_id)]
         #[qproperty(QString, library_status)]
         /// Lo que se recordó de la última sesión.
         #[qproperty(QString, remembered_output)]
@@ -61,6 +64,8 @@ pub mod chilpa_bridge {
         #[qproperty(QString, autoplay_device)]
         /// Una búsqueda de arranque, para probar la vista sin teclear.
         #[qproperty(QString, initial_search)]
+        /// Un álbum de arranque, por id, para probar la vista sin ratón.
+        #[qproperty(i64, initial_album)]
         type Chilpa = super::ChilpaRust;
 
         /// Guarda la salida y la política elegidas.
@@ -90,6 +95,14 @@ pub mod chilpa_bridge {
         /// Vuelve a leer los álbumes de la biblioteca.
         #[qinvokable]
         fn refresh_albums(self: Pin<&mut Chilpa>);
+
+        /// Abre un álbum: muestra sus pistas sin reproducirlas.
+        #[qinvokable]
+        fn open_album_tracks(self: Pin<&mut Chilpa>, album_id: i64, title: &QString);
+
+        /// Cierra el álbum abierto.
+        #[qinvokable]
+        fn close_album(self: Pin<&mut Chilpa>);
 
         /// Pone a sonar un álbum completo.
         #[qinvokable]
@@ -135,6 +148,8 @@ pub struct ChilpaRust {
     albums: QStringList,
     results: QStringList,
     result_paths: Vec<String>,
+    open_album: QString,
+    open_album_id: i64,
     library_status: QString,
     remembered_output: QString,
     remembered_bit_perfect: bool,
@@ -148,6 +163,7 @@ pub struct ChilpaRust {
     autoplay_path: QString,
     autoplay_device: QString,
     initial_search: QString,
+    initial_album: i64,
     api: chilpa_api::Chilpa,
 }
 
@@ -167,6 +183,8 @@ impl Default for ChilpaRust {
             albums: QStringList::default(),
             results: QStringList::default(),
             result_paths: Vec::new(),
+            open_album: QString::from(""),
+            open_album_id: 0,
             library_status: QString::from(""),
             remembered_output: QString::from(&recordado.output),
             remembered_bit_perfect: recordado.bit_perfect,
@@ -182,6 +200,7 @@ impl Default for ChilpaRust {
             autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             initial_search: QString::from(&std::env::var("CHILPA_BUSCAR").unwrap_or_default()),
+            initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -287,6 +306,38 @@ impl Chilpa {
             lista.append(QString::from(&renglon));
         }
         self.as_mut().set_albums(QStringList::from(&lista));
+    }
+
+    pub fn open_album_tracks(mut self: Pin<&mut Self>, album_id: i64, title: &QString) {
+        let pistas = self.as_mut().rust_mut().api.album_tracks(album_id);
+        let mut lista = QList::<QString>::default();
+        let mut rutas = Vec::with_capacity(pistas.len());
+        for t in &pistas {
+            let segundos = t.duration_ms / 1000;
+            let numero = t.track_number.map(|n| format!("{n}. ")).unwrap_or_default();
+            lista.append(QString::from(&format!(
+                "{}\t{}{}\t{}\t{}\t{}:{:02}",
+                t.path,
+                numero,
+                t.title,
+                t.artist,
+                t.album,
+                segundos / 60,
+                segundos % 60
+            )));
+            rutas.push(t.path.clone());
+        }
+        self.as_mut().set_results(QStringList::from(&lista));
+        self.as_mut().rust_mut().result_paths = rutas;
+        self.as_mut().set_open_album(title.clone());
+        self.as_mut().set_open_album_id(album_id);
+    }
+
+    pub fn close_album(mut self: Pin<&mut Self>) {
+        self.as_mut().set_open_album(QString::from(""));
+        self.as_mut().set_open_album_id(0);
+        self.as_mut().set_results(QStringList::default());
+        self.as_mut().rust_mut().result_paths.clear();
     }
 
     pub fn play_album(mut self: Pin<&mut Self>, album_id: i64, device: &QString, bit_perfect: bool) {

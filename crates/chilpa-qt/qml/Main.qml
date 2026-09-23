@@ -26,7 +26,10 @@ ApplicationWindow {
     }
     Shortcut {
         sequence: "Escape"
-        onActivated: busqueda.text = ""
+        onActivated: {
+            busqueda.text = ""
+            Chilpa.closeAlbum()
+        }
     }
     Shortcut {
         sequence: "Ctrl+F"
@@ -62,6 +65,7 @@ ApplicationWindow {
     Component.onCompleted: {
         // Para probar sin teclado: CHILPA_BUSCAR deja la búsqueda escrita.
         if (Chilpa.initialSearch !== "") busqueda.text = Chilpa.initialSearch
+        if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshOutputs()
         Chilpa.refreshAlbums()
         const guardada = Chilpa.outputIds.indexOf(Chilpa.rememberedOutput)
@@ -269,7 +273,7 @@ ApplicationWindow {
             Layout.minimumHeight: 200
             deviceId: salidas.deviceId
             bitPerfect: bitPerfect.checked
-            visible: busqueda.text !== ""
+            visible: busqueda.text !== "" || Chilpa.openAlbum !== ""
         }
 
         // La biblioteca, con sus álbumes.
@@ -281,7 +285,7 @@ ApplicationWindow {
             Layout.minimumHeight: 260
             deviceId: salidas.deviceId
             bitPerfect: bitPerfect.checked
-            visible: Chilpa.albums.length > 0 && busqueda.text === ""
+            visible: Chilpa.albums.length > 0 && busqueda.text === "" && Chilpa.openAlbum === ""
         }
 
         // La cola. Se asoma solo cuando hay más de una pista, y solo
