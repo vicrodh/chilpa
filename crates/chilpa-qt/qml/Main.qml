@@ -12,7 +12,7 @@ import com.blitzfc.chilpa
 ApplicationWindow {
     id: ventana
     width: 860
-    height: 620
+    height: 760
     visible: true
     title: "Chilpa"
     color: "#faf6f2"
@@ -228,6 +228,9 @@ ApplicationWindow {
         Biblioteca {
             Layout.fillWidth: true
             Layout.fillHeight: true
+            // Una fila de portadas cabe completa, con sus tres renglones de
+            // texto; menos que esto los recorta.
+            Layout.minimumHeight: 260
             deviceId: salidas.deviceId
             bitPerfect: bitPerfect.checked
             visible: Chilpa.albums.length > 0

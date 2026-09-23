@@ -53,7 +53,7 @@ Rectangle {
             Layout.fillHeight: true
             clip: true
             cellWidth: 160
-            cellHeight: 200
+            cellHeight: 216
             model: Chilpa.albums
 
             delegate: Item {
@@ -97,9 +97,18 @@ Rectangle {
                     }
                     Label {
                         Layout.fillWidth: true
-                        text: datos[2] + (datos[3] ? " · " + datos[3] : "")
+                        text: datos[2]
                         elide: Text.ElideRight
                         font.pixelSize: 12
+                        color: "#7a411d1f"
+                    }
+                    // El año y las pistas en su propio renglón: pegados al
+                    // artista se los comía el elide.
+                    Label {
+                        Layout.fillWidth: true
+                        text: (datos[3] ? datos[3] + " · " : "") + datos[4] +
+                              (datos[4] === "1" ? " pista" : " pistas")
+                        font.pixelSize: 11
                         color: "#7a411d1f"
                     }
                 }
