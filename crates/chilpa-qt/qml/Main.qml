@@ -47,7 +47,7 @@ ApplicationWindow {
     Shortcut {
         sequence: "Ctrl+Left"
         enabled: Chilpa.playing
-        onActivated: Chilpa.previousTrack(salidas.deviceId, bitPerfect.checked)
+        onActivated: Chilpa.previousTrack()
     }
     Shortcut {
         sequence: StandardKey.MoveToNextChar
@@ -67,9 +67,10 @@ ApplicationWindow {
         return m + ":" + (s < 10 ? "0" : "") + s
     }
 
-    // La salida y la política se recuerdan entre sesiones.
-    function recordar() {
-        Chilpa.remember(salidas.deviceId, bitPerfect.checked)
+    // La salida y la política se eligen una vez y quedan en el puente, que
+    // las recuerda para la próxima sesión. Cualquier vista las lee de ahí.
+    function elegir() {
+        Chilpa.choose(salidas.deviceId, bitPerfect.checked)
     }
 
     Component.onCompleted: {
@@ -78,20 +79,28 @@ ApplicationWindow {
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshOutputs()
         Chilpa.refreshAlbums()
-        const guardada = Chilpa.outputIds.indexOf(Chilpa.rememberedOutput)
+        const guardada = Chilpa.outputIds.indexOf(Chilpa.device)
         if (guardada >= 0) salidas.currentIndex = guardada
-        bitPerfect.checked = Chilpa.rememberedBitPerfect
+        bitPerfect.checked = Chilpa.wantBitPerfect
+        // Sin salida recordada, la primera de la lista es la que va a sonar:
+        // el puente tiene que saberlo antes del primer play.
+        if (guardada < 0 && Chilpa.outputIds.length > 0) Chilpa.device = salidas.deviceId
         // Arrancada con un archivo: se elige la salida pedida y suena sola.
         if (Chilpa.autoplayPath !== "") {
             if (Chilpa.autoplayDevice !== "") {
                 const i = Chilpa.outputIds.indexOf(Chilpa.autoplayDevice)
-                if (i >= 0) salidas.currentIndex = i
+                // Una salida pedida por la línea de comandos suena, pero no
+                // se queda de preferida: es para probar, no para elegir.
+                if (i >= 0) {
+                    salidas.currentIndex = i
+                    Chilpa.device = Chilpa.autoplayDevice
+                }
             }
             // Si apunta a una carpeta, se encola entera.
             if (Chilpa.autoplayPath.endsWith("/"))
-                Chilpa.playFolder(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
+                Chilpa.playFolder(Chilpa.autoplayPath)
             else
-                Chilpa.play(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
+                Chilpa.play(Chilpa.autoplayPath)
         }
     }
 
@@ -111,7 +120,7 @@ ApplicationWindow {
     FolderDialog {
         id: dialogoCarpeta
         title: "Abrir una carpeta"
-        onAccepted: Chilpa.playFolder(selectedFolder, salidas.deviceId, bitPerfect.checked)
+        onAccepted: Chilpa.playFolder(selectedFolder)
     }
 
     // Abrir una radio: una dirección y ya.
@@ -122,7 +131,7 @@ ApplicationWindow {
         width: 420
         standardButtons: Dialog.Ok | Dialog.Cancel
         onAccepted: if (direccion.text !== "")
-            Chilpa.playUrl(direccion.text, salidas.deviceId, bitPerfect.checked)
+            Chilpa.playUrl(direccion.text)
 
         ColumnLayout {
             anchors.fill: parent
@@ -138,7 +147,7 @@ ApplicationWindow {
         id: dialogoLista
         title: "Abrir una lista"
         nameFilters: ["Listas (*.m3u *.m3u8)"]
-        onAccepted: Chilpa.playPlaylist(selectedFile, salidas.deviceId, bitPerfect.checked)
+        onAccepted: Chilpa.playPlaylist(selectedFile)
     }
 
     FileDialog {
@@ -154,7 +163,7 @@ ApplicationWindow {
         id: dialogo
         title: "Abrir un archivo de audio"
         nameFilters: ["Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.aiff *.dsf)"]
-        onAccepted: Chilpa.play(selectedFile, salidas.deviceId, bitPerfect.checked)
+        onAccepted: Chilpa.play(selectedFile)
     }
 
     ColumnLayout {
@@ -171,7 +180,7 @@ ApplicationWindow {
                 model: Chilpa.outputs
                 // El id de la salida elegida. No se llama currentValue:
                 // ComboBox ya declara esa propiedad como final.
-                onActivated: ventana.recordar()
+                onActivated: ventana.elegir()
                 readonly property string deviceId:
                     currentIndex >= 0 && currentIndex < Chilpa.outputIds.length
                         ? Chilpa.outputIds[currentIndex]
@@ -187,7 +196,7 @@ ApplicationWindow {
                 id: bitPerfect
                 text: "Bit-perfect"
                 checked: true
-                onToggled: ventana.recordar()
+                onToggled: ventana.elegir()
             }
         }
 
@@ -228,7 +237,7 @@ ApplicationWindow {
             Button {
                 text: "Anterior"
                 enabled: Chilpa.playing
-                onClicked: Chilpa.previousTrack(salidas.deviceId, bitPerfect.checked)
+                onClicked: Chilpa.previousTrack()
             }
             Button {
                 text: Chilpa.paused ? "Reanudar" : "Pausa"
@@ -349,8 +358,6 @@ ApplicationWindow {
             Layout.fillWidth: true
             Layout.fillHeight: true
             Layout.minimumHeight: 200
-            deviceId: salidas.deviceId
-            bitPerfect: bitPerfect.checked
             visible: busqueda.text !== "" || Chilpa.openAlbum !== ""
         }
 
@@ -361,8 +368,6 @@ ApplicationWindow {
             // Una fila de portadas cabe completa, con sus tres renglones de
             // texto; menos que esto los recorta.
             Layout.minimumHeight: 260
-            deviceId: salidas.deviceId
-            bitPerfect: bitPerfect.checked
             visible: Chilpa.albums.length > 0 && busqueda.text === "" && Chilpa.openAlbum === ""
         }
 
