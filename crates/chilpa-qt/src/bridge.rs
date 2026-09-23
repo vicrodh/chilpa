@@ -51,9 +51,11 @@ pub mod chilpa_bridge {
         /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
         #[qproperty(f64, scan_progress)]
         #[qproperty(bool, scanning)]
-        /// Lo que se recordó de la última sesión.
-        #[qproperty(QString, remembered_output)]
-        #[qproperty(bool, remembered_bit_perfect)]
+        /// Lo elegido para reproducir: la salida y si se exige bit-perfect.
+        /// Vive aquí, no en un control de la ventana, para que cualquier
+        /// layout lo lea sin depender de dónde quedó el selector.
+        #[qproperty(QString, device)]
+        #[qproperty(bool, want_bit_perfect)]
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
@@ -71,9 +73,9 @@ pub mod chilpa_bridge {
         #[qproperty(i64, initial_album)]
         type Chilpa = super::ChilpaRust;
 
-        /// Guarda la salida y la política elegidas.
+        /// Elige la salida y la política, y las recuerda para la próxima vez.
         #[qinvokable]
-        fn remember(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
+        fn choose(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
 
         /// Vuelve a leer las salidas de la máquina.
         #[qinvokable]
@@ -81,7 +83,7 @@ pub mod chilpa_bridge {
 
         /// Pone a sonar un archivo en la salida elegida.
         #[qinvokable]
-        fn play(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+        fn play(self: Pin<&mut Chilpa>, path: &QString);
 
         /// Busca en la biblioteca.
         #[qinvokable]
@@ -89,7 +91,7 @@ pub mod chilpa_bridge {
 
         /// Pone a sonar lo que encontró la búsqueda, desde esa posición.
         #[qinvokable]
-        fn play_results(self: Pin<&mut Chilpa>, from: i32, device: &QString, bit_perfect: bool);
+        fn play_results(self: Pin<&mut Chilpa>, from: i32);
 
         /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
         #[qinvokable]
@@ -109,15 +111,15 @@ pub mod chilpa_bridge {
 
         /// Pone a sonar un álbum completo.
         #[qinvokable]
-        fn play_album(self: Pin<&mut Chilpa>, album_id: i64, device: &QString, bit_perfect: bool);
+        fn play_album(self: Pin<&mut Chilpa>, album_id: i64);
 
         /// Pone a sonar una radio o cualquier stream por HTTP.
         #[qinvokable]
-        fn play_url(self: Pin<&mut Chilpa>, url: &QString, device: &QString, bit_perfect: bool);
+        fn play_url(self: Pin<&mut Chilpa>, url: &QString);
 
         /// Abre una lista M3U y la pone a sonar.
         #[qinvokable]
-        fn play_playlist(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+        fn play_playlist(self: Pin<&mut Chilpa>, path: &QString);
 
         /// Guarda la cola actual como lista M3U.
         #[qinvokable]
@@ -125,7 +127,7 @@ pub mod chilpa_bridge {
 
         /// Encola una carpeta entera.
         #[qinvokable]
-        fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
+        fn play_folder(self: Pin<&mut Chilpa>, folder: &QString);
 
         /// Salta a la siguiente pista de la cola.
         #[qinvokable]
@@ -133,7 +135,7 @@ pub mod chilpa_bridge {
 
         /// Vuelve a la anterior; en la primera, la reinicia.
         #[qinvokable]
-        fn previous_track(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
+        fn previous_track(self: Pin<&mut Chilpa>);
 
         /// Pausa o reanuda. No se llama set_paused: ese nombre ya lo usa el
         /// asignador que genera la propiedad `paused`.
@@ -176,8 +178,8 @@ pub struct ChilpaRust {
     library_status: QString,
     scan_progress: f64,
     scanning: bool,
-    remembered_output: QString,
-    remembered_bit_perfect: bool,
+    device: QString,
+    want_bit_perfect: bool,
     format: QString,
     error: QString,
     playing: bool,
@@ -213,8 +215,8 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
-            remembered_output: QString::from(&recordado.output),
-            remembered_bit_perfect: recordado.bit_perfect,
+            device: QString::from(&recordado.output),
+            want_bit_perfect: recordado.bit_perfect,
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -246,11 +248,11 @@ impl Chilpa {
         self.as_mut().set_output_ids(QStringList::from(&ids));
     }
 
-    pub fn play(mut self: Pin<&mut Self>, path: &QString, device: &QString, bit_perfect: bool) {
+    pub fn play(mut self: Pin<&mut Self>, path: &QString) {
         let ruta = path.to_string();
         // QML entrega la ruta de un diálogo de archivo como URL.
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let dispositivo = device.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         self.as_mut().set_error(QString::from(""));
         self.as_mut().set_track(QString::from(&ruta));
         self.as_mut().set_playing(true);
@@ -293,8 +295,8 @@ impl Chilpa {
         self.as_mut().rust_mut().result_paths = rutas;
     }
 
-    pub fn play_results(mut self: Pin<&mut Self>, from: i32, device: &QString, bit_perfect: bool) {
-        let dispositivo = device.to_string();
+    pub fn play_results(mut self: Pin<&mut Self>, from: i32) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         let desde = from.max(0) as usize;
         let rutas: Vec<String> = self
             .as_mut()
@@ -362,8 +364,8 @@ impl Chilpa {
         self.as_mut().rust_mut().result_paths.clear();
     }
 
-    pub fn play_album(mut self: Pin<&mut Self>, album_id: i64, device: &QString, bit_perfect: bool) {
-        let dispositivo = device.to_string();
+    pub fn play_album(mut self: Pin<&mut Self>, album_id: i64) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         let pistas = self.as_mut().rust_mut().api.play_album(album_id, &dispositivo, bit_perfect);
         let mut lista = QList::<QString>::default();
         for pista in &pistas {
@@ -374,9 +376,9 @@ impl Chilpa {
         self.as_mut().set_playing(!pistas.is_empty());
     }
 
-    pub fn play_url(mut self: Pin<&mut Self>, url: &QString, device: &QString, bit_perfect: bool) {
+    pub fn play_url(mut self: Pin<&mut Self>, url: &QString) {
         let direccion = url.to_string();
-        let dispositivo = device.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         self.as_mut().rust_mut().api.play_url(&direccion, &dispositivo, bit_perfect);
         let mut lista = QList::<QString>::default();
         lista.append(QString::from(&direccion));
@@ -386,15 +388,10 @@ impl Chilpa {
         self.as_mut().set_track(QString::from(&direccion));
     }
 
-    pub fn play_playlist(
-        mut self: Pin<&mut Self>,
-        path: &QString,
-        device: &QString,
-        bit_perfect: bool,
-    ) {
+    pub fn play_playlist(mut self: Pin<&mut Self>, path: &QString) {
         let ruta = path.to_string();
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let dispositivo = device.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         let titulos = self.as_mut().rust_mut().api.play_playlist(
             std::path::Path::new(&ruta),
             &dispositivo,
@@ -419,10 +416,10 @@ impl Chilpa {
     }
 
     /// Encola una carpeta entera y la echa a andar.
-    pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString, device: &QString, bit_perfect: bool) {
+    pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let ruta = folder.to_string();
         let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
-        let dispositivo = device.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         let pistas = self
             .as_mut()
             .rust_mut()
@@ -437,8 +434,15 @@ impl Chilpa {
         self.as_mut().set_playing(!pistas.is_empty());
     }
 
-    pub fn remember(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
+    /// La salida y la política elegidas, que es lo que usa todo lo que suena.
+    fn elegido(self: Pin<&mut Self>) -> (String, bool) {
+        (self.device.to_string(), self.want_bit_perfect)
+    }
+
+    pub fn choose(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
         let id = device.to_string();
+        self.as_mut().set_device(device.clone());
+        self.as_mut().set_want_bit_perfect(bit_perfect);
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
     }
 
@@ -446,8 +450,8 @@ impl Chilpa {
         self.as_mut().rust_mut().api.next_track();
     }
 
-    pub fn previous_track(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
-        let dispositivo = device.to_string();
+    pub fn previous_track(mut self: Pin<&mut Self>) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
         self.as_mut().rust_mut().api.previous_track(&dispositivo, bit_perfect);
     }
 

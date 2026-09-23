@@ -13,8 +13,6 @@ Rectangle {
     color: "#ffffff"
     border.color: "#1a411d1f"
 
-    property string deviceId: ""
-    property bool bitPerfect: true
 
     ColumnLayout {
         anchors.fill: parent
@@ -35,7 +33,7 @@ Rectangle {
             }
             Button {
                 text: "Reproducir"
-                onClicked: Chilpa.playAlbum(Chilpa.openAlbumId, raiz.deviceId, raiz.bitPerfect)
+                onClicked: Chilpa.playAlbum(Chilpa.openAlbumId)
             }
             Button {
                 text: "Cerrar"
@@ -92,7 +90,7 @@ Rectangle {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: Chilpa.playResults(index, raiz.deviceId, raiz.bitPerfect)
+                onClicked: Chilpa.playResults(index)
             }
         }
     }

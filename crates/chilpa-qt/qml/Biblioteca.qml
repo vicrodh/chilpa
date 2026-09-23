@@ -14,8 +14,6 @@ Rectangle {
     border.color: "#1a411d1f"
 
     // Qué salida y con qué política se reproduce; las decide la ventana.
-    property string deviceId: ""
-    property bool bitPerfect: true
 
     // Cada renglón viene como "id, título, artista, año, pistas, portada".
     function campos(renglon) {
@@ -128,7 +126,7 @@ Rectangle {
                     cursorShape: Qt.PointingHandCursor
                     // Un clic abre el álbum; el doble clic lo echa a andar.
                     onClicked: Chilpa.openAlbumTracks(parseInt(datos[0]), datos[1])
-                    onDoubleClicked: Chilpa.playAlbum(parseInt(datos[0]), raiz.deviceId, raiz.bitPerfect)
+                    onDoubleClicked: Chilpa.playAlbum(parseInt(datos[0]))
                 }
             }
         }
