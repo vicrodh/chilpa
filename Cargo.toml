@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "crates/chilpa-models",
     "crates/chilpa-audio",
+    "crates/chilpa-tags",
     "crates/chilpa-decode",
     "crates/chilpa-dsd",
     "crates/chilpa-sacd",
@@ -22,6 +23,7 @@ rust-version = "1.90"
 [workspace.dependencies]
 chilpa-models = { path = "crates/chilpa-models" }
 chilpa-audio = { path = "crates/chilpa-audio" }
+chilpa-tags = { path = "crates/chilpa-tags" }
 chilpa-decode = { path = "crates/chilpa-decode" }
 chilpa-dsd = { path = "crates/chilpa-dsd" }
 chilpa-sacd = { path = "crates/chilpa-sacd" }
