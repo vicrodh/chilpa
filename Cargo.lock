@@ -145,6 +145,7 @@ dependencies = [
  "chilpa-library",
  "chilpa-models",
  "chilpa-sacd",
+ "chilpa-stream",
  "chilpa-tags",
  "rusqlite",
 ]
@@ -154,6 +155,7 @@ name = "chilpa-decode"
 version = "0.0.0"
 dependencies = [
  "chilpa-audio",
+ "chilpa-stream",
  "symphonia",
 ]
 

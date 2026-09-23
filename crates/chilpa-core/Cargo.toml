@@ -9,6 +9,7 @@ rust-version.workspace = true
 chilpa-models.workspace = true
 chilpa-audio.workspace = true
 chilpa-decode.workspace = true
+chilpa-stream.workspace = true
 chilpa-tags.workspace = true
 chilpa-library.workspace = true
 rusqlite = "0.40"

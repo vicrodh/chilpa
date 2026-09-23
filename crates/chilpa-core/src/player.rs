@@ -36,6 +36,8 @@ pub enum PlayerEvent {
     },
     /// Frames entregados hasta ahora.
     Progress { frames: u64 },
+    /// Lo que la estación dice que suena.
+    StreamTitle { title: String },
     /// Terminó de forma natural.
     Finished { frames: u64 },
     /// Se detuvo porque alguien lo pidió.
@@ -210,6 +212,9 @@ fn reproducir(
     // DSD no pasa por el decodificador de PCM: va por DoP, y hoy se
     // reproduce de a una pista.
     if let Some(primera) = paths.first() {
+        if es_url(primera) {
+            return reproducir_stream(primera, device, &caps, policy, stop, pause, open, events);
+        }
         if es_sacd(primera) {
             return reproducir_sacd(primera, device, &caps, stop, pause, skip, open, events);
         }
@@ -255,6 +260,69 @@ fn reproducir(
         .last()
         .map(|r| r.outcome.clone())
         .unwrap_or(Outcome::Finished { frames: 0 }))
+}
+
+/// Cierto si lo que se pidió es una URL y no un archivo.
+fn es_url(path: &Path) -> bool {
+    path.to_string_lossy().starts_with("http://") || path.to_string_lossy().starts_with("https://")
+}
+
+/// Reproduce una radio o cualquier stream por HTTP.
+#[allow(clippy::too_many_arguments)]
+fn reproducir_stream(
+    url: &Path,
+    device: &str,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    open: &mut OpenSink,
+    events: &Sender<PlayerEvent>,
+) -> Result<Outcome, PlayError> {
+    let direccion = url.to_string_lossy().to_string();
+    let stream = chilpa_stream::open(&direccion)
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+    let titulos = stream.now_playing();
+    let estacion = stream.info().name.clone();
+
+    let ruta = url.to_path_buf();
+    let eventos = events.clone();
+    let etiqueta = chilpa_tags::Tags {
+        title: estacion.clone().or_else(|| Some(direccion.clone())),
+        album: Some("Radio".into()),
+        ..chilpa_tags::Tags::default()
+    };
+
+    let played = crate::playback::play_stream(
+        stream,
+        caps,
+        policy,
+        stop,
+        pause,
+        |formato| open(device, formato),
+        &mut |delivery| {
+            let _ = eventos.send(PlayerEvent::Started {
+                path: ruta.clone(),
+                opened: delivery.opened,
+                bit_perfect: delivery.is_bit_perfect(),
+                total_frames: None,
+                tags: Some(etiqueta.clone()),
+                artwork: None,
+                index: 0,
+                queue_len: 1,
+                dsd_multiple: None,
+            });
+        },
+        &mut |frames| {
+            // El título de la estación cambia con cada canción; se publica
+            // con el progreso, que es lo único que viaja seguido.
+            if let Some(titulo) = titulos.get() {
+                let _ = events.send(PlayerEvent::StreamTitle { title: titulo });
+            }
+            let _ = events.send(PlayerEvent::Progress { frames });
+        },
+    )?;
+    Ok(played.outcome)
 }
 
 /// Cierto si el archivo es una imagen de SACD.

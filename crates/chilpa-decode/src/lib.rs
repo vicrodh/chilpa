@@ -74,11 +74,30 @@ impl Decoded {
     /// Abre un archivo y prepara su decodificador.
     pub fn open(path: &Path) -> Result<Self, DecodeError> {
         let file = File::open(path).map_err(DecodeError::Open)?;
-        let mss = MediaSourceStream::new(Box::new(file), Default::default());
         let mut hint = Hint::new();
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
             hint.with_extension(ext);
         }
+        Self::from_source(Box::new(file), hint)
+    }
+
+    /// Abre un stream de red. No tiene duración ni se puede buscar en él.
+    ///
+    /// El formato se toma de lo que anunció el servidor: una URL de radio
+    /// casi nunca trae extensión, y adivinar por el nombre falla.
+    pub fn open_stream(stream: chilpa_stream::HttpStream) -> Result<Self, DecodeError> {
+        let mut hint = Hint::new();
+        if let Some(ext) = stream.info().extension_hint() {
+            hint.with_extension(&ext);
+        }
+        Self::from_source(Box::new(stream), hint)
+    }
+
+    fn from_source(
+        fuente: Box<dyn symphonia::core::io::MediaSource>,
+        hint: Hint,
+    ) -> Result<Self, DecodeError> {
+        let mss = MediaSourceStream::new(fuente, Default::default());
         let probed = symphonia::default::get_probe()
             .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;

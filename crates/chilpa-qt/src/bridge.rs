@@ -108,6 +108,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_album(self: Pin<&mut Chilpa>, album_id: i64, device: &QString, bit_perfect: bool);
 
+        /// Pone a sonar una radio o cualquier stream por HTTP.
+        #[qinvokable]
+        fn play_url(self: Pin<&mut Chilpa>, url: &QString, device: &QString, bit_perfect: bool);
+
         /// Abre una lista M3U y la pone a sonar.
         #[qinvokable]
         fn play_playlist(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
@@ -366,6 +370,18 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn play_url(mut self: Pin<&mut Self>, url: &QString, device: &QString, bit_perfect: bool) {
+        let direccion = url.to_string();
+        let dispositivo = device.to_string();
+        self.as_mut().rust_mut().api.play_url(&direccion, &dispositivo, bit_perfect);
+        let mut lista = QList::<QString>::default();
+        lista.append(QString::from(&direccion));
+        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(true);
+        self.as_mut().set_track(QString::from(&direccion));
     }
 
     pub fn play_playlist(
