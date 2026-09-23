@@ -27,6 +27,9 @@ PERMISIVAS = {
     "MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD", "CC0-1.0",
     "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception", "BSL-1.0", "MPL-2.0",
+    # Los certificados raíz de Mozilla vienen bajo esta licencia de datos:
+    # permisiva, y solo cubre la lista de certificados, no código.
+    "CDLA-Permissive-2.0",
 }
 
 # Copyleft fuerte: se puede usar, y el binario hereda sus términos.
@@ -70,7 +73,7 @@ def licencias(expr):
 PREFERENCIA = [
     "MIT", "MIT-0", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Zlib", "0BSD", "CC0-1.0",
     "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0", "MPL-2.0",
-    "Apache-2.0 WITH LLVM-exception", "Apache-2.0",
+    "CDLA-Permissive-2.0", "Apache-2.0 WITH LLVM-exception", "Apache-2.0",
 ]
 
 

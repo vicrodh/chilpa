@@ -5,6 +5,7 @@ members = [
     "crates/chilpa-audio",
     "crates/chilpa-tags",
     "crates/chilpa-library",
+    "crates/chilpa-stream",
     "crates/chilpa-decode",
     "crates/chilpa-dsd",
     "crates/chilpa-sacd",
@@ -26,6 +27,7 @@ chilpa-models = { path = "crates/chilpa-models" }
 chilpa-audio = { path = "crates/chilpa-audio" }
 chilpa-tags = { path = "crates/chilpa-tags" }
 chilpa-library = { path = "crates/chilpa-library" }
+chilpa-stream = { path = "crates/chilpa-stream" }
 chilpa-decode = { path = "crates/chilpa-decode" }
 chilpa-dsd = { path = "crates/chilpa-dsd" }
 chilpa-sacd = { path = "crates/chilpa-sacd" }

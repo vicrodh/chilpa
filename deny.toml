@@ -7,7 +7,7 @@
 allow = [
     "MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD",
     "CC0-1.0", "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0",
-    "MPL-2.0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception",
+    "MPL-2.0", "CDLA-Permissive-2.0", "Apache-2.0", "Apache-2.0 WITH LLVM-exception",
     # Copyleft: permitidas, y el binario hereda sus términos.
     "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
     "GPL-3.0", "GPL-3.0-only", "GPL-3.0-or-later",
