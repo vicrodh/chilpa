@@ -35,6 +35,8 @@ pub enum Rule {
     ShorterThanMs(u64),
     /// De ese artista, sin distinguir mayúsculas.
     ArtistIs(String),
+    /// De ese género.
+    GenreIs(String),
 }
 
 /// Cómo se ordena lo que sale.
@@ -130,6 +132,13 @@ fn condicion(regla: &Rule, ahora: i64) -> (String, Vec<Value>) {
         ),
         Rule::ArtistIs(nombre) => (
             "t.artist = ? COLLATE NOCASE".into(),
+            vec![Value::Text(nombre.clone())],
+        ),
+        Rule::GenreIs(nombre) => (
+            "EXISTS (SELECT 1 FROM track_genres tg
+                     JOIN genres g ON g.id = tg.genre_id
+                     WHERE tg.track_id = t.id AND g.name = ?)"
+                .into(),
             vec![Value::Text(nombre.clone())],
         ),
     }

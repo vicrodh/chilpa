@@ -437,6 +437,36 @@ impl Chilpa {
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
+    /// Los géneros de la biblioteca, del más común al menos.
+    pub fn genres(&mut self, limit: usize) -> Vec<(String, usize)> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        let mut g = lib.genres().unwrap_or_default();
+        g.truncate(limit);
+        g
+    }
+
+    /// Pone a sonar un género, revuelto.
+    pub fn play_genre(&mut self, genre: &str, device: &str, bit_perfect: bool) -> Vec<String> {
+        let lista = chilpa_library::SmartList::new(
+            genre,
+            vec![chilpa_library::Rule::GenreIs(genre.to_string())],
+            chilpa_library::SmartOrder::Random,
+            300,
+        );
+        let Some(lib) = self.library() else { return Vec::new() };
+        let rutas: Vec<String> = lib
+            .smart_tracks(&lista)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| t.external_id)
+            .collect();
+        if rutas.is_empty() {
+            self.now.error = format!("no hay nada de {genre}");
+            return Vec::new();
+        }
+        self.play_tracks(&rutas, device, bit_perfect)
+    }
+
     /// Las listas inteligentes que Chilpa trae de fábrica, con cuántas
     /// pistas les salen hoy.
     ///

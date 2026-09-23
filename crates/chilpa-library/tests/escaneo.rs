@@ -25,6 +25,7 @@ fn album(nombre: &str, pistas: usize) -> Option<PathBuf> {
             .args(["-metadata", "artist=Artista"])
             .args(["-metadata", "album=Disco"])
             .args(["-metadata", &format!("track={i}")])
+            .args(["-metadata", "genre=Rock"])
             .arg(&destino)
             .output()
             .ok()?
@@ -169,5 +170,28 @@ fn la_portada_de_la_carpeta_se_usa_cuando_el_archivo_no_trae_una() {
         Some(cover.display().to_string().as_str()),
         "se tomó la portada de la carpeta"
     );
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn los_generos_del_archivo_entran_a_la_biblioteca() {
+    let Some(dir) = album("generos", 2) else {
+        eprintln!("sin ffmpeg: se salta");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+
+    let generos = lib.genres().unwrap();
+    assert_eq!(generos, vec![("Rock".to_string(), 2)], "un género con sus dos pistas");
+
+    // Y cada pista lo trae.
+    let source = lib.source_id("local", "default").unwrap();
+    let id = lib
+        .track_by_path(source, &dir.join("disco 1").join("01-pista.flac"))
+        .unwrap()
+        .expect("la pista está");
+    assert_eq!(lib.track_genres(id).unwrap(), vec!["Rock".to_string()]);
+
     let _ = std::fs::remove_dir_all(dir);
 }

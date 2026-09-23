@@ -35,6 +35,7 @@ ApplicationWindow {
         if (Chilpa.initialSearch !== "") Chilpa.search(Chilpa.initialSearch)
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshAlbums()
+        if (Chilpa.initialRescan) Chilpa.rescan()
         // Arrancada con un archivo: suena sola en la salida que se le pida.
         if (Chilpa.autoplayPath !== "") {
             // Una salida pedida por la línea de comandos suena, pero no se

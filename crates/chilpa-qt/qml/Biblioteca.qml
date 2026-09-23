@@ -100,12 +100,21 @@ Rectangle {
             }
 
             Item { Layout.fillWidth: true }
-            ProgressBar {
+            // Una barra propia, de dos rectángulos: la del estilo del
+            // sistema se queja cuando aparece dentro de un RowLayout y llena
+            // la consola de avisos que no son nuestros.
+            Rectangle {
                 visible: Chilpa.scanning
                 Layout.preferredWidth: 160
-                from: 0
-                to: 1
-                value: Chilpa.scanProgress
+                Layout.preferredHeight: 6
+                radius: 3
+                color: "#e6ddd5"
+                Rectangle {
+                    height: parent.height
+                    width: parent.width * Math.max(0, Math.min(1, Chilpa.scanProgress))
+                    radius: parent.radius
+                    color: "#d7272b"
+                }
             }
             Label {
                 text: Chilpa.libraryStatus
