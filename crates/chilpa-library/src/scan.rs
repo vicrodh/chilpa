@@ -182,7 +182,16 @@ fn guardar_archivo(
     )
 }
 
-/// Le pone portada al álbum si todavía no tiene y este archivo trae una.
+/// Nombres de portada que se usan en las carpetas de música.
+const PORTADAS: &[&str] = &[
+    "cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.jpeg", "folder.png",
+    "front.jpg", "front.png", "album.jpg", "album.png", "Cover.jpg", "Folder.jpg",
+];
+
+/// Le pone portada al álbum si todavía no tiene.
+///
+/// Primero la del archivo; si no trae, la que esté junto a él en la carpeta,
+/// que es como guarda las portadas media biblioteca del mundo.
 fn guardar_portada(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite::Result<()> {
     let tiene: Option<String> = lib
         .db
@@ -191,13 +200,43 @@ fn guardar_portada(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusq
     if tiene.is_some() {
         return Ok(());
     }
-    if let Ok(Some(portada)) = chilpa_tags::extract_artwork(path, cache) {
+    let portada = chilpa_tags::extract_artwork(path, cache)
+        .ok()
+        .flatten()
+        .or_else(|| portada_en_carpeta(path));
+    if let Some(portada) = portada {
         lib.db.execute(
             "UPDATE albums SET artwork_path = ?2 WHERE id = ?1",
             params![album, portada.display().to_string()],
         )?;
     }
     Ok(())
+}
+
+/// La portada que esté junto al archivo, si la hay.
+fn portada_en_carpeta(path: &Path) -> Option<PathBuf> {
+    let dir = path.parent()?;
+    for nombre in PORTADAS {
+        let candidata = dir.join(nombre);
+        if candidata.is_file() {
+            return Some(candidata);
+        }
+    }
+    // Cualquier imagen suelta, si no hay una con nombre conocido.
+    let mut sueltas: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png"))
+                    .unwrap_or(false)
+        })
+        .collect();
+    sueltas.sort();
+    sueltas.into_iter().next()
 }
 
 fn album_id(lib: &Library, titulo: &str, artista: &str, año: Option<u32>) -> rusqlite::Result<i64> {
