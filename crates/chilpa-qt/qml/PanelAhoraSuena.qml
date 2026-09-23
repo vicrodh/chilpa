@@ -10,10 +10,15 @@ import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 Rectangle {
+    id: raiz
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
-    implicitHeight: 152
+    implicitHeight: compacto ? 112 : 152
+
+    // En una barra de abajo la tarjeta no cabe entera: la portada se
+    // encoge y el reloj deja de gritar.
+    property bool compacto: false
 
     // mm:ss, que es como se lee una duración.
     function reloj(segundos) {
@@ -24,12 +29,12 @@ Rectangle {
 
     RowLayout {
         anchors.fill: parent
-        anchors.margins: 16
+        anchors.margins: raiz.compacto ? 10 : 16
         spacing: 14
 
         Rectangle {
-            Layout.preferredWidth: 120
-            Layout.preferredHeight: 120
+            Layout.preferredWidth: raiz.compacto ? 64 : 120
+            Layout.preferredHeight: raiz.compacto ? 64 : 120
             radius: 8
             color: "#f0eae4"
             visible: Chilpa.playing || Chilpa.artwork !== ""
@@ -45,14 +50,14 @@ Rectangle {
                 text: "sin portada"
                 color: "#7a411d1f"
                 font.pixelSize: 11
-                visible: Chilpa.artwork === ""
+                visible: Chilpa.artwork === "" && !raiz.compacto
             }
         }
 
         ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 6
+            spacing: raiz.compacto ? 2 : 6
 
             Label {
                 Layout.fillWidth: true
@@ -73,12 +78,13 @@ Rectangle {
             Label {
                 text: Chilpa.format
                 color: "#7a411d1f"
+                visible: !raiz.compacto
             }
             Label {
                 text: Chilpa.totalSeconds > 0
                     ? reloj(Chilpa.seconds) + " / " + reloj(Chilpa.totalSeconds)
                     : reloj(Chilpa.seconds)
-                font.pixelSize: 26
+                font.pixelSize: raiz.compacto ? 13 : 26
                 color: "#411d1f"
             }
 

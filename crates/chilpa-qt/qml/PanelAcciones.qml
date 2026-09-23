@@ -9,6 +9,9 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import com.blitzfc.chilpa
 
+// El panel ocupa lo que ocupan sus botones. Quien lo coloca decide si le
+// sobra espacio a un lado; un relleno aquí adentro se comería la barra de
+// un acomodo que ponga algo más en el mismo renglón.
 RowLayout {
     spacing: 8
 
@@ -96,5 +99,4 @@ RowLayout {
         text: "Escanear a la biblioteca"
         onClicked: dialogoEscaneo.open()
     }
-    Item { Layout.fillWidth: true }
 }

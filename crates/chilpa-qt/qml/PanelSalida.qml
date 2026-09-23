@@ -15,6 +15,8 @@ RowLayout {
 
     // Para que un layout decida si quiere la caja de búsqueda aquí o aparte.
     property bool conBusqueda: true
+    // Lo mismo con el selector de acomodo.
+    property bool conLayout: true
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
@@ -44,6 +46,11 @@ RowLayout {
     CajaDeBusqueda {
         Layout.preferredWidth: 200
         visible: raiz.conBusqueda
+    }
+
+    SelectorDeLayout {
+        Layout.preferredWidth: 130
+        visible: raiz.conLayout
     }
 
     CheckBox {
