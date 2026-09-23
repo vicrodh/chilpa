@@ -178,6 +178,7 @@ dependencies = [
  "chilpa-models",
  "chilpa-plugin",
  "chilpa-tags",
+ "rusqlite",
  "wat",
 ]
 

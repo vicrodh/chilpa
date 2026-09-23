@@ -7,7 +7,7 @@
 
 use crate::host::{Host, Plugin, PluginError, Services};
 use crate::limits::Limits;
-use crate::manifest::Manifest;
+use crate::manifest::{Kind, Manifest};
 use crate::watchdog::{State, Watchdog};
 use crate::Reply;
 use std::collections::BTreeMap;
@@ -90,6 +90,25 @@ impl Registry {
             .values()
             .filter(|i| i.loaded() && self.watchdog.usable(&i.id))
             .map(|i| i.id.as_str())
+            .collect()
+    }
+
+    /// Los que sirven ahora y son de ese tipo, con su nombre, en el orden
+    /// en que se instalaron.
+    ///
+    /// El orden importa: un plugin no puede colarse antes que otro, y el
+    /// mapa está ordenado por id, así que la lista es siempre la misma.
+    pub fn usable_of_kind(&self, kind: Kind) -> Vec<(String, String)> {
+        self.plugins
+            .values()
+            .filter(|i| self.watchdog.usable(&i.id))
+            .filter_map(|i| {
+                let p = i.plugin.as_ref()?;
+                (p.manifest().kind == kind).then(|| {
+                    let name = if i.name.is_empty() { i.id.clone() } else { i.name.clone() };
+                    (i.id.clone(), name)
+                })
+            })
             .collect()
     }
 
