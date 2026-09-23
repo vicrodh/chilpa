@@ -26,5 +26,5 @@ pub use negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy, T
 pub use pack::{pack, PackError, Samples};
 pub use render::{render, render_with, FrameSource, Outcome};
 pub use gapless::{transition, Transition, Trimmer};
-pub use seek::{Cursor, SeekPlan};
+pub use seek::{Cursor, SeekPlan, SeekSignal};
 pub use sink::{AudioSink, SinkError, StopSignal};

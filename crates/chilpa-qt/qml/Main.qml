@@ -170,12 +170,15 @@ ApplicationWindow {
                     color: "#411d1f"
                 }
 
-                ProgressBar {
+                // La barra también sirve para saltar: se arrastra o se
+                // hace clic en cualquier punto.
+                Slider {
                     Layout.fillWidth: true
                     visible: Chilpa.totalSeconds > 0
                     from: 0
                     to: Chilpa.totalSeconds
                     value: Chilpa.seconds
+                    onMoved: Chilpa.seek(value)
                 }
                 Label {
                     text: Chilpa.bitPerfect ? "bit-perfect" : (Chilpa.playing ? "convertido" : "")

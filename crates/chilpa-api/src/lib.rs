@@ -171,6 +171,14 @@ impl Chilpa {
         pistas.iter().map(|p| p.display().to_string()).collect()
     }
 
+    /// Salta a ese segundo de la pista que suena.
+    pub fn seek(&mut self, seconds: f64) {
+        if let Some(p) = &self.player {
+            let seguro = seconds.max(0.0);
+            p.seek(std::time::Duration::from_secs_f64(seguro));
+        }
+    }
+
     /// Para lo que esté sonando.
     pub fn stop(&mut self) {
         if let Some(p) = &self.player {

@@ -60,6 +60,7 @@ pub struct Player {
     orders: Sender<Order>,
     events: Receiver<PlayerEvent>,
     stop: StopSignal,
+    seek: chilpa_audio::seek::SeekSignal,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -70,6 +71,8 @@ impl Player {
         let (events_tx, events_rx) = channel::<PlayerEvent>();
         let stop = StopSignal::new();
         let stop_hilo = stop.clone();
+        let seek = chilpa_audio::seek::SeekSignal::new();
+        let seek_hilo = seek.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -88,6 +91,7 @@ impl Player {
                                 &device,
                                 bit_perfect,
                                 &stop,
+                                &seek_hilo,
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
@@ -107,7 +111,7 @@ impl Player {
             })
             .expect("el hilo del reproductor arranca");
 
-        Self { orders: orders_tx, events: events_rx, stop, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, stop, seek, thread: Some(thread) }
     }
 
     /// Pide reproducir un archivo. Regresa de inmediato.
@@ -122,6 +126,12 @@ impl Player {
             device: device.to_string(),
             bit_perfect,
         });
+    }
+
+    /// Pide saltar a ese punto de la pista que suena. El salto se atiende
+    /// entre bloques; pedirlo no bloquea.
+    pub fn seek(&self, position: std::time::Duration) {
+        self.seek.request(position);
     }
 
     /// Pide parar. No espera al dispositivo.
@@ -159,6 +169,7 @@ fn reproducir(
     device: &str,
     bit_perfect: bool,
     stop: &StopSignal,
+    seek: &chilpa_audio::seek::SeekSignal,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
@@ -171,6 +182,7 @@ fn reproducir(
         &caps,
         policy,
         stop,
+        seek,
         |formato| open(device, formato),
         &mut |indice, ruta, delivery| {
             // Los tags y la portada se leen al arrancar cada pista, no al
