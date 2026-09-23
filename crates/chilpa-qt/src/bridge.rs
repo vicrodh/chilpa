@@ -1067,6 +1067,18 @@ impl Chilpa {
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
     }
 
+    pub fn automix(mut self: Pin<&mut Self>) {
+        let mezcladas = self.as_mut().rust_mut().api.automix();
+        if mezcladas > 0 {
+            self.as_mut().set_library_status(QString::from(&format!(
+                "mezcla por tempo: {mezcladas} pistas"
+            )));
+            // La mezcla apaga el aleatorio: son dos formas de lo mismo.
+            self.as_mut().rust_mut().shuffle = false;
+            self.as_mut().shuffle_changed();
+        }
+    }
+
     pub fn shuffle(&self) -> bool {
         self.shuffle
     }

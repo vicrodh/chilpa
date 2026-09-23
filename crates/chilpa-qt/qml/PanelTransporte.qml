@@ -73,4 +73,11 @@ RowLayout {
         text: ["Repetir: no", "Repetir: cola", "Repetir: pista"][Chilpa.repeat]
         onClicked: Chilpa.cycleRepeat()
     }
+    // Reordena lo que falta para que el tempo no dé saltos. Necesita que la
+    // biblioteca esté analizada.
+    Button {
+        text: "AutoMix"
+        enabled: Chilpa.queue.length > 2
+        onClicked: Chilpa.automix()
+    }
 }

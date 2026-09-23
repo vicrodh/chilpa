@@ -192,6 +192,11 @@ impl Player {
         self.controls.order.set(crate::queue_playback::shuffled_now(len), len);
     }
 
+    /// Pone un orden de recorrido para la cola que suena.
+    pub fn set_order(&self, orden: Vec<usize>, len: usize) -> bool {
+        self.controls.order.set(orden, len)
+    }
+
     /// Vuelve al orden en que se encoló.
     pub fn clear_order(&self) {
         self.controls.order.clear();

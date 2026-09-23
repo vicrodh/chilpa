@@ -14,11 +14,15 @@
 //!    poco; una biblioteca de cien mil pistas no entra en memoria y no tiene
 //!    por qué hacerlo.
 
-use chilpa_library::{Library, StoredTrack};
+use chilpa_library::Library;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::sync::Arc;
 use std::thread::JoinHandle;
+
+/// Cómo se llama este analizador en la base. Es el de `chilpa-analysis`,
+/// repetido aquí para que la fachada no tenga que conocer ese crate.
+pub const ANALIZADOR: &str = chilpa_analysis::NOMBRE;
 
 /// Cuánto audio se mira de cada pista.
 const SEGUNDOS_QUE_SE_MIRAN: u64 = 60;
