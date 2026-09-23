@@ -6,6 +6,7 @@
 // línea de comandos, y cargar el layout que toque.
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import com.blitzfc.chilpa
 
 ApplicationWindow {
@@ -13,7 +14,11 @@ ApplicationWindow {
     width: 980
     height: 760
     visible: true
-    title: "Chilpa"
+    // El título dice qué suena: en una barra de tareas es lo único que se
+    // ve de la ventana.
+    title: Chilpa.playing && Chilpa.title !== ""
+        ? (Chilpa.artist !== "" ? Chilpa.artist + " — " + Chilpa.title : Chilpa.title)
+        : "Chilpa"
     color: "#faf6f2"
 
     // El layout es un archivo `Layout<nombre>.qml` al lado de este. Si el
@@ -47,6 +52,59 @@ ApplicationWindow {
             else
                 Chilpa.play(Chilpa.autoplayPath)
         }
+    }
+
+    // La lista de atajos, que si no hay que adivinarla.
+    Dialog {
+        id: ayuda
+        title: "Atajos"
+        anchors.centerIn: Overlay.overlay
+        width: 380
+        Component.onCompleted: if (Chilpa.initialTab === "ayuda") open()
+
+        ColumnLayout {
+            anchors.fill: parent
+            spacing: 4
+            Repeater {
+                model: [
+                    ["Espacio", "pausa y reanuda"],
+                    ["Ctrl+O", "abrir un archivo"],
+                    ["Ctrl+F", "buscar"],
+                    ["Escape", "cerrar lo que esté abierto"],
+                    ["Ctrl + flechas", "pista siguiente y anterior"],
+                    ["Flechas", "diez segundos adelante y atrás"],
+                    ["F1", "esta lista"]
+                ]
+                delegate: RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 12
+                    Label {
+                        Layout.preferredWidth: 160
+                        text: modelData[0]
+                        font.family: "monospace"
+                        font.pixelSize: 12
+                    }
+                    Label {
+                        Layout.fillWidth: true
+                        text: modelData[1]
+                        font.pixelSize: 12
+                    }
+                }
+            }
+
+            // Botón propio: el estándar de Qt sale en inglés.
+            Button {
+                Layout.alignment: Qt.AlignRight
+                Layout.topMargin: 6
+                text: "Cerrar"
+                onClicked: ayuda.close()
+            }
+        }
+    }
+
+    Shortcut {
+        sequence: "F1"
+        onActivated: ayuda.open()
     }
 
     Timer {
