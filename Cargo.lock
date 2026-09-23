@@ -119,6 +119,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-alsa",
  "chilpa-audio",
+ "chilpa-cd",
  "chilpa-decode",
  "chilpa-dsd",
  "chilpa-models",
