@@ -95,6 +95,14 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
     archivos
 }
 
+/// Ahora, en segundos desde el epoch.
+fn ahora_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
 /// Cómo se nombra un número de canales, ya en plural cuando toca.
 fn canales(n: u16) -> String {
     match n {
@@ -102,6 +110,17 @@ fn canales(n: u16) -> String {
         2 => "estéreo".to_string(),
         otros => format!("{otros} canales"),
     }
+}
+
+/// Lo que se sabe de la pista que suena, para registrarla al terminar.
+#[derive(Clone, Debug)]
+struct EnCurso {
+    path: String,
+    started_at: i64,
+    sample_rate_hz: u32,
+    bit_depth: Option<u8>,
+    bit_perfect: bool,
+    duration_ms: u64,
 }
 
 /// Un álbum como lo necesita una vista.
@@ -142,6 +161,8 @@ pub struct ScanSummary {
 pub struct Chilpa {
     core: chilpa_core::Core,
     library: Option<chilpa_library::Library>,
+    /// Lo que hace falta para registrar la reproducción cuando termine.
+    en_curso: Option<EnCurso>,
     player: Option<chilpa_core::player::Player>,
     now: NowPlaying,
     sample_rate: u32,
@@ -158,6 +179,7 @@ impl Chilpa {
         Self {
             core: chilpa_core::Core::new(),
             library: None,
+            en_curso: None,
             player: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -383,6 +405,24 @@ impl Chilpa {
                     self.now.bit_perfect = bit_perfect;
                     self.now.index = index;
                     self.now.queue_len = queue_len;
+                    // Cada arranque cierra lo anterior: en una cola, la
+                    // pista que empieza es la prueba de que la de antes
+                    // terminó.
+                    self.registrar_reproduccion(false);
+                    self.en_curso = Some(EnCurso {
+                        path: path.display().to_string(),
+                        started_at: ahora_unix(),
+                        sample_rate_hz: opened.sample_rate_hz,
+                        bit_depth: opened
+                            .sample_format
+                            .is_integer()
+                            .then(|| opened.sample_format.valid_bits()),
+                        bit_perfect,
+                        duration_ms: match (total_frames, opened.sample_rate_hz) {
+                            (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
+                            _ => 0,
+                        },
+                    });
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
                         _ => 0.0,
@@ -410,17 +450,56 @@ impl Chilpa {
                         self.now.seconds = frames as f64 / f64::from(self.sample_rate);
                     }
                 }
-                PlayerEvent::Finished { frames } | PlayerEvent::Stopped { frames } => {
+                PlayerEvent::Finished { frames } => {
                     self.now.frames = frames;
                     self.now.playing = false;
+                    self.registrar_reproduccion(false);
+                }
+                PlayerEvent::Stopped { frames } => {
+                    self.now.frames = frames;
+                    self.now.playing = false;
+                    // Parar a media pista cuenta como salto.
+                    self.registrar_reproduccion(true);
                 }
                 PlayerEvent::Failed { message } => {
                     self.now.playing = false;
                     self.now.error = message;
+                    // Una falla del dispositivo no es una escucha, pero lo
+                    // que alcanzó a sonar sí se registra, marcado como
+                    // interrumpido.
+                    self.registrar_reproduccion(true);
                 }
             }
         }
         &self.now
+    }
+
+    /// Guarda en el log lo que llevaba sonando la pista en curso.
+    ///
+    /// El log es append-only: de aquí salen las stats, las smart lists y el
+    /// sync de play counts con un DAP.
+    fn registrar_reproduccion(&mut self, skipped: bool) {
+        let Some(curso) = self.en_curso.take() else { return };
+        let frames = self.now.frames;
+        if curso.sample_rate_hz == 0 || frames == 0 {
+            return;
+        }
+        let played_ms = frames * 1000 / u64::from(curso.sample_rate_hz);
+        let ruta = std::path::PathBuf::from(&curso.path);
+        let Some(lib) = self.library() else { return };
+        let Ok(source) = lib.source_id("local", "default") else { return };
+        let track = lib.track_by_path(source, &ruta).ok().flatten();
+        let _ = lib.log_play(
+            track,
+            Some(source),
+            curso.started_at,
+            played_ms,
+            curso.duration_ms,
+            skipped,
+            Some(curso.sample_rate_hz),
+            curso.bit_depth,
+            curso.bit_perfect,
+        );
     }
 
     /// El estado actual, sin recoger eventos.
