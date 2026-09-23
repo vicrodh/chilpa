@@ -7,7 +7,7 @@
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::negotiate::{negotiate, Delivery, NegotiationError, Policy};
 use chilpa_audio::pack::{pack, PackError, Samples};
-use chilpa_audio::render::{render, FrameSource, Outcome};
+use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_decode::{Block, DecodeError, Decoded};
 use std::path::Path;
@@ -95,12 +95,28 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
+    play_file_with(path, caps, policy, stop, open_sink, &mut |_| {})
+}
+
+/// Lo mismo, avisando el progreso en frames mientras suena.
+pub fn play_file_with<F, K>(
+    path: &Path,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
+    open_sink: F,
+    on_progress: &mut dyn FnMut(u64),
+) -> Result<Played, PlayError>
+where
+    F: FnOnce(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
     let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let delivery =
         negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
     let mut frames = Frames { decoded: &mut decoded, opened: delivery.opened, error: None };
-    let outcome = render(&mut frames, &mut sink, stop);
+    let outcome = chilpa_audio::render::render_with(&mut frames, &mut sink, stop, on_progress);
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));
     }
