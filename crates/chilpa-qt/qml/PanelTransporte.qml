@@ -60,5 +60,4 @@ RowLayout {
         enabled: Chilpa.playing
         onClicked: Chilpa.stop()
     }
-    Item { Layout.fillWidth: true }
 }

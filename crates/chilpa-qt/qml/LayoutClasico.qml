@@ -15,9 +15,9 @@ ColumnLayout {
 
     PanelSalida { Layout.fillWidth: true }
 
-    PanelAcciones { Layout.fillWidth: true }
+    PanelAcciones { Layout.alignment: Qt.AlignLeft }
 
-    PanelTransporte { Layout.fillWidth: true }
+    PanelTransporte { Layout.alignment: Qt.AlignLeft }
 
     PanelAhoraSuena {
         Layout.fillWidth: true

@@ -54,6 +54,9 @@ pub mod chilpa_bridge {
         /// El layout de la ventana. Es el nombre de un `Layout<nombre>.qml`,
         /// para que agregar un acomodo sea agregar un archivo.
         #[qproperty(QString, layout)]
+        /// Los acomodos que trae el binario. La lista la arma `build.rs` a
+        /// partir de los archivos, no se escribe a mano.
+        #[qproperty(QStringList, layouts)]
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
@@ -169,6 +172,11 @@ pub mod chilpa_bridge {
 
 use chilpa_bridge::Chilpa;
 
+/// La lista de acomodos, generada por `build.rs` a partir de los QML.
+mod acomodos {
+    include!(concat!(env!("OUT_DIR"), "/layouts.rs"));
+}
+
 /// El estado del lado de Rust.
 pub struct ChilpaRust {
     outputs: QStringList,
@@ -189,6 +197,7 @@ pub struct ChilpaRust {
     scan_progress: f64,
     scanning: bool,
     layout: QString,
+    layouts: QStringList,
     search_text: QString,
     device: QString,
     want_bit_perfect: bool,
@@ -228,6 +237,13 @@ impl Default for ChilpaRust {
             scan_progress: 0.0,
             scanning: false,
             layout: QString::from(&recordado.layout),
+            layouts: {
+                let mut l = QList::<QString>::default();
+                for n in acomodos::LAYOUTS {
+                    l.append(QString::from(*n));
+                }
+                QStringList::from(&l)
+            },
             search_text: QString::from(""),
             device: QString::from(&recordado.output),
             want_bit_perfect: recordado.bit_perfect,
