@@ -159,6 +159,7 @@ fn pista_de(t: chilpa_library::StoredTrack) -> LibraryTrack {
         track_number: t.track_number,
         duration_ms: t.duration_ms,
         present: t.present,
+        analysis: String::new(),
     }
 }
 
@@ -275,6 +276,8 @@ pub struct LibraryTrack {
     pub track_number: Option<u16>,
     pub duration_ms: u64,
     pub present: bool,
+    /// Lo que el análisis sacó, vacío si todavía no se ha analizado.
+    pub analysis: String,
 }
 
 /// Cómo va el análisis que corre en segundo plano.

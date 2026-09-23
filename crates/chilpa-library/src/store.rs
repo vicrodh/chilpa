@@ -478,6 +478,43 @@ impl Library {
         Ok(())
     }
 
+    /// Lo que el análisis le puso a varias pistas, en una sola consulta.
+    ///
+    /// Una consulta por renglón de una lista es justo lo que hacía lenta a
+    /// la biblioteca de QBZ.
+    pub fn features_for(
+        &self,
+        track_ids: &[i64],
+        analyzer: &str,
+    ) -> rusqlite::Result<std::collections::HashMap<i64, (Option<f32>, Option<String>)>> {
+        let mut salida = std::collections::HashMap::new();
+        if track_ids.is_empty() {
+            return Ok(salida);
+        }
+        // Los ids son enteros que vienen de la propia base; aun así van como
+        // parámetros, para no tener dos formas de armar una consulta.
+        let huecos = vec!["?"; track_ids.len()].join(",");
+        let sql = format!(
+            "SELECT track_id, bpm, musical_key FROM audio_features
+             WHERE analyzer = ?1 AND track_id IN ({huecos})
+             ORDER BY version",
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let mut valores: Vec<rusqlite::types::Value> =
+            vec![rusqlite::types::Value::Text(analyzer.to_string())];
+        valores.extend(track_ids.iter().map(|i| rusqlite::types::Value::Integer(*i)));
+        let filas = stmt.query_map(rusqlite::params_from_iter(valores), |r| {
+            Ok((r.get::<_, i64>(0)?, (r.get(1)?, r.get(2)?)))
+        })?;
+        for fila in filas {
+            let (id, datos) = fila?;
+            // Ordenado por versión, así que la última que entra es la más
+            // nueva.
+            salida.insert(id, datos);
+        }
+        Ok(salida)
+    }
+
     /// Lo que el análisis le puso a una pista: tempo y tonalidad.
     pub fn track_features(
         &self,
@@ -1169,6 +1206,22 @@ mod tests {
         let encontradas = lib.search("blues", 50).unwrap();
         assert_eq!(encontradas.len(), 1, "salió por su género, no por su título");
         assert_eq!(encontradas[0].id, id);
+    }
+
+    #[test]
+    fn las_features_de_varias_pistas_salen_en_una_consulta() {
+        let lib = biblioteca_de_muestra();
+        lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into())).unwrap();
+        lib.save_features(2, "chilpa", 1, Some(90.0), None, None).unwrap();
+        // Una versión más nueva de la misma pista gana.
+        lib.save_features(1, "chilpa", 2, Some(129.0), None, Some("G · 9B".into())).unwrap();
+
+        let mapa = lib.features_for(&[1, 2, 3], "chilpa").unwrap();
+        assert_eq!(mapa.len(), 2, "la 3 no tiene análisis");
+        assert_eq!(mapa[&1].0, Some(129.0), "la versión más nueva");
+        assert_eq!(mapa[&1].1.as_deref(), Some("G · 9B"));
+        assert_eq!(mapa[&2].1, None);
+        assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
     }
 
     #[test]

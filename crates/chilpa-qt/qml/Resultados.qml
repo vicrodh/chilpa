@@ -102,13 +102,13 @@ Rectangle {
                 spacing: 10
 
                 Label {
-                    Layout.preferredWidth: parent.width * 0.45
+                    Layout.preferredWidth: parent.width * 0.40
                     text: datos[1]
                     elide: Text.ElideRight
                     color: "#411d1f"
                 }
                 Label {
-                    Layout.preferredWidth: parent.width * 0.25
+                    Layout.preferredWidth: parent.width * 0.22
                     text: datos[2]
                     elide: Text.ElideRight
                     color: "#7a411d1f"
@@ -117,6 +117,16 @@ Rectangle {
                     Layout.fillWidth: true
                     text: datos[3]
                     elide: Text.ElideRight
+                    color: "#7a411d1f"
+                }
+                // Lo que el análisis sacó. Solo sale cuando ya se analizó:
+                // una columna vacía no le dice nada a nadie.
+                Label {
+                    Layout.preferredWidth: parent.width * 0.16
+                    horizontalAlignment: Text.AlignRight
+                    text: datos.length > 5 ? datos[5] : ""
+                    elide: Text.ElideRight
+                    font.pixelSize: 11
                     color: "#7a411d1f"
                 }
                 Label {
