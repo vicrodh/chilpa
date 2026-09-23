@@ -318,13 +318,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn un_archivo_que_no_existe_falla_al_abrir() {
+    fn a_file_that_does_not_exist_fails_to_open() {
         let r = Decoded::open(Path::new("/no/existe.flac"));
         assert!(matches!(r, Err(DecodeError::Open(_))));
     }
 
     #[test]
-    fn los_frames_se_cuentan_por_canal() {
+    fn frames_are_counted_per_channel() {
         let b = Block::Int { data: vec![0; 10], bits: 16 };
         assert_eq!(b.frames(2), 5);
     }

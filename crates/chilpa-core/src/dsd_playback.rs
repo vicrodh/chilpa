@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn dsd64_se_abre_a_176_400_y_los_bits_salen_intactos() {
+    fn dsd64_opens_at_176_400_and_the_bits_come_out_intact() {
         let mut cap = Capturador::default();
         let mut f = source();
         let played = play_dsd(
@@ -214,7 +214,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dispositivo_que_no_llega_a_la_portadora_se_rechaza() {
+    fn a_device_that_cannot_reach_the_carrier_is_refused() {
         let mut cap = Capturador::default();
         let mut f = source();
         let r = play_dsd(

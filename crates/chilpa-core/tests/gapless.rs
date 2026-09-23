@@ -84,7 +84,7 @@ fn play(tracks: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
 }
 
 #[test]
-fn dos_pistas_del_mismo_formato_salen_pegadas() {
+fn two_tracks_in_the_same_format_come_out_back_to_back() {
     // La segunda continúa la cuenta de la primera: si hubiera hueco,
     // repetición o recorte, la secuencia se rompe en la unión.
     let a = ramp("a", 0, 5_000);
@@ -103,7 +103,7 @@ fn dos_pistas_del_mismo_formato_salen_pegadas() {
 }
 
 #[test]
-fn si_cambia_el_formato_se_reabre_y_no_se_pierde_nada() {
+fn if_the_format_changes_the_device_reopens_and_nothing_is_lost() {
     let a = ramp("cd", 0, 4_000);
     // La segunda pista es de otra frecuencia: encadenar sin hueco es
     // imposible, pero no debe perderse ni una muestra.

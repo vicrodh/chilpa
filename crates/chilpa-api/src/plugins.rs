@@ -272,7 +272,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn una_llave_con_barras_o_puntos_dobles_no_se_vuelve_archivo() {
+    fn a_key_with_slashes_or_dot_dots_never_becomes_a_file() {
         let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"));
         for bad in ["../fuera", "con/barra", "..", "CON.MAYUSCULAS", "", &"x".repeat(65)] {
             assert!(s.file("com.a.b", bad).is_none(), "\"{bad}\" no debería pasar");
@@ -282,14 +282,14 @@ mod tests {
     }
 
     #[test]
-    fn un_id_con_barras_tampoco() {
+    fn nor_does_an_id_with_slashes() {
         let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"));
         assert!(s.file("../otro", "token").is_none());
         assert!(s.file("con/barra", "token").is_none());
     }
 
     #[test]
-    fn el_almacen_de_un_plugin_va_y_viene() {
+    fn a_plugin_store_round_trips() {
         let dir = std::env::temp_dir().join("chilpa-plugins-almacen");
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = ChilpaServices::new(dir.clone());
@@ -302,7 +302,7 @@ mod tests {
     }
 
     #[test]
-    fn el_almacen_no_es_para_guardar_un_catalogo() {
+    fn the_store_is_not_for_keeping_a_catalogue() {
         let dir = std::env::temp_dir().join("chilpa-plugins-grande");
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = ChilpaServices::new(dir.clone());
@@ -311,7 +311,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_carpeta_de_plugins_no_hay_plugins_y_no_es_un_error() {
+    fn no_plugin_folder_means_no_plugins_and_is_not_an_error() {
         let dir = std::env::temp_dir().join("chilpa-plugins-que-no-existe");
         let _ = std::fs::remove_dir_all(&dir);
         let mut p = Plugins::new(dir).expect("el motor arranca");
@@ -320,7 +320,7 @@ mod tests {
     }
 
     #[test]
-    fn una_carpeta_sin_manifest_no_se_anota_como_plugin_roto() {
+    fn a_folder_without_a_manifest_is_not_listed_as_a_broken_plugin() {
         let dir = std::env::temp_dir().join("chilpa-plugins-sin-manifest");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("basura")).unwrap();
@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn un_plugin_roto_se_lista_con_su_razon() {
+    fn a_broken_plugin_is_listed_with_its_reason() {
         let dir = std::env::temp_dir().join("chilpa-plugins-roto");
         let _ = std::fs::remove_dir_all(&dir);
         let own = dir.join("com.roto.plugin");

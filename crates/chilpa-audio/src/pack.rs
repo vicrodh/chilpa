@@ -105,7 +105,7 @@ mod tests {
     }
 
     #[test]
-    fn un_entero_de_16_sale_identico_en_16() {
+    fn a_16_bit_integer_comes_out_identical_in_16() {
         let data = [0i32, 1, -1, 32767, -32768];
         let bytes = packed(&Samples::Int { data: &data, bits: 16 }, SampleFormat::S16);
         let wrap: Vec<i32> = bytes
@@ -116,7 +116,7 @@ mod tests {
     }
 
     #[test]
-    fn subir_de_16_a_24_es_un_corrimiento_exacto() {
+    fn going_from_16_to_24_is_an_exact_shift() {
         let data = [1i32, -1, 32767];
         let bytes = packed(&Samples::Int { data: &data, bits: 16 }, SampleFormat::S24In32);
         let wrap: Vec<i32> = bytes
@@ -127,7 +127,7 @@ mod tests {
     }
 
     #[test]
-    fn el_valor_maximo_de_24_bits_no_pierde_su_ultimo_lsb() {
+    fn the_maximum_24_bit_value_keeps_its_last_lsb() {
         // Este es el hallazgo del packer de QBZ: escalar por 8_388_607.0 y
         // redondear movía las muestras fuertes un LSB.
         let data = [8_388_607i32, -8_388_608, 4_194_303];
@@ -140,13 +140,13 @@ mod tests {
     }
 
     #[test]
-    fn el_byte_bajo_de_24_en_32_queda_en_cero() {
+    fn the_low_byte_of_24_in_32_stays_zero() {
         let bytes = packed(&Samples::Int { data: &[0x7FFFFF], bits: 24 }, SampleFormat::S24In32);
         assert_eq!(bytes[0], 0, "justificado a la izquierda");
     }
 
     #[test]
-    fn bajar_de_bits_se_rechaza_en_vez_de_truncar_en_silencio() {
+    fn narrowing_bits_is_refused_instead_of_truncating_silently() {
         let mut out = Vec::new();
         let r = pack(&Samples::Int { data: &[1], bits: 24 }, SampleFormat::S16, &mut out);
         assert_eq!(r, Err(PackError::WouldTruncate { from_bits: 24, to_bits: 16 }));

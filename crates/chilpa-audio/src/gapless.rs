@@ -116,19 +116,19 @@ mod tests {
     }
 
     #[test]
-    fn el_mismo_formato_encadena_sin_cortar() {
+    fn the_same_format_chains_without_a_gap() {
         assert!(transition(fmt(44_100), fmt(44_100)).is_seamless());
     }
 
     #[test]
-    fn cambiar_de_frecuencia_obliga_a_renegociar_y_se_dice() {
+    fn changing_rate_forces_a_renegotiation_and_says_so() {
         let t = transition(fmt(44_100), fmt(96_000));
         assert!(!t.is_seamless());
         assert!(matches!(t, Transition::Renegotiate { .. }));
     }
 
     #[test]
-    fn sin_relleno_no_se_recorta_nada() {
+    fn without_padding_nothing_is_trimmed() {
         let mut t = Trimmer::new(0, 0, 2);
         let output = t.push(&frames(0, 10));
         assert_eq!(output, frames(0, 10));
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn el_recorte_de_arranque_cruza_bloques() {
+    fn the_start_trim_spans_blocks() {
         // 5 frames de delay repartidos entre dos bloques de 3.
         let mut t = Trimmer::new(5, 0, 2);
         assert!(t.push(&frames(0, 3)).is_empty(), "el primer bloque es todo relleno");
@@ -145,7 +145,7 @@ mod tests {
     }
 
     #[test]
-    fn el_recorte_de_cola_no_deja_salir_el_relleno_final() {
+    fn the_tail_trim_keeps_the_final_padding_in() {
         let mut t = Trimmer::new(0, 4, 2);
         let primero = t.push(&frames(0, 10));
         assert_eq!(primero, frames(0, 6), "se retienen los 4 últimos");
@@ -154,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_retenido_sale_cuando_llega_mas_musica() {
+    fn what_was_held_comes_out_when_more_music_arrives() {
         let mut t = Trimmer::new(0, 4, 2);
         t.push(&frames(0, 10));
         let second = t.push(&frames(10, 2));
@@ -162,7 +162,7 @@ mod tests {
     }
 
     #[test]
-    fn delay_y_padding_juntos_dejan_la_pista_exacta() {
+    fn delay_and_padding_together_leave_the_track_exact() {
         let mut t = Trimmer::new(3, 2, 2);
         let mut output = t.push(&frames(0, 12));
         output.extend(t.finish());

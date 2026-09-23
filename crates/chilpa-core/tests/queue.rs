@@ -97,7 +97,7 @@ fn play(
 }
 
 #[test]
-fn tres_pistas_del_mismo_formato_abren_el_dispositivo_una_vez() {
+fn three_tracks_in_the_same_format_open_the_device_once() {
     let tracks = vec![
         track("a", 1_000, 16, 44_100),
         track("b", 2_000, 16, 44_100),
@@ -117,7 +117,7 @@ fn tres_pistas_del_mismo_formato_abren_el_dispositivo_una_vez() {
 }
 
 #[test]
-fn cambiar_de_formato_reabre_el_dispositivo_y_se_reporta() {
+fn changing_format_reopens_the_device_and_is_reported() {
     let tracks = vec![
         track("cd", 1_000, 16, 44_100),
         track("hires", 1_000, 24, 96_000),
@@ -138,7 +138,7 @@ fn cambiar_de_formato_reabre_el_dispositivo_y_se_reporta() {
 }
 
 #[test]
-fn si_el_dispositivo_se_pierde_la_cola_se_detiene_ahi() {
+fn if_the_device_is_lost_the_queue_stops_there() {
     // El hallazgo de QBZ: una escritura fallida se veía como fin de pista y
     // la cola entera se saltaba sin avisar.
     let tracks = vec![

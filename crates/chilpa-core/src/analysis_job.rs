@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_nada_que_analizar_termina_de_inmediato() {
+    fn with_nothing_to_analyze_it_finishes_at_once() {
         let dir = std::env::temp_dir().join("chilpa-analisis-vacio");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
@@ -280,7 +280,7 @@ mod tests {
     }
 
     #[test]
-    fn un_archivo_que_no_se_puede_abrir_no_tumba_el_analisis() {
+    fn a_file_that_cannot_be_opened_does_not_bring_the_analysis_down() {
         assert!(analyze_file(Path::new("/no/existe.flac")).is_none());
     }
 }

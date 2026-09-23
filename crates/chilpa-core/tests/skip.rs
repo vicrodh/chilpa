@@ -65,7 +65,7 @@ fn caps() -> DeviceCaps {
 }
 
 #[test]
-fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
+fn a_seek_asked_for_before_the_start_begins_at_that_point() {
     let path = ramp("arranque", 44_100 * 3);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(2));
@@ -95,7 +95,7 @@ fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
 }
 
 #[test]
-fn saltar_mas_alla_del_final_termina_la_pista_sin_tronar() {
+fn seeking_past_the_end_finishes_the_track_without_crashing() {
     let path = ramp("pasado", 44_100);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(60));

@@ -155,12 +155,12 @@ mod tests {
     }
 
     #[test]
-    fn la_cola_arranca_en_el_primero() {
+    fn the_queue_starts_on_the_first_track() {
         assert_eq!(queue(3).current().unwrap().track.external_id, "0");
     }
 
     #[test]
-    fn un_orden_de_afuera_no_cambia_lo_que_suena() {
+    fn an_order_from_outside_does_not_change_what_plays() {
         let mut q = queue(3);
         q.set_order(vec![2, 0, 1]).unwrap();
         assert_eq!(q.current().unwrap().track.external_id, "0", "sigue sonando el mismo track");
@@ -168,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn se_rechaza_un_orden_que_no_es_permutacion() {
+    fn an_order_that_is_not_a_permutation_is_refused() {
         let mut q = queue(3);
         assert_eq!(q.set_order(vec![0, 1]), Err(OrderError::WrongLength { expected: 3, got: 2 }));
         assert_eq!(q.set_order(vec![0, 1, 1]), Err(OrderError::Repeated(1)));
@@ -177,14 +177,14 @@ mod tests {
     }
 
     #[test]
-    fn sin_repeticion_la_cola_se_acaba() {
+    fn without_repeat_the_queue_ends() {
         let mut q = queue(2);
         assert!(q.advance().is_some());
         assert!(q.advance().is_none());
     }
 
     #[test]
-    fn repetir_todo_da_la_vuelta_y_repetir_una_se_queda() {
+    fn repeat_all_wraps_around_and_repeat_one_stays_put() {
         let mut q = queue(2);
         q.repeat = RepeatMode::All;
         q.advance();
@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn la_posicion_se_cuenta_en_frames() {
+    fn position_is_counted_in_frames() {
         let p = Progress { frames_played: 44_100, sample_rate_hz: 44_100 };
         assert_eq!(p.position(), Duration::from_secs(1));
         let p = Progress { frames_played: 96_000 * 3 / 2, sample_rate_hz: 96_000 };

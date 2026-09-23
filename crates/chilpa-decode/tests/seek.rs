@@ -55,7 +55,7 @@ fn temporal(name: &str) -> PathBuf {
 }
 
 #[test]
-fn buscar_deja_la_lectura_en_el_frame_pedido() {
+fn seeking_leaves_the_reader_on_the_requested_frame() {
     let path = temporal("rampa");
     write_ramp(&path, 60_000);
     let mut decoded = Decoded::open(&path).unwrap();
@@ -74,7 +74,7 @@ fn buscar_deja_la_lectura_en_el_frame_pedido() {
 }
 
 #[test]
-fn el_archivo_declara_su_duracion_en_frames() {
+fn the_file_declares_its_duration_in_frames() {
     let path = temporal("duracion");
     write_ramp(&path, 1_000);
     let decoded = Decoded::open(&path).unwrap();

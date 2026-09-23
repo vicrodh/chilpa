@@ -160,7 +160,7 @@ mod tests {
     }
 
     #[test]
-    fn se_cuenta_antes_de_avanzar_y_el_total_no_cambia() {
+    fn counting_comes_before_progress_and_the_total_does_not_move() {
         let dir = std::env::temp_dir().join("chilpa-scanjob-progreso");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("disco")).unwrap();
@@ -197,7 +197,7 @@ mod tests {
     }
 
     #[test]
-    fn varias_carpetas_cuentan_juntas_y_el_avance_no_reinicia() {
+    fn several_folders_count_together_and_progress_does_not_restart() {
         let dir = std::env::temp_dir().join("chilpa-scanjob-varias");
         let _ = std::fs::remove_dir_all(&dir);
         let (a, b) = (dir.join("a"), dir.join("b"));
@@ -236,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn si_una_carpeta_falta_las_demas_igual_se_escanean() {
+    fn if_one_folder_is_missing_the_rest_are_scanned_anyway() {
         let dir = std::env::temp_dir().join("chilpa-scanjob-falta");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
@@ -260,7 +260,7 @@ mod tests {
     }
 
     #[test]
-    fn un_root_que_no_existe_termina_con_su_reporte() {
+    fn a_root_that_does_not_exist_finishes_with_its_report() {
         let db = std::env::temp_dir().join("chilpa-scanjob-test.db");
         let _ = std::fs::remove_file(&db);
         let job = ScanJob::start(db.clone(), PathBuf::from("/no/existe"), None);

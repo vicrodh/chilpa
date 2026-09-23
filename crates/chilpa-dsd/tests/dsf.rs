@@ -49,7 +49,7 @@ fn temporal(name: &str) -> PathBuf {
 }
 
 #[test]
-fn se_lee_el_encabezado_y_todos_los_bloques() {
+fn the_header_and_every_block_are_read() {
     let path = temporal("basico");
     let samples = u64::from(BLOCK) * 3 * 8;
     write_dsf(&path, 3, 1, samples);
@@ -74,7 +74,7 @@ fn se_lee_el_encabezado_y_todos_los_bloques() {
 }
 
 #[test]
-fn los_bits_se_entregan_con_el_primero_en_tiempo_arriba() {
+fn bits_are_delivered_with_the_earliest_one_on_top() {
     // DSF guarda el bit primero en tiempo abajo; aquí debe salir invertido.
     let path = temporal("orden");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
@@ -96,7 +96,7 @@ fn los_bits_se_entregan_con_el_primero_en_tiempo_arriba() {
 }
 
 #[test]
-fn el_relleno_del_ultimo_bloque_no_sale() {
+fn the_padding_of_the_last_block_does_not_come_out() {
     let path = temporal("relleno");
     // Dos bloques en el archivo, pero solo 100 bytes por canal son música.
     write_dsf(&path, 2, 1, 100 * 8);
@@ -108,7 +108,7 @@ fn el_relleno_del_ultimo_bloque_no_sale() {
 }
 
 #[test]
-fn los_bits_del_archivo_llegan_intactos_al_empaquetado_dop() {
+fn the_file_bits_reach_the_dop_packing_intact() {
     // El equivalente de bit-perfect en DSD: la carga útil de cada palabra
     // DoP es exactamente el par de bytes que traía el archivo.
     let path = temporal("dop");
@@ -136,7 +136,7 @@ fn los_bits_del_archivo_llegan_intactos_al_empaquetado_dop() {
 }
 
 #[test]
-fn buscar_cae_en_el_arranque_de_un_bloque() {
+fn seeking_lands_at_the_start_of_a_block() {
     let path = temporal("buscar");
     write_dsf(&path, 4, 1, u64::from(BLOCK) * 4 * 8);
     let mut r = DsfReader::open(&path).unwrap();

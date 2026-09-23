@@ -90,20 +90,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn un_frame_estereo_dura_un_setenta_y_cinco_avo_de_segundo() {
+    fn a_stereo_frame_lasts_one_seventy_fifth_of_a_second() {
         // 2 822 400 bits por canal y por segundo, 8 bits por byte, 2 canales,
         // 75 frames por segundo.
         assert_eq!(DSD64_HZ as usize / 8 * 2 / 75, STEREO_FRAME);
     }
 
     #[test]
-    fn el_codigo_de_tiempo_se_vuelve_frames() {
+    fn the_timecode_becomes_frames() {
         assert_eq!(timecode_frames(&[0, 0, 1], 0), 1);
         assert_eq!(timecode_frames(&[1, 30, 0], 0), (60 + 30) * 75);
     }
 
     #[test]
-    fn dst_se_reconoce_como_comprimido() {
+    fn dst_is_recognized_as_compressed() {
         assert!(Encoding::Dst.is_compressed());
         assert!(!Encoding::Dsd3In14.is_compressed());
     }

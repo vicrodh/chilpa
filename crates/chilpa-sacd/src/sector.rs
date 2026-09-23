@@ -138,7 +138,7 @@ mod tests {
     }
 
     #[test]
-    fn un_sector_de_audio_se_decodifica_y_suma_2048() {
+    fn an_audio_sector_decodes_and_adds_up_to_2048() {
         let s = sector_de_audio([0, 1, 2]);
         let p = parse(&s, 550).unwrap();
         assert!(!p.dst);
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn un_sector_cuyos_paquetes_no_suman_2048_se_rechaza() {
+    fn a_sector_whose_packets_do_not_add_up_to_2048_is_refused() {
         let mut s = sector_de_audio([0, 0, 0]);
         // Se le quita un byte al largo declarado: la suma ya no cierra.
         let w = u16::from_be_bytes([s[1], s[2]]) - 1;
@@ -160,13 +160,13 @@ mod tests {
     }
 
     #[test]
-    fn un_codigo_de_tiempo_imposible_se_rechaza() {
+    fn an_impossible_timecode_is_refused() {
         let s = sector_de_audio([0, 75, 0]);
         assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
     }
 
     #[test]
-    fn el_largo_usa_once_bits_y_no_doce() {
+    fn the_length_uses_eleven_bits_and_not_twelve() {
         // 0x181B: con doce bits daría 2075, más que el sector.
         let w = 0x181Bu16;
         assert_eq!((w & 0x07FF) as usize, 27);

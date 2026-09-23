@@ -111,7 +111,7 @@ fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
 }
 
 #[test]
-fn los_formatos_sin_perdida_salen_identicos_y_por_bloques() {
+fn lossless_formats_come_out_identical_and_in_blocks() {
     if !hay_ffmpeg() {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -155,7 +155,7 @@ fn los_formatos_sin_perdida_salen_identicos_y_por_bloques() {
 }
 
 #[test]
-fn los_formatos_con_perdida_se_decodifican_por_bloques() {
+fn lossy_formats_decode_in_blocks() {
     if !hay_ffmpeg() {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -196,7 +196,7 @@ fn los_formatos_con_perdida_se_decodifican_por_bloques() {
 }
 
 #[test]
-fn opus_todavia_no_se_puede_y_se_dice_claro() {
+fn opus_is_not_supported_yet_and_says_so_plainly() {
     if !hay_ffmpeg() {
         eprintln!("sin ffmpeg: se salta");
         return;

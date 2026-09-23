@@ -31,7 +31,7 @@ fn wave(dir: &PathBuf, name: &str) -> PathBuf {
 }
 
 #[test]
-fn la_mezcla_necesita_tempos_y_reordena_cuando_los_hay() {
+fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
     let dir = std::env::temp_dir().join("chilpa-api-mezcla");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();

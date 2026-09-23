@@ -499,7 +499,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn de_una_url_sale_la_maquina() {
+    fn a_url_yields_its_host() {
         assert_eq!(host_de_url("https://api.ejemplo.com/v1/buscar"), Some("api.ejemplo.com".into()));
         assert_eq!(host_de_url("http://API.Ejemplo.COM"), Some("api.ejemplo.com".into()));
         assert_eq!(host_de_url("https://api.ejemplo.com:8443/x"), Some("api.ejemplo.com".into()));
@@ -513,7 +513,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dominio_permitido_cubre_sus_subdominios_y_nada_mas() {
+    fn an_allowed_domain_covers_its_subdomains_and_nothing_else() {
         let list = vec!["ejemplo.com".to_string()];
         assert!(allowed("ejemplo.com", &list));
         assert!(allowed("api.ejemplo.com", &list));
@@ -525,7 +525,7 @@ mod tests {
     }
 
     #[test]
-    fn de_una_peticion_sale_su_dominio() {
+    fn a_request_yields_its_domain() {
         assert_eq!(
             domain_of(br#"{"url":"https://api.ejemplo.com/buscar","metodo":"GET"}"#),
             Some("api.ejemplo.com".into())

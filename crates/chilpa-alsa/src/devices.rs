@@ -100,7 +100,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn la_etiqueta_junta_nombre_e_identificador() {
+    fn the_label_joins_name_and_identifier() {
         let d = Device {
             id: "hw:0,0".into(),
             card: "HDA Intel PCH".into(),
@@ -110,13 +110,13 @@ mod tests {
     }
 
     #[test]
-    fn listar_no_truena_aunque_no_haya_tarjetas() {
+    fn listing_does_not_crash_without_cards() {
         // En una máquina sin audio la lista sale vacía, no en error.
         let _ = list();
     }
 
     #[test]
-    fn todos_los_identificadores_son_directos() {
+    fn every_identifier_is_a_direct_device() {
         for d in list() {
             assert!(d.id.starts_with("hw:"), "{} no es un dispositivo directo", d.id);
         }

@@ -99,7 +99,7 @@ fn within(name: &str, took: Duration, ceiling: Duration) {
 }
 
 #[test]
-fn una_biblioteca_de_cincuenta_mil_pistas_no_se_arrastra() {
+fn a_fifty_thousand_track_library_does_not_crawl() {
     let (lib, built) = how_long(large_library);
     eprintln!("armar {TRACKS} pistas: {built:?}");
     assert_eq!(lib.track_count(false).unwrap(), TRACKS as usize);
@@ -162,7 +162,7 @@ fn una_biblioteca_de_cincuenta_mil_pistas_no_se_arrastra() {
 }
 
 #[test]
-fn las_features_de_una_pagina_salen_en_una_sola_consulta() {
+fn the_features_of_one_page_come_out_in_a_single_query() {
     let lib = large_library();
     let ids: Vec<i64> = (1..=200).collect();
     for id in &ids {

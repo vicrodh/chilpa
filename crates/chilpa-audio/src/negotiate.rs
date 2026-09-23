@@ -179,7 +179,7 @@ mod tests {
     }
 
     #[test]
-    fn cuando_hay_que_remuestrear_no_se_tiran_bits_de_pilon() {
+    fn when_resampling_is_needed_no_bits_are_thrown_in_for_free() {
         // 24/88.2 no cabe: hay que remuestrear. Pero el dispositivo sabe 32
         // bits, así que recortar a 16 sería una pérdida de más.
         let request = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn recortar_bits_se_dice() {
+    fn dropping_bits_is_reported() {
         // Un dispositivo que solo sabe 16 bits: a 24 no le queda de otra.
         let caps = DeviceCaps {
             sample_rates: vec![48_000],
@@ -230,21 +230,21 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_el_dispositivo_acepta_se_abre_tal_cual() {
+    fn what_the_device_accepts_is_opened_as_is() {
         let d = negotiate(cd(), &caps(&[44_100], &[SampleFormat::S16]), Policy::BitPerfect).unwrap();
         assert_eq!(d.opened, cd());
         assert!(d.is_bit_perfect());
     }
 
     #[test]
-    fn sin_soporte_bit_perfect_falla_en_vez_de_caer_en_silencio() {
+    fn without_support_bit_perfect_fails_instead_of_falling_back_silently() {
         let caps = caps(&[48_000], &[SampleFormat::F32]);
         let r = negotiate(cd(), &caps, Policy::BitPerfect);
         assert_eq!(r, Err(NegotiationError::Unsupported { requested: cd(), policy: Policy::BitPerfect }));
     }
 
     #[test]
-    fn ensanchar_conserva_las_muestras_y_sigue_siendo_bit_perfect() {
+    fn widening_keeps_the_samples_and_stays_bit_perfect() {
         let caps = caps(&[44_100], &[SampleFormat::S32]);
         let d = negotiate(cd(), &caps, Policy::AllowWidening).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32);
@@ -253,7 +253,7 @@ mod tests {
     }
 
     #[test]
-    fn resamplear_o_flotar_deja_de_ser_bit_perfect_y_se_dice() {
+    fn resampling_or_floating_stops_being_bit_perfect_and_says_so() {
         let caps = caps(&[48_000], &[SampleFormat::F32]);
         let d = negotiate(cd(), &caps, Policy::AllowAnything).unwrap();
         assert!(d.transforms.contains(&Transform::Resampled { from_hz: 44_100, to_hz: 48_000 }));
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn no_se_promete_bit_perfect_con_capacidades_adivinadas() {
+    fn bit_perfect_is_not_promised_from_guessed_caps() {
         let mut caps = caps(&[44_100], &[SampleFormat::S16]);
         caps.probed = false;
         assert_eq!(negotiate(cd(), &caps, Policy::BitPerfect), Err(NegotiationError::CapsNotProbed));

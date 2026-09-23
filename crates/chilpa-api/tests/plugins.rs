@@ -55,7 +55,7 @@ fn install(root: &Path, id: &str, capabilities: &str, body: &str) {
 }
 
 #[test]
-fn un_plugin_en_su_carpeta_carga_y_contesta() {
+fn a_plugin_in_its_folder_loads_and_answers() {
     let dir = std::env::temp_dir().join("chilpa-api-plugins");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();

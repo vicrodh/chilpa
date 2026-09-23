@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn una_pista_del_disco_sale_completa_y_bit_perfect() {
+    fn a_track_off_the_disc_comes_out_whole_and_bit_perfect() {
         let mut disco = Disco { fail_at: None };
         let toc = read_toc(&mut disco).unwrap();
         let track = *toc.track(1).unwrap();
@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn un_sector_ilegible_corta_la_pista_y_queda_dicho() {
+    fn an_unreadable_sector_cuts_the_track_and_it_is_said() {
         let mut disco = Disco { fail_at: Some(75) };
         let toc = read_toc(&mut disco).unwrap();
         let track = *toc.track(1).unwrap();

@@ -77,20 +77,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_formato_sabe_cuantos_bytes_y_bits_utiles_lleva() {
+    fn the_format_knows_its_bytes_and_its_useful_bits() {
         assert_eq!(SampleFormat::S24Packed.bytes(), 3);
         assert_eq!(SampleFormat::S24In32.bytes(), 4);
         assert_eq!(SampleFormat::S24In32.valid_bits(), 24, "van 24 bits en 32");
     }
 
     #[test]
-    fn los_flotantes_no_son_enteros() {
+    fn floats_are_not_integers() {
         assert!(SampleFormat::S32.is_integer());
         assert!(!SampleFormat::F32.is_integer());
     }
 
     #[test]
-    fn un_frame_estereo_de_24_en_32_mide_ocho_bytes() {
+    fn a_stereo_frame_of_24_in_32_is_eight_bytes() {
         assert_eq!(StreamFormat::new(SampleFormat::S24In32, 96_000, 2).frame_bytes(), 8);
     }
 }

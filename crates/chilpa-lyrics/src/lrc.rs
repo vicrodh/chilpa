@@ -138,7 +138,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn se_leen_los_sellos_de_tiempo() {
+    fn the_timestamps_are_read() {
         assert_eq!(time("01:02"), Some(62_000));
         assert_eq!(time("00:01.50"), Some(1_500), "dos dígitos son centésimas");
         assert_eq!(time("00:01.500"), Some(1_500), "tres son milésimas");
@@ -147,7 +147,7 @@ mod tests {
     }
 
     #[test]
-    fn una_letra_sincronizada_queda_en_orden() {
+    fn synced_lyrics_end_up_in_order() {
         let l = parse("[00:12.00]Uno\n[00:05.50]Cero\n");
         assert!(l.synced);
         assert_eq!(l.lines[0].text, "Cero");
@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn un_renglon_con_varios_sellos_sale_varias_veces() {
+    fn a_line_with_several_stamps_comes_out_several_times() {
         let l = parse("[00:10.00][01:10.00][02:10.00]Estribillo\n");
         assert_eq!(l.lines.len(), 3, "el estribillo suena tres veces");
         assert_eq!(
@@ -167,7 +167,7 @@ mod tests {
     }
 
     #[test]
-    fn las_cabeceras_no_son_letra() {
+    fn headers_are_not_lyrics() {
         let l = parse("[ti:Canción]\n[ar:Alguien]\n[al:Disco]\n[00:01.00]Ahí va\n");
         assert_eq!(l.title.as_deref(), Some("Canción"));
         assert_eq!(l.artist.as_deref(), Some("Alguien"));
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn el_offset_corre_la_letra_entera() {
+    fn the_offset_shifts_the_whole_lyric() {
         let l = parse("[offset:500]\n[00:10.00]Tarde\n");
         assert_eq!(l.lines[0].at_ms, 9_500, "medio segundo antes");
         // Y no se va a negativo.
@@ -185,7 +185,7 @@ mod tests {
     }
 
     #[test]
-    fn un_texto_sin_sellos_sigue_siendo_letra() {
+    fn text_without_stamps_is_still_lyrics() {
         let l = parse("Primera\n\nSegunda\n");
         assert!(!l.synced, "no está sincronizada");
         assert_eq!(l.lines.len(), 2, "y los renglones vacíos no cuentan");
@@ -193,7 +193,7 @@ mod tests {
     }
 
     #[test]
-    fn un_renglon_sin_texto_se_queda_como_pausa() {
+    fn a_line_without_text_stays_as_a_pause() {
         let l = parse("[00:01.00]Algo\n[00:05.00]\n[00:09.00]Más\n");
         assert_eq!(l.lines.len(), 3);
         assert_eq!(l.lines[1].text, "", "el silencio también es parte de la letra");

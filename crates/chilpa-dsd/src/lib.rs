@@ -93,7 +93,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn las_tasas_de_dsd_son_multiplos_de_44_100() {
+    fn dsd_rates_are_multiples_of_44_100() {
         assert!(is_supported_rate(2_822_400));
         assert!(is_supported_rate(11_289_600));
         assert!(!is_supported_rate(44_100), "eso es PCM");
@@ -101,14 +101,14 @@ mod tests {
     }
 
     #[test]
-    fn el_multiplo_nombra_la_tasa() {
+    fn the_multiple_names_the_rate() {
         let info = DsdInfo { dsd_rate_hz: 2_822_400, channels: 2, samples: 2_822_400 };
         assert_eq!(info.multiple(), 64);
         assert_eq!(info.seconds(), 1.0);
     }
 
     #[test]
-    fn invertir_los_bits_es_reversible() {
+    fn inverting_the_bits_is_reversible() {
         for b in [0u8, 1, 0x80, 0xAB, 0xFF] {
             assert_eq!(reverse_bits(reverse_bits(b)), b);
         }

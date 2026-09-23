@@ -158,14 +158,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn solo_el_xrun_deja_seguir() {
+    fn only_an_xrun_lets_playback_continue() {
         assert!(SinkError::Xrun.is_recoverable());
         assert!(!SinkError::DeviceLost.is_recoverable());
         assert!(!SinkError::Timeout(Duration::from_millis(200)).is_recoverable());
     }
 
     #[test]
-    fn saltar_se_consume_una_sola_vez() {
+    fn a_skip_is_consumed_exactly_once() {
         let s = SkipSignal::new();
         assert!(!s.take());
         s.skip();
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn la_pausa_se_pone_y_se_quita() {
+    fn the_pause_goes_on_and_comes_off() {
         let p = PauseSignal::new();
         assert!(!p.is_paused());
         p.set(true);
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn limpiar_la_bandera_deja_lista_la_siguiente_pista() {
+    fn clearing_the_flag_leaves_the_next_track_ready() {
         let signal = StopSignal::new();
         signal.stop();
         signal.reset();
@@ -192,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn la_señal_de_paro_se_ve_desde_otro_hilo() {
+    fn the_stop_signal_is_visible_from_another_thread() {
         let signal = StopSignal::new();
         let copy = signal.clone();
         assert!(!signal.is_stopped());

@@ -95,7 +95,7 @@ mod tests {
     }
 
     #[test]
-    fn se_saca_el_titulo_del_bloque() {
+    fn the_title_is_pulled_out_of_the_block() {
         let b = "StreamTitle='Creedence - Born On The Bayou';StreamUrl='';";
         assert_eq!(
             title_of(b.as_bytes()).as_deref(),
@@ -104,13 +104,13 @@ mod tests {
     }
 
     #[test]
-    fn un_bloque_sin_titulo_no_dice_nada() {
+    fn a_block_without_a_title_says_nothing() {
         assert_eq!(title_of(b"StreamUrl='http://x';"), None);
         assert_eq!(title_of(b"StreamTitle='';"), None);
     }
 
     #[test]
-    fn la_metadata_sale_del_audio_y_el_titulo_se_publica() {
+    fn the_metadata_is_taken_out_of_the_audio_and_the_title_is_published() {
         // 16 bytes de audio, un bloque con título, y otros 16 de audio.
         let mut data = Vec::new();
         data.extend_from_slice(&[1u8; 16]);
@@ -129,7 +129,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_metaint_el_flujo_pasa_tal_cual() {
+    fn without_metaint_the_stream_passes_through_unchanged() {
         let data: Vec<u8> = (0..50u8).collect();
         let mut lector =
             IcyReader::new(std::io::Cursor::new(data.clone()), 0, NowPlaying::new());

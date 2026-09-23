@@ -145,7 +145,7 @@ mod tests {
     use std::time::Duration;
 
     #[test]
-    fn en_pausa_no_se_escribe_y_al_reanudar_sigue_donde_iba() {
+    fn paused_nothing_is_written_and_resuming_picks_up_where_it_was() {
         use std::sync::atomic::{AtomicBool, Ordering};
         use std::sync::Arc;
 
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn parar_desde_una_pausa_sale_de_inmediato() {
+    fn stopping_from_a_pause_returns_at_once() {
         let pause = PauseSignal::new();
         pause.set(true);
         let stop = StopSignal::new();
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn el_progreso_avisa_los_frames_que_de_verdad_salieron() {
+    fn progress_reports_the_frames_that_actually_went_out() {
         let mut source = Blocks(vec![block(10), block(6)]);
         let mut sink = FakeSink::new(4);
         let mut warnings = Vec::new();
@@ -253,7 +253,7 @@ mod tests {
     }
 
     #[test]
-    fn una_pista_completa_termina_y_deja_avanzar_la_cola() {
+    fn a_finished_track_lets_the_queue_advance() {
         let mut source = Blocks(vec![block(10), block(10)]);
         let mut sink = FakeSink::new(100);
         let out = render(&mut source, &mut sink, &StopSignal::new());
@@ -262,7 +262,7 @@ mod tests {
     }
 
     #[test]
-    fn las_escrituras_parciales_se_reintentan_hasta_entregar_todo() {
+    fn partial_writes_are_retried_until_everything_is_delivered() {
         let mut source = Blocks(vec![block(10)]);
         let mut sink = FakeSink::new(3);
         let out = render(&mut source, &mut sink, &StopSignal::new());
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dispositivo_perdido_no_se_confunde_con_fin_de_pista() {
+    fn a_lost_device_is_not_mistaken_for_end_of_track() {
         // El hallazgo: en QBZ esto avanzaba la cola entera sin avisar.
         let mut source = Blocks(vec![block(10), block(10)]);
         let mut sink = FakeSink::failing(100, 1, SinkError::DeviceLost);
@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn un_timeout_tambien_es_falla_y_no_espera_para_siempre() {
+    fn a_timeout_is_a_failure_too_and_does_not_wait_forever() {
         let mut source = Blocks(vec![block(4)]);
         let wait = Duration::from_millis(200);
         let mut sink = FakeSink::failing(100, 1, SinkError::Timeout(wait));
@@ -291,14 +291,14 @@ mod tests {
     }
 
     #[test]
-    fn un_xrun_suelto_se_aguanta_y_la_pista_termina_bien() {
+    fn a_lone_xrun_is_absorbed_and_the_track_finishes() {
         let mut source = Blocks(vec![block(6)]);
         let mut sink = FakeSink::failing(100, 1, SinkError::Xrun);
         assert_eq!(render(&mut source, &mut sink, &StopSignal::new()), Outcome::Finished { frames: 6 });
     }
 
     #[test]
-    fn muchos_xruns_seguidos_dan_el_dispositivo_por_perdido() {
+    fn many_xruns_in_a_row_give_the_device_up_for_lost() {
         struct AlwaysXrun;
         impl AudioSink for AlwaysXrun {
             fn format(&self) -> StreamFormat {
@@ -317,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn parar_no_espera_al_dispositivo() {
+    fn stopping_does_not_wait_for_the_device() {
         // La señal ya está puesta antes de empezar: el lazo la ve entre
         // bloques y sale sin pedirle nada al dispositivo.
         let stop = StopSignal::new();
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn parar_a_media_pista_sale_entre_escrituras() {
+    fn stopping_mid_track_returns_between_writes() {
         struct StopsOnTheThird(StopSignal, usize);
         impl AudioSink for StopsOnTheThird {
             fn format(&self) -> StreamFormat {

@@ -26,7 +26,7 @@ fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
 }
 
 #[test]
-fn se_leen_los_campos_basicos_y_la_duracion() {
+fn the_basic_fields_and_the_duration_are_read() {
     let Some(path) = file(
         "basico",
         &[
@@ -53,7 +53,7 @@ fn se_leen_los_campos_basicos_y_la_duracion() {
 }
 
 #[test]
-fn un_archivo_sin_tags_no_falla_y_reporta_sus_propiedades() {
+fn a_file_without_tags_does_not_fail_and_reports_its_properties() {
     let Some(path) = file("sin-tags", &[]) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -66,7 +66,7 @@ fn un_archivo_sin_tags_no_falla_y_reporta_sus_propiedades() {
 }
 
 #[test]
-fn el_genero_se_lee_como_lista() {
+fn the_genre_is_read_as_a_list() {
     let Some(path) = file("generos", &[("GENRE", "Rock")]) else {
         eprintln!("sin ffmpeg: se salta");
         return;

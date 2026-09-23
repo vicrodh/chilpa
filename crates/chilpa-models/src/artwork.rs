@@ -41,18 +41,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sin_portada_por_omision() {
+    fn no_artwork_by_default() {
         assert!(ArtworkRef::default().is_none());
     }
 
     #[test]
-    fn un_archivo_local_si_tiene_url_externa() {
+    fn a_local_file_does_have_an_external_url() {
         let art = ArtworkRef::File(PathBuf::from("/musica/album/cover.jpg"));
         assert_eq!(art.external_url().as_deref(), Some("file:///musica/album/cover.jpg"));
     }
 
     #[test]
-    fn lo_embebido_no_tiene_url_hasta_extraerse() {
+    fn embedded_artwork_has_no_url_until_it_is_extracted() {
         let art = ArtworkRef::Embedded { path: PathBuf::from("/musica/a.flac"), index: 0 };
         assert_eq!(art.external_url(), None);
     }

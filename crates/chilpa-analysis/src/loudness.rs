@@ -226,7 +226,7 @@ mod tests {
     }
 
     #[test]
-    fn un_seno_de_cero_dbfs_en_un_canal_mide_menos_tres_lkfs() {
+    fn a_zero_dbfs_sine_on_one_channel_measures_minus_three_lkfs() {
         // Es la calibración de la norma: 0 dBFS a 997 Hz en un solo canal
         // son -3.01 LKFS. Si esto se mueve, la curva K está mal.
         let data = sine(1.0, 48_000, 5, 2, true);
@@ -235,21 +235,21 @@ mod tests {
     }
 
     #[test]
-    fn el_mismo_seno_en_los_dos_canales_mide_tres_unidades_mas() {
+    fn the_same_sine_on_both_channels_measures_three_units_more() {
         let one = integrated(&sine(1.0, 48_000, 5, 2, true), 48_000, 2).unwrap();
         let dos = integrated(&sine(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
         assert!((dos - one - 3.01).abs() < 0.1, "de {one:.2} a {dos:.2}");
     }
 
     #[test]
-    fn al_doble_de_amplitud_seis_unidades_mas() {
+    fn twice_the_amplitude_is_six_units_more() {
         let low = integrated(&sine(0.25, 48_000, 5, 2, false), 48_000, 2).unwrap();
         let alto = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
         assert!((alto - low - 6.02).abs() < 0.1, "de {low:.2} a {alto:.2}");
     }
 
     #[test]
-    fn la_medida_no_depende_de_la_frecuencia_de_muestreo() {
+    fn the_measurement_does_not_depend_on_the_sample_rate() {
         // La curva K se recalcula para cada frecuencia; si estuviera fija a
         // 48 kHz, esto se separaría.
         let a = integrated(&sine(0.5, 44_100, 5, 2, false), 44_100, 2).unwrap();
@@ -260,12 +260,12 @@ mod tests {
     }
 
     #[test]
-    fn el_silencio_no_tiene_sonoridad() {
+    fn silence_has_no_loudness() {
         assert_eq!(integrated(&vec![0.0; 48_000 * 4], 48_000, 2), None);
     }
 
     #[test]
-    fn una_pista_mas_corta_que_un_bloque_no_da_numero() {
+    fn a_track_shorter_than_a_block_gives_no_number() {
         // 400 ms es el bloque; 200 no alcanzan.
         assert_eq!(integrated(&sine(0.5, 48_000, 0, 2, false), 48_000, 2), None);
         let short = sine(0.5, 48_000, 1, 2, false);
@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn los_silencios_no_bajan_la_cuenta() {
+    fn silences_do_not_drag_the_reading_down() {
         // Cinco segundos de tono y cinco de silencio: la compuerta relativa
         // tiene que dejar fuera el silencio.
         let mut data = sine(0.5, 48_000, 5, 2, false);
@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn una_frecuencia_de_muestreo_imposible_no_arma_medidor() {
+    fn an_impossible_sample_rate_builds_no_meter() {
         assert!(Meter::new(0, 2).is_none());
         assert!(Meter::new(4_000, 2).is_none());
     }

@@ -236,14 +236,14 @@ mod tests {
     }
 
     #[test]
-    fn un_pulso_de_120_se_detecta_como_120() {
+    fn a_120_beat_is_detected_as_120() {
         let t = detect(&pulse(120.0, 44_100, 20), 44_100).expect("hay pulso");
         assert!((t.bpm - 120.0).abs() < 3.0, "salió {}", t.bpm);
         assert!(t.confidence > 0.1, "confianza baja: {}", t.confidence);
     }
 
     #[test]
-    fn varios_tempos_salen_cerca() {
+    fn several_tempos_land_close() {
         // Dos BPM de margen: con la interpolación del pico, el error de
         // cuantización de los cuadros se queda por debajo de eso.
         for expected in [85.0f32, 90.0, 100.0, 110.0, 128.0, 140.0, 150.0] {
@@ -258,7 +258,7 @@ mod tests {
     }
 
     #[test]
-    fn un_pulso_con_ruido_encima_sigue_saliendo() {
+    fn a_beat_under_noise_still_comes_out() {
         // Ruido determinista, para que la prueba no dependa del día.
         let mut x: u32 = 0x1234_5678;
         let mut v = pulse(120.0, 44_100, 20);
@@ -273,7 +273,7 @@ mod tests {
     }
 
     #[test]
-    fn un_tempo_lento_se_reporta_en_el_rango_en_que_se_cuenta() {
+    fn a_slow_tempo_is_reported_in_the_range_it_is_counted_in() {
         // 60 BPM se cuenta igual de bien como 120: se prefiere el doble.
         let t = detect(&pulse(60.0, 44_100, 24), 44_100).expect("hay pulso");
         assert!(
@@ -284,19 +284,19 @@ mod tests {
     }
 
     #[test]
-    fn el_silencio_no_tiene_tempo() {
+    fn silence_has_no_tempo() {
         assert!(detect(&vec![0.0; 44_100 * 20], 44_100).is_none());
     }
 
     #[test]
-    fn una_pista_muy_corta_no_da_un_numero_inventado() {
+    fn a_very_short_track_gives_no_invented_number() {
         assert!(detect(&pulse(120.0, 44_100, 3), 44_100).is_none(), "tres segundos no bastan");
         assert!(detect(&[], 44_100).is_none());
         assert!(detect(&pulse(120.0, 44_100, 20), 0).is_none(), "sin frecuencia, nada");
     }
 
     #[test]
-    fn el_remuestreo_promedia_y_acorta() {
+    fn resampling_averages_and_shortens() {
         let v: Vec<f32> = (0..8).map(|i| i as f32).collect();
         let r = remuestrear(&v, 44_100, 11_025);
         assert_eq!(r.len(), 2, "de cuatro en cuatro");

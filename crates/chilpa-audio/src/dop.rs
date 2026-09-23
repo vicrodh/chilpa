@@ -133,13 +133,13 @@ mod tests {
     }
 
     #[test]
-    fn el_portador_de_dsd64_es_176_400() {
+    fn the_dsd64_carrier_is_176_400() {
         assert_eq!(carrier_rate(2_822_400), 176_400);
         assert_eq!(carrier_rate(5_644_800), 352_800);
     }
 
     #[test]
-    fn los_markers_alternan_y_los_dos_canales_llevan_el_mismo() {
+    fn markers_alternate_and_both_channels_carry_the_same_one() {
         let left = dsd(&[0xAB, 0xCD, 0x12, 0x34]);
         let der = dsd(&[0x55, 0xAA, 0x9C, 0x63]);
         let mut out = Vec::new();
@@ -151,7 +151,7 @@ mod tests {
     }
 
     #[test]
-    fn la_fase_del_marker_sigue_entre_llamadas() {
+    fn the_marker_phase_survives_across_calls() {
         let mut packer = DopPacker::new();
         let mut out = Vec::new();
         packer.pack(&[&dsd(&[0, 0]), &dsd(&[0, 0])], &mut out);
@@ -161,7 +161,7 @@ mod tests {
     }
 
     #[test]
-    fn el_silencio_lleva_payload_de_dsd_y_no_ceros() {
+    fn silence_carries_a_dsd_payload_and_not_zeros() {
         let mut out = Vec::new();
         DopPacker::new().silence(1, 2, &mut out);
         assert_eq!(out[0], ((0x05 << 16) | 0x6969) << 8);
@@ -169,7 +169,7 @@ mod tests {
     }
 
     #[test]
-    fn una_escritura_parcial_se_reanuda_y_no_pierde_frames() {
+    fn a_partial_write_resumes_and_loses_no_frames() {
         // El hallazgo de la auditoría: QBZ solo avisaba del write parcial y
         // tiraba el resto, y ahí se rompía la alternancia.
         let mut packer = DopPacker::new();
@@ -190,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn tras_un_xrun_se_rellena_con_silencio_y_la_fase_no_se_rompe() {
+    fn after_an_xrun_it_fills_with_silence_and_the_phase_holds() {
         let mut packer = DopPacker::new();
         let mut words = Vec::new();
         packer.pack(&[&dsd(&[1, 2]), &dsd(&[3, 4])], &mut words);

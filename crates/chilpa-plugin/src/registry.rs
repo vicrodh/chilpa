@@ -164,7 +164,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn un_manifest_ilegible_se_anota_y_no_tumba_el_registro() {
+    fn an_unreadable_manifest_is_recorded_and_does_not_bring_the_registry_down() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         assert!(!r.install(&host, "esto no es json", b""));
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn un_manifest_con_id_pero_roto_se_anota_con_su_id() {
+    fn a_broken_manifest_that_has_an_id_is_recorded_under_it() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         // Tiene id pero le falta todo lo demás.
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn uno_que_no_paso_la_validacion_conserva_su_nombre() {
+    fn one_that_failed_validation_keeps_its_name() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         // El JSON se lee; lo que no pasa es la versión de la API.
@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn a_uno_que_no_esta_no_se_le_puede_pedir_nada() {
+    fn nothing_can_be_asked_of_one_that_is_not_there() {
         let r = Registry::new();
         assert!(matches!(r.state("com.no.existe"), State::Quarantined { .. }));
     }

@@ -197,7 +197,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_tipo_de_contenido_sugiere_la_extension() {
+    fn the_content_type_suggests_the_extension() {
         let mut info = StreamInfo { content_type: Some("audio/mpeg".into()), ..Default::default() };
         assert_eq!(info.extension_hint().as_deref(), Some("mp3"));
         info.content_type = Some("audio/flac; charset=utf-8".into());
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn un_stream_no_se_rebobina() {
+    fn a_stream_does_not_rewind() {
         let data: Vec<u8> = (0..100u8).collect();
         let mut s = HttpStream::new(
             Box::new(std::io::Cursor::new(data)),
@@ -221,7 +221,7 @@ mod tests {
     }
 
     #[test]
-    fn el_titulo_de_la_estacion_se_comparte_entre_hilos() {
+    fn the_station_title_is_shared_across_threads() {
         let np = NowPlaying::new();
         let copy = np.clone();
         std::thread::spawn(move || copy.set(Some("Una canción".into()))).join().unwrap();

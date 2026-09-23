@@ -148,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn la_potencia_de_dos_es_la_que_cabe() {
+    fn the_power_of_two_is_the_one_that_fits() {
         assert_eq!(power_of_two(1024), 1024);
         assert_eq!(power_of_two(1025), 1024);
         assert_eq!(power_of_two(1023), 512);
@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn un_tono_aparece_en_su_banda_y_no_en_las_demas() {
+    fn a_tone_shows_in_its_band_and_in_no_other() {
         let rate = 44_100;
         let data = sine(1_000.0, rate, 4096, 0.9);
         let bands = bands(&data, rate, 24);
@@ -183,13 +183,13 @@ mod tests {
     }
 
     #[test]
-    fn el_silencio_no_dibuja_nada() {
+    fn silence_draws_nothing() {
         let bands = bands(&vec![0.0; 2048], 44_100, 16);
         assert!(bands.iter().all(|b| *b == 0.0), "{bands:?}");
     }
 
     #[test]
-    fn un_tono_mas_fuerte_da_una_banda_mas_alta() {
+    fn a_louder_tone_gives_a_taller_band() {
         let rate = 44_100;
         let low = bands(&sine(1_000.0, rate, 4096, 0.05), rate, 24);
         let alto = bands(&sine(1_000.0, rate, 4096, 0.9), rate, 24);
@@ -199,7 +199,7 @@ mod tests {
     }
 
     #[test]
-    fn con_poco_material_no_se_inventa_un_espectro() {
+    fn too_little_material_invents_no_spectrum() {
         assert!(bands(&[], 44_100, 16).is_empty());
         assert!(bands(&[0.1; 8], 44_100, 16).is_empty(), "ocho muestras no son un espectro");
         assert!(bands(&[0.1; 2048], 0, 16).is_empty(), "sin frecuencia de muestreo, nada");
@@ -207,7 +207,7 @@ mod tests {
     }
 
     #[test]
-    fn la_fft_de_una_constante_deja_todo_en_el_bin_cero() {
+    fn the_fft_of_a_constant_puts_everything_in_bin_zero() {
         let mut re = vec![1.0f32; 8];
         let mut im = vec![0.0f32; 8];
         fft(&mut re, &mut im);

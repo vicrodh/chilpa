@@ -213,28 +213,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_año_sale_de_la_fecha_sin_truncarla() {
+    fn the_year_comes_from_the_date_without_truncating_it() {
         let tags = Tags { date: Some("2019-03-15".into()), ..Tags::default() };
         assert_eq!(tags.year(), Some(2019));
         assert_eq!(tags.date.as_deref(), Some("2019-03-15"), "la fecha se conserva completa");
     }
 
     #[test]
-    fn varios_artistas_se_muestran_en_una_linea_sin_perderse() {
+    fn several_artists_show_on_one_line_without_getting_lost() {
         let tags = Tags { artists: vec!["Uno".into(), "Dos".into()], ..Tags::default() };
         assert_eq!(tags.artist_line(), "Uno, Dos");
         assert_eq!(tags.artists.len(), 2, "siguen siendo dos, no una cadena");
     }
 
     #[test]
-    fn el_nombre_de_la_portada_cambia_si_cambia_el_archivo() {
+    fn the_cover_name_changes_when_the_file_changes() {
         // Dos rutas distintas no pueden compartir archivo de caché.
         assert_ne!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/b.flac")));
         assert_eq!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/a.flac")));
     }
 
     #[test]
-    fn un_archivo_que_no_existe_se_reporta() {
+    fn a_file_that_does_not_exist_is_reported() {
         assert!(read(Path::new("/no/existe.flac")).is_err());
     }
 }

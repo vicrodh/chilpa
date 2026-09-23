@@ -72,7 +72,7 @@ fn run(
 }
 
 #[test]
-fn uno_que_se_porta_bien_carga_y_contesta() {
+fn a_well_behaved_one_loads_and_answers() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -85,7 +85,7 @@ fn uno_que_se_porta_bien_carga_y_contesta() {
 }
 
 #[test]
-fn uno_que_truena_se_detiene_y_chilpa_sigue() {
+fn one_that_crashes_is_stopped_and_chilpa_carries_on() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -109,7 +109,7 @@ fn uno_que_truena_se_detiene_y_chilpa_sigue() {
 }
 
 #[test]
-fn uno_que_se_cuelga_se_corta_por_combustible() {
+fn one_that_hangs_is_cut_off_by_fuel() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -124,7 +124,7 @@ fn uno_que_se_cuelga_se_corta_por_combustible() {
 }
 
 #[test]
-fn a_uno_que_pide_mas_memoria_de_la_permitida_se_le_niega() {
+fn one_asking_for_more_memory_than_allowed_is_refused() {
     // Ocho megabytes son 128 páginas; pide 200 de un jalón. Contesta la
     // respuesta buena solo si el motor se lo negó.
     let wat = format!(
@@ -144,7 +144,7 @@ fn a_uno_que_pide_mas_memoria_de_la_permitida_se_le_niega() {
 }
 
 #[test]
-fn uno_que_se_come_la_memoria_en_un_lazo_se_detiene() {
+fn one_eating_memory_in_a_loop_is_stopped() {
     // Crece de a una página para siempre. Con el límite puesto nunca crece,
     // y lo que lo detiene, medido, es el reloj y no el combustible: pedir
     // memoria es caro en tiempo y barato en instrucciones. Por eso hacen
@@ -169,7 +169,7 @@ fn uno_que_se_come_la_memoria_en_un_lazo_se_detiene() {
 }
 
 #[test]
-fn uno_que_miente_sobre_su_version_no_carga() {
+fn one_lying_about_its_version_does_not_load() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 7))
@@ -185,7 +185,7 @@ fn uno_que_miente_sobre_su_version_no_carga() {
 }
 
 #[test]
-fn uno_al_que_le_faltan_exports_no_carga() {
+fn one_missing_exports_does_not_load() {
     // Sin memoria ni alloc: no hay forma de hablarle.
     let wat = r#"(module (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#;
     let host = Host::new().unwrap();
@@ -215,7 +215,7 @@ fn plugin_that_requests(url: &str) -> String {
 }
 
 #[test]
-fn uno_que_sale_a_un_dominio_que_no_declaro_no_llega_al_host() {
+fn one_reaching_a_domain_it_did_not_declare_never_reaches_the_host() {
     // Declara ejemplo.com y pide otra-cosa.net.
     let wat = plugin_that_requests("https://otra-cosa.net/robar");
     let (_reg, notes, r) =
@@ -226,7 +226,7 @@ fn uno_que_sale_a_un_dominio_que_no_declaro_no_llega_al_host() {
 }
 
 #[test]
-fn uno_que_sale_al_dominio_que_si_declaro_llega() {
+fn one_reaching_the_domain_it_did_declare_gets_through() {
     let wat = plugin_that_requests("https://api.ejemplo.com/buscar");
     let (_reg, notes, r) =
         run(r#"{"tipo": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
@@ -239,7 +239,7 @@ fn uno_que_sale_al_dominio_que_si_declaro_llega() {
 }
 
 #[test]
-fn uno_sin_permiso_de_red_no_llega_al_host_aunque_lo_intente() {
+fn one_without_network_permission_never_reaches_the_host_however_hard_it_tries() {
     let wat = plugin_that_requests("https://api.ejemplo.com/x");
     let (_reg, notes, r) = run("", &wat, "buscar");
     assert!(r.is_ok(), "{r:?}");
@@ -247,7 +247,7 @@ fn uno_sin_permiso_de_red_no_llega_al_host_aunque_lo_intente() {
 }
 
 #[test]
-fn uno_sin_almacen_no_lee_ni_escribe() {
+fn one_without_storage_neither_reads_nor_writes() {
     let wat = format!(
         r#"(module
             (import "chilpa" "store_get" (func $get (param i32 i32 i32 i32) (result i32)))
@@ -268,7 +268,7 @@ fn uno_sin_almacen_no_lee_ni_escribe() {
 }
 
 #[test]
-fn el_almacen_de_un_plugin_va_siempre_a_su_nombre() {
+fn a_plugin_store_always_goes_under_its_own_name() {
     let wat = format!(
         r#"(module
             (import "chilpa" "store_set" (func $set (param i32 i32 i32 i32) (result i32)))
@@ -289,7 +289,7 @@ fn el_almacen_de_un_plugin_va_siempre_a_su_nombre() {
 }
 
 #[test]
-fn uno_que_contesta_una_direccion_ajena_no_hace_que_chilpa_lea_de_mas() {
+fn one_answering_with_a_foreign_address_does_not_make_chilpa_read_beyond() {
     // Contesta una dirección enorme, muy por fuera de su memoria.
     let wat = format!(
         r#"(module {PRELUDE}
@@ -302,7 +302,7 @@ fn uno_que_contesta_una_direccion_ajena_no_hace_que_chilpa_lea_de_mas() {
 }
 
 #[test]
-fn uno_que_no_contesta_nada_no_se_confunde_con_uno_que_contesto_vacio() {
+fn one_that_answers_nothing_is_not_confused_with_one_that_answered_empty() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -313,7 +313,7 @@ fn uno_que_no_contesta_nada_no_se_confunde_con_uno_que_contesto_vacio() {
 }
 
 #[test]
-fn una_operacion_que_el_plugin_no_tiene_se_dice_y_ya() {
+fn an_operation_the_plugin_lacks_is_reported_and_that_is_all() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -324,7 +324,7 @@ fn una_operacion_que_el_plugin_no_tiene_se_dice_y_ya() {
 }
 
 #[test]
-fn un_plugin_roto_no_se_lleva_a_los_demas() {
+fn a_broken_plugin_does_not_take_the_others_with_it() {
     let host = Host::new().unwrap();
     let (svc, _) = services();
     let mut reg = Registry::new();
@@ -357,7 +357,7 @@ fn un_plugin_roto_no_se_lleva_a_los_demas() {
 }
 
 #[test]
-fn de_la_cuarentena_solo_lo_saca_el_usuario() {
+fn only_the_user_gets_it_out_of_quarantine() {
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))

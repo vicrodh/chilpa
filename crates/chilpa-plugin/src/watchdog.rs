@@ -139,14 +139,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn uno_que_nunca_ha_hecho_nada_esta_bien() {
+    fn one_that_has_never_done_anything_is_healthy() {
         let w = Watchdog::new();
         assert_eq!(w.state("com.a.b"), State::Healthy);
         assert!(w.usable("com.a.b"));
     }
 
     #[test]
-    fn dos_fallas_no_son_cuarentena_pero_se_notan() {
+    fn two_failures_are_not_quarantine_but_they_show() {
         let mut w = Watchdog::new();
         assert_eq!(w.failure("com.a.b", "truena"), State::Stumbling { failures: 1 });
         assert_eq!(w.failure("com.a.b", "truena"), State::Stumbling { failures: 2 });
@@ -154,7 +154,7 @@ mod tests {
     }
 
     #[test]
-    fn a_la_tercera_va_a_cuarentena_y_se_dice_por_que() {
+    fn on_the_third_it_goes_to_quarantine_and_says_why() {
         let mut w = Watchdog::new();
         w.failure("com.a.b", "una");
         w.failure("com.a.b", "otra");
@@ -170,7 +170,7 @@ mod tests {
     }
 
     #[test]
-    fn una_llamada_buena_perdona_lo_anterior() {
+    fn one_good_call_forgives_what_came_before() {
         let mut w = Watchdog::new();
         w.failure("com.a.b", "una");
         w.failure("com.a.b", "otra");
@@ -183,7 +183,7 @@ mod tests {
     }
 
     #[test]
-    fn las_fallas_viejas_no_cuentan() {
+    fn old_failures_do_not_count() {
         let mut w = Watchdog::new();
         let now = Instant::now();
         let a_while_ago = now - WINDOW - Duration::from_secs(1);
@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn de_la_cuarentena_solo_sale_el_usuario() {
+    fn only_the_user_takes_it_out_of_quarantine() {
         let mut w = Watchdog::new();
         for _ in 0..3 {
             w.failure("com.a.b", "truena");
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn hay_cosas_que_van_a_cuarentena_de_inmediato() {
+    fn some_things_go_to_quarantine_at_once() {
         let mut w = Watchdog::new();
         w.quarantine("com.a.b", "el manifest pide una versión de API que no existe");
         assert!(!w.usable("com.a.b"));
@@ -225,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn un_plugin_roto_no_arrastra_a_los_demas() {
+    fn a_broken_plugin_does_not_drag_the_others_down() {
         let mut w = Watchdog::new();
         for _ in 0..3 {
             w.failure("com.roto.plugin", "truena");

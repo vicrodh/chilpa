@@ -196,7 +196,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_core_arranca_con_la_biblioteca_local() {
+    fn the_core_starts_with_the_local_library() {
         let core = Core::new();
         assert_eq!(core.sources(), &[SourceId::local()]);
     }

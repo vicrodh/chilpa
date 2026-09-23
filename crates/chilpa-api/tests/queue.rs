@@ -73,7 +73,7 @@ fn wait_at_least(chilpa: &mut chilpa_api::Chilpa, index: usize) -> bool {
 }
 
 #[test]
-fn volver_atras_no_recorta_la_cola() {
+fn going_back_does_not_trim_the_queue() {
     let dir = folder("atras");
     other_library(&dir);
     // Pistas de medio segundo: alcanza para que la cola avance sola.
@@ -104,7 +104,7 @@ fn volver_atras_no_recorta_la_cola() {
 }
 
 #[test]
-fn el_aleatorio_y_la_repeticion_se_recuerdan_en_la_fachada() {
+fn shuffle_and_repeat_are_remembered_by_the_facade() {
     let mut chilpa = chilpa_api::Chilpa::new();
     assert!(!chilpa.shuffle(), "arranca en orden");
     assert_eq!(chilpa.repeat(), chilpa_api::Repeat::Off);
@@ -115,7 +115,7 @@ fn el_aleatorio_y_la_repeticion_se_recuerdan_en_la_fachada() {
 }
 
 #[test]
-fn encolar_sin_nada_sonando_arranca_la_cola() {
+fn enqueuing_with_nothing_playing_starts_the_queue() {
     let dir = folder("encolar");
     other_library(&dir);
     let paths: Vec<String> = ["01.wav", "02.wav"]

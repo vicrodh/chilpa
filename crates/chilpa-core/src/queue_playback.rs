@@ -564,7 +564,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sin_orden_propio_la_cola_va_como_viene() {
+    fn without_an_order_of_its_own_the_queue_plays_as_it_came() {
         let o = Order::new();
         assert_eq!(o.first(3), 0);
         assert_eq!(o.next(0, 3, false), Some(1));
@@ -573,7 +573,7 @@ mod tests {
     }
 
     #[test]
-    fn un_orden_propio_manda() {
+    fn an_explicit_order_wins() {
         let o = Order::new();
         assert!(o.set(vec![2, 0, 1], 3));
         assert_eq!(o.first(3), 2);
@@ -583,7 +583,7 @@ mod tests {
     }
 
     #[test]
-    fn cambiar_el_orden_a_media_cola_sigue_desde_donde_quedo() {
+    fn changing_the_order_mid_queue_continues_from_where_it_was() {
         let o = Order::new();
         assert!(o.set(vec![0, 1, 2, 3], 4));
         // Suena la 1 y se reordena: lo que sigue es lo que la siga ahora.
@@ -592,7 +592,7 @@ mod tests {
     }
 
     #[test]
-    fn un_orden_que_no_es_permutacion_se_rechaza() {
+    fn an_order_that_is_not_a_permutation_is_refused() {
         let o = Order::new();
         assert!(!o.set(vec![0, 0, 1], 3), "repetida");
         assert!(!o.set(vec![0, 1], 3), "incompleta");
@@ -601,7 +601,7 @@ mod tests {
     }
 
     #[test]
-    fn barajar_da_una_permutacion_y_no_siempre_la_misma() {
+    fn shuffling_gives_a_permutation_and_not_always_the_same_one() {
         for seed in [1u64, 42, 99_999] {
             let o = shuffled(8, seed);
             assert!(is_permutation(&o, 8), "{o:?} no es una permutación");
@@ -613,7 +613,7 @@ mod tests {
     }
 
     #[test]
-    fn limpiar_devuelve_el_orden_del_arreglo() {
+    fn clearing_restores_the_array_order() {
         let o = Order::new();
         assert!(o.set(vec![1, 0], 2));
         o.clear();

@@ -34,7 +34,7 @@ fn reply(headers: &[(&str, &str)], body: &[u8]) -> Vec<u8> {
 }
 
 #[test]
-fn se_lee_el_nombre_de_la_estacion_y_su_formato() {
+fn the_station_name_and_its_format_are_read() {
     let url = server(reply(
         &[("icy-name", "Radio Chilpa"), ("content-type", "audio/mpeg")],
         b"datos de audio",
@@ -45,7 +45,7 @@ fn se_lee_el_nombre_de_la_estacion_y_su_formato() {
 }
 
 #[test]
-fn la_metadata_icy_sale_del_audio_y_deja_el_titulo() {
+fn the_icy_metadata_comes_out_of_the_audio_and_leaves_the_title() {
     // 16 bytes de audio, el bloque con el título, y 16 más.
     let mut body = vec![7u8; 16];
     let text = b"StreamTitle='Radio Chilpa - Una';";
@@ -72,7 +72,7 @@ fn la_metadata_icy_sale_del_audio_y_deja_el_titulo() {
 }
 
 #[test]
-fn una_pagina_web_no_es_una_estacion() {
+fn a_web_page_is_not_a_station() {
     let url = server(reply(&[("content-type", "text/html")], b"<html>"));
     match open(&url) {
         Err(StreamError::NotAudio(kind)) => assert!(kind.contains("html")),
@@ -82,7 +82,7 @@ fn una_pagina_web_no_es_una_estacion() {
 }
 
 #[test]
-fn una_direccion_muerta_se_reporta_sin_tronar() {
+fn a_dead_address_is_reported_without_crashing() {
     // Puerto cerrado: nadie contesta.
     match open("http://127.0.0.1:1/stream") {
         Err(StreamError::Open(_)) => {}

@@ -84,7 +84,7 @@ mod tests {
     }
 
     #[test]
-    fn las_rutas_relativas_se_resuelven_contra_la_lista() {
+    fn relative_paths_resolve_against_the_playlist() {
         let dir = folder("relativas");
         std::fs::write(dir.join("a.flac"), b"x").unwrap();
         std::fs::write(dir.join("b.flac"), b"x").unwrap();
@@ -98,7 +98,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_ya_no_esta_se_reporta_aparte() {
+    fn what_is_gone_is_reported_separately() {
         let dir = folder("ausentes");
         std::fs::write(dir.join("a.flac"), b"x").unwrap();
         let list = dir.join("l.m3u");
@@ -111,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn las_urls_se_saltan_por_ahora() {
+    fn urls_are_skipped_for_now() {
         let dir = folder("urls");
         let list = dir.join("l.m3u");
         std::fs::write(&list, "http://ejemplo/stream\n").unwrap();
@@ -121,7 +121,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_escrito_se_vuelve_a_leer_igual_y_con_rutas_relativas() {
+    fn what_is_written_reads_back_the_same_and_with_relative_paths() {
         let dir = folder("ida-y-vuelta");
         std::fs::create_dir_all(dir.join("disco")).unwrap();
         let tracks: Vec<PathBuf> =

@@ -70,7 +70,7 @@ mod tests {
     use crate::format::SampleFormat;
 
     #[test]
-    fn lo_entregado_queda_en_el_archivo_tal_cual() {
+    fn what_was_delivered_lands_in_the_file_unchanged() {
         let mut path = std::env::temp_dir();
         path.push("chilpa-capture-test.raw");
         let stream = StreamFormat::new(SampleFormat::S16, 44_100, 2);
@@ -84,7 +84,7 @@ mod tests {
     }
 
     #[test]
-    fn la_captura_acepta_lo_que_le_den_y_se_declara_medida() {
+    fn capture_accepts_whatever_it_is_given_and_declares_itself_measured() {
         let caps = capabilities();
         assert!(caps.probed, "sin esto no se podría prometer bit-perfect");
         assert!(caps.accepts(&StreamFormat::new(SampleFormat::S24In32, 192_000, 2)));

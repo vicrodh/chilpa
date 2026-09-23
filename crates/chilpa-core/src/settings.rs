@@ -135,14 +135,14 @@ mod tests {
     }
 
     #[test]
-    fn sin_archivo_se_usan_los_valores_por_omision() {
+    fn with_no_file_the_defaults_are_used() {
         let s = load_from(&temporal("no-existe"));
         assert_eq!(s, Settings::default());
         assert!(s.bit_perfect, "bit-perfect viene encendido");
     }
 
     #[test]
-    fn lo_guardado_se_vuelve_a_leer_igual() {
+    fn what_was_saved_reads_back_the_same() {
         let file = temporal("ida-y-vuelta");
         let s = Settings {
             output: "hw:1,0".into(),
@@ -158,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn un_archivo_roto_no_tumba_nada() {
+    fn a_broken_file_brings_nothing_down() {
         let file = temporal("roto");
         std::fs::write(&file, "esto no es\nun archivo válido }{\noutput = hw:0,0\n").unwrap();
         let s = load_from(&file);
@@ -168,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_layout_guardado_la_ventana_tiene_con_que_arrancar() {
+    fn with_no_saved_layout_the_window_still_has_something_to_start_with() {
         let file = temporal("sin-layout");
         std::fs::write(&file, "layout =\n").unwrap();
         assert_eq!(load_from(&file).layout, DEFAULT_LAYOUT);
@@ -176,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn los_comentarios_y_los_espacios_no_estorban() {
+    fn comments_and_whitespace_do_not_get_in_the_way() {
         let file = temporal("comentarios");
         std::fs::write(&file, "# un comentario\n  output   =   hw:2,0  \nbit_perfect = false\n").unwrap();
         let s = load_from(&file);

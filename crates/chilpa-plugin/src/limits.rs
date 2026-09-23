@@ -96,14 +96,14 @@ mod tests {
     use super::*;
 
     #[test]
-    fn los_limites_por_omision_son_razonables() {
+    fn the_default_limits_are_reasonable() {
         let l = Limits::default();
         assert!(l.fuel > 0 && l.memory_bytes > 0 && !l.timeout.is_zero());
         assert_eq!(l.max_pages(), 512, "32 MiB son 512 páginas de 64 KiB");
     }
 
     #[test]
-    fn los_cortos_son_mas_apretados_que_los_largos() {
+    fn the_short_limits_are_tighter_than_the_long_ones() {
         let (c, d, l) = (Limits::short(), Limits::default(), Limits::long());
         assert!(c.fuel < d.fuel && d.fuel < l.fuel);
         assert!(c.memory_bytes < d.memory_bytes && d.memory_bytes < l.memory_bytes);
@@ -111,7 +111,7 @@ mod tests {
     }
 
     #[test]
-    fn la_memoria_se_redondea_a_paginas_enteras() {
+    fn memory_is_rounded_up_to_whole_pages() {
         let l = Limits { memory_bytes: 100_000, ..Limits::default() };
         assert_eq!(l.max_pages(), 1, "100 KB no alcanzan para dos páginas");
         let l = Limits { memory_bytes: 1000, ..Limits::default() };
@@ -119,7 +119,7 @@ mod tests {
     }
 
     #[test]
-    fn cada_detencion_se_explica_en_castellano() {
+    fn every_halt_explains_itself_in_plain_words() {
         for d in [
             Halt::OutOfFuel,
             Halt::OutOfMemory,

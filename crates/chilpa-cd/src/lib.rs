@@ -156,14 +156,14 @@ mod tests {
     }
 
     #[test]
-    fn el_formato_de_un_cd_es_siempre_el_mismo() {
+    fn a_cd_always_has_the_same_format() {
         assert_eq!(CDDA_FORMAT.sample_rate_hz, 44_100);
         assert_eq!(CDDA_FORMAT.sample_format, SampleFormat::S16);
         assert_eq!(FRAMES_PER_SECTOR, 588);
     }
 
     #[test]
-    fn se_lee_el_toc_con_sus_duraciones() {
+    fn the_toc_is_read_with_its_durations() {
         let mut d = FakeSink { fail_at: None };
         let toc = read_toc(&mut d).unwrap();
         assert_eq!(toc.tracks.len(), 2);
@@ -172,7 +172,7 @@ mod tests {
     }
 
     #[test]
-    fn una_pista_se_entrega_completa_y_en_bloques() {
+    fn a_track_is_delivered_whole_and_in_blocks() {
         let mut d = FakeSink { fail_at: None };
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
@@ -186,7 +186,7 @@ mod tests {
     }
 
     #[test]
-    fn un_sector_ilegible_corta_y_se_reporta_en_vez_de_sonar_a_silencio() {
+    fn an_unreadable_sector_cuts_and_is_reported_instead_of_playing_silence() {
         let mut d = FakeSink { fail_at: Some(75) };
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
