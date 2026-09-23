@@ -147,3 +147,27 @@ fn la_busqueda_encuentra_por_titulo_artista_y_album() {
 
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn la_portada_de_la_carpeta_se_usa_cuando_el_archivo_no_trae_una() {
+    let Some(dir) = album("portada-carpeta", 2) else {
+        eprintln!("sin ffmpeg: se salta");
+        return;
+    };
+    // Los archivos que genera la prueba no traen portada embebida.
+    let cover = dir.join("disco 1").join("cover.jpg");
+    std::fs::write(&cover, b"no es un jpeg de verdad, pero existe").unwrap();
+
+    let lib = Library::in_memory().unwrap();
+    let cache = std::env::temp_dir().join("chilpa-escaneo-cache");
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+
+    let albumes = lib.albums(10, 0).unwrap();
+    assert_eq!(albumes.len(), 1);
+    assert_eq!(
+        albumes[0].artwork_path.as_deref(),
+        Some(cover.display().to_string().as_str()),
+        "se tomó la portada de la carpeta"
+    );
+    let _ = std::fs::remove_dir_all(dir);
+}
