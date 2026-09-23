@@ -17,19 +17,19 @@
 use crate::{Lyrics, Line};
 
 /// Lee una letra en LRC, o en texto plano si no trae sellos.
-pub fn parse(texto: &str) -> Lyrics {
-    let mut lineas: Vec<Line> = Vec::new();
-    let mut sueltas: Vec<String> = Vec::new();
+pub fn parse(text: &str) -> Lyrics {
+    let mut lines: Vec<Line> = Vec::new();
+    let mut loose: Vec<String> = Vec::new();
     let mut offset_ms: i64 = 0;
     let mut title = None;
     let mut artist = None;
 
-    for cruda in texto.lines() {
-        let linea = cruda.trim_end_matches('\r');
-        let (sellos, resto) = sellos_de(linea);
-        if sellos.is_empty() {
+    for raw in text.lines() {
+        let line = raw.trim_end_matches('\r');
+        let (labels, rest) = labels_of(line);
+        if labels.is_empty() {
             // Puede ser una etiqueta de cabecera o texto sin sincronizar.
-            match etiqueta(linea) {
+            match tag(line) {
                 Some(("offset", v)) => {
                     offset_ms = v.trim().parse().unwrap_or(0);
                 }
@@ -38,24 +38,24 @@ pub fn parse(texto: &str) -> Lyrics {
                 // Cualquier otra etiqueta conocida se calla; no es letra.
                 Some(_) => {}
                 None => {
-                    if !linea.trim().is_empty() {
-                        sueltas.push(linea.trim().to_string());
+                    if !line.trim().is_empty() {
+                        loose.push(line.trim().to_string());
                     }
                 }
             }
             continue;
         }
-        let texto = resto.trim().to_string();
-        for at in sellos {
-            lineas.push(Line { at_ms: at, text: texto.clone() });
+        let text = rest.trim().to_string();
+        for at in labels {
+            lines.push(Line { at_ms: at, text: text.clone() });
         }
     }
 
-    if lineas.is_empty() {
+    if lines.is_empty() {
         return Lyrics {
             title,
             artist,
-            lines: sueltas.into_iter().map(|t| Line { at_ms: 0, text: t }).collect(),
+            lines: loose.into_iter().map(|t| Line { at_ms: 0, text: t }).collect(),
             synced: false,
         };
     }
@@ -63,44 +63,44 @@ pub fn parse(texto: &str) -> Lyrics {
     // El offset del archivo corre la letra entera. Es positivo cuando hay
     // que adelantarla, así que se resta.
     if offset_ms != 0 {
-        for l in &mut lineas {
+        for l in &mut lines {
             *l = Line {
                 at_ms: (l.at_ms as i64 - offset_ms).max(0) as u64,
                 text: std::mem::take(&mut l.text),
             };
         }
     }
-    lineas.sort_by_key(|l| l.at_ms);
-    Lyrics { title, artist, lines: lineas, synced: true }
+    lines.sort_by_key(|l| l.at_ms);
+    Lyrics { title, artist, lines: lines, synced: true }
 }
 
 /// Los sellos con los que empieza un renglón, y lo que queda después.
-fn sellos_de(linea: &str) -> (Vec<u64>, &str) {
-    let mut sellos = Vec::new();
-    let mut resto = linea;
+fn labels_of(line: &str) -> (Vec<u64>, &str) {
+    let mut labels = Vec::new();
+    let mut rest = line;
     loop {
-        let sin_espacios = resto.trim_start();
-        let Some(cierre) = sin_espacios.find(']') else { break };
-        if !sin_espacios.starts_with('[') {
+        let trimmed = rest.trim_start();
+        let Some(close) = trimmed.find(']') else { break };
+        if !trimmed.starts_with('[') {
             break;
         }
-        let Some(ms) = tiempo(&sin_espacios[1..cierre]) else { break };
-        sellos.push(ms);
-        resto = &sin_espacios[cierre + 1..];
+        let Some(ms) = time(&trimmed[1..close]) else { break };
+        labels.push(ms);
+        rest = &trimmed[close + 1..];
     }
-    (sellos, resto)
+    (labels, rest)
 }
 
 /// `mm:ss`, `mm:ss.xx` o `mm:ss.xxx` en milisegundos.
-fn tiempo(s: &str) -> Option<u64> {
-    let (min, resto) = s.split_once(':')?;
-    let minutos: u64 = min.trim().parse().ok()?;
-    let (seg, fraccion) = match resto.split_once(['.', ':']) {
+fn time(s: &str) -> Option<u64> {
+    let (min, rest) = s.split_once(':')?;
+    let minutes: u64 = min.trim().parse().ok()?;
+    let (seg, fraction) = match rest.split_once(['.', ':']) {
         Some((a, b)) => (a, Some(b)),
-        None => (resto, None),
+        None => (rest, None),
     };
-    let segundos: u64 = seg.trim().parse().ok()?;
-    let milis = match fraccion {
+    let seconds: u64 = seg.trim().parse().ok()?;
+    let millis = match fraction {
         None => 0,
         Some(f) => {
             let f = f.trim();
@@ -117,14 +117,14 @@ fn tiempo(s: &str) -> Option<u64> {
             }
         }
     };
-    Some(minutos * 60_000 + segundos * 1_000 + milis)
+    Some(minutes * 60_000 + seconds * 1_000 + millis)
 }
 
 /// `[clave:valor]` de cabecera, si el renglón es eso.
-fn etiqueta(linea: &str) -> Option<(&str, &str)> {
-    let l = linea.trim();
-    let dentro = l.strip_prefix('[')?.strip_suffix(']')?;
-    let (clave, valor) = dentro.split_once(':')?;
+fn tag(line: &str) -> Option<(&str, &str)> {
+    let l = line.trim();
+    let inside = l.strip_prefix('[')?.strip_suffix(']')?;
+    let (clave, valor) = inside.split_once(':')?;
     let clave = clave.trim();
     // Solo letras: así `[01:23]` no pasa por etiqueta.
     if clave.is_empty() || !clave.chars().all(|c| c.is_ascii_alphabetic()) {
@@ -139,11 +139,11 @@ mod tests {
 
     #[test]
     fn se_leen_los_sellos_de_tiempo() {
-        assert_eq!(tiempo("01:02"), Some(62_000));
-        assert_eq!(tiempo("00:01.50"), Some(1_500), "dos dígitos son centésimas");
-        assert_eq!(tiempo("00:01.500"), Some(1_500), "tres son milésimas");
-        assert_eq!(tiempo("00:01.5"), Some(1_500), "uno son décimas");
-        assert_eq!(tiempo("ti:Algo"), None);
+        assert_eq!(time("01:02"), Some(62_000));
+        assert_eq!(time("00:01.50"), Some(1_500), "dos dígitos son centésimas");
+        assert_eq!(time("00:01.500"), Some(1_500), "tres son milésimas");
+        assert_eq!(time("00:01.5"), Some(1_500), "uno son décimas");
+        assert_eq!(time("ti:Algo"), None);
     }
 
     #[test]

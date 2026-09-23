@@ -8,9 +8,9 @@ pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::PluginInfo;
 
-mod biblioteca;
-mod cola;
-mod listas;
+mod library;
+mod queue;
+mod playlists;
 mod plugins;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
@@ -91,7 +91,7 @@ pub struct NowPlaying {
 }
 
 /// Las extensiones que Chilpa sabe abrir hoy.
-const EXTENSIONES: &[&str] =
+const EXTENSIONS: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
 
 /// Los archivos de audio de una carpeta, en orden alfabético.
@@ -101,19 +101,19 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
     let Ok(dir) = std::fs::read_dir(folder) else {
         return Vec::new();
     };
-    let mut archivos: Vec<_> = dir
+    let mut files: Vec<_> = dir
         .flatten()
         .map(|e| e.path())
         .filter(|p| {
             p.is_file()
                 && p.extension()
                     .and_then(|e| e.to_str())
-                    .map(|e| EXTENSIONES.contains(&e.to_lowercase().as_str()))
+                    .map(|e| EXTENSIONS.contains(&e.to_lowercase().as_str()))
                     .unwrap_or(false)
         })
         .collect();
-    archivos.sort();
-    archivos
+    files.sort();
+    files
 }
 
 /// El recorrido que deja el tempo más parejo, empezando en `desde`.
@@ -121,15 +121,15 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
 /// Es un vecino más cercano, a propósito: una mezcla no necesita el orden
 /// óptimo, necesita no dar saltos de cuarenta BPM entre dos pistas. Lo que
 /// no trae tempo se va al final, en su orden.
-fn orden_por_tempo(bpms: &[Option<f32>], desde: usize) -> Vec<usize> {
-    let mut faltan: Vec<usize> = (0..bpms.len()).filter(|i| *i != desde).collect();
-    let mut orden = vec![desde];
-    let mut ultimo = bpms.get(desde).copied().flatten();
+fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
+    let mut missing: Vec<usize> = (0..bpms.len()).filter(|i| *i != from).collect();
+    let mut order = vec![from];
+    let mut ultimo = bpms.get(from).copied().flatten();
 
-    while !faltan.is_empty() {
+    while !missing.is_empty() {
         // De las que tienen tempo, la más cercana a la anterior.
-        let elegido = match ultimo {
-            Some(t) => faltan
+        let chosen = match ultimo {
+            Some(t) => missing
                 .iter()
                 .enumerate()
                 .filter(|(_, i)| bpms[**i].is_some())
@@ -142,38 +142,38 @@ fn orden_por_tempo(bpms: &[Option<f32>], desde: usize) -> Vec<usize> {
             None => None,
         };
         // Si ya no queda ninguna con tempo, se vacía lo que sobra tal cual.
-        let pos = elegido.unwrap_or(0);
-        let i = faltan.remove(pos);
+        let pos = chosen.unwrap_or(0);
+        let i = missing.remove(pos);
         ultimo = bpms[i].or(ultimo);
-        orden.push(i);
+        order.push(i);
     }
-    orden
+    order
 }
 
 /// Lo que el análisis sacó, en una línea.
 ///
 /// La sonoridad se dice, no se aplica: corregirla cambiaría las muestras, y
 /// ahí se acabó el bit-perfect.
-pub(crate) fn describir_analisis(
+pub(crate) fn describe_analysis(
     bpm: Option<f32>,
-    tono: Option<&str>,
+    tone: Option<&str>,
     lufs: Option<f32>,
 ) -> String {
-    let mut partes: Vec<String> = Vec::new();
+    let mut parts: Vec<String> = Vec::new();
     if let Some(b) = bpm {
-        partes.push(format!("{b:.0} BPM"));
+        parts.push(format!("{b:.0} BPM"));
     }
-    if let Some(t) = tono {
-        partes.push(t.to_string());
+    if let Some(t) = tone {
+        parts.push(t.to_string());
     }
     if let Some(l) = lufs {
-        partes.push(format!("{l:.1} LUFS"));
+        parts.push(format!("{l:.1} LUFS"));
     }
-    partes.join(" · ")
+    parts.join(" · ")
 }
 
 /// Traduce una pista de la biblioteca a lo que necesita una vista.
-fn pista_de(t: chilpa_library::StoredTrack) -> LibraryTrack {
+fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
     LibraryTrack {
         id: t.id,
         path: t.external_id,
@@ -188,7 +188,7 @@ fn pista_de(t: chilpa_library::StoredTrack) -> LibraryTrack {
 }
 
 /// El título que muestra una cola: el del tag, o el nombre del archivo.
-fn titulo_de(path: &std::path::Path) -> String {
+fn title_of(path: &std::path::Path) -> String {
     chilpa_tags::read(path)
         .ok()
         .and_then(|info| info.tags.title)
@@ -198,7 +198,7 @@ fn titulo_de(path: &std::path::Path) -> String {
 }
 
 /// Ahora, en segundos desde el epoch.
-fn ahora_unix() -> i64 {
+fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
@@ -206,17 +206,17 @@ fn ahora_unix() -> i64 {
 }
 
 /// Cómo se nombra un número de canales, ya en plural cuando toca.
-fn canales(n: u16) -> String {
+fn channels(n: u16) -> String {
     match n {
         1 => "mono".to_string(),
         2 => "estéreo".to_string(),
-        otros => format!("{otros} canales"),
+        others => format!("{others} canales"),
     }
 }
 
 /// Lo que se sabe de la pista que suena, para registrarla al terminar.
 #[derive(Clone, Debug)]
-struct EnCurso {
+struct InProgress {
     path: String,
     started_at: i64,
     sample_rate_hz: u32,
@@ -343,10 +343,10 @@ pub struct Chilpa {
     core: chilpa_core::Core,
     library: Option<chilpa_library::Library>,
     /// Lo que hace falta para registrar la reproducción cuando termine.
-    en_curso: Option<EnCurso>,
+    in_progress: Option<InProgress>,
     /// Las rutas de la cola actual, completa y en el orden en que se
     /// encoló. Volver atrás no la recorta.
-    cola: Vec<String>,
+    queue: Vec<String>,
     /// Qué posición de `cola` fue la primera que se le dio al reproductor.
     /// Volver atrás relanza desde ahí, y la posición que ve la vista se
     /// cuenta sobre la cola entera.
@@ -355,11 +355,11 @@ pub struct Chilpa {
     repeat: Repeat,
     album_sort: AlbumSort,
     /// El artista al que está filtrada la reja, vacío si no hay filtro.
-    artista: String,
+    artist: String,
     /// Qué posiciones de `cola` se quitaron, para que la vista las apague.
-    quitadas: Vec<bool>,
+    removed: Vec<bool>,
     /// La letra de lo que suena, para no releerla en cada pulso.
-    letra: Option<chilpa_lyrics::Lyrics>,
+    lyrics: Option<chilpa_lyrics::Lyrics>,
     /// El sandbox de plugins, armado la primera vez que se pide.
     plugins: Option<plugins::Plugins>,
     /// Lo que de verdad sale por el dispositivo, para los visualizadores.
@@ -385,15 +385,15 @@ impl Chilpa {
         Self {
             core: chilpa_core::Core::new(),
             library: None,
-            en_curso: None,
-            cola: Vec::new(),
+            in_progress: None,
+            queue: Vec::new(),
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,
             album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
-            artista: String::new(),
-            quitadas: Vec::new(),
-            letra: None,
+            artist: String::new(),
+            removed: Vec::new(),
+            lyrics: None,
             plugins: None,
             tap: chilpa_core::tap::Tap::new(),
             scan: None,
@@ -430,44 +430,44 @@ impl Chilpa {
 
 
     /// Lo que el análisis ya sabía de la pista que empieza.
-    fn cargar_analisis(&mut self, path: &std::path::Path) {
+    fn load_analysis(&mut self, path: &std::path::Path) {
         self.now.analysis = String::new();
         let Some(lib) = self.library() else { return };
         let Ok(source) = lib.source_id("local", "default") else { return };
         let Some(id) = lib.track_by_path(source, path).ok().flatten() else { return };
-        let Some((bpm, tono, sonoridad)) =
-            lib.track_features(id, chilpa_core::analysis_job::ANALIZADOR).ok().flatten()
+        let Some((bpm, tone, loudness)) =
+            lib.track_features(id, chilpa_core::analysis_job::ANALYZER).ok().flatten()
         else {
             return;
         };
-        self.now.analysis = describir_analisis(bpm, tono.as_deref(), sonoridad);
+        self.now.analysis = describe_analysis(bpm, tone.as_deref(), loudness);
     }
 
     /// Busca la letra de lo que empieza a sonar.
     ///
     /// Se lee una vez por pista, no en cada pulso: son unos kilobytes, pero
     /// abrir un archivo sesenta veces por minuto no tiene ningún sentido.
-    fn cargar_letra(&mut self, path: &std::path::Path) {
-        let hallada = chilpa_lyrics::find(path);
-        self.now.lyrics = hallada
+    fn load_lyrics(&mut self, path: &std::path::Path) {
+        let found = chilpa_lyrics::find(path);
+        self.now.lyrics = found
             .as_ref()
             .map(|h| h.lyrics.lines.iter().map(|l| l.text.clone()).collect())
             .unwrap_or_default();
-        self.now.lyrics_synced = hallada.as_ref().is_some_and(|h| h.lyrics.synced);
-        self.now.lyrics_source = match hallada.as_ref().map(|h| &h.source) {
+        self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.lyrics.synced);
+        self.now.lyrics_source = match found.as_ref().map(|h| &h.source) {
             Some(chilpa_lyrics::Source::Sidecar(_)) => "archivo".into(),
             Some(chilpa_lyrics::Source::Embedded) => "tags".into(),
             None => String::new(),
         };
         self.now.lyrics_line = -1;
-        self.letra = hallada.map(|h| h.lyrics);
+        self.lyrics = found.map(|h| h.lyrics);
     }
 
     /// Qué renglón de la letra va en ese segundo.
-    fn renglon_en(&self, segundos: f64) -> i32 {
-        let Some(letra) = &self.letra else { return -1 };
-        let ms = (segundos.max(0.0) * 1000.0) as u64;
-        letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
+    fn line_at(&self, seconds: f64) -> i32 {
+        let Some(lyrics) = &self.lyrics else { return -1 };
+        let ms = (seconds.max(0.0) * 1000.0) as u64;
+        lyrics.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
 
@@ -509,19 +509,19 @@ impl Chilpa {
     /// Se miran los nodos de siempre; una unidad que no está no es un
     /// error, nomás no sale en la lista.
     pub fn cd_drives(&self) -> Vec<String> {
-        let mut unidades = Vec::new();
-        for nombre in ["/dev/sr0", "/dev/sr1", "/dev/cdrom", "/dev/dvd"] {
-            let p = std::path::Path::new(nombre);
-            if p.exists() && !unidades.iter().any(|u: &String| u == nombre) {
-                unidades.push(nombre.to_string());
+        let mut units = Vec::new();
+        for name in ["/dev/sr0", "/dev/sr1", "/dev/cdrom", "/dev/dvd"] {
+            let p = std::path::Path::new(name);
+            if p.exists() && !units.iter().any(|u: &String| u == name) {
+                units.push(name.to_string());
             }
         }
-        unidades
+        units
     }
 
     /// Pone a sonar el CD que haya en esa unidad, de principio a fin.
     pub fn play_cd(&mut self, drive: &str, device: &str, bit_perfect: bool) -> bool {
-        let unidad = if drive.is_empty() {
+        let unit = if drive.is_empty() {
             match self.cd_drives().first() {
                 Some(u) => u.clone(),
                 None => {
@@ -532,9 +532,9 @@ impl Chilpa {
         } else {
             drive.to_string()
         };
-        self.cola = vec![format!("cdda:{unidad}")];
-        self.quitadas = vec![false];
-        self.lanzar(0, device, bit_perfect);
+        self.queue = vec![format!("cdda:{unit}")];
+        self.removed = vec![false];
+        self.spawn(0, device, bit_perfect);
         true
     }
 
@@ -545,8 +545,8 @@ impl Chilpa {
             self.now.error = "eso no parece una dirección de stream".into();
             return;
         }
-        self.cola = vec![url.clone()];
-        self.lanzar(0, device, bit_perfect);
+        self.queue = vec![url.clone()];
+        self.spawn(0, device, bit_perfect);
     }
 
 
@@ -608,25 +608,25 @@ impl Chilpa {
                 }
             }
         };
-        let d = chilpa_core::wizard::diagnosticar(&id, &caps);
+        let d = chilpa_core::wizard::diagnose(&id, &caps);
         WizardReport {
             device: d.device,
             probed: d.probed,
-            summary: d.resumen,
+            summary: d.summary,
             rates: d.sample_rates,
             formats: d.formats,
             rows: d
-                .filas
+                .rows
                 .into_iter()
                 .map(|f| WizardRow {
-                    name: f.nombre,
-                    format: f.formato,
-                    verdict: match f.veredicto {
-                        chilpa_core::wizard::Veredicto::BitPerfect => "bit-perfect".into(),
-                        chilpa_core::wizard::Veredicto::Convertido { a } => {
+                    name: f.name,
+                    format: f.format,
+                    verdict: match f.verdict {
+                        chilpa_core::wizard::Verdict::BitPerfect => "bit-perfect".into(),
+                        chilpa_core::wizard::Verdict::Converted { a } => {
                             format!("convertido a {a}")
                         }
-                        chilpa_core::wizard::Veredicto::NoSePuede => "no se puede".into(),
+                        chilpa_core::wizard::Verdict::Unsupported => "no se puede".into(),
                     },
                 })
                 .collect(),
@@ -651,9 +651,9 @@ impl Chilpa {
     pub fn play_file(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) {
         // Un archivo suelto también es una cola de una pista: así pasa por
         // el mismo camino y hereda el tap, la repetición y el orden.
-        self.cola = vec![path.display().to_string()];
-        self.quitadas = vec![false];
-        self.lanzar(0, device, bit_perfect);
+        self.queue = vec![path.display().to_string()];
+        self.removed = vec![false];
+        self.spawn(0, device, bit_perfect);
         self.now.path = path.display().to_string();
     }
 
@@ -661,69 +661,69 @@ impl Chilpa {
     ///
     /// Es el pico de cada tajada, no el promedio: una onda dibujada con
     /// promedios se ve plana y no se parece a lo que se oye.
-    pub fn scope_envelope(&self, puntos: usize) -> Vec<f32> {
-        let foto = self.tap.snapshot();
-        let canales = foto.channels.max(1) as usize;
-        let frames = foto.samples.len() / canales;
-        if frames == 0 || puntos == 0 {
+    pub fn scope_envelope(&self, points: usize) -> Vec<f32> {
+        let snapshot = self.tap.snapshot();
+        let channels = snapshot.channels.max(1) as usize;
+        let frames = snapshot.samples.len() / channels;
+        if frames == 0 || points == 0 {
             return Vec::new();
         }
-        let por_punto = (frames / puntos).max(1);
-        let mut salida = Vec::with_capacity(puntos);
-        for i in 0..puntos {
-            let desde = i * por_punto;
-            if desde >= frames {
+        let per_point = (frames / points).max(1);
+        let mut output = Vec::with_capacity(points);
+        for i in 0..points {
+            let from = i * per_point;
+            if from >= frames {
                 break;
             }
-            let hasta = (desde + por_punto).min(frames);
+            let hasta = (from + per_point).min(frames);
             let mut pico = 0.0f32;
-            for f in desde..hasta {
-                for c in 0..canales {
-                    pico = pico.max(foto.samples[f * canales + c].abs());
+            for f in from..hasta {
+                for c in 0..channels {
+                    pico = pico.max(snapshot.samples[f * channels + c].abs());
                 }
             }
-            salida.push(pico);
+            output.push(pico);
         }
-        salida
+        output
     }
 
     /// El espectro de lo que sale, en `bandas` valores de 0 a 1.
     ///
     /// Los canales se mezclan a mono: un espectro por canal se ve igual en
     /// casi toda la música y ocupa el doble de pantalla.
-    pub fn scope_spectrum(&self, bandas: usize) -> Vec<f32> {
-        let foto = self.tap.snapshot();
-        let canales = foto.channels.max(1) as usize;
-        if foto.samples.is_empty() {
+    pub fn scope_spectrum(&self, bands: usize) -> Vec<f32> {
+        let snapshot = self.tap.snapshot();
+        let channels = snapshot.channels.max(1) as usize;
+        if snapshot.samples.is_empty() {
             return Vec::new();
         }
-        let mono: Vec<f32> = foto
+        let mono: Vec<f32> = snapshot
             .samples
-            .chunks_exact(canales)
-            .map(|f| f.iter().sum::<f32>() / canales as f32)
+            .chunks_exact(channels)
+            .map(|f| f.iter().sum::<f32>() / channels as f32)
             .collect();
-        chilpa_core::spectrum::bands(&mono, foto.sample_rate_hz, bandas)
+        chilpa_core::spectrum::bands(&mono, snapshot.sample_rate_hz, bands)
     }
 
     /// Pares (izquierdo, derecho) de lo que acaba de salir, para el
     /// goniómetro. En mono se devuelve el mismo valor dos veces, que es lo
     /// que dibuja una línea a 45 grados, como debe ser.
-    pub fn scope_pairs(&self, puntos: usize) -> Vec<(f32, f32)> {
-        let foto = self.tap.snapshot();
-        let canales = foto.channels.max(1) as usize;
-        let frames = foto.samples.len() / canales;
-        if frames == 0 || puntos == 0 {
+    pub fn scope_pairs(&self, points: usize) -> Vec<(f32, f32)> {
+        let snapshot = self.tap.snapshot();
+        let channels = snapshot.channels.max(1) as usize;
+        let frames = snapshot.samples.len() / channels;
+        if frames == 0 || points == 0 {
             return Vec::new();
         }
         // Se toma uno de cada tantos: dibujar ocho mil puntos por cuadro no
         // se ve distinto y sí se siente.
-        let salto = (frames / puntos).max(1);
+        let skip = (frames / points).max(1);
         (0..frames)
-            .step_by(salto)
-            .take(puntos)
+            .step_by(skip)
+            .take(points)
             .map(|f| {
-                let i = foto.samples[f * canales];
-                let d = if canales > 1 { foto.samples[f * canales + 1] } else { i };
+                let i = snapshot.samples[f * channels];
+                let d = if channels > 1 { snapshot.samples[f * channels + 1] } else { i };
                 (i, d)
             })
             .collect()
@@ -736,13 +736,13 @@ impl Chilpa {
     /// fase enseña, y el que dice si una mezcla va a sobrevivir a un
     /// altavoz solo.
     pub fn scope_correlation(&self) -> Option<f32> {
-        let foto = self.tap.snapshot();
-        let canales = foto.channels.max(1) as usize;
-        if canales < 2 || foto.samples.is_empty() {
+        let snapshot = self.tap.snapshot();
+        let channels = snapshot.channels.max(1) as usize;
+        if channels < 2 || snapshot.samples.is_empty() {
             return None;
         }
         let (mut si, mut sd, mut sid) = (0.0f64, 0.0f64, 0.0f64);
-        for f in foto.samples.chunks_exact(canales) {
+        for f in snapshot.samples.chunks_exact(channels) {
             let (i, d) = (f64::from(f[0]), f64::from(f[1]));
             si += i * i;
             sd += d * d;
@@ -754,8 +754,8 @@ impl Chilpa {
 
     /// El nivel por canal, de 0 a 1: pico y rms.
     pub fn scope_levels(&self) -> Vec<(f32, f32)> {
-        let foto = self.tap.snapshot();
-        foto.peaks.iter().copied().zip(foto.rms.iter().copied()).collect()
+        let snapshot = self.tap.snapshot();
+        snapshot.peaks.iter().copied().zip(snapshot.rms.iter().copied()).collect()
     }
 
     /// Lo que de verdad está saliendo por el dispositivo, para dibujarlo.
@@ -776,16 +776,16 @@ impl Chilpa {
         device: &str,
         bit_perfect: bool,
     ) -> Vec<String> {
-        let pistas = audio_files_in(folder);
-        if pistas.is_empty() {
+        let tracks = audio_files_in(folder);
+        if tracks.is_empty() {
             self.now.error = format!("no hay audio en {}", folder.display());
             return Vec::new();
         }
         // La carpeta también entra a la cola: si no, guardarla o volver
         // atrás no tendrían de dónde leer.
-        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
-        self.lanzar(0, device, bit_perfect);
-        pistas.iter().map(|p| titulo_de(p)).collect()
+        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
+        self.spawn(0, device, bit_perfect);
+        tracks.iter().map(|p| title_of(p)).collect()
     }
 
     /// Pausa o reanuda lo que suena.
@@ -799,8 +799,8 @@ impl Chilpa {
     /// Salta a ese segundo de la pista que suena.
     pub fn seek(&mut self, seconds: f64) {
         if let Some(p) = &self.player {
-            let seguro = seconds.max(0.0);
-            p.seek(std::time::Duration::from_secs_f64(seguro));
+            let safe = seconds.max(0.0);
+            p.seek(std::time::Duration::from_secs_f64(safe));
         }
     }
 
@@ -820,12 +820,12 @@ impl Chilpa {
     /// Con el aleatorio encendido no hay "la de antes" que valga: lo que se
     /// hace es reiniciar la que suena.
     pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
-        if self.cola.is_empty() || self.now.index == 0 || self.shuffle {
+        if self.queue.is_empty() || self.now.index == 0 || self.shuffle {
             // En la primera pista, "anterior" es volver a empezarla.
             self.seek(0.0);
             return;
         }
-        self.lanzar(self.now.index - 1, device, bit_perfect);
+        self.spawn(self.now.index - 1, device, bit_perfect);
     }
 
     /// Para lo que esté sonando.
@@ -839,9 +839,9 @@ impl Chilpa {
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
         self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
-        let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
-        for evento in eventos {
-            match evento {
+        let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
+        for event in events {
+            match event {
                 PlayerEvent::Started {
                     path,
                     opened,
@@ -855,7 +855,7 @@ impl Chilpa {
                 } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
-                    let nombre = path
+                    let name = path
                         .file_stem()
                         .map(|s| s.to_string_lossy().to_string())
                         .unwrap_or_default();
@@ -865,35 +865,35 @@ impl Chilpa {
                         .unwrap_or_default();
                     match &tags {
                         Some(t) => {
-                            self.now.title = t.title.clone().unwrap_or(nombre);
+                            self.now.title = t.title.clone().unwrap_or(name);
                             self.now.artist = t.artist_line();
                             self.now.album = t.album.clone().unwrap_or_default();
                         }
                         None => {
-                            self.now.title = nombre;
+                            self.now.title = name;
                             self.now.artist = String::new();
                             self.now.album = String::new();
                         }
                     }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
-                    self.cargar_letra(&path);
-                    self.cargar_analisis(&path);
+                    self.load_lyrics(&path);
+                    self.load_analysis(&path);
                     // El reproductor cuenta sobre lo que se le dio; la vista
                     // cuenta sobre la cola entera.
                     self.now.index = self.base + index;
-                    self.now.queue_len = if self.cola.is_empty() {
+                    self.now.queue_len = if self.queue.is_empty() {
                         queue_len
                     } else {
-                        self.cola.len()
+                        self.queue.len()
                     };
                     // Cada arranque cierra lo anterior: en una cola, la
                     // pista que empieza es la prueba de que la de antes
                     // terminó.
                     self.registrar_reproduccion(false);
-                    self.en_curso = Some(EnCurso {
+                    self.in_progress = Some(InProgress {
                         path: path.display().to_string(),
-                        started_at: ahora_unix(),
+                        started_at: now_unix(),
                         sample_rate_hz: opened.sample_rate_hz,
                         bit_depth: opened
                             .sample_format
@@ -913,16 +913,16 @@ impl Chilpa {
                         // En DSD lo que importa es la tasa de DSD; el
                         // portador de DoP se dice aparte, porque es el
                         // formato con el que se abrió el dispositivo.
-                        Some(multiplo) => format!(
-                            "DSD{multiplo} · DoP a {} Hz · {}",
+                        Some(multiple) => format!(
+                            "DSD{multiple} · DoP a {} Hz · {}",
                             opened.sample_rate_hz,
-                            canales(opened.channels)
+                            channels(opened.channels)
                         ),
                         None => format!(
                             "{} Hz · {} bits · {}",
                             opened.sample_rate_hz,
                             opened.sample_format.valid_bits(),
-                            canales(opened.channels)
+                            channels(opened.channels)
                         ),
                     };
                 }
@@ -936,7 +936,7 @@ impl Chilpa {
                     if self.sample_rate > 0 {
                         self.now.seconds = frames as f64 / f64::from(self.sample_rate);
                     }
-                    self.now.lyrics_line = self.renglon_en(self.now.seconds);
+                    self.now.lyrics_line = self.line_at(self.now.seconds);
                 }
                 PlayerEvent::Finished { frames } => {
                     self.now.frames = frames;
@@ -967,26 +967,26 @@ impl Chilpa {
     /// El log es append-only: de aquí salen las stats, las smart lists y el
     /// sync de play counts con un DAP.
     fn registrar_reproduccion(&mut self, skipped: bool) {
-        let Some(curso) = self.en_curso.take() else { return };
+        let Some(current) = self.in_progress.take() else { return };
         let frames = self.now.frames;
-        if curso.sample_rate_hz == 0 || frames == 0 {
+        if current.sample_rate_hz == 0 || frames == 0 {
             return;
         }
-        let played_ms = frames * 1000 / u64::from(curso.sample_rate_hz);
-        let ruta = std::path::PathBuf::from(&curso.path);
+        let played_ms = frames * 1000 / u64::from(current.sample_rate_hz);
+        let path = std::path::PathBuf::from(&current.path);
         let Some(lib) = self.library() else { return };
         let Ok(source) = lib.source_id("local", "default") else { return };
-        let track = lib.track_by_path(source, &ruta).ok().flatten();
+        let track = lib.track_by_path(source, &path).ok().flatten();
         let _ = lib.log_play(
             track,
             Some(source),
-            curso.started_at,
+            current.started_at,
             played_ms,
-            curso.duration_ms,
+            current.duration_ms,
             skipped,
-            Some(curso.sample_rate_hz),
-            curso.bit_depth,
-            curso.bit_perfect,
+            Some(current.sample_rate_hz),
+            current.bit_depth,
+            current.bit_perfect,
         );
     }
 
@@ -1030,39 +1030,39 @@ mod tests {
     fn la_mezcla_va_de_tempo_en_tempo_sin_saltos() {
         // Empieza en la de 120 y debería seguir 118, 125, 90.
         let bpms = vec![Some(90.0), Some(120.0), Some(125.0), Some(118.0)];
-        assert_eq!(orden_por_tempo(&bpms, 1), vec![1, 3, 2, 0]);
+        assert_eq!(order_by_tempo(&bpms, 1), vec![1, 3, 2, 0]);
     }
 
     #[test]
     fn lo_que_no_tiene_tempo_se_va_al_final() {
         let bpms = vec![Some(120.0), None, Some(122.0), None, Some(160.0)];
-        let orden = orden_por_tempo(&bpms, 0);
-        assert_eq!(&orden[..3], &[0, 2, 4], "primero las que sí, de cerca en cerca");
-        let cola: Vec<usize> = orden[3..].to_vec();
-        assert_eq!(cola, vec![1, 3], "y las ciegas al final, en su orden");
+        let order = order_by_tempo(&bpms, 0);
+        assert_eq!(&order[..3], &[0, 2, 4], "primero las que sí, de cerca en cerca");
+        let queue: Vec<usize> = order[3..].to_vec();
+        assert_eq!(queue, vec![1, 3], "y las ciegas al final, en su orden");
     }
 
     #[test]
     fn una_mezcla_no_pierde_ni_repite_pistas() {
         let bpms = vec![Some(100.0), Some(140.0), None, Some(101.0), Some(139.0), None];
-        let orden = orden_por_tempo(&bpms, 3);
-        let mut visto = orden.clone();
-        visto.sort_unstable();
-        assert_eq!(visto, (0..6).collect::<Vec<_>>(), "es una permutación: {orden:?}");
-        assert_eq!(orden[0], 3, "arranca donde se le dijo");
+        let order = order_by_tempo(&bpms, 3);
+        let mut seen = order.clone();
+        seen.sort_unstable();
+        assert_eq!(seen, (0..6).collect::<Vec<_>>(), "es una permutación: {order:?}");
+        assert_eq!(order[0], 3, "arranca donde se le dijo");
     }
 
     #[test]
     fn sin_ningun_tempo_la_mezcla_deja_el_orden_como_estaba() {
         let bpms = vec![None, None, None];
-        assert_eq!(orden_por_tempo(&bpms, 0), vec![0, 1, 2]);
+        assert_eq!(order_by_tempo(&bpms, 0), vec![0, 1, 2]);
     }
 
     #[test]
     fn los_canales_se_nombran_como_se_dicen() {
-        assert_eq!(canales(1), "mono");
-        assert_eq!(canales(2), "estéreo");
-        assert_eq!(canales(6), "6 canales");
+        assert_eq!(channels(1), "mono");
+        assert_eq!(channels(2), "estéreo");
+        assert_eq!(channels(6), "6 canales");
     }
 
     #[test]
@@ -1070,14 +1070,14 @@ mod tests {
         let mut dir = std::env::temp_dir();
         dir.push("chilpa-api-carpeta");
         let _ = std::fs::create_dir_all(&dir);
-        for nombre in ["b.flac", "a.wav", "notas.txt", "c.MP3"] {
-            std::fs::write(dir.join(nombre), b"x").unwrap();
+        for name in ["b.flac", "a.wav", "notas.txt", "c.MP3"] {
+            std::fs::write(dir.join(name), b"x").unwrap();
         }
-        let encontrados: Vec<String> = audio_files_in(&dir)
+        let found: Vec<String> = audio_files_in(&dir)
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
             .collect();
-        assert_eq!(encontrados, vec!["a.wav", "b.flac", "c.MP3"], "sin el .txt y ordenados");
+        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3"], "sin el .txt y ordenados");
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -1091,11 +1091,11 @@ mod tests {
 
     #[test]
     fn las_salidas_que_se_listan_son_directas() {
-        for salida in Chilpa::new().outputs() {
+        for output in Chilpa::new().outputs() {
             assert!(
-                salida.id.starts_with("hw:") || salida.id == "capture",
+                output.id.starts_with("hw:") || output.id == "capture",
                 "{} no es una salida válida",
-                salida.id
+                output.id
             );
         }
     }

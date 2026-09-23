@@ -11,26 +11,26 @@ use std::rc::Rc;
 
 /// Cuántas veces se abrió el dispositivo y cuántos frames recibió cada vez.
 #[derive(Default)]
-struct Registro {
-    aperturas: Vec<StreamFormat>,
+struct CallLog {
+    opens: Vec<StreamFormat>,
     frames: u64,
-    fallar_tras: Option<u64>,
+    fail_after: Option<u64>,
 }
 
-struct Falso {
-    registro: Rc<RefCell<Registro>>,
+struct FakeSink {
+    log: Rc<RefCell<CallLog>>,
     stream: StreamFormat,
 }
 
-impl AudioSink for Falso {
+impl AudioSink for FakeSink {
     fn format(&self) -> StreamFormat {
         self.stream
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        let mut r = self.registro.borrow_mut();
-        if let Some(limite) = r.fallar_tras {
-            if r.frames >= limite {
+        let mut r = self.log.borrow_mut();
+        if let Some(limit) = r.fail_after {
+            if r.frames >= limit {
                 return Err(SinkError::DeviceLost);
             }
         }
@@ -46,7 +46,7 @@ impl AudioSink for Falso {
     }
 }
 
-fn escribir_wav(path: &PathBuf, frames: u32, bits: u16, rate: u32) {
+fn write_wav(path: &PathBuf, frames: u32, bits: u16, rate: u32) {
     let bytes = u32::from(bits) / 8;
     let data_len = frames * 2 * bytes;
     let mut f = std::fs::File::create(path).unwrap();
@@ -69,10 +69,10 @@ fn escribir_wav(path: &PathBuf, frames: u32, bits: u16, rate: u32) {
     }
 }
 
-fn pista(nombre: &str, frames: u32, bits: u16, rate: u32) -> PathBuf {
+fn track(name: &str, frames: u32, bits: u16, rate: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-cola-{nombre}.wav"));
-    escribir_wav(&p, frames, bits, rate);
+    p.push(format!("chilpa-cola-{name}.wav"));
+    write_wav(&p, frames, bits, rate);
     p
 }
 
@@ -85,54 +85,54 @@ fn caps() -> DeviceCaps {
     }
 }
 
-fn reproducir(
-    pistas: &[PathBuf],
-    registro: &Rc<RefCell<Registro>>,
+fn play(
+    tracks: &[PathBuf],
+    log: &Rc<RefCell<CallLog>>,
 ) -> Vec<chilpa_core::queue_playback::TrackResult> {
-    play_queue(pistas, &caps(), Policy::BitPerfect, &StopSignal::new(), |stream| {
-        registro.borrow_mut().aperturas.push(stream);
-        Ok(Falso { registro: Rc::clone(registro), stream })
+    play_queue(tracks, &caps(), Policy::BitPerfect, &StopSignal::new(), |stream| {
+        log.borrow_mut().opens.push(stream);
+        Ok(FakeSink { log: Rc::clone(log), stream })
     })
     .expect("la cola corre")
 }
 
 #[test]
 fn tres_pistas_del_mismo_formato_abren_el_dispositivo_una_vez() {
-    let pistas = vec![
-        pista("a", 1_000, 16, 44_100),
-        pista("b", 2_000, 16, 44_100),
-        pista("c", 1_500, 16, 44_100),
+    let tracks = vec![
+        track("a", 1_000, 16, 44_100),
+        track("b", 2_000, 16, 44_100),
+        track("c", 1_500, 16, 44_100),
     ];
-    let registro = Rc::new(RefCell::new(Registro::default()));
-    let resultados = reproducir(&pistas, &registro);
+    let log = Rc::new(RefCell::new(CallLog::default()));
+    let results = play(&tracks, &log);
 
-    assert_eq!(resultados.len(), 3);
-    assert_eq!(registro.borrow().aperturas.len(), 1, "el dispositivo se abrió una sola vez");
-    assert_eq!(renegotiations(&resultados), 0, "nada de huecos entre pistas");
-    assert_eq!(registro.borrow().frames, 4_500, "salieron todos los frames de las tres");
-    assert_eq!(finished(&resultados).count(), 3);
-    for p in pistas {
+    assert_eq!(results.len(), 3);
+    assert_eq!(log.borrow().opens.len(), 1, "el dispositivo se abrió una sola vez");
+    assert_eq!(renegotiations(&results), 0, "nada de huecos entre pistas");
+    assert_eq!(log.borrow().frames, 4_500, "salieron todos los frames de las tres");
+    assert_eq!(finished(&results).count(), 3);
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn cambiar_de_formato_reabre_el_dispositivo_y_se_reporta() {
-    let pistas = vec![
-        pista("cd", 1_000, 16, 44_100),
-        pista("hires", 1_000, 24, 96_000),
-        pista("hires2", 500, 24, 96_000),
+    let tracks = vec![
+        track("cd", 1_000, 16, 44_100),
+        track("hires", 1_000, 24, 96_000),
+        track("hires2", 500, 24, 96_000),
     ];
-    let registro = Rc::new(RefCell::new(Registro::default()));
-    let resultados = reproducir(&pistas, &registro);
+    let log = Rc::new(RefCell::new(CallLog::default()));
+    let results = play(&tracks, &log);
 
-    let aperturas = registro.borrow().aperturas.clone();
-    assert_eq!(aperturas.len(), 2, "solo se reabre cuando cambia el formato");
-    assert_eq!(aperturas[0].sample_rate_hz, 44_100);
-    assert_eq!(aperturas[1].sample_rate_hz, 96_000);
-    assert_eq!(renegotiations(&resultados), 1, "la segunda pista dice que hubo corte");
-    assert!(resultados[2].transition.is_seamless(), "la tercera sí encadena");
-    for p in pistas {
+    let opens = log.borrow().opens.clone();
+    assert_eq!(opens.len(), 2, "solo se reabre cuando cambia el formato");
+    assert_eq!(opens[0].sample_rate_hz, 44_100);
+    assert_eq!(opens[1].sample_rate_hz, 96_000);
+    assert_eq!(renegotiations(&results), 1, "la segunda pista dice que hubo corte");
+    assert!(results[2].transition.is_seamless(), "la tercera sí encadena");
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
@@ -141,19 +141,19 @@ fn cambiar_de_formato_reabre_el_dispositivo_y_se_reporta() {
 fn si_el_dispositivo_se_pierde_la_cola_se_detiene_ahi() {
     // El hallazgo de QBZ: una escritura fallida se veía como fin de pista y
     // la cola entera se saltaba sin avisar.
-    let pistas = vec![
-        pista("uno", 1_000, 16, 44_100),
-        pista("dos", 1_000, 16, 44_100),
-        pista("tres", 1_000, 16, 44_100),
+    let tracks = vec![
+        track("uno", 1_000, 16, 44_100),
+        track("dos", 1_000, 16, 44_100),
+        track("tres", 1_000, 16, 44_100),
     ];
-    let registro = Rc::new(RefCell::new(Registro { fallar_tras: Some(500), ..Default::default() }));
-    let resultados = reproducir(&pistas, &registro);
+    let log = Rc::new(RefCell::new(CallLog { fail_after: Some(500), ..Default::default() }));
+    let results = play(&tracks, &log);
 
-    assert_eq!(resultados.len(), 1, "la cola se detuvo en la pista que falló");
-    assert!(!resultados[0].outcome.may_advance_queue(), "esa pista no deja avanzar");
-    assert!(resultados[0].frames() > 0, "alcanzó a sonar antes de perderse");
-    assert_eq!(finished(&resultados).count(), 0);
-    for p in pistas {
+    assert_eq!(results.len(), 1, "la cola se detuvo en la pista que falló");
+    assert!(!results[0].outcome.may_advance_queue(), "esa pista no deja avanzar");
+    assert!(results[0].frames() > 0, "alcanzó a sonar antes de perderse");
+    assert_eq!(finished(&results).count(), 0);
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }

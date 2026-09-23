@@ -16,13 +16,13 @@ use std::rc::Rc;
 /// Cuenta frames y, cuando llega al tope, pide parar: es lo que corta una
 /// repetición que si no seguiría para siempre.
 #[derive(Clone)]
-struct Topado {
+struct CappedSink {
     frames: Rc<RefCell<u64>>,
     tope: u64,
     stop: chilpa_audio::sink::StopSignal,
 }
 
-impl AudioSink for Topado {
+impl AudioSink for CappedSink {
     fn format(&self) -> StreamFormat {
         StreamFormat::new(SampleFormat::S16, 44_100, 2)
     }
@@ -40,9 +40,9 @@ impl AudioSink for Topado {
     }
 }
 
-fn onda(nombre: &str, frames: u32) -> PathBuf {
+fn wave(name: &str, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-repetir-{nombre}.wav"));
+    p.push(format!("chilpa-repetir-{name}.wav"));
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -75,106 +75,106 @@ fn caps() -> DeviceCaps {
 }
 
 /// Reproduce hasta entregar `tope` frames y regresa qué pistas sonaron.
-fn sonadas(pistas: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
+fn played(tracks: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
     let controls = Controls::new();
     controls.repeat.set(repeat);
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope,
         stop: controls.stop.clone(),
     };
-    let resultados =
-        play_queue_with(&SharedQueue::new(pistas.to_vec()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
+    let results =
+        play_queue_with(&SharedQueue::new(tracks.to_vec()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
             .expect("la cola corre");
-    resultados.into_iter().map(|r| r.path).collect()
+    results.into_iter().map(|r| r.path).collect()
 }
 
 #[test]
 fn sin_repeticion_la_cola_se_acaba() {
-    let a = onda("off-a", 4_410);
-    let b = onda("off-b", 4_410);
-    let pistas = vec![a.clone(), b.clone()];
+    let a = wave("off-a", 4_410);
+    let b = wave("off-b", 4_410);
+    let tracks = vec![a.clone(), b.clone()];
     // El tope es más alto que las dos pistas juntas: si la cola no se
     // acabara sola, este test no terminaría.
-    assert_eq!(sonadas(&pistas, Repeat::Off, 1_000_000), vec![a.clone(), b.clone()]);
-    for p in pistas {
+    assert_eq!(played(&tracks, Repeat::Off, 1_000_000), vec![a.clone(), b.clone()]);
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn repeat_all_vuelve_a_empezar() {
-    let a = onda("all-a", 4_410);
-    let b = onda("all-b", 4_410);
-    let pistas = vec![a.clone(), b.clone()];
+    let a = wave("all-a", 4_410);
+    let b = wave("all-b", 4_410);
+    let tracks = vec![a.clone(), b.clone()];
     // Tope a dos vueltas y media; el paro llega a media tercera pista.
-    let sonadas = sonadas(&pistas, Repeat::All, 4_410 * 5);
-    assert!(sonadas.len() > 2, "dio más de una vuelta: {sonadas:?}");
-    assert_eq!(sonadas[0], a, "empezó por la primera");
-    assert_eq!(sonadas[2], a, "y volvió a ella tras la última");
-    for p in pistas {
+    let played = played(&tracks, Repeat::All, 4_410 * 5);
+    assert!(played.len() > 2, "dio más de una vuelta: {played:?}");
+    assert_eq!(played[0], a, "empezó por la primera");
+    assert_eq!(played[2], a, "y volvió a ella tras la última");
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn repeat_one_se_queda_en_la_misma() {
-    let a = onda("one-a", 4_410);
-    let b = onda("one-b", 4_410);
-    let pistas = vec![a.clone(), b.clone()];
-    let sonadas = sonadas(&pistas, Repeat::One, 4_410 * 3);
-    assert!(sonadas.len() > 1, "se repitió: {sonadas:?}");
-    assert!(sonadas.iter().all(|p| *p == a), "nunca pasó a la segunda: {sonadas:?}");
-    for p in pistas {
+    let a = wave("one-a", 4_410);
+    let b = wave("one-b", 4_410);
+    let tracks = vec![a.clone(), b.clone()];
+    let played = played(&tracks, Repeat::One, 4_410 * 3);
+    assert!(played.len() > 1, "se repitió: {played:?}");
+    assert!(played.iter().all(|p| *p == a), "nunca pasó a la segunda: {played:?}");
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn en_repeat_one_saltar_si_avanza() {
-    let a = onda("salto-a", 44_100);
-    let b = onda("salto-b", 4_410);
-    let pistas = vec![a.clone(), b.clone()];
+    let a = wave("salto-a", 44_100);
+    let b = wave("salto-b", 4_410);
+    let tracks = vec![a.clone(), b.clone()];
 
     let controls = Controls::new();
     controls.repeat.set(Repeat::One);
     // Se pide el salto antes de empezar: la primera pista termina enseguida
     // y, aunque esté en repeat-one, la cola tiene que pasar a la segunda.
     controls.skip.skip();
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 4_410 * 2,
         stop: controls.stop.clone(),
     };
-    let resultados =
-        play_queue_with(&SharedQueue::new(pistas.clone()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
+    let results =
+        play_queue_with(&SharedQueue::new(tracks.clone()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
             .expect("la cola corre");
-    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
-    assert_eq!(rutas[0], a);
-    assert_eq!(rutas[1], b, "el salto ganó sobre la repetición: {rutas:?}");
-    for p in pistas {
+    let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
+    assert_eq!(paths[0], a);
+    assert_eq!(paths[1], b, "el salto ganó sobre la repetición: {paths:?}");
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn un_orden_propio_cambia_lo_que_suena() {
-    let a = onda("orden-a", 4_410);
-    let b = onda("orden-b", 4_410);
-    let c = onda("orden-c", 4_410);
-    let pistas = vec![a.clone(), b.clone(), c.clone()];
+    let a = wave("orden-a", 4_410);
+    let b = wave("orden-b", 4_410);
+    let c = wave("orden-c", 4_410);
+    let tracks = vec![a.clone(), b.clone(), c.clone()];
 
     let controls = Controls::new();
     assert!(controls.order.set(vec![2, 0, 1], 3), "el orden es una permutación");
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 1_000_000,
         stop: controls.stop.clone(),
     };
-    let resultados = play_queue_with(
-        &SharedQueue::new(pistas.clone()),
+    let results = play_queue_with(
+        &SharedQueue::new(tracks.clone()),
         &caps(),
         Policy::BitPerfect,
         &controls,
@@ -183,70 +183,70 @@ fn un_orden_propio_cambia_lo_que_suena() {
         &mut |_, _| {},
     )
     .expect("la cola corre");
-    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
-    assert_eq!(rutas, vec![c, a, b], "sonaron en el orden pedido");
-    for p in pistas {
+    let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
+    assert_eq!(paths, vec![c, a, b], "sonaron en el orden pedido");
+    for p in tracks {
         let _ = std::fs::remove_file(p);
     }
 }
 
 #[test]
 fn lo_que_se_encola_a_media_cola_si_suena() {
-    let a = onda("crece-a", 4_410);
-    let b = onda("crece-b", 4_410);
+    let a = wave("crece-a", 4_410);
+    let b = wave("crece-b", 4_410);
 
-    let cola = SharedQueue::new(vec![a.clone()]);
+    let queue = SharedQueue::new(vec![a.clone()]);
     let controls = Controls::new();
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 1_000_000,
         stop: controls.stop.clone(),
     };
     // La segunda entra cuando la primera ya arrancó: la cola no se rearma,
     // le crece la cola.
-    let mut agregada = false;
-    let resultados = play_queue_with(
-        &cola,
+    let mut added = false;
+    let results = play_queue_with(
+        &queue,
         &caps(),
         Policy::BitPerfect,
         &controls,
         |_| Ok(sink.clone()),
         &mut |_, _, _| {
-            if !agregada {
-                agregada = true;
-                cola.extend(std::slice::from_ref(&b));
+            if !added {
+                added = true;
+                queue.extend(std::slice::from_ref(&b));
             }
         },
         &mut |_, _| {},
     )
     .expect("la cola corre");
 
-    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
-    assert_eq!(rutas, vec![a.clone(), b.clone()], "la agregada también sonó");
+    let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
+    assert_eq!(paths, vec![a.clone(), b.clone()], "la agregada también sonó");
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
 }
 
 #[test]
 fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
-    let a = onda("quita-a", 4_410);
-    let b = onda("quita-b", 4_410);
-    let c = onda("quita-c", 4_410);
+    let a = wave("quita-a", 4_410);
+    let b = wave("quita-b", 4_410);
+    let c = wave("quita-c", 4_410);
 
-    let cola = SharedQueue::new(vec![a.clone(), b.clone(), c.clone()]);
+    let queue = SharedQueue::new(vec![a.clone(), b.clone(), c.clone()]);
     // Se quita la de en medio antes de empezar.
-    assert!(cola.remove(1));
-    assert!(!cola.remove(1), "quitarla dos veces no cuenta");
-    assert_eq!(cola.len(), 3, "la posición se conserva vacía");
+    assert!(queue.remove(1));
+    assert!(!queue.remove(1), "quitarla dos veces no cuenta");
+    assert_eq!(queue.len(), 3, "la posición se conserva vacía");
 
     let controls = Controls::new();
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 1_000_000,
         stop: controls.stop.clone(),
     };
-    let resultados = play_queue_with(
-        &cola,
+    let results = play_queue_with(
+        &queue,
         &caps(),
         Policy::BitPerfect,
         &controls,
@@ -256,8 +256,8 @@ fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
     )
     .expect("la cola corre");
 
-    let rutas: Vec<PathBuf> = resultados.into_iter().map(|r| r.path).collect();
-    assert_eq!(rutas, vec![a.clone(), c.clone()], "la de en medio se saltó");
+    let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
+    assert_eq!(paths, vec![a.clone(), c.clone()], "la de en medio se saltó");
     for p in [a, b, c] {
         let _ = std::fs::remove_file(p);
     }
@@ -265,19 +265,19 @@ fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
 
 #[test]
 fn quitar_toda_la_cola_con_repeticion_no_deja_girando_el_hilo() {
-    let a = onda("vacia-a", 4_410);
-    let cola = SharedQueue::new(vec![a.clone()]);
-    cola.remove(0);
+    let a = wave("vacia-a", 4_410);
+    let queue = SharedQueue::new(vec![a.clone()]);
+    queue.remove(0);
 
     let controls = Controls::new();
     controls.repeat.set(Repeat::All);
-    let sink = Topado {
+    let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 1_000_000,
         stop: controls.stop.clone(),
     };
-    let resultados = play_queue_with(
-        &cola,
+    let results = play_queue_with(
+        &queue,
         &caps(),
         Policy::BitPerfect,
         &controls,
@@ -286,6 +286,6 @@ fn quitar_toda_la_cola_con_repeticion_no_deja_girando_el_hilo() {
         &mut |_, _| {},
     )
     .expect("la cola corre");
-    assert!(resultados.is_empty(), "no sonó nada, y terminó");
+    assert!(results.is_empty(), "no sonó nada, y terminó");
     let _ = std::fs::remove_file(a);
 }

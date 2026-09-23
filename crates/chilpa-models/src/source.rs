@@ -90,7 +90,7 @@ pub fn preferred<'a>(options: &'a [Availability], order: &[SourceId]) -> Option<
 mod tests {
     use super::*;
 
-    fn calidad(bits: Option<u8>, hz: u32) -> AudioQuality {
+    fn quality(bits: Option<u8>, hz: u32) -> AudioQuality {
         AudioQuality {
             codec: if bits.is_some() { "flac".into() } else { "opus".into() },
             bit_depth: bits,
@@ -116,35 +116,35 @@ mod tests {
     #[test]
     fn gana_el_source_que_el_usuario_prefiere() {
         let local = SourceId::local();
-        let remoto = SourceId::new("example-source", "cuenta-1");
-        let opciones = vec![
-            Availability::playable(remoto.clone(), Some(calidad(Some(24), 192_000))),
-            Availability::playable(local.clone(), Some(calidad(Some(16), 44_100))),
+        let remote = SourceId::new("example-source", "cuenta-1");
+        let options = vec![
+            Availability::playable(remote.clone(), Some(quality(Some(24), 192_000))),
+            Availability::playable(local.clone(), Some(quality(Some(16), 44_100))),
         ];
-        let elegido = preferred(&opciones, &[local.clone(), remoto.clone()]).unwrap();
-        assert_eq!(elegido.source, local, "el orden del usuario manda sobre la calidad");
+        let chosen = preferred(&options, &[local.clone(), remote.clone()]).unwrap();
+        assert_eq!(chosen.source, local, "el orden del usuario manda sobre la calidad");
     }
 
     #[test]
     fn entre_iguales_gana_la_mejor_calidad() {
         let a = SourceId::new("example-source", "cuenta-1");
         let b = SourceId::new("otro-source", "cuenta-1");
-        let opciones = vec![
-            Availability::playable(a.clone(), Some(calidad(Some(16), 44_100))),
-            Availability::playable(b.clone(), Some(calidad(Some(24), 96_000))),
+        let options = vec![
+            Availability::playable(a.clone(), Some(quality(Some(16), 44_100))),
+            Availability::playable(b.clone(), Some(quality(Some(24), 96_000))),
         ];
-        assert_eq!(preferred(&opciones, &[]).unwrap().source, b);
+        assert_eq!(preferred(&options, &[]).unwrap().source, b);
     }
 
     #[test]
     fn un_source_inalcanzable_no_se_elige_pero_sigue_ahi() {
         let local = SourceId::local();
-        let opciones = vec![Availability {
+        let options = vec![Availability {
             source: local.clone(),
             reachability: Reachability::Unreachable,
-            quality: Some(calidad(Some(24), 96_000)),
+            quality: Some(quality(Some(24), 96_000)),
         }];
-        assert!(preferred(&opciones, &[local]).is_none());
-        assert_eq!(opciones.len(), 1, "lo inalcanzable no se borra");
+        assert!(preferred(&options, &[local]).is_none());
+        assert_eq!(options.len(), 1, "lo inalcanzable no se borra");
     }
 }

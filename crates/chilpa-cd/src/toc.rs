@@ -79,8 +79,8 @@ impl Toc {
 pub fn build(entries: &[TocEntry], leadout_lsn: u32) -> Toc {
     let mut tracks = Vec::with_capacity(entries.len());
     for (i, e) in entries.iter().enumerate() {
-        let siguiente = entries.get(i + 1);
-        let fin = match siguiente {
+        let next = entries.get(i + 1);
+        let fin = match next {
             Some(s) if s.session != e.session => s.start_lsn.saturating_sub(SESSION_GAP_SECTORS),
             Some(s) => s.start_lsn,
             None => leadout_lsn,
@@ -104,7 +104,7 @@ mod tests {
         TocEntry { number, start_lsn: start, is_audio: true, session }
     }
 
-    fn datos(number: u8, start: u32, session: u8) -> TocEntry {
+    fn data(number: u8, start: u32, session: u8) -> TocEntry {
         TocEntry { number, start_lsn: start, is_audio: false, session }
     }
 
@@ -121,7 +121,7 @@ mod tests {
     fn en_un_cd_extra_la_ultima_de_audio_no_se_come_el_hueco_entre_sesiones() {
         // El hallazgo de la auditoría: sin descontar el hueco, la pista 2
         // medía 152 segundos de más y el rip fallaba.
-        let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), datos(3, 41_400, 2)], 60_000);
+        let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), data(3, 41_400, 2)], 60_000);
         assert_eq!(toc.tracks[1].sectors, 41_400 - SESSION_GAP_SECTORS - 15_000);
         assert_eq!(toc.tracks[1].end_lsn(), 30_000);
         assert!(toc.is_mixed());
@@ -131,7 +131,7 @@ mod tests {
     fn un_disco_de_modo_mixto_en_una_sola_sesion_no_descuenta_nada() {
         // Datos primero y audio después, todo en la sesión 1: aquí no hay
         // hueco que descontar.
-        let toc = build(&[datos(1, 0, 1), audio(2, 20_000, 1)], 40_000);
+        let toc = build(&[data(1, 0, 1), audio(2, 20_000, 1)], 40_000);
         assert_eq!(toc.tracks[0].sectors, 20_000);
         assert_eq!(toc.tracks[1].sectors, 20_000);
     }
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn se_listan_solo_las_pistas_de_audio() {
-        let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), datos(3, 41_400, 2)], 60_000);
+        let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), data(3, 41_400, 2)], 60_000);
         assert_eq!(toc.audio_tracks().count(), 2);
         assert_eq!(toc.track(3).unwrap().is_audio, false);
     }

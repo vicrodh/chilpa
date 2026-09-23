@@ -5,25 +5,25 @@
 //! plugin que no pasa se anota con su razón y se sigue con los demás; nunca
 //! se aborta el arranque por culpa de uno.
 
-use crate::host::{Host, Plugin, PluginError, Servicios};
+use crate::host::{Host, Plugin, PluginError, Services};
 use crate::limits::Limits;
 use crate::manifest::Manifest;
-use crate::watchdog::{Estado, Watchdog};
-use crate::Respuesta;
+use crate::watchdog::{State, Watchdog};
+use crate::Reply;
 use std::collections::BTreeMap;
 
 /// Un plugin que se intentó cargar.
-pub struct Instalado {
+pub struct Installed {
     pub id: String,
-    pub nombre: String,
+    pub name: String,
     /// El plugin listo, o `None` si no cargó.
     pub plugin: Option<Plugin>,
     /// Por qué no cargó, si no cargó.
-    pub problema: Option<String>,
+    pub problem: Option<String>,
 }
 
-impl Instalado {
-    pub fn cargado(&self) -> bool {
+impl Installed {
+    pub fn loaded(&self) -> bool {
         self.plugin.is_some()
     }
 }
@@ -31,7 +31,7 @@ impl Instalado {
 /// Todos los plugins de esta sesión.
 #[derive(Default)]
 pub struct Registry {
-    plugins: BTreeMap<String, Instalado>,
+    plugins: BTreeMap<String, Installed>,
     watchdog: Watchdog,
 }
 
@@ -44,35 +44,35 @@ impl Registry {
     /// se anota y se sigue.
     ///
     /// Devuelve cierto si quedó utilizable.
-    pub fn instalar(&mut self, host: &Host, manifest_json: &str, wasm: &[u8]) -> bool {
+    pub fn install(&mut self, host: &Host, manifest_json: &str, wasm: &[u8]) -> bool {
         let manifest = match Manifest::parse(manifest_json) {
             Ok(m) => m,
             Err(e) => {
                 // El manifest no pasó, pero puede que su JSON sí se lea: se
                 // rescata el id y el nombre para que en la lista aparezca
                 // como lo que es y no como una cadena de puntos.
-                let (id, nombre) = a_ciegas(manifest_json);
-                self.watchdog.cuarentena(&id, &e.to_string());
+                let (id, name) = salvage(manifest_json);
+                self.watchdog.quarantine(&id, &e.to_string());
                 self.plugins.insert(
                     id.clone(),
-                    Instalado { id, nombre, plugin: None, problema: Some(e.to_string()) },
+                    Installed { id, name, plugin: None, problem: Some(e.to_string()) },
                 );
                 return false;
             }
         };
-        let (id, nombre) = (manifest.id.clone(), manifest.name.clone());
-        match host.cargar(manifest, wasm) {
+        let (id, name) = (manifest.id.clone(), manifest.name.clone());
+        match host.load(manifest, wasm) {
             Ok(p) => {
                 self.plugins
-                    .insert(id.clone(), Instalado { id, nombre, plugin: Some(p), problema: None });
+                    .insert(id.clone(), Installed { id, name, plugin: Some(p), problem: None });
                 true
             }
             Err(e) => {
-                let razon = e.to_string();
-                self.watchdog.cuarentena(&id, &razon);
+                let reason = e.to_string();
+                self.watchdog.quarantine(&id, &reason);
                 self.plugins.insert(
                     id.clone(),
-                    Instalado { id, nombre, plugin: None, problema: Some(razon) },
+                    Installed { id, name, plugin: None, problem: Some(reason) },
                 );
                 false
             }
@@ -80,33 +80,33 @@ impl Registry {
     }
 
     /// Los plugins instalados, cargados o no.
-    pub fn instalados(&self) -> impl Iterator<Item = &Instalado> {
+    pub fn installed(&self) -> impl Iterator<Item = &Installed> {
         self.plugins.values()
     }
 
     /// Los que se pueden usar ahora mismo.
-    pub fn utilizables(&self) -> Vec<&str> {
+    pub fn usable(&self) -> Vec<&str> {
         self.plugins
             .values()
-            .filter(|i| i.cargado() && self.watchdog.usable(&i.id))
+            .filter(|i| i.loaded() && self.watchdog.usable(&i.id))
             .map(|i| i.id.as_str())
             .collect()
     }
 
-    pub fn estado(&self, id: &str) -> Estado {
+    pub fn state(&self, id: &str) -> State {
         if !self.plugins.contains_key(id) {
-            return Estado::Cuarentena { razon: "no está instalado".into() };
+            return State::Quarantined { reason: "no está instalado".into() };
         }
-        self.watchdog.estado(id)
+        self.watchdog.state(id)
     }
 
     /// Lo saca de cuarentena. Solo lo llama el usuario.
-    pub fn reactivar(&mut self, id: &str) {
-        self.watchdog.reactivar(id);
+    pub fn reactivate(&mut self, id: &str) {
+        self.watchdog.reactivate(id);
     }
 
-    pub fn en_cuarentena(&self) -> Vec<(String, String)> {
-        self.watchdog.en_cuarentena()
+    pub fn quarantined(&self) -> Vec<(String, String)> {
+        self.watchdog.quarantined()
     }
 
     /// Le pide algo a un plugin y lleva la cuenta de cómo le fue.
@@ -114,34 +114,34 @@ impl Registry {
     /// Un error del plugin (un JSON con `error`) **no** cuenta como falla:
     /// "no encontré esa canción" es una respuesta, no una rotura. Lo que
     /// cuenta es tronar, pasarse de los límites o no contestar.
-    pub fn llamar(
+    pub fn call(
         &mut self,
         host: &Host,
-        servicios: &Servicios,
+        services: &Services,
         id: &str,
-        operacion: &str,
-        entrada: &[u8],
-        limites: Limits,
-    ) -> Result<Respuesta, PluginError> {
+        operation: &str,
+        input: &[u8],
+        limits: Limits,
+    ) -> Result<Reply, PluginError> {
         if !self.watchdog.usable(id) {
-            return Err(PluginError::SinPermiso(format!(
+            return Err(PluginError::NotAllowed(format!(
                 "llamar a \"{id}\", que está en cuarentena"
             )));
         }
         let Some(inst) = self.plugins.get(id) else {
-            return Err(PluginError::SinPermiso(format!("llamar a \"{id}\", que no está instalado")));
+            return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no está instalado")));
         };
         let Some(plugin) = &inst.plugin else {
-            return Err(PluginError::SinPermiso(format!("llamar a \"{id}\", que no cargó")));
+            return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no cargó")));
         };
 
-        match plugin.llamar(host, servicios, operacion, entrada, limites) {
+        match plugin.call(host, services, operation, input, limits) {
             Ok(r) => {
-                self.watchdog.exito(id);
+                self.watchdog.success(id);
                 Ok(r)
             }
             Err(e) => {
-                self.watchdog.falla(id, &e.to_string());
+                self.watchdog.failure(id, &e.to_string());
                 Err(e)
             }
         }
@@ -149,14 +149,14 @@ impl Registry {
 }
 
 /// Lo que se pueda rescatar de un manifest que no pasó.
-fn a_ciegas(json: &str) -> (String, String) {
+fn salvage(json: &str) -> (String, String) {
     let v = serde_json::from_str::<serde_json::Value>(json).ok();
-    let sacar = |campo: &str| {
-        v.as_ref().and_then(|v| v.get(campo)?.as_str().map(str::to_string)).unwrap_or_default()
+    let take = |field: &str| {
+        v.as_ref().and_then(|v| v.get(field)?.as_str().map(str::to_string)).unwrap_or_default()
     };
-    let id = sacar("id");
+    let id = take("id");
     let id = if id.is_empty() { "(manifest ilegible)".to_string() } else { id };
-    (id, sacar("name"))
+    (id, take("name"))
 }
 
 #[cfg(test)]
@@ -167,12 +167,12 @@ mod tests {
     fn un_manifest_ilegible_se_anota_y_no_tumba_el_registro() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
-        assert!(!r.instalar(&host, "esto no es json", b""));
-        assert_eq!(r.instalados().count(), 1);
-        assert!(!r.utilizables().is_empty() == false);
-        let inst = r.instalados().next().unwrap();
-        assert!(!inst.cargado());
-        assert!(inst.problema.is_some());
+        assert!(!r.install(&host, "esto no es json", b""));
+        assert_eq!(r.installed().count(), 1);
+        assert!(!r.usable().is_empty() == false);
+        let inst = r.installed().next().unwrap();
+        assert!(!inst.loaded());
+        assert!(inst.problem.is_some());
     }
 
     #[test]
@@ -180,9 +180,9 @@ mod tests {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         // Tiene id pero le falta todo lo demás.
-        assert!(!r.instalar(&host, r#"{"id":"com.a.b"}"#, b""));
-        assert_eq!(r.instalados().next().unwrap().id, "com.a.b");
-        assert!(matches!(r.estado("com.a.b"), Estado::Cuarentena { .. }));
+        assert!(!r.install(&host, r#"{"id":"com.a.b"}"#, b""));
+        assert_eq!(r.installed().next().unwrap().id, "com.a.b");
+        assert!(matches!(r.state("com.a.b"), State::Quarantined { .. }));
     }
 
     #[test]
@@ -192,15 +192,15 @@ mod tests {
         // El JSON se lee; lo que no pasa es la versión de la API.
         let json = r#"{"id":"com.a.b","name":"Se llama así","version":"1",
                        "api_version":42,"kind":"source"}"#;
-        assert!(!r.instalar(&host, json, b""));
-        let inst = r.instalados().next().unwrap();
-        assert_eq!(inst.nombre, "Se llama así", "en la lista sale con su nombre");
-        assert!(inst.problema.as_ref().unwrap().contains("versión"));
+        assert!(!r.install(&host, json, b""));
+        let inst = r.installed().next().unwrap();
+        assert_eq!(inst.name, "Se llama así", "en la lista sale con su nombre");
+        assert!(inst.problem.as_ref().unwrap().contains("versión"));
     }
 
     #[test]
     fn a_uno_que_no_esta_no_se_le_puede_pedir_nada() {
         let r = Registry::new();
-        assert!(matches!(r.estado("com.no.existe"), Estado::Cuarentena { .. }));
+        assert!(matches!(r.state("com.no.existe"), State::Quarantined { .. }));
     }
 }

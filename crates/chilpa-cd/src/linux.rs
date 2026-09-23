@@ -57,8 +57,8 @@ impl LinuxDrive {
     /// Abre la unidad y comprueba que tenga un disco listo.
     pub fn open(path: &Path) -> Result<Self, CdError> {
         let file = File::open(path).map_err(|e| CdError::Device(e.to_string()))?;
-        let estado = unsafe { libc::ioctl(file.as_raw_fd(), CDROM_DRIVE_STATUS, 0) };
-        if estado != CDS_DISC_OK {
+        let state = unsafe { libc::ioctl(file.as_raw_fd(), CDROM_DRIVE_STATUS, 0) };
+        if state != CDS_DISC_OK {
             return Err(CdError::NoDisc);
         }
         Ok(Self { file, path: path.to_path_buf() })
@@ -68,7 +68,7 @@ impl LinuxDrive {
         &self.path
     }
 
-    fn entrada(&self, track: u8) -> Result<(u32, bool), CdError> {
+    fn toc_entry(&self, track: u8) -> Result<(u32, bool), CdError> {
         let mut e = TocEntryRaw { track, format: CDROM_LBA, ..Default::default() };
         if unsafe { libc::ioctl(self.file.as_raw_fd(), CDROMREADTOCENTRY, &mut e) } < 0 {
             return Err(CdError::Device(std::io::Error::last_os_error().to_string()));
@@ -83,37 +83,37 @@ impl CdDevice for LinuxDrive {
         if unsafe { libc::ioctl(self.file.as_raw_fd(), CDROMREADTOCHDR, &mut hdr) } < 0 {
             return Err(CdError::Device(std::io::Error::last_os_error().to_string()));
         }
-        let (leadout, _) = self.entrada(CDROM_LEADOUT)?;
+        let (leadout, _) = self.toc_entry(CDROM_LEADOUT)?;
 
-        let mut entradas = Vec::new();
-        let mut sesion = 1u8;
-        let mut anterior_es_audio = None;
+        let mut entries = Vec::new();
+        let mut session = 1u8;
+        let mut previous_is_audio = None;
         for n in hdr.first..=hdr.last {
-            let (lsn, es_audio) = self.entrada(n)?;
+            let (lsn, is_audio) = self.toc_entry(n)?;
             // El ioctl del TOC no dice la sesión. En un CD-Extra la pista de
             // datos vive en la segunda, y se reconoce porque llega después
             // del audio: es el único caso donde hay que descontar el hueco.
-            if anterior_es_audio == Some(true) && !es_audio {
-                sesion = 2;
+            if previous_is_audio == Some(true) && !is_audio {
+                session = 2;
             }
-            anterior_es_audio = Some(es_audio);
-            entradas.push(TocEntry { number: n, start_lsn: lsn, is_audio: es_audio, session: sesion });
+            previous_is_audio = Some(is_audio);
+            entries.push(TocEntry { number: n, start_lsn: lsn, is_audio: is_audio, session: session });
         }
-        Ok((entradas, leadout))
+        Ok((entries, leadout))
     }
 
     fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
-        let sectores = sectors.clamp(1, MAX_SECTORS_PER_READ);
+        let sectors = sectors.clamp(1, MAX_SECTORS_PER_READ);
         out.clear();
-        out.resize(sectores as usize * SECTOR_BYTES, 0);
-        let mut peticion = ReadAudio {
+        out.resize(sectors as usize * SECTOR_BYTES, 0);
+        let mut request = ReadAudio {
             addr_lba: lsn as i32,
             addr_format: CDROM_LBA,
             _pad: [0; 3],
-            nframes: sectores as libc::c_int,
+            nframes: sectors as libc::c_int,
             buf: out.as_mut_ptr(),
         };
-        if unsafe { libc::ioctl(self.file.as_raw_fd(), CDROMREADAUDIO, &mut peticion) } < 0 {
+        if unsafe { libc::ioctl(self.file.as_raw_fd(), CDROMREADAUDIO, &mut request) } < 0 {
             return Err(CdError::Read {
                 lsn,
                 why: std::io::Error::last_os_error().to_string(),

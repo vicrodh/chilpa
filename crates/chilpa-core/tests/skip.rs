@@ -18,9 +18,9 @@ impl AudioSink for Capturador {
         StreamFormat::new(SampleFormat::S16, 44_100, 2)
     }
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        let mut muestras = self.0.borrow_mut();
+        let mut samples = self.0.borrow_mut();
         for par in frames.chunks_exact(2) {
-            muestras.push(i16::from_le_bytes([par[0], par[1]]));
+            samples.push(i16::from_le_bytes([par[0], par[1]]));
         }
         Ok(frames.len() / 4)
     }
@@ -30,9 +30,9 @@ impl AudioSink for Capturador {
 }
 
 /// Un WAV donde la muestra del canal izquierdo dice su número de frame.
-fn rampa(nombre: &str, frames: u32) -> PathBuf {
+fn ramp(name: &str, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-saltar-{nombre}.wav"));
+    p.push(format!("chilpa-saltar-{name}.wav"));
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -66,11 +66,11 @@ fn caps() -> DeviceCaps {
 
 #[test]
 fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
-    let path = rampa("arranque", 44_100 * 3);
+    let path = ramp("arranque", 44_100 * 3);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(2));
     let cap = Capturador::default();
-    let mut posiciones = Vec::new();
+    let mut positions = Vec::new();
 
     play_queue_with(
         &SharedQueue::new(vec![path.clone()]),
@@ -79,7 +79,7 @@ fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
         &Controls { seek: seek.clone(), ..Controls::new() },
         |_| Ok(cap.clone()),
         &mut |_, _, _| {},
-        &mut |_, frames| posiciones.push(frames),
+        &mut |_, frames| positions.push(frames),
     )
     .unwrap();
 
@@ -87,20 +87,20 @@ fn un_salto_pedido_antes_de_empezar_arranca_en_ese_punto() {
     assert_eq!(cap.0.borrow()[0], (88_200 % 30_000) as i16, "arrancó en el punto pedido");
     // Y la posición que se reporta cuenta desde el archivo, no desde el salto.
     assert!(
-        posiciones.first().is_some_and(|p| *p >= 88_200),
+        positions.first().is_some_and(|p| *p >= 88_200),
         "la primera posición fue {:?}",
-        posiciones.first()
+        positions.first()
     );
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn saltar_mas_alla_del_final_termina_la_pista_sin_tronar() {
-    let path = rampa("pasado", 44_100);
+    let path = ramp("pasado", 44_100);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(60));
     let cap = Capturador::default();
-    let resultados = play_queue_with(
+    let results = play_queue_with(
         &SharedQueue::new(vec![path.clone()]),
         &caps(),
         Policy::BitPerfect,
@@ -110,7 +110,7 @@ fn saltar_mas_alla_del_final_termina_la_pista_sin_tronar() {
         &mut |_, _| {},
     )
     .unwrap();
-    assert_eq!(resultados.len(), 1);
-    assert!(resultados[0].outcome.may_advance_queue(), "terminó como fin natural");
+    assert_eq!(results.len(), 1);
+    assert!(results[0].outcome.may_advance_queue(), "terminó como fin natural");
     let _ = std::fs::remove_file(path);
 }

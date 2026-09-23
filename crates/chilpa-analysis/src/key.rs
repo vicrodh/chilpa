@@ -19,20 +19,20 @@
 use std::f32::consts::PI;
 
 /// Los nombres de las doce notas, con sostenidos.
-const NOTAS: [&str; 12] =
+const NOTES: [&str; 12] =
     ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 /// Perfiles de Krumhansl-Kessler para mayor y menor.
 const MAYOR: [f32; 12] = [
     6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
 ];
-const MENOR: [f32; 12] = [
+const MINOR: [f32; 12] = [
     6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17,
 ];
 
 /// Cuántas muestras entran en cada ventana. A 11 025 Hz son 0.74 s, que dan
 /// 1.35 Hz por bin: tres bins por semitono en el registro grave.
-const VENTANA: usize = 8192;
+const WINDOW: usize = 8192;
 
 /// La tonalidad que se encontró.
 #[derive(Clone, PartialEq, Debug)]
@@ -48,89 +48,89 @@ pub struct Key {
 
 /// Estima la tonalidad de una señal mono.
 pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Key> {
-    let croma = chroma(samples, sample_rate_hz)?;
-    let (indice, es_mayor, confianza) = mejor_perfil(&croma)?;
+    let chroma = chroma(samples, sample_rate_hz)?;
+    let (index, is_major, confidence) = best_profile(&chroma)?;
     Some(Key {
-        name: nombre(indice, es_mayor),
-        camelot: camelot(indice, es_mayor),
-        confidence: confianza,
+        name: name(index, is_major),
+        camelot: camelot(index, is_major),
+        confidence: confidence,
     })
 }
 
 /// Cuánta energía hay en cada nota, sumando todas las octavas.
 pub fn chroma(samples: &[f32], sample_rate_hz: u32) -> Option<[f32; 12]> {
-    if sample_rate_hz == 0 || samples.len() < VENTANA {
+    if sample_rate_hz == 0 || samples.len() < WINDOW {
         return None;
     }
-    let mitad = VENTANA / 2;
-    let por_bin = sample_rate_hz as f32 / VENTANA as f32;
+    let half = WINDOW / 2;
+    let per_bin = sample_rate_hz as f32 / WINDOW as f32;
     // Se mira de 65 Hz (C2) a 2100 Hz (C7): abajo está el ruido del bombo y
     // arriba los armónicos ya no dicen de qué tono es.
-    let k_min = ((65.0 / por_bin) as usize).max(1);
-    let k_max = ((2100.0 / por_bin) as usize).min(mitad - 1);
+    let k_min = ((65.0 / per_bin) as usize).max(1);
+    let k_max = ((2100.0 / per_bin) as usize).min(half - 1);
     if k_max <= k_min {
         return None;
     }
 
-    let mut croma = [0.0f32; 12];
-    let salto = VENTANA / 2;
-    let mut inicio = 0;
-    let mut ventanas = 0usize;
-    while inicio + VENTANA <= samples.len() {
-        let mut re: Vec<f32> = Vec::with_capacity(VENTANA);
-        for (i, m) in samples[inicio..inicio + VENTANA].iter().enumerate() {
-            let hann = 0.5 - 0.5 * (2.0 * PI * i as f32 / (VENTANA as f32 - 1.0)).cos();
+    let mut chroma = [0.0f32; 12];
+    let skip = WINDOW / 2;
+    let mut start = 0;
+    let mut windows = 0usize;
+    while start + WINDOW <= samples.len() {
+        let mut re: Vec<f32> = Vec::with_capacity(WINDOW);
+        for (i, m) in samples[start..start + WINDOW].iter().enumerate() {
+            let hann = 0.5 - 0.5 * (2.0 * PI * i as f32 / (WINDOW as f32 - 1.0)).cos();
             re.push(m * hann);
         }
-        let mut im = vec![0.0f32; VENTANA];
+        let mut im = vec![0.0f32; WINDOW];
         chilpa_audio::spectrum::fft(&mut re, &mut im);
 
         for k in k_min..=k_max {
-            let magnitud = (re[k] * re[k] + im[k] * im[k]).sqrt();
-            if magnitud <= 0.0 {
+            let magnitude = (re[k] * re[k] + im[k] * im[k]).sqrt();
+            if magnitude <= 0.0 {
                 continue;
             }
-            let hz = k as f32 * por_bin;
+            let hz = k as f32 * per_bin;
             // Nota MIDI: 69 es el la de 440 Hz.
             let midi = 69.0 + 12.0 * (hz / 440.0).log2();
-            let clase = (midi.round() as i32).rem_euclid(12) as usize;
-            croma[clase] += magnitud;
+            let class = (midi.round() as i32).rem_euclid(12) as usize;
+            chroma[class] += magnitude;
         }
-        ventanas += 1;
-        inicio += salto;
+        windows += 1;
+        start += skip;
     }
-    if ventanas == 0 {
+    if windows == 0 {
         return None;
     }
-    let total: f32 = croma.iter().sum();
+    let total: f32 = chroma.iter().sum();
     if total <= 0.0 {
         return None;
     }
-    for c in croma.iter_mut() {
+    for c in chroma.iter_mut() {
         *c /= total;
     }
-    Some(croma)
+    Some(chroma)
 }
 
 /// La rotación y el modo que mejor correlacionan, con su confianza.
-fn mejor_perfil(croma: &[f32; 12]) -> Option<(usize, bool, f32)> {
-    let mut resultados: Vec<(usize, bool, f32)> = Vec::with_capacity(24);
-    for tonica in 0..12 {
-        for (es_mayor, perfil) in [(true, &MAYOR), (false, &MENOR)] {
-            let rotado: Vec<f32> = (0..12).map(|i| perfil[(i + 12 - tonica) % 12]).collect();
-            resultados.push((tonica, es_mayor, correlacion(croma, &rotado)));
+fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
+    let mut results: Vec<(usize, bool, f32)> = Vec::with_capacity(24);
+    for tonic in 0..12 {
+        for (is_major, profile) in [(true, &MAYOR), (false, &MINOR)] {
+            let rotated: Vec<f32> = (0..12).map(|i| profile[(i + 12 - tonic) % 12]).collect();
+            results.push((tonic, is_major, correlacion(chroma, &rotated)));
         }
     }
-    resultados.sort_by(|a, b| b.2.total_cmp(&a.2));
-    let mejor = resultados.first().copied()?;
-    if !mejor.2.is_finite() || mejor.2 <= 0.0 {
+    results.sort_by(|a, b| b.2.total_cmp(&a.2));
+    let best = results.first().copied()?;
+    if !best.2.is_finite() || best.2 <= 0.0 {
         return None;
     }
     // La confianza es qué tanto le gana al segundo lugar: un cromagrama que
     // encaja igual de bien en dos tonos no dice nada.
-    let segundo = resultados.get(1).map(|r| r.2).unwrap_or(0.0).max(0.0);
-    let confianza = ((mejor.2 - segundo) / mejor.2).clamp(0.0, 1.0);
-    Some((mejor.0, mejor.1, confianza))
+    let second = results.get(1).map(|r| r.2).unwrap_or(0.0).max(0.0);
+    let confidence = ((best.2 - second) / best.2).clamp(0.0, 1.0);
+    Some((best.0, best.1, confidence))
 }
 
 /// Correlación de Pearson entre dos vectores del mismo largo.
@@ -152,18 +152,18 @@ fn correlacion(a: &[f32], b: &[f32]) -> f32 {
     }
 }
 
-fn nombre(indice: usize, es_mayor: bool) -> String {
-    format!("{}{}", NOTAS[indice % 12], if es_mayor { "" } else { "m" })
+fn name(index: usize, is_major: bool) -> String {
+    format!("{}{}", NOTES[index % 12], if is_major { "" } else { "m" })
 }
 
 /// La rueda de Camelot: el número dice qué tan lejos está en el círculo de
 /// quintas, y la letra si es menor (A) o mayor (B).
-fn camelot(indice: usize, es_mayor: bool) -> String {
+fn camelot(index: usize, is_major: bool) -> String {
     // El círculo de quintas empezando en do. Do mayor es 8B y la menor es
     // 8A, y de ahí se cuenta.
     let quintas = [0usize, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
-    let pos = quintas.iter().position(|q| *q == indice % 12).unwrap_or(0);
-    let numero = if es_mayor {
+    let pos = quintas.iter().position(|q| *q == index % 12).unwrap_or(0);
+    let number = if is_major {
         // Do está en la posición 0 y le toca el 8.
         (pos + 7) % 12 + 1
     } else {
@@ -171,7 +171,7 @@ fn camelot(indice: usize, es_mayor: bool) -> String {
         // quintas atrás de la mayor.
         (pos + 4) % 12 + 1
     };
-    format!("{numero}{}", if es_mayor { "B" } else { "A" })
+    format!("{number}{}", if is_major { "B" } else { "A" })
 }
 
 #[cfg(test)]
@@ -184,15 +184,15 @@ mod tests {
     }
 
     /// Un acorde sostenido con esas notas MIDI.
-    fn acorde(notas: &[f32], rate: u32, segundos: u32) -> Vec<f32> {
-        let total = (rate * segundos) as usize;
+    fn chord(notes: &[f32], rate: u32, seconds: u32) -> Vec<f32> {
+        let total = (rate * seconds) as usize;
         (0..total)
             .map(|i| {
-                notas
+                notes
                     .iter()
                     .map(|n| (2.0 * PI * hz(*n) * i as f32 / rate as f32).sin())
                     .sum::<f32>()
-                    / notas.len() as f32
+                    / notes.len() as f32
             })
             .collect()
     }
@@ -201,22 +201,22 @@ mod tests {
     fn do_mayor_sale_como_do_mayor() {
         // Las siete notas de la escala de do, para que el perfil tenga con
         // qué trabajar: con una tríada sola, do mayor y la menor empatan.
-        let escala: Vec<f32> = [60.0, 62.0, 64.0, 65.0, 67.0, 69.0, 71.0].to_vec();
+        let scale: Vec<f32> = [60.0, 62.0, 64.0, 65.0, 67.0, 69.0, 71.0].to_vec();
         // Pesando la tónica y la dominante, como en la música de verdad.
-        let mut notas = escala.clone();
-        notas.extend_from_slice(&[60.0, 67.0, 60.0]);
-        let k = detect(&acorde(&notas, 11_025, 6), 11_025).expect("hay tonalidad");
+        let mut notes = scale.clone();
+        notes.extend_from_slice(&[60.0, 67.0, 60.0]);
+        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
         assert_eq!(k.name, "C", "salió {} ({})", k.name, k.camelot);
         assert_eq!(k.camelot, "8B");
     }
 
     #[test]
     fn la_menor_sale_como_la_menor() {
-        let escala: Vec<f32> = [57.0, 59.0, 60.0, 62.0, 64.0, 65.0, 67.0].to_vec();
-        let mut notas = escala.clone();
+        let scale: Vec<f32> = [57.0, 59.0, 60.0, 62.0, 64.0, 65.0, 67.0].to_vec();
+        let mut notes = scale.clone();
         // En menor, lo que manda es la tónica y la tercera menor.
-        notas.extend_from_slice(&[57.0, 60.0, 57.0, 64.0]);
-        let k = detect(&acorde(&notas, 11_025, 6), 11_025).expect("hay tonalidad");
+        notes.extend_from_slice(&[57.0, 60.0, 57.0, 64.0]);
+        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
         assert_eq!(k.name, "Am", "salió {} ({})", k.name, k.camelot);
         assert_eq!(k.camelot, "8A");
     }
@@ -253,12 +253,12 @@ mod tests {
         // Cada tono mayor comparte casilla con su relativo menor.
         for i in 0..12usize {
             let mayor = camelot(i, true);
-            let relativo = camelot((i + 9) % 12, false);
+            let relative = camelot((i + 9) % 12, false);
             assert_eq!(
                 mayor[..mayor.len() - 1],
-                relativo[..relativo.len() - 1],
+                relative[..relative.len() - 1],
                 "{} y su relativo menor comparten número",
-                NOTAS[i]
+                NOTES[i]
             );
         }
     }
@@ -266,8 +266,8 @@ mod tests {
     #[test]
     fn un_cromagrama_plano_no_se_decide() {
         // Todas las notas igual de fuertes: no hay tónica que valga.
-        let plano = [1.0f32 / 12.0; 12];
-        let (_, _, confianza) = mejor_perfil(&plano).unwrap_or((0, true, 0.0));
-        assert!(confianza < 0.2, "no debería estar seguro: {confianza}");
+        let flat = [1.0f32 / 12.0; 12];
+        let (_, _, confidence) = best_profile(&flat).unwrap_or((0, true, 0.0));
+        assert!(confidence < 0.2, "no debería estar seguro: {confidence}");
     }
 }

@@ -129,9 +129,9 @@ mod tests {
         // y se repetía casi medio segundo de música.
         let mut c = Cursor::new(44_100);
         c.advance(66_150); // 1.5 s
-        let al_pausar = c.frame;
+        let on_pause = c.frame;
         // Reanudar no toca el cursor.
-        assert_eq!(c.frame, al_pausar);
+        assert_eq!(c.frame, on_pause);
         assert_eq!(c.position(), Duration::from_millis(1500));
     }
 

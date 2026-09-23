@@ -76,12 +76,12 @@ impl Player {
         let (orders_tx, orders_rx) = channel::<Order>();
         let (events_tx, events_rx) = channel::<PlayerEvent>();
         let controls = crate::queue_playback::Controls::new();
-        let controls_hilo = controls.clone();
+        let controls_thread = controls.clone();
         let queue = crate::queue_playback::SharedQueue::default();
-        let queue_hilo = queue.clone();
-        let stop_hilo = controls.stop.clone();
-        let pause_hilo = controls.pause.clone();
-        let skip_hilo = controls.skip.clone();
+        let queue_thread = queue.clone();
+        let stop_thread = controls.stop.clone();
+        let pause_thread = controls.pause.clone();
+        let skip_thread = controls.skip.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -93,20 +93,20 @@ impl Player {
                         Order::Play { paths, device, bit_perfect } => {
                             // Cada pista arranca con la bandera limpia: una
                             // orden de paro vieja no mata la siguiente.
-                            stop_hilo.reset();
-                            pause_hilo.set(false);
-                            skip_hilo.take();
-                            queue_hilo.set(paths.clone());
-                            let resultado = reproducir(
-                                &queue_hilo,
+                            stop_thread.reset();
+                            pause_thread.set(false);
+                            skip_thread.take();
+                            queue_thread.set(paths.clone());
+                            let result = play(
+                                &queue_thread,
                                 &device,
                                 bit_perfect,
-                                &controls_hilo,
+                                &controls_thread,
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
                             );
-                            let evento = match resultado {
+                            let event = match result {
                                 Ok(Outcome::Finished { frames }) => PlayerEvent::Finished { frames },
                                 Ok(Outcome::Stopped { frames }) => PlayerEvent::Stopped { frames },
                                 Ok(Outcome::Failed { frames, error }) => PlayerEvent::Failed {
@@ -114,7 +114,7 @@ impl Player {
                                 },
                                 Err(e) => PlayerEvent::Failed { message: e.to_string() },
                             };
-                            let _ = events_tx.send(evento);
+                            let _ = events_tx.send(event);
                         }
                     }
                 }
@@ -193,8 +193,8 @@ impl Player {
     }
 
     /// Pone un orden de recorrido para la cola que suena.
-    pub fn set_order(&self, orden: Vec<usize>, len: usize) -> bool {
-        self.controls.order.set(orden, len)
+    pub fn set_order(&self, order: Vec<usize>, len: usize) -> bool {
+        self.controls.order.set(order, len)
     }
 
     /// Vuelve al orden en que se encoló.
@@ -231,7 +231,7 @@ impl Drop for Player {
     }
 }
 
-fn reproducir(
+fn play(
     queue: &crate::queue_playback::SharedQueue,
     device: &str,
     bit_perfect: bool,
@@ -249,41 +249,41 @@ fn reproducir(
 
     // DSD no pasa por el decodificador de PCM: va por DoP, y hoy se
     // reproduce de a una pista.
-    if let Some(primera) = paths.first() {
-        if es_url(primera) {
-            return reproducir_stream(primera, device, &caps, policy, stop, pause, open, events);
+    if let Some(first) = paths.first() {
+        if is_url(first) {
+            return play_stream(first, device, &caps, policy, stop, pause, open, events);
         }
-        if es_cd(primera) {
-            return reproducir_cd(primera, device, &caps, stop, pause, skip, open, events);
+        if is_cd(first) {
+            return play_cd(first, device, &caps, stop, pause, skip, open, events);
         }
-        if es_sacd(primera) {
-            return reproducir_sacd(primera, device, &caps, stop, pause, skip, open, events);
+        if is_sacd(first) {
+            return play_sacd(first, device, &caps, stop, pause, skip, open, events);
         }
-        if es_dsd(primera) {
-            return reproducir_dsd(primera, device, &caps, stop, pause, open, events);
+        if is_dsd(first) {
+            return play_dsd(first, device, &caps, stop, pause, open, events);
         }
     }
-    let resultados = crate::queue_playback::play_queue_with(
+    let results = crate::queue_playback::play_queue_with(
         queue,
         &caps,
         policy,
         controls,
-        |formato| open(device, formato),
-        &mut |indice, ruta, delivery| {
+        |format| open(device, format),
+        &mut |index, path, delivery| {
             // Los tags y la portada se leen al arrancar cada pista, no al
             // encolarla: una cola larga no debe leer cientos de archivos
             // antes de que suene el primero.
-            let tags = chilpa_tags::read(ruta).ok().map(|info| info.tags);
-            let artwork = chilpa_tags::extract_artwork(ruta, &crate::artwork_cache()).ok().flatten();
-            let total_frames = chilpa_decode::Decoded::open(ruta).ok().and_then(|d| d.frame_count());
+            let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
+            let artwork = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
+            let total_frames = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
             let _ = events.send(PlayerEvent::Started {
-                path: ruta.to_path_buf(),
+                path: path.to_path_buf(),
                 opened: delivery.opened,
                 bit_perfect: delivery.is_bit_perfect(),
                 total_frames,
                 tags,
                 artwork,
-                index: indice,
+                index: index,
                 queue_len: total,
                 dsd_multiple: None,
             });
@@ -294,20 +294,20 @@ fn reproducir(
     )?;
 
     // El final de la cola es el final de su última pista.
-    Ok(resultados
+    Ok(results
         .last()
         .map(|r| r.outcome.clone())
         .unwrap_or(Outcome::Finished { frames: 0 }))
 }
 
 /// Cierto si lo que se pidió es una URL y no un archivo.
-fn es_url(path: &Path) -> bool {
+fn is_url(path: &Path) -> bool {
     path.to_string_lossy().starts_with("http://") || path.to_string_lossy().starts_with("https://")
 }
 
 /// Reproduce una radio o cualquier stream por HTTP.
 #[allow(clippy::too_many_arguments)]
-fn reproducir_stream(
+fn play_stream(
     url: &Path,
     device: &str,
     caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -317,16 +317,16 @@ fn reproducir_stream(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let direccion = url.to_string_lossy().to_string();
-    let stream = chilpa_stream::open(&direccion)
+    let address = url.to_string_lossy().to_string();
+    let stream = chilpa_stream::open(&address)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
     let titulos = stream.now_playing();
-    let estacion = stream.info().name.clone();
+    let station = stream.info().name.clone();
 
-    let ruta = url.to_path_buf();
-    let eventos = events.clone();
-    let etiqueta = chilpa_tags::Tags {
-        title: estacion.clone().or_else(|| Some(direccion.clone())),
+    let path = url.to_path_buf();
+    let events = events.clone();
+    let tag = chilpa_tags::Tags {
+        title: station.clone().or_else(|| Some(address.clone())),
         album: Some("Radio".into()),
         ..chilpa_tags::Tags::default()
     };
@@ -337,14 +337,14 @@ fn reproducir_stream(
         policy,
         stop,
         pause,
-        |formato| open(device, formato),
+        |format| open(device, format),
         &mut |delivery| {
-            let _ = eventos.send(PlayerEvent::Started {
-                path: ruta.clone(),
+            let _ = events.send(PlayerEvent::Started {
+                path: path.clone(),
                 opened: delivery.opened,
                 bit_perfect: delivery.is_bit_perfect(),
                 total_frames: None,
-                tags: Some(etiqueta.clone()),
+                tags: Some(tag.clone()),
                 artwork: None,
                 index: 0,
                 queue_len: 1,
@@ -354,8 +354,8 @@ fn reproducir_stream(
         &mut |frames| {
             // El título de la estación cambia con cada canción; se publica
             // con el progreso, que es lo único que viaja seguido.
-            if let Some(titulo) = titulos.get() {
-                let _ = events.send(PlayerEvent::StreamTitle { title: titulo });
+            if let Some(title) = titulos.get() {
+                let _ = events.send(PlayerEvent::StreamTitle { title: title });
             }
             let _ = events.send(PlayerEvent::Progress { frames });
         },
@@ -364,7 +364,7 @@ fn reproducir_stream(
 }
 
 /// Cierto si el archivo es una imagen de SACD.
-fn es_sacd(path: &Path) -> bool {
+fn is_sacd(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .map(|e| e.eq_ignore_ascii_case("iso"))
@@ -376,19 +376,19 @@ fn es_sacd(path: &Path) -> bool {
 /// Un CD se pide como `cdda:/dev/sr0`. El prefijo no es adorno: un nodo de
 /// dispositivo a secas no se distingue de un archivo, y abrir la unidad por
 /// equivocación asusta a cualquiera.
-fn es_cd(path: &Path) -> bool {
+fn is_cd(path: &Path) -> bool {
     path.to_string_lossy().starts_with("cdda:")
 }
 
 /// La unidad que pide una ruta `cdda:`.
 pub fn cd_device_of(path: &Path) -> Option<PathBuf> {
     let s = path.to_string_lossy();
-    let nodo = s.strip_prefix("cdda:")?;
-    (!nodo.is_empty()).then(|| PathBuf::from(nodo))
+    let node = s.strip_prefix("cdda:")?;
+    (!node.is_empty()).then(|| PathBuf::from(node))
 }
 
 #[cfg(target_os = "linux")]
-fn reproducir_cd(
+fn play_cd(
     path: &Path,
     device: &str,
     caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -398,55 +398,55 @@ fn reproducir_cd(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let nodo = cd_device_of(path)
+    let node = cd_device_of(path)
         .ok_or_else(|| PlayError::Sink(SinkError::Backend("falta la unidad".into())))?;
-    let mut unidad = chilpa_cd::linux::LinuxDrive::open(&nodo)
+    let mut unit = chilpa_cd::linux::LinuxDrive::open(&node)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let toc = crate::cd_playback::read_toc(&mut unidad)
+    let toc = crate::cd_playback::read_toc(&mut unit)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let pistas: Vec<chilpa_cd::Track> = toc.audio_tracks().copied().collect();
-    if pistas.is_empty() {
+    let tracks: Vec<chilpa_cd::Track> = toc.audio_tracks().copied().collect();
+    if tracks.is_empty() {
         return Err(PlayError::Sink(SinkError::Backend(
             "el disco no trae pistas de audio".into(),
         )));
     }
 
-    let total = pistas.len();
+    let total = tracks.len();
     let mut ultimo = Outcome::Finished { frames: 0 };
-    for (indice, pista) in pistas.iter().enumerate() {
+    for (index, track) in tracks.iter().enumerate() {
         if stop.is_stopped() {
             return Ok(Outcome::Stopped { frames: ultimo.frames() });
         }
         skip.take();
-        let etiqueta = chilpa_tags::Tags {
-            title: Some(format!("Pista {}", pista.number)),
-            album: Some(format!("CD en {}", nodo.display())),
+        let tag = chilpa_tags::Tags {
+            title: Some(format!("Pista {}", track.number)),
+            album: Some(format!("CD en {}", node.display())),
             ..chilpa_tags::Tags::default()
         };
-        let eventos = events.clone();
-        let ruta = path.to_path_buf();
+        let events = events.clone();
+        let path = path.to_path_buf();
         // Un CD son 44 100 frames por segundo, y sus sectores ya son PCM.
-        let duracion = Some(u64::from(pista.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64);
+        let duration = Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64);
 
         let played = crate::cd_playback::play_track(
-            &mut unidad,
-            pista,
+            &mut unit,
+            track,
             caps,
             stop,
             pause,
-            |formato| {
-                let sink = open(device, formato);
+            |format| {
+                let sink = open(device, format);
                 if sink.is_ok() {
-                    let _ = eventos.send(PlayerEvent::Started {
-                        path: ruta.clone(),
-                        opened: formato,
+                    let _ = events.send(PlayerEvent::Started {
+                        path: path.clone(),
+                        opened: format,
                         // Un CD entregado tal cual siempre es bit-perfect:
                         // si la salida no acepta 16/44.1, no se abre.
                         bit_perfect: true,
-                        total_frames: duracion,
-                        tags: Some(etiqueta.clone()),
+                        total_frames: duration,
+                        tags: Some(tag.clone()),
                         artwork: None,
-                        index: indice,
+                        index: index,
                         queue_len: total,
                         dsd_multiple: None,
                     });
@@ -461,9 +461,9 @@ fn reproducir_cd(
 
         // Un sector ilegible corta la pista, y se dice en vez de rellenar
         // con silencio.
-        if let Some(problema) = played.read_error {
+        if let Some(problem) = played.read_error {
             let _ = events.send(PlayerEvent::Failed {
-                message: format!("pista {}: {problema}", pista.number),
+                message: format!("pista {}: {problem}", track.number),
             });
         }
         ultimo = played.outcome;
@@ -475,7 +475,7 @@ fn reproducir_cd(
 }
 
 #[cfg(not(target_os = "linux"))]
-fn reproducir_cd(
+fn play_cd(
     _path: &Path,
     _device: &str,
     _caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -490,7 +490,7 @@ fn reproducir_cd(
     )))
 }
 
-fn reproducir_sacd(
+fn play_sacd(
     path: &Path,
     device: &str,
     caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -500,52 +500,52 @@ fn reproducir_sacd(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let imagen = chilpa_sacd::open(path)
+    let image = chilpa_sacd::open(path)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let pistas = imagen.area.tracks.clone();
-    if pistas.is_empty() {
+    let tracks = image.area.tracks.clone();
+    if tracks.is_empty() {
         return Err(PlayError::Sink(SinkError::Backend("el disco no trae pistas".into())));
     }
-    let total = pistas.len();
+    let total = tracks.len();
     let mut ultimo = Outcome::Finished { frames: 0 };
 
-    for (indice, pista) in pistas.iter().enumerate() {
+    for (index, track) in tracks.iter().enumerate() {
         if stop.is_stopped() {
             return Ok(Outcome::Stopped { frames: ultimo.frames() });
         }
         skip.take();
         // Cada pista abre la imagen otra vez: el lector se queda con ella, y
         // así una pista que falla no se lleva el resto del disco.
-        let imagen = chilpa_sacd::open(path)
+        let image = chilpa_sacd::open(path)
             .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-        let mut lector = chilpa_sacd::SacdTrackReader::open(imagen, pista)
+        let mut lector = chilpa_sacd::SacdTrackReader::open(image, track)
             .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
 
-        let etiqueta = chilpa_tags::Tags {
-            title: Some(format!("Pista {}", pista.number)),
+        let tag = chilpa_tags::Tags {
+            title: Some(format!("Pista {}", track.number)),
             album: path.file_stem().map(|s| s.to_string_lossy().to_string()),
             ..chilpa_tags::Tags::default()
         };
-        let eventos = events.clone();
-        let ruta = path.to_path_buf();
-        let duracion = Some(u64::from(pista.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16);
+        let events = events.clone();
+        let path = path.to_path_buf();
+        let duration = Some(u64::from(track.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16);
 
         let played = crate::dsd_playback::play_dsd(
             &mut lector,
             caps,
             stop,
             pause,
-            |formato| {
-                let sink = open(device, formato);
+            |format| {
+                let sink = open(device, format);
                 if sink.is_ok() {
-                    let _ = eventos.send(PlayerEvent::Started {
-                        path: ruta.clone(),
-                        opened: formato,
+                    let _ = events.send(PlayerEvent::Started {
+                        path: path.clone(),
+                        opened: format,
                         bit_perfect: true,
-                        total_frames: duracion,
-                        tags: Some(etiqueta.clone()),
+                        total_frames: duration,
+                        tags: Some(tag.clone()),
                         artwork: None,
-                        index: indice,
+                        index: index,
                         queue_len: total,
                         dsd_multiple: Some(64),
                     });
@@ -567,7 +567,7 @@ fn reproducir_sacd(
 }
 
 /// Cierto si el archivo es DSD por su extensión.
-fn es_dsd(path: &Path) -> bool {
+fn is_dsd(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
         .map(|e| e.eq_ignore_ascii_case("dsf"))
@@ -576,7 +576,7 @@ fn es_dsd(path: &Path) -> bool {
 
 /// Reproduce un archivo DSD y cuenta lo mismo que la ruta de PCM.
 #[allow(clippy::too_many_arguments)]
-fn reproducir_dsd(
+fn play_dsd(
     path: &Path,
     device: &str,
     caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -592,9 +592,9 @@ fn reproducir_dsd(
         .map(|r| r.info().clone())
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
 
-    let ruta = path.to_path_buf();
-    let eventos = events.clone();
-    let multiplo = info.multiple();
+    let owned = path.to_path_buf();
+    let events = events.clone();
+    let multiple = info.multiple();
     let total_frames = Some(info.samples / 16);
 
     let played = crate::dsd_playback::play_dsf(
@@ -602,19 +602,19 @@ fn reproducir_dsd(
         caps,
         stop,
         pause,
-        |formato| {
-            let sink = open(device, formato);
+        |format| {
+            let sink = open(device, format);
             if let Ok(_) = &sink {
-                let _ = eventos.send(PlayerEvent::Started {
-                    path: ruta.clone(),
-                    opened: formato,
+                let _ = events.send(PlayerEvent::Started {
+                    path: owned.clone(),
+                    opened: format,
                     bit_perfect: true,
                     total_frames,
                     tags: tags.clone(),
                     artwork: artwork.clone(),
                     index: 0,
                     queue_len: 1,
-                    dsd_multiple: Some(multiplo),
+                    dsd_multiple: Some(multiple),
                 });
             }
             sink
@@ -634,11 +634,11 @@ mod tests {
 
     #[test]
     fn una_ruta_de_cd_se_reconoce_por_su_prefijo() {
-        assert!(es_cd(Path::new("cdda:/dev/sr0")));
+        assert!(is_cd(Path::new("cdda:/dev/sr0")));
         // Un nodo de dispositivo a secas NO es un CD: abrir la unidad por
         // equivocación asusta a cualquiera.
-        assert!(!es_cd(Path::new("/dev/sr0")));
-        assert!(!es_cd(Path::new("/musica/una.flac")));
+        assert!(!is_cd(Path::new("/dev/sr0")));
+        assert!(!is_cd(Path::new("/musica/una.flac")));
     }
 
     #[test]
@@ -654,18 +654,18 @@ mod tests {
     use std::sync::Arc;
     use std::time::{Duration, Instant};
 
-    struct Nulo {
+    struct NullSink {
         stream: StreamFormat,
-        escritos: Arc<AtomicU64>,
+        written: Arc<AtomicU64>,
     }
 
-    impl AudioSink for Nulo {
+    impl AudioSink for NullSink {
         fn format(&self) -> StreamFormat {
             self.stream
         }
         fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
             let n = frames.len() / self.stream.frame_bytes();
-            self.escritos.fetch_add(n as u64, Ordering::Relaxed);
+            self.written.fetch_add(n as u64, Ordering::Relaxed);
             Ok(n)
         }
         fn close(&mut self) -> Result<(), SinkError> {
@@ -673,9 +673,9 @@ mod tests {
         }
     }
 
-    fn wav(nombre: &str, frames: u32) -> PathBuf {
+    fn wav(name: &str, frames: u32) -> PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!("chilpa-player-{nombre}.wav"));
+        p.push(format!("chilpa-player-{name}.wav"));
         let data = frames * 4;
         let mut f = std::fs::File::create(&p).unwrap();
         f.write_all(b"RIFF").unwrap();
@@ -698,7 +698,7 @@ mod tests {
         p
     }
 
-    fn player(escritos: Arc<AtomicU64>) -> Player {
+    fn player(written: Arc<AtomicU64>) -> Player {
         Player::spawn(
             Box::new(|_| {
                 Ok(DeviceCaps {
@@ -709,68 +709,68 @@ mod tests {
                 })
             }),
             Box::new(move |_, stream| {
-                Ok(Box::new(Nulo { stream, escritos: Arc::clone(&escritos) }) as Box<dyn AudioSink + Send>)
+                Ok(Box::new(NullSink { stream, written: Arc::clone(&written) }) as Box<dyn AudioSink + Send>)
             }),
         )
     }
 
-    fn esperar<F: Fn(&[PlayerEvent]) -> bool>(p: &Player, hasta: F) -> Vec<PlayerEvent> {
-        let limite = Instant::now() + Duration::from_secs(5);
-        let mut todos = Vec::new();
-        while Instant::now() < limite {
-            todos.extend(p.poll());
-            if hasta(&todos) {
-                return todos;
+    fn wait<F: Fn(&[PlayerEvent]) -> bool>(p: &Player, hasta: F) -> Vec<PlayerEvent> {
+        let limit = Instant::now() + Duration::from_secs(5);
+        let mut all = Vec::new();
+        while Instant::now() < limit {
+            all.extend(p.poll());
+            if hasta(&all) {
+                return all;
             }
             std::thread::sleep(Duration::from_millis(5));
         }
-        todos
+        all
     }
 
     #[test]
     fn reproducir_no_bloquea_y_avisa_progreso_y_final() {
-        let escritos = Arc::new(AtomicU64::new(0));
-        let p = player(Arc::clone(&escritos));
-        let archivo = wav("basico", 5_000);
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
+        let file = wav("basico", 5_000);
 
         let antes = Instant::now();
-        p.play(&archivo, "falso", true);
+        p.play(&file, "falso", true);
         assert!(antes.elapsed() < Duration::from_millis(100), "play() regresa de inmediato");
 
-        let eventos = esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
-        assert!(eventos.iter().any(|e| matches!(e, PlayerEvent::Started { .. })));
-        assert!(eventos.iter().any(|e| matches!(e, PlayerEvent::Progress { .. })));
-        assert!(matches!(eventos.last(), Some(PlayerEvent::Finished { frames: 5_000 })));
-        assert_eq!(escritos.load(Ordering::Relaxed), 5_000);
-        let _ = std::fs::remove_file(archivo);
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        assert!(events.iter().any(|e| matches!(e, PlayerEvent::Started { .. })));
+        assert!(events.iter().any(|e| matches!(e, PlayerEvent::Progress { .. })));
+        assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 5_000 })));
+        assert_eq!(written.load(Ordering::Relaxed), 5_000);
+        let _ = std::fs::remove_file(file);
     }
 
     #[test]
     fn una_cola_suena_en_orden_y_avisa_el_lugar_de_cada_pista() {
-        let escritos = Arc::new(AtomicU64::new(0));
-        let p = player(Arc::clone(&escritos));
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
         let a = wav("cola-a", 1_000);
         let b = wav("cola-b", 2_000);
         p.play_all(&[a.clone(), b.clone()], "falso", true);
 
-        let eventos = esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
-        let arranques: Vec<(usize, usize)> = eventos
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        let startups: Vec<(usize, usize)> = events
             .iter()
             .filter_map(|e| match e {
                 PlayerEvent::Started { index, queue_len, .. } => Some((*index, *queue_len)),
                 _ => None,
             })
             .collect();
-        assert_eq!(arranques, vec![(0, 2), (1, 2)], "las dos pistas, en orden");
-        assert_eq!(escritos.load(Ordering::Relaxed), 3_000, "salieron todos los frames");
+        assert_eq!(startups, vec![(0, 2), (1, 2)], "las dos pistas, en orden");
+        assert_eq!(written.load(Ordering::Relaxed), 3_000, "salieron todos los frames");
         let _ = std::fs::remove_file(a);
         let _ = std::fs::remove_file(b);
     }
 
     #[test]
     fn saltar_avanza_la_cola_en_vez_de_detenerla() {
-        let escritos = Arc::new(AtomicU64::new(0));
-        let p = player(Arc::clone(&escritos));
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
         // Pistas largas: sin saltar, la prueba tardaría en llegar al final.
         let a = wav("saltar-a", 400_000);
         let b = wav("saltar-b", 1_000);
@@ -778,20 +778,20 @@ mod tests {
 
         // En cuanto arranca la primera, se pide saltar. Los eventos se
         // juntan de las dos esperas: cada una consume lo que ya recogió.
-        let mut eventos =
-            esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Started { .. })));
+        let mut events =
+            wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Started { .. })));
         p.next();
-        eventos.extend(esperar(&p, |e| {
+        events.extend(wait(&p, |e| {
             e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. }))
         }));
 
-        let arranques = eventos
+        let startups = events
             .iter()
             .filter(|e| matches!(e, PlayerEvent::Started { .. }))
             .count();
-        assert!(arranques >= 2, "la segunda pista arrancó: {arranques} arranques");
+        assert!(startups >= 2, "la segunda pista arrancó: {startups} arranques");
         assert!(
-            escritos.load(Ordering::Relaxed) < 401_000,
+            written.load(Ordering::Relaxed) < 401_000,
             "no sonó la primera entera"
         );
         let _ = std::fs::remove_file(a);
@@ -802,13 +802,13 @@ mod tests {
     fn un_archivo_que_no_existe_avisa_y_el_reproductor_sigue_vivo() {
         let p = player(Arc::new(AtomicU64::new(0)));
         p.play(Path::new("/no/existe.flac"), "falso", true);
-        let eventos = esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));
-        assert!(matches!(eventos.last(), Some(PlayerEvent::Failed { .. })));
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));
+        assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })));
 
-        let archivo = wav("despues-de-fallar", 1_000);
-        p.play(&archivo, "falso", true);
-        let eventos = esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
-        assert!(eventos.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "sigue aceptando órdenes");
-        let _ = std::fs::remove_file(archivo);
+        let file = wav("despues-de-fallar", 1_000);
+        p.play(&file, "falso", true);
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        assert!(events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "sigue aceptando órdenes");
+        let _ = std::fs::remove_file(file);
     }
 }

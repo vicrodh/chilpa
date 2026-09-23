@@ -75,10 +75,10 @@ mod tests {
         path.push("chilpa-capture-test.raw");
         let stream = StreamFormat::new(SampleFormat::S16, 44_100, 2);
         let mut sink = CaptureSink::create(&path, stream).unwrap();
-        let datos: Vec<u8> = (0..40u8).collect();
-        assert_eq!(sink.write(&datos).unwrap(), 10);
+        let data: Vec<u8> = (0..40u8).collect();
+        assert_eq!(sink.write(&data).unwrap(), 10);
         sink.close().unwrap();
-        assert_eq!(std::fs::read(&path).unwrap(), datos);
+        assert_eq!(std::fs::read(&path).unwrap(), data);
         assert_eq!(sink.frames(), 10);
         let _ = std::fs::remove_file(path);
     }

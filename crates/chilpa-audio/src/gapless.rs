@@ -50,9 +50,9 @@ pub struct Trimmer {
     delay: u64,
     padding: usize,
     channels: usize,
-    consumidos: u64,
+    consumed: u64,
     /// Frames retenidos a la espera de saber si son el final.
-    cola: Vec<i32>,
+    queue: Vec<i32>,
 }
 
 impl Trimmer {
@@ -62,42 +62,42 @@ impl Trimmer {
             delay,
             padding: padding as usize,
             channels: channels.max(1) as usize,
-            consumidos: 0,
-            cola: Vec::new(),
+            consumed: 0,
+            queue: Vec::new(),
         }
     }
 
     /// Frames que ya salieron, sin contar los recortados.
     pub fn emitted(&self) -> u64 {
-        self.consumidos
+        self.consumed
     }
 
     /// Pasa un bloque por el recorte. Lo que regresa ya es música.
     pub fn push(&mut self, block: &[i32]) -> Vec<i32> {
-        let mut datos = std::mem::take(&mut self.cola);
-        datos.extend_from_slice(block);
+        let mut data = std::mem::take(&mut self.queue);
+        data.extend_from_slice(block);
 
         // Recorte del arranque: puede abarcar varios bloques.
-        let pendientes = self.delay.saturating_sub(self.consumidos);
-        let frames = datos.len() / self.channels;
-        let brincar = pendientes.min(frames as u64) as usize;
-        if brincar > 0 {
-            datos.drain(..brincar * self.channels);
-            self.consumidos += brincar as u64;
+        let pending = self.delay.saturating_sub(self.consumed);
+        let frames = data.len() / self.channels;
+        let skip = pending.min(frames as u64) as usize;
+        if skip > 0 {
+            data.drain(..skip * self.channels);
+            self.consumed += skip as u64;
         }
 
         // Se retienen los últimos `padding` frames por si son la cola.
-        let frames = datos.len() / self.channels;
-        let retener = self.padding.min(frames);
-        let corte = (frames - retener) * self.channels;
-        self.cola = datos.split_off(corte);
-        self.consumidos += (datos.len() / self.channels) as u64;
-        datos
+        let frames = data.len() / self.channels;
+        let hold = self.padding.min(frames);
+        let cut = (frames - hold) * self.channels;
+        self.queue = data.split_off(cut);
+        self.consumed += (data.len() / self.channels) as u64;
+        data
     }
 
     /// Se acabó la pista: lo retenido era relleno y se tira.
     pub fn finish(&mut self) -> Vec<i32> {
-        self.cola.clear();
+        self.queue.clear();
         Vec::new()
     }
 }
@@ -111,8 +111,8 @@ mod tests {
         StreamFormat::new(SampleFormat::S16, rate, 2)
     }
 
-    fn frames(desde: i32, n: i32) -> Vec<i32> {
-        (desde..desde + n).flat_map(|v| [v, -v]).collect()
+    fn frames(from: i32, n: i32) -> Vec<i32> {
+        (from..from + n).flat_map(|v| [v, -v]).collect()
     }
 
     #[test]
@@ -130,8 +130,8 @@ mod tests {
     #[test]
     fn sin_relleno_no_se_recorta_nada() {
         let mut t = Trimmer::new(0, 0, 2);
-        let salida = t.push(&frames(0, 10));
-        assert_eq!(salida, frames(0, 10));
+        let output = t.push(&frames(0, 10));
+        assert_eq!(output, frames(0, 10));
         assert_eq!(t.emitted(), 10);
     }
 
@@ -140,8 +140,8 @@ mod tests {
         // 5 frames de delay repartidos entre dos bloques de 3.
         let mut t = Trimmer::new(5, 0, 2);
         assert!(t.push(&frames(0, 3)).is_empty(), "el primer bloque es todo relleno");
-        let segundo = t.push(&frames(3, 3));
-        assert_eq!(segundo, frames(5, 1), "solo sale el frame 5 en adelante");
+        let second = t.push(&frames(3, 3));
+        assert_eq!(second, frames(5, 1), "solo sale el frame 5 en adelante");
     }
 
     #[test]
@@ -157,15 +157,15 @@ mod tests {
     fn lo_retenido_sale_cuando_llega_mas_musica() {
         let mut t = Trimmer::new(0, 4, 2);
         t.push(&frames(0, 10));
-        let segundo = t.push(&frames(10, 2));
-        assert_eq!(segundo, frames(6, 2), "lo retenido resulta ser música");
+        let second = t.push(&frames(10, 2));
+        assert_eq!(second, frames(6, 2), "lo retenido resulta ser música");
     }
 
     #[test]
     fn delay_y_padding_juntos_dejan_la_pista_exacta() {
         let mut t = Trimmer::new(3, 2, 2);
-        let mut salida = t.push(&frames(0, 12));
-        salida.extend(t.finish());
-        assert_eq!(salida, frames(3, 7), "12 frames menos 3 de arranque y 2 de cola");
+        let mut output = t.push(&frames(0, 12));
+        output.extend(t.finish());
+        assert_eq!(output, frames(3, 7), "12 frames menos 3 de arranque y 2 de cola");
     }
 }

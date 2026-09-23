@@ -147,8 +147,8 @@ impl AlbumSort {
 
     /// Lo contrario. Un nombre que no se reconoce da el orden de siempre, no
     /// un error: una preferencia vieja no debe dejar la reja vacía.
-    pub fn from_name(nombre: &str) -> Self {
-        match nombre {
+    pub fn from_name(name: &str) -> Self {
+        match name {
             "title" => AlbumSort::Title,
             "year" => AlbumSort::Year,
             "added" => AlbumSort::Added,
@@ -176,12 +176,12 @@ impl AlbumSort {
     /// Por artista, título o año se ordena con columnas de `albums` y ya:
     /// se puede recortar la página antes de contar nada. Por escuchas o por
     /// fecha de alta no hay manera, porque el orden sale justo de eso.
-    fn necesita_agregar(&self) -> bool {
+    fn needs_adding(&self) -> bool {
         matches!(self, AlbumSort::Added | AlbumSort::Played | AlbumSort::LastPlayed)
     }
 
     /// El orden cuando solo se miran columnas de `albums`.
-    fn order_by_barato(&self) -> &'static str {
+    fn cheap_order_by(&self) -> &'static str {
         match self {
             AlbumSort::Title => "a.title COLLATE NOCASE",
             AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
@@ -256,13 +256,13 @@ impl Library {
 
     /// El id del root, creándolo si hace falta.
     pub fn root_id(&self, source_id: i64, path: &Path) -> rusqlite::Result<i64> {
-        let ruta = path.display().to_string();
+        let path = path.display().to_string();
         self.db.execute(
             "INSERT OR IGNORE INTO roots (source_id, path) VALUES (?1, ?2)",
-            params![source_id, ruta],
+            params![source_id, path],
         )?;
         self.db
-            .query_row("SELECT id FROM roots WHERE path = ?1", params![ruta], |r| r.get(0))
+            .query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
     }
 
     /// Deja esos géneros como los de una pista, quitando los que ya no.
@@ -273,19 +273,19 @@ impl Library {
         let tx = self.db.unchecked_transaction()?;
         tx.execute("DELETE FROM track_genres WHERE track_id = ?1", params![track_id])?;
         {
-            let mut inserta = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
-            let mut busca = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
-            let mut liga = tx.prepare(
+            let mut insert = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
+            let mut find = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
+            let mut link = tx.prepare(
                 "INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)",
             )?;
-            for nombre in genres {
-                let nombre = nombre.trim();
-                if nombre.is_empty() {
+            for name in genres {
+                let name = name.trim();
+                if name.is_empty() {
                     continue;
                 }
-                inserta.execute(params![nombre])?;
-                let id: i64 = busca.query_row(params![nombre], |r| r.get(0))?;
-                liga.execute(params![track_id, id])?;
+                insert.execute(params![name])?;
+                let id: i64 = find.query_row(params![name], |r| r.get(0))?;
+                link.execute(params![track_id, id])?;
             }
         }
         tx.commit()
@@ -301,9 +301,9 @@ impl Library {
              GROUP BY g.id
              ORDER BY count(t.id) DESC, g.name COLLATE NOCASE",
         )?;
-        let filas =
+        let rows =
             stmt.query_map([], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? as usize)))?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Los géneros de una pista.
@@ -314,8 +314,8 @@ impl Library {
              WHERE tg.track_id = ?1
              ORDER BY g.name COLLATE NOCASE",
         )?;
-        let filas = stmt.query_map(params![track_id], |r| r.get(0))?;
-        filas.collect()
+        let rows = stmt.query_map(params![track_id], |r| r.get(0))?;
+        rows.collect()
     }
 
     /// Crea una lista, o devuelve la que ya existe con ese id externo.
@@ -329,7 +329,7 @@ impl Library {
         name: &str,
         external_id: &str,
     ) -> rusqlite::Result<i64> {
-        let ahora = ahora_unix();
+        let now = now_unix();
         if !external_id.is_empty() {
             if let Some(id) = self
                 .db
@@ -342,7 +342,7 @@ impl Library {
             {
                 self.db.execute(
                     "UPDATE playlists SET name = ?2, updated_at = ?3 WHERE id = ?1",
-                    params![id, name, ahora],
+                    params![id, name, now],
                 )?;
                 return Ok(id);
             }
@@ -354,7 +354,7 @@ impl Library {
                 source_id,
                 (!external_id.is_empty()).then_some(external_id),
                 name,
-                ahora
+                now
             ],
         )?;
         Ok(self.db.last_insert_rowid())
@@ -382,7 +382,7 @@ impl Library {
         }
         tx.execute(
             "UPDATE playlists SET updated_at = ?2 WHERE id = ?1",
-            params![playlist_id, ahora_unix()],
+            params![playlist_id, now_unix()],
         )?;
         tx.commit()
     }
@@ -398,7 +398,7 @@ impl Library {
              GROUP BY p.id
              ORDER BY p.updated_at DESC, p.name COLLATE NOCASE",
         )?;
-        let filas = stmt.query_map([], |r| {
+        let rows = stmt.query_map([], |r| {
             Ok(StoredPlaylist {
                 id: r.get(0)?,
                 provider: r.get(1)?,
@@ -410,7 +410,7 @@ impl Library {
                 updated_at: r.get(7)?,
             })
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Lo que trae una lista, en su orden.
@@ -419,17 +419,17 @@ impl Library {
             "SELECT track_id, external_id FROM playlist_tracks
              WHERE playlist_id = ?1 ORDER BY position",
         )?;
-        let filas = stmt.query_map(params![playlist_id], |r| {
+        let rows = stmt.query_map(params![playlist_id], |r| {
             Ok(PlaylistEntry { track_id: r.get(0)?, external_id: r.get(1)? })
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Cambia el nombre de una lista.
     pub fn rename_playlist(&self, playlist_id: i64, name: &str) -> rusqlite::Result<()> {
         self.db.execute(
             "UPDATE playlists SET name = ?2, updated_at = ?3 WHERE id = ?1",
-            params![playlist_id, name, ahora_unix()],
+            params![playlist_id, name, now_unix()],
         )?;
         Ok(())
     }
@@ -465,8 +465,8 @@ impl Library {
              ORDER BY t.id
              LIMIT ?3",
         )?;
-        let filas = stmt.query_map(params![analyzer, version, limit as i64], fila_a_track)?;
-        filas.collect()
+        let rows = stmt.query_map(params![analyzer, version, limit as i64], row_to_track)?;
+        rows.collect()
     }
 
     /// Cuántas pistas presentes ya tienen análisis de esa versión.
@@ -512,7 +512,7 @@ impl Library {
                 tempo_confidence,
                 musical_key,
                 loudness_lufs,
-                ahora_unix()
+                now_unix()
             ],
         )?;
         Ok(())
@@ -528,32 +528,32 @@ impl Library {
         analyzer: &str,
     ) -> rusqlite::Result<std::collections::HashMap<i64, (Option<f32>, Option<String>, Option<f32>)>>
     {
-        let mut salida = std::collections::HashMap::new();
+        let mut output = std::collections::HashMap::new();
         if track_ids.is_empty() {
-            return Ok(salida);
+            return Ok(output);
         }
         // Los ids son enteros que vienen de la propia base; aun así van como
         // parámetros, para no tener dos formas de armar una consulta.
-        let huecos = vec!["?"; track_ids.len()].join(",");
+        let gaps = vec!["?"; track_ids.len()].join(",");
         let sql = format!(
             "SELECT track_id, bpm, musical_key, loudness_lufs FROM audio_features
-             WHERE analyzer = ?1 AND track_id IN ({huecos})
+             WHERE analyzer = ?1 AND track_id IN ({gaps})
              ORDER BY version",
         );
         let mut stmt = self.db.prepare(&sql)?;
-        let mut valores: Vec<rusqlite::types::Value> =
+        let mut values: Vec<rusqlite::types::Value> =
             vec![rusqlite::types::Value::Text(analyzer.to_string())];
-        valores.extend(track_ids.iter().map(|i| rusqlite::types::Value::Integer(*i)));
-        let filas = stmt.query_map(rusqlite::params_from_iter(valores), |r| {
+        values.extend(track_ids.iter().map(|i| rusqlite::types::Value::Integer(*i)));
+        let rows = stmt.query_map(rusqlite::params_from_iter(values), |r| {
             Ok((r.get::<_, i64>(0)?, (r.get(1)?, r.get(2)?, r.get(3)?)))
         })?;
-        for fila in filas {
-            let (id, datos) = fila?;
+        for row in rows {
+            let (id, data) = row?;
             // Ordenado por versión, así que la última que entra es la más
             // nueva.
-            salida.insert(id, datos);
+            output.insert(id, data);
         }
-        Ok(salida)
+        Ok(output)
     }
 
     /// Lo que el análisis le puso a una pista: tempo, tonalidad y sonoridad.
@@ -628,8 +628,8 @@ impl Library {
              ORDER BY count(p.id) DESC, max(p.started_at) DESC
              LIMIT ?1",
         )?;
-        let filas = stmt.query_map(params![limit as i64], fila_a_track_stat)?;
-        filas.collect()
+        let rows = stmt.query_map(params![limit as i64], row_to_track_stat)?;
+        rows.collect()
     }
 
     /// Lo último que sonó, sin repetir pista.
@@ -645,8 +645,8 @@ impl Library {
              ORDER BY ultima DESC
              LIMIT ?1",
         )?;
-        let filas = stmt.query_map(params![limit as i64], fila_a_track_stat)?;
-        filas.collect()
+        let rows = stmt.query_map(params![limit as i64], row_to_track_stat)?;
+        rows.collect()
     }
 
     /// Las carpetas que se han escaneado alguna vez, con cuándo fue.
@@ -657,7 +657,7 @@ impl Library {
         let mut stmt = self.db.prepare(
             "SELECT id, path, last_scan, reachable FROM roots ORDER BY path COLLATE NOCASE",
         )?;
-        let filas = stmt.query_map([], |r| {
+        let rows = stmt.query_map([], |r| {
             Ok(StoredRoot {
                 id: r.get(0)?,
                 path: r.get::<_, String>(1)?.into(),
@@ -665,7 +665,7 @@ impl Library {
                 reachable: r.get::<_, i64>(3)? != 0,
             })
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Marca si un root está alcanzable. Un root ausente NO poda nada.
@@ -710,7 +710,7 @@ impl Library {
              ORDER BY a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE
              LIMIT ?1 OFFSET ?2",
         )?;
-        let filas = stmt.query_map(params![limit as i64, offset as i64], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
             Ok(StoredAlbum {
                 id: r.get(0)?,
                 title: r.get(1)?,
@@ -720,7 +720,7 @@ impl Library {
                 track_count: r.get::<_, i64>(5)? as usize,
             })
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Los álbumes con su cuenta de escuchas, en el orden que se pida.
@@ -731,23 +731,23 @@ impl Library {
     /// biblioteca de QBZ.
     pub fn albums_sorted(
         &self,
-        orden: AlbumSort,
+        order: AlbumSort,
         limit: usize,
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
-        self.albums_filtered(orden, None, limit, offset)
+        self.albums_filtered(order, None, limit, offset)
     }
 
     /// Lo mismo, pero solo los de un artista cuando se pide uno.
     pub fn albums_filtered(
         &self,
-        orden: AlbumSort,
+        order: AlbumSort,
         artist: Option<&str>,
         limit: usize,
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
-        if !orden.necesita_agregar() {
-            return self.albums_pagina_barata(orden, artist, limit, offset);
+        if !order.needs_adding() {
+            return self.albums_page_cheap(order, artist, limit, offset);
         }
         // El filtro va como parámetro, nunca interpolado: un nombre con
         // comillas no tiene por qué romper una consulta.
@@ -771,10 +771,10 @@ impl Library {
              GROUP BY a.id
              ORDER BY {}
              LIMIT ?1 OFFSET ?2",
-            orden.order_by()
+            order.order_by()
         );
         let mut stmt = self.db.prepare(&sql)?;
-        let filas = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
             Ok((
                 StoredAlbum {
                     id: r.get(0)?,
@@ -787,7 +787,7 @@ impl Library {
                 r.get::<_, i64>(6)? as usize,
             ))
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// La reja cuando el orden no depende de agregar nada.
@@ -796,9 +796,9 @@ impl Library {
     /// escuchas, para las cien filas que van a salir. Contar la biblioteca
     /// entera en cada página era el hallazgo alto de la auditoría de QBZ, y
     /// aquí se nota: de 137 ms a unos pocos, con cincuenta mil pistas.
-    fn albums_pagina_barata(
+    fn albums_page_cheap(
         &self,
-        orden: AlbumSort,
+        order: AlbumSort,
         artist: Option<&str>,
         limit: usize,
         offset: usize,
@@ -822,11 +822,11 @@ impl Library {
              FROM pagina g
              JOIN albums a ON a.id = g.id
              ORDER BY {}",
-            orden.order_by_barato(),
-            orden.order_by_barato()
+            order.cheap_order_by(),
+            order.cheap_order_by()
         );
         let mut stmt = self.db.prepare(&sql)?;
-        let filas = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
             Ok((
                 StoredAlbum {
                     id: r.get(0)?,
@@ -839,7 +839,7 @@ impl Library {
                 r.get::<_, i64>(6)? as usize,
             ))
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Los artistas de la biblioteca, por nombre.
@@ -859,7 +859,7 @@ impl Library {
              ORDER BY a.album_artist COLLATE NOCASE
              LIMIT ?1 OFFSET ?2",
         )?;
-        let filas = stmt.query_map(params![limit as i64, offset as i64], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
             Ok(StoredArtist {
                 name: r.get(0)?,
                 album_count: r.get::<_, i64>(1)? as usize,
@@ -867,7 +867,7 @@ impl Library {
                 artwork_path: r.get(3)?,
             })
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Un álbum por su id, con su cuenta de escuchas.
@@ -895,8 +895,8 @@ impl Library {
             .optional()?;
         match album {
             Some(a) => {
-                let escuchas = self.album_play_count(album_id)?;
-                Ok(Some((a, escuchas)))
+                let listens = self.album_play_count(album_id)?;
+                Ok(Some((a, listens)))
             }
             None => Ok(None),
         }
@@ -911,8 +911,8 @@ impl Library {
              WHERE t.album_id = ?1
              ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
         )?;
-        let filas = stmt.query_map(params![album_id], fila_a_track)?;
-        filas.collect()
+        let rows = stmt.query_map(params![album_id], row_to_track)?;
+        rows.collect()
     }
 
     /// Los álbumes más escuchados, con su cuenta de reproducciones.
@@ -932,7 +932,7 @@ impl Library {
              ORDER BY count(p.id) DESC, a.title COLLATE NOCASE
              LIMIT ?1",
         )?;
-        let filas = stmt.query_map(params![limit as i64], |r| {
+        let rows = stmt.query_map(params![limit as i64], |r| {
             Ok((
                 StoredAlbum {
                     id: r.get(0)?,
@@ -945,7 +945,7 @@ impl Library {
                 r.get::<_, i64>(6)? as usize,
             ))
         })?;
-        filas.collect()
+        rows.collect()
     }
 
     /// Cuántas veces se ha escuchado cada pista de un álbum.
@@ -962,8 +962,8 @@ impl Library {
     }
 
     /// Busca por título, artista o álbum.
-    pub fn search(&self, texto: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
-        let patron = format!("%{texto}%");
+    pub fn search(&self, text: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
+        let patron = format!("%{text}%");
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present
@@ -976,8 +976,8 @@ impl Library {
              ORDER BY t.artist COLLATE NOCASE, t.title COLLATE NOCASE
              LIMIT ?2",
         )?;
-        let filas = stmt.query_map(params![patron, limit as i64], fila_a_track)?;
-        filas.collect()
+        let rows = stmt.query_map(params![patron, limit as i64], row_to_track)?;
+        rows.collect()
     }
 
     /// Guarda una reproducción. El log es append-only.
@@ -1038,14 +1038,14 @@ impl Library {
     }
 }
 
-fn ahora_unix() -> i64 {
+fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_secs() as i64)
         .unwrap_or(0)
 }
 
-pub(crate) fn fila_a_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
+pub(crate) fn row_to_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
     Ok(StoredTrack {
         id: r.get(0)?,
         external_id: r.get(1)?,
@@ -1058,9 +1058,9 @@ pub(crate) fn fila_a_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrac
     })
 }
 
-fn fila_a_track_stat(r: &rusqlite::Row<'_>) -> rusqlite::Result<TrackStat> {
+fn row_to_track_stat(r: &rusqlite::Row<'_>) -> rusqlite::Result<TrackStat> {
     Ok(TrackStat {
-        track: fila_a_track(r)?,
+        track: row_to_track(r)?,
         count: r.get::<_, i64>(8)? as usize,
         at: r.get(9)?,
     })
@@ -1108,11 +1108,11 @@ mod tests {
     }
 
     /// Tres álbumes con distinto artista, año, fecha de alta y escuchas.
-    fn biblioteca_de_muestra() -> Library {
+    fn sample_library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         // (id, título, artista, año, added_at)
-        for (id, titulo, artista, año, alta) in [
+        for (id, title, artist, año, high) in [
             (1, "Bayou", "Creedence", 1969, 100),
             (2, "Aqualung", "Tull", 1971, 300),
             (3, "Cosmo", "Creedence", 1970, 200),
@@ -1121,14 +1121,14 @@ mod tests {
                 .execute(
                     "INSERT INTO albums (id, title, album_artist, year)
                      VALUES (?1, ?2, ?3, ?4)",
-                    params![id, titulo, artista, año],
+                    params![id, title, artist, año],
                 )
                 .unwrap();
             lib.db
                 .execute(
                     "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
                      VALUES (?1, ?2, 'Pista', ?3, 1000, ?4)",
-                    params![source, format!("/{titulo}.flac"), id, alta],
+                    params![source, format!("/{title}.flac"), id, high],
                 )
                 .unwrap();
         }
@@ -1139,8 +1139,8 @@ mod tests {
         lib
     }
 
-    fn titulos(lib: &Library, orden: AlbumSort) -> Vec<String> {
-        lib.albums_sorted(orden, 50, 0)
+    fn titulos(lib: &Library, order: AlbumSort) -> Vec<String> {
+        lib.albums_sorted(order, 50, 0)
             .unwrap()
             .into_iter()
             .map(|(a, _)| a.title)
@@ -1149,7 +1149,7 @@ mod tests {
 
     #[test]
     fn cada_vista_ordena_la_reja_a_su_manera() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         assert_eq!(
             titulos(&lib, AlbumSort::Artist),
             ["Bayou", "Cosmo", "Aqualung"],
@@ -1168,42 +1168,42 @@ mod tests {
 
     #[test]
     fn la_reja_trae_las_escuchas_en_la_misma_consulta() {
-        let lib = biblioteca_de_muestra();
-        let escuchas: Vec<(String, usize)> = lib
+        let lib = sample_library();
+        let listens: Vec<(String, usize)> = lib
             .albums_sorted(AlbumSort::Played, 50, 0)
             .unwrap()
             .into_iter()
             .map(|(a, n)| (a.title, n))
             .collect();
         assert_eq!(
-            escuchas,
+            listens,
             vec![("Cosmo".into(), 2), ("Bayou".into(), 1), ("Aqualung".into(), 0)]
         );
     }
 
     #[test]
     fn una_lista_guarda_su_orden_y_sobrevive_a_lo_que_no_esta() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "De la mañana", "").unwrap();
 
-        let entradas = vec![
+        let entries = vec![
             PlaylistEntry { track_id: Some(2), external_id: "/Aqualung.flac".into() },
             // Algo que la lista menciona y todavía no se escanea.
             PlaylistEntry { track_id: None, external_id: "/pendiente.flac".into() },
             PlaylistEntry { track_id: Some(1), external_id: "/Bayou.flac".into() },
         ];
-        lib.set_playlist_entries(id, &entradas).unwrap();
+        lib.set_playlist_entries(id, &entries).unwrap();
 
         let leidas = lib.playlist_entries(id).unwrap();
-        assert_eq!(leidas, entradas, "el orden es el que se guardó");
+        assert_eq!(leidas, entries, "el orden es el que se guardó");
         assert_eq!(leidas[1].track_id, None, "lo que no está sigue anotado");
 
-        let listas = lib.playlists().unwrap();
-        assert_eq!(listas.len(), 1);
-        assert_eq!(listas[0].track_count, 3);
-        assert_eq!(listas[0].provider, "local");
-        assert!(listas[0].external_id.is_empty(), "una lista de aquí no tiene id externo");
+        let lists = lib.playlists().unwrap();
+        assert_eq!(lists.len(), 1);
+        assert_eq!(lists[0].track_count, 3);
+        assert_eq!(lists[0].provider, "local");
+        assert!(lists[0].external_id.is_empty(), "una lista de aquí no tiene id externo");
     }
 
     #[test]
@@ -1213,9 +1213,9 @@ mod tests {
         let a = lib.create_playlist(source, "Mezcla", "abc123").unwrap();
         let b = lib.create_playlist(source, "Mezcla renombrada", "abc123").unwrap();
         assert_eq!(a, b, "el mismo id externo es la misma lista");
-        let listas = lib.playlists().unwrap();
-        assert_eq!(listas.len(), 1);
-        assert_eq!(listas[0].name, "Mezcla renombrada", "se quedó el nombre nuevo");
+        let lists = lib.playlists().unwrap();
+        assert_eq!(lists.len(), 1);
+        assert_eq!(lists[0].name, "Mezcla renombrada", "se quedó el nombre nuevo");
     }
 
     #[test]
@@ -1233,17 +1233,17 @@ mod tests {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "Mía", "").unwrap();
-        let tres: Vec<PlaylistEntry> = (0..3)
+        let three: Vec<PlaylistEntry> = (0..3)
             .map(|i| PlaylistEntry { track_id: None, external_id: format!("/{i}.flac") })
             .collect();
-        lib.set_playlist_entries(id, &tres).unwrap();
-        lib.set_playlist_entries(id, &tres[..1]).unwrap();
+        lib.set_playlist_entries(id, &three).unwrap();
+        lib.set_playlist_entries(id, &three[..1]).unwrap();
         assert_eq!(lib.playlist_entries(id).unwrap().len(), 1, "no quedaron las viejas");
     }
 
     #[test]
     fn borrar_una_lista_no_toca_las_pistas() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "Temporal", "").unwrap();
         lib.set_playlist_entries(
@@ -1258,7 +1258,7 @@ mod tests {
 
     #[test]
     fn las_estadisticas_salen_del_log_completo() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         let s = lib.stats().unwrap();
         assert_eq!(s.plays, 3, "tres escuchas completas");
         assert_eq!(s.distinct_tracks, 2, "de dos pistas distintas");
@@ -1277,22 +1277,22 @@ mod tests {
 
     #[test]
     fn el_top_y_el_historial_miran_lo_mismo_por_distinto_lado() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         // La pista del álbum 3 suena dos veces; la del 1, una, y antes.
         let top = lib.top_tracks(10).unwrap();
         assert_eq!(top.len(), 2);
         assert_eq!(top[0].count, 2, "primero la más escuchada");
         assert_eq!(top[1].count, 1);
 
-        let reciente = lib.recently_played(10).unwrap();
-        assert_eq!(reciente[0].at, Some(30), "primero la última que sonó");
-        assert_eq!(reciente[1].at, Some(10));
-        assert_eq!(reciente.len(), 2, "una pista por renglón, no una por escucha");
+        let recent = lib.recently_played(10).unwrap();
+        assert_eq!(recent[0].at, Some(30), "primero la última que sonó");
+        assert_eq!(recent[1].at, Some(10));
+        assert_eq!(recent.len(), 2, "una pista por renglón, no una por escucha");
     }
 
     #[test]
     fn la_busqueda_tambien_mira_el_genero() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         // La pista del álbum 1 es de blues; las demás, no.
         let id: i64 = lib
             .db
@@ -1300,14 +1300,14 @@ mod tests {
             .unwrap();
         lib.set_track_genres(id, &["Delta Blues".to_string()]).unwrap();
 
-        let encontradas = lib.search("blues", 50).unwrap();
-        assert_eq!(encontradas.len(), 1, "salió por su género, no por su título");
-        assert_eq!(encontradas[0].id, id);
+        let found = lib.search("blues", 50).unwrap();
+        assert_eq!(found.len(), 1, "salió por su género, no por su título");
+        assert_eq!(found[0].id, id);
     }
 
     #[test]
     fn las_features_de_varias_pistas_salen_en_una_consulta() {
-        let lib = biblioteca_de_muestra();
+        let lib = sample_library();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into()), Some(-9.5))
             .unwrap();
         lib.save_features(2, "chilpa", 1, Some(90.0), None, None, None).unwrap();
@@ -1315,50 +1315,50 @@ mod tests {
         lib.save_features(1, "chilpa", 2, Some(129.0), None, Some("G · 9B".into()), Some(-8.0))
             .unwrap();
 
-        let mapa = lib.features_for(&[1, 2, 3], "chilpa").unwrap();
-        assert_eq!(mapa.len(), 2, "la 3 no tiene análisis");
-        assert_eq!(mapa[&1].0, Some(129.0), "la versión más nueva");
-        assert_eq!(mapa[&1].1.as_deref(), Some("G · 9B"));
-        assert_eq!(mapa[&1].2, Some(-8.0), "la sonoridad también viene");
-        assert_eq!(mapa[&2].1, None);
+        let map = lib.features_for(&[1, 2, 3], "chilpa").unwrap();
+        assert_eq!(map.len(), 2, "la 3 no tiene análisis");
+        assert_eq!(map[&1].0, Some(129.0), "la versión más nueva");
+        assert_eq!(map[&1].1.as_deref(), Some("G · 9B"));
+        assert_eq!(map[&1].2, Some(-8.0), "la sonoridad también viene");
+        assert_eq!(map[&2].1, None);
         assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
     }
 
     #[test]
     fn un_album_suelto_trae_lo_suyo_y_sus_escuchas() {
-        let lib = biblioteca_de_muestra();
-        let (album, escuchas) = lib.album(3).unwrap().expect("el álbum existe");
+        let lib = sample_library();
+        let (album, listens) = lib.album(3).unwrap().expect("el álbum existe");
         assert_eq!(album.title, "Cosmo");
         assert_eq!(album.album_artist, "Creedence");
         assert_eq!(album.track_count, 1);
-        assert_eq!(escuchas, 2);
+        assert_eq!(listens, 2);
         assert!(lib.album(99).unwrap().is_none(), "uno que no existe no es un error");
     }
 
     #[test]
     fn los_artistas_salen_con_lo_que_tienen() {
-        let lib = biblioteca_de_muestra();
-        let artistas = lib.artists(50, 0).unwrap();
+        let lib = sample_library();
+        let artists = lib.artists(50, 0).unwrap();
         assert_eq!(
-            artistas.iter().map(|a| a.name.as_str()).collect::<Vec<_>>(),
+            artists.iter().map(|a| a.name.as_str()).collect::<Vec<_>>(),
             ["Creedence", "Tull"],
             "por nombre"
         );
-        assert_eq!(artistas[0].album_count, 2, "Creedence trae dos discos");
-        assert_eq!(artistas[0].track_count, 2, "con una pista cada uno");
-        assert_eq!(artistas[1].album_count, 1);
+        assert_eq!(artists[0].album_count, 2, "Creedence trae dos discos");
+        assert_eq!(artists[0].track_count, 2, "con una pista cada uno");
+        assert_eq!(artists[1].album_count, 1);
     }
 
     #[test]
     fn la_reja_se_puede_filtrar_por_artista() {
-        let lib = biblioteca_de_muestra();
-        let suyos: Vec<String> = lib
+        let lib = sample_library();
+        let own: Vec<String> = lib
             .albums_filtered(AlbumSort::Title, Some("Creedence"), 50, 0)
             .unwrap()
             .into_iter()
             .map(|(a, _)| a.title)
             .collect();
-        assert_eq!(suyos, ["Bayou", "Cosmo"]);
+        assert_eq!(own, ["Bayou", "Cosmo"]);
 
         // Sin filtro, salen todos.
         assert_eq!(lib.albums_filtered(AlbumSort::Title, None, 50, 0).unwrap().len(), 3);
@@ -1368,9 +1368,9 @@ mod tests {
 
     #[test]
     fn un_nombre_con_comillas_no_rompe_la_consulta() {
-        let lib = biblioteca_de_muestra();
-        let raro = "O'Connor'; DROP TABLE albums; --";
-        assert!(lib.albums_filtered(AlbumSort::Title, Some(raro), 50, 0).unwrap().is_empty());
+        let lib = sample_library();
+        let odd = "O'Connor'; DROP TABLE albums; --";
+        assert!(lib.albums_filtered(AlbumSort::Title, Some(odd), 50, 0).unwrap().is_empty());
         assert_eq!(lib.albums_sorted(AlbumSort::Title, 50, 0).unwrap().len(), 3, "la tabla sigue");
     }
 
@@ -1386,18 +1386,18 @@ mod tests {
     fn los_mas_escuchados_salen_del_log_y_en_orden() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        for (album, titulo) in [(1, "Uno"), (2, "Dos")] {
+        for (album, title) in [(1, "Uno"), (2, "Dos")] {
             lib.db
                 .execute(
                     "INSERT INTO albums (id, title, album_artist) VALUES (?1, ?2, 'Artista')",
-                    params![album, titulo],
+                    params![album, title],
                 )
                 .unwrap();
             lib.db
                 .execute(
                     "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
                      VALUES (?1, ?2, 'Pista', ?3, 1000, 0)",
-                    params![source, format!("/{titulo}.flac"), album],
+                    params![source, format!("/{title}.flac"), album],
                 )
                 .unwrap();
         }

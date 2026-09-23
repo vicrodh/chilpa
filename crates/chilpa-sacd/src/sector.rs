@@ -143,11 +143,11 @@ mod tests {
         let p = parse(&s, 550).unwrap();
         assert!(!p.dst);
         assert_eq!(p.packets.len(), 1);
-        let paquete = p.packets[0];
-        assert!(paquete.frame_start && paquete.is_audio());
-        assert_eq!(paquete.at, 6);
-        assert_eq!(paquete.at + paquete.len, SECTOR);
-        assert_eq!(paquete.timecode, Some(75 + 2));
+        let packet = p.packets[0];
+        assert!(packet.frame_start && packet.is_audio());
+        assert_eq!(packet.at, 6);
+        assert_eq!(packet.at + packet.len, SECTOR);
+        assert_eq!(packet.timecode, Some(75 + 2));
     }
 
     #[test]

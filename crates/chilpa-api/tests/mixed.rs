@@ -6,11 +6,11 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-const SALIDA: &str = "capture";
+const OUTPUT: &str = "capture";
 
 /// Un WAV corto de silencio. Lo que importa aquí es el orden, no el sonido.
-fn onda(dir: &PathBuf, nombre: &str) -> PathBuf {
-    let p = dir.join(nombre);
+fn wave(dir: &PathBuf, name: &str) -> PathBuf {
+    let p = dir.join(name);
     let frames = 4_410u32;
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
@@ -37,9 +37,9 @@ fn la_mezcla_necesita_tempos_y_reordena_cuando_los_hay() {
     std::fs::create_dir_all(&dir).unwrap();
     std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
 
-    let rutas: Vec<String> = ["a.wav", "b.wav", "c.wav", "d.wav"]
+    let paths: Vec<String> = ["a.wav", "b.wav", "c.wav", "d.wav"]
         .iter()
-        .map(|n| onda(&dir, n).display().to_string())
+        .map(|n| wave(&dir, n).display().to_string())
         .collect();
 
     // La mezcla lee los tempos de la biblioteca, así que las pistas tienen
@@ -56,7 +56,7 @@ fn la_mezcla_necesita_tempos_y_reordena_cuando_los_hay() {
     assert_eq!(chilpa.automix(), 0);
     assert!(chilpa.now_playing().error.contains("cola"));
 
-    chilpa.play_tracks(&rutas, SALIDA, true);
+    chilpa.play_tracks(&paths, OUTPUT, true);
     // Sin análisis tampoco, y también se dice.
     assert_eq!(chilpa.automix(), 0, "sin tempos no se mezcla a ciegas");
     assert!(
@@ -68,17 +68,17 @@ fn la_mezcla_necesita_tempos_y_reordena_cuando_los_hay() {
     // Se meten los tempos a mano, como si el análisis ya hubiera corrido.
     let lib = chilpa_library::Library::open(&chilpa_library::Library::default_path()).unwrap();
     let source = lib.source_id("local", "default").unwrap();
-    for (ruta, bpm) in rutas.iter().zip([90.0f32, 140.0, 92.0, 138.0]) {
+    for (path, bpm) in paths.iter().zip([90.0f32, 140.0, 92.0, 138.0]) {
         let id = lib
-            .track_by_path(source, std::path::Path::new(ruta))
+            .track_by_path(source, std::path::Path::new(path))
             .unwrap()
             .expect("la pista quedó registrada en el escaneo");
         lib.save_features(id, "chilpa", 1, Some(bpm), Some(0.8), None, None).unwrap();
     }
     drop(lib);
 
-    let mezcladas = chilpa.automix();
-    assert_eq!(mezcladas, 4, "las cuatro entraron a la mezcla");
+    let mixed = chilpa.automix();
+    assert_eq!(mixed, 4, "las cuatro entraron a la mezcla");
     assert!(!chilpa.shuffle(), "mezclar apaga el aleatorio");
 
     chilpa.stop();

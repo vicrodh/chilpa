@@ -8,24 +8,24 @@ use super::*;
 impl Chilpa {
     /// Pone a sonar un género, revuelto.
     pub fn play_genre(&mut self, genre: &str, device: &str, bit_perfect: bool) -> Vec<String> {
-        let lista = chilpa_library::SmartList::new(
+        let list = chilpa_library::SmartList::new(
             genre,
             vec![chilpa_library::Rule::GenreIs(genre.to_string())],
             chilpa_library::SmartOrder::Random,
             300,
         );
         let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
-            .smart_tracks(&lista)
+        let paths: Vec<String> = lib
+            .smart_tracks(&list)
             .unwrap_or_default()
             .into_iter()
             .map(|t| t.external_id)
             .collect();
-        if rutas.is_empty() {
+        if paths.is_empty() {
             self.now.error = format!("no hay nada de {genre}");
             return Vec::new();
         }
-        self.play_tracks(&rutas, device, bit_perfect)
+        self.play_tracks(&paths, device, bit_perfect)
     }
 
     /// Pone a sonar una lista inteligente, por su nombre.
@@ -35,23 +35,23 @@ impl Chilpa {
         device: &str,
         bit_perfect: bool,
     ) -> Vec<String> {
-        let Some(lista) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
+        let Some(list) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
         else {
             self.now.error = format!("no conozco la lista \"{name}\"");
             return Vec::new();
         };
         let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
-            .smart_tracks(&lista)
+        let paths: Vec<String> = lib
+            .smart_tracks(&list)
             .unwrap_or_default()
             .into_iter()
             .map(|t| t.external_id)
             .collect();
-        if rutas.is_empty() {
+        if paths.is_empty() {
             self.now.error = format!("\"{name}\" no trae nada hoy");
             return Vec::new();
         }
-        self.play_tracks(&rutas, device, bit_perfect)
+        self.play_tracks(&paths, device, bit_perfect)
     }
 
     /// Las listas guardadas, las de aquí y las que traiga un source.
@@ -74,19 +74,19 @@ impl Chilpa {
     /// Regresa el id de la lista. Lo que no esté en la biblioteca se guarda
     /// igual, por su ruta: la lista vale aunque falte escanear.
     pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
-        let nombre = name.trim().to_string();
-        if nombre.is_empty() {
+        let name = name.trim().to_string();
+        if name.is_empty() {
             self.now.error = "una lista necesita un nombre".into();
             return None;
         }
-        if self.cola.is_empty() {
+        if self.queue.is_empty() {
             self.now.error = "no hay cola que guardar".into();
             return None;
         }
-        let rutas = self.cola.clone();
+        let paths = self.queue.clone();
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
-        let entradas: Vec<chilpa_library::PlaylistEntry> = rutas
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths
             .iter()
             .map(|r| chilpa_library::PlaylistEntry {
                 track_id: lib
@@ -96,8 +96,8 @@ impl Chilpa {
                 external_id: r.clone(),
             })
             .collect();
-        let id = lib.create_playlist(source, &nombre, "").ok()?;
-        lib.set_playlist_entries(id, &entradas).ok()?;
+        let id = lib.create_playlist(source, &name, "").ok()?;
+        lib.set_playlist_entries(id, &entries).ok()?;
         Some(id)
     }
 
@@ -109,18 +109,18 @@ impl Chilpa {
         bit_perfect: bool,
     ) -> Vec<String> {
         let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
+        let paths: Vec<String> = lib
             .playlist_entries(playlist_id)
             .unwrap_or_default()
             .into_iter()
             .map(|e| e.external_id)
             .filter(|r| !r.is_empty())
             .collect();
-        if rutas.is_empty() {
+        if paths.is_empty() {
             self.now.error = "esa lista está vacía".into();
             return Vec::new();
         }
-        self.play_tracks(&rutas, device, bit_perfect)
+        self.play_tracks(&paths, device, bit_perfect)
     }
 
     /// Borra una lista. Las pistas no se tocan.
@@ -132,13 +132,13 @@ impl Chilpa {
 
     /// Cambia el nombre de una lista.
     pub fn rename_playlist(&mut self, playlist_id: i64, name: &str) {
-        let nombre = name.trim().to_string();
-        if nombre.is_empty() {
+        let name = name.trim().to_string();
+        if name.is_empty() {
             self.now.error = "una lista necesita un nombre".into();
             return;
         }
         if let Some(lib) = self.library() {
-            let _ = lib.rename_playlist(playlist_id, &nombre);
+            let _ = lib.rename_playlist(playlist_id, &name);
         }
     }
 }

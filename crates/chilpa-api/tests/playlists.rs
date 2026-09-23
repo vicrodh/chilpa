@@ -8,10 +8,10 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-const SALIDA: &str = "capture";
+const OUTPUT: &str = "capture";
 
-fn onda(dir: &PathBuf, nombre: &str, frames: u32) -> PathBuf {
-    let p = dir.join(nombre);
+fn wave(dir: &PathBuf, name: &str, frames: u32) -> PathBuf {
+    let p = dir.join(name);
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -41,9 +41,9 @@ fn guardar_la_cola_reproducirla_y_borrarla() {
     std::fs::create_dir_all(&dir).unwrap();
     std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
 
-    let rutas: Vec<String> = ["01.wav", "02.wav", "03.wav"]
+    let paths: Vec<String> = ["01.wav", "02.wav", "03.wav"]
         .iter()
-        .map(|n| onda(&dir, n, 4_410).display().to_string())
+        .map(|n| wave(&dir, n, 4_410).display().to_string())
         .collect();
 
     let mut chilpa = chilpa_api::Chilpa::new();
@@ -53,18 +53,18 @@ fn guardar_la_cola_reproducirla_y_borrarla() {
     assert!(chilpa.save_queue_as("Vacía").is_none());
     assert!(chilpa.now_playing().error.contains("cola"));
 
-    chilpa.play_tracks(&rutas, SALIDA, true);
+    chilpa.play_tracks(&paths, OUTPUT, true);
     // Y una lista sin nombre tampoco va.
     assert!(chilpa.save_queue_as("   ").is_none());
 
     let id = chilpa.save_queue_as("De la mañana").expect("se guardó");
-    let listas = chilpa.playlists();
-    assert_eq!(listas.len(), 1);
-    assert_eq!(listas[0].name, "De la mañana");
-    assert_eq!(listas[0].track_count, 3);
-    assert_eq!(listas[0].provider, "local", "es de aquí");
+    let lists = chilpa.playlists();
+    assert_eq!(lists.len(), 1);
+    assert_eq!(lists[0].name, "De la mañana");
+    assert_eq!(lists[0].track_count, 3);
+    assert_eq!(lists[0].provider, "local", "es de aquí");
 
-    let titulos = chilpa.play_saved_playlist(id, SALIDA, true);
+    let titulos = chilpa.play_saved_playlist(id, OUTPUT, true);
     assert_eq!(titulos.len(), 3, "vuelve a sonar completa");
     assert_eq!(chilpa.queue_titles().len(), 3);
 

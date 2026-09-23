@@ -30,10 +30,10 @@ pub struct Settings {
 }
 
 /// El visualizador con el que arranca quien no ha elegido ninguno.
-pub const VISUALIZADOR_POR_OMISION: &str = "onda";
+pub const DEFAULT_VISUALIZER: &str = "onda";
 
 /// El acomodo con el que arranca quien no ha elegido ninguno.
-pub const LAYOUT_POR_OMISION: &str = "Clasico";
+pub const DEFAULT_LAYOUT: &str = "Clasico";
 
 impl Default for Settings {
     fn default() -> Self {
@@ -41,9 +41,9 @@ impl Default for Settings {
             output: String::new(),
             bit_perfect: true,
             last_folder: String::new(),
-            layout: LAYOUT_POR_OMISION.to_string(),
+            layout: DEFAULT_LAYOUT.to_string(),
             album_sort: String::new(),
-            visualizer: VISUALIZADOR_POR_OMISION.to_string(),
+            visualizer: DEFAULT_VISUALIZER.to_string(),
         }
     }
 }
@@ -64,8 +64,8 @@ pub fn load() -> Settings {
 }
 
 pub fn load_from(file: &std::path::Path) -> Settings {
-    let texto = std::fs::read_to_string(file).unwrap_or_default();
-    let pares = parse(&texto);
+    let text = std::fs::read_to_string(file).unwrap_or_default();
+    let pares = parse(&text);
     let mut s = Settings::default();
     if let Some(v) = pares.get("output") {
         s.output = v.clone();
@@ -102,7 +102,7 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
     if let Some(dir) = file.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    let texto = format!(
+    let text = format!(
         "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\n",
         settings.output,
         settings.bit_perfect,
@@ -111,11 +111,11 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         settings.album_sort,
         settings.visualizer
     );
-    std::fs::write(file, texto)
+    std::fs::write(file, text)
 }
 
-fn parse(texto: &str) -> BTreeMap<String, String> {
-    texto
+fn parse(text: &str) -> BTreeMap<String, String> {
+    text
         .lines()
         .map(str::trim)
         .filter(|l| !l.is_empty() && !l.starts_with('#'))
@@ -128,9 +128,9 @@ fn parse(texto: &str) -> BTreeMap<String, String> {
 mod tests {
     use super::*;
 
-    fn temporal(nombre: &str) -> PathBuf {
+    fn temporal(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
-        p.push(format!("chilpa-settings-{nombre}.conf"));
+        p.push(format!("chilpa-settings-{name}.conf"));
         p
     }
 
@@ -171,7 +171,7 @@ mod tests {
     fn sin_layout_guardado_la_ventana_tiene_con_que_arrancar() {
         let file = temporal("sin-layout");
         std::fs::write(&file, "layout =\n").unwrap();
-        assert_eq!(load_from(&file).layout, LAYOUT_POR_OMISION);
+        assert_eq!(load_from(&file).layout, DEFAULT_LAYOUT);
         let _ = std::fs::remove_file(file);
     }
 

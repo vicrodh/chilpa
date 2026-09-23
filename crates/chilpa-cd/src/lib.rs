@@ -104,11 +104,11 @@ impl chilpa_audio::render::FrameSource for TrackReader<'_> {
         if self.lsn >= self.end_lsn || self.error.is_some() {
             return None;
         }
-        let sectores = self.chunk.min(self.remaining());
+        let sectors = self.chunk.min(self.remaining());
         let mut buf = Vec::new();
-        match self.device.read_audio(self.lsn, sectores, &mut buf) {
+        match self.device.read_audio(self.lsn, sectors, &mut buf) {
             Ok(()) => {
-                self.lsn += sectores;
+                self.lsn += sectors;
                 Some(buf)
             }
             Err(e) => {
@@ -126,11 +126,11 @@ mod tests {
     use super::*;
     use chilpa_audio::render::FrameSource;
 
-    struct Falso {
-        fallar_en: Option<u32>,
+    struct FakeSink {
+        fail_at: Option<u32>,
     }
 
-    impl CdDevice for Falso {
+    impl CdDevice for FakeSink {
         fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError> {
             Ok((
                 vec![
@@ -142,7 +142,7 @@ mod tests {
         }
 
         fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
-            if self.fallar_en == Some(lsn) {
+            if self.fail_at == Some(lsn) {
                 return Err(CdError::Read { lsn, why: "error de C2".into() });
             }
             out.clear();
@@ -164,7 +164,7 @@ mod tests {
 
     #[test]
     fn se_lee_el_toc_con_sus_duraciones() {
-        let mut d = Falso { fallar_en: None };
+        let mut d = FakeSink { fail_at: None };
         let toc = read_toc(&mut d).unwrap();
         assert_eq!(toc.tracks.len(), 2);
         assert_eq!(toc.tracks[0].sectors, 150);
@@ -173,13 +173,13 @@ mod tests {
 
     #[test]
     fn una_pista_se_entrega_completa_y_en_bloques() {
-        let mut d = Falso { fallar_en: None };
+        let mut d = FakeSink { fail_at: None };
         let toc = read_toc(&mut d).unwrap();
-        let pista = *toc.track(1).unwrap();
-        let mut lector = TrackReader::new(&mut d, &pista);
+        let track = *toc.track(1).unwrap();
+        let mut lector = TrackReader::new(&mut d, &track);
         let mut bytes = 0;
-        while let Some(bloque) = lector.next_block() {
-            bytes += bloque.len();
+        while let Some(block) = lector.next_block() {
+            bytes += block.len();
         }
         assert_eq!(bytes, 150 * SECTOR_BYTES, "salieron los 150 sectores");
         assert!(lector.error.is_none());
@@ -187,10 +187,10 @@ mod tests {
 
     #[test]
     fn un_sector_ilegible_corta_y_se_reporta_en_vez_de_sonar_a_silencio() {
-        let mut d = Falso { fallar_en: Some(75) };
+        let mut d = FakeSink { fail_at: Some(75) };
         let toc = read_toc(&mut d).unwrap();
-        let pista = *toc.track(1).unwrap();
-        let mut lector = TrackReader::new(&mut d, &pista);
+        let track = *toc.track(1).unwrap();
+        let mut lector = TrackReader::new(&mut d, &track);
         let primero = lector.next_block().expect("el primer bloque sí sale");
         assert_eq!(primero.len(), 75 * SECTOR_BYTES);
         assert!(lector.next_block().is_none());

@@ -71,7 +71,7 @@ impl DsfReader {
         let lsb_first = match bits_per_sample {
             1 => true,
             8 => false,
-            otro => return Err(DsdError::Corrupt(format!("bits_per_sample {otro}"))),
+            other => return Err(DsdError::Corrupt(format!("bits_per_sample {other}"))),
         };
         if block_size == 0 || block_size > (1 << 20) {
             return Err(DsdError::Corrupt(format!("bloque de {block_size} bytes")));
@@ -98,12 +98,12 @@ impl DsfReader {
     pub fn seek_to_sample(&mut self, sample: u64) -> Result<u64, DsdError> {
         let total = self.info.samples.div_ceil(8);
         let byte = (sample / 8).min(total);
-        let bloque = byte / self.block_size as u64;
-        let byte_alineado = bloque * self.block_size as u64;
-        let salto = self.data_start + byte_alineado * u64::from(self.info.channels);
-        self.file.seek(SeekFrom::Start(salto))?;
-        self.remaining_per_channel = total - byte_alineado;
-        Ok(byte_alineado * 8)
+        let block = byte / self.block_size as u64;
+        let byte_aligned = block * self.block_size as u64;
+        let skip = self.data_start + byte_aligned * u64::from(self.info.channels);
+        self.file.seek(SeekFrom::Start(skip))?;
+        self.remaining_per_channel = total - byte_aligned;
+        Ok(byte_aligned * 8)
     }
 }
 
@@ -116,11 +116,11 @@ impl DsdSource for DsfReader {
         if self.remaining_per_channel == 0 {
             return Ok(None);
         }
-        let validos = self.block_size.min(self.remaining_per_channel as usize);
-        let mut canales = Vec::with_capacity(self.info.channels as usize);
+        let valid = self.block_size.min(self.remaining_per_channel as usize);
+        let mut channels = Vec::with_capacity(self.info.channels as usize);
         for _ in 0..self.info.channels {
-            let mut bloque = vec![0u8; self.block_size];
-            match self.file.read_exact(&mut bloque) {
+            let mut block = vec![0u8; self.block_size];
+            match self.file.read_exact(&mut block) {
                 Ok(()) => {}
                 // Un archivo cortado no es un error: se entrega lo que hay.
                 Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
@@ -129,16 +129,16 @@ impl DsdSource for DsfReader {
                 }
                 Err(e) => return Err(DsdError::Open(e)),
             }
-            bloque.truncate(validos);
+            block.truncate(valid);
             if self.lsb_first {
-                for b in &mut bloque {
+                for b in &mut block {
                     *b = reverse_bits(*b);
                 }
             }
-            canales.push(bloque);
+            channels.push(block);
         }
-        self.remaining_per_channel -= validos as u64;
-        Ok(Some(canales))
+        self.remaining_per_channel -= valid as u64;
+        Ok(Some(channels))
     }
 }
 

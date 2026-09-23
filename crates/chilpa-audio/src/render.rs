@@ -40,7 +40,7 @@ impl Outcome {
 }
 
 /// Cuántos xruns seguidos se toleran antes de dar el dispositivo por perdido.
-const MAX_XRUNS_SEGUIDOS: u32 = 8;
+const MAX_CONSECUTIVE_XRUNS: u32 = 8;
 
 /// Entrega todo lo que dé la fuente y regresa cómo terminó.
 ///
@@ -100,22 +100,22 @@ where
             return Outcome::Finished { frames };
         };
         let mut offset = 0;
-        let mut avisado = false;
+        let mut warned = false;
         while offset < block.len() {
             if stop.is_stopped() {
                 return Outcome::Stopped { frames };
             }
             if pause.is_paused() {
-                if !avisado {
+                if !warned {
                     let _ = sink.set_paused(true);
-                    avisado = true;
+                    warned = true;
                 }
                 std::thread::sleep(std::time::Duration::from_millis(20));
                 continue;
             }
-            if avisado {
+            if warned {
                 let _ = sink.set_paused(false);
-                avisado = false;
+                warned = false;
             }
             match sink.write(&block[offset..]) {
                 Ok(0) => break,
@@ -127,7 +127,7 @@ where
                 }
                 Err(e) if e.is_recoverable() => {
                     xruns += 1;
-                    if xruns >= MAX_XRUNS_SEGUIDOS {
+                    if xruns >= MAX_CONSECUTIVE_XRUNS {
                         return Outcome::Failed { frames, error: SinkError::DeviceLost };
                     }
                 }
@@ -151,21 +151,21 @@ mod tests {
 
         let pause = PauseSignal::new();
         pause.set(true);
-        let mut fuente = Bloques(vec![bloque(8)]);
-        let mut sink = Falso::nuevo(100);
-        let listo = Arc::new(AtomicBool::new(false));
+        let mut source = Blocks(vec![block(8)]);
+        let mut sink = FakeSink::new(100);
+        let ready = Arc::new(AtomicBool::new(false));
 
         std::thread::scope(|s| {
-            let pause_hilo = pause.clone();
-            let listo_hilo = Arc::clone(&listo);
+            let pause_thread = pause.clone();
+            let ready_thread = Arc::clone(&ready);
             s.spawn(move || {
                 // Mientras está en pausa no debe salir nada.
                 std::thread::sleep(Duration::from_millis(60));
-                listo_hilo.store(true, Ordering::Release);
-                pause_hilo.set(false);
+                ready_thread.store(true, Ordering::Release);
+                pause_thread.set(false);
             });
-            let out = render_paused(&mut fuente, &mut sink, &StopSignal::new(), &pause, &mut |_| {});
-            assert!(listo.load(Ordering::Acquire), "no escribió antes de que se quitara la pausa");
+            let out = render_paused(&mut source, &mut sink, &StopSignal::new(), &pause, &mut |_| {});
+            assert!(ready.load(Ordering::Acquire), "no escribió antes de que se quitara la pausa");
             assert_eq!(out, Outcome::Finished { frames: 8 });
         });
     }
@@ -176,26 +176,26 @@ mod tests {
         pause.set(true);
         let stop = StopSignal::new();
         stop.stop();
-        let mut fuente = Bloques(vec![bloque(8)]);
-        let mut sink = Falso::nuevo(100);
-        let out = render_paused(&mut fuente, &mut sink, &stop, &pause, &mut |_| {});
+        let mut source = Blocks(vec![block(8)]);
+        let mut sink = FakeSink::new(100);
+        let out = render_paused(&mut source, &mut sink, &stop, &pause, &mut |_| {});
         assert_eq!(out, Outcome::Stopped { frames: 0 });
     }
 
     #[test]
     fn el_progreso_avisa_los_frames_que_de_verdad_salieron() {
-        let mut fuente = Bloques(vec![bloque(10), bloque(6)]);
-        let mut sink = Falso::nuevo(4);
-        let mut avisos = Vec::new();
-        let out = render_with(&mut fuente, &mut sink, &StopSignal::new(), &mut |f| avisos.push(f));
+        let mut source = Blocks(vec![block(10), block(6)]);
+        let mut sink = FakeSink::new(4);
+        let mut warnings = Vec::new();
+        let out = render_with(&mut source, &mut sink, &StopSignal::new(), &mut |f| warnings.push(f));
         assert_eq!(out, Outcome::Finished { frames: 16 });
-        assert_eq!(avisos.last(), Some(&16));
-        assert!(avisos.windows(2).all(|p| p[0] < p[1]), "el progreso solo avanza");
+        assert_eq!(warnings.last(), Some(&16));
+        assert!(warnings.windows(2).all(|p| p[0] < p[1]), "el progreso solo avanza");
     }
 
-    struct Bloques(Vec<Vec<u8>>);
+    struct Blocks(Vec<Vec<u8>>);
 
-    impl FrameSource for Bloques {
+    impl FrameSource for Blocks {
         fn next_block(&mut self) -> Option<Vec<u8>> {
             if self.0.is_empty() {
                 None
@@ -207,100 +207,100 @@ mod tests {
 
     /// Un dispositivo de mentiras: acepta `accept` frames por escritura y
     /// falla en la escritura número `fail_at` con `error`.
-    struct Falso {
+    struct FakeSink {
         accept: usize,
         fail_at: Option<(usize, SinkError)>,
-        escrituras: usize,
-        recibidos: usize,
-        cerrado: bool,
+        writes: usize,
+        received: usize,
+        closed: bool,
     }
 
-    impl Falso {
-        fn nuevo(accept: usize) -> Self {
-            Self { accept, fail_at: None, escrituras: 0, recibidos: 0, cerrado: false }
+    impl FakeSink {
+        fn new(accept: usize) -> Self {
+            Self { accept, fail_at: None, writes: 0, received: 0, closed: false }
         }
 
-        fn que_falla(accept: usize, en: usize, error: SinkError) -> Self {
-            Self { fail_at: Some((en, error)), ..Self::nuevo(accept) }
+        fn failing(accept: usize, en: usize, error: SinkError) -> Self {
+            Self { fail_at: Some((en, error)), ..Self::new(accept) }
         }
     }
 
-    impl AudioSink for Falso {
+    impl AudioSink for FakeSink {
         fn format(&self) -> StreamFormat {
             StreamFormat::new(SampleFormat::S16, 44_100, 2)
         }
 
         fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-            self.escrituras += 1;
+            self.writes += 1;
             if let Some((en, error)) = &self.fail_at {
-                if self.escrituras == *en {
+                if self.writes == *en {
                     return Err(error.clone());
                 }
             }
-            let cabe = (frames.len() / 4).min(self.accept);
-            self.recibidos += cabe;
-            Ok(cabe)
+            let fits = (frames.len() / 4).min(self.accept);
+            self.received += fits;
+            Ok(fits)
         }
 
         fn close(&mut self) -> Result<(), SinkError> {
-            self.cerrado = true;
+            self.closed = true;
             Ok(())
         }
     }
 
-    fn bloque(frames: usize) -> Vec<u8> {
+    fn block(frames: usize) -> Vec<u8> {
         vec![0u8; frames * 4]
     }
 
     #[test]
     fn una_pista_completa_termina_y_deja_avanzar_la_cola() {
-        let mut fuente = Bloques(vec![bloque(10), bloque(10)]);
-        let mut sink = Falso::nuevo(100);
-        let out = render(&mut fuente, &mut sink, &StopSignal::new());
+        let mut source = Blocks(vec![block(10), block(10)]);
+        let mut sink = FakeSink::new(100);
+        let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 20 });
         assert!(out.may_advance_queue());
     }
 
     #[test]
     fn las_escrituras_parciales_se_reintentan_hasta_entregar_todo() {
-        let mut fuente = Bloques(vec![bloque(10)]);
-        let mut sink = Falso::nuevo(3);
-        let out = render(&mut fuente, &mut sink, &StopSignal::new());
+        let mut source = Blocks(vec![block(10)]);
+        let mut sink = FakeSink::new(3);
+        let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 10 });
-        assert_eq!(sink.recibidos, 10);
-        assert!(sink.escrituras > 1, "se necesitaron varias escrituras");
+        assert_eq!(sink.received, 10);
+        assert!(sink.writes > 1, "se necesitaron varias escrituras");
     }
 
     #[test]
     fn un_dispositivo_perdido_no_se_confunde_con_fin_de_pista() {
         // El hallazgo: en QBZ esto avanzaba la cola entera sin avisar.
-        let mut fuente = Bloques(vec![bloque(10), bloque(10)]);
-        let mut sink = Falso::que_falla(100, 1, SinkError::DeviceLost);
-        let out = render(&mut fuente, &mut sink, &StopSignal::new());
+        let mut source = Blocks(vec![block(10), block(10)]);
+        let mut sink = FakeSink::failing(100, 1, SinkError::DeviceLost);
+        let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::DeviceLost });
         assert!(!out.may_advance_queue(), "la cola NO avanza");
     }
 
     #[test]
     fn un_timeout_tambien_es_falla_y_no_espera_para_siempre() {
-        let mut fuente = Bloques(vec![bloque(4)]);
-        let espera = Duration::from_millis(200);
-        let mut sink = Falso::que_falla(100, 1, SinkError::Timeout(espera));
-        let out = render(&mut fuente, &mut sink, &StopSignal::new());
-        assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::Timeout(espera) });
+        let mut source = Blocks(vec![block(4)]);
+        let wait = Duration::from_millis(200);
+        let mut sink = FakeSink::failing(100, 1, SinkError::Timeout(wait));
+        let out = render(&mut source, &mut sink, &StopSignal::new());
+        assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::Timeout(wait) });
     }
 
     #[test]
     fn un_xrun_suelto_se_aguanta_y_la_pista_termina_bien() {
-        let mut fuente = Bloques(vec![bloque(6)]);
-        let mut sink = Falso::que_falla(100, 1, SinkError::Xrun);
-        assert_eq!(render(&mut fuente, &mut sink, &StopSignal::new()), Outcome::Finished { frames: 6 });
+        let mut source = Blocks(vec![block(6)]);
+        let mut sink = FakeSink::failing(100, 1, SinkError::Xrun);
+        assert_eq!(render(&mut source, &mut sink, &StopSignal::new()), Outcome::Finished { frames: 6 });
     }
 
     #[test]
     fn muchos_xruns_seguidos_dan_el_dispositivo_por_perdido() {
-        struct SiempreXrun;
-        impl AudioSink for SiempreXrun {
+        struct AlwaysXrun;
+        impl AudioSink for AlwaysXrun {
             fn format(&self) -> StreamFormat {
                 StreamFormat::new(SampleFormat::S16, 44_100, 2)
             }
@@ -311,8 +311,8 @@ mod tests {
                 Ok(())
             }
         }
-        let mut fuente = Bloques(vec![bloque(4)]);
-        let out = render(&mut fuente, &mut SiempreXrun, &StopSignal::new());
+        let mut source = Blocks(vec![block(4)]);
+        let out = render(&mut source, &mut AlwaysXrun, &StopSignal::new());
         assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::DeviceLost });
     }
 
@@ -322,16 +322,16 @@ mod tests {
         // bloques y sale sin pedirle nada al dispositivo.
         let stop = StopSignal::new();
         stop.stop();
-        let mut fuente = Bloques(vec![bloque(10)]);
-        let mut sink = Falso::nuevo(1);
-        assert_eq!(render(&mut fuente, &mut sink, &stop), Outcome::Stopped { frames: 0 });
-        assert_eq!(sink.escrituras, 0, "no se le escribió nada al dispositivo");
+        let mut source = Blocks(vec![block(10)]);
+        let mut sink = FakeSink::new(1);
+        assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 0 });
+        assert_eq!(sink.writes, 0, "no se le escribió nada al dispositivo");
     }
 
     #[test]
     fn parar_a_media_pista_sale_entre_escrituras() {
-        struct ParaEnLaTercera(StopSignal, usize);
-        impl AudioSink for ParaEnLaTercera {
+        struct StopsOnTheThird(StopSignal, usize);
+        impl AudioSink for StopsOnTheThird {
             fn format(&self) -> StreamFormat {
                 StreamFormat::new(SampleFormat::S16, 44_100, 2)
             }
@@ -347,8 +347,8 @@ mod tests {
             }
         }
         let stop = StopSignal::new();
-        let mut fuente = Bloques(vec![bloque(20)]);
-        let mut sink = ParaEnLaTercera(stop.clone(), 0);
-        assert_eq!(render(&mut fuente, &mut sink, &stop), Outcome::Stopped { frames: 6 });
+        let mut source = Blocks(vec![block(20)]);
+        let mut sink = StopsOnTheThird(stop.clone(), 0);
+        assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 6 });
     }
 }

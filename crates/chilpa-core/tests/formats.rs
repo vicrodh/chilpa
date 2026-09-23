@@ -21,7 +21,7 @@ use std::process::Command;
 const RATE: u32 = 44_100;
 const FRAMES: u32 = 44_100 * 3;
 /// Un bloque de más de un segundo ya es sospechoso de leer de más.
-const MAX_FRAMES_POR_BLOQUE: usize = RATE as usize;
+const MAX_FRAMES_PER_BLOCK: usize = RATE as usize;
 
 fn hay_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
@@ -36,7 +36,7 @@ fn dir() -> PathBuf {
 
 /// WAV de referencia: el canal izquierdo lleva una rampa y el derecho su
 /// negado, así que cualquier desfase o conversión se nota.
-fn escribir_wav(path: &Path, bits: u16) {
+fn write_wav(path: &Path, bits: u16) {
     let bytes = u32::from(bits) / 8;
     let data_len = FRAMES * 2 * bytes;
     let mut f = std::fs::File::create(path).unwrap();
@@ -53,7 +53,7 @@ fn escribir_wav(path: &Path, bits: u16) {
     f.write_all(b"data").unwrap();
     f.write_all(&data_len.to_le_bytes()).unwrap();
     for i in 0..FRAMES {
-        let v = muestra(i, bits);
+        let v = sample(i, bits);
         match bits {
             16 => {
                 f.write_all(&(v as i16).to_le_bytes()).unwrap();
@@ -67,47 +67,47 @@ fn escribir_wav(path: &Path, bits: u16) {
     }
 }
 
-fn muestra(i: u32, bits: u16) -> i32 {
-    let periodo = if bits == 16 { 30_000 } else { 8_000_000 };
-    (i as i32 % periodo) - periodo / 2
+fn sample(i: u32, bits: u16) -> i32 {
+    let period = if bits == 16 { 30_000 } else { 8_000_000 };
+    (i as i32 % period) - period / 2
 }
 
-fn convertir(origen: &Path, destino: &Path, args: &[&str]) -> bool {
-    let salida = Command::new("ffmpeg")
+fn convert(origin: &Path, target: &Path, args: &[&str]) -> bool {
+    let output = Command::new("ffmpeg")
         .args(["-y", "-loglevel", "error", "-i"])
-        .arg(origen)
+        .arg(origin)
         .args(args)
-        .arg(destino)
+        .arg(target)
         .output()
         .expect("ffmpeg corre");
-    if !salida.status.success() {
-        eprintln!("ffmpeg falló: {}", String::from_utf8_lossy(&salida.stderr));
+    if !output.status.success() {
+        eprintln!("ffmpeg falló: {}", String::from_utf8_lossy(&output.stderr));
     }
-    salida.status.success()
+    output.status.success()
 }
 
 /// Decodifica todo y regresa las muestras del canal izquierdo más el bloque
 /// más grande que entregó el decodificador.
-fn decodificar(path: &Path) -> (Vec<i32>, usize, u8) {
+fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
     let mut decoded = Decoded::open(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
-    let canales = decoded.stream_format().channels as usize;
-    let mut izquierdo = Vec::new();
+    let channels = decoded.stream_format().channels as usize;
+    let mut left = Vec::new();
     let mut mayor = 0usize;
     let mut bits = 0u8;
     while let Some(block) = decoded.next_block().unwrap() {
         match block {
             Block::Int { data, bits: b } => {
                 bits = b;
-                mayor = mayor.max(data.len() / canales);
-                izquierdo.extend(data.iter().step_by(canales));
+                mayor = mayor.max(data.len() / channels);
+                left.extend(data.iter().step_by(channels));
             }
             Block::Float(data) => {
-                mayor = mayor.max(data.len() / canales);
-                izquierdo.extend(data.iter().step_by(canales).map(|v| (v * 32768.0) as i32));
+                mayor = mayor.max(data.len() / channels);
+                left.extend(data.iter().step_by(channels).map(|v| (v * 32768.0) as i32));
             }
         }
     }
-    (izquierdo, mayor, bits)
+    (left, mayor, bits)
 }
 
 #[test]
@@ -119,36 +119,36 @@ fn los_formatos_sin_perdida_salen_identicos_y_por_bloques() {
     let d = dir();
     let wav16 = d.join("ref16.wav");
     let wav24 = d.join("ref24.wav");
-    escribir_wav(&wav16, 16);
-    escribir_wav(&wav24, 24);
+    write_wav(&wav16, 16);
+    write_wav(&wav24, 24);
 
-    let esperado16: Vec<i32> = (0..FRAMES).map(|i| muestra(i, 16)).collect();
-    let esperado24: Vec<i32> = (0..FRAMES).map(|i| muestra(i, 24)).collect();
+    let expected16: Vec<i32> = (0..FRAMES).map(|i| sample(i, 16)).collect();
+    let expected24: Vec<i32> = (0..FRAMES).map(|i| sample(i, 24)).collect();
 
-    let casos: &[(&str, &Path, &[&str], &Vec<i32>, u8)] = &[
-        ("flac16.flac", &wav16, &["-c:a", "flac"], &esperado16, 16),
-        ("flac24.flac", &wav24, &["-c:a", "flac"], &esperado24, 24),
-        ("alac16.m4a", &wav16, &["-c:a", "alac"], &esperado16, 16),
-        ("alac24.m4a", &wav24, &["-c:a", "alac"], &esperado24, 24),
-        ("pcm24.wav", &wav24, &["-c:a", "pcm_s24le"], &esperado24, 24),
-        ("pcm16.aiff", &wav16, &["-c:a", "pcm_s16be"], &esperado16, 16),
+    let cases: &[(&str, &Path, &[&str], &Vec<i32>, u8)] = &[
+        ("flac16.flac", &wav16, &["-c:a", "flac"], &expected16, 16),
+        ("flac24.flac", &wav24, &["-c:a", "flac"], &expected24, 24),
+        ("alac16.m4a", &wav16, &["-c:a", "alac"], &expected16, 16),
+        ("alac24.m4a", &wav24, &["-c:a", "alac"], &expected24, 24),
+        ("pcm24.wav", &wav24, &["-c:a", "pcm_s24le"], &expected24, 24),
+        ("pcm16.aiff", &wav16, &["-c:a", "pcm_s16be"], &expected16, 16),
     ];
 
-    for (nombre, origen, args, esperado, bits_esperados) in casos {
-        let destino = d.join(nombre);
-        if !convertir(origen, &destino, args) {
-            eprintln!("{nombre}: ffmpeg no pudo, se salta");
+    for (name, origin, args, expected, expected_bits) in cases {
+        let target = d.join(name);
+        if !convert(origin, &target, args) {
+            eprintln!("{name}: ffmpeg no pudo, se salta");
             continue;
         }
-        let (salieron, mayor, bits) = decodificar(&destino);
-        assert_eq!(bits, *bits_esperados, "{nombre}: los bits del archivo mandan");
-        assert_eq!(salieron.len(), esperado.len(), "{nombre}: faltaron o sobraron frames");
-        assert_eq!(&salieron, *esperado, "{nombre}: la señal cambió");
+        let (came_out, mayor, bits) = decode(&target);
+        assert_eq!(bits, *expected_bits, "{name}: los bits del archivo mandan");
+        assert_eq!(came_out.len(), expected.len(), "{name}: faltaron o sobraron frames");
+        assert_eq!(&came_out, *expected, "{name}: la señal cambió");
         assert!(
-            mayor <= MAX_FRAMES_POR_BLOQUE,
-            "{nombre}: un bloque de {mayor} frames; se está decodificando de más"
+            mayor <= MAX_FRAMES_PER_BLOCK,
+            "{name}: un bloque de {mayor} frames; se está decodificando de más"
         );
-        let _ = std::fs::remove_file(destino);
+        let _ = std::fs::remove_file(target);
     }
     let _ = std::fs::remove_file(wav16);
     let _ = std::fs::remove_file(wav24);
@@ -162,35 +162,35 @@ fn los_formatos_con_perdida_se_decodifican_por_bloques() {
     }
     let d = dir();
     let wav = d.join("ref-perdida.wav");
-    escribir_wav(&wav, 16);
+    write_wav(&wav, 16);
 
     // Opus no entra: el decodificador que usamos todavía no lo trae. Queda
     // como hueco conocido, y la prueba de abajo lo fija.
-    for (nombre, args) in [
+    for (name, args) in [
         ("aac.m4a", ["-c:a", "aac"]),
         ("mp3.mp3", ["-c:a", "mp3"]),
         ("vorbis.ogg", ["-c:a", "libvorbis"]),
     ] {
-        let destino = d.join(nombre);
-        if !convertir(&wav, &destino, &args) {
-            eprintln!("{nombre}: ffmpeg no pudo, se salta");
+        let target = d.join(name);
+        if !convert(&wav, &target, &args) {
+            eprintln!("{name}: ffmpeg no pudo, se salta");
             continue;
         }
-        let (salieron, mayor, _) = decodificar(&destino);
-        assert!(!salieron.is_empty(), "{nombre}: no salió audio");
+        let (came_out, mayor, _) = decode(&target);
+        assert!(!came_out.is_empty(), "{name}: no salió audio");
         // Con pérdida la duración se mueve un poco por el relleno del
         // codificador; basta con que ande cerca.
-        let diferencia = (salieron.len() as i64 - FRAMES as i64).abs();
+        let difference = (came_out.len() as i64 - FRAMES as i64).abs();
         assert!(
-            diferencia < RATE as i64 / 2,
-            "{nombre}: salieron {} frames contra {FRAMES}",
-            salieron.len()
+            difference < RATE as i64 / 2,
+            "{name}: salieron {} frames contra {FRAMES}",
+            came_out.len()
         );
         assert!(
-            mayor <= MAX_FRAMES_POR_BLOQUE,
-            "{nombre}: un bloque de {mayor} frames; se está decodificando de más"
+            mayor <= MAX_FRAMES_PER_BLOCK,
+            "{name}: un bloque de {mayor} frames; se está decodificando de más"
         );
-        let _ = std::fs::remove_file(destino);
+        let _ = std::fs::remove_file(target);
     }
     let _ = std::fs::remove_file(wav);
 }
@@ -203,19 +203,19 @@ fn opus_todavia_no_se_puede_y_se_dice_claro() {
     }
     let d = dir();
     let wav = d.join("ref-opus.wav");
-    escribir_wav(&wav, 16);
-    let destino = d.join("prueba.opus");
-    if !convertir(&wav, &destino, &["-c:a", "libopus"]) {
+    write_wav(&wav, 16);
+    let target = d.join("prueba.opus");
+    if !convert(&wav, &target, &["-c:a", "libopus"]) {
         eprintln!("sin codificador de opus: se salta");
         return;
     }
-    match Decoded::open(&destino) {
+    match Decoded::open(&target) {
         Err(e) => {
-            let texto = e.to_string();
-            assert!(texto.contains("no soportado"), "el error debe decir qué pasó: {texto}");
+            let text = e.to_string();
+            assert!(text.contains("no soportado"), "el error debe decir qué pasó: {text}");
         }
         Ok(_) => panic!("ya se puede abrir opus: quita esta prueba y agrégalo a la matriz"),
     }
-    let _ = std::fs::remove_file(destino);
+    let _ = std::fs::remove_file(target);
     let _ = std::fs::remove_file(wav);
 }

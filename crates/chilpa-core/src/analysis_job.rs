@@ -22,13 +22,13 @@ use std::thread::JoinHandle;
 
 /// Cómo se llama este analizador en la base. Es el de `chilpa-analysis`,
 /// repetido aquí para que la fachada no tenga que conocer ese crate.
-pub const ANALIZADOR: &str = chilpa_analysis::NOMBRE;
+pub const ANALYZER: &str = chilpa_analysis::NAME;
 
 /// Cuánto audio se mira de cada pista.
-const SEGUNDOS_QUE_SE_MIRAN: u64 = 60;
+const SECONDS_EXAMINED: u64 = 60;
 
 /// Cuántas pistas se piden por tanda.
-const TANDA: usize = 200;
+const BATCH: usize = 200;
 
 /// Cómo va el análisis.
 #[derive(Clone, PartialEq, Debug)]
@@ -50,7 +50,7 @@ pub enum AnalysisProgress {
 /// Un análisis corriendo en segundo plano.
 pub struct AnalysisJob {
     events: Receiver<AnalysisProgress>,
-    cancelar: Arc<std::sync::atomic::AtomicBool>,
+    cancel: Arc<std::sync::atomic::AtomicBool>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -58,8 +58,8 @@ impl AnalysisJob {
     /// Arranca el análisis de lo que falte en la base que está en `db_path`.
     pub fn start(db_path: PathBuf) -> Self {
         let (tx, rx) = channel();
-        let cancelar = Arc::new(std::sync::atomic::AtomicBool::new(false));
-        let bandera = Arc::clone(&cancelar);
+        let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let flag = Arc::clone(&cancel);
         let thread = std::thread::Builder::new()
             .name("chilpa-analisis".into())
             .spawn(move || {
@@ -70,10 +70,10 @@ impl AnalysisJob {
                         return;
                     }
                 };
-                let analizador = chilpa_analysis::NOMBRE;
+                let analyzer = chilpa_analysis::NAME;
                 let version = chilpa_analysis::VERSION;
 
-                let total = match lib.tracks_pending_analysis(analizador, version, usize::MAX) {
+                let total = match lib.tracks_pending_analysis(analyzer, version, usize::MAX) {
                     Ok(v) => v.len(),
                     Err(e) => {
                         let _ = tx.send(AnalysisProgress::Failed(e.to_string()));
@@ -82,12 +82,12 @@ impl AnalysisJob {
                 };
                 let _ = tx.send(AnalysisProgress::Counted { total });
 
-                let (mut hechas, mut sin_pulso, mut fallidas) = (0usize, 0usize, 0usize);
+                let (mut made, mut no_pulse, mut failed) = (0usize, 0usize, 0usize);
                 loop {
-                    if bandera.load(std::sync::atomic::Ordering::Relaxed) {
+                    if flag.load(std::sync::atomic::Ordering::Relaxed) {
                         break;
                     }
-                    let tanda = match lib.tracks_pending_analysis(analizador, version, TANDA) {
+                    let batch = match lib.tracks_pending_analysis(analyzer, version, BATCH) {
                         Ok(v) if v.is_empty() => break,
                         Ok(v) => v,
                         Err(e) => {
@@ -95,17 +95,17 @@ impl AnalysisJob {
                             return;
                         }
                     };
-                    for pista in tanda {
-                        if bandera.load(std::sync::atomic::Ordering::Relaxed) {
+                    for track in batch {
+                        if flag.load(std::sync::atomic::Ordering::Relaxed) {
                             break;
                         }
-                        let features = analizar_archivo(Path::new(&pista.external_id));
+                        let features = analyze_file(Path::new(&track.external_id));
                         // Aunque no se le haya encontrado pulso se guarda la
                         // fila: si no, la pista saldría pendiente para
                         // siempre y el análisis nunca terminaría.
-                        let guardado = lib.save_features(
-                            pista.id,
-                            analizador,
+                        let saved = lib.save_features(
+                            track.id,
+                            analyzer,
                             version,
                             features.as_ref().and_then(|f| f.bpm),
                             features.as_ref().and_then(|f| f.tempo_confidence),
@@ -115,20 +115,20 @@ impl AnalysisJob {
                                 .map(|k| format!("{} · {}", k.name, k.camelot)),
                             features.as_ref().and_then(|f| f.loudness_lufs),
                         );
-                        match (&features, &guardado) {
+                        match (&features, &saved) {
                             (_, Err(e)) => {
                                 let _ = tx.send(AnalysisProgress::Failed(e.to_string()));
                                 return;
                             }
-                            (None, _) => fallidas += 1,
-                            (Some(f), _) if f.bpm.is_none() => sin_pulso += 1,
+                            (None, _) => failed += 1,
+                            (Some(f), _) if f.bpm.is_none() => no_pulse += 1,
                             _ => {}
                         }
-                        hechas += 1;
+                        made += 1;
                         let _ = tx.send(AnalysisProgress::Advanced {
-                            done: hechas,
+                            done: made,
                             total,
-                            title: pista.title.clone(),
+                            title: track.title.clone(),
                             bpm: features.as_ref().and_then(|f| f.bpm),
                             key: features
                                 .as_ref()
@@ -138,13 +138,13 @@ impl AnalysisJob {
                     }
                 }
                 let _ = tx.send(AnalysisProgress::Done {
-                    analyzed: hechas,
-                    without_pulse: sin_pulso,
-                    failed: fallidas,
+                    analyzed: made,
+                    without_pulse: no_pulse,
+                    failed: failed,
                 });
             })
             .expect("el hilo de análisis arranca");
-        Self { events: rx, cancelar, thread: Some(thread) }
+        Self { events: rx, cancel, thread: Some(thread) }
     }
 
     /// Lo que haya pasado, sin bloquear.
@@ -161,7 +161,7 @@ impl AnalysisJob {
 
     /// Pide que se detenga. La pista en curso se termina.
     pub fn cancel(&self) {
-        self.cancelar.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
     }
 
     pub fn finished(&self) -> bool {
@@ -182,11 +182,11 @@ impl Drop for AnalysisJob {
 ///
 /// `None` cuando el archivo no se pudo abrir o leer. Que no se le encuentre
 /// pulso no es una falla: es una respuesta.
-pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Analysis> {
+pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
     let mut decoded = chilpa_decode::Decoded::open(path).ok()?;
-    let formato = decoded.stream_format();
-    let canales = formato.channels.max(1) as usize;
-    let rate = formato.sample_rate_hz;
+    let format = decoded.stream_format();
+    let channels = format.channels.max(1) as usize;
+    let rate = format.sample_rate_hz;
     if rate == 0 {
         return None;
     }
@@ -194,48 +194,48 @@ pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Analysis> {
     // Se empieza en el cuarto de la pista: las intros no dicen nada del
     // pulso, y el principio de un disco suele ser lo menos representativo.
     if let Some(total) = decoded.frame_count() {
-        let arranque = total / 4;
-        if arranque > u64::from(rate) {
-            let _ = decoded.seek_to_frame(arranque);
+        let startup = total / 4;
+        if startup > u64::from(rate) {
+            let _ = decoded.seek_to_frame(startup);
         }
     }
 
-    let quiero = SEGUNDOS_QUE_SE_MIRAN * u64::from(rate);
-    let mut mono: Vec<f32> = Vec::with_capacity(quiero as usize / 4);
+    let want = SECONDS_EXAMINED * u64::from(rate);
+    let mut mono: Vec<f32> = Vec::with_capacity(want as usize / 4);
     // La sonoridad se mide al vuelo, con la señal como viene: mezclarla a
     // mono o bajarle la frecuencia cambiaría el número.
-    let mut medidor = chilpa_analysis::LoudnessMeter::new(rate, formato.channels.max(1));
+    let mut meter = chilpa_analysis::LoudnessMeter::new(rate, format.channels.max(1));
     let mut leidos = 0u64;
-    let mut intercalado: Vec<f32> = Vec::new();
-    while leidos < quiero {
-        let bloque = match decoded.next_block() {
+    let mut interleaved: Vec<f32> = Vec::new();
+    while leidos < want {
+        let block = match decoded.next_block() {
             Ok(Some(b)) => b,
             Ok(None) | Err(_) => break,
         };
-        intercalado.clear();
-        match bloque {
+        interleaved.clear();
+        match block {
             chilpa_decode::Block::Int { data, bits } => {
-                let escala = 1.0f32 / (1i64 << (bits.max(1) - 1)) as f32;
-                intercalado.extend(data.iter().map(|m| *m as f32 * escala));
+                let scale = 1.0f32 / (1i64 << (bits.max(1) - 1)) as f32;
+                interleaved.extend(data.iter().map(|m| *m as f32 * scale));
             }
-            chilpa_decode::Block::Float(data) => intercalado.extend(data),
+            chilpa_decode::Block::Float(data) => interleaved.extend(data),
         }
-        if intercalado.is_empty() {
+        if interleaved.is_empty() {
             continue;
         }
-        if let Some(m) = medidor.as_mut() {
-            m.push(&intercalado);
+        if let Some(m) = meter.as_mut() {
+            m.push(&interleaved);
         }
-        for frame in intercalado.chunks_exact(canales) {
-            mono.push(frame.iter().sum::<f32>() / canales as f32);
+        for frame in interleaved.chunks_exact(channels) {
+            mono.push(frame.iter().sum::<f32>() / channels as f32);
         }
-        leidos += (intercalado.len() / canales) as u64;
+        leidos += (interleaved.len() / channels) as u64;
     }
     if mono.is_empty() {
         return None;
     }
     let mut features = chilpa_analysis::analyze(&mono, rate);
-    features.loudness_lufs = medidor.and_then(|m| m.integrated()).map(|l| l as f32);
+    features.loudness_lufs = meter.and_then(|m| m.integrated()).map(|l| l as f32);
     Some(features)
 }
 
@@ -243,12 +243,12 @@ pub fn analizar_archivo(path: &Path) -> Option<chilpa_analysis::Analysis> {
 mod tests {
     use super::*;
 
-    fn espera(job: &AnalysisJob) -> Vec<AnalysisProgress> {
-        let limite = std::time::Instant::now() + std::time::Duration::from_secs(20);
-        let mut eventos = Vec::new();
-        while std::time::Instant::now() < limite {
-            eventos.extend(job.poll());
-            if eventos
+    fn wait(job: &AnalysisJob) -> Vec<AnalysisProgress> {
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(20);
+        let mut events = Vec::new();
+        while std::time::Instant::now() < limit {
+            events.extend(job.poll());
+            if events
                 .iter()
                 .any(|e| matches!(e, AnalysisProgress::Done { .. } | AnalysisProgress::Failed(_)))
             {
@@ -256,7 +256,7 @@ mod tests {
             }
             std::thread::sleep(std::time::Duration::from_millis(20));
         }
-        eventos
+        events
     }
 
     #[test]
@@ -266,13 +266,13 @@ mod tests {
         std::fs::create_dir_all(&dir).unwrap();
 
         let job = AnalysisJob::start(dir.join("lib.db"));
-        let eventos = espera(&job);
-        match eventos.first() {
+        let events = wait(&job);
+        match events.first() {
             Some(AnalysisProgress::Counted { total }) => assert_eq!(*total, 0),
-            otro => panic!("lo primero es la cuenta: {otro:?}"),
+            other => panic!("lo primero es la cuenta: {other:?}"),
         }
         assert!(matches!(
-            eventos.last(),
+            events.last(),
             Some(AnalysisProgress::Done { analyzed: 0, .. })
         ));
         drop(job);
@@ -281,6 +281,6 @@ mod tests {
 
     #[test]
     fn un_archivo_que_no_se_puede_abrir_no_tumba_el_analisis() {
-        assert!(analizar_archivo(Path::new("/no/existe.flac")).is_none());
+        assert!(analyze_file(Path::new("/no/existe.flac")).is_none());
     }
 }

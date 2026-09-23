@@ -17,13 +17,13 @@
 const OFFSET: f64 = -0.691;
 
 /// Por debajo de esto un bloque es silencio y no cuenta.
-const COMPUERTA_ABSOLUTA: f64 = -70.0;
+const ABSOLUTE_GATE: f64 = -70.0;
 
 /// La segunda compuerta va diez unidades abajo del promedio.
-const COMPUERTA_RELATIVA: f64 = -10.0;
+const RELATIVE_GATE: f64 = -10.0;
 
 /// Cuánto dura un bloque, y cuánto se avanza entre uno y otro.
-const BLOQUE_MS: f64 = 400.0;
+const BLOCK_MS: f64 = 400.0;
 const PASO_MS: f64 = 100.0;
 
 /// Un biquad en forma directa II transpuesta.
@@ -48,10 +48,10 @@ impl Biquad {
 
     /// El primer tramo de la curva K: un realce de agudos, el que imita la
     /// cabeza.
-    fn realce(rate: f64) -> Self {
-        let (f0, ganancia_db, q) = (1681.974450955533, 3.999843853973347, 0.7071752369554196);
+    fn boost(rate: f64) -> Self {
+        let (f0, gain_db, q) = (1681.974450955533, 3.999843853973347, 0.7071752369554196);
         let k = (std::f64::consts::PI * f0 / rate).tan();
-        let vh = 10f64.powf(ganancia_db / 20.0);
+        let vh = 10f64.powf(gain_db / 20.0);
         let vb = vh.powf(0.4996667741545416);
         let a0 = 1.0 + k / q + k * k;
         Self {
@@ -67,7 +67,7 @@ impl Biquad {
 
     /// El segundo tramo: quita lo que está tan abajo que no se oye como
     /// volumen.
-    fn pasa_altos(rate: f64) -> Self {
+    fn high_pass(rate: f64) -> Self {
         let (f0, q) = (38.13547087602444, 0.5003270373238773);
         let k = (std::f64::consts::PI * f0 / rate).tan();
         let a0 = 1.0 + k / q + k * k;
@@ -87,9 +87,9 @@ impl Biquad {
 ///
 /// Los frontales pesan uno; los de atrás, un poco más, porque el envolvente
 /// se percibe más fuerte de lo que mide.
-fn peso(canal: usize, canales: usize) -> f64 {
+fn peso(canal: usize, channels: usize) -> f64 {
     // Con estéreo o mono no hay traseros que pesar.
-    if canales <= 2 {
+    if channels <= 2 {
         return 1.0;
     }
     // En 5.1 el orden habitual es I, D, C, LFE, TI, TD.
@@ -102,69 +102,69 @@ fn peso(canal: usize, canales: usize) -> f64 {
 
 /// Un medidor que se va comiendo la señal bloque por bloque.
 pub struct Meter {
-    canales: usize,
-    filtros: Vec<(Biquad, Biquad)>,
+    channels: usize,
+    filters: Vec<(Biquad, Biquad)>,
     /// Cuántas muestras por canal lleva el bloque en curso.
-    en_bloque: usize,
-    muestras_por_bloque: usize,
-    muestras_por_paso: usize,
+    in_block: usize,
+    samples_per_block: usize,
+    samples_per_step: usize,
     /// La suma de cuadrados de cada canal, por cada tramo de `PASO_MS`.
-    tramos: Vec<Vec<f64>>,
-    tramo_actual: Vec<f64>,
+    segments: Vec<Vec<f64>>,
+    current_segment: Vec<f64>,
     /// La potencia de cada bloque ya cerrado.
-    bloques: Vec<f64>,
+    blocks: Vec<f64>,
 }
 
 impl Meter {
     pub fn new(sample_rate_hz: u32, channels: u16) -> Option<Self> {
-        let canales = channels.max(1) as usize;
+        let channels = channels.max(1) as usize;
         if sample_rate_hz < 8_000 {
             return None;
         }
         let rate = f64::from(sample_rate_hz);
         Some(Self {
-            canales,
-            filtros: (0..canales)
-                .map(|_| (Biquad::realce(rate), Biquad::pasa_altos(rate)))
+            channels,
+            filters: (0..channels)
+                .map(|_| (Biquad::boost(rate), Biquad::high_pass(rate)))
                 .collect(),
-            en_bloque: 0,
-            muestras_por_bloque: (rate * BLOQUE_MS / 1000.0).round() as usize,
-            muestras_por_paso: (rate * PASO_MS / 1000.0).round() as usize,
-            tramos: Vec::new(),
-            tramo_actual: vec![0.0; canales],
-            bloques: Vec::new(),
+            in_block: 0,
+            samples_per_block: (rate * BLOCK_MS / 1000.0).round() as usize,
+            samples_per_step: (rate * PASO_MS / 1000.0).round() as usize,
+            segments: Vec::new(),
+            current_segment: vec![0.0; channels],
+            blocks: Vec::new(),
         })
     }
 
     /// Come un pedazo de audio intercalado por canal.
     pub fn push(&mut self, interleaved: &[f32]) {
-        for frame in interleaved.chunks_exact(self.canales) {
+        for frame in interleaved.chunks_exact(self.channels) {
             for (c, m) in frame.iter().enumerate() {
-                let (realce, altos) = &mut self.filtros[c];
-                let y = altos.paso(realce.paso(f64::from(*m)));
-                self.tramo_actual[c] += y * y;
+                let (boost, altos) = &mut self.filters[c];
+                let y = altos.paso(boost.paso(f64::from(*m)));
+                self.current_segment[c] += y * y;
             }
-            self.en_bloque += 1;
-            if self.en_bloque == self.muestras_por_paso {
-                self.cerrar_tramo();
+            self.in_block += 1;
+            if self.in_block == self.samples_per_step {
+                self.close_segment();
             }
         }
     }
 
-    fn cerrar_tramo(&mut self) {
-        self.tramos.push(std::mem::replace(&mut self.tramo_actual, vec![0.0; self.canales]));
-        self.en_bloque = 0;
+    fn close_segment(&mut self) {
+        self.segments.push(std::mem::replace(&mut self.current_segment, vec![0.0; self.channels]));
+        self.in_block = 0;
         // Un bloque son cuatro tramos; se cierra uno por cada tramo nuevo,
         // que es el traslape del 75 % que pide la norma.
-        let por_bloque = self.muestras_por_bloque / self.muestras_por_paso;
-        if self.tramos.len() >= por_bloque {
-            let desde = self.tramos.len() - por_bloque;
+        let per_block = self.samples_per_block / self.samples_per_step;
+        if self.segments.len() >= per_block {
+            let from = self.segments.len() - per_block;
             let mut z = 0.0;
-            for c in 0..self.canales {
-                let suma: f64 = self.tramos[desde..].iter().map(|t| t[c]).sum();
-                z += peso(c, self.canales) * suma / self.muestras_por_bloque as f64;
+            for c in 0..self.channels {
+                let sum: f64 = self.segments[from..].iter().map(|t| t[c]).sum();
+                z += peso(c, self.channels) * sum / self.samples_per_block as f64;
             }
-            self.bloques.push(z);
+            self.blocks.push(z);
         }
     }
 
@@ -173,29 +173,29 @@ impl Meter {
     /// `None` cuando no hubo ni un bloque que pasara la compuerta: silencio,
     /// o una pista más corta que 400 ms.
     pub fn integrated(&self) -> Option<f64> {
-        if self.bloques.is_empty() {
+        if self.blocks.is_empty() {
             return None;
         }
-        let nivel = |z: f64| if z > 0.0 { OFFSET + 10.0 * z.log10() } else { f64::NEG_INFINITY };
+        let level = |z: f64| if z > 0.0 { OFFSET + 10.0 * z.log10() } else { f64::NEG_INFINITY };
 
         // Primera compuerta: lo que sea silencio no cuenta.
-        let pasan: Vec<f64> =
-            self.bloques.iter().copied().filter(|z| nivel(*z) > COMPUERTA_ABSOLUTA).collect();
-        if pasan.is_empty() {
+        let pass: Vec<f64> =
+            self.blocks.iter().copied().filter(|z| level(*z) > ABSOLUTE_GATE).collect();
+        if pass.is_empty() {
             return None;
         }
         // Segunda compuerta: diez unidades abajo del promedio de lo que
         // quedó. Es lo que evita que los silencios entre partes bajen la
         // cuenta de una pista dinámica.
-        let media = pasan.iter().sum::<f64>() / pasan.len() as f64;
-        let umbral = nivel(media) + COMPUERTA_RELATIVA;
+        let media = pass.iter().sum::<f64>() / pass.len() as f64;
+        let umbral = level(media) + RELATIVE_GATE;
         let finales: Vec<f64> =
-            pasan.into_iter().filter(|z| nivel(*z) > umbral).collect();
+            pass.into_iter().filter(|z| level(*z) > umbral).collect();
         if finales.is_empty() {
             return None;
         }
         let media = finales.iter().sum::<f64>() / finales.len() as f64;
-        let l = nivel(media);
+        let l = level(media);
         l.is_finite().then_some(l)
     }
 }
@@ -213,13 +213,13 @@ mod tests {
     use std::f64::consts::PI;
 
     /// Un seno de 997 Hz repartido en los canales que se pidan.
-    fn seno(amplitud: f32, rate: u32, segundos: u32, canales: u16, solo_uno: bool) -> Vec<f32> {
-        let frames = (rate * segundos) as usize;
-        let mut v = Vec::with_capacity(frames * canales as usize);
+    fn sine(amplitude: f32, rate: u32, seconds: u32, channels: u16, only_one: bool) -> Vec<f32> {
+        let frames = (rate * seconds) as usize;
+        let mut v = Vec::with_capacity(frames * channels as usize);
         for i in 0..frames {
-            let m = amplitud * (2.0 * PI * 997.0 * i as f64 / f64::from(rate)).sin() as f32;
-            for c in 0..canales {
-                v.push(if solo_uno && c > 0 { 0.0 } else { m });
+            let m = amplitude * (2.0 * PI * 997.0 * i as f64 / f64::from(rate)).sin() as f32;
+            for c in 0..channels {
+                v.push(if only_one && c > 0 { 0.0 } else { m });
             }
         }
         v
@@ -229,32 +229,32 @@ mod tests {
     fn un_seno_de_cero_dbfs_en_un_canal_mide_menos_tres_lkfs() {
         // Es la calibración de la norma: 0 dBFS a 997 Hz en un solo canal
         // son -3.01 LKFS. Si esto se mueve, la curva K está mal.
-        let datos = seno(1.0, 48_000, 5, 2, true);
-        let l = integrated(&datos, 48_000, 2).expect("hay sonido");
+        let data = sine(1.0, 48_000, 5, 2, true);
+        let l = integrated(&data, 48_000, 2).expect("hay sonido");
         assert!((l - (-3.01)).abs() < 0.1, "midió {l:.3} LKFS, se esperaba -3.01");
     }
 
     #[test]
     fn el_mismo_seno_en_los_dos_canales_mide_tres_unidades_mas() {
-        let uno = integrated(&seno(1.0, 48_000, 5, 2, true), 48_000, 2).unwrap();
-        let dos = integrated(&seno(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((dos - uno - 3.01).abs() < 0.1, "de {uno:.2} a {dos:.2}");
+        let one = integrated(&sine(1.0, 48_000, 5, 2, true), 48_000, 2).unwrap();
+        let dos = integrated(&sine(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        assert!((dos - one - 3.01).abs() < 0.1, "de {one:.2} a {dos:.2}");
     }
 
     #[test]
     fn al_doble_de_amplitud_seis_unidades_mas() {
-        let bajo = integrated(&seno(0.25, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        let alto = integrated(&seno(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((alto - bajo - 6.02).abs() < 0.1, "de {bajo:.2} a {alto:.2}");
+        let low = integrated(&sine(0.25, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        let alto = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        assert!((alto - low - 6.02).abs() < 0.1, "de {low:.2} a {alto:.2}");
     }
 
     #[test]
     fn la_medida_no_depende_de_la_frecuencia_de_muestreo() {
         // La curva K se recalcula para cada frecuencia; si estuviera fija a
         // 48 kHz, esto se separaría.
-        let a = integrated(&seno(0.5, 44_100, 5, 2, false), 44_100, 2).unwrap();
-        let b = integrated(&seno(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        let c = integrated(&seno(0.5, 96_000, 5, 2, false), 96_000, 2).unwrap();
+        let a = integrated(&sine(0.5, 44_100, 5, 2, false), 44_100, 2).unwrap();
+        let b = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        let c = integrated(&sine(0.5, 96_000, 5, 2, false), 96_000, 2).unwrap();
         assert!((a - b).abs() < 0.1, "44.1 dio {a:.2} y 48 dio {b:.2}");
         assert!((c - b).abs() < 0.1, "96 dio {c:.2} y 48 dio {b:.2}");
     }
@@ -267,22 +267,22 @@ mod tests {
     #[test]
     fn una_pista_mas_corta_que_un_bloque_no_da_numero() {
         // 400 ms es el bloque; 200 no alcanzan.
-        assert_eq!(integrated(&seno(0.5, 48_000, 0, 2, false), 48_000, 2), None);
-        let corto = seno(0.5, 48_000, 1, 2, false);
-        assert!(integrated(&corto[..48_000 * 2 / 5], 48_000, 2).is_none());
+        assert_eq!(integrated(&sine(0.5, 48_000, 0, 2, false), 48_000, 2), None);
+        let short = sine(0.5, 48_000, 1, 2, false);
+        assert!(integrated(&short[..48_000 * 2 / 5], 48_000, 2).is_none());
     }
 
     #[test]
     fn los_silencios_no_bajan_la_cuenta() {
         // Cinco segundos de tono y cinco de silencio: la compuerta relativa
         // tiene que dejar fuera el silencio.
-        let mut datos = seno(0.5, 48_000, 5, 2, false);
-        let solo_tono = integrated(&datos, 48_000, 2).unwrap();
-        datos.extend(std::iter::repeat(0.0).take(48_000 * 5 * 2));
-        let con_silencio = integrated(&datos, 48_000, 2).unwrap();
+        let mut data = sine(0.5, 48_000, 5, 2, false);
+        let tone_only = integrated(&data, 48_000, 2).unwrap();
+        data.extend(std::iter::repeat(0.0).take(48_000 * 5 * 2));
+        let with_silence = integrated(&data, 48_000, 2).unwrap();
         assert!(
-            (solo_tono - con_silencio).abs() < 0.2,
-            "el silencio movió la cuenta de {solo_tono:.2} a {con_silencio:.2}"
+            (tone_only - with_silence).abs() < 0.2,
+            "el silencio movió la cuenta de {tone_only:.2} a {with_silence:.2}"
         );
     }
 

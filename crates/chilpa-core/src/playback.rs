@@ -180,9 +180,9 @@ mod tests {
         }
     }
 
-    struct Nulo;
+    struct NullSink;
 
-    impl AudioSink for Nulo {
+    impl AudioSink for NullSink {
         fn format(&self) -> StreamFormat {
             StreamFormat::new(SampleFormat::S16, 44_100, 2)
         }
@@ -201,7 +201,7 @@ mod tests {
             &caps(),
             Policy::BitPerfect,
             &StopSignal::new(),
-            |_| Ok(Nulo),
+            |_| Ok(NullSink),
         );
         assert!(matches!(r, Err(PlayError::Decode(DecodeError::Open(_)))));
     }

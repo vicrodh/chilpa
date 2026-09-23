@@ -25,8 +25,8 @@ pub const VERSION: i64 = 5;
 /// Cada paso corre una sola vez y nunca se edita después de salir: una base
 /// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
 /// crearía dos formas distintas de la misma versión.
-const PASOS: &[&str] =
-    &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3, MIGRACION_V4, MIGRACION_V5];
+const STEPS: &[&str] =
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5];
 
 /// Crea o actualiza el esquema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -45,14 +45,14 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
             )),
         ));
     }
-    for (i, paso) in PASOS.iter().enumerate() {
-        let destino = i as i64 + 1;
-        if actual >= destino {
+    for (i, paso) in STEPS.iter().enumerate() {
+        let target = i as i64 + 1;
+        if actual >= target {
             continue;
         }
         // Cada paso va en su transacción: si truena a la mitad, la versión
         // no avanza y la base queda como estaba.
-        db.execute_batch(&format!("BEGIN; {paso} PRAGMA user_version = {destino}; COMMIT;"))?;
+        db.execute_batch(&format!("BEGIN; {paso} PRAGMA user_version = {target}; COMMIT;"))?;
     }
     Ok(())
 }
@@ -201,7 +201,7 @@ CREATE TABLE audio_features (
 /// externo, para poder volver a sincronizarla sin duplicarla. Y una entrada
 /// guarda la ruta además del track: una lista no se rompe porque algo
 /// todavía no esté escaneado.
-const MIGRACION_V2: &str = r#"
+const MIGRATION_V2: &str = r#"
 CREATE TABLE playlists (
     id           INTEGER PRIMARY KEY,
     source_id    INTEGER NOT NULL REFERENCES sources(id),
@@ -233,7 +233,7 @@ CREATE INDEX playlist_tracks_track ON playlist_tracks(track_id);
 /// cadena hace que "Rock; Blues" no sea ni Rock ni Blues a la hora de
 /// filtrar. `COLLATE NOCASE` en el nombre para que "rock" y "Rock" sean el
 /// mismo género, que es lo que quiere decir quien los escribió.
-const MIGRACION_V3: &str = r#"
+const MIGRATION_V3: &str = r#"
 CREATE TABLE genres (
     id   INTEGER PRIMARY KEY,
     name TEXT NOT NULL UNIQUE COLLATE NOCASE
@@ -253,7 +253,7 @@ CREATE INDEX track_genres_genre ON track_genres(genre_id);
 /// Va en su propia columna y no dentro de `energy`, que es otra cosa.
 /// Guardar un número bajo el nombre de otro es la clase de mentira
 /// silenciosa que después nadie encuentra.
-const MIGRACION_V4: &str = r#"
+const MIGRATION_V4: &str = r#"
 ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
 "#;
 
@@ -264,7 +264,7 @@ ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
 /// cada álbum. Medido con cinco mil álbumes: la reja pasó de 30 segundos a
 /// 7 milisegundos. Es el mismo hallazgo de la auditoría de QBZ, con otra
 /// cara.
-const MIGRACION_V5: &str = r#"
+const MIGRATION_V5: &str = r#"
 CREATE INDEX tracks_album_present ON tracks(album_id, present);
 ANALYZE;
 "#;
@@ -373,16 +373,16 @@ mod tests {
             [],
         )
         .unwrap();
-        let poner = |pos: i64| {
+        let set = |pos: i64| {
             db.execute(
                 "INSERT INTO playlist_tracks (playlist_id, position, external_id)
                  VALUES (1, ?1, '/a.flac')",
                 [pos],
             )
         };
-        poner(0).unwrap();
-        assert!(poner(0).is_err(), "el orden de una lista no se duplica");
-        poner(1).unwrap();
+        set(0).unwrap();
+        assert!(set(0).is_err(), "el orden de una lista no se duplica");
+        set(1).unwrap();
     }
 
     #[test]
@@ -390,9 +390,9 @@ mod tests {
         let db = Connection::open_in_memory().unwrap();
         db.pragma_update(None, "user_version", VERSION + 1).unwrap();
         let e = migrate(&db).expect_err("bajar de versión perdería datos");
-        let dicho = e.to_string();
-        assert!(dicho.contains("versión"), "el error tiene que explicarse: {dicho}");
-        assert!(dicho.contains("actualiza"), "y decir qué hacer: {dicho}");
+        let said = e.to_string();
+        assert!(said.contains("versión"), "el error tiene que explicarse: {said}");
+        assert!(said.contains("actualiza"), "y decir qué hacer: {said}");
     }
 
     #[test]
@@ -400,16 +400,16 @@ mod tests {
         let db = memoria();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
-        let insertar = |external: &str| {
+        let insert = |external: &str| {
             db.execute(
                 "INSERT INTO tracks (source_id, external_id, title, added_at)
                  VALUES (1, ?1, 'x', 0)",
                 [external],
             )
         };
-        insertar("/musica/a.flac").unwrap();
-        assert!(insertar("/musica/a.flac").is_err(), "la identidad no se repite");
-        insertar("/musica/b.flac").unwrap();
+        insert("/musica/a.flac").unwrap();
+        assert!(insert("/musica/a.flac").is_err(), "la identidad no se repite");
+        insert("/musica/b.flac").unwrap();
     }
 
     #[test]

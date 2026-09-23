@@ -77,7 +77,7 @@ mod tests {
     use chilpa_cd::{TocEntry, SECTOR_BYTES};
 
     struct Disco {
-        fallar_en: Option<u32>,
+        fail_at: Option<u32>,
     }
 
     impl CdDevice for Disco {
@@ -91,7 +91,7 @@ mod tests {
             ))
         }
         fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
-            if self.fallar_en == Some(lsn) {
+            if self.fail_at == Some(lsn) {
                 return Err(CdError::Read { lsn, why: "error de C2".into() });
             }
             out.clear();
@@ -100,9 +100,9 @@ mod tests {
         }
     }
 
-    struct Nulo(StreamFormat, u64);
+    struct NullSink(StreamFormat, u64);
 
-    impl AudioSink for &mut Nulo {
+    impl AudioSink for &mut NullSink {
         fn format(&self) -> StreamFormat {
             self.0
         }
@@ -127,13 +127,13 @@ mod tests {
 
     #[test]
     fn una_pista_del_disco_sale_completa_y_bit_perfect() {
-        let mut disco = Disco { fallar_en: None };
+        let mut disco = Disco { fail_at: None };
         let toc = read_toc(&mut disco).unwrap();
-        let pista = *toc.track(1).unwrap();
-        let mut sink = Nulo(CDDA_FORMAT, 0);
+        let track = *toc.track(1).unwrap();
+        let mut sink = NullSink(CDDA_FORMAT, 0);
         let played = play_track(
             &mut disco,
-            &pista,
+            &track,
             &caps(),
             &StopSignal::new(),
             &PauseSignal::new(),
@@ -150,13 +150,13 @@ mod tests {
 
     #[test]
     fn un_sector_ilegible_corta_la_pista_y_queda_dicho() {
-        let mut disco = Disco { fallar_en: Some(75) };
+        let mut disco = Disco { fail_at: Some(75) };
         let toc = read_toc(&mut disco).unwrap();
-        let pista = *toc.track(1).unwrap();
-        let mut sink = Nulo(CDDA_FORMAT, 0);
+        let track = *toc.track(1).unwrap();
+        let mut sink = NullSink(CDDA_FORMAT, 0);
         let played = play_track(
             &mut disco,
-            &pista,
+            &track,
             &caps(),
             &StopSignal::new(),
             &PauseSignal::new(),

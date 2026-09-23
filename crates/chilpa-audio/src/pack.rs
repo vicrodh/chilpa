@@ -108,22 +108,22 @@ mod tests {
     fn un_entero_de_16_sale_identico_en_16() {
         let data = [0i32, 1, -1, 32767, -32768];
         let bytes = packed(&Samples::Int { data: &data, bits: 16 }, SampleFormat::S16);
-        let vuelta: Vec<i32> = bytes
+        let wrap: Vec<i32> = bytes
             .chunks(2)
             .map(|c| i16::from_le_bytes([c[0], c[1]]) as i32)
             .collect();
-        assert_eq!(vuelta, data, "ida y vuelta sin perder un solo LSB");
+        assert_eq!(wrap, data, "ida y vuelta sin perder un solo LSB");
     }
 
     #[test]
     fn subir_de_16_a_24_es_un_corrimiento_exacto() {
         let data = [1i32, -1, 32767];
         let bytes = packed(&Samples::Int { data: &data, bits: 16 }, SampleFormat::S24In32);
-        let vuelta: Vec<i32> = bytes
+        let wrap: Vec<i32> = bytes
             .chunks(4)
             .map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) >> 8)
             .collect();
-        assert_eq!(vuelta, data.iter().map(|v| v << 8).collect::<Vec<_>>());
+        assert_eq!(wrap, data.iter().map(|v| v << 8).collect::<Vec<_>>());
     }
 
     #[test]
@@ -132,11 +132,11 @@ mod tests {
         // redondear movía las muestras fuertes un LSB.
         let data = [8_388_607i32, -8_388_608, 4_194_303];
         let bytes = packed(&Samples::Int { data: &data, bits: 24 }, SampleFormat::S24Packed);
-        let vuelta: Vec<i32> = bytes
+        let wrap: Vec<i32> = bytes
             .chunks(3)
             .map(|c| (i32::from_le_bytes([0, c[0], c[1], c[2]])) >> 8)
             .collect();
-        assert_eq!(vuelta, data);
+        assert_eq!(wrap, data);
     }
 
     #[test]

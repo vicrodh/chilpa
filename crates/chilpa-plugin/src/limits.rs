@@ -42,7 +42,7 @@ impl Default for Limits {
 
 impl Limits {
     /// Los de una llamada que se espera corta, como resolver una letra.
-    pub fn cortos() -> Self {
+    pub fn short() -> Self {
         Self {
             fuel: 50_000_000,
             memory_bytes: 8 * 1024 * 1024,
@@ -51,7 +51,7 @@ impl Limits {
     }
 
     /// Los de algo que sí puede tardar, como traer un catálogo entero.
-    pub fn largos() -> Self {
+    pub fn long() -> Self {
         Self {
             fuel: 10_000_000_000,
             memory_bytes: 128 * 1024 * 1024,
@@ -70,23 +70,23 @@ impl Limits {
 
 /// Por qué se detuvo una llamada a un plugin.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum Detencion {
+pub enum Halt {
     /// Se acabó el combustible: estaba calculando de más.
-    SinCombustible,
+    OutOfFuel,
     /// Pidió más memoria de la que tiene permitida.
-    SinMemoria,
+    OutOfMemory,
     /// Se pasó del reloj.
     Timeout(Duration),
 }
 
-impl std::fmt::Display for Detencion {
+impl std::fmt::Display for Halt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Detencion::SinCombustible => {
+            Halt::OutOfFuel => {
                 write!(f, "se pasó del cómputo que tenía permitido y se detuvo")
             }
-            Detencion::SinMemoria => write!(f, "pidió más memoria de la permitida"),
-            Detencion::Timeout(d) => write!(f, "no contestó en {d:?} y se detuvo"),
+            Halt::OutOfMemory => write!(f, "pidió más memoria de la permitida"),
+            Halt::Timeout(d) => write!(f, "no contestó en {d:?} y se detuvo"),
         }
     }
 }
@@ -104,7 +104,7 @@ mod tests {
 
     #[test]
     fn los_cortos_son_mas_apretados_que_los_largos() {
-        let (c, d, l) = (Limits::cortos(), Limits::default(), Limits::largos());
+        let (c, d, l) = (Limits::short(), Limits::default(), Limits::long());
         assert!(c.fuel < d.fuel && d.fuel < l.fuel);
         assert!(c.memory_bytes < d.memory_bytes && d.memory_bytes < l.memory_bytes);
         assert!(c.timeout < d.timeout && d.timeout < l.timeout);
@@ -121,13 +121,13 @@ mod tests {
     #[test]
     fn cada_detencion_se_explica_en_castellano() {
         for d in [
-            Detencion::SinCombustible,
-            Detencion::SinMemoria,
-            Detencion::Timeout(Duration::from_secs(5)),
+            Halt::OutOfFuel,
+            Halt::OutOfMemory,
+            Halt::Timeout(Duration::from_secs(5)),
         ] {
-            let texto = d.to_string();
-            assert!(texto.len() > 10, "{texto}");
-            assert!(!texto.contains("Error"), "nada de jerga: {texto}");
+            let text = d.to_string();
+            assert!(text.len() > 10, "{text}");
+            assert!(!text.contains("Error"), "nada de jerga: {text}");
         }
     }
 }
