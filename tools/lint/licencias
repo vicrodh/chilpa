@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Chilpa es GPL-2.0-only: ninguna dependencia puede ser incompatible.
+"""Chilpa es MIT. Este candado no prohíbe licencias: avisa qué arrastra el
+binario.
 
-Fuera quedan GPL-3.0, AGPL, LGPL-3.0 y lo que solo ofrece Apache-2.0 sin la
-excepción de LLVM. Cuando un crate ofrece varias licencias ("MIT OR
-Apache-2.0"), basta con que una sea compatible.
+Con MIT se puede enlazar casi cualquier cosa, pero una dependencia copyleft
+hace que el EJECUTABLE que se distribuye salga bajo sus términos, aunque el
+código de este repo siga siendo MIT. Por eso aquí:
 
-Lee `cargo metadata`, así que no necesita cargo-deny instalado. El CI correrá
-además cargo-deny con deny.toml.
+- las licencias permisivas pasan calladas;
+- las copyleft se listan, para que se sepa bajo qué sale el binario;
+- lo que no trae licencia declarada falla, porque eso sí hay que revisarlo a
+  mano;
+- dos copyleft incompatibles entre sí (por ejemplo Apache-2.0 junto a
+  GPL-2.0-only, que no se pueden combinar) falla.
+
+Lee `cargo metadata`, así que no necesita cargo-deny instalado.
 """
 import json
 import re
@@ -16,69 +23,68 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-COMPATIBLES = {
+PERMISIVAS = {
     "MIT", "MIT-0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Zlib", "0BSD", "CC0-1.0",
-    "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "MPL-2.0",
-    "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
-    "LGPL-2.0-only", "LGPL-2.0-or-later", "LGPL-2.1-only", "LGPL-2.1-or-later",
-    # La excepción de LLVM existe justo para poder combinar con GPL-2.0.
-    "Apache-2.0 WITH LLVM-exception",
+    "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception", "BSL-1.0", "MPL-2.0",
 }
+
+# Copyleft fuerte: se puede usar, y el binario hereda sus términos.
+COPYLEFT = {
+    "GPL-2.0", "GPL-2.0-only", "GPL-2.0-or-later",
+    "GPL-3.0", "GPL-3.0-only", "GPL-3.0-or-later",
+    "AGPL-3.0", "AGPL-3.0-only", "AGPL-3.0-or-later",
+    "LGPL-2.1-only", "LGPL-2.1-or-later", "LGPL-3.0-only", "LGPL-3.0-or-later",
+}
+
+# Pares que no pueden vivir en el mismo binario.
+INCOMPATIBLES = [
+    ("Apache-2.0", "GPL-2.0-only"),
+    ("Apache-2.0", "GPL-2.0"),
+]
 
 TOKEN = re.compile(r"\(|\)|\bAND\b|\bOR\b|[^()\s]+", re.IGNORECASE)
 
 
-def compatible(expr):
-    """Evalúa una expresión SPDX: ¿se puede cumplir con licencias compatibles?
-
-    Entiende AND, OR y paréntesis, y trata `/` como OR, que es la forma vieja
-    que todavía usan algunos crates. Una licencia con excepción
-    ("Apache-2.0 WITH LLVM-exception") llega como tres tokens y se vuelve a
-    unir.
-    """
+def licencias(expr):
+    """Las licencias que menciona una expresión SPDX, ya unidas con su WITH."""
     tokens = [t for t in TOKEN.findall(expr.replace("/", " OR ")) if t.strip()]
-    unidos = []
+    out = []
     i = 0
     while i < len(tokens):
+        if tokens[i].upper() in ("AND", "OR") or tokens[i] in ("(", ")"):
+            i += 1
+            continue
         if i + 2 < len(tokens) and tokens[i + 1].upper() == "WITH":
-            unidos.append(f"{tokens[i]} WITH {tokens[i + 2]}")
+            out.append(f"{tokens[i]} WITH {tokens[i + 2]}")
             i += 3
         else:
-            unidos.append(tokens[i])
+            out.append(tokens[i].strip("+"))
             i += 1
-    pos = 0
+    return out
 
-    def expresion():
-        nonlocal pos
-        valor = termino()
-        while pos < len(unidos) and unidos[pos].upper() == "OR":
-            pos += 1
-            valor = termino() or valor
-        return valor
 
-    def termino():
-        nonlocal pos
-        valor = factor()
-        while pos < len(unidos) and unidos[pos].upper() == "AND":
-            pos += 1
-            valor = factor() and valor
-        return valor
+# En qué orden preferimos las permisivas cuando una dependencia ofrece
+# varias. Apache-2.0 va al final porque es la única que puede chocar con una
+# dependencia GPL-2.0-only; elegirla sin necesidad inventaría un conflicto.
+PREFERENCIA = [
+    "MIT", "MIT-0", "ISC", "BSD-2-Clause", "BSD-3-Clause", "Zlib", "0BSD", "CC0-1.0",
+    "Unlicense", "Unicode-3.0", "Unicode-DFS-2016", "BSL-1.0", "MPL-2.0",
+    "Apache-2.0 WITH LLVM-exception", "Apache-2.0",
+]
 
-    def factor():
-        nonlocal pos
-        if pos < len(unidos) and unidos[pos] == "(":
-            pos += 1
-            valor = expresion()
-            if pos < len(unidos) and unidos[pos] == ")":
-                pos += 1
-            return valor
-        if pos >= len(unidos):
-            return False
-        licencia = unidos[pos].strip("+")
-        pos += 1
-        return licencia in COMPATIBLES
 
-    return expresion()
+def elegida(expr):
+    """Qué licencia tomamos de una expresión con alternativas.
+
+    Si hay permisivas, la primera según PREFERENCIA; si no, la primera
+    copyleft, que es la que va a marcar el binario.
+    """
+    opciones = licencias(expr)
+    for preferida in PREFERENCIA:
+        if preferida in opciones:
+            return preferida
+    return opciones[0] if opciones else None
 
 
 def main():
@@ -87,20 +93,36 @@ def main():
         cwd=ROOT, capture_output=True, text=True, check=True).stdout)
     propios = {p["name"] for p in meta["packages"] if p.get("source") is None}
     errores = []
+    copyleft = []
+    total = 0
+    presentes = set()
     for pkg in sorted(meta["packages"], key=lambda p: p["name"]):
         if pkg["name"] in propios:
             continue
-        licencia = pkg.get("license")
-        if not licencia:
+        total += 1
+        expr = pkg.get("license")
+        if not expr:
             errores.append(f"{pkg['name']} {pkg['version']}: sin licencia declarada; revísala a mano")
             continue
-        if not compatible(licencia):
-            errores.append(f"{pkg['name']} {pkg['version']}: {licencia} no es compatible con GPL-2.0-only")
+        pick = elegida(expr)
+        presentes.add(pick)
+        if pick in COPYLEFT:
+            copyleft.append(f"{pkg['name']} {pkg['version']}: {expr}")
+        elif pick not in PERMISIVAS:
+            errores.append(f"{pkg['name']} {pkg['version']}: {expr} no está clasificada; agrégala a la lista")
+
+    for a, b in INCOMPATIBLES:
+        if a in presentes and b in presentes:
+            errores.append(f"{a} y {b} no se pueden combinar en el mismo binario")
+
+    if copyleft:
+        print("licencias: el binario sale copyleft por estas dependencias:", file=sys.stderr)
+        print("\n".join(f"  {c}" for c in copyleft), file=sys.stderr)
     if errores:
         print("\n".join(errores), file=sys.stderr)
         print(f"licencias: {len(errores)} problema(s)", file=sys.stderr)
         sys.exit(1)
-    print(f"licencias: {len(meta['packages']) - len(propios)} dependencias, todas compatibles")
+    print(f"licencias: {total} dependencias, {len(copyleft)} copyleft")
 
 
 if __name__ == "__main__":

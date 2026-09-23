@@ -45,6 +45,8 @@ git config core.hooksPath hooks
 
 ## License
 
-GPL-2.0-only, with a plugin exception: a plugin that talks to Chilpa only
-through the public plugin API may carry any license. See [LICENSE](LICENSE)
-and [LICENSE-EXCEPTION-PLUGINS](LICENSE-EXCEPTION-PLUGINS).
+MIT. See [LICENSE](LICENSE).
+
+Some optional features link libraries under copyleft licenses. When a build
+includes those, the resulting binary ships under their terms; the source in
+this repository stays MIT either way.

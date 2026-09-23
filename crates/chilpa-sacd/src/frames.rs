@@ -29,7 +29,7 @@ impl SacdTrackReader {
     pub fn open(image: SacdImage, track: &SacdTrack) -> Result<Self, SacdError> {
         if track.encoding.is_compressed() {
             return Err(SacdError::Unsupported(
-                "la pista viene comprimida con DST; falta un decodificador compatible con la licencia".into(),
+                "la pista viene comprimida con DST y todavía no hay decodificador".into(),
             ));
         }
         let samples = u64::from(track.duration_frames) * u64::from(crate::DSD64_HZ / 75);
