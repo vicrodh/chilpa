@@ -3,6 +3,7 @@
 //! Nadie habla con este crate desde un frontend. La única puerta pública es
 //! `chilpa-api` (ADR-001); aquí adentro vive la implementación.
 
+pub mod dsd_playback;
 pub mod playback;
 pub mod player;
 pub mod settings;
