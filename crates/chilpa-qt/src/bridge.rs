@@ -75,6 +75,8 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// Las unidades de CD que hay en la máquina.
+        #[qproperty(QStringList, cd_drives)]
         /// Los géneros de la biblioteca, como "nombre\tpistas".
         #[qproperty(QStringList, genres)]
         /// Las listas inteligentes, como "nombre\tpistas".
@@ -228,6 +230,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_album(self: Pin<&mut Chilpa>, album_id: i64);
 
+        /// Pone a sonar el CD que haya en esa unidad.
+        #[qinvokable]
+        fn play_cd(self: Pin<&mut Chilpa>, drive: &QString);
+
+        /// Vuelve a mirar qué unidades de CD hay.
+        #[qinvokable]
+        fn refresh_cd_drives(self: Pin<&mut Chilpa>);
+
         /// Pone a sonar una radio o cualquier stream por HTTP.
         #[qinvokable]
         fn play_url(self: Pin<&mut Chilpa>, url: &QString);
@@ -375,6 +385,7 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    cd_drives: QStringList,
     genres: QStringList,
     smart_lists: QStringList,
     playlists: QStringList,
@@ -437,6 +448,7 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            cd_drives: QStringList::default(),
             genres: QStringList::default(),
             smart_lists: QStringList::default(),
             playlists: QStringList::default(),
@@ -899,6 +911,24 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn refresh_cd_drives(mut self: Pin<&mut Self>) {
+        let unidades = self.api.cd_drives();
+        let mut l = QList::<QString>::default();
+        for u in &unidades {
+            l.append(QString::from(u));
+        }
+        self.as_mut().set_cd_drives(QStringList::from(&l));
+    }
+
+    pub fn play_cd(mut self: Pin<&mut Self>, drive: &QString) {
+        let unidad = drive.to_string();
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        self.as_mut().set_error(QString::from(""));
+        if self.as_mut().rust_mut().api.play_cd(&unidad, &dispositivo, bit_perfect) {
+            self.as_mut().set_playing(true);
+        }
     }
 
     pub fn play_url(mut self: Pin<&mut Self>, url: &QString) {

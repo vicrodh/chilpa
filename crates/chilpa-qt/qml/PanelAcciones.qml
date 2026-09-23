@@ -24,6 +24,8 @@ RowLayout {
     readonly property url desde:
         Chilpa.lastFolder === "" ? "" : "file://" + Chilpa.lastFolder
 
+    Component.onCompleted: Chilpa.refreshCdDrives()
+
     Shortcut {
         sequence: "Ctrl+O"
         onActivated: dialogoArchivo.open()
@@ -113,6 +115,13 @@ RowLayout {
     Button {
         text: "Abrir stream"
         onClicked: dialogoStream.open()
+    }
+    // Solo aparece si hay una unidad: un botón que nunca va a servir
+    // estorba más de lo que ayuda.
+    Button {
+        text: "Reproducir CD"
+        visible: Chilpa.cdDrives.length > 0
+        onClicked: Chilpa.playCd(Chilpa.cdDrives[0])
     }
     Button {
         text: "Escanear a la biblioteca"

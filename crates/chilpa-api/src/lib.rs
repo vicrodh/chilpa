@@ -859,6 +859,40 @@ impl Chilpa {
         }
     }
 
+    /// Las unidades de CD que hay en la máquina.
+    ///
+    /// Se miran los nodos de siempre; una unidad que no está no es un
+    /// error, nomás no sale en la lista.
+    pub fn cd_drives(&self) -> Vec<String> {
+        let mut unidades = Vec::new();
+        for nombre in ["/dev/sr0", "/dev/sr1", "/dev/cdrom", "/dev/dvd"] {
+            let p = std::path::Path::new(nombre);
+            if p.exists() && !unidades.iter().any(|u: &String| u == nombre) {
+                unidades.push(nombre.to_string());
+            }
+        }
+        unidades
+    }
+
+    /// Pone a sonar el CD que haya en esa unidad, de principio a fin.
+    pub fn play_cd(&mut self, drive: &str, device: &str, bit_perfect: bool) -> bool {
+        let unidad = if drive.is_empty() {
+            match self.cd_drives().first() {
+                Some(u) => u.clone(),
+                None => {
+                    self.now.error = "no encontré una unidad de CD".into();
+                    return false;
+                }
+            }
+        } else {
+            drive.to_string()
+        };
+        self.cola = vec![format!("cdda:{unidad}")];
+        self.quitadas = vec![false];
+        self.lanzar(0, device, bit_perfect);
+        true
+    }
+
     /// Pone a sonar una radio o cualquier stream por HTTP.
     pub fn play_url(&mut self, url: &str, device: &str, bit_perfect: bool) {
         let url = url.trim().to_string();
