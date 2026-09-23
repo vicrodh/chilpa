@@ -19,10 +19,20 @@ ColumnLayout {
 
     PanelTransporte { Layout.alignment: Qt.AlignLeft }
 
-    PanelAhoraSuena {
+    // Lo que suena y, a un lado, su letra cuando la hay.
+    RowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 152
         Layout.alignment: Qt.AlignTop
+        spacing: 14
+
+        PanelAhoraSuena { Layout.fillWidth: true; Layout.fillHeight: true }
+
+        PanelLetra {
+            Layout.preferredWidth: 300
+            Layout.fillHeight: true
+            visible: Chilpa.lyrics.length > 0
+        }
     }
 
     // Los resultados, cuando hay algo escrito en la búsqueda o un álbum

@@ -68,6 +68,15 @@ pub struct NowPlaying {
     /// Qué lugar ocupa en la cola y cuántas pistas tiene.
     pub index: usize,
     pub queue_len: usize,
+    /// La letra de lo que suena, un renglón por entrada. Vacía si no hay.
+    pub lyrics: Vec<String>,
+    /// Qué renglón va, o -1 cuando la letra no trae tiempos o todavía no
+    /// entra ninguno.
+    pub lyrics_line: i32,
+    /// Cierto si la letra trae tiempos y se puede seguir.
+    pub lyrics_synced: bool,
+    /// De dónde salió: "archivo", "tags" o vacío.
+    pub lyrics_source: String,
     /// El último problema, vacío si no hay.
     pub error: String,
 }
@@ -199,6 +208,8 @@ pub struct Chilpa {
     shuffle: bool,
     repeat: Repeat,
     album_sort: AlbumSort,
+    /// La letra de lo que suena, para no releerla en cada pulso.
+    letra: Option<chilpa_lyrics::Lyrics>,
     /// El escaneo en segundo plano, mientras corre.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -224,6 +235,7 @@ impl Chilpa {
             shuffle: false,
             repeat: Repeat::Off,
             album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
+            letra: None,
             scan: None,
             scan_status: ScanStatus::default(),
             player: None,
@@ -321,6 +333,33 @@ impl Chilpa {
     pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
         let vista = self.album_sort;
         self.albums_sorted(vista, limit, offset)
+    }
+
+    /// Busca la letra de lo que empieza a sonar.
+    ///
+    /// Se lee una vez por pista, no en cada pulso: son unos kilobytes, pero
+    /// abrir un archivo sesenta veces por minuto no tiene ningún sentido.
+    fn cargar_letra(&mut self, path: &std::path::Path) {
+        let hallada = chilpa_lyrics::find(path);
+        self.now.lyrics = hallada
+            .as_ref()
+            .map(|h| h.lyrics.lines.iter().map(|l| l.text.clone()).collect())
+            .unwrap_or_default();
+        self.now.lyrics_synced = hallada.as_ref().is_some_and(|h| h.lyrics.synced);
+        self.now.lyrics_source = match hallada.as_ref().map(|h| &h.source) {
+            Some(chilpa_lyrics::Source::Sidecar(_)) => "archivo".into(),
+            Some(chilpa_lyrics::Source::Embedded) => "tags".into(),
+            None => String::new(),
+        };
+        self.now.lyrics_line = -1;
+        self.letra = hallada.map(|h| h.lyrics);
+    }
+
+    /// Qué renglón de la letra va en ese segundo.
+    fn renglon_en(&self, segundos: f64) -> i32 {
+        let Some(letra) = &self.letra else { return -1 };
+        let ms = (segundos.max(0.0) * 1000.0) as u64;
+        letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
     /// La vista rápida con la que se está mirando la biblioteca.
@@ -709,6 +748,7 @@ impl Chilpa {
                     }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
+                    self.cargar_letra(&path);
                     // El reproductor cuenta sobre lo que se le dio; la vista
                     // cuenta sobre la cola entera.
                     self.now.index = self.base + index;
@@ -766,6 +806,7 @@ impl Chilpa {
                     if self.sample_rate > 0 {
                         self.now.seconds = frames as f64 / f64::from(self.sample_rate);
                     }
+                    self.now.lyrics_line = self.renglon_en(self.now.seconds);
                 }
                 PlayerEvent::Finished { frames } => {
                     self.now.frames = frames;

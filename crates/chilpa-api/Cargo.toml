@@ -10,3 +10,4 @@ chilpa-core.workspace = true
 chilpa-models.workspace = true
 chilpa-library.workspace = true
 chilpa-tags.workspace = true
+chilpa-lyrics.workspace = true

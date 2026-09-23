@@ -117,6 +117,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-core",
  "chilpa-library",
+ "chilpa-lyrics",
  "chilpa-models",
  "chilpa-tags",
 ]
@@ -173,6 +174,13 @@ dependencies = [
  "chilpa-models",
  "chilpa-tags",
  "rusqlite",
+]
+
+[[package]]
+name = "chilpa-lyrics"
+version = "0.0.0"
+dependencies = [
+ "lofty",
 ]
 
 [[package]]
