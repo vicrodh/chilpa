@@ -12,7 +12,7 @@ use std::path::Path;
 use symphonia::core::audio::{AudioBufferRef, Signal};
 use symphonia::core::codecs::{Decoder, DecoderOptions};
 use symphonia::core::errors::Error as SymphoniaError;
-use symphonia::core::formats::{FormatOptions, FormatReader};
+use symphonia::core::formats::{FormatOptions, FormatReader, SeekMode, SeekTo};
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
@@ -57,6 +57,9 @@ pub struct Decoded {
     decoder: Box<dyn Decoder>,
     track_id: u32,
     stream: StreamFormat,
+    delay: u64,
+    padding: u32,
+    frames: Option<u64>,
 }
 
 impl Decoded {
@@ -93,12 +96,47 @@ impl Decoded {
         let decoder = symphonia::default::get_codecs()
             .make(params, &DecoderOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
+        let delay = u64::from(params.delay.unwrap_or(0));
+        let padding = params.padding.unwrap_or(0);
+        let frames = params.n_frames;
         Ok(Self {
             format,
             decoder,
             track_id,
             stream: StreamFormat::new(sample_format, sample_rate_hz, channels),
+            delay,
+            padding,
+            frames,
         })
+    }
+
+    /// Frames de arranque que metió el codificador y que no son música.
+    pub fn encoder_delay(&self) -> u64 {
+        self.delay
+    }
+
+    /// Frames de cola que metió el codificador.
+    pub fn encoder_padding(&self) -> u32 {
+        self.padding
+    }
+
+    /// Cuántos frames tiene la pista, si el contenedor lo dice.
+    pub fn frame_count(&self) -> Option<u64> {
+        self.frames
+    }
+
+    /// Mueve la lectura lo más cerca posible del frame pedido y regresa el
+    /// plan para quedar exactamente ahí: el contenedor casi siempre aterriza
+    /// antes, y esos frames se decodifican y se tiran.
+    pub fn seek_to_frame(&mut self, frame: u64) -> Result<chilpa_audio::seek::SeekPlan, DecodeError> {
+        let to = SeekTo::TimeStamp { ts: frame, track_id: self.track_id };
+        let landed = self
+            .format
+            .seek(SeekMode::Accurate, to)
+            .map_err(|e| DecodeError::Corrupt(e.to_string()))?;
+        // El decodificador arrastra estado del punto anterior.
+        self.decoder.reset();
+        Ok(chilpa_audio::seek::SeekPlan::after_landing(frame, landed.actual_ts))
     }
 
     /// El formato que este archivo quiere que se abra en el dispositivo.

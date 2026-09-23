@@ -12,13 +12,17 @@
 
 pub mod dop;
 pub mod format;
+pub mod gapless;
 pub mod negotiate;
 pub mod pack;
 pub mod render;
+pub mod seek;
 pub mod sink;
 
 pub use format::{SampleFormat, StreamFormat};
 pub use negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy, Transform};
 pub use pack::{pack, PackError, Samples};
 pub use render::{render, FrameSource, Outcome};
+pub use gapless::{transition, Transition, Trimmer};
+pub use seek::{Cursor, SeekPlan};
 pub use sink::{AudioSink, SinkError, StopSignal};
