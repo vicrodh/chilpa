@@ -46,6 +46,8 @@ pub enum Policy {
 pub enum Transform {
     /// Se acomodó en más bits con un corrimiento. No pierde información.
     Widened { from_bits: u8, to_bits: u8 },
+    /// Se recortaron bits. Sí pierde información, y por eso se dice.
+    Narrowed { from_bits: u8, to_bits: u8 },
     Resampled { from_hz: u32, to_hz: u32 },
     /// Pasó por flotantes: el dispositivo convierte.
     Floated,
@@ -128,7 +130,21 @@ pub fn negotiate(
     }
 
     // Último recurso: lo que el dispositivo acepte, diciendo qué se perdió.
-    let format = *caps.formats.first().ok_or(NegotiationError::Unsupported { requested, policy })?;
+    //
+    // De los formatos que ofrece se elige el que menos daño hace: primero el
+    // entero más angosto que todavía quepa lo pedido, y si ninguno cabe, el
+    // más ancho que haya. Tomar el primero de la lista tiraba 24 bits a 16
+    // en un dispositivo que también sabe 32, sin decirlo.
+    let pedidos = requested.sample_format.valid_bits();
+    let format = caps
+        .formats
+        .iter()
+        .filter(|f| f.is_integer() && f.valid_bits() >= pedidos)
+        .min_by_key(|f| f.valid_bits())
+        .or_else(|| caps.formats.iter().filter(|f| f.is_integer()).max_by_key(|f| f.valid_bits()))
+        .or_else(|| caps.formats.first())
+        .copied()
+        .ok_or(NegotiationError::Unsupported { requested, policy })?;
     let rate = *caps
         .sample_rates
         .iter()
@@ -141,17 +157,63 @@ pub fn negotiate(
     }
     if !format.is_integer() {
         transforms.push(Transform::Floated);
-    } else if format.valid_bits() > requested.sample_format.valid_bits() {
-        transforms.push(Transform::Widened {
-            from_bits: requested.sample_format.valid_bits(),
-            to_bits: format.valid_bits(),
-        });
+    } else if format.valid_bits() > pedidos {
+        transforms.push(Transform::Widened { from_bits: pedidos, to_bits: format.valid_bits() });
+    } else if format.valid_bits() < pedidos {
+        transforms.push(Transform::Narrowed { from_bits: pedidos, to_bits: format.valid_bits() });
     }
     Ok(Delivery { requested, opened, transforms })
 }
 
 #[cfg(test)]
 mod tests {
+    /// Un dispositivo que ofrece 16 y 32 bits, nada más a 48 kHz: el caso
+    /// del códec de una laptop.
+    fn codec_de_laptop() -> DeviceCaps {
+        DeviceCaps {
+            sample_rates: vec![48_000],
+            formats: vec![SampleFormat::S16, SampleFormat::S32],
+            channels: vec![2],
+            probed: true,
+        }
+    }
+
+    #[test]
+    fn cuando_hay_que_remuestrear_no_se_tiran_bits_de_pilon() {
+        // 24/88.2 no cabe: hay que remuestrear. Pero el dispositivo sabe 32
+        // bits, así que recortar a 16 sería una pérdida de más.
+        let pedido = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
+        let d = negotiate(pedido, &codec_de_laptop(), Policy::AllowAnything).unwrap();
+        assert_eq!(d.opened.sample_format, SampleFormat::S32, "cabe en 32, no se recorta");
+        assert_eq!(d.opened.sample_rate_hz, 48_000);
+        assert!(!d.is_bit_perfect(), "remuestrear nunca es bit-perfect");
+        assert!(
+            d.transforms.iter().any(|t| matches!(t, Transform::Resampled { .. })),
+            "se dijo que se remuestreó: {:?}",
+            d.transforms
+        );
+    }
+
+    #[test]
+    fn recortar_bits_se_dice() {
+        // Un dispositivo que solo sabe 16 bits: a 24 no le queda de otra.
+        let caps = DeviceCaps {
+            sample_rates: vec![48_000],
+            formats: vec![SampleFormat::S16],
+            channels: vec![2],
+            probed: true,
+        };
+        let pedido = StreamFormat::new(SampleFormat::S24In32, 48_000, 2);
+        let d = negotiate(pedido, &caps, Policy::AllowAnything).unwrap();
+        assert_eq!(d.opened.sample_format, SampleFormat::S16);
+        assert!(
+            d.transforms.contains(&Transform::Narrowed { from_bits: 24, to_bits: 16 }),
+            "el recorte tiene que aparecer: {:?}",
+            d.transforms
+        );
+        assert!(!d.is_bit_perfect(), "recortar no conserva las muestras");
+    }
+
     use super::*;
 
     fn caps(rates: &[u32], formats: &[SampleFormat]) -> DeviceCaps {
