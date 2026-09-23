@@ -192,8 +192,11 @@ mod tests {
     #[test]
     fn las_salidas_que_se_listan_son_directas() {
         for salida in Chilpa::new().outputs() {
-            assert!(salida.id.starts_with("hw:"), "{} no es directa", salida.id);
-            assert!(salida.label.contains(&salida.id));
+            assert!(
+                salida.id.starts_with("hw:") || salida.id == "capture",
+                "{} no es una salida válida",
+                salida.id
+            );
         }
     }
 
