@@ -7,6 +7,10 @@
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
 
+mod biblioteca;
+mod cola;
+mod listas;
+
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
 
@@ -105,6 +109,40 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
         .collect();
     archivos.sort();
     archivos
+}
+
+/// El recorrido que deja el tempo más parejo, empezando en `desde`.
+///
+/// Es un vecino más cercano, a propósito: una mezcla no necesita el orden
+/// óptimo, necesita no dar saltos de cuarenta BPM entre dos pistas. Lo que
+/// no trae tempo se va al final, en su orden.
+fn orden_por_tempo(bpms: &[Option<f32>], desde: usize) -> Vec<usize> {
+    let mut faltan: Vec<usize> = (0..bpms.len()).filter(|i| *i != desde).collect();
+    let mut orden = vec![desde];
+    let mut ultimo = bpms.get(desde).copied().flatten();
+
+    while !faltan.is_empty() {
+        // De las que tienen tempo, la más cercana a la anterior.
+        let elegido = match ultimo {
+            Some(t) => faltan
+                .iter()
+                .enumerate()
+                .filter(|(_, i)| bpms[**i].is_some())
+                .min_by(|a, b| {
+                    let da = (bpms[*a.1].unwrap() - t).abs();
+                    let db = (bpms[*b.1].unwrap() - t).abs();
+                    da.total_cmp(&db)
+                })
+                .map(|(pos, _)| pos),
+            None => None,
+        };
+        // Si ya no queda ninguna con tempo, se vacía lo que sobra tal cual.
+        let pos = elegido.unwrap_or(0);
+        let i = faltan.remove(pos);
+        ultimo = bpms[i].or(ultimo);
+        orden.push(i);
+    }
+    orden
 }
 
 /// Traduce una pista de la biblioteca a lo que necesita una vista.
@@ -315,7 +353,7 @@ impl Chilpa {
     }
 
     /// La biblioteca, abriéndola la primera vez que se usa.
-    fn library(&mut self) -> Option<&chilpa_library::Library> {
+    pub(crate) fn library(&mut self) -> Option<&chilpa_library::Library> {
         if self.library.is_none() {
             match chilpa_core::open_library() {
                 Ok(lib) => self.library = Some(lib),
@@ -328,166 +366,14 @@ impl Chilpa {
         self.library.as_ref()
     }
 
-    /// Arranca un escaneo en segundo plano. La interfaz no se bloquea.
-    pub fn start_scan(&mut self, folder: &std::path::Path) {
-        if self.scan.is_some() {
-            self.now.error = "ya hay un escaneo corriendo".into();
-            return;
-        }
-        // La conexión de la interfaz se suelta: el escaneo abre la suya, y
-        // dos conexiones a la misma base en WAL conviven sin pelearse.
-        self.scan = Some(chilpa_library::ScanJob::start(
-            chilpa_library::Library::default_path(),
-            folder.to_path_buf(),
-            Some(chilpa_core::artwork_cache()),
-        ));
-        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
-    }
 
-    /// Vuelve a escanear todas las carpetas que ya están en la biblioteca.
-    ///
-    /// Es lo normal después del primer día: la música vive donde vive, y
-    /// volver a buscarla a mano cada vez es trabajo del usuario que la
-    /// biblioteca ya tiene anotado.
-    pub fn rescan(&mut self) {
-        if self.scan.is_some() {
-            self.now.error = "ya hay un escaneo corriendo".into();
-            return;
-        }
-        let carpetas = self.roots();
-        if carpetas.is_empty() {
-            self.now.error = "todavía no hay ninguna carpeta en la biblioteca".into();
-            return;
-        }
-        self.scan = Some(chilpa_library::ScanJob::start_all(
-            chilpa_library::Library::default_path(),
-            carpetas,
-            Some(chilpa_core::artwork_cache()),
-        ));
-        self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
-    }
 
-    /// Arranca el análisis de lo que falte, en segundo plano.
-    pub fn start_analysis(&mut self) {
-        if self.analysis.is_some() {
-            self.now.error = "ya hay un análisis corriendo".into();
-            return;
-        }
-        self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start(
-            chilpa_library::Library::default_path(),
-        ));
-        self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
-    }
 
-    /// Pide que el análisis se detenga.
-    pub fn cancel_analysis(&mut self) {
-        if let Some(j) = &self.analysis {
-            j.cancel();
-        }
-    }
 
-    /// Cómo va el análisis.
-    pub fn analysis_status(&mut self) -> &AnalysisStatus {
-        use chilpa_core::analysis_job::AnalysisProgress;
-        let eventos = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
-        let mut termino = false;
-        for evento in eventos {
-            match evento {
-                AnalysisProgress::Counted { total } => self.analysis_status.total = total,
-                AnalysisProgress::Advanced { done, total, title, bpm } => {
-                    self.analysis_status.done = done;
-                    self.analysis_status.total = total;
-                    self.analysis_status.last = match bpm {
-                        Some(b) => format!("{title} · {b:.0} BPM"),
-                        None => format!("{title} · sin pulso"),
-                    };
-                }
-                AnalysisProgress::Done { analyzed, without_pulse, failed } => {
-                    self.analysis_status.running = false;
-                    self.analysis_status.analyzed = analyzed;
-                    self.analysis_status.without_pulse = without_pulse;
-                    self.analysis_status.failed = failed;
-                    termino = true;
-                }
-                AnalysisProgress::Failed(e) => {
-                    self.analysis_status.running = false;
-                    self.now.error = format!("el análisis se detuvo: {e}");
-                    termino = true;
-                }
-            }
-        }
-        if termino {
-            self.analysis = None;
-        }
-        &self.analysis_status
-    }
 
-    /// Las carpetas que forman la biblioteca.
-    pub fn roots(&mut self) -> Vec<std::path::PathBuf> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
-    }
 
-    /// Cómo va el escaneo. Al terminar, refresca lo que la vista muestra.
-    pub fn scan_status(&mut self) -> &ScanStatus {
-        let eventos = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
-        for evento in eventos {
-            match evento {
-                chilpa_library::ScanProgress::Counted { total } => {
-                    self.scan_status.total = total;
-                }
-                chilpa_library::ScanProgress::Advanced { done, total } => {
-                    self.scan_status.done = done;
-                    self.scan_status.total = total;
-                }
-                chilpa_library::ScanProgress::Done(r) => {
-                    self.scan_status = ScanStatus {
-                        running: false,
-                        done: r.seen,
-                        total: r.seen,
-                        summary: ScanSummary {
-                            seen: r.seen,
-                            read: r.read,
-                            unchanged: r.unchanged,
-                            missing: r.missing,
-                            unreachable: r.unreachable,
-                        },
-                    };
-                    self.scan = None;
-                }
-                chilpa_library::ScanProgress::Failed(e) => {
-                    self.now.error = format!("el escaneo falló: {e}");
-                    self.scan_status.running = false;
-                    self.scan = None;
-                }
-            }
-        }
-        &self.scan_status
-    }
 
-    /// Escanea una carpeta hacia la biblioteca, esperando a que termine.
-    pub fn scan(&mut self, folder: &std::path::Path) -> ScanSummary {
-        let Some(lib) = self.library() else { return ScanSummary::default() };
-        match chilpa_core::scan_into_library(lib, folder) {
-            Ok(r) => ScanSummary {
-                seen: r.seen,
-                read: r.read,
-                unchanged: r.unchanged,
-                missing: r.missing,
-                unreachable: r.unreachable,
-            },
-            Err(e) => {
-                self.now.error = format!("el escaneo falló: {e}");
-                ScanSummary::default()
-            }
-        }
-    }
 
-    /// Los álbumes de la biblioteca.
-    pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
-        let vista = self.album_sort;
-        self.albums_sorted(vista, limit, offset)
-    }
 
     /// Busca la letra de lo que empieza a sonar.
     ///
@@ -516,427 +402,39 @@ impl Chilpa {
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
-    /// Los géneros de la biblioteca, del más común al menos.
-    pub fn genres(&mut self, limit: usize) -> Vec<(String, usize)> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        let mut g = lib.genres().unwrap_or_default();
-        g.truncate(limit);
-        g
-    }
 
-    /// Pone a sonar un género, revuelto.
-    pub fn play_genre(&mut self, genre: &str, device: &str, bit_perfect: bool) -> Vec<String> {
-        let lista = chilpa_library::SmartList::new(
-            genre,
-            vec![chilpa_library::Rule::GenreIs(genre.to_string())],
-            chilpa_library::SmartOrder::Random,
-            300,
-        );
-        let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
-            .smart_tracks(&lista)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| t.external_id)
-            .collect();
-        if rutas.is_empty() {
-            self.now.error = format!("no hay nada de {genre}");
-            return Vec::new();
-        }
-        self.play_tracks(&rutas, device, bit_perfect)
-    }
 
-    /// Las listas inteligentes que Chilpa trae de fábrica, con cuántas
-    /// pistas les salen hoy.
-    ///
-    /// Una lista inteligente no guarda pistas: guarda reglas y se vuelve a
-    /// resolver cada vez. Por eso la cuenta cambia sola.
-    pub fn smart_lists(&mut self) -> Vec<SmartListInfo> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        chilpa_library::smart_builtins()
-            .into_iter()
-            .map(|l| {
-                let n = lib.smart_tracks(&l).map(|t| t.len()).unwrap_or(0);
-                SmartListInfo { name: l.name, track_count: n }
-            })
-            .collect()
-    }
 
-    /// Pone a sonar una lista inteligente, por su nombre.
-    pub fn play_smart_list(
-        &mut self,
-        name: &str,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
-        let Some(lista) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
-        else {
-            self.now.error = format!("no conozco la lista \"{name}\"");
-            return Vec::new();
-        };
-        let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
-            .smart_tracks(&lista)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| t.external_id)
-            .collect();
-        if rutas.is_empty() {
-            self.now.error = format!("\"{name}\" no trae nada hoy");
-            return Vec::new();
-        }
-        self.play_tracks(&rutas, device, bit_perfect)
-    }
 
-    /// Las listas guardadas, las de aquí y las que traiga un source.
-    pub fn playlists(&mut self) -> Vec<Playlist> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.playlists()
-            .unwrap_or_default()
-            .into_iter()
-            .map(|p| Playlist {
-                id: p.id,
-                name: p.name,
-                provider: p.provider,
-                track_count: p.track_count,
-            })
-            .collect()
-    }
 
-    /// Guarda la cola como una lista con ese nombre.
-    ///
-    /// Regresa el id de la lista. Lo que no esté en la biblioteca se guarda
-    /// igual, por su ruta: la lista vale aunque falte escanear.
-    pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
-        let nombre = name.trim().to_string();
-        if nombre.is_empty() {
-            self.now.error = "una lista necesita un nombre".into();
-            return None;
-        }
-        if self.cola.is_empty() {
-            self.now.error = "no hay cola que guardar".into();
-            return None;
-        }
-        let rutas = self.cola.clone();
-        let lib = self.library()?;
-        let source = lib.source_id("local", "default").ok()?;
-        let entradas: Vec<chilpa_library::PlaylistEntry> = rutas
-            .iter()
-            .map(|r| chilpa_library::PlaylistEntry {
-                track_id: lib
-                    .track_by_path(source, std::path::Path::new(r))
-                    .ok()
-                    .flatten(),
-                external_id: r.clone(),
-            })
-            .collect();
-        let id = lib.create_playlist(source, &nombre, "").ok()?;
-        lib.set_playlist_entries(id, &entradas).ok()?;
-        Some(id)
-    }
 
-    /// Pone a sonar una lista guardada.
-    pub fn play_saved_playlist(
-        &mut self,
-        playlist_id: i64,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        let rutas: Vec<String> = lib
-            .playlist_entries(playlist_id)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|e| e.external_id)
-            .filter(|r| !r.is_empty())
-            .collect();
-        if rutas.is_empty() {
-            self.now.error = "esa lista está vacía".into();
-            return Vec::new();
-        }
-        self.play_tracks(&rutas, device, bit_perfect)
-    }
 
-    /// Borra una lista. Las pistas no se tocan.
-    pub fn delete_playlist(&mut self, playlist_id: i64) {
-        if let Some(lib) = self.library() {
-            let _ = lib.delete_playlist(playlist_id);
-        }
-    }
 
-    /// Cambia el nombre de una lista.
-    pub fn rename_playlist(&mut self, playlist_id: i64, name: &str) {
-        let nombre = name.trim().to_string();
-        if nombre.is_empty() {
-            self.now.error = "una lista necesita un nombre".into();
-            return;
-        }
-        if let Some(lib) = self.library() {
-            let _ = lib.rename_playlist(playlist_id, &nombre);
-        }
-    }
 
-    /// El resumen de lo escuchado.
-    pub fn stats(&mut self) -> Stats {
-        let Some(lib) = self.library() else { return Stats::default() };
-        lib.stats().unwrap_or_default()
-    }
 
-    /// Las pistas más escuchadas.
-    pub fn top_tracks(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.top_tracks(limit)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| (pista_de(t.track), t.count))
-            .collect()
-    }
 
-    /// Lo último que sonó, una pista por renglón.
-    pub fn recently_played(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.recently_played(limit)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| (pista_de(t.track), t.count))
-            .collect()
-    }
 
-    /// Los artistas de la biblioteca.
-    pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.artists(limit, offset)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|a| Artist {
-                name: a.name,
-                album_count: a.album_count,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-            })
-            .collect()
-    }
 
-    /// El artista que se está mirando, vacío si se ven todos.
-    pub fn open_artist(&self) -> &str {
-        &self.artista
-    }
 
-    /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
-    pub fn set_open_artist(&mut self, name: &str) {
-        self.artista = name.to_string();
-    }
 
-    /// La vista rápida con la que se está mirando la biblioteca.
-    pub fn album_sort(&self) -> AlbumSort {
-        self.album_sort
-    }
 
-    /// Cambia la vista y la recuerda para la próxima sesión.
-    pub fn set_album_sort(&mut self, orden: AlbumSort) {
-        self.album_sort = orden;
-        let mut s = chilpa_core::settings::load();
-        s.album_sort = orden.name().to_string();
-        let _ = chilpa_core::settings::save(&s);
-    }
 
-    /// Los álbumes en el orden que se pida, con su cuenta de escuchas.
-    pub fn albums_sorted(
-        &mut self,
-        orden: AlbumSort,
-        limit: usize,
-        offset: usize,
-    ) -> Vec<Album> {
-        let artista = self.artista.clone();
-        let filtro = (!artista.is_empty()).then_some(artista.as_str());
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_filtered(orden, filtro, limit, offset)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(a, escuchas)| Album {
-                id: a.id,
-                title: a.title,
-                artist: a.album_artist,
-                year: a.year,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-                play_count: escuchas,
-            })
-            .collect()
-    }
 
-    /// Un álbum por su id, con su portada y su cuenta de escuchas.
-    pub fn album(&mut self, album_id: i64) -> Option<Album> {
-        let lib = self.library()?;
-        let (a, escuchas) = lib.album(album_id).ok().flatten()?;
-        Some(Album {
-            id: a.id,
-            title: a.title,
-            artist: a.album_artist,
-            year: a.year,
-            track_count: a.track_count,
-            artwork_path: a.artwork_path.unwrap_or_default(),
-            play_count: escuchas,
-        })
-    }
 
-    /// Las pistas de un álbum, en el orden del disco.
-    pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.album_tracks(album_id).unwrap_or_default().into_iter().map(pista_de).collect()
-    }
 
-    /// Busca en la biblioteca por título, artista o álbum.
-    pub fn search(&mut self, texto: &str, limit: usize) -> Vec<LibraryTrack> {
-        if texto.trim().is_empty() {
-            return Vec::new();
-        }
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.search(texto.trim(), limit).unwrap_or_default().into_iter().map(pista_de).collect()
-    }
 
-    /// Echa a andar la cola que ya está en `self.cola`, desde esa posición.
-    ///
-    /// Todo lo que reproduce una lista pasa por aquí: así la repetición, el
-    /// aleatorio y la cuenta de posiciones se aplican en un solo lugar.
-    fn lanzar(&mut self, desde: usize, device: &str, bit_perfect: bool) {
-        let pistas: Vec<std::path::PathBuf> =
-            self.cola.iter().skip(desde).map(std::path::PathBuf::from).collect();
-        if pistas.is_empty() {
-            return;
-        }
-        self.base = desde;
-        self.quitadas = vec![false; self.cola.len()];
-        let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.cola.len());
-        let tap = self.tap.clone();
-        let player = self
-            .player
-            .get_or_insert_with(move || chilpa_core::spawn_player_with(tap));
-        player.set_repeat(repeat);
-        if shuffle {
-            player.shuffle(pistas.len());
-        } else {
-            player.clear_order();
-        }
-        self.now = NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() };
-        player.play_all(&pistas, device, bit_perfect);
-    }
 
-    /// Pone a sonar lo que encontró una búsqueda, en ese orden.
-    pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
-        let pistas: Vec<std::path::PathBuf> =
-            paths.iter().map(std::path::PathBuf::from).collect();
-        if pistas.is_empty() {
-            return Vec::new();
-        }
-        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
-        self.lanzar(0, device, bit_perfect);
-        pistas.iter().map(|p| titulo_de(p)).collect()
-    }
 
-    /// Los títulos de la cola, en el orden en que se encoló.
-    pub fn queue_titles(&self) -> Vec<String> {
-        self.cola.iter().map(|r| titulo_de(std::path::Path::new(r))).collect()
-    }
 
-    /// Qué posiciones de la cola se quitaron.
-    pub fn queue_removed(&self) -> &[bool] {
-        &self.quitadas
-    }
 
-    /// Quita de la cola la pista en esa posición.
-    ///
-    /// La que suena no se quita: para esa está el botón de siguiente. Y una
-    /// que ya pasó tampoco, porque no cambiaría nada.
-    pub fn remove_from_queue(&mut self, index: usize) -> bool {
-        if index <= self.now.index || index >= self.cola.len() {
-            return false;
-        }
-        let Some(p) = &self.player else { return false };
-        // El reproductor cuenta desde donde arrancó; la vista, desde el
-        // principio de la cola.
-        if !p.remove_from_queue(index - self.base) {
-            return false;
-        }
-        if let Some(q) = self.quitadas.get_mut(index) {
-            *q = true;
-        }
-        true
-    }
 
-    /// Para y vacía la cola.
-    pub fn clear_queue(&mut self) {
-        self.stop();
-        self.cola.clear();
-        self.quitadas.clear();
-        self.base = 0;
-        self.now.queue_len = 0;
-    }
 
-    /// Agrega pistas al final de la cola. Si no hay nada sonando, arranca.
-    ///
-    /// Encolar no corta lo que suena: la cola le crece por atrás y lo
-    /// agregado entra cuando le toca.
-    pub fn enqueue(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
-        let pistas: Vec<std::path::PathBuf> =
-            paths.iter().map(std::path::PathBuf::from).collect();
-        if pistas.is_empty() {
-            return Vec::new();
-        }
-        let sonando = self.now.playing && self.player.is_some();
-        if !sonando {
-            return self.play_tracks(paths, device, bit_perfect);
-        }
-        self.cola.extend(pistas.iter().map(|p| p.display().to_string()));
-        self.quitadas.resize(self.cola.len(), false);
-        if let Some(p) = &self.player {
-            p.enqueue(&pistas);
-        }
-        self.now.queue_len = self.cola.len();
-        pistas.iter().map(|p| titulo_de(p)).collect()
-    }
 
-    /// Encola un álbum completo.
-    pub fn enqueue_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
-        let rutas: Vec<String> = self
-            .album_tracks(album_id)
-            .into_iter()
-            .filter(|t| t.present)
-            .map(|t| t.path)
-            .collect();
-        self.enqueue(&rutas, device, bit_perfect)
-    }
 
-    /// Si la cola suena barajada.
-    pub fn shuffle(&self) -> bool {
-        self.shuffle
-    }
 
-    /// Baraja la cola o la devuelve a su orden. Toma efecto al terminar la
-    /// pista que suena: barajar no corta el audio.
-    pub fn set_shuffle(&mut self, shuffle: bool) {
-        self.shuffle = shuffle;
-        let restantes = self.cola.len().saturating_sub(self.base);
-        if let Some(p) = &self.player {
-            if shuffle {
-                p.shuffle(restantes);
-            } else {
-                p.clear_order();
-            }
-        }
-    }
 
-    pub fn repeat(&self) -> Repeat {
-        self.repeat
-    }
 
-    /// Cambia la repetición. También toma efecto al terminar la pista.
-    pub fn set_repeat(&mut self, repeat: Repeat) {
-        self.repeat = repeat;
-        if let Some(p) = &self.player {
-            p.set_repeat(repeat);
-        }
-    }
+
 
     /// Las unidades de CD que hay en la máquina.
     ///
@@ -983,76 +481,8 @@ impl Chilpa {
         self.lanzar(0, device, bit_perfect);
     }
 
-    /// Abre una lista M3U y la pone a sonar.
-    ///
-    /// Regresa los títulos encolados; lo que la lista menciona y ya no está
-    /// se reporta en el error, en vez de desaparecer sin decir nada.
-    pub fn play_playlist(
-        &mut self,
-        path: &std::path::Path,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
-        let lista = match chilpa_library::playlist::read(path) {
-            Ok(l) => l,
-            Err(e) => {
-                self.now.error = format!("no se pudo leer la lista: {e}");
-                return Vec::new();
-            }
-        };
-        if !lista.missing.is_empty() {
-            self.now.error = format!(
-                "{} de las pistas de la lista ya no están",
-                lista.missing.len()
-            );
-        }
-        if lista.tracks.is_empty() {
-            if self.now.error.is_empty() {
-                self.now.error = "la lista no trae pistas".into();
-            }
-            return Vec::new();
-        }
-        let rutas: Vec<String> = lista.tracks.iter().map(|p| p.display().to_string()).collect();
-        let error = std::mem::take(&mut self.now.error);
-        let titulos = self.play_tracks(&rutas, device, bit_perfect);
-        self.now.error = error;
-        titulos
-    }
 
-    /// Guarda la cola actual como una lista M3U.
-    pub fn save_queue(&mut self, path: &std::path::Path) -> bool {
-        if self.cola.is_empty() {
-            self.now.error = "no hay cola que guardar".into();
-            return false;
-        }
-        let pistas: Vec<std::path::PathBuf> =
-            self.cola.iter().map(std::path::PathBuf::from).collect();
-        match chilpa_library::playlist::write_m3u(path, &pistas) {
-            Ok(()) => true,
-            Err(e) => {
-                self.now.error = format!("no se pudo guardar la lista: {e}");
-                false
-            }
-        }
-    }
 
-    /// Pone a sonar un álbum completo, en el orden del disco.
-    ///
-    /// Regresa los títulos de la cola, no las rutas: una cola que muestra
-    /// nombres de archivo no le dice nada a nadie.
-    pub fn play_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
-        let disponibles: Vec<LibraryTrack> =
-            self.album_tracks(album_id).into_iter().filter(|t| t.present).collect();
-        if disponibles.is_empty() {
-            self.now.error = "ese álbum no tiene pistas disponibles".into();
-            return Vec::new();
-        }
-        let pistas: Vec<std::path::PathBuf> =
-            disponibles.iter().map(|t| std::path::PathBuf::from(&t.path)).collect();
-        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
-        self.lanzar(0, device, bit_perfect);
-        disponibles.into_iter().map(|t| t.title).collect()
-    }
 
     /// Lo que Chilpa recuerda: la última salida, si se pide bit-perfect y
     /// la última carpeta abierta.
@@ -1429,6 +859,38 @@ mod tests {
     fn listar_sources_regresa_la_biblioteca_local() {
         let mut chilpa = Chilpa::new();
         assert_eq!(chilpa.dispatch(Command::ListSources), Event::Sources(vec![SourceId::local()]));
+    }
+
+    #[test]
+    fn la_mezcla_va_de_tempo_en_tempo_sin_saltos() {
+        // Empieza en la de 120 y debería seguir 118, 125, 90.
+        let bpms = vec![Some(90.0), Some(120.0), Some(125.0), Some(118.0)];
+        assert_eq!(orden_por_tempo(&bpms, 1), vec![1, 3, 2, 0]);
+    }
+
+    #[test]
+    fn lo_que_no_tiene_tempo_se_va_al_final() {
+        let bpms = vec![Some(120.0), None, Some(122.0), None, Some(160.0)];
+        let orden = orden_por_tempo(&bpms, 0);
+        assert_eq!(&orden[..3], &[0, 2, 4], "primero las que sí, de cerca en cerca");
+        let cola: Vec<usize> = orden[3..].to_vec();
+        assert_eq!(cola, vec![1, 3], "y las ciegas al final, en su orden");
+    }
+
+    #[test]
+    fn una_mezcla_no_pierde_ni_repite_pistas() {
+        let bpms = vec![Some(100.0), Some(140.0), None, Some(101.0), Some(139.0), None];
+        let orden = orden_por_tempo(&bpms, 3);
+        let mut visto = orden.clone();
+        visto.sort_unstable();
+        assert_eq!(visto, (0..6).collect::<Vec<_>>(), "es una permutación: {orden:?}");
+        assert_eq!(orden[0], 3, "arranca donde se le dijo");
+    }
+
+    #[test]
+    fn sin_ningun_tempo_la_mezcla_deja_el_orden_como_estaba() {
+        let bpms = vec![None, None, None];
+        assert_eq!(orden_por_tempo(&bpms, 0), vec![0, 1, 2]);
     }
 
     #[test]
