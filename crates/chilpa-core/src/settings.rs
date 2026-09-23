@@ -25,7 +25,12 @@ pub struct Settings {
     pub layout: String,
     /// La vista rápida con la que se mira la biblioteca.
     pub album_sort: String,
+    /// Qué visualizador se dibuja, por nombre.
+    pub visualizer: String,
 }
+
+/// El visualizador con el que arranca quien no ha elegido ninguno.
+pub const VISUALIZADOR_POR_OMISION: &str = "onda";
 
 /// El acomodo con el que arranca quien no ha elegido ninguno.
 pub const LAYOUT_POR_OMISION: &str = "Clasico";
@@ -38,6 +43,7 @@ impl Default for Settings {
             last_folder: String::new(),
             layout: LAYOUT_POR_OMISION.to_string(),
             album_sort: String::new(),
+            visualizer: VISUALIZADOR_POR_OMISION.to_string(),
         }
     }
 }
@@ -79,6 +85,11 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     if let Some(v) = pares.get("album_sort") {
         s.album_sort = v.clone();
     }
+    if let Some(v) = pares.get("visualizer") {
+        if !v.is_empty() {
+            s.visualizer = v.clone();
+        }
+    }
     s
 }
 
@@ -92,8 +103,13 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         std::fs::create_dir_all(dir)?;
     }
     let texto = format!(
-        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\n",
-        settings.output, settings.bit_perfect, settings.last_folder, settings.layout, settings.album_sort
+        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\n",
+        settings.output,
+        settings.bit_perfect,
+        settings.last_folder,
+        settings.layout,
+        settings.album_sort,
+        settings.visualizer
     );
     std::fs::write(file, texto)
 }
@@ -134,6 +150,7 @@ mod tests {
             last_folder: "/musica/albumes".into(),
             layout: "Columna".into(),
             album_sort: "played".into(),
+            visualizer: "espectro".into(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);

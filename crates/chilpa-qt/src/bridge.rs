@@ -77,6 +77,10 @@ pub mod chilpa_bridge {
         #[qproperty(QString, last_folder)]
         /// La envolvente de lo que sale: un valor de 0 a 1 por punto.
         #[qproperty(QStringList, scope)]
+        /// Qué visualizador se dibuja: "onda" o "espectro".
+        #[qproperty(QString, visualizer)]
+        /// El espectro de lo que sale: un valor de 0 a 1 por banda.
+        #[qproperty(QStringList, spectrum)]
         /// El nivel por canal, como "pico\trms".
         #[qproperty(QStringList, levels)]
         /// Las unidades de CD que hay en la máquina.
@@ -130,6 +134,10 @@ pub mod chilpa_bridge {
         /// Cierto para volver a escanear al arrancar, sin tocar un botón.
         #[qproperty(bool, initial_rescan)]
         type Chilpa = super::ChilpaRust;
+
+        /// Elige el visualizador y lo recuerda.
+        #[qinvokable]
+        fn choose_visualizer(self: Pin<&mut Chilpa>, name: &QString);
 
         /// Elige el layout de la ventana y lo recuerda.
         #[qinvokable]
@@ -390,6 +398,8 @@ pub struct ChilpaRust {
     lyrics_source: QString,
     last_folder: QString,
     scope: QStringList,
+    visualizer: QString,
+    spectrum: QStringList,
     levels: QStringList,
     cd_drives: QStringList,
     genres: QStringList,
@@ -455,6 +465,8 @@ impl Default for ChilpaRust {
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
             scope: QStringList::default(),
+            visualizer: QString::from(&recordado.visualizer),
+            spectrum: QStringList::default(),
             levels: QStringList::default(),
             cd_drives: QStringList::default(),
             genres: QStringList::default(),
@@ -552,6 +564,12 @@ impl Chilpa {
         self.as_mut().set_scanning(true);
         self.as_mut().set_scan_progress(0.0);
         self.as_mut().set_library_status(QString::from("escaneando..."));
+    }
+
+    pub fn choose_visualizer(mut self: Pin<&mut Self>, name: &QString) {
+        let nombre = name.to_string();
+        self.as_mut().set_visualizer(name.clone());
+        self.as_mut().rust_mut().api.remember_visualizer(&nombre);
     }
 
     pub fn choose_layout(mut self: Pin<&mut Self>, name: &QString) {
@@ -1101,6 +1119,13 @@ impl Chilpa {
                 e.append(QString::from(&format!("{v:.4}")));
             }
             self.as_mut().set_scope(QStringList::from(&e));
+
+            let espectro = self.api.scope_spectrum(32);
+            let mut b = QList::<QString>::default();
+            for v in &espectro {
+                b.append(QString::from(&format!("{v:.4}")));
+            }
+            self.as_mut().set_spectrum(QStringList::from(&b));
 
             let niveles = self.api.scope_levels();
             let mut l = QList::<QString>::default();

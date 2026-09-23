@@ -12,7 +12,7 @@ pub mod settings;
 pub mod queue_playback;
 
 /// Lo que sale por el dispositivo, para quien lo quiera dibujar.
-pub use chilpa_audio::tap;
+pub use chilpa_audio::{spectrum, tap};
 
 use chilpa_models::SourceId;
 

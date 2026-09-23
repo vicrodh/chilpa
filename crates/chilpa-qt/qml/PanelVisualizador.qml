@@ -15,10 +15,15 @@ Rectangle {
     border.color: "#1a411d1f"
     implicitHeight: 110
 
-    // Se redibuja cuando llega una envolvente nueva, no con un temporizador
-    // propio: dos relojes desacompasados se ven peor que uno solo.
-    onScopeChanged: onda.requestPaint()
+    // Se redibuja cuando llegan datos nuevos, no con un temporizador propio:
+    // dos relojes desacompasados se ven peor que uno solo.
     property var scope: Chilpa.scope
+    property var spectrum: Chilpa.spectrum
+    onScopeChanged: onda.requestPaint()
+    onSpectrumChanged: barras.requestPaint()
+
+    /// Qué se dibuja. Lo decide el puente, que lo recuerda entre sesiones.
+    readonly property bool porEspectro: Chilpa.visualizer === "espectro"
 
     ColumnLayout {
         anchors.fill: parent
@@ -26,9 +31,34 @@ Rectangle {
         spacing: 8
 
         Canvas {
+            id: barras
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.porEspectro
+
+            onPaint: {
+                const ctx = getContext("2d")
+                ctx.reset()
+                const bandas = raiz.spectrum
+                if (!bandas || bandas.length === 0) return
+                const ancho = width / bandas.length
+                for (let i = 0; i < bandas.length; i++) {
+                    const v = Math.min(1, parseFloat(bandas[i]) || 0)
+                    const alto = Math.max(1, v * height)
+                    // Los graves en rojo, los agudos en vino: el degradado
+                    // dice en qué parte del espectro se está mirando.
+                    const t = i / bandas.length
+                    ctx.fillStyle = Qt.rgba(0.84 - 0.6 * t, 0.15 + 0.05 * t, 0.17 + 0.05 * t, 1)
+                    ctx.fillRect(i * ancho, height - alto, Math.max(1, ancho - 2), alto)
+                }
+            }
+        }
+
+        Canvas {
             id: onda
             Layout.fillWidth: true
             Layout.fillHeight: true
+            visible: !raiz.porEspectro
 
             onPaint: {
                 const ctx = getContext("2d")
@@ -104,6 +134,20 @@ Rectangle {
                 }
             }
             Item { Layout.fillWidth: true }
+
+            // Cambiar de dibujo sin menús: un clic en el nombre.
+            Label {
+                text: raiz.porEspectro ? "espectro" : "onda"
+                font.pixelSize: 10
+                color: "#7a411d1f"
+                MouseArea {
+                    anchors.fill: parent
+                    anchors.margins: -6
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: Chilpa.chooseVisualizer(
+                        raiz.porEspectro ? "onda" : "espectro")
+                }
+            }
         }
     }
 }
