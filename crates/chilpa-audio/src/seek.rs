@@ -79,6 +79,33 @@ impl Cursor {
     }
 }
 
+/// Un lugar donde pedir un salto desde otro hilo.
+///
+/// Igual que la señal de paro: quien reproduce la mira entre bloques y la
+/// consume. Pedir un salto nunca bloquea a quien lo pide ni toma el candado
+/// del dispositivo.
+#[derive(Clone, Debug, Default)]
+pub struct SeekSignal(std::sync::Arc<std::sync::Mutex<Option<Duration>>>);
+
+impl SeekSignal {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Pide saltar a ese punto. Un salto nuevo reemplaza al que no se haya
+    /// atendido: lo que importa es el último que pidió el usuario.
+    pub fn request(&self, position: Duration) {
+        if let Ok(mut guard) = self.0.lock() {
+            *guard = Some(position);
+        }
+    }
+
+    /// Se lleva el salto pendiente, si hay.
+    pub fn take(&self) -> Option<Duration> {
+        self.0.lock().ok().and_then(|mut g| g.take())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -106,6 +133,16 @@ mod tests {
         // Reanudar no toca el cursor.
         assert_eq!(c.frame, al_pausar);
         assert_eq!(c.position(), Duration::from_millis(1500));
+    }
+
+    #[test]
+    fn el_ultimo_salto_pedido_es_el_que_vale() {
+        let s = SeekSignal::new();
+        assert_eq!(s.take(), None);
+        s.request(Duration::from_secs(10));
+        s.request(Duration::from_secs(30));
+        assert_eq!(s.take(), Some(Duration::from_secs(30)), "gana el más reciente");
+        assert_eq!(s.take(), None, "se consume una sola vez");
     }
 
     #[test]

@@ -61,6 +61,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
 
+        /// Salta a ese segundo de lo que suena.
+        #[qinvokable]
+        fn seek(self: Pin<&mut Chilpa>, seconds: f64);
+
         /// Para lo que esté sonando.
         #[qinvokable]
         fn stop(self: Pin<&mut Chilpa>);
@@ -171,6 +175,10 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn seek(mut self: Pin<&mut Self>, seconds: f64) {
+        self.as_mut().rust_mut().api.seek(seconds);
     }
 
     pub fn stop(mut self: Pin<&mut Self>) {

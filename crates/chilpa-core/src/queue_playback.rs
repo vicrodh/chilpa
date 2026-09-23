@@ -13,6 +13,7 @@ use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
+use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
@@ -40,6 +41,14 @@ struct TrackFrames<'a> {
     opened: StreamFormat,
     trimmer: Trimmer,
     agotado: bool,
+    /// Dónde se piden los saltos. Se atienden entre bloques, nunca a media
+    /// escritura.
+    seek: SeekSignal,
+    /// Frames que hay que tirar para caer en el punto exacto pedido.
+    descartar: u64,
+    /// Dónde cayó el último salto. La posición que ve la interfaz cuenta
+    /// desde el archivo, así que a los frames entregados se les suma esto.
+    base: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -48,8 +57,28 @@ impl FrameSource for TrackFrames<'_> {
             if self.agotado {
                 return None;
             }
+            if let Some(destino) = self.seek.take() {
+                let frame = chilpa_audio::seek::frames_at(destino, self.opened.sample_rate_hz);
+                match self.decoded.seek_to_frame(frame) {
+                    Ok(plan) => {
+                        self.descartar = plan.discard;
+                        // La base es el punto PEDIDO, no donde aterrizó el
+                        // contenedor: los frames que se descartan no salen,
+                        // así que sumarlos aparte dejaría la posición corta.
+                        self.base.store(frame, std::sync::atomic::Ordering::Relaxed);
+                    }
+                    // Un contenedor que no sabe saltar sigue sonando desde
+                    // donde iba, en vez de tirar la pista.
+                    Err(_) => self.descartar = 0,
+                }
+            }
             let recortado = match self.decoded.next_block() {
                 Ok(Some(Block::Int { data, bits })) => {
+                    let canales = self.opened.channels.max(1) as usize;
+                    let data = self.tirar_descarte(data, canales);
+                    if data.is_empty() {
+                        continue;
+                    }
                     let frames = self.trimmer.push(&data);
                     if frames.is_empty() {
                         continue;
@@ -79,6 +108,24 @@ impl FrameSource for TrackFrames<'_> {
     }
 }
 
+impl TrackFrames<'_> {
+    /// Tira los frames que sobran de un salto, que pueden abarcar varios
+    /// bloques.
+    fn tirar_descarte(&mut self, data: Vec<i32>, canales: usize) -> Vec<i32> {
+        if self.descartar == 0 {
+            return data;
+        }
+        let frames = (data.len() / canales) as u64;
+        if self.descartar >= frames {
+            self.descartar -= frames;
+            return Vec::new();
+        }
+        let corte = self.descartar as usize * canales;
+        self.descartar = 0;
+        data[corte..].to_vec()
+    }
+}
+
 /// Reproduce las pistas en orden.
 ///
 /// `open_sink` abre el dispositivo con el formato que se le pase. Se le llama
@@ -94,7 +141,16 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    play_queue_with(paths, caps, policy, stop, open_sink, &mut |_, _, _| {}, &mut |_, _| {})
+    play_queue_with(
+        paths,
+        caps,
+        policy,
+        stop,
+        &SeekSignal::new(),
+        open_sink,
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
 }
 
 /// Lo mismo, avisando cuándo arranca cada pista y cuántos frames lleva.
@@ -107,6 +163,7 @@ pub fn play_queue_with<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     stop: &StopSignal,
+    seek: &SeekSignal,
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery),
     on_progress: &mut dyn FnMut(usize, u64),
@@ -141,11 +198,19 @@ where
             decoded.encoder_padding(),
             delivery.opened.channels,
         );
-        let mut frames =
-            TrackFrames { decoded: &mut decoded, opened: delivery.opened, trimmer, agotado: false };
+        let mut frames = TrackFrames {
+            decoded: &mut decoded,
+            opened: delivery.opened,
+            trimmer,
+            agotado: false,
+            seek: seek.clone(),
+            descartar: 0,
+            base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        };
+        let base = std::sync::Arc::clone(&frames.base);
         on_track(indice, path, &delivery);
         let outcome = chilpa_audio::render::render_with(&mut frames, sink, stop, &mut |f| {
-            on_progress(indice, f)
+            on_progress(indice, f + base.load(std::sync::atomic::Ordering::Relaxed))
         });
         let termino_bien = outcome.may_advance_queue();
         resultados.push(TrackResult {
