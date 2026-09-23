@@ -25,6 +25,8 @@ Rectangle {
             Chilpa.refreshArtists()
         } else if (cual === "estadisticas") {
             Chilpa.refreshStats()
+        } else if (cual === "listas") {
+            Chilpa.refreshPlaylists()
         }
     }
 
@@ -53,6 +55,9 @@ Rectangle {
                         return Chilpa.artists.length +
                             (Chilpa.artists.length === 1 ? " artista" : " artistas")
                     if (raiz.pestana === "estadisticas") return "Estadísticas"
+                    if (raiz.pestana === "listas")
+                        return Chilpa.playlists.length +
+                            (Chilpa.playlists.length === 1 ? " lista" : " listas")
                     return Chilpa.albums.length === 0
                         ? "La biblioteca está vacía"
                         : Chilpa.albums.length +
@@ -67,6 +72,7 @@ Rectangle {
                 model: [
                     { clave: "albumes", texto: "Álbumes" },
                     { clave: "artistas", texto: "Artistas" },
+                    { clave: "listas", texto: "Listas" },
                     { clave: "estadisticas", texto: "Estadísticas" }
                 ]
                 delegate: Button {
@@ -120,6 +126,12 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: raiz.pestana === "estadisticas"
+        }
+
+        PanelListas {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.pestana === "listas"
         }
 
         GridView {

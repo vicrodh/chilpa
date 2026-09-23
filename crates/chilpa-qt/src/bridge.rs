@@ -69,6 +69,8 @@ pub mod chilpa_bridge {
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
+        /// Las listas guardadas, como "id\tnombre\tde dónde\tpistas".
+        #[qproperty(QStringList, playlists)]
         /// El resumen de lo escuchado, ya en renglones de "etiqueta\tvalor".
         #[qproperty(QStringList, stats)]
         /// Las más escuchadas y lo último que sonó, como
@@ -153,6 +155,22 @@ pub mod chilpa_bridge {
         #[qsignal]
         #[cxx_name = "albumViewChanged"]
         fn album_view_changed(self: Pin<&mut Chilpa>);
+
+        /// Vuelve a leer las listas guardadas.
+        #[qinvokable]
+        fn refresh_playlists(self: Pin<&mut Chilpa>);
+
+        /// Guarda la cola como una lista con ese nombre.
+        #[qinvokable]
+        fn save_queue_as(self: Pin<&mut Chilpa>, name: &QString);
+
+        /// Pone a sonar una lista guardada.
+        #[qinvokable]
+        fn play_saved_playlist(self: Pin<&mut Chilpa>, playlist_id: i64);
+
+        /// Borra una lista guardada. Las pistas no se tocan.
+        #[qinvokable]
+        fn delete_playlist(self: Pin<&mut Chilpa>, playlist_id: i64);
 
         /// Vuelve a leer las estadísticas de escucha.
         #[qinvokable]
@@ -321,6 +339,7 @@ pub struct ChilpaRust {
     lyrics_synced: bool,
     lyrics_source: QString,
     last_folder: QString,
+    playlists: QStringList,
     stats: QStringList,
     top_tracks: QStringList,
     recent_tracks: QStringList,
@@ -375,6 +394,7 @@ impl Default for ChilpaRust {
             lyrics_synced: false,
             lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
+            playlists: QStringList::default(),
             stats: QStringList::default(),
             top_tracks: QStringList::default(),
             recent_tracks: QStringList::default(),
@@ -545,6 +565,45 @@ impl Chilpa {
         self.as_mut().rust_mut().api.set_album_sort(orden);
         self.as_mut().album_view_changed();
         self.as_mut().refresh_albums();
+    }
+
+    pub fn refresh_playlists(mut self: Pin<&mut Self>) {
+        let listas = self.as_mut().rust_mut().api.playlists();
+        let mut l = QList::<QString>::default();
+        for p in &listas {
+            l.append(QString::from(&format!(
+                "{}\t{}\t{}\t{}",
+                p.id, p.name, p.provider, p.track_count
+            )));
+        }
+        self.as_mut().set_playlists(QStringList::from(&l));
+    }
+
+    pub fn save_queue_as(mut self: Pin<&mut Self>, name: &QString) {
+        let nombre = name.to_string();
+        let guardada = self.as_mut().rust_mut().api.save_queue_as(&nombre).is_some();
+        if guardada {
+            self.as_mut()
+                .set_library_status(QString::from(&format!("lista \"{nombre}\" guardada")));
+            self.as_mut().refresh_playlists();
+        }
+    }
+
+    pub fn play_saved_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
+        let (dispositivo, bit_perfect) = self.as_mut().elegido();
+        let titulos = self
+            .as_mut()
+            .rust_mut()
+            .api
+            .play_saved_playlist(playlist_id, &dispositivo, bit_perfect);
+        self.as_mut().refrescar_cola(&titulos);
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!titulos.is_empty());
+    }
+
+    pub fn delete_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
+        self.as_mut().rust_mut().api.delete_playlist(playlist_id);
+        self.as_mut().refresh_playlists();
     }
 
     pub fn refresh_stats(mut self: Pin<&mut Self>) {

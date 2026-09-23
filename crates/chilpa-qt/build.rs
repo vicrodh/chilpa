@@ -21,6 +21,7 @@ const QML: &[&str] = &[
     "qml/Biblioteca.qml",
     "qml/RejaDeArtistas.qml",
     "qml/PanelEstadisticas.qml",
+    "qml/PanelListas.qml",
     "qml/ListaDePistas.qml",
     "qml/Resultados.qml",
 ];

@@ -159,6 +159,19 @@ struct EnCurso {
     duration_ms: u64,
 }
 
+/// Una lista de reproducción, lista para mostrar.
+///
+/// `provider` dice de dónde vino. La vista puede filtrar por él: es lo que
+/// permite que un plugin traiga sus listas sin que se confundan con las de
+/// aquí.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct Playlist {
+    pub id: i64,
+    pub name: String,
+    pub provider: String,
+    pub track_count: usize,
+}
+
 /// Un artista de la biblioteca, listo para mostrar.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Artist {
@@ -415,6 +428,94 @@ impl Chilpa {
         let Some(letra) = &self.letra else { return -1 };
         let ms = (segundos.max(0.0) * 1000.0) as u64;
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
+    }
+
+    /// Las listas guardadas, las de aquí y las que traiga un source.
+    pub fn playlists(&mut self) -> Vec<Playlist> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.playlists()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| Playlist {
+                id: p.id,
+                name: p.name,
+                provider: p.provider,
+                track_count: p.track_count,
+            })
+            .collect()
+    }
+
+    /// Guarda la cola como una lista con ese nombre.
+    ///
+    /// Regresa el id de la lista. Lo que no esté en la biblioteca se guarda
+    /// igual, por su ruta: la lista vale aunque falte escanear.
+    pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
+        let nombre = name.trim().to_string();
+        if nombre.is_empty() {
+            self.now.error = "una lista necesita un nombre".into();
+            return None;
+        }
+        if self.cola.is_empty() {
+            self.now.error = "no hay cola que guardar".into();
+            return None;
+        }
+        let rutas = self.cola.clone();
+        let lib = self.library()?;
+        let source = lib.source_id("local", "default").ok()?;
+        let entradas: Vec<chilpa_library::PlaylistEntry> = rutas
+            .iter()
+            .map(|r| chilpa_library::PlaylistEntry {
+                track_id: lib
+                    .track_by_path(source, std::path::Path::new(r))
+                    .ok()
+                    .flatten(),
+                external_id: r.clone(),
+            })
+            .collect();
+        let id = lib.create_playlist(source, &nombre, "").ok()?;
+        lib.set_playlist_entries(id, &entradas).ok()?;
+        Some(id)
+    }
+
+    /// Pone a sonar una lista guardada.
+    pub fn play_saved_playlist(
+        &mut self,
+        playlist_id: i64,
+        device: &str,
+        bit_perfect: bool,
+    ) -> Vec<String> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        let rutas: Vec<String> = lib
+            .playlist_entries(playlist_id)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|e| e.external_id)
+            .filter(|r| !r.is_empty())
+            .collect();
+        if rutas.is_empty() {
+            self.now.error = "esa lista está vacía".into();
+            return Vec::new();
+        }
+        self.play_tracks(&rutas, device, bit_perfect)
+    }
+
+    /// Borra una lista. Las pistas no se tocan.
+    pub fn delete_playlist(&mut self, playlist_id: i64) {
+        if let Some(lib) = self.library() {
+            let _ = lib.delete_playlist(playlist_id);
+        }
+    }
+
+    /// Cambia el nombre de una lista.
+    pub fn rename_playlist(&mut self, playlist_id: i64, name: &str) {
+        let nombre = name.trim().to_string();
+        if nombre.is_empty() {
+            self.now.error = "una lista necesita un nombre".into();
+            return;
+        }
+        if let Some(lib) = self.library() {
+            let _ = lib.rename_playlist(playlist_id, &nombre);
+        }
     }
 
     /// El resumen de lo escuchado.
