@@ -1139,7 +1139,7 @@ mod tests {
         lib
     }
 
-    fn titulos(lib: &Library, order: AlbumSort) -> Vec<String> {
+    fn titles(lib: &Library, order: AlbumSort) -> Vec<String> {
         lib.albums_sorted(order, 50, 0)
             .unwrap()
             .into_iter()
@@ -1151,16 +1151,16 @@ mod tests {
     fn each_view_sorts_the_grid_its_own_way() {
         let lib = sample_library();
         assert_eq!(
-            titulos(&lib, AlbumSort::Artist),
+            titles(&lib, AlbumSort::Artist),
             ["Bayou", "Cosmo", "Aqualung"],
             "artista, luego año"
         );
-        assert_eq!(titulos(&lib, AlbumSort::Title), ["Aqualung", "Bayou", "Cosmo"]);
-        assert_eq!(titulos(&lib, AlbumSort::Year), ["Aqualung", "Cosmo", "Bayou"], "del más nuevo");
-        assert_eq!(titulos(&lib, AlbumSort::Added), ["Aqualung", "Cosmo", "Bayou"], "lo último que entró");
-        assert_eq!(titulos(&lib, AlbumSort::Played), ["Cosmo", "Bayou", "Aqualung"]);
+        assert_eq!(titles(&lib, AlbumSort::Title), ["Aqualung", "Bayou", "Cosmo"]);
+        assert_eq!(titles(&lib, AlbumSort::Year), ["Aqualung", "Cosmo", "Bayou"], "del más nuevo");
+        assert_eq!(titles(&lib, AlbumSort::Added), ["Aqualung", "Cosmo", "Bayou"], "lo último que entró");
+        assert_eq!(titles(&lib, AlbumSort::Played), ["Cosmo", "Bayou", "Aqualung"]);
         assert_eq!(
-            titulos(&lib, AlbumSort::LastPlayed),
+            titles(&lib, AlbumSort::LastPlayed),
             ["Cosmo", "Bayou", "Aqualung"],
             "lo último que sonó, y lo que nunca sonó al final"
         );
@@ -1195,9 +1195,9 @@ mod tests {
         ];
         lib.set_playlist_entries(id, &entries).unwrap();
 
-        let leidas = lib.playlist_entries(id).unwrap();
-        assert_eq!(leidas, entries, "el orden es el que se guardó");
-        assert_eq!(leidas[1].track_id, None, "lo que no está sigue anotado");
+        let read_back = lib.playlist_entries(id).unwrap();
+        assert_eq!(read_back, entries, "el orden es el que se guardó");
+        assert_eq!(read_back[1].track_id, None, "lo que no está sigue anotado");
 
         let lists = lib.playlists().unwrap();
         assert_eq!(lists.len(), 1);

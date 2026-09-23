@@ -320,7 +320,7 @@ fn play_stream(
     let address = url.to_string_lossy().to_string();
     let stream = chilpa_stream::open(&address)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let titulos = stream.now_playing();
+    let titles = stream.now_playing();
     let station = stream.info().name.clone();
 
     let path = url.to_path_buf();
@@ -354,7 +354,7 @@ fn play_stream(
         &mut |frames| {
             // El título de la estación cambia con cada canción; se publica
             // con el progreso, que es lo único que viaja seguido.
-            if let Some(title) = titulos.get() {
+            if let Some(title) = titles.get() {
                 let _ = events.send(PlayerEvent::StreamTitle { title: title });
             }
             let _ = events.send(PlayerEvent::Progress { frames });

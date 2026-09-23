@@ -118,7 +118,7 @@ fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
     for tonic in 0..12 {
         for (is_major, profile) in [(true, &MAYOR), (false, &MINOR)] {
             let rotated: Vec<f32> = (0..12).map(|i| profile[(i + 12 - tonic) % 12]).collect();
-            results.push((tonic, is_major, correlacion(chroma, &rotated)));
+            results.push((tonic, is_major, correlation(chroma, &rotated)));
         }
     }
     results.sort_by(|a, b| b.2.total_cmp(&a.2));
@@ -134,7 +134,7 @@ fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
 }
 
 /// Correlación de Pearson entre dos vectores del mismo largo.
-fn correlacion(a: &[f32], b: &[f32]) -> f32 {
+fn correlation(a: &[f32], b: &[f32]) -> f32 {
     let n = a.len() as f32;
     let (ma, mb) = (a.iter().sum::<f32>() / n, b.iter().sum::<f32>() / n);
     let mut num = 0.0f32;

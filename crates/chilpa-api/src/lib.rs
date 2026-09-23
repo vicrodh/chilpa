@@ -899,7 +899,7 @@ impl Chilpa {
                     // Cada arranque cierra lo anterior: en una cola, la
                     // pista que empieza es la prueba de que la de antes
                     // terminó.
-                    self.registrar_reproduccion(false);
+                    self.log_play(false);
                     self.in_progress = Some(InProgress {
                         path: path.display().to_string(),
                         started_at: now_unix(),
@@ -950,13 +950,13 @@ impl Chilpa {
                 PlayerEvent::Finished { frames } => {
                     self.now.frames = frames;
                     self.now.playing = false;
-                    self.registrar_reproduccion(false);
+                    self.log_play(false);
                 }
                 PlayerEvent::Stopped { frames } => {
                     self.now.frames = frames;
                     self.now.playing = false;
                     // Parar a media pista cuenta como salto.
-                    self.registrar_reproduccion(true);
+                    self.log_play(true);
                 }
                 PlayerEvent::Failed { message } => {
                     self.now.playing = false;
@@ -964,7 +964,7 @@ impl Chilpa {
                     // Una falla del dispositivo no es una escucha, pero lo
                     // que alcanzó a sonar sí se registra, marcado como
                     // interrumpido.
-                    self.registrar_reproduccion(true);
+                    self.log_play(true);
                 }
             }
         }
@@ -975,7 +975,7 @@ impl Chilpa {
     ///
     /// El log es append-only: de aquí salen las stats, las smart lists y el
     /// sync de play counts con un DAP.
-    fn registrar_reproduccion(&mut self, skipped: bool) {
+    fn log_play(&mut self, skipped: bool) {
         let Some(current) = self.in_progress.take() else { return };
         let frames = self.now.frames;
         if current.sample_rate_hz == 0 || frames == 0 {

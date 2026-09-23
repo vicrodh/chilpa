@@ -82,8 +82,8 @@ fn going_back_does_not_trim_the_queue() {
     }
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let titulos = chilpa.play_folder(&dir, OUTPUT, true);
-    assert_eq!(titulos.len(), 3, "se encolaron las tres");
+    let titles = chilpa.play_folder(&dir, OUTPUT, true);
+    assert_eq!(titles.len(), 3, "se encolaron las tres");
 
     assert!(wait_at_least(&mut chilpa, 2), "la cola avanzó sola");
     let antes = chilpa.now_playing().index;
@@ -124,8 +124,8 @@ fn enqueuing_with_nothing_playing_starts_the_queue() {
         .collect();
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    let titulos = chilpa.enqueue(&paths, OUTPUT, true);
-    assert_eq!(titulos.len(), 2, "encolar con nada sonando es reproducir");
+    let titles = chilpa.enqueue(&paths, OUTPUT, true);
+    assert_eq!(titles.len(), 2, "encolar con nada sonando es reproducir");
     assert!(wait_at_least(&mut chilpa, 1), "la cola avanzó");
     assert_eq!(chilpa.queue_titles().len(), 2);
 

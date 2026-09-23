@@ -68,7 +68,7 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
     let mut packets = Vec::with_capacity(packet_count);
     let mut at = header_len;
     let mut total = header_len;
-    let mut leidos = 0usize;
+    let mut read_frames = 0usize;
     for k in 0..packet_count {
         let w = u16::from_be_bytes([sector[1 + 2 * k], sector[2 + 2 * k]]);
         let len = (w & 0x07FF) as usize;
@@ -80,8 +80,8 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
         // como arranque con un registro centinela: se cuenta, pero su código
         // de tiempo no significa nada.
         let timecode = if frame_start {
-            let info = frame_info_at + leidos * frame_info_size;
-            leidos += 1;
+            let info = frame_info_at + read_frames * frame_info_size;
+            read_frames += 1;
             if data_type == DATA_TYPE_AUDIO {
                 let t = sector.get(info..info + 3).ok_or_else(|| SacdError::BadSector {
                     lsn,

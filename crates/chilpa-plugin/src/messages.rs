@@ -302,12 +302,12 @@ mod tests {
 
         // Sin nada firme no hay huella: emparejar por nombre es no emparejar.
         assert_eq!(RemoteTrack::default().fingerprint(), None);
-        let vacios = RemoteTrack {
+        let blank = RemoteTrack {
             isrc: Some("  ".into()),
             musicbrainz_recording_id: Some("".into()),
             ..Default::default()
         };
-        assert_eq!(vacios.fingerprint(), None);
+        assert_eq!(blank.fingerprint(), None);
     }
 
     #[test]
