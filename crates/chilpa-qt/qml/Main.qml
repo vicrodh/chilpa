@@ -40,6 +40,16 @@ ApplicationWindow {
         onActivated: dialogo.open()
     }
     Shortcut {
+        sequence: "Ctrl+Right"
+        enabled: Chilpa.playing
+        onActivated: Chilpa.nextTrack()
+    }
+    Shortcut {
+        sequence: "Ctrl+Left"
+        enabled: Chilpa.playing
+        onActivated: Chilpa.previousTrack(salidas.deviceId, bitPerfect.checked)
+    }
+    Shortcut {
         sequence: StandardKey.MoveToNextChar
         enabled: !busqueda.activeFocus && Chilpa.playing
         onActivated: Chilpa.seek(Math.min(Chilpa.seconds + 10, Chilpa.totalSeconds))
@@ -160,9 +170,19 @@ ApplicationWindow {
                 onClicked: dialogoEscaneo.open()
             }
             Button {
+                text: "Anterior"
+                enabled: Chilpa.playing
+                onClicked: Chilpa.previousTrack(salidas.deviceId, bitPerfect.checked)
+            }
+            Button {
                 text: Chilpa.paused ? "Reanudar" : "Pausa"
                 enabled: Chilpa.playing
                 onClicked: Chilpa.pause(!Chilpa.paused)
+            }
+            Button {
+                text: "Siguiente"
+                enabled: Chilpa.playing && Chilpa.queue.length > 1
+                onClicked: Chilpa.nextTrack()
             }
             Button {
                 text: "Parar"
