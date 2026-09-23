@@ -16,9 +16,36 @@ Rectangle {
     property string deviceId: ""
     property bool bitPerfect: true
 
-    ListView {
+    ColumnLayout {
         anchors.fill: parent
         anchors.margins: 10
+        spacing: 8
+
+        // El encabezado solo aparece cuando se abrió un álbum.
+        RowLayout {
+            Layout.fillWidth: true
+            visible: Chilpa.openAlbum !== ""
+            Label {
+                text: Chilpa.openAlbum
+                font.pixelSize: 15
+                font.weight: Font.DemiBold
+                color: "#411d1f"
+                elide: Text.ElideRight
+                Layout.fillWidth: true
+            }
+            Button {
+                text: "Reproducir"
+                onClicked: Chilpa.playAlbum(Chilpa.openAlbumId, raiz.deviceId, raiz.bitPerfect)
+            }
+            Button {
+                text: "Cerrar"
+                onClicked: Chilpa.closeAlbum()
+            }
+        }
+
+    ListView {
+        Layout.fillWidth: true
+        Layout.fillHeight: true
         clip: true
         model: Chilpa.results
 
@@ -68,5 +95,6 @@ Rectangle {
                 onClicked: Chilpa.playResults(index, raiz.deviceId, raiz.bitPerfect)
             }
         }
+    }
     }
 }
