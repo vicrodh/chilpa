@@ -11,6 +11,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-audio"
+version = "0.0.0"
+
+[[package]]
 name = "chilpa-core"
 version = "0.0.0"
 dependencies = [

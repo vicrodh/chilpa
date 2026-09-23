@@ -16,7 +16,8 @@ ROOT = Path(__file__).resolve().parents[2]
 # Quién puede depender de quién, dentro del workspace.
 ALLOWED = {
     "chilpa-models": set(),
-    "chilpa-core": {"chilpa-models"},
+    "chilpa-audio": {"chilpa-models"},
+    "chilpa-core": {"chilpa-models", "chilpa-audio"},
     "chilpa-api": {"chilpa-core", "chilpa-models"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},
