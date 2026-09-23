@@ -9,7 +9,6 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_core::playback::play_file;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process::Command;
 

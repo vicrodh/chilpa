@@ -63,10 +63,7 @@ pub type ProbeDevice = Box<dyn FnMut(&str) -> Result<DeviceCaps, SinkError> + Se
 pub struct Player {
     orders: Sender<Order>,
     events: Receiver<PlayerEvent>,
-    stop: StopSignal,
-    pause: chilpa_audio::sink::PauseSignal,
-    skip: chilpa_audio::sink::SkipSignal,
-    seek: chilpa_audio::seek::SeekSignal,
+    controls: crate::queue_playback::Controls,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -75,14 +72,11 @@ impl Player {
     pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
         let (orders_tx, orders_rx) = channel::<Order>();
         let (events_tx, events_rx) = channel::<PlayerEvent>();
-        let stop = StopSignal::new();
-        let stop_hilo = stop.clone();
-        let seek = chilpa_audio::seek::SeekSignal::new();
-        let seek_hilo = seek.clone();
-        let pause = chilpa_audio::sink::PauseSignal::new();
-        let pause_hilo = pause.clone();
-        let skip = chilpa_audio::sink::SkipSignal::new();
-        let skip_hilo = skip.clone();
+        let controls = crate::queue_playback::Controls::new();
+        let controls_hilo = controls.clone();
+        let stop_hilo = controls.stop.clone();
+        let pause_hilo = controls.pause.clone();
+        let skip_hilo = controls.skip.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -97,15 +91,11 @@ impl Player {
                             stop_hilo.reset();
                             pause_hilo.set(false);
                             skip_hilo.take();
-                            let stop = stop_hilo.clone();
                             let resultado = reproducir(
                                 &paths,
                                 &device,
                                 bit_perfect,
-                                &stop,
-                                &pause_hilo,
-                                &seek_hilo,
-                                &skip_hilo,
+                                &controls_hilo,
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
@@ -125,7 +115,7 @@ impl Player {
             })
             .expect("el hilo del reproductor arranca");
 
-        Self { orders: orders_tx, events: events_rx, stop, pause, skip, seek, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, controls, thread: Some(thread) }
     }
 
     /// Pide reproducir un archivo. Regresa de inmediato.
@@ -144,28 +134,37 @@ impl Player {
 
     /// Pausa o reanuda. La pista no pierde su lugar.
     pub fn set_paused(&self, paused: bool) {
-        self.pause.set(paused);
+        self.controls.pause.set(paused);
     }
 
     pub fn is_paused(&self) -> bool {
-        self.pause.is_paused()
+        self.controls.pause.is_paused()
     }
 
     /// Salta a la siguiente pista de la cola. La actual termina como si se
     /// hubiera acabado, así que la cola avanza en vez de detenerse.
     pub fn next(&self) {
-        self.skip.skip();
+        self.controls.skip.skip();
     }
 
     /// Pide saltar a ese punto de la pista que suena. El salto se atiende
     /// entre bloques; pedirlo no bloquea.
     pub fn seek(&self, position: std::time::Duration) {
-        self.seek.request(position);
+        self.controls.seek.request(position);
+    }
+
+    /// Cambia la repetición. Toma efecto al terminar la pista que suena.
+    pub fn set_repeat(&self, repeat: crate::queue_playback::Repeat) {
+        self.controls.repeat.set(repeat);
+    }
+
+    pub fn repeat(&self) -> crate::queue_playback::Repeat {
+        self.controls.repeat.get()
     }
 
     /// Pide parar. No espera al dispositivo.
     pub fn stop(&self) {
-        self.stop.stop();
+        self.controls.stop.stop();
         let _ = self.orders.send(Order::Stop);
     }
 
@@ -184,7 +183,7 @@ impl Player {
 
 impl Drop for Player {
     fn drop(&mut self) {
-        self.stop.stop();
+        self.controls.stop.stop();
         let _ = self.orders.send(Order::Quit);
         if let Some(t) = self.thread.take() {
             let _ = t.join();
@@ -192,19 +191,16 @@ impl Drop for Player {
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn reproducir(
     paths: &[PathBuf],
     device: &str,
     bit_perfect: bool,
-    stop: &StopSignal,
-    pause: &chilpa_audio::sink::PauseSignal,
-    seek: &chilpa_audio::seek::SeekSignal,
-    skip: &chilpa_audio::sink::SkipSignal,
+    controls: &crate::queue_playback::Controls,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
+    let (stop, pause, skip) = (&controls.stop, &controls.pause, &controls.skip);
     let caps = probe(device).map_err(PlayError::Sink)?;
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
     let total = paths.len();
@@ -226,10 +222,7 @@ fn reproducir(
         paths,
         &caps,
         policy,
-        stop,
-        pause,
-        seek,
-        skip,
+        controls,
         |formato| open(device, formato),
         &mut |indice, ruta, delivery| {
             // Los tags y la portada se leen al arrancar cada pista, no al
