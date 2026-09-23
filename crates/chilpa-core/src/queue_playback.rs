@@ -14,7 +14,7 @@ use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::seek::SeekSignal;
-use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
+use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
 
@@ -146,6 +146,7 @@ where
         caps,
         policy,
         stop,
+        &PauseSignal::new(),
         &SeekSignal::new(),
         open_sink,
         &mut |_, _, _| {},
@@ -163,6 +164,7 @@ pub fn play_queue_with<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     stop: &StopSignal,
+    pause: &PauseSignal,
     seek: &SeekSignal,
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery),
@@ -209,9 +211,10 @@ where
         };
         let base = std::sync::Arc::clone(&frames.base);
         on_track(indice, path, &delivery);
-        let outcome = chilpa_audio::render::render_with(&mut frames, sink, stop, &mut |f| {
-            on_progress(indice, f + base.load(std::sync::atomic::Ordering::Relaxed))
-        });
+        let outcome =
+            chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
+                on_progress(indice, f + base.load(std::sync::atomic::Ordering::Relaxed))
+            });
         let termino_bien = outcome.may_advance_queue();
         resultados.push(TrackResult {
             path: path.clone(),

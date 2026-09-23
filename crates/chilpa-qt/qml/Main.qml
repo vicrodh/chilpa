@@ -97,6 +97,11 @@ ApplicationWindow {
                 onClicked: dialogoCarpeta.open()
             }
             Button {
+                text: Chilpa.paused ? "Reanudar" : "Pausa"
+                enabled: Chilpa.playing
+                onClicked: Chilpa.setPaused(!Chilpa.paused)
+            }
+            Button {
                 text: "Parar"
                 enabled: Chilpa.playing
                 onClicked: Chilpa.stop()

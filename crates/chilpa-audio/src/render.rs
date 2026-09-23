@@ -6,7 +6,7 @@
 //! entera en silencio. Aquí solo [`Outcome::Finished`] permite avanzar la
 //! cola; lo demás se le cuenta al usuario.
 
-use crate::sink::{AudioSink, SinkError, StopSignal};
+use crate::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 
 /// De dónde salen los bytes que van al dispositivo.
 pub trait FrameSource {
@@ -72,6 +72,25 @@ where
     S: FrameSource,
     K: AudioSink,
 {
+    render_paused(source, sink, stop, &PauseSignal::new(), on_progress)
+}
+
+/// Lo mismo, atendiendo también la pausa.
+///
+/// En pausa el lazo deja de escribir y espera, y le avisa al dispositivo por
+/// si sabe pausar de verdad. Sigue mirando la señal de paro, así que parar
+/// desde una pausa sale de inmediato.
+pub fn render_paused<S, K>(
+    source: &mut S,
+    sink: &mut K,
+    stop: &StopSignal,
+    pause: &PauseSignal,
+    on_progress: &mut dyn FnMut(u64),
+) -> Outcome
+where
+    S: FrameSource,
+    K: AudioSink,
+{
     let frame_bytes = sink.format().frame_bytes();
     let mut frames: u64 = 0;
     let mut xruns = 0;
@@ -81,9 +100,22 @@ where
             return Outcome::Finished { frames };
         };
         let mut offset = 0;
+        let mut avisado = false;
         while offset < block.len() {
             if stop.is_stopped() {
                 return Outcome::Stopped { frames };
+            }
+            if pause.is_paused() {
+                if !avisado {
+                    let _ = sink.set_paused(true);
+                    avisado = true;
+                }
+                std::thread::sleep(std::time::Duration::from_millis(20));
+                continue;
+            }
+            if avisado {
+                let _ = sink.set_paused(false);
+                avisado = false;
             }
             match sink.write(&block[offset..]) {
                 Ok(0) => break,
@@ -111,6 +143,44 @@ mod tests {
     use super::*;
     use crate::format::{SampleFormat, StreamFormat};
     use std::time::Duration;
+
+    #[test]
+    fn en_pausa_no_se_escribe_y_al_reanudar_sigue_donde_iba() {
+        use std::sync::atomic::{AtomicBool, Ordering};
+        use std::sync::Arc;
+
+        let pause = PauseSignal::new();
+        pause.set(true);
+        let mut fuente = Bloques(vec![bloque(8)]);
+        let mut sink = Falso::nuevo(100);
+        let listo = Arc::new(AtomicBool::new(false));
+
+        std::thread::scope(|s| {
+            let pause_hilo = pause.clone();
+            let listo_hilo = Arc::clone(&listo);
+            s.spawn(move || {
+                // Mientras está en pausa no debe salir nada.
+                std::thread::sleep(Duration::from_millis(60));
+                listo_hilo.store(true, Ordering::Release);
+                pause_hilo.set(false);
+            });
+            let out = render_paused(&mut fuente, &mut sink, &StopSignal::new(), &pause, &mut |_| {});
+            assert!(listo.load(Ordering::Acquire), "no escribió antes de que se quitara la pausa");
+            assert_eq!(out, Outcome::Finished { frames: 8 });
+        });
+    }
+
+    #[test]
+    fn parar_desde_una_pausa_sale_de_inmediato() {
+        let pause = PauseSignal::new();
+        pause.set(true);
+        let stop = StopSignal::new();
+        stop.stop();
+        let mut fuente = Bloques(vec![bloque(8)]);
+        let mut sink = Falso::nuevo(100);
+        let out = render_paused(&mut fuente, &mut sink, &stop, &pause, &mut |_| {});
+        assert_eq!(out, Outcome::Stopped { frames: 0 });
+    }
 
     #[test]
     fn el_progreso_avisa_los_frames_que_de_verdad_salieron() {
