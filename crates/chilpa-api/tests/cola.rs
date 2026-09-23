@@ -8,6 +8,16 @@
 use std::io::Write;
 use std::path::PathBuf;
 
+/// Apunta la biblioteca a un directorio temporal.
+///
+/// Sin esto, la prueba escribe en la biblioteca de quien la corra: le mete
+/// escuchas y, lo que de verdad duele, le migra el esquema a la versión del
+/// código que se está probando. Eso ya rompió un binario viejo que seguía
+/// abierto.
+fn biblioteca_aparte(dir: &std::path::Path) {
+    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+}
+
 /// La salida de captura escribe a un archivo, así que esto corre sin sonido
 /// y sin hardware.
 const SALIDA: &str = "capture";
@@ -65,6 +75,7 @@ fn esperar_al_menos(chilpa: &mut chilpa_api::Chilpa, indice: usize) -> bool {
 #[test]
 fn volver_atras_no_recorta_la_cola() {
     let dir = carpeta("atras");
+    biblioteca_aparte(&dir);
     // Pistas de medio segundo: alcanza para que la cola avance sola.
     for n in ["01.wav", "02.wav", "03.wav"] {
         onda(&dir, n, 22_050);
@@ -106,6 +117,7 @@ fn el_aleatorio_y_la_repeticion_se_recuerdan_en_la_fachada() {
 #[test]
 fn encolar_sin_nada_sonando_arranca_la_cola() {
     let dir = carpeta("encolar");
+    biblioteca_aparte(&dir);
     let rutas: Vec<String> = ["01.wav", "02.wav"]
         .iter()
         .map(|n| onda(&dir, n, 4_410).display().to_string())

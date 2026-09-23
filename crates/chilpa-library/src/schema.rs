@@ -33,8 +33,17 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
         // Una base de una versión más nueva no se toca: bajar de versión
-        // pierde datos en silencio.
-        return Err(rusqlite::Error::InvalidQuery);
+        // pierde datos en silencio. Se dice qué pasó, porque el error
+        // genérico de rusqlite ("Query is not read-only") no le dice nada a
+        // nadie y esto sí ocurre: un Chilpa viejo contra una biblioteca que
+        // ya abrió uno nuevo.
+        return Err(rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+            Some(format!(
+                "esta biblioteca es de la versión {actual} y este Chilpa entiende hasta la \
+                 {VERSION}; actualiza Chilpa en vez de abrirla con uno viejo"
+            )),
+        ));
     }
     for (i, paso) in PASOS.iter().enumerate() {
         let destino = i as i64 + 1;
@@ -380,7 +389,10 @@ mod tests {
     fn una_base_mas_nueva_no_se_toca() {
         let db = Connection::open_in_memory().unwrap();
         db.pragma_update(None, "user_version", VERSION + 1).unwrap();
-        assert!(migrate(&db).is_err(), "bajar de versión perdería datos");
+        let e = migrate(&db).expect_err("bajar de versión perdería datos");
+        let dicho = e.to_string();
+        assert!(dicho.contains("versión"), "el error tiene que explicarse: {dicho}");
+        assert!(dicho.contains("actualiza"), "y decir qué hacer: {dicho}");
     }
 
     #[test]
