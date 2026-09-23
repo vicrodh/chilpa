@@ -60,6 +60,14 @@ pub struct Decoded {
     delay: u64,
     padding: u32,
     frames: Option<u64>,
+    /// El primer bloque, cuando hubo que decodificarlo para saber con
+    /// cuántos canales y a qué frecuencia suena el archivo.
+    pendiente: Option<Block>,
+    /// Bits útiles que declara el archivo. Mandan sobre el ancho del búfer
+    /// que entrega el decodificador: symphonia acomoda un FLAC de 16 bits en
+    /// un búfer de 32, y quedarse con el 32 haría que el empaquetado creyera
+    /// que hay que truncar.
+    declared_bits: Option<u8>,
 }
 
 impl Decoded {
@@ -80,25 +88,37 @@ impl Decoded {
             .ok_or_else(|| DecodeError::Unsupported("el archivo no trae pistas".into()))?;
         let track_id = track.id;
         let params = &track.codec_params;
-        let sample_rate_hz = params
-            .sample_rate
-            .ok_or_else(|| DecodeError::Unsupported("sin frecuencia de muestreo".into()))?;
-        let channels = params
-            .channels
-            .ok_or_else(|| DecodeError::Unsupported("sin canales".into()))?
-            .count() as u16;
+        // Un MP4 no siempre declara canales ni frecuencia en el contenedor:
+        // los trae el primer bloque decodificado. Por eso, si faltan, se
+        // decodifica un bloque de entrada y se guarda para entregarlo luego.
+        let declarados = (params.sample_rate, params.channels.map(|c| c.count() as u16));
         // Los bits del archivo mandan: 16 bits salen en S16, 24 en S24In32.
         let sample_format = match params.bits_per_sample.unwrap_or(16) {
             0..=16 => SampleFormat::S16,
             17..=24 => SampleFormat::S24In32,
             _ => SampleFormat::S32,
         };
-        let decoder = symphonia::default::get_codecs()
+        let mut decoder = symphonia::default::get_codecs()
             .make(params, &DecoderOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
         let delay = u64::from(params.delay.unwrap_or(0));
         let padding = params.padding.unwrap_or(0);
         let frames = params.n_frames;
+        let declared_bits = params
+            .bits_per_sample
+            .map(|b| b.min(32) as u8)
+            .or_else(|| alac_bit_depth(params));
+        let mut format = format;
+        let mut pendiente = None;
+        let (sample_rate_hz, channels) = match declarados {
+            (Some(rate), Some(channels)) => (rate, channels),
+            _ => {
+                let (rate, channels, block) =
+                    primer_bloque(&mut *format, &mut *decoder, track_id, declared_bits)?;
+                pendiente = Some(block);
+                (rate, channels)
+            }
+        };
         Ok(Self {
             format,
             decoder,
@@ -107,6 +127,8 @@ impl Decoded {
             delay,
             padding,
             frames,
+            declared_bits,
+            pendiente,
         })
     }
 
@@ -129,6 +151,7 @@ impl Decoded {
     /// plan para quedar exactamente ahí: el contenedor casi siempre aterriza
     /// antes, y esos frames se decodifican y se tiran.
     pub fn seek_to_frame(&mut self, frame: u64) -> Result<chilpa_audio::seek::SeekPlan, DecodeError> {
+        self.pendiente = None;
         let to = SeekTo::TimeStamp { ts: frame, track_id: self.track_id };
         let landed = self
             .format
@@ -146,6 +169,9 @@ impl Decoded {
 
     /// El siguiente bloque. `None` cuando se acabó el archivo.
     pub fn next_block(&mut self) -> Result<Option<Block>, DecodeError> {
+        if let Some(block) = self.pendiente.take() {
+            return Ok(Some(block));
+        }
         loop {
             let packet = match self.format.next_packet() {
                 Ok(p) => p,
@@ -159,7 +185,7 @@ impl Decoded {
                 continue;
             }
             match self.decoder.decode(&packet) {
-                Ok(buffer) => return Ok(Some(interleave(&buffer))),
+                Ok(buffer) => return Ok(Some(interleave(&buffer, self.declared_bits))),
                 // Un paquete dañado no tumba la pista: se salta.
                 Err(SymphoniaError::DecodeError(_)) => continue,
                 Err(e) => return Err(DecodeError::Corrupt(e.to_string())),
@@ -168,20 +194,70 @@ impl Decoded {
     }
 }
 
+/// ALAC no declara los bits en el contenedor: van en su cookie
+/// (ALACSpecificConfig), donde el byte 5 es la profundidad. Sin esto, un ALAC
+/// de 16 bits se toma como de 32 y el empaquetado cree que hay que truncar.
+fn alac_bit_depth(params: &symphonia::core::codecs::CodecParameters) -> Option<u8> {
+    if params.codec != symphonia::core::codecs::CODEC_TYPE_ALAC {
+        return None;
+    }
+    let cookie = params.extra_data.as_deref()?;
+    let bits = *cookie.get(5)?;
+    (1..=32).contains(&bits).then_some(bits)
+}
+
+/// Decodifica hasta el primer bloque con audio y regresa frecuencia, canales
+/// y ese bloque, para los contenedores que no lo declaran.
+fn primer_bloque(
+    format: &mut dyn FormatReader,
+    decoder: &mut dyn Decoder,
+    track_id: u32,
+    declared_bits: Option<u8>,
+) -> Result<(u32, u16, Block), DecodeError> {
+    loop {
+        let packet = match format.next_packet() {
+            Ok(p) => p,
+            Err(e) => return Err(DecodeError::Unsupported(format!("sin audio legible: {e}"))),
+        };
+        if packet.track_id() != track_id {
+            continue;
+        }
+        match decoder.decode(&packet) {
+            Ok(buffer) => {
+                let spec = *buffer.spec();
+                return Ok((
+                    spec.rate,
+                    spec.channels.count() as u16,
+                    interleave(&buffer, declared_bits),
+                ));
+            }
+            Err(SymphoniaError::DecodeError(_)) => continue,
+            Err(e) => return Err(DecodeError::Corrupt(e.to_string())),
+        }
+    }
+}
+
 /// Pasa un búfer planar de symphonia a muestras intercaladas, conservando el
 /// tipo original.
-fn interleave(buffer: &AudioBufferRef<'_>) -> Block {
+fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>) -> Block {
+    // El decodificador acomoda las muestras justificadas a la izquierda
+    // dentro del búfer: un FLAC de 16 bits llega en un búfer de 32 con la
+    // muestra corrida 16 lugares. Se baja a su posición real, que es exacto
+    // porque los bits de abajo son cero, y así el empaquetado sabe de
+    // cuántos bits se trata.
     macro_rules! ints {
-        ($buf:expr, $bits:expr, $conv:expr) => {{
+        ($buf:expr, $ancho:expr, $conv:expr) => {{
+            let bits = declared_bits.unwrap_or($ancho).min($ancho);
+            let corrimiento = $ancho - bits;
             let frames = $buf.frames();
             let channels = $buf.spec().channels.count();
             let mut data = Vec::with_capacity(frames * channels);
             for f in 0..frames {
                 for c in 0..channels {
-                    data.push($conv($buf.chan(c)[f]));
+                    data.push($conv($buf.chan(c)[f]) >> corrimiento);
                 }
             }
-            Block::Int { data, bits: $bits }
+            Block::Int { data, bits }
         }};
     }
     match buffer {

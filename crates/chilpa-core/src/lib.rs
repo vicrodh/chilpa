@@ -4,6 +4,7 @@
 //! `chilpa-api` (ADR-001); aquí adentro vive la implementación.
 
 pub mod playback;
+pub mod queue_playback;
 
 use chilpa_models::SourceId;
 

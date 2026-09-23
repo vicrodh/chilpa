@@ -1,0 +1,155 @@
+//! Reproducir varias pistas seguidas.
+//!
+//! La cola encadena sin hueco mientras el formato del stream no cambie. Si
+//! cambia, hay que reabrir el dispositivo y el corte es inevitable: se
+//! reporta, no se disimula.
+//!
+//! Cada pista termina con su propio [`Outcome`], y solo un fin natural deja
+//! pasar a la siguiente. Una falla del dispositivo detiene la cola ahí mismo,
+//! que es justo lo que QBZ no hacía: se saltaba todo en silencio.
+
+use chilpa_audio::format::StreamFormat;
+use chilpa_audio::gapless::{transition, Transition, Trimmer};
+use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
+use chilpa_audio::pack::{pack, Samples};
+use chilpa_audio::render::{render, FrameSource, Outcome};
+use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
+use chilpa_decode::{Block, Decoded};
+use std::path::{Path, PathBuf};
+
+use crate::playback::PlayError;
+
+/// Cómo terminó una pista de la cola.
+pub struct TrackResult {
+    pub path: PathBuf,
+    pub delivery: Delivery,
+    pub outcome: Outcome,
+    /// Cómo se llegó a esta pista desde la anterior.
+    pub transition: Transition,
+}
+
+impl TrackResult {
+    pub fn frames(&self) -> u64 {
+        self.outcome.frames()
+    }
+}
+
+/// Fuente de una pista, con su recorte de relleno aplicado.
+struct TrackFrames<'a> {
+    decoded: &'a mut Decoded,
+    opened: StreamFormat,
+    trimmer: Trimmer,
+    agotado: bool,
+}
+
+impl FrameSource for TrackFrames<'_> {
+    fn next_block(&mut self) -> Option<Vec<u8>> {
+        loop {
+            if self.agotado {
+                return None;
+            }
+            let recortado = match self.decoded.next_block() {
+                Ok(Some(Block::Int { data, bits })) => {
+                    let frames = self.trimmer.push(&data);
+                    if frames.is_empty() {
+                        continue;
+                    }
+                    let mut bytes = Vec::new();
+                    let samples = Samples::Int { data: &frames, bits };
+                    pack(&samples, self.opened.sample_format, &mut bytes).ok()?;
+                    bytes
+                }
+                Ok(Some(Block::Float(data))) => {
+                    let mut bytes = Vec::new();
+                    pack(&Samples::Float(&data), self.opened.sample_format, &mut bytes).ok()?;
+                    bytes
+                }
+                Ok(None) => {
+                    // Lo que quedó retenido era relleno del codificador.
+                    self.agotado = true;
+                    self.trimmer.finish();
+                    return None;
+                }
+                Err(_) => return None,
+            };
+            if !recortado.is_empty() {
+                return Some(recortado);
+            }
+        }
+    }
+}
+
+/// Reproduce las pistas en orden.
+///
+/// `open_sink` abre el dispositivo con el formato que se le pase. Se le llama
+/// una vez por cada renegociación, no una vez por pista.
+pub fn play_queue<F, K>(
+    paths: &[PathBuf],
+    caps: &DeviceCaps,
+    policy: Policy,
+    stop: &StopSignal,
+    mut open_sink: F,
+) -> Result<Vec<TrackResult>, PlayError>
+where
+    F: FnMut(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
+    let mut resultados = Vec::new();
+    let mut abierto: Option<(StreamFormat, K)> = None;
+
+    for path in paths {
+        let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
+        let delivery = negotiate(decoded.stream_format(), caps, policy)
+            .map_err(PlayError::Negotiation)?;
+
+        let paso = match &abierto {
+            Some((actual, _)) => transition(*actual, delivery.opened),
+            None => Transition::Seamless,
+        };
+        if !paso.is_seamless() || abierto.is_none() {
+            if let Some((_, mut viejo)) = abierto.take() {
+                viejo.close().map_err(PlayError::Sink)?;
+            }
+            let nuevo = open_sink(delivery.opened).map_err(PlayError::Sink)?;
+            abierto = Some((delivery.opened, nuevo));
+        }
+        let (_, sink) = abierto.as_mut().expect("recién abierto");
+
+        let trimmer = Trimmer::new(
+            decoded.encoder_delay(),
+            decoded.encoder_padding(),
+            delivery.opened.channels,
+        );
+        let mut frames =
+            TrackFrames { decoded: &mut decoded, opened: delivery.opened, trimmer, agotado: false };
+        let outcome = render(&mut frames, sink, stop);
+        let termino_bien = outcome.may_advance_queue();
+        resultados.push(TrackResult {
+            path: path.clone(),
+            delivery,
+            outcome,
+            transition: paso,
+        });
+        if !termino_bien {
+            break;
+        }
+    }
+
+    if let Some((_, mut sink)) = abierto.take() {
+        sink.close().map_err(PlayError::Sink)?;
+    }
+    Ok(resultados)
+}
+
+/// Cuántas veces se reabrió el dispositivo en una cola ya reproducida.
+pub fn renegotiations(results: &[TrackResult]) -> usize {
+    results.iter().filter(|r| !r.transition.is_seamless()).count()
+}
+
+/// Las pistas que sí sonaron completas.
+pub fn finished(results: &[TrackResult]) -> impl Iterator<Item = &Path> {
+    results
+        .iter()
+        .filter(|r| r.outcome.may_advance_queue())
+        .map(|r| r.path.as_path())
+}
