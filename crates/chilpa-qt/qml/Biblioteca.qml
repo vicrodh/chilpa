@@ -11,16 +11,26 @@ Rectangle {
     id: raiz
     radius: 14
 
-    // Qué se está mirando: la reja de discos o la de artistas. Entrar a un
-    // artista devuelve a los discos, ya filtrados.
-    property bool porArtista: false
+    // Qué se está mirando: los discos, los artistas o las estadísticas.
+    // Entrar a un artista devuelve a los discos, ya filtrados.
+    property string pestana: "albumes"
+    readonly property bool porArtista: pestana === "artistas"
+
+    function verPestana(cual) {
+        pestana = cual
+        if (cual === "artistas") {
+            // Entrar a los artistas quita el filtro: si no, se vería la
+            // lista completa y la reja de uno solo.
+            Chilpa.openArtistAlbums("")
+            Chilpa.refreshArtists()
+        } else if (cual === "estadisticas") {
+            Chilpa.refreshStats()
+        }
+    }
 
     Component.onCompleted: {
         // Para probar la vista sin ratón: CHILPA_PESTANA=artistas.
-        if (Chilpa.initialTab === "artistas") {
-            porArtista = true
-            Chilpa.refreshArtists()
-        }
+        if (Chilpa.initialTab !== "") verPestana(Chilpa.initialTab)
     }
     color: "#ffffff"
     border.color: "#1a411d1f"
@@ -38,44 +48,46 @@ Rectangle {
         RowLayout {
             Layout.fillWidth: true
             Label {
-                text: raiz.porArtista
-                    ? Chilpa.artists.length + (Chilpa.artists.length === 1 ? " artista" : " artistas")
-                    : (Chilpa.albums.length === 0
+                text: {
+                    if (raiz.pestana === "artistas")
+                        return Chilpa.artists.length +
+                            (Chilpa.artists.length === 1 ? " artista" : " artistas")
+                    if (raiz.pestana === "estadisticas") return "Estadísticas"
+                    return Chilpa.albums.length === 0
                         ? "La biblioteca está vacía"
-                        : Chilpa.albums.length + (Chilpa.albums.length === 1 ? " álbum" : " álbumes"))
+                        : Chilpa.albums.length +
+                            (Chilpa.albums.length === 1 ? " álbum" : " álbumes")
+                }
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
                 color: "#411d1f"
             }
 
-            Button {
-                text: raiz.porArtista ? "Álbumes" : "Artistas"
-                onClicked: {
-                    raiz.porArtista = !raiz.porArtista
-                    if (raiz.porArtista) {
-                        // Entrar a los artistas quita el filtro: si no, se
-                        // vería la lista completa y la reja de uno solo.
-                        Chilpa.openArtistAlbums("")
-                        Chilpa.refreshArtists()
-                    }
+            Repeater {
+                model: [
+                    { clave: "albumes", texto: "Álbumes" },
+                    { clave: "artistas", texto: "Artistas" },
+                    { clave: "estadisticas", texto: "Estadísticas" }
+                ]
+                delegate: Button {
+                    text: modelData.texto
+                    checkable: true
+                    checked: raiz.pestana === modelData.clave
+                    onClicked: raiz.verPestana(modelData.clave)
                 }
             }
 
             // El artista al que está filtrada la reja, con su salida.
             Button {
-                visible: !raiz.porArtista && Chilpa.openArtist !== ""
+                visible: raiz.pestana === "albumes" && Chilpa.openArtist !== ""
                 text: "← " + Chilpa.openArtist
-                onClicked: {
-                    Chilpa.openArtistAlbums("")
-                    raiz.porArtista = true
-                    Chilpa.refreshArtists()
-                }
+                onClicked: raiz.verPestana("artistas")
             }
 
             // Las vistas rápidas: lo mismo de siempre, mirado de otra forma.
             ComboBox {
                 Layout.preferredWidth: 180
-                visible: !raiz.porArtista
+                visible: raiz.pestana === "albumes"
                 model: Chilpa.albumViews
                 currentIndex: Chilpa.albumView
                 onActivated: Chilpa.albumView = index
@@ -101,14 +113,20 @@ Rectangle {
         RejaDeArtistas {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: raiz.porArtista
+            visible: raiz.pestana === "artistas"
+        }
+
+        PanelEstadisticas {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.pestana === "estadisticas"
         }
 
         GridView {
             id: cuadricula
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: !raiz.porArtista
+            visible: raiz.pestana === "albumes"
             clip: true
             cellWidth: 160
             cellHeight: 216

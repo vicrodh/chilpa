@@ -5,7 +5,7 @@
 //! primero se amplía esta API.
 
 pub use chilpa_core::queue_playback::Repeat;
-pub use chilpa_library::AlbumSort;
+pub use chilpa_library::{AlbumSort, Stats};
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -105,6 +105,20 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
         .collect();
     archivos.sort();
     archivos
+}
+
+/// Traduce una pista de la biblioteca a lo que necesita una vista.
+fn pista_de(t: chilpa_library::StoredTrack) -> LibraryTrack {
+    LibraryTrack {
+        id: t.id,
+        path: t.external_id,
+        title: t.title,
+        artist: t.artist,
+        album: t.album,
+        track_number: t.track_number,
+        duration_ms: t.duration_ms,
+        present: t.present,
+    }
 }
 
 /// El título que muestra una cola: el del tag, o el nombre del archivo.
@@ -403,6 +417,32 @@ impl Chilpa {
         letra.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
 
+    /// El resumen de lo escuchado.
+    pub fn stats(&mut self) -> Stats {
+        let Some(lib) = self.library() else { return Stats::default() };
+        lib.stats().unwrap_or_default()
+    }
+
+    /// Las pistas más escuchadas.
+    pub fn top_tracks(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.top_tracks(limit)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| (pista_de(t.track), t.count))
+            .collect()
+    }
+
+    /// Lo último que sonó, una pista por renglón.
+    pub fn recently_played(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.recently_played(limit)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| (pista_de(t.track), t.count))
+            .collect()
+    }
+
     /// Los artistas de la biblioteca.
     pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
         let Some(lib) = self.library() else { return Vec::new() };
@@ -469,20 +509,7 @@ impl Chilpa {
     /// Las pistas de un álbum, en el orden del disco.
     pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.album_tracks(album_id)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| LibraryTrack {
-                id: t.id,
-                path: t.external_id,
-                title: t.title,
-                artist: t.artist,
-                album: t.album,
-                track_number: t.track_number,
-                duration_ms: t.duration_ms,
-                present: t.present,
-            })
-            .collect()
+        lib.album_tracks(album_id).unwrap_or_default().into_iter().map(pista_de).collect()
     }
 
     /// Busca en la biblioteca por título, artista o álbum.
@@ -491,20 +518,7 @@ impl Chilpa {
             return Vec::new();
         }
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.search(texto.trim(), limit)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| LibraryTrack {
-                id: t.id,
-                path: t.external_id,
-                title: t.title,
-                artist: t.artist,
-                album: t.album,
-                track_number: t.track_number,
-                duration_ms: t.duration_ms,
-                present: t.present,
-            })
-            .collect()
+        lib.search(texto.trim(), limit).unwrap_or_default().into_iter().map(pista_de).collect()
     }
 
     /// Echa a andar la cola que ya está en `self.cola`, desde esa posición.
