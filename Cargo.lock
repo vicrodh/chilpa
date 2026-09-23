@@ -112,6 +112,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-analysis"
+version = "0.0.0"
+
+[[package]]
 name = "chilpa-api"
 version = "0.0.0"
 dependencies = [

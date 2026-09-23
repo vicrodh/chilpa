@@ -20,6 +20,8 @@ ALLOWED = {
     "chilpa-tags": {"chilpa-models"},
     # Las letras que vienen con la música. No habla con nadie por la red.
     "chilpa-lyrics": set(),
+    # Lo que se puede saber de una pista escuchándola. No toca la salida.
+    "chilpa-analysis": set(),
     "chilpa-library": {"chilpa-models", "chilpa-tags"},
     "chilpa-stream": set(),
     "chilpa-decode": {"chilpa-audio", "chilpa-stream"},
