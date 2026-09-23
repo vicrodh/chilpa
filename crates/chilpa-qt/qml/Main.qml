@@ -11,7 +11,7 @@ import com.blitzfc.chilpa
 
 ApplicationWindow {
     id: ventana
-    width: 860
+    width: 980
     height: 760
     visible: true
     title: "Chilpa"
@@ -171,10 +171,11 @@ ApplicationWindow {
             }
         }
 
+        // Lo que abre música.
         RowLayout {
-            spacing: 10
+            spacing: 8
             Button {
-                text: "Abrir y reproducir"
+                text: "Abrir archivo"
                 onClicked: dialogo.open()
             }
             Button {
@@ -194,6 +195,12 @@ ApplicationWindow {
                 text: "Escanear a la biblioteca"
                 onClicked: dialogoEscaneo.open()
             }
+            Item { Layout.fillWidth: true }
+        }
+
+        // El transporte.
+        RowLayout {
+            spacing: 8
             Button {
                 text: "Anterior"
                 enabled: Chilpa.playing
@@ -214,8 +221,10 @@ ApplicationWindow {
                 enabled: Chilpa.playing
                 onClicked: Chilpa.stop()
             }
+            Item { Layout.fillWidth: true }
         }
 
+        // La tarjeta de lo que suena.
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 152
