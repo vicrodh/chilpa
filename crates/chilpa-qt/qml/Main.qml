@@ -30,6 +30,8 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
+        // Para probar sin teclado: CHILPA_BUSCAR deja la búsqueda escrita.
+        if (Chilpa.initialSearch !== "") busqueda.text = Chilpa.initialSearch
         Chilpa.refreshOutputs()
         Chilpa.refreshAlbums()
         const guardada = Chilpa.outputIds.indexOf(Chilpa.rememberedOutput)
@@ -94,6 +96,12 @@ ApplicationWindow {
                     currentIndex >= 0 && currentIndex < Chilpa.outputIds.length
                         ? Chilpa.outputIds[currentIndex]
                         : ""
+            }
+            TextField {
+                id: busqueda
+                Layout.preferredWidth: 200
+                placeholderText: "Buscar"
+                onTextChanged: Chilpa.search(text)
             }
             CheckBox {
                 id: bitPerfect
@@ -224,6 +232,16 @@ ApplicationWindow {
             }
         }
 
+        // Los resultados, cuando hay algo escrito en la búsqueda.
+        Resultados {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            Layout.minimumHeight: 200
+            deviceId: salidas.deviceId
+            bitPerfect: bitPerfect.checked
+            visible: busqueda.text !== ""
+        }
+
         // La biblioteca, con sus álbumes.
         Biblioteca {
             Layout.fillWidth: true
@@ -233,7 +251,7 @@ ApplicationWindow {
             Layout.minimumHeight: 260
             deviceId: salidas.deviceId
             bitPerfect: bitPerfect.checked
-            visible: Chilpa.albums.length > 0
+            visible: Chilpa.albums.length > 0 && busqueda.text === ""
         }
 
         // La cola. Se asoma solo cuando hay más de una pista, y solo

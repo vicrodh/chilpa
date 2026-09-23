@@ -154,6 +154,7 @@ pub struct LibraryTrack {
     pub path: String,
     pub title: String,
     pub artist: String,
+    pub album: String,
     pub track_number: Option<u16>,
     pub duration_ms: u64,
     pub present: bool,
@@ -262,11 +263,47 @@ impl Chilpa {
                 path: t.external_id,
                 title: t.title,
                 artist: t.artist,
+                album: t.album,
                 track_number: t.track_number,
                 duration_ms: t.duration_ms,
                 present: t.present,
             })
             .collect()
+    }
+
+    /// Busca en la biblioteca por título, artista o álbum.
+    pub fn search(&mut self, texto: &str, limit: usize) -> Vec<LibraryTrack> {
+        if texto.trim().is_empty() {
+            return Vec::new();
+        }
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.search(texto.trim(), limit)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|t| LibraryTrack {
+                id: t.id,
+                path: t.external_id,
+                title: t.title,
+                artist: t.artist,
+                album: t.album,
+                track_number: t.track_number,
+                duration_ms: t.duration_ms,
+                present: t.present,
+            })
+            .collect()
+    }
+
+    /// Pone a sonar lo que encontró una búsqueda, en ese orden.
+    pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
+        let pistas: Vec<std::path::PathBuf> =
+            paths.iter().map(std::path::PathBuf::from).collect();
+        if pistas.is_empty() {
+            return Vec::new();
+        }
+        let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
+        self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
+        player.play_all(&pistas, device, bit_perfect);
+        pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
     /// Pone a sonar un álbum completo, en el orden del disco.

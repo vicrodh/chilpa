@@ -8,7 +8,7 @@ fn main() {
         .qml_module(QmlModule {
             uri: "com.blitzfc.chilpa",
             rust_files: &["src/bridge.rs"],
-            qml_files: &["qml/Main.qml", "qml/Biblioteca.qml"],
+            qml_files: &["qml/Main.qml", "qml/Biblioteca.qml", "qml/Resultados.qml"],
             ..Default::default()
         })
         .build();
