@@ -34,13 +34,29 @@ pub struct Output {
     pub label: String,
 }
 
-/// Las salidas de la máquina.
+/// Las salidas de la máquina, más la de diagnóstico.
+///
+/// La captura va al final y se llama por su nombre: sirve para probar la
+/// ruta completa sin sacar sonido y para comprobar el bit-perfect contra el
+/// archivo que produce.
 #[cfg(target_os = "linux")]
 pub fn outputs() -> Vec<Output> {
-    chilpa_alsa::list()
+    let mut salidas: Vec<Output> = chilpa_alsa::list()
         .into_iter()
         .map(|d| Output { id: d.id.clone(), label: d.label() })
-        .collect()
+        .collect();
+    salidas.push(Output {
+        id: chilpa_audio::CAPTURE_ID.to_string(),
+        label: format!("Captura a archivo ({})", capture_path().display()),
+    });
+    salidas
+}
+
+/// Dónde escribe la salida de captura.
+pub fn capture_path() -> std::path::PathBuf {
+    let mut p = std::env::temp_dir();
+    p.push("chilpa-capture.raw");
+    p
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -52,10 +68,21 @@ pub fn outputs() -> Vec<Output> {
 #[cfg(target_os = "linux")]
 pub fn spawn_player() -> player::Player {
     player::Player::spawn(
-        Box::new(|id| chilpa_alsa::probe(id)),
+        Box::new(|id| {
+            if id == chilpa_audio::CAPTURE_ID {
+                Ok(chilpa_audio::capture::capabilities())
+            } else {
+                chilpa_alsa::probe(id)
+            }
+        }),
         Box::new(|id, formato| {
-            chilpa_alsa::AlsaSink::open(id, formato)
-                .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
+            if id == chilpa_audio::CAPTURE_ID {
+                chilpa_audio::CaptureSink::create(&capture_path(), formato)
+                    .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
+            } else {
+                chilpa_alsa::AlsaSink::open(id, formato)
+                    .map(|s| Box::new(s) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
+            }
         }),
     )
 }

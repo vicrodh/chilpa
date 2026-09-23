@@ -10,6 +10,7 @@
 //! 3. **DoP no se interrumpe.** Una escritura parcial se reanuda donde se
 //!    quedó, y los huecos se rellenan con silencio DSD, no con ceros.
 
+pub mod capture;
 pub mod dop;
 pub mod format;
 pub mod gapless;
@@ -19,6 +20,7 @@ pub mod render;
 pub mod seek;
 pub mod sink;
 
+pub use capture::{CaptureSink, CAPTURE_ID};
 pub use format::{SampleFormat, StreamFormat};
 pub use negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy, Transform};
 pub use pack::{pack, PackError, Samples};
