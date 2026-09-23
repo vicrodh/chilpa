@@ -231,11 +231,7 @@ impl Chilpa {
         let pistas = self.as_mut().rust_mut().api.play_album(album_id, &dispositivo, bit_perfect);
         let mut lista = QList::<QString>::default();
         for pista in &pistas {
-            let nombre = std::path::Path::new(pista)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| pista.clone());
-            lista.append(QString::from(&nombre));
+            lista.append(QString::from(pista));
         }
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
@@ -254,11 +250,7 @@ impl Chilpa {
             .play_folder(std::path::Path::new(&ruta), &dispositivo, bit_perfect);
         let mut lista = QList::<QString>::default();
         for pista in &pistas {
-            let nombre = std::path::Path::new(pista)
-                .file_name()
-                .map(|n| n.to_string_lossy().to_string())
-                .unwrap_or_else(|| pista.clone());
-            lista.append(QString::from(&nombre));
+            lista.append(QString::from(pista));
         }
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);

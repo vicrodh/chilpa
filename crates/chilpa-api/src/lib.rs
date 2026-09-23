@@ -95,6 +95,16 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
     archivos
 }
 
+/// El título que muestra una cola: el del tag, o el nombre del archivo.
+fn titulo_de(path: &std::path::Path) -> String {
+    chilpa_tags::read(path)
+        .ok()
+        .and_then(|info| info.tags.title)
+        .unwrap_or_else(|| {
+            path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()
+        })
+}
+
 /// Ahora, en segundos desde el epoch.
 fn ahora_unix() -> i64 {
     std::time::SystemTime::now()
@@ -254,21 +264,22 @@ impl Chilpa {
     }
 
     /// Pone a sonar un álbum completo, en el orden del disco.
+    ///
+    /// Regresa los títulos de la cola, no las rutas: una cola que muestra
+    /// nombres de archivo no le dice nada a nadie.
     pub fn play_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
-        let pistas: Vec<std::path::PathBuf> = self
-            .album_tracks(album_id)
-            .into_iter()
-            .filter(|t| t.present)
-            .map(|t| std::path::PathBuf::from(t.path))
-            .collect();
-        if pistas.is_empty() {
+        let disponibles: Vec<LibraryTrack> =
+            self.album_tracks(album_id).into_iter().filter(|t| t.present).collect();
+        if disponibles.is_empty() {
             self.now.error = "ese álbum no tiene pistas disponibles".into();
             return Vec::new();
         }
+        let pistas: Vec<std::path::PathBuf> =
+            disponibles.iter().map(|t| std::path::PathBuf::from(&t.path)).collect();
         let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
         self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
         player.play_all(&pistas, device, bit_perfect);
-        pistas.iter().map(|p| p.display().to_string()).collect()
+        disponibles.into_iter().map(|t| t.title).collect()
     }
 
     /// Lo que Chilpa recuerda: la última salida, si se pide bit-perfect y
@@ -316,7 +327,8 @@ impl Chilpa {
 
     /// Pone a sonar una carpeta completa, en orden alfabético.
     ///
-    /// Regresa las rutas encoladas, para que la vista las muestre.
+    /// Regresa los títulos encolados: el del tag cuando el archivo lo trae,
+    /// y si no, el nombre del archivo.
     pub fn play_folder(
         &mut self,
         folder: &std::path::Path,
@@ -335,7 +347,7 @@ impl Chilpa {
             ..NowPlaying::default()
         };
         player.play_all(&pistas, device, bit_perfect);
-        pistas.iter().map(|p| p.display().to_string()).collect()
+        pistas.iter().map(|p| titulo_de(p)).collect()
     }
 
     /// Pausa o reanuda lo que suena.

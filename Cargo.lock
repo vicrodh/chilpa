@@ -106,6 +106,7 @@ dependencies = [
  "chilpa-core",
  "chilpa-library",
  "chilpa-models",
+ "chilpa-tags",
 ]
 
 [[package]]
