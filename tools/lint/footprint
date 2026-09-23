@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Mide cuánta memoria ocupa Chilpa sin hacer nada (ADR-001).
+
+Arranca la ventana con la plataforma `offscreen` de Qt, la deja reposar unos
+segundos y lee su RSS. Si pasa del presupuesto, falla.
+
+El número no es un capricho: QBZ terminó decodificando pistas completas en
+memoria (2.7 GB por una hora a 24/96), y el plan de Chilpa dice que el
+footprint se mide, no se supone. Este candado mide lo barato —la app quieta—
+y deja para después lo caro: reproducir una biblioteca grande.
+
+Se salta solo si el binario no está compilado; nunca pasa por no medir.
+"""
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+# Presupuesto de la ventana en reposo. Una app de Qt Quick con su pila
+# gráfica no baja de ~100 MB; el margen está para notar una fuga, no para
+# tolerarla.
+BUDGET_MB = 250
+SETTLE_SECONDS = 6
+
+
+def binario() -> Path | None:
+    for perfil in ("release", "debug"):
+        for base in (Path(os.environ.get("CARGO_TARGET_DIR", ROOT / "target")), ROOT / "target"):
+            ruta = Path(base) / perfil / "chilpa-qt"
+            if ruta.is_file():
+                return ruta
+    return None
+
+
+def rss_mb(pid: int) -> float | None:
+    try:
+        for linea in Path(f"/proc/{pid}/status").read_text().splitlines():
+            if linea.startswith("VmRSS:"):
+                return int(linea.split()[1]) / 1024
+    except OSError:
+        return None
+    return None
+
+
+def main() -> None:
+    app = binario()
+    if app is None:
+        print("footprint: no hay binario compilado; se salta")
+        return
+
+    entorno = dict(os.environ, QT_QPA_PLATFORM="offscreen")
+    proceso = subprocess.Popen(
+        [str(app)], env=entorno, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
+    try:
+        pico = 0.0
+        for _ in range(SETTLE_SECONDS * 2):
+            time.sleep(0.5)
+            if proceso.poll() is not None:
+                print("footprint: la ventana se salió sola; nada que medir", file=sys.stderr)
+                sys.exit(1)
+            actual = rss_mb(proceso.pid)
+            if actual is not None:
+                pico = max(pico, actual)
+    finally:
+        proceso.terminate()
+        try:
+            proceso.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proceso.kill()
+
+    if pico > BUDGET_MB:
+        print(
+            f"footprint: la ventana en reposo usa {pico:.0f} MB, el presupuesto es {BUDGET_MB} MB",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    print(f"footprint: {pico:.0f} MB en reposo, de {BUDGET_MB} MB")
+
+
+if __name__ == "__main__":
+    main()

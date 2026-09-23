@@ -41,7 +41,9 @@ Before working on this repo:
 git config core.hooksPath hooks
 ```
 
-`tools/lint/all` runs every check; the pre-commit hook runs the same thing.
+`tools/lint/fast` runs the cheap checks and the pre-commit hook runs it on
+every commit; `tools/lint/all` adds the idle-memory budget, which costs a few
+seconds and needs a built binary.
 
 ## License
 
