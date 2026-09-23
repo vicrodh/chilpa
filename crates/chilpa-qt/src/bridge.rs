@@ -108,6 +108,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_album(self: Pin<&mut Chilpa>, album_id: i64, device: &QString, bit_perfect: bool);
 
+        /// Abre una lista M3U y la pone a sonar.
+        #[qinvokable]
+        fn play_playlist(self: Pin<&mut Chilpa>, path: &QString, device: &QString, bit_perfect: bool);
+
+        /// Guarda la cola actual como lista M3U.
+        #[qinvokable]
+        fn save_queue(self: Pin<&mut Chilpa>, path: &QString);
+
         /// Encola una carpeta entera.
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
@@ -358,6 +366,38 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn play_playlist(
+        mut self: Pin<&mut Self>,
+        path: &QString,
+        device: &QString,
+        bit_perfect: bool,
+    ) {
+        let ruta = path.to_string();
+        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
+        let dispositivo = device.to_string();
+        let titulos = self.as_mut().rust_mut().api.play_playlist(
+            std::path::Path::new(&ruta),
+            &dispositivo,
+            bit_perfect,
+        );
+        let mut lista = QList::<QString>::default();
+        for t in &titulos {
+            lista.append(QString::from(t));
+        }
+        self.as_mut().set_queue(QStringList::from(&lista));
+        self.as_mut().set_queue_index(0);
+        self.as_mut().set_playing(!titulos.is_empty());
+    }
+
+    pub fn save_queue(mut self: Pin<&mut Self>, path: &QString) {
+        let ruta = path.to_string();
+        let ruta = ruta.strip_prefix("file://").unwrap_or(&ruta).to_string();
+        let ok = self.as_mut().rust_mut().api.save_queue(std::path::Path::new(&ruta));
+        if ok {
+            self.as_mut().set_library_status(QString::from(&format!("lista guardada en {ruta}")));
+        }
     }
 
     /// Encola una carpeta entera y la echa a andar.
