@@ -34,6 +34,10 @@ pub mod chilpa_bridge {
         #[qproperty(bool, playing)]
         #[qproperty(bool, bit_perfect)]
         #[qproperty(f64, seconds)]
+        /// Lo que se pidió reproducir al arrancar, si se pasó por la línea
+        /// de comandos. Vacío cuando no.
+        #[qproperty(QString, autoplay_path)]
+        #[qproperty(QString, autoplay_device)]
         type Chilpa = super::ChilpaRust;
 
         /// Vuelve a leer las salidas de la máquina.
@@ -67,6 +71,8 @@ pub struct ChilpaRust {
     playing: bool,
     bit_perfect: bool,
     seconds: f64,
+    autoplay_path: QString,
+    autoplay_device: QString,
     api: chilpa_api::Chilpa,
 }
 
@@ -81,6 +87,10 @@ impl Default for ChilpaRust {
             playing: false,
             bit_perfect: false,
             seconds: 0.0,
+            // La ventana se puede arrancar apuntando a un archivo, para
+            // probarla sin tocar nada: chilpa-qt <archivo> [salida].
+            autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
+            autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             api: chilpa_api::Chilpa::new(),
         }
     }

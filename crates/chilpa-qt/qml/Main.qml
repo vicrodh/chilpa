@@ -17,7 +17,17 @@ ApplicationWindow {
     title: "Chilpa"
     color: "#faf6f2"
 
-    Component.onCompleted: Chilpa.refreshOutputs()
+    Component.onCompleted: {
+        Chilpa.refreshOutputs()
+        // Arrancada con un archivo: se elige la salida pedida y suena sola.
+        if (Chilpa.autoplayPath !== "") {
+            if (Chilpa.autoplayDevice !== "") {
+                const i = Chilpa.outputIds.indexOf(Chilpa.autoplayDevice)
+                if (i >= 0) salidas.currentIndex = i
+            }
+            Chilpa.play(Chilpa.autoplayPath, salidas.deviceId, bitPerfect.checked)
+        }
+    }
 
     Timer {
         interval: 100
