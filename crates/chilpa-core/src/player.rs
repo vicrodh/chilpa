@@ -26,6 +26,8 @@ pub enum PlayerEvent {
         total_frames: Option<u64>,
         /// Lo que el archivo dice de sí mismo, cuando se pudo leer.
         tags: Option<chilpa_tags::Tags>,
+        /// La portada ya extraída a disco, cuando el archivo trae una.
+        artwork: Option<PathBuf>,
     },
     /// Frames entregados hasta ahora.
     Progress { frames: u64 },
@@ -160,6 +162,8 @@ fn reproducir(
     let duracion = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
     let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
     let tags_para_arranque = tags.clone();
+    let portada = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
+    let portada_para_arranque = portada.clone();
     play_file_with(
         path,
         &caps,
@@ -173,6 +177,7 @@ fn reproducir(
                 bit_perfect: false,
                 total_frames: duracion,
                 tags: tags_para_arranque.clone(),
+                artwork: portada_para_arranque.clone(),
             });
             Ok(sink)
         },
@@ -189,6 +194,7 @@ fn reproducir(
             bit_perfect: played.delivery.is_bit_perfect(),
             total_frames: played.total_frames,
             tags: tags.clone(),
+            artwork: portada.clone(),
         });
         played.outcome
     })

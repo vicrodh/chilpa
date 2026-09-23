@@ -32,6 +32,8 @@ pub mod chilpa_bridge {
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
+        /// La portada como URL de archivo, lista para un Image de QML.
+        #[qproperty(QString, artwork)]
         #[qproperty(QString, format)]
         #[qproperty(QString, error)]
         #[qproperty(bool, playing)]
@@ -73,6 +75,7 @@ pub struct ChilpaRust {
     title: QString,
     artist: QString,
     album: QString,
+    artwork: QString,
     format: QString,
     error: QString,
     playing: bool,
@@ -93,6 +96,7 @@ impl Default for ChilpaRust {
             title: QString::from(""),
             artist: QString::from(""),
             album: QString::from(""),
+            artwork: QString::from(""),
             format: QString::from(""),
             error: QString::from(""),
             playing: false,
@@ -149,6 +153,12 @@ impl Chilpa {
         self.as_mut().set_title(QString::from(&ahora.title));
         self.as_mut().set_artist(QString::from(&ahora.artist));
         self.as_mut().set_album(QString::from(&ahora.album));
+        let portada = if ahora.artwork_path.is_empty() {
+            String::new()
+        } else {
+            format!("file://{}", ahora.artwork_path)
+        };
+        self.as_mut().set_artwork(QString::from(&portada));
         self.as_mut().set_error(QString::from(&ahora.error));
         if !ahora.path.is_empty() {
             self.as_mut().set_track(QString::from(&ahora.path));

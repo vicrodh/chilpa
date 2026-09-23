@@ -52,6 +52,15 @@ pub fn outputs() -> Vec<Output> {
     salidas
 }
 
+/// Dónde se guardan las portadas que se sacan de los archivos.
+pub fn artwork_cache() -> std::path::PathBuf {
+    let base = std::env::var_os("XDG_CACHE_HOME")
+        .map(std::path::PathBuf::from)
+        .or_else(|| std::env::var_os("HOME").map(|h| std::path::PathBuf::from(h).join(".cache")))
+        .unwrap_or_else(std::env::temp_dir);
+    base.join("chilpa").join("artwork")
+}
+
 /// Dónde escribe la salida de captura.
 pub fn capture_path() -> std::path::PathBuf {
     let mut p = std::env::temp_dir();

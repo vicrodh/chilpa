@@ -96,9 +96,36 @@ ApplicationWindow {
             color: "#ffffff"
             border.color: "#1a411d1f"
 
-            ColumnLayout {
+            RowLayout {
                 anchors.fill: parent
                 anchors.margins: 16
+                spacing: 14
+
+                Rectangle {
+                    Layout.preferredWidth: 120
+                    Layout.preferredHeight: 120
+                    radius: 8
+                    color: "#f0eae4"
+                    visible: Chilpa.playing || Chilpa.artwork !== ""
+                    Image {
+                        anchors.fill: parent
+                        source: Chilpa.artwork
+                        fillMode: Image.PreserveAspectCrop
+                        visible: Chilpa.artwork !== ""
+                        asynchronous: true
+                    }
+                    Label {
+                        anchors.centerIn: parent
+                        text: "sin portada"
+                        color: "#7a411d1f"
+                        font.pixelSize: 11
+                        visible: Chilpa.artwork === ""
+                    }
+                }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
                 spacing: 6
 
                 Label {
@@ -147,6 +174,9 @@ ApplicationWindow {
                     color: "#d7272b"
                     visible: Chilpa.error !== ""
                 }
+
+                Item { Layout.fillHeight: true }
+            }
             }
         }
     }
