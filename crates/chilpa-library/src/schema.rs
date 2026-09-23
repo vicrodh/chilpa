@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// La versión del esquema que entiende este código.
-pub const VERSION: i64 = 4;
+pub const VERSION: i64 = 5;
 
 /// Los pasos, en orden. El índice es la versión a la que llevan: el primero
 /// lleva de 0 a 1, el segundo de 1 a 2.
@@ -25,7 +25,8 @@ pub const VERSION: i64 = 4;
 /// Cada paso corre una sola vez y nunca se edita después de salir: una base
 /// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
 /// crearía dos formas distintas de la misma versión.
-const PASOS: &[&str] = &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3, MIGRACION_V4];
+const PASOS: &[&str] =
+    &[SCHEMA_V1, MIGRACION_V2, MIGRACION_V3, MIGRACION_V4, MIGRACION_V5];
 
 /// Crea o actualiza el esquema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -245,6 +246,18 @@ CREATE INDEX track_genres_genre ON track_genres(genre_id);
 /// silenciosa que después nadie encuentra.
 const MIGRACION_V4: &str = r#"
 ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
+"#;
+
+/// De 4 a 5: un índice sobre `(album_id, present)`.
+///
+/// Sin él, SQLite elegía `tracks_present` para `album_id = ? AND present = 1`
+/// y, como todas las pistas están presentes, recorría la tabla entera por
+/// cada álbum. Medido con cinco mil álbumes: la reja pasó de 30 segundos a
+/// 7 milisegundos. Es el mismo hallazgo de la auditoría de QBZ, con otra
+/// cara.
+const MIGRACION_V5: &str = r#"
+CREATE INDEX tracks_album_present ON tracks(album_id, present);
+ANALYZE;
 "#;
 
 #[cfg(test)]

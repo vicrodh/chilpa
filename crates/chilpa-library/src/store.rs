@@ -170,6 +170,25 @@ impl AlbumSort {
         ]
     }
 
+    /// Cierto si el orden necesita agregar la biblioteca entera para
+    /// decidir qué va primero.
+    ///
+    /// Por artista, título o año se ordena con columnas de `albums` y ya:
+    /// se puede recortar la página antes de contar nada. Por escuchas o por
+    /// fecha de alta no hay manera, porque el orden sale justo de eso.
+    fn necesita_agregar(&self) -> bool {
+        matches!(self, AlbumSort::Added | AlbumSort::Played | AlbumSort::LastPlayed)
+    }
+
+    /// El orden cuando solo se miran columnas de `albums`.
+    fn order_by_barato(&self) -> &'static str {
+        match self {
+            AlbumSort::Title => "a.title COLLATE NOCASE",
+            AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
+            _ => "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE",
+        }
+    }
+
     fn order_by(&self) -> &'static str {
         match self {
             AlbumSort::Artist => "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE",
@@ -184,6 +203,15 @@ impl AlbumSort {
 
 
 impl Library {
+    /// La conexión, para las pruebas que necesitan sembrar datos de golpe.
+    ///
+    /// No es para la aplicación: lo que la aplicación necesita sale por un
+    /// método con nombre, no por SQL suelto.
+    #[doc(hidden)]
+    pub fn connection(&self) -> &Connection {
+        &self.db
+    }
+
     /// Abre (o crea) la biblioteca en ese archivo.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         if let Some(dir) = path.parent() {
@@ -718,6 +746,9 @@ impl Library {
         limit: usize,
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        if !orden.necesita_agregar() {
+            return self.albums_pagina_barata(orden, artist, limit, offset);
+        }
         // El filtro va como parámetro, nunca interpolado: un nombre con
         // comillas no tiene por qué romper una consulta.
         let sql = format!(
@@ -741,6 +772,58 @@ impl Library {
              ORDER BY {}
              LIMIT ?1 OFFSET ?2",
             orden.order_by()
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let filas = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
+            Ok((
+                StoredAlbum {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    album_artist: r.get(2)?,
+                    year: r.get(3)?,
+                    artwork_path: r.get(4)?,
+                    track_count: r.get::<_, i64>(5)? as usize,
+                },
+                r.get::<_, i64>(6)? as usize,
+            ))
+        })?;
+        filas.collect()
+    }
+
+    /// La reja cuando el orden no depende de agregar nada.
+    ///
+    /// Se recorta la página primero y solo después se cuentan pistas y
+    /// escuchas, para las cien filas que van a salir. Contar la biblioteca
+    /// entera en cada página era el hallazgo alto de la auditoría de QBZ, y
+    /// aquí se nota: de 137 ms a unos pocos, con cincuenta mil pistas.
+    fn albums_pagina_barata(
+        &self,
+        orden: AlbumSort,
+        artist: Option<&str>,
+        limit: usize,
+        offset: usize,
+    ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        let sql = format!(
+            "WITH pagina AS MATERIALIZED (
+                 SELECT a.id AS id
+                 FROM albums a
+                 WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE)
+                   AND EXISTS (SELECT 1 FROM tracks t WHERE t.album_id = a.id AND t.present = 1)
+                 ORDER BY {}
+                 LIMIT ?1 OFFSET ?2
+             )
+             SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
+                    (SELECT count(*) FROM tracks t
+                     WHERE t.album_id = a.id AND t.present = 1),
+                    (SELECT count(*) FROM play_events p
+                     JOIN tracks t2 ON t2.id = p.track_id
+                     WHERE t2.album_id = a.id
+                       AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms))
+             FROM pagina g
+             JOIN albums a ON a.id = g.id
+             ORDER BY {}",
+            orden.order_by_barato(),
+            orden.order_by_barato()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let filas = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
