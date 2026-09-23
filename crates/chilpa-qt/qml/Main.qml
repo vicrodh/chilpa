@@ -111,6 +111,7 @@ ApplicationWindow {
         Rectangle {
             Layout.fillWidth: true
             Layout.preferredHeight: 152
+            Layout.alignment: Qt.AlignTop
             radius: 14
             color: "#ffffff"
             border.color: "#1a411d1f"
@@ -202,10 +203,11 @@ ApplicationWindow {
             }
         }
 
-        // La cola. Se asoma solo cuando hay más de una pista.
+        // La cola. Se asoma solo cuando hay más de una pista, y solo
+        // entonces se queda con el espacio que sobra.
         Rectangle {
             Layout.fillWidth: true
-            Layout.fillHeight: true
+            Layout.fillHeight: visible
             radius: 14
             color: "#ffffff"
             border.color: "#1a411d1f"
@@ -236,6 +238,14 @@ ApplicationWindow {
                     }
                 }
             }
+        }
+
+        // Sin cola, este relleno se queda con el espacio que sobra y todo lo
+        // demás permanece arriba. Un elemento invisible no ocupa lugar en un
+        // Layout, así que desaparece en cuanto hay cola.
+        Item {
+            Layout.fillHeight: true
+            visible: Chilpa.queue.length <= 1
         }
     }
 }
