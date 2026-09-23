@@ -27,6 +27,8 @@ Rectangle {
             Chilpa.refreshStats()
         } else if (cual === "listas") {
             Chilpa.refreshPlaylists()
+        } else if (cual === "asistente") {
+            Chilpa.runWizard()
         }
     }
 
@@ -55,6 +57,7 @@ Rectangle {
                         return Chilpa.artists.length +
                             (Chilpa.artists.length === 1 ? " artista" : " artistas")
                     if (raiz.pestana === "estadisticas") return "Estadísticas"
+                    if (raiz.pestana === "asistente") return "Asistente de salida"
                     if (raiz.pestana === "listas")
                         return Chilpa.playlists.length +
                             (Chilpa.playlists.length === 1 ? " lista" : " listas")
@@ -73,7 +76,8 @@ Rectangle {
                     { clave: "albumes", texto: "Álbumes" },
                     { clave: "artistas", texto: "Artistas" },
                     { clave: "listas", texto: "Listas" },
-                    { clave: "estadisticas", texto: "Estadísticas" }
+                    { clave: "estadisticas", texto: "Estadísticas" },
+                    { clave: "asistente", texto: "Salida" }
                 ]
                 delegate: Button {
                     text: modelData.texto
@@ -141,6 +145,12 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: raiz.pestana === "listas"
+        }
+
+        PanelAsistente {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: raiz.pestana === "asistente"
         }
 
         GridView {

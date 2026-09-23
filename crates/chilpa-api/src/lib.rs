@@ -220,6 +220,27 @@ pub struct Playlist {
     pub track_count: usize,
 }
 
+/// Lo que el asistente encontró de una salida.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct WizardReport {
+    pub device: String,
+    /// Cierto si se midió abriendo el dispositivo.
+    pub probed: bool,
+    pub summary: String,
+    pub rates: Vec<u32>,
+    pub formats: Vec<String>,
+    pub rows: Vec<WizardRow>,
+}
+
+/// Un formato y qué pasa con él.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct WizardRow {
+    pub name: String,
+    pub format: String,
+    /// "bit-perfect", "convertido a ..." o "no se puede".
+    pub verdict: String,
+}
+
 /// Un artista de la biblioteca, listo para mostrar.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Artist {
@@ -543,6 +564,55 @@ impl Chilpa {
         let mut s = chilpa_core::settings::load();
         s.last_folder = folder.to_string();
         let _ = chilpa_core::settings::save(&s);
+    }
+
+    /// El diagnóstico de una salida: qué formatos salen tal cual.
+    ///
+    /// Mide el dispositivo de verdad. No configura nada: el asistente de QBZ
+    /// escribía ajustes a ciegas, y eso es peor que no saber.
+    pub fn wizard(&mut self, device: &str) -> WizardReport {
+        let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
+        let caps = match chilpa_core::probe_device(&id) {
+            Ok(c) => c,
+            Err(e) => {
+                return WizardReport {
+                    device: id,
+                    probed: false,
+                    summary: format!("no se pudo abrir el dispositivo: {e:?}"),
+                    rates: Vec::new(),
+                    formats: Vec::new(),
+                    rows: Vec::new(),
+                }
+            }
+        };
+        let d = chilpa_core::wizard::diagnosticar(&id, &caps);
+        WizardReport {
+            device: d.device,
+            probed: d.probed,
+            summary: d.resumen,
+            rates: d.sample_rates,
+            formats: d.formats,
+            rows: d
+                .filas
+                .into_iter()
+                .map(|f| WizardRow {
+                    name: f.nombre,
+                    format: f.formato,
+                    verdict: match f.veredicto {
+                        chilpa_core::wizard::Veredicto::BitPerfect => "bit-perfect".into(),
+                        chilpa_core::wizard::Veredicto::Convertido { a } => {
+                            format!("convertido a {a}")
+                        }
+                        chilpa_core::wizard::Veredicto::NoSePuede => "no se puede".into(),
+                    },
+                })
+                .collect(),
+        }
+    }
+
+    /// La salida elegida, o la primera que haya.
+    fn device_or_first(&self) -> String {
+        self.outputs().first().map(|o| o.id.clone()).unwrap_or_default()
     }
 
     /// Las salidas que el usuario puede elegir.

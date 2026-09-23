@@ -10,6 +10,7 @@ pub mod dsd_playback;
 pub mod playback;
 pub mod player;
 pub mod settings;
+pub mod wizard;
 pub mod queue_playback;
 
 /// Lo que sale por el dispositivo, para quien lo quiera dibujar.
@@ -93,6 +94,19 @@ pub fn capture_path() -> std::path::PathBuf {
 #[cfg(not(target_os = "linux"))]
 pub fn outputs() -> Vec<Output> {
     Vec::new()
+}
+
+/// Mide un dispositivo de salida.
+///
+/// Es lo mismo que usa el reproductor para negociar; el asistente lo llama
+/// aparte para poder decir qué se puede antes de poner nada a sonar.
+#[cfg(target_os = "linux")]
+pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+    if id == chilpa_audio::CAPTURE_ID {
+        Ok(chilpa_audio::capture::capabilities())
+    } else {
+        chilpa_alsa::probe(id)
+    }
 }
 
 /// Arranca un reproductor conectado a las salidas reales de la máquina.

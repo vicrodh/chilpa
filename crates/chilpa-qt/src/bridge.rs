@@ -89,6 +89,10 @@ pub mod chilpa_bridge {
         #[qproperty(QStringList, spectrum)]
         /// El nivel por canal, como "pico\trms".
         #[qproperty(QStringList, levels)]
+        /// El diagnóstico de la salida: una línea de resumen y un renglón
+        /// por formato, como "nombre\tformato\tveredicto".
+        #[qproperty(QString, wizard_summary)]
+        #[qproperty(QStringList, wizard_rows)]
         /// Las unidades de CD que hay en la máquina.
         #[qproperty(QStringList, cd_drives)]
         /// Los géneros de la biblioteca, como "nombre\tpistas".
@@ -262,6 +266,10 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_cd(self: Pin<&mut Chilpa>, drive: &QString);
 
+        /// Mide la salida elegida y dice qué formatos salen tal cual.
+        #[qinvokable]
+        fn run_wizard(self: Pin<&mut Chilpa>);
+
         /// Vuelve a mirar qué unidades de CD hay.
         #[qinvokable]
         fn refresh_cd_drives(self: Pin<&mut Chilpa>);
@@ -425,6 +433,8 @@ pub struct ChilpaRust {
     visualizer: QString,
     spectrum: QStringList,
     levels: QStringList,
+    wizard_summary: QString,
+    wizard_rows: QStringList,
     cd_drives: QStringList,
     genres: QStringList,
     smart_lists: QStringList,
@@ -497,6 +507,8 @@ impl Default for ChilpaRust {
             visualizer: QString::from(&recordado.visualizer),
             spectrum: QStringList::default(),
             levels: QStringList::default(),
+            wizard_summary: QString::from(""),
+            wizard_rows: QStringList::default(),
             cd_drives: QStringList::default(),
             genres: QStringList::default(),
             smart_lists: QStringList::default(),
@@ -983,6 +995,33 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn run_wizard(mut self: Pin<&mut Self>) {
+        let (dispositivo, _) = self.as_mut().elegido();
+        let reporte = self.as_mut().rust_mut().api.wizard(&dispositivo);
+        let mut l = QList::<QString>::default();
+        // Primero lo que el dispositivo dijo de sí mismo.
+        if reporte.probed {
+            l.append(QString::from(&format!(
+                "Frecuencias\t{}\t",
+                reporte
+                    .rates
+                    .iter()
+                    .map(|r| r.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )));
+            l.append(QString::from(&format!("Formatos\t{}\t", reporte.formats.join(", "))));
+        }
+        for f in &reporte.rows {
+            l.append(QString::from(&format!("{}\t{}\t{}", f.name, f.format, f.verdict)));
+        }
+        self.as_mut().set_wizard_rows(QStringList::from(&l));
+        self.as_mut().set_wizard_summary(QString::from(&format!(
+            "{}: {}",
+            reporte.device, reporte.summary
+        )));
     }
 
     pub fn refresh_cd_drives(mut self: Pin<&mut Self>) {
