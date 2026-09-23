@@ -14,17 +14,30 @@ ColumnLayout {
 
     PanelAcciones { Layout.alignment: Qt.AlignLeft }
 
-    // El grueso de la ventana: lo que se está mirando.
-    Resultados {
+    // El grueso de la ventana: lo que se está mirando y, a la derecha, la
+    // letra de lo que suena.
+    RowLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
-    }
+        spacing: 10
 
-    Biblioteca {
-        Layout.fillWidth: true
-        Layout.fillHeight: true
-        visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
+        Resultados {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
+        }
+
+        Biblioteca {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
+        }
+
+        PanelLetra {
+            Layout.preferredWidth: 300
+            Layout.fillHeight: true
+            visible: Chilpa.lyrics.length > 0
+        }
     }
 
     PanelCola {

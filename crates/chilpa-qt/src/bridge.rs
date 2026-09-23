@@ -60,6 +60,12 @@ pub mod chilpa_bridge {
         /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
         /// ve, y la caja donde se escribe cambia de lugar con cada layout.
         #[qproperty(QString, search_text)]
+        /// La letra de lo que suena: un renglón por entrada, qué renglón
+        /// va (-1 si ninguno) y de dónde salió.
+        #[qproperty(QStringList, lyrics)]
+        #[qproperty(i32, lyrics_line)]
+        #[qproperty(bool, lyrics_synced)]
+        #[qproperty(QString, lyrics_source)]
         /// La última carpeta que se abrió, para que los diálogos no
         /// empiecen en el home cada vez.
         #[qproperty(QString, last_folder)]
@@ -244,6 +250,13 @@ pub struct ChilpaRust {
     scanning: bool,
     layout: QString,
     layouts: QStringList,
+    lyrics: QStringList,
+    /// De qué pista es la letra que está armada, para no rearmarla en cada
+    /// pulso.
+    letra_de: String,
+    lyrics_line: i32,
+    lyrics_synced: bool,
+    lyrics_source: QString,
     last_folder: QString,
     album_views: QStringList,
     album_view: i32,
@@ -287,6 +300,11 @@ impl Default for ChilpaRust {
             library_status: QString::from(""),
             scan_progress: 0.0,
             scanning: false,
+            lyrics: QStringList::default(),
+            letra_de: String::new(),
+            lyrics_line: -1,
+            lyrics_synced: false,
+            lyrics_source: QString::from(""),
             last_folder: QString::from(&recordado.last_folder),
             album_views: {
                 let mut l = QList::<QString>::default();
@@ -669,6 +687,19 @@ impl Chilpa {
         };
         self.as_mut().set_artwork(QString::from(&portada));
         self.as_mut().set_queue_index(ahora.index as i32);
+        // La letra solo se vuelve a armar cuando cambia: rehacer una lista
+        // de QString sesenta veces por minuto es tirar trabajo.
+        if self.letra_de != ahora.path {
+            let mut lista = QList::<QString>::default();
+            for l in &ahora.lyrics {
+                lista.append(QString::from(l));
+            }
+            self.as_mut().set_lyrics(QStringList::from(&lista));
+            self.as_mut().set_lyrics_synced(ahora.lyrics_synced);
+            self.as_mut().set_lyrics_source(QString::from(&ahora.lyrics_source));
+            self.as_mut().rust_mut().letra_de = ahora.path.clone();
+        }
+        self.as_mut().set_lyrics_line(ahora.lyrics_line);
         self.as_mut().set_error(QString::from(&ahora.error));
         if !ahora.path.is_empty() {
             self.as_mut().set_track(QString::from(&ahora.path));
