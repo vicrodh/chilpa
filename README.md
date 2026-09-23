@@ -1,3 +1,5 @@
+<img src="assets/logo.png" alt="" width="140" align="right">
+
 # Chilpa
 
 *Chilpatl* is Nahuatl for hornet. Chilpa is a music player for the desktop.
@@ -30,8 +32,7 @@ What QBZ never got to:
 - `docs/adr/` — the decisions that constrain the code.
 - `tools/lint/` — the checks that enforce them.
 
-Agent rules are not kept in this repo; they live in the internal docs and are
-symlinked here as `AGENTS.md`, untracked.
+Agent rules, plans and internal documents are not part of this repository.
 
 Before working on this repo:
 
