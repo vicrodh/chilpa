@@ -112,6 +112,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString, device: &QString, bit_perfect: bool);
 
+        /// Salta a la siguiente pista de la cola.
+        #[qinvokable]
+        fn next_track(self: Pin<&mut Chilpa>);
+
+        /// Vuelve a la anterior; en la primera, la reinicia.
+        #[qinvokable]
+        fn previous_track(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
+
         /// Pausa o reanuda. No se llama set_paused: ese nombre ya lo usa el
         /// asignador que genera la propiedad `paused`.
         #[qinvokable]
@@ -374,6 +382,15 @@ impl Chilpa {
     pub fn remember(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
         let id = device.to_string();
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
+    }
+
+    pub fn next_track(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().api.next_track();
+    }
+
+    pub fn previous_track(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
+        let dispositivo = device.to_string();
+        self.as_mut().rust_mut().api.previous_track(&dispositivo, bit_perfect);
     }
 
     pub fn pause(mut self: Pin<&mut Self>, paused: bool) {

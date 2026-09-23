@@ -103,6 +103,28 @@ impl PauseSignal {
     }
 }
 
+/// La bandera con la que se salta a la siguiente pista.
+///
+/// Saltar NO es parar: la pista actual termina como si se hubiera acabado
+/// sola, así que la cola avanza. Parar detiene la cola entera.
+#[derive(Clone, Debug, Default)]
+pub struct SkipSignal(Arc<AtomicBool>);
+
+impl SkipSignal {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn skip(&self) {
+        self.0.store(true, Ordering::Release);
+    }
+
+    /// Se lleva la petición, si la hay.
+    pub fn take(&self) -> bool {
+        self.0.swap(false, Ordering::AcqRel)
+    }
+}
+
 /// La bandera con la que se para desde otro hilo.
 ///
 /// Parar no manda un comando por un canal que pueda quedarse lleno, ni toma
@@ -140,6 +162,15 @@ mod tests {
         assert!(SinkError::Xrun.is_recoverable());
         assert!(!SinkError::DeviceLost.is_recoverable());
         assert!(!SinkError::Timeout(Duration::from_millis(200)).is_recoverable());
+    }
+
+    #[test]
+    fn saltar_se_consume_una_sola_vez() {
+        let s = SkipSignal::new();
+        assert!(!s.take());
+        s.skip();
+        assert!(s.take());
+        assert!(!s.take(), "la petición ya se atendió");
     }
 
     #[test]

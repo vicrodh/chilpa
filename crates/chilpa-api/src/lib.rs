@@ -176,6 +176,8 @@ pub struct Chilpa {
     library: Option<chilpa_library::Library>,
     /// Lo que hace falta para registrar la reproducción cuando termine.
     en_curso: Option<EnCurso>,
+    /// Las rutas de la cola actual, para poder volver atrás.
+    cola: Vec<String>,
     player: Option<chilpa_core::player::Player>,
     now: NowPlaying,
     sample_rate: u32,
@@ -193,6 +195,7 @@ impl Chilpa {
             core: chilpa_core::Core::new(),
             library: None,
             en_curso: None,
+            cola: Vec::new(),
             player: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -300,6 +303,7 @@ impl Chilpa {
         if pistas.is_empty() {
             return Vec::new();
         }
+        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
         let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
         self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
         player.play_all(&pistas, device, bit_perfect);
@@ -319,6 +323,7 @@ impl Chilpa {
         }
         let pistas: Vec<std::path::PathBuf> =
             disponibles.iter().map(|t| std::path::PathBuf::from(&t.path)).collect();
+        self.cola = pistas.iter().map(|p| p.display().to_string()).collect();
         let player = self.player.get_or_insert_with(chilpa_core::spawn_player);
         self.now = NowPlaying { playing: true, queue_len: pistas.len(), ..NowPlaying::default() };
         player.play_all(&pistas, device, bit_perfect);
@@ -407,6 +412,29 @@ impl Chilpa {
             let seguro = seconds.max(0.0);
             p.seek(std::time::Duration::from_secs_f64(seguro));
         }
+    }
+
+    /// Salta a la siguiente pista de la cola.
+    pub fn next_track(&mut self) {
+        if let Some(p) = &self.player {
+            p.next();
+        }
+    }
+
+    /// Vuelve a la pista anterior.
+    ///
+    /// No hay una señal para esto: la cola se vuelve a lanzar desde la
+    /// pista de antes, que es lo que el reproductor sabe hacer.
+    pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
+        if self.cola.is_empty() || self.now.index == 0 {
+            // En la primera pista, "anterior" es volver a empezarla.
+            self.seek(0.0);
+            return;
+        }
+        let desde = self.now.index - 1;
+        let restantes: Vec<String> = self.cola[desde..].to_vec();
+        let titulos = self.play_tracks(&restantes, device, bit_perfect);
+        let _ = titulos;
     }
 
     /// Para lo que esté sonando.

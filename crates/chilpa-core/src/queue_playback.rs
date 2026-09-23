@@ -14,7 +14,7 @@ use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{pack, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::seek::SeekSignal;
-use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
+use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
 
@@ -44,6 +44,9 @@ struct TrackFrames<'a> {
     /// Dónde se piden los saltos. Se atienden entre bloques, nunca a media
     /// escritura.
     seek: SeekSignal,
+    /// Dónde se pide saltar de pista. Se atiende terminando la fuente, que
+    /// es lo que hace que la cola avance en lugar de detenerse.
+    skip: SkipSignal,
     /// Frames que hay que tirar para caer en el punto exacto pedido.
     descartar: u64,
     /// Dónde cayó el último salto. La posición que ve la interfaz cuenta
@@ -55,6 +58,11 @@ impl FrameSource for TrackFrames<'_> {
     fn next_block(&mut self) -> Option<Vec<u8>> {
         loop {
             if self.agotado {
+                return None;
+            }
+            if self.skip.take() {
+                self.agotado = true;
+                self.trimmer.finish();
                 return None;
             }
             if let Some(destino) = self.seek.take() {
@@ -148,6 +156,7 @@ where
         stop,
         &PauseSignal::new(),
         &SeekSignal::new(),
+        &SkipSignal::new(),
         open_sink,
         &mut |_, _, _| {},
         &mut |_, _| {},
@@ -166,6 +175,7 @@ pub fn play_queue_with<F, K>(
     stop: &StopSignal,
     pause: &PauseSignal,
     seek: &SeekSignal,
+    skip: &SkipSignal,
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery),
     on_progress: &mut dyn FnMut(usize, u64),
@@ -206,6 +216,7 @@ where
             trimmer,
             agotado: false,
             seek: seek.clone(),
+            skip: skip.clone(),
             descartar: 0,
             base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         };

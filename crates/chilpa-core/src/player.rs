@@ -63,6 +63,7 @@ pub struct Player {
     events: Receiver<PlayerEvent>,
     stop: StopSignal,
     pause: chilpa_audio::sink::PauseSignal,
+    skip: chilpa_audio::sink::SkipSignal,
     seek: chilpa_audio::seek::SeekSignal,
     thread: Option<JoinHandle<()>>,
 }
@@ -78,6 +79,8 @@ impl Player {
         let seek_hilo = seek.clone();
         let pause = chilpa_audio::sink::PauseSignal::new();
         let pause_hilo = pause.clone();
+        let skip = chilpa_audio::sink::SkipSignal::new();
+        let skip_hilo = skip.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -91,6 +94,7 @@ impl Player {
                             // orden de paro vieja no mata la siguiente.
                             stop_hilo.reset();
                             pause_hilo.set(false);
+                            skip_hilo.take();
                             let stop = stop_hilo.clone();
                             let resultado = reproducir(
                                 &paths,
@@ -99,6 +103,7 @@ impl Player {
                                 &stop,
                                 &pause_hilo,
                                 &seek_hilo,
+                                &skip_hilo,
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
@@ -118,7 +123,7 @@ impl Player {
             })
             .expect("el hilo del reproductor arranca");
 
-        Self { orders: orders_tx, events: events_rx, stop, pause, seek, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, stop, pause, skip, seek, thread: Some(thread) }
     }
 
     /// Pide reproducir un archivo. Regresa de inmediato.
@@ -142,6 +147,12 @@ impl Player {
 
     pub fn is_paused(&self) -> bool {
         self.pause.is_paused()
+    }
+
+    /// Salta a la siguiente pista de la cola. La actual termina como si se
+    /// hubiera acabado, así que la cola avanza en vez de detenerse.
+    pub fn next(&self) {
+        self.skip.skip();
     }
 
     /// Pide saltar a ese punto de la pista que suena. El salto se atiende
@@ -187,6 +198,7 @@ fn reproducir(
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     seek: &chilpa_audio::seek::SeekSignal,
+    skip: &chilpa_audio::sink::SkipSignal,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
@@ -209,6 +221,7 @@ fn reproducir(
         stop,
         pause,
         seek,
+        skip,
         |formato| open(device, formato),
         &mut |indice, ruta, delivery| {
             // Los tags y la portada se leen al arrancar cada pista, no al
@@ -421,6 +434,37 @@ mod tests {
             .collect();
         assert_eq!(arranques, vec![(0, 2), (1, 2)], "las dos pistas, en orden");
         assert_eq!(escritos.load(Ordering::Relaxed), 3_000, "salieron todos los frames");
+        let _ = std::fs::remove_file(a);
+        let _ = std::fs::remove_file(b);
+    }
+
+    #[test]
+    fn saltar_avanza_la_cola_en_vez_de_detenerla() {
+        let escritos = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&escritos));
+        // Pistas largas: sin saltar, la prueba tardaría en llegar al final.
+        let a = wav("saltar-a", 400_000);
+        let b = wav("saltar-b", 1_000);
+        p.play_all(&[a.clone(), b.clone()], "falso", true);
+
+        // En cuanto arranca la primera, se pide saltar. Los eventos se
+        // juntan de las dos esperas: cada una consume lo que ya recogió.
+        let mut eventos =
+            esperar(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Started { .. })));
+        p.next();
+        eventos.extend(esperar(&p, |e| {
+            e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. }))
+        }));
+
+        let arranques = eventos
+            .iter()
+            .filter(|e| matches!(e, PlayerEvent::Started { .. }))
+            .count();
+        assert!(arranques >= 2, "la segunda pista arrancó: {arranques} arranques");
+        assert!(
+            escritos.load(Ordering::Relaxed) < 401_000,
+            "no sonó la primera entera"
+        );
         let _ = std::fs::remove_file(a);
         let _ = std::fs::remove_file(b);
     }
