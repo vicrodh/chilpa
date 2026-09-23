@@ -94,6 +94,8 @@ pub mod chilpa_bridge {
         #[qproperty(f64, correlation)]
         /// El nivel por canal, como "pico\trms".
         #[qproperty(QStringList, levels)]
+        /// Los plugins instalados, como "id\tnombre\testado\tproblema".
+        #[qproperty(QStringList, plugins)]
         /// El diagnóstico de la salida: una línea de resumen y un renglón
         /// por formato, como "nombre\tformato\tveredicto".
         #[qproperty(QString, wizard_summary)]
@@ -271,6 +273,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn play_cd(self: Pin<&mut Chilpa>, drive: &QString);
 
+        /// Carga los plugins que haya y vuelve a leer la lista.
+        #[qinvokable]
+        fn load_plugins(self: Pin<&mut Chilpa>);
+
+        /// Saca un plugin de cuarentena. Solo lo pide el usuario.
+        #[qinvokable]
+        fn reactivate_plugin(self: Pin<&mut Chilpa>, id: &QString);
+
         /// Mide la salida elegida y dice qué formatos salen tal cual.
         #[qinvokable]
         fn run_wizard(self: Pin<&mut Chilpa>);
@@ -440,6 +450,7 @@ pub struct ChilpaRust {
     pairs: QStringList,
     correlation: f64,
     levels: QStringList,
+    plugins: QStringList,
     wizard_summary: QString,
     wizard_rows: QStringList,
     cd_drives: QStringList,
@@ -516,6 +527,7 @@ impl Default for ChilpaRust {
             pairs: QStringList::default(),
             correlation: 999.0,
             levels: QStringList::default(),
+            plugins: QStringList::default(),
             wizard_summary: QString::from(""),
             wizard_rows: QStringList::default(),
             cd_drives: QStringList::default(),
@@ -1006,6 +1018,35 @@ impl Chilpa {
         self.as_mut().set_queue(QStringList::from(&lista));
         self.as_mut().set_queue_index(0);
         self.as_mut().set_playing(!pistas.is_empty());
+    }
+
+    pub fn load_plugins(mut self: Pin<&mut Self>) {
+        let cuantos = self.as_mut().rust_mut().api.load_plugins();
+        self.as_mut().refrescar_plugins();
+        let total = self.as_mut().rust_mut().api.plugins().len();
+        if total > 0 {
+            self.as_mut().set_library_status(QString::from(&format!(
+                "{cuantos} de {total} plugins cargados"
+            )));
+        }
+    }
+
+    pub fn reactivate_plugin(mut self: Pin<&mut Self>, id: &QString) {
+        let nombre = id.to_string();
+        self.as_mut().rust_mut().api.reactivate_plugin(&nombre);
+        self.as_mut().refrescar_plugins();
+    }
+
+    fn refrescar_plugins(mut self: Pin<&mut Self>) {
+        let lista = self.as_mut().rust_mut().api.plugins();
+        let mut l = QList::<QString>::default();
+        for p in &lista {
+            l.append(QString::from(&format!(
+                "{}\t{}\t{}\t{}",
+                p.id, p.name, p.state, p.problem
+            )));
+        }
+        self.as_mut().set_plugins(QStringList::from(&l));
     }
 
     pub fn run_wizard(mut self: Pin<&mut Self>) {
