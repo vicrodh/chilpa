@@ -4,6 +4,7 @@ members = [
     "crates/chilpa-models",
     "crates/chilpa-audio",
     "crates/chilpa-decode",
+    "crates/chilpa-dsd",
     "crates/chilpa-alsa",
     "crates/chilpa-core",
     "crates/chilpa-api",
@@ -20,6 +21,7 @@ rust-version = "1.90"
 chilpa-models = { path = "crates/chilpa-models" }
 chilpa-audio = { path = "crates/chilpa-audio" }
 chilpa-decode = { path = "crates/chilpa-decode" }
+chilpa-dsd = { path = "crates/chilpa-dsd" }
 chilpa-alsa = { path = "crates/chilpa-alsa" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }

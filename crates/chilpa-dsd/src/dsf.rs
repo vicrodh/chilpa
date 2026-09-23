@@ -1,0 +1,161 @@
+//! DSF, el contenedor de Sony.
+//!
+//! La estructura es simple: un chunk `DSD ` con el puntero a los tags, un
+//! chunk `fmt ` con la descripción del stream, y un chunk `data` con los
+//! bits. Los datos vienen en BLOQUES por canal (4096 bytes por canal, uno
+//! tras otro), y el último bloque puede traer relleno que no es música: por
+//! eso se cuentan los bytes válidos a partir del número de muestras.
+//!
+//! `bits_per_sample` no dice cuántos bits mide una muestra (siempre es una):
+//! dice el orden dentro del byte. 1 = el primero en tiempo va en el bit menos
+//! significativo, que es lo normal; 8 = al revés.
+
+use crate::{is_supported_rate, reverse_bits, DsdError, DsdInfo, DsdSource};
+use std::fs::File;
+use std::io::{BufReader, Read, Seek, SeekFrom};
+use std::path::Path;
+
+pub struct DsfReader {
+    file: BufReader<File>,
+    info: DsdInfo,
+    block_size: usize,
+    /// Bytes válidos que quedan por canal.
+    remaining_per_channel: u64,
+    /// Dónde empiezan los datos. No se supone: se toma de la posición real
+    /// después de leer el encabezado, porque el chunk fmt puede traer más
+    /// campos de los que leemos.
+    data_start: u64,
+    lsb_first: bool,
+}
+
+impl DsfReader {
+    pub fn open(path: &Path) -> Result<Self, DsdError> {
+        let mut file = BufReader::new(File::open(path)?);
+
+        if &read_id(&mut file)? != b"DSD " {
+            return Err(DsdError::Corrupt("no empieza con el chunk DSD".into()));
+        }
+        let dsd_chunk = read_u64(&mut file)?;
+        if dsd_chunk != 28 {
+            return Err(DsdError::Corrupt(format!("el chunk DSD mide {dsd_chunk}, no 28")));
+        }
+        let _total_size = read_u64(&mut file)?;
+        let _metadata_ptr = read_u64(&mut file)?;
+
+        if &read_id(&mut file)? != b"fmt " {
+            return Err(DsdError::Corrupt("falta el chunk fmt".into()));
+        }
+        let fmt_size = read_u64(&mut file)?;
+        if fmt_size < 52 {
+            return Err(DsdError::Corrupt(format!("el chunk fmt mide {fmt_size}, mínimo 52")));
+        }
+        let version = read_u32(&mut file)?;
+        let format_id = read_u32(&mut file)?;
+        let _channel_type = read_u32(&mut file)?;
+        let channels = read_u32(&mut file)?;
+        let dsd_rate_hz = read_u32(&mut file)?;
+        let bits_per_sample = read_u32(&mut file)?;
+        let samples = read_u64(&mut file)?;
+        let block_size = read_u32(&mut file)?;
+        let _reserved = read_u32(&mut file)?;
+
+        if version != 1 || format_id != 0 {
+            return Err(DsdError::Unsupported(format!("DSF versión {version}, id {format_id}")));
+        }
+        if !(1..=6).contains(&channels) {
+            return Err(DsdError::Unsupported(format!("{channels} canales")));
+        }
+        if !is_supported_rate(dsd_rate_hz) {
+            return Err(DsdError::Unsupported(format!("{dsd_rate_hz} Hz")));
+        }
+        let lsb_first = match bits_per_sample {
+            1 => true,
+            8 => false,
+            otro => return Err(DsdError::Corrupt(format!("bits_per_sample {otro}"))),
+        };
+        if block_size == 0 || block_size > (1 << 20) {
+            return Err(DsdError::Corrupt(format!("bloque de {block_size} bytes")));
+        }
+
+        if &read_id(&mut file)? != b"data" {
+            return Err(DsdError::Corrupt("falta el chunk data".into()));
+        }
+        let _data_size = read_u64(&mut file)?;
+        let data_start = file.stream_position()?;
+
+        Ok(Self {
+            file,
+            block_size: block_size as usize,
+            remaining_per_channel: samples.div_ceil(8),
+            data_start,
+            lsb_first,
+            info: DsdInfo { dsd_rate_hz, channels: channels as u16, samples },
+        })
+    }
+
+    /// Se coloca en el bit pedido, alineado al bloque del contenedor. Regresa
+    /// el bit en el que quedó de verdad, que puede ser antes del pedido.
+    pub fn seek_to_sample(&mut self, sample: u64) -> Result<u64, DsdError> {
+        let total = self.info.samples.div_ceil(8);
+        let byte = (sample / 8).min(total);
+        let bloque = byte / self.block_size as u64;
+        let byte_alineado = bloque * self.block_size as u64;
+        let salto = self.data_start + byte_alineado * u64::from(self.info.channels);
+        self.file.seek(SeekFrom::Start(salto))?;
+        self.remaining_per_channel = total - byte_alineado;
+        Ok(byte_alineado * 8)
+    }
+}
+
+impl DsdSource for DsfReader {
+    fn info(&self) -> &DsdInfo {
+        &self.info
+    }
+
+    fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, DsdError> {
+        if self.remaining_per_channel == 0 {
+            return Ok(None);
+        }
+        let validos = self.block_size.min(self.remaining_per_channel as usize);
+        let mut canales = Vec::with_capacity(self.info.channels as usize);
+        for _ in 0..self.info.channels {
+            let mut bloque = vec![0u8; self.block_size];
+            match self.file.read_exact(&mut bloque) {
+                Ok(()) => {}
+                // Un archivo cortado no es un error: se entrega lo que hay.
+                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
+                    self.remaining_per_channel = 0;
+                    return Ok(None);
+                }
+                Err(e) => return Err(DsdError::Open(e)),
+            }
+            bloque.truncate(validos);
+            if self.lsb_first {
+                for b in &mut bloque {
+                    *b = reverse_bits(*b);
+                }
+            }
+            canales.push(bloque);
+        }
+        self.remaining_per_channel -= validos as u64;
+        Ok(Some(canales))
+    }
+}
+
+fn read_id(f: &mut impl Read) -> Result<[u8; 4], DsdError> {
+    let mut id = [0u8; 4];
+    f.read_exact(&mut id)?;
+    Ok(id)
+}
+
+fn read_u32(f: &mut impl Read) -> Result<u32, DsdError> {
+    let mut b = [0u8; 4];
+    f.read_exact(&mut b)?;
+    Ok(u32::from_le_bytes(b))
+}
+
+fn read_u64(f: &mut impl Read) -> Result<u64, DsdError> {
+    let mut b = [0u8; 8];
+    f.read_exact(&mut b)?;
+    Ok(u64::from_le_bytes(b))
+}
