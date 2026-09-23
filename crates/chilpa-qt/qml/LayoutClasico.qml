@@ -35,6 +35,12 @@ ColumnLayout {
         }
     }
 
+    PanelVisualizador {
+        Layout.fillWidth: true
+        Layout.preferredHeight: 110
+        visible: Chilpa.playing
+    }
+
     // Los resultados, cuando hay algo escrito en la búsqueda o un álbum
     // abierto.
     Resultados {

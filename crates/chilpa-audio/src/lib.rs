@@ -19,6 +19,7 @@ pub mod pack;
 pub mod render;
 pub mod seek;
 pub mod sink;
+pub mod tap;
 
 pub use capture::{CaptureSink, CAPTURE_ID};
 pub use format::{SampleFormat, StreamFormat};

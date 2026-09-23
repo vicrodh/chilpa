@@ -56,5 +56,10 @@ ColumnLayout {
             Layout.preferredHeight: 112
             compacto: true
         }
+        PanelVisualizador {
+            Layout.preferredWidth: 260
+            Layout.preferredHeight: 112
+            visible: Chilpa.playing
+        }
     }
 }
