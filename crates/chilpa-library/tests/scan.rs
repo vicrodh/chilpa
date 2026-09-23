@@ -41,7 +41,7 @@ fn album(name: &str, tracks: usize) -> Option<PathBuf> {
 }
 
 #[test]
-fn un_escaneo_lee_los_tags_y_arma_el_album() {
+fn a_scan_reads_the_tags_and_builds_the_album() {
     let Some(dir) = album("basico", 3) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -69,7 +69,7 @@ fn un_escaneo_lee_los_tags_y_arma_el_album() {
 }
 
 #[test]
-fn un_segundo_escaneo_no_vuelve_a_leer_lo_que_no_cambio() {
+fn a_second_scan_does_not_reread_what_did_not_change() {
     let Some(dir) = album("incremental", 4) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -86,7 +86,7 @@ fn un_segundo_escaneo_no_vuelve_a_leer_lo_que_no_cambio() {
 }
 
 #[test]
-fn un_root_que_desaparece_marca_sus_tracks_pero_no_los_borra() {
+fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
     // El hallazgo alto de la auditoría: un mountpoint desmontado se veía
     // vacío y el prune borraba todos sus tracks.
     let Some(dir) = album("desmontado", 2) else {
@@ -114,7 +114,7 @@ fn un_root_que_desaparece_marca_sus_tracks_pero_no_los_borra() {
 }
 
 #[test]
-fn un_archivo_borrado_se_marca_ausente_y_no_se_pierde_su_historia() {
+fn a_deleted_file_is_marked_missing_and_keeps_its_history() {
     let Some(dir) = album("borrado", 3) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -133,7 +133,7 @@ fn un_archivo_borrado_se_marca_ausente_y_no_se_pierde_su_historia() {
 }
 
 #[test]
-fn la_busqueda_encuentra_por_titulo_artista_y_album() {
+fn search_finds_by_title_artist_and_album() {
     let Some(dir) = album("busqueda", 2) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -150,7 +150,7 @@ fn la_busqueda_encuentra_por_titulo_artista_y_album() {
 }
 
 #[test]
-fn la_portada_de_la_carpeta_se_usa_cuando_el_archivo_no_trae_una() {
+fn the_folder_cover_is_used_when_the_file_carries_none() {
     let Some(dir) = album("portada-carpeta", 2) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -174,7 +174,7 @@ fn la_portada_de_la_carpeta_se_usa_cuando_el_archivo_no_trae_una() {
 }
 
 #[test]
-fn los_generos_del_archivo_entran_a_la_biblioteca() {
+fn the_genres_in_the_file_reach_the_library() {
     let Some(dir) = album("generos", 2) else {
         eprintln!("sin ffmpeg: se salta");
         return;

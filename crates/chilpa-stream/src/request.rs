@@ -150,19 +150,19 @@ mod tests {
     }
 
     #[test]
-    fn una_peticion_que_no_es_json_contesta_un_error_en_json() {
+    fn a_request_that_is_not_json_answers_an_error_in_json() {
         let r = as_json(&send(b"basura", None));
         assert!(r["error"].as_str().unwrap().contains("no es JSON"));
     }
 
     #[test]
-    fn sin_url_no_hay_peticion() {
+    fn no_url_means_no_request() {
         let r = as_json(&send(b"{}", None));
         assert!(r["error"].as_str().unwrap().contains("no trae url"));
     }
 
     #[test]
-    fn un_esquema_que_no_es_http_se_rechaza_sin_salir() {
+    fn a_scheme_that_is_not_http_is_refused_without_going_out() {
         for url in ["file:///etc/passwd", "ftp://algo/x", "chilpa://interno"] {
             let request = format!(r#"{{"url":"{url}"}}"#);
             let r = as_json(&send(request.as_bytes(), None));
@@ -174,7 +174,7 @@ mod tests {
     }
 
     #[test]
-    fn se_lee_lo_que_el_plugin_pidio() {
+    fn what_the_plugin_asked_for_is_read() {
         let p = leer(br#"{"url":"https://a.b/c","method":"post","headers":{"X":"1"},"body":"hola"}"#)
             .unwrap();
         assert_eq!(p.url, "https://a.b/c");
@@ -184,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_metodo_es_un_get() {
+    fn no_method_means_a_get() {
         let p = leer(br#"{"url":"https://a.b"}"#).unwrap();
         assert_eq!(p.method, "GET");
         assert!(p.headers.is_empty() && p.body.is_empty());

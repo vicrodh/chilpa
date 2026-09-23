@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn un_archivo_que_no_existe_se_reporta_como_tal() {
+    fn a_file_that_does_not_exist_is_reported_as_such() {
         let r = play_file(
             Path::new("/no/existe.flac"),
             &caps(),

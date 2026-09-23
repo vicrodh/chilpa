@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn do_mayor_sale_como_do_mayor() {
+    fn c_major_comes_out_as_c_major() {
         // Las siete notas de la escala de do, para que el perfil tenga con
         // qué trabajar: con una tríada sola, do mayor y la menor empatan.
         let scale: Vec<f32> = [60.0, 62.0, 64.0, 65.0, 67.0, 69.0, 71.0].to_vec();
@@ -211,7 +211,7 @@ mod tests {
     }
 
     #[test]
-    fn la_menor_sale_como_la_menor() {
+    fn a_minor_comes_out_as_a_minor() {
         let scale: Vec<f32> = [57.0, 59.0, 60.0, 62.0, 64.0, 65.0, 67.0].to_vec();
         let mut notes = scale.clone();
         // En menor, lo que manda es la tónica y la tercera menor.
@@ -222,18 +222,18 @@ mod tests {
     }
 
     #[test]
-    fn el_silencio_no_tiene_tonalidad() {
+    fn silence_has_no_key() {
         assert!(detect(&vec![0.0; 11_025 * 4], 11_025).is_none());
     }
 
     #[test]
-    fn con_poco_material_no_se_inventa_una_tonalidad() {
+    fn too_little_material_invents_no_key() {
         assert!(detect(&[0.1; 100], 11_025).is_none());
         assert!(detect(&[0.1; 20_000], 0).is_none());
     }
 
     #[test]
-    fn la_rueda_de_camelot_da_la_vuelta_completa() {
+    fn the_camelot_wheel_wraps_all_the_way_around() {
         // Las veinticuatro casillas, sin repetir ni faltar.
         let mut vistas: Vec<String> = Vec::new();
         for i in 0..12 {
@@ -264,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn un_cromagrama_plano_no_se_decide() {
+    fn a_flat_chromagram_picks_nothing() {
         // Todas las notas igual de fuertes: no hay tónica que valga.
         let flat = [1.0f32 / 12.0; 12];
         let (_, _, confidence) = best_profile(&flat).unwrap_or((0, true, 0.0));

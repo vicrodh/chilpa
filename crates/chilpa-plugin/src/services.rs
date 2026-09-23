@@ -159,7 +159,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn sin_servicios_la_red_contesta_que_no() {
+    fn with_no_services_the_network_answers_no() {
         let mut s = NoServices;
         let r = s.http("com.a.b", b"{}");
         assert!(String::from_utf8_lossy(&r).contains("no tiene permiso"));
@@ -168,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn el_host_de_prueba_se_acuerda_de_todo() {
+    fn the_test_host_remembers_everything() {
         let mut h = TestHost::new();
         h.prepare(|a| a.clock = 1234);
         h.log("com.a.b", Level::Warn, "algo");
@@ -188,7 +188,7 @@ mod tests {
     }
 
     #[test]
-    fn una_copia_del_host_de_prueba_ve_lo_mismo() {
+    fn a_clone_of_the_test_host_sees_the_same() {
         let mut h = TestHost::new();
         let copy = h.clone();
         h.log("com.a.b", Level::Info, "algo");
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn los_niveles_desconocidos_caen_en_info() {
+    fn unknown_levels_fall_back_to_info() {
         assert_eq!(Level::from_code(0), Level::Debug);
         assert_eq!(Level::from_code(1), Level::Info);
         assert_eq!(Level::from_code(2), Level::Warn);

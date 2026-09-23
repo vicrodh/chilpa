@@ -280,14 +280,14 @@ mod tests {
     }
 
     #[test]
-    fn el_esquema_se_crea_y_queda_marcado_con_su_version() {
+    fn the_schema_is_created_and_stamped_with_its_version() {
         let db = memoria();
         let v: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
         assert_eq!(v, VERSION);
     }
 
     #[test]
-    fn migrar_dos_veces_no_hace_nada_la_segunda() {
+    fn migrating_twice_does_nothing_the_second_time() {
         let db = memoria();
         migrate(&db).unwrap();
         let tablas: i64 = db
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn una_base_de_la_version_uno_sube_sin_perder_nada() {
+    fn a_version_one_database_upgrades_without_losing_anything() {
         let db = Connection::open_in_memory().unwrap();
         // Una base como la dejaba la versión 1.
         db.execute_batch(SCHEMA_V1).unwrap();
@@ -327,7 +327,7 @@ mod tests {
     }
 
     #[test]
-    fn la_confianza_del_tempo_tiene_su_propia_columna() {
+    fn tempo_confidence_has_a_column_of_its_own() {
         let db = memoria();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
@@ -353,7 +353,7 @@ mod tests {
     }
 
     #[test]
-    fn un_genero_es_el_mismo_sin_importar_como_se_escriba() {
+    fn a_genre_is_the_same_however_it_is_spelled() {
         let db = memoria();
         db.execute("INSERT INTO genres (name) VALUES ('Rock')", []).unwrap();
         assert!(
@@ -363,7 +363,7 @@ mod tests {
     }
 
     #[test]
-    fn una_lista_no_repite_posicion() {
+    fn a_playlist_never_repeats_a_position() {
         let db = memoria();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
@@ -386,7 +386,7 @@ mod tests {
     }
 
     #[test]
-    fn una_base_mas_nueva_no_se_toca() {
+    fn a_newer_database_is_left_alone() {
         let db = Connection::open_in_memory().unwrap();
         db.pragma_update(None, "user_version", VERSION + 1).unwrap();
         let e = migrate(&db).expect_err("bajar de versión perdería datos");
@@ -396,7 +396,7 @@ mod tests {
     }
 
     #[test]
-    fn dos_tracks_no_pueden_compartir_source_e_id_externo() {
+    fn two_tracks_cannot_share_a_source_and_an_external_id() {
         let db = memoria();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
@@ -413,7 +413,7 @@ mod tests {
     }
 
     #[test]
-    fn el_log_de_reproducciones_acepta_lo_que_las_stats_necesitan() {
+    fn the_play_log_accepts_what_the_stats_need() {
         let db = memoria();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();

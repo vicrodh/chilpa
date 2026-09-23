@@ -1021,20 +1021,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn listar_sources_regresa_la_biblioteca_local() {
+    fn listing_sources_returns_the_local_library() {
         let mut chilpa = Chilpa::new();
         assert_eq!(chilpa.dispatch(Command::ListSources), Event::Sources(vec![SourceId::local()]));
     }
 
     #[test]
-    fn la_mezcla_va_de_tempo_en_tempo_sin_saltos() {
+    fn the_mix_walks_tempo_to_tempo_without_jumps() {
         // Empieza en la de 120 y debería seguir 118, 125, 90.
         let bpms = vec![Some(90.0), Some(120.0), Some(125.0), Some(118.0)];
         assert_eq!(order_by_tempo(&bpms, 1), vec![1, 3, 2, 0]);
     }
 
     #[test]
-    fn lo_que_no_tiene_tempo_se_va_al_final() {
+    fn what_has_no_tempo_goes_last() {
         let bpms = vec![Some(120.0), None, Some(122.0), None, Some(160.0)];
         let order = order_by_tempo(&bpms, 0);
         assert_eq!(&order[..3], &[0, 2, 4], "primero las que sí, de cerca en cerca");
@@ -1043,7 +1043,7 @@ mod tests {
     }
 
     #[test]
-    fn una_mezcla_no_pierde_ni_repite_pistas() {
+    fn a_mix_loses_no_track_and_repeats_none() {
         let bpms = vec![Some(100.0), Some(140.0), None, Some(101.0), Some(139.0), None];
         let order = order_by_tempo(&bpms, 3);
         let mut seen = order.clone();
@@ -1053,20 +1053,20 @@ mod tests {
     }
 
     #[test]
-    fn sin_ningun_tempo_la_mezcla_deja_el_orden_como_estaba() {
+    fn with_no_tempo_at_all_the_mix_leaves_the_order_alone() {
         let bpms = vec![None, None, None];
         assert_eq!(order_by_tempo(&bpms, 0), vec![0, 1, 2]);
     }
 
     #[test]
-    fn los_canales_se_nombran_como_se_dicen() {
+    fn channels_are_named_the_way_they_are_said() {
         assert_eq!(channels(1), "mono");
         assert_eq!(channels(2), "estéreo");
         assert_eq!(channels(6), "6 canales");
     }
 
     #[test]
-    fn de_una_carpeta_solo_salen_archivos_de_audio_y_en_orden() {
+    fn a_folder_yields_audio_files_only_and_in_order() {
         let mut dir = std::env::temp_dir();
         dir.push("chilpa-api-carpeta");
         let _ = std::fs::create_dir_all(&dir);
@@ -1082,7 +1082,7 @@ mod tests {
     }
 
     #[test]
-    fn el_estado_arranca_vacio_y_sin_error() {
+    fn the_state_starts_empty_and_without_error() {
         let chilpa = Chilpa::new();
         assert!(!chilpa.now_playing().playing);
         assert!(chilpa.now_playing().error.is_empty());
@@ -1090,7 +1090,7 @@ mod tests {
     }
 
     #[test]
-    fn las_salidas_que_se_listan_son_directas() {
+    fn the_listed_outputs_are_direct_ones() {
         for output in Chilpa::new().outputs() {
             assert!(
                 output.id.starts_with("hw:") || output.id == "capture",
@@ -1101,7 +1101,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_no_existe_falla_con_un_mensaje_para_la_ui() {
+    fn what_does_not_exist_fails_with_a_message_for_the_ui() {
         let mut chilpa = Chilpa::new();
         let track = TrackRef { source: SourceId::local(), external_id: "1".into() };
         assert!(matches!(chilpa.dispatch(Command::Play(track)), Event::Failed { .. }));

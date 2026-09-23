@@ -633,7 +633,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn una_ruta_de_cd_se_reconoce_por_su_prefijo() {
+    fn a_cd_path_is_recognized_by_its_prefix() {
         assert!(is_cd(Path::new("cdda:/dev/sr0")));
         // Un nodo de dispositivo a secas NO es un CD: abrir la unidad por
         // equivocación asusta a cualquiera.
@@ -642,7 +642,7 @@ mod tests {
     }
 
     #[test]
-    fn de_una_ruta_de_cd_sale_su_unidad() {
+    fn a_cd_path_yields_its_drive() {
         assert_eq!(cd_device_of(Path::new("cdda:/dev/sr0")), Some(PathBuf::from("/dev/sr0")));
         assert_eq!(cd_device_of(Path::new("cdda:")), None, "sin unidad no hay nada que abrir");
         assert_eq!(cd_device_of(Path::new("/dev/sr0")), None);
@@ -728,7 +728,7 @@ mod tests {
     }
 
     #[test]
-    fn reproducir_no_bloquea_y_avisa_progreso_y_final() {
+    fn playing_does_not_block_and_reports_progress_and_end() {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
         let file = wav("basico", 5_000);
@@ -746,7 +746,7 @@ mod tests {
     }
 
     #[test]
-    fn una_cola_suena_en_orden_y_avisa_el_lugar_de_cada_pista() {
+    fn a_queue_plays_in_order_and_reports_each_track_position() {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
         let a = wav("cola-a", 1_000);
@@ -768,7 +768,7 @@ mod tests {
     }
 
     #[test]
-    fn saltar_avanza_la_cola_en_vez_de_detenerla() {
+    fn skipping_advances_the_queue_instead_of_stopping_it() {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
         // Pistas largas: sin saltar, la prueba tardaría en llegar al final.
@@ -799,7 +799,7 @@ mod tests {
     }
 
     #[test]
-    fn un_archivo_que_no_existe_avisa_y_el_reproductor_sigue_vivo() {
+    fn a_missing_file_is_reported_and_the_player_stays_alive() {
         let p = player(Arc::new(AtomicU64::new(0)));
         p.play(Path::new("/no/existe.flac"), "falso", true);
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));

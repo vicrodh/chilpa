@@ -101,7 +101,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn empacar_y_desempacar_son_lo_contrario() {
+    fn packing_and_unpacking_are_inverses() {
         for (ptr, len) in [(0u32, 5u32), (1024, 0), (0xdead_beef, 0x1234)] {
             let v = pack(ptr, len);
             assert_eq!(unpack(v), Some((ptr, len)), "con ({ptr}, {len})");
@@ -109,32 +109,32 @@ mod tests {
     }
 
     #[test]
-    fn un_cero_quiere_decir_que_no_contesto() {
+    fn a_zero_means_it_did_not_answer() {
         assert_eq!(unpack(0), None);
         // Y una dirección cero con largo cero es lo mismo que nada.
         assert_eq!(pack(0, 0), 0);
     }
 
     #[test]
-    fn una_respuesta_con_error_se_lee_como_error() {
+    fn a_reply_carrying_an_error_reads_as_an_error() {
         let r = read_reply(r#"{"error":"no encontré esa pista"}"#.as_bytes().to_vec());
         assert_eq!(r, Reply::Error("no encontré esa pista".into()));
     }
 
     #[test]
-    fn una_respuesta_buena_se_entrega_tal_cual() {
+    fn a_good_reply_is_handed_over_unchanged() {
         let json = br#"{"tracks":[]}"#.to_vec();
         assert_eq!(read_reply(json.clone()), Reply::Ok(json));
     }
 
     #[test]
-    fn lo_que_no_es_json_es_un_error_del_plugin() {
+    fn anything_that_is_not_json_is_the_plugin_fault() {
         let r = read_reply(b"basura".to_vec());
         assert!(matches!(r, Reply::Error(e) if e.contains("no es JSON")));
     }
 
     #[test]
-    fn el_cupo_dice_cuanto_hacia_falta() {
+    fn the_room_check_says_how_much_was_needed() {
         assert_eq!(Room::para(Some(b"hola"), 10), Room::Fits(4));
         assert_eq!(Room::para(Some(b"hola"), 4), Room::Fits(4), "justo cabe");
         assert_eq!(Room::para(Some(b"hola"), 2), Room::TooBig(4));
@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn los_codigos_del_cupo_no_se_confunden_entre_si() {
+    fn the_room_codes_are_not_mistaken_for_one_another() {
         assert_eq!(Room::Fits(4).code(), 4);
         assert_eq!(Room::TooBig(4).code(), -4);
         assert_eq!(Room::Nothing.code(), -1);

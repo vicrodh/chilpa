@@ -1071,7 +1071,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_source_y_el_root_se_crean_una_sola_vez() {
+    fn the_source_and_the_root_are_created_once() {
         let lib = Library::in_memory().unwrap();
         let a = lib.source_id("local", "default").unwrap();
         let b = lib.source_id("local", "default").unwrap();
@@ -1082,7 +1082,7 @@ mod tests {
     }
 
     #[test]
-    fn un_root_inalcanzable_marca_sus_tracks_pero_no_los_borra() {
+    fn an_unreachable_root_marks_its_tracks_but_does_not_delete_them() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let root = lib.root_id(source, Path::new("/nas")).unwrap();
@@ -1148,7 +1148,7 @@ mod tests {
     }
 
     #[test]
-    fn cada_vista_ordena_la_reja_a_su_manera() {
+    fn each_view_sorts_the_grid_its_own_way() {
         let lib = sample_library();
         assert_eq!(
             titulos(&lib, AlbumSort::Artist),
@@ -1167,7 +1167,7 @@ mod tests {
     }
 
     #[test]
-    fn la_reja_trae_las_escuchas_en_la_misma_consulta() {
+    fn the_grid_brings_play_counts_in_the_same_query() {
         let lib = sample_library();
         let listens: Vec<(String, usize)> = lib
             .albums_sorted(AlbumSort::Played, 50, 0)
@@ -1182,7 +1182,7 @@ mod tests {
     }
 
     #[test]
-    fn una_lista_guarda_su_orden_y_sobrevive_a_lo_que_no_esta() {
+    fn a_playlist_keeps_its_order_and_survives_what_is_missing() {
         let lib = sample_library();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "De la mañana", "").unwrap();
@@ -1207,7 +1207,7 @@ mod tests {
     }
 
     #[test]
-    fn volver_a_traer_una_lista_de_un_source_la_actualiza_sin_duplicarla() {
+    fn fetching_a_source_playlist_again_updates_it_without_duplicating_it() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("servidor", "casa").unwrap();
         let a = lib.create_playlist(source, "Mezcla", "abc123").unwrap();
@@ -1219,7 +1219,7 @@ mod tests {
     }
 
     #[test]
-    fn dos_listas_hechas_a_mano_con_el_mismo_nombre_son_dos_listas() {
+    fn two_hand_made_playlists_with_the_same_name_are_two_playlists() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let a = lib.create_playlist(source, "Sin nombre", "").unwrap();
@@ -1229,7 +1229,7 @@ mod tests {
     }
 
     #[test]
-    fn reemplazar_el_contenido_no_deja_restos() {
+    fn replacing_the_contents_leaves_no_leftovers() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "Mía", "").unwrap();
@@ -1242,7 +1242,7 @@ mod tests {
     }
 
     #[test]
-    fn borrar_una_lista_no_toca_las_pistas() {
+    fn deleting_a_playlist_does_not_touch_the_tracks() {
         let lib = sample_library();
         let source = lib.source_id("local", "default").unwrap();
         let id = lib.create_playlist(source, "Temporal", "").unwrap();
@@ -1257,7 +1257,7 @@ mod tests {
     }
 
     #[test]
-    fn las_estadisticas_salen_del_log_completo() {
+    fn the_stats_come_from_the_whole_log() {
         let lib = sample_library();
         let s = lib.stats().unwrap();
         assert_eq!(s.plays, 3, "tres escuchas completas");
@@ -1269,14 +1269,14 @@ mod tests {
     }
 
     #[test]
-    fn sin_una_sola_escucha_las_estadisticas_son_ceros() {
+    fn without_a_single_play_the_stats_are_zeros() {
         let lib = Library::in_memory().unwrap();
         let s = lib.stats().unwrap();
         assert_eq!(s, Stats::default(), "ceros, no un error");
     }
 
     #[test]
-    fn el_top_y_el_historial_miran_lo_mismo_por_distinto_lado() {
+    fn the_top_and_the_history_look_at_the_same_thing_from_different_sides() {
         let lib = sample_library();
         // La pista del álbum 3 suena dos veces; la del 1, una, y antes.
         let top = lib.top_tracks(10).unwrap();
@@ -1291,7 +1291,7 @@ mod tests {
     }
 
     #[test]
-    fn la_busqueda_tambien_mira_el_genero() {
+    fn search_looks_at_the_genre_too() {
         let lib = sample_library();
         // La pista del álbum 1 es de blues; las demás, no.
         let id: i64 = lib
@@ -1306,7 +1306,7 @@ mod tests {
     }
 
     #[test]
-    fn las_features_de_varias_pistas_salen_en_una_consulta() {
+    fn features_for_several_tracks_come_out_in_one_query() {
         let lib = sample_library();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into()), Some(-9.5))
             .unwrap();
@@ -1325,7 +1325,7 @@ mod tests {
     }
 
     #[test]
-    fn un_album_suelto_trae_lo_suyo_y_sus_escuchas() {
+    fn a_single_album_brings_its_own_and_its_plays() {
         let lib = sample_library();
         let (album, listens) = lib.album(3).unwrap().expect("el álbum existe");
         assert_eq!(album.title, "Cosmo");
@@ -1336,7 +1336,7 @@ mod tests {
     }
 
     #[test]
-    fn los_artistas_salen_con_lo_que_tienen() {
+    fn artists_come_out_with_what_they_have() {
         let lib = sample_library();
         let artists = lib.artists(50, 0).unwrap();
         assert_eq!(
@@ -1350,7 +1350,7 @@ mod tests {
     }
 
     #[test]
-    fn la_reja_se_puede_filtrar_por_artista() {
+    fn the_grid_can_be_filtered_by_artist() {
         let lib = sample_library();
         let own: Vec<String> = lib
             .albums_filtered(AlbumSort::Title, Some("Creedence"), 50, 0)
@@ -1367,7 +1367,7 @@ mod tests {
     }
 
     #[test]
-    fn un_nombre_con_comillas_no_rompe_la_consulta() {
+    fn a_name_with_quotes_does_not_break_the_query() {
         let lib = sample_library();
         let odd = "O'Connor'; DROP TABLE albums; --";
         assert!(lib.albums_filtered(AlbumSort::Title, Some(odd), 50, 0).unwrap().is_empty());
@@ -1375,7 +1375,7 @@ mod tests {
     }
 
     #[test]
-    fn un_nombre_de_vista_desconocido_no_deja_la_reja_vacia() {
+    fn an_unknown_view_name_does_not_leave_the_grid_empty() {
         assert_eq!(AlbumSort::from_name("lo que sea"), AlbumSort::Artist);
         for v in AlbumSort::all() {
             assert_eq!(AlbumSort::from_name(v.name()), v, "{} va y viene", v.name());
@@ -1383,7 +1383,7 @@ mod tests {
     }
 
     #[test]
-    fn los_mas_escuchados_salen_del_log_y_en_orden() {
+    fn the_most_played_come_from_the_log_and_in_order() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         for (album, title) in [(1, "Uno"), (2, "Dos")] {
@@ -1419,7 +1419,7 @@ mod tests {
     }
 
     #[test]
-    fn una_reproduccion_a_medias_no_cuenta_como_escucha() {
+    fn a_half_played_track_does_not_count_as_a_play() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         lib.db

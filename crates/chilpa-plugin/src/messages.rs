@@ -253,13 +253,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn una_consulta_no_pide_mas_de_lo_que_cabe() {
+    fn a_query_never_asks_for_more_than_fits() {
         assert_eq!(Query::new("algo", 10).limit, 10);
         assert_eq!(Query::new("algo", 100_000).limit, MAX_PER_REPLY);
     }
 
     #[test]
-    fn lo_que_no_sirve_se_tira_y_lo_que_sobra_se_recorta() {
+    fn what_is_useless_is_dropped_and_what_is_extra_is_trimmed() {
         let mut r = Results::default();
         r.tracks.push(RemoteTrack { external_id: "a".into(), title: "Una".into(), ..Default::default() });
         // Sin id no se puede volver a pedir; sin título no se puede mostrar.
@@ -279,7 +279,7 @@ mod tests {
     }
 
     #[test]
-    fn la_huella_prefiere_el_mbid_y_normaliza() {
+    fn the_fingerprint_prefers_the_mbid_and_normalizes() {
         let t = RemoteTrack {
             isrc: Some(" usrc17607839 ".into()),
             musicbrainz_recording_id: Some(" ABC-123 ".into()),
@@ -301,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn una_calidad_a_medias_se_dice_a_medias() {
+    fn a_half_known_quality_is_described_as_half_known() {
         assert_eq!(Quality::default().describe(), "");
         let c = Quality { codec: Some("flac".into()), bit_depth: Some(24), sample_rate_hz: Some(96_000), channels: Some(2) };
         assert_eq!(c.describe(), "FLAC · 24 bits a 96000 Hz");
@@ -310,7 +310,7 @@ mod tests {
     }
 
     #[test]
-    fn un_stream_que_no_es_http_no_se_intenta() {
+    fn a_stream_that_is_not_http_is_not_attempted() {
         let bad = Stream { url: "file:///etc/passwd".into(), codec: None, quality: Quality::default(), expires_at: None };
         assert!(!bad.utilizable());
         let good = Stream { url: "https://a.b/c".into(), codec: None, quality: Quality::default(), expires_at: None };
@@ -318,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn un_enlace_con_fecha_caduca() {
+    fn a_link_with_a_date_expires() {
         let s = Stream {
             url: "https://a.b/c".into(),
             codec: None,
@@ -334,7 +334,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_contesta_un_plugin_se_lee_o_se_dice_por_que_no() {
+    fn what_a_plugin_answers_is_read_or_it_says_why_not() {
         let r: Results = leer(br#"{"tracks":[{"external_id":"a","title":"Una"}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);
         assert_eq!(r.tracks[0].artist, "", "lo que falta toma su valor por omisión");
@@ -344,7 +344,7 @@ mod tests {
     }
 
     #[test]
-    fn un_campo_de_mas_no_tumba_la_lectura() {
+    fn one_extra_field_does_not_break_the_read() {
         // Un plugin de una versión más nueva puede mandar campos que este
         // Chilpa no conoce; se ignoran en vez de rechazar todo.
         let r: Results =

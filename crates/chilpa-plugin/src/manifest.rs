@@ -242,7 +242,7 @@ mod tests {
     }
 
     #[test]
-    fn un_manifest_bueno_se_lee_entero() {
+    fn a_good_manifest_is_read_in_full() {
         let m = Manifest::parse(&base()).expect("es válido");
         assert_eq!(m.id, "com.ejemplo.prueba");
         assert_eq!(m.kind, Kind::Source);
@@ -252,7 +252,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_capacidades_no_puede_nada() {
+    fn with_no_capabilities_it_can_do_nothing() {
         let json = base().replace(
             r#""capabilities": [
                 {"tipo": "network", "domains": ["api.ejemplo.com"]},
@@ -266,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn una_capacidad_desconocida_no_se_ignora() {
+    fn an_unknown_capability_is_not_ignored() {
         // Fallar cerrado: si no se sabe qué pide, no se puede saber si es
         // peligroso.
         let json = base().replace(r#"{"tipo": "storage"}"#, r#"{"tipo": "leer_todo_el_disco"}"#);
@@ -275,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn una_version_de_api_distinta_no_carga() {
+    fn a_different_api_version_does_not_load() {
         let json = base().replace(r#""api_version": 1"#, r#""api_version": 99"#);
         let e = Manifest::parse(&json).expect_err("no se acepta");
         assert_eq!(e, ManifestError::ApiIncompatible { wants: 99, have: 1 });
@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn un_id_que_no_sirve_de_carpeta_no_pasa() {
+    fn an_id_that_cannot_be_a_folder_does_not_pass() {
         for bad in [
             "sin-punto",
             "../escapar",
@@ -306,7 +306,7 @@ mod tests {
     }
 
     #[test]
-    fn un_comodin_en_los_dominios_no_pasa() {
+    fn a_wildcard_in_the_domains_does_not_pass() {
         for bad in ["*", "*.ejemplo.com", "https://api.ejemplo.com", "api.ejemplo.com/v1", "localhost"] {
             let json = base().replace("api.ejemplo.com", bad);
             assert!(
@@ -317,14 +317,14 @@ mod tests {
     }
 
     #[test]
-    fn el_runtime_de_proceso_se_rechaza_diciendo_por_que() {
+    fn the_process_runtime_is_refused_and_says_why() {
         let json = base().replace(r#""kind": "source""#, r#""kind": "source", "runtime": "process""#);
         let e = Manifest::parse(&json).expect_err("todavía no existe");
         assert!(e.to_string().contains("todavía no existe"), "{e}");
     }
 
     #[test]
-    fn un_manifest_que_no_es_json_se_rechaza_con_su_razon() {
+    fn a_manifest_that_is_not_json_is_refused_with_its_reason() {
         let e = Manifest::parse("esto no es json").expect_err("no es json");
         assert!(matches!(e, ManifestError::Unreadable(_)));
         let e = Manifest::parse(r#"{"id": "com.a.b"}"#).expect_err("le faltan campos");
@@ -332,7 +332,7 @@ mod tests {
     }
 
     #[test]
-    fn un_nombre_o_una_version_vacios_no_pasan() {
+    fn an_empty_name_or_version_does_not_pass() {
         let json = base().replace(r#""name": "Prueba""#, r#""name": "   ""#);
         assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty("el nombre")));
         let json = base().replace(r#""version": "0.1.0""#, r#""version": """#);

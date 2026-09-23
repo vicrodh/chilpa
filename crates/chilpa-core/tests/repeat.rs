@@ -91,7 +91,7 @@ fn played(tracks: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
 }
 
 #[test]
-fn sin_repeticion_la_cola_se_acaba() {
+fn without_repeat_the_queue_ends() {
     let a = wave("off-a", 4_410);
     let b = wave("off-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
@@ -104,7 +104,7 @@ fn sin_repeticion_la_cola_se_acaba() {
 }
 
 #[test]
-fn repeat_all_vuelve_a_empezar() {
+fn repeat_all_starts_over() {
     let a = wave("all-a", 4_410);
     let b = wave("all-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
@@ -119,7 +119,7 @@ fn repeat_all_vuelve_a_empezar() {
 }
 
 #[test]
-fn repeat_one_se_queda_en_la_misma() {
+fn repeat_one_stays_on_the_same_track() {
     let a = wave("one-a", 4_410);
     let b = wave("one-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
@@ -132,7 +132,7 @@ fn repeat_one_se_queda_en_la_misma() {
 }
 
 #[test]
-fn en_repeat_one_saltar_si_avanza() {
+fn under_repeat_one_skipping_does_advance() {
     let a = wave("salto-a", 44_100);
     let b = wave("salto-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
@@ -160,7 +160,7 @@ fn en_repeat_one_saltar_si_avanza() {
 }
 
 #[test]
-fn un_orden_propio_cambia_lo_que_suena() {
+fn an_explicit_order_changes_what_plays() {
     let a = wave("orden-a", 4_410);
     let b = wave("orden-b", 4_410);
     let c = wave("orden-c", 4_410);
@@ -191,7 +191,7 @@ fn un_orden_propio_cambia_lo_que_suena() {
 }
 
 #[test]
-fn lo_que_se_encola_a_media_cola_si_suena() {
+fn what_is_enqueued_mid_queue_does_play() {
     let a = wave("crece-a", 4_410);
     let b = wave("crece-b", 4_410);
 
@@ -228,7 +228,7 @@ fn lo_que_se_encola_a_media_cola_si_suena() {
 }
 
 #[test]
-fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
+fn a_removed_track_does_not_play_and_the_others_do_not_move() {
     let a = wave("quita-a", 4_410);
     let b = wave("quita-b", 4_410);
     let c = wave("quita-c", 4_410);
@@ -264,7 +264,7 @@ fn una_pista_quitada_no_suena_y_las_demas_no_se_mueven() {
 }
 
 #[test]
-fn quitar_toda_la_cola_con_repeticion_no_deja_girando_el_hilo() {
+fn emptying_the_queue_under_repeat_does_not_leave_the_thread_spinning() {
     let a = wave("vacia-a", 4_410);
     let queue = SharedQueue::new(vec![a.clone()]);
     queue.remove(0);

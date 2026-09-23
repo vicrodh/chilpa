@@ -49,7 +49,7 @@ fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
 }
 
 #[test]
-fn el_pulso_de_un_archivo_sale_por_el_camino_completo() {
+fn a_file_beat_comes_out_through_the_whole_path() {
     let path = pulse("128", 128.0, 25);
     let features = analyze_file(&path).expect("se pudo leer y analizar");
     let bpm = features.bpm.expect("se le encontró pulso");
@@ -63,7 +63,7 @@ fn el_pulso_de_un_archivo_sale_por_el_camino_completo() {
 }
 
 #[test]
-fn un_archivo_sin_pulso_se_analiza_y_no_dice_nada() {
+fn a_file_without_a_beat_is_analyzed_and_says_nothing() {
     // Silencio: se lee bien, pero no hay qué contar.
     let path = pulse("silencio", 128.0, 25);
     // Se sobrescribe el audio con ceros dejando el encabezado.
@@ -79,7 +79,7 @@ fn un_archivo_sin_pulso_se_analiza_y_no_dice_nada() {
 }
 
 #[test]
-fn un_archivo_que_no_es_audio_no_tumba_nada() {
+fn a_file_that_is_not_audio_brings_nothing_down() {
     let mut p = std::env::temp_dir();
     p.push("chilpa-analisis-basura.wav");
     std::fs::write(&p, b"esto no es un WAV").unwrap();

@@ -100,13 +100,13 @@ mod tests {
     }
 
     #[test]
-    fn el_source_local_se_reconoce() {
+    fn the_local_source_is_recognized() {
         assert!(SourceId::local().is_local());
         assert!(!SourceId::new("example-source", "cuenta-1").is_local());
     }
 
     #[test]
-    fn dos_instancias_del_mismo_provider_son_distintas() {
+    fn two_instances_of_the_same_provider_are_different() {
         let a = SourceId::new("example-source", "cuenta-1");
         let b = SourceId::new("example-source", "cuenta-2");
         assert_ne!(a, b);
@@ -114,7 +114,7 @@ mod tests {
     }
 
     #[test]
-    fn gana_el_source_que_el_usuario_prefiere() {
+    fn the_source_the_user_prefers_wins() {
         let local = SourceId::local();
         let remote = SourceId::new("example-source", "cuenta-1");
         let options = vec![
@@ -126,7 +126,7 @@ mod tests {
     }
 
     #[test]
-    fn entre_iguales_gana_la_mejor_calidad() {
+    fn among_equals_the_better_quality_wins() {
         let a = SourceId::new("example-source", "cuenta-1");
         let b = SourceId::new("otro-source", "cuenta-1");
         let options = vec![
@@ -137,7 +137,7 @@ mod tests {
     }
 
     #[test]
-    fn un_source_inalcanzable_no_se_elige_pero_sigue_ahi() {
+    fn an_unreachable_source_is_not_chosen_but_stays_listed() {
         let local = SourceId::local();
         let options = vec![Availability {
             source: local.clone(),

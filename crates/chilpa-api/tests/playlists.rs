@@ -35,7 +35,7 @@ fn wave(dir: &PathBuf, name: &str, frames: u32) -> PathBuf {
 }
 
 #[test]
-fn guardar_la_cola_reproducirla_y_borrarla() {
+fn save_the_queue_play_it_and_delete_it() {
     let dir = std::env::temp_dir().join("chilpa-api-listas");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();

@@ -276,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn nunca_escuchadas_son_las_que_nunca_sonaron() {
+    fn never_played_means_the_ones_that_never_played() {
         let lib = library();
         let mut come_out = titulos(
             &lib,
@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_agregado_hace_poco_deja_fuera_lo_viejo() {
+    fn recently_added_leaves_the_old_ones_out() {
         let lib = library();
         let mut come_out = titulos(
             &lib,
@@ -298,7 +298,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_de_esta_semana_mira_cuando_sono_no_cuando_entro() {
+    fn this_week_looks_at_when_it_played_not_when_it_arrived() {
         let lib = library();
         assert_eq!(
             titulos(&lib, &SmartList::new("x", vec![Rule::PlayedWithinDays(7)], Order::MostPlayed, 50)),
@@ -308,7 +308,7 @@ mod tests {
     }
 
     #[test]
-    fn alta_resolucion_es_lo_que_pasa_del_cd() {
+    fn high_resolution_is_whatever_goes_beyond_cd() {
         let lib = library();
         assert_eq!(
             titulos(&lib, &SmartList::new("x", vec![Rule::HiRes], Order::Artist, 50)),
@@ -317,7 +317,7 @@ mod tests {
     }
 
     #[test]
-    fn las_reglas_se_suman_todas() {
+    fn every_rule_adds_up() {
         let lib = library();
         let list = SmartList::new(
             "x",
@@ -329,14 +329,14 @@ mod tests {
     }
 
     #[test]
-    fn el_limite_se_respeta() {
+    fn the_limit_is_honored() {
         let lib = library();
         let list = SmartList::new("x", vec![], Order::Artist, 2);
         assert_eq!(lib.smart_tracks(&list).unwrap().len(), 2);
     }
 
     #[test]
-    fn el_bpm_filtra_lo_que_el_analisis_encontro() {
+    fn bpm_filters_on_what_the_analysis_found() {
         let lib = library();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         lib.save_features(2, "chilpa", 1, Some(72.0), None, None, None).unwrap();
@@ -355,7 +355,7 @@ mod tests {
     }
 
     #[test]
-    fn analizar_de_nuevo_la_misma_version_reemplaza_su_fila() {
+    fn analyzing_again_with_the_same_version_replaces_its_row() {
         let lib = library();
         lib.save_features(1, "chilpa", 1, Some(100.0), None, None, None).unwrap();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
@@ -364,7 +364,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_pendiente_es_lo_que_no_tiene_esa_version() {
+    fn pending_means_whatever_lacks_that_version() {
         let lib = library();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
@@ -374,7 +374,7 @@ mod tests {
     }
 
     #[test]
-    fn un_nombre_de_artista_raro_es_un_nombre_y_ya() {
+    fn an_odd_artist_name_is_just_a_name() {
         let lib = library();
         let odd = "Uno'; DROP TABLE tracks; --";
         let list = SmartList::new("x", vec![Rule::ArtistIs(odd.into())], Order::Artist, 50);
@@ -383,7 +383,7 @@ mod tests {
     }
 
     #[test]
-    fn las_de_fabrica_corren_todas() {
+    fn the_built_in_ones_all_run() {
         let lib = library();
         for list in builtins() {
             lib.smart_tracks(&list)

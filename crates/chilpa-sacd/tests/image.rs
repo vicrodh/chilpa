@@ -107,7 +107,7 @@ fn build(dst: bool) -> TestImage {
 }
 
 #[test]
-fn se_leen_las_dos_pistas_del_area_estereo() {
+fn both_tracks_of_the_stereo_area_are_read() {
     let path = build(false).write("dos-pistas");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dsd3In14);
@@ -120,7 +120,7 @@ fn se_leen_las_dos_pistas_del_area_estereo() {
 }
 
 #[test]
-fn una_pista_entrega_dsd64_estereo_con_los_canales_separados() {
+fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
     let path = build(false).write("audio");
     let img = open(&path).unwrap();
     let track = img.area.tracks[0].clone();
@@ -140,7 +140,7 @@ fn una_pista_entrega_dsd64_estereo_con_los_canales_separados() {
 }
 
 #[test]
-fn una_pista_comprimida_se_rechaza_con_un_mensaje_claro() {
+fn a_compressed_track_is_refused_with_a_clear_message() {
     let path = build(true).write("dst");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dst);
@@ -154,7 +154,7 @@ fn una_pista_comprimida_se_rechaza_con_un_mensaje_claro() {
 }
 
 #[test]
-fn una_imagen_que_no_es_sacd_se_rechaza() {
+fn an_image_that_is_not_a_sacd_is_refused() {
     let img = TestImage::new();
     let path = img.write("vacia");
     assert!(matches!(open(&path), Err(SacdError::MalformedToc(_))));

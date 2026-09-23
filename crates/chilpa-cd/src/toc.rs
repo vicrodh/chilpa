@@ -109,7 +109,7 @@ mod tests {
     }
 
     #[test]
-    fn cada_pista_mide_hasta_la_siguiente_y_la_ultima_hasta_el_lead_out() {
+    fn each_track_runs_to_the_next_and_the_last_one_to_the_lead_out() {
         let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1)], 30_000);
         assert_eq!(toc.tracks[0].sectors, 15_000);
         assert_eq!(toc.tracks[1].sectors, 15_000);
@@ -118,7 +118,7 @@ mod tests {
     }
 
     #[test]
-    fn en_un_cd_extra_la_ultima_de_audio_no_se_come_el_hueco_entre_sesiones() {
+    fn on_a_cd_extra_the_last_audio_track_does_not_swallow_the_session_gap() {
         // El hallazgo de la auditoría: sin descontar el hueco, la pista 2
         // medía 152 segundos de más y el rip fallaba.
         let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), data(3, 41_400, 2)], 60_000);
@@ -128,7 +128,7 @@ mod tests {
     }
 
     #[test]
-    fn un_disco_de_modo_mixto_en_una_sola_sesion_no_descuenta_nada() {
+    fn a_mixed_mode_disc_in_one_session_subtracts_nothing() {
         // Datos primero y audio después, todo en la sesión 1: aquí no hay
         // hueco que descontar.
         let toc = build(&[data(1, 0, 1), audio(2, 20_000, 1)], 40_000);
@@ -137,13 +137,13 @@ mod tests {
     }
 
     #[test]
-    fn la_duracion_sale_en_segundos_a_75_sectores() {
+    fn the_duration_comes_out_in_seconds_at_75_sectors() {
         let toc = build(&[audio(1, 0, 1)], 750);
         assert_eq!(toc.tracks[0].seconds(), 10.0);
     }
 
     #[test]
-    fn se_listan_solo_las_pistas_de_audio() {
+    fn only_audio_tracks_are_listed() {
         let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), data(3, 41_400, 2)], 60_000);
         assert_eq!(toc.audio_tracks().count(), 2);
         assert_eq!(toc.track(3).unwrap().is_audio, false);

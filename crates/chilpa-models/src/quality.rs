@@ -50,23 +50,23 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_tiene_perdida_no_es_lossless() {
+    fn anything_lossy_is_not_lossless() {
         assert!(q("flac", Some(24), 96_000).is_lossless());
         assert!(!q("opus", None, 48_000).is_lossless());
     }
 
     #[test]
-    fn hi_res_rankea_arriba_de_cd() {
+    fn hi_res_ranks_above_cd() {
         assert!(q("flac", Some(24), 96_000).rank() > q("flac", Some(16), 44_100).rank());
     }
 
     #[test]
-    fn lo_que_tiene_perdida_no_le_gana_a_nada_lossless() {
+    fn lossy_never_beats_anything_lossless() {
         assert!(q("opus", None, 48_000).rank() < q("flac", Some(16), 44_100).rank());
     }
 
     #[test]
-    fn el_mismo_formato_no_renegocia_la_salida() {
+    fn the_same_format_does_not_renegotiate_the_output() {
         assert!(q("flac", Some(16), 44_100).same_stream_format(&q("alac", Some(16), 44_100)));
         assert!(!q("flac", Some(16), 44_100).same_stream_format(&q("flac", Some(16), 48_000)));
     }

@@ -133,7 +133,7 @@ mod tests {
     }
 
     #[test]
-    fn el_renglon_que_va_es_el_ultimo_que_entro() {
+    fn the_current_line_is_the_last_one_that_started() {
         let l = lrc::parse("[00:05.00]Uno\n[00:10.00]Dos\n[00:20.00]Tres\n");
         assert_eq!(l.line_at(0), None, "antes del primero no hay ninguno");
         assert_eq!(l.line_at(4_999), None);
@@ -144,14 +144,14 @@ mod tests {
     }
 
     #[test]
-    fn una_letra_sin_tiempos_no_se_sigue() {
+    fn lyrics_without_timings_are_not_followed() {
         let l = lrc::parse("Nomás el texto\n");
         assert_eq!(l.line_at(5_000), None);
         assert_eq!(l.plain(), "Nomás el texto");
     }
 
     #[test]
-    fn el_lrc_de_al_lado_es_el_que_manda() {
+    fn the_lrc_next_to_the_file_wins() {
         let dir = folder("sidecar");
         let track = dir.join("cancion.flac");
         std::fs::write(&track, b"no importa el contenido").unwrap();
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn sin_letra_no_se_inventa_nada() {
+    fn with_no_lyrics_nothing_is_invented() {
         let dir = folder("vacio");
         let track = dir.join("cancion.flac");
         std::fs::write(&track, b"tampoco importa").unwrap();
@@ -178,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn la_extension_en_mayusculas_tambien_se_encuentra() {
+    fn an_uppercase_extension_is_found_too() {
         let dir = folder("mayusculas");
         let track = dir.join("cancion.flac");
         std::fs::write(&track, b"x").unwrap();

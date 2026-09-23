@@ -98,7 +98,7 @@ fn caps(format: SampleFormat, rate: u32) -> DeviceCaps {
 }
 
 #[test]
-fn un_wav_de_16_bits_sale_identico_por_el_cable() {
+fn a_16_bit_wav_goes_out_identical_over_the_wire() {
     let originals = samples(16);
     let path = temporal("16");
     write_wav(&path, &originals, 16, 44_100, 2);
@@ -130,7 +130,7 @@ fn un_wav_de_16_bits_sale_identico_por_el_cable() {
 }
 
 #[test]
-fn un_wav_de_24_bits_sale_identico_por_el_cable() {
+fn a_24_bit_wav_goes_out_identical_over_the_wire() {
     let originals = samples(24);
     let path = temporal("24");
     write_wav(&path, &originals, 24, 96_000, 2);
@@ -160,7 +160,7 @@ fn un_wav_de_24_bits_sale_identico_por_el_cable() {
 }
 
 #[test]
-fn con_un_dispositivo_que_no_puede_se_falla_en_vez_de_resamplear() {
+fn with_a_device_that_cannot_do_it_we_fail_instead_of_resampling() {
     let path = temporal("rechazo");
     write_wav(&path, &samples(16), 16, 44_100, 2);
     let solo_48k = caps(SampleFormat::S16, 48_000);

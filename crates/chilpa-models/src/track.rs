@@ -128,12 +128,12 @@ mod tests {
     }
 
     #[test]
-    fn el_mismo_id_en_sources_distintos_no_es_el_mismo_track() {
+    fn the_same_id_on_different_sources_is_not_the_same_track() {
         assert_ne!(track("example-source", "1").id, track("otro-source", "1").id);
     }
 
     #[test]
-    fn el_isrc_empareja_entre_sources() {
+    fn the_isrc_matches_across_sources() {
         let mut a = track("example-source", "1");
         let mut b = track("otro-source", "99");
         a.isrc = Some("MXABC0000001".into());
@@ -142,12 +142,12 @@ mod tests {
     }
 
     #[test]
-    fn sin_llaves_no_se_empareja_aunque_el_titulo_coincida() {
+    fn without_keys_nothing_matches_even_if_the_title_does() {
         assert!(!track("example-source", "1").same_recording(&track("otro-source", "2")));
     }
 
     #[test]
-    fn un_track_solo_en_un_source_inalcanzable_no_es_reproducible() {
+    fn a_track_only_on_an_unreachable_source_is_not_playable() {
         let mut t = track("example-source", "1");
         t.availability = vec![Availability {
             source: t.id.source.clone(),
@@ -163,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn la_linea_de_artistas_junta_a_todos() {
+    fn the_artist_line_joins_them_all() {
         let mut t = track("local", "1");
         t.artists = vec![ArtistRef::named("Uno"), ArtistRef::named("Dos")];
         assert_eq!(t.artist_line(), "Uno, Dos");

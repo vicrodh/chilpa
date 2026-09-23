@@ -111,20 +111,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn el_tiempo_se_vuelve_frames_sin_truncar_a_segundos() {
+    fn time_becomes_frames_without_truncating_to_seconds() {
         assert_eq!(frames_at(Duration::from_millis(1500), 44_100), 66_150);
         assert_eq!(frames_at(Duration::from_millis(1), 44_100), 44);
         assert_eq!(frames_at(Duration::ZERO, 44_100), 0);
     }
 
     #[test]
-    fn ida_y_vuelta_de_una_posicion_no_pierde_el_frame() {
+    fn a_position_round_trip_keeps_the_frame() {
         let c = Cursor { frame: 123_456, sample_rate_hz: 96_000 };
         assert_eq!(frames_at(c.position(), 96_000), 123_456);
     }
 
     #[test]
-    fn pausar_y_reanudar_no_regresa_al_segundo_redondeado() {
+    fn pause_and_resume_does_not_jump_back_to_a_rounded_second() {
         // El hallazgo de QBZ: al reanudar se re-buscaba el segundo truncado
         // y se repetía casi medio segundo de música.
         let mut c = Cursor::new(44_100);
@@ -136,7 +136,7 @@ mod tests {
     }
 
     #[test]
-    fn el_ultimo_salto_pedido_es_el_que_vale() {
+    fn the_last_seek_asked_for_is_the_one_that_counts() {
         let s = SeekSignal::new();
         assert_eq!(s.take(), None);
         s.request(Duration::from_secs(10));
@@ -146,7 +146,7 @@ mod tests {
     }
 
     #[test]
-    fn lo_que_el_contenedor_no_alcanza_se_tira_decodificando() {
+    fn what_the_container_cannot_reach_is_dropped_while_decoding() {
         let plan = SeekPlan::after_landing(100_000, 98_304);
         assert_eq!(plan.request, 98_304);
         assert_eq!(plan.discard, 1_696);
@@ -154,13 +154,13 @@ mod tests {
     }
 
     #[test]
-    fn si_el_contenedor_cae_justo_no_se_tira_nada() {
+    fn if_the_container_lands_exactly_nothing_is_dropped() {
         let plan = SeekPlan::after_landing(44_100, 44_100);
         assert!(plan.is_exact());
     }
 
     #[test]
-    fn un_aterrizaje_pasado_no_deja_un_descarte_negativo() {
+    fn overshooting_never_leaves_a_negative_discard() {
         let plan = SeekPlan::after_landing(1_000, 2_000);
         assert_eq!(plan.discard, 0, "nunca se descarta hacia atrás");
     }

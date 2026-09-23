@@ -156,7 +156,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn una_rampa_en_little_endian_no_se_ve_volteada() {
+    fn a_little_endian_ramp_does_not_look_byte_swapped() {
         let mut pcm = Vec::new();
         for i in 0..2000i16 {
             pcm.extend_from_slice(&i.to_le_bytes());
@@ -165,7 +165,7 @@ mod tests {
     }
 
     #[test]
-    fn la_misma_rampa_escrita_al_reves_si_se_nota() {
+    fn the_same_ramp_written_backwards_does_show() {
         let mut pcm = Vec::new();
         for i in 0..2000i16 {
             pcm.extend_from_slice(&i.to_be_bytes());

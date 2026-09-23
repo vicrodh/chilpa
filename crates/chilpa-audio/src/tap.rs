@@ -239,7 +239,7 @@ mod tests {
     }
 
     #[test]
-    fn mirar_no_cambia_un_solo_byte() {
+    fn watching_changes_not_a_single_byte() {
         let format = StreamFormat::new(SampleFormat::S16, 44_100, 2);
         let data = ramp(1000);
 
@@ -261,7 +261,7 @@ mod tests {
     }
 
     #[test]
-    fn solo_se_copia_lo_que_el_dispositivo_acepto() {
+    fn only_what_the_device_accepted_is_copied() {
         let format = StreamFormat::new(SampleFormat::S16, 44_100, 2);
         let tap = Tap::new();
         // Acepta 10 frames por escritura; se le dan 100.
@@ -272,7 +272,7 @@ mod tests {
     }
 
     #[test]
-    fn el_pico_y_el_rms_salen_por_canal() {
+    fn peak_and_rms_come_out_per_channel() {
         let format = StreamFormat::new(SampleFormat::S16, 44_100, 2);
         let tap = Tap::new();
         let mut s = tap.wrap(mirror(format, 0));
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[test]
-    fn el_circulo_se_endereza_y_queda_lo_ultimo() {
+    fn the_ring_is_straightened_and_the_latest_remains() {
         let format = StreamFormat::new(SampleFormat::S16, 44_100, 1);
         let tap = Tap::new();
         let mut s = tap.wrap(mirror(format, 0));
@@ -316,14 +316,14 @@ mod tests {
     }
 
     #[test]
-    fn sin_nada_escrito_la_foto_esta_vacia_y_no_truena() {
+    fn with_nothing_written_the_snapshot_is_empty_and_does_not_crash() {
         let tap = Tap::new();
         assert_eq!(tap.snapshot(), Snapshot::default());
         assert_eq!(tap.frames(), 0);
     }
 
     #[test]
-    fn las_muestras_se_normalizan_segun_su_formato() {
+    fn samples_are_normalized_according_to_their_format() {
         assert!((normalize(&i16::MAX.to_le_bytes(), SampleFormat::S16) - 1.0).abs() < 1e-4);
         assert_eq!(normalize(&i16::MIN.to_le_bytes(), SampleFormat::S16), -1.0);
         assert!((normalize(&i32::MAX.to_le_bytes(), SampleFormat::S32) - 1.0).abs() < 1e-6);

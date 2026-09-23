@@ -161,7 +161,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn solo_se_abren_dispositivos_directos() {
+    fn only_direct_devices_are_opened() {
         match AlsaSink::open("plughw:0,0", StreamFormat::new(SampleFormat::S16, 44_100, 2)) {
             Err(SinkError::Backend(msg)) => assert!(msg.contains("plughw")),
             Err(other) => panic!("debía rechazarse por no ser hw:, salió {other:?}"),
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn cada_formato_tiene_su_equivalente_en_alsa() {
+    fn every_format_has_an_alsa_equivalent() {
         for f in [
             SampleFormat::S16,
             SampleFormat::S24Packed,

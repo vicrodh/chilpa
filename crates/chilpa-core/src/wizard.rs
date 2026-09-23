@@ -142,7 +142,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dispositivo_de_cd_solo_entrega_cd() {
+    fn a_cd_device_delivers_cd_and_nothing_more() {
         let d = diagnose("hw:0,0", &caps(&[44_100], &[SampleFormat::S16], true));
         let cd = d.rows.iter().find(|f| f.name == "CD").unwrap();
         assert_eq!(cd.verdict, Verdict::BitPerfect);
@@ -156,7 +156,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dispositivo_sin_medir_no_promete_nada() {
+    fn an_unmeasured_device_promises_nothing() {
         let d = diagnose(
             "hw:0,0",
             &caps(&[44_100, 96_000], &[SampleFormat::S16, SampleFormat::S24In32], false),
@@ -171,7 +171,7 @@ mod tests {
     }
 
     #[test]
-    fn un_dac_de_los_buenos_entrega_casi_todo() {
+    fn a_good_dac_delivers_nearly_everything() {
         let d = diagnose(
             "hw:1,0",
             &caps(
@@ -196,7 +196,7 @@ mod tests {
     }
 
     #[test]
-    fn un_formato_dicho_como_se_dice() {
+    fn a_format_spelled_the_way_it_is_spoken() {
         let f = StreamFormat::new(SampleFormat::S24In32, 96_000, 2);
         assert_eq!(describe(f), "24 bits a 96000 Hz, estéreo");
         let mono = StreamFormat::new(SampleFormat::S16, 44_100, 1);

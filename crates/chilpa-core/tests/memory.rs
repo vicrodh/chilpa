@@ -73,7 +73,7 @@ fn caps() -> DeviceCaps {
 }
 
 #[test]
-fn una_pista_de_cinco_minutos_no_se_carga_entera_en_memoria() {
+fn a_five_minute_track_is_not_loaded_whole_into_memory() {
     let Some(path) = long_file() else {
         eprintln!("sin ffmpeg: se salta");
         return;

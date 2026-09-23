@@ -102,7 +102,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn los_canales_vienen_intercalados_byte_a_byte() {
+    fn channels_come_interleaved_byte_by_byte() {
         let frame: Vec<u8> = (0..8u8).collect();
         let channels = split_channels(&frame);
         assert_eq!(channels[0], vec![0, 2, 4, 6], "el izquierdo toma los pares");
@@ -110,14 +110,14 @@ mod tests {
     }
 
     #[test]
-    fn un_frame_se_parte_en_dos_mitades_iguales() {
+    fn a_frame_splits_into_two_equal_halves() {
         let channels = split_channels(&vec![0u8; STEREO_FRAME]);
         assert_eq!(channels[0].len(), STEREO_FRAME / 2);
         assert_eq!(channels[0].len(), channels[1].len());
     }
 
     #[test]
-    fn dst_no_es_reproducible_todavia() {
+    fn dst_is_not_playable_yet() {
         assert!(!is_playable(Encoding::Dst));
         assert!(is_playable(Encoding::Dsd3In14));
     }
