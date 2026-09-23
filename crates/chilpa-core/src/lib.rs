@@ -16,6 +16,10 @@ pub mod queue_playback;
 /// Lo que sale por el dispositivo, para quien lo quiera dibujar.
 pub use chilpa_audio::{spectrum, tap};
 
+/// Una petición hecha por cuenta de un plugin. La credencial la pone quien
+/// llama, nunca el plugin (ADR-007).
+pub use chilpa_stream::hacer_peticion;
+
 use chilpa_models::SourceId;
 
 /// Estado del proceso, por ahora vacío. Crece conforme entran los crates

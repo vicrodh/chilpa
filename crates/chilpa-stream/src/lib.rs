@@ -11,8 +11,10 @@
 //!   adivinar por la extensión de una URL que muchas veces no tiene.
 
 pub mod icy;
+pub mod peticion;
 
 pub use icy::IcyReader;
+pub use peticion::hacer as hacer_peticion;
 
 use std::io::{self, Read, Seek, SeekFrom};
 use std::sync::{Arc, Mutex};

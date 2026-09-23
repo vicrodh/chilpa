@@ -6,10 +6,12 @@
 
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
+pub use plugins::PluginInfo;
 
 mod biblioteca;
 mod cola;
 mod listas;
+mod plugins;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -358,6 +360,8 @@ pub struct Chilpa {
     quitadas: Vec<bool>,
     /// La letra de lo que suena, para no releerla en cada pulso.
     letra: Option<chilpa_lyrics::Lyrics>,
+    /// El sandbox de plugins, armado la primera vez que se pide.
+    plugins: Option<plugins::Plugins>,
     /// Lo que de verdad sale por el dispositivo, para los visualizadores.
     tap: chilpa_core::tap::Tap,
     /// El escaneo en segundo plano, mientras corre.
@@ -390,6 +394,7 @@ impl Chilpa {
             artista: String::new(),
             quitadas: Vec::new(),
             letra: None,
+            plugins: None,
             tap: chilpa_core::tap::Tap::new(),
             scan: None,
             scan_status: ScanStatus::default(),

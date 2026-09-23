@@ -11,3 +11,9 @@ chilpa-models.workspace = true
 chilpa-library.workspace = true
 chilpa-tags.workspace = true
 chilpa-lyrics.workspace = true
+chilpa-plugin.workspace = true
+
+[dev-dependencies]
+# Los plugins de prueba se escriben en texto de wasm, para no necesitar una
+# cadena de compilación aparte.
+wat = "1"

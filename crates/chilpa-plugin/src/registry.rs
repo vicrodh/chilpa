@@ -48,13 +48,14 @@ impl Registry {
         let manifest = match Manifest::parse(manifest_json) {
             Ok(m) => m,
             Err(e) => {
-                // Sin manifest no hay ni id con qué anotarlo; se guarda con
-                // lo que se pueda para que el usuario lo vea en la lista.
-                let id = id_a_ciegas(manifest_json);
+                // El manifest no pasó, pero puede que su JSON sí se lea: se
+                // rescata el id y el nombre para que en la lista aparezca
+                // como lo que es y no como una cadena de puntos.
+                let (id, nombre) = a_ciegas(manifest_json);
                 self.watchdog.cuarentena(&id, &e.to_string());
                 self.plugins.insert(
                     id.clone(),
-                    Instalado { id, nombre: String::new(), plugin: None, problema: Some(e.to_string()) },
+                    Instalado { id, nombre, plugin: None, problema: Some(e.to_string()) },
                 );
                 return false;
             }
@@ -147,12 +148,15 @@ impl Registry {
     }
 }
 
-/// Un id con el que anotar un manifest que ni siquiera se pudo leer.
-fn id_a_ciegas(json: &str) -> String {
-    serde_json::from_str::<serde_json::Value>(json)
-        .ok()
-        .and_then(|v| v.get("id")?.as_str().map(str::to_string))
-        .unwrap_or_else(|| "(manifest ilegible)".to_string())
+/// Lo que se pueda rescatar de un manifest que no pasó.
+fn a_ciegas(json: &str) -> (String, String) {
+    let v = serde_json::from_str::<serde_json::Value>(json).ok();
+    let sacar = |campo: &str| {
+        v.as_ref().and_then(|v| v.get(campo)?.as_str().map(str::to_string)).unwrap_or_default()
+    };
+    let id = sacar("id");
+    let id = if id.is_empty() { "(manifest ilegible)".to_string() } else { id };
+    (id, sacar("name"))
 }
 
 #[cfg(test)]
@@ -179,6 +183,19 @@ mod tests {
         assert!(!r.instalar(&host, r#"{"id":"com.a.b"}"#, b""));
         assert_eq!(r.instalados().next().unwrap().id, "com.a.b");
         assert!(matches!(r.estado("com.a.b"), Estado::Cuarentena { .. }));
+    }
+
+    #[test]
+    fn uno_que_no_paso_la_validacion_conserva_su_nombre() {
+        let host = Host::new().unwrap();
+        let mut r = Registry::new();
+        // El JSON se lee; lo que no pasa es la versión de la API.
+        let json = r#"{"id":"com.a.b","name":"Se llama así","version":"1",
+                       "api_version":42,"kind":"source"}"#;
+        assert!(!r.instalar(&host, json, b""));
+        let inst = r.instalados().next().unwrap();
+        assert_eq!(inst.nombre, "Se llama así", "en la lista sale con su nombre");
+        assert!(inst.problema.as_ref().unwrap().contains("versión"));
     }
 
     #[test]
