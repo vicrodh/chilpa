@@ -1,0 +1,253 @@
+//! El esquema de la biblioteca, versión 1.
+//!
+//! Cuatro decisiones vienen de la auditoría de QBZ (CHD-0001), donde la base
+//! de datos era el cuello de botella y la fuente de las pérdidas de datos:
+//!
+//! 1. **La identidad de un track es `(source, id externo)`.** Un entero
+//!    autoincremental como identidad hacía que reindexar cambiara los ids y
+//!    rompiera las playlists.
+//! 2. **El log de reproducciones es append-only y existe desde el día uno.**
+//!    Las stats y las smart lists son consultas sobre él. Si no se guarda
+//!    desde el principio, esa historia no se puede recuperar después.
+//! 3. **Las features de audio llevan la versión del analizador.** Un
+//!    analizador mejor puede recalcular sin revolver lo viejo.
+//! 4. **Nada se borra por no encontrarse.** Un root desmontado marca sus
+//!    tracks como ausentes; borrarlos fue el hallazgo alto de la auditoría.
+
+use rusqlite::Connection;
+
+/// La versión del esquema que entiende este código.
+pub const VERSION: i64 = 1;
+
+/// Crea o actualiza el esquema.
+pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    if actual > VERSION {
+        // Una base de una versión más nueva no se toca: bajar de versión
+        // pierde datos en silencio.
+        return Err(rusqlite::Error::InvalidQuery);
+    }
+    if actual == VERSION {
+        return Ok(());
+    }
+    db.execute_batch(SCHEMA_V1)?;
+    db.pragma_update(None, "user_version", VERSION)?;
+    Ok(())
+}
+
+/// Los pragmas con los que se abre. WAL deja que la interfaz lea mientras el
+/// escaneo escribe, que es justo lo que en QBZ daba "database is locked".
+pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
+    db.pragma_update(None, "journal_mode", "WAL")?;
+    db.pragma_update(None, "synchronous", "NORMAL")?;
+    db.pragma_update(None, "foreign_keys", "ON")?;
+    // Una espera antes de rendirse: un escaneo largo no debe tirar una
+    // lectura de la interfaz.
+    db.busy_timeout(std::time::Duration::from_secs(5))?;
+    Ok(())
+}
+
+const SCHEMA_V1: &str = r#"
+-- De dónde sale el contenido: proveedor más instancia. La biblioteca local
+-- es un source como cualquier otro.
+CREATE TABLE sources (
+    id          INTEGER PRIMARY KEY,
+    provider    TEXT NOT NULL,
+    instance    TEXT NOT NULL,
+    label       TEXT NOT NULL DEFAULT '',
+    UNIQUE (provider, instance)
+);
+
+-- Las carpetas que se escanean. Un root con su mountpoint ausente no se
+-- poda: se marca y ya.
+CREATE TABLE roots (
+    id          INTEGER PRIMARY KEY,
+    source_id   INTEGER NOT NULL REFERENCES sources(id),
+    path        TEXT NOT NULL UNIQUE,
+    last_scan   INTEGER,
+    reachable   INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE artists (
+    id          INTEGER PRIMARY KEY,
+    name        TEXT NOT NULL,
+    mbid        TEXT,
+    UNIQUE (name, mbid)
+);
+
+CREATE TABLE albums (
+    id            INTEGER PRIMARY KEY,
+    title         TEXT NOT NULL,
+    album_artist  TEXT NOT NULL DEFAULT '',
+    mbid          TEXT,
+    year          INTEGER,
+    artwork_path  TEXT,
+    UNIQUE (title, album_artist, mbid)
+);
+
+-- La identidad es (source_id, external_id). external_id de un archivo local
+-- es su ruta.
+CREATE TABLE tracks (
+    id             INTEGER PRIMARY KEY,
+    source_id      INTEGER NOT NULL REFERENCES sources(id),
+    external_id    TEXT NOT NULL,
+    title          TEXT NOT NULL,
+    artist         TEXT NOT NULL DEFAULT '',
+    album_id       INTEGER REFERENCES albums(id),
+    track_number   INTEGER,
+    disc_number    INTEGER,
+    duration_ms    INTEGER NOT NULL DEFAULT 0,
+    sample_rate_hz INTEGER,
+    bit_depth      INTEGER,
+    channels       INTEGER,
+    codec          TEXT,
+    isrc           TEXT,
+    recording_mbid TEXT,
+    -- 1 mientras el archivo esté donde dijo estar. Un source inalcanzable
+    -- pone 0 y conserva la fila.
+    present        INTEGER NOT NULL DEFAULT 1,
+    added_at       INTEGER NOT NULL,
+    UNIQUE (source_id, external_id)
+);
+
+CREATE INDEX tracks_album ON tracks(album_id);
+CREATE INDEX tracks_artist ON tracks(artist);
+CREATE INDEX tracks_present ON tracks(present);
+CREATE INDEX tracks_isrc ON tracks(isrc) WHERE isrc IS NOT NULL;
+CREATE INDEX tracks_mbid ON tracks(recording_mbid) WHERE recording_mbid IS NOT NULL;
+
+-- Lo que el escaneo vio en disco, para poder ser incremental. Se guarda el
+-- inodo además de la fecha: renombrar un archivo no debe re-extraer sus tags.
+CREATE TABLE scanned_files (
+    id          INTEGER PRIMARY KEY,
+    root_id     INTEGER NOT NULL REFERENCES roots(id),
+    path        TEXT NOT NULL UNIQUE,
+    -- En nanosegundos: en segundos, dos cambios dentro del mismo segundo
+    -- se ven iguales.
+    mtime       INTEGER NOT NULL,
+    size        INTEGER NOT NULL,
+    inode       INTEGER,
+    track_id    INTEGER REFERENCES tracks(id),
+    scanned_at  INTEGER NOT NULL
+);
+
+CREATE INDEX scanned_root ON scanned_files(root_id);
+CREATE INDEX scanned_inode ON scanned_files(inode) WHERE inode IS NOT NULL;
+
+-- El log de reproducciones. Append-only: de aquí salen las stats, las smart
+-- lists y el sync de play counts con un DAP.
+CREATE TABLE play_events (
+    id            INTEGER PRIMARY KEY,
+    track_id      INTEGER REFERENCES tracks(id),
+    source_id     INTEGER REFERENCES sources(id),
+    started_at    INTEGER NOT NULL,
+    -- Cuánto sonó de verdad, en milisegundos entregados.
+    played_ms     INTEGER NOT NULL,
+    -- La duración que tenía la pista, para saber si se escuchó completa.
+    duration_ms   INTEGER NOT NULL DEFAULT 0,
+    -- 1 si el usuario la saltó.
+    skipped       INTEGER NOT NULL DEFAULT 0,
+    -- Con qué salió: formato real y si fue bit-perfect.
+    sample_rate_hz INTEGER,
+    bit_depth      INTEGER,
+    bit_perfect    INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX play_events_track ON play_events(track_id);
+CREATE INDEX play_events_time ON play_events(started_at);
+
+-- Lo que el análisis saca de un track. La versión del analizador va en la
+-- fila: cambiarlo no obliga a tirar lo viejo.
+CREATE TABLE audio_features (
+    track_id      INTEGER NOT NULL REFERENCES tracks(id),
+    analyzer      TEXT NOT NULL,
+    version       INTEGER NOT NULL,
+    bpm           REAL,
+    musical_key   TEXT,
+    energy        REAL,
+    loudness_lufs REAL,
+    intro_ms      INTEGER,
+    outro_ms      INTEGER,
+    analyzed_at   INTEGER NOT NULL,
+    PRIMARY KEY (track_id, analyzer, version)
+);
+"#;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn memoria() -> Connection {
+        let db = Connection::open_in_memory().unwrap();
+        migrate(&db).unwrap();
+        db
+    }
+
+    #[test]
+    fn el_esquema_se_crea_y_queda_marcado_con_su_version() {
+        let db = memoria();
+        let v: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
+        assert_eq!(v, VERSION);
+    }
+
+    #[test]
+    fn migrar_dos_veces_no_hace_nada_la_segunda() {
+        let db = memoria();
+        migrate(&db).unwrap();
+        let tablas: i64 = db
+            .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
+            .unwrap();
+        assert!(tablas >= 8, "hay {tablas} tablas");
+    }
+
+    #[test]
+    fn una_base_mas_nueva_no_se_toca() {
+        let db = Connection::open_in_memory().unwrap();
+        db.pragma_update(None, "user_version", VERSION + 1).unwrap();
+        assert!(migrate(&db).is_err(), "bajar de versión perdería datos");
+    }
+
+    #[test]
+    fn dos_tracks_no_pueden_compartir_source_e_id_externo() {
+        let db = memoria();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        let insertar = |external: &str| {
+            db.execute(
+                "INSERT INTO tracks (source_id, external_id, title, added_at)
+                 VALUES (1, ?1, 'x', 0)",
+                [external],
+            )
+        };
+        insertar("/musica/a.flac").unwrap();
+        assert!(insertar("/musica/a.flac").is_err(), "la identidad no se repite");
+        insertar("/musica/b.flac").unwrap();
+    }
+
+    #[test]
+    fn el_log_de_reproducciones_acepta_lo_que_las_stats_necesitan() {
+        let db = memoria();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        db.execute(
+            "INSERT INTO tracks (source_id, external_id, title, added_at)
+             VALUES (1, '/a.flac', 'Una', 0)",
+            [],
+        )
+        .unwrap();
+        db.execute(
+            "INSERT INTO play_events
+             (track_id, source_id, started_at, played_ms, duration_ms, skipped,
+              sample_rate_hz, bit_depth, bit_perfect)
+             VALUES (1, 1, 1700000000, 180000, 200000, 0, 44100, 16, 1)",
+            [],
+        )
+        .unwrap();
+        let (ms, bp): (i64, i64) = db
+            .query_row("SELECT played_ms, bit_perfect FROM play_events", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!((ms, bp), (180_000, 1));
+    }
+}
