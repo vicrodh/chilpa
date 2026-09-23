@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Todos los candados. Lo mismo que corre el hook de pre-commit y el CI.
+# Todos los candados, incluido el que cuesta segundos. Esto es lo que corre
+# el CI; el hook de pre-commit usa `fast`.
 set -e
 root=$(git rev-parse --show-toplevel)
-"$root/tools/lint/no-platform-names"
-"$root/tools/lint/arquitectura"
-"$root/tools/lint/licencias"
+"$root/tools/lint/fast"
+"$root/tools/lint/footprint"

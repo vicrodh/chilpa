@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -e
 root=$(git rev-parse --show-toplevel)
-"$root/tools/lint/all"
+"$root/tools/lint/fast"
