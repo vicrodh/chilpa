@@ -1,0 +1,10 @@
+[package]
+name = "chilpa-tags"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-models.workspace = true
+lofty = "0.25"
