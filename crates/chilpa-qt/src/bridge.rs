@@ -34,6 +34,7 @@ pub mod chilpa_bridge {
         #[qproperty(bool, playing)]
         #[qproperty(bool, bit_perfect)]
         #[qproperty(f64, seconds)]
+        #[qproperty(f64, total_seconds)]
         /// Lo que se pidió reproducir al arrancar, si se pasó por la línea
         /// de comandos. Vacío cuando no.
         #[qproperty(QString, autoplay_path)]
@@ -71,6 +72,7 @@ pub struct ChilpaRust {
     playing: bool,
     bit_perfect: bool,
     seconds: f64,
+    total_seconds: f64,
     autoplay_path: QString,
     autoplay_device: QString,
     api: chilpa_api::Chilpa,
@@ -87,6 +89,7 @@ impl Default for ChilpaRust {
             playing: false,
             bit_perfect: false,
             seconds: 0.0,
+            total_seconds: 0.0,
             // La ventana se puede arrancar apuntando a un archivo, para
             // probarla sin tocar nada: chilpa-qt <archivo> [salida].
             autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
@@ -131,6 +134,7 @@ impl Chilpa {
         let ahora = self.as_mut().rust_mut().api.poll().clone();
         self.as_mut().set_playing(ahora.playing);
         self.as_mut().set_seconds(ahora.seconds);
+        self.as_mut().set_total_seconds(ahora.total_seconds);
         self.as_mut().set_bit_perfect(ahora.bit_perfect);
         self.as_mut().set_format(QString::from(&ahora.format));
         self.as_mut().set_error(QString::from(&ahora.error));

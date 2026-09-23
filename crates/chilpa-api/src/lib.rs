@@ -50,6 +50,8 @@ pub struct NowPlaying {
     /// Frames entregados y su equivalente en segundos.
     pub frames: u64,
     pub seconds: f64,
+    /// Duración total, cuando se conoce.
+    pub total_seconds: f64,
     /// Con qué se abrió el dispositivo, ya listo para mostrar.
     pub format: String,
     pub bit_perfect: bool,
@@ -114,11 +116,15 @@ impl Chilpa {
         let eventos = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for evento in eventos {
             match evento {
-                PlayerEvent::Started { path, opened, bit_perfect } => {
+                PlayerEvent::Started { path, opened, bit_perfect, total_frames } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
+                    self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
+                        (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
+                        _ => 0.0,
+                    };
                     self.now.format = format!(
                         "{} Hz · {} bits · {} canales",
                         opened.sample_rate_hz,

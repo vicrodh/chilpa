@@ -77,6 +77,8 @@ impl FrameSource for Frames<'_> {
 pub struct Played {
     pub delivery: Delivery,
     pub outcome: Outcome,
+    /// Cuántos frames tenía la pista, cuando el contenedor lo dice.
+    pub total_frames: Option<u64>,
 }
 
 /// Reproduce un archivo en un dispositivo, con la política dada.
@@ -112,6 +114,7 @@ where
     K: AudioSink,
 {
     let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
+    let total_frames = decoded.frame_count();
     let delivery =
         negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
@@ -121,7 +124,7 @@ where
         return Err(PlayError::Pack(e));
     }
     sink.close().map_err(PlayError::Sink)?;
-    Ok(Played { delivery, outcome })
+    Ok(Played { delivery, outcome, total_frames })
 }
 
 #[cfg(test)]
