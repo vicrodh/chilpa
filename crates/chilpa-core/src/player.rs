@@ -248,6 +248,9 @@ fn reproducir(
         if es_url(primera) {
             return reproducir_stream(primera, device, &caps, policy, stop, pause, open, events);
         }
+        if es_cd(primera) {
+            return reproducir_cd(primera, device, &caps, stop, pause, skip, open, events);
+        }
         if es_sacd(primera) {
             return reproducir_sacd(primera, device, &caps, stop, pause, skip, open, events);
         }
@@ -365,6 +368,123 @@ fn es_sacd(path: &Path) -> bool {
 
 /// Reproduce las pistas del área estéreo de una imagen de SACD, en orden.
 #[allow(clippy::too_many_arguments)]
+/// Un CD se pide como `cdda:/dev/sr0`. El prefijo no es adorno: un nodo de
+/// dispositivo a secas no se distingue de un archivo, y abrir la unidad por
+/// equivocación asusta a cualquiera.
+fn es_cd(path: &Path) -> bool {
+    path.to_string_lossy().starts_with("cdda:")
+}
+
+/// La unidad que pide una ruta `cdda:`.
+pub fn cd_device_of(path: &Path) -> Option<PathBuf> {
+    let s = path.to_string_lossy();
+    let nodo = s.strip_prefix("cdda:")?;
+    (!nodo.is_empty()).then(|| PathBuf::from(nodo))
+}
+
+#[cfg(target_os = "linux")]
+fn reproducir_cd(
+    path: &Path,
+    device: &str,
+    caps: &chilpa_audio::negotiate::DeviceCaps,
+    stop: &StopSignal,
+    pause: &chilpa_audio::sink::PauseSignal,
+    skip: &chilpa_audio::sink::SkipSignal,
+    open: &mut OpenSink,
+    events: &Sender<PlayerEvent>,
+) -> Result<Outcome, PlayError> {
+    let nodo = cd_device_of(path)
+        .ok_or_else(|| PlayError::Sink(SinkError::Backend("falta la unidad".into())))?;
+    let mut unidad = chilpa_cd::linux::LinuxDrive::open(&nodo)
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+    let toc = crate::cd_playback::read_toc(&mut unidad)
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+    let pistas: Vec<chilpa_cd::Track> = toc.audio_tracks().copied().collect();
+    if pistas.is_empty() {
+        return Err(PlayError::Sink(SinkError::Backend(
+            "el disco no trae pistas de audio".into(),
+        )));
+    }
+
+    let total = pistas.len();
+    let mut ultimo = Outcome::Finished { frames: 0 };
+    for (indice, pista) in pistas.iter().enumerate() {
+        if stop.is_stopped() {
+            return Ok(Outcome::Stopped { frames: ultimo.frames() });
+        }
+        skip.take();
+        let etiqueta = chilpa_tags::Tags {
+            title: Some(format!("Pista {}", pista.number)),
+            album: Some(format!("CD en {}", nodo.display())),
+            ..chilpa_tags::Tags::default()
+        };
+        let eventos = events.clone();
+        let ruta = path.to_path_buf();
+        // Un CD son 44 100 frames por segundo, y sus sectores ya son PCM.
+        let duracion = Some(u64::from(pista.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64);
+
+        let played = crate::cd_playback::play_track(
+            &mut unidad,
+            pista,
+            caps,
+            stop,
+            pause,
+            |formato| {
+                let sink = open(device, formato);
+                if sink.is_ok() {
+                    let _ = eventos.send(PlayerEvent::Started {
+                        path: ruta.clone(),
+                        opened: formato,
+                        // Un CD entregado tal cual siempre es bit-perfect:
+                        // si la salida no acepta 16/44.1, no se abre.
+                        bit_perfect: true,
+                        total_frames: duracion,
+                        tags: Some(etiqueta.clone()),
+                        artwork: None,
+                        index: indice,
+                        queue_len: total,
+                        dsd_multiple: None,
+                    });
+                }
+                sink
+            },
+            &mut |frames| {
+                let _ = events.send(PlayerEvent::Progress { frames });
+            },
+        )
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+
+        // Un sector ilegible corta la pista, y se dice en vez de rellenar
+        // con silencio.
+        if let Some(problema) = played.read_error {
+            let _ = events.send(PlayerEvent::Failed {
+                message: format!("pista {}: {problema}", pista.number),
+            });
+        }
+        ultimo = played.outcome;
+        if !ultimo.may_advance_queue() {
+            break;
+        }
+    }
+    Ok(ultimo)
+}
+
+#[cfg(not(target_os = "linux"))]
+fn reproducir_cd(
+    _path: &Path,
+    _device: &str,
+    _caps: &chilpa_audio::negotiate::DeviceCaps,
+    _stop: &StopSignal,
+    _pause: &chilpa_audio::sink::PauseSignal,
+    _skip: &chilpa_audio::sink::SkipSignal,
+    _open: &mut OpenSink,
+    _events: &Sender<PlayerEvent>,
+) -> Result<Outcome, PlayError> {
+    Err(PlayError::Sink(SinkError::Backend(
+        "todavía no se leen CD fuera de Linux".into(),
+    )))
+}
+
 fn reproducir_sacd(
     path: &Path,
     device: &str,
@@ -506,6 +626,23 @@ fn reproducir_dsd(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn una_ruta_de_cd_se_reconoce_por_su_prefijo() {
+        assert!(es_cd(Path::new("cdda:/dev/sr0")));
+        // Un nodo de dispositivo a secas NO es un CD: abrir la unidad por
+        // equivocación asusta a cualquiera.
+        assert!(!es_cd(Path::new("/dev/sr0")));
+        assert!(!es_cd(Path::new("/musica/una.flac")));
+    }
+
+    #[test]
+    fn de_una_ruta_de_cd_sale_su_unidad() {
+        assert_eq!(cd_device_of(Path::new("cdda:/dev/sr0")), Some(PathBuf::from("/dev/sr0")));
+        assert_eq!(cd_device_of(Path::new("cdda:")), None, "sin unidad no hay nada que abrir");
+        assert_eq!(cd_device_of(Path::new("/dev/sr0")), None);
+    }
+
     use chilpa_audio::format::SampleFormat;
     use std::io::Write;
     use std::sync::atomic::{AtomicU64, Ordering};
