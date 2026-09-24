@@ -127,6 +127,33 @@ impl Chilpa {
         lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
     }
 
+    /// Forgets a folder: it stops being rescanned and what came from it
+    /// stops counting as present.
+    ///
+    /// Nothing is deleted. Adding the folder back finds its tracks again,
+    /// with the listening history they already had.
+    ///
+    /// Returns true if there was such a folder to forget.
+    pub fn forget_folder(&mut self, folder: &str) -> bool {
+        let Some(lib) = self.library() else { return false };
+        let Some(root) = lib
+            .roots()
+            .unwrap_or_default()
+            .into_iter()
+            .find(|r| r.path.to_string_lossy() == folder)
+        else {
+            return false;
+        };
+        match lib.forget_root(root.id) {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error =
+                    chilpa_i18n::t_args("the folder could not be forgotten: {}", &[&e.to_string()]);
+                false
+            }
+        }
+    }
+
     /// How the scan is going. On finishing, it refreshes what the view shows.
     pub fn scan_status(&mut self) -> &ScanStatus {
         let events = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();

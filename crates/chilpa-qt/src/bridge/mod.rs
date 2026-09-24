@@ -225,6 +225,11 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn refresh_library_folders(self: Pin<&mut Chilpa>);
 
+        /// Forgets a folder: it stops being rescanned and what came from it
+        /// stops counting as present. Nothing is deleted.
+        #[qinvokable]
+        fn forget_library_folder(self: Pin<&mut Chilpa>, folder: &QString);
+
         /// Chooses the visualizer and remembers it.
         #[qinvokable]
         fn choose_visualizer(self: Pin<&mut Chilpa>, name: &QString);

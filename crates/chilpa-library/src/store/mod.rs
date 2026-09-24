@@ -183,6 +183,21 @@ impl Library {
         rows.collect()
     }
 
+    /// Forgets a folder: it stops being rescanned, and what came from it
+    /// stops counting as present.
+    ///
+    /// The tracks are not deleted. The play log points at them -- that is
+    /// where the stats come from -- and adding the folder back finds them
+    /// again instead of starting the history from zero. What does go is what
+    /// the scan remembered about the files, because forgetting a folder and
+    /// keeping notes on it is not forgetting it.
+    pub fn forget_root(&self, root_id: i64) -> rusqlite::Result<()> {
+        self.set_root_reachable(root_id, false)?;
+        self.db.execute("DELETE FROM scanned_files WHERE root_id = ?1", params![root_id])?;
+        self.db.execute("DELETE FROM roots WHERE id = ?1", params![root_id])?;
+        Ok(())
+    }
+
     /// Marks whether a root is reachable. A missing root prunes NOTHING.
     pub fn set_root_reachable(&self, root_id: i64, reachable: bool) -> rusqlite::Result<()> {
         self.db.execute(
@@ -353,6 +368,39 @@ mod tests {
 
         assert_eq!(lib.track_count(true).unwrap(), 1, "the row is still there");
         assert_eq!(lib.track_count(false).unwrap(), 0, "but it no longer counts as present");
+    }
+
+    #[test]
+    fn forgetting_a_folder_stops_it_being_rescanned_and_deletes_nothing() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        let root = lib.root_id(source, Path::new("/nas")).unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (source_id, external_id, title, added_at)
+                 VALUES (?1, '/nas/a.flac', 'One', 0)",
+                params![source],
+            )
+            .unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO scanned_files (root_id, path, mtime, size, track_id, scanned_at)
+                 VALUES (?1, '/nas/a.flac', 0, 0, 1, 0)",
+                params![root],
+            )
+            .unwrap();
+
+        lib.forget_root(root).unwrap();
+
+        assert!(lib.roots().unwrap().is_empty(), "it is not on the list to rescan");
+        assert_eq!(lib.track_count(true).unwrap(), 1, "the track is not deleted");
+        assert_eq!(lib.track_count(false).unwrap(), 0, "it stops counting as present");
+
+        // Adding it back finds the same track again, with whatever history
+        // it had: that is the difference between forgetting and deleting.
+        let again = lib.root_id(source, Path::new("/nas")).unwrap();
+        assert_ne!(again, 0);
+        assert_eq!(lib.roots().unwrap().len(), 1);
     }
 
 

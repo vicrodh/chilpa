@@ -142,6 +142,9 @@ msgstr "Carpetas"
 msgid "For a long while"
 msgstr "Para un rato largo"
 
+msgid "Forget"
+msgstr "Olvidar"
+
 msgid "Formats"
 msgstr "Formatos"
 
@@ -809,6 +812,9 @@ msgstr "el archivo trae {} bits y el dispositivo solo toma {}"
 
 msgid "the fmt chunk is missing"
 msgstr "falta el chunk fmt"
+
+msgid "the folder could not be forgotten: {}"
+msgstr "no se pudo olvidar la carpeta: {}"
 
 msgid "the folder for \"{}\" could not be deleted"
 msgstr "no se pudo borrar la carpeta de \"{}\""
