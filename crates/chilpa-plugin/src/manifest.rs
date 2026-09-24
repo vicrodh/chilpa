@@ -58,6 +58,33 @@ pub enum Capability {
     RegisterPanel,
     /// Registrar un comando que el usuario puede disparar.
     RegisterCommand,
+    /// Maneja su propia cuenta: se autentica solo y guarda su credencial
+    /// donde él quiera. Chilpa no la ve, no la pone en sus peticiones y no
+    /// la puede borrar.
+    ///
+    /// Existe porque hay bibliotecas que hablan el protocolo propio de un
+    /// servicio y **se autentican ellas mismas**: necesitan sockets crudos
+    /// y la credencial en sus manos. Con esas, el invariante normal —el
+    /// plugin usa la credencial pero nunca la tiene— no se puede sostener,
+    /// y fingir que sí sería peor que decirlo.
+    ///
+    /// Solo tiene sentido con [`Runtime::Process`]: un plugin de WASM no
+    /// tiene sockets ni disco propio, así que no podría manejar nada.
+    ///
+    /// `keyring` dice **dónde** lo guarda. Si es cierto, en el llavero del
+    /// sistema bajo su propio nombre —una entrada suya, aparte de la de
+    /// Chilpa, nunca la misma—. Si es falso, donde él decida, que puede ser
+    /// un archivo en claro.
+    ///
+    /// **Es una declaración, no una garantía.** Las otras capacidades
+    /// Chilpa las hace cumplir: un dominio que no está en la lista no sale
+    /// a la red, y punto. Esta no la puede comprobar, porque justamente se
+    /// trata de lo que pasa fuera de su alcance. Por eso se le dice al
+    /// usuario como lo que es: lo que el plugin dice de sí mismo.
+    OwnAccount {
+        #[serde(default)]
+        keyring: bool,
+    },
 }
 
 impl Capability {
@@ -75,6 +102,18 @@ impl Capability {
             Capability::RegisterSource => "aportar catálogo: buscar y traer música".into(),
             Capability::RegisterPanel => "poner un panel suyo en la ventana".into(),
             Capability::RegisterCommand => "agregar un comando que tú disparas".into(),
+            // Se dice distinto de las demás a propósito: es la única que
+            // deja a Chilpa fuera, y aprobarla no debería sentirse igual
+            // que aprobar un panel. Y se dice "dice que", porque es lo
+            // único honesto: Chilpa no lo puede comprobar.
+            Capability::OwnAccount { keyring: true } => "manejar tu cuenta él mismo, fuera \
+                de Chilpa: dice que guarda tu credencial en el llavero del sistema, bajo su \
+                propio nombre. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
+                .into(),
+            Capability::OwnAccount { keyring: false } => "manejar tu cuenta él mismo, fuera \
+                de Chilpa: tu credencial queda donde él decida, que puede ser un archivo en \
+                claro. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
+                .into(),
         }
     }
 }
@@ -205,6 +244,18 @@ impl Manifest {
             if let Some(e) = a.problem() {
                 return Err(ManifestError::BadAuth(e));
             }
+        }
+        // Un plugin de WASM no tiene sockets ni disco propio: no podría
+        // manejar una cuenta aunque dijera que sí. Se rechaza al instalar,
+        // no se ignora en silencio.
+        if self.runtime != Runtime::Process
+            && self.capabilities.iter().any(|c| matches!(c, Capability::OwnAccount { .. }))
+        {
+            return Err(ManifestError::BadAuth(
+                "dice manejar su propia cuenta, pero eso solo puede hacerlo un plugin de \
+                 proceso aparte: en WASM no hay sockets ni disco suyo"
+                    .into(),
+            ));
         }
         Ok(())
     }
@@ -416,6 +467,40 @@ mod tests {
                 matches!(Manifest::parse(&json), Err(ManifestError::BadDomain(_))),
                 "\"{bad}\" no debería pasar"
             );
+        }
+    }
+
+    #[test]
+    fn a_wasm_plugin_cannot_claim_it_manages_its_own_account() {
+        // No tiene sockets ni disco suyo: decirlo sería mentir, y se
+        // rechaza al instalar en lugar de ignorarse.
+        let e = Manifest::parse(
+            r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source",
+                "capabilities":[{"type":"own_account"}]}"#,
+        )
+        .unwrap_err();
+        assert!(e.to_string().contains("proceso aparte"), "{e}");
+    }
+
+    #[test]
+    fn managing_its_own_account_is_said_plainly_and_not_like_the_others() {
+        // Es la única capacidad que deja a Chilpa fuera. Aprobarla no
+        // debería sentirse igual que aprobar un panel.
+        // Guardarla en el llavero del sistema es mejor noticia que
+        // guardarla donde sea, y se dice distinto.
+        let in_keyring = Capability::OwnAccount { keyring: true }.describe();
+        assert!(in_keyring.contains("llavero del sistema"), "{llavero}");
+        assert!(in_keyring.contains("su propio nombre"), "aparte de la de Chilpa: {llavero}");
+
+        let anywhere = Capability::OwnAccount { keyring: false }.describe();
+        assert!(anywhere.contains("archivo en claro"), "{donde_sea}");
+
+        // Las dos dicen lo mismo de fondo, incluido que no se comprueba.
+        for said in [in_keyring, anywhere] {
+            assert!(said.contains("fuera de Chilpa"), "{said}");
+            assert!(said.contains("no la ve"), "{said}");
+            assert!(said.contains("borrar"), "{said}");
+            assert!(said.contains("comprobarlo"), "es una declaración, no una garantía: {said}");
         }
     }
 

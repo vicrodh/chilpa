@@ -39,6 +39,9 @@ ALLOWED = {
     # Quien la llama le inyecta la petición, y por eso `chilpa-plugin` puede
     # usar su tipo para leer un manifest sin enlazar un cliente HTTP.
     "chilpa-auth": set(),
+    # Los catálogos de traducción. No dependen de nada, y viven aparte del
+    # shell a propósito: cambiar de ventana no debe poder romper el idioma.
+    "chilpa-i18n": set(),
     "chilpa-library": {"chilpa-models", "chilpa-tags"},
     "chilpa-stream": set(),
     "chilpa-decode": {"chilpa-audio", "chilpa-stream"},

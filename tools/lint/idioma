@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""El código va en inglés; los comentarios y lo que lee el usuario, en español.
+"""El repo de código va en inglés: identificadores, comentarios y cadenas.
 
-Este candado revisa lo primero. Mira solo las regiones de código de cada
-archivo -- nunca los comentarios ni las cadenas -- y marca todo identificador
-con una palabra española adentro.
+Lo único que se queda en español es lo que lee el usuario final, y eso sale
+de los archivos de traducción, no de aquí (ADR-001).
+
+Este candado mira las tres cosas. Un identificador con una palabra española
+adentro, un comentario escrito en español, y una cadena en español que no
+esté marcada para traducir.
 
 Una palabra se considera española si el inglés la rechaza y el es_MX la
 acepta, o la aceptaría con acentos. Lo segundo hace falta porque un
@@ -30,6 +33,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = Path(__file__).resolve().parent
+# Cuántos comentarios en español quedan por traducir. Solo baja.
+BUDGET = BASE / "comentarios-pendientes.txt"
 
 
 def sin_acentos(s):
@@ -174,6 +179,23 @@ def solo_les_falta_el_acento(tokens):
     return out
 
 
+def palabras_de(texto):
+    """Las palabras de un texto, sin lo que va entre acentos graves ni URLs.
+
+    Lo que va en `backticks` es un identificador y ya lo revisa la otra
+    mitad de este candado; contarlo aquí marcaría comentarios en inglés que
+    nombran una función.
+    """
+    texto = re.sub(r"`[^`]*`", " ", texto)
+    texto = re.sub(r"https?://\S+", " ", texto)
+    texto = re.sub(r"\[[^\]]*\]\([^)]*\)", " ", texto)
+    return [w.lower() for w in re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", texto)]
+
+
+def sin_acentos_lista(palabras):
+    return [sin_acentos(w) for w in palabras]
+
+
 def lista(nombre):
     f = BASE / nombre
     if not f.exists():
@@ -185,12 +207,21 @@ def lista(nombre):
     }
 
 
+def es_espanol(palabra, no_es, no_en, acentos):
+    """Cierto si esa palabra es española y no inglesa."""
+    if palabra not in no_en:
+        return False
+    return palabra not in no_es or palabra in acentos
+
+
 def main():
     permitidas = lista("permitidas-idioma.txt")
     archivos = sorted(ROOT.glob("crates/*/**/*.rs")) + sorted(ROOT.glob("crates/*/qml/*.qml"))
 
-    # Identificador -> dónde salió la primera vez.
+    # Identificador -> dónde salió la primera vez, y los comentarios con su
+    # lugar, que es lo que hay que poder señalar.
     donde = {}
+    comentarios = []
     for f in archivos:
         src = f.read_text()
         piezas = trozos_qml(src) if f.suffix == ".qml" else trozos_rust(src)
@@ -202,33 +233,73 @@ def main():
                         m.group(0),
                         (f.relative_to(ROOT), linea + texto[: m.start()].count("\n")),
                     )
+            elif tipo == "comment":
+                comentarios.append((f.relative_to(ROOT), linea, texto))
             linea += texto.count("\n")
 
-    tokens = sorted({p for i in donde for p in palabras(i)} - permitidas)
+    de_ids = {p for i in donde for p in palabras(i)}
+    de_prosa = {w for _, _, t in comentarios for w in palabras_de(t)}
+    tokens = sorted((de_ids | de_prosa) - permitidas)
+
     no_es = hunspell("es_MX", tokens)
     no_en = hunspell("en_US", tokens)
+    aviso = None
     if no_es is None or no_en is None:
         base = {sin_acentos(w) for w in lista("palabras-es.txt")}
-        espanol = {t for t in tokens if t in base}
+        no_es = {t for t in tokens if t not in base}
+        no_en = set(tokens)
+        acentos = set()
         aviso = "idioma: sin hunspell; solo se revisó la lista base"
     else:
         # Solo se le pregunta por los que ningún diccionario reconoce:
         # pedir sugerencias es lo caro de esto.
         acentos = solo_les_falta_el_acento(sorted(no_es & no_en))
-        espanol = {t for t in tokens if t in no_en and (t not in no_es or t in acentos)}
-        aviso = None
 
-    malos = sorted(
-        (donde[i], i) for i in donde if any(p in espanol for p in palabras(i))
-    )
+    espanol = {t for t in tokens if es_espanol(t, no_es, no_en, acentos)}
+
+    errores = []
+
+    malos = sorted((donde[i], i) for i in donde if any(p in espanol for p in palabras(i)))
     if malos:
-        print("idioma: el código va en inglés; estos identificadores no lo están:")
-        for (f, n), ident in malos:
-            print(f"  {f}:{n}: {ident}")
+        errores.append("el código va en inglés; estos identificadores no lo están:")
+        errores += [f"  {f}:{n}: {i}" for (f, n), i in malos]
+
+    # Un comentario se marca con dos palabras españolas, no con una: en uno
+    # escrito en inglés puede aparecer una prestada, y marcarlo por eso
+    # volvería el candado ruido que nadie lee.
+    prosa = []
+    for f, n, texto in comentarios:
+        hay = sorted({w for w in palabras_de(texto) if w in espanol})
+        if len(hay) >= 2:
+            prosa.append((f, n, hay[:4]))
+    # Trinquete mientras dura la traducción del código viejo: el número de
+    # comentarios en español solo puede bajar. Cuando llegue a cero se
+    # quita el archivo y esto se vuelve un "ninguno" a secas.
+    quedan = BUDGET.read_text().strip() if BUDGET.exists() else "0"
+    tope = int(quedan) if quedan.isdigit() else 0
+    if len(prosa) > tope:
+        errores.append(
+            f"los comentarios también van en inglés; hay {len(prosa)} en español y el "
+            f"tope es {tope}. Traduce los que tocaste:"
+        )
+        errores += [f"  {f}:{n}: {', '.join(w)}…" for f, n, w in prosa[:15]]
+        if len(prosa) > 15:
+            errores.append(f"  … y {len(prosa) - 15} más")
+    elif len(prosa) < tope and BUDGET.exists():
+        BUDGET.write_text(f"{len(prosa)}\n")
+        print(f"idioma: bajan a {len(prosa)} los comentarios en español (eran {tope})")
+
+    if errores:
+        print("\n".join(errores))
         print()
         print("Si alguno no es español, agrégalo a tools/lint/permitidas-idioma.txt.")
         return 1
-    print(f"idioma: {len(donde)} identificadores, todos en inglés")
+
+    pendientes = f"; quedan {len(prosa)} comentarios por traducir" if prosa else ""
+    print(
+        f"idioma: {len(donde)} identificadores en inglés, "
+        f"{len(comentarios) - len(prosa)} de {len(comentarios)} comentarios{pendientes}"
+    )
     if aviso:
         print(aviso)
     return 0
