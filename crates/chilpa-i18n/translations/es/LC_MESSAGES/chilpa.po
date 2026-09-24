@@ -16,6 +16,18 @@ msgstr "\"{}\" no sirve como id: se usa como nombre de carpeta, así que va en m
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
 
+msgid "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let the Mac convert"
+msgstr "\"{}\" no lleva muestras de {} bits sin tocarlas; apaga bit-perfect para dejar que la Mac convierta"
+
+msgid "\"{}\" would not open ({})"
+msgstr "no se pudo abrir \"{}\" ({})"
+
+msgid "\"{}\" would not run at {} Hz ({})"
+msgstr "\"{}\" no quiso correr a {} Hz ({})"
+
+msgid "\"{}\" would not start ({})"
+msgstr "\"{}\" no quiso arrancar ({})"
+
 msgid "(unreadable manifest)"
 msgstr "(manifest ilegible)"
 
@@ -97,9 +109,6 @@ msgstr "Revisar"
 msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
 msgstr "Revisar lee el archivo entero y reporta lo que encuentre. Reconstruir rehace las cuentas de escuchas y el índice de búsqueda a partir de las pistas y del log, que no se tocan: no se pierde nada por correrlo."
 
-msgid "Chilpa can see this Mac's outputs but cannot play through them yet"
-msgstr "Chilpa ya ve las salidas de esta Mac pero todavía no puede reproducir por ellas"
-
 msgid "Classic"
 msgstr "Clásico"
 
@@ -147,6 +156,9 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 
 msgid "Everything"
 msgstr "Todo"
+
+msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
+msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
 
 msgid "Folders"
 msgstr "Carpetas"
@@ -532,6 +544,9 @@ msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"
 
+msgid "a Mac's outputs take integer samples, not floating point"
+msgstr "las salidas de una Mac toman muestras enteras, no de punto flotante"
+
 msgid "a direct URL"
 msgstr "una URL directa"
 
@@ -561,6 +576,9 @@ msgstr "ya hay un análisis corriendo"
 
 msgid "analysing..."
 msgstr "analizando..."
+
+msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
+msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga bit-perfect para compartirlo"
 
 msgid "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})"
 msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect para compartirlo ({})"
@@ -1073,6 +1091,9 @@ msgstr "no hay nada de {}"
 
 msgid "there is nowhere to keep a secret on this machine"
 msgstr "no hay dónde guardar un secreto en este equipo"
+
+msgid "this Mac has no output called \"{}\" any more"
+msgstr "esta Mac ya no tiene ninguna salida llamada \"{}\""
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "este dispositivo no entrega bit-perfect en ningún formato común"

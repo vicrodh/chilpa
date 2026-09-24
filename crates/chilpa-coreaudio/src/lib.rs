@@ -27,6 +27,7 @@
 #![cfg(target_os = "macos")]
 
 mod ffi;
+mod play;
 mod read;
 
 use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, OutputBackend};
@@ -98,7 +99,12 @@ impl OutputBackend for CoreAudio {
             // has to be persuaded. What it costs is set out in the caveat --
             // exact is not free here either, it is a device taken.
             fidelity: Fidelity::Exact,
-            caveat: String::new(),
+            caveat: chilpa_i18n::t(
+                "Exact here means the device is Chilpa's alone while a track plays, and set to \
+                 that track's rate. Nothing else on the Mac can use it meanwhile, and the rate \
+                 changes between tracks. Turn bit-perfect off to share it and let the Mac \
+                 convert.",
+            ),
         }
     }
 
@@ -145,18 +151,12 @@ impl OutputBackend for CoreAudio {
 
     fn open(
         &self,
-        _id: &str,
-        _format: StreamFormat,
-        _exclusive: bool,
+        id: &str,
+        format: StreamFormat,
+        exclusive: bool,
     ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
-        // Playing is the next piece and it is deliberately not half-written
-        // here: an output that opens and delivers nothing is worse than one
-        // that says it cannot yet, because the first one looks like it
-        // worked. ADR-010 calls a path that returns empty declared debt, and
-        // this is it, declared.
-        Err(SinkError::Backend(chilpa_i18n::t(
-            "Chilpa can see this Mac's outputs but cannot play through them yet",
-        )))
+        play::CoreAudioSink::open(id, format, exclusive)
+            .map(|s| Box::new(s) as Box<dyn AudioSink + Send>)
     }
 }
 

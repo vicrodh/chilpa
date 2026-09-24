@@ -163,6 +163,12 @@ pub fn available_rates(device: AudioObjectID) -> Vec<AudioValueRange> {
     read_all(device, &global(kAudioDevicePropertyAvailableNominalSampleRates))
 }
 
+/// The streams a device sends out on. A format is a property of one of
+/// these, not of the device.
+pub fn output_streams(device: AudioObjectID) -> Vec<AudioObjectID> {
+    read_all(device, &output(kAudioDevicePropertyStreams))
+}
+
 /// Every format the hardware really carries, across its output streams.
 ///
 /// This is the one that matters for bit-perfect, and it is not the same as
@@ -170,8 +176,7 @@ pub fn available_rates(device: AudioObjectID) -> Vec<AudioValueRange> {
 /// physical formats are what the wire does. A device that reports 24 bits
 /// here and is set to 44100 will carry 24-bit samples at 44100 untouched.
 pub fn physical_formats(device: AudioObjectID) -> Vec<AudioStreamBasicDescription> {
-    let streams: Vec<AudioObjectID> =
-        read_all(device, &output(kAudioDevicePropertyStreams));
+    let streams = output_streams(device);
     let mut out = Vec::new();
     for stream in streams {
         let formats: Vec<AudioStreamRangedDescription> =

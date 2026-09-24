@@ -110,6 +110,51 @@ pub struct AudioStreamRangedDescription {
     pub mSampleRateRange: AudioValueRange,
 }
 
+/// What a stream really carries, and what it is presented as.
+///
+/// Two properties and the difference is the whole of bit-perfect here. The
+/// physical format is the wire. The virtual format is what CoreAudio hands
+/// the program, converting between the two if they differ -- and if it
+/// converts, the samples did not arrive as they left.
+pub const kAudioStreamPropertyPhysicalFormat: AudioObjectPropertySelector = fourcc(b"pft ");
+pub const kAudioStreamPropertyVirtualFormat: AudioObjectPropertySelector = fourcc(b"sfmt");
+
+pub const kAudioFormatLinearPCM: u32 = fourcc(b"lpcm");
+pub const kAudioFormatFlagIsFloat: u32 = 1 << 0;
+pub const kAudioFormatFlagIsBigEndian: u32 = 1 << 1;
+pub const kAudioFormatFlagIsSignedInteger: u32 = 1 << 2;
+pub const kAudioFormatFlagIsPacked: u32 = 1 << 3;
+pub const kAudioFormatFlagIsNonInterleaved: u32 = 1 << 5;
+
+/// Nobody has the device. CoreAudio spells "no owner" as -1.
+pub const kAudioHogModeNobody: i32 = -1;
+
+/// When a period of samples is wanted. Nothing here reads it; the device
+/// asks and this answers with whatever is ready.
+#[repr(C)]
+pub struct AudioTimeStamp {
+    pub mSampleTime: f64,
+    pub mHostTime: u64,
+    pub mRateScalar: f64,
+    pub mWordClockTime: u64,
+    pub mSMPTETime: [u8; 16],
+    pub mFlags: u32,
+    pub mReserved: u32,
+}
+
+/// What the device calls, on its own thread, every period.
+pub type AudioDeviceIOProc = extern "C" fn(
+    inDevice: AudioObjectID,
+    inNow: *const AudioTimeStamp,
+    inInputData: *const AudioBufferList,
+    inInputTime: *const AudioTimeStamp,
+    outOutputData: *mut AudioBufferList,
+    inOutputTime: *const AudioTimeStamp,
+    inClientData: *mut c_void,
+) -> OSStatus;
+
+pub type AudioDeviceIOProcID = *mut c_void;
+
 pub type CFStringRef = *const c_void;
 pub type CFIndex = isize;
 pub const kCFStringEncodingUTF8: u32 = 0x0800_0100;
@@ -123,6 +168,30 @@ extern "C" {
         inQualifierData: *const c_void,
         outDataSize: *mut u32,
     ) -> OSStatus;
+
+    pub fn AudioObjectSetPropertyData(
+        inObjectID: AudioObjectID,
+        inAddress: *const AudioObjectPropertyAddress,
+        inQualifierDataSize: u32,
+        inQualifierData: *const c_void,
+        inDataSize: u32,
+        inData: *const c_void,
+    ) -> OSStatus;
+
+    pub fn AudioDeviceCreateIOProcID(
+        inDevice: AudioObjectID,
+        inProc: AudioDeviceIOProc,
+        inClientData: *mut c_void,
+        outIOProcID: *mut AudioDeviceIOProcID,
+    ) -> OSStatus;
+
+    pub fn AudioDeviceDestroyIOProcID(
+        inDevice: AudioObjectID,
+        inIOProcID: AudioDeviceIOProcID,
+    ) -> OSStatus;
+
+    pub fn AudioDeviceStart(inDevice: AudioObjectID, inProcID: AudioDeviceIOProcID) -> OSStatus;
+    pub fn AudioDeviceStop(inDevice: AudioObjectID, inProcID: AudioDeviceIOProcID) -> OSStatus;
 
     pub fn AudioObjectGetPropertyData(
         inObjectID: AudioObjectID,
