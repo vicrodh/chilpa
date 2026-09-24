@@ -1,8 +1,9 @@
-// La cola, con la pista que suena marcada.
+// The queue, with the playing track marked.
 //
-// Una pista que todavía no suena se puede quitar; la que suena no, que para
-// eso está el botón de siguiente. Quitarla no la saca del renglón: se apaga
-// y se tacha, así la lista no brinca debajo de la vista.
+// A track that is not playing yet can be removed; the playing one cannot,
+// that is what the next button is for. Removing it does not take it off its
+// line: it is greyed and struck through, so the list does not jump under the
+// view.
 import QtQuick
 import QtQuick.Controls
 import com.blitzfc.chilpa
@@ -19,7 +20,7 @@ Rectangle {
         clip: true
         model: Chilpa.queue
         currentIndex: Chilpa.queueIndex
-        // Al avanzar la cola, la pista que suena se queda a la vista.
+        // As the queue advances, the playing track stays in view.
         onCurrentIndexChanged: positionViewAtIndex(currentIndex, ListView.Contain)
 
         delegate: Rectangle {

@@ -1,5 +1,5 @@
-// El acomodo compacto: la biblioteca se queda con la ventana y lo que suena
-// vive en una barra de abajo, como en un reproductor de toda la vida.
+// The compact layout: the library keeps the window and what is playing lives
+// in a bar at the bottom, like in a player of old.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -14,8 +14,8 @@ ColumnLayout {
 
     ActionsPanel { Layout.alignment: Qt.AlignLeft }
 
-    // El grueso de la ventana: lo que se está mirando y, a la derecha, la
-    // letra de lo que suena.
+    // The bulk of the window: what is being looked at and, to the right,
+    // the lyrics of what is playing.
     RowLayout {
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -46,7 +46,7 @@ ColumnLayout {
         visible: Chilpa.queue.length > 1
     }
 
-    // La barra de abajo: transporte y lo que suena, en un renglón.
+    // The bottom bar: transport and what is playing, on one line.
     RowLayout {
         Layout.fillWidth: true
         spacing: 10

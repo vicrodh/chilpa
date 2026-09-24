@@ -1,9 +1,9 @@
-// Elegir la salida, buscar y exigir bit-perfect.
+// Choosing the output, searching and demanding bit-perfect.
 //
-// Los tres controles que cualquier layout necesita tener a mano. Lo que
-// eligen no se queda aquí: va al puente, y de ahí lo lee todo lo demás, así
-// que este panel se puede poner arriba, en una barra lateral o en ningún
-// lado sin romper nada.
+// The three controls any layout needs to hand. What they choose does not
+// stay here: it goes to the bridge, and everything else reads it from there,
+// so this panel can go on top, in a sidebar or nowhere at all without
+// breaking anything.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -13,15 +13,15 @@ RowLayout {
     id: root
     spacing: 10
 
-    // Para que un layout decida si quiere la caja de búsqueda aquí o aparte.
+    // So a layout can decide whether it wants the search box here or separately.
     property bool withSearch: true
-    // Lo mismo con el selector de acomodo.
+    // The same with the layout selector.
     property bool withLayout: true
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
-        // Sin salida recordada suena la primera de la lista, y el puente
-        // tiene que saberlo antes del primer play.
+        // With no remembered output the first on the list plays, and the
+        // bridge has to know that before the first play.
         if (Chilpa.outputIds.indexOf(Chilpa.device) < 0 && Chilpa.outputIds.length > 0)
             Chilpa.device = Chilpa.outputIds[0]
     }
@@ -32,8 +32,8 @@ RowLayout {
         id: outputs
         Layout.fillWidth: true
         model: Chilpa.outputs
-        // Lo elegido vive en el puente; esto solo lo muestra. Así la lista
-        // queda en su lugar aunque la salida la cambie otra cosa.
+        // What is chosen lives in the bridge; this only shows it. That way
+        // the list stays put even if something else changes the output.
         currentIndex: {
             const i = Chilpa.outputIds.indexOf(Chilpa.device)
             return i >= 0 ? i : 0

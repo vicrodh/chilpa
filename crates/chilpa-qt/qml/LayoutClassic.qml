@@ -1,8 +1,9 @@
-// El acomodo clásico: todo en una columna, de arriba abajo.
+// The classic layout: everything in one column, top to bottom.
 //
-// Un layout no tiene lógica: elige qué paneles se ven y dónde. Todo lo que
-// necesitan lo leen del puente, así que agregar otro acomodo es agregar un
-// `Layout<nombre>.qml` al lado de este y elegirlo en las preferencias.
+// A layout has no logic: it chooses which panels are seen and where.
+// Everything they need they read from the bridge, so adding another layout
+// is adding a `Layout<name>.qml` next to this one and choosing it in the
+// preferences.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -19,11 +20,11 @@ ColumnLayout {
 
     TransportPanel { Layout.alignment: Qt.AlignLeft }
 
-    // Lo que suena y, a un lado, su letra cuando la hay.
+    // What is playing and, beside it, its lyrics when there are any.
     //
-    // Con mínimo, no solo con preferido: cuando la ventana se queda corta,
-    // un ColumnLayout encoge lo que puede, y esta tarjeta encogida se come
-    // el reloj.
+    // With a minimum, not just a preferred: when the window runs short, a
+    // ColumnLayout shrinks what it can, and this card shrunk eats the
+    // clock.
     RowLayout {
         Layout.fillWidth: true
         Layout.preferredHeight: 152
@@ -47,8 +48,8 @@ ColumnLayout {
         visible: Chilpa.playing
     }
 
-    // Los resultados, cuando hay algo escrito en la búsqueda o un álbum
-    // abierto.
+    // The results, when there is something typed in the search or an album
+    // open.
     Results {
         Layout.fillWidth: true
         Layout.fillHeight: true
@@ -59,31 +60,31 @@ ColumnLayout {
     Library {
         Layout.fillWidth: true
         Layout.fillHeight: true
-        // Una fila de portadas con sus renglones de texto y, arriba, las
-        // pestañas. Por debajo de esto se recorta el último renglón de cada
-        // ficha, que es lo primero que se puede perder sin que estorbe.
+        // A row of covers with their text lines and, above, the tabs. Below
+        // this the last line of each card is clipped, which is the first thing
+        // that can be lost without getting in the way.
         Layout.minimumHeight: 260
-        // Se esconde solo cuando hay resultados o un álbum abierto ocupando
-        // su lugar. Antes se escondía también con la biblioteca vacía, y eso
-        // dejaba sin camino a sus otras pestañas: en una instalación nueva no
-        // se podía llegar a aprobar un plugin (ADR-008) sin escanear música
+        // It only hides when there are results or an open album taking its
+        // place. It used to hide with an empty library too, and that left its
+        // other tabs with no way in: on a fresh install there was no way to
+        // reach approving a plugin (ADR-008) without scanning music first.
         // primero.
         visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
     }
 
-    // La cola se asoma solo cuando hay más de una pista.
+    // The queue only shows itself when there is more than one track.
     QueuePanel {
         Layout.fillWidth: true
         Layout.preferredHeight: 150
-        // La cola es lo que cede primero cuando la ventana se queda corta:
-        // siempre se puede desplazar por dentro.
+        // The queue is what gives first when the window runs short: it can
+        // always be scrolled inside.
         Layout.minimumHeight: 60
         visible: Chilpa.queue.length > 1
     }
 
-    // Sin cola ni biblioteca, este relleno se queda con el espacio que sobra
-    // y todo lo demás permanece arriba. Un elemento invisible no ocupa lugar
-    // en un Layout, así que desaparece en cuanto hay algo que mostrar.
+    // With no queue and no library, this filler takes the leftover space
+    // and everything else stays at the top. An invisible item takes no room
+    // in a Layout, so it vanishes as soon as there is something to show.
     Item {
         Layout.fillHeight: true
         visible: Chilpa.queue.length <= 1 && Chilpa.albums.length === 0

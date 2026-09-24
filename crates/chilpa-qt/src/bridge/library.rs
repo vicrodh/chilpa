@@ -1,8 +1,8 @@
-//! Lo que la ventana pregunta de la biblioteca.
+//! What the window asks about the library.
 //!
-//! La reja de álbumes y sus vistas, los artistas, las listas guardadas, las
-//! estadísticas y el escaneo. Cada método es una línea que llama a la
-//! fachada y acomoda lo que contesta en propiedades que QML lee.
+//! The album grid and its views, the artists, the saved lists, the stats and
+//! the scan. Every method is one line that calls the facade and arranges
+//! what it answers into properties QML reads.
 
 use super::{Chilpa, VIEWS};
 use cxx_qt::CxxQtType as _;
@@ -15,8 +15,8 @@ impl Chilpa {
     pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let path = folder.to_string();
         let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
-        // El escaneo corre en su propio hilo: una biblioteca grande dejaría
-        // la ventana congelada si se hiciera aquí.
+        // The scan runs on its own thread: a large library would leave the
+        // window frozen if it happened here.
         self.as_mut().remember_folder(&format!("{path}/."));
         self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&path));
         self.as_mut().set_scanning(true);
@@ -45,8 +45,8 @@ impl Chilpa {
         self.album_view
     }
 
-    /// Recuerda dónde estaba el usuario: lo que se abre es, casi siempre,
-    /// vecino de lo último que se abrió.
+    /// It remembers where the user was: what gets opened is, almost always,
+    /// next to the last thing opened.
     pub(super) fn remember_folder(mut self: Pin<&mut Self>, path: &str) {
         let folder = std::path::Path::new(path)
             .parent()
@@ -201,8 +201,8 @@ impl Chilpa {
         let mut list = QList::<QString>::default();
         for a in &albums {
             let año = a.year.map(|y| y.to_string()).unwrap_or_default();
-            // Un renglón por álbum, separado por tabuladores: QML lo parte y
-            // arma su modelo sin que el puente invente un tipo nuevo.
+            // One line per album, tab separated: QML splits it and builds its
+            // model without the bridge inventing a new type.
             let line = format!(
                 "{}\t{}\t{}\t{}\t{}\t{}\t{}",
                 a.id, a.title, a.artist, año, a.track_count, a.artwork_path, a.play_count
@@ -237,8 +237,8 @@ impl Chilpa {
         self.as_mut().set_open_album(title.clone());
         self.as_mut().set_open_album_id(album_id);
 
-        // El encabezado del álbum: portada, artista y una línea con año,
-        // pistas, duración y escuchas.
+        // The album's header: cover, artist and one line with year, tracks,
+        // duration and plays.
         let duration: u64 = tracks.iter().map(|t| t.duration_ms).sum();
         match self.as_mut().rust_mut().api.album(album_id) {
             Some(a) => {
@@ -264,8 +264,8 @@ impl Chilpa {
                         if a.play_count == 1 { "escucha" } else { "escuchas" }
                     ));
                 }
-                // El título sale de la biblioteca, no de quien abrió la
-                // vista: así siempre dice lo que dice el disco.
+                // The title comes from the library, not from whoever opened
+                // the view: that way it always says what the disc says.
                 self.as_mut().set_open_album(QString::from(&a.title));
                 self.as_mut().set_open_album_artist(QString::from(&a.artist));
                 self.as_mut().set_open_album_art(QString::from(&cover));

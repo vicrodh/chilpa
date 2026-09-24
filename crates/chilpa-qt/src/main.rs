@@ -1,11 +1,11 @@
-//! El shell de escritorio.
+//! The desktop shell.
 //!
-//! Hoy es un smoke test visual: elegir salida, abrir un archivo y ver la
-//! posición avanzar con el veredicto de bit-perfect. La decisión de Widgets
-//! contra Quick sigue abierta, así que esta ventana es desechable; lo que no
-//! lo es son la fachada y el puente, que ya tienen la forma del ADR-001.
+//! Today it is a visual smoke test: choose an output, open a file and watch
+//! the position advance with the bit-perfect verdict. The Widgets versus
+//! Quick decision is still open, so this window is disposable; what is not
+//! are the facade and the bridge, which already have ADR-001's shape.
 //!
-//! Este crate es el ÚNICO que puede tener tipos de Qt.
+//! This crate is the ONLY one that may hold Qt types.
 
 mod bridge;
 

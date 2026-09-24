@@ -1,8 +1,8 @@
-// La letra de lo que suena.
+// The lyrics of what is playing.
 //
-// Si trae tiempos, el renglón que va se marca y la lista se mueve sola. Si
-// no, se muestra completa y quieta: una letra sin sincronizar que brinca
-// sería mentirle al que la está leyendo.
+// If it carries timings, the current line is marked and the list moves by
+// itself. If not, it is shown whole and still: unsynchronized lyrics that
+// jump would be lying to whoever is reading them.
 import QtQuick
 import QtQuick.Controls
 import com.blitzfc.chilpa

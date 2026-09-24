@@ -1,15 +1,15 @@
 use cxx_qt_build::{CxxQtBuilder, QmlModule};
 
-/// Los archivos QML que se compilan al binario. Los que empiezan con
-/// `Layout` son acomodos de la ventana, y de ahí sale la lista que el puente
-/// le ofrece al usuario: así agregar un acomodo es agregar un archivo, y no
-/// hay una segunda lista que se pueda quedar atrás.
+/// The QML files compiled into the binary. The ones starting with `Layout`
+/// are window layouts, and the list the bridge offers the user comes from
+/// them: that way adding a layout is adding a file, and there is no second
+/// list that can fall behind.
 const QML: &[&str] = &[
     "qml/Main.qml",
-    // Los acomodos.
+    // The layouts.
     "qml/LayoutClassic.qml",
     "qml/LayoutCompact.qml",
-    // Las piezas que un acomodo puede colocar donde quiera.
+    // The pieces a layout can place wherever it likes.
     "qml/OutputPanel.qml",
     "qml/ActionsPanel.qml",
     "qml/TransportPanel.qml",
@@ -29,7 +29,7 @@ const QML: &[&str] = &[
     "qml/Results.qml",
 ];
 
-/// Escribe la lista de acomodos para que el puente la incluya.
+/// Writes the list of layouts for the bridge to include.
 fn write_layouts() {
     let names: Vec<String> = QML
         .iter()
@@ -53,9 +53,9 @@ fn main() {
         .qt_module("QuickControls2")
         .qml_module(QmlModule {
             uri: "com.blitzfc.chilpa",
-            // El módulo del puente vive en `bridge/mod.rs`: cxx-qt solo mira el
-            // archivo que trae `#[cxx_qt::bridge]`, y los `impl` repartidos en
-            // sus hermanos no le hacen falta.
+            // The bridge's module lives in `bridge/mod.rs`: cxx-qt only looks at the
+            // file carrying `#[cxx_qt::bridge]`, and the `impl`s spread across its
+            // siblings are not needed.
             rust_files: &["src/bridge/mod.rs"],
             qml_files: QML,
             ..Default::default()

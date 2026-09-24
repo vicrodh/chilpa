@@ -1,12 +1,13 @@
-// Los plugins instalados, qué piden y cómo se están portando.
+// The installed plugins, what they ask for and how they are behaving.
 //
-// Un plugin que no cargó sale aquí con su razón, no en un log que nadie
-// mira. De la cuarentena solo lo saca el usuario, con este botón.
+// A plugin that did not load shows up here with its reason, not in a log
+// nobody looks at. Only the user takes it out of quarantine, with this
+// button.
 //
-// Y nadie corre sin permiso (ADR-008): uno recién puesto aparece con lo que
-// pide escrito en palabras y no hace nada hasta que se le diga que sí. No
-// hay un botón de "aprobar todo": si aprobar fuera un trámite, no sería una
-// decisión.
+// And nobody runs without permission (ADR-008): a freshly dropped one shows
+// up with what it asks for written in words and does nothing until it is
+// told yes. There is no "approve all" button: if approving were paperwork,
+// it would not be a decision.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -47,8 +48,8 @@ ColumnLayout {
 
         delegate: Rectangle {
             width: list.width
-            // Uno pendiente crece para que quepa lo que pide: esconderlo
-            // tras un "ver detalles" es invitar a aprobar sin leer.
+            // A pending one grows so what it asks for fits: hiding it
+            // behind a "see details" is inviting approval without reading.
             height: pending ? 64 + asks.length * 17 : 46
             radius: 8
             color: pending ? "#fdf6ec" : (row.containsMouse ? "#f6f1ec" : "transparent")
@@ -57,11 +58,11 @@ ColumnLayout {
             readonly property var cols: root.fields(modelData)
             readonly property bool quarantined: cols[2] === "en cuarentena"
             readonly property bool pending: cols[2] === "pendiente de aprobación"
-            // Lo que falta aprobar, un renglón por cosa.
+            // What is left to approve, one line per thing.
             readonly property var asks: cols.length > 4 && cols[4] !== "" ? cols[4].split(" · ") : []
-            // Uno que ya corría y ahora pide más no es uno nuevo.
+            // One that was already running and now asks for more is not a new one.
             readonly property bool wantsMore: cols.length > 5 && cols[5] === "mas"
-            // Cómo está su cuenta: "", "falta", "conectada" o "vencida".
+            // How its account stands: "", "missing", "connected" or "expired".
             readonly property string account: cols.length > 6 ? cols[6] : ""
             readonly property string accountHost: cols.length > 7 ? cols[7] : ""
 
@@ -106,9 +107,9 @@ ColumnLayout {
                         text: wantsMore ? "Aprobar lo nuevo" : "Aprobar"
                         onClicked: Chilpa.approvePlugin(cols[0])
                     }
-                    // La cuenta: qué le falta o qué tiene. Solo aparece en
-                    // uno que ya corre; antes de aprobarlo no hay nada que
-                    // conectar.
+                    // The account: what it lacks or what it has. It only
+                    // appears on one that already runs; before approval there
+                    // is nothing to connect.
                     Label {
                         visible: !pending && account === "conectada"
                         text: "cuenta conectada"
@@ -143,7 +144,7 @@ ColumnLayout {
                     }
                 }
 
-                // Lo que pide, que es lo que se está aprobando.
+                // What it asks for, which is what is being approved.
                 Label {
                     Layout.fillWidth: true
                     visible: pending

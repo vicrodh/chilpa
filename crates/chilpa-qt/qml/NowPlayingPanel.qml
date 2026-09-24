@@ -1,9 +1,9 @@
-// La tarjeta de lo que suena: portada, título, formato, posición y el
-// veredicto de bit-perfect.
+// The card for what is playing: cover, title, format, position and the
+// bit-perfect verdict.
 //
-// El veredicto se dice como es. Si la salida se abrió con otro formato, se
-// marca "convertido" en rojo: un reproductor que dice bit-perfect sin serlo
-// no sirve para nada.
+// The verdict is said as it is. If the output was opened with another
+// format, it is marked "converted" in red: a player that says bit-perfect
+// without being it is no use at all.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -16,11 +16,11 @@ Rectangle {
     border.color: "#1a411d1f"
     implicitHeight: compact ? 112 : 152
 
-    // En una barra de abajo la tarjeta no cabe entera: la portada se
-    // encoge y el reloj deja de gritar.
+    // In a bottom bar the card does not fit whole: the cover shrinks and
+    // the clock stops shouting.
     property bool compact: false
 
-    // mm:ss, que es como se lee una duración.
+    // mm:ss, which is how a duration is read.
     function clock(seconds) {
         const m = Math.floor(seconds / 60)
         const s = Math.floor(seconds % 60)
@@ -76,8 +76,8 @@ Rectangle {
                 color: "#411d1f"
             }
             Label {
-                // El formato de verdad, y lo que el análisis sacó de la
-                // pista cuando ya se analizó.
+                // The real format, and what the analysis found for the
+                // track once it has been analysed.
                 text: [Chilpa.format, Chilpa.analysis].filter(t => t !== "").join("  ·  ")
                 color: "#7a411d1f"
                 visible: !root.compact
@@ -90,8 +90,8 @@ Rectangle {
                 color: "#411d1f"
             }
 
-            // La barra también sirve para saltar: se arrastra o se hace clic
-            // en cualquier punto.
+            // The bar also serves for seeking: it is dragged or clicked at any
+            // point.
             Slider {
                 Layout.fillWidth: true
                 visible: Chilpa.totalSeconds > 0

@@ -1,8 +1,8 @@
-// Los resultados de la búsqueda.
+// The search results.
 //
-// Una lista simple: título, artista y duración. Un clic reproduce desde ahí,
-// encolando lo que sigue, que es como se espera de una búsqueda. Un clic
-// con el botón de en medio encola sin cortar lo que suena.
+// A plain list: title, artist and duration. A click plays from there,
+// queueing what follows, which is what is expected of a search. A middle
+// click queues without cutting off what is playing.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -20,7 +20,7 @@ Rectangle {
         anchors.margins: 10
         spacing: 8
 
-        // El encabezado solo aparece cuando se abrió un álbum.
+        // The header only appears when an album has been opened.
         RowLayout {
             Layout.fillWidth: true
             visible: Chilpa.openAlbum !== ""
@@ -81,8 +81,8 @@ Rectangle {
             }
         }
 
-        // Lo que un source no pudo contestar se dice, no se esconde: una
-        // lista corta sin explicación parece una biblioteca pobre.
+        // What a source could not answer is said, not hidden: a short list
+        // with no explanation looks like a poor library.
         Label {
             Layout.fillWidth: true
             visible: Chilpa.searchProblems !== ""
@@ -105,12 +105,12 @@ Rectangle {
             color: row.containsMouse ? "#f7f1ec" : "transparent"
 
             readonly property var cols: modelData.split("\t")
-            // Columnas 6 a 8 solo vienen de la búsqueda; al abrir un álbum
-            // la fila es más corta y estas quedan vacías.
+            // Columns 6 to 8 only come from the search; on opening an album
+            // the row is shorter and these are left empty.
             readonly property string sourceName: cols.length > 6 ? cols[6] : ""
             readonly property string alsoIn: cols.length > 7 ? cols[7] : ""
-            // Lo que todavía no se puede tocar se ve apagado en lugar de
-            // fingir que un clic va a sonar.
+            // What cannot be played yet is shown greyed instead of
+            // pretending a click will make a sound.
             readonly property bool playable: cols.length > 8 ? cols[8] === "1" : true
 
             opacity: playable ? 1.0 : 0.55
@@ -139,8 +139,8 @@ Rectangle {
                     elide: Text.ElideRight
                     color: "#7a411d1f"
                 }
-                // Lo que el análisis sacó. Solo sale cuando ya se analizó:
-                // una columna vacía no le dice nada a nadie.
+                // What the analysis found. It only shows once analysed: an
+                // empty column tells nobody anything.
                 Label {
                     Layout.preferredWidth: parent.width * 0.12
                     horizontalAlignment: Text.AlignRight
@@ -149,8 +149,8 @@ Rectangle {
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }
-                // De dónde salió, y en qué otros sources está la misma
-                // canción. Solo se dibuja si hay más de uno en juego.
+                // Where it came from, and which other sources hold the same
+                // song. It is only drawn if more than one is in play.
                 Label {
                     visible: alsoIn !== "" || (sourceName !== "" && sourceName !== "Mi biblioteca")
                     text: alsoIn !== "" ? sourceName + " + " + alsoIn : sourceName
@@ -169,8 +169,8 @@ Rectangle {
                 id: row
                 anchors.fill: parent
                 hoverEnabled: true
-                // Sobre lo que no se puede tocar, el cursor no promete un
-                // clic que no va a hacer nada.
+                // Over what cannot be played, the cursor does not promise a
+                // click that will do nothing.
                 cursorShape: playable ? Qt.PointingHandCursor : Qt.ArrowCursor
                 enabled: playable
                 acceptedButtons: Qt.LeftButton | Qt.MiddleButton

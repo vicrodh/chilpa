@@ -1,7 +1,7 @@
-//! La búsqueda, del lado de la ventana.
+//! Search, on the window's side.
 //!
-//! Lo local sale al instante; lo de los sources llega en el pulso y la lista
-//! se vuelve a armar sola.
+//! What is local comes out at once; what the sources give arrives on the
+//! tick and the list rebuilds itself.
 
 use super::Chilpa;
 use cxx_qt::CxxQtType as _;
@@ -13,26 +13,26 @@ impl Chilpa {
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
         let owned = text.to_string();
         self.as_mut().set_search_text(text.clone());
-        // Esto solo trae lo local, que sale al instante. Lo que aporten los
-        // sources llega después, y `tick` lo recoge.
+        // This only brings what is local, which comes out at once. Whatever
+        // the sources contribute arrives later, and `tick` picks it up.
         self.as_mut().rust_mut().api.search_all(&owned, 200);
         self.as_mut().refresh_results();
     }
 
-    /// Pasa a la vista lo que la búsqueda lleva junto ahora.
+    /// Passes to the view what the search has joined so far.
     ///
-    /// Se llama al buscar y en cada pulso mientras algún source siga
-    /// contestando: los resultados crecen solos, sin que el usuario tenga
-    /// que volver a escribir.
+    /// It is called on searching and on every tick while some source is
+    /// still answering: the results grow on their own, without the user
+    /// having to type again.
     pub fn refresh_results(mut self: Pin<&mut Self>) {
-        // Se toma la marca aquí para que quien llame directo no deje un
-        // refresco pendiente para el siguiente pulso.
+        // The flag is taken here so a direct caller does not leave a refresh
+        // pending for the next tick.
         let _ = self.as_mut().rust_mut().api.search_changed();
         let hits = self.as_mut().rust_mut().api.found().to_vec();
         let mut list = QList::<QString>::default();
-        // Va alineado renglón a renglón con la lista, con una ruta vacía
-        // donde no hay nada que tocar: si se saltaran renglones, "reproducir
-        // desde aquí" arrancaría en otra pista.
+        // It is aligned line by line with the list, with an empty path where
+        // there is nothing to play: if lines were skipped, "play from here"
+        // would start on another track.
         let mut paths = Vec::with_capacity(hits.len());
         for h in &hits {
             let seconds = h.duration_ms / 1000;
@@ -60,9 +60,9 @@ impl Chilpa {
     pub fn play_results(mut self: Pin<&mut Self>, from: i32) {
         let (device, bit_perfect) = self.as_mut().chosen();
         let from = from.max(0) as usize;
-        // La fachada decide: lo local suena y encola lo que sigue, lo de un
-        // source se resuelve primero. Aquí no se sabe cuál es cuál, y está
-        // bien que no se sepa.
+        // The facade decides: what is local plays and queues what follows,
+        // what is a source's is resolved first. Here which is which is not
+        // known, and it is right that it is not.
         let ok = self.as_mut().rust_mut().api.play_hit(from, &device, bit_perfect);
         let titles = self.as_mut().rust_mut().api.queue_titles();
         self.as_mut().refresh_queue(&titles);

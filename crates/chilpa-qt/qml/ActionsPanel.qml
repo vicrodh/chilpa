@@ -1,26 +1,25 @@
-// Todo lo que abre música, con sus diálogos adentro.
+// Everything that opens music, with its dialogs inside.
 //
-// Cada diálogo empieza en la última carpeta que se abrió: buscar la música
-// desde el home en cada arranque es el tipo de roce que se nota todos los
-// días.
+// Every dialog starts at the last folder opened: hunting for the music from
+// home on every startup is the kind of friction that is felt every day.
 //
-// Los diálogos viven aquí y no en la ventana: así un layout que quiera estos
-// botones en otro lado solo instancia este panel, sin arrastrar diálogos
-// sueltos ni depender de ids de la ventana.
+// The dialogs live here and not in the window: that way a layout that wants
+// these buttons elsewhere just instantiates this panel, without dragging
+// loose dialogs along or depending on the window's ids.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Dialogs
 import com.blitzfc.chilpa
 
-// El panel ocupa lo que ocupan sus botones. Quien lo coloca decide si le
-// sobra espacio a un lado; un relleno aquí adentro se comería la barra de
-// un acomodo que ponga algo más en el mismo renglón.
+// The panel takes up what its buttons take up. Whoever places it decides
+// whether there is space to spare beside it; a filler in here would eat the
+// bar of a layout that puts something else on the same line.
 RowLayout {
     id: root
     spacing: 8
 
-    // Los diálogos piden una URL, no una ruta.
+    // The dialogs ask for a URL, not a path.
     readonly property url from_:
         Chilpa.lastFolder === "" ? "" : "file://" + Chilpa.lastFolder
 
@@ -75,7 +74,7 @@ RowLayout {
         onAccepted: Chilpa.scanFolder(selectedFolder)
     }
 
-    // Abrir una radio: una dirección y ya.
+    // Opening a radio: an address and that is it.
     Dialog {
         id: streamDialog
         title: "Abrir un stream"
@@ -120,8 +119,8 @@ RowLayout {
         text: "Abrir stream"
         onClicked: streamDialog.open()
     }
-    // Solo aparece si hay una unidad: un botón que nunca va a servir
-    // estorba más de lo que ayuda.
+    // It only appears if there is a drive: a button that will never be
+    // any use gets in the way more than it helps.
     Button {
         text: "Reproducir CD"
         visible: Chilpa.cdDrives.length > 0
