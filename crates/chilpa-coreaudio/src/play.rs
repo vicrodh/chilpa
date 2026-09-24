@@ -86,33 +86,73 @@ fn set<T>(
     }
 }
 
-/// The format description for a track, as CoreAudio spells it.
+/// What Chilpa's sample layout looks like on the wire.
 ///
-/// Interleaved signed integers, packed, little-endian -- which is what every
-/// file Chilpa decodes already is, and what makes the copy into the device's
-/// buffer a copy rather than a conversion.
-fn describe(stream: StreamFormat) -> Option<AudioStreamBasicDescription> {
-    let bits: u32 = match stream.sample_format {
-        SampleFormat::S16 => 16,
-        SampleFormat::S24Packed => 24,
-        SampleFormat::S24In32 | SampleFormat::S32 => 32,
+/// The width alone does not say it. A DAC that carries 24 bits may want them
+/// packed into three bytes or left-justified inside four, and those are not
+/// interchangeable: hand one to a device expecting the other and the bytes
+/// land in the wrong places, which is noise and not music. `S24In32` is
+/// left-justified by definition, which is what CoreAudio calls aligned-high.
+fn wire(format: SampleFormat) -> Option<(u32, u32, u32)> {
+    // (valid bits, bytes per channel, the flag that says the layout)
+    Some(match format {
+        SampleFormat::S16 => (16, 2, kAudioFormatFlagIsPacked),
+        SampleFormat::S24Packed => (24, 3, kAudioFormatFlagIsPacked),
+        SampleFormat::S24In32 => (24, 4, kAudioFormatFlagIsAlignedHigh),
+        SampleFormat::S32 => (32, 4, kAudioFormatFlagIsPacked),
         // A float track is not what a DAC takes; whoever decoded it has
         // already been asked to hand over integers.
         SampleFormat::F32 => return None,
-    };
-    let channels = u32::from(stream.channels);
-    let bytes_per_frame = (bits / 8) * channels;
-    Some(AudioStreamBasicDescription {
-        mSampleRate: f64::from(stream.sample_rate_hz),
-        mFormatID: kAudioFormatLinearPCM,
-        mFormatFlags: kAudioFormatFlagIsSignedInteger | kAudioFormatFlagIsPacked,
-        mBytesPerPacket: bytes_per_frame,
-        mFramesPerPacket: 1,
-        mBytesPerFrame: bytes_per_frame,
-        mChannelsPerFrame: channels,
-        mBitsPerChannel: bits,
-        mReserved: 0,
     })
+}
+
+/// True when a description is plain interleaved signed little-endian PCM in
+/// the exact layout Chilpa's samples are in.
+fn carries(f: &AudioStreamBasicDescription, stream: StreamFormat) -> bool {
+    let Some((bits, per_channel, layout)) = wire(stream.sample_format) else { return false };
+    let channels = u32::from(stream.channels);
+    f.mFormatID == kAudioFormatLinearPCM
+        && f.mFormatFlags & kAudioFormatFlagIsFloat == 0
+        && f.mFormatFlags & kAudioFormatFlagIsSignedInteger != 0
+        && f.mFormatFlags & kAudioFormatFlagIsBigEndian == 0
+        && f.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0
+        && f.mFormatFlags & (kAudioFormatFlagIsPacked | kAudioFormatFlagIsAlignedHigh) == layout
+        && f.mBitsPerChannel == bits
+        && f.mChannelsPerFrame == channels
+        && f.mBytesPerFrame == per_channel * channels
+        && f.mFramesPerPacket == 1
+        && f.mBytesPerPacket == f.mBytesPerFrame
+        && (f.mSampleRate - f64::from(stream.sample_rate_hz)).abs() < 0.5
+}
+
+/// The format to ask a stream for: one the device itself offered.
+///
+/// Offered and not invented. A fabricated description can be right in every
+/// field somebody thought to fill and still be refused for one nobody
+/// remembered, and the refusal comes back as a number. The device publishes
+/// exactly what it carries, so the job is to pick from that list.
+///
+/// When the output is wanted alone the non-mixable variant is preferred:
+/// that is the other half of hog mode -- hog keeps other programs off the
+/// device, this keeps anything from being mixed into the stream -- and it is
+/// the flag a DAC looks at before lighting its bit-perfect lamp.
+fn offered(
+    stream_id: AudioObjectID,
+    stream: StreamFormat,
+    exclusive: bool,
+) -> Option<AudioStreamBasicDescription> {
+    let fits: Vec<AudioStreamBasicDescription> = read::available_physical_formats(stream_id)
+        .into_iter()
+        .filter(|f| carries(f, stream))
+        .collect();
+    if exclusive {
+        if let Some(alone) =
+            fits.iter().find(|f| f.mFormatFlags & kAudioFormatFlagIsNonMixable != 0)
+        {
+            return Some(*alone);
+        }
+    }
+    fits.into_iter().next()
 }
 
 /// Waits for a device to really be at that rate.
@@ -170,10 +210,17 @@ fn disagrees(wanted: &AudioStreamBasicDescription, got: &AudioStreamBasicDescrip
         // over would land in the wrong places, which is noise, not music.
         return Some(format!("{} bytes a frame", got.mBytesPerFrame));
     }
-    if got.mFormatFlags & kAudioFormatFlagIsAlignedHigh
-        != wanted.mFormatFlags & kAudioFormatFlagIsAlignedHigh
+    if got.mFormatFlags & (kAudioFormatFlagIsAlignedHigh | kAudioFormatFlagIsPacked)
+        != wanted.mFormatFlags & (kAudioFormatFlagIsAlignedHigh | kAudioFormatFlagIsPacked)
     {
-        return Some("the valid bits at the other end of the word".to_string());
+        return Some("the valid bits somewhere else in the word".to_string());
+    }
+    if got.mFramesPerPacket != wanted.mFramesPerPacket
+        || got.mBytesPerPacket != wanted.mBytesPerPacket
+    {
+        // A packet that is not one frame means the device is not carrying
+        // plain PCM, whatever the rest of the description says.
+        return Some("packets that are not one frame".to_string());
     }
     // Whether the stream ended up non-mixable is not compared: it is asked
     // for, and a device that will not give it still carries the samples
@@ -242,11 +289,11 @@ impl CoreAudioSink {
                 &[name],
             )));
         };
-        let Some(wanted) = describe(stream) else {
+        if wire(stream.sample_format).is_none() {
             return Err(SinkError::Backend(chilpa_i18n::t(
                 "a Mac's outputs take integer samples, not floating point",
             )));
-        };
+        }
 
         // 1. The device to ourselves, before anything is changed on it:
         // changing the rate of a device somebody else is using would move
@@ -261,10 +308,28 @@ impl CoreAudioSink {
                     &[name],
                 )));
             }
+            // Failing to take it is an error and not a shrug. This set a
+            // flag and carried on, which meant a track played into a shared
+            // device while the stack went on saying Exact and the window
+            // went on saying bit-perfect -- the one claim this project
+            // exists to stop making, made by the code written to make it
+            // true.
             let mine = std::process::id() as i32;
-            if set(device, &global(kAudioDevicePropertyHogMode), &mine).is_ok() {
-                hogged = true;
+            set(device, &global(kAudioDevicePropertyHogMode), &mine).map_err(|s| {
+                SinkError::Backend(chilpa_i18n::t_args(
+                    "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to \
+                     share it",
+                    &[name, &s.to_string()],
+                ))
+            })?;
+            // And read back, because asking is not having.
+            if read::hogged_by(device) != mine {
+                return Err(SinkError::Backend(chilpa_i18n::t_args(
+                    "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it",
+                    &[name],
+                )));
             }
+            hogged = true;
         }
 
         let sink = |e: SinkError| -> SinkError {
@@ -301,32 +366,64 @@ impl CoreAudioSink {
 
         // 3. The wire carrying the track's own samples, and the program
         // handed the same thing. Setting only the first leaves CoreAudio
-        // converting into whatever the second happens to be.
-        for stream_id in read::output_streams(device) {
-            let physical = set(stream_id, &global(kAudioStreamPropertyPhysicalFormat), &wanted);
-            let virtual_ = set(stream_id, &global(kAudioStreamPropertyVirtualFormat), &wanted);
-            if physical.is_err() || virtual_.is_err() {
+        // converting into whatever the second happens to be, which is float
+        // on every device this was tried on.
+        let streams = read::output_streams(device);
+        if streams.is_empty() {
+            return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                "\"{}\" has no output stream",
+                &[name],
+            ))));
+        }
+        let mut bytes_per_frame = 0u32;
+        for stream_id in streams {
+            let Some(wanted) = offered(stream_id, stream, exclusive) else {
                 return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let \
+                    "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let \
                      the Mac convert",
-                    &[name, &wanted.mBitsPerChannel.to_string()],
-                ))));
-            }
-            // Read back what it actually took. A set that returns success
-            // and a device that gives something else is the ordinary case
-            // in audio, not the strange one -- the ALSA sink checks the same
-            // way after hw_params, for the same reason.
-            let Some(got) = read::virtual_format(stream_id) else {
-                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not say what format it opened",
-                    &[name],
+                    &[
+                        name,
+                        &stream.sample_format.valid_bits().to_string(),
+                        &stream.sample_rate_hz.to_string(),
+                    ],
                 ))));
             };
-            if let Some(wrong) = disagrees(&wanted, &got) {
-                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert",
-                    &[name, &wrong],
-                ))));
+            bytes_per_frame = wanted.mBytesPerFrame;
+
+            // The wire first, then what the program is handed. The virtual
+            // side never asks to be non-mixable: that is a property of the
+            // stream on the wire.
+            let mut presented = wanted;
+            presented.mFormatFlags &= !kAudioFormatFlagIsNonMixable;
+
+            for (address, asked, which) in [
+                (kAudioStreamPropertyPhysicalFormat, wanted, "physical"),
+                (kAudioStreamPropertyVirtualFormat, presented, "virtual"),
+            ] {
+                set(stream_id, &global(address), &asked).map_err(|s| {
+                    sink(SinkError::Backend(chilpa_i18n::t_args(
+                        "\"{}\" refused the {} format ({})",
+                        &[name, which, &s.to_string()],
+                    )))
+                })?;
+                // Read back. A set that returns success and a device that
+                // gives something else is the ordinary case in audio, not
+                // the strange one; the ALSA sink checks the same way after
+                // hw_params. Both sides are checked: only checking the one
+                // the program is handed leaves the wire unverified, and the
+                // wire is what reaches the DAC.
+                let Some(got) = read::format(stream_id, address) else {
+                    return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                        "\"{}\" would not say what format it opened",
+                        &[name],
+                    ))));
+                };
+                if let Some(wrong) = disagrees(&asked, &got) {
+                    return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                        "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert",
+                        &[name, &wrong],
+                    ))));
+                }
             }
         }
 
@@ -361,7 +458,7 @@ impl CoreAudioSink {
             ))));
         }
 
-        let frame = usize::from(stream.channels) * (wanted.mBitsPerChannel as usize / 8);
+        let frame = bytes_per_frame.max(1) as usize;
         Ok(CoreAudioSink {
             device,
             proc_id: ProcToken(proc_id),

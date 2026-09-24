@@ -10,10 +10,16 @@ msgstr ""
 msgid "\"{}\" did not switch to {} Hz"
 msgstr ""
 
+msgid "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let the Mac convert"
+msgstr ""
+
 msgid "\"{}\" does not say how an account connects"
 msgstr ""
 
 msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
+msgstr ""
+
+msgid "\"{}\" has no output stream"
 msgstr ""
 
 msgid "\"{}\" is not a domain permission can be given to"
@@ -22,7 +28,13 @@ msgstr ""
 msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
 msgstr ""
 
-msgid "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let the Mac convert"
+msgid "\"{}\" refused the {} format ({})"
+msgstr ""
+
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to share it"
+msgstr ""
+
+msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it"
 msgstr ""
 
 msgid "\"{}\" would not open ({})"
