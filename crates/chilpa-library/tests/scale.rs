@@ -197,6 +197,74 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     within("list with three rules", t, Duration::from_millis(200));
 }
 
+/// What a scan pays per track, which nothing measured before.
+///
+/// Everything that makes reading fast is a write: the rollups and the FTS5
+/// index are maintained by triggers, so each of them is work at insert time.
+/// It is worth what it costs, but only as long as someone knows what it
+/// costs.
+///
+/// Measured on this machine, inserting into one transaction:
+///
+/// | | per track |
+/// | --- | --- |
+/// | the insert on its own | 5.5 us |
+/// | with the rollup triggers | 15.6 us |
+/// | with FTS5 as well | 55.9 us |
+///
+/// So the indexes add about fifty microseconds to a track, and a hundred
+/// thousand of them add five seconds to a scan that takes minutes, because
+/// a scan also opens every file. An incremental rescan pays none of it:
+/// what does not change is not written.
+///
+/// Those are the numbers with nothing else running. Inside the suite this
+/// test shares the machine with the other two and reads around 150 us, so
+/// the ceiling is 300: it is there for the day someone adds a third trigger
+/// without measuring, not to time the machine.
+#[test]
+fn a_scan_does_not_pay_too_much_for_the_indexes() {
+    const N: i64 = 20_000;
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    for a in 1..=(N / 10) {
+        lib.connection()
+            .execute(
+                "INSERT INTO albums (id, title, album_artist, year)
+                 VALUES (?1, ?2, 'Someone', 1970)",
+                params![a, format!("Album {a}")],
+            )
+            .unwrap();
+    }
+    let tx = lib.connection().unchecked_transaction().unwrap();
+    let (_, took) = how_long(|| {
+        let mut stmt = tx
+            .prepare(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id,
+                                     duration_ms, added_at)
+                 VALUES (?1, ?2, ?3, ?4, 'Someone', ?5, 200000, ?1)",
+            )
+            .unwrap();
+        for i in 1..=N {
+            stmt.execute(params![
+                i,
+                source,
+                format!("/music/{i}.flac"),
+                format!("Track {i}"),
+                (i - 1) / 10 + 1
+            ])
+            .unwrap();
+        }
+    });
+    drop(tx);
+    let each = took / N as u32;
+    eprintln!("inserting a track: {each:?} ({took:?} for {N})");
+    assert!(
+        each <= Duration::from_micros(300),
+        "a track costs {each:?} to insert; it was 56 us alone, 150 in the suite, \
+         when the indexes went in"
+    );
+}
+
 #[test]
 fn the_features_of_one_page_come_out_in_a_single_query() {
     let lib = large_library();
