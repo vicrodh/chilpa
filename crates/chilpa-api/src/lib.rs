@@ -12,6 +12,7 @@ pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 mod library;
 mod queue;
 mod playlists;
+mod accounts;
 mod approvals;
 mod plugins;
 mod search;
@@ -378,6 +379,9 @@ pub struct Chilpa {
     /// La búsqueda en curso: lo local, lo que aportaron los sources y lo
     /// que la vista dibuja.
     search: search::SearchState,
+    /// La cuenta que se está conectando, entre que se abre el navegador y
+    /// que el usuario regresa.
+    connecting: Option<plugins::Connecting>,
     now: NowPlaying,
     sample_rate: u32,
 }
@@ -410,6 +414,7 @@ impl Chilpa {
             analysis_status: AnalysisStatus::default(),
             player: None,
             search: search::SearchState::default(),
+            connecting: None,
             now: NowPlaying::default(),
             sample_rate: 0,
         }

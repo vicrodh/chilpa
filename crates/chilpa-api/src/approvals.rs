@@ -48,10 +48,13 @@ impl Approvals {
     /// Lo que pide de más respecto a lo aprobado. Vacío si no hay nada
     /// nuevo; todo lo que pide si nunca se aprobó.
     pub fn beyond(&self, manifest: &Manifest) -> Vec<String> {
-        match self.approved.get(&manifest.id) {
-            Some(before) => manifest.asks_for().beyond(before),
-            None => manifest.capabilities.iter().map(|c| c.describe()).collect(),
-        }
+        // Uno nunca aprobado se compara contra "nada aprobado", y no por un
+        // camino aparte: tenerlos separados hacía que a un plugin nuevo no
+        // se le dijera a dónde te manda a dar permiso, porque esa línea
+        // solo la ponía el otro camino.
+        let nothing = Asked { kind: manifest.kind, capabilities: Vec::new(), auth: None };
+        let before = self.approved.get(&manifest.id).unwrap_or(&nothing);
+        manifest.asks_for().beyond(before)
     }
 
     /// Cierto si a ese id se le aprobó algo alguna vez, sea lo que pide hoy

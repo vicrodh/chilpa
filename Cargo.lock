@@ -404,6 +404,7 @@ dependencies = [
 name = "chilpa-api"
 version = "0.0.0"
 dependencies = [
+ "chilpa-auth",
  "chilpa-core",
  "chilpa-library",
  "chilpa-lyrics",
@@ -412,6 +413,7 @@ dependencies = [
  "chilpa-secrets",
  "chilpa-tags",
  "rusqlite",
+ "serde",
  "serde_json",
  "wat",
 ]
@@ -499,6 +501,7 @@ version = "0.0.0"
 name = "chilpa-plugin"
 version = "0.0.0"
 dependencies = [
+ "chilpa-auth",
  "serde",
  "serde_json",
  "wasmtime",

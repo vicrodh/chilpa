@@ -34,11 +34,14 @@ impl Installed {
     }
 
     /// Lo que pide, en palabras, para preguntar.
+    ///
+    /// Sale de comparar contra "nada aprobado", que es la misma cuenta que
+    /// hace la aprobación: así no hay dos listas de lo que pide un plugin
+    /// que se puedan separar.
     pub fn asks(&self) -> Vec<String> {
-        match &self.manifest {
-            Some(m) => m.capabilities.iter().map(crate::manifest::Capability::describe).collect(),
-            None => Vec::new(),
-        }
+        let Some(m) = &self.manifest else { return Vec::new() };
+        let nothing = Asked { kind: m.kind, capabilities: Vec::new(), auth: None };
+        m.asks_for().beyond(&nothing)
     }
 }
 

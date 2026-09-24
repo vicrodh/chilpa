@@ -93,6 +93,12 @@ pub struct Manifest {
     pub kind: Kind,
     #[serde(default)]
     pub runtime: Runtime,
+    /// Cómo se conecta una cuenta en ese source, si necesita una.
+    ///
+    /// Los endpoints los declara el plugin, pero el flujo lo corre Chilpa:
+    /// el token no pasa por sus manos (ADR-008).
+    #[serde(default)]
+    pub auth: Option<chilpa_auth::Auth>,
     #[serde(default)]
     pub capabilities: Vec<Capability>,
 }
@@ -112,11 +118,14 @@ pub enum ManifestError {
     RuntimeNotImplemented(Runtime),
     /// Un dominio de la lista de red no es un dominio.
     BadDomain(String),
+    /// Cómo dice conectarse la cuenta no sirve.
+    BadAuth(String),
 }
 
 impl std::fmt::Display for ManifestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ManifestError::BadAuth(e) => write!(f, "cómo conecta la cuenta no sirve: {e}"),
             ManifestError::Unreadable(e) => write!(f, "el manifest no se entiende: {e}"),
             ManifestError::BadId(id) => write!(
                 f,
@@ -176,6 +185,14 @@ impl Manifest {
                 }
             }
         }
+        // Se revisa aquí y no al conectarse: un plugin que mandaría al
+        // usuario a escribir su contraseña por http no se instala, no falla
+        // a la mitad del flujo con el navegador ya abierto.
+        if let Some(a) = &self.auth {
+            if let Some(e) = a.problem() {
+                return Err(ManifestError::BadAuth(e));
+            }
+        }
         Ok(())
     }
 
@@ -215,7 +232,12 @@ impl Manifest {
     pub fn asks_for(&self) -> Asked {
         let mut capabilities = self.capabilities.clone();
         capabilities.sort_by_key(|c| c.describe());
-        Asked { kind: self.kind, capabilities }
+        Asked { kind: self.kind, capabilities, auth: self.auth.clone() }
+    }
+
+    /// Cierto si hay que conectar una cuenta antes de que sirva de algo.
+    pub fn needs_account(&self) -> bool {
+        self.auth.is_some()
     }
 }
 
@@ -225,6 +247,11 @@ impl Manifest {
 pub struct Asked {
     pub kind: Kind,
     pub capabilities: Vec<Capability>,
+    /// Cómo se conecta la cuenta. Va en lo aprobado porque cambiar a dónde
+    /// se manda al usuario a poner su contraseña es lo último que debería
+    /// pasar sin que lo vuelva a ver.
+    #[serde(default)]
+    pub auth: Option<chilpa_auth::Auth>,
 }
 
 impl Asked {
@@ -234,11 +261,20 @@ impl Asked {
         if self.kind != approved.kind {
             return vec![format!("ser un plugin de otro tipo: {:?}", self.kind)];
         }
-        self.capabilities
+        let mut out: Vec<String> = self
+            .capabilities
             .iter()
             .filter(|c| !approved.capabilities.contains(c))
             .map(Capability::describe)
-            .collect()
+            .collect();
+        if self.auth != approved.auth {
+            out.push(match &self.auth {
+                Some(a) if a.host().is_empty() => "guardar una credencial tuya".to_string(),
+                Some(a) => format!("mandarte a dar permiso en {}", a.host()),
+                None => "dejar de usar la cuenta que tenía".to_string(),
+            });
+        }
+        out
     }
 }
 
