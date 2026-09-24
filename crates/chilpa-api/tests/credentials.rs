@@ -10,9 +10,9 @@ fn install(dir: &Path, id: &str) {
     std::fs::write(
         dir.join(id).join("manifest.json"),
         format!(
-            r#"{{"id": "{id}", "name": "Uno", "version": "0.1.0", "api_version": 1,
+            r#"{{"id": "{id}", "name": "One", "version": "0.1.0", "api_version": 1,
                  "kind": "source",
-                 "capabilities": [{{"type":"network","domains":["api.ejemplo.com"]}}]}}"#
+                 "capabilities": [{{"type":"network","domains":["api.example.com"]}}]}}"#
         ),
     )
     .unwrap();
@@ -20,7 +20,7 @@ fn install(dir: &Path, id: &str) {
         (memory (export "memory") 1)
         (func (export "chilpa_alloc") (param i32) (result i32) (i32.const 4096))
         (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#;
-    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(wat).expect("compila"))
+    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(wat).expect("it compiles"))
         .unwrap();
 }
 
@@ -29,47 +29,47 @@ fn a_credential_is_stored_sealed_and_never_reaches_the_plugin() {
     let dir = std::env::temp_dir().join("chilpa-api-credentials");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     let root = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&root).unwrap();
-    install(&root, "com.prueba.uno");
+    install(&root, "com.test.one");
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
-    chilpa.approve_plugin("com.prueba.uno");
-    assert!(!chilpa.plugins()[0].connected, "todavía no hay cuenta");
+    chilpa.approve_plugin("com.test.one");
+    assert!(!chilpa.plugins()[0].connected, "there is no account yet");
 
     // Something recognisable at a glance is kept, so it would show if left in the clear.
-    const SECRET: &str = "Bearer no-debe-aparecer-en-disco-12345";
-    assert!(chilpa.connect_plugin("com.prueba.uno", SECRET), "se guardó");
-    assert!(chilpa.plugins()[0].connected, "y la vista sabe que hay cuenta");
+    const SECRET: &str = "Bearer must-not-show-up-on-disk-12345";
+    assert!(chilpa.connect_plugin("com.test.one", SECRET), "it was kept");
+    assert!(chilpa.plugins()[0].connected, "and the view knows there is an account");
 
     // The text is not on disk, not in that file and not in any other in
     // the plugin's folder.
     let mut looked_at = 0;
-    for entry in walk(&root.join("com.prueba.uno")) {
+    for entry in walk(&root.join("com.test.one")) {
         let bytes = std::fs::read(&entry).unwrap();
         assert!(
             !contains(&bytes, SECRET.as_bytes()),
-            "el secreto está en claro en {}",
+            "the secret is in the clear in {}",
             entry.display()
         );
         looked_at += 1;
     }
-    assert!(looked_at >= 3, "se revisaron manifest, wasm y el sobre: {looked_at}");
+    assert!(looked_at >= 3, "the manifest, the wasm and the envelope were checked: {looked_at}");
 
     // And it can be read back: encrypting is not losing it.
-    let sealed = std::fs::read(root.join("com.prueba.uno").join("credential.sealed")).unwrap();
+    let sealed = std::fs::read(root.join("com.test.one").join("credential.sealed")).unwrap();
     assert!(!sealed.is_empty());
-    assert!(!chilpa.secrets_location().is_empty(), "se puede decir dónde quedó");
+    assert!(!chilpa.secrets_location().is_empty(), "where it ended up can be said");
 
     // Withdrawing permission deletes the secret: keeping one for a plugin
     // that no longer runs would be keeping a token for nothing.
-    chilpa.revoke_plugin("com.prueba.uno");
+    chilpa.revoke_plugin("com.test.one");
     assert!(
-        !root.join("com.prueba.uno").join("credential.sealed").exists(),
-        "revocar se lleva la credencial"
+        !root.join("com.test.one").join("credential.sealed").exists(),
+        "revoking takes the credential with it"
     );
 
     let _ = std::fs::remove_dir_all(dir);

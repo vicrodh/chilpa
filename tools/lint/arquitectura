@@ -13,6 +13,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# El catálogo de traducción lo puede usar cualquiera. No depende de nada, así
+# que no puede meter un ciclo ni arrastrar una pila que un crate no quiera; y
+# el texto que lee el usuario tiene que poder escribirse donde se sabe el
+# detalle, no solo en la fachada. Lo que NO se relaja es al revés:
+# chilpa-i18n no depende de nadie.
+ABIERTO = {"chilpa-i18n"}
+
 # Quién puede depender de quién, dentro del workspace.
 ALLOWED = {
     "chilpa-models": set(),
@@ -82,7 +89,7 @@ def check_deps(errors):
             errors.append(f"{manifest.relative_to(ROOT)}: el crate {name} no está en la lista del ADR-001")
             continue
         deps = {d for d in data.get("dependencies", {}) if d.startswith("chilpa-")}
-        for dep in sorted(deps - ALLOWED[name]):
+        for dep in sorted(deps - ALLOWED[name] - ABIERTO):
             errors.append(f"{name}: no puede depender de {dep} (ADR-001)")
 
 

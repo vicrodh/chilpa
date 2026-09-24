@@ -93,7 +93,7 @@ mod tests {
 
     fn manifest(id: &str, capabilities: &str) -> Manifest {
         Manifest::parse(&format!(
-            r#"{{"id":"{id}","name":"Uno","version":"1","api_version":1,
+            r#"{{"id":"{id}","name":"One","version":"1","api_version":1,
                  "kind":"source","capabilities":[{capabilities}]}}"#
         ))
         .unwrap()
@@ -108,21 +108,21 @@ mod tests {
 
     #[test]
     fn nothing_is_approved_until_someone_says_so() {
-        let dir = temporal("nuevo");
+        let dir = temporal("new");
         let a = Approvals::load(&dir);
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
-        assert!(!a.covers(&m), "una instalación nueva no aprueba nada sola");
+        assert!(!a.covers(&m), "a fresh install approves nothing by itself");
         assert!(!a.knows("com.a.b"));
-        assert_eq!(a.beyond(&m).len(), 1, "y se puede decir qué pide");
+        assert_eq!(a.beyond(&m).len(), 1, "and what it asks for can be named");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn what_was_approved_survives_a_restart() {
-        let dir = temporal("vuelve");
+        let dir = temporal("again");
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
         Approvals::load(&dir).approve(&m).unwrap();
-        assert!(Approvals::load(&dir).covers(&m), "se leyó de vuelta");
+        assert!(Approvals::load(&dir).covers(&m), "it was read back");
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -136,47 +136,47 @@ mod tests {
         // The new version wants to reach the internet, and nobody approved that.
         let now = manifest(
             "com.a.b",
-            r#"{"type":"storage"},{"type":"network","domains":["api.ejemplo.com"]}"#,
+            r#"{"type":"storage"},{"type":"network","domains":["api.example.com"]}"#,
         );
         assert!(!a.covers(&now));
         let added = a.beyond(&now);
-        assert_eq!(added.len(), 1, "solo lo nuevo, no todo otra vez: {added:?}");
-        assert!(added[0].contains("api.ejemplo.com"), "{added:?}");
-        assert!(a.knows("com.a.b"), "no es un plugin nuevo: es uno que pide más");
+        assert_eq!(added.len(), 1, "only what is new, not everything over: {added:?}");
+        assert!(added[0].contains("api.example.com"), "{added:?}");
+        assert!(a.knows("com.a.b"), "it is not a new plugin: it is one that asks for more");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn a_version_that_asks_for_the_same_keeps_its_approval() {
-        let dir = temporal("igual");
+        let dir = temporal("same");
         let mut a = Approvals::load(&dir);
         a.approve(&manifest("com.a.b", r#"{"type":"storage"}"#)).unwrap();
         let newer = Manifest::parse(
-            r#"{"id":"com.a.b","name":"Uno","version":"2","api_version":1,
+            r#"{"id":"com.a.b","name":"One","version":"2","api_version":1,
                 "kind":"source","capabilities":[{"type":"storage"}]}"#,
         )
         .unwrap();
-        assert!(a.covers(&newer), "subir de versión sin pedir más no vuelve a preguntar");
+        assert!(a.covers(&newer), "bumping a version without asking for more does not ask again");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn revoking_asks_again_from_scratch() {
-        let dir = temporal("revoca");
+        let dir = temporal("revoke");
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
         let mut a = Approvals::load(&dir);
         a.approve(&m).unwrap();
         a.revoke("com.a.b").unwrap();
         assert!(!a.covers(&m));
-        assert!(!Approvals::load(&dir).covers(&m), "y quedó escrito");
+        assert!(!Approvals::load(&dir).covers(&m), "and it was written down");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn an_unreadable_file_approves_nothing() {
         // The opposite would be assuming permissions nobody gave.
-        let dir = temporal("roto");
-        std::fs::write(dir.join(FILE), "esto no es json").unwrap();
+        let dir = temporal("broken");
+        std::fs::write(dir.join(FILE), "this is not json").unwrap();
         let a = Approvals::load(&dir);
         assert!(!a.covers(&manifest("com.a.b", "")));
         let _ = std::fs::remove_dir_all(dir);

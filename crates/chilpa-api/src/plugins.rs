@@ -114,8 +114,10 @@ fn seal_account(
     plugin: &str,
     account: &Account,
 ) -> Result<(), String> {
-    let secrets = secrets.ok_or("no hay dónde guardar un secreto en este equipo")?;
-    let path = credential_file(root, plugin).ok_or("ese id no sirve de carpeta")?;
+    let secrets = secrets
+        .ok_or_else(|| chilpa_i18n::t("there is nowhere to keep a secret on this machine"))?;
+    let path = credential_file(root, plugin)
+        .ok_or_else(|| chilpa_i18n::t("that id does not work as a folder"))?;
     let plain = serde_json::to_vec(account).map_err(|e| e.to_string())?;
     let sealed = secrets.seal(&plain).map_err(|e| e.to_string())?;
     if let Some(dir) = path.parent() {
@@ -456,7 +458,7 @@ impl Plugins {
             .installed()
             .find(|i| i.id == id)
             .and_then(|i| i.manifest.clone())
-            .ok_or_else(|| format!("no hay un plugin \"{id}\" con manifest que aprobar"))?;
+            .ok_or_else(|| chilpa_i18n::t_args("there is no plugin \"{}\" with a manifest to approve", &[id]))?;
         self.approvals.approve(&manifest).map_err(|e| e.to_string())
     }
 
@@ -563,7 +565,7 @@ impl Chilpa {
         match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             Some(mut p) => p.load_all(),
             None => {
-                self.now.error = "no se pudo arrancar el sandbox de plugins".into();
+                self.now.error = chilpa_i18n::t("the plugin sandbox could not be started").into();
                 0
             }
         }
@@ -584,12 +586,12 @@ impl Chilpa {
     /// It returns how many ended up usable, just like loading does.
     pub fn approve_plugin(&mut self, id: &str) -> usize {
         let Some(p) = self.plugins.clone() else {
-            self.now.error = "el sandbox de plugins no está arrancado".into();
+            self.now.error = chilpa_i18n::t("the plugin sandbox is not started").into();
             return 0;
         };
         let Ok(mut p) = p.lock() else { return 0 };
         if let Err(e) = p.approve(id) {
-            self.now.error = format!("no se pudo guardar la aprobación: {e}");
+            self.now.error = chilpa_i18n::t_args("the approval could not be saved: {}", &[&e.to_string()]);
             return 0;
         }
         p.load_all()
@@ -601,7 +603,7 @@ impl Chilpa {
         let Some(p) = self.plugins.clone() else { return 0 };
         let Ok(mut p) = p.lock() else { return 0 };
         if let Err(e) = p.revoke(id) {
-            self.now.error = format!("no se pudo quitar la aprobación: {e}");
+            self.now.error = chilpa_i18n::t_args("the approval could not be withdrawn: {}", &[&e.to_string()]);
             return 0;
         }
         // Withdrawing permission deletes the secret: keeping one for a
@@ -627,7 +629,7 @@ impl Chilpa {
     ) -> Result<Vec<u8>, String> {
         match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             Some(mut p) => p.call_short(id, operation, input),
-            None => Err("el sandbox de plugins no está arrancado".into()),
+            None => Err(chilpa_i18n::t("the plugin sandbox is not started").into()),
         }
     }
 
@@ -641,11 +643,11 @@ impl Chilpa {
     pub fn connect_account(&mut self, id: &str) -> Result<String, String> {
         let auth = self
             .auth_of(id)
-            .ok_or_else(|| format!("\"{id}\" no dice cómo se conecta una cuenta"))?;
+            .ok_or_else(|| chilpa_i18n::t_args("\"{}\" does not say how an account connects", &[id]))?;
         let back = chilpa_auth::Loopback::bind().map_err(|e| e.to_string())?;
         let pkce = chilpa_auth::Pkce::new();
         let url =
-            chilpa_auth::authorize_url(&auth, &pkce, &back).ok_or("ese source no usa OAuth")?;
+            chilpa_auth::authorize_url(&auth, &pkce, &back).ok_or(chilpa_i18n::t("that source does not use OAuth"))?;
 
         let (tx, rx) = std::sync::mpsc::channel();
         let thread = std::thread::Builder::new()
@@ -690,14 +692,14 @@ impl Chilpa {
                 match saved {
                     Some(Ok(())) => Some(c.id.clone()),
                     Some(Err(e)) => {
-                        self.now.error = format!("la cuenta se conectó pero no se pudo guardar: {e}");
+                        self.now.error = chilpa_i18n::t_args("the account connected but could not be saved: {}", &[&e.to_string()]);
                         None
                     }
                     None => None,
                 }
             }
             Err(e) => {
-                self.now.error = format!("no se conectó la cuenta: {e}");
+                self.now.error = chilpa_i18n::t_args("the account did not connect: {}", &[&e.to_string()]);
                 None
             }
         }
@@ -715,14 +717,14 @@ impl Chilpa {
     /// that its requests go out authenticated (ADR-008).
     pub fn connect_plugin(&mut self, id: &str, credential: &str) -> bool {
         let Some(p) = self.plugins.clone() else {
-            self.now.error = "el sandbox de plugins no está arrancado".into();
+            self.now.error = chilpa_i18n::t("the plugin sandbox is not started").into();
             return false;
         };
         let Ok(mut p) = p.lock() else { return false };
         match p.set_credential(id, credential) {
             Ok(()) => true,
             Err(e) => {
-                self.now.error = format!("no se pudo guardar la credencial: {e}");
+                self.now.error = chilpa_i18n::t_args("the credential could not be saved: {}", &[&e.to_string()]);
                 false
             }
         }
@@ -773,13 +775,15 @@ impl Chilpa {
         drop(p);
 
         if !gone {
-            self.now.error = format!("no se pudo borrar la carpeta de \"{id}\"");
+            self.now.error = chilpa_i18n::t_args("the folder for \"{}\" could not be deleted", &[id]);
             return false;
         }
         if own && !told {
-            self.now.error = "lo desinstalé, pero manejaba su cuenta por su lado y no \
-                 contestó cuando le pedí borrarla: puede que tu credencial siga guardada \
-                 donde él la haya puesto"
+            self.now.error = chilpa_i18n::t(
+                    "I uninstalled it, but it handled its account on its own and did not \
+                     answer when I asked it to delete it: your credential may still be \
+                     kept wherever it put it",
+                )
                 .into();
         }
         true
@@ -805,7 +809,7 @@ impl Chilpa {
     ) -> Result<Vec<u8>, String> {
         match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             Some(mut p) => p.call(id, operation, input),
-            None => Err("el sandbox de plugins no está arrancado".into()),
+            None => Err(chilpa_i18n::t("the plugin sandbox is not started").into()),
         }
     }
 }
@@ -817,8 +821,8 @@ mod tests {
     #[test]
     fn a_key_with_slashes_or_dot_dots_never_becomes_a_file() {
         let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"), None);
-        for bad in ["../fuera", "con/barra", "..", "CON.MAYUSCULAS", "", &"x".repeat(65)] {
-            assert!(s.file("com.a.b", bad).is_none(), "\"{bad}\" no debería pasar");
+        for bad in ["../outside", "with/slash", "..", "WITH.UPPERCASE", "", &"x".repeat(65)] {
+            assert!(s.file("com.a.b", bad).is_none(), "\"{bad}\" should not pass");
         }
         assert!(s.file("com.a.b", "token").is_some());
         assert!(s.file("com.a.b", "ultima-sync.json").is_some());
@@ -827,20 +831,20 @@ mod tests {
     #[test]
     fn nor_does_an_id_with_slashes() {
         let s = ChilpaServices::new(PathBuf::from("/tmp/chilpa-plugins"), None);
-        assert!(s.file("../otro", "token").is_none());
-        assert!(s.file("con/barra", "token").is_none());
+        assert!(s.file("../another", "token").is_none());
+        assert!(s.file("with/slash", "token").is_none());
     }
 
     #[test]
     fn a_plugin_store_round_trips() {
-        let dir = std::env::temp_dir().join("chilpa-plugins-almacen");
+        let dir = std::env::temp_dir().join("chilpa-plugins-store");
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = ChilpaServices::new(dir.clone(), None);
         assert!(s.store_set("com.a.b", "token", b"abc"));
         assert_eq!(s.store_get("com.a.b", "token").as_deref(), Some(&b"abc"[..]));
-        assert_eq!(s.store_get("com.a.b", "otra"), None);
+        assert_eq!(s.store_get("com.a.b", "other"), None);
         // And each plugin has its own.
-        assert_eq!(s.store_get("com.otro.plugin", "token"), None);
+        assert_eq!(s.store_get("com.another.plugin", "token"), None);
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -849,15 +853,15 @@ mod tests {
         let dir = std::env::temp_dir().join("chilpa-plugins-grande");
         let _ = std::fs::remove_dir_all(&dir);
         let mut s = ChilpaServices::new(dir.clone(), None);
-        assert!(!s.store_set("com.a.b", "enorme", &vec![0u8; 2 * 1024 * 1024]));
+        assert!(!s.store_set("com.a.b", "huge", &vec![0u8; 2 * 1024 * 1024]));
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn no_plugin_folder_means_no_plugins_and_is_not_an_error() {
-        let dir = std::env::temp_dir().join("chilpa-plugins-que-no-existe");
+        let dir = std::env::temp_dir().join("chilpa-plugins-that-does-not-exist");
         let _ = std::fs::remove_dir_all(&dir);
-        let mut p = Plugins::new(dir).expect("el motor arranca");
+        let mut p = Plugins::new(dir).expect("the engine starts");
         assert_eq!(p.load_all(), 0);
         assert!(p.list().is_empty());
     }
@@ -866,33 +870,33 @@ mod tests {
     fn a_folder_without_a_manifest_is_not_listed_as_a_broken_plugin() {
         let dir = std::env::temp_dir().join("chilpa-plugins-sin-manifest");
         let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(dir.join("basura")).unwrap();
-        std::fs::write(dir.join("basura").join("leeme.txt"), b"hola").unwrap();
+        std::fs::create_dir_all(dir.join("junk")).unwrap();
+        std::fs::write(dir.join("junk").join("readme.txt"), b"hello").unwrap();
         let mut p = Plugins::new(dir.clone()).unwrap();
         assert_eq!(p.load_all(), 0);
-        assert!(p.list().is_empty(), "no es un plugin roto: no es un plugin");
+        assert!(p.list().is_empty(), "it is not a broken plugin: it is not a plugin");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn a_broken_plugin_is_listed_with_its_reason() {
-        let dir = std::env::temp_dir().join("chilpa-plugins-roto");
+        let dir = std::env::temp_dir().join("chilpa-plugins-broken");
         let _ = std::fs::remove_dir_all(&dir);
-        let own = dir.join("com.roto.plugin");
+        let own = dir.join("com.broken.plugin");
         std::fs::create_dir_all(&own).unwrap();
         std::fs::write(
             own.join("manifest.json"),
-            r#"{"id":"com.roto.plugin","name":"Roto","version":"1","api_version":99,"kind":"source"}"#,
+            r#"{"id":"com.broken.plugin","name":"Broken","version":"1","api_version":99,"kind":"source"}"#,
         )
         .unwrap();
         std::fs::write(own.join("plugin.wasm"), b"").unwrap();
 
         let mut p = Plugins::new(dir.clone()).unwrap();
-        assert_eq!(p.load_all(), 0, "no quedó utilizable");
+        assert_eq!(p.load_all(), 0, "it did not end up usable");
         let list = p.list();
         assert_eq!(list.len(), 1);
         assert_eq!(list[0].state, "quarantined");
-        assert!(list[0].problem.contains("versión"), "{}", list[0].problem);
+        assert!(list[0].problem.contains("version"), "{}", list[0].problem);
         let _ = std::fs::remove_dir_all(dir);
     }
 }

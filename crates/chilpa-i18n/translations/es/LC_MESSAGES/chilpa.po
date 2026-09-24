@@ -4,6 +4,21 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "\"{}\" brings nothing today"
+msgstr "\"{}\" no trae nada hoy"
+
+msgid "\"{}\" does not say how an account connects"
+msgstr "\"{}\" no dice cómo se conecta una cuenta"
+
+msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
+msgstr "\"{}\" no sirve como id: se usa como nombre de carpeta, así que va en minúsculas, con puntos, guiones o dígitos, y sin barras ni puntos dobles"
+
+msgid "\"{}\" is not a domain permission can be given to"
+msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
+
+msgid "(unreadable manifest)"
+msgstr "(manifest ilegible)"
+
 msgid "Album"
 msgstr "Álbum"
 
@@ -72,6 +87,15 @@ msgstr "Formatos"
 
 msgid "Genres"
 msgstr "Géneros"
+
+msgid "I did not find a CD drive"
+msgstr "no encontré una unidad de CD"
+
+msgid "I do not know the list \"{}\""
+msgstr "no conozco la lista \"{}\""
+
+msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
+msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuando le pedí borrarla: puede que tu credencial siga guardada donde él la haya puesto"
 
 msgid "It asks for no permission at all, but whether it runs is still yours to decide."
 msgstr "No pide ningún permiso, pero igual decides tú si corre."
@@ -262,14 +286,56 @@ msgstr "Quitar permiso"
 msgid "Your browser is open to grant permission. Waiting here."
 msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
 
+msgid "a DASH manifest, which Chilpa cannot read yet"
+msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"
+
+msgid "a direct URL"
+msgstr "una URL directa"
+
+msgid "a list needs a name"
+msgstr "una lista necesita un nombre"
+
+msgid "a scan is already running"
+msgstr "ya hay un escaneo corriendo"
+
 msgid "account connected"
 msgstr "cuenta conectada"
+
+msgid "add a command you trigger"
+msgstr "agregar un comando que tú disparas"
+
+msgid "almost nothing in the queue has an analysed tempo"
+msgstr "casi nada de la cola tiene tempo analizado"
+
+msgid "an HLS manifest, which Chilpa cannot read yet"
+msgstr "un manifiesto HLS, que Chilpa todavía no sabe leer"
+
+msgid "an analysis is already running"
+msgstr "ya hay un análisis corriendo"
 
 msgid "analysing..."
 msgstr "analizando..."
 
 msgid "awaiting approval"
 msgstr "pendiente de aprobación"
+
+msgid "be a plugin of another kind: {}"
+msgstr "ser un plugin de otro tipo: {}"
+
+msgid "bring catalogue: search for and fetch music"
+msgstr "aportar catálogo: buscar y traer música"
+
+msgid "calling \"{}\", which did not load"
+msgstr "llamar a \"{}\", que no cargó"
+
+msgid "calling \"{}\", which is in quarantine"
+msgstr "llamar a \"{}\", que está en cuarentena"
+
+msgid "calling \"{}\", which is not installed"
+msgstr "llamar a \"{}\", que no está instalado"
+
+msgid "calling \"{}\", which nobody has approved"
+msgstr "llamar a \"{}\", que nadie ha aprobado"
 
 msgid "cannot be done"
 msgstr "no se puede"
@@ -280,22 +346,103 @@ msgstr "cerrar lo que esté abierto"
 msgid "converted"
 msgstr "convertido"
 
+msgid "converted to {}"
+msgstr "convertido a {}"
+
 msgid "could not open the browser: {}"
 msgstr "no se pudo abrir el navegador: {}"
 
+msgid "file"
+msgstr "archivo"
+
 msgid "fine"
 msgstr "bien"
+
+msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "manejar tu cuenta él mismo, fuera de Chilpa: dice que guarda tu credencial en el llavero del sistema, bajo su propio nombre. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
+
+msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr "manejar tu cuenta él mismo, fuera de Chilpa: tu credencial queda donde él decida, que puede ser un archivo en claro. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
+
+msgid "how the account connects does not work: {}"
+msgstr "cómo conecta la cuenta no sirve: {}"
+
+msgid "it answered an address not in its memory"
+msgstr "contestó una dirección que no está en su memoria"
+
+msgid "it answered nothing"
+msgstr "no contestó nada"
+
+msgid "it answered something that is not JSON"
+msgstr "contestó algo que no es JSON"
+
+msgid "it answered something that is not an http address"
+msgstr "contestó algo que no es una dirección http"
+
+msgid "it answered something that is not understood: {}"
+msgstr "contestó algo que no se entiende: {}"
+
+msgid "it asked for more memory than it is allowed"
+msgstr "pidió más memoria de la permitida"
+
+msgid "it asked for {}, which its manifest did not declare"
+msgstr "pidió {}, que su manifest no declaró"
+
+msgid "it asks for API version {} and this Chilpa understands {}; it does not load"
+msgstr "pide la versión {} de la API y este Chilpa entiende la {}; no se carga"
+
+msgid "it asks for the {} runtime, which does not exist yet"
+msgstr "pide el runtime {}, que todavía no existe"
+
+msgid "it blew up inside: {}"
+msgstr "tronó adentro: {}"
+
+msgid "it delivers the track in {} files in a row, and they are not read one after another yet"
+msgstr "entrega la pista en {} archivos seguidos, y todavía no se leen encadenados"
+
+msgid "it delivers {}"
+msgstr "entrega {}"
+
+msgid "it did not answer in {} and was stopped"
+msgstr "no contestó en {} y se detuvo"
+
+msgid "it does not export \"{}\", which every plugin has to export"
+msgstr "no exporta \"{}\", que todo plugin tiene que exportar"
+
+msgid "it failed {} times in a row; the last one: {}"
+msgstr "falló {} veces seguidas; la última: {}"
+
+msgid "it is not installed"
+msgstr "no está instalado"
+
+msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
+msgstr "dice manejar su propia cuenta, pero eso solo puede hacerlo un plugin de proceso aparte: en WASM no hay sockets ni disco suyo"
+
+msgid "it went over the compute it was allowed and was stopped"
+msgstr "se pasó del cómputo que tenía permitido y se detuvo"
+
+msgid "keep a credential of yours"
+msgstr "guardar una credencial tuya"
+
+msgid "keep things of its own on disk"
+msgstr "guardar sus propias cosas en disco"
 
 msgid "mixed by tempo: {} track"
 msgid_plural "mixed by tempo: {} tracks"
 msgstr[0] "mezcla por tempo: {} pista"
 msgstr[1] "mezcla por tempo: {} pistas"
 
+msgid "mono"
+msgstr "mono"
+
 msgid "next and previous track"
 msgstr "pista siguiente y anterior"
 
 msgid "no cover"
 msgstr "sin portada"
+
+msgid "no pulse"
+msgstr "sin pulso"
 
 msgid "open a file"
 msgstr "abrir un archivo"
@@ -312,8 +459,17 @@ msgstr "lista \"{}\" guardada"
 msgid "playlist saved to {}"
 msgstr "lista guardada en {}"
 
+msgid "put a panel of its own in the window"
+msgstr "poner un panel suyo en la ventana"
+
 msgid "quarantined"
 msgstr "en cuarentena"
+
+msgid "reach the internet, only {}"
+msgstr "salir a internet, solo a {}"
+
+msgid "read your library, without being able to change it"
+msgstr "leer tu biblioteca, sin poder cambiarla"
 
 msgid "remove"
 msgstr "quitar"
@@ -324,20 +480,140 @@ msgstr "escaneando..."
 msgid "search"
 msgstr "buscar"
 
+msgid "send you to grant permission at {}"
+msgstr "mandarte a dar permiso en {}"
+
+msgid "stereo"
+msgstr "estéreo"
+
+msgid "stop using the account it had"
+msgstr "dejar de usar la cuenta que tenía"
+
 msgid "stumbling"
 msgstr "tropezando"
+
+msgid "tags"
+msgstr "tags"
 
 msgid "ten seconds forward and back"
 msgstr "diez segundos adelante y atrás"
 
+msgid "that album has no playable tracks"
+msgstr "ese álbum no tiene pistas disponibles"
+
+msgid "that does not look like a stream address"
+msgstr "eso no parece una dirección de stream"
+
+msgid "that domain is not among the ones the plugin declared"
+msgstr "ese dominio no está en los que el plugin declaró"
+
 msgid "that folder could not be read; nothing was touched"
 msgstr "no se pudo leer esa carpeta; no se tocó nada"
+
+msgid "that id does not work as a folder"
+msgstr "ese id no sirve de carpeta"
+
+msgid "that list is empty"
+msgstr "esa lista está vacía"
+
+msgid "that source does not use OAuth"
+msgstr "ese source no usa OAuth"
+
+msgid "the account connected but could not be saved: {}"
+msgstr "la cuenta se conectó pero no se pudo guardar: {}"
+
+msgid "the account did not connect: {}"
+msgstr "no se conectó la cuenta: {}"
 
 msgid "the account expired"
 msgstr "la cuenta caducó"
 
+msgid "the analysis stopped: {}"
+msgstr "el análisis se detuvo: {}"
+
+msgid "the approval could not be saved: {}"
+msgstr "no se pudo guardar la aprobación: {}"
+
+msgid "the approval could not be withdrawn: {}"
+msgstr "no se pudo quitar la aprobación: {}"
+
+msgid "the credential could not be saved: {}"
+msgstr "no se pudo guardar la credencial: {}"
+
+msgid "the device could not be opened: {}"
+msgstr "no se pudo abrir el dispositivo: {}"
+
+msgid "the folder for \"{}\" could not be deleted"
+msgstr "no se pudo borrar la carpeta de \"{}\""
+
+msgid "the host could not serve it"
+msgstr "el host no pudo atender"
+
+msgid "the library could not be opened: {}"
+msgstr "no se pudo abrir la biblioteca: {}"
+
+msgid "the link it gave has already expired"
+msgstr "el enlace que dio ya caducó"
+
+msgid "the list carries no tracks"
+msgstr "la lista no trae pistas"
+
+msgid "the list could not be read: {}"
+msgstr "no se pudo leer la lista: {}"
+
+msgid "the list could not be saved: {}"
+msgstr "no se pudo guardar la lista: {}"
+
+msgid "the manifest is not understood: {}"
+msgstr "el manifest no se entiende: {}"
+
+msgid "the manifest says API {} and the module answers {}; it does not load"
+msgstr "el manifest dice API {} y el módulo contesta {}; no se carga"
+
+msgid "the module could not be loaded: {}"
+msgstr "el módulo no se pudo cargar: {}"
+
+msgid "the name"
+msgstr "el nombre"
+
+msgid "the plugin sandbox could not be started"
+msgstr "no se pudo arrancar el sandbox de plugins"
+
+msgid "the plugin sandbox is not started"
+msgstr "el sandbox de plugins no está arrancado"
+
+msgid "the request carries no URL that can be understood"
+msgstr "la petición no trae una URL que se entienda"
+
+msgid "the scan failed: {}"
+msgstr "el escaneo falló: {}"
+
+msgid "the version"
+msgstr "la versión"
+
+msgid "there is no folder in the library yet"
+msgstr "todavía no hay ninguna carpeta en la biblioteca"
+
+msgid "there is no plugin \"{}\" with a manifest to approve"
+msgstr "no hay un plugin \"{}\" con manifest que aprobar"
+
+msgid "there is no queue to save"
+msgstr "no hay cola que guardar"
+
+msgid "there is not enough queue to mix"
+msgstr "hace falta más cola para mezclar"
+
+msgid "there is nothing under {}"
+msgstr "no hay nada de {}"
+
+msgid "there is nowhere to keep a secret on this machine"
+msgstr "no hay dónde guardar un secreto en este equipo"
+
 msgid "this list"
 msgstr "esta lista"
+
+msgid "this plugin declared no network permission"
+msgstr "este plugin no declaró permiso de red"
 
 msgid "{} album"
 msgid_plural "{} albums"
@@ -352,8 +628,19 @@ msgid_plural "{} artists"
 msgstr[0] "{} artista"
 msgstr[1] "{} artistas"
 
+msgid "{} channel"
+msgid_plural "{} channels"
+msgstr[0] "{} canal"
+msgstr[1] "{} canales"
+
 msgid "{} files: {} read, {} unchanged, {} missing"
 msgstr "{} archivos: {} leídos, {} sin cambios, {} ausentes"
+
+msgid "{} is missing"
+msgstr "falta {}"
+
+msgid "{} of the list's tracks are gone"
+msgstr "{} de las pistas de la lista ya no están"
 
 msgid "{} of {}"
 msgstr "{} de {}"

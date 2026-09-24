@@ -89,7 +89,7 @@ impl HostServices for NoServices {
         false
     }
     fn http(&mut self, _plugin: &str, _request: &[u8]) -> Vec<u8> {
-        br#"{"error":"este plugin no tiene permiso de red"}"#.to_vec()
+        br#"{"error":"this plugin has no network permission"}"#.to_vec()
     }
 }
 
@@ -125,13 +125,13 @@ impl TestHost {
 
     /// Looks at what was noted without being able to change it.
     pub fn examine<T>(&self, f: impl FnOnce(&Recorded) -> T) -> T {
-        let save = self.0.lock().expect("el candado del host de prueba");
+        let save = self.0.lock().expect("the test host's lock");
         f(&save)
     }
 
     /// Sets something up before running.
     pub fn prepare(&self, f: impl FnOnce(&mut Recorded)) {
-        let mut save = self.0.lock().expect("el candado del host de prueba");
+        let mut save = self.0.lock().expect("the test host's lock");
         f(&mut save);
     }
 }
@@ -144,18 +144,18 @@ impl HostServices for TestHost {
         self.examine(|a| a.clock)
     }
     fn store_get(&mut self, plugin: &str, key: &str) -> Option<Vec<u8>> {
-        let mut save = self.0.lock().expect("el candado del host de prueba");
+        let mut save = self.0.lock().expect("the test host's lock");
         save.reads.push((plugin.to_string(), key.to_string()));
         save.store.get(key).cloned()
     }
     fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool {
-        let mut save = self.0.lock().expect("el candado del host de prueba");
+        let mut save = self.0.lock().expect("the test host's lock");
         save.writes.push((plugin.to_string(), key.to_string(), value.to_vec()));
         save.store.insert(key.to_string(), value.to_vec());
         true
     }
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8> {
-        let mut save = self.0.lock().expect("el candado del host de prueba");
+        let mut save = self.0.lock().expect("the test host's lock");
         save
             .requests
             .push((plugin.to_string(), String::from_utf8_lossy(request).to_string()));
@@ -175,19 +175,19 @@ mod tests {
     fn with_no_services_the_network_answers_no() {
         let mut s = NoServices;
         let r = s.http("com.a.b", b"{}");
-        assert!(String::from_utf8_lossy(&r).contains("no tiene permiso"));
+        assert!(String::from_utf8_lossy(&r).contains("no network permission"));
         assert_eq!(s.store_get("com.a.b", "x"), None);
-        assert!(!s.store_set("com.a.b", "x", b"y"), "no deja escribir");
+        assert!(!s.store_set("com.a.b", "x", b"y"), "it does not allow writing");
     }
 
     #[test]
     fn the_test_host_remembers_everything() {
         let mut h = TestHost::new();
         h.prepare(|a| a.clock = 1234);
-        h.log("com.a.b", Level::Warn, "algo");
-        h.store_set("com.a.b", "token", b"secreto");
-        assert_eq!(h.store_get("com.a.b", "token").as_deref(), Some(&b"secreto"[..]));
-        h.http("com.a.b", br#"{"url":"https://api.ejemplo.com"}"#);
+        h.log("com.a.b", Level::Warn, "something");
+        h.store_set("com.a.b", "token", b"secret");
+        assert_eq!(h.store_get("com.a.b", "token").as_deref(), Some(&b"secret"[..]));
+        h.http("com.a.b", br#"{"url":"https://api.example.com"}"#);
 
         h.examine(|a| {
             assert_eq!(a.logs.len(), 1);
@@ -195,7 +195,7 @@ mod tests {
             assert_eq!(a.writes.len(), 1);
             assert_eq!(a.reads.len(), 1);
             assert_eq!(a.requests.len(), 1);
-            assert!(a.requests[0].1.contains("api.ejemplo.com"));
+            assert!(a.requests[0].1.contains("api.example.com"));
         });
         assert_eq!(h.now_unix(), 1234);
     }
@@ -204,8 +204,8 @@ mod tests {
     fn a_clone_of_the_test_host_sees_the_same() {
         let mut h = TestHost::new();
         let copy = h.clone();
-        h.log("com.a.b", Level::Info, "algo");
-        assert_eq!(copy.examine(|a| a.logs.len()), 1, "la copia mira el mismo cuaderno");
+        h.log("com.a.b", Level::Info, "something");
+        assert_eq!(copy.examine(|a| a.logs.len()), 1, "the copy looks at the same notebook");
     }
 
     #[test]
@@ -214,6 +214,6 @@ mod tests {
         assert_eq!(Level::from_code(1), Level::Info);
         assert_eq!(Level::from_code(2), Level::Warn);
         assert_eq!(Level::from_code(3), Level::Error);
-        assert_eq!(Level::from_code(99), Level::Info, "lo raro no se pierde, se degrada");
+        assert_eq!(Level::from_code(99), Level::Info, "the odd is not lost, it is degraded");
     }
 }

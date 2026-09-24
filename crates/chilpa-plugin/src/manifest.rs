@@ -96,26 +96,32 @@ impl Capability {
     pub fn describe(&self) -> String {
         match self {
             Capability::Network { domains } => {
-                format!("salir a internet, solo a {}", domains.join(", "))
+                chilpa_i18n::t_args("reach the internet, only {}", &[&domains.join(", ")])
             }
-            Capability::Storage => "guardar sus propias cosas en disco".into(),
-            Capability::LibraryRead => "leer tu biblioteca, sin poder cambiarla".into(),
-            Capability::RegisterSource => "aportar catálogo: buscar y traer música".into(),
-            Capability::RegisterPanel => "poner un panel suyo en la ventana".into(),
-            Capability::RegisterCommand => "agregar un comando que tú disparas".into(),
+            Capability::Storage => chilpa_i18n::t("keep things of its own on disk"),
+            Capability::LibraryRead => {
+                chilpa_i18n::t("read your library, without being able to change it")
+            }
+            Capability::RegisterSource => {
+                chilpa_i18n::t("bring catalogue: search for and fetch music")
+            }
+            Capability::RegisterPanel => chilpa_i18n::t("put a panel of its own in the window"),
+            Capability::RegisterCommand => chilpa_i18n::t("add a command you trigger"),
             // It is worded differently from the rest on purpose: it is
             // the only one that leaves Chilpa out, and approving it
             // should not feel like approving a panel. And it says "says
             // it", because that is the only honest wording: Chilpa
             // cannot check it.
-            Capability::OwnAccount { keyring: true } => "manejar tu cuenta él mismo, fuera \
-                de Chilpa: dice que guarda tu credencial en el llavero del sistema, bajo su \
-                propio nombre. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
-                .into(),
-            Capability::OwnAccount { keyring: false } => "manejar tu cuenta él mismo, fuera \
-                de Chilpa: tu credencial queda donde él decida, que puede ser un archivo en \
-                claro. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
-                .into(),
+            Capability::OwnAccount { keyring: true } => chilpa_i18n::t(
+                "handle your account itself, outside Chilpa: it says it keeps your \
+                 credential in the system keyring, under its own name. Chilpa does not \
+                 see it, cannot delete it and cannot check any of this",
+            ),
+            Capability::OwnAccount { keyring: false } => chilpa_i18n::t(
+                "handle your account itself, outside Chilpa: your credential ends up \
+                 wherever it decides, which may be a plaintext file. Chilpa does not see \
+                 it, cannot delete it and cannot check any of this",
+            ),
         }
     }
 }
@@ -179,24 +185,54 @@ pub enum ManifestError {
 impl std::fmt::Display for ManifestError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ManifestError::BadAuth(e) => write!(f, "cómo conecta la cuenta no sirve: {e}"),
-            ManifestError::Unreadable(e) => write!(f, "el manifest no se entiende: {e}"),
+            ManifestError::BadAuth(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("how the account connects does not work: {}", &[&e.to_string()]))
+            }
+            ManifestError::Unreadable(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("the manifest is not understood: {}", &[e]))
+            }
             ManifestError::BadId(id) => write!(
                 f,
-                "\"{id}\" no sirve como id: se usa como nombre de carpeta, así que va en \
-                 minúsculas, con puntos, guiones o dígitos, y sin barras ni puntos dobles"
+                "{}",
+                chilpa_i18n::t_args(
+                    "\"{}\" does not work as an id: it is used as a folder name, so it goes \
+                     in lowercase, with dots, dashes or digits, and no slashes and no \
+                     double dots",
+                    &[id],
+                )
             ),
-            ManifestError::Empty(field) => write!(f, "falta {field}"),
+            ManifestError::Empty(field) => {
+                write!(f, "{}", chilpa_i18n::t_args("{} is missing", &[field]))
+            }
             ManifestError::ApiIncompatible { wants, have } => write!(
                 f,
-                "pide la versión {wants} de la API y este Chilpa entiende la {have}; \
-                 no se carga"
+                "{}",
+                chilpa_i18n::t_args(
+                    "it asks for API version {} and this Chilpa understands {}; it does \
+                     not load",
+                    &[&wants.to_string(), &have.to_string()],
+                )
             ),
             ManifestError::RuntimeNotImplemented(r) => {
-                write!(f, "pide el runtime {r:?}, que todavía no existe")
+                let runtime = format!("{r:?}");
+                write!(
+                    f,
+                    "{}",
+                    chilpa_i18n::t_args(
+                        "it asks for the {} runtime, which does not exist yet",
+                        &[&runtime],
+                    )
+                )
             }
             ManifestError::BadDomain(d) => {
-                write!(f, "\"{d}\" no es un dominio al que se pueda dar permiso")
+                write!(
+                    f,
+                    "{}",
+                    chilpa_i18n::t_args(
+                        "\"{}\" is not a domain permission can be given to",
+                        &[d],
+                    )
+                )
             }
         }
     }
@@ -213,10 +249,10 @@ impl Manifest {
 
     fn validate(&self) -> Result<(), ManifestError> {
         if self.name.trim().is_empty() {
-            return Err(ManifestError::Empty("el nombre"));
+            return Err(ManifestError::Empty(chilpa_i18n::mark("the name")));
         }
         if self.version.trim().is_empty() {
-            return Err(ManifestError::Empty("la versión"));
+            return Err(ManifestError::Empty(chilpa_i18n::mark("the version")));
         }
         if !valid_id(&self.id) {
             return Err(ManifestError::BadId(self.id.clone()));
@@ -255,8 +291,11 @@ impl Manifest {
             && self.capabilities.iter().any(|c| matches!(c, Capability::OwnAccount { .. }))
         {
             return Err(ManifestError::BadAuth(
-                "dice manejar su propia cuenta, pero eso solo puede hacerlo un plugin de \
-                 proceso aparte: en WASM no hay sockets ni disco suyo"
+                chilpa_i18n::mark(
+                    "it says it handles its own account, but only a separate process \
+                     plugin can do that: in WASM there are no sockets and no disk of its \
+                     own",
+                )
                     .into(),
             ));
         }
@@ -326,7 +365,7 @@ impl Asked {
     /// approval is enough.
     pub fn beyond(&self, approved: &Asked) -> Vec<String> {
         if self.kind != approved.kind {
-            return vec![format!("ser un plugin de otro tipo: {:?}", self.kind)];
+            return vec![chilpa_i18n::t_args("be a plugin of another kind: {}", &[&format!("{:?}", self.kind)])];
         }
         let mut out: Vec<String> = self
             .capabilities
@@ -336,9 +375,11 @@ impl Asked {
             .collect();
         if self.auth != approved.auth {
             out.push(match &self.auth {
-                Some(a) if a.host().is_empty() => "guardar una credencial tuya".to_string(),
-                Some(a) => format!("mandarte a dar permiso en {}", a.host()),
-                None => "dejar de usar la cuenta que tenía".to_string(),
+                Some(a) if a.host().is_empty() => chilpa_i18n::t("keep a credential of yours"),
+                Some(a) => {
+                    chilpa_i18n::t_args("send you to grant permission at {}", &[&a.host()])
+                }
+                None => chilpa_i18n::t("stop using the account it had"),
             });
         }
         out
@@ -386,13 +427,13 @@ mod tests {
 
     fn base() -> String {
         r#"{
-            "id": "com.ejemplo.prueba",
-            "name": "Prueba",
+            "id": "com.example.test",
+            "name": "Test",
             "version": "0.1.0",
             "api_version": 1,
             "kind": "source",
             "capabilities": [
-                {"type": "network", "domains": ["api.ejemplo.com"]},
+                {"type": "network", "domains": ["api.example.com"]},
                 {"type": "storage"}
             ]
         }"#
@@ -401,11 +442,11 @@ mod tests {
 
     #[test]
     fn a_good_manifest_is_read_in_full() {
-        let m = Manifest::parse(&base()).expect("es válido");
-        assert_eq!(m.id, "com.ejemplo.prueba");
+        let m = Manifest::parse(&base()).expect("it is valid");
+        assert_eq!(m.id, "com.example.test");
         assert_eq!(m.kind, Kind::Source);
-        assert_eq!(m.runtime, Runtime::Wasm, "el runtime por omisión es wasm");
-        assert_eq!(m.allowed_domains(), vec!["api.ejemplo.com"]);
+        assert_eq!(m.runtime, Runtime::Wasm, "the default runtime is wasm");
+        assert_eq!(m.allowed_domains(), vec!["api.example.com"]);
         assert!(m.can_store() && m.can_go_out());
     }
 
@@ -413,13 +454,13 @@ mod tests {
     fn with_no_capabilities_it_can_do_nothing() {
         let json = base().replace(
             r#""capabilities": [
-                {"type": "network", "domains": ["api.ejemplo.com"]},
+                {"type": "network", "domains": ["api.example.com"]},
                 {"type": "storage"}
             ]"#,
             r#""capabilities": []"#,
         );
         let m = Manifest::parse(&json).unwrap();
-        assert!(!m.can_go_out(), "sin red declarada no hay red");
+        assert!(!m.can_go_out(), "with no network declared there is no network");
         assert!(!m.can_store());
     }
 
@@ -427,49 +468,49 @@ mod tests {
     fn an_unknown_capability_is_not_ignored() {
         // Fail closed: if what it asks for is unknown, whether it is
         // dangerous cannot be known.
-        let json = base().replace(r#"{"type": "storage"}"#, r#"{"type": "leer_todo_el_disco"}"#);
-        let e = Manifest::parse(&json).expect_err("no se acepta");
+        let json = base().replace(r#"{"type": "storage"}"#, r#"{"type": "read_the_whole_disk"}"#);
+        let e = Manifest::parse(&json).expect_err("it is not accepted");
         assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
     }
 
     #[test]
     fn a_different_api_version_does_not_load() {
         let json = base().replace(r#""api_version": 1"#, r#""api_version": 99"#);
-        let e = Manifest::parse(&json).expect_err("no se acepta");
+        let e = Manifest::parse(&json).expect_err("it is not accepted");
         assert_eq!(e, ManifestError::ApiIncompatible { wants: 99, have: 1 });
-        assert!(e.to_string().contains("no se carga"), "{e}");
+        assert!(e.to_string().contains("it does not load"), "{e}");
     }
 
     #[test]
     fn an_id_that_cannot_be_a_folder_does_not_pass() {
         for bad in [
-            "sin-punto",
-            "../escapar",
-            "con/barra",
-            "Con.Mayusculas",
-            ".empieza.en.punto",
-            "termina.en.punto.",
-            "doble..punto",
+            "no-dot",
+            "../escape",
+            "with/slash",
+            "With.Uppercase",
+            ".starts.with.a.dot",
+            "ends.with.a.dot.",
+            "double..dot",
             "",
         ] {
-            let json = base().replace("com.ejemplo.prueba", bad);
+            let json = base().replace("com.example.test", bad);
             assert!(
                 matches!(Manifest::parse(&json), Err(ManifestError::BadId(_))),
-                "\"{bad}\" no debería pasar"
+                "\"{bad}\" should not pass"
             );
         }
         // And one that does.
-        let json = base().replace("com.ejemplo.prueba", "org.mi-servicio.plugin2");
+        let json = base().replace("com.example.test", "org.my-service.plugin2");
         assert!(Manifest::parse(&json).is_ok());
     }
 
     #[test]
     fn a_wildcard_in_the_domains_does_not_pass() {
-        for bad in ["*", "*.ejemplo.com", "https://api.ejemplo.com", "api.ejemplo.com/v1", "localhost"] {
-            let json = base().replace("api.ejemplo.com", bad);
+        for bad in ["*", "*.example.com", "https://api.example.com", "api.example.com/v1", "localhost"] {
+            let json = base().replace("api.example.com", bad);
             assert!(
                 matches!(Manifest::parse(&json), Err(ManifestError::BadDomain(_))),
-                "\"{bad}\" no debería pasar"
+                "\"{bad}\" should not pass"
             );
         }
     }
@@ -479,11 +520,11 @@ mod tests {
         // It has neither sockets nor a disk of its own: saying so would be
         // a lie, and it is refused at install instead of ignored.
         let e = Manifest::parse(
-            r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source",
+            r#"{"id":"com.a.b","name":"One","version":"1","api_version":1,"kind":"source",
                 "capabilities":[{"type":"own_account"}]}"#,
         )
         .unwrap_err();
-        assert!(e.to_string().contains("proceso aparte"), "{e}");
+        assert!(e.to_string().contains("separate process"), "{e}");
     }
 
     #[test]
@@ -493,41 +534,41 @@ mod tests {
         // Keeping it in the system keyring is better news than keeping
         // it just anywhere, and it is worded differently.
         let in_keyring = Capability::OwnAccount { keyring: true }.describe();
-        assert!(in_keyring.contains("llavero del sistema"), "{in_keyring}");
-        assert!(in_keyring.contains("su propio nombre"), "separate from Chilpa's: {in_keyring}");
+        assert!(in_keyring.contains("system keyring"), "{in_keyring}");
+        assert!(in_keyring.contains("its own name"), "separate from Chilpa's: {in_keyring}");
 
         let anywhere = Capability::OwnAccount { keyring: false }.describe();
-        assert!(anywhere.contains("archivo en claro"), "{anywhere}");
+        assert!(anywhere.contains("plaintext file"), "{anywhere}");
 
         // Both say the same thing underneath, including that it is not checked.
         for said in [in_keyring, anywhere] {
-            assert!(said.contains("fuera de Chilpa"), "{said}");
-            assert!(said.contains("no la ve"), "{said}");
-            assert!(said.contains("borrar"), "{said}");
-            assert!(said.contains("comprobarlo"), "es una declaración, no una garantía: {said}");
+            assert!(said.contains("outside Chilpa"), "{said}");
+            assert!(said.contains("does not see it"), "{said}");
+            assert!(said.contains("delete"), "{said}");
+            assert!(said.contains("check"), "it is a declaration, not a guarantee: {said}");
         }
     }
 
     #[test]
     fn the_process_runtime_is_refused_and_says_why() {
         let json = base().replace(r#""kind": "source""#, r#""kind": "source", "runtime": "process""#);
-        let e = Manifest::parse(&json).expect_err("todavía no existe");
-        assert!(e.to_string().contains("todavía no existe"), "{e}");
+        let e = Manifest::parse(&json).expect_err("does not exist yet");
+        assert!(e.to_string().contains("does not exist yet"), "{e}");
     }
 
     #[test]
     fn a_manifest_that_is_not_json_is_refused_with_its_reason() {
-        let e = Manifest::parse("esto no es json").expect_err("no es json");
+        let e = Manifest::parse("this is not json").expect_err("no es json");
         assert!(matches!(e, ManifestError::Unreadable(_)));
-        let e = Manifest::parse(r#"{"id": "com.a.b"}"#).expect_err("le faltan campos");
+        let e = Manifest::parse(r#"{"id": "com.a.b"}"#).expect_err("it is missing fields");
         assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
     }
 
     #[test]
     fn an_empty_name_or_version_does_not_pass() {
-        let json = base().replace(r#""name": "Prueba""#, r#""name": "   ""#);
-        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty("el nombre")));
+        let json = base().replace(r#""name": "Test""#, r#""name": "   ""#);
+        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty(chilpa_i18n::mark("the name"))));
         let json = base().replace(r#""version": "0.1.0""#, r#""version": """#);
-        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty("la versión")));
+        assert_eq!(Manifest::parse(&json), Err(ManifestError::Empty(chilpa_i18n::mark("the version"))));
     }
 }

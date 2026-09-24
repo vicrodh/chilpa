@@ -36,10 +36,10 @@ fn wave(dir: &PathBuf, name: &str, frames: u32) -> PathBuf {
 
 #[test]
 fn save_the_queue_play_it_and_delete_it() {
-    let dir = std::env::temp_dir().join("chilpa-api-listas");
+    let dir = std::env::temp_dir().join("chilpa-api-playlists");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     let paths: Vec<String> = ["01.wav", "02.wav", "03.wav"]
         .iter()
@@ -47,29 +47,29 @@ fn save_the_queue_play_it_and_delete_it() {
         .collect();
 
     let mut chilpa = chilpa_api::Chilpa::new();
-    assert!(chilpa.playlists().is_empty(), "una biblioteca nueva no trae listas");
+    assert!(chilpa.playlists().is_empty(), "a fresh library carries no playlists");
 
     // With no queue there is nothing to save, and it is said.
-    assert!(chilpa.save_queue_as("Vacía").is_none());
-    assert!(chilpa.now_playing().error.contains("cola"));
+    assert!(chilpa.save_queue_as("Empty").is_none());
+    assert!(chilpa.now_playing().error.contains("queue"));
 
     chilpa.play_tracks(&paths, OUTPUT, true);
     // And a list with no name does not go either.
     assert!(chilpa.save_queue_as("   ").is_none());
 
-    let id = chilpa.save_queue_as("De la mañana").expect("se guardó");
+    let id = chilpa.save_queue_as("De la mañana").expect("it was saved");
     let lists = chilpa.playlists();
     assert_eq!(lists.len(), 1);
     assert_eq!(lists[0].name, "De la mañana");
     assert_eq!(lists[0].track_count, 3);
-    assert_eq!(lists[0].provider, "local", "es de aquí");
+    assert_eq!(lists[0].provider, "local", "it is from here");
 
     let titles = chilpa.play_saved_playlist(id, OUTPUT, true);
-    assert_eq!(titles.len(), 3, "vuelve a sonar completa");
+    assert_eq!(titles.len(), 3, "it plays whole again");
     assert_eq!(chilpa.queue_titles().len(), 3);
 
-    chilpa.rename_playlist(id, "De la noche");
-    assert_eq!(chilpa.playlists()[0].name, "De la noche");
+    chilpa.rename_playlist(id, "Late night");
+    assert_eq!(chilpa.playlists()[0].name, "Late night");
 
     chilpa.delete_playlist(id);
     assert!(chilpa.playlists().is_empty());

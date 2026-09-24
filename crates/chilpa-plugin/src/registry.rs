@@ -194,7 +194,7 @@ impl Registry {
 
     pub fn state(&self, id: &str) -> State {
         let Some(inst) = self.plugins.get(id) else {
-            return State::Quarantined { reason: "no está instalado".into() };
+            return State::Quarantined { reason: chilpa_i18n::t("it is not installed") };
         };
         if inst.pending {
             return State::PendingApproval;
@@ -226,20 +226,28 @@ impl Registry {
         limits: Limits,
     ) -> Result<Reply, PluginError> {
         if !self.watchdog.usable(id) {
-            return Err(PluginError::NotAllowed(format!(
-                "llamar a \"{id}\", que está en cuarentena"
+            return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
+                "calling \"{}\", which is in quarantine",
+                &[id],
             )));
         }
         let Some(inst) = self.plugins.get(id) else {
-            return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no está instalado")));
+            return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
+                "calling \"{}\", which is not installed",
+                &[id],
+            )));
         };
         if inst.pending {
-            return Err(PluginError::NotAllowed(format!(
-                "llamar a \"{id}\", que nadie ha aprobado"
+            return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
+                "calling \"{}\", which nobody has approved",
+                &[id],
             )));
         }
         let Some(plugin) = &inst.plugin else {
-            return Err(PluginError::NotAllowed(format!("llamar a \"{id}\", que no cargó")));
+            return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
+                "calling \"{}\", which did not load",
+                &[id],
+            )));
         };
 
         match plugin.call(host, services, operation, input, limits) {
@@ -262,7 +270,7 @@ fn salvage(json: &str) -> (String, String) {
         v.as_ref().and_then(|v| v.get(field)?.as_str().map(str::to_string)).unwrap_or_default()
     };
     let id = take("id");
-    let id = if id.is_empty() { "(manifest ilegible)".to_string() } else { id };
+    let id = if id.is_empty() { chilpa_i18n::mark("(unreadable manifest)").to_string() } else { id };
     (id, take("name"))
 }
 
@@ -274,7 +282,7 @@ mod tests {
     fn an_unreadable_manifest_is_recorded_and_does_not_bring_the_registry_down() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
-        assert!(!r.install(&host, "esto no es json", b"", |_| true));
+        assert!(!r.install(&host, "this is not json", b"", |_| true));
         assert_eq!(r.installed().count(), 1);
         assert!(!r.usable().is_empty() == false);
         let inst = r.installed().next().unwrap();
@@ -297,17 +305,17 @@ mod tests {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
         // The JSON parses; what does not pass is the API version.
-        let json = r#"{"id":"com.a.b","name":"Se llama así","version":"1",
+        let json = r#"{"id":"com.a.b","name":"It is called this","version":"1",
                        "api_version":42,"kind":"source"}"#;
         assert!(!r.install(&host, json, b"", |_| true));
         let inst = r.installed().next().unwrap();
-        assert_eq!(inst.name, "Se llama así", "en la lista sale con su nombre");
-        assert!(inst.problem.as_ref().unwrap().contains("versión"));
+        assert_eq!(inst.name, "It is called this", "it shows up in the list by its name");
+        assert!(inst.problem.as_ref().unwrap().contains("version"));
     }
 
     #[test]
     fn nothing_can_be_asked_of_one_that_is_not_there() {
         let r = Registry::new();
-        assert!(matches!(r.state("com.no.existe"), State::Quarantined { .. }));
+        assert!(matches!(r.state("com.does.not.exist"), State::Quarantined { .. }));
     }
 }

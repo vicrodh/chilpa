@@ -22,7 +22,7 @@ impl Chilpa {
             .map(|t| t.external_id)
             .collect();
         if paths.is_empty() {
-            self.now.error = format!("no hay nada de {genre}");
+            self.now.error = chilpa_i18n::t_args("there is nothing under {}", &[genre]);
             return Vec::new();
         }
         self.play_tracks(&paths, device, bit_perfect)
@@ -37,7 +37,7 @@ impl Chilpa {
     ) -> Vec<String> {
         let Some(list) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
         else {
-            self.now.error = format!("no conozco la lista \"{name}\"");
+            self.now.error = chilpa_i18n::t_args("I do not know the list \"{}\"", &[name]);
             return Vec::new();
         };
         let Some(lib) = self.library() else { return Vec::new() };
@@ -48,7 +48,7 @@ impl Chilpa {
             .map(|t| t.external_id)
             .collect();
         if paths.is_empty() {
-            self.now.error = format!("\"{name}\" no trae nada hoy");
+            self.now.error = chilpa_i18n::t_args("\"{}\" brings nothing today", &[name]);
             return Vec::new();
         }
         self.play_tracks(&paths, device, bit_perfect)
@@ -76,11 +76,11 @@ impl Chilpa {
     pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
         let name = name.trim().to_string();
         if name.is_empty() {
-            self.now.error = "una lista necesita un nombre".into();
+            self.now.error = chilpa_i18n::t("a list needs a name");
             return None;
         }
         if self.queue.is_empty() {
-            self.now.error = "no hay cola que guardar".into();
+            self.now.error = chilpa_i18n::t("there is no queue to save");
             return None;
         }
         let paths = self.queue.clone();
@@ -117,7 +117,7 @@ impl Chilpa {
             .filter(|r| !r.is_empty())
             .collect();
         if paths.is_empty() {
-            self.now.error = "esa lista está vacía".into();
+            self.now.error = chilpa_i18n::t("that list is empty");
             return Vec::new();
         }
         self.play_tracks(&paths, device, bit_perfect)
@@ -134,7 +134,7 @@ impl Chilpa {
     pub fn rename_playlist(&mut self, playlist_id: i64, name: &str) {
         let name = name.trim().to_string();
         if name.is_empty() {
-            self.now.error = "una lista necesita un nombre".into();
+            self.now.error = chilpa_i18n::t("a list needs a name");
             return;
         }
         if let Some(lib) = self.library() {

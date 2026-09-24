@@ -26,7 +26,7 @@ impl Chilpa {
     /// Starts a background scan. The interface does not block.
     pub fn start_scan(&mut self, folder: &std::path::Path) {
         if self.scan.is_some() {
-            self.now.error = "ya hay un escaneo corriendo".into();
+            self.now.error = chilpa_i18n::t("a scan is already running");
             return;
         }
         // The interface's connection is let go: the scan opens its own, and
@@ -46,12 +46,12 @@ impl Chilpa {
     /// the library has already written down.
     pub fn rescan(&mut self) {
         if self.scan.is_some() {
-            self.now.error = "ya hay un escaneo corriendo".into();
+            self.now.error = chilpa_i18n::t("a scan is already running");
             return;
         }
         let folders = self.roots();
         if folders.is_empty() {
-            self.now.error = "todavía no hay ninguna carpeta en la biblioteca".into();
+            self.now.error = chilpa_i18n::t("there is no folder in the library yet");
             return;
         }
         self.scan = Some(chilpa_library::ScanJob::start_all(
@@ -65,7 +65,7 @@ impl Chilpa {
     /// Starts the analysis of whatever is missing, in the background.
     pub fn start_analysis(&mut self) {
         if self.analysis.is_some() {
-            self.now.error = "ya hay un análisis corriendo".into();
+            self.now.error = chilpa_i18n::t("an analysis is already running");
             return;
         }
         self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start(
@@ -94,7 +94,7 @@ impl Chilpa {
                     self.analysis_status.total = total;
                     let tempo = match bpm {
                         Some(b) => format!("{b:.0} BPM"),
-                        None => "sin pulso".to_string(),
+                        None => chilpa_i18n::t("no pulse"),
                     };
                     self.analysis_status.last = match key {
                         Some(k) => format!("{title} · {tempo} · {k}"),
@@ -110,7 +110,7 @@ impl Chilpa {
                 }
                 AnalysisProgress::Failed(e) => {
                     self.analysis_status.running = false;
-                    self.now.error = format!("el análisis se detuvo: {e}");
+                    self.now.error = chilpa_i18n::t_args("the analysis stopped: {}", &[&e]);
                     finished = true;
                 }
             }
@@ -155,7 +155,7 @@ impl Chilpa {
                     self.scan = None;
                 }
                 chilpa_library::ScanProgress::Failed(e) => {
-                    self.now.error = format!("el escaneo falló: {e}");
+                    self.now.error = chilpa_i18n::t_args("the scan failed: {}", &[&e]);
                     self.scan_status.running = false;
                     self.scan = None;
                 }
@@ -176,7 +176,7 @@ impl Chilpa {
                 unreachable: r.unreachable,
             },
             Err(e) => {
-                self.now.error = format!("el escaneo falló: {e}");
+                self.now.error = chilpa_i18n::t_args("the scan failed: {}", &[&e.to_string()]);
                 ScanSummary::default()
             }
         }
