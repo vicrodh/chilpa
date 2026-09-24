@@ -132,6 +132,18 @@ impl Device {
         line
     }
 
+    /// The line under the name: how it is attached, and what it says it can
+    /// do without being opened.
+    pub fn detail(&self) -> String {
+        let mut line = self.bus.name().to_string();
+        let declared = self.declared.summary();
+        if !declared.is_empty() {
+            line.push_str(" · ");
+            line.push_str(&declared);
+        }
+        line
+    }
+
     /// The whole line, with how it is attached and what it says it can do.
     pub fn full_label(&self) -> String {
         let mut line = self.label();

@@ -451,6 +451,9 @@ msgstr "Falta la respuesta del servicio."
 msgid "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means."
 msgstr "Este es el control del propio dispositivo ({}). Chilpa nunca escala las muestras: eso es lo que quiere decir bit-perfect."
 
+msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
+msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
+
 msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
 msgstr "Esta salida no tiene control de volumen propio. Chilpa no se lo va a inventar escalando las muestras, porque ahí se acabó el bit-perfect: usa la perilla del dispositivo."
 
@@ -486,6 +489,9 @@ msgstr "Onda"
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"
+
+msgid "Wherever the system is sending sound"
+msgstr "A donde el sistema esté mandando el sonido"
 
 msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
 msgstr "Con esto encendido, una pista que el dispositivo no acepta en su propio formato no suena, y se dice. Apagado, Chilpa convierte y también lo dice."
@@ -698,6 +704,9 @@ msgstr "sin portada"
 
 msgid "no pulse"
 msgstr "sin pulso"
+
+msgid "no sound card is listed in /proc/asound"
+msgstr "no hay ninguna tarjeta de sonido listada en /proc/asound"
 
 msgid "not supported: {}"
 msgstr "no soportado: {}"
@@ -1016,6 +1025,9 @@ msgstr "esta salida no tiene control de volumen propio"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"
+
+msgid "through {}"
+msgstr "por {}"
 
 msgid "track {}: {}"
 msgstr "pista {}: {}"

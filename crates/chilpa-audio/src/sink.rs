@@ -15,8 +15,8 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-/// What can go wrong writing to the device. None of these is
-/// un final normal.
+/// What can go wrong writing to the device. None of these is a track
+/// ending normally.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SinkError {
     /// The device vanished: unplugged, powered off, or taken by someone else.
