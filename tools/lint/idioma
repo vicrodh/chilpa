@@ -212,9 +212,33 @@ def es_espanol(palabra, no_es, no_en, acentos):
     return palabra not in no_es or palabra in acentos
 
 
+def trozos_toml(src):
+    """(tipo, texto) con tipo en code|comment. TOML.
+
+    Un `#` dentro de una cadena no abre un comentario, y en un manifest las
+    cadenas traen rutas y URLs con `#` de vez en cuando. Partir por líneas
+    alcanza: un comentario de TOML llega hasta el fin de la línea.
+    """
+    out = []
+    for linea in src.split("\n"):
+        pelada = linea.lstrip()
+        if pelada.startswith("#"):
+            out.append(("comment", linea + "\n"))
+        else:
+            out.append(("code", linea + "\n"))
+    return out
+
+
 def main():
     permitidas = lista("permitidas-idioma.txt")
-    archivos = sorted(ROOT.glob("crates/*/**/*.rs")) + sorted(ROOT.glob("crates/*/qml/*.qml"))
+    # Los manifests también: un comentario de Cargo.toml explica por qué está
+    # una dependencia, que es justo lo que un contribuidor necesita leer.
+    archivos = (
+        sorted(ROOT.glob("crates/*/**/*.rs"))
+        + sorted(ROOT.glob("crates/*/qml/*.qml"))
+        + sorted(ROOT.glob("crates/*/Cargo.toml"))
+        + [ROOT / "Cargo.toml"]
+    )
 
     # Identificador -> dónde salió la primera vez, y los comentarios con su
     # lugar, que es lo que hay que poder señalar.
@@ -222,7 +246,12 @@ def main():
     comentarios = []
     for f in archivos:
         src = f.read_text()
-        piezas = trozos_qml(src) if f.suffix == ".qml" else trozos_rust(src)
+        if f.suffix == ".qml":
+            piezas = trozos_qml(src)
+        elif f.name == "Cargo.toml":
+            piezas = trozos_toml(src)
+        else:
+            piezas = trozos_rust(src)
         linea = 1
         for tipo, texto in piezas:
             if tipo == "code":
