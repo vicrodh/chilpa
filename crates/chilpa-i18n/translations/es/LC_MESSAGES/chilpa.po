@@ -238,6 +238,9 @@ msgstr "Todavía no hay listas guardadas"
 msgid "Nothing playing"
 msgstr "Nada sonando"
 
+msgid "Open"
+msgstr "Abrir"
+
 msgid "Open a folder"
 msgstr "Abrir una carpeta"
 

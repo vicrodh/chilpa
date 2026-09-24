@@ -238,6 +238,9 @@ msgstr ""
 msgid "Nothing playing"
 msgstr ""
 
+msgid "Open"
+msgstr ""
+
 msgid "Open a folder"
 msgstr ""
 

@@ -621,6 +621,11 @@ impl Chilpa {
     ///
     /// It is what is used when someone is waiting in front of the window,
     /// as when resolving a track to start it playing.
+    /// The catalogue sources that work now, with their name.
+    pub fn sources(&mut self) -> Vec<(String, String)> {
+        self.plugins.as_ref().and_then(|p| p.lock().ok()).map(|p| p.searchers()).unwrap_or_default()
+    }
+
     pub fn call_plugin_short(
         &mut self,
         id: &str,

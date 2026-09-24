@@ -74,7 +74,7 @@ impl Hit {
         }
     }
 
-    fn remote(
+    pub(crate) fn remote(
         t: messages::RemoteTrack,
         source: &str,
         source_name: &str,
