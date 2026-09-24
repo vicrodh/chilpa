@@ -1,22 +1,22 @@
-//! El formato LRC.
+//! The LRC format.
 //!
-//! Un archivo de texto donde cada renglón empieza con uno o varios sellos de
-//! tiempo: `[01:23.45]Y así canta`. Lo que se cuida aquí:
+//! A text file where each line starts with one or more timestamps:
+//! `[01:23.45]the words`. What is looked after here:
 //!
-//! - **Un renglón puede traer varios sellos.** Un estribillo se escribe una
-//!   vez con todas sus horas; tratar solo la primera pierde el resto de la
-//!   canción.
-//! - **Los sellos vienen de todo tipo**: `mm:ss`, `mm:ss.xx` (centésimas) y
-//!   `mm:ss.xxx` (milésimas). Leer `.5` como 5 ms en vez de 500 deja la letra
-//!   medio segundo adelantada.
-//! - **Las etiquetas de cabecera** (`[ti:]`, `[ar:]`, `[offset:]`) no son
-//!   renglones de letra y no deben aparecer en pantalla.
-//! - **Un archivo sin un solo sello sigue siendo una letra**, nomás que sin
-//!   sincronizar. Se muestra completa.
+//! - **A line can carry several stamps.** A refrain is written once with
+//!   all its times; taking only the first loses the rest of the song.
+
+//! - **Stamps come in every shape**: `mm:ss`, `mm:ss.xx` (hundredths) and
+//!   `mm:ss.xxx` (thousandths). Reading `.5` as 5 ms instead of 500 leaves
+//!   the lyrics half a second early.
+//! - **Header tags** (`[ti:]`, `[ar:]`, `[offset:]`) are not lyric lines and
+//!   must not show on screen.
+//! - **A file without a single stamp is still lyrics**, just unsynced. It is
+//!   shown whole.
 
 use crate::{Lyrics, Line};
 
-/// Lee una letra en LRC, o en texto plano si no trae sellos.
+/// Reads LRC lyrics, or plain text when there are no stamps.
 pub fn parse(text: &str) -> Lyrics {
     let mut lines: Vec<Line> = Vec::new();
     let mut loose: Vec<String> = Vec::new();
@@ -28,14 +28,14 @@ pub fn parse(text: &str) -> Lyrics {
         let line = raw.trim_end_matches('\r');
         let (labels, rest) = labels_of(line);
         if labels.is_empty() {
-            // Puede ser una etiqueta de cabecera o texto sin sincronizar.
+            // It may be a header tag or unsynced text.
             match tag(line) {
                 Some(("offset", v)) => {
                     offset_ms = v.trim().parse().unwrap_or(0);
                 }
                 Some(("ti", v)) => title = Some(v.trim().to_string()),
                 Some(("ar", v)) => artist = Some(v.trim().to_string()),
-                // Cualquier otra etiqueta conocida se calla; no es letra.
+                // Any other known tag stays quiet; it is not lyrics.
                 Some(_) => {}
                 None => {
                     if !line.trim().is_empty() {
@@ -60,8 +60,8 @@ pub fn parse(text: &str) -> Lyrics {
         };
     }
 
-    // El offset del archivo corre la letra entera. Es positivo cuando hay
-    // que adelantarla, así que se resta.
+    // The file's offset shifts the whole lyric. It is positive when it has
+    // to move earlier, so it is subtracted.
     if offset_ms != 0 {
         for l in &mut lines {
             *l = Line {
@@ -74,7 +74,7 @@ pub fn parse(text: &str) -> Lyrics {
     Lyrics { title, artist, lines: lines, synced: true }
 }
 
-/// Los sellos con los que empieza un renglón, y lo que queda después.
+/// The stamps a line starts with, and what is left after them.
 fn labels_of(line: &str) -> (Vec<u64>, &str) {
     let mut labels = Vec::new();
     let mut rest = line;
@@ -91,7 +91,7 @@ fn labels_of(line: &str) -> (Vec<u64>, &str) {
     (labels, rest)
 }
 
-/// `mm:ss`, `mm:ss.xx` o `mm:ss.xxx` en milisegundos.
+/// `mm:ss`, `mm:ss.xx` or `mm:ss.xxx`, in milliseconds.
 fn time(s: &str) -> Option<u64> {
     let (min, rest) = s.split_once(':')?;
     let minutes: u64 = min.trim().parse().ok()?;
@@ -107,8 +107,8 @@ fn time(s: &str) -> Option<u64> {
             if !f.chars().all(|c| c.is_ascii_digit()) || f.is_empty() {
                 return None;
             }
-            // Dos dígitos son centésimas, tres son milésimas. Leer ".5"
-            // como 5 ms dejaría la letra medio segundo adelantada.
+            // Two digits are hundredths, three are thousandths. Reading ".5"
+            // as 5 ms would leave the lyrics half a second early.
             let n: u64 = f.parse().ok()?;
             match f.len() {
                 1 => n * 100,
@@ -120,13 +120,13 @@ fn time(s: &str) -> Option<u64> {
     Some(minutes * 60_000 + seconds * 1_000 + millis)
 }
 
-/// `[clave:valor]` de cabecera, si el renglón es eso.
+/// A header `[key:value]`, if that is what the line is.
 fn tag(line: &str) -> Option<(&str, &str)> {
     let l = line.trim();
     let inside = l.strip_prefix('[')?.strip_suffix(']')?;
     let (key, value) = inside.split_once(':')?;
     let key = key.trim();
-    // Solo letras: así `[01:23]` no pasa por etiqueta.
+    // Letters only: that way `[01:23]` does not pass for a tag.
     if key.is_empty() || !key.chars().all(|c| c.is_ascii_alphabetic()) {
         return None;
     }
@@ -179,7 +179,7 @@ mod tests {
     fn the_offset_shifts_the_whole_lyric() {
         let l = parse("[offset:500]\n[00:10.00]Tarde\n");
         assert_eq!(l.lines[0].at_ms, 9_500, "medio segundo antes");
-        // Y no se va a negativo.
+        // And it never goes negative.
         let l = parse("[offset:99000]\n[00:10.00]Tarde\n");
         assert_eq!(l.lines[0].at_ms, 0);
     }

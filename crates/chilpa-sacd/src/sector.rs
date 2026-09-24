@@ -1,37 +1,37 @@
-//! El empaquetado dentro de un sector del área de audio.
+//! The packing inside a sector of the audio area.
 //!
-//! Layout medido en QBZ contra un censo de 3 066 893 sectores, sin una sola
-//! excepción:
+//! Layout measured in QBZ against a census of 3,066,893 sectors, without a
+//! single exception:
 //!
 //! ```text
 //! byte 0:  packet_count     = (b >> 5) & 0x07
 //!          frame_info_count = (b >> 2) & 0x07
 //!          dst              =  b & 0x01
-//! luego packet_count descriptores de 16 bits, big endian:
-//!          bit 15     arranca un frame
-//!          bits 14-11 tipo de dato
-//!          bits 10-0  largo EN BYTES        <- ONCE bits, no doce
-//! luego frame_info_count registros de 4 bytes (DST) o 3 (sin comprimir)
+//! then packet_count 16-bit descriptors, big endian:
+//!          bit 15     starts a frame
+//!          bits 14-11 data type
+//!          bits 10-0  length IN BYTES       <- ELEVEN bits, not twelve
+//! then frame_info_count records of 4 bytes (DST) or 3 (uncompressed)
 //! ```
 //!
-//! Los once bits del largo son la corrección que importa. La versión que
-//! circula por ahí le da doce, y el primer descriptor de los discos que se
-//! midieron es 0x181B: con doce bits da 2075, más que el sector entero. Con
-//! once da 27, y 5 + 27 + 2016 = 2048 exacto. La suma
-//! `encabezado + Σ largos == 2048` es lo que prueba la decodificación, y aquí
-//! se verifica en cada sector en vez de darla por buena.
+//! The eleven bits of the length are the correction that matters. The
+//! version going around gives it twelve, and the first descriptor of the
+//! discs measured is 0x181B: with twelve bits that is 2075, more than the
+//! whole sector. With eleven it is 27, and 5 + 27 + 2016 = 2048 exactly. The
+//! sum `header + Σ lengths == 2048` is what proves the decoding, and here it
+//! is checked on every sector instead of being taken on faith.
 
 use crate::{SacdError, DATA_TYPE_AUDIO, SECTOR};
 
-/// Un paquete dentro de un sector.
+/// A packet inside a sector.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Packet {
     pub frame_start: bool,
     pub data_type: u16,
-    /// Dónde empieza la carga dentro del sector.
+    /// Where the payload starts inside the sector.
     pub at: usize,
     pub len: usize,
-    /// Código de tiempo del área, cuando el paquete arranca un frame de audio.
+    /// The area's timecode, when the packet starts an audio frame.
     pub timecode: Option<u32>,
 }
 
@@ -41,15 +41,15 @@ impl Packet {
     }
 }
 
-/// Lo que se sabe de un sector del área de audio.
+/// What is known about a sector of the audio area.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SectorPackets {
-    /// Cierto si el sector trae frames comprimidos con DST.
+    /// True when the sector carries DST-compressed frames.
     pub dst: bool,
     pub packets: Vec<Packet>,
 }
 
-/// Decodifica el empaquetado de un sector.
+/// Decodes a sector's packing.
 pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
     if sector.len() != SECTOR {
         return Err(SacdError::BadSector { lsn, why: "no mide 2048 bytes".into() });
@@ -75,11 +75,10 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
         let frame_start = w & 0x8000 != 0;
         let data_type = (w >> 11) & 0x07;
 
-        // El registro de frame-info solo existe para los paquetes que
-        // arrancan un frame. En el lead-out hay un paquete de relleno marcado
-        // como arranque con un registro centinela: se cuenta, pero su código
-        // de tiempo no significa nada.
-        let timecode = if frame_start {
+        // The frame-info record only exists for packets that start a frame.
+        // In the lead-out there is a filler packet marked as a start with a
+        // sentinel record: it counts, but its timecode means nothing.
+                let timecode = if frame_start {
             let info = frame_info_at + read_frames * frame_info_size;
             read_frames += 1;
             if data_type == DATA_TYPE_AUDIO {
@@ -124,10 +123,10 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
 mod tests {
     use super::*;
 
-    /// Un sector con un solo paquete de audio que arranca frame.
+    /// A sector with a single audio packet that starts a frame.
     fn sector_de_audio(timecode: [u8; 3]) -> Vec<u8> {
         let mut s = vec![0u8; SECTOR];
-        // 1 paquete, 1 registro de frame-info, sin DST.
+        // 1 packet, 1 frame-info record, no DST.
         s[0] = (1 << 5) | (1 << 2);
         let header_len = 1 + 2 + 3;
         let len = SECTOR - header_len;
@@ -153,7 +152,7 @@ mod tests {
     #[test]
     fn a_sector_whose_packets_do_not_add_up_to_2048_is_refused() {
         let mut s = sector_de_audio([0, 0, 0]);
-        // Se le quita un byte al largo declarado: la suma ya no cierra.
+        // One byte is taken off the declared length: the sum no longer adds up.
         let w = u16::from_be_bytes([s[1], s[2]]) - 1;
         s[1..3].copy_from_slice(&w.to_be_bytes());
         assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
@@ -167,7 +166,7 @@ mod tests {
 
     #[test]
     fn the_length_uses_eleven_bits_and_not_twelve() {
-        // 0x181B: con doce bits daría 2075, más que el sector.
+        // 0x181B: with twelve bits that would be 2075, more than the sector.
         let w = 0x181Bu16;
         assert_eq!((w & 0x07FF) as usize, 27);
         assert_eq!(5 + 27 + 2016, SECTOR);

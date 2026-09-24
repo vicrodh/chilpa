@@ -1,9 +1,9 @@
-//! La unidad de disco en Linux, por ioctl.
+//! The disc drive on Linux, through ioctl.
 //!
-//! Tres llamadas bastan para reproducir: el encabezado del TOC, cada entrada
-//! y la lectura de audio. El kernel entrega las muestras en little endian,
-//! que es justo lo que quiere el dispositivo de salida, así que los bytes
-//! pasan sin voltearse.
+//! Three calls are enough to play: the TOC header, each entry, and the audio
+//! read. The kernel hands the samples over little endian, which is exactly
+//! what the output device wants, so the bytes pass through without being
+//! swapped.
 
 use crate::{CdDevice, CdError, TocEntry, MAX_SECTORS_PER_READ, SECTOR_BYTES};
 use std::fs::File;
@@ -15,10 +15,10 @@ const CDROMREADTOCENTRY: libc::c_ulong = 0x5306;
 const CDROMREADAUDIO: libc::c_ulong = 0x530e;
 const CDROM_DRIVE_STATUS: libc::c_ulong = 0x5326;
 const CDROM_LBA: u8 = 0x01;
-/// El número de pista con el que se pregunta por el lead-out.
+/// The track number you ask with to get the lead-out.
 const CDROM_LEADOUT: u8 = 0xAA;
 const CDS_DISC_OK: libc::c_int = 4;
-/// Bit de control que marca una pista de datos.
+/// The control bit that marks a data track.
 const CTRL_DATA: u8 = 0x04;
 
 #[repr(C)]
@@ -47,14 +47,14 @@ struct ReadAudio {
     buf: *mut u8,
 }
 
-/// Una unidad abierta.
+/// An open drive.
 pub struct LinuxDrive {
     file: File,
     path: PathBuf,
 }
 
 impl LinuxDrive {
-    /// Abre la unidad y comprueba que tenga un disco listo.
+    /// Opens the drive and checks it has a disc ready.
     pub fn open(path: &Path) -> Result<Self, CdError> {
         let file = File::open(path).map_err(|e| CdError::Device(e.to_string()))?;
         let state = unsafe { libc::ioctl(file.as_raw_fd(), CDROM_DRIVE_STATUS, 0) };
@@ -90,9 +90,9 @@ impl CdDevice for LinuxDrive {
         let mut previous_is_audio = None;
         for n in hdr.first..=hdr.last {
             let (lsn, is_audio) = self.toc_entry(n)?;
-            // El ioctl del TOC no dice la sesión. En un CD-Extra la pista de
-            // datos vive en la segunda, y se reconoce porque llega después
-            // del audio: es el único caso donde hay que descontar el hueco.
+            // The TOC ioctl does not say which session. On a CD-Extra the data
+            // track lives in the second one, and is recognized because it comes
+            // after the audio: the only case where the gap must be subtracted.
             if previous_is_audio == Some(true) && !is_audio {
                 session = 2;
             }
@@ -123,13 +123,13 @@ impl CdDevice for LinuxDrive {
     }
 }
 
-/// Un heurístico para diagnosticar unidades que entregan las muestras al
-/// revés. No se aplica solo: si alguna vez hace falta voltear los bytes, se
-/// decide con una medición, no con una suposición.
+/// A heuristic for diagnosing drives that hand the samples over the wrong
+/// way round. It does not apply itself: if swapping the bytes is ever
+/// needed, that is decided by a measurement, not by a guess.
 ///
-/// La idea: en música real dos muestras seguidas se parecen. Si la diferencia
-/// promedio leyendo en big endian es mucho menor que en little endian, los
-/// bytes vienen volteados.
+/// The idea: in real music two consecutive samples are alike. If the average
+/// difference reading big endian is much smaller than little endian, the
+/// bytes arrive swapped.
 pub fn looks_byte_swapped(pcm: &[u8]) -> bool {
     if pcm.len() < 8 {
         return false;

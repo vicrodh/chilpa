@@ -1,14 +1,13 @@
-//! Streams por HTTP: radio y cualquier otra cosa que llegue por la red.
+//! HTTP streams: radio, and anything else that arrives over the network.
 //!
-//! Un stream no es un archivo: no tiene final conocido, no se puede buscar y
-//! puede cortarse a media canción. Este crate lo envuelve para que el resto
-//! del motor no tenga que saberlo, y guarda dos cosas que sí cambian la
-//! experiencia:
+//! A stream is not a file: it has no known end, cannot be seeked, and may
+//! cut off mid-song. This crate wraps it so the rest of the engine does not
+//! have to know, and keeps the two things that do change the experience:
 //!
-//! - **La metadata ICY** (`StreamTitle`), que es lo único que dice qué suena
-//!   en una radio.
-//! - **El formato que anuncia el servidor**, para elegir el decodificador sin
-//!   adivinar por la extensión de una URL que muchas veces no tiene.
+//! - **ICY metadata** (`StreamTitle`), which is the only thing that says
+//!   what is playing on a radio.
+//! - **The format the server announces**, to pick the decoder without
+//!   guessing from the extension of a URL that often has none.
 
 pub mod icy;
 pub mod request;
@@ -21,9 +20,9 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 pub enum StreamError {
-    /// La URL no se pudo abrir.
+    /// The URL could not be opened.
     Open(String),
-    /// El servidor contestó algo que no es audio.
+    /// The server answered with something that is not audio.
     NotAudio(String),
 }
 
@@ -36,22 +35,21 @@ impl std::fmt::Display for StreamError {
     }
 }
 
-/// Lo que se sabe de un stream cuando se abre.
+/// What is known about a stream when it opens.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct StreamInfo {
-    /// El nombre de la estación, cuando lo manda.
+    /// The station's name, when it sends one.
     pub name: Option<String>,
-    /// El tipo de contenido: `audio/mpeg`, `audio/flac`, …
+    /// The content type: `audio/mpeg`, `audio/flac`, …
     pub content_type: Option<String>,
-    /// La extensión que le corresponde, para ayudar al decodificador.
+    /// The extension that goes with it, to help the decoder.
     pub hint: Option<String>,
-    /// Cada cuántos bytes viene un bloque de metadata, si el servidor lo
-    /// ofrece.
-    pub icy_metaint: Option<usize>,
+    /// How many bytes go between metadata blocks, if the server offers them.
+        pub icy_metaint: Option<usize>,
 }
 
 impl StreamInfo {
-    /// La extensión que le pasamos al probador de formatos.
+    /// The extension handed to the format prober.
     pub fn extension_hint(&self) -> Option<String> {
         self.hint.clone().or_else(|| {
             let kind = self.content_type.as_deref()?;
@@ -70,7 +68,7 @@ impl StreamInfo {
     }
 }
 
-/// Lo que va cambiando mientras suena: hoy, el título que manda la estación.
+/// What changes while it plays: today, the title the station sends.
 #[derive(Clone, Debug, Default)]
 pub struct NowPlaying(Arc<Mutex<Option<String>>>);
 
@@ -90,11 +88,11 @@ impl NowPlaying {
     }
 }
 
-/// Un stream abierto, listo para que lo lea el decodificador.
+/// An open stream, ready for the decoder to read.
 ///
-/// Implementa `Seek` porque el decodificador lo exige, pero solo contesta la
-/// posición: un stream no se puede rebobinar, y fingir que sí produce audio
-/// corrupto en vez de un error claro.
+/// Implements `Seek` because the decoder demands it, but only answers the
+/// position: a stream cannot rewind, and pretending it can produces corrupt
+/// audio instead of a clear error.
 pub struct HttpStream {
     inner: Box<dyn Read + Send + Sync>,
     info: StreamInfo,
@@ -103,7 +101,7 @@ pub struct HttpStream {
 }
 
 impl HttpStream {
-    /// Construye el stream a partir de un reader ya abierto.
+    /// Builds the stream from a reader that is already open.
     pub fn new(
         inner: Box<dyn Read + Send + Sync>,
         info: StreamInfo,
@@ -116,7 +114,7 @@ impl HttpStream {
         &self.info
     }
 
-    /// El título que manda la estación, si manda alguno.
+    /// The title the station sends, if it sends one.
     pub fn now_playing(&self) -> NowPlaying {
         self.now_playing.clone()
     }
@@ -133,7 +131,7 @@ impl Read for HttpStream {
 impl Seek for HttpStream {
     fn seek(&mut self, pos: SeekFrom) -> io::Result<u64> {
         match pos {
-            // Quedarse donde se está es la única búsqueda posible.
+            // Staying where you are is the only seek there is.
             SeekFrom::Current(0) => Ok(self.position),
             SeekFrom::Start(n) if n == self.position => Ok(self.position),
             _ => Err(io::Error::new(
@@ -154,10 +152,10 @@ impl symphonia::core::io::MediaSource for HttpStream {
     }
 }
 
-/// Abre una URL y deja el audio listo para el decodificador.
+/// Opens a URL and leaves the audio ready for the decoder.
 ///
-/// Pide la metadata ICY: si el servidor la ofrece, el reader la saca del
-/// flujo y publica el título; si no, el audio pasa tal cual.
+/// Asks for ICY metadata: if the server offers it, the reader takes it out
+/// of the stream and publishes the title; if not, the audio passes through.
 pub fn open(url: &str) -> Result<HttpStream, StreamError> {
     let reply = ureq::get(url)
         .header("Icy-MetaData", "1")

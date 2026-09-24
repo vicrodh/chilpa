@@ -1,27 +1,28 @@
-//! Una petición HTTP hecha por cuenta de alguien más.
+//! An HTTP request made on someone else's behalf.
 //!
-//! Es lo que Chilpa hace cuando un plugin pide salir a la red (ADR-007). El
-//! plugin dice a dónde y con qué; **la credencial la pone Chilpa**, de este
-//! lado, y en la memoria del plugin nunca estuvo.
+//! It is what Chilpa does when a plugin asks to go out to the network
+//! (ADR-007). The plugin says where and with what; **Chilpa puts in the
+//! credential**, on this side, and it was never in the plugin's memory.
 //!
-//! Entra y sale JSON porque es lo que cualquier lenguaje sabe leer y lo que
-//! se puede mirar con los ojos cuando algo falla.
+//! JSON in and out, because it is what any language can read and what can be
+//! looked at by eye when something fails.
 //!
-//! Lo que este módulo no hace, a propósito: no decide si el dominio está
-//! permitido. Eso ya se revisó antes de llegar aquí, con el manifest en la
-//! mano, y repetirlo en dos lados es tener dos reglas que se pueden separar.
+//! What this module does not do, on purpose: it does not decide whether the
+//! domain is allowed. That was checked before getting here, with the
+//! manifest in hand, and repeating it in two places is having two rules that
+//! can drift apart.
 
 use std::collections::BTreeMap;
 use std::time::Duration;
 
-/// Cuánto se espera a que el otro lado conteste.
+/// How long to wait for the other side to answer.
 const TIMEOUT: Duration = Duration::from_secs(20);
 
-/// Cuánto se acepta de respuesta. Más que esto es alguien mandando un disco
-/// por una API, y no tiene por qué caber en memoria.
+/// How much of a reply is accepted. More than this is someone sending a
+/// record through an API, and it has no business fitting in memory.
 const MAX: usize = 8 * 1024 * 1024;
 
-/// Lo que se pidió, ya leído del JSON.
+/// What was asked for, already read out of the JSON.
 #[derive(Debug, Default)]
 struct Request {
     url: String,
@@ -30,10 +31,10 @@ struct Request {
     body: String,
 }
 
-/// Hace la petición y contesta JSON.
+/// Makes the request and answers in JSON.
 ///
-/// Nunca devuelve `Err`: un problema de red es una respuesta con `error`,
-/// porque del otro lado hay un plugin que solo entiende JSON.
+/// Never returns `Err`: a network problem is a reply carrying `error`,
+/// because on the other side is a plugin that only understands JSON.
 pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
     let p = match read(request_json) {
         Ok(p) => p,
@@ -48,8 +49,8 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
         .build()
         .new_agent();
 
-    // Los encabezados que de verdad se mandan. El plugin no puede poner su
-    // propia autorización: esa la pone Chilpa, de este lado.
+    // The headers that really go out. The plugin cannot set its own
+    // authorization: Chilpa sets that, on this side.
     let mut headers: Vec<(String, String)> = p
         .headers
         .iter()

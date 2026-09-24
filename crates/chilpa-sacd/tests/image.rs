@@ -1,5 +1,5 @@
-//! Una imagen de SACD armada a mano: tabla maestra, área estéreo con dos
-//! pistas y sectores de audio con su empaquetado real.
+//! A SACD image built by hand: master table, stereo area with two tracks,
+//! and audio sectors with their real packing.
 
 use chilpa_dsd::DsdSource;
 use chilpa_sacd::{open, Encoding, SacdError, SacdTrackReader, DATA_TYPE_AUDIO, SECTOR};
@@ -34,16 +34,16 @@ fn be32(v: u32) -> [u8; 4] {
     v.to_be_bytes()
 }
 
-/// Arma una imagen con dos pistas; `dst` marca el área como comprimida.
+/// Builds an image with two tracks; `dst` marks the area as compressed.
 fn build(dst: bool) -> TestImage {
     let mut img = TestImage::new();
 
     {
         let m = img.sector(510);
         m[..8].copy_from_slice(b"SACDMTOC");
-        m[8] = 1; // versión 1.20
+        m[8] = 1; // version 1.20
         m[9] = 20;
-        // Ranura del área estéreo: primaria, respaldo y tamaño en sectores.
+        // The stereo area slot: primary, backup and size in sectors.
         m[0x40..0x44].copy_from_slice(&be32(AREA_TOC_LSN));
         m[0x44..0x48].copy_from_slice(&be32(0));
         m[0x54..0x56].copy_from_slice(&3u16.to_be_bytes());
@@ -54,12 +54,12 @@ fn build(dst: bool) -> TestImage {
         a[..8].copy_from_slice(b"TWOCHTOC");
         a[0x14] = 4; // DSD64
         a[0x15] = if dst { 0 } else { 2 };
-        a[0x20] = 2; // dos canales
+        a[0x20] = 2; // two channels
         a[0x21] = 0;
-        a[0x40] = 0; // duración del área: 0:02:00
+        a[0x40] = 0; // area duration: 0:02:00
         a[0x41] = 2;
         a[0x42] = 0;
-        a[0x45] = 2; // dos pistas
+        a[0x45] = 2; // two tracks
         a[0x48..0x4c].copy_from_slice(&be32(AUDIO_START));
         a[0x4c..0x50].copy_from_slice(&be32(AUDIO_END));
     }
@@ -68,7 +68,7 @@ fn build(dst: bool) -> TestImage {
     {
         let t1 = img.sector(AREA_TOC_LSN + 1);
         t1[..8].copy_from_slice(b"SACDTRL1");
-        // Pista 1: sectores 550..559. Pista 2: 560..569.
+        // Track 1: sectors 550..559. Track 2: 560..569.
         t1[8..12].copy_from_slice(&be32(AUDIO_START));
         t1[12..16].copy_from_slice(&be32(AUDIO_START + 10));
         t1[SECOND_ARRAY..SECOND_ARRAY + 4].copy_from_slice(&be32(10));
@@ -77,14 +77,14 @@ fn build(dst: bool) -> TestImage {
     {
         let t2 = img.sector(AREA_TOC_LSN + 2);
         t2[..8].copy_from_slice(b"SACDTRL2");
-        // Arranques en 0:00:00 y 0:01:00; duraciones de 1 segundo cada una.
+        // Starts at 0:00:00 and 0:01:00; one second each.
         t2[8..12].copy_from_slice(&[0, 0, 0, 0]);
         t2[12..16].copy_from_slice(&[0, 1, 0, 0]);
         t2[SECOND_ARRAY..SECOND_ARRAY + 4].copy_from_slice(&[0, 1, 0, 0]);
         t2[SECOND_ARRAY + 4..SECOND_ARRAY + 4 + 4].copy_from_slice(&[0, 1, 0, 0]);
     }
 
-    // Sectores de audio: uno por sector, con su registro de frame-info.
+    // Audio sectors: one per sector, with its frame-info record.
     for (i, lsn) in (AUDIO_START..=AUDIO_END).enumerate() {
         let s = img.sector(lsn);
         s[0] = (1 << 5) | (1 << 2) | u8::from(dst);
@@ -96,8 +96,8 @@ fn build(dst: bool) -> TestImage {
         s[3] = 0;
         s[4] = (i / 75) as u8;
         s[5] = (i % 75) as u8;
-        // La carga: el byte n del canal izquierdo vale n y el derecho su
-        // complemento, intercalados byte a byte.
+        // The payload: byte n of the left channel is n and the right one its
+        // complement, interleaved byte by byte.
         for (k, b) in s[header_len..].iter_mut().enumerate() {
             let sample = ((i * len + k) / 2 % 251) as u8;
             *b = if k % 2 == 0 { sample } else { !sample };
@@ -132,7 +132,7 @@ fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
     let block = lector.next_block().unwrap().expect("hay audio");
     assert_eq!(block.len(), 2);
     assert_eq!(block[0].len(), 9408 / 2, "medio frame por canal");
-    // El izquierdo lleva la muestra y el derecho su complemento.
+    // The left one carries the sample and the right one its complement.
     for i in 0..16 {
         assert_eq!(block[1][i], !block[0][i], "los canales no se revolvieron");
     }

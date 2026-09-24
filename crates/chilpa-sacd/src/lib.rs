@@ -1,12 +1,13 @@
-//! Imágenes de SACD: leer el disco y entregar sus pistas como DSD.
+//! SACD images: read the disc and hand its tracks over as DSD.
 //!
-//! Una imagen de SACD es un archivo de sectores de 2048 bytes con dos tablas
-//! de contenido (la maestra y la del área estéreo) y un área de audio donde
-//! los bits de DSD viajan empaquetados por sector.
+//! A SACD image is a file of 2048-byte sectors with two tables of contents
+//! (the master one and the stereo area's) and an audio area where the DSD
+//! bits travel packed per sector.
 //!
-//! Este crate solo lee: nunca escribe en la imagen ni convierte la señal. Lo
-//! que entrega son los mismos bits que trae el disco, para que la ruta de DSD
-//! que ya existe (DoP o salida nativa) los mande al DAC sin tocarlos.
+//! This crate only reads: it never writes to the image nor converts the
+//! signal. What it hands over are the same bits the disc carries, so the DSD
+//! path that already exists (DoP or native output) sends them to the DAC
+//! untouched.
 
 pub mod frames;
 pub mod sector;
@@ -17,23 +18,23 @@ pub use toc::{open, SacdArea, SacdTrack};
 
 /// Un sector de SACD.
 pub const SECTOR: usize = 2048;
-/// Sectores por segundo de reproducción.
+/// Sectors per second of playback.
 pub const SECTORS_PER_SEC: u32 = 350;
-/// Un frame estéreo de DSD64 sin comprimir: 1/75 de segundo.
+/// An uncompressed stereo DSD64 frame: 1/75 of a second.
 pub const STEREO_FRAME: usize = 9408;
-/// La única tasa que usa el área estéreo del Scarlet Book.
+/// The only rate the Scarlet Book's stereo area uses.
 pub const DSD64_HZ: u32 = 2_822_400;
-/// El tipo de dato que marca audio en un paquete.
+/// The data type that marks audio in a packet.
 pub const DATA_TYPE_AUDIO: u16 = 2;
 
-/// Cómo vienen guardados los bits del área.
+/// How the area's bits are stored.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Encoding {
-    /// DSD sin comprimir, 3 bytes en 14.
+    /// Uncompressed DSD, 3 bytes in 14.
     Dsd3In14,
-    /// DSD sin comprimir, 3 bytes en 16.
+    /// Uncompressed DSD, 3 bytes in 16.
     Dsd3In16,
-    /// Comprimido con DST. Todavía no se puede reproducir.
+    /// DST compressed. Cannot be played yet.
     Dst,
 }
 
@@ -46,11 +47,11 @@ impl Encoding {
 #[derive(Debug)]
 pub enum SacdError {
     Open(std::io::Error),
-    /// La imagen no tiene la forma de un SACD.
+    /// The image is not shaped like a SACD.
     MalformedToc(String),
-    /// Un sector que no cuadra con lo que dice su encabezado.
+    /// A sector that does not add up to what its header says.
     BadSector { lsn: u64, why: String },
-    /// Algo que el disco trae pero todavía no manejamos.
+    /// Something the disc carries that we do not handle yet.
     Unsupported(String),
 }
 
@@ -79,7 +80,7 @@ pub(crate) fn be32(b: &[u8], at: usize) -> u32 {
     u32::from_be_bytes([b[at], b[at + 1], b[at + 2], b[at + 3]])
 }
 
-/// Un código de tiempo del disco (minutos, segundos, frames de 1/75 s) en
+/// A disc timecode (minutes, seconds, 1/75 s frames) in
 /// frames.
 pub(crate) fn timecode_frames(b: &[u8], at: usize) -> u32 {
     (u32::from(b[at]) * 60 + u32::from(b[at + 1])) * 75 + u32::from(b[at + 2])
@@ -91,8 +92,8 @@ mod tests {
 
     #[test]
     fn a_stereo_frame_lasts_one_seventy_fifth_of_a_second() {
-        // 2 822 400 bits por canal y por segundo, 8 bits por byte, 2 canales,
-        // 75 frames por segundo.
+        // 2,822,400 bits per channel per second, 8 bits per byte, 2 channels,
+        // 75 frames per second.
         assert_eq!(DSD64_HZ as usize / 8 * 2 / 75, STEREO_FRAME);
     }
 
