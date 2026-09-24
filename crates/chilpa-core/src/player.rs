@@ -244,6 +244,10 @@ fn play(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
+    // What the samples meet after Chilpa hands them over. The delivery
+    // cannot see that far, and a verdict that ignores it says bit-perfect
+    // over a resampler.
+    let exact_path = crate::path_is_exact(device);
     let (stop, pause, skip) = (&controls.stop, &controls.pause, &controls.skip);
     let paths = queue.to_vec();
     let paths = paths.as_slice();
@@ -283,7 +287,7 @@ fn play(
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
-                bit_perfect: delivery.is_bit_perfect(),
+                bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames,
                 tags,
                 artwork,
@@ -331,6 +335,7 @@ fn play_stream(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
+    let exact_path = crate::path_is_exact(device);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
     let stream = chilpa_stream::open_parts(&parts)
@@ -357,7 +362,7 @@ fn play_stream(
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
-                bit_perfect: delivery.is_bit_perfect(),
+                bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames: None,
                 tags: Some(tag.clone()),
                 artwork: None,

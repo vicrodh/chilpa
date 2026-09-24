@@ -35,6 +35,7 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
         stacks.push(Box::new(chilpa_alsa::System));
         stacks.push(Box::new(chilpa_alsa::Alsa));
         stacks.push(Box::new(chilpa_pipewire::PipeWire));
+        stacks.push(Box::new(chilpa_pulse::Pulse));
     }
     stacks.push(Box::new(chilpa_audio::capture::FileBackend::new(super::capture_path())));
     stacks
@@ -118,6 +119,37 @@ mod tests {
         // resampled without being told.
         assert!(resolve("oss:dsp0").is_none());
         assert!(resolve("hw:1,0").is_none(), "a bare id names no stack");
+    }
+
+    #[test]
+    fn only_a_stack_that_can_be_exact_lets_a_verdict_say_so() {
+        // The bug this closes, caught by playing a track: the delivery only
+        // knows what Chilpa did to the samples, and handing them to a server
+        // that resamples leaves every transform empty. So the window said
+        // "bit-perfect" in green over PulseAudio, which mixes every program
+        // together and resamples the result -- the exact claim this project
+        // exists to stop making.
+        for info in described() {
+            for output in outputs_of(info.kind) {
+                let exact = super::super::path_is_exact(&output.id);
+                let never = info.fidelity == chilpa_audio::backend::Fidelity::Never;
+                assert_eq!(exact, !never, "{} disagrees with its stack", output.id);
+                assert!(
+                    !(never && output.bit_perfect),
+                    "{} is marked bit-perfect on a stack that never is",
+                    output.id
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn an_output_nobody_has_heard_of_is_never_called_exact() {
+        // The safe answer to "did the samples survive" is never yes when
+        // nothing is known about the road.
+        assert!(!super::super::path_is_exact("oss:dsp0"));
+        assert!(!super::super::path_is_exact("hw:1,0"));
+        assert!(!super::super::path_is_exact(""));
     }
 
     #[test]

@@ -76,8 +76,18 @@ pub struct Delivery {
 }
 
 impl Delivery {
-    /// Bit-perfect means no transformation changed a sample.
-    pub fn is_bit_perfect(&self) -> bool {
+    /// Whether anything Chilpa did to the samples changed one.
+    ///
+    /// **This is not the whole of bit-perfect and its name says so.** It
+    /// knows what happened up to the moment the samples were handed over,
+    /// and nothing about what happens after. Handing them to a server that
+    /// mixes and resamples leaves every transform here empty, so a verdict
+    /// built on this alone reads "bit-perfect" over a resampler -- which is
+    /// the exact claim this project exists to stop making.
+    ///
+    /// What happens afterwards is the stack's `Fidelity`, and whoever
+    /// reports a verdict has to put the two together.
+    pub fn nothing_was_converted(&self) -> bool {
         self.transforms.iter().all(|t| t.preserves_samples())
     }
 }
@@ -187,7 +197,7 @@ mod tests {
         let d = negotiate(request, &codec_de_laptop(), Policy::AllowAnything).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32, "it fits in 32, nothing is truncated");
         assert_eq!(d.opened.sample_rate_hz, 48_000);
-        assert!(!d.is_bit_perfect(), "resampling is never bit-perfect");
+        assert!(!d.nothing_was_converted(), "resampling is never bit-perfect");
         assert!(
             d.transforms.iter().any(|t| matches!(t, Transform::Resampled { .. })),
             "it was said that it resampled: {:?}",
@@ -212,7 +222,7 @@ mod tests {
             "the truncation has to show up: {:?}",
             d.transforms
         );
-        assert!(!d.is_bit_perfect(), "truncating does not keep the samples");
+        assert!(!d.nothing_was_converted(), "truncating does not keep the samples");
     }
 
     use super::*;
@@ -234,7 +244,7 @@ mod tests {
     fn what_the_device_accepts_is_opened_as_is() {
         let d = negotiate(cd(), &caps(&[44_100], &[SampleFormat::S16]), Policy::BitPerfect).unwrap();
         assert_eq!(d.opened, cd());
-        assert!(d.is_bit_perfect());
+        assert!(d.nothing_was_converted());
     }
 
     #[test]
@@ -250,7 +260,7 @@ mod tests {
         let d = negotiate(cd(), &caps, Policy::AllowWidening).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32);
         assert_eq!(d.transforms, vec![Transform::Widened { from_bits: 16, to_bits: 32 }]);
-        assert!(d.is_bit_perfect(), "a shift does not change the value");
+        assert!(d.nothing_was_converted(), "a shift does not change the value");
     }
 
     #[test]
@@ -259,7 +269,7 @@ mod tests {
         let d = negotiate(cd(), &caps, Policy::AllowAnything).unwrap();
         assert!(d.transforms.contains(&Transform::Resampled { from_hz: 44_100, to_hz: 48_000 }));
         assert!(d.transforms.contains(&Transform::Floated));
-        assert!(!d.is_bit_perfect());
+        assert!(!d.nothing_was_converted());
     }
 
     #[test]

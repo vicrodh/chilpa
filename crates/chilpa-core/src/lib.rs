@@ -254,15 +254,20 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
         Some((chilpa_audio::backend::BackendKind::File, _)) => {
             Ok(chilpa_audio::capture::capabilities())
         }
-        Some((chilpa_audio::backend::BackendKind::PipeWire, sink)) => {
-            // The plugin takes the format it is handed, so what a sink
-            // accepts is what the card under it accepts. Measuring that
-            // means opening it, and opening a server sink to measure it
-            // takes it from whoever is using it. Until there is a way to ask
-            // without taking, this says what the plugin will take.
-            let _ = sink;
-            Ok(chilpa_audio::capture::capabilities())
-        }
+        // A server takes whatever it is handed and makes it fit, so there
+        // is nothing here that would refuse a format. What it does to the
+        // samples on the way is the stack's `fidelity`, and that is said
+        // where an output is chosen rather than smuggled in as a capability.
+        //
+        // Measuring for real would mean opening the sink, and opening one to
+        // measure it takes it from whoever is using it -- which is exactly
+        // what a listing must never do.
+        Some((
+            chilpa_audio::backend::BackendKind::PipeWire
+            | chilpa_audio::backend::BackendKind::Pulse
+            | chilpa_audio::backend::BackendKind::Jack,
+            _,
+        )) => Ok(chilpa_audio::capture::capabilities()),
         Some((_, bare)) => chilpa_alsa::probe(bare),
         None => Err(unknown_output(id)),
     }
@@ -280,6 +285,32 @@ fn open_output(
     // Exclusively, always. A player whose whole claim is bit-perfect asks
     // for the output to itself; a stack that has nothing like it ignores it.
     stack.open(&bare, format, true)
+}
+
+/// Whether the road past Chilpa leaves the samples alone.
+///
+/// A delivery only knows what Chilpa itself did. Handing samples to a server
+/// that mixes and resamples leaves every transform empty, so a verdict built
+/// on the delivery alone reads "bit-perfect" over a resampler -- which is
+/// the exact claim this project exists to stop making, and which it made for
+/// one afternoon before this existed.
+///
+/// An identifier that names no stack is not exact, because nothing is known
+/// about it and the safe answer to "did the samples survive" is never yes.
+pub fn path_is_exact(device: &str) -> bool {
+    use chilpa_audio::backend::Fidelity;
+    backends::resolve(device)
+        .map(|(stack, _)| match stack.info().fidelity {
+            Fidelity::Exact => true,
+            // "It depends" depends on being handed the output alone, and
+            // Chilpa always asks for it that way -- a player whose whole
+            // claim is bit-perfect does not share the DAC. The day there is
+            // a setting to share it, this is the line that changes, and the
+            // verdict has to change with it rather than keep saying yes.
+            Fidelity::Depends => true,
+            Fidelity::Never => false,
+        })
+        .unwrap_or(false)
 }
 
 /// The error for an identifier that names no stack this build has.
@@ -361,7 +392,7 @@ impl Core {
             Outcome::Finished { frames } | Outcome::Stopped { frames } => Ok(PlayedSummary {
                 frames,
                 quality,
-                bit_perfect: played.delivery.is_bit_perfect(),
+                bit_perfect: played.delivery.nothing_was_converted(),
             }),
             Outcome::Failed { frames, error } => {
                 Err(chilpa_i18n::t_args(

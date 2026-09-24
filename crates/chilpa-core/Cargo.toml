@@ -27,3 +27,4 @@ workspace = true
 [target.'cfg(target_os = "linux")'.dependencies]
 chilpa-alsa.workspace = true
 chilpa-pipewire.workspace = true
+chilpa-pulse.workspace = true

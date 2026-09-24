@@ -212,7 +212,7 @@ mod tests {
 
         assert_eq!(played.carrier_hz, 176_400);
         assert_eq!(played.delivery.opened.sample_rate_hz, 176_400);
-        assert!(played.delivery.is_bit_perfect());
+        assert!(played.delivery.nothing_was_converted());
 
         // First word: marker 0x05 and the file's payload, justified.
         let first = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
