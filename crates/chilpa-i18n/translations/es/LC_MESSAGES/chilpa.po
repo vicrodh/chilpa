@@ -942,6 +942,9 @@ msgstr "la versión"
 msgid "the wait ran out"
 msgstr "se acabó la espera"
 
+msgid "there is no audio output on this platform yet"
+msgstr "todavía no hay salida de audio en esta plataforma"
+
 msgid "there is no disc in the drive"
 msgstr "no hay disco en la unidad"
 

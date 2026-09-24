@@ -3,8 +3,12 @@
 //! No frontend talks to this crate. The only public door is `chilpa-api`
 //! (ADR-001); the implementation lives in here.
 
-#[cfg(target_os = "linux")]
 pub mod analysis_job;
+// A CD drive is read through `chilpa-cd`, which is ioctls and therefore
+// Linux. The module follows its dependency; everything else in this crate
+// does not, and a `cfg` here on anything that has no reason for one is what
+// ADR-010 calls a lie with a date on it.
+#[cfg(target_os = "linux")]
 pub mod cd_playback;
 pub mod dsd_playback;
 pub mod playback;
@@ -180,6 +184,21 @@ pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chi
     }
 }
 
+/// The same where there is no backend yet.
+///
+/// ADR-010 deuda M2: Windows, macOS and Android have no output backend, so
+/// there is nothing to measure. It says so and the facade goes on
+/// compiling; what it must never do is not exist, because then the shell
+/// stops building and the platform quietly leaves the workspace.
+#[cfg(not(target_os = "linux"))]
+pub fn probe_device(
+    _id: &str,
+) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+    Err(chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
+        "there is no audio output on this platform yet",
+    )))
+}
+
 /// Starts a player wired to the machine's real outputs.
 #[cfg(target_os = "linux")]
 pub fn spawn_player() -> player::Player {
@@ -213,6 +232,29 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     )
 }
 
+/// The same where there is no backend yet (ADR-010 deuda M2).
+///
+/// A real player over a device that refuses to open: the queue, the signals
+/// and the events all work, and what fails is the one thing that actually is
+/// missing. That is what makes the rest of the engine testable on a platform
+/// whose audio nobody has written.
+#[cfg(not(target_os = "linux"))]
+pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
+    let _ = tap;
+    fn nothing_yet<T>() -> Result<T, chilpa_audio::sink::SinkError> {
+        Err(chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
+            "there is no audio output on this platform yet",
+        )))
+    }
+    player::Player::spawn(Box::new(|_| nothing_yet()), Box::new(|_, _| nothing_yet()))
+}
+
+/// The same where there is no backend yet (ADR-010 deuda M2).
+#[cfg(not(target_os = "linux"))]
+pub fn spawn_player() -> player::Player {
+    spawn_player_with(chilpa_audio::tap::Tap::new())
+}
+
 /// What the core tells the facade when something has finished playing.
 pub struct PlayedSummary {
     pub frames: u64,
@@ -226,6 +268,17 @@ impl Core {
     /// It is the vertical slice's minimum path: decode, measure the
     /// device, negotiate and deliver. The error comes out already written for
     /// the UI, because the facade does not know the types in here.
+    /// The same where there is no backend yet (ADR-010 deuda M2).
+    #[cfg(not(target_os = "linux"))]
+    pub fn play_local(
+        &mut self,
+        _path: &std::path::Path,
+        _device: &str,
+        _bit_perfect: bool,
+    ) -> Result<PlayedSummary, String> {
+        Err(chilpa_i18n::t("there is no audio output on this platform yet"))
+    }
+
     #[cfg(target_os = "linux")]
     pub fn play_local(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) -> Result<PlayedSummary, String> {
         use chilpa_audio::negotiate::Policy;
