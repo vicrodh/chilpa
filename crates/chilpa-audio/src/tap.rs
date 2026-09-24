@@ -1,57 +1,57 @@
-//! Mirar lo que sale, sin tocarlo.
+//! Watching what goes out, without touching it.
 //!
-//! Un visualizador necesita las muestras que de verdad se entregaron. La
-//! única forma honesta de dárselas es copiarlas **después** de empaquetarlas
-//! y **antes** de escribirlas, sin cambiar un solo byte de lo que va al
-//! dispositivo.
+//! A visualizer needs the samples that were really delivered. The only
+//! honest way to give it them is to copy them **after** packing and
+//! **before** writing, without changing a single byte of what goes to the
+//! device.
 //!
-//! Tres reglas que hacen que esto no se coma el bit-perfect ni el CPU:
+//! Three rules that keep this from eating bit-perfect or the CPU:
 //!
-//! 1. **Lo que se entrega no se modifica nunca.** [`TapSink`] copia y
-//!    reenvía; lo que escribe es exactamente lo que le dieron, y solo lo que
-//!    el dispositivo aceptó cuenta como entregado.
-//! 2. **La copia es de tamaño fijo y se pisa.** Un búfer circular chico: si
-//!    nadie mira, lo viejo se tira. Nunca crece, nunca bloquea al audio.
-//! 3. **Si el candado está ocupado, se salta la copia.** El hilo que suena
-//!    no espera al que dibuja. Perder un cuadro de un visualizador no le
-//!    importa a nadie; un hueco en el audio sí.
+//! 1. **What is delivered is never modified.** [`TapSink`] copies and
+//!    forwards; what it writes is exactly what it was given, and only what
+//!    the device accepted counts as delivered.
+//! 2. **The copy is fixed-size and overwrites itself.** A small ring
+//!    buffer: if nobody looks, the old is dropped. It never grows and never
+//!    blocks the audio.
+//! 3. **If the lock is busy, the copy is skipped.** The thread that plays
+//!    does not wait for the one that draws. Losing a visualizer frame
+//!    matters to nobody; a gap in the audio does.
 
 use crate::format::{SampleFormat, StreamFormat};
 use crate::sink::{AudioSink, SinkError};
 use std::sync::{Arc, Mutex};
 
-/// Cuántos frames se guardan para mirar. A 192 kHz son unos 43 ms, que es
-/// más de lo que cabe en un cuadro de pantalla.
+/// How many frames are kept to look at. At 192 kHz that is about 43 ms,
+/// which is more than fits in a screen frame.
 pub const FRAMES_KEPT: usize = 8192;
 
-/// Lo último que salió, para quien lo quiera dibujar.
+/// The last thing that went out, for whoever wants to draw it.
 #[derive(Clone, Default)]
 pub struct Tap(Arc<Mutex<State>>);
 
 #[derive(Default)]
 struct State {
-    /// Muestras normalizadas a -1.0..1.0, intercaladas por canal.
+    /// Samples normalized to -1.0..1.0, interleaved by channel.
     samples: Vec<f32>,
-    /// Dónde va la escritura dentro del círculo.
+    /// Where the write head is inside the ring.
     cursor: usize,
     channels: u16,
     sample_rate_hz: u32,
-    /// Cuántos frames se han copiado desde que se abrió.
+    /// How many frames have been copied since it opened.
     frames: u64,
 }
 
-/// Una foto de lo que acaba de salir.
+/// A snapshot of what just went out.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct Snapshot {
-    /// Las muestras en orden cronológico, intercaladas por canal.
+    /// The samples in chronological order, interleaved by channel.
     pub samples: Vec<f32>,
     pub channels: u16,
     pub sample_rate_hz: u32,
-    /// El pico por canal en lo que se guardó, de 0.0 a 1.0.
+    /// The per-channel peak of what was kept, from 0.0 to 1.0.
     pub peaks: Vec<f32>,
-    /// La raíz cuadrática media por canal, que es lo que se oye como
-    /// volumen.
-    pub rms: Vec<f32>,
+    /// The per-channel RMS, which is what is heard as loudness.
+        pub rms: Vec<f32>,
 }
 
 impl Tap {
@@ -59,7 +59,7 @@ impl Tap {
         Self::default()
     }
 
-    /// Prepara el círculo para un formato. Se llama al abrir el dispositivo.
+    /// Prepares the ring for a format. Called when the device opens.
     fn prepare(&self, format: StreamFormat) {
         if let Ok(mut e) = self.0.lock() {
             let channels = format.channels.max(1);
@@ -71,7 +71,7 @@ impl Tap {
         }
     }
 
-    /// Copia lo que se entregó. Si el candado está ocupado, no hace nada.
+    /// Copies what was delivered. If the lock is busy, it does nothing.
     fn copy(&self, bytes: &[u8], format: StreamFormat) {
         let Ok(mut e) = self.0.try_lock() else { return };
         if e.samples.is_empty() {
@@ -94,15 +94,15 @@ impl Tap {
         e.frames += (written / channels) as u64;
     }
 
-    /// Lo último que salió, en orden cronológico.
+    /// The last thing that went out, in chronological order.
     pub fn snapshot(&self) -> Snapshot {
         let Ok(e) = self.0.lock() else { return Snapshot::default() };
         if e.samples.is_empty() {
             return Snapshot::default();
         }
         let channels = e.channels.max(1) as usize;
-        // El círculo se endereza: de la posición del cursor en adelante es
-        // lo más viejo.
+        // The ring is straightened: from the cursor onwards is the oldest
+        // part.
         let mut samples = Vec::with_capacity(e.samples.len());
         samples.extend_from_slice(&e.samples[e.cursor..]);
         samples.extend_from_slice(&e.samples[..e.cursor]);
@@ -126,12 +126,12 @@ impl Tap {
         }
     }
 
-    /// Cuántos frames se han copiado.
+    /// How many frames have been copied.
     pub fn frames(&self) -> u64 {
         self.0.lock().map(|e| e.frames).unwrap_or(0)
     }
 
-    /// Envuelve un dispositivo para mirar lo que se le entrega.
+    /// Wraps a device to watch what is delivered to it.
     pub fn wrap<S: AudioSink>(&self, sink: S) -> TapSink<S> {
         let format = sink.format();
         self.prepare(format);
@@ -139,7 +139,7 @@ impl Tap {
     }
 }
 
-/// Un dispositivo envuelto: copia lo entregado y lo pasa tal cual.
+/// A wrapped device: it copies what is delivered and passes it through.
 pub struct TapSink<S: AudioSink> {
     inner: S,
     tap: Tap,
@@ -152,8 +152,8 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        // Primero se escribe, luego se copia lo que el dispositivo aceptó:
-        // copiar de más mostraría muestras que nunca sonaron.
+        // Write first, then copy what the device accepted: copying more would
+        // show samples that never played.
         let accepted = self.inner.write(frames)?;
         let bytes = accepted * self.format.frame_bytes();
         if let Some(delivered) = frames.get(..bytes) {
@@ -171,21 +171,21 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     }
 }
 
-/// Una muestra empaquetada, llevada a -1.0..1.0.
+/// A packed sample, taken to -1.0..1.0.
 fn normalize(bytes: &[u8], format: SampleFormat) -> f32 {
     match format {
         SampleFormat::S16 => {
             let v = i16::from_le_bytes([bytes[0], bytes[1]]);
             f32::from(v) / 32_768.0
         }
-        // S24In32 va justificado a la izquierda, así que se lee igual que
-        // un entero de 32 bits.
+        // S24In32 is left-justified, so it reads the same as a 32-bit
+        // integer.
         SampleFormat::S24In32 | SampleFormat::S32 => {
             let v = i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
             v as f32 / 2_147_483_648.0
         }
         SampleFormat::S24Packed => {
-            // Tres bytes con signo: se estiran a 32 para leerlos.
+            // Three signed bytes: sign-extended to 32 to read them.
             let v = i32::from_le_bytes([0, bytes[0], bytes[1], bytes[2]]);
             v as f32 / 2_147_483_648.0
         }
@@ -203,7 +203,7 @@ mod tests {
     struct MirrorSink {
         format: StreamFormat,
         written: Rc<RefCell<Vec<u8>>>,
-        /// Cuántos frames acepta por escritura, o todos si es cero.
+        /// How many frames it takes per write, or all of them if zero.
         tope: usize,
     }
 
@@ -227,7 +227,7 @@ mod tests {
         MirrorSink { format, written: Rc::new(RefCell::new(Vec::new())), tope }
     }
 
-    /// Una rampa de 16 bits en estéreo.
+    /// A 16-bit stereo ramp.
     fn ramp(frames: usize) -> Vec<u8> {
         let mut v = Vec::with_capacity(frames * 4);
         for i in 0..frames {
@@ -264,7 +264,7 @@ mod tests {
     fn only_what_the_device_accepted_is_copied() {
         let format = StreamFormat::new(SampleFormat::S16, 44_100, 2);
         let tap = Tap::new();
-        // Acepta 10 frames por escritura; se le dan 100.
+        // It takes 10 frames per write; it is given 100.
         let mut s = tap.wrap(mirror(format, 10));
         let accepted = s.write(&ramp(100)).unwrap();
         assert_eq!(accepted, 10);
@@ -277,7 +277,7 @@ mod tests {
         let tap = Tap::new();
         let mut s = tap.wrap(mirror(format, 0));
 
-        // Izquierdo a tope, derecho en silencio, llenando el círculo.
+        // Left at full scale, right silent, filling the ring.
         let mut data = Vec::new();
         for _ in 0..FRAMES_KEPT {
             data.extend_from_slice(&i16::MAX.to_le_bytes());
@@ -300,7 +300,7 @@ mod tests {
         let tap = Tap::new();
         let mut s = tap.wrap(mirror(format, 0));
 
-        // Se escribe más de lo que cabe: lo viejo se pisa.
+        // More is written than fits: the old is overwritten.
         let mut data = Vec::new();
         for i in 0..(FRAMES_KEPT + 100) {
             data.extend_from_slice(&((i % 1000) as i16).to_le_bytes());
@@ -309,7 +309,7 @@ mod tests {
 
         let snapshot = tap.snapshot();
         assert_eq!(snapshot.samples.len(), FRAMES_KEPT);
-        // La última muestra es la última escrita, no una de en medio.
+        // The last sample is the last one written, not one from the middle.
         let ultima = (((FRAMES_KEPT + 99) % 1000) as i16) as f32 / 32_768.0;
         let vista = *snapshot.samples.last().unwrap();
         assert!((vista - ultima).abs() < 1e-6, "quedó {vista}, se esperaba {ultima}");
@@ -328,7 +328,7 @@ mod tests {
         assert_eq!(normalize(&i16::MIN.to_le_bytes(), SampleFormat::S16), -1.0);
         assert!((normalize(&i32::MAX.to_le_bytes(), SampleFormat::S32) - 1.0).abs() < 1e-6);
         assert_eq!(normalize(&1.0f32.to_le_bytes(), SampleFormat::F32), 1.0);
-        // Los 24 bits empaquetados van en tres bytes: el tope es 0x7FFFFF.
+        // The packed 24 bits go in three bytes: the top is 0x7FFFFF.
         assert!((normalize(&[0xFF, 0xFF, 0x7F], SampleFormat::S24Packed) - 1.0).abs() < 1e-4);
     }
 }

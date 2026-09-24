@@ -1,23 +1,24 @@
-//! Qué se le pide al dispositivo y qué se abrió de verdad.
+//! What is asked of the device and what actually opened.
 //!
-//! La auditoría encontró tres formas distintas del mismo error en QBZ: con la
-//! salida en modo directo, si el dispositivo no aceptaba el formato, se caía
-//! en silencio a `plughw` (que resamplea) o al mixer compartido, y la UI
-//! seguía diciendo "bit-perfect". Aquí no hay caída silenciosa: o se abre lo
-//! que se pidió, o se dice exactamente qué se cambió, o se rechaza.
+//! The audit found three different shapes of the same bug in QBZ: with the
+//! output in direct mode, if the device would not take the format, it fell
+//! silently back to `plughw` (which resamples) or to the shared mixer, and
+//! the UI kept saying "bit-perfect". Here there is no silent fallback:
+//! either what was asked for opens, or exactly what changed is stated, or
+//! it is refused.
 
 use crate::format::{SampleFormat, StreamFormat};
 
-/// Lo que el dispositivo declara aceptar.
+/// What the device declares it accepts.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct DeviceCaps {
     pub sample_rates: Vec<u32>,
     pub formats: Vec<SampleFormat>,
     pub channels: Vec<u16>,
-    /// Cierto si estas capacidades se midieron abriendo el dispositivo. Las
-    /// adivinadas no sirven para decidir bit-perfect: el asistente de QBZ
-    /// escribía una lista de frecuencias supuestas y apagaba el resampleo,
-    /// que es peor que no saber.
+    /// True when these caps were measured by opening the device. Guessed ones
+    /// are no good for deciding bit-perfect: the QBZ wizard wrote a list of
+    /// assumed rates and turned resampling off, which is worse than not
+    /// knowing.
     pub probed: bool,
 }
 
@@ -29,44 +30,44 @@ impl DeviceCaps {
     }
 }
 
-/// Qué tanto se permite tocar la señal.
+/// How much the signal may be touched.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Policy {
-    /// No se toca ni un bit. Si el dispositivo no puede, se falla.
+    /// Not one bit is touched. If the device cannot, it fails.
     BitPerfect,
-    /// Se permite acomodar la muestra en un formato más grande, que es
-    /// exacto, pero nunca resamplear ni convertir a flotante.
+    /// The sample may be laid out in a wider format, which is exact, but
+    /// never resampled nor converted to float.
     AllowWidening,
-    /// Se permite lo que sea con tal de que suene.
+    /// Anything goes, as long as it plays.
     AllowAnything,
 }
 
-/// Cada cosa que le pasó a la señal entre el decodificador y el DAC.
+/// Each thing that happened to the signal between decoder and DAC.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Transform {
-    /// Se acomodó en más bits con un corrimiento. No pierde información.
+    /// Laid out in more bits with a shift. Loses nothing.
     Widened { from_bits: u8, to_bits: u8 },
-    /// Se recortaron bits. Sí pierde información, y por eso se dice.
+    /// Bits were dropped. That does lose information, which is why it is said.
     Narrowed { from_bits: u8, to_bits: u8 },
     Resampled { from_hz: u32, to_hz: u32 },
-    /// Pasó por flotantes: el dispositivo convierte.
+    /// It went through floats: the device converts.
     Floated,
-    /// Se mezcló con otras aplicaciones.
+    /// It was mixed with other applications.
     Mixed,
-    /// Se le aplicó volumen por software.
+    /// Software volume was applied to it.
     VolumeApplied,
 }
 
 impl Transform {
-    /// Cierto si la muestra que llega al DAC es la misma que salió del
-    /// decodificador. Ensanchar conserva el valor; lo demás no.
+    /// True when the sample reaching the DAC is the same one that left the
+    /// decoder. Widening keeps the value; nothing else does.
     pub fn preserves_samples(self) -> bool {
         matches!(self, Transform::Widened { .. })
     }
 }
 
-/// Lo que de verdad se abrió. Es el único lugar que puede decir si la salida
-/// es bit-perfect, y lo dice a partir de los hechos, no de un ajuste.
+/// What actually opened. It is the only place that can say whether the
+/// output is bit-perfect, and it says so from the facts, not from a setting.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Delivery {
     pub requested: StreamFormat,
@@ -75,7 +76,7 @@ pub struct Delivery {
 }
 
 impl Delivery {
-    /// Bit-perfect es que ninguna transformación haya cambiado una muestra.
+    /// Bit-perfect means no transformation changed a sample.
     pub fn is_bit_perfect(&self) -> bool {
         self.transforms.iter().all(|t| t.preserves_samples())
     }
@@ -83,13 +84,13 @@ impl Delivery {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum NegotiationError {
-    /// El dispositivo no acepta el formato y la política no deja convertir.
+    /// The device will not take the format and the policy forbids converting.
     Unsupported { requested: StreamFormat, policy: Policy },
-    /// Las capacidades no se midieron; no se puede prometer bit-perfect.
+    /// The caps were not measured; bit-perfect cannot be promised.
     CapsNotProbed,
 }
 
-/// Decide con qué formato abrir. Regresa lo que se abre y lo que costó.
+/// Decides what format to open at. Returns what opens and what it cost.
 pub fn negotiate(
     requested: StreamFormat,
     caps: &DeviceCaps,
@@ -105,7 +106,7 @@ pub fn negotiate(
         return Err(NegotiationError::Unsupported { requested, policy });
     }
 
-    // Ensanchar es exacto: misma frecuencia, mismos canales, más bits.
+    // Widening is exact: same rate, same channels, more bits.
     let widened = caps
         .formats
         .iter()
@@ -129,12 +130,12 @@ pub fn negotiate(
         return Err(NegotiationError::Unsupported { requested, policy });
     }
 
-    // Último recurso: lo que el dispositivo acepte, diciendo qué se perdió.
+    // Last resort: whatever the device takes, saying what was lost.
     //
-    // De los formatos que ofrece se elige el que menos daño hace: primero el
-    // entero más angosto que todavía quepa lo pedido, y si ninguno cabe, el
-    // más ancho que haya. Tomar el primero de la lista tiraba 24 bits a 16
-    // en un dispositivo que también sabe 32, sin decirlo.
+    // Of the formats offered, the one that does least harm is picked: first
+    // the narrowest integer that still fits what was asked, and if none
+    // fits, the widest there is. Taking the first of the list threw 24 bits
+    // down to 16 on a device that also does 32, without saying so.
     let requests = requested.sample_format.valid_bits();
     let format = caps
         .formats
@@ -167,8 +168,8 @@ pub fn negotiate(
 
 #[cfg(test)]
 mod tests {
-    /// Un dispositivo que ofrece 16 y 32 bits, nada más a 48 kHz: el caso
-    /// del códec de una laptop.
+    /// A device offering 16 and 32 bits, only at 48 kHz: the case of a
+    /// laptop codec.
     fn codec_de_laptop() -> DeviceCaps {
         DeviceCaps {
             sample_rates: vec![48_000],
@@ -180,8 +181,8 @@ mod tests {
 
     #[test]
     fn when_resampling_is_needed_no_bits_are_thrown_in_for_free() {
-        // 24/88.2 no cabe: hay que remuestrear. Pero el dispositivo sabe 32
-        // bits, así que recortar a 16 sería una pérdida de más.
+        // 24/88.2 does not fit: it has to resample. But the device does 32
+        // bits, so cutting down to 16 would be a loss too many.
         let request = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
         let d = negotiate(request, &codec_de_laptop(), Policy::AllowAnything).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32, "cabe en 32, no se recorta");
@@ -196,7 +197,7 @@ mod tests {
 
     #[test]
     fn dropping_bits_is_reported() {
-        // Un dispositivo que solo sabe 16 bits: a 24 no le queda de otra.
+        // A device that only knows 16 bits: 24 has no other option.
         let caps = DeviceCaps {
             sample_rates: vec![48_000],
             formats: vec![SampleFormat::S16],

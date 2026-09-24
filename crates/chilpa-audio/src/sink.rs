@@ -1,63 +1,62 @@
-//! El dispositivo visto desde el motor.
+//! The device as the engine sees it.
 //!
-//! Dos cosas que la auditoría encontró rotas en QBZ y que aquí son parte del
-//! tipo, no del cuidado de quien programa:
+//! Two things the audit found broken in QBZ that here are part of the type,
+//! not of the programmer's care:
 //!
-//! 1. **Una escritura que falla no es un fin de pista.** En QBZ, si el DAC se
-//!    desconectaba o se trababa, el fallo se veía igual que "se acabó la
-//!    pista", y la cola entera se saltaba sin decir nada.
-//! 2. **Parar nunca espera al dispositivo.** Si el endpoint dejaba de mandar
-//!    eventos, el escritor se bloqueaba para siempre y `stop()` se quedaba en
-//!    deadlock. Aquí toda espera tiene límite y parar solo levanta una
-//!    bandera.
+//! 1. **A failed write is not the end of a track.** In QBZ, if the DAC was
+//!    unplugged or jammed, the failure looked exactly like "the track
+//!    ended", and the whole queue skipped through without a word.
+//! 2. **Stopping never waits for the device.** If the endpoint stopped
+//!    sending events, the writer blocked forever and `stop()` deadlocked.
+//!    Here every wait has a limit and stopping only raises a flag.
 
 use crate::format::StreamFormat;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
 
-/// Lo que puede salir mal al escribirle al dispositivo. Ninguna de estas es
+/// What can go wrong writing to the device. None of these is
 /// un final normal.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum SinkError {
-    /// El dispositivo desapareció: desconectado, apagado o tomado por otro.
+    /// The device vanished: unplugged, powered off, or taken by someone else.
     DeviceLost,
-    /// Se quedó sin datos y hubo que recuperarlo. Se puede seguir.
+    /// It ran dry and had to be recovered. Playing can continue.
     Xrun,
-    /// No respondió dentro del límite. Se trata como pérdida, no como
-    /// paciencia infinita.
+    /// It did not answer within the limit. Treated as a loss, not as
+    /// infinite patience.
     Timeout(Duration),
-    /// Ya estaba cerrado.
+    /// It was already closed.
     Closed,
-    /// Cualquier otra falla del backend, con su texto.
+    /// Any other backend failure, with its text.
     Backend(String),
 }
 
 impl SinkError {
-    /// Cierto si tiene caso seguir escribiendo.
+    /// True when it is worth writing more.
     pub fn is_recoverable(&self) -> bool {
         matches!(self, SinkError::Xrun)
     }
 }
 
-/// Un dispositivo de salida abierto.
+/// An open output device.
 pub trait AudioSink {
-    /// Con qué formato quedó abierto de verdad.
+    /// The format it actually ended up open at.
     fn format(&self) -> StreamFormat;
 
-    /// Escribe frames y regresa cuántos aceptó. Puede aceptar menos: quien
-    /// llama reintenta el resto.
+    /// Writes frames and returns how many it took. It may take fewer: the
+    /// caller retries the rest.
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError>;
 
-    /// Suelta el dispositivo. No espera a que se vacíe el búfer ni a que el
-    /// dispositivo conteste.
+    /// Releases the device. It waits neither for the buffer to empty nor for
+    /// the device to answer.
     fn close(&mut self) -> Result<(), SinkError>;
 
-    /// Pausa o reanuda en el dispositivo, cuando sabe hacerlo.
+    /// Pauses or resumes at the device, when it knows how.
     ///
-    /// Por omisión no hace nada: quien reproduce deja de escribir y con eso
-    /// basta para que se detenga. Un backend que pueda pausar de verdad lo
-    /// implementa y así evita que el dispositivo se quede sin datos.
+    /// By default it does nothing: whoever plays stops writing and that is
+    /// enough to stop it. A backend that can really pause implements this
+    /// and so keeps the device from running dry.
     fn set_paused(&mut self, _paused: bool) -> Result<(), SinkError> {
         Ok(())
     }
@@ -81,11 +80,11 @@ impl AudioSink for Box<dyn AudioSink + Send> {
     }
 }
 
-/// La bandera con la que se pausa desde otro hilo.
+/// The flag that pauses from another thread.
 ///
-/// Pausar no suelta el dispositivo ni pierde el lugar: el lazo de entrega
-/// deja de escribir y espera, mirando también la señal de paro para no
-/// quedarse dormido si le piden parar mientras está en pausa.
+/// Pausing neither releases the device nor loses the place: the delivery
+/// loop stops writing and waits, also watching the stop signal so it does
+/// not sleep through a stop asked for while paused.
 #[derive(Clone, Debug, Default)]
 pub struct PauseSignal(Arc<AtomicBool>);
 
@@ -103,10 +102,10 @@ impl PauseSignal {
     }
 }
 
-/// La bandera con la que se salta a la siguiente pista.
+/// The flag that skips to the next track.
 ///
-/// Saltar NO es parar: la pista actual termina como si se hubiera acabado
-/// sola, así que la cola avanza. Parar detiene la cola entera.
+/// Skipping is NOT stopping: the current track ends as if it had run out
+/// on its own, so the queue advances. Stopping halts the whole queue.
 #[derive(Clone, Debug, Default)]
 pub struct SkipSignal(Arc<AtomicBool>);
 
@@ -119,17 +118,17 @@ impl SkipSignal {
         self.0.store(true, Ordering::Release);
     }
 
-    /// Se lleva la petición, si la hay.
+    /// Takes the request, if there is one.
     pub fn take(&self) -> bool {
         self.0.swap(false, Ordering::AcqRel)
     }
 }
 
-/// La bandera con la que se para desde otro hilo.
+/// The flag that stops from another thread.
 ///
-/// Parar no manda un comando por un canal que pueda quedarse lleno, ni toma
-/// el candado del dispositivo: levanta esto, y el lazo de escritura lo mira
-/// entre bloque y bloque.
+/// Stopping does not send a command down a channel that could fill up, nor
+/// take the device's lock: it raises this, and the write loop checks it
+/// between blocks.
 #[derive(Clone, Debug, Default)]
 pub struct StopSignal(Arc<AtomicBool>);
 
@@ -146,8 +145,8 @@ impl StopSignal {
         self.0.load(Ordering::Acquire)
     }
 
-    /// Limpia la bandera para la siguiente pista. Una orden de paro vieja no
-    /// debe matar lo que empieza después.
+    /// Clears the flag for the next track. An old stop order must not kill
+    /// what starts afterwards.
     pub fn reset(&self) {
         self.0.store(false, Ordering::Release);
     }

@@ -1,14 +1,14 @@
-//! Buscar dentro de una pista, contando frames.
+//! Seeking inside a track, counting frames.
 //!
-//! En QBZ la posición se llevaba con el reloj del sistema en segundos
-//! enteros. Eso rompía dos cosas: al reanudar una pausa se volvía al segundo
-//! truncado, y el cambio de pista lo disparaban dos detectores distintos.
-//! Aquí la posición siempre es un número de frames y el tiempo solo se usa
-//! para hablar con la UI.
+//! In QBZ the position was kept with the system clock in whole seconds.
+//! That broke two things: resuming a pause went back to the truncated
+//! second, and the track change was fired by two different detectors.
+//! Here the position is always a frame count and time is only used to talk
+//! to the UI.
 
 use std::time::Duration;
 
-/// Convierte tiempo a frames redondeando al más cercano, no truncando.
+/// Turns time into frames rounding to nearest, not truncating.
 pub fn frames_at(position: Duration, sample_rate_hz: u32) -> u64 {
     if sample_rate_hz == 0 {
         return 0;
@@ -18,7 +18,7 @@ pub fn frames_at(position: Duration, sample_rate_hz: u32) -> u64 {
     ((nanos * rate + 500_000_000) / 1_000_000_000) as u64
 }
 
-/// El tiempo que representa un frame, para mostrarlo.
+/// The time a frame stands for, for display.
 pub fn position_of(frames: u64, sample_rate_hz: u32) -> Duration {
     if sample_rate_hz == 0 {
         return Duration::ZERO;
@@ -26,21 +26,21 @@ pub fn position_of(frames: u64, sample_rate_hz: u32) -> Duration {
     Duration::from_nanos(frames * 1_000_000_000 / u64::from(sample_rate_hz))
 }
 
-/// Lo que hay que hacer para quedar exactamente en el frame pedido.
+/// What has to be done to land exactly on the requested frame.
 ///
-/// Un contenedor no siempre puede colocarse en cualquier frame: lo normal es
-/// que caiga en el arranque de un paquete, antes del objetivo. La diferencia
-/// se decodifica y se tira, que es lo que hace que la búsqueda sea exacta.
+/// A container cannot always land on any frame: usually it lands at the
+/// start of a packet, before the target. The difference is decoded and
+/// dropped, which is what makes the seek exact.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct SeekPlan {
-    /// Frame al que se le pide al contenedor que se mueva.
+    /// The frame the container is asked to move to.
     pub request: u64,
-    /// Frames que hay que decodificar y tirar después.
+    /// Frames to decode and throw away afterwards.
     pub discard: u64,
 }
 
 impl SeekPlan {
-    /// `landed` es dónde quedó el contenedor de verdad.
+    /// `landed` is where the container actually ended up.
     pub fn after_landing(target: u64, landed: u64) -> Self {
         Self { request: landed, discard: target.saturating_sub(landed) }
     }
@@ -50,10 +50,10 @@ impl SeekPlan {
     }
 }
 
-/// Dónde va la reproducción, en frames.
+/// Where playback is, in frames.
 ///
-/// Pausar no mueve nada: al reanudar se sigue en el mismo frame, no en el
-/// segundo redondeado.
+/// Pausing moves nothing: resuming continues on the same frame, not on the
+/// rounded second.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub struct Cursor {
     pub frame: u64,
@@ -79,11 +79,11 @@ impl Cursor {
     }
 }
 
-/// Un lugar donde pedir un salto desde otro hilo.
+/// A place to ask for a seek from another thread.
 ///
-/// Igual que la señal de paro: quien reproduce la mira entre bloques y la
-/// consume. Pedir un salto nunca bloquea a quien lo pide ni toma el candado
-/// del dispositivo.
+/// Like the stop signal: whoever plays checks it between blocks and
+/// consumes it. Asking for a seek never blocks the asker nor takes the
+/// device's lock.
 #[derive(Clone, Debug, Default)]
 pub struct SeekSignal(std::sync::Arc<std::sync::Mutex<Option<Duration>>>);
 
@@ -92,15 +92,15 @@ impl SeekSignal {
         Self::default()
     }
 
-    /// Pide saltar a ese punto. Un salto nuevo reemplaza al que no se haya
-    /// atendido: lo que importa es el último que pidió el usuario.
+    /// Asks to jump to that point. A new seek replaces one that has not been
+    /// served: what matters is the last one the user asked for.
     pub fn request(&self, position: Duration) {
         if let Ok(mut guard) = self.0.lock() {
             *guard = Some(position);
         }
     }
 
-    /// Se lleva el salto pendiente, si hay.
+    /// Takes the pending seek, if there is one.
     pub fn take(&self) -> Option<Duration> {
         self.0.lock().ok().and_then(|mut g| g.take())
     }
@@ -125,12 +125,12 @@ mod tests {
 
     #[test]
     fn pause_and_resume_does_not_jump_back_to_a_rounded_second() {
-        // El hallazgo de QBZ: al reanudar se re-buscaba el segundo truncado
-        // y se repetía casi medio segundo de música.
+        // The QBZ finding: resuming re-sought the truncated second and
+        // repeated almost half a second of music.
         let mut c = Cursor::new(44_100);
         c.advance(66_150); // 1.5 s
         let on_pause = c.frame;
-        // Reanudar no toca el cursor.
+        // Resuming does not touch the cursor.
         assert_eq!(c.frame, on_pause);
         assert_eq!(c.position(), Duration::from_millis(1500));
     }

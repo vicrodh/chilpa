@@ -1,25 +1,26 @@
-//! DoP: DSD sobre PCM, según el estándar abierto DoP v1.1.
+//! DoP: DSD over PCM, following the open DoP v1.1 standard.
 //!
-//! Cada palabra de 24 bits lleva 16 bits de DSD bajo un marker que alterna
-//! 0x05 y 0xFA entre frames. El DAC detecta esa alternancia y se pasa a modo
-//! DSD; si se rompe, interpreta el stream como PCM y suelta ruido fuerte.
+//! Each 24-bit word carries 16 bits of DSD under a marker that alternates
+//! 0x05 and 0xFA between frames. The DAC spots that alternation and switches
+//! to DSD mode; break it and it reads the stream as PCM and lets out loud
+//! noise.
 //!
-//! De ahí sale la regla que la auditoría encontró rota en QBZ: una escritura
-//! parcial dejaba fuera los frames restantes y solo escribía un warning, así
-//! que la secuencia de markers se desfasaba. Aquí las escrituras parciales se
-//! reanudan en el frame exacto donde se quedaron, y lo que se manda en pausas
-//! o al final es silencio DSD con markers válidos, nunca ceros de PCM.
+//! That is where the rule the audit found broken in QBZ comes from: a
+//! partial write left the remaining frames out and only logged a warning,
+//! so the marker sequence drifted out of phase. Here partial writes resume
+//! at the exact frame they stopped at, and what is sent during pauses or at
+//! the end is DSD silence with valid markers, never PCM zeros.
 
-/// Frecuencia del portador PCM para un bit rate de DSD: 16 bits de DSD por
-/// frame y por canal.
+/// The PCM carrier rate for a DSD bit rate: 16 DSD bits per frame per
+/// channel.
 pub const fn carrier_rate(dsd_rate_hz: u32) -> u32 {
     dsd_rate_hz / 16
 }
 
-/// El payload de silencio en DSD. Ceros de PCM sacarían al DAC de modo DSD.
+/// The DSD silence payload. PCM zeros would knock the DAC out of DSD mode.
 const SILENCE: i32 = 0x6969;
 
-/// Empaqueta frames de DoP manteniendo la fase del marker entre llamadas.
+/// Packs DoP frames, keeping the marker phase across calls.
 #[derive(Debug, Default)]
 pub struct DopPacker {
     marker_fa: bool,
@@ -36,8 +37,8 @@ impl DopPacker {
         m
     }
 
-    /// Empaqueta DSD planar (2 bytes por canal y por frame) en muestras S32
-    /// intercaladas, justificadas a la izquierda y listas para el cable.
+    /// Packs planar DSD (2 bytes per channel per frame) into interleaved S32
+    /// samples, left-justified and ready for the wire.
     pub fn pack(&mut self, planar: &[&[u8]], out: &mut Vec<i32>) {
         let channels = planar.len();
         let frames = planar.iter().map(|c| c.len()).min().unwrap_or(0) / 2;
@@ -52,7 +53,7 @@ impl DopPacker {
         }
     }
 
-    /// Silencio DSD con markers válidos, para pausas, seeks y relleno final.
+    /// DSD silence with valid markers, for pauses, seeks and final padding.
     pub fn silence(&mut self, frames: usize, channels: u16, out: &mut Vec<i32>) {
         out.reserve(frames * channels as usize);
         for _ in 0..frames {
@@ -63,30 +64,30 @@ impl DopPacker {
         }
     }
 
-    /// Fase actual, para comprobar continuidad. `false` = sigue 0x05.
+    /// The current phase, to check continuity. `false` = 0x05 is next.
     pub fn next_is_fa(&self) -> bool {
         self.marker_fa
     }
 }
 
-/// Lo que un dispositivo hizo con una escritura.
+/// What a device did with a write.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum WriteOutcome {
-    /// Escribió esos frames; pueden ser menos de los que se le dieron.
+    /// It wrote that many frames; there may be fewer than it was given.
     Wrote(usize),
-    /// El dispositivo se quedó corto de datos y hubo que recuperarlo. Lo que
-    /// no alcanzó a salir se perdió.
+    /// The device ran short of data and had to be recovered. Whatever did not
+    /// make it out was lost.
     Xrun,
 }
 
-/// Entrega palabras de DoP a un dispositivo sin romper la alternancia.
+/// Delivers DoP words to a device without breaking the alternation.
 ///
-/// El escritor no asume que una escritura consuma todo: reintenta el resto
-/// desde el frame exacto donde se quedó. Después de un xrun, el hueco se
-/// rellena con silencio DSD para que el DAC nunca vea PCM.
+/// The writer does not assume a write consumes everything: it retries the
+/// rest from the exact frame it stopped at. After an xrun, the gap is
+/// filled with DSD silence so the DAC never sees PCM.
 pub struct DopWriter {
     channels: u16,
-    /// Frames de silencio que se mandan tras recuperar un xrun.
+    /// Frames of silence sent after recovering from an xrun.
     pub recovery_frames: usize,
 }
 
@@ -95,10 +96,10 @@ impl DopWriter {
         Self { channels, recovery_frames: 1 }
     }
 
-    /// Escribe todos los frames de `words`, reintentando los parciales.
+    /// Writes every frame of `words`, retrying the partial ones.
     ///
-    /// `sink` recibe las muestras que faltan y regresa qué hizo con ellas.
-    /// Regresa cuántos frames se recuperaron con silencio.
+    /// `sink` receives the samples still owed and reports what it did with
+    /// them. Returns how many frames were recovered with silence.
     pub fn write_all<S>(&self, packer: &mut DopPacker, words: &[i32], mut sink: S) -> usize
     where
         S: FnMut(&[i32]) -> WriteOutcome,
@@ -111,8 +112,8 @@ impl DopWriter {
                 WriteOutcome::Wrote(0) => break,
                 WriteOutcome::Wrote(frames) => done += frames,
                 WriteOutcome::Xrun => {
-                    // El silencio avanza la fase igual que los frames que se
-                    // perdieron, así que el DAC sigue viendo la alternancia.
+                    // The silence advances the phase just like the frames that were
+                    // lost, so the DAC keeps seeing the alternation.
                     let mut relleno = Vec::new();
                     packer.silence(self.recovery_frames, self.channels, &mut relleno);
                     sink(&relleno);
@@ -170,8 +171,8 @@ mod tests {
 
     #[test]
     fn a_partial_write_resumes_and_loses_no_frames() {
-        // El hallazgo de la auditoría: QBZ solo avisaba del write parcial y
-        // tiraba el resto, y ahí se rompía la alternancia.
+        // The audit's finding: QBZ only warned about the partial write and
+        // threw the rest away, and that is where the alternation broke.
         let mut packer = DopPacker::new();
         let mut words = Vec::new();
         packer.pack(&[&dsd(&[1, 2, 3, 4, 5, 6]), &dsd(&[7, 8, 9, 10, 11, 12])], &mut words);
