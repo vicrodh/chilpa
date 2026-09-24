@@ -1014,6 +1014,9 @@ msgstr ""
 msgid "track {}: {}"
 msgstr ""
 
+msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
+msgstr ""
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] ""

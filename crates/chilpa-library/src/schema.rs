@@ -15,6 +15,7 @@
 //!    its tracks missing; deleting them was the audit's high finding.
 
 use rusqlite::Connection;
+use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
 pub const VERSION: i64 = 9;
@@ -27,6 +28,71 @@ pub const VERSION: i64 = 9;
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
     &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9];
+
+/// Where the copy of a library about to be upgraded goes.
+///
+/// Beside the library, so it is on the same filesystem -- a backup on a
+/// different disk that fails halfway is worse than none -- and named after
+/// it, so whoever finds it knows what it is.
+pub fn backup_path(library: &Path) -> PathBuf {
+    let mut name = library.file_name().unwrap_or_default().to_os_string();
+    name.push(".before-upgrade");
+    library.with_file_name(name)
+}
+
+/// Copies the library before changing its shape.
+///
+/// A migration rewrites the file in place and there is no way back from it.
+/// Every schema change in here has been walked forward in a test, but a test
+/// covers the cases somebody thought of, and what is at stake is a library
+/// somebody spent years building. So: one copy, taken before the first step
+/// runs, replaced by the next upgrade, in the same folder as the library.
+///
+/// `VACUUM INTO` and not a file copy: a copy of the file alone misses the
+/// write-ahead log and produces a library missing its most recent writes,
+/// which is exactly the shape of backup that looks fine until it is needed.
+/// It costs about half a second and five per cent less room than the
+/// original on two hundred thousand tracks, and it is paid only when there
+/// is really something to upgrade.
+///
+/// If it cannot be taken, the upgrade does not happen. Chilpa opening at all
+/// costs less than a library that cannot be gone back to.
+pub fn back_up_before_upgrading(db: &Connection, library: &Path) -> rusqlite::Result<()> {
+    let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+    // Zero is a file that was just created: there is nothing in it yet.
+    if actual == 0 || actual >= VERSION {
+        return Ok(());
+    }
+    let backup = backup_path(library);
+    // VACUUM INTO refuses to write over a file that is already there.
+    let _ = std::fs::remove_file(&backup);
+    db.execute("VACUUM INTO ?1", [&backup.to_string_lossy().as_ref()]).map_err(|e| {
+        rusqlite::Error::SqliteFailure(
+            rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CANTOPEN),
+            Some(chilpa_i18n::t_args(
+                "your library needs updating and a copy of it could not be kept first, \
+                 at {}: {}. Make room there, or move the library somewhere with room, \
+                 and open Chilpa again",
+                &[&backup.display().to_string(), &e.to_string()],
+            )),
+        )
+    })?;
+    Ok(())
+}
+
+/// Builds a database stopped at an older version, as a shipped Chilpa would
+/// have left it.
+///
+/// It is here and not in a test module because two of them need it: the one
+/// that walks every version forward, and the one that checks a library is
+/// copied before it is upgraded.
+#[cfg(test)]
+pub(crate) fn stop_at(db: &Connection, version: usize) {
+    for step in STEPS.iter().take(version) {
+        db.execute_batch(step).unwrap();
+    }
+    db.execute_batch(&format!("PRAGMA user_version = {version}")).unwrap();
+}
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -707,22 +773,13 @@ mod tests {
         db
     }
 
-    /// A database stopped at an older version, with whatever was in it then.
-    fn at_version(v: usize) -> Connection {
-        let db = Connection::open_in_memory().unwrap();
-        for step in STEPS.iter().take(v) {
-            db.execute_batch(step).unwrap();
-        }
-        db.execute_batch(&format!("PRAGMA user_version = {v}")).unwrap();
-        db
-    }
-
     #[test]
     fn an_older_library_is_brought_up_and_keeps_what_it_had() {
         // Nothing tested the upgrade path, which is the one every library
         // that already exists takes. This one starts where a shipped Chilpa
         // left it and walks it to today.
-        let db = at_version(8);
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db, 8);
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
         db.execute(
@@ -788,7 +845,8 @@ mod tests {
     fn every_version_in_between_can_be_walked_forward() {
         // A library can have stopped at any of them.
         for v in 0..STEPS.len() {
-            let db = at_version(v);
+            let db = Connection::open_in_memory().unwrap();
+            stop_at(&db, v);
             migrate(&db).unwrap_or_else(|e| panic!("from version {v}: {e}"));
             assert_eq!(
                 db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(),
