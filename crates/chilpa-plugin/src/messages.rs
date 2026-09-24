@@ -138,6 +138,41 @@ pub fn isrc_fingerprint(isrc: &str) -> Option<String> {
     (!i.is_empty()).then(|| format!("isrc:{}", i.to_ascii_uppercase()))
 }
 
+/// Cómo viene lo que un source entrega para reproducir.
+///
+/// Medido en las APIs de dos servicios grandes: lo normal es una URL sola
+/// ya firmada, pero también se entregan manifiestos segmentados. Se declara
+/// en lugar de adivinarlo por la extensión, porque una URL firmada no tiene
+/// extensión que mirar.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Delivery {
+    /// Una sola URL que se abre y se lee de corrido. Es lo que Chilpa sabe
+    /// reproducir hoy.
+    #[default]
+    Progressive,
+    /// Un manifiesto DASH: el audio viene en segmentos.
+    Dash,
+    /// Un manifiesto HLS, por las mismas.
+    Hls,
+}
+
+impl Delivery {
+    /// Cierto si Chilpa sabe reproducir eso hoy.
+    pub fn playable(&self) -> bool {
+        matches!(self, Delivery::Progressive)
+    }
+
+    /// Cómo se le dice al usuario cuando no se puede.
+    pub fn describe(&self) -> &'static str {
+        match self {
+            Delivery::Progressive => "una URL directa",
+            Delivery::Dash => "un manifiesto DASH, que Chilpa todavía no sabe leer",
+            Delivery::Hls => "un manifiesto HLS, que Chilpa todavía no sabe leer",
+        }
+    }
+}
+
 /// Lo que se le pide al source para poder reproducir algo suyo.
 ///
 /// Entra por [`op::RESOLVER`] y sale un [`Stream`]. Va aparte de la
@@ -239,10 +274,24 @@ impl Results {
 ///
 /// Chilpa decodifica y entrega; el plugin no toca el audio ni el dispositivo
 /// (ADR-003). Por eso aquí solo hay de dónde leer, no cómo sonar.
-#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Stream {
     /// De dónde se lee. Tiene que ser `http` o `https`.
+    ///
+    /// Medido en las APIs de dos servicios grandes: la URL viene **ya
+    /// firmada en la query**, así que no lleva cabecera de autenticación.
+    /// Lo que sí va firmado es la llamada a la API que la entrega, y eso el
+    /// plugin ya lo hace con `http` (ADR-008).
+    #[serde(default)]
     pub url: String,
+    /// Cuando una pista viene partida en varias URLs que se leen en orden.
+    ///
+    /// No es lo mismo que un manifiesto segmentado: son archivos completos,
+    /// uno tras otro. **El plugin decodifica el manifiesto de su servicio y
+    /// entrega la lista ya lista**; Chilpa no sabe de formatos de
+    /// manifiesto, que es lo que dice el ADR-004.
+    #[serde(default)]
+    pub urls: Vec<String>,
     /// Lo que el source dice que es, para elegir el decodificador.
     #[serde(default)]
     pub codec: Option<String>,
@@ -252,12 +301,26 @@ pub struct Stream {
     /// enlaces que caducan.
     #[serde(default)]
     pub expires_at: Option<i64>,
+    /// Cómo viene. Por omisión, una URL directa, que es lo más común.
+    #[serde(default)]
+    pub delivery: Delivery,
 }
 
 impl Stream {
-    /// Cierto si se puede intentar abrir.
+    /// De dónde se lee, en orden. `url` primero si viene, luego `urls`.
+    pub fn parts(&self) -> Vec<&str> {
+        std::iter::once(self.url.as_str())
+            .filter(|u| !u.is_empty())
+            .chain(self.urls.iter().map(String::as_str))
+            .collect()
+    }
+
+    /// Cierto si se puede intentar abrir: hay al menos una parte y todas
+    /// son http.
     pub fn usable(&self) -> bool {
-        self.url.starts_with("https://") || self.url.starts_with("http://")
+        let parts = self.parts();
+        !parts.is_empty()
+            && parts.iter().all(|u| u.starts_with("https://") || u.starts_with("http://"))
     }
 
     /// Cierto si ya caducó según el reloj que se le pase.
@@ -338,10 +401,37 @@ mod tests {
     }
 
     #[test]
+    fn a_track_can_come_in_several_files_read_in_order() {
+        // Es el caso normal en hi-res: el manifiesto del servicio trae
+        // varias URLs completas. El plugin lo decodifica y entrega la
+        // lista; Chilpa no sabe de manifiestos.
+        let s: Stream = read(
+            br#"{"urls":["https://a.b/1.flac","https://a.b/2.flac"],"codec":"flac"}"#,
+        )
+        .unwrap();
+        assert_eq!(s.parts(), ["https://a.b/1.flac", "https://a.b/2.flac"]);
+        assert!(s.usable());
+
+        // Una sola sigue escribiéndose como siempre.
+        let one: Stream = read(br#"{"url":"https://a.b/x.flac"}"#).unwrap();
+        assert_eq!(one.parts(), ["https://a.b/x.flac"]);
+    }
+
+    #[test]
+    fn one_bad_part_spoils_the_whole_stream() {
+        // Basta con que una no sea http para no intentar ninguna: leer la
+        // mitad de una pista y fallar es peor que no empezar.
+        let s: Stream =
+            read(br#"{"urls":["https://a.b/1.flac","file:///etc/passwd"]}"#).unwrap();
+        assert!(!s.usable());
+        assert!(read::<Stream>(br#"{"codec":"flac"}"#).unwrap().parts().is_empty());
+    }
+
+    #[test]
     fn a_stream_that_is_not_http_is_not_attempted() {
-        let bad = Stream { url: "file:///etc/passwd".into(), codec: None, quality: Quality::default(), expires_at: None };
+        let bad = Stream { url: "file:///etc/passwd".into(), ..Default::default() };
         assert!(!bad.usable());
-        let good = Stream { url: "https://a.b/c".into(), codec: None, quality: Quality::default(), expires_at: None };
+        let good = Stream { url: "https://a.b/c".into(), ..Default::default() };
         assert!(good.usable());
     }
 
@@ -349,16 +439,15 @@ mod tests {
     fn a_link_with_a_date_expires() {
         let s = Stream {
             url: "https://a.b/c".into(),
-            codec: None,
-            quality: Quality::default(),
             expires_at: Some(1000),
+            ..Default::default()
         };
         assert!(!s.expired(999));
         assert!(s.expired(1000), "justo al filo ya no sirve");
         assert!(s.expired(1001));
         // Sin fecha no caduca.
-        let sin = Stream { expires_at: None, ..s };
-        assert!(!sin.expired(i64::MAX));
+        let undated = Stream { expires_at: None, ..s };
+        assert!(!undated.expired(i64::MAX));
     }
 
     #[test]

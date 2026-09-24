@@ -466,6 +466,15 @@ impl Plugins {
         self.registry.installed().find(|i| i.id == id)?.manifest.as_ref()?.auth.clone()
     }
 
+    /// Cierto si ese source dice que puede entregar audio.
+    pub fn delivers_audio(&self, id: &str) -> bool {
+        self.registry
+            .installed()
+            .find(|i| i.id == id)
+            .and_then(|i| i.manifest.as_ref())
+            .is_none_or(|m| m.delivers_audio)
+    }
+
     /// Los plugins de catálogo que sirven ahora, con su nombre.
     pub fn searchers(&self) -> Vec<(String, String)> {
         self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
