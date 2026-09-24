@@ -49,7 +49,7 @@ pub struct StreamInfo {
     /// The extension that goes with it, to help the decoder.
     pub hint: Option<String>,
     /// How many bytes go between metadata blocks, if the server offers them.
-        pub icy_metaint: Option<usize>,
+    pub icy_metaint: Option<usize>,
 }
 
 impl StreamInfo {
@@ -154,6 +154,81 @@ impl symphonia::core::io::MediaSource for HttpStream {
     fn byte_len(&self) -> Option<u64> {
         None
     }
+}
+
+/// Reads several URLs one after another, as if they were one file.
+///
+/// It is the normal case in hi-res: a source signs one URL per part, and the
+/// parts are the same file cut up, not segments of a manifest. Chained means
+/// chained at the byte level: the decoder asks for bytes, and when a part
+/// runs out the next one opens without it noticing.
+///
+/// **This is the reading of the manifest, not a measurement.** It was
+/// verified against a local server that serves a file in pieces, which is
+/// what the shape of the data says a real source does; it has not been
+/// verified against a real service. If a source ever hands over parts that
+/// are whole files with their own headers, this will play the first one and
+/// then produce noise, so a part that does not open at all fails loudly
+/// rather than being skipped: half a track and silence is a symptom someone
+/// can report, and a corrupt one is not.
+struct Chained {
+    /// The parts not yet opened, in order, reversed so the next one pops.
+    rest: Vec<String>,
+    current: Box<dyn Read + Send + Sync>,
+}
+
+impl Read for Chained {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        loop {
+            let n = self.current.read(buf)?;
+            if n > 0 {
+                return Ok(n);
+            }
+            // A part that ends is not the end of the track: the next one
+            // opens here, and only running out of parts is the end.
+            let Some(next) = self.rest.pop() else { return Ok(0) };
+            self.current = body_of(&next).map_err(|e| {
+                io::Error::other(chilpa_i18n::t_args(
+                    "the next part of the track could not be opened: {}",
+                    &[&e.to_string()],
+                ))
+            })?;
+        }
+    }
+}
+
+/// Opens a URL and hands back only its body.
+fn body_of(url: &str) -> Result<Box<dyn Read + Send + Sync>, StreamError> {
+    let reply = ureq::get(url)
+        .header("User-Agent", "Chilpa")
+        .call()
+        .map_err(|e| StreamError::Open(e.to_string()))?;
+    Ok(Box::new(reply.into_body().into_reader()))
+}
+
+/// Opens a track that comes in several parts and reads them in order.
+///
+/// The first part is opened here so what comes back already knows its
+/// content type; the rest open as the decoder reaches them. An empty list is
+/// the caller's mistake and says so.
+pub fn open_parts(urls: &[String]) -> Result<HttpStream, StreamError> {
+    let Some((first, rest)) = urls.split_first() else {
+        return Err(StreamError::Open(chilpa_i18n::t("there is no part to open")));
+    };
+    let mut stream = open(first)?;
+    if rest.is_empty() {
+        return Ok(stream);
+    }
+    let info = stream.info.clone();
+    let now_playing = stream.now_playing.clone();
+    let mut pending: Vec<String> = rest.to_vec();
+    pending.reverse();
+    let first_body = std::mem::replace(&mut stream.inner, Box::new(io::empty()));
+    Ok(HttpStream::new(
+        Box::new(Chained { rest: pending, current: first_body }),
+        info,
+        now_playing,
+    ))
 }
 
 /// Opens a URL and leaves the audio ready for the decoder.

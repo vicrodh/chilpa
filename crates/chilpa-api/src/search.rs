@@ -358,7 +358,10 @@ impl Chilpa {
 
         match self.resolve(&hit) {
             Ok(stream) => {
-                let url = stream.parts()[0].to_string();
+                // A track in several parts travels as one queue entry, with
+                // its parts joined by a space: a URL cannot carry one, so the
+                // core splits them back without guessing.
+                let url = stream.parts().join(" ");
                 self.search.playing = Some((url.clone(), hit));
                 self.play_url(&url, device, bit_perfect);
                 true
@@ -384,17 +387,6 @@ impl Chilpa {
         }
         if !stream.delivery.playable() {
             return Err(chilpa_i18n::t_args("it delivers {}", &[&stream.delivery.describe()]));
-        }
-        // Several parts is the normal case in hi-res, and they are not yet
-        // read one after another. How many there are is said instead of
-        // playing only the first, which would sound like a cut off track
-        // with no explanation.
-        if stream.parts().len() > 1 {
-            return Err(chilpa_i18n::t_args(
-                "it delivers the track in {} files in a row, and they are not read one \
-                 after another yet",
-                &[&stream.parts().len().to_string()],
-            ));
         }
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
