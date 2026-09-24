@@ -1,9 +1,9 @@
-//! El puente entre QML y la fachada.
+//! The bridge between QML and the facade.
 //!
-//! Aquí no vive lógica: el objeto expone propiedades que QML lee y órdenes
-//! que QML dispara, y cada una es una línea que llama a `chilpa-api`
-//! (ADR-001). Si una vista necesita algo que no está en la fachada, se amplía
-//! la fachada, no este archivo.
+//! No logic lives here: the object exposes properties QML reads and orders
+//! QML fires, and each one is a line that calls `chilpa-api` (ADR-001). If a
+//! view needs something the facade does not have, the facade is widened, not
+//! this file.
 
 use cxx_qt_lib::{QList, QString, QStringList};
 
@@ -21,115 +21,115 @@ pub mod chilpa_bridge {
         #[qobject]
         #[qml_element]
         #[qml_singleton]
-        /// Las salidas que se pueden elegir, ya con etiqueta para mostrar.
+        /// The outputs that can be chosen, already labelled for display.
         #[qproperty(QStringList, outputs)]
-        /// Los identificadores, en el mismo orden que las etiquetas.
+        /// The identifiers, in the same order as the labels.
         #[qproperty(QStringList, output_ids)]
-        /// Lo que suena y su estado.
+        /// What is playing and its state.
         #[qproperty(QString, track)]
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
-        /// La portada como URL de archivo, lista para un Image de QML.
+        /// The cover as a file URL, ready for a QML Image.
         #[qproperty(QString, artwork)]
-        /// Las pistas encoladas y cuál suena.
+        /// The queued tracks and which one is playing.
         #[qproperty(QStringList, queue)]
         #[qproperty(i32, queue_index)]
-        /// Qué posiciones de la cola se quitaron, como "0" o "1".
+        /// Which positions of the queue were removed, as "0" or "1".
         #[qproperty(QStringList, queue_removed)]
-        /// La biblioteca: un renglón por álbum, ya listo para la vista.
-        /// Cada entrada es
-        /// "id\ttítulo\tartista\taño\tpistas\tportada\tescuchas".
+        /// The library: one line per album, ready for the view. Each entry is
+        /// "id\ttitle\tartist\tyear\ttracks\tcover\tplays".
         #[qproperty(QStringList, albums)]
-        /// Los resultados de la última búsqueda o del álbum abierto: un
-        /// renglón por pista, con "ruta, título, artista, álbum, duración y
-        /// lo que el análisis sacó".
+        /// The results of the last search or of the open album: one line per
+        /// track, with "path, title, artist, album, duration and what the
+        /// analysis found".
         #[qproperty(QStringList, results)]
-        /// Los sources que contestaron mal, ya redactado para mostrarse.
-        /// Vacío cuando todos contestaron bien.
+        /// The sources that answered badly, already written for display. Empty
+        /// when all of them answered fine.
         #[qproperty(QString, search_problems)]
-        /// El álbum que se está mirando, vacío si no hay ninguno abierto.
+        /// The album being looked at, empty if none is open.
         #[qproperty(QString, open_album)]
         #[qproperty(i64, open_album_id)]
-        /// Lo demás del álbum abierto, para su encabezado.
+        /// The rest of the open album, for its header.
         #[qproperty(QString, open_album_artist)]
         #[qproperty(QString, open_album_art)]
         #[qproperty(QString, open_album_line)]
         #[qproperty(QString, library_status)]
-        /// Cómo va el análisis: de 0 a 1, si corre, y qué se está mirando.
+        /// How the analysis is going: from 0 to 1, whether it runs, and what is
+        /// being looked at.
         #[qproperty(f64, analysis_progress)]
         #[qproperty(bool, analyzing)]
         #[qproperty(QString, analysis_status)]
-        /// Cómo va el escaneo: de 0 a 1, y si sigue corriendo.
+        /// How the scan is going: from 0 to 1, and whether it is still running.
         #[qproperty(f64, scan_progress)]
         #[qproperty(bool, scanning)]
-        /// El layout de la ventana. Es el nombre de un `Layout<nombre>.qml`,
-        /// para que agregar un acomodo sea agregar un archivo.
+        /// The window's layout. It is the name of a `Layout<name>.qml`, so that
+        /// adding a layout is adding a file.
         #[qproperty(QString, layout)]
-        /// Los acomodos que trae el binario. La lista la arma `build.rs` a
-        /// partir de los archivos, no se escribe a mano.
+        /// The layouts the binary carries. `build.rs` builds the list from the
+        /// files, it is not written by hand.
         #[qproperty(QStringList, layouts)]
-        /// Lo que hay escrito en la búsqueda. Vive aquí porque decide qué se
-        /// ve, y la caja donde se escribe cambia de lugar con cada layout.
+        /// What is typed in the search. It lives here because it decides what
+        /// is seen, and the box it is typed in moves with every layout.
         #[qproperty(QString, search_text)]
-        /// Lo que el análisis dice de lo que suena: "128 BPM · 8B".
+        /// What the analysis says about what is playing: "128 BPM - 8B".
         #[qproperty(QString, analysis)]
-        /// La letra de lo que suena: un renglón por entrada, qué renglón
-        /// va (-1 si ninguno) y de dónde salió.
+        /// The lyrics of what is playing: one line per entry, which line is
+        /// current (-1 if none) and where it came from.
         #[qproperty(QStringList, lyrics)]
         #[qproperty(i32, lyrics_line)]
         #[qproperty(bool, lyrics_synced)]
         #[qproperty(QString, lyrics_source)]
-        /// La última carpeta que se abrió, para que los diálogos no
-        /// empiecen en el home cada vez.
+        /// The last folder opened, so the dialogs do not start at home every
+        /// time.
         #[qproperty(QString, last_folder)]
-        /// La envolvente de lo que sale: un valor de 0 a 1 por punto.
+        /// The envelope of what goes out: one value from 0 to 1 per point.
         #[qproperty(QStringList, scope)]
-        /// Qué visualizador se dibuja: "wave", "spectrum" o "goniometer".
+        /// Which visualizer is drawn: "wave", "spectrum" or "goniometer".
         #[qproperty(QString, visualizer)]
-        /// El espectro de lo que sale: un valor de 0 a 1 por banda.
+        /// The spectrum of what goes out: one value from 0 to 1 per band.
         #[qproperty(QStringList, spectrum)]
-        /// Pares "izquierdo\tderecho" para el goniómetro, y la correlación
-        /// entre canales de -1 a 1 (999 cuando no hay dos canales).
+        /// "left\tright" pairs for the goniometer, and the correlation between
+        /// channels from -1 to 1 (999 when there are not two channels).
         #[qproperty(QStringList, pairs)]
         #[qproperty(f64, correlation)]
-        /// El nivel por canal, como "pico\trms".
+        /// The level per channel, as "peak\trms".
         #[qproperty(QStringList, levels)]
-        /// Los plugins instalados, como "id\tnombre\testado\tproblema".
+        /// The installed plugins, as "id\tname\tstate\tproblem".
         #[qproperty(QStringList, plugins)]
-        /// El diagnóstico de la salida: una línea de resumen y un renglón
-        /// por formato, como "nombre\tformato\tveredicto".
+        /// The output's diagnosis: one summary line and one line per format, as
+        /// "name\tformat\tverdict".
         #[qproperty(QString, wizard_summary)]
         #[qproperty(QStringList, wizard_rows)]
-        /// Las unidades de CD que hay en la máquina.
+        /// The CD drives on the machine.
         #[qproperty(QStringList, cd_drives)]
-        /// Los géneros de la biblioteca, como "nombre\tpistas".
+        /// The library's genres, as "name\ttracks".
         #[qproperty(QStringList, genres)]
-        /// Las listas inteligentes, como "nombre\tpistas".
+        /// The smart lists, as "name\ttracks".
         #[qproperty(QStringList, smart_lists)]
-        /// Las listas guardadas, como "id\tnombre\tde dónde\tpistas".
+        /// The saved lists, as "id\tname\tprovider\ttracks".
         #[qproperty(QStringList, playlists)]
-        /// El resumen de lo escuchado, ya en renglones de "etiqueta\tvalor".
+        /// The listening summary, already in "label\tvalue" lines.
         #[qproperty(QStringList, stats)]
-        /// Las más escuchadas y lo último que sonó, como
-        /// "título\tartista\tálbum\tveces\truta".
+        /// The most played and the last played, as
+        /// "title\tartist\talbum\tcount\tpath".
         #[qproperty(QStringList, top_tracks)]
         #[qproperty(QStringList, recent_tracks)]
-        /// Los artistas de la biblioteca: un renglón con
-        /// "nombre\tdiscos\tpistas\tportada".
+        /// The library's artists: one line with
+        /// "name\talbums\ttracks\tcover".
         #[qproperty(QStringList, artists)]
-        /// El artista al que está filtrada la reja, vacío si se ven todos.
+        /// The artist the grid is filtered to, empty if all are shown.
         #[qproperty(QString, open_artist)]
-        /// Las vistas rápidas de la biblioteca y cuál está puesta.
+        /// The library's quick views and which one is set.
         #[qproperty(QStringList, album_views)]
         #[qproperty(i32, album_view, READ = album_view, WRITE = choose_album_view, NOTIFY = album_view_changed)]
-        /// Cómo se recorre la cola: barajada o no, y la repetición como
-        /// 0 = ninguna, 1 = toda la cola, 2 = la pista.
+        /// How the queue is traversed: shuffled or not, and repeat as
+        /// 0 = none, 1 = the whole queue, 2 = the track.
         #[qproperty(bool, shuffle, READ = shuffle, WRITE = shuffle_queue, NOTIFY = shuffle_changed)]
         #[qproperty(i32, repeat)]
-        /// Lo elegido para reproducir: la salida y si se exige bit-perfect.
-        /// Vive aquí, no en un control de la ventana, para que cualquier
-        /// layout lo lea sin depender de dónde quedó el selector.
+        /// What was chosen for playback: the output and whether bit-perfect is
+        /// required. It lives here, not in a window control, so any layout can
+        /// read it without depending on where the selector ended up.
         #[qproperty(QString, device)]
         #[qproperty(bool, want_bit_perfect)]
         #[qproperty(QString, format)]
@@ -139,76 +139,76 @@ pub mod chilpa_bridge {
         #[qproperty(bool, bit_perfect)]
         #[qproperty(f64, seconds)]
         #[qproperty(f64, total_seconds)]
-        /// Lo que se pidió reproducir al arrancar, si se pasó por la línea
-        /// de comandos. Vacío cuando no.
+        /// What was asked to be played at startup, if it came on the command
+        /// line. Empty when it did not.
         #[qproperty(QString, autoplay_path)]
         #[qproperty(QString, autoplay_device)]
-        /// Una búsqueda de arranque, para probar la vista sin teclear.
+        /// A startup search, for exercising the view without typing.
         #[qproperty(QString, initial_search)]
-        /// Un álbum de arranque, por id, para probar la vista sin ratón.
+        /// A startup album, by id, for exercising the view without a mouse.
         #[qproperty(i64, initial_album)]
-        /// Con qué pestaña de la biblioteca arranca: "artistas" o vacío.
+        /// Which library tab it starts on: "artists" or empty.
         #[qproperty(QString, initial_tab)]
-        /// Qué resultado de la búsqueda poner a sonar al arrancar, contando
-        /// desde 1. Para probar sin teclado ni ratón, como los de arriba.
+        /// Which search result to start playing at startup, counting from 1.
+        /// For exercising without keyboard or mouse, like the ones above.
         #[qproperty(i32, initial_play)]
-        /// Qué plugin conectar al arrancar, por la misma razón.
+        /// Which plugin to connect at startup, for the same reason.
         #[qproperty(QString, initial_connect)]
-        /// Cierto para volver a escanear al arrancar, sin tocar un botón.
+        /// True to rescan at startup, without touching a button.
         #[qproperty(bool, initial_rescan)]
-        /// Cierto para analizar al arrancar, igual de útil para probar.
+        /// True to analyse at startup, just as useful for exercising.
         #[qproperty(bool, initial_analysis)]
         type Chilpa = super::ChilpaRust;
 
-        /// Elige el visualizador y lo recuerda.
+        /// Chooses the visualizer and remembers it.
         #[qinvokable]
         fn choose_visualizer(self: Pin<&mut Chilpa>, name: &QString);
 
-        /// Elige el layout de la ventana y lo recuerda.
+        /// Chooses the window's layout and remembers it.
         #[qinvokable]
         fn choose_layout(self: Pin<&mut Chilpa>, name: &QString);
 
-        /// Elige la salida y la política, y las recuerda para la próxima vez.
+        /// Chooses the output and the policy, and remembers them for next time.
         #[qinvokable]
         fn choose(self: Pin<&mut Chilpa>, device: &QString, bit_perfect: bool);
 
-        /// Vuelve a leer las salidas de la máquina.
+        /// Reads the machine's outputs again.
         #[qinvokable]
         fn refresh_outputs(self: Pin<&mut Chilpa>);
 
-        /// Pone a sonar un archivo en la salida elegida.
+        /// Starts a file playing on the chosen output.
         #[qinvokable]
         fn play(self: Pin<&mut Chilpa>, path: &QString);
 
-        /// Busca en la biblioteca.
+        /// Searches the library.
         #[qinvokable]
         fn search(self: Pin<&mut Chilpa>, text: &QString);
 
-        /// Pone a sonar lo que encontró la búsqueda, desde esa posición.
+        /// Starts what the search found playing, from that position.
         ///
-        /// Lo de un source se resuelve antes de sonar, así que puede tardar
-        /// lo que el plugin tarde en contestar.
+        /// What is a source's is resolved before playing, so it can take as
+        /// long as the plugin takes to answer.
         #[qinvokable]
         fn play_results(self: Pin<&mut Chilpa>, from: i32);
 
-        /// Arranca el análisis de lo que falte, en segundo plano.
+        /// Starts the analysis of whatever is missing, in the background.
         #[qinvokable]
         fn analyze_library(self: Pin<&mut Chilpa>);
 
-        /// Pide que el análisis se detenga.
+        /// Asks the analysis to stop.
         #[qinvokable]
         fn cancel_analysis(self: Pin<&mut Chilpa>);
 
-        /// Vuelve a escanear las carpetas que ya están en la biblioteca.
+        /// Rescans the folders already in the library.
         #[qinvokable]
         fn rescan(self: Pin<&mut Chilpa>);
 
-        /// Escanea una carpeta hacia la biblioteca y refresca los álbumes.
+        /// Scans a folder into the library and refreshes the albums.
         #[qinvokable]
         fn scan_folder(self: Pin<&mut Chilpa>, folder: &QString);
 
-        /// El lector y el asignador de `album_view`: cambiar la vista
-        /// vuelve a leer la biblioteca en ese orden.
+        /// The getter and setter for `album_view`: changing the view reads
+        /// the library again in that order.
         #[cxx_name = "albumView"]
         fn album_view(self: &Chilpa) -> i32;
         #[cxx_name = "setAlbumView"]
@@ -218,126 +218,126 @@ pub mod chilpa_bridge {
         #[cxx_name = "albumViewChanged"]
         fn album_view_changed(self: Pin<&mut Chilpa>);
 
-        /// Vuelve a leer las listas guardadas.
+        /// Reads the saved lists again.
         #[qinvokable]
         fn refresh_playlists(self: Pin<&mut Chilpa>);
 
-        /// Pone a sonar un género, revuelto.
+        /// Starts a genre playing, shuffled.
         #[qinvokable]
         fn play_genre(self: Pin<&mut Chilpa>, genre: &QString);
 
-        /// Pone a sonar una lista inteligente, por su nombre.
+        /// Starts a smart list playing, by its name.
         #[qinvokable]
         fn play_smart_list(self: Pin<&mut Chilpa>, name: &QString);
 
-        /// Guarda la cola como una lista con ese nombre.
+        /// Saves the queue as a list under that name.
         #[qinvokable]
         fn save_queue_as(self: Pin<&mut Chilpa>, name: &QString);
 
-        /// Pone a sonar una lista guardada.
+        /// Starts a saved list playing.
         #[qinvokable]
         fn play_saved_playlist(self: Pin<&mut Chilpa>, playlist_id: i64);
 
-        /// Borra una lista guardada. Las pistas no se tocan.
+        /// Deletes a saved list. The tracks are not touched.
         #[qinvokable]
         fn delete_playlist(self: Pin<&mut Chilpa>, playlist_id: i64);
 
-        /// Vuelve a leer las estadísticas de escucha.
+        /// Reads the listening stats again.
         #[qinvokable]
         fn refresh_stats(self: Pin<&mut Chilpa>);
 
-        /// Vuelve a leer los artistas de la biblioteca.
+        /// Reads the library's artists again.
         #[qinvokable]
         fn refresh_artists(self: Pin<&mut Chilpa>);
 
-        /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
+        /// Filters the grid to one artist. An empty name clears the filter.
         #[qinvokable]
         fn open_artist_albums(self: Pin<&mut Chilpa>, name: &QString);
 
-        /// Vuelve a leer los álbumes de la biblioteca.
+        /// Reads the library's albums again.
         #[qinvokable]
         fn refresh_albums(self: Pin<&mut Chilpa>);
 
-        /// Abre un álbum: muestra sus pistas sin reproducirlas.
+        /// Opens an album: it shows its tracks without playing them.
         #[qinvokable]
         fn open_album_tracks(self: Pin<&mut Chilpa>, album_id: i64, title: &QString);
 
-        /// Cierra el álbum abierto.
+        /// Closes the open album.
         #[qinvokable]
         fn close_album(self: Pin<&mut Chilpa>);
 
-        /// Encola lo que encontró la búsqueda, desde esa posición.
+        /// Queues what the search found, from that position.
         #[qinvokable]
         fn enqueue_results(self: Pin<&mut Chilpa>, from: i32);
 
-        /// Encola un álbum completo, sin cortar lo que suena.
+        /// Queues a whole album, without cutting off what is playing.
         #[qinvokable]
         fn enqueue_album(self: Pin<&mut Chilpa>, album_id: i64);
 
-        /// Pone a sonar un álbum completo.
+        /// Starts a whole album playing.
         #[qinvokable]
         fn play_album(self: Pin<&mut Chilpa>, album_id: i64);
 
-        /// Pone a sonar el CD que haya en esa unidad.
+        /// Starts whatever CD is in that drive playing.
         #[qinvokable]
         fn play_cd(self: Pin<&mut Chilpa>, drive: &QString);
 
-        /// Carga los plugins que haya y vuelve a leer la lista.
+        /// Loads whatever plugins there are and reads the list again.
         #[qinvokable]
         fn load_plugins(self: Pin<&mut Chilpa>);
 
-        /// El usuario aprueba lo que un plugin pide; hasta entonces no
-        /// corre, ni se compila su wasm (ADR-008).
+        /// The user approves what a plugin asks for; until then it does not
+        /// run, and its wasm is not compiled (ADR-008).
         #[qinvokable]
         fn approve_plugin(self: Pin<&mut Chilpa>, id: &QString);
 
-        /// Conecta la cuenta de un plugin: abre el navegador donde el
-        /// servicio pide permiso. Lo que conteste llega en el pulso.
+        /// Connects a plugin's account: it opens the browser where the service
+        /// asks for permission. Whatever it answers arrives on the tick.
         #[qinvokable]
         fn connect_account(self: Pin<&mut Chilpa>, id: &QString);
 
-        /// Deja de esperar al navegador.
+        /// Stops waiting for the browser.
         #[qinvokable]
         fn cancel_connect(self: Pin<&mut Chilpa>);
 
-        /// Borra la credencial guardada. El plugin sigue instalado.
+        /// Deletes the kept credential. The plugin stays installed.
         #[qinvokable]
         fn disconnect_account(self: Pin<&mut Chilpa>, id: &QString);
 
-        /// Le quita la aprobación: deja de correr en el momento.
+        /// Withdraws its approval: it stops running right away.
         #[qinvokable]
         fn revoke_plugin(self: Pin<&mut Chilpa>, id: &QString);
 
-        /// Saca un plugin de cuarentena. Solo lo pide el usuario.
+        /// Takes a plugin out of quarantine. Only the user asks for it.
         #[qinvokable]
         fn reactivate_plugin(self: Pin<&mut Chilpa>, id: &QString);
 
-        /// Mide la salida elegida y dice qué formatos salen tal cual.
+        /// Measures the chosen output and says which formats come out untouched.
         #[qinvokable]
         fn run_wizard(self: Pin<&mut Chilpa>);
 
-        /// Vuelve a mirar qué unidades de CD hay.
+        /// Looks again at what CD drives there are.
         #[qinvokable]
         fn refresh_cd_drives(self: Pin<&mut Chilpa>);
 
-        /// Pone a sonar una radio o cualquier stream por HTTP.
+        /// Starts a radio, or any stream over HTTP, playing.
         #[qinvokable]
         fn play_url(self: Pin<&mut Chilpa>, url: &QString);
 
-        /// Abre una lista M3U y la pone a sonar.
+        /// Opens an M3U list and starts it playing.
         #[qinvokable]
         fn play_playlist(self: Pin<&mut Chilpa>, path: &QString);
 
-        /// Guarda la cola actual como lista M3U.
+        /// Saves the current queue as an M3U list.
         #[qinvokable]
         fn save_queue(self: Pin<&mut Chilpa>, path: &QString);
 
-        /// Encola una carpeta entera.
+        /// Queues a whole folder.
         #[qinvokable]
         fn play_folder(self: Pin<&mut Chilpa>, folder: &QString);
 
-        /// El lector y el asignador de `shuffle`: QML escribe la propiedad
-        /// y el asignador la aplica en la fachada.
+        /// The getter and setter for `shuffle`: QML writes the property and the
+        /// setter applies it on the facade.
         #[cxx_name = "shuffle"]
         fn shuffle(self: &Chilpa) -> bool;
         #[cxx_name = "setShuffle"]
@@ -347,45 +347,45 @@ pub mod chilpa_bridge {
         #[cxx_name = "shuffleChanged"]
         fn shuffle_changed(self: Pin<&mut Chilpa>);
 
-        /// Cambia la repetición: 0 ninguna, 1 toda la cola, 2 la pista.
+        /// Changes repeat: 0 none, 1 the whole queue, 2 the track.
         #[qinvokable]
         fn cycle_repeat(self: Pin<&mut Chilpa>);
 
-        /// Reordena la cola para que el tempo cambie poco entre pistas.
+        /// Reorders the queue so the tempo changes little between tracks.
         #[qinvokable]
         fn automix(self: Pin<&mut Chilpa>);
 
-        /// Quita de la cola la pista en esa posición.
+        /// Removes the track at that position from the queue.
         #[qinvokable]
         fn remove_from_queue(self: Pin<&mut Chilpa>, index: i32);
 
-        /// Para y vacía la cola.
+        /// Stops and empties the queue.
         #[qinvokable]
         fn clear_queue(self: Pin<&mut Chilpa>);
 
-        /// Salta a la siguiente pista de la cola.
+        /// Skips to the next track in the queue.
         #[qinvokable]
         fn next_track(self: Pin<&mut Chilpa>);
 
-        /// Vuelve a la anterior; en la primera, la reinicia.
+        /// Goes back to the previous one; on the first, it restarts it.
         #[qinvokable]
         fn previous_track(self: Pin<&mut Chilpa>);
 
-        /// Pausa o reanuda. No se llama set_paused: ese nombre ya lo usa el
-        /// asignador que genera la propiedad `paused`.
+        /// Pauses or resumes. It is not called set_paused: that name is already
+        /// taken by the setter the `paused` property generates.
         #[qinvokable]
         fn pause(self: Pin<&mut Chilpa>, paused: bool);
 
-        /// Salta a ese segundo de lo que suena.
+        /// Seeks to that second of what is playing.
         #[qinvokable]
         fn seek(self: Pin<&mut Chilpa>, seconds: f64);
 
-        /// Para lo que esté sonando.
+        /// Stops whatever is playing.
         #[qinvokable]
         fn stop(self: Pin<&mut Chilpa>);
 
-        /// Recoge los eventos del reproductor y actualiza las propiedades.
-        /// QML lo llama desde un temporizador.
+        /// Collects the player's events and updates the properties. QML calls
+        /// it from a timer.
         #[qinvokable]
         fn poll(self: Pin<&mut Chilpa>);
     }
@@ -399,11 +399,11 @@ mod plugins;
 mod search;
 mod tick;
 
-/// Un tiempo largo dicho como se dice: "3 h 21 min", no 12 060 000 ms.
+/// A long span said the way it is said: "3 h 21 min", not 12,060,000 ms.
 pub(super) fn long_duration(ms: u64) -> String {
     let minutes = ms / 60_000;
     if minutes == 0 {
-        // Un disco de prueba de seis segundos no dura "0 min".
+        // A six second test disc does not last "0 min".
         return format!("{} s", ms / 1000);
     }
     let (hours, rest) = (minutes / 60, minutes % 60);
@@ -413,10 +413,10 @@ pub(super) fn long_duration(ms: u64) -> String {
     format!("{hours} h {rest} min")
 }
 
-/// Una fecha unix en año-mes-día, sin arrastrar una biblioteca de fechas.
+/// A unix date as year-month-day, without dragging in a date library.
 pub(super) fn short_date(unix: i64) -> String {
-    // Días desde 1970 a fecha civil (Howard Hinnant). Son cuatro líneas y
-    // evitan una dependencia para mostrar un renglón.
+    // Days since 1970 to a civil date (Howard Hinnant). It is four lines and
+    // it avoids a dependency for showing one line.
     let days_ago = unix.div_euclid(86_400) + 719_468;
     let era = days_ago.div_euclid(146_097);
     let doe = days_ago - era * 146_097;
@@ -429,7 +429,7 @@ pub(super) fn short_date(unix: i64) -> String {
     format!("{y:04}-{m:02}-{d:02}")
 }
 
-/// Las vistas rápidas de la biblioteca, con su nombre para la lista.
+/// The library's quick views, with their name for the list.
 pub(super) const VIEWS: &[(chilpa_api::AlbumSort, &str)] = &[
     (chilpa_api::AlbumSort::Artist, "Por artista"),
     (chilpa_api::AlbumSort::Title, "Por título"),
@@ -439,12 +439,12 @@ pub(super) const VIEWS: &[(chilpa_api::AlbumSort, &str)] = &[
     (chilpa_api::AlbumSort::LastPlayed, "Escuchados hace poco"),
 ];
 
-/// La lista de acomodos, generada por `build.rs` a partir de los QML.
+/// The list of layouts, generated by `build.rs` from the QML files.
 mod layouts {
     include!(concat!(env!("OUT_DIR"), "/layouts.rs"));
 }
 
-/// El estado del lado de Rust.
+/// The state on the Rust side.
 pub struct ChilpaRust {
     outputs: QStringList,
     output_ids: QStringList,
@@ -460,8 +460,8 @@ pub struct ChilpaRust {
     results: QStringList,
     search_problems: QString,
     result_paths: Vec<String>,
-    /// Si el pulso anterior ya sabía que se estaba esperando al navegador,
-    /// para no rearmar la lista de plugins en cada pulso.
+    /// Whether the previous tick already knew the browser was being waited
+    /// on, so the plugin list is not rebuilt on every tick.
     connecting_shown: bool,
     open_album: QString,
     open_album_id: i64,
@@ -478,8 +478,8 @@ pub struct ChilpaRust {
     layouts: QStringList,
     analysis: QString,
     lyrics: QStringList,
-    /// De qué pista es la letra que está armada, para no rearmarla en cada
-    /// pulso.
+    /// Which track the assembled lyrics belong to, so they are not rebuilt
+    /// on every tick.
     lyrics_of: String,
     lyrics_line: i32,
     lyrics_synced: bool,
@@ -615,19 +615,19 @@ impl Default for ChilpaRust {
             bit_perfect: false,
             seconds: 0.0,
             total_seconds: 0.0,
-            // La ventana se puede arrancar apuntando a un archivo, para
-            // probarla sin tocar nada: chilpa-qt <archivo> [salida].
+            // The window can be started pointing at a file, to exercise it
+            // without touching anything: chilpa-qt <file> [output].
             autoplay_path: QString::from(&std::env::args().nth(1).unwrap_or_default()),
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             initial_search: QString::from(&std::env::var("CHILPA_SEARCH").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             initial_tab: QString::from(&std::env::var("CHILPA_TAB").unwrap_or_default()),
-            // Qué plugin conectar al arrancar. Vacío no conecta nada.
+            // Which plugin to connect at startup. Empty connects nothing.
             initial_connect: QString::from(
                 &std::env::var("CHILPA_CONNECT").unwrap_or_default(),
             ),
-            // Cuál resultado poner a sonar al arrancar, contando desde 1.
-            // Con 0 no suena nada, que es lo normal.
+            // Which result to start playing at startup, counting from 1.
+            // With 0 nothing plays, which is the normal case.
             initial_play: std::env::var("CHILPA_PLAY")
                 .ok()
                 .and_then(|v| v.parse().ok())
@@ -640,11 +640,11 @@ impl Default for ChilpaRust {
 }
 
 
-/// Abre una URL en el navegador del sistema.
+/// Opens a URL in the system's browser.
 ///
-/// `xdg-open` en Linux, `open` en macOS, `start` en Windows. No se espera a
-/// que termine: el navegador vive su vida y Chilpa sigue con la suya, que
-/// es esperar en su hilo a que el usuario regrese.
+/// `xdg-open` on Linux, `open` on macOS, `start` on Windows. It is not
+/// waited on: the browser lives its life and Chilpa goes on with its own,
+/// which is waiting on its thread for the user to come back.
 pub(super) fn open_in_browser(url: &str) -> std::io::Result<()> {
     let mut cmd = if cfg!(target_os = "macos") {
         std::process::Command::new("open")

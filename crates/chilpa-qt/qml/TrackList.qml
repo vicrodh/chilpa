@@ -1,7 +1,7 @@
-// Una lista de pistas con su cuenta. La usan los tops y el historial.
+// A track list with its count. The tops and the history use it.
 //
-// Un doble clic la pone a sonar: de nada sirve ver lo que más se escucha si
-// hay que ir a buscarlo a otro lado.
+// A double click starts it playing: it is no use seeing what is played most
+// if it then has to be hunted down somewhere else.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,9 +12,9 @@ ColumnLayout {
     spacing: 6
 
     property string title: ""
-    /// Renglones "título, artista, álbum, veces, ruta".
+    /// Lines of "title, artist, album, count, path".
     property var tracks: []
-    /// Si se muestra la cuenta de escuchas.
+    /// Whether the play count is shown.
     property bool withPlayCounts: true
 
     Label {

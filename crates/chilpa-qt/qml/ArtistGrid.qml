@@ -1,9 +1,9 @@
-// Los artistas de la biblioteca.
+// The library's artists.
 //
-// Un clic filtra la reja de álbumes a ese artista. La portada es la de uno
-// de sus discos: una inicial en un cuadro gris no le dice nada a nadie. Va
-// cuadrada, como los discos: redondearla pide una máscara y un efecto más
-// para no ganar nada.
+// A click filters the album grid to that artist. The cover is one of their
+// albums': an initial on a grey square tells nobody anything. It is square,
+// like the albums: rounding it asks for a mask and one more effect to gain
+// nothing.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -16,7 +16,7 @@ GridView {
     cellHeight: 216
     model: Chilpa.artists
 
-    // Cada renglón viene como "nombre, discos, pistas, portada".
+    // Each line comes as "name, albums, tracks, cover".
     function fields(line) {
         return line.split("\t")
     }

@@ -1,8 +1,9 @@
-// La búsqueda, con sus atajos.
+// The search, with its shortcuts.
 //
-// Lo escrito vive en el puente (`Chilpa.searchText`), no en este campo: las
-// vistas deciden qué mostrar según haya o no búsqueda, y no tienen por qué
-// saber dónde quedó la caja en este layout.
+// What is typed lives in the bridge (`Chilpa.searchText`), not in this
+// field: the views decide what to show depending on whether there is a
+// search, and they have no reason to know where the box ended up in this
+// layout.
 import QtQuick
 import QtQuick.Controls
 import com.blitzfc.chilpa

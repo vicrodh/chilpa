@@ -1,7 +1,7 @@
-// La cuadrícula de álbumes.
+// The album grid.
 //
-// Es el primer pedazo de la vista de biblioteca: portada, título, artista y
-// cuántas pistas trae. Un clic la pone a sonar completa.
+// It is the first piece of the library view: cover, title, artist and how
+// many tracks it carries. A click starts the whole thing playing.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -11,16 +11,16 @@ Rectangle {
     id: root
     radius: 14
 
-    // Qué se está mirando: los discos, los artistas o las estadísticas.
-    // Entrar a un artista devuelve a los discos, ya filtrados.
+    // What is being looked at: the albums, the artists or the stats.
+    // Entering an artist returns to the albums, already filtered.
     property string tab: "albumes"
     readonly property bool byArtist: tab === "artistas"
 
     function showTab(which) {
         tab = which
         if (which === "artistas") {
-            // Entrar a los artistas quita el filtro: si no, se vería la
-            // lista completa y la reja de uno solo.
+            // Entering the artists clears the filter: otherwise the full list
+            // would show alongside a grid of just one.
             Chilpa.openArtistAlbums("")
             Chilpa.refreshArtists()
         } else if (which === "estadisticas") {
@@ -35,13 +35,13 @@ Rectangle {
     }
 
     Component.onCompleted: {
-        // Para probar la vista sin ratón: CHILPA_TAB=artistas.
+        // For exercising the view without a mouse: CHILPA_TAB=artists.
         if (Chilpa.initialTab !== "") showTab(Chilpa.initialTab)
     }
     color: "#ffffff"
     border.color: "#1a411d1f"
 
-    // Cada renglón viene como "id, título, artista, año, pistas, portada".
+    // Each line comes as "id, title, artist, year, tracks, cover".
     function fields(line) {
         return line.split("\t")
     }
@@ -91,14 +91,14 @@ Rectangle {
                 }
             }
 
-            // El artista al que está filtrada la reja, con su salida.
+            // The artist the grid is filtered to, with its way out.
             Button {
                 visible: root.tab === "albumes" && Chilpa.openArtist !== ""
                 text: "← " + Chilpa.openArtist
                 onClicked: root.showTab("artistas")
             }
 
-            // Las vistas rápidas: lo mismo de siempre, mirado de otra forma.
+            // The quick views: the same as ever, looked at another way.
             ComboBox {
                 Layout.preferredWidth: 180
                 visible: root.tab === "albumes"
@@ -108,9 +108,9 @@ Rectangle {
             }
 
             Item { Layout.fillWidth: true }
-            // Una barra propia, de dos rectángulos: la del estilo del
-            // sistema se queja cuando aparece dentro de un RowLayout y llena
-            // la consola de avisos que no son nuestros.
+            // A bar of our own, two rectangles: the system style's one
+            // complains when it appears inside a RowLayout and fills the
+            // console with warnings that are not ours.
             Rectangle {
                 visible: Chilpa.scanning
                 Layout.preferredWidth: 160
@@ -219,8 +219,8 @@ Rectangle {
                         font.pixelSize: 12
                         color: "#7a411d1f"
                     }
-                    // El año y las pistas en su propio renglón: pegados al
-                    // artista se los comía el elide.
+                    // The year and the tracks on their own line: stuck to the
+                    // artist the elide ate them.
                     Label {
                         Layout.fillWidth: true
                         text: (cols[3] ? cols[3] + " · " : "") + cols[4] +
@@ -237,8 +237,8 @@ Rectangle {
                     anchors.fill: parent
                     cursorShape: Qt.PointingHandCursor
                     acceptedButtons: Qt.LeftButton | Qt.MiddleButton
-                    // Un clic abre el álbum, el doble clic lo echa a andar y
-                    // el de en medio lo encola sin cortar lo que suena.
+                    // A click opens the album, a double click sets it going and
+                    // the middle one queues it without cutting off what plays.
                     onClicked: (event) => {
                         if (event.button === Qt.MiddleButton)
                             Chilpa.enqueueAlbum(parseInt(cols[0]))

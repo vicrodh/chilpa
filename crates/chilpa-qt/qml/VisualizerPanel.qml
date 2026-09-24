@@ -1,8 +1,8 @@
-// Lo que de verdad está saliendo por el dispositivo.
+// What is actually going out the device.
 //
-// No es la decodificación ni una animación bonita: son las muestras que se
-// entregaron, copiadas después de empaquetarlas. Si esto se mueve, hay audio
-// saliendo; si se queda plano, no lo hay, y eso ya es un diagnóstico.
+// It is not the decoding and it is not a pretty animation: these are the
+// samples that were delivered, copied after packing. If this moves, audio is
+// going out; if it stays flat, none is, and that is already a diagnosis.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -15,8 +15,8 @@ Rectangle {
     border.color: "#1a411d1f"
     implicitHeight: 110
 
-    // Se redibuja cuando llegan datos nuevos, no con un temporizador propio:
-    // dos relojes desacompasados se ven peor que uno solo.
+    // It redraws when new data arrives, not on a timer of its own: two clocks
+    // out of step look worse than one.
     property var scope: Chilpa.scope
     property var spectrum: Chilpa.spectrum
     property var pairs: Chilpa.pairs
@@ -24,7 +24,7 @@ Rectangle {
     onSpectrumChanged: bars.requestPaint()
     onPairsChanged: gonio.requestPaint()
 
-    /// Qué se dibuja. Lo decide el puente, que lo recuerda entre sesiones.
+    /// What is drawn. The bridge decides, and remembers it between sessions.
     readonly property string which: Chilpa.visualizer
     readonly property bool asSpectrum: which === "spectrum"
     readonly property bool asGoniometer: which === "goniometer"
@@ -49,8 +49,8 @@ Rectangle {
                 for (let i = 0; i < bands.length; i++) {
                     const v = Math.min(1, parseFloat(bands[i]) || 0)
                     const barH = Math.max(1, v * height)
-                    // Los graves en rojo, los agudos en vino: el degradado
-                    // dice en qué parte del espectro se está mirando.
+                    // The lows in red, the highs in wine: the gradient says
+                    // which part of the spectrum is being looked at.
                     const t = i / bands.length
                     ctx.fillStyle = Qt.rgba(0.84 - 0.6 * t, 0.15 + 0.05 * t, 0.17 + 0.05 * t, 1)
                     ctx.fillRect(i * barW, height - barH, Math.max(1, barW - 2), barH)
@@ -58,10 +58,9 @@ Rectangle {
             }
         }
 
-        // El goniómetro: cada muestra es un punto, el izquierdo contra el
-        // derecho, girado 45 grados. Una raya vertical es mono; una mancha
-        // ancha es estéreo; una raya horizontal es contrafase, que en mono
-        // se cancela.
+        // The goniometer: each sample is a dot, left against right, turned 45
+        // degrees. A vertical line is mono; a wide blob is stereo; a
+        // horizontal line is out of phase, which cancels in mono.
         Canvas {
             id: gonio
             Layout.fillWidth: true
@@ -89,8 +88,8 @@ Rectangle {
                     const p = points[n].split("\t")
                     const i = parseFloat(p[0]) || 0
                     const d = parseFloat(p[1]) || 0
-                    // Girado 45 grados: mono queda vertical, que es como se
-                    // mira un goniómetro.
+                    // Turned 45 degrees: mono ends up vertical, which is how a
+                    // goniometer is read.
                     const x = cx + (d - i) * r * 0.7071
                     const y = cy - (d + i) * r * 0.7071
                     ctx.fillRect(x, y, 2, 2)
@@ -124,8 +123,8 @@ Rectangle {
                 const barW = w / points.length
                 ctx.fillStyle = "#d7272b"
                 for (let i = 0; i < points.length; i++) {
-                    // Cada punto es el pico de su tajada: se dibuja
-                    // simétrico, como una onda.
+                    // Each point is its slice's peak: it is drawn
+                    // symmetrically, like a wave.
                     const v = Math.min(1, parseFloat(points[i]) || 0)
                     const barH = Math.max(1, v * mid)
                     ctx.fillRect(i * barW, mid - barH, Math.max(1, barW - 1), barH * 2)
@@ -133,8 +132,8 @@ Rectangle {
             }
         }
 
-        // Los niveles por canal, con su número: un medidor sin número no
-        // sirve para comparar nada.
+        // The levels per channel, with their number: a meter with no number
+        // is no use for comparing anything.
         RowLayout {
             Layout.fillWidth: true
             spacing: 10
@@ -179,8 +178,8 @@ Rectangle {
             }
             Item { Layout.fillWidth: true }
 
-            // La correlación entre canales: uno es mono, cero es ancho, y
-            // abajo de cero hay algo en contrafase.
+            // The correlation between channels: one is mono, zero is wide, and
+            // below zero there is something out of phase.
             Label {
                 visible: Chilpa.correlation <= 1.0
                 text: "fase " + Chilpa.correlation.toFixed(2)
@@ -188,7 +187,7 @@ Rectangle {
                 color: Chilpa.correlation < 0 ? "#d7272b" : "#7a411d1f"
             }
 
-            // Cambiar de dibujo sin menús: un clic en el nombre.
+            // Changing the drawing without menus: a click on the name.
             Label {
                 text: root.which
                 font.pixelSize: 10

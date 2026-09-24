@@ -1,4 +1,4 @@
-// Anterior, pausa, siguiente y parar, con sus atajos.
+// Previous, pause, next and stop, with their shortcuts.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -9,8 +9,8 @@ RowLayout {
     id: root
     spacing: 8
 
-    // Con el cursor dentro de un campo de texto, la barra espaciadora
-    // escribe un espacio; no pausa.
+    // With the cursor inside a text field, the space bar types a space;
+    // it does not pause.
     readonly property bool typing:
         Window.window !== null && Window.window.activeFocusItem instanceof TextInput
 
@@ -61,8 +61,8 @@ RowLayout {
         onClicked: Chilpa.stop()
     }
 
-    // Aleatorio y repetición cambian lo que sigue, no lo que suena: se
-    // pueden tocar con la cola andando.
+    // Shuffle and repeat change what comes next, not what is playing:
+    // they can be touched with the queue running.
     Button {
         text: "Aleatorio"
         checkable: true
@@ -73,8 +73,8 @@ RowLayout {
         text: ["Repetir: no", "Repetir: cola", "Repetir: pista"][Chilpa.repeat]
         onClicked: Chilpa.cycleRepeat()
     }
-    // Reordena lo que falta para que el tempo no dé saltos. Necesita que la
-    // biblioteca esté analizada.
+    // It reorders what is left so the tempo does not jump. It needs the
+    // library to have been analysed.
     Button {
         text: "AutoMix"
         enabled: Chilpa.queue.length > 2

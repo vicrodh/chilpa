@@ -1,7 +1,7 @@
-//! Los plugins: cargarlos, aprobarlos y conectar su cuenta.
+//! The plugins: loading them, approving them and connecting their account.
 //!
-//! Nadie corre sin que el usuario apruebe lo que pide (ADR-008), y conectar
-//! una cuenta abre el navegador y espera en otro hilo.
+//! Nobody runs without the user approving what it asks for (ADR-008), and
+//! connecting an account opens the browser and waits on another thread.
 
 use super::Chilpa;
 use cxx_qt::CxxQtType as _;
@@ -40,9 +40,9 @@ impl Chilpa {
         let name = id.to_string();
         match self.as_mut().rust_mut().api.connect_account(&name) {
             Ok(url) => {
-                // Se abre el navegador del sistema. Si no hay ninguno, se
-                // dice y se deja la URL a la vista: copiarla a mano es feo
-                // pero funciona, y quedarse callado no.
+                // The system browser is opened. If there is none, it is said
+                // and the URL is left to the view: copying it by hand is ugly
+                // but it works, and keeping quiet does not.
                 match open_in_browser(&url) {
                     Ok(()) => self.as_mut().set_library_status(QString::from(
                         "Te abrí el navegador para dar permiso. Aquí te espero.",
@@ -88,12 +88,12 @@ impl Chilpa {
                 p.name,
                 p.state,
                 p.problem,
-                // Lo que falta aprobar, que es lo que hay que leer antes de
-                // decir que sí. Con " · " porque un renglón no lleva tabs.
+                // What is left to approve, which is what has to be read before
+                // saying yes. With " - " because a line carries no tabs.
                 p.pending.join(" · "),
                 if p.wants_more { "mas" } else { "" },
-                // Cómo está su cuenta: sin cuenta, conectada, o vencida sin
-                // cómo renovarse.
+                // How its account stands: no account, connected, or expired
+                // with no way to renew itself.
                 if p.account_expired {
                     "vencida"
                 } else if p.connected {

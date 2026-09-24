@@ -1,8 +1,8 @@
-//! El pulso: recoger lo que pasó y acomodarlo en las propiedades.
+//! The tick: collecting what happened and arranging it into the properties.
 //!
-//! QML lo llama desde un temporizador. Todo lo que corre en segundo plano
-//! —la reproducción, el escaneo, el análisis, la búsqueda, conectar una
-//! cuenta— se recoge aquí y en ningún otro lado.
+//! QML calls it from a timer. Everything that runs in the background -- the
+//! playback, the scan, the analysis, the search, connecting an account -- is
+//! collected here and nowhere else.
 
 use super::Chilpa;
 use cxx_qt::CxxQtType as _;
@@ -12,7 +12,7 @@ use std::pin::Pin;
 impl Chilpa {
 
     pub fn poll(mut self: Pin<&mut Self>) {
-        // El análisis avanza solo; lo único que hace falta es contarlo.
+        // The analysis advances on its own; all that is needed is to report it.
         if self.analyzing {
             let state = self.as_mut().rust_mut().api.analysis_status().clone();
             let progress = if state.total > 0 {
@@ -33,12 +33,12 @@ impl Chilpa {
                     "{} analizadas, {} sin pulso, {} sin leer",
                     state.analyzed, state.without_pulse, state.failed
                 )));
-                // Las listas de tempo ya tienen con qué llenarse.
+                // The tempo lists now have something to fill themselves with.
                 self.as_mut().refresh_playlists();
             }
         }
 
-        // El escaneo primero: al terminar refresca los álbumes.
+        // The scan first: on finishing it refreshes the albums.
         if self.scanning {
             let state = self.as_mut().rust_mut().api.scan_status().clone();
             let progress = if state.total > 0 {
@@ -61,14 +61,13 @@ impl Chilpa {
                 self.as_mut().set_scanning(false);
                 self.as_mut().set_scan_progress(1.0);
                 self.as_mut().refresh_albums();
-                // Los géneros y las cuentas de las listas cambian con lo que
-                // acaba de entrar.
+                // The genres and the lists' counts change with what just came in.
                 self.as_mut().refresh_playlists();
             }
         }
 
-        // Lo que sale, para los visualizadores. Solo mientras suena: leer
-        // el círculo con el reproductor quieto es trabajo tirado.
+        // What goes out, for the visualizers. Only while it plays: reading
+        // the ring with the player idle is wasted work.
         if self.playing {
             let envelope = self.api.scope_envelope(120);
             let mut e = QList::<QString>::default();
@@ -118,8 +117,8 @@ impl Chilpa {
         };
         self.as_mut().set_artwork(QString::from(&cover));
         self.as_mut().set_queue_index(now.index as i32);
-        // La letra solo se vuelve a armar cuando cambia: rehacer una lista
-        // de QString sesenta veces por minuto es tirar trabajo.
+        // The lyrics are only rebuilt when they change: remaking a list of
+        // QStrings sixty times a minute is wasted work.
         if self.lyrics_of != now.path {
             let mut list = QList::<QString>::default();
             for l in &now.lyrics {
@@ -137,8 +136,8 @@ impl Chilpa {
             self.as_mut().set_track(QString::from(&now.path));
         }
 
-        // Una cuenta que termina de conectarse cambia la lista de plugins,
-        // y el usuario está mirando esa pestaña esperándolo.
+        // An account that finishes connecting changes the plugin list, and
+        // the user is looking at that tab waiting for it.
         if self.as_mut().rust_mut().api.connecting() != self.connecting_shown {
             let waiting = self.as_mut().rust_mut().api.connecting();
             self.as_mut().rust_mut().connecting_shown = waiting;
@@ -148,10 +147,10 @@ impl Chilpa {
             }
         }
 
-        // Cuando llega lo de un source, la lista se vuelve a armar: es lo
-        // que hace que los resultados aparezcan solos. Se pregunta si
-        // cambiaron y no si la consulta sigue viva, porque puede empezar y
-        // acabar entre dos pulsos.
+        // When a source's results arrive, the list is rebuilt: that is what
+        // makes results appear on their own. What is asked is whether they
+        // changed and not whether the query is still alive, because it can
+        // start and finish between two ticks.
         if self.as_mut().rust_mut().api.search_changed() {
             self.as_mut().refresh_results();
         }

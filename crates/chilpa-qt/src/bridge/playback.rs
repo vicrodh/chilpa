@@ -1,7 +1,7 @@
-//! Poner algo a sonar y manejar la cola.
+//! Starting something playing and driving the queue.
 //!
-//! La salida y la política de bit-perfect salen de lo que el usuario eligió
-//! en la ventana; aquí solo se le pasan a la fachada.
+//! The output and the bit-perfect policy come from what the user chose in
+//! the window; here they are only handed to the facade.
 
 use super::Chilpa;
 use cxx_qt::CxxQtType as _;
@@ -23,7 +23,7 @@ impl Chilpa {
 
     pub fn play(mut self: Pin<&mut Self>, path: &QString) {
         let path = path.to_string();
-        // QML entrega la ruta de un diálogo de archivo como URL.
+        // QML hands a file dialog's path over as a URL.
         let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
         let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().set_error(QString::from(""));
@@ -33,8 +33,8 @@ impl Chilpa {
             .rust_mut()
             .api
             .play_file(std::path::Path::new(&path), &device, bit_perfect);
-        // Un archivo suelto también es una cola de una pista: la vista tiene
-        // que poder guardarla y vaciarla como cualquier otra.
+        // A lone file is a one track queue too: the view has to be able to
+        // save it and empty it like any other.
         let queue = self.as_mut().rust_mut().api.queue_titles();
         self.as_mut().refresh_queue(&queue);
         self.as_mut().set_queue_index(0);
@@ -53,7 +53,7 @@ impl Chilpa {
         self.as_mut().set_track(QString::from(&address));
     }
 
-    /// Encola una carpeta entera y la echa a andar.
+    /// Queues a whole folder and sets it going.
     pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let path = folder.to_string();
         let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
@@ -100,7 +100,7 @@ impl Chilpa {
         }
     }
 
-    /// Deja la cola que reporta la fachada en las propiedades de la vista.
+    /// Puts the queue the facade reports into the view's properties.
     pub(super) fn refresh_queue(mut self: Pin<&mut Self>, titles: &[String]) {
         let mut list = QList::<QString>::default();
         for t in titles {
@@ -110,7 +110,7 @@ impl Chilpa {
         self.as_mut().refresh_removed();
     }
 
-    /// Qué posiciones de la cola están apagadas.
+    /// Which positions of the queue are greyed out.
     pub(super) fn refresh_removed(mut self: Pin<&mut Self>) {
         let removed: Vec<bool> = self.api.queue_removed().to_vec();
         let mut l = QList::<QString>::default();
@@ -137,7 +137,7 @@ impl Chilpa {
         self.as_mut().set_playing(false);
     }
 
-    /// La salida y la política elegidas, que es lo que usa todo lo que suena.
+    /// The chosen output and policy, which is what everything that plays uses.
     pub(super) fn chosen(self: Pin<&mut Self>) -> (String, bool) {
         (self.device.to_string(), self.want_bit_perfect)
     }
@@ -155,7 +155,7 @@ impl Chilpa {
             self.as_mut().set_library_status(QString::from(&format!(
                 "mezcla por tempo: {mixed} pistas"
             )));
-            // La mezcla apaga el aleatorio: son dos formas de lo mismo.
+            // The mix switches shuffle off: they are two forms of the same thing.
             self.as_mut().rust_mut().shuffle = false;
             self.as_mut().shuffle_changed();
         }
@@ -223,7 +223,7 @@ impl Chilpa {
         let (device, _) = self.as_mut().chosen();
         let report = self.as_mut().rust_mut().api.wizard(&device);
         let mut l = QList::<QString>::default();
-        // Primero lo que el dispositivo dijo de sí mismo.
+        // First what the device said about itself.
         if report.probed {
             l.append(QString::from(&format!(
                 "Frecuencias\t{}\t",

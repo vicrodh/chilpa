@@ -1,8 +1,8 @@
-// Lo que se ha escuchado.
+// What has been listened to.
 //
-// Todo sale del log de reproducciones, que es append-only: los números se
-// vuelven a sumar cada vez que se miran, no se llevan en un contador que se
-// pueda desincronizar sin que nadie se entere.
+// It all comes out of the play log, which is append-only: the numbers are
+// added up again every time they are looked at, not kept in a counter that
+// can drift out of sync without anyone noticing.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -16,7 +16,7 @@ ColumnLayout {
         return line.split("\t")
     }
 
-    // El resumen, en renglones de etiqueta y valor.
+    // The summary, in label and value lines.
     Flow {
         Layout.fillWidth: true
         spacing: 18

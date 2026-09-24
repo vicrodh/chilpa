@@ -1,9 +1,9 @@
-// La ventana. No acomoda nada: carga el layout elegido y lo deja hacer.
+// The window. It arranges nothing: it loads the chosen layout and lets it work.
 //
-// Chilpa va a tener varios acomodos, y en el futuro modificables, así que la
-// ventana solo se encarga de lo que ningún layout debería repetir: el pulso
-// que recoge los eventos del reproductor, el arranque con un archivo por la
-// línea de comandos, y cargar el layout que toque.
+// Chilpa will have several layouts, editable in the future, so the window
+// only takes care of what no layout should repeat: the tick that collects
+// the player's events, starting with a file from the command line, and
+// loading whichever layout applies.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,21 +12,21 @@ import com.blitzfc.chilpa
 ApplicationWindow {
     id: window
     width: 980
-    // Alto para que el acomodo clásico quepa entero con la reja, la cola y
-    // el visualizador; si la pantalla es más chica, Qt recorta la ventana y
-    // lo último en ceder es la cola.
+    // Tall so the classic layout fits whole with the grid, the queue and
+    // the visualizer; if the screen is smaller, Qt trims the window and the
+    // last thing to give is the queue.
     height: 860
     visible: true
-    // El título dice qué suena: en una barra de tareas es lo único que se
-    // ve de la ventana.
+    // The title says what is playing: in a taskbar it is all that is seen
+    // of the window.
     title: Chilpa.playing && Chilpa.title !== ""
         ? (Chilpa.artist !== "" ? Chilpa.artist + " — " + Chilpa.title : Chilpa.title)
         : "Chilpa"
     color: "#faf6f2"
 
-    // El layout es un archivo `Layout<nombre>.qml` al lado de este. Si el
-    // nombre guardado no existe, se cae al clásico en vez de dejar la
-    // ventana vacía.
+    // The layout is a `Layout<name>.qml` file next to this one. If the
+    // saved name does not exist, it falls back to the classic one instead
+    // of leaving the window empty.
     Loader {
         id: layout
         anchors.fill: parent
@@ -37,7 +37,7 @@ ApplicationWindow {
         }
     }
 
-    // Espera a que la búsqueda traiga resultados y toca el que se pidió.
+    // It waits for the search to bring results and plays the one that was asked for.
     Timer {
         id: playWhenReady
         interval: 250
@@ -56,27 +56,27 @@ ApplicationWindow {
     }
 
     Component.onCompleted: {
-        // Los plugins se cargan aquí y no al abrir su pestaña: la búsqueda
-        // le pregunta a los sources, y no puede depender de que el usuario
-        // haya pasado por ahí primero. Uno roto no carga y se anota; el
-        // arranque nunca se detiene por eso (ADR-003).
+        // The plugins are loaded here and not on opening their tab: the
+        // search asks the sources, and it cannot depend on the user having
+        // been through there first. A broken one does not load and is
+        // noted; startup never stops because of it (ADR-003).
         Chilpa.loadPlugins()
 
-        // Para probar sin teclado ni ratón: CHILPA_SEARCH deja la búsqueda
-        // escrita y CHILPA_ALBUM abre un álbum por id.
+        // For exercising without keyboard or mouse: CHILPA_SEARCH leaves the
+        // search typed in and CHILPA_ALBUM opens an album by id.
         if (Chilpa.initialSearch !== "") Chilpa.search(Chilpa.initialSearch)
-        // Los resultados de un source llegan después de la búsqueda, así que
-        // se espera a que estén antes de tocar el primero.
+        // A source's results arrive after the search, so it waits for them
+        // before playing the first one.
         if (Chilpa.initialPlay > 0) playWhenReady.start()
         if (Chilpa.initialConnect !== "") Chilpa.connectAccount(Chilpa.initialConnect)
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshAlbums()
         if (Chilpa.initialRescan) Chilpa.rescan()
         if (Chilpa.initialAnalysis) Chilpa.analyzeLibrary()
-        // Arrancada con un archivo: suena sola en la salida que se le pida.
+        // Started with a file: it plays by itself on whatever output is asked for.
         if (Chilpa.autoplayPath !== "") {
-            // Una salida pedida por la línea de comandos suena, pero no se
-            // queda de preferida: es para probar, no para elegir.
+            // An output asked for on the command line plays, but it does not
+            // stay as the preferred one: it is for testing, not for choosing.
             if (Chilpa.autoplayDevice !== "") Chilpa.device = Chilpa.autoplayDevice
             if (Chilpa.autoplayPath.endsWith("/"))
                 Chilpa.playFolder(Chilpa.autoplayPath)
@@ -85,7 +85,7 @@ ApplicationWindow {
         }
     }
 
-    // La lista de atajos, que si no hay que adivinarla.
+    // The list of shortcuts, which otherwise has to be guessed.
     Dialog {
         id: help
         title: "Atajos"
@@ -123,7 +123,7 @@ ApplicationWindow {
                 }
             }
 
-            // Botón propio: el estándar de Qt sale en inglés.
+            // A button of our own: Qt's standard one comes out in English.
             Button {
                 Layout.alignment: Qt.AlignRight
                 Layout.topMargin: 6

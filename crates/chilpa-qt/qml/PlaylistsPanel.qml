@@ -1,8 +1,8 @@
-// Las listas guardadas.
+// The saved lists.
 //
-// Cada una dice de dónde viene. Hoy todas son de aquí; cuando un plugin
-// traiga las suyas, se van a ver en la misma lista y se van a poder separar
-// por esa columna, que es de lo que se trata.
+// Each one says where it comes from. Today they are all from here; when a
+// plugin brings its own, they will show in the same list and can be
+// separated by that column, which is the whole point.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
@@ -12,7 +12,7 @@ ColumnLayout {
     id: root
     spacing: 8
 
-    // Cada renglón viene como "id, nombre, de dónde, pistas".
+    // Each line comes as "id, name, provider, tracks".
     function fields(line) {
         return line.split("\t")
     }
@@ -41,7 +41,7 @@ ColumnLayout {
         name.text = ""
     }
 
-    // El análisis: lo que llena las listas de tempo.
+    // The analysis: what fills the tempo lists.
     RowLayout {
         Layout.fillWidth: true
         spacing: 8
@@ -72,8 +72,9 @@ ColumnLayout {
         }
     }
 
-    // Las inteligentes primero: no se guardan, se vuelven a resolver cada
-    // vez que se miran, así que siempre traen lo que cumple hoy.
+    // The smart ones first: they are not saved, they are resolved again
+    // every time they are looked at, so they always carry what qualifies
+    // today.
     Label {
         text: "Inteligentes"
         font.pixelSize: 12

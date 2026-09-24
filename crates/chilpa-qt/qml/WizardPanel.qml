@@ -1,9 +1,9 @@
-// El asistente de alta fidelidad.
+// The high fidelity wizard.
 //
-// Es un diagnóstico, no una configuración: mide la salida elegida y dice,
-// formato por formato, si lo que saldría es lo mismo que entró. No apaga
-// nada ni escribe ajustes. El de QBZ escribía una lista de frecuencias
-// supuestas, y eso es peor que no saber.
+// It is a diagnosis, not a configuration: it measures the chosen output and
+// says, format by format, whether what would come out is the same as what
+// went in. It turns nothing off and writes no settings. QBZ's one wrote a
+// list of assumed rates, and that is worse than not knowing.
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
