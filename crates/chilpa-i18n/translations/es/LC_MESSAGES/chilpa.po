@@ -16,6 +16,9 @@ msgstr "\"{}\" no sirve como id: se usa como nombre de carpeta, así que va en m
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
 
+msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
+msgstr "\"{}\" abrió como {} en su lugar; apaga bit-perfect para dejar que la Mac convierta"
+
 msgid "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let the Mac convert"
 msgstr "\"{}\" no lleva muestras de {} bits sin tocarlas; apaga bit-perfect para dejar que la Mac convierta"
 
@@ -24,6 +27,9 @@ msgstr "no se pudo abrir \"{}\" ({})"
 
 msgid "\"{}\" would not run at {} Hz ({})"
 msgstr "\"{}\" no quiso correr a {} Hz ({})"
+
+msgid "\"{}\" would not say what format it opened"
+msgstr "\"{}\" no dijo en qué formato abrió"
 
 msgid "\"{}\" would not start ({})"
 msgstr "\"{}\" no quiso arrancar ({})"
