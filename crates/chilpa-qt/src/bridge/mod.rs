@@ -158,7 +158,46 @@ pub mod chilpa_bridge {
         #[qproperty(bool, initial_rescan)]
         /// True to analyse at startup, just as useful for exercising.
         #[qproperty(bool, initial_analysis)]
+        /// The language the window is speaking, as a two letter code.
+        #[qproperty(QString, language)]
+        /// The languages that can be chosen.
+        #[qproperty(QStringList, languages)]
+        /// Bumped every time the language changes. A QML binding that passes
+        /// it to `translate` re-evaluates, which is what makes the window
+        /// change language without being rebuilt.
+        #[qproperty(i32, tr_rev)]
         type Chilpa = super::ChilpaRust;
+
+        /// Translates a msgid, which is the English string itself.
+        ///
+        /// `rev` is `trRev` and is not used: it is there so the binding
+        /// depends on it.
+        #[qinvokable]
+        fn translate(self: &Chilpa, msgid: &QString, rev: i32) -> QString;
+
+        /// The same for a count, choosing singular or plural.
+        #[qinvokable]
+        fn translate_n(
+            self: &Chilpa,
+            singular: &QString,
+            plural: &QString,
+            n: i32,
+            rev: i32,
+        ) -> QString;
+
+        /// The same, filling each `{}` with the next argument.
+        #[qinvokable]
+        fn translate_args(
+            self: &Chilpa,
+            msgid: &QString,
+            args: &QStringList,
+            rev: i32,
+        ) -> QString;
+
+        /// Chooses the language and remembers it. Empty goes back to what
+        /// the environment asks for.
+        #[qinvokable]
+        fn choose_language(self: Pin<&mut Chilpa>, code: &QString);
 
         /// Chooses the visualizer and remembers it.
         #[qinvokable]
@@ -393,6 +432,7 @@ pub mod chilpa_bridge {
 
 use chilpa_bridge::Chilpa;
 
+mod i18n;
 mod library;
 mod playback;
 mod plugins;
@@ -446,6 +486,9 @@ mod layouts {
 
 /// The state on the Rust side.
 pub struct ChilpaRust {
+    language: QString,
+    languages: QStringList,
+    tr_rev: i32,
     outputs: QStringList,
     output_ids: QStringList,
     track: QString,
@@ -531,8 +574,18 @@ pub struct ChilpaRust {
 
 impl Default for ChilpaRust {
     fn default() -> Self {
-        let remembered = chilpa_api::Chilpa::new().settings();
+        // Building one facade sets the language from the preferences, so
+        // everything below already speaks it.
+        let api = chilpa_api::Chilpa::new();
+        let remembered = api.settings();
+        let mut codes = QList::<QString>::default();
+        for code in api.languages() {
+            codes.append(QString::from(*code));
+        }
         Self {
+            language: QString::from(api.language()),
+            languages: QStringList::from(&codes),
+            tr_rev: 0,
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
             track: QString::from(""),
@@ -634,7 +687,7 @@ impl Default for ChilpaRust {
                 .unwrap_or(0),
             initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
             initial_analysis: std::env::var("CHILPA_ANALYZE").is_ok(),
-            api: chilpa_api::Chilpa::new(),
+            api,
         }
     }
 }

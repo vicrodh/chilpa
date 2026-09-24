@@ -26,6 +26,10 @@ pub struct Settings {
     pub album_sort: String,
     /// Which visualizer is drawn, by name.
     pub visualizer: String,
+    /// The language the window speaks, as a two letter code. Empty means
+    /// whatever the environment asks for, which is right until someone
+    /// chooses otherwise.
+    pub language: String,
 }
 
 /// The visualizer someone who has chosen none starts with.
@@ -43,6 +47,7 @@ impl Default for Settings {
             layout: DEFAULT_LAYOUT.to_string(),
             album_sort: String::new(),
             visualizer: DEFAULT_VISUALIZER.to_string(),
+            language: String::new(),
         }
     }
 }
@@ -89,6 +94,9 @@ pub fn load_from(file: &std::path::Path) -> Settings {
             s.visualizer = renamed(v, OLD_VISUALIZERS);
         }
     }
+    if let Some(v) = pares.get("language") {
+        s.language = v.clone();
+    }
     s
 }
 
@@ -115,13 +123,14 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         std::fs::create_dir_all(dir)?;
     }
     let text = format!(
-        "# Preferencias de Chilpa. Se puede editar a mano.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\n",
+        "# Chilpa's preferences. Editing this by hand is fine.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\nlanguage = {}\n",
         settings.output,
         settings.bit_perfect,
         settings.last_folder,
         settings.layout,
         settings.album_sort,
-        settings.visualizer
+        settings.visualizer,
+        settings.language
     );
     std::fs::write(file, text)
 }

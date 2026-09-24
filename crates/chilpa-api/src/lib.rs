@@ -394,6 +394,14 @@ impl Default for Chilpa {
 
 impl Chilpa {
     pub fn new() -> Self {
+        // The language is set before anything can speak: a message built
+        // during startup has to come out in the same language as the rest.
+        let saved = chilpa_core::settings::load();
+        chilpa_i18n::set_language(if saved.language.is_empty() {
+            chilpa_i18n::from_environment()
+        } else {
+            &saved.language
+        });
         Self {
             core: chilpa_core::Core::new(),
             library: None,
@@ -402,7 +410,7 @@ impl Chilpa {
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,
-            album_sort: AlbumSort::from_name(&chilpa_core::settings::load().album_sort),
+            album_sort: AlbumSort::from_name(&saved.album_sort),
             artist: String::new(),
             removed: Vec::new(),
             lyrics: None,
@@ -587,6 +595,47 @@ impl Chilpa {
         let mut s = chilpa_core::settings::load();
         s.visualizer = visualizer.to_string();
         let _ = chilpa_core::settings::save(&s);
+    }
+
+    /// Sets the language and remembers it.
+    ///
+    /// An empty code means whatever the environment asks for, which is what
+    /// a fresh install has and what someone gets back by clearing the choice.
+    pub fn choose_language(&mut self, language: &str) {
+        let code =
+            if language.is_empty() { chilpa_i18n::from_environment() } else { language };
+        chilpa_i18n::set_language(code);
+        let mut s = chilpa_core::settings::load();
+        s.language = language.to_string();
+        let _ = chilpa_core::settings::save(&s);
+    }
+
+    /// The language the window is speaking now.
+    pub fn language(&self) -> &'static str {
+        chilpa_i18n::current_language()
+    }
+
+    /// The languages that can be chosen.
+    pub fn languages(&self) -> &'static [&'static str] {
+        chilpa_i18n::languages()
+    }
+
+    /// Translates a msgid, which is the English string itself.
+    ///
+    /// The shell only ever talks to the facade (ADR-001), so the catalog is
+    /// reached through here and not by depending on `chilpa-i18n`.
+    pub fn t(&self, msgid: &str) -> String {
+        chilpa_i18n::t(msgid)
+    }
+
+    /// The same for a count, choosing singular or plural.
+    pub fn tn(&self, singular: &str, plural: &str, n: i64) -> String {
+        chilpa_i18n::tn(singular, plural, n)
+    }
+
+    /// The same, filling each `{}` with the next argument.
+    pub fn t_args(&self, msgid: &str, args: &[&str]) -> String {
+        chilpa_i18n::t_args(msgid, args)
     }
 
     /// Remembers the chosen window layout.
