@@ -34,10 +34,23 @@ struct Shared {
     lost: AtomicBool,
 }
 
+/// The token CoreAudio gives back for a registered callback.
+///
+/// It is an opaque handle, not a pointer to anything this program owns, and
+/// the calls that take it -- stop, destroy -- may be made from any thread.
+/// So it may move to the one that plays, which is the only reason this
+/// wrapper exists: Rust will not move a raw pointer across threads on its
+/// own say-so, and it is right to ask.
+struct ProcToken(AudioDeviceIOProcID);
+
+// Sound because the token is opaque and its calls are thread-agnostic. What
+// is NOT sound and is not done here: sharing it. One sink owns one token.
+unsafe impl Send for ProcToken {}
+
 /// A stream to a Mac's output device.
 pub struct CoreAudioSink {
     device: AudioObjectID,
-    proc_id: AudioDeviceIOProcID,
+    proc_id: ProcToken,
     shared: Arc<Shared>,
     stream: StreamFormat,
     /// Whether this took the device to itself and therefore has to give it
@@ -254,7 +267,7 @@ impl CoreAudioSink {
         let frame = usize::from(stream.channels) * (wanted.mBitsPerChannel as usize / 8);
         Ok(CoreAudioSink {
             device,
-            proc_id,
+            proc_id: ProcToken(proc_id),
             shared,
             stream,
             hogged,
@@ -286,14 +299,14 @@ impl AudioSink for CoreAudioSink {
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
-        if self.proc_id.is_null() {
+        if self.proc_id.0.is_null() {
             return Ok(());
         }
         unsafe {
-            AudioDeviceStop(self.device, self.proc_id);
-            AudioDeviceDestroyIOProcID(self.device, self.proc_id);
+            AudioDeviceStop(self.device, self.proc_id.0);
+            AudioDeviceDestroyIOProcID(self.device, self.proc_id.0);
         }
-        self.proc_id = std::ptr::null_mut();
+        self.proc_id.0 = std::ptr::null_mut();
         // Giving the device back is not optional: a hogged device stays
         // unusable by everything else until whoever took it lets go, and a
         // player that forgets leaves the Mac silent for every other program.
