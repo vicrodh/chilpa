@@ -233,7 +233,10 @@ impl Chilpa {
         chilpa_library::smart_builtins()
             .into_iter()
             .map(|l| {
-                let n = lib.smart_tracks(&l).map(|t| t.len()).unwrap_or(0);
+                // The panel wants the number, not the tracks: eight lists
+                // side by side, each of them resolved, was two hundred
+                // milliseconds of opening a tab.
+                let n = lib.smart_count(&l).unwrap_or(0);
                 SmartListInfo { name: l.name, track_count: n }
             })
             .collect()

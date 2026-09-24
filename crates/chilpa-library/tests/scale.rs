@@ -5,9 +5,32 @@
 //! This test builds a genuinely large library and puts a time ceiling on
 //! what the interface queries.
 //!
-//! The ceilings are generous on purpose. They are not there to measure the
-//! machine: they are there so a query that turns quadratic shows up the day
-//! someone writes it, not the day a user opens their library.
+//! The ceilings are generous -- roughly ten times what this machine
+//! measures -- but not arbitrary. They are not there to measure the machine:
+//! they are there so a query that turns quadratic shows up the day someone
+//! writes it, not the day a user opens their library. A ceiling so high that
+//! nothing can hit it is not a gate, and these used to all be 1500 ms with
+//! everything running in 3.
+//!
+//! Measured on this machine with fifty thousand tracks, before and after the
+//! V6 and V7 migrations (the rollups and FTS5):
+//!
+//! | what | before | after |
+//! | --- | --- | --- |
+//! | grid, sorted on an album column | 7 ms | 3 ms |
+//! | grid, sorted by plays or by date | 135-155 ms | 3-4 ms |
+//! | artists | 78 ms | 7 ms |
+//! | search | 80 ms | 12 ms |
+//! | most played | 72 ms | 10 ms |
+//! | last played | 70 ms | 0.2 ms |
+//! | the eight smart lists, counted | 200 ms | 60 ms |
+//!
+//! That last one is the worst case by construction and not by accident: in
+//! this fixture every track has been played, so "Never played" cannot stop
+//! at its limit and walks the whole library to find nothing. A real library
+//! is the other way round -- most of it has never been played -- and the
+//! count stops at two hundred. The number to keep an eye on is this one,
+//! because it is the one that cannot get lucky.
 
 use chilpa_library::{AlbumSort, Library, Rule, SmartList, SmartOrder};
 use rusqlite::params;
@@ -115,39 +138,52 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     for order in AlbumSort::all() {
         let (page, t) = how_long(|| lib.albums_sorted(order, 100, 0).unwrap());
         assert_eq!(page.len(), 100, "{}", order.name());
-        within(&format!("grid by {}", order.name()), t, Duration::from_millis(1500));
+        within(&format!("grid by {}", order.name()), t, Duration::from_millis(50));
     }
 
     // A page from deep in: it must not cost more than the first one just
     // for being far away.
     let (_, t) = how_long(|| lib.albums_sorted(AlbumSort::Artist, 100, 4_000).unwrap());
-    within("grid on page 40", t, Duration::from_millis(1500));
+    within("grid on page 40", t, Duration::from_millis(80));
 
     // The artists.
     let (artists, t) = how_long(|| lib.artists(500, 0).unwrap());
     assert_eq!(artists.len(), 200, "two hundred artists");
-    within("artists", t, Duration::from_millis(1500));
+    within("artists", t, Duration::from_millis(80));
 
     // The search, which walks titles, artists, albums and genres.
     let (found, t) = how_long(|| lib.search("Track 7", 200).unwrap());
     assert!(!found.is_empty());
-    within("search", t, Duration::from_millis(1500));
+    within("search", t, Duration::from_millis(120));
 
     // The stats, which sum the whole log.
     let (stats, t) = how_long(|| lib.stats().unwrap());
     assert!(stats.plays > 0);
-    within("statistics", t, Duration::from_millis(1500));
+    // The only one that still reads the whole log, and the only one that
+    // has to: a total is a total. It is one view, opened on purpose, not
+    // something that runs while someone scrolls.
+    within("statistics", t, Duration::from_millis(300));
 
     let (_, t) = how_long(|| lib.top_tracks(20).unwrap());
-    within("most played", t, Duration::from_millis(1500));
+    within("most played", t, Duration::from_millis(100));
     let (_, t) = how_long(|| lib.recently_played(20).unwrap());
-    within("last played", t, Duration::from_millis(1500));
+    within("last played", t, Duration::from_millis(50));
 
-    // The smart lists, which is what gets resolved every time they are
-    // looked at.
+    // The smart lists. Counting them is what the panel does -- eight side
+    // by side, every time the tab opens -- and resolving one is what
+    // happens when somebody presses play on it. The first has to be
+    // instant; the second can take what a query takes.
+    let (_, t) = how_long(|| {
+        chilpa_library::smart_builtins()
+            .iter()
+            .map(|l| lib.smart_count(l).unwrap())
+            .sum::<usize>()
+    });
+    within("the eight lists, counted", t, Duration::from_millis(200));
+
     for list in chilpa_library::smart_builtins() {
         let (_, t) = how_long(|| lib.smart_tracks(&list).unwrap());
-        within(&format!("list \"{}\"", list.name), t, Duration::from_millis(1500));
+        within(&format!("list \"{}\"", list.name), t, Duration::from_millis(400));
     }
 
     // And a list with several rules at once.
@@ -158,7 +194,7 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
         200,
     );
     let (_, t) = how_long(|| lib.smart_tracks(&composite).unwrap());
-    within("list with three rules", t, Duration::from_millis(1500));
+    within("list with three rules", t, Duration::from_millis(200));
 }
 
 #[test]
@@ -170,5 +206,5 @@ fn the_features_of_one_page_come_out_in_a_single_query() {
     }
     let (map, t) = how_long(|| lib.features_for(&ids, "chilpa").unwrap());
     assert_eq!(map.len(), 200);
-    within("features for two hundred tracks", t, Duration::from_millis(500));
+    within("features for two hundred tracks", t, Duration::from_millis(50));
 }

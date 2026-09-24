@@ -66,16 +66,18 @@ impl Library {
 
     /// The most played tracks.
     pub fn top_tracks(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
+        // The order comes from an index, so it reads as many rows as it
+        // returns. Grouping the whole log to take twenty was the shape that
+        // made this grow with the library instead of with the answer.
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present,
-                    count(p.id), max(p.started_at)
-             FROM play_events p
-             JOIN tracks t ON t.id = p.track_id
+                    r.plays, r.last_played
+             FROM track_rollup r
+             JOIN tracks t ON t.id = r.track_id
              LEFT JOIN albums a ON a.id = t.album_id
-             WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
-             GROUP BY t.id
-             ORDER BY count(p.id) DESC, max(p.started_at) DESC
+             WHERE r.plays > 0
+             ORDER BY r.plays DESC, r.last_played DESC
              LIMIT ?1",
         )?;
         let rows = stmt.query_map(params![limit as i64], row_to_track_stat)?;
@@ -84,15 +86,18 @@ impl Library {
 
     /// The last things played, without repeating a track.
     pub fn recently_played(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
+        // By `last_touched`, which counts a skip: what came up last is what
+        // came up last. The number beside it is the play count, which does
+        // not -- those are two different questions and the rollup keeps both.
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present,
-                    count(p.id), max(p.started_at) AS last_at
-             FROM play_events p
-             JOIN tracks t ON t.id = p.track_id
+                    r.plays, r.last_touched
+             FROM track_rollup r
+             JOIN tracks t ON t.id = r.track_id
              LEFT JOIN albums a ON a.id = t.album_id
-             GROUP BY t.id
-             ORDER BY last_at DESC
+             WHERE r.last_touched IS NOT NULL
+             ORDER BY r.last_touched DESC
              LIMIT ?1",
         )?;
         let rows = stmt.query_map(params![limit as i64], row_to_track_stat)?;
@@ -212,4 +217,91 @@ mod tests {
             .unwrap();
         assert_eq!(lib.play_count(1).unwrap(), 1);
     }
+    #[test]
+    fn what_is_kept_is_what_counting_would_give() {
+        // The rollups are the whole reason the grid and the stats are fast,
+        // and the whole risk: a number maintained by a trigger is wrong
+        // without saying so. This drives every path that writes -- a play, a
+        // half play, a track arriving, a track going missing and coming back
+        // -- and then rebuilds from the log and demands the same answer.
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO albums (id, title, album_artist) VALUES (1, 'An album', 'Someone')",
+                [],
+            )
+            .unwrap();
+        for id in 1..=3i64 {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, album_id,
+                                         duration_ms, added_at)
+                     VALUES (?1, ?2, ?3, 'Track', 1, 200000, ?1)",
+                    params![id, source, format!("/music/{id}.flac")],
+                )
+                .unwrap();
+        }
+        // A listen, a skip, and a listen of something else.
+        lib.log_play(Some(1), Some(source), 10, 200_000, 200_000, false, None, None, true).unwrap();
+        lib.log_play(Some(1), Some(source), 20, 10_000, 200_000, true, None, None, true).unwrap();
+        lib.log_play(Some(2), Some(source), 30, 200_000, 200_000, false, None, None, true).unwrap();
+        // One goes missing and comes back, which is what a scan does.
+        lib.db.execute("UPDATE tracks SET present = 0 WHERE id = 3", []).unwrap();
+        lib.db.execute("UPDATE tracks SET present = 1 WHERE id = 3", []).unwrap();
+
+        let snapshot = |lib: &Library| {
+            let mut out = Vec::new();
+            let mut stmt = lib
+                .db
+                .prepare(
+                    "SELECT album_id, plays, COALESCE(last_played, -1), added_at, present_tracks
+                     FROM album_rollup ORDER BY album_id",
+                )
+                .unwrap();
+            let rows = stmt
+                .query_map([], |r| {
+                    Ok(format!(
+                        "album {} {} {} {} {}",
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, i64>(2)?,
+                        r.get::<_, i64>(3)?,
+                        r.get::<_, i64>(4)?
+                    ))
+                })
+                .unwrap();
+            out.extend(rows.map(Result::unwrap));
+            let mut stmt = lib
+                .db
+                .prepare(
+                    "SELECT track_id, plays, COALESCE(last_played, -1), COALESCE(last_touched, -1)
+                     FROM track_rollup ORDER BY track_id",
+                )
+                .unwrap();
+            let rows = stmt
+                .query_map([], |r| {
+                    Ok(format!(
+                        "track {} {} {} {}",
+                        r.get::<_, i64>(0)?,
+                        r.get::<_, i64>(1)?,
+                        r.get::<_, i64>(2)?,
+                        r.get::<_, i64>(3)?
+                    ))
+                })
+                .unwrap();
+            out.extend(rows.map(Result::unwrap));
+            out
+        };
+
+        let kept = snapshot(&lib);
+        lib.rebuild_rollups().unwrap();
+        let counted = snapshot(&lib);
+        assert_eq!(kept, counted, "what the triggers kept is not what the log says");
+
+        // And the numbers themselves are the ones the rules ask for.
+        assert!(kept.contains(&"track 1 1 10 20".to_string()), "{kept:?}");
+        assert!(kept.contains(&"album 1 2 30 3 3".to_string()), "{kept:?}");
+    }
+
 }

@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 5;
+pub const VERSION: i64 = 7;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -26,7 +26,7 @@ pub const VERSION: i64 = 5;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7];
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -267,6 +267,259 @@ ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
 /// wearing another face.
 const MIGRATION_V5: &str = r#"
 CREATE INDEX tracks_album_present ON tracks(album_id, present);
+ANALYZE;
+"#;
+
+/// From 5 to 6: what the grid needs about an album, kept instead of
+/// recomputed.
+///
+/// Three of the six orderings -- by plays, by when it was last played, by
+/// when it came in -- could not trim the page before aggregating, because
+/// the order *is* the aggregate. So every page walked the whole play log
+/// joined to the whole track table. Measured with fifty thousand tracks and
+/// a play per track: 135 to 155 ms per page, against 7 for the orderings
+/// that sort on an `albums` column. At a hundred thousand that is a stutter
+/// someone can feel while scrolling.
+///
+/// The fix is not another index: there is nothing to index, because the
+/// number does not exist until it is counted. So it is kept. `album_rollup`
+/// carries the three numbers, the triggers keep them current, and the grid
+/// goes back to trimming the page first and reading three columns after.
+///
+/// **Kept means it can drift**, and a number that drifts is worse than a
+/// number that is slow. Two things guard it: the triggers cover every way a
+/// row gets in (there is no path that writes a play or a track without
+/// them), and `Library::rebuild_rollup` recomputes the whole thing from the
+/// log, which is what a repair runs and what the tests compare against.
+const MIGRATION_V6: &str = r#"
+CREATE TABLE album_rollup (
+    album_id    INTEGER PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+    -- Plays that count as a listen, by the same rule the queries used:
+    -- a track with no known duration, or one played at least halfway.
+    plays       INTEGER NOT NULL DEFAULT 0,
+    last_played INTEGER,
+    -- The newest `added_at` of any of its tracks, which is what "recently
+    -- added" means to someone looking at a grid of albums.
+    added_at    INTEGER NOT NULL DEFAULT 0,
+    -- How many of its tracks are where they said they were. It is here so
+    -- the grid does not run a subquery per row and the artists view
+    -- aggregates over albums instead of over every track in the library.
+    present_tracks INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX album_rollup_plays ON album_rollup(plays DESC);
+CREATE INDEX album_rollup_last ON album_rollup(last_played DESC);
+CREATE INDEX album_rollup_added ON album_rollup(added_at DESC);
+-- The grid and the artists view both skip an album with nothing present.
+CREATE INDEX album_rollup_present ON album_rollup(present_tracks);
+
+-- A track arriving gives its album a row, moves its date forward and counts.
+CREATE TRIGGER album_rollup_track_in AFTER INSERT ON tracks
+WHEN NEW.album_id IS NOT NULL
+BEGIN
+    INSERT INTO album_rollup (album_id, added_at, present_tracks)
+    VALUES (NEW.album_id, NEW.added_at, CASE WHEN NEW.present = 1 THEN 1 ELSE 0 END)
+    ON CONFLICT(album_id) DO UPDATE
+      SET added_at = max(added_at, NEW.added_at),
+          present_tracks = present_tracks + CASE WHEN NEW.present = 1 THEN 1 ELSE 0 END;
+END;
+
+CREATE TRIGGER album_rollup_track_out AFTER DELETE ON tracks
+WHEN OLD.album_id IS NOT NULL AND OLD.present = 1
+BEGIN
+    UPDATE album_rollup SET present_tracks = max(0, present_tracks - 1)
+     WHERE album_id = OLD.album_id;
+END;
+
+-- A track moving album, or going missing and coming back, is the one case
+-- where counting again beats adding and subtracting: `present` flips in
+-- bulk during a scan, and a count over `tracks_album_present` is an index
+-- range for the one album that changed.
+--
+-- The date is a maximum and is only pushed forward. Lowering it would mean
+-- walking the rest of an album's tracks on every move, for a column that
+-- exists to sort a grid.
+CREATE TRIGGER album_rollup_track_moved AFTER UPDATE OF album_id, added_at, present ON tracks
+BEGIN
+    INSERT INTO album_rollup (album_id, added_at) VALUES (NEW.album_id, NEW.added_at)
+    ON CONFLICT(album_id) DO UPDATE SET added_at = max(added_at, NEW.added_at);
+    UPDATE album_rollup
+       SET present_tracks = (SELECT count(*) FROM tracks t
+                             WHERE t.album_id = album_rollup.album_id AND t.present = 1)
+     WHERE album_id IN (OLD.album_id, NEW.album_id);
+END;
+
+-- The same for a track. `top_tracks`, `recently_played` and every smart
+-- list that looks at plays used to group the whole log; now they read a
+-- column and stop at the limit.
+--
+-- Two dates, not one, because they answer different questions: `last_played`
+-- is the last time it was really listened to, and `last_touched` the last
+-- time it came up at all, skip included. "The last thing that played" means
+-- the second one; the count next to it means the first.
+CREATE TABLE track_rollup (
+    track_id     INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    plays        INTEGER NOT NULL DEFAULT 0,
+    last_played  INTEGER,
+    last_touched INTEGER
+);
+
+CREATE INDEX track_rollup_plays ON track_rollup(plays DESC);
+CREATE INDEX track_rollup_touched ON track_rollup(last_touched DESC);
+
+CREATE TRIGGER track_rollup_play AFTER INSERT ON play_events
+WHEN NEW.track_id IS NOT NULL
+BEGIN
+    INSERT INTO track_rollup (track_id, plays, last_played, last_touched)
+    VALUES (
+        NEW.track_id,
+        CASE WHEN NEW.duration_ms = 0 OR NEW.played_ms * 2 >= NEW.duration_ms THEN 1 ELSE 0 END,
+        CASE WHEN NEW.duration_ms = 0 OR NEW.played_ms * 2 >= NEW.duration_ms
+             THEN NEW.started_at END,
+        NEW.started_at
+    )
+    ON CONFLICT(track_id) DO UPDATE
+      SET plays = plays + CASE WHEN NEW.duration_ms = 0
+                                 OR NEW.played_ms * 2 >= NEW.duration_ms THEN 1 ELSE 0 END,
+          last_played = CASE WHEN NEW.duration_ms = 0 OR NEW.played_ms * 2 >= NEW.duration_ms
+                             THEN max(COALESCE(last_played, 0), NEW.started_at)
+                             ELSE last_played END,
+          last_touched = max(COALESCE(last_touched, 0), NEW.started_at);
+END;
+
+-- A play counts by the same rule the queries used, and nowhere else is that
+-- rule written any more.
+CREATE TRIGGER album_rollup_play AFTER INSERT ON play_events
+WHEN NEW.track_id IS NOT NULL
+ AND (NEW.duration_ms = 0 OR NEW.played_ms * 2 >= NEW.duration_ms)
+BEGIN
+    INSERT INTO album_rollup (album_id, plays, last_played)
+    SELECT t.album_id, 1, NEW.started_at
+    FROM tracks t WHERE t.id = NEW.track_id AND t.album_id IS NOT NULL
+    ON CONFLICT(album_id) DO UPDATE
+      SET plays = plays + 1,
+          last_played = max(COALESCE(last_played, 0), NEW.started_at);
+END;
+
+-- What is already there, counted once.
+INSERT INTO album_rollup (album_id, plays, last_played, added_at, present_tracks)
+SELECT a.id,
+       COALESCE(e.plays, 0),
+       e.last_at,
+       COALESCE((SELECT max(t.added_at) FROM tracks t WHERE t.album_id = a.id), 0),
+       (SELECT count(*) FROM tracks t WHERE t.album_id = a.id AND t.present = 1)
+FROM albums a
+LEFT JOIN (
+    SELECT t2.album_id AS aid, count(*) AS plays, max(p.started_at) AS last_at
+    FROM play_events p
+    JOIN tracks t2 ON t2.id = p.track_id
+    WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+    GROUP BY t2.album_id
+) e ON e.aid = a.id;
+
+INSERT INTO track_rollup (track_id, plays, last_played, last_touched)
+SELECT p.track_id,
+       sum(CASE WHEN p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms THEN 1 ELSE 0 END),
+       max(CASE WHEN p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+                THEN p.started_at END),
+       max(p.started_at)
+FROM play_events p
+WHERE p.track_id IS NOT NULL
+GROUP BY p.track_id;
+
+ANALYZE;
+"#;
+
+/// From 6 to 7: the search stops reading the whole library.
+///
+/// It was four `LIKE '%text%'` in an `OR`, over title, artist, album title
+/// and genre. `LIKE` with a leading wildcard cannot use an index, so every
+/// keystroke walked every track and, for the genre, ran a subquery per row.
+/// Measured with fifty thousand tracks: 80 ms, growing straight with the
+/// library.
+///
+/// FTS5 turns that into an index lookup. What it costs is a copy of the four
+/// pieces of text -- a few megabytes at a hundred thousand tracks -- and the
+/// triggers that keep it current. What it buys is a search that answers in
+/// the time it takes to draw the result, at any size.
+///
+/// `remove_diacritics 2` is what makes "Bjork" find "Björk" and "naive"
+/// find "naïve", which is the difference between a search someone trusts
+/// and one they learn to work around. It matters most in a library that is
+/// not in English, which is most libraries.
+const MIGRATION_V7: &str = r#"
+CREATE VIRTUAL TABLE track_search USING fts5(
+    title, artist, album, genres,
+    tokenize = 'unicode61 remove_diacritics 2'
+);
+
+-- A track arriving is indexed with its album's title. Its genres come
+-- later, in their own table, and their trigger refreshes this row.
+CREATE TRIGGER track_search_in AFTER INSERT ON tracks
+BEGIN
+    INSERT INTO track_search (rowid, title, artist, album, genres)
+    VALUES (
+        NEW.id,
+        NEW.title,
+        NEW.artist,
+        COALESCE((SELECT a.title FROM albums a WHERE a.id = NEW.album_id), ''),
+        ''
+    );
+END;
+
+CREATE TRIGGER track_search_out AFTER DELETE ON tracks
+BEGIN
+    DELETE FROM track_search WHERE rowid = OLD.id;
+END;
+
+-- An FTS5 row is replaced, not edited: delete and insert is the documented
+-- way, and it keeps the index and the text from disagreeing.
+CREATE TRIGGER track_search_changed AFTER UPDATE OF title, artist, album_id ON tracks
+BEGIN
+    DELETE FROM track_search WHERE rowid = NEW.id;
+    INSERT INTO track_search (rowid, title, artist, album, genres)
+    VALUES (
+        NEW.id,
+        NEW.title,
+        NEW.artist,
+        COALESCE((SELECT a.title FROM albums a WHERE a.id = NEW.album_id), ''),
+        COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                  JOIN genres g ON g.id = tg.genre_id
+                  WHERE tg.track_id = NEW.id), '')
+    );
+END;
+
+-- The genres of a track are rewritten wholesale (delete then insert), so
+-- both ends refresh the same row from what is in the table at that moment.
+CREATE TRIGGER track_search_genre_in AFTER INSERT ON track_genres
+BEGIN
+    UPDATE track_search
+       SET genres = COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                              JOIN genres g ON g.id = tg.genre_id
+                              WHERE tg.track_id = NEW.track_id), '')
+     WHERE rowid = NEW.track_id;
+END;
+
+CREATE TRIGGER track_search_genre_out AFTER DELETE ON track_genres
+BEGIN
+    UPDATE track_search
+       SET genres = COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                              JOIN genres g ON g.id = tg.genre_id
+                              WHERE tg.track_id = OLD.track_id), '')
+     WHERE rowid = OLD.track_id;
+END;
+
+-- What is already there, indexed once.
+INSERT INTO track_search (rowid, title, artist, album, genres)
+SELECT t.id,
+       t.title,
+       t.artist,
+       COALESCE(a.title, ''),
+       COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                 JOIN genres g ON g.id = tg.genre_id
+                 WHERE tg.track_id = t.id), '')
+FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
+
 ANALYZE;
 "#;
 
