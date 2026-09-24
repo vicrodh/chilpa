@@ -853,6 +853,7 @@ impl Chilpa {
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
         self.advance_search();
+        self.advance_connect();
         self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {

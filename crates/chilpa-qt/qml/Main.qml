@@ -68,6 +68,7 @@ ApplicationWindow {
         // Los resultados de un source llegan después de la búsqueda, así que
         // se espera a que estén antes de tocar el primero.
         if (Chilpa.initialPlay > 0) playWhenReady.start()
+        if (Chilpa.initialConnect !== "") Chilpa.connectAccount(Chilpa.initialConnect)
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshAlbums()
         if (Chilpa.initialRescan) Chilpa.rescan()

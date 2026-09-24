@@ -53,7 +53,10 @@ fn main() {
         .qt_module("QuickControls2")
         .qml_module(QmlModule {
             uri: "com.blitzfc.chilpa",
-            rust_files: &["src/bridge.rs"],
+            // El módulo del puente vive en `bridge/mod.rs`: cxx-qt solo mira el
+            // archivo que trae `#[cxx_qt::bridge]`, y los `impl` repartidos en
+            // sus hermanos no le hacen falta.
+            rust_files: &["src/bridge/mod.rs"],
             qml_files: QML,
             ..Default::default()
         })

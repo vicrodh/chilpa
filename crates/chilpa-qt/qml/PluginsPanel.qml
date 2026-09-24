@@ -61,6 +61,9 @@ ColumnLayout {
             readonly property var asks: cols.length > 4 && cols[4] !== "" ? cols[4].split(" · ") : []
             // Uno que ya corría y ahora pide más no es uno nuevo.
             readonly property bool wantsMore: cols.length > 5 && cols[5] === "mas"
+            // Cómo está su cuenta: "", "falta", "conectada" o "vencida".
+            readonly property string account: cols.length > 6 ? cols[6] : ""
+            readonly property string accountHost: cols.length > 7 ? cols[7] : ""
 
             ColumnLayout {
                 anchors.fill: parent
@@ -102,6 +105,31 @@ ColumnLayout {
                         visible: pending
                         text: wantsMore ? "Aprobar lo nuevo" : "Aprobar"
                         onClicked: Chilpa.approvePlugin(cols[0])
+                    }
+                    // La cuenta: qué le falta o qué tiene. Solo aparece en
+                    // uno que ya corre; antes de aprobarlo no hay nada que
+                    // conectar.
+                    Label {
+                        visible: !pending && account === "conectada"
+                        text: "cuenta conectada"
+                        font.pixelSize: 11
+                        color: "#2e7d32"
+                    }
+                    Label {
+                        visible: !pending && account === "vencida"
+                        text: "la cuenta caducó"
+                        font.pixelSize: 11
+                        color: "#a05a2c"
+                    }
+                    Button {
+                        visible: !pending && !quarantined && (account === "falta" || account === "vencida")
+                        text: account === "vencida" ? "Reconectar" : "Conectar cuenta"
+                        onClicked: Chilpa.connectAccount(cols[0])
+                    }
+                    Button {
+                        visible: !pending && account === "conectada"
+                        text: "Desconectar"
+                        onClicked: Chilpa.disconnectAccount(cols[0])
                     }
                     Button {
                         visible: !pending && !quarantined
