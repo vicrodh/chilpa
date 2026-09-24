@@ -211,6 +211,22 @@ pub fn hogged_by(device: AudioObjectID) -> i32 {
     read(device, &global(kAudioDevicePropertyHogMode)).unwrap_or(-1)
 }
 
+/// Where the device's own knob sits, from 0 to 1.
+///
+/// `None` when it has none, which is the usual answer for a USB DAC with a
+/// knob on the front: the hardware owns the volume and says nothing about
+/// it. Inventing one by scaling the samples would be the end of bit-perfect,
+/// so nothing is invented.
+pub fn volume(device: AudioObjectID) -> Option<f32> {
+    read(device, &output(kAudioDevicePropertyVolumeScalar))
+}
+
+/// Whether it is muted, when it can be.
+pub fn muted(device: AudioObjectID) -> Option<bool> {
+    let on: u32 = read(device, &output(kAudioDevicePropertyMute))?;
+    Some(on != 0)
+}
+
 /// How a transport reads in the window.
 pub fn transport_name(transport: u32) -> &'static str {
     match transport {

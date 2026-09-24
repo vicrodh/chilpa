@@ -82,6 +82,13 @@ impl OutputBackend for Pulse {
         }
     }
 
+    /// The protocol carries anything and converts what it must, so there
+    /// is nothing to refuse. That it converts is the stack's fidelity, and
+    /// it says so where an output is chosen.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        Ok(chilpa_audio::capture::capabilities())
+    }
+
     fn outputs(&self) -> Vec<BackendOutput> {
         crate::server::sinks()
             .into_iter()

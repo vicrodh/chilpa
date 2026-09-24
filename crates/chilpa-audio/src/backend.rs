@@ -208,6 +208,24 @@ impl BackendOutput {
     }
 }
 
+/// What an output's own volume control is doing.
+///
+/// Its own, and that word is load-bearing: a volume applied by multiplying
+/// the samples is not a volume, it is a conversion, and it is the end of
+/// bit-perfect. A stack that cannot reach a real knob says so and Chilpa
+/// leaves the knob to the person.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct Knob {
+    /// Where it sits, from 0 to 100.
+    pub percent: u8,
+    pub muted: bool,
+    /// Whether it can be muted at all.
+    pub can_mute: bool,
+    /// Which control it is, as the device names it. Worth showing when the
+    /// knob does not do what somebody expected.
+    pub name: String,
+}
+
 /// A stack Chilpa can hand samples to.
 pub trait OutputBackend: Send + Sync {
     /// What it is, without opening anything.
@@ -218,6 +236,36 @@ pub trait OutputBackend: Send + Sync {
     /// Empty is a legitimate answer and is not an error: a backend that is
     /// there but has nothing plugged into it has nothing to list.
     fn outputs(&self) -> Vec<BackendOutput>;
+
+    /// What that output accepts.
+    ///
+    /// The one question whose answer differs most between stacks. A card can
+    /// be asked by opening it; a server takes whatever it is handed and
+    /// makes it fit, so there is nothing to refuse; a JACK graph has exactly
+    /// one rate and publishes it. Each says its own, and `DeviceCaps::probed`
+    /// is where the difference between measured and assumed is recorded --
+    /// guessed caps cannot promise bit-perfect.
+    fn caps(&self, id: &str) -> Result<crate::negotiate::DeviceCaps, SinkError>;
+
+    /// That output's own volume control, if it has one.
+    ///
+    /// `None` is the common answer and not a failure: a USB DAC with a knob
+    /// on the front usually exposes nothing, and the right thing then is to
+    /// say so rather than to invent a volume by scaling the samples.
+    fn volume(&self, _id: &str) -> Option<Knob> {
+        None
+    }
+
+    /// Moves it. The default is the honest one for a stack with no control:
+    /// there is nothing to move.
+    fn set_volume(&self, _id: &str, _percent: u8) -> Result<(), String> {
+        Err(chilpa_i18n::t("this output has no volume control of its own"))
+    }
+
+    /// Mutes it, or takes it off mute.
+    fn set_muted(&self, _id: &str, _muted: bool) -> Result<(), String> {
+        Err(chilpa_i18n::t("this output has no volume control of its own"))
+    }
 
     /// Opens one. The only call here that touches the hardware.
     ///

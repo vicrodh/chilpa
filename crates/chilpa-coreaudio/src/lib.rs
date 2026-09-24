@@ -30,7 +30,7 @@ mod ffi;
 mod play;
 mod read;
 
-use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, OutputBackend};
+use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, Knob, OutputBackend};
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::sink::{AudioSink, SinkError};
 
@@ -147,6 +147,57 @@ impl OutputBackend for CoreAudio {
         // one they are hearing.
         outputs.sort_by_key(|(is_default, _)| !is_default);
         outputs.into_iter().map(|(_, o)| o).collect()
+    }
+
+    /// Read from the hardware: what the wire carries, not what the device
+    /// happens to be set to.
+    fn caps(&self, id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        capabilities(id).ok_or_else(|| {
+            SinkError::Backend(chilpa_i18n::t("this output is not there any more"))
+        })
+    }
+
+    /// The device's own knob, when it has one.
+    ///
+    /// Most DACs worth owning do not: the volume lives in the hardware and
+    /// CoreAudio reports nothing. That is the right answer and it is given
+    /// as such, rather than offering a slider that would work by scaling the
+    /// samples.
+    fn volume(&self, id: &str) -> Option<Knob> {
+        let device = find(id)?;
+        let level = read::volume(device)?;
+        Some(Knob {
+            percent: (level.clamp(0.0, 1.0) * 100.0).round() as u8,
+            muted: read::muted(device).unwrap_or(false),
+            can_mute: read::muted(device).is_some(),
+            // CoreAudio has no name for it: there is one knob and it belongs
+            // to the device.
+            name: String::new(),
+        })
+    }
+
+    fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
+        let Some(device) = find(id) else {
+            return Err(chilpa_i18n::t("this output is not there any more"));
+        };
+        if read::volume(device).is_none() {
+            return Err(chilpa_i18n::t("this output has no volume control of its own"));
+        }
+        let level = f32::from(percent.min(100)) / 100.0;
+        play::write_property(device, ffi::kAudioDevicePropertyVolumeScalar, &level)
+            .map_err(|s| chilpa_i18n::t_args("the volume would not move ({})", &[&s.to_string()]))
+    }
+
+    fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
+        let Some(device) = find(id) else {
+            return Err(chilpa_i18n::t("this output is not there any more"));
+        };
+        if read::muted(device).is_none() {
+            return Err(chilpa_i18n::t("this output has no volume control of its own"));
+        }
+        let on: u32 = u32::from(muted);
+        play::write_property(device, ffi::kAudioDevicePropertyMute, &on)
+            .map_err(|s| chilpa_i18n::t_args("the mute would not move ({})", &[&s.to_string()]))
     }
 
     fn open(

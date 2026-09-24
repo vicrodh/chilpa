@@ -156,6 +156,18 @@ impl OutputBackend for PipeWire {
         }
     }
 
+    /// A server takes whatever it is handed and makes it fit, so there is
+    /// nothing here that would refuse a format. What it does to the samples
+    /// on the way is the stack's fidelity, said where an output is chosen
+    /// rather than smuggled in as a capability.
+    ///
+    /// Measuring for real would mean opening the sink, and opening one to
+    /// measure it takes it from whoever is using it -- which is exactly what
+    /// a listing must never do.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        Ok(chilpa_audio::capture::capabilities())
+    }
+
     fn outputs(&self) -> Vec<BackendOutput> {
         sinks()
             .into_iter()

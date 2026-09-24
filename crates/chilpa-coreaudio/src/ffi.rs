@@ -40,6 +40,9 @@ pub const kAudioDevicePropertyAvailableNominalSampleRates: AudioObjectPropertySe
 pub const kAudioDevicePropertyNominalSampleRate: AudioObjectPropertySelector = fourcc(b"nsrt");
 pub const kAudioDevicePropertyTransportType: AudioObjectPropertySelector = fourcc(b"tran");
 pub const kAudioDevicePropertyHogMode: AudioObjectPropertySelector = fourcc(b"oink");
+/// The knob, from 0 to 1. A device that has none simply does not answer.
+pub const kAudioDevicePropertyVolumeScalar: AudioObjectPropertySelector = fourcc(b"volm");
+pub const kAudioDevicePropertyMute: AudioObjectPropertySelector = fourcc(b"mute");
 pub const kAudioStreamPropertyAvailablePhysicalFormats: AudioObjectPropertySelector =
     fourcc(b"pfta");
 pub const kAudioDevicePropertyStreams: AudioObjectPropertySelector = fourcc(b"stm#");

@@ -1020,6 +1020,9 @@ msgstr ""
 msgid "the module could not be loaded: {}"
 msgstr ""
 
+msgid "the mute would not move ({})"
+msgstr ""
+
 msgid "the name"
 msgstr ""
 
@@ -1080,6 +1083,9 @@ msgstr ""
 msgid "the version"
 msgstr ""
 
+msgid "the volume would not move ({})"
+msgstr ""
+
 msgid "the wait ran out"
 msgstr ""
 
@@ -1126,6 +1132,9 @@ msgid "this list"
 msgstr ""
 
 msgid "this output has no volume control of its own"
+msgstr ""
+
+msgid "this output is not there any more"
 msgstr ""
 
 msgid "this plugin declared no network permission"
