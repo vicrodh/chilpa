@@ -87,10 +87,12 @@ impl Hit {
             quality: t.quality.describe(),
             analysis: String::new(),
             also_in: Vec::new(),
-            // Reproducir lo de un plugin necesita `chilpa_resolver` y la
-            // ruta de stream; todavía no está, y decir que sí se puede
-            // sería mentir en la interfaz.
-            playable: false,
+            // Se puede intentar: al hacer clic se le pide `chilpa_resolver`
+            // al source y lo que conteste se pone a sonar. Si no sabe
+            // resolver, o si el enlace ya caducó, se dice con su razón,
+            // igual que un archivo local que desapareció. Apagar todo lo
+            // remoto por si acaso sería una lista que no hace nada.
+            playable: true,
         }
     }
 }
@@ -258,6 +260,10 @@ pub(crate) struct SearchState {
     pub fingerprints: HashMap<String, Vec<String>>,
     /// Lo local y lo remoto ya juntos, que es lo que la vista dibuja.
     pub hits: Vec<Hit>,
+    /// El resultado de un source que se mandó a sonar, con la URL a la que
+    /// se resolvió. El decodificador de un stream no sabe más que la URL,
+    /// así que la ficha tiene que venir de aquí.
+    pub playing: Option<(String, Hit)>,
     /// Cierto desde que los resultados cambiaron hasta que alguien los
     /// recoge. Sin esto la vista tendría que adivinar cuándo mirar: una
     /// consulta puede empezar y acabar entre dos pulsos, y el último source
@@ -292,6 +298,9 @@ impl Chilpa {
             fingerprints,
             hits: Vec::new(),
             changed: false,
+            // Lo que ya está sonando sigue sonando aunque se busque otra
+            // cosa, así que su ficha se conserva.
+            playing: self.search.playing.take(),
         };
         self.rebuild_hits();
         self.search.hits.clone()
@@ -300,6 +309,77 @@ impl Chilpa {
     /// Lo último que se juntó, para que la vista lo dibuje.
     pub fn found(&self) -> &[Hit] {
         &self.search.hits
+    }
+
+    /// Pone a sonar el resultado que está en esa posición.
+    ///
+    /// Lo local suena de inmediato y encola lo que sigue, como siempre. Lo
+    /// de un source hay que resolverlo primero: el plugin contesta con una
+    /// URL, y de ahí en adelante es el mismo camino que una radio.
+    ///
+    /// Devuelve falso y deja dicho el porqué en `now_playing().error` si no
+    /// se pudo. Un source que no sabe resolver no es una falla de Chilpa,
+    /// pero tampoco algo que se deba tragar en silencio.
+    pub fn play_hit(&mut self, index: usize, device: &str, bit_perfect: bool) -> bool {
+        let Some(hit) = self.search.hits.get(index).cloned() else { return false };
+
+        if hit.source == LOCAL {
+            // Desde aquí para abajo, saltándose lo remoto: encolar algo que
+            // todavía no se ha resuelto pondría a la cola a esperar.
+            let paths: Vec<String> = self.search.hits[index..]
+                .iter()
+                .filter(|h| h.source == LOCAL)
+                .map(|h| h.id.clone())
+                .collect();
+            self.play_tracks(&paths, device, bit_perfect);
+            return true;
+        }
+
+        match self.resolve(&hit) {
+            Ok(stream) => {
+                self.search.playing = Some((stream.url.clone(), hit));
+                self.play_url(&stream.url, device, bit_perfect);
+                true
+            }
+            Err(e) => {
+                self.now.error = format!("{}: {e}", hit.source_name);
+                false
+            }
+        }
+    }
+
+    /// Le pide al source con qué se reproduce uno de sus ids.
+    ///
+    /// Se revisa lo que contesta antes de creerle: una URL que no es http
+    /// no se intenta, y un enlace que ya caducó se dice en lugar de abrirlo
+    /// para que falle con un 403 que nadie sabe leer.
+    fn resolve(&mut self, hit: &Hit) -> Result<messages::Stream, String> {
+        let request = messages::write(&messages::Resolve::new(&hit.id));
+        let bytes = self.call_plugin_short(&hit.source, messages::op::RESOLVER, &request)?;
+        let stream: messages::Stream = messages::read(&bytes)?;
+        if !stream.usable() {
+            return Err("contestó algo que no es una dirección http".into());
+        }
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs() as i64)
+            .unwrap_or(0);
+        if stream.expired(now) {
+            return Err("el enlace que dio ya caducó".into());
+        }
+        Ok(stream)
+    }
+
+    /// Le pone a lo que suena la ficha que dio el source, si es suya.
+    pub(crate) fn name_from_source(&mut self, path: &std::path::Path) {
+        let path = path.display().to_string();
+        let Some((url, hit)) = &self.search.playing else { return };
+        if *url != path {
+            return;
+        }
+        self.now.title = hit.title.clone();
+        self.now.artist = hit.artist.clone();
+        self.now.album = hit.album.clone();
     }
 
     /// Cierto si los resultados cambiaron desde la última vez que se
@@ -505,10 +585,14 @@ mod tests {
     }
 
     #[test]
-    fn what_a_plugin_offers_cannot_be_played_yet_and_says_so() {
+    fn what_a_plugin_offers_can_be_tried() {
+        // Se marca como reproducible porque al hacer clic se le pide
+        // `chilpa_resolver` al source. Que conteste o no es suyo, y si no
+        // puede se dice con su nombre; apagar todo lo remoto por si acaso
+        // sería una lista que no hace nada.
         let replies = vec![reply("a", vec![remote("x", "Una", None)])];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
-        assert!(!all[0].playable, "sin resolver el stream no se puede prometer");
+        assert!(all[0].playable);
     }
 
     #[test]

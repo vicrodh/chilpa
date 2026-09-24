@@ -103,7 +103,7 @@ pub struct HttpStream {
 }
 
 impl HttpStream {
-    /// Construye el stream a partir de un lector ya abierto.
+    /// Construye el stream a partir de un reader ya abierto.
     pub fn new(
         inner: Box<dyn Read + Send + Sync>,
         info: StreamInfo,
@@ -156,7 +156,7 @@ impl symphonia::core::io::MediaSource for HttpStream {
 
 /// Abre una URL y deja el audio listo para el decodificador.
 ///
-/// Pide la metadata ICY: si el servidor la ofrece, el lector la saca del
+/// Pide la metadata ICY: si el servidor la ofrece, el reader la saca del
 /// flujo y publica el título; si no, el audio pasa tal cual.
 pub fn open(url: &str) -> Result<HttpStream, StreamError> {
     let reply = ureq::get(url)
@@ -183,13 +183,13 @@ pub fn open(url: &str) -> Result<HttpStream, StreamError> {
 
     let now_playing = NowPlaying::new();
     let body = reply.into_body().into_reader();
-    let lector: Box<dyn Read + Send + Sync> = match info.icy_metaint {
+    let reader: Box<dyn Read + Send + Sync> = match info.icy_metaint {
         Some(metaint) if metaint > 0 => {
             Box::new(IcyReader::new(body, metaint, now_playing.clone()))
         }
         _ => Box::new(body),
     };
-    Ok(HttpStream::new(lector, info, now_playing))
+    Ok(HttpStream::new(reader, info, now_playing))
 }
 
 #[cfg(test)]

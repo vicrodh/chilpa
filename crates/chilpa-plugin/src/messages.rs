@@ -138,6 +138,24 @@ pub fn isrc_fingerprint(isrc: &str) -> Option<String> {
     (!i.is_empty()).then(|| format!("isrc:{}", i.to_ascii_uppercase()))
 }
 
+/// Lo que se le pide al source para poder reproducir algo suyo.
+///
+/// Entra por [`op::RESOLVER`] y sale un [`Stream`]. Va aparte de la
+/// búsqueda porque resolver cuesta: muchos sources firman una URL por
+/// llamada, y pedirla para cada resultado de una lista sería regalarles
+/// trabajo y quemar el límite de la cuenta.
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
+pub struct Resolve {
+    /// El id que el mismo source dio al buscar.
+    pub external_id: String,
+}
+
+impl Resolve {
+    pub fn new(external_id: &str) -> Self {
+        Self { external_id: external_id.to_string() }
+    }
+}
+
 /// Un álbum que vive en un source.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct RemoteAlbum {
