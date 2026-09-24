@@ -214,6 +214,9 @@ msgstr "Medir la salida"
 msgid "Most played"
 msgstr "Más escuchadas"
 
+msgid "Mute"
+msgstr "Silenciar"
+
 msgid "My library"
 msgstr "Mi biblioteca"
 
@@ -418,6 +421,12 @@ msgstr "El servicio no mandó un código."
 msgid "The service's answer is missing."
 msgstr "Falta la respuesta del servicio."
 
+msgid "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means."
+msgstr "Este es el control del propio dispositivo ({}). Chilpa nunca escala las muestras: eso es lo que quiere decir bit-perfect."
+
+msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
+msgstr "Esta salida no tiene control de volumen propio. Chilpa no se lo va a inventar escalando las muestras, porque ahí se acabó el bit-perfect: usa la perilla del dispositivo."
+
 msgid "This plugin wants:"
 msgstr "Este plugin quiere:"
 
@@ -430,8 +439,14 @@ msgstr "Para moverse"
 msgid "Track {}"
 msgstr "Pista {}"
 
+msgid "Unmute"
+msgstr "Quitar silencio"
+
 msgid "Visualizer"
 msgstr "Visualizador"
+
+msgid "Volume"
+msgstr "Volumen"
 
 msgid "Wave"
 msgstr "Onda"
@@ -792,6 +807,9 @@ msgstr "el dispositivo abrió {} Hz y {} canales, no {} Hz y {}"
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr "no se midió el dispositivo; sin eso no se promete bit-perfect"
 
+msgid "the device's volume control is gone"
+msgstr "el control de volumen del dispositivo ya no está"
+
 msgid "the disc carries no audio tracks"
 msgstr "el disco no trae pistas de audio"
 
@@ -944,6 +962,9 @@ msgstr "esta biblioteca es de la versión {} y este Chilpa entiende hasta la {};
 
 msgid "this list"
 msgstr "esta lista"
+
+msgid "this output has no volume control of its own"
+msgstr "esta salida no tiene control de volumen propio"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"

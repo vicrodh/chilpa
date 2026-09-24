@@ -19,6 +19,7 @@ ScrollView {
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
+        Chilpa.refreshVolume()
         Chilpa.refreshLibraryFolders()
     }
 
@@ -101,6 +102,56 @@ ScrollView {
                     text: Chilpa.translate(
                         "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too.",
                         Chilpa.trRev)
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 10
+                    color: "#7a411d1f"
+                }
+            }
+        }
+
+        Setting {
+            label: Chilpa.translate("Volume", Chilpa.trRev)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 10
+                    visible: Chilpa.hasVolume
+                    Slider {
+                        Layout.fillWidth: true
+                        from: 0
+                        to: 100
+                        stepSize: 1
+                        value: Chilpa.volume
+                        onMoved: Chilpa.chooseVolume(Math.round(value))
+                    }
+                    Label {
+                        Layout.preferredWidth: 40
+                        text: Chilpa.volume + "%"
+                        font.pixelSize: 12
+                        color: "#411d1f"
+                    }
+                    Button {
+                        visible: Chilpa.canMute
+                        text: Chilpa.muted
+                            ? Chilpa.translate("Unmute", Chilpa.trRev)
+                            : Chilpa.translate("Mute", Chilpa.trRev)
+                        onClicked: Chilpa.chooseMuted(!Chilpa.muted)
+                    }
+                }
+                // Said and not hidden: an output with no control of its own
+                // is the common case on a DAC, and someone looking for a
+                // slider deserves to know why there is none.
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.hasVolume
+                        ? Chilpa.translateArgs(
+                            "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means.",
+                            [Chilpa.volumeControl], Chilpa.trRev)
+                        : Chilpa.translate(
+                            "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device.",
+                            Chilpa.trRev)
                     wrapMode: Text.Wrap
                     font.pixelSize: 10
                     color: "#7a411d1f"
