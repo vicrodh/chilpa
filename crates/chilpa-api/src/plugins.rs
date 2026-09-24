@@ -9,9 +9,12 @@
 //! razón y no impide que los demás carguen.
 
 use super::*;
+use crate::accounts::Account;
 use crate::approvals::Approvals;
 use chilpa_plugin::{Host, HostServices, Limits, Level, Registry, Services};
+use chilpa_auth::Auth;
 use chilpa_secrets::{BackendKind, SecretBox};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
@@ -20,6 +23,10 @@ use std::sync::{Arc, Mutex};
 /// Lo que no está aquí, no existe para el guest.
 pub struct ChilpaServices {
     root: PathBuf,
+    /// Cómo conecta su cuenta cada plugin, sacado de su manifest al
+    /// cargarlo. Hace falta aquí para poder renovar un acceso vencido sin
+    /// que el plugin participe.
+    auth: Arc<Mutex<BTreeMap<String, Auth>>>,
     /// Donde se abren las credenciales. Compartida con `Plugins`, que es
     /// quien las guarda: una sola caja para que las dos orillas usen la
     /// misma llave maestra.
@@ -28,7 +35,7 @@ pub struct ChilpaServices {
 
 impl ChilpaServices {
     pub fn new(root: PathBuf, secrets: Option<Arc<SecretBox>>) -> Self {
-        Self { root, secrets }
+        Self { root, secrets, auth: Arc::new(Mutex::new(BTreeMap::new())) }
     }
 
     /// El archivo donde vive una llave del almacén de un plugin.
@@ -53,13 +60,96 @@ impl ChilpaServices {
     /// no hay credencial, y la petición sale sin `Authorization`. Inventar
     /// algo aquí sería mandar basura al servicio del usuario.
     fn credential(&self, plugin: &str) -> Option<String> {
-        let path = credential_file(&self.root, plugin)?;
-        let sealed = std::fs::read(path).ok()?;
-        let plain = self.secrets.as_ref()?.open_sealed(&sealed).ok()?;
-        let text = String::from_utf8(plain).ok()?;
-        let text = text.trim().to_string();
-        (!text.is_empty()).then_some(text)
+        let account = self.account(plugin)?;
+        let now = now_unix();
+
+        // Si el acceso venció y hay con qué renovarlo, se renueva aquí, se
+        // guarda cifrado, y la petición sale con el nuevo. El plugin no se
+        // entera de que hubo una renovación, que es justo el punto.
+        if account.stale(now) {
+            let auth = self.auth.lock().ok()?.get(plugin).cloned()?;
+            match account.renew(&auth, now, &post) {
+                Ok(fresh) => {
+                    let _ = self.save(plugin, &fresh);
+                    return fresh.header();
+                }
+                // Que falle renovar no se rescata inventando algo: la
+                // petición sale sin credencial y el servicio dirá que no,
+                // que es más honesto que mandar un token vencido.
+                Err(_) => return None,
+            }
+        }
+        account.header()
     }
+
+    /// Lo guardado para ese plugin, descifrado.
+    fn account(&self, plugin: &str) -> Option<Account> {
+        open_account(&self.root, self.secrets.as_deref(), plugin)
+    }
+
+    /// Guarda, cifrado.
+    fn save(&self, plugin: &str, account: &Account) -> Result<(), String> {
+        seal_account(&self.root, self.secrets.as_deref(), plugin, account)
+    }
+}
+
+/// Lee la cuenta cifrada de un plugin, si hay.
+fn open_account(root: &Path, secrets: Option<&SecretBox>, plugin: &str) -> Option<Account> {
+    let path = credential_file(root, plugin)?;
+    let sealed = std::fs::read(path).ok()?;
+    let plain = secrets?.open_sealed(&sealed).ok()?;
+    serde_json::from_slice(&plain).ok()
+}
+
+/// Guarda una cuenta cifrada en la carpeta de su plugin.
+///
+/// Vive suelta porque la usan los dos lados: quien conecta la cuenta y
+/// quien la renueva a media petición, y uno llega por un `dyn HostServices`
+/// que no sabe de esto.
+fn seal_account(
+    root: &Path,
+    secrets: Option<&SecretBox>,
+    plugin: &str,
+    account: &Account,
+) -> Result<(), String> {
+    let secrets = secrets.ok_or("no hay dónde guardar un secreto en este equipo")?;
+    let path = credential_file(root, plugin).ok_or("ese id no sirve de carpeta")?;
+    let plain = serde_json::to_vec(account).map_err(|e| e.to_string())?;
+    let sealed = secrets.seal(&plain).map_err(|e| e.to_string())?;
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(path, sealed).map_err(|e| e.to_string())
+}
+
+fn now_unix() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0)
+}
+
+/// La petición que `chilpa-auth` no trae adentro: ese crate no conoce la
+/// red, y aquí se le presta la misma que usa todo lo demás.
+fn post(url: &str, body: &str) -> Result<(u16, String), String> {
+    let request = serde_json::json!({
+        "url": url,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+        },
+        "body": body,
+    });
+    let raw = chilpa_core::send_request(&serde_json::to_vec(&request).unwrap(), None);
+    let reply: serde_json::Value = serde_json::from_slice(&raw).map_err(|e| e.to_string())?;
+    if let Some(e) = reply.get("error").and_then(|e| e.as_str()) {
+        return Err(e.to_string());
+    }
+    Ok((
+        reply.get("status").and_then(|s| s.as_u64()).unwrap_or(0) as u16,
+        reply.get("body").and_then(|b| b.as_str()).unwrap_or_default().to_string(),
+    ))
 }
 
 /// Dónde vive la credencial cifrada de un plugin.
@@ -70,7 +160,17 @@ fn credential_file(root: &Path, plugin: &str) -> Option<PathBuf> {
     valid_id(plugin).then(|| root.join(plugin).join("credential.sealed"))
 }
 
+impl ChilpaServices {
+    fn auth_map_inner(&self) -> Arc<Mutex<chilpa_plugin::AuthMap>> {
+        Arc::clone(&self.auth)
+    }
+}
+
 impl HostServices for ChilpaServices {
+    fn auth_map(&self) -> Option<Arc<Mutex<chilpa_plugin::AuthMap>>> {
+        Some(self.auth_map_inner())
+    }
+
     fn log(&mut self, plugin: &str, level: Level, message: &str) {
         // Con el id por delante: un renglón de log sin dueño no sirve para
         // saber a quién reclamarle.
@@ -148,6 +248,22 @@ pub struct PluginInfo {
     /// Cierto si tiene una credencial guardada. No dice cuál, ni la fachada
     /// la muestra nunca: solo si hay cuenta conectada o no.
     pub connected: bool,
+    /// Cierto si la cuenta venció y no hay con qué renovarla sola: el
+    /// usuario tiene que volver a conectarla. Se dice en lugar de dejar que
+    /// todo empiece a fallar sin explicación.
+    pub account_expired: bool,
+    /// A dónde se manda al usuario a dar permiso, vacío si no usa OAuth o
+    /// no necesita cuenta.
+    pub account_host: String,
+}
+
+/// Una conexión de cuenta a medias: ya se mandó al usuario al navegador y
+/// se está esperando a que regrese.
+pub struct Connecting {
+    pub id: String,
+    pub auth: chilpa_auth::Auth,
+    pub back: chilpa_auth::Loopback,
+    pub pkce: chilpa_auth::Pkce,
 }
 
 /// Todo lo de plugins que la fachada guarda.
@@ -187,6 +303,7 @@ impl Plugins {
             }
             self.load_one(&dir);
         }
+        self.remember_auth();
         self.registry.usable().len()
     }
 
@@ -202,6 +319,26 @@ impl Plugins {
         // contesta que no y su wasm nunca se toca (ADR-008).
         let approvals = &self.approvals;
         self.registry.install(&self.host, &manifest, &wasm, |m| approvals.covers(m));
+    }
+
+    /// Le pasa a los servicios cómo conecta su cuenta cada plugin.
+    ///
+    /// Es lo único que hace falta para renovar un acceso vencido a media
+    /// petición, y es lo que evita tener que preguntarle al registro desde
+    /// adentro de una llamada que ya tiene el candado tomado.
+    fn remember_auth(&mut self) {
+        let known: BTreeMap<String, Auth> = self
+            .registry
+            .installed()
+            .filter_map(|i| Some((i.id.clone(), i.manifest.as_ref()?.auth.clone()?)))
+            .collect();
+        if let Ok(services) = self.services.lock() {
+            if let Some(map) = services.auth_map() {
+                if let Ok(mut m) = map.lock() {
+                    *m = known;
+                }
+            }
+        }
     }
 
     /// Lo que hay, para mostrarlo.
@@ -232,6 +369,13 @@ impl Plugins {
                         .unwrap_or_default(),
                     wants_more: self.approvals.knows(&i.id),
                     connected: self.has_credential(&i.id),
+                    account_expired: self.expired(&i.id),
+                    account_host: i
+                        .manifest
+                        .as_ref()
+                        .and_then(|m| m.auth.as_ref())
+                        .map(|a| a.host())
+                        .unwrap_or_default(),
                 }
             })
             .collect()
@@ -247,17 +391,12 @@ impl Plugins {
     /// El plugin nunca la ve: lo único que hace con ella es que Chilpa la
     /// ponga en sus peticiones (ADR-008).
     pub fn set_credential(&mut self, id: &str, value: &str) -> Result<(), String> {
-        let Some(secrets) = &self.secrets else {
-            return Err("no hay dónde guardar un secreto en este equipo".into());
-        };
-        let Some(path) = credential_file(&self.root, id) else {
-            return Err(format!("\"{id}\" no es un id que pueda ser una carpeta"));
-        };
-        let sealed = secrets.seal(value.as_bytes()).map_err(|e| e.to_string())?;
-        if let Some(dir) = path.parent() {
-            std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
-        }
-        std::fs::write(path, sealed).map_err(|e| e.to_string())
+        self.save_account(id, &Account::Token { header: value.to_string() })
+    }
+
+    /// Guarda una cuenta ya conectada, sea fija o de OAuth.
+    pub fn save_account(&mut self, id: &str, account: &Account) -> Result<(), String> {
+        seal_account(&self.root, self.secrets.as_deref(), id, account)
     }
 
     /// Borra la credencial de un plugin. Revocarlo la borra también.
@@ -265,6 +404,12 @@ impl Plugins {
         if let Some(path) = credential_file(&self.root, id) {
             let _ = std::fs::remove_file(path);
         }
+    }
+
+    /// Cierto si la cuenta de ese plugin venció sin cómo renovarse.
+    fn expired(&self, id: &str) -> bool {
+        open_account(&self.root, self.secrets.as_deref(), id)
+            .is_some_and(|a| a.dead(now_unix()))
     }
 
     /// Cierto si ese plugin tiene una credencial guardada.
@@ -302,6 +447,11 @@ impl Plugins {
     /// vuelve a preguntar.
     pub fn revoke(&mut self, id: &str) -> Result<(), String> {
         self.approvals.revoke(id).map_err(|e| e.to_string())
+    }
+
+    /// Cómo conecta su cuenta ese plugin, según su manifest.
+    pub fn auth_of(&self, id: &str) -> Option<chilpa_auth::Auth> {
+        self.registry.installed().find(|i| i.id == id)?.manifest.as_ref()?.auth.clone()
     }
 
     /// Los plugins de catálogo que sirven ahora, con su nombre.
@@ -425,6 +575,53 @@ impl Chilpa {
             Some(mut p) => p.call_short(id, operation, input),
             None => Err("el sandbox de plugins no está arrancado".into()),
         }
+    }
+
+    /// Arranca la conexión de una cuenta y contesta a dónde hay que mandar
+    /// al usuario.
+    ///
+    /// No abre el navegador: cómo se abre uno es cosa del sistema, y quien
+    /// llama sabe si hay ventana o no. Guarda el loopback y el verificador
+    /// hasta que se termine con [`Chilpa::finish_connect`].
+    pub fn begin_connect(&mut self, id: &str) -> Result<String, String> {
+        let auth = self
+            .plugins()
+            .iter()
+            .find(|p| p.id == id)
+            .map(|_| ())
+            .and_then(|_| self.auth_of(id))
+            .ok_or_else(|| format!("\"{id}\" no dice cómo se conecta una cuenta"))?;
+
+        let back = chilpa_auth::Loopback::bind().map_err(|e| e.to_string())?;
+        let pkce = chilpa_auth::Pkce::new();
+        let url = chilpa_auth::authorize_url(&auth, &pkce, &back)
+            .ok_or("ese source no usa OAuth")?;
+        self.connecting = Some(Connecting { id: id.to_string(), auth, back, pkce });
+        Ok(url)
+    }
+
+    /// Espera a que el navegador regrese y guarda la cuenta, cifrada.
+    ///
+    /// Bloquea hasta que el usuario decide, o hasta que se acaba la
+    /// paciencia. Quien llama lo corre donde pueda esperar.
+    pub fn finish_connect(&mut self) -> Result<String, String> {
+        let Some(c) = self.connecting.take() else {
+            return Err("no hay ninguna conexión empezada".into());
+        };
+        let code = chilpa_auth::wait_for_code(&c.back).map_err(|e| e.to_string())?;
+        let tokens =
+            chilpa_auth::exchange(&c.auth, &code, &c.pkce, &c.back, now_unix(), &post)
+                .map_err(|e| e.to_string())?;
+        let Some(p) = self.plugins.clone() else { return Err("no hay sandbox".into()) };
+        let Ok(mut p) = p.lock() else { return Err("el sandbox está ocupado".into()) };
+        p.save_account(&c.id, &Account::OAuth { tokens })?;
+        Ok(c.id)
+    }
+
+    /// Cómo conecta su cuenta ese plugin, según su manifest.
+    fn auth_of(&self, id: &str) -> Option<chilpa_auth::Auth> {
+        let p = self.plugins.as_ref()?.lock().ok()?;
+        p.auth_of(id)
     }
 
     /// Guarda la credencial de un plugin, cifrada, y dice dónde quedó.

@@ -57,7 +57,20 @@ pub trait HostServices: Send {
     /// esperando para siempre: el guest se puede cortar por combustible o
     /// por reloj, pero una llamada del host que se cuelga cuelga el hilo.
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8>;
+
+    /// Un lugar donde quien implementa esto puede guardar lo que necesite
+    /// para renovar credenciales, si es que las maneja.
+    ///
+    /// Está en el trait porque quien lo implementa llega hasta aquí como un
+    /// `dyn HostServices` y ya no se sabe de qué tipo era. Devolver `None`
+    /// es lo normal: un host de pruebas no tiene cuentas que renovar.
+    fn auth_map(&self) -> Option<std::sync::Arc<std::sync::Mutex<AuthMap>>> {
+        None
+    }
 }
+
+/// Cómo conecta su cuenta cada plugin, por id.
+pub type AuthMap = std::collections::BTreeMap<String, chilpa_auth::Auth>;
 
 /// Un host que no deja hacer nada. Sirve para plugins que no pidieron
 /// ninguna capacidad, y para las pruebas.

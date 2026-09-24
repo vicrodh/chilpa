@@ -6,13 +6,17 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-# Las peticiones salen por el mismo camino que todo lo demás de red.
-chilpa-stream.workspace = true
 # El reto de PKCE es un SHA-256 en base64url.
 sha2 = "0.10"
 base64 = "0.22"
 # El verificador y el estado son aleatorios.
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
+# Las respuestas del servicio vienen en JSON.
 serde_json = "1"
 thiserror = "2"
+
+[dev-dependencies]
+# Solo las pruebas salen a la red de verdad: el crate no la conoce.
+chilpa-stream.workspace = true
+serde_json = "1"

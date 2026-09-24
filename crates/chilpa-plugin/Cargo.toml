@@ -6,6 +6,10 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Solo por el tipo con el que un manifest declara cómo se conecta una
+# cuenta. Ese crate no conoce la red: quien corre el flujo le inyecta la
+# petición, así que el sandbox no acaba enlazando un cliente HTTP.
+chilpa-auth.workspace = true
 # serde y serde_json ya estaban en el árbol por el crate de streams, así que
 # el formato de mensajes no agrega dependencias nuevas. Un parser de JSON
 # escrito a mano sería la superficie de ataque más obvia del proyecto.

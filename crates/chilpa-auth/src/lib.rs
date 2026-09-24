@@ -22,7 +22,7 @@
 mod flow;
 mod pkce;
 
-pub use flow::{authorize_url, exchange, refresh, wait_for_code, Loopback};
+pub use flow::{authorize_url, exchange, refresh, wait_for_code, Loopback, Post};
 pub use pkce::Pkce;
 
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,10 @@ pub enum Auth {
     /// larga vida. Chilpa la guarda cifrada y la pone en cada petición.
     Token,
     /// OAuth 2.0 con código y PKCE.
+    ///
+    /// El nombre va escrito a mano: `rename_all` lo volvería `o_auth2`, y
+    /// esto cruza el ABI. Un manifest dice `"type": "oauth2"`.
+    #[serde(rename = "oauth2")]
     OAuth2 {
         /// A dónde se manda al usuario a decir que sí.
         authorize_url: String,
@@ -194,6 +198,20 @@ mod tests {
             scopes: vec![],
         };
         assert!(a.problem().unwrap().contains("client_id"));
+    }
+
+    #[test]
+    fn a_manifest_spells_it_the_way_a_person_would() {
+        let a: Auth = serde_json::from_str(
+            r#"{"type":"oauth2","authorize_url":"https://a.b/a",
+                "token_url":"https://a.b/t","client_id":"x"}"#,
+        )
+        .expect("se lee como lo escribiría alguien");
+        assert!(matches!(a, Auth::OAuth2 { .. }));
+        assert!(serde_json::to_string(&a).unwrap().contains(r#""type":"oauth2""#));
+
+        let t: Auth = serde_json::from_str(r#"{"type":"token"}"#).unwrap();
+        assert_eq!(t, Auth::Token);
     }
 
     #[test]

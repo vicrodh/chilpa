@@ -36,5 +36,5 @@ pub use messages::{
     op, RemoteAlbum, Quality, Query, RemotePlaylist, Results, Stream, RemoteTrack,
 };
 pub use registry::{Installed, Registry};
-pub use services::{Recorded, TestHost, HostServices, Level};
+pub use services::{Recorded, TestHost, HostServices, Level, AuthMap};
 pub use watchdog::{State, Watchdog};

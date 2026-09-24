@@ -93,6 +93,29 @@ fn now() -> i64 {
     1_000_000
 }
 
+/// La petición de verdad, que es lo que inyecta Chilpa. El crate no conoce
+/// la red; aquí se le presta.
+fn post(url: &str, body: &str) -> Result<(u16, String), String> {
+    let request = serde_json::json!({
+        "url": url,
+        "method": "POST",
+        "headers": {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Accept": "application/json",
+        },
+        "body": body,
+    });
+    let raw = chilpa_stream::request::send(&serde_json::to_vec(&request).unwrap(), None);
+    let reply: serde_json::Value = serde_json::from_slice(&raw).map_err(|e| e.to_string())?;
+    if let Some(e) = reply.get("error").and_then(|e| e.as_str()) {
+        return Err(e.to_string());
+    }
+    Ok((
+        reply.get("status").and_then(|s| s.as_u64()).unwrap_or(0) as u16,
+        reply.get("body").and_then(|b| b.as_str()).unwrap_or_default().to_string(),
+    ))
+}
+
 #[test]
 fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     let svc = service();
@@ -117,7 +140,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     assert_eq!(code, "el-codigo");
 
     // Se cambia por tokens. Aquí, y solo aquí, viaja el verificador.
-    let tokens = exchange(&auth, &code, &pkce, &back, now()).expect("cambió");
+    let tokens = exchange(&auth, &code, &pkce, &back, now(), &post).expect("cambió");
     assert_eq!(tokens.access_token, "primero");
     assert_eq!(tokens.refresh_token, "para-renovar");
     assert_eq!(tokens.expires_at, Some(now() + 3600));
@@ -133,7 +156,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     let old = Tokens { expires_at: Some(now() - 1), ..tokens.clone() };
     assert!(old.stale(now()));
     assert!(old.renewable());
-    let fresh = refresh(&auth, &old, now()).expect("renovó");
+    let fresh = refresh(&auth, &old, now(), &post).expect("renovó");
     assert_eq!(fresh.access_token, "segundo");
     assert_eq!(
         fresh.refresh_token, "para-renovar",

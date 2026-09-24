@@ -119,6 +119,17 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
     Err(AuthError::NoCode("se acabó la espera".into()))
 }
 
+/// Cómo se manda una petición al servicio.
+///
+/// Se inyecta en lugar de traer un cliente HTTP adentro. Así este crate no
+/// depende de la red, y `chilpa-plugin` puede usar su tipo [`Auth`] para
+/// leer un manifest sin que el sandbox acabe enlazando un cliente HTTP que
+/// no tiene por qué existir ahí.
+///
+/// Recibe la URL y el cuerpo ya formado; contesta el código de estado y el
+/// cuerpo de la respuesta.
+pub type Post<'a> = &'a dyn Fn(&str, &str) -> Result<(u16, String), String>;
+
 /// Cambia el código por los tokens.
 pub fn exchange(
     auth: &Auth,
@@ -126,6 +137,7 @@ pub fn exchange(
     pkce: &Pkce,
     back: &Loopback,
     now_unix: i64,
+    post_with: Post<'_>,
 ) -> Result<Tokens, AuthError> {
     let Auth::OAuth2 { token_url, client_id, .. } = auth else {
         return Err(AuthError::Unreadable("ese source no usa OAuth".into()));
@@ -137,11 +149,16 @@ pub fn exchange(
         ("client_id", client_id),
         ("code_verifier", pkce.verifier()),
     ]);
-    post(token_url, &form, now_unix, "")
+    post(token_url, &form, now_unix, "", post_with)
 }
 
 /// Pide un access nuevo con el refresh, sin molestar al usuario.
-pub fn refresh(auth: &Auth, tokens: &Tokens, now_unix: i64) -> Result<Tokens, AuthError> {
+pub fn refresh(
+    auth: &Auth,
+    tokens: &Tokens,
+    now_unix: i64,
+    post_with: Post<'_>,
+) -> Result<Tokens, AuthError> {
     let Auth::OAuth2 { token_url, client_id, .. } = auth else {
         return Err(AuthError::Unreadable("ese source no usa OAuth".into()));
     };
@@ -152,7 +169,7 @@ pub fn refresh(auth: &Auth, tokens: &Tokens, now_unix: i64) -> Result<Tokens, Au
     ]);
     // Muchos servicios no devuelven un refresh nuevo al renovar; el que se
     // tenía sigue valiendo, y perderlo obligaría a reconectar la cuenta.
-    post(token_url, &form, now_unix, &tokens.refresh_token)
+    post(token_url, &form, now_unix, &tokens.refresh_token, post_with)
 }
 
 fn post(
@@ -160,28 +177,13 @@ fn post(
     body: &str,
     now_unix: i64,
     keep_refresh: &str,
+    post_with: Post<'_>,
 ) -> Result<Tokens, AuthError> {
     if !secure(url) {
         return Err(AuthError::Unreadable("el token_url no es https".into()));
     }
-    let request = serde_json::json!({
-        "url": url,
-        "method": "POST",
-        "headers": {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Accept": "application/json",
-        },
-        "body": body,
-    });
-    let raw = chilpa_stream::request::send(&serde_json::to_vec(&request).unwrap(), None);
-    let reply: serde_json::Value =
-        serde_json::from_slice(&raw).map_err(|e| AuthError::Unreadable(e.to_string()))?;
-
-    if let Some(e) = reply.get("error").and_then(|e| e.as_str()) {
-        return Err(AuthError::Network(e.to_string()));
-    }
-    let status = reply.get("status").and_then(|s| s.as_u64()).unwrap_or(0) as u16;
-    let text = reply.get("body").and_then(|b| b.as_str()).unwrap_or_default();
+    let (status, text) = post_with(url, body).map_err(AuthError::Network)?;
+    let text = text.as_str();
     if !(200..300).contains(&status) {
         // Se corta: el cuerpo de un error puede traer el token de otra
         // cuenta, o media página de HTML.
