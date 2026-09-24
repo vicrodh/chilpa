@@ -90,7 +90,10 @@ ColumnLayout {
             model: Chilpa.smartLists
             delegate: Button {
                 readonly property var cols: modelData.split("\t")
-                text: cols[0] + "  (" + cols[1] + ")"
+                // The name travels as its English msgid and is translated
+                // here; what goes back to the facade is the msgid, so the
+                // lookup never depends on the chosen language.
+                text: Chilpa.translate(cols[0], Chilpa.trRev) + "  (" + cols[1] + ")"
                 enabled: cols[1] !== "0"
                 onClicked: Chilpa.playSmartList(cols[0])
             }

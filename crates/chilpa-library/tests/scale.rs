@@ -44,7 +44,7 @@ fn large_library() -> Library {
         for a in 1..=ALBUMS {
             // Two hundred artists, so the grid by artist really groups and is
             // not one row per artist.
-            let artist = format!("Artista {:03}", a % 200);
+            let artist = format!("Artist {:03}", a % 200);
             albums
                 .execute(params![a, format!("Disco {a}"), artist, 1960 + (a % 60) as i32])
                 .unwrap();
@@ -56,9 +56,9 @@ fn large_library() -> Library {
                     .execute(params![
                         id,
                         source,
-                        format!("/musica/{a}/{p:02}.flac"),
-                        format!("Pista {p} del {a}"),
-                        format!("Artista {:03}", a % 200),
+                        format!("/music/{a}/{p:02}.flac"),
+                        format!("Track {p} of {a}"),
+                        format!("Artist {:03}", a % 200),
                         a,
                         200_000 + (id % 400_000),
                         bits,
@@ -94,14 +94,14 @@ fn within(name: &str, took: Duration, ceiling: Duration) {
     eprintln!("{name}: {took:?}");
     assert!(
         took <= ceiling,
-        "{name} tardó {took:?}, el techo es {ceiling:?}: algo se volvió cuadrático"
+        "{name} took {took:?}, the ceiling is {ceiling:?}: something turned quadratic"
     );
 }
 
 #[test]
 fn a_fifty_thousand_track_library_does_not_crawl() {
     let (lib, built) = how_long(large_library);
-    eprintln!("armar {TRACKS} pistas: {built:?}");
+    eprintln!("building {TRACKS} tracks: {built:?}");
     assert_eq!(lib.track_count(false).unwrap(), TRACKS as usize);
 
     // The grid: a page of a hundred albums with their play counts. This is
@@ -115,50 +115,50 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     for order in AlbumSort::all() {
         let (page, t) = how_long(|| lib.albums_sorted(order, 100, 0).unwrap());
         assert_eq!(page.len(), 100, "{}", order.name());
-        within(&format!("reja por {}", order.name()), t, Duration::from_millis(1500));
+        within(&format!("grid by {}", order.name()), t, Duration::from_millis(1500));
     }
 
     // A page from deep in: it must not cost more than the first one just
     // for being far away.
     let (_, t) = how_long(|| lib.albums_sorted(AlbumSort::Artist, 100, 4_000).unwrap());
-    within("reja en la página 40", t, Duration::from_millis(1500));
+    within("grid on page 40", t, Duration::from_millis(1500));
 
     // The artists.
     let (artists, t) = how_long(|| lib.artists(500, 0).unwrap());
-    assert_eq!(artists.len(), 200, "doscientos artistas");
-    within("artistas", t, Duration::from_millis(1500));
+    assert_eq!(artists.len(), 200, "two hundred artists");
+    within("artists", t, Duration::from_millis(1500));
 
     // The search, which walks titles, artists, albums and genres.
-    let (found, t) = how_long(|| lib.search("Pista 7", 200).unwrap());
+    let (found, t) = how_long(|| lib.search("Track 7", 200).unwrap());
     assert!(!found.is_empty());
-    within("búsqueda", t, Duration::from_millis(1500));
+    within("search", t, Duration::from_millis(1500));
 
     // The stats, which sum the whole log.
     let (stats, t) = how_long(|| lib.stats().unwrap());
     assert!(stats.plays > 0);
-    within("estadísticas", t, Duration::from_millis(1500));
+    within("statistics", t, Duration::from_millis(1500));
 
     let (_, t) = how_long(|| lib.top_tracks(20).unwrap());
-    within("más escuchadas", t, Duration::from_millis(1500));
+    within("most played", t, Duration::from_millis(1500));
     let (_, t) = how_long(|| lib.recently_played(20).unwrap());
-    within("lo último que sonó", t, Duration::from_millis(1500));
+    within("last played", t, Duration::from_millis(1500));
 
     // The smart lists, which is what gets resolved every time they are
     // looked at.
     for list in chilpa_library::smart_builtins() {
         let (_, t) = how_long(|| lib.smart_tracks(&list).unwrap());
-        within(&format!("lista \"{}\"", list.name), t, Duration::from_millis(1500));
+        within(&format!("list \"{}\"", list.name), t, Duration::from_millis(1500));
     }
 
     // And a list with several rules at once.
     let composite = SmartList::new(
-        "compuesta",
+        "compound",
         vec![Rule::HiRes, Rule::PlayedAtLeast(2), Rule::LongerThanMs(300_000)],
         SmartOrder::MostPlayed,
         200,
     );
     let (_, t) = how_long(|| lib.smart_tracks(&composite).unwrap());
-    within("lista con tres reglas", t, Duration::from_millis(1500));
+    within("list with three rules", t, Duration::from_millis(1500));
 }
 
 #[test]
@@ -170,5 +170,5 @@ fn the_features_of_one_page_come_out_in_a_single_query() {
     }
     let (map, t) = how_long(|| lib.features_for(&ids, "chilpa").unwrap());
     assert_eq!(map.len(), 200);
-    within("features de doscientas pistas", t, Duration::from_millis(500));
+    within("features for two hundred tracks", t, Duration::from_millis(500));
 }

@@ -86,11 +86,11 @@ mod tests {
 
     #[test]
     fn relative_paths_resolve_against_the_playlist() {
-        let dir = folder("relativas");
+        let dir = folder("relative");
         std::fs::write(dir.join("a.flac"), b"x").unwrap();
         std::fs::write(dir.join("b.flac"), b"x").unwrap();
         let list = dir.join("album.m3u");
-        std::fs::write(&list, "#EXTM3U\n#EXTINF:120,Una\na.flac\nb.flac\n").unwrap();
+        std::fs::write(&list, "#EXTM3U\n#EXTINF:120,One\na.flac\nb.flac\n").unwrap();
 
         let read_back = read(&list).unwrap();
         assert_eq!(read_back.tracks, vec![dir.join("a.flac"), dir.join("b.flac")]);
@@ -100,14 +100,14 @@ mod tests {
 
     #[test]
     fn what_is_gone_is_reported_separately() {
-        let dir = folder("ausentes");
+        let dir = folder("missing");
         std::fs::write(dir.join("a.flac"), b"x").unwrap();
         let list = dir.join("l.m3u");
-        std::fs::write(&list, "a.flac\nse-fue.flac\n").unwrap();
+        std::fs::write(&list, "a.flac\ngone.flac\n").unwrap();
 
         let read_back = read(&list).unwrap();
         assert_eq!(read_back.tracks.len(), 1);
-        assert_eq!(read_back.missing, vec![dir.join("se-fue.flac")]);
+        assert_eq!(read_back.missing, vec![dir.join("gone.flac")]);
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -123,19 +123,19 @@ mod tests {
 
     #[test]
     fn what_is_written_reads_back_the_same_and_with_relative_paths() {
-        let dir = folder("ida-y-vuelta");
+        let dir = folder("round-trip");
         std::fs::create_dir_all(dir.join("disco")).unwrap();
         let tracks: Vec<PathBuf> =
             ["disco/01.flac", "disco/02.flac"].iter().map(|n| dir.join(n)).collect();
         for p in &tracks {
             std::fs::write(p, b"x").unwrap();
         }
-        let list = dir.join("mia.m3u");
+        let list = dir.join("mine.m3u");
         write_m3u(&list, &tracks).unwrap();
 
         let text = std::fs::read_to_string(&list).unwrap();
-        assert!(text.contains("disco/01.flac"), "se guardó relativa: {text}");
-        assert!(!text.contains(dir.to_str().unwrap()), "sin rutas absolutas");
+        assert!(text.contains("disco/01.flac"), "it was saved relative: {text}");
+        assert!(!text.contains(dir.to_str().unwrap()), "no absolute paths");
 
         assert_eq!(read(&list).unwrap().tracks, tracks);
         let _ = std::fs::remove_dir_all(dir);

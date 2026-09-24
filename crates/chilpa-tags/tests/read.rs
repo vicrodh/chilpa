@@ -4,13 +4,13 @@ use chilpa_tags::read;
 use std::path::PathBuf;
 use std::process::Command;
 
-fn hay_ffmpeg() -> bool {
+fn has_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 /// A one-second FLAC carrying whatever tags it is given.
 fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
-    if !hay_ffmpeg() {
+    if !has_ffmpeg() {
         return None;
     }
     let mut target = std::env::temp_dir();
@@ -28,34 +28,34 @@ fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
 #[test]
 fn the_basic_fields_and_the_duration_are_read() {
     let Some(path) = file(
-        "basico",
+        "basic",
         &[
-            ("title", "Cancion de prueba"),
-            ("artist", "Artista"),
-            ("album", "Disco"),
+            ("title", "A test song"),
+            ("artist", "Artist"),
+            ("album", "Album"),
             ("track", "3"),
             ("date", "2019-03-15"),
         ],
     ) else {
-        eprintln!("sin ffmpeg: se salta");
+        eprintln!("no ffmpeg: skipped");
         return;
     };
     let info = read(&path).unwrap();
-    assert_eq!(info.tags.title.as_deref(), Some("Cancion de prueba"));
-    assert_eq!(info.tags.artist_line(), "Artista");
-    assert_eq!(info.tags.album.as_deref(), Some("Disco"));
+    assert_eq!(info.tags.title.as_deref(), Some("A test song"));
+    assert_eq!(info.tags.artist_line(), "Artist");
+    assert_eq!(info.tags.album.as_deref(), Some("Album"));
     assert_eq!(info.tags.track_number, Some(3));
-    assert_eq!(info.tags.date.as_deref(), Some("2019-03-15"), "la fecha no se trunca");
+    assert_eq!(info.tags.date.as_deref(), Some("2019-03-15"), "the date is not truncated");
     assert_eq!(info.tags.year(), Some(2019));
-    assert!(info.duration.as_millis() >= 900, "duro {:?}", info.duration);
+    assert!(info.duration.as_millis() >= 900, "it lasted {:?}", info.duration);
     assert_eq!(info.sample_rate_hz, Some(44_100));
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn a_file_without_tags_does_not_fail_and_reports_its_properties() {
-    let Some(path) = file("sin-tags", &[]) else {
-        eprintln!("sin ffmpeg: se salta");
+    let Some(path) = file("no-tags", &[]) else {
+        eprintln!("no ffmpeg: skipped");
         return;
     };
     let info = read(&path).unwrap();
@@ -67,8 +67,8 @@ fn a_file_without_tags_does_not_fail_and_reports_its_properties() {
 
 #[test]
 fn the_genre_is_read_as_a_list() {
-    let Some(path) = file("generos", &[("GENRE", "Rock")]) else {
-        eprintln!("sin ffmpeg: se salta");
+    let Some(path) = file("genres", &[("GENRE", "Rock")]) else {
+        eprintln!("no ffmpeg: skipped");
         return;
     };
     let info = read(&path).unwrap();

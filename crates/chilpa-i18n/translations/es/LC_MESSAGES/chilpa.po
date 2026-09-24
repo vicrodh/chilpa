@@ -34,6 +34,9 @@ msgstr "32 bits"
 msgid "32 bit float"
 msgstr "flotante de 32"
 
+msgid "Added this month"
+msgstr "Agregadas este mes"
+
 msgid "Album"
 msgstr "Álbum"
 
@@ -72,6 +75,9 @@ msgstr "CD en {}"
 
 msgid "CDs are not read outside Linux yet"
 msgstr "todavía no se leen CD fuera de Linux"
+
+msgid "Calm"
+msgstr "Tranquilo"
 
 msgid "Capture to a file ({})"
 msgstr "Captura a archivo ({})"
@@ -118,8 +124,14 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 msgid "Everything"
 msgstr "Todo"
 
+msgid "For a long while"
+msgstr "Para un rato largo"
+
 msgid "Formats"
 msgstr "Formatos"
+
+msgid "From this week"
+msgstr "De esta semana"
 
 msgid "Genres"
 msgstr "Géneros"
@@ -135,6 +147,9 @@ msgstr "Alta 24/88.2"
 
 msgid "High 24/96"
 msgstr "Alta 24/96"
+
+msgid "High resolution"
+msgstr "Alta resolución"
 
 msgid "I did not find a CD drive"
 msgstr "no encontré una unidad de CD"
@@ -171,6 +186,9 @@ msgstr "Más escuchadas"
 
 msgid "My library"
 msgstr "Mi biblioteca"
+
+msgid "Never played"
+msgstr "Nunca escuchadas"
 
 msgid "Next"
 msgstr "Siguiente"
@@ -358,8 +376,14 @@ msgstr "Este plugin quiere:"
 msgid "Time listened"
 msgstr "Tiempo escuchado"
 
+msgid "To move to"
+msgstr "Para moverse"
+
 msgid "Track {}"
 msgstr "Pista {}"
+
+msgid "What you play most"
+msgstr "Lo que más escuchas"
 
 msgid "Withdraw permission"
 msgstr "Quitar permiso"

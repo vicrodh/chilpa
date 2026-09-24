@@ -56,7 +56,7 @@ mod tests {
             .execute(
                 "INSERT INTO tracks (source_id, external_id, title, isrc, recording_mbid,
                                      present, added_at)
-                 VALUES (?1, ?2, 'Pista', ?3, ?4, 1, 0)",
+                 VALUES (?1, ?2, 'Track', ?3, ?4, 1, 0)",
                 params![source, path, isrc, mbid],
             )
             .unwrap();
@@ -78,13 +78,13 @@ mod tests {
         track(&lib, source, "/d.flac", None, None);
 
         let fp = lib.fingerprints_for(&[1, 2, 3, 4]).unwrap();
-        assert_eq!(fp.len(), 3, "la que no trae ninguno no ocupa lugar");
+        assert_eq!(fp.len(), 3, "the one that carries neither takes no room");
         assert_eq!(fp[&1], (Some("USRC17607839".into()), None));
-        assert_eq!(fp[&2].0, None, "esa solo trae MBID");
+        assert_eq!(fp[&2].0, None, "that one carries only an MBID");
         assert!(fp[&2].1.is_some());
-        assert_eq!(fp[&3].0.as_deref(), Some("GBAYE0601498"), "puede traer los dos");
+        assert_eq!(fp[&3].0.as_deref(), Some("GBAYE0601498"), "it can carry both");
         assert!(fp[&3].1.is_some());
-        assert!(!fp.contains_key(&4), "sin ninguno de los dos no hay con qué emparejar");
+        assert!(!fp.contains_key(&4), "with neither of the two there is nothing to match on");
     }
 
     #[test]

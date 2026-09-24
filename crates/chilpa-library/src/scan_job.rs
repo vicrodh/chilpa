@@ -103,7 +103,7 @@ impl ScanJob {
                 }
                 let _ = tx.send(ScanProgress::Done(accumulated));
             })
-            .expect("el hilo de escaneo arranca");
+            .expect("the scan thread starts");
         Self { events: rx, thread: Some(thread) }
     }
 
@@ -161,13 +161,13 @@ mod tests {
 
     #[test]
     fn counting_comes_before_progress_and_the_total_does_not_move() {
-        let dir = std::env::temp_dir().join("chilpa-scanjob-progreso");
+        let dir = std::env::temp_dir().join("chilpa-scanjob-progress");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("disco")).unwrap();
         for n in 0..4 {
             std::fs::write(dir.join("disco").join(format!("{n:02}.flac")), b"no es audio").unwrap();
         }
-        std::fs::write(dir.join("notas.txt"), b"x").unwrap();
+        std::fs::write(dir.join("notes.txt"), b"x").unwrap();
 
         let db = dir.join("lib.db");
         let job = ScanJob::start(db, dir.clone(), None);
@@ -176,21 +176,21 @@ mod tests {
         // The total arrives first: a bar without one invents its progress.
         match events.first() {
             Some(ScanProgress::Counted { total }) => {
-                assert_eq!(*total, 4, "se cuentan los de audio, no el .txt")
+                assert_eq!(*total, 4, "the audio ones are counted, not the .txt")
             }
-            other => panic!("lo primero es la cuenta: {other:?}"),
+            other => panic!("the count comes first: {other:?}"),
         }
         let mut seen = 0;
         for e in &events {
             if let ScanProgress::Advanced { done, total } = e {
-                assert_eq!(*total, 4, "el total no se mueve a media cuenta");
-                assert!(*done >= seen, "el avance no retrocede");
+                assert_eq!(*total, 4, "the total does not move mid count");
+                assert!(*done >= seen, "progress does not go backwards");
                 seen = *done;
             }
         }
         match events.last() {
             Some(ScanProgress::Done(r)) => assert_eq!(r.seen, 4),
-            other => panic!("debía terminar: {other:?}"),
+            other => panic!("it should have finished: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn several_folders_count_together_and_progress_does_not_restart() {
-        let dir = std::env::temp_dir().join("chilpa-scanjob-varias");
+        let dir = std::env::temp_dir().join("chilpa-scanjob-several");
         let _ = std::fs::remove_dir_all(&dir);
         let (a, b) = (dir.join("a"), dir.join("b"));
         std::fs::create_dir_all(&a).unwrap();
@@ -214,22 +214,22 @@ mod tests {
         let events = to_the_end(&job);
 
         match events.first() {
-            Some(ScanProgress::Counted { total }) => assert_eq!(*total, 5, "las dos juntas"),
-            other => panic!("lo primero es la cuenta: {other:?}"),
+            Some(ScanProgress::Counted { total }) => assert_eq!(*total, 5, "both together"),
+            other => panic!("the count comes first: {other:?}"),
         }
         let mut seen = 0;
         for e in &events {
             if let ScanProgress::Advanced { done, .. } = e {
-                assert!(*done >= seen, "el avance no reinicia entre carpetas");
+                assert!(*done >= seen, "progress does not restart between folders");
                 seen = *done;
             }
         }
         match events.last() {
             Some(ScanProgress::Done(r)) => {
-                assert_eq!(r.seen, 5, "se vieron las cinco");
+                assert_eq!(r.seen, 5, "all five were seen");
                 assert!(!r.unreachable);
             }
-            other => panic!("debía terminar: {other:?}"),
+            other => panic!("it should have finished: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -237,23 +237,23 @@ mod tests {
 
     #[test]
     fn if_one_folder_is_missing_the_rest_are_scanned_anyway() {
-        let dir = std::env::temp_dir().join("chilpa-scanjob-falta");
+        let dir = std::env::temp_dir().join("chilpa-scanjob-missing");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
-        std::fs::write(dir.join("una.flac"), b"x").unwrap();
+        std::fs::write(dir.join("one.flac"), b"x").unwrap();
 
         let job = ScanJob::start_all(
             dir.join("lib.db"),
-            vec![PathBuf::from("/no/existe"), dir.clone()],
+            vec![PathBuf::from("/does/not/exist"), dir.clone()],
             None,
         );
         let events = to_the_end(&job);
         match events.last() {
             Some(ScanProgress::Done(r)) => {
                 assert_eq!(r.seen, 1);
-                assert!(!r.unreachable, "una sí se pudo leer");
+                assert!(!r.unreachable, "one could be read");
             }
-            other => panic!("debía terminar: {other:?}"),
+            other => panic!("it should have finished: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_dir_all(dir);
@@ -263,7 +263,7 @@ mod tests {
     fn a_root_that_does_not_exist_finishes_with_its_report() {
         let db = std::env::temp_dir().join("chilpa-scanjob-test.db");
         let _ = std::fs::remove_file(&db);
-        let job = ScanJob::start(db.clone(), PathBuf::from("/no/existe"), None);
+        let job = ScanJob::start(db.clone(), PathBuf::from("/does/not/exist"), None);
         let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
         let mut events = Vec::new();
         while std::time::Instant::now() < limit {
@@ -275,8 +275,8 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(10));
         }
         match events.last() {
-            Some(ScanProgress::Done(r)) => assert!(r.unreachable, "se marcó inalcanzable"),
-            other => panic!("debía terminar con un reporte: {other:?}"),
+            Some(ScanProgress::Done(r)) => assert!(r.unreachable, "it was marked unreachable"),
+            other => panic!("it should have finished with a report: {other:?}"),
         }
         drop(job);
         let _ = std::fs::remove_file(db);

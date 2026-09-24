@@ -169,10 +169,10 @@ mod tests {
             .unwrap();
 
         let map = lib.features_for(&[1, 2, 3], "chilpa").unwrap();
-        assert_eq!(map.len(), 2, "la 3 no tiene análisis");
-        assert_eq!(map[&1].0, Some(129.0), "la versión más nueva");
+        assert_eq!(map.len(), 2, "3 has no analysis");
+        assert_eq!(map[&1].0, Some(129.0), "the newest version");
         assert_eq!(map[&1].1.as_deref(), Some("G · 9B"));
-        assert_eq!(map[&1].2, Some(-8.0), "la sonoridad también viene");
+        assert_eq!(map[&1].2, Some(-8.0), "the loudness comes too");
         assert_eq!(map[&2].1, None);
         assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
     }
