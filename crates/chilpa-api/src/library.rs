@@ -1,12 +1,12 @@
-//! La biblioteca vista desde la fachada.
+//! The library as the facade sees it.
 //!
-//! Escanear, analizar y preguntarle a la base. Todo lo que aquí regresa ya
-//! viene en los tipos de la vista: quien dibuja no conoce a rusqlite.
+//! Scanning, analysing and asking the database. Everything returned here
+//! already comes in the view's types: whoever draws does not know rusqlite.
 
 use super::*;
 
 impl Chilpa {
-    /// Le pega a cada pista lo que el análisis sacó, en una sola consulta.
+    /// Attaches what the analysis found to each track, in a single query.
     fn with_analysis(&mut self, mut tracks: Vec<LibraryTrack>) -> Vec<LibraryTrack> {
         if tracks.is_empty() {
             return tracks;
@@ -23,14 +23,14 @@ impl Chilpa {
         tracks
     }
 
-    /// Arranca un escaneo en segundo plano. La interfaz no se bloquea.
+    /// Starts a background scan. The interface does not block.
     pub fn start_scan(&mut self, folder: &std::path::Path) {
         if self.scan.is_some() {
             self.now.error = "ya hay un escaneo corriendo".into();
             return;
         }
-        // La conexión de la interfaz se suelta: el escaneo abre la suya, y
-        // dos conexiones a la misma base en WAL conviven sin pelearse.
+        // The interface's connection is let go: the scan opens its own, and
+        // two connections to the same WAL database coexist without fighting.
         self.scan = Some(chilpa_library::ScanJob::start(
             chilpa_library::Library::default_path(),
             folder.to_path_buf(),
@@ -39,11 +39,11 @@ impl Chilpa {
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
     }
 
-    /// Vuelve a escanear todas las carpetas que ya están en la biblioteca.
+    /// Rescans every folder already in the library.
     ///
-    /// Es lo normal después del primer día: la música vive donde vive, y
-    /// volver a buscarla a mano cada vez es trabajo del usuario que la
-    /// biblioteca ya tiene anotado.
+    /// It is the usual case after day one: the music lives where it lives,
+    /// and going to find it by hand every time is work for the user that
+    /// the library has already written down.
     pub fn rescan(&mut self) {
         if self.scan.is_some() {
             self.now.error = "ya hay un escaneo corriendo".into();
@@ -62,7 +62,7 @@ impl Chilpa {
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
     }
 
-    /// Arranca el análisis de lo que falte, en segundo plano.
+    /// Starts the analysis of whatever is missing, in the background.
     pub fn start_analysis(&mut self) {
         if self.analysis.is_some() {
             self.now.error = "ya hay un análisis corriendo".into();
@@ -74,14 +74,14 @@ impl Chilpa {
         self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
     }
 
-    /// Pide que el análisis se detenga.
+    /// Asks the analysis to stop.
     pub fn cancel_analysis(&mut self) {
         if let Some(j) = &self.analysis {
             j.cancel();
         }
     }
 
-    /// Cómo va el análisis.
+    /// How the analysis is going.
     pub fn analysis_status(&mut self) -> &AnalysisStatus {
         use chilpa_core::analysis_job::AnalysisProgress;
         let events = self.analysis.as_ref().map(|j| j.poll()).unwrap_or_default();
@@ -121,13 +121,13 @@ impl Chilpa {
         &self.analysis_status
     }
 
-    /// Las carpetas que forman la biblioteca.
+    /// The folders that make up the library.
     pub fn roots(&mut self) -> Vec<std::path::PathBuf> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
     }
 
-    /// Cómo va el escaneo. Al terminar, refresca lo que la vista muestra.
+    /// How the scan is going. On finishing, it refreshes what the view shows.
     pub fn scan_status(&mut self) -> &ScanStatus {
         let events = self.scan.as_ref().map(|j| j.poll()).unwrap_or_default();
         for event in events {
@@ -164,7 +164,7 @@ impl Chilpa {
         &self.scan_status
     }
 
-    /// Escanea una carpeta hacia la biblioteca, esperando a que termine.
+    /// Scans a folder into the library, waiting for it to finish.
     pub fn scan(&mut self, folder: &std::path::Path) -> ScanSummary {
         let Some(lib) = self.library() else { return ScanSummary::default() };
         match chilpa_core::scan_into_library(lib, folder) {
@@ -182,13 +182,13 @@ impl Chilpa {
         }
     }
 
-    /// Los álbumes de la biblioteca.
+    /// The library's albums.
     pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
         let vista = self.album_sort;
         self.albums_sorted(vista, limit, offset)
     }
 
-    /// Los géneros de la biblioteca, del más común al menos.
+    /// The library's genres, most common first.
     pub fn genres(&mut self, limit: usize) -> Vec<(String, usize)> {
         let Some(lib) = self.library() else { return Vec::new() };
         let mut g = lib.genres().unwrap_or_default();
@@ -196,11 +196,11 @@ impl Chilpa {
         g
     }
 
-    /// Las listas inteligentes que Chilpa trae de fábrica, con cuántas
-    /// pistas les salen hoy.
+    /// The smart lists Chilpa ships with, and how many tracks each yields
+    /// today.
     ///
-    /// Una lista inteligente no guarda pistas: guarda reglas y se vuelve a
-    /// resolver cada vez. Por eso la cuenta cambia sola.
+    /// A smart list does not keep tracks: it keeps rules and is resolved
+    /// again every time. That is why the count changes on its own.
     pub fn smart_lists(&mut self) -> Vec<SmartListInfo> {
         let Some(lib) = self.library() else { return Vec::new() };
         chilpa_library::smart_builtins()
@@ -212,13 +212,13 @@ impl Chilpa {
             .collect()
     }
 
-    /// El resumen de lo escuchado.
+    /// The summary of what was listened to.
     pub fn stats(&mut self) -> Stats {
         let Some(lib) = self.library() else { return Stats::default() };
         lib.stats().unwrap_or_default()
     }
 
-    /// Las pistas más escuchadas.
+    /// The most played tracks.
     pub fn top_tracks(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.top_tracks(limit)
@@ -228,7 +228,7 @@ impl Chilpa {
             .collect()
     }
 
-    /// Lo último que sonó, una pista por renglón.
+    /// The last things played, one track per line.
     pub fn recently_played(&mut self, limit: usize) -> Vec<(LibraryTrack, usize)> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.recently_played(limit)
@@ -238,7 +238,7 @@ impl Chilpa {
             .collect()
     }
 
-    /// Los artistas de la biblioteca.
+    /// The library's artists.
     pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.artists(limit, offset)
@@ -253,22 +253,22 @@ impl Chilpa {
             .collect()
     }
 
-    /// El artista que se está mirando, vacío si se ven todos.
+    /// The artist being looked at, empty if all of them are shown.
     pub fn open_artist(&self) -> &str {
         &self.artist
     }
 
-    /// Filtra la reja a un artista. Un nombre vacío quita el filtro.
+    /// Filters the grid to one artist. An empty name clears the filter.
     pub fn set_open_artist(&mut self, name: &str) {
         self.artist = name.to_string();
     }
 
-    /// La vista rápida con la que se está mirando la biblioteca.
+    /// The quick view the library is being looked at with.
     pub fn album_sort(&self) -> AlbumSort {
         self.album_sort
     }
 
-    /// Cambia la vista y la recuerda para la próxima sesión.
+    /// Changes the view and remembers it for the next session.
     pub fn set_album_sort(&mut self, order: AlbumSort) {
         self.album_sort = order;
         let mut s = chilpa_core::settings::load();
@@ -276,7 +276,7 @@ impl Chilpa {
         let _ = chilpa_core::settings::save(&s);
     }
 
-    /// Los álbumes en el orden que se pida, con su cuenta de escuchas.
+    /// The albums in whatever order is asked for, with their play counts.
     pub fn albums_sorted(
         &mut self,
         order: AlbumSort,
@@ -301,7 +301,7 @@ impl Chilpa {
             .collect()
     }
 
-    /// Un álbum por su id, con su portada y su cuenta de escuchas.
+    /// An album by its id, with its cover and its play count.
     pub fn album(&mut self, album_id: i64) -> Option<Album> {
         let lib = self.library()?;
         let (a, listens) = lib.album(album_id).ok().flatten()?;
@@ -316,7 +316,7 @@ impl Chilpa {
         })
     }
 
-    /// Las pistas de un álbum, en el orden del disco.
+    /// An album's tracks, in the disc's order.
     pub fn album_tracks(&mut self, album_id: i64) -> Vec<LibraryTrack> {
         let Some(lib) = self.library() else { return Vec::new() };
         let tracks: Vec<LibraryTrack> =
@@ -324,7 +324,7 @@ impl Chilpa {
         self.with_analysis(tracks)
     }
 
-    /// Busca en la biblioteca por título, artista o álbum.
+    /// Searches the library by title, artist or album.
     pub fn search(&mut self, text: &str, limit: usize) -> Vec<LibraryTrack> {
         if text.trim().is_empty() {
             return Vec::new();

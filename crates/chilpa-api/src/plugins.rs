@@ -1,12 +1,12 @@
-//! Los plugins, vistos desde la fachada.
+//! The plugins, as the facade sees them.
 //!
-//! Aquí se juntan las dos mitades: el sandbox, que vive en `chilpa-plugin` y
-//! no sabe de red ni de disco, y lo que Chilpa le presta. Las credenciales
-//! están de este lado y nunca cruzan (ADR-007).
+//! Here the two halves meet: the sandbox, which lives in `chilpa-plugin` and
+//! knows neither network nor disk, and what Chilpa lends it. The credentials
+//! are on this side and never cross (ADR-007).
 //!
-//! Los plugins se leen de `~/.local/share/chilpa/plugins/<id>/`, con su
-//! `manifest.json` y su `plugin.wasm`. Uno que no cargue se anota con su
-//! razón y no impide que los demás carguen.
+//! Plugins are read from `~/.local/share/chilpa/plugins/<id>/`, with their
+//! `manifest.json` and their `plugin.wasm`. One that does not load is noted
+//! with its reason and does not stop the rest from loading.
 
 use super::*;
 use crate::accounts::Account;
@@ -18,18 +18,17 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
-/// Lo que Chilpa le presta a un plugin.
+/// What Chilpa lends a plugin.
 ///
-/// Lo que no está aquí, no existe para el guest.
+/// What is not here does not exist for the guest.
 pub struct ChilpaServices {
     root: PathBuf,
-    /// Cómo conecta su cuenta cada plugin, sacado de su manifest al
-    /// cargarlo. Hace falta aquí para poder renovar un acceso vencido sin
-    /// que el plugin participe.
+    /// How each plugin connects its account, taken from its manifest at
+    /// load time. It is needed here so an expired access can be renewed
+    /// without the plugin taking part.
     auth: Arc<Mutex<BTreeMap<String, Auth>>>,
-    /// Donde se abren las credenciales. Compartida con `Plugins`, que es
-    /// quien las guarda: una sola caja para que las dos orillas usen la
-    /// misma llave maestra.
+    /// Where the credentials are opened. Shared with `Plugins`, which is
+    /// what keeps them: one box so both shores use the same master key.
     secrets: Option<Arc<SecretBox>>,
 }
 
@@ -38,11 +37,11 @@ impl ChilpaServices {
         Self { root, secrets, auth: Arc::new(Mutex::new(BTreeMap::new())) }
     }
 
-    /// El archivo donde vive una llave del almacén de un plugin.
+    /// The file where one key of a plugin's store lives.
     ///
-    /// La llave se revisa antes de volverse un nombre de archivo: una que
-    /// traiga barras o puntos dobles saldría de la carpeta del plugin, que
-    /// es justo lo que el sandbox está para impedir.
+    /// The key is checked before it becomes a file name: one carrying
+    /// slashes or double dots would escape the plugin's folder, which is
+    /// exactly what the sandbox is there to prevent.
     fn file(&self, plugin: &str, key: &str) -> Option<PathBuf> {
         if !valid_key(key) || !valid_id(plugin) {
             return None;
@@ -50,22 +49,24 @@ impl ChilpaServices {
         Some(self.root.join(plugin).join("store").join(key))
     }
 
-    /// La credencial guardada para un plugin, si hay.
+    /// The credential kept for a plugin, if there is one.
     ///
-    /// Vive cifrada en la carpeta del plugin pero **fuera de su almacén**, y
-    /// el guest no tiene forma de pedirla: no hay una importación que la
-    /// devuelva, y su `store_get` no alcanza este archivo (ADR-008).
+    /// It lives encrypted in the plugin's folder but **outside its store**,
+    /// and the guest has no way to ask for it: there is no import that
+    /// returns it, and its `store_get` does not reach this file (ADR-008).
     ///
-    /// Que no se pueda abrir no se rescata de ninguna forma: se contesta que
-    /// no hay credencial, y la petición sale sin `Authorization`. Inventar
-    /// algo aquí sería mandar basura al servicio del usuario.
+    /// Failing to open it is not papered over in any way: the answer is
+    /// that there is no credential, and the request goes out without
+    /// `Authorization`. Inventing something here would be sending junk to
+    /// the user's service.
     fn credential(&self, plugin: &str) -> Option<String> {
         let account = self.account(plugin)?;
         let now = now_unix();
 
-        // Si el acceso venció y hay con qué renovarlo, se renueva aquí, se
-        // guarda cifrado, y la petición sale con el nuevo. El plugin no se
-        // entera de que hubo una renovación, que es justo el punto.
+        // If the access expired and there is something to renew it with, it
+        // is renewed here, kept encrypted, and the request goes out with the
+        // new one. The plugin never finds out a renewal happened, which is
+        // exactly the point.
         if account.stale(now) {
             let auth = self.auth.lock().ok()?.get(plugin).cloned()?;
             match account.renew(&auth, now, &post) {
@@ -73,27 +74,28 @@ impl ChilpaServices {
                     let _ = self.save(plugin, &fresh);
                     return fresh.header();
                 }
-                // Que falle renovar no se rescata inventando algo: la
-                // petición sale sin credencial y el servicio dirá que no,
-                // que es más honesto que mandar un token vencido.
+                // A failed renewal is not papered over by inventing
+                // something: the request goes out with no credential and
+                // the service will say no, which is more honest than
+                // sending an expired token.
                 Err(_) => return None,
             }
         }
         account.header()
     }
 
-    /// Lo guardado para ese plugin, descifrado.
+    /// What is kept for that plugin, decrypted.
     fn account(&self, plugin: &str) -> Option<Account> {
         open_account(&self.root, self.secrets.as_deref(), plugin)
     }
 
-    /// Guarda, cifrado.
+    /// Keeps it, encrypted.
     fn save(&self, plugin: &str, account: &Account) -> Result<(), String> {
         seal_account(&self.root, self.secrets.as_deref(), plugin, account)
     }
 }
 
-/// Lee la cuenta cifrada de un plugin, si hay.
+/// Reads a plugin's encrypted account, if there is one.
 fn open_account(root: &Path, secrets: Option<&SecretBox>, plugin: &str) -> Option<Account> {
     let path = credential_file(root, plugin)?;
     let sealed = std::fs::read(path).ok()?;
@@ -101,11 +103,11 @@ fn open_account(root: &Path, secrets: Option<&SecretBox>, plugin: &str) -> Optio
     serde_json::from_slice(&plain).ok()
 }
 
-/// Guarda una cuenta cifrada en la carpeta de su plugin.
+/// Keeps an encrypted account in its plugin's folder.
 ///
-/// Vive suelta porque la usan los dos lados: quien conecta la cuenta y
-/// quien la renueva a media petición, y uno llega por un `dyn HostServices`
-/// que no sabe de esto.
+/// It lives on its own because both sides use it: whoever connects the
+/// account and whoever renews it mid request, and one of them arrives
+/// through a `dyn HostServices` that knows nothing about this.
 fn seal_account(
     root: &Path,
     secrets: Option<&SecretBox>,
@@ -129,8 +131,9 @@ fn now_unix() -> i64 {
         .unwrap_or(0)
 }
 
-/// La petición que `chilpa-auth` no trae adentro: ese crate no conoce la
-/// red, y aquí se le presta la misma que usa todo lo demás.
+/// The request `chilpa-auth` does not carry inside: that crate knows
+/// nothing of the network, and here it is lent the same one everything
+/// else uses.
 fn post(url: &str, body: &str) -> Result<(u16, String), String> {
     let request = serde_json::json!({
         "url": url,
@@ -152,10 +155,10 @@ fn post(url: &str, body: &str) -> Result<(u16, String), String> {
     ))
 }
 
-/// Dónde vive la credencial cifrada de un plugin.
+/// Where a plugin's encrypted credential lives.
 ///
-/// El id se revisa antes de volverse una ruta, igual que una llave del
-/// almacén: uno con barras saldría de su carpeta.
+/// The id is checked before it becomes a path, just like a store key:
+/// one with slashes would escape its folder.
 fn credential_file(root: &Path, plugin: &str) -> Option<PathBuf> {
     valid_id(plugin).then(|| root.join(plugin).join("credential.sealed"))
 }
@@ -172,8 +175,8 @@ impl HostServices for ChilpaServices {
     }
 
     fn log(&mut self, plugin: &str, level: Level, message: &str) {
-        // Con el id por delante: un renglón de log sin dueño no sirve para
-        // saber a quién reclamarle.
+        // With the id in front: a log line with no owner is no use for
+        // knowing who to take it up with.
         eprintln!("[plugin {plugin}] {level:?}: {message}");
     }
 
@@ -190,8 +193,8 @@ impl HostServices for ChilpaServices {
 
     fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool {
         let Some(path) = self.file(plugin, key) else { return false };
-        // Un plugin no puede llenar el disco de a poquito: el almacén es
-        // para ajustes y marcas, no para una copia del catálogo.
+        // A plugin cannot fill the disk a bit at a time: the store is for
+        // settings and markers, not for a copy of the catalogue.
         if value.len() > 1024 * 1024 {
             return false;
         }
@@ -204,15 +207,15 @@ impl HostServices for ChilpaServices {
     }
 
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8> {
-        // La credencial se agrega aquí. El plugin dijo a dónde; con qué
-        // permiso lo decide Chilpa.
+        // The credential is added here. The plugin said where to; with what
+        // permission is Chilpa's call.
         let credential = self.credential(plugin);
         chilpa_core::send_request(request, credential.as_deref())
     }
 }
 
-/// Una llave del almacén sirve si se puede volver un nombre de archivo sin
-/// salirse de su carpeta.
+/// A store key works if it can become a file name without escaping its
+/// folder.
 fn valid_key(key: &str) -> bool {
     !key.is_empty()
         && key.len() <= 64
@@ -220,7 +223,7 @@ fn valid_key(key: &str) -> bool {
         && key.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-' || c == '_')
 }
 
-/// Lo mismo para el id, que también es una carpeta.
+/// The same for the id, which is also a folder.
 fn valid_id(id: &str) -> bool {
     !id.is_empty()
         && !id.contains("..")
@@ -228,41 +231,41 @@ fn valid_id(id: &str) -> bool {
         && id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-')
 }
 
-/// Un plugin, como lo ve la vista.
+/// A plugin, as the view sees it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PluginInfo {
     pub id: String,
     pub name: String,
-    /// "pendiente de aprobación", "bien", "tropezando" o "en cuarentena".
+    /// "awaiting approval", "fine", "stumbling" or "quarantined".
     pub state: String,
-    /// Por qué está castigado, o vacío.
+    /// Why it is in the corner, or empty.
     pub problem: String,
-    /// Lo que pide, en palabras, para poder aprobarlo o negarlo.
+    /// What it asks for, in words, so it can be approved or refused.
     pub asks: Vec<String>,
-    /// De lo que pide, lo que todavía no se ha aprobado. Vacío en uno que
-    /// ya está aprobado; todo lo que pide en uno nuevo.
+    /// Of what it asks for, what has not been approved yet. Empty on one
+    /// already approved; everything it asks for on a new one.
     pub pending: Vec<String>,
-    /// Cierto si ya se le había aprobado algo y ahora pide más. Es distinto
-    /// de uno nuevo, y se dice distinto.
+    /// True if something had been approved for it and now it asks for
+    /// more. It is different from a new one, and it is said differently.
     pub wants_more: bool,
-    /// Cierto si tiene una credencial guardada. No dice cuál, ni la fachada
-    /// la muestra nunca: solo si hay cuenta conectada o no.
+    /// True if it has a credential kept. It does not say which, and the
+    /// facade never shows it: only whether an account is connected or not.
     pub connected: bool,
-    /// Cierto si la cuenta venció y no hay con qué renovarla sola: el
-    /// usuario tiene que volver a conectarla. Se dice en lugar de dejar que
-    /// todo empiece a fallar sin explicación.
+    /// True if the account expired and there is nothing to renew it with
+    /// on its own: the user has to connect it again. It is said instead of
+    /// letting everything start failing with no explanation.
     pub account_expired: bool,
-    /// A dónde se manda al usuario a dar permiso, vacío si no usa OAuth o
-    /// no necesita cuenta.
+    /// Where the user is sent to grant permission, empty if it does not use
+    /// OAuth or needs no account.
     pub account_host: String,
 }
 
-/// Una conexión de cuenta a medias: ya se mandó al usuario al navegador y
-/// se está esperando a que regrese.
+/// A half finished account connection: the user has been sent to the
+/// browser and it is waiting for them to come back.
 ///
-/// La espera corre en su propio hilo porque el usuario puede tardar lo que
-/// quiera —hasta cinco minutos— y la ventana no puede quedarse tiesa
-/// mientras tanto. Lo que contesta llega por `poll`, igual que la búsqueda.
+/// The wait runs on its own thread because the user can take as long as
+/// they like -- up to five minutes -- and the window cannot sit frozen
+/// meanwhile. What it answers arrives through `poll`, just like search.
 pub struct Connecting {
     pub id: String,
     pub answer: std::sync::mpsc::Receiver<Result<chilpa_auth::Tokens, String>>,
@@ -271,28 +274,29 @@ pub struct Connecting {
 
 impl Drop for Connecting {
     fn drop(&mut self) {
-        // No se espera al hilo: si el usuario abandonó el navegador, seguir
-        // esperándolo dejaría la aplicación sin cerrar. El hilo se acaba
-        // solo cuando se le agota la paciencia.
+        // The thread is not waited on: if the user walked away from the
+        // browser, going on waiting would leave the app unable to close. The
+        // thread ends on its own when its patience runs out.
         self.thread.take();
     }
 }
 
-/// Todo lo de plugins que la fachada guarda.
+/// Everything about plugins the facade keeps.
 pub struct Plugins {
     host: Host,
     registry: Registry,
     services: Services,
     approvals: Approvals,
-    /// La caja de secretos, o `None` si no se pudo abrir ninguna. Sin ella
-    /// no se guarda nada: antes que dejar un token en claro, no se guarda.
+    /// The secret box, or `None` if none could be opened. Without it
+    /// nothing is kept: rather than leave a token in the clear, nothing is
+    /// kept at all.
     secrets: Option<Arc<SecretBox>>,
     root: PathBuf,
 }
 
 impl Plugins {
-    /// Arma el host. Falla solo si el motor no se pudo crear, que sería un
-    /// problema de la máquina y no de un plugin.
+    /// Builds the host. It only fails if the engine could not be created, which
+    /// would be a problem with the machine and not with a plugin.
     pub fn new(root: PathBuf) -> Option<Self> {
         let host = Host::new().ok()?;
         let secrets = SecretBox::open("chilpa", &root).ok().map(Arc::new);
@@ -302,10 +306,10 @@ impl Plugins {
         Some(Self { host, registry: Registry::new(), services, approvals, secrets, root })
     }
 
-    /// Lee la carpeta de plugins y carga lo que encuentre.
+    /// Reads the plugins folder and loads whatever it finds.
     ///
-    /// Devuelve cuántos quedaron utilizables. Una carpeta que no existe no
-    /// es un error: quiere decir que no hay plugins.
+    /// It returns how many ended up usable. A folder that does not exist is
+    /// not an error: it means there are no plugins.
     pub fn load_all(&mut self) -> usize {
         let Ok(entries) = std::fs::read_dir(&self.root) else { return 0 };
         for entry in entries.flatten() {
@@ -322,22 +326,22 @@ impl Plugins {
     fn load_one(&mut self, dir: &Path) {
         let manifest = match std::fs::read_to_string(dir.join("manifest.json")) {
             Ok(m) => m,
-            // Una carpeta sin manifest no es un plugin roto: no es un
-            // plugin. Se pasa de largo sin anotar nada.
+            // A folder with no manifest is not a broken plugin: it is not a
+            // plugin. It is walked past without noting anything.
             Err(_) => return,
         };
         let wasm = std::fs::read(dir.join("plugin.wasm")).unwrap_or_default();
-        // Un plugin que nadie aprobó no se compila siquiera: el cierre
-        // contesta que no y su wasm nunca se toca (ADR-008).
+        // A plugin nobody approved is not even compiled: the closure
+        // answers no and its wasm is never touched (ADR-008).
         let approvals = &self.approvals;
         self.registry.install(&self.host, &manifest, &wasm, |m| approvals.covers(m));
     }
 
-    /// Le pasa a los servicios cómo conecta su cuenta cada plugin.
+    /// Hands the services how each plugin connects its account.
     ///
-    /// Es lo único que hace falta para renovar un acceso vencido a media
-    /// petición, y es lo que evita tener que preguntarle al registro desde
-    /// adentro de una llamada que ya tiene el candado tomado.
+    /// It is all that is needed to renew an expired access mid request, and
+    /// it is what avoids having to ask the registry from inside a call that
+    /// already holds the lock.
     fn remember_auth(&mut self) {
         let known: BTreeMap<String, Auth> = self
             .registry
@@ -353,7 +357,7 @@ impl Plugins {
         }
     }
 
-    /// Lo que hay, para mostrarlo.
+    /// What there is, for showing.
     pub fn list(&self) -> Vec<PluginInfo> {
         self.registry
             .installed()
@@ -393,58 +397,59 @@ impl Plugins {
             .collect()
     }
 
-    /// Lo saca de cuarentena. Solo lo llama el usuario.
+    /// Takes it out of quarantine. Only the user calls it.
     pub fn reactivate(&mut self, id: &str) {
         self.registry.reactivate(id);
     }
 
-    /// Guarda la credencial de un plugin, cifrada.
+    /// Keeps a plugin's credential, encrypted.
     ///
-    /// El plugin nunca la ve: lo único que hace con ella es que Chilpa la
-    /// ponga en sus peticiones (ADR-008).
+    /// The plugin never sees it: all that happens with it is that Chilpa
+    /// puts it in its requests (ADR-008).
     pub fn set_credential(&mut self, id: &str, value: &str) -> Result<(), String> {
         self.save_account(id, &Account::Token { header: value.to_string() })
     }
 
-    /// Guarda una cuenta ya conectada, sea fija o de OAuth.
+    /// Keeps an already connected account, fixed or OAuth.
     pub fn save_account(&mut self, id: &str, account: &Account) -> Result<(), String> {
         seal_account(&self.root, self.secrets.as_deref(), id, account)
     }
 
-    /// Borra la credencial de un plugin. Revocarlo la borra también.
+    /// Deletes a plugin's credential. Revoking it deletes it too.
     pub fn forget_credential(&mut self, id: &str) {
         if let Some(path) = credential_file(&self.root, id) {
             let _ = std::fs::remove_file(path);
         }
     }
 
-    /// Cierto si la cuenta de ese plugin venció sin cómo renovarse.
+    /// True if that plugin's account expired with no way to renew itself.
     fn expired(&self, id: &str) -> bool {
         open_account(&self.root, self.secrets.as_deref(), id)
             .is_some_and(|a| a.dead(now_unix()))
     }
 
-    /// Cierto si ese plugin tiene una credencial guardada.
+    /// True if that plugin has a credential kept.
     pub fn has_credential(&self, id: &str) -> bool {
         credential_file(&self.root, id).is_some_and(|p| p.exists())
     }
 
-    /// Dónde se están guardando los secretos, para poder decirlo.
+    /// Where the secrets are being kept, so it can be stated.
     pub fn secrets_backend(&self) -> Option<BackendKind> {
         self.secrets.as_ref().map(|s| s.backend())
     }
 
-    /// Olvida todo lo cargado. Se usa al revocar: un plugin que dejó de
-    /// estar aprobado tiene que dejar de existir en esta sesión, no
-    /// quedarse instanciado hasta el siguiente arranque.
+    /// Forgets everything loaded. It is used on revoke: a plugin that
+    /// stopped being approved has to stop existing in this session, not
+    /// stay instantiated until the next startup.
     pub fn forget(&mut self) {
         self.registry = Registry::new();
     }
 
-    /// El usuario aprueba lo que ese plugin pide hoy.
+    /// The user approves what that plugin asks for today.
     ///
-    /// No lo carga: cargar es releer la carpeta, y eso lo hace quien llama,
-    /// para que aprobar dos seguidos no recompile todo dos veces.
+    /// It does not load it: loading means rereading the folder, and the
+    /// caller does that, so approving two in a row does not recompile
+    /// everything twice.
     pub fn approve(&mut self, id: &str) -> Result<(), String> {
         let manifest = self
             .registry
@@ -455,18 +460,18 @@ impl Plugins {
         self.approvals.approve(&manifest).map_err(|e| e.to_string())
     }
 
-    /// Quita la aprobación. El plugin deja de cargar y lo que pida se
-    /// vuelve a preguntar.
+    /// Withdraws the approval. The plugin stops loading and what it asks
+    /// for is put to the user again.
     pub fn revoke(&mut self, id: &str) -> Result<(), String> {
         self.approvals.revoke(id).map_err(|e| e.to_string())
     }
 
-    /// Cómo conecta su cuenta ese plugin, según su manifest.
+    /// How that plugin connects its account, according to its manifest.
     pub fn auth_of(&self, id: &str) -> Option<chilpa_auth::Auth> {
         self.registry.installed().find(|i| i.id == id)?.manifest.as_ref()?.auth.clone()
     }
 
-    /// Se lleva la carpeta del plugin. Devuelve cierto si ya no está.
+    /// Takes the plugin's folder away. Returns true if it is gone.
     pub fn uninstall(&mut self, id: &str) -> bool {
         let Some(dir) = valid_id(id).then(|| self.root.join(id)) else { return false };
         if !dir.exists() {
@@ -475,7 +480,7 @@ impl Plugins {
         std::fs::remove_dir_all(&dir).is_ok()
     }
 
-    /// Cierto si ese plugin dijo que maneja su propia cuenta.
+    /// True if that plugin said it handles its own account.
     pub fn manages_own_account(&self, id: &str) -> bool {
         self.registry
             .installed()
@@ -490,7 +495,7 @@ impl Plugins {
             })
     }
 
-    /// Cierto si ese source dice que puede entregar audio.
+    /// True if that source says it can deliver audio.
     pub fn delivers_audio(&self, id: &str) -> bool {
         self.registry
             .installed()
@@ -499,18 +504,18 @@ impl Plugins {
             .is_none_or(|m| m.delivers_audio)
     }
 
-    /// Los plugins de catálogo que sirven ahora, con su nombre.
+    /// The catalogue plugins that work now, with their name.
     pub fn searchers(&self) -> Vec<(String, String)> {
         self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
     }
 
-    /// Le pide algo a un plugin.
+    /// Asks a plugin for something.
     pub fn call(&mut self, id: &str, operation: &str, input: &[u8]) -> Result<Vec<u8>, String> {
         self.call_with(id, operation, input, Limits::default())
     }
 
-    /// Lo mismo, con los límites cortos: es lo que se usa cuando alguien
-    /// está esperando frente a la ventana, como al buscar.
+    /// The same, with the short limits: it is what is used when someone is
+    /// waiting in front of the window, as when searching.
     pub fn call_short(
         &mut self,
         id: &str,
@@ -536,7 +541,7 @@ impl Plugins {
 }
 
 impl Chilpa {
-    /// Dónde viven los plugins.
+    /// Where the plugins live.
     pub fn plugins_dir() -> PathBuf {
         let base = std::env::var_os("XDG_DATA_HOME")
             .map(PathBuf::from)
@@ -547,10 +552,10 @@ impl Chilpa {
         base.join("chilpa").join("plugins")
     }
 
-    /// Carga los plugins que haya. Se llama una vez al arrancar.
+    /// Loads whatever plugins there are. It is called once at startup.
     ///
-    /// Devuelve cuántos quedaron utilizables. Que no haya ninguno es lo
-    /// normal hoy y no es un problema.
+    /// It returns how many ended up usable. Having none is the normal case
+    /// today and is not a problem.
     pub fn load_plugins(&mut self) -> usize {
         if self.plugins.is_none() {
             self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
@@ -564,7 +569,7 @@ impl Chilpa {
         }
     }
 
-    /// Los plugins instalados, cargados o no.
+    /// The installed plugins, loaded or not.
     pub fn plugins(&self) -> Vec<PluginInfo> {
         self.plugins
             .as_ref()
@@ -573,10 +578,10 @@ impl Chilpa {
             .unwrap_or_default()
     }
 
-    /// El usuario aprueba lo que un plugin pide, y se vuelve a leer la
-    /// carpeta para que entre a correr sin reiniciar.
+    /// The user approves what a plugin asks for, and the folder is read
+    /// again so it starts running without a restart.
     ///
-    /// Devuelve cuántos quedaron utilizables, igual que cargar.
+    /// It returns how many ended up usable, just like loading does.
     pub fn approve_plugin(&mut self, id: &str) -> usize {
         let Some(p) = self.plugins.clone() else {
             self.now.error = "el sandbox de plugins no está arrancado".into();
@@ -590,8 +595,8 @@ impl Chilpa {
         p.load_all()
     }
 
-    /// Quita la aprobación de un plugin: deja de correr ahora mismo y lo
-    /// que pida se volverá a preguntar.
+    /// Withdraws a plugin's approval: it stops running right now and what
+    /// it asks for will be put to the user again.
     pub fn revoke_plugin(&mut self, id: &str) -> usize {
         let Some(p) = self.plugins.clone() else { return 0 };
         let Ok(mut p) = p.lock() else { return 0 };
@@ -599,21 +604,21 @@ impl Chilpa {
             self.now.error = format!("no se pudo quitar la aprobación: {e}");
             return 0;
         }
-        // Quitar el permiso borra el secreto: dejarlo guardado para un
-        // plugin que ya no corre es guardar un token por nada.
+        // Withdrawing permission deletes the secret: keeping one for a
+        // plugin that no longer runs is keeping a token for nothing.
         //
-        // Quitar el permiso no desinstala: el plugin sigue en su carpeta y
-        // lo suyo también. Lo que lo borra todo es desinstalarlo, que le
-        // pide primero que limpie.
+        // Withdrawing permission does not uninstall: the plugin stays in its
+        // folder and so does what is its own. What deletes everything is
+        // uninstalling, which asks it to clean up first.
         p.forget_credential(id);
         p.forget();
         p.load_all()
     }
 
-    /// Le pide una operación a un plugin con los límites cortos.
+    /// Asks a plugin for an operation with the short limits.
     ///
-    /// Es lo que se usa cuando alguien está esperando frente a la ventana,
-    /// como al resolver una pista para ponerla a sonar.
+    /// It is what is used when someone is waiting in front of the window,
+    /// as when resolving a track to start it playing.
     pub fn call_plugin_short(
         &mut self,
         id: &str,
@@ -626,12 +631,13 @@ impl Chilpa {
         }
     }
 
-    /// Arranca la conexión de una cuenta y contesta a dónde hay que mandar
-    /// al usuario.
+    /// Starts connecting an account and answers where the user has to be
+    /// sent.
     ///
-    /// No abre el navegador: cómo se abre uno es cosa del sistema, y quien
-    /// llama sabe si hay ventana o no. A partir de aquí se espera en otro
-    /// hilo, y el resultado llega por [`Chilpa::poll`].
+    /// It does not open the browser: how one is opened is the system's
+    /// business, and the caller knows whether there is a window. From here
+    /// on the wait runs on another thread, and the result arrives through
+    /// [`Chilpa::poll`].
     pub fn connect_account(&mut self, id: &str) -> Result<String, String> {
         let auth = self
             .auth_of(id)
@@ -659,19 +665,19 @@ impl Chilpa {
         Ok(url)
     }
 
-    /// Cierto mientras se espera a que el usuario termine en el navegador.
+    /// True while waiting for the user to finish in the browser.
     pub fn connecting(&self) -> bool {
         self.connecting.is_some()
     }
 
-    /// Deja de esperar. El usuario cerró el navegador o cambió de opinión.
+    /// Stops waiting. The user closed the browser or changed their mind.
     pub fn cancel_connect(&mut self) {
         self.connecting = None;
     }
 
-    /// Recoge lo que haya contestado el navegador. Lo llama `poll`.
+    /// Collects whatever the browser answered. `poll` calls it.
     ///
-    /// Devuelve el id del plugin que quedó conectado, si alguno.
+    /// It returns the id of the plugin that ended up connected, if any.
     pub(crate) fn advance_connect(&mut self) -> Option<String> {
         let answer = self.connecting.as_ref()?.answer.try_recv().ok()?;
         let c = self.connecting.take()?;
@@ -697,16 +703,16 @@ impl Chilpa {
         }
     }
 
-    /// Cómo conecta su cuenta ese plugin, según su manifest.
+    /// How that plugin connects its account, according to its manifest.
     fn auth_of(&self, id: &str) -> Option<chilpa_auth::Auth> {
         let p = self.plugins.as_ref()?.lock().ok()?;
         p.auth_of(id)
     }
 
-    /// Guarda la credencial de un plugin, cifrada, y dice dónde quedó.
+    /// Keeps a plugin's credential, encrypted, and says where it ended up.
     ///
-    /// El plugin no la recibe nunca: lo único que cambia para él es que sus
-    /// peticiones salen autenticadas (ADR-008).
+    /// The plugin never receives it: the only thing that changes for it is
+    /// that its requests go out authenticated (ADR-008).
     pub fn connect_plugin(&mut self, id: &str, credential: &str) -> bool {
         let Some(p) = self.plugins.clone() else {
             self.now.error = "el sandbox de plugins no está arrancado".into();
@@ -722,15 +728,15 @@ impl Chilpa {
         }
     }
 
-    /// Borra la credencial de un plugin. El plugin sigue instalado.
+    /// Deletes a plugin's credential. The plugin stays installed.
     pub fn disconnect_plugin(&mut self, id: &str) {
         if let Some(mut p) = self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             p.forget_credential(id);
         }
     }
 
-    /// Dónde se están guardando los secretos en este equipo, en palabras.
-    /// Vacío si no hay dónde.
+    /// Where the secrets are being kept on this machine, in words. Empty if
+    /// there is nowhere.
     pub fn secrets_location(&self) -> String {
         self.plugins
             .as_ref()
@@ -740,17 +746,17 @@ impl Chilpa {
             .unwrap_or_default()
     }
 
-    /// Lo desinstala: le pide que borre lo suyo, le quita el permiso y se
-    /// lleva su carpeta.
+    /// Uninstalls it: asks it to delete what is its own, withdraws its
+    /// permission and takes its folder away.
     ///
-    /// El orden importa. Primero se le avisa, **mientras todavía puede
-    /// correr**: un plugin que maneja su propia cuenta guardó su credencial
-    /// donde Chilpa no llega, y la única forma de que se vaya es que él la
-    /// borre. Quitarle el permiso antes lo dejaría sin poder hacerlo.
+    /// The order matters. It is told first, **while it can still run**: a
+    /// plugin that handles its own account kept its credential somewhere
+    /// Chilpa cannot reach, and the only way for it to go is for the plugin
+    /// to delete it. Withdrawing permission first would leave it unable to.
     ///
-    /// Que no conteste no detiene nada: se desinstala igual y se dice qué
-    /// quedó sin limpiar, porque callarlo sería dejar al usuario creyendo
-    /// que se llevó todo.
+    /// It not answering stops nothing: it is uninstalled anyway and what
+    /// was left uncleaned is stated, because keeping quiet would leave the
+    /// user believing everything went with it.
     pub fn uninstall_plugin(&mut self, id: &str) -> bool {
         let Some(shared) = self.plugins.clone() else { return false };
         let Ok(mut p) = shared.lock() else { return false };
@@ -779,17 +785,18 @@ impl Chilpa {
         true
     }
 
-    /// Saca un plugin de cuarentena.
+    /// Takes a plugin out of quarantine.
     pub fn reactivate_plugin(&mut self, id: &str) {
         if let Some(mut p) = self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             p.reactivate(id);
         }
     }
 
-    /// Le pide una operación a un plugin.
+    /// Asks a plugin for an operation.
     ///
-    /// El error que regresa ya viene redactado: puede ser del plugin ("no
-    /// encontré esa pista") o de Chilpa ("se pasó del cómputo permitido").
+    /// The error it returns comes already written: it can be the plugin's
+    /// ("I did not find that track") or Chilpa's ("it went over the allowed
+    /// compute").
     pub fn call_plugin(
         &mut self,
         id: &str,
@@ -832,7 +839,7 @@ mod tests {
         assert!(s.store_set("com.a.b", "token", b"abc"));
         assert_eq!(s.store_get("com.a.b", "token").as_deref(), Some(&b"abc"[..]));
         assert_eq!(s.store_get("com.a.b", "otra"), None);
-        // Y cada plugin tiene el suyo.
+        // And each plugin has its own.
         assert_eq!(s.store_get("com.otro.plugin", "token"), None);
         let _ = std::fs::remove_dir_all(dir);
     }

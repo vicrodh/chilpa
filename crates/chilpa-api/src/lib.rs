@@ -1,8 +1,8 @@
-//! La fachada de Chilpa: lo único que un frontend puede usar (ADR-001).
+//! Chilpa's facade: the only thing a frontend may use (ADR-001).
 //!
-//! Un shell manda [`Command`]s y recibe [`Event`]s. No ve el core, ni la
-//! biblioteca, ni el player. Si una vista necesita algo que no está aquí,
-//! primero se amplía esta API.
+//! A shell sends [`Command`]s and receives [`Event`]s. It sees neither the
+//! core, nor the library, nor the player. If a view needs something that is
+//! not here, this API is widened first.
 
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
@@ -20,87 +20,87 @@ mod search;
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
 
-/// Lo que un frontend le pide a Chilpa.
+/// What a frontend asks Chilpa for.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Command {
-    /// Reproducir un track de cualquier source.
+    /// Play a track from any source.
     Play(TrackRef),
     Pause,
     Resume,
-    /// Listar los sources registrados.
+    /// List the registered sources.
     ListSources,
-    /// Reproducir un archivo local en un dispositivo, con la política de
-    /// salida dada. Es la ruta mínima mientras la biblioteca no existe.
+    /// Play a local file on a device, with the given output policy. It is
+    /// the minimal path while the library does not exist.
     PlayFile { path: PathBuf, device: String, bit_perfect: bool },
 }
 
-/// Lo que Chilpa le cuenta al frontend.
+/// What Chilpa tells the frontend.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Event {
     Sources(Vec<SourceId>),
-    /// Empezó a sonar algo, con la calidad real de la salida.
+    /// Something started playing, with the output's real quality.
     Playing { track: TrackRef, quality: AudioQuality },
     Paused,
-    /// Terminó de sonar un archivo: cuántos frames salieron, con qué formato
-    /// se abrió el dispositivo y si fue bit-perfect.
+    /// A file finished playing: how many frames went out, what format the
+    /// device was opened with and whether it was bit-perfect.
     Played { frames: u64, quality: AudioQuality, bit_perfect: bool },
-    /// Algo salió mal, en un texto que la UI puede mostrar.
+    /// Something went wrong, in text the UI can show.
     Failed { message: String },
 }
 
-/// Una salida de audio que el usuario puede elegir.
+/// An audio output the user can choose.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Output {
     pub id: String,
     pub label: String,
 }
 
-/// Lo que está sonando, como lo necesita una vista.
+/// What is playing, as a view needs it.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct NowPlaying {
     pub path: String,
-    /// El título que dice el archivo; si no dice nada, su nombre.
+    /// The title the file states; if it states none, its name.
     pub title: String,
     pub artist: String,
     pub album: String,
-    /// La portada ya en disco, lista para mostrarse. Vacío si no hay.
+    /// The cover already on disk, ready to show. Empty if there is none.
     pub artwork_path: String,
     pub playing: bool,
     pub paused: bool,
-    /// Frames entregados y su equivalente en segundos.
+    /// Frames delivered and their equivalent in seconds.
     pub frames: u64,
     pub seconds: f64,
-    /// Duración total, cuando se conoce.
+    /// Total duration, when it is known.
     pub total_seconds: f64,
-    /// Con qué se abrió el dispositivo, ya listo para mostrar.
+    /// What the device was opened with, ready to show.
     pub format: String,
     pub bit_perfect: bool,
-    /// Qué lugar ocupa en la cola y cuántas pistas tiene.
+    /// Its place in the queue and how many tracks it has.
     pub index: usize,
     pub queue_len: usize,
-    /// Lo que el análisis dice de lo que suena: "128 BPM · 8B". Vacío si
-    /// todavía no se ha analizado.
+    /// What the analysis says about what is playing: "128 BPM - 8B". Empty
+    /// if it has not been analysed yet.
     pub analysis: String,
-    /// La letra de lo que suena, un renglón por entrada. Vacía si no hay.
+    /// The lyrics of what is playing, one line per entry. Empty if none.
     pub lyrics: Vec<String>,
-    /// Qué renglón va, o -1 cuando la letra no trae tiempos o todavía no
-    /// entra ninguno.
+    /// Which line is current, or -1 when the lyrics carry no timings or
+    /// none has come in yet.
     pub lyrics_line: i32,
-    /// Cierto si la letra trae tiempos y se puede seguir.
+    /// True if the lyrics carry timings and can be followed.
     pub lyrics_synced: bool,
-    /// De dónde salió: "archivo", "tags" o vacío.
+    /// Where it came from: "file", "tags" or empty.
     pub lyrics_source: String,
-    /// El último problema, vacío si no hay.
+    /// The last problem, empty if there is none.
     pub error: String,
 }
 
-/// Las extensiones que Chilpa sabe abrir hoy.
+/// The extensions Chilpa knows how to open today.
 const EXTENSIONS: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
 
-/// Los archivos de audio de una carpeta, en orden alfabético.
+/// A folder's audio files, in alphabetical order.
 ///
-/// No entra a subcarpetas: eso es trabajo de la biblioteca, no de una vista.
+/// It does not descend into subfolders: that is the library's job, not a view's.
 pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
     let Ok(dir) = std::fs::read_dir(folder) else {
         return Vec::new();
@@ -120,18 +120,18 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
     files
 }
 
-/// El recorrido que deja el tempo más parejo, empezando en `desde`.
+/// The walk that keeps the tempo most even, starting at `from`.
 ///
-/// Es un vecino más cercano, a propósito: una mezcla no necesita el orden
-/// óptimo, necesita no dar saltos de cuarenta BPM entre dos pistas. Lo que
-/// no trae tempo se va al final, en su orden.
+/// It is a nearest neighbour, on purpose: a mix does not need the optimal
+/// order, it needs not to jump forty BPM between two tracks. Whatever
+/// carries no tempo goes to the end, in its own order.
 fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
     let mut missing: Vec<usize> = (0..bpms.len()).filter(|i| *i != from).collect();
     let mut order = vec![from];
     let mut ultimo = bpms.get(from).copied().flatten();
 
     while !missing.is_empty() {
-        // De las que tienen tempo, la más cercana a la anterior.
+        // Of those with a tempo, the closest to the previous one.
         let chosen = match ultimo {
             Some(t) => missing
                 .iter()
@@ -145,7 +145,7 @@ fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
                 .map(|(pos, _)| pos),
             None => None,
         };
-        // Si ya no queda ninguna con tempo, se vacía lo que sobra tal cual.
+        // If none with a tempo are left, the rest is emptied out as is.
         let pos = chosen.unwrap_or(0);
         let i = missing.remove(pos);
         ultimo = bpms[i].or(ultimo);
@@ -154,10 +154,10 @@ fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
     order
 }
 
-/// Lo que el análisis sacó, en una línea.
+/// What the analysis found, in one line.
 ///
-/// La sonoridad se dice, no se aplica: corregirla cambiaría las muestras, y
-/// ahí se acabó el bit-perfect.
+/// Loudness is stated, not applied: correcting it would change the samples,
+/// and there goes bit-perfect.
 pub(crate) fn describe_analysis(
     bpm: Option<f32>,
     tone: Option<&str>,
@@ -176,7 +176,7 @@ pub(crate) fn describe_analysis(
     parts.join(" · ")
 }
 
-/// Traduce una pista de la biblioteca a lo que necesita una vista.
+/// Translates a library track into what a view needs.
 fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
     LibraryTrack {
         id: t.id,
@@ -191,7 +191,7 @@ fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
     }
 }
 
-/// El título que muestra una cola: el del tag, o el nombre del archivo.
+/// The title a queue shows: the tag's, or the file's name.
 fn title_of(path: &std::path::Path) -> String {
     chilpa_tags::read(path)
         .ok()
@@ -201,7 +201,7 @@ fn title_of(path: &std::path::Path) -> String {
         })
 }
 
-/// Ahora, en segundos desde el epoch.
+/// Now, in seconds since the epoch.
 fn now_unix() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -209,7 +209,7 @@ fn now_unix() -> i64 {
         .unwrap_or(0)
 }
 
-/// Cómo se nombra un número de canales, ya en plural cuando toca.
+/// How a channel count is named, already plural where it should be.
 fn channels(n: u16) -> String {
     match n {
         1 => "mono".to_string(),
@@ -218,7 +218,7 @@ fn channels(n: u16) -> String {
     }
 }
 
-/// Lo que se sabe de la pista que suena, para registrarla al terminar.
+/// What is known about the playing track, to log it when it ends.
 #[derive(Clone, Debug)]
 struct InProgress {
     path: String,
@@ -229,18 +229,18 @@ struct InProgress {
     duration_ms: u64,
 }
 
-/// Una lista inteligente, con lo que le sale hoy.
+/// A smart list, with whatever it yields today.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SmartListInfo {
     pub name: String,
     pub track_count: usize,
 }
 
-/// Una lista de reproducción, lista para mostrar.
+/// A playlist, ready to show.
 ///
-/// `provider` dice de dónde vino. La vista puede filtrar por él: es lo que
-/// permite que un plugin traiga sus listas sin que se confundan con las de
-/// aquí.
+/// `provider` says where it came from. The view can filter on it: that is
+/// what lets a plugin bring its own lists without them being confused with
+/// the ones from here.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Playlist {
     pub id: i64,
@@ -249,11 +249,11 @@ pub struct Playlist {
     pub track_count: usize,
 }
 
-/// Lo que el asistente encontró de una salida.
+/// What the wizard found about an output.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct WizardReport {
     pub device: String,
-    /// Cierto si se midió abriendo el dispositivo.
+    /// True if it was measured by opening the device.
     pub probed: bool,
     pub summary: String,
     pub rates: Vec<u32>,
@@ -261,16 +261,16 @@ pub struct WizardReport {
     pub rows: Vec<WizardRow>,
 }
 
-/// Un formato y qué pasa con él.
+/// A format and what happens to it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct WizardRow {
     pub name: String,
     pub format: String,
-    /// "bit-perfect", "convertido a ..." o "no se puede".
+    /// "bit-perfect", "converted to ..." or "cannot be done".
     pub verdict: String,
 }
 
-/// Un artista de la biblioteca, listo para mostrar.
+/// An artist from the library, ready to show.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Artist {
     pub name: String,
@@ -279,7 +279,7 @@ pub struct Artist {
     pub artwork_path: String,
 }
 
-/// Un álbum como lo necesita una vista.
+/// An album as a view needs it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Album {
     pub id: i64,
@@ -287,13 +287,13 @@ pub struct Album {
     pub artist: String,
     pub year: Option<i32>,
     pub track_count: usize,
-    /// La portada en disco, vacío si no hay.
+    /// The cover on disk, empty if there is none.
     pub artwork_path: String,
-    /// Cuántas escuchas lleva, contadas del log.
+    /// How many plays it has, counted from the log.
     pub play_count: usize,
 }
 
-/// Una pista de la biblioteca.
+/// A track from the library.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct LibraryTrack {
     pub id: i64,
@@ -304,35 +304,35 @@ pub struct LibraryTrack {
     pub track_number: Option<u16>,
     pub duration_ms: u64,
     pub present: bool,
-    /// Lo que el análisis sacó, vacío si todavía no se ha analizado.
+    /// What the analysis found, empty if it has not been analysed yet.
     pub analysis: String,
 }
 
-/// Cómo va el análisis que corre en segundo plano.
+/// How the background analysis is going.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct AnalysisStatus {
     pub running: bool,
     pub done: usize,
     pub total: usize,
-    /// La última pista que se miró, para que se vea que avanza.
+    /// The last track looked at, so progress is visible.
     pub last: String,
-    /// Cuántas quedaron analizadas, sin pulso y sin poder leerse.
+    /// How many ended up analysed, without a pulse, and unreadable.
     pub analyzed: usize,
     pub without_pulse: usize,
     pub failed: usize,
 }
 
-/// Cómo va el escaneo que corre en segundo plano.
+/// How the background scan is going.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanStatus {
     pub running: bool,
     pub done: usize,
     pub total: usize,
-    /// Lo que dejó el último escaneo terminado.
+    /// What the last finished scan left behind.
     pub summary: ScanSummary,
 }
 
-/// Qué pasó en un escaneo, en una línea para la vista.
+/// What happened in a scan, in one line for the view.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanSummary {
     pub seen: usize,
@@ -342,45 +342,45 @@ pub struct ScanSummary {
     pub unreachable: bool,
 }
 
-/// La instancia de Chilpa con la que habla un frontend.
+/// The Chilpa instance a frontend talks to.
 pub struct Chilpa {
     core: chilpa_core::Core,
     library: Option<chilpa_library::Library>,
-    /// Lo que hace falta para registrar la reproducción cuando termine.
+    /// What is needed to log the play when it ends.
     in_progress: Option<InProgress>,
-    /// Las rutas de la cola actual, completa y en el orden en que se
-    /// encoló. Volver atrás no la recorta.
+    /// The current queue's paths, whole and in the order they were queued.
+    /// Going back does not trim it.
     queue: Vec<String>,
-    /// Qué posición de `cola` fue la primera que se le dio al reproductor.
-    /// Volver atrás relanza desde ahí, y la posición que ve la vista se
-    /// cuenta sobre la cola entera.
+    /// Which position of `queue` was the first one handed to the player.
+    /// Going back restarts from there, and the position the view sees is
+    /// counted over the whole queue.
     base: usize,
     shuffle: bool,
     repeat: Repeat,
     album_sort: AlbumSort,
-    /// El artista al que está filtrada la reja, vacío si no hay filtro.
+    /// The artist the grid is filtered to, empty if there is no filter.
     artist: String,
-    /// Qué posiciones de `cola` se quitaron, para que la vista las apague.
+    /// Which positions of `queue` were removed, so the view greys them out.
     removed: Vec<bool>,
-    /// La letra de lo que suena, para no releerla en cada pulso.
+    /// The lyrics of what is playing, so they are not reread on every tick.
     lyrics: Option<chilpa_lyrics::Lyrics>,
-    /// El sandbox de plugins, armado la primera vez que se pide. Va
-    /// compartido porque la búsqueda lo consulta desde su propio hilo: un
-    /// source lento no puede dejar la ventana esperando.
+    /// The plugin sandbox, built the first time it is asked for. It is
+    /// shared because search queries it from its own thread: a slow source
+    /// must not leave the window waiting.
     plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
-    /// Lo que de verdad sale por el dispositivo, para los visualizadores.
+    /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
-    /// El escaneo en segundo plano, mientras corre.
+    /// The background scan, while it runs.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
     analysis: Option<chilpa_core::analysis_job::AnalysisJob>,
     analysis_status: AnalysisStatus,
     player: Option<chilpa_core::player::Player>,
-    /// La búsqueda en curso: lo local, lo que aportaron los sources y lo
-    /// que la vista dibuja.
+    /// The search in progress: what is local, what the sources contributed
+    /// and what the view draws.
     search: search::SearchState,
-    /// La cuenta que se está conectando, entre que se abre el navegador y
-    /// que el usuario regresa.
+    /// The account being connected, between the browser opening and the
+    /// user coming back.
     connecting: Option<plugins::Connecting>,
     now: NowPlaying,
     sample_rate: u32,
@@ -420,7 +420,7 @@ impl Chilpa {
         }
     }
 
-    /// La biblioteca, abriéndola la primera vez que se usa.
+    /// The library, opened the first time it is used.
     pub(crate) fn library(&mut self) -> Option<&chilpa_library::Library> {
         if self.library.is_none() {
             match chilpa_core::open_library() {
@@ -443,7 +443,7 @@ impl Chilpa {
 
 
 
-    /// Lo que el análisis ya sabía de la pista que empieza.
+    /// What the analysis already knew about the track that is starting.
     fn load_analysis(&mut self, path: &std::path::Path) {
         self.now.analysis = String::new();
         let Some(lib) = self.library() else { return };
@@ -457,10 +457,10 @@ impl Chilpa {
         self.now.analysis = describe_analysis(bpm, tone.as_deref(), loudness);
     }
 
-    /// Busca la letra de lo que empieza a sonar.
+    /// Looks up the lyrics of what is starting to play.
     ///
-    /// Se lee una vez por pista, no en cada pulso: son unos kilobytes, pero
-    /// abrir un archivo sesenta veces por minuto no tiene ningún sentido.
+    /// It is read once per track, not on every tick: it is a few kilobytes, but
+    /// opening a file sixty times a minute makes no sense at all.
     fn load_lyrics(&mut self, path: &std::path::Path) {
         let found = chilpa_lyrics::find(path);
         self.now.lyrics = found
@@ -477,7 +477,7 @@ impl Chilpa {
         self.lyrics = found.map(|h| h.lyrics);
     }
 
-    /// Qué renglón de la letra va en ese segundo.
+    /// Which line of the lyrics belongs to that second.
     fn line_at(&self, seconds: f64) -> i32 {
         let Some(lyrics) = &self.lyrics else { return -1 };
         let ms = (seconds.max(0.0) * 1000.0) as u64;
@@ -518,10 +518,10 @@ impl Chilpa {
 
 
 
-    /// Las unidades de CD que hay en la máquina.
+    /// The CD drives on the machine.
     ///
-    /// Se miran los nodos de siempre; una unidad que no está no es un
-    /// error, nomás no sale en la lista.
+    /// The usual nodes are checked; a drive that is not there is not an
+    /// error, it simply does not show up on the list.
     pub fn cd_drives(&self) -> Vec<String> {
         let mut units = Vec::new();
         for name in ["/dev/sr0", "/dev/sr1", "/dev/cdrom", "/dev/dvd"] {
@@ -533,7 +533,7 @@ impl Chilpa {
         units
     }
 
-    /// Pone a sonar el CD que haya en esa unidad, de principio a fin.
+    /// Starts playing whatever CD is in that drive, from start to finish.
     pub fn play_cd(&mut self, drive: &str, device: &str, bit_perfect: bool) -> bool {
         let unit = if drive.is_empty() {
             match self.cd_drives().first() {
@@ -552,7 +552,7 @@ impl Chilpa {
         true
     }
 
-    /// Pone a sonar una radio o cualquier stream por HTTP.
+    /// Starts playing a radio, or any stream over HTTP.
     pub fn play_url(&mut self, url: &str, device: &str, bit_perfect: bool) {
         let url = url.trim().to_string();
         if !url.starts_with("http://") && !url.starts_with("https://") {
@@ -566,47 +566,47 @@ impl Chilpa {
 
 
 
-    /// Lo que Chilpa recuerda: la última salida, si se pide bit-perfect y
-    /// la última carpeta abierta.
+    /// What Chilpa remembers: the last output, whether bit-perfect is asked
+    /// for, and the last folder opened.
     pub fn settings(&self) -> chilpa_core::settings::Settings {
         chilpa_core::settings::load()
     }
 
-    /// Recuerda la salida y la política elegidas.
+    /// Remembers the chosen output and policy.
     pub fn remember(&mut self, output: &str, bit_perfect: bool) {
         let mut s = chilpa_core::settings::load();
         s.output = output.to_string();
         s.bit_perfect = bit_perfect;
-        // Si no se puede guardar, la sesión sigue: es una preferencia, no
-        // una parte del reproductor.
+        // If it cannot be saved, the session carries on: it is a
+        // preference, not a part of the player.
         let _ = chilpa_core::settings::save(&s);
     }
 
-    /// Recuerda qué visualizador se está dibujando.
+    /// Remembers which visualizer is being drawn.
     pub fn remember_visualizer(&mut self, visualizer: &str) {
         let mut s = chilpa_core::settings::load();
         s.visualizer = visualizer.to_string();
         let _ = chilpa_core::settings::save(&s);
     }
 
-    /// Recuerda el acomodo elegido para la ventana.
+    /// Remembers the chosen window layout.
     pub fn remember_layout(&mut self, layout: &str) {
         let mut s = chilpa_core::settings::load();
         s.layout = layout.to_string();
         let _ = chilpa_core::settings::save(&s);
     }
 
-    /// Recuerda la última carpeta abierta.
+    /// Remembers the last folder opened.
     pub fn remember_folder(&mut self, folder: &str) {
         let mut s = chilpa_core::settings::load();
         s.last_folder = folder.to_string();
         let _ = chilpa_core::settings::save(&s);
     }
 
-    /// El diagnóstico de una salida: qué formatos salen tal cual.
+    /// An output's diagnosis: which formats come out untouched.
     ///
-    /// Mide el dispositivo de verdad. No configura nada: el asistente de QBZ
-    /// escribía ajustes a ciegas, y eso es peor que no saber.
+    /// It measures the device for real. It configures nothing: QBZ's wizard
+    /// wrote settings blind, and that is worse than not knowing.
     pub fn wizard(&mut self, device: &str) -> WizardReport {
         let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
         let caps = match chilpa_core::probe_device(&id) {
@@ -647,12 +647,12 @@ impl Chilpa {
         }
     }
 
-    /// La salida elegida, o la primera que haya.
+    /// The chosen output, or the first one there is.
     fn device_or_first(&self) -> String {
         self.outputs().first().map(|o| o.id.clone()).unwrap_or_default()
     }
 
-    /// Las salidas que el usuario puede elegir.
+    /// The outputs the user can choose from.
     pub fn outputs(&self) -> Vec<Output> {
         chilpa_core::outputs()
             .into_iter()
@@ -660,21 +660,21 @@ impl Chilpa {
             .collect()
     }
 
-    /// Pone a sonar un archivo. Regresa de inmediato: lo que pase después
-    /// llega por [`Chilpa::poll`].
+    /// Starts a file playing. It returns immediately: whatever happens next
+    /// arrives through [`Chilpa::poll`].
     pub fn play_file(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) {
-        // Un archivo suelto también es una cola de una pista: así pasa por
-        // el mismo camino y hereda el tap, la repetición y el orden.
+        // A lone file is a one track queue too: that way it goes down the
+        // same path and inherits the tap, the repeat and the order.
         self.queue = vec![path.display().to_string()];
         self.removed = vec![false];
         self.spawn(0, device, bit_perfect);
         self.now.path = path.display().to_string();
     }
 
-    /// La envolvente de lo que acaba de salir, en `puntos` valores de 0 a 1.
+    /// The envelope of what just went out, as `points` values from 0 to 1.
     ///
-    /// Es el pico de cada tajada, no el promedio: una onda dibujada con
-    /// promedios se ve plana y no se parece a lo que se oye.
+    /// It is each slice's peak, not its average: a wave drawn from averages
+    /// looks flat and does not resemble what is heard.
     pub fn scope_envelope(&self, points: usize) -> Vec<f32> {
         let snapshot = self.tap.snapshot();
         let channels = snapshot.channels.max(1) as usize;
@@ -701,10 +701,10 @@ impl Chilpa {
         output
     }
 
-    /// El espectro de lo que sale, en `bandas` valores de 0 a 1.
+    /// The spectrum of what is going out, as `bands` values from 0 to 1.
     ///
-    /// Los canales se mezclan a mono: un espectro por canal se ve igual en
-    /// casi toda la música y ocupa el doble de pantalla.
+    /// The channels are mixed to mono: a spectrum per channel looks the same
+    /// on almost all music and takes twice the screen.
     pub fn scope_spectrum(&self, bands: usize) -> Vec<f32> {
         let snapshot = self.tap.snapshot();
         let channels = snapshot.channels.max(1) as usize;
@@ -719,9 +719,9 @@ impl Chilpa {
         chilpa_core::spectrum::bands(&mono, snapshot.sample_rate_hz, bands)
     }
 
-    /// Pares (izquierdo, derecho) de lo que acaba de salir, para el
-    /// goniómetro. En mono se devuelve el mismo valor dos veces, que es lo
-    /// que dibuja una línea a 45 grados, como debe ser.
+    /// (left, right) pairs of what just went out, for the goniometer. On
+    /// mono the same value is returned twice, which draws a line at 45
+    /// degrees, as it should.
     pub fn scope_pairs(&self, points: usize) -> Vec<(f32, f32)> {
         let snapshot = self.tap.snapshot();
         let channels = snapshot.channels.max(1) as usize;
@@ -729,8 +729,8 @@ impl Chilpa {
         if frames == 0 || points == 0 {
             return Vec::new();
         }
-        // Se toma uno de cada tantos: dibujar ocho mil puntos por cuadro no
-        // se ve distinto y sí se siente.
+        // One in every so many is taken: drawing eight thousand points per
+        // frame does not look different but is certainly felt.
         let skip = (frames / points).max(1);
         (0..frames)
             .step_by(skip)
@@ -743,12 +743,12 @@ impl Chilpa {
             .collect()
     }
 
-    /// La correlación entre los dos canales, de -1 a 1.
+    /// The correlation between the two channels, from -1 to 1.
     ///
-    /// Uno es mono, cero es estéreo ancho y por debajo de cero hay algo en
-    /// contrafase, que en mono se cancela. Es el número que un medidor de
-    /// fase enseña, y el que dice si una mezcla va a sobrevivir a un
-    /// altavoz solo.
+    /// One is mono, zero is wide stereo and below zero there is something
+    /// out of phase, which cancels in mono. It is the number a phase meter
+    /// shows, and the one that says whether a mix will survive a single
+    /// speaker.
     pub fn scope_correlation(&self) -> Option<f32> {
         let snapshot = self.tap.snapshot();
         let channels = snapshot.channels.max(1) as usize;
@@ -766,24 +766,24 @@ impl Chilpa {
         (den > 0.0).then(|| (sid / den) as f32)
     }
 
-    /// El nivel por canal, de 0 a 1: pico y rms.
+    /// The level per channel, from 0 to 1: peak and rms.
     pub fn scope_levels(&self) -> Vec<(f32, f32)> {
         let snapshot = self.tap.snapshot();
         snapshot.peaks.iter().copied().zip(snapshot.rms.iter().copied()).collect()
     }
 
-    /// Lo que de verdad está saliendo por el dispositivo, para dibujarlo.
+    /// What is actually going out the device, for drawing.
     ///
-    /// Son las muestras entregadas, copiadas después de empaquetarlas: lo
-    /// que se ve es lo que sonó, no lo que se decodificó.
+    /// These are the delivered samples, copied after packing: what is seen
+    /// is what played, not what was decoded.
     pub fn scope(&self) -> chilpa_core::tap::Snapshot {
         self.tap.snapshot()
     }
 
-    /// Pone a sonar una carpeta completa, en orden alfabético.
+    /// Starts a whole folder playing, in alphabetical order.
     ///
-    /// Regresa los títulos encolados: el del tag cuando el archivo lo trae,
-    /// y si no, el nombre del archivo.
+    /// It returns the queued titles: the tag's when the file carries one,
+    /// and the file's name otherwise.
     pub fn play_folder(
         &mut self,
         folder: &std::path::Path,
@@ -795,14 +795,14 @@ impl Chilpa {
             self.now.error = format!("no hay audio en {}", folder.display());
             return Vec::new();
         }
-        // La carpeta también entra a la cola: si no, guardarla o volver
-        // atrás no tendrían de dónde leer.
+        // The folder goes into the queue too: otherwise saving it or going
+        // back would have nothing to read from.
         self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
     }
 
-    /// Pausa o reanuda lo que suena.
+    /// Pauses or resumes what is playing.
     pub fn set_paused(&mut self, paused: bool) {
         if let Some(p) = &self.player {
             p.set_paused(paused);
@@ -810,7 +810,7 @@ impl Chilpa {
         }
     }
 
-    /// Salta a ese segundo de la pista que suena.
+    /// Seeks to that second of the playing track.
     pub fn seek(&mut self, seconds: f64) {
         if let Some(p) = &self.player {
             let safe = seconds.max(0.0);
@@ -818,38 +818,38 @@ impl Chilpa {
         }
     }
 
-    /// Salta a la siguiente pista de la cola.
+    /// Skips to the next track in the queue.
     pub fn next_track(&mut self) {
         if let Some(p) = &self.player {
             p.next();
         }
     }
 
-    /// Vuelve a la pista anterior.
+    /// Goes back to the previous track.
     ///
-    /// No hay una señal para esto: la cola se vuelve a lanzar desde la pista
-    /// de antes, que es lo que el reproductor sabe hacer. La cola no se
-    /// recorta, solo cambia por dónde empieza.
+    /// There is no signal for this: the queue is relaunched from the previous
+    /// track, which is what the player knows how to do. The queue is not
+    /// trimmed, only where it starts changes.
     ///
-    /// Con el aleatorio encendido no hay "la de antes" que valga: lo que se
-    /// hace es reiniciar la que suena.
+    /// With shuffle on there is no meaningful "previous one": what happens
+    /// is that the playing one restarts.
     pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
         if self.queue.is_empty() || self.now.index == 0 || self.shuffle {
-            // En la primera pista, "anterior" es volver a empezarla.
+            // On the first track, "previous" means starting it over.
             self.seek(0.0);
             return;
         }
         self.spawn(self.now.index - 1, device, bit_perfect);
     }
 
-    /// Para lo que esté sonando.
+    /// Stops whatever is playing.
     pub fn stop(&mut self) {
         if let Some(p) = &self.player {
             p.stop();
         }
     }
 
-    /// Recoge lo que haya pasado y actualiza el estado que ve la vista.
+    /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
         self.advance_search();
@@ -891,25 +891,25 @@ impl Chilpa {
                             self.now.album = String::new();
                         }
                     }
-                    // Lo que vino de un source ya trae su ficha de la
-                    // búsqueda. Sin esto la ventana mostraría la URL cruda,
-                    // que es lo único que el decodificador sabe de ella.
+                    // What came from a source already carries its card from
+                    // the search. Without this the window would show the raw
+                    // URL, which is all the decoder knows about it.
                     self.name_from_source(&path);
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     self.load_lyrics(&path);
                     self.load_analysis(&path);
-                    // El reproductor cuenta sobre lo que se le dio; la vista
-                    // cuenta sobre la cola entera.
+                    // The player counts over what it was given; the view
+                    // counts over the whole queue.
                     self.now.index = self.base + index;
                     self.now.queue_len = if self.queue.is_empty() {
                         queue_len
                     } else {
                         self.queue.len()
                     };
-                    // Cada arranque cierra lo anterior: en una cola, la
-                    // pista que empieza es la prueba de que la de antes
-                    // terminó.
+                    // Every start closes the previous one: in a queue, the
+                    // track that starts is the proof the one before it
+                    // finished.
                     self.log_play(false);
                     self.in_progress = Some(InProgress {
                         path: path.display().to_string(),
@@ -930,9 +930,9 @@ impl Chilpa {
                         _ => 0.0,
                     };
                     self.now.format = match dsd_multiple {
-                        // En DSD lo que importa es la tasa de DSD; el
-                        // portador de DoP se dice aparte, porque es el
-                        // formato con el que se abrió el dispositivo.
+                        // On DSD what matters is the DSD rate; the DoP
+                        // carrier is stated separately, because it is the
+                        // format the device was opened with.
                         Some(multiple) => format!(
                             "DSD{multiple} · DoP a {} Hz · {}",
                             opened.sample_rate_hz,
@@ -947,8 +947,8 @@ impl Chilpa {
                     };
                 }
                 PlayerEvent::StreamTitle { title } => {
-                    // En una radio, el título lo manda la estación y cambia
-                    // con cada canción.
+                    // On a radio the title is sent by the station and
+                    // changes with every song.
                     self.now.title = title;
                 }
                 PlayerEvent::Progress { frames } => {
@@ -966,15 +966,14 @@ impl Chilpa {
                 PlayerEvent::Stopped { frames } => {
                     self.now.frames = frames;
                     self.now.playing = false;
-                    // Parar a media pista cuenta como salto.
+                    // Stopping mid track counts as a skip.
                     self.log_play(true);
                 }
                 PlayerEvent::Failed { message } => {
                     self.now.playing = false;
                     self.now.error = message;
-                    // Una falla del dispositivo no es una escucha, pero lo
-                    // que alcanzó a sonar sí se registra, marcado como
-                    // interrumpido.
+                    // A device failure is not a listen, but whatever did
+                    // play is logged, marked as interrupted.
                     self.log_play(true);
                 }
             }
@@ -982,10 +981,10 @@ impl Chilpa {
         &self.now
     }
 
-    /// Guarda en el log lo que llevaba sonando la pista en curso.
+    /// Records in the log how much of the current track had played.
     ///
-    /// El log es append-only: de aquí salen las stats, las smart lists y el
-    /// sync de play counts con un DAP.
+    /// The log is append-only: the stats, the smart lists and the
+    /// play count sync with a DAP all come out of here.
     fn log_play(&mut self, skipped: bool) {
         let Some(current) = self.in_progress.take() else { return };
         let frames = self.now.frames;
@@ -1010,12 +1009,12 @@ impl Chilpa {
         );
     }
 
-    /// El estado actual, sin recoger eventos.
+    /// The current state, without collecting events.
     pub fn now_playing(&self) -> &NowPlaying {
         &self.now
     }
 
-    /// Ejecuta un comando y regresa lo que el frontend debe saber.
+    /// Runs a command and returns what the frontend should know.
     pub fn dispatch(&mut self, command: Command) -> Event {
         match command {
             Command::ListSources => Event::Sources(self.core.sources().to_vec()),
@@ -1048,7 +1047,7 @@ mod tests {
 
     #[test]
     fn the_mix_walks_tempo_to_tempo_without_jumps() {
-        // Empieza en la de 120 y debería seguir 118, 125, 90.
+        // It starts at the 120 one and should go on 118, 125, 90.
         let bpms = vec![Some(90.0), Some(120.0), Some(125.0), Some(118.0)];
         assert_eq!(order_by_tempo(&bpms, 1), vec![1, 3, 2, 0]);
     }

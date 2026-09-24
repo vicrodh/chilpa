@@ -1,9 +1,9 @@
-//! Las listas guardadas, de punta a punta.
+//! The saved lists, end to end.
 //!
-//! Es una sola prueba a propósito: apunta `XDG_DATA_HOME` a un directorio
-//! temporal para no escribir en la biblioteca de quien la corra, y esa
-//! variable es del proceso entero. Con una sola prueba no hay con quién
-//! pelearse.
+//! It is a single test on purpose: it points `XDG_DATA_HOME` at a temporary
+//! directory so as not to write into the library of whoever runs it, and
+//! that variable belongs to the whole process. With one test there is nobody
+//! to fight with.
 
 use std::io::Write;
 use std::path::PathBuf;
@@ -49,12 +49,12 @@ fn save_the_queue_play_it_and_delete_it() {
     let mut chilpa = chilpa_api::Chilpa::new();
     assert!(chilpa.playlists().is_empty(), "una biblioteca nueva no trae listas");
 
-    // Sin cola no hay nada que guardar, y se dice.
+    // With no queue there is nothing to save, and it is said.
     assert!(chilpa.save_queue_as("Vacía").is_none());
     assert!(chilpa.now_playing().error.contains("cola"));
 
     chilpa.play_tracks(&paths, OUTPUT, true);
-    // Y una lista sin nombre tampoco va.
+    // And a list with no name does not go either.
     assert!(chilpa.save_queue_as("   ").is_none());
 
     let id = chilpa.save_queue_as("De la mañana").expect("se guardó");

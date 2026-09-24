@@ -1,16 +1,16 @@
-//! De un resultado de un source a música saliendo por el dispositivo.
+//! From a source's result to music coming out the device.
 //!
-//! Es el camino completo: el plugin contesta la búsqueda, el usuario hace
-//! clic, Chilpa le pide `chilpa_resolver`, el plugin da una URL, y esa URL
-//! se abre y se reproduce como cualquier otro stream.
+//! It is the whole path: the plugin answers the search, the user clicks,
+//! Chilpa asks it for `chilpa_resolver`, the plugin gives a URL, and that
+//! URL is opened and played like any other stream.
 //!
-//! El servidor es local y de juguete: lo que se prueba es la costura, no
-//! HTTP. Y el plugin **no pide permiso de red**, a propósito: resolver no
-//! necesita que el guest salga a internet, porque quien abre la URL es
-//! Chilpa.
+//! The server is local and a toy: what is tested is the seam, not HTTP. And
+//! the plugin **asks for no network permission**, on purpose: resolving does
+//! not need the guest to reach the internet, because the one opening the URL
+//! is Chilpa.
 //!
-//! Es una sola prueba porque apunta `XDG_DATA_HOME` a un directorio
-//! temporal, y esa variable es del proceso entero.
+//! It is a single test because it points `XDG_DATA_HOME` at a temporary
+//! directory, and that variable belongs to the whole process.
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
@@ -18,7 +18,7 @@ use std::path::Path;
 
 const OUTPUT: &str = "capture";
 
-/// Un WAV corto con un tono, en memoria.
+/// A short WAV with a tone, in memory.
 fn wave(frames: u32) -> Vec<u8> {
     let data = frames * 4;
     let mut w = Vec::with_capacity(44 + data as usize);
@@ -42,7 +42,7 @@ fn wave(frames: u32) -> Vec<u8> {
     w
 }
 
-/// Sirve el mismo WAV a quien se lo pida, una vez por conexión.
+/// Serves the same WAV to whoever asks, once per connection.
 fn serve(audio: Vec<u8>) -> u16 {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -64,7 +64,7 @@ fn serve(audio: Vec<u8>) -> u16 {
     port
 }
 
-/// Un source que encuentra una pista y sabe decir con qué se reproduce.
+/// A source that finds a track and can say what it is played with.
 fn install(dir: &Path, id: &str, found: &str, stream: &str) {
     std::fs::create_dir_all(dir.join(id)).unwrap();
     std::fs::write(
@@ -76,9 +76,9 @@ fn install(dir: &Path, id: &str, found: &str, stream: &str) {
     )
     .unwrap();
 
-    // Dos datos en memoria, cada uno con su dirección y su largo sacados
-    // aquí. Contarlos a mano es cómo una prueba pasa por la razón
-    // equivocada.
+    // Two pieces of data in memory, each with its address and length taken
+    // from here. Counting them by hand is how a test passes for the wrong
+    // reason.
     let esc = |s: &str| s.replace('\\', "\\\\").replace('"', "\\\"");
     let wat = format!(
         r#"(module
@@ -123,8 +123,8 @@ fn a_track_from_a_source_resolves_and_plays() {
         &format!(r#"{{"url":"http://127.0.0.1:{port}/track.wav","codec":"wav"}}"#),
     );
 
-    // Y uno que contesta una dirección que no es http, para ver que no se
-    // intenta abrir.
+    // And one that answers with an address that is not http, to check it
+    // is not opened.
     install(
         &root,
         "com.prueba.mentiroso",
@@ -137,7 +137,7 @@ fn a_track_from_a_source_resolves_and_plays() {
     chilpa.approve_plugin("com.prueba.fuente");
     assert_eq!(chilpa.approve_plugin("com.prueba.mentiroso"), 2, "los dos corriendo");
 
-    // Buscar: lo local está vacío, así que el único resultado es del source.
+    // Search: the local side is empty, so the only result is the source's.
     chilpa.search_all("una", 20);
     assert!(wait_for(&mut chilpa, |c| c.found().len() >= 2), "los dos contestaron");
     let hits = chilpa.found().to_vec();
@@ -147,13 +147,13 @@ fn a_track_from_a_source_resolves_and_plays() {
     assert_eq!(hits[good].title, "Una de un source");
     assert!(hits[good].playable, "ahora sí se puede intentar");
 
-    // El que miente: no se intenta abrir, y se dice por qué.
+    // The one that lies: it is not opened, and why is said.
     assert!(!chilpa.play_hit(liar, OUTPUT, true), "no se abre un file://");
     let e = chilpa.now_playing().error.clone();
     assert!(e.contains("http"), "y se dice por qué: {e}");
     assert!(e.starts_with("Source de prueba"), "con el nombre del source: {e}");
 
-    // Y el bueno: un clic, se resuelve y suena.
+    // And the good one: a click, it resolves and it plays.
     assert!(chilpa.play_hit(good, OUTPUT, true), "{}", chilpa.now_playing().error);
     assert!(
         wait_for(&mut chilpa, |c| c.now_playing().seconds > 0.0 || !c.now_playing().playing),
@@ -161,8 +161,8 @@ fn a_track_from_a_source_resolves_and_plays() {
     );
     let now = chilpa.now_playing().clone();
     assert!(now.error.is_empty(), "sonó sin quejarse: {}", now.error);
-    // La ventana muestra la ficha del source, no la URL a la que resolvió:
-    // el decodificador de un stream no sabe más que eso.
+    // The window shows the source's card, not the URL it resolved to: a
+    // stream's decoder knows nothing beyond that.
     assert_eq!(now.title, "Una de un source", "se ve el título, no la URL");
     assert_eq!(now.artist, "Alguien");
     assert!(now.total_seconds > 0.0 || now.seconds > 0.0, "algo salió por el dispositivo: {now:?}");

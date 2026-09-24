@@ -1,23 +1,23 @@
-//! Buscar con un plugin de verdad puesto en disco.
+//! Searching with a real plugin dropped on disk.
 //!
-//! Las pruebas de `merge` viven en el módulo y no tocan nada; esta comprueba
-//! lo otro: que la consulta salga en su hilo, que lo que el plugin contesta
-//! llegue por `poll`, y que una canción que ya está en la biblioteca no se
-//! muestre dos veces sino con su "también está en".
+//! The `merge` tests live in the module and touch nothing; this one checks
+//! the other half: that the query goes out on its thread, that what the
+//! plugin answers arrives through `poll`, and that a song already in the
+//! library is not shown twice but with its "also in".
 //!
-//! Es una sola prueba porque apunta `XDG_DATA_HOME` a un directorio
-//! temporal, y esa variable es del proceso entero.
+//! It is a single test because it points `XDG_DATA_HOME` at a temporary
+//! directory, and that variable belongs to the whole process.
 
 use std::path::{Path, PathBuf};
 
-/// El ISRC que comparten la pista local y la que contesta el plugin.
+/// The ISRC shared by the local track and the one the plugin answers with.
 const ISRC: &str = "USRC17607839";
 
-/// Un plugin de catálogo que contesta siempre lo mismo.
+/// A catalogue plugin that always answers the same thing.
 ///
-/// `reply` va con sus comillas de verdad: aquí se escapa para meterlo en el
-/// texto de wasm y el largo se saca del original, no del texto escapado.
-/// Contar a mano es cómo una prueba pasa por la razón equivocada.
+/// `reply` comes with its real quotes: here it is escaped to go into the
+/// wasm text and the length is taken from the original, not from the escaped
+/// text. Counting by hand is how a test passes for the wrong reason.
 fn source_plugin(dir: &Path, id: &str, reply: &str) {
     std::fs::create_dir_all(dir.join(id)).unwrap();
     std::fs::write(
@@ -35,8 +35,8 @@ fn source_plugin(dir: &Path, id: &str, reply: &str) {
     )
     .unwrap();
     let len = reply.len();
-    // Una cadena de wasm no lleva saltos de línea crudos; el escape sigue
-    // siendo un byte, así que el largo no cambia.
+    // A wasm string carries no raw newlines; the escape is still one byte,
+    // so the length does not change.
     let escaped = reply.replace('\\', "\\\\").replace('"', "\\\"").replace('\n', "\\n");
     let wat = format!(
         r#"(module
@@ -60,7 +60,7 @@ fn source_plugin(dir: &Path, id: &str, reply: &str) {
         .unwrap();
 }
 
-/// Un WAV chiquito con su ISRC puesto después, directo en la base.
+/// A tiny WAV with its ISRC put in afterwards, straight into the database.
 fn wave(dir: &Path, name: &str) -> PathBuf {
     use std::io::Write;
     let p = dir.join(name);
@@ -94,8 +94,8 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     std::fs::create_dir_all(&dir).unwrap();
     std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
 
-    // Una biblioteca con una pista, y su ISRC anotado como lo dejaría el
-    // escaneo de un archivo que sí lo trae.
+    // A library with one track, and its ISRC noted the way a scan of a
+    // file that does carry one would leave it.
     let music = dir.join("musica");
     std::fs::create_dir_all(&music).unwrap();
     wave(&music, "Suzie Q.wav");
@@ -104,15 +104,15 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     let local = chilpa.search("Suzie", 20);
     assert_eq!(local.len(), 1, "la pista se escaneó");
 
-    // El ISRC lo deja el escaneo cuando el archivo lo trae; este WAV no
-    // trae tags, así que se pone a mano en la misma base.
+    // The scan leaves the ISRC when the file carries one; this WAV carries
+    // no tags, so it is put in by hand in the same database.
     rusqlite::Connection::open(chilpa_library::Library::default_path())
         .unwrap()
         .execute("UPDATE tracks SET isrc = ?1", rusqlite::params![ISRC])
         .unwrap();
 
-    // Dos sources: uno trae la misma canción (mismo ISRC) y otra que no
-    // está en disco; el otro se cae.
+    // Two sources: one brings the same song (same ISRC) and another that
+    // is not on disk; the other falls over.
     let plugins = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&plugins).unwrap();
     source_plugin(
@@ -132,16 +132,16 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     chilpa.approve_plugin("com.prueba.bueno");
     assert_eq!(chilpa.approve_plugin("com.prueba.roto"), 2, "los dos cargaron");
 
-    // Lo local sale de inmediato, sin esperar a nadie.
+    // What is local comes out at once, waiting for nobody.
     let immediate = chilpa.search_all("Suzie", 20);
     assert_eq!(immediate.len(), 1, "lo local no espera a los plugins");
     assert_eq!(immediate[0].source, "local");
     assert!(immediate[0].playable, "lo que está en disco sí se puede tocar");
 
-    // Y lo de los sources llega por poll, cuando pasa el descanso de tecleo.
-    // Se mira como lo mira la ventana: solo cuando avisan que cambió. Una
-    // consulta puede empezar y acabar entre dos pulsos, y aun así el último
-    // source en contestar tiene que quedar dibujado.
+    // And what the sources give arrives through poll, once the typing rest
+    // is over. It is watched the way the window watches it: only when a
+    // change is announced. A query can start and finish between two ticks,
+    // and even so the last source to answer has to end up drawn.
     let mut hits = Vec::new();
     let arrived = wait_for(&mut chilpa, |c| {
         if c.search_changed() {
@@ -167,12 +167,12 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     assert!(other.playable, "se le puede pedir al source que la resuelva");
     assert_eq!(other.quality, "", "esa no declaró calidad y no se le inventa");
 
-    // El que contestó mal se dice, y no se llevó a nadie.
+    // The one that answered badly is named, and it took nobody with it.
     let problems = chilpa.search_problems();
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(problems[0].starts_with("Source com.prueba.roto"), "{problems:?}");
 
-    // Buscar otra cosa tira lo de la consulta anterior de inmediato.
+    // Searching for something else throws away the previous query's results at once.
     let other_search = chilpa.search_all("no existe nada así", 20);
     assert!(other_search.is_empty());
     assert!(chilpa.found().is_empty(), "no se quedan resultados de la búsqueda vieja");
@@ -181,7 +181,7 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
-/// Llama a `poll` deadline que se cumpla la condición, o se acabe la paciencia.
+/// Calls `poll` until the condition holds, or patience runs out.
 fn wait_for(
     chilpa: &mut chilpa_api::Chilpa,
     mut cond: impl FnMut(&mut chilpa_api::Chilpa) -> bool,

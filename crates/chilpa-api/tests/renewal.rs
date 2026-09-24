@@ -1,21 +1,21 @@
-//! Un acceso vencido se renueva solo, del lado de Chilpa.
+//! An expired access renews itself, on Chilpa's side.
 //!
-//! El plugin pide salir a su dominio con el token de ayer guardado. Chilpa
-//! ve que venció, lo cambia por uno nuevo contra el servicio, guarda el
-//! nuevo cifrado, y la petición del plugin sale firmada con ese. El plugin
-//! no participa: no tiene cómo pedir el token ni cómo saber que hubo una
-//! renovación (ADR-008).
+//! The plugin asks to reach its domain with yesterday's token kept. Chilpa
+//! sees it expired, swaps it for a new one against the service, keeps the
+//! new one encrypted, and the plugin's request goes out signed with that
+//! one. The plugin takes no part: it has no way to ask for the token and no
+//! way to know a renewal happened (ADR-008).
 //!
-//! Es una sola prueba porque apunta `XDG_DATA_HOME` a un directorio
-//! temporal, y esa variable es del proceso entero.
+//! It is a single test because it points `XDG_DATA_HOME` at a temporary
+//! directory, and that variable belongs to the whole process.
 
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 
-/// Un servicio que renueva tokens y guarda con qué le firmaron cada
-/// petición, para poder decir qué vio.
+/// A service that renews tokens and keeps what each request was signed
+/// with, so it can say what it saw.
 struct Service {
     port: u16,
     seen: Arc<Mutex<Vec<(String, String)>>>,
@@ -61,9 +61,9 @@ fn service() -> Service {
                 .to_string();
             mine.lock().unwrap().push((target.clone(), authorization));
 
-            // El primero nace vencido a propósito: es una cuenta que se
-            // conectó hace rato y cuyo acceso ya no sirve. El segundo, el
-            // de renovar, dura una hora.
+            // The first is born expired on purpose: it is an account
+            // connected a while ago whose access no longer works. The
+            // second, from the renewal, lasts an hour.
             let json = if target.starts_with("/token") {
                 if text.contains("grant_type=refresh_token") {
                     r#"{"access_token":"token-nuevo","token_type":"Bearer","expires_in":3600}"#
@@ -86,8 +86,8 @@ fn service() -> Service {
     Service { port, seen }
 }
 
-/// Un plugin que solo sale a la red, con el dominio y el puerto que se le
-/// den. El largo del dato se calcula aquí.
+/// A plugin that only reaches the network, with whatever domain and port it
+/// is given. The data's length is computed here.
 fn install(dir: &Path, id: &str, port: u16) {
     std::fs::create_dir_all(dir.join(id)).unwrap();
     std::fs::write(
@@ -146,7 +146,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
 
-    // Lo que pide incluye a dónde va a mandar al usuario a dar permiso.
+    // What it asks for includes where it will send the user to grant permission.
     let listed = chilpa.plugins();
     assert_eq!(listed[0].state, "pendiente de aprobación", "{:?}", listed[0].problem);
     let pending = listed[0].pending.clone();
@@ -157,8 +157,8 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     assert_eq!(chilpa.plugins()[0].account_host, "127.0.0.1");
     assert_eq!(chilpa.approve_plugin("com.prueba.cuenta"), 1);
 
-    // Se conecta la cuenta por el camino de verdad: Chilpa da la URL, el
-    // navegador regresa con el código, y Chilpa lo cambia por tokens.
+    // The account is connected down the real path: Chilpa gives the URL,
+    // the browser comes back with the code, and Chilpa swaps it for tokens.
     let url = chilpa.connect_account("com.prueba.cuenta").expect("hay a dónde mandar");
     assert!(url.contains("code_challenge="), "con PKCE: {url}");
     assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A"), "a loopback: {url}");
@@ -169,8 +169,8 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
         std::thread::sleep(std::time::Duration::from_millis(100));
         browser(&unescape(&redirect), &format!("code=el-codigo&state={state}"));
     });
-    // La espera corre en otro hilo; lo que contesta llega por poll, que es
-    // como lo va a ver la ventana.
+    // The wait runs on another thread; what it answers arrives through
+    // poll, which is how the window will see it.
     assert!(chilpa.connecting(), "se está esperando al navegador");
     assert!(
         wait_for(&mut chilpa, |c| c.plugins()[0].connected),
@@ -180,11 +180,11 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     assert!(!chilpa.connecting(), "y ya no se espera a nadie");
     assert!(!chilpa.plugins()[0].account_expired, "venció, pero hay con qué renovarla");
 
-    // El plugin sale a la red. No pidió ningún token: no tiene cómo.
+    // The plugin reaches the network. It asked for no token: it has no way to.
     chilpa.call_plugin("com.prueba.cuenta", "salir", b"{}").expect("salió");
 
     let seen = svc.seen.lock().unwrap().clone();
-    // Dos: el intercambio del código al conectar, y la renovación de ahora.
+    // Two: the code exchange on connecting, and this renewal.
     let at_token: Vec<_> = seen.iter().filter(|(t, _)| t.starts_with("/token")).collect();
     let calls: Vec<_> = seen.iter().filter(|(t, _)| t.starts_with("/api/")).collect();
 
@@ -195,7 +195,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
         "firmada con el token renovado, no con el vencido"
     );
 
-    // Lo guardado quedó al día, así que la siguiente no vuelve a renovar.
+    // What is kept ended up current, so the next one does not renew again.
     chilpa.call_plugin("com.prueba.cuenta", "salir", b"{}").expect("salió otra vez");
     let seen = svc.seen.lock().unwrap().clone();
     assert_eq!(
@@ -204,7 +204,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
         "el token nuevo se guardó: no se renueva en cada petición"
     );
 
-    // Y en disco no está ninguno de los dos en claro.
+    // And neither of the two is on disk in the clear.
     let sealed =
         std::fs::read(root.join("com.prueba.cuenta").join("credential.sealed")).unwrap();
     for secret in ["token-viejo", "token-nuevo", "para-renovar"] {
@@ -217,7 +217,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
-/// Llama a `poll` hasta que se cumpla la condición, o se acabe la paciencia.
+/// Calls `poll` until the condition holds, or patience runs out.
 fn wait_for(
     chilpa: &mut chilpa_api::Chilpa,
     mut cond: impl FnMut(&mut chilpa_api::Chilpa) -> bool,
@@ -233,7 +233,7 @@ fn wait_for(
     false
 }
 
-/// Lo que hay entre dos marcas de una URL.
+/// What lies between two markers of a URL.
 fn between(text: &str, from: &str, to: &str) -> String {
     let rest = text.split_once(from).map(|(_, r)| r).unwrap_or("");
     rest.split_once(to).map(|(v, _)| v).unwrap_or(rest).to_string()
@@ -264,7 +264,7 @@ fn unescape(s: &str) -> String {
     String::from_utf8_lossy(&out).to_string()
 }
 
-/// Hace lo que haría el navegador al regresar.
+/// Does what the browser would do on coming back.
 fn browser(redirect: &str, query: &str) {
     let rest = redirect.strip_prefix("http://").unwrap();
     let (host, path) = rest.split_once('/').unwrap();
