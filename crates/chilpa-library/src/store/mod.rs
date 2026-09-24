@@ -65,6 +65,8 @@ impl Library {
         }
         let db = Connection::open(path)?;
         schema::apply_pragmas(&db)?;
+        // Before the shape of the file changes, and only when it is going to.
+        schema::back_up_before_upgrading(&db, path)?;
         schema::migrate(&db)?;
         // Not only after a scan: a library that already exists carries the
         // statistics of an empty database and would keep them until its next
@@ -563,6 +565,65 @@ mod tests {
             .unwrap_or(None)
             .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
             .unwrap_or(0)
+    }
+
+    #[test]
+    fn upgrading_a_library_leaves_a_copy_of_what_it_was() {
+        // The copy is only worth having if it opens. This one is opened as a
+        // library and asked for the track that was in it.
+        let dir = std::env::temp_dir().join("chilpa-backup-test");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("library.db");
+
+        // A library stopped at an older version, with something in it.
+        {
+            std::fs::create_dir_all(&dir).unwrap();
+            let db = rusqlite::Connection::open(&path).unwrap();
+            crate::schema::apply_pragmas(&db).unwrap();
+            crate::schema::stop_at(&db, 1);
+            db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+                .unwrap();
+            db.execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, added_at)
+                 VALUES (1, 1, '/a.flac', 'What was there', 0)",
+                [],
+            )
+            .unwrap();
+        }
+
+        let backup = crate::schema::backup_path(&path);
+        assert!(!backup.exists(), "nothing to go back to yet");
+
+        let lib = Library::open(&path).unwrap();
+        assert_eq!(lib.track_count(true).unwrap(), 1, "the library still has its track");
+        assert!(backup.exists(), "and there is a way back");
+
+        let kept = Library::open(&backup).unwrap();
+        assert_eq!(
+            kept.db
+                .query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0))
+                .unwrap(),
+            "What was there",
+            "the copy opens and holds what was in it"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_library_that_needs_no_upgrade_is_not_copied() {
+        let dir = std::env::temp_dir().join("chilpa-backup-none-test");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("library.db");
+        drop(Library::open(&path).unwrap());
+        // Opening it again changes nothing, so there is nothing to keep.
+        drop(Library::open(&path).unwrap());
+        assert!(
+            !crate::schema::backup_path(&path).exists(),
+            "a copy per open would be half a second and a second library on disk"
+        );
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

@@ -1014,6 +1014,9 @@ msgstr "este plugin no declaró permiso de red"
 msgid "track {}: {}"
 msgstr "pista {}: {}"
 
+msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
+msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} álbum"
