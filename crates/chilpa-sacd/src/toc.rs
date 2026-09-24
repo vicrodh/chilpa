@@ -1,21 +1,21 @@
-//! Las tablas de contenido: qué pistas tiene el disco y dónde viven.
+//! The tables of contents: what tracks the disc has and where they live.
 
 use crate::{be16, be32, timecode_frames, Encoding, SacdError, SECTOR};
 use std::fs::File;
 use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::Path;
 
-/// Dónde vive la tabla maestra, con sus dos respaldos.
+/// Where the master table lives, with its two backups.
 const MASTER_TOC_LSN: [u64; 3] = [510, 520, 530];
 const MAX_AREA_TOC_SECTORS: u16 = 96;
 
-/// Una pista del área estéreo.
+/// A track of the stereo area.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SacdTrack {
     pub number: u8,
     pub start_lsn: u32,
     pub length_lsn: u32,
-    /// Duración en frames de 1/75 de segundo.
+    /// Duration in frames of 1/75 of a second.
     pub duration_frames: u32,
     pub encoding: Encoding,
 }
@@ -26,17 +26,17 @@ impl SacdTrack {
     }
 }
 
-/// El área estéreo del disco.
+/// The disc's stereo area.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct SacdArea {
     pub tracks: Vec<SacdTrack>,
     pub encoding: Encoding,
-    /// Primer y último sector del área de audio.
+    /// First and last sector of the audio area.
     pub audio_start_lsn: u32,
     pub audio_end_lsn: u32,
 }
 
-/// La imagen abierta, con su área estéreo ya leída.
+/// The open image, with its stereo area already read.
 pub struct SacdImage {
     pub(crate) file: BufReader<File>,
     pub(crate) sectors: u64,
@@ -54,7 +54,7 @@ impl SacdImage {
     }
 }
 
-/// Abre una imagen de SACD y lee su área estéreo.
+/// Opens a SACD image and reads its stereo area.
 pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
     let file = File::open(path)?;
     let sectors = file.metadata()?.len() / SECTOR as u64;
@@ -86,7 +86,7 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
         return Err(SacdError::Unsupported(format!("Master TOC versión {}.{}", version.0, version.1)));
     }
 
-    // Dos ranuras de área: la estéreo y la multicanal. Se prueba cada copia.
+    // Two area slots: stereo and multichannel. Every copy is tried.
     let slots = [
         (be32(&master, 0x40), be32(&master, 0x44), be16(&master, 0x54)),
         (be32(&master, 0x48), be32(&master, 0x4c), be16(&master, 0x56)),
@@ -149,7 +149,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
         .ok_or_else(|| SacdError::MalformedToc("falta SACDTRL1".into()))?;
     let trl2 = find_block(toc, b"SACDTRL2")
         .ok_or_else(|| SacdError::MalformedToc("falta SACDTRL2".into()))?;
-    // Cada bloque trae dos arreglos de 255 entradas de 4 bytes.
+    // Each block carries two arrays of 255 four-byte entries.
     const SECOND_ARRAY: usize = 8 + 255 * 4;
 
     let mut tracks = Vec::with_capacity(track_count);
@@ -189,7 +189,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
     Ok(SacdArea { tracks, encoding, audio_start_lsn, audio_end_lsn })
 }
 
-/// Busca un bloque con esa firma dentro de la tabla del área.
+/// Looks for a block with that signature inside the area's table.
 fn find_block<'a>(toc: &'a [u8], signature: &[u8; 8]) -> Option<&'a [u8]> {
     toc.chunks(SECTOR).find(|s| s.len() >= 8 && &s[..8] == signature)
 }

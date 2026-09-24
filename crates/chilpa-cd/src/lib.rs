@@ -1,12 +1,12 @@
-//! Reproducir un CD de audio leyendo sus sectores.
+//! Playing an audio CD by reading its sectors.
 //!
-//! Un CD-DA no se decodifica: cada sector trae 2352 bytes que YA son PCM de
-//! 16 bits, estéreo, a 44 100 Hz, en little endian. Lo único que hay que
-//! hacer es leerlos y entregarlos, y eso es lo que hace bit-perfect a la
-//! reproducción de un disco.
+//! A CD-DA is not decoded: every sector carries 2352 bytes that ALREADY are
+//! 16-bit stereo PCM at 44,100 Hz, little endian. All there is to do is read
+//! them and hand them over, and that is what makes playing a disc
+//! bit-perfect.
 //!
-//! La unidad vive detrás de [`CdDevice`], así que la lógica se prueba con un
-//! dispositivo de mentiras y el acceso real queda en un solo lugar.
+//! The drive lives behind [`CdDevice`], so the logic is tested with a fake
+//! device and the real access stays in one place.
 
 pub mod toc;
 
@@ -17,22 +17,22 @@ pub use toc::{build, Toc, TocEntry, Track, SECTOR_BYTES, SECTORS_PER_SEC};
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 
-/// El formato de todo CD de audio.
+/// The format every audio CD has.
 pub const CDDA_FORMAT: StreamFormat = StreamFormat::new(SampleFormat::S16, 44_100, 2);
-/// Frames estéreo en un sector.
+/// Stereo frames in a sector.
 pub const FRAMES_PER_SECTOR: usize = SECTOR_BYTES / 4;
-/// Lo máximo que acepta el kernel por lectura.
+/// The most the kernel accepts per read.
 pub const MAX_SECTORS_PER_READ: u32 = 75;
 
 #[derive(Debug)]
 pub enum CdError {
-    /// No se pudo hablar con la unidad.
+    /// The drive could not be talked to.
     Device(String),
-    /// La unidad está vacía o todavía no reconoce el disco.
+    /// The drive is empty, or has not recognized the disc yet.
     NoDisc,
-    /// El disco no trae pistas de audio.
+    /// The disc carries no audio tracks.
     NotAudio,
-    /// Un sector ilegible, con su posición.
+    /// An unreadable sector, with its position.
     Read { lsn: u32, why: String },
 }
 
@@ -47,16 +47,16 @@ impl std::fmt::Display for CdError {
     }
 }
 
-/// Una unidad de disco.
+/// A disc drive.
 pub trait CdDevice {
-    /// Lee el TOC crudo: las entradas y el lead-out.
+    /// Reads the raw TOC: the entries and the lead-out.
     fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError>;
 
-    /// Lee `sectors` sectores de audio desde `lsn` y los deja en `out`.
+    /// Reads `sectors` audio sectors from `lsn` into `out`.
     fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError>;
 }
 
-/// Lee el TOC de una unidad y le calcula las duraciones.
+/// Reads a drive's TOC and works out the durations.
 pub fn read_toc(device: &mut dyn CdDevice) -> Result<Toc, CdError> {
     let (entries, leadout) = device.read_toc()?;
     if entries.is_empty() {
@@ -69,16 +69,15 @@ pub fn read_toc(device: &mut dyn CdDevice) -> Result<Toc, CdError> {
     Ok(toc)
 }
 
-/// Entrega una pista de CD como bloques de PCM, listos para el dispositivo de
-/// salida.
+/// Hands a CD track over as PCM blocks, ready for the output device.
 pub struct TrackReader<'a> {
     device: &'a mut dyn CdDevice,
     lsn: u32,
     end_lsn: u32,
-    /// Sectores por lectura. Más sectores es menos ida y vuelta con la
-    /// unidad; el kernel no acepta más de 75.
+    /// Sectors per read. More sectors means fewer round trips with the
+    /// drive; the kernel takes no more than 75.
     chunk: u32,
-    /// El primer sector ilegible, si lo hubo.
+    /// The first unreadable sector, if there was one.
     pub error: Option<CdError>,
 }
 
@@ -93,7 +92,7 @@ impl<'a> TrackReader<'a> {
         }
     }
 
-    /// Cuántos sectores faltan.
+    /// How many sectors are left.
     pub fn remaining(&self) -> u32 {
         self.end_lsn.saturating_sub(self.lsn)
     }
@@ -112,8 +111,8 @@ impl chilpa_audio::render::FrameSource for TrackReader<'_> {
                 Some(buf)
             }
             Err(e) => {
-                // Un sector ilegible no se rellena con silencio a escondidas:
-                // se corta y se reporta.
+                // An unreadable sector is not quietly filled with silence: the track
+                // is cut and it is reported.
                 self.error = Some(e);
                 None
             }

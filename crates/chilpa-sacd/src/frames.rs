@@ -1,11 +1,11 @@
-//! De sectores a bloques de DSD por canal.
+//! From sectors to DSD blocks, one per channel.
 //!
-//! Un frame estéreo sin comprimir mide 9408 bytes y trae los dos canales
-//! **intercalados byte a byte**. Eso no se dedujo: se midió. En QBZ se probó
-//! primero la otra hipótesis (un bloque contiguo por canal) y el resultado
-//! dejaba 23 % de la energía arriba de la banda audible; con el intercalado
-//! por byte quedó 99.8 % adentro. La hipótesis equivocada llegó a salir en
-//! una versión, así que aquí queda escrito.
+//! An uncompressed stereo frame is 9408 bytes and carries both channels
+//! **interleaved byte by byte**. That was not deduced, it was measured. QBZ
+//! tried the other hypothesis first (a contiguous block per channel) and the
+//! result left 23% of the energy above the audible band; with byte
+//! interleaving it came to 99.8% inside. The wrong hypothesis made it into a
+//! release, so it is written down here.
 
 use crate::sector;
 use crate::{Encoding, SacdError, SECTOR, STEREO_FRAME};
@@ -13,19 +13,19 @@ use chilpa_dsd::{DsdInfo, DsdSource};
 
 use crate::toc::{SacdImage, SacdTrack};
 
-/// Lee una pista del área de audio y la entrega como DSD por canal.
+/// Reads a track from the audio area and hands it over as DSD per channel.
 pub struct SacdTrackReader {
     image: SacdImage,
-    /// Sectores que faltan por leer de la pista.
+    /// Sectors of the track still to read.
     lsn: u64,
     end_lsn: u64,
-    /// Audio leído que todavía no completa un frame.
+    /// Audio read that does not yet make up a whole frame.
     pending: Vec<u8>,
     info: DsdInfo,
 }
 
 impl SacdTrackReader {
-    /// Abre una pista. El DST todavía no se puede reproducir.
+    /// Opens a track. DST cannot be played yet.
     pub fn open(image: SacdImage, track: &SacdTrack) -> Result<Self, SacdError> {
         if track.encoding.is_compressed() {
             return Err(SacdError::Unsupported(
@@ -42,7 +42,7 @@ impl SacdTrackReader {
         })
     }
 
-    /// Lee sectores hasta juntar al menos un frame completo.
+    /// Reads sectors until there is at least one whole frame.
     fn fill(&mut self) -> Result<(), SacdError> {
         let mut sector_buf = vec![0u8; SECTOR];
         while self.pending.len() < STEREO_FRAME && self.lsn < self.end_lsn {
@@ -70,7 +70,7 @@ impl DsdSource for SacdTrackReader {
     fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, chilpa_dsd::DsdError> {
         self.fill().map_err(|e| chilpa_dsd::DsdError::Corrupt(e.to_string()))?;
         if self.pending.len() < STEREO_FRAME {
-            // Lo que sobra no completa un frame: es el final de la pista.
+            // What is left does not make a frame: it is the end of the track.
             self.pending.clear();
             return Ok(None);
         }
@@ -79,8 +79,8 @@ impl DsdSource for SacdTrackReader {
     }
 }
 
-/// Parte un frame estéreo en sus dos canales. Los bytes vienen alternados:
-/// el par va al izquierdo y el impar al derecho.
+/// Splits a stereo frame into its two channels. The bytes alternate: even
+/// goes left, odd goes right.
 pub fn split_channels(frame: &[u8]) -> Vec<Vec<u8>> {
     let half = frame.len() / 2;
     let mut left = Vec::with_capacity(half);
@@ -92,7 +92,7 @@ pub fn split_channels(frame: &[u8]) -> Vec<Vec<u8>> {
     vec![left, right]
 }
 
-/// Qué codificaciones se pueden reproducir hoy.
+/// Which encodings can be played today.
 pub fn is_playable(encoding: Encoding) -> bool {
     !encoding.is_compressed()
 }

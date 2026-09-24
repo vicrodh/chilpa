@@ -1,38 +1,38 @@
-//! Las letras que ya vienen con la música.
+//! The lyrics that already come with the music.
 //!
-//! Este crate no habla con nadie por la red: busca lo que está en disco, que
-//! es de donde salen las letras que de verdad se tienen. Dos lugares, en
-//! este orden:
+//! This crate talks to nobody over the network: it looks for what is on
+//! disk, which is where the lyrics you actually have come from. Two places,
+//! in this order:
 //!
-//! 1. Un `.lrc` junto al archivo, con el mismo nombre. Es el que suele traer
-//!    los tiempos, y por eso va primero.
-//! 2. La letra guardada dentro del archivo, en sus tags.
+//! 1. An `.lrc` next to the file, with the same name. It is the one that
+//!    usually carries timings, which is why it goes first.
+//! 2. The lyrics stored inside the file, in its tags.
 //!
-//! Una letra con tiempos se puede seguir mientras suena; una sin tiempos se
-//! muestra completa. Las dos cosas valen, y cuál es cuál se dice, no se
-//! adivina.
+//! Timed lyrics can be followed while the track plays; untimed ones are
+//! shown whole. Both are fine, and which is which is stated, not guessed.
+
 
 pub mod lrc;
 
 use std::path::{Path, PathBuf};
 
-/// Un renglón de la letra, con el momento en que entra.
+/// One line of the lyrics, with the moment it starts.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Line {
-    /// Milisegundos desde el principio de la pista. Cero en una letra sin
-    /// sincronizar.
+    /// Milliseconds from the start of the track. Zero in unsynced lyrics.
+    
     pub at_ms: u64,
     pub text: String,
 }
 
-/// La letra de una pista.
+/// A track's lyrics.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Lyrics {
-    /// Lo que la letra dice de sí misma, cuando lo dice.
+    /// What the lyrics say about themselves, when they say anything.
     pub title: Option<String>,
     pub artist: Option<String>,
     pub lines: Vec<Line>,
-    /// Cierto si trae tiempos y se puede seguir mientras suena.
+    /// True when they carry timings and can be followed while playing.
     pub synced: bool,
 }
 
@@ -41,46 +41,46 @@ impl Lyrics {
         self.lines.is_empty()
     }
 
-    /// Qué renglón va en ese momento, por posición en `lines`.
+    /// Which line is current at that moment, by position in `lines`.
     ///
-    /// Es el último que ya entró. Antes del primero no hay ninguno: mostrar
-    /// el primer renglón desde el segundo cero, cuando entra en el 20,
-    /// es peor que no mostrar nada.
+    /// It is the last one that has started. Before the first there is none:
+    /// showing the first line from second zero, when it starts at twenty, is
+    /// worse than showing nothing.
     pub fn line_at(&self, ms: u64) -> Option<usize> {
         if !self.synced || self.lines.is_empty() {
             return None;
         }
-        // `partition_point` da cuántos renglones ya entraron.
+        // `partition_point` gives how many lines have started.
         let ya = self.lines.partition_point(|l| l.at_ms <= ms);
         ya.checked_sub(1)
     }
 
-    /// La letra en texto plano, un renglón por línea.
+    /// The lyrics as plain text, one line each.
     pub fn plain(&self) -> String {
         self.lines.iter().map(|l| l.text.as_str()).collect::<Vec<_>>().join("\n")
     }
 }
 
-/// De dónde salió la letra. Sirve para decirlo en la vista.
+/// Where the lyrics came from. Used to say so in the view.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Source {
-    /// Un archivo `.lrc` junto a la pista.
+    /// An `.lrc` file next to the track.
     Sidecar(PathBuf),
-    /// Los tags del archivo.
+    /// The file's tags.
     Embedded,
 }
 
-/// Una letra encontrada, con su procedencia.
+/// Lyrics that were found, with their origin.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Found {
     pub lyrics: Lyrics,
     pub source: Source,
 }
 
-/// Busca la letra de una pista.
+/// Looks for a track's lyrics.
 ///
-/// Devuelve `None` cuando no hay ninguna, que es distinto de una letra
-/// vacía: una letra vacía en los tags no debe tapar al `.lrc` de al lado.
+/// Returns `None` when there are none, which is not the same as empty
+/// lyrics: empty lyrics in the tags must not hide the `.lrc` next door.
 pub fn find(track: &Path) -> Option<Found> {
     if let Some(path) = sidecar(track) {
         if let Ok(text) = std::fs::read_to_string(&path) {
@@ -95,10 +95,10 @@ pub fn find(track: &Path) -> Option<Found> {
     (!lyrics.is_empty()).then_some(Found { lyrics, source: Source::Embedded })
 }
 
-/// El `.lrc` que le toca a una pista, si existe.
+/// The `.lrc` that belongs to a track, if it is there.
 ///
-/// Se prueba `.lrc` y `.LRC`: en un disco que vino de Windows la extensión
-/// puede estar en mayúsculas, y en Linux eso sí importa.
+/// Both `.lrc` and `.LRC` are tried: on a disc that came from Windows the
+/// extension may be uppercase, and on Linux that matters.
 pub fn sidecar(track: &Path) -> Option<PathBuf> {
     for ext in ["lrc", "LRC", "Lrc"] {
         let candidate = track.with_extension(ext);
@@ -109,7 +109,7 @@ pub fn sidecar(track: &Path) -> Option<PathBuf> {
     None
 }
 
-/// La letra guardada dentro del archivo.
+/// The lyrics stored inside the file.
 fn embedded(track: &Path) -> Option<String> {
     use lofty::file::TaggedFileExt;
     use lofty::prelude::ItemKey;
@@ -171,7 +171,7 @@ mod tests {
         std::fs::write(&track, b"tampoco importa").unwrap();
         assert!(find(&track).is_none());
 
-        // Un .lrc vacío tampoco cuenta como letra.
+        // An empty .lrc does not count as lyrics either.
         std::fs::write(dir.join("cancion.lrc"), "\n\n").unwrap();
         assert!(find(&track).is_none());
         let _ = std::fs::remove_dir_all(dir);

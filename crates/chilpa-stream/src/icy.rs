@@ -1,23 +1,23 @@
-//! La metadata que mete Shoutcast/Icecast en medio del audio.
+//! The metadata Shoutcast and Icecast put in the middle of the audio.
 //!
-//! El servidor avisa cada cuántos bytes de audio viene un bloque de metadata
-//! (`icy-metaint`). El bloque empieza con un byte que dice su tamaño en
-//! múltiplos de 16; si es cero, no hay metadata esta vez, que es el caso
-//! común.
+//! The server says how many audio bytes go between metadata blocks
+//! (`icy-metaint`). The block starts with a byte giving its size in
+//! multiples of 16; zero means there is none this time, which is the common
+//! case.
 //!
-//! Lo importante: **esos bytes NO son audio**. Si se le pasan al
-//! decodificador, suenan como un chasquido cada pocos segundos. Este lector
-//! los saca del flujo y deja el audio limpio.
+//! What matters: **those bytes are NOT audio**. Handed to the decoder they
+//! sound like a click every few seconds. This reader takes them out of the
+//! stream and leaves the audio clean.
 
 use crate::NowPlaying;
 use std::io::{self, Read};
 
-/// Lee un stream con metadata ICY intercalada y entrega solo el audio.
+/// Reads a stream with ICY metadata woven in and hands over only the audio.
 pub struct IcyReader<R: Read> {
     inner: R,
-    /// Cada cuántos bytes de audio viene un bloque de metadata.
+    /// How many audio bytes go between metadata blocks.
     metaint: usize,
-    /// Cuántos bytes de audio faltan para el siguiente bloque.
+    /// How many audio bytes are left before the next block.
     restante: usize,
     now_playing: NowPlaying,
 }
@@ -27,7 +27,7 @@ impl<R: Read> IcyReader<R> {
         Self { inner, metaint, restante: metaint, now_playing }
     }
 
-    /// Lee y aplica un bloque de metadata.
+    /// Reads a metadata block and applies it.
     fn leer_metadata(&mut self) -> io::Result<()> {
         let mut largo = [0u8; 1];
         if self.inner.read(&mut largo)? == 0 {
@@ -35,7 +35,7 @@ impl<R: Read> IcyReader<R> {
         }
         let bytes = largo[0] as usize * 16;
         if bytes == 0 {
-            // Lo normal: el servidor no tiene nada nuevo que decir.
+            // The usual case: the server has nothing new to say.
             return Ok(());
         }
         let mut block = vec![0u8; bytes];
@@ -56,8 +56,8 @@ impl<R: Read> Read for IcyReader<R> {
             self.leer_metadata()?;
             self.restante = self.metaint;
         }
-        // Nunca se lee más allá del siguiente bloque de metadata: pasarse
-        // metería esos bytes en el audio.
+        // Never read past the next metadata block: overshooting would put
+        // those bytes into the audio.
         let hasta = buf.len().min(self.restante);
         let n = self.inner.read(&mut buf[..hasta])?;
         self.restante -= n;
@@ -65,10 +65,10 @@ impl<R: Read> Read for IcyReader<R> {
     }
 }
 
-/// Saca `StreamTitle` de un bloque de metadata.
+/// Pulls `StreamTitle` out of a metadata block.
 ///
-/// El bloque viene como `StreamTitle='Artista - Canción';StreamUrl='...';`
-/// rellenado con ceros hasta un múltiplo de 16.
+/// The block arrives as `StreamTitle='...';StreamUrl='...';` padded with
+/// zeros to a multiple of 16.
 pub fn title_of(block: &[u8]) -> Option<String> {
     let text = String::from_utf8_lossy(block);
     let text = text.trim_end_matches('\0');
@@ -111,12 +111,12 @@ mod tests {
 
     #[test]
     fn the_metadata_is_taken_out_of_the_audio_and_the_title_is_published() {
-        // 16 bytes de audio, un bloque con título, y otros 16 de audio.
+        // 16 bytes of audio, a block with a title, and 16 more of audio.
         let mut data = Vec::new();
         data.extend_from_slice(&[1u8; 16]);
         data.extend_from_slice(&block("StreamTitle='Una canción';"));
         data.extend_from_slice(&[2u8; 16]);
-        data.push(0); // el bloque vacío que toca después
+        data.push(0); // the empty block that comes next
 
         let np = NowPlaying::new();
         let mut lector = IcyReader::new(std::io::Cursor::new(data), 16, np.clone());

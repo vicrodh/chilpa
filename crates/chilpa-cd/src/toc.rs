@@ -1,21 +1,21 @@
-//! La tabla de contenido de un CD, y las cuentas que hay que hacerle.
+//! A CD's table of contents, and the arithmetic it needs.
 //!
-//! El TOC no trae duraciones: cada pista mide lo que hay hasta la siguiente,
-//! y la última hasta el lead-out. Eso es correcto en un disco de puro audio y
-//! **está mal en un CD-Extra**, donde después del audio viene una sesión de
-//! datos: entre las dos sesiones hay un hueco de 11 400 sectores, unos 152
-//! segundos, que no es música.
+//! The TOC carries no durations: each track runs to the next one, and the
+//! last to the lead-out. That is right on an audio-only disc and **wrong on
+//! a CD-Extra**, where a data session follows the audio: between the two
+//! sessions there is a gap of 11,400 sectors, some 152 seconds, that is not
+//! music.
 //!
-//! La auditoría de QBZ encontró ese error: la última pista de audio llegaba
-//! hasta el arranque de la pista de datos, así que el rip fallaba y el disco
-//! daba identificadores distintos entre sistemas.
+//! The QBZ audit found that bug: the last audio track ran all the way to the
+//! start of the data track, so the rip failed and the disc gave different
+//! identifiers across systems.
 
-/// Sectores por segundo.
+/// Sectors per second.
 pub const SECTORS_PER_SEC: u32 = 75;
-/// Hueco entre dos sesiones: lead-out de la primera más lead-in de la
-/// segunda.
+/// The gap between two sessions: the first one's lead-out plus the second
+/// one's lead-in.
 pub const SESSION_GAP_SECTORS: u32 = 11_400;
-/// Bytes de un sector de audio: 588 frames estéreo de 16 bits.
+/// Bytes in an audio sector: 588 stereo frames of 16 bits.
 pub const SECTOR_BYTES: usize = 2352;
 
 /// Una entrada del TOC tal como la entrega la unidad.
