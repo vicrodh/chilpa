@@ -36,7 +36,7 @@ const FORMATS: &[(SampleFormat, Format)] = &[
 ];
 
 fn alsa_format(f: SampleFormat) -> Format {
-    FORMATS.iter().find(|(s, _)| *s == f).map(|(_, a)| *a).expect("formato cubierto")
+    FORMATS.iter().find(|(s, _)| *s == f).map(|(_, a)| *a).expect("format covered")
 }
 
 /// Measures what a device really accepts, by opening it.
@@ -89,9 +89,14 @@ impl AlsaSink {
             let rate = params.get_rate().map_err(backend)?;
             let channels = params.get_channels().map_err(backend)? as u16;
             if rate != stream.sample_rate_hz || channels != stream.channels {
-                return Err(SinkError::Backend(format!(
-                    "el dispositivo abrió {rate} Hz y {channels} canales, no {} Hz y {}",
-                    stream.sample_rate_hz, stream.channels
+                return Err(SinkError::Backend(chilpa_i18n::t_args(
+                    "the device opened {} Hz and {} channels, not {} Hz and {}",
+                    &[
+                        &rate.to_string(),
+                        &channels.to_string(),
+                        &stream.sample_rate_hz.to_string(),
+                        &stream.channels.to_string(),
+                    ],
                 )));
             }
         }
@@ -142,8 +147,9 @@ impl AudioSink for AlsaSink {
 
 fn open(device: &str) -> Result<PCM, SinkError> {
     if !device.starts_with("hw:") {
-        return Err(SinkError::Backend(format!(
-            "{device} no es un dispositivo directo; solo se abre hw: (nada de plughw ni default)"
+        return Err(SinkError::Backend(chilpa_i18n::t_args(
+            "{} is not a direct device; only hw: is opened (no plughw and no default)",
+            &[device],
         )));
     }
     PCM::new(device, Direction::Playback, false).map_err(|e| match e.errno() {
@@ -164,8 +170,8 @@ mod tests {
     fn only_direct_devices_are_opened() {
         match AlsaSink::open("plughw:0,0", StreamFormat::new(SampleFormat::S16, 44_100, 2)) {
             Err(SinkError::Backend(msg)) => assert!(msg.contains("plughw")),
-            Err(other) => panic!("debía rechazarse por no ser hw:, salió {other:?}"),
-            Ok(_) => panic!("plughw no se debe abrir nunca"),
+            Err(other) => panic!("it should have been refused for not being hw:, it came out {other:?}"),
+            Ok(_) => panic!("plughw must never be opened"),
         }
         assert!(matches!(probe("default"), Err(SinkError::Backend(_))));
     }

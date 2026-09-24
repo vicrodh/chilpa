@@ -74,13 +74,14 @@ impl Auth {
             return None;
         };
         if client_id.trim().is_empty() {
-            return Some("el client_id viene vacío".into());
+            return Some(chilpa_i18n::t("the client_id came in empty"));
         }
         for (what, url) in [("authorize_url", authorize_url), ("token_url", token_url)] {
             if !secure(url) {
-                return Some(format!(
-                    "{what} tiene que ser https (o loopback): mandar a alguien a dar \
-                     permiso por http deja su sesión en el camino"
+                return Some(chilpa_i18n::t_args(
+                    "{} has to be https (or a loopback): sending someone to grant \
+                     permission over http leaves their session on the road",
+                    &[what],
                 ));
             }
         }
@@ -126,17 +127,17 @@ impl Tokens {
 
 #[derive(Debug, thiserror::Error)]
 pub enum AuthError {
-    #[error("el servicio contestó {0}: {1}")]
+    #[error("the service answered {0}: {1}")]
     Refused(u16, String),
-    #[error("el servicio contestó algo que no se entiende: {0}")]
+    #[error("the service answered something that is not understood: {0}")]
     Unreadable(String),
-    #[error("no se pudo hablar con el servicio: {0}")]
+    #[error("the service could not be reached: {0}")]
     Network(String),
-    #[error("la respuesta no trae access_token")]
+    #[error("the answer carries no access_token")]
     NoToken,
-    #[error("el navegador contestó con otro estado: alguien más metió mano")]
+    #[error("the browser answered with a different state: someone else stepped in")]
     WrongState,
-    #[error("el usuario no terminó de dar permiso")]
+    #[error("the user did not finish granting permission")]
     NoCode(String),
     #[error("disco: {0}")]
     Io(#[from] std::io::Error),
@@ -207,7 +208,7 @@ mod tests {
             r#"{"type":"oauth2","authorize_url":"https://a.b/a",
                 "token_url":"https://a.b/t","client_id":"x"}"#,
         )
-        .expect("se lee como lo escribiría alguien");
+        .expect("it reads the way someone would write it");
         assert!(matches!(a, Auth::OAuth2 { .. }));
         assert!(serde_json::to_string(&a).unwrap().contains(r#""type":"oauth2""#));
 
@@ -224,19 +225,19 @@ mod tests {
     #[test]
     fn the_user_can_be_told_where_they_are_going() {
         assert_eq!(oauth("https://cuentas.ejemplo.com/authorize", "https://a.b/t").host(),
-                   "cuentas.ejemplo.com");
+                   "accounts.example.com");
     }
 
     #[test]
     fn a_token_is_renewed_before_it_expires_not_after() {
         let t = Tokens { access_token: "a".into(), refresh_token: "r".into(), expires_at: Some(1_000) };
-        assert!(!t.stale(900), "todavía sirve");
-        assert!(t.stale(941), "le queda menos de un minuto: se renueva ya");
+        assert!(!t.stale(900), "it still works");
+        assert!(t.stale(941), "it has less than a minute left: it renews now");
         assert!(t.stale(1_001));
         assert!(t.renewable());
 
         let undated = Tokens { access_token: "a".into(), ..Default::default() };
-        assert!(!undated.stale(9_999), "sin fecha no se adivina que caducó");
-        assert!(!undated.renewable(), "y sin refresh no hay cómo renovarlo");
+        assert!(!undated.stale(9_999), "with no date nobody guesses it expired");
+        assert!(!undated.renewable(), "and with no refresh there is no way to renew it");
     }
 }

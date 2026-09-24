@@ -33,21 +33,21 @@ impl DsfReader {
         let mut file = BufReader::new(File::open(path)?);
 
         if &read_id(&mut file)? != b"DSD " {
-            return Err(DsdError::Corrupt("no empieza con el chunk DSD".into()));
+            return Err(DsdError::Corrupt(chilpa_i18n::mark("it does not start with the DSD chunk").into()));
         }
         let dsd_chunk = read_u64(&mut file)?;
         if dsd_chunk != 28 {
-            return Err(DsdError::Corrupt(format!("el chunk DSD mide {dsd_chunk}, no 28")));
+            return Err(DsdError::Corrupt(format!("the DSD chunk is {dsd_chunk}, not 28")));
         }
         let _total_size = read_u64(&mut file)?;
         let _metadata_ptr = read_u64(&mut file)?;
 
         if &read_id(&mut file)? != b"fmt " {
-            return Err(DsdError::Corrupt("falta el chunk fmt".into()));
+            return Err(DsdError::Corrupt(chilpa_i18n::mark("the fmt chunk is missing").into()));
         }
         let fmt_size = read_u64(&mut file)?;
         if fmt_size < 52 {
-            return Err(DsdError::Corrupt(format!("el chunk fmt mide {fmt_size}, mínimo 52")));
+            return Err(DsdError::Corrupt(format!("the fmt chunk is {fmt_size}, the minimum is 52")));
         }
         let version = read_u32(&mut file)?;
         let format_id = read_u32(&mut file)?;
@@ -60,10 +60,10 @@ impl DsfReader {
         let _reserved = read_u32(&mut file)?;
 
         if version != 1 || format_id != 0 {
-            return Err(DsdError::Unsupported(format!("DSF versión {version}, id {format_id}")));
+            return Err(DsdError::Unsupported(format!("DSF version {version}, id {format_id}")));
         }
         if !(1..=6).contains(&channels) {
-            return Err(DsdError::Unsupported(format!("{channels} canales")));
+            return Err(DsdError::Unsupported(format!("{channels} channels")));
         }
         if !is_supported_rate(dsd_rate_hz) {
             return Err(DsdError::Unsupported(format!("{dsd_rate_hz} Hz")));
@@ -74,11 +74,11 @@ impl DsfReader {
             other => return Err(DsdError::Corrupt(format!("bits_per_sample {other}"))),
         };
         if block_size == 0 || block_size > (1 << 20) {
-            return Err(DsdError::Corrupt(format!("bloque de {block_size} bytes")));
+            return Err(DsdError::Corrupt(format!("a block of {block_size} bytes")));
         }
 
         if &read_id(&mut file)? != b"data" {
-            return Err(DsdError::Corrupt("falta el chunk data".into()));
+            return Err(DsdError::Corrupt(chilpa_i18n::mark("the data chunk is missing").into()));
         }
         let _data_size = read_u64(&mut file)?;
         let data_start = file.stream_position()?;

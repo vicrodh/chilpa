@@ -102,33 +102,33 @@ mod tests {
     #[test]
     fn the_local_source_is_recognized() {
         assert!(SourceId::local().is_local());
-        assert!(!SourceId::new("example-source", "cuenta-1").is_local());
+        assert!(!SourceId::new("example-source", "account-1").is_local());
     }
 
     #[test]
     fn two_instances_of_the_same_provider_are_different() {
-        let a = SourceId::new("example-source", "cuenta-1");
-        let b = SourceId::new("example-source", "cuenta-2");
+        let a = SourceId::new("example-source", "account-1");
+        let b = SourceId::new("example-source", "account-2");
         assert_ne!(a, b);
-        assert_eq!(a.to_string(), "example-source:cuenta-1");
+        assert_eq!(a.to_string(), "example-source:account-1");
     }
 
     #[test]
     fn the_source_the_user_prefers_wins() {
         let local = SourceId::local();
-        let remote = SourceId::new("example-source", "cuenta-1");
+        let remote = SourceId::new("example-source", "account-1");
         let options = vec![
             Availability::playable(remote.clone(), Some(quality(Some(24), 192_000))),
             Availability::playable(local.clone(), Some(quality(Some(16), 44_100))),
         ];
         let chosen = preferred(&options, &[local.clone(), remote.clone()]).unwrap();
-        assert_eq!(chosen.source, local, "el orden del usuario manda sobre la calidad");
+        assert_eq!(chosen.source, local, "the user's order beats the quality");
     }
 
     #[test]
     fn among_equals_the_better_quality_wins() {
-        let a = SourceId::new("example-source", "cuenta-1");
-        let b = SourceId::new("otro-source", "cuenta-1");
+        let a = SourceId::new("example-source", "account-1");
+        let b = SourceId::new("other-source", "account-1");
         let options = vec![
             Availability::playable(a.clone(), Some(quality(Some(16), 44_100))),
             Availability::playable(b.clone(), Some(quality(Some(24), 96_000))),
@@ -145,6 +145,6 @@ mod tests {
             quality: Some(quality(Some(24), 96_000)),
         }];
         assert!(preferred(&options, &[local]).is_none());
-        assert_eq!(options.len(), 1, "lo inalcanzable no se borra");
+        assert_eq!(options.len(), 1, "what is unreachable is not deleted");
     }
 }

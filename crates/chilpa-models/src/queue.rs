@@ -163,7 +163,7 @@ mod tests {
     fn an_order_from_outside_does_not_change_what_plays() {
         let mut q = queue(3);
         q.set_order(vec![2, 0, 1]).unwrap();
-        assert_eq!(q.current().unwrap().track.external_id, "0", "sigue sonando el mismo track");
+        assert_eq!(q.current().unwrap().track.external_id, "0", "the same track is still playing");
         assert_eq!(q.advance().unwrap().track.external_id, "1");
     }
 
@@ -173,7 +173,7 @@ mod tests {
         assert_eq!(q.set_order(vec![0, 1]), Err(OrderError::WrongLength { expected: 3, got: 2 }));
         assert_eq!(q.set_order(vec![0, 1, 1]), Err(OrderError::Repeated(1)));
         assert_eq!(q.set_order(vec![0, 1, 9]), Err(OrderError::OutOfRange(9)));
-        assert_eq!(q.current().unwrap().track.external_id, "0", "la cola no quedó a medias");
+        assert_eq!(q.current().unwrap().track.external_id, "0", "the queue was not left half done");
     }
 
     #[test]
@@ -199,6 +199,6 @@ mod tests {
         let p = Progress { frames_played: 44_100, sample_rate_hz: 44_100 };
         assert_eq!(p.position(), Duration::from_secs(1));
         let p = Progress { frames_played: 96_000 * 3 / 2, sample_rate_hz: 96_000 };
-        assert_eq!(p.position(), Duration::from_millis(1500), "sin truncar a segundos enteros");
+        assert_eq!(p.position(), Duration::from_millis(1500), "without truncating to whole seconds");
     }
 }

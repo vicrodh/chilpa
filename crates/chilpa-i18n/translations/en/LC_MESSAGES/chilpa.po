@@ -94,6 +94,9 @@ msgstr ""
 msgid "Ctrl + arrows"
 msgstr ""
 
+msgid "DSD not supported: {}"
+msgstr ""
+
 msgid "DSD128 over DoP"
 msgstr ""
 
@@ -107,6 +110,9 @@ msgid "Disconnect"
 msgstr ""
 
 msgid "Distinct tracks"
+msgstr ""
+
+msgid "Done. You can close this tab and go back to Chilpa."
 msgstr ""
 
 msgid "Everything"
@@ -131,6 +137,9 @@ msgid "High 24/96"
 msgstr ""
 
 msgid "I did not find a CD drive"
+msgstr ""
+
+msgid "I did not understand that request."
 msgstr ""
 
 msgid "I do not know the list \"{}\""
@@ -271,6 +280,15 @@ msgstr ""
 msgid "SACD images"
 msgstr ""
 
+msgid "SACDMTOC was not found"
+msgstr ""
+
+msgid "SACDTRL1 is missing"
+msgstr ""
+
+msgid "SACDTRL2 is missing"
+msgstr ""
+
 msgid "Save queue"
 msgstr ""
 
@@ -319,7 +337,19 @@ msgstr ""
 msgid "Studio 24/48"
 msgstr ""
 
+msgid "That answer does not belong to this window."
+msgstr ""
+
+msgid "The account did not connect. You can close this tab."
+msgstr ""
+
 msgid "The library is empty"
+msgstr ""
+
+msgid "The service sent no code."
+msgstr ""
+
+msgid "The service's answer is missing."
 msgstr ""
 
 msgid "This plugin wants:"
@@ -415,10 +445,16 @@ msgstr ""
 msgid "could not: {}"
 msgstr ""
 
+msgid "damaged DSD file: {}"
+msgstr ""
+
 msgid "damaged file: {}"
 msgstr ""
 
 msgid "device: {}"
+msgstr ""
+
+msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr ""
 
 msgid "file"
@@ -437,6 +473,18 @@ msgid "handle your account itself, outside Chilpa: your credential ends up where
 msgstr ""
 
 msgid "how the account connects does not work: {}"
+msgstr ""
+
+msgid "impossible packet counts"
+msgstr ""
+
+msgid "in the system keyring"
+msgstr ""
+
+msgid "invalid table of contents: {}"
+msgstr ""
+
+msgid "invalid timecode in frame-info"
 msgstr ""
 
 msgid "it answered an address not in its memory"
@@ -481,7 +529,13 @@ msgstr ""
 msgid "it does not export \"{}\", which every plugin has to export"
 msgstr ""
 
+msgid "it does not start with the DSD chunk"
+msgstr ""
+
 msgid "it failed {} times in a row; the last one: {}"
+msgstr ""
+
+msgid "it is not 2048 bytes"
 msgstr ""
 
 msgid "it is not installed"
@@ -516,7 +570,13 @@ msgstr ""
 msgid "no pulse"
 msgstr ""
 
+msgid "not supported: {}"
+msgstr ""
+
 msgid "open a file"
+msgstr ""
+
+msgid "outside the image"
 msgstr ""
 
 msgid "pause and resume"
@@ -550,6 +610,12 @@ msgid "scanning..."
 msgstr ""
 
 msgid "search"
+msgstr ""
+
+msgid "sector {} could not be read: {}"
+msgstr ""
+
+msgid "sector {} is invalid: {}"
 msgstr ""
 
 msgid "send you to grant permission at {}"
@@ -612,7 +678,19 @@ msgstr ""
 msgid "the approval could not be withdrawn: {}"
 msgstr ""
 
+msgid "the area declares no tracks"
+msgstr ""
+
+msgid "the audio area falls outside the image"
+msgstr ""
+
+msgid "the client_id came in empty"
+msgstr ""
+
 msgid "the credential could not be saved: {}"
+msgstr ""
+
+msgid "the data chunk is missing"
 msgstr ""
 
 msgid "the device could not be measured; nothing below is verified"
@@ -630,6 +708,9 @@ msgstr ""
 msgid "the device failed after {} frames: {}"
 msgstr ""
 
+msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
+msgstr ""
+
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr ""
 
@@ -637,6 +718,9 @@ msgid "the disc carries no audio tracks"
 msgstr ""
 
 msgid "the disc carries no tracks"
+msgstr ""
+
+msgid "the drive does not answer: {}"
 msgstr ""
 
 msgid "the drive is missing"
@@ -648,10 +732,22 @@ msgstr ""
 msgid "the file carries {} bits and the device only takes {}"
 msgstr ""
 
+msgid "the fmt chunk is missing"
+msgstr ""
+
 msgid "the folder for \"{}\" could not be deleted"
 msgstr ""
 
+msgid "the frame-info table is cut off"
+msgstr ""
+
 msgid "the host could not serve it"
+msgstr ""
+
+msgid "the image could not be read: {}"
+msgstr ""
+
+msgid "the image is shorter than its master table"
 msgstr ""
 
 msgid "the library could not be opened: {}"
@@ -711,10 +807,28 @@ msgstr ""
 msgid "the scan failed: {}"
 msgstr ""
 
+msgid "the sector is DST compressed"
+msgstr ""
+
 msgid "the server sent no audio: {}"
 msgstr ""
 
+msgid "the stereo area (TWOCHTOC) was not found"
+msgstr ""
+
+msgid "the tags could not be read: {}"
+msgstr ""
+
+msgid "the track is DST compressed and there is no decoder yet"
+msgstr ""
+
 msgid "the version"
+msgstr ""
+
+msgid "the wait ran out"
+msgstr ""
+
+msgid "there is no disc in the drive"
 msgstr ""
 
 msgid "there is no folder in the library yet"
@@ -736,6 +850,9 @@ msgid "there is nowhere to keep a secret on this machine"
 msgstr ""
 
 msgid "this device delivers bit-perfect in no common format"
+msgstr ""
+
+msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr ""
 
 msgid "this list"
@@ -771,7 +888,13 @@ msgstr[1] ""
 msgid "{} files: {} read, {} unchanged, {} missing"
 msgstr ""
 
+msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
+msgstr ""
+
 msgid "{} is missing"
+msgstr ""
+
+msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
 msgstr ""
 
 msgid "{} of the list's tracks are gone"

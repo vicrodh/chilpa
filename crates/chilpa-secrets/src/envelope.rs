@@ -32,13 +32,13 @@ impl<'a> Sealed<'a> {
         // is something else.
         if bytes.len() < HEADER_LEN + 16 {
             return Err(SecretError::Malformed(format!(
-                "son {} bytes, no alcanzan ni para el encabezado",
+                "it is {} bytes, not even enough for the header",
                 bytes.len()
             )));
         }
         let version = bytes[0];
         if version != ENVELOPE_VERSION {
-            return Err(SecretError::Malformed(format!("versión {version} desconocida")));
+            return Err(SecretError::Malformed(format!("unknown version {version}")));
         }
         Ok(Self {
             backend_marker: bytes[1],

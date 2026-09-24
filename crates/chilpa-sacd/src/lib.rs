@@ -58,10 +58,22 @@ pub enum SacdError {
 impl std::fmt::Display for SacdError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SacdError::Open(e) => write!(f, "no se pudo leer la imagen: {e}"),
-            SacdError::MalformedToc(s) => write!(f, "tabla de contenido inválida: {s}"),
-            SacdError::BadSector { lsn, why } => write!(f, "sector {lsn} inválido: {why}"),
-            SacdError::Unsupported(s) => write!(f, "no soportado: {s}"),
+            SacdError::Open(e) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args("the image could not be read: {}", &[&e.to_string()])
+            ),
+            SacdError::MalformedToc(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("invalid table of contents: {}", &[s]))
+            }
+            SacdError::BadSector { lsn, why } => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args("sector {} is invalid: {}", &[&lsn.to_string(), why])
+            ),
+            SacdError::Unsupported(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("not supported: {}", &[s]))
+            }
         }
     }
 }

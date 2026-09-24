@@ -49,9 +49,9 @@ fn service() -> Service {
 
             // On renewal it sends no new refresh, like many services.
             let json = if body.contains("grant_type=refresh_token") {
-                r#"{"access_token":"segundo","token_type":"Bearer","expires_in":3600}"#
+                r#"{"access_token":"second","token_type":"Bearer","expires_in":3600}"#
             } else {
-                r#"{"access_token":"primero","refresh_token":"para-renovar",
+                r#"{"access_token":"first","refresh_token":"to-renew",
                     "token_type":"Bearer","expires_in":3600}"#
             };
             // `Connection: close` because this server serves one request per
@@ -120,31 +120,31 @@ fn post(url: &str, body: &str) -> Result<(u16, String), String> {
 fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     let svc = service();
     let auth = auth(svc.port);
-    assert_eq!(auth.problem(), None, "loopback por http se acepta");
+    assert_eq!(auth.problem(), None, "a loopback over http is accepted");
 
     let back = Loopback::bind().unwrap();
     let pkce = Pkce::new();
     let url = authorize_url(&auth, &pkce, &back).unwrap();
     assert!(url.contains("code_challenge="), "{url}");
-    assert!(!url.contains(pkce.verifier()), "el verificador no va en la URL");
+    assert!(!url.contains(pkce.verifier()), "the verifier does not go in the URL");
 
     // The browser comes back with the code and the same state.
     let redirect = back.redirect_uri();
     let state = back.state().to_string();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(100));
-        browser(&redirect, &format!("code=el-codigo&state={state}"));
+        browser(&redirect, &format!("code=the-code&state={state}"));
     });
 
-    let code = chilpa_auth::wait_for_code(&back).expect("llegó el código");
-    assert_eq!(code, "el-codigo");
+    let code = chilpa_auth::wait_for_code(&back).expect("the code arrived");
+    assert_eq!(code, "the-code");
 
     // Exchanged for tokens. Here, and only here, the verifier travels.
-    let tokens = exchange(&auth, &code, &pkce, &back, now(), &post).expect("cambió");
+    let tokens = exchange(&auth, &code, &pkce, &back, now(), &post).expect("exchanged");
     assert_eq!(tokens.access_token, "primero");
-    assert_eq!(tokens.refresh_token, "para-renovar");
+    assert_eq!(tokens.refresh_token, "to-renew");
     assert_eq!(tokens.expires_at, Some(now() + 3600));
-    assert!(!tokens.stale(now()), "recién sacado");
+    assert!(!tokens.stale(now()), "freshly minted");
 
     let asked = svc.seen.lock().unwrap().clone();
     assert_eq!(asked.len(), 1);
@@ -156,11 +156,11 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     let old = Tokens { expires_at: Some(now() - 1), ..tokens.clone() };
     assert!(old.stale(now()));
     assert!(old.renewable());
-    let fresh = refresh(&auth, &old, now(), &post).expect("renovó");
-    assert_eq!(fresh.access_token, "segundo");
+    let fresh = refresh(&auth, &old, now(), &post).expect("renewed");
+    assert_eq!(fresh.access_token, "second");
     assert_eq!(
-        fresh.refresh_token, "para-renovar",
-        "el servicio no mandó uno nuevo, así que se conserva el que había"
+        fresh.refresh_token, "to-renew",
+        "the service sent no new one, so the one there is kept"
     );
     assert_eq!(fresh.expires_at, Some(now() + 3600));
 }
@@ -171,9 +171,9 @@ fn a_reply_with_someone_else_state_is_refused_without_using_the_code() {
     let redirect = back.redirect_uri();
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(100));
-        browser(&redirect, "code=robado&state=de-alguien-mas");
+        browser(&redirect, "code=stolen&state=someone-elses");
     });
-    let e = chilpa_auth::wait_for_code(&back).expect_err("no se acepta");
+    let e = chilpa_auth::wait_for_code(&back).expect_err("it is not accepted");
     assert!(matches!(e, chilpa_auth::AuthError::WrongState), "{e}");
 }
 
@@ -186,6 +186,6 @@ fn a_user_who_says_no_is_reported_and_not_retried() {
         std::thread::sleep(std::time::Duration::from_millis(100));
         browser(&redirect, &format!("error=access_denied&state={state}"));
     });
-    let e = chilpa_auth::wait_for_code(&back).expect_err("dijo que no");
+    let e = chilpa_auth::wait_for_code(&back).expect_err("it said no");
     assert!(matches!(e, chilpa_auth::AuthError::NoCode(ref s) if s == "access_denied"), "{e}");
 }

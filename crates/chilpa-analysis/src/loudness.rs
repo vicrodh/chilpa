@@ -230,8 +230,8 @@ mod tests {
         // It is the standard's calibration: 0 dBFS at 997 Hz on a single
         // channel is -3.01 LKFS. If this moves, the K curve is wrong.
         let data = sine(1.0, 48_000, 5, 2, true);
-        let l = integrated(&data, 48_000, 2).expect("hay sonido");
-        assert!((l - (-3.01)).abs() < 0.1, "midió {l:.3} LKFS, se esperaba -3.01");
+        let l = integrated(&data, 48_000, 2).expect("there is sound");
+        assert!((l - (-3.01)).abs() < 0.1, "it measured {l:.3} LKFS, -3.01 was expected");
     }
 
     #[test]
@@ -255,8 +255,8 @@ mod tests {
         let a = integrated(&sine(0.5, 44_100, 5, 2, false), 44_100, 2).unwrap();
         let b = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
         let c = integrated(&sine(0.5, 96_000, 5, 2, false), 96_000, 2).unwrap();
-        assert!((a - b).abs() < 0.1, "44.1 dio {a:.2} y 48 dio {b:.2}");
-        assert!((c - b).abs() < 0.1, "96 dio {c:.2} y 48 dio {b:.2}");
+        assert!((a - b).abs() < 0.1, "44.1 gave {a:.2} and 48 gave {b:.2}");
+        assert!((c - b).abs() < 0.1, "96 gave {c:.2} and 48 gave {b:.2}");
     }
 
     #[test]
@@ -282,7 +282,7 @@ mod tests {
         let with_silence = integrated(&data, 48_000, 2).unwrap();
         assert!(
             (tone_only - with_silence).abs() < 0.2,
-            "el silencio movió la cuenta de {tone_only:.2} a {with_silence:.2}"
+            "the silence moved the reading from {tone_only:.2} to {with_silence:.2}"
         );
     }
 

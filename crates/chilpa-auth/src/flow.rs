@@ -76,13 +76,13 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
 
         let head = request_line(&mut stream);
         let Some(target) = head.split_whitespace().nth(1) else {
-            let _ = answer(&mut stream, "No entendí esa petición.");
+            let _ = answer(&mut stream, &chilpa_i18n::t("I did not understand that request."));
             continue;
         };
         // The browser asks for the favicon as well as the callback; that is
         // not the answer being waited for.
         let Some(query) = target.split_once('?').map(|(_, q)| q.to_string()) else {
-            let _ = answer(&mut stream, "Falta la respuesta del servicio.");
+            let _ = answer(&mut stream, &chilpa_i18n::t("The service's answer is missing."));
             continue;
         };
 
@@ -99,23 +99,23 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
         }
 
         if let Some(e) = failed {
-            let _ = answer(&mut stream, "No se conectó la cuenta. Puedes cerrar esta pestaña.");
+            let _ = answer(&mut stream, &chilpa_i18n::t("The account did not connect. You can close this tab."));
             return Err(AuthError::NoCode(e));
         }
         // Compared before the code is used: a `state` that is not ours means
         // somebody else caused this reply.
         if state.as_deref() != Some(back.state()) {
-            let _ = answer(&mut stream, "Esa respuesta no corresponde a esta ventana.");
+            let _ = answer(&mut stream, &chilpa_i18n::t("That answer does not belong to this window."));
             return Err(AuthError::WrongState);
         }
         let Some(code) = code else {
-            let _ = answer(&mut stream, "El servicio no mandó un código.");
+            let _ = answer(&mut stream, &chilpa_i18n::t("The service sent no code."));
             continue;
         };
-        let _ = answer(&mut stream, "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa.");
+        let _ = answer(&mut stream, &chilpa_i18n::t("Done. You can close this tab and go back to Chilpa."));
         return Ok(code);
     }
-    Err(AuthError::NoCode("se acabó la espera".into()))
+    Err(AuthError::NoCode(chilpa_i18n::t("the wait ran out").into()))
 }
 
 /// How a request is sent to the service.
@@ -139,7 +139,7 @@ pub fn exchange(
     post_with: Post<'_>,
 ) -> Result<Tokens, AuthError> {
     let Auth::OAuth2 { token_url, client_id, .. } = auth else {
-        return Err(AuthError::Unreadable("ese source no usa OAuth".into()));
+        return Err(AuthError::Unreadable(chilpa_i18n::t("that source does not use OAuth").into()));
     };
     let form = form(&[
         ("grant_type", "authorization_code"),
@@ -159,7 +159,7 @@ pub fn refresh(
     post_with: Post<'_>,
 ) -> Result<Tokens, AuthError> {
     let Auth::OAuth2 { token_url, client_id, .. } = auth else {
-        return Err(AuthError::Unreadable("ese source no usa OAuth".into()));
+        return Err(AuthError::Unreadable(chilpa_i18n::t("that source does not use OAuth").into()));
     };
     let form = form(&[
         ("grant_type", "refresh_token"),
@@ -313,7 +313,7 @@ mod tests {
             authorize_url: "https://cuentas.ejemplo.com/authorize".into(),
             token_url: "https://cuentas.ejemplo.com/token".into(),
             client_id: "chilpa app".into(),
-            scopes: vec!["leer".into(), "escribir".into()],
+            scopes: vec!["leer".into(), "write".into()],
         }
     }
 
@@ -326,10 +326,10 @@ mod tests {
         assert!(url.contains("response_type=code"));
         assert!(url.contains(&format!("code_challenge={}", escape(&pkce.challenge()))));
         assert!(url.contains("code_challenge_method=S256"));
-        assert!(!url.contains(pkce.verifier()), "el verificador no sale de este proceso");
-        assert!(url.contains("scope=leer%20escribir"), "{url}");
-        assert!(url.contains("client_id=chilpa%20app"), "lo que lleva espacios va escapado");
-        assert!(url.contains("127.0.0.1"), "regresa a loopback: {url}");
+        assert!(!url.contains(pkce.verifier()), "the verifier does not leave this process");
+        assert!(url.contains("scope=read%20write"), "{url}");
+        assert!(url.contains("client_id=chilpa%20app"), "what carries spaces is escaped");
+        assert!(url.contains("127.0.0.1"), "it comes back to a loopback: {url}");
     }
 
     #[test]
@@ -337,7 +337,7 @@ mod tests {
         let back = Loopback::bind().unwrap();
         let uri = back.redirect_uri();
         assert!(uri.starts_with("http://127.0.0.1:"), "{uri}");
-        assert!(!uri.ends_with(":0"), "un puerto de verdad: {uri}");
+        assert!(!uri.ends_with(":0"), "a real port: {uri}");
     }
 
     #[test]
@@ -347,7 +347,7 @@ mod tests {
 
     #[test]
     fn what_goes_in_a_url_comes_back_the_same() {
-        for s in ["hola", "con espacio", "a+b/c=d", "ñandú", "%41"] {
+        for s in ["hi", "with space", "a+b/c=d", "jalapeño", "%41"] {
             assert_eq!(unescape(&escape(s)), s, "{s}");
         }
     }

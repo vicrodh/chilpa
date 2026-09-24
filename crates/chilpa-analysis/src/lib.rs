@@ -73,7 +73,7 @@ mod tests {
     #[test]
     fn no_beat_and_no_tone_reports_nothing() {
         let f = analyze(&vec![0.0; 44_100 * 10], 44_100);
-        assert_eq!(f, Analysis::default(), "ceros, no números inventados");
+        assert_eq!(f, Analysis::default(), "zeros, not invented numbers");
         assert!(f.bpm.is_none() && f.key.is_none());
     }
 }

@@ -123,18 +123,18 @@ mod tests {
     use crate::source::Reachability;
 
     fn track(source: &str, id: &str) -> Track {
-        Track::new(TrackRef::new(SourceId::new(source, "cuenta-1"), id), "Canción")
+        Track::new(TrackRef::new(SourceId::new(source, "account-1"), id), "A song")
     }
 
     #[test]
     fn the_same_id_on_different_sources_is_not_the_same_track() {
-        assert_ne!(track("example-source", "1").id, track("otro-source", "1").id);
+        assert_ne!(track("example-source", "1").id, track("other-source", "1").id);
     }
 
     #[test]
     fn the_isrc_matches_across_sources() {
         let mut a = track("example-source", "1");
-        let mut b = track("otro-source", "99");
+        let mut b = track("other-source", "99");
         a.isrc = Some("MXABC0000001".into());
         b.isrc = Some("MXABC0000001".into());
         assert!(a.same_recording(&b));
@@ -142,7 +142,7 @@ mod tests {
 
     #[test]
     fn without_keys_nothing_matches_even_if_the_title_does() {
-        assert!(!track("example-source", "1").same_recording(&track("otro-source", "2")));
+        assert!(!track("example-source", "1").same_recording(&track("other-source", "2")));
     }
 
     #[test]
@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn the_artist_line_joins_them_all() {
         let mut t = track("local", "1");
-        t.artists = vec![ArtistRef::named("Uno"), ArtistRef::named("Dos")];
-        assert_eq!(t.artist_line(), "Uno, Dos");
+        t.artists = vec![ArtistRef::named("One"), ArtistRef::named("Dos")];
+        assert_eq!(t.artist_line(), "One, Two");
     }
 }

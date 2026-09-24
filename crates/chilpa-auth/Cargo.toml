@@ -6,6 +6,9 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# The page the browser lands on is read by the user, and so is why an
+# account did not connect.
+chilpa-i18n.workspace = true
 # El reto de PKCE es un SHA-256 en base64url.
 sha2 = "0.10"
 base64 = "0.22"

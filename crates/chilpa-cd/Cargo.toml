@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Why a disc could not be read is read by the user.
+chilpa-i18n.workspace = true
 chilpa-audio.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]

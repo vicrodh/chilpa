@@ -39,9 +39,10 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         // opened.
         return Err(rusqlite::Error::SqliteFailure(
             rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
-            Some(format!(
-                "esta biblioteca es de la versión {actual} y este Chilpa entiende hasta la \
-                 {VERSION}; actualiza Chilpa en vez de abrirla con uno viejo"
+            Some(chilpa_i18n::t_args(
+                "this library is version {} and this Chilpa understands up to {}; \
+                 update Chilpa instead of opening it with an old one",
+                &[&actual.to_string(), &VERSION.to_string()],
             )),
         ));
     }
@@ -70,8 +71,8 @@ pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
 }
 
 const SCHEMA_V1: &str = r#"
--- De dónde sale el contenido: proveedor más instancia. La biblioteca local
--- es un source como cualquier otro.
+-- Where the content comes from: provider plus instance. The local library
+-- is a source like any other.
 CREATE TABLE sources (
     id          INTEGER PRIMARY KEY,
     provider    TEXT NOT NULL,
@@ -80,8 +81,8 @@ CREATE TABLE sources (
     UNIQUE (provider, instance)
 );
 
--- Las carpetas que se escanean. Un root con su mountpoint ausente no se
--- poda: se marca y ya.
+-- The folders that get scanned. A root whose mountpoint is missing is not
+-- pruned: it is marked and that is all.
 CREATE TABLE roots (
     id          INTEGER PRIMARY KEY,
     source_id   INTEGER NOT NULL REFERENCES sources(id),
@@ -107,8 +108,8 @@ CREATE TABLE albums (
     UNIQUE (title, album_artist, mbid)
 );
 
--- La identidad es (source_id, external_id). external_id de un archivo local
--- es su ruta.
+-- The identity is (source_id, external_id). A local file's external_id is
+-- its path.
 CREATE TABLE tracks (
     id             INTEGER PRIMARY KEY,
     source_id      INTEGER NOT NULL REFERENCES sources(id),
@@ -125,8 +126,8 @@ CREATE TABLE tracks (
     codec          TEXT,
     isrc           TEXT,
     recording_mbid TEXT,
-    -- 1 mientras el archivo esté donde dijo estar. Un source inalcanzable
-    -- pone 0 y conserva la fila.
+    -- 1 while the file is where it said it was. An unreachable source sets
+    -- 0 and keeps the row.
     present        INTEGER NOT NULL DEFAULT 1,
     added_at       INTEGER NOT NULL,
     UNIQUE (source_id, external_id)
@@ -138,14 +139,14 @@ CREATE INDEX tracks_present ON tracks(present);
 CREATE INDEX tracks_isrc ON tracks(isrc) WHERE isrc IS NOT NULL;
 CREATE INDEX tracks_mbid ON tracks(recording_mbid) WHERE recording_mbid IS NOT NULL;
 
--- Lo que el escaneo vio en disco, para poder ser incremental. Se guarda el
--- inodo además de la fecha: renombrar un archivo no debe re-extraer sus tags.
+-- What the scan saw on disk, so it can be incremental. The inode is kept as
+-- well as the date: renaming a file must not re-extract its tags.
 CREATE TABLE scanned_files (
     id          INTEGER PRIMARY KEY,
     root_id     INTEGER NOT NULL REFERENCES roots(id),
     path        TEXT NOT NULL UNIQUE,
-    -- En nanosegundos: en segundos, dos cambios dentro del mismo segundo
-    -- se ven iguales.
+    -- In nanoseconds: in seconds, two changes inside the same second look
+    -- identical.
     mtime       INTEGER NOT NULL,
     size        INTEGER NOT NULL,
     inode       INTEGER,
@@ -156,20 +157,20 @@ CREATE TABLE scanned_files (
 CREATE INDEX scanned_root ON scanned_files(root_id);
 CREATE INDEX scanned_inode ON scanned_files(inode) WHERE inode IS NOT NULL;
 
--- El log de reproducciones. Append-only: de aquí salen las stats, las smart
--- lists y el sync de play counts con un DAP.
+-- The play log. Append-only: the stats, the smart lists and the play count
+-- sync with a DAP all come out of here.
 CREATE TABLE play_events (
     id            INTEGER PRIMARY KEY,
     track_id      INTEGER REFERENCES tracks(id),
     source_id     INTEGER REFERENCES sources(id),
     started_at    INTEGER NOT NULL,
-    -- Cuánto sonó de verdad, en milisegundos entregados.
+    -- How much actually played, in delivered milliseconds.
     played_ms     INTEGER NOT NULL,
-    -- La duración que tenía la pista, para saber si se escuchó completa.
+    -- The duration the track had, so whether it was listened to whole is known.
     duration_ms   INTEGER NOT NULL DEFAULT 0,
-    -- 1 si el usuario la saltó.
+    -- 1 if the user skipped it.
     skipped       INTEGER NOT NULL DEFAULT 0,
-    -- Con qué salió: formato real y si fue bit-perfect.
+    -- What it went out as: the real format and whether it was bit-perfect.
     sample_rate_hz INTEGER,
     bit_depth      INTEGER,
     bit_perfect    INTEGER NOT NULL DEFAULT 0
@@ -178,8 +179,8 @@ CREATE TABLE play_events (
 CREATE INDEX play_events_track ON play_events(track_id);
 CREATE INDEX play_events_time ON play_events(started_at);
 
--- Lo que el análisis saca de un track. La versión del analizador va en la
--- fila: cambiarlo no obliga a tirar lo viejo.
+-- What the analysis pulls out of a track. The analyser's version goes in the
+-- row: changing it does not force throwing the old away.
 CREATE TABLE audio_features (
     track_id      INTEGER NOT NULL REFERENCES tracks(id),
     analyzer      TEXT NOT NULL,
@@ -218,8 +219,8 @@ CREATE TABLE playlist_tracks (
     playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
     position    INTEGER NOT NULL,
     track_id    INTEGER REFERENCES tracks(id),
-    -- Lo que la lista dice que va aquí, aunque el track no esté en la
-    -- biblioteca: una ruta local, o el id que le da su source.
+    -- What the list says goes here, even when the track is not in the
+    -- library: a local path, or the id its source gives it.
     external_id TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (playlist_id, position)
 );

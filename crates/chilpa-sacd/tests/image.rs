@@ -108,7 +108,7 @@ fn build(dst: bool) -> TestImage {
 
 #[test]
 fn both_tracks_of_the_stereo_area_are_read() {
-    let path = build(false).write("dos-pistas");
+    let path = build(false).write("two-tracks");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dsd3In14);
     assert_eq!(img.area.tracks.len(), 2);
@@ -131,10 +131,10 @@ fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
 
     let block = lector.next_block().unwrap().expect("hay audio");
     assert_eq!(block.len(), 2);
-    assert_eq!(block[0].len(), 9408 / 2, "medio frame por canal");
+    assert_eq!(block[0].len(), 9408 / 2, "half a frame per channel");
     // The left one carries the sample and the right one its complement.
     for i in 0..16 {
-        assert_eq!(block[1][i], !block[0][i], "los canales no se revolvieron");
+        assert_eq!(block[1][i], !block[0][i], "the channels were not scrambled");
     }
     let _ = std::fs::remove_file(path);
 }
@@ -147,8 +147,8 @@ fn a_compressed_track_is_refused_with_a_clear_message() {
     let track = img.area.tracks[0].clone();
     match SacdTrackReader::open(img, &track) {
         Err(SacdError::Unsupported(msg)) => assert!(msg.contains("DST"), "{msg}"),
-        Err(other) => panic!("debía rechazarse por DST: {other:?}"),
-        Ok(_) => panic!("una pista con DST no se puede reproducir todavía"),
+        Err(other) => panic!("it should have been refused for DST: {other:?}"),
+        Ok(_) => panic!("a DST track cannot be played yet"),
     }
     let _ = std::fs::remove_file(path);
 }
@@ -156,7 +156,7 @@ fn a_compressed_track_is_refused_with_a_clear_message() {
 #[test]
 fn an_image_that_is_not_a_sacd_is_refused() {
     let img = TestImage::new();
-    let path = img.write("vacia");
+    let path = img.write("empty");
     assert!(matches!(open(&path), Err(SacdError::MalformedToc(_))));
     let _ = std::fs::remove_file(path);
 }
