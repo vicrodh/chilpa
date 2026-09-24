@@ -1,19 +1,19 @@
-//! Lo que el host le presta a un plugin.
+//! What the host lends a plugin.
 //!
-//! Un guest de wasm no tiene red, ni disco, ni reloj: solo existe lo que
-//! Chilpa le pasa. Estas son las cuatro puertas de la v1, y no hay una
-//! quinta (ADR-007).
+//! A wasm guest has no network, no disk and no clock: only what Chilpa hands
+//! it exists. These are v1's four doors, and there is no fifth (ADR-007).
 //!
-//! La regla que manda sobre todas: **el plugin nunca ve una credencial.** No
-//! porque se le pida que no la guarde, sino porque la petición la hace el
-//! host y el token se agrega del lado de acá. En la memoria del guest nunca
-//! estuvo.
+//! The rule that governs the rest: **a plugin never sees a credential.** Not
+//! because it is asked not to keep one, but because the host makes the
+//! request and the token is added on this side. It was never in the guest's
+//! memory.
 //!
-//! Este crate no sabe hablar HTTP ni abrir una base de datos, a propósito:
-//! lo implementa quien lo usa. Así el host de plugins no arrastra una pila
-//! de red, y las pruebas pueden mirar exactamente qué pidió un plugin.
+//! This crate knows neither how to speak HTTP nor how to open a database, on
+//! purpose: whoever uses it implements that. That way the plugin host drags
+//! in no network stack, and the tests can look at exactly what a plugin
+//! asked for.
 
-/// Qué tan importante es una línea de log.
+/// How important a log line is.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Level {
     Debug,
@@ -33,47 +33,47 @@ impl Level {
     }
 }
 
-/// Lo que el host hace por un plugin.
+/// What the host does for a plugin.
 ///
-/// Todo lleva el id del plugin porque lo que se guarda, se pide y se anota
-/// es suyo y de nadie más.
+/// Everything carries the plugin's id because what is kept, asked for and
+/// noted is its own and nobody else's.
 pub trait HostServices: Send {
-    /// Una línea al log, con el plugin por delante.
+    /// A line to the log, with the plugin in front.
     fn log(&mut self, plugin: &str, level: Level, message: &str);
 
-    /// La hora, en segundos unix.
+    /// The time, in unix seconds.
     fn now_unix(&mut self) -> i64;
 
-    /// Lee del almacén del plugin. `None` si no hay nada con esa llave.
+    /// Reads from the plugin's store. `None` if there is nothing under that key.
     fn store_get(&mut self, plugin: &str, key: &str) -> Option<Vec<u8>>;
 
-    /// Escribe en el almacén del plugin. Falso si no se pudo.
+    /// Writes to the plugin's store. False if it could not be done.
     fn store_set(&mut self, plugin: &str, key: &str, value: &[u8]) -> bool;
 
-    /// Hace una petición por el plugin.
+    /// Makes a request on the plugin's behalf.
     ///
-    /// Recibe y devuelve JSON. **Quien implementa esto pone la credencial**;
-    /// el plugin solo dijo a dónde y con qué cuerpo. Y no puede quedarse
-    /// esperando para siempre: el guest se puede cortar por combustible o
-    /// por reloj, pero una llamada del host que se cuelga cuelga el hilo.
+    /// It takes and returns JSON. **Whoever implements this supplies the
+    /// credential**; the plugin only said where to and with what body. And
+    /// it cannot wait forever: the guest can be cut off by fuel or by the
+    /// clock, but a host call that hangs hangs the thread.
     fn http(&mut self, plugin: &str, request: &[u8]) -> Vec<u8>;
 
-    /// Un lugar donde quien implementa esto puede guardar lo que necesite
-    /// para renovar credenciales, si es que las maneja.
+    /// A place where whoever implements this can keep whatever they need
+    /// to renew credentials, if they handle any.
     ///
-    /// Está en el trait porque quien lo implementa llega hasta aquí como un
-    /// `dyn HostServices` y ya no se sabe de qué tipo era. Devolver `None`
-    /// es lo normal: un host de pruebas no tiene cuentas que renovar.
+    /// It is on the trait because the implementor arrives here as a `dyn
+    /// HostServices` and its type is no longer known. Returning `None` is
+    /// the normal case: a test host has no accounts to renew.
     fn auth_map(&self) -> Option<std::sync::Arc<std::sync::Mutex<AuthMap>>> {
         None
     }
 }
 
-/// Cómo conecta su cuenta cada plugin, por id.
+/// How each plugin connects its account, by id.
 pub type AuthMap = std::collections::BTreeMap<String, chilpa_auth::Auth>;
 
-/// Un host que no deja hacer nada. Sirve para plugins que no pidieron
-/// ninguna capacidad, y para las pruebas.
+/// A host that allows nothing. It serves plugins that asked for no
+/// capability at all, and the tests.
 #[derive(Default)]
 pub struct NoServices;
 
@@ -93,27 +93,27 @@ impl HostServices for NoServices {
     }
 }
 
-/// Un host de mentiras que anota todo lo que le pidieron.
+/// A fake host that notes down everything it was asked for.
 ///
-/// Es lo que hace que la suite de plugins hostiles pueda afirmar no solo que
-/// Chilpa sobrevivió, sino que el plugin no llegó a donde no debía.
+/// It is what lets the hostile plugin suite claim not only that Chilpa
+/// survived, but that the plugin never reached where it should not.
 ///
-/// Se puede clonar: una copia se le da al host y otra se queda la prueba
-/// para mirar lo que pasó. Por eso lo anotado vive detrás de su propio
-/// candado y no del que envuelve al host.
+/// It can be cloned: one copy goes to the host and the test keeps another
+/// to look at what happened. That is why what is noted lives behind its own
+/// lock and not the one wrapping the host.
 #[derive(Default, Clone)]
 pub struct TestHost(std::sync::Arc<std::sync::Mutex<Recorded>>);
 
-/// Todo lo que un plugin le pidió al host de prueba.
+/// Everything a plugin asked the test host for.
 #[derive(Default)]
 pub struct Recorded {
     pub logs: Vec<(String, Level, String)>,
     pub reads: Vec<(String, String)>,
     pub writes: Vec<(String, String, Vec<u8>)>,
     pub requests: Vec<(String, String)>,
-    /// Lo que `store_get` contesta, por llave.
+    /// What `store_get` answers, by key.
     pub store: std::collections::HashMap<String, Vec<u8>>,
-    /// Lo que `http` contesta. Vacío da una respuesta de relleno.
+    /// What `http` answers. Empty gives a filler reply.
     pub http_reply: Vec<u8>,
     pub clock: i64,
 }
@@ -123,13 +123,13 @@ impl TestHost {
         Self::default()
     }
 
-    /// Mira lo anotado sin poder cambiarlo.
+    /// Looks at what was noted without being able to change it.
     pub fn examine<T>(&self, f: impl FnOnce(&Recorded) -> T) -> T {
         let save = self.0.lock().expect("el candado del host de prueba");
         f(&save)
     }
 
-    /// Prepara algo antes de correr.
+    /// Sets something up before running.
     pub fn prepare(&self, f: impl FnOnce(&mut Recorded)) {
         let mut save = self.0.lock().expect("el candado del host de prueba");
         f(&mut save);

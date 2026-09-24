@@ -1,23 +1,24 @@
-//! La suite de plugins hostiles que pide el ADR-003.
+//! The hostile plugin suite ADR-003 calls for.
 //!
-//! Cada uno de estos plugins intenta una cosa distinta: tronar, colgarse,
-//! comerse la memoria, mentir sobre su versión, salir a un dominio que no
-//! declaró, leer un almacén que no pidió, o contestar una dirección que no
-//! es suya. En todos los casos se afirman dos cosas:
+//! Each of these plugins tries something different: blowing up, hanging,
+//! eating memory, lying about its version, reaching a domain it did not
+//! declare, reading a store it did not ask for, or answering with an address
+//! that is not its own. In every case two things are asserted:
 //!
-//! 1. **Chilpa sigue.** La llamada se detiene, no el proceso.
-//! 2. **No llegó a donde no debía.** El host de prueba se acuerda de todo lo
-//!    que le pidieron, así que se puede afirmar que no le pidieron nada.
+//! 1. **Chilpa carries on.** The call is stopped, not the process.
+//! 2. **It did not reach where it should not.** The test host remembers
+//!    everything it was asked for, so it can be asserted that it was asked
+//!    for nothing.
 //!
-//! Los plugins van escritos en texto de wasm para que la suite corra sin
-//! ninguna cadena de compilación aparte.
+//! The plugins are written in wasm text so the suite runs without any
+//! separate toolchain.
 
 use chilpa_plugin::{
     Halt, State, Host, TestHost, Limits, PluginError, Registry, Reply, Services,
 };
 use std::sync::{Arc, Mutex};
 
-/// El manifest de siempre, con las capacidades que se le pidan.
+/// The usual manifest, with whatever capabilities it is given.
 fn manifest(capabilities: &str) -> String {
     format!(
         r#"{{
@@ -31,7 +32,7 @@ fn manifest(capabilities: &str) -> String {
     )
 }
 
-/// Lo que todo plugin tiene que traer para que lo carguen.
+/// What every plugin has to carry to be loaded.
 const PRELUDE: &str = r#"
   (memory (export "memory") 1)
   (global $siguiente (mut i32) (i32.const 1024))
@@ -43,21 +44,21 @@ const PRELUDE: &str = r#"
   (data (i32.const 0) "{\"ok\":true}")
 "#;
 
-/// La respuesta fija que deja el preludio: `{"ok":true}`, en (0, 11).
+/// The fixed reply the prelude leaves behind: `{"ok":true}`, at (0, 11).
 const FIXED_REPLY: &str = "(i64.const 11)";
 
 fn compile(wat: &str) -> Vec<u8> {
     wat::parse_str(wat).expect("el plugin de prueba compila")
 }
 
-/// Un host de prueba y la copia con la que la prueba lo mira.
+/// A test host and the copy the test watches it through.
 fn services() -> (Services, TestHost) {
     let notes = TestHost::new();
     let s: Services = Arc::new(Mutex::new(notes.clone()));
     (s, notes)
 }
 
-/// Instala un plugin y lo llama una vez.
+/// Installs a plugin and calls it once.
 fn run(
     capabilities: &str,
     wat: &str,
@@ -93,7 +94,7 @@ fn one_that_crashes_is_stopped_and_chilpa_carries_on() {
     );
     let (mut reg, _notes, r) = run("", &wat, "buscar");
     assert!(matches!(r, Err(PluginError::Crashed(_))), "{r:?}");
-    // Y se puede seguir pidiendo: una falla no es cuarentena.
+    // And it can still be asked: one failure is not quarantine.
     assert!(reg.state("com.prueba.hostil").usable());
     let host = Host::new().unwrap();
     let (svc, _) = services();
@@ -103,7 +104,7 @@ fn one_that_crashes_is_stopped_and_chilpa_carries_on() {
         matches!(reg.state("com.prueba.hostil"), State::Quarantined { .. }),
         "a la tercera va a cuarentena"
     );
-    // Y en cuarentena ya no se le llama.
+    // And in quarantine it is no longer called.
     let r = reg.call(&host, &svc, "com.prueba.hostil", "buscar", b"{}", Limits::short());
     assert!(matches!(r, Err(PluginError::NotAllowed(_))), "{r:?}");
 }
@@ -125,8 +126,8 @@ fn one_that_hangs_is_cut_off_by_fuel() {
 
 #[test]
 fn one_asking_for_more_memory_than_allowed_is_refused() {
-    // Ocho megabytes son 128 páginas; pide 200 de un jalón. Contesta la
-    // respuesta buena solo si el motor se lo negó.
+    // Eight megabytes is 128 pages; it asks for 200 in one go. It gives the
+    // good reply only if the engine refused it.
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -145,11 +146,11 @@ fn one_asking_for_more_memory_than_allowed_is_refused() {
 
 #[test]
 fn one_eating_memory_in_a_loop_is_stopped() {
-    // Crece de a una página para siempre. Con el límite puesto nunca crece,
-    // y lo que lo detiene, medido, es el reloj y no el combustible: pedir
-    // memoria es caro en tiempo y barato en instrucciones. Por eso hacen
-    // falta los dos límites, y por eso aquí se afirma que se detuvo y no
-    // con cuál de los dos.
+    // It grows one page at a time forever. With the limit in place it never
+    // grows, and what stops it, measured, is the clock and not the fuel:
+    // asking for memory is expensive in time and cheap in instructions.
+    // That is why both limits are needed, and why what is asserted here is
+    // that it was stopped and not by which of the two.
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -186,7 +187,7 @@ fn one_lying_about_its_version_does_not_load() {
 
 #[test]
 fn one_missing_exports_does_not_load() {
-    // Sin memoria ni alloc: no hay forma de hablarle.
+    // No memory and no alloc: there is no way to talk to it.
     let wat = r#"(module (func (export "chilpa_api_version") (result i32) (i32.const 1)))"#;
     let host = Host::new().unwrap();
     let mut reg = Registry::new();
@@ -195,9 +196,9 @@ fn one_missing_exports_does_not_load() {
     assert!(problem.contains("memory"), "{problem}");
 }
 
-/// Un plugin que le pide al host esa URL. El largo se calcula, no se
-/// escribe a mano: uno mal puesto trunca el JSON y la prueba pasaría porque
-/// la petición no se entiende, no porque el dominio esté prohibido.
+/// A plugin that asks the host for that URL. The length is computed, not
+/// typed by hand: a wrong one truncates the JSON and the test would pass
+/// because the request is unintelligible, not because the domain is barred.
 fn plugin_that_requests(url: &str) -> String {
     let request = format!(r#"{{"url":"{url}"}}"#);
     let escaped = request.replace('"', "\\\"");
@@ -216,7 +217,7 @@ fn plugin_that_requests(url: &str) -> String {
 
 #[test]
 fn one_reaching_a_domain_it_did_not_declare_never_reaches_the_host() {
-    // Declara ejemplo.com y pide otra-cosa.net.
+    // It declares example.com and asks for something-else.net.
     let wat = plugin_that_requests("https://otra-cosa.net/robar");
     let (_reg, notes, r) =
         run(r#"{"type": "network", "domains": ["ejemplo.com"]}"#, &wat, "buscar");
@@ -290,7 +291,7 @@ fn a_plugin_store_always_goes_under_its_own_name() {
 
 #[test]
 fn one_answering_with_a_foreign_address_does_not_make_chilpa_read_beyond() {
-    // Contesta una dirección enorme, muy por fuera de su memoria.
+    // It answers with a huge address, far outside its own memory.
     let wat = format!(
         r#"(module {PRELUDE}
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -349,7 +350,7 @@ fn a_broken_plugin_does_not_take_the_others_with_it() {
     }
     assert!(matches!(reg.state("com.roto.plugin"), State::Quarantined { .. }));
 
-    // Y el bueno sigue trabajando.
+    // And the good one carries on working.
     let r = reg.call(&host, &svc, "com.bueno.plugin", "buscar", b"{}", Limits::short());
     assert_eq!(r.unwrap(), Reply::Ok(br#"{"ok":true}"#.to_vec()));
     assert_eq!(reg.usable(), vec!["com.bueno.plugin"]);

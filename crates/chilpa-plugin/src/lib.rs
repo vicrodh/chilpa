@@ -1,23 +1,23 @@
 //! El host de plugins de Chilpa.
 //!
-//! Un plugin corre en un sandbox de WebAssembly, adentro del proceso, con
-//! límites que aplica el motor y no la buena voluntad de nadie (ADR-007).
-//! Lo que puede hacer se lo presta el host, función por función; lo que no
-//! está en esa lista, no existe en su mundo.
+//! A plugin runs in a WebAssembly sandbox, inside the process, under limits
+//! the engine enforces and nobody's good will (ADR-007). What it can do is
+//! lent to it by the host, function by function; what is not on that list
+//! does not exist in its world.
 //!
-//! Las dos reglas del ADR-003, aquí en una línea cada una:
+//! The two rules of ADR-003, one line each:
 //!
-//! 1. **Un plugin nunca ve un token.** No guarda credenciales porque no las
-//!    recibe: la petición la hace el host y el secreto se agrega de este
-//!    lado.
-//! 2. **Un plugin roto no rompe Chilpa.** Si se pasa de combustible, de
-//!    memoria o de reloj, se detiene esa llamada. Si truena tres veces
-//!    seguidas, se va a cuarentena y de ahí solo lo saca el usuario.
+//! 1. **A plugin never sees a token.** It keeps no credentials because it
+//!    never receives them: the host makes the request and the secret is
+//!    added on this side.
+//! 2. **A broken plugin does not break Chilpa.** If it goes over fuel,
+//!    memory or the clock, that call is stopped. If it blows up three times
+//!    in a row it goes to quarantine, and only the user takes it out.
 //!
-//! Este crate no conoce al core, ni a la biblioteca, ni a la red. Recibe lo
-//! que puede prestar como un `HostServices` que implementa quien lo usa. Así
-//! el sandbox no arrastra una pila de red, y las pruebas pueden mirar
-//! exactamente qué intentó un plugin.
+//! This crate knows neither the core, nor the library, nor the network. What
+//! it can lend arrives as a `HostServices` implemented by whoever uses it.
+//! That way the sandbox drags in no network stack, and the tests can look at
+//! exactly what a plugin tried to do.
 
 pub mod abi;
 pub mod host;
