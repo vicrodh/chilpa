@@ -1,13 +1,13 @@
-//! Que una biblioteca grande siga siendo rápida.
+//! Keeping a large library fast.
 //!
-//! El hallazgo alto de la auditoría de QBZ era la base de datos: cada página
-//! de la reja volvía a agregar la biblioteca entera, y una consulta por
-//! renglón hacía el resto. Esta prueba arma una biblioteca de verdad grande
-//! y le pone un techo de tiempo a lo que la interfaz consulta.
+//! The QBZ audit's high finding was the database: every page of the grid
+//! aggregated the whole library again, and a query per row did the rest.
+//! This test builds a genuinely large library and puts a time ceiling on
+//! what the interface queries.
 //!
-//! Los techos son generosos a propósito. No están para medir la máquina:
-//! están para que una consulta que se vuelva cuadrática se note el día que
-//! alguien la escriba, no el día que un usuario abra su biblioteca.
+//! The ceilings are generous on purpose. They are not there to measure the
+//! machine: they are there so a query that turns quadratic shows up the day
+//! someone writes it, not the day a user opens their library.
 
 use chilpa_library::{AlbumSort, Library, Rule, SmartList, SmartOrder};
 use rusqlite::params;
@@ -17,7 +17,7 @@ const ALBUMS: i64 = 5_000;
 const PER_ALBUM: i64 = 10;
 const TRACKS: i64 = ALBUMS * PER_ALBUM;
 
-/// Arma una biblioteca con cincuenta mil pistas y un log de escuchas.
+/// Builds a library with fifty thousand tracks and a play log.
 fn large_library() -> Library {
     let lib = Library::in_memory().unwrap();
     let source = lib.source_id("local", "default").unwrap();
@@ -42,8 +42,8 @@ fn large_library() -> Library {
             .unwrap();
 
         for a in 1..=ALBUMS {
-            // Doscientos artistas, para que la reja por artista agrupe de
-            // verdad y no sea una fila por artista.
+            // Two hundred artists, so the grid by artist really groups and is
+            // not one row per artist.
             let artist = format!("Artista {:03}", a % 200);
             albums
                 .execute(params![a, format!("Disco {a}"), artist, 1960 + (a % 60) as i32])
@@ -66,7 +66,7 @@ fn large_library() -> Library {
                         1_700_000_000i64 + id
                     ])
                     .unwrap();
-                // Una de cada tres se ha escuchado, algunas varias veces.
+                // One in three has been played, some of them several times.
                 if id % 3 == 0 {
                     for k in 0..=(id % 4) {
                         plays
@@ -81,7 +81,7 @@ fn large_library() -> Library {
     lib
 }
 
-/// Corre algo y dice cuánto tardó.
+/// Runs something and says how long it took.
 fn how_long<T>(f: impl FnOnce() -> T) -> (T, Duration) {
     let start = Instant::now();
     let r = f();
@@ -89,8 +89,8 @@ fn how_long<T>(f: impl FnOnce() -> T) -> (T, Duration) {
 }
 
 fn within(name: &str, took: Duration, ceiling: Duration) {
-    // Con `--nocapture` se ven los tiempos, que es lo que hace útil este
-    // archivo cuando algo empieza a ponerse lento pero todavía pasa.
+    // With `--nocapture` the timings show, which is what makes this file
+    // useful when something starts getting slow but still passes.
     eprintln!("{name}: {took:?}");
     assert!(
         took <= ceiling,
@@ -104,36 +104,36 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     eprintln!("armar {TRACKS} pistas: {built:?}");
     assert_eq!(lib.track_count(false).unwrap(), TRACKS as usize);
 
-    // La reja: una página de cien álbumes con su cuenta de escuchas. Esto
-    // es lo que en QBZ agregaba la biblioteca entera por página.
+    // The grid: a page of a hundred albums with their play counts. This is
+    // what aggregated the whole library per page in QBZ.
     //
-    // Los órdenes que solo miran columnas de `albums` recortan la página
-    // antes de contar nada y salen en unos diez milisegundos; los que
-    // ordenan por escuchas o por fecha de alta tienen que agregar, y andan
-    // en ciento cincuenta. Por eso el techo es el mismo para todos: lo que
-    // se vigila es que ninguno se vuelva cuadrático.
+    // The orderings that only look at `albums` columns trim the page
+    // before counting anything and come out in about ten milliseconds;
+    // the ones sorting by plays or by date added have to aggregate, and
+    // run around a hundred and fifty. That is why the ceiling is the same
+    // for all: what is watched is that none of them turns quadratic.
     for order in AlbumSort::all() {
         let (page, t) = how_long(|| lib.albums_sorted(order, 100, 0).unwrap());
         assert_eq!(page.len(), 100, "{}", order.name());
         within(&format!("reja por {}", order.name()), t, Duration::from_millis(1500));
     }
 
-    // Una página del fondo: no puede costar más que la primera por estar
-    // lejos.
+    // A page from deep in: it must not cost more than the first one just
+    // for being far away.
     let (_, t) = how_long(|| lib.albums_sorted(AlbumSort::Artist, 100, 4_000).unwrap());
     within("reja en la página 40", t, Duration::from_millis(1500));
 
-    // Los artistas.
+    // The artists.
     let (artists, t) = how_long(|| lib.artists(500, 0).unwrap());
     assert_eq!(artists.len(), 200, "doscientos artistas");
     within("artistas", t, Duration::from_millis(1500));
 
-    // La búsqueda, que recorre títulos, artistas, álbumes y géneros.
+    // The search, which walks titles, artists, albums and genres.
     let (found, t) = how_long(|| lib.search("Pista 7", 200).unwrap());
     assert!(!found.is_empty());
     within("búsqueda", t, Duration::from_millis(1500));
 
-    // Las estadísticas, que suman el log entero.
+    // The stats, which sum the whole log.
     let (stats, t) = how_long(|| lib.stats().unwrap());
     assert!(stats.plays > 0);
     within("estadísticas", t, Duration::from_millis(1500));
@@ -143,14 +143,14 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     let (_, t) = how_long(|| lib.recently_played(20).unwrap());
     within("lo último que sonó", t, Duration::from_millis(1500));
 
-    // Las listas inteligentes, que es lo que se resuelve cada vez que se
-    // miran.
+    // The smart lists, which is what gets resolved every time they are
+    // looked at.
     for list in chilpa_library::smart_builtins() {
         let (_, t) = how_long(|| lib.smart_tracks(&list).unwrap());
         within(&format!("lista \"{}\"", list.name), t, Duration::from_millis(1500));
     }
 
-    // Y una lista con varias reglas a la vez.
+    // And a list with several rules at once.
     let composite = SmartList::new(
         "compuesta",
         vec![Rule::HiRes, Rule::PlayedAtLeast(2), Rule::LongerThanMs(300_000)],

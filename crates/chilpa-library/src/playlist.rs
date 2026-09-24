@@ -1,39 +1,40 @@
-//! Listas M3U: leerlas y escribirlas.
+//! M3U playlists: reading and writing them.
 //!
-//! El formato es viejo y simple, y por eso sigue siendo el que todo el mundo
-//! entiende. Lo que importa al leerlo:
+//! The format is old and simple, which is why it is still the one everybody
+//! understands. What matters when reading it:
 //!
-//! - **Las rutas relativas se resuelven contra la lista**, no contra el
-//!   directorio de trabajo. Una lista dentro de la carpeta del álbum es lo
-//!   normal, y resolverla mal la deja vacía.
-//! - **Una entrada que ya no existe no tumba la lista**: se reporta aparte.
-//!   Lo mismo que con la biblioteca, lo ausente se dice, no se borra.
+//! - **Relative paths resolve against the playlist**, not against the
+//!   working directory. A playlist inside the album's folder is the normal
+//!   case, and resolving it wrong leaves it empty.
+//! - **An entry that no longer exists does not bring the playlist down**: it
+//!   is reported separately. As with the library, what is missing is said,
+//!   not deleted.
 
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-/// Lo que trae una lista.
+/// What a playlist carries.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Playlist {
-    /// Las pistas que existen, en el orden de la lista.
+    /// The tracks that exist, in the playlist's order.
     pub tracks: Vec<PathBuf>,
-    /// Las que la lista menciona pero no están en disco.
+    /// The ones the playlist names that are not on disk.
     pub missing: Vec<PathBuf>,
 }
 
-/// Lee una lista M3U o M3U8.
+/// Reads an M3U or M3U8 playlist.
 pub fn read(path: &Path) -> std::io::Result<Playlist> {
     let text = std::fs::read_to_string(path)?;
     let base = path.parent().unwrap_or(Path::new("."));
     let mut list = Playlist::default();
     for line in text.lines() {
         let line = line.trim();
-        // `#EXTINF` y sus compañeros son metadata: la fuente de verdad es el
-        // archivo, así que se saltan.
+        // `#EXTINF` and its companions are metadata: the source of truth is the
+        // file, so they are skipped.
         if line.is_empty() || line.starts_with('#') {
             continue;
         }
-        // Una URL no es un archivo local; hoy no se abren.
+        // A URL is not a local file; those are not opened today.
         if line.contains("://") {
             continue;
         }
@@ -48,10 +49,10 @@ pub fn read(path: &Path) -> std::io::Result<Playlist> {
     Ok(list)
 }
 
-/// Escribe una lista M3U con rutas relativas cuando se puede.
+/// Writes an M3U playlist with relative paths where it can.
 ///
-/// Relativas porque una lista junto a la música se puede mover con ella; una
-/// lista llena de rutas absolutas se rompe en cuanto cambia el disco.
+/// Relative because a playlist next to the music can move with it; one full
+/// of absolute paths breaks as soon as the disk changes.
 pub fn write_m3u(path: &Path, tracks: &[PathBuf]) -> std::io::Result<()> {
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir)?;
@@ -66,7 +67,7 @@ pub fn write_m3u(path: &Path, tracks: &[PathBuf]) -> std::io::Result<()> {
     Ok(())
 }
 
-/// La ruta relativa de `track` respecto a `base`, si comparten prefijo.
+/// `track`'s path relative to `base`, if they share a prefix.
 fn relative(base: &Path, track: &Path) -> PathBuf {
     track.strip_prefix(base).map(PathBuf::from).unwrap_or_else(|_| track.to_path_buf())
 }

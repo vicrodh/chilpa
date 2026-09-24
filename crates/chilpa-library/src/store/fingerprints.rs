@@ -1,23 +1,23 @@
-//! Con qué se empareja una pista local contra la de un source.
+//! What a local track is matched against a source's with.
 //!
-//! Son el ISRC y el MBID de grabación que el escaneo saca de los tags. Es
-//! lo único con lo que se puede decir "esta canción también está allá" sin
-//! adivinar: emparejar por título junta covers, remasters y homónimos, que
-//! es peor que no emparejar.
+//! The ISRC and the recording MBID the scan pulls out of the tags. They are
+//! the only thing that can say "this song is also over there" without
+//! guessing: matching by title lumps covers, remasters and namesakes
+//! together, which is worse than not matching at all.
 //!
-//! Salen crudos a propósito. Quien empareja los normaliza con
-//! `chilpa_plugin::messages`, que es donde vive la única regla; si esta
-//! orilla normalizara por su cuenta, dos reglas parecidas no emparejarían
-//! nada y nadie se daría cuenta.
+//! They come out raw on purpose. Whoever matches normalizes them with
+//! `chilpa_plugin::messages`, which is where the one rule lives; if this
+//! side normalized on its own, two similar rules would match nothing and
+//! nobody would notice.
 
 use crate::store::Library;
 use std::collections::HashMap;
 
 impl Library {
-    /// El ISRC y el MBID de varias pistas, en una consulta.
+    /// The ISRC and MBID of several tracks, in one query.
     ///
-    /// Las que no traen ninguno de los dos no salen en el mapa: no hay con
-    /// qué emparejarlas, y una entrada vacía solo daría trabajo al que lee.
+    /// The ones carrying neither do not appear in the map: there is nothing to
+    /// match them with, and an empty entry would only give the reader work.
     #[allow(clippy::type_complexity)]
     pub fn fingerprints_for(
         &self,
@@ -27,8 +27,8 @@ impl Library {
         if track_ids.is_empty() {
             return Ok(output);
         }
-        // Los ids son enteros que vienen de la propia base; aun así van como
-        // parámetros, para no tener dos formas de armar una consulta.
+        // The ids are integers that came from the database itself; even so
+        // they go as parameters, to avoid two ways of building a query.
         let gaps = vec!["?"; track_ids.len()].join(",");
         let sql = format!(
             "SELECT id, isrc, recording_mbid FROM tracks

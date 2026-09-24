@@ -1,44 +1,44 @@
-//! El log de reproducciones y lo que se suma de él.
+//! The play log and what is summed from it.
 //!
-//! El log es append-only y las estadísticas salen de sumarlo, no de
-//! contadores: un contador se desincroniza y nadie se entera; el log se
-//! puede volver a sumar siempre.
+//! The log is append-only and the stats come from summing it, not from
+//! counters: a counter drifts out of sync and nobody notices; the log can
+//! always be summed again.
 
 use crate::store::Library;
 use rusqlite::params;
 use crate::store::{row_to_track, StoredTrack};
 
-/// Lo que el log de reproducciones dice en conjunto.
+/// What the play log says taken together.
 ///
-/// Sale del log, no de contadores: un contador se desincroniza y nadie se
-/// entera; el log se puede volver a sumar siempre.
+/// It comes from the log, not from counters: a counter drifts out of sync
+/// and nobody notices; the log can always be summed again.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Stats {
-    /// Escuchas completas: las que sonaron más de la mitad.
+    /// Full plays: the ones that played more than halfway.
     pub plays: usize,
-    /// Todo lo que se ha entregado, en milisegundos, completas o no.
+    /// Everything delivered, in milliseconds, full plays or not.
     pub listened_ms: u64,
-    /// Cuántas pistas distintas se han escuchado.
+    /// How many distinct tracks have been played.
     pub distinct_tracks: usize,
-    /// Cuántas veces se saltó algo.
+    /// How many times something was skipped.
     pub skips: usize,
-    /// Cuántas de las escuchas salieron bit-perfect.
+    /// How many of the plays came out bit-perfect.
     pub bit_perfect: usize,
-    /// Cuándo fue la primera escucha registrada, en segundos unix.
+    /// When the first recorded play was, in unix seconds.
     pub since: Option<i64>,
 }
 
-/// Una pista con su cuenta, para los tops y el historial.
+/// A track with its count, for the tops and the history.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct TrackStat {
     pub track: StoredTrack,
-    /// Escuchas, o el momento de la última, según qué lista sea.
+    /// Plays, or the moment of the last one, depending on which list it is.
     pub count: usize,
     pub at: Option<i64>,
 }
 
 impl Library {
-    /// El resumen de todo lo que se ha escuchado.
+    /// The summary of everything that has been played.
     pub fn stats(&self) -> rusqlite::Result<Stats> {
         self.db.query_row(
             "SELECT
@@ -64,7 +64,7 @@ impl Library {
         )
     }
 
-    /// Las pistas más escuchadas.
+    /// The most played tracks.
     pub fn top_tracks(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
@@ -82,7 +82,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Lo último que sonó, sin repetir pista.
+    /// The last things played, without repeating a track.
     pub fn recently_played(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
@@ -99,7 +99,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Guarda una reproducción. El log es append-only.
+    /// Records a play. The log is append-only.
     #[allow(clippy::too_many_arguments)]
     pub fn log_play(
         &self,
@@ -133,8 +133,8 @@ impl Library {
         Ok(())
     }
 
-    /// Cuántas veces se ha reproducido un track, contando solo lo que sonó
-    /// más de la mitad. Es la definición que usan las stats.
+    /// How many times a track has been played, counting only what played more
+    /// than halfway. It is the definition the stats use.
     pub fn play_count(&self, track_id: i64) -> rusqlite::Result<usize> {
         let n: i64 = self.db.query_row(
             "SELECT count(*) FROM play_events
@@ -181,7 +181,7 @@ mod tests {
     #[test]
     fn the_top_and_the_history_look_at_the_same_thing_from_different_sides() {
         let lib = sample_library();
-        // La pista del álbum 3 suena dos veces; la del 1, una, y antes.
+        // Album 3's track plays twice; album 1's once, and earlier.
         let top = lib.top_tracks(10).unwrap();
         assert_eq!(top.len(), 2);
         assert_eq!(top[0].count, 2, "primero la más escuchada");

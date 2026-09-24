@@ -1,13 +1,13 @@
-//! Escanear sin congelar la interfaz.
+//! Scanning without freezing the interface.
 //!
-//! El escaneo abre su propia conexión en su propio hilo: una conexión de
-//! SQLite no se comparte entre hilos, y la interfaz tiene que poder seguir
-//! leyendo mientras se escribe. Para eso la base va en WAL (ver
+//! The scan opens its own connection on its own thread: a SQLite connection
+//! is not shared across threads, and the interface has to keep reading
+//! while writing happens. That is what WAL is for (see
 //! [`crate::schema::apply_pragmas`]).
 //!
-//! Lo que se reporta es lo que de verdad pasó: archivos vistos, leídos y
-//! saltados. Una barra que avanza sola sin saber cuántos archivos hay miente,
-//! así que aquí se cuenta primero y se avanza después.
+//! What is reported is what really happened: files seen, read and skipped.
+//! A bar that advances without knowing how many files there are is lying,
+//! so here we count first and advance afterwards.
 
 use crate::scan::ScanReport;
 use crate::store::Library;
@@ -15,35 +15,35 @@ use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::thread::JoinHandle;
 
-/// Cómo va el escaneo.
+/// How the scan is going.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ScanProgress {
-    /// Ya se sabe cuántos archivos hay que mirar.
+    /// How many files there are to look at is now known.
     Counted { total: usize },
     /// Van `done` de `total`.
     Advanced { done: usize, total: usize },
-    /// Terminó, con su reporte.
+    /// It finished, with its report.
     Done(ScanReport),
-    /// No se pudo.
+    /// It could not be done.
     Failed(String),
 }
 
-/// Un escaneo corriendo en segundo plano.
+/// A scan running in the background.
 pub struct ScanJob {
     events: Receiver<ScanProgress>,
     thread: Option<JoinHandle<()>>,
 }
 
 impl ScanJob {
-    /// Arranca el escaneo de una carpeta sobre la base que está en `db_path`.
+    /// Starts scanning a folder into the database at `db_path`.
     pub fn start(db_path: PathBuf, root: PathBuf, artwork_cache: Option<PathBuf>) -> Self {
         Self::start_all(db_path, vec![root], artwork_cache)
     }
 
-    /// Lo mismo con varias carpetas, una tras otra.
+    /// The same with several folders, one after another.
     ///
-    /// La cuenta se hace primero sobre todas, para que la barra avance de
-    /// principio a fin y no se reinicie en cada carpeta.
+    /// The count is taken over all of them first, so the bar advances from
+    /// start to finish instead of restarting on every folder.
     pub fn start_all(
         db_path: PathBuf,
         roots: Vec<PathBuf>,
@@ -60,7 +60,7 @@ impl ScanJob {
                         return;
                     }
                 };
-                // Contar primero: sin total, una barra de progreso inventa.
+                // Count first: without a total, a progress bar invents one.
                 let total: usize = roots.iter().map(|r| crate::scan::count_audio_files(r)).sum();
                 let _ = tx.send(ScanProgress::Counted { total });
 
@@ -69,8 +69,8 @@ impl ScanJob {
                     unreachable: true,
                     ..ScanReport::default()
                 };
-                // Lo que ya llevan las carpetas anteriores, para que el
-                // avance no vuelva a empezar en cada una.
+                // What the earlier folders already account for, so progress does
+                // not start over on each one.
                 let mut previous = 0usize;
                 for root in &roots {
                     let warn = |done: usize| {
@@ -88,8 +88,8 @@ impl ScanJob {
                             accumulated.read += r.read;
                             accumulated.unchanged += r.unchanged;
                             accumulated.missing += r.missing;
-                            // Con que una carpeta se haya podido leer, el
-                            // escaneo sirvió de algo.
+                            // As long as one folder could be read, the scan was worth
+                            // something.
                             accumulated.unreachable &= r.unreachable;
                         }
                         Err(e) => {
@@ -107,7 +107,7 @@ impl ScanJob {
         Self { events: rx, thread: Some(thread) }
     }
 
-    /// Lo que haya pasado, sin bloquear.
+    /// Whatever has happened, without blocking.
     pub fn poll(&self) -> Vec<ScanProgress> {
         let mut out = Vec::new();
         loop {
@@ -119,7 +119,7 @@ impl ScanJob {
         out
     }
 
-    /// Cierto si el hilo ya terminó.
+    /// True when the thread has finished.
     pub fn finished(&self) -> bool {
         self.thread.as_ref().is_some_and(|t| t.is_finished())
     }
@@ -127,15 +127,15 @@ impl ScanJob {
 
 impl Drop for ScanJob {
     fn drop(&mut self) {
-        // El escaneo no se interrumpe a la mitad: dejar la base con archivos
-        // a medio registrar es peor que esperar.
+        // The scan is not interrupted halfway: leaving the database with files
+        // half-recorded is worse than waiting.
         if let Some(t) = self.thread.take() {
             let _ = t.join();
         }
     }
 }
 
-/// Cuenta los archivos de audio de una carpeta, sin tocar la base.
+/// Counts a folder's audio files, without touching the database.
 pub fn count(root: &Path) -> usize {
     crate::scan::count_audio_files(root)
 }
@@ -144,7 +144,7 @@ pub fn count(root: &Path) -> usize {
 mod tests {
     use super::*;
 
-    /// Espera a que el escaneo termine y regresa todo lo que reportó.
+    /// Waits for the scan to finish and returns everything it reported.
     fn to_the_end(job: &ScanJob) -> Vec<ScanProgress> {
         let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
         let mut events = Vec::new();
@@ -173,7 +173,7 @@ mod tests {
         let job = ScanJob::start(db, dir.clone(), None);
         let events = to_the_end(&job);
 
-        // El total llega primero: una barra sin total inventa su avance.
+        // The total arrives first: a bar without one invents its progress.
         match events.first() {
             Some(ScanProgress::Counted { total }) => {
                 assert_eq!(*total, 4, "se cuentan los de audio, no el .txt")
