@@ -1,0 +1,15 @@
+[package]
+name = "chilpa-pipewire"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# What a stack cannot promise is read by the user.
+chilpa-i18n.workspace = true
+chilpa-audio.workspace = true
+# The samples reach PipeWire through its ALSA plugin, so the sink this
+# opens is the one chilpa-alsa already knows how to drive. No second
+# implementation of writing to a device.
+chilpa-alsa.workspace = true

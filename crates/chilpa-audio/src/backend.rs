@@ -220,7 +220,11 @@ pub trait OutputBackend: Send + Sync {
     /// device is not who writes to it. A sink that cannot move there cannot
     /// be played through, so the trait asks for it rather than leaving it to
     /// be discovered at the call site.
-    fn open(&self, id: &str, format: StreamFormat)
+    /// `exclusive` asks for the output to itself, which is what makes a
+    /// sound server able to pass samples through untouched instead of
+    /// mixing them. A stack that has nothing like it ignores it; one that
+    /// does is the difference between `Depends` being kept and not.
+    fn open(&self, id: &str, format: StreamFormat, exclusive: bool)
         -> Result<Box<dyn AudioSink + Send>, SinkError>;
 }
 

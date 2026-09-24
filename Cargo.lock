@@ -465,6 +465,7 @@ dependencies = [
  "chilpa-i18n",
  "chilpa-library",
  "chilpa-models",
+ "chilpa-pipewire",
  "chilpa-sacd",
  "chilpa-stream",
  "chilpa-tags",
@@ -518,6 +519,15 @@ dependencies = [
 [[package]]
 name = "chilpa-models"
 version = "0.0.0"
+
+[[package]]
+name = "chilpa-pipewire"
+version = "0.0.0"
+dependencies = [
+ "chilpa-alsa",
+ "chilpa-audio",
+ "chilpa-i18n",
+]
 
 [[package]]
 name = "chilpa-plugin"

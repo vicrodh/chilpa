@@ -139,6 +139,7 @@ impl crate::backend::OutputBackend for FileBackend {
         &self,
         _id: &str,
         format: StreamFormat,
+        _exclusive: bool,
     ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
         Ok(Box::new(CaptureSink::create(&self.path, format)?))
     }

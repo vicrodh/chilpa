@@ -61,7 +61,8 @@ impl OutputBackend for Alsa {
         outputs
     }
 
-    fn open(&self, id: &str, format: StreamFormat) -> Result<Box<dyn AudioSink + Send>, SinkError> {
+    fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
+        -> Result<Box<dyn AudioSink + Send>, SinkError> {
         Ok(Box::new(AlsaSink::open(id, format)?))
     }
 }
@@ -127,7 +128,8 @@ impl OutputBackend for System {
         }]
     }
 
-    fn open(&self, id: &str, format: StreamFormat) -> Result<Box<dyn AudioSink + Send>, SinkError> {
+    fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
+        -> Result<Box<dyn AudioSink + Send>, SinkError> {
         Ok(Box::new(AlsaSink::open(id, format)?))
     }
 }

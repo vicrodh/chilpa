@@ -254,6 +254,15 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
         Some((chilpa_audio::backend::BackendKind::File, _)) => {
             Ok(chilpa_audio::capture::capabilities())
         }
+        Some((chilpa_audio::backend::BackendKind::PipeWire, sink)) => {
+            // The plugin takes the format it is handed, so what a sink
+            // accepts is what the card under it accepts. Measuring that
+            // means opening it, and opening a server sink to measure it
+            // takes it from whoever is using it. Until there is a way to ask
+            // without taking, this says what the plugin will take.
+            let _ = sink;
+            Ok(chilpa_audio::capture::capabilities())
+        }
         Some((_, bare)) => chilpa_alsa::probe(bare),
         None => Err(unknown_output(id)),
     }
@@ -268,7 +277,9 @@ fn open_output(
     let Some((stack, bare)) = backends::resolve(id) else {
         return Err(unknown_output(id));
     };
-    stack.open(&bare, format)
+    // Exclusively, always. A player whose whole claim is bit-perfect asks
+    // for the output to itself; a stack that has nothing like it ignores it.
+    stack.open(&bare, format, true)
 }
 
 /// The error for an identifier that names no stack this build has.
