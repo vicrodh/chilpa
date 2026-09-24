@@ -176,22 +176,30 @@ pub fn output_streams(device: AudioObjectID) -> Vec<AudioObjectID> {
 /// physical formats are what the wire does. A device that reports 24 bits
 /// here and is set to 44100 will carry 24-bit samples at 44100 untouched.
 pub fn physical_formats(device: AudioObjectID) -> Vec<AudioStreamBasicDescription> {
-    let streams = output_streams(device);
-    let mut out = Vec::new();
-    for stream in streams {
-        let formats: Vec<AudioStreamRangedDescription> =
-            read_all(stream, &global(kAudioStreamPropertyAvailablePhysicalFormats));
-        out.extend(formats.into_iter().map(|f| f.mFormat));
-    }
-    out
+    output_streams(device).into_iter().flat_map(available_physical_formats).collect()
 }
 
-/// What a stream is presented as right now.
+/// One of a stream's two formats, right now.
 ///
 /// The one to read back after asking for a format: a set that returns
 /// success and a device that gives something else is the ordinary case.
-pub fn virtual_format(stream: AudioObjectID) -> Option<AudioStreamBasicDescription> {
-    read(stream, &global(kAudioStreamPropertyVirtualFormat))
+/// Both sides are worth reading -- the wire, and what the program is handed.
+pub fn format(
+    stream: AudioObjectID,
+    which: AudioObjectPropertySelector,
+) -> Option<AudioStreamBasicDescription> {
+    read(stream, &global(which))
+}
+
+/// Every format one stream carries, as the device published them.
+///
+/// The list to pick from rather than to check against: a description built
+/// by hand can be right in every field somebody thought of and refused for
+/// one nobody did.
+pub fn available_physical_formats(stream: AudioObjectID) -> Vec<AudioStreamBasicDescription> {
+    let ranged: Vec<AudioStreamRangedDescription> =
+        read_all(stream, &global(kAudioStreamPropertyAvailablePhysicalFormats));
+    ranged.into_iter().map(|f| f.mFormat).collect()
 }
 
 /// Who has the device to themselves, or nobody.

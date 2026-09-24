@@ -10,11 +10,17 @@ msgstr "\"{}\" no trae nada hoy"
 msgid "\"{}\" did not switch to {} Hz"
 msgstr "\"{}\" no cambió a {} Hz"
 
+msgid "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let the Mac convert"
+msgstr "\"{}\" no lleva muestras de {} bits a {} Hz; apaga bit-perfect para dejar que la Mac convierta"
+
 msgid "\"{}\" does not say how an account connects"
 msgstr "\"{}\" no dice cómo se conecta una cuenta"
 
 msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
 msgstr "\"{}\" no sirve como id: se usa como nombre de carpeta, así que va en minúsculas, con puntos, guiones o dígitos, y sin barras ni puntos dobles"
+
+msgid "\"{}\" has no output stream"
+msgstr "\"{}\" no tiene ningún stream de salida"
 
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
@@ -22,8 +28,14 @@ msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
 msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
 msgstr "\"{}\" abrió como {} en su lugar; apaga bit-perfect para dejar que la Mac convierta"
 
-msgid "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let the Mac convert"
-msgstr "\"{}\" no lleva muestras de {} bits sin tocarlas; apaga bit-perfect para dejar que la Mac convierta"
+msgid "\"{}\" refused the {} format ({})"
+msgstr "\"{}\" rechazó el formato {} ({})"
+
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva ({}); apaga bit-perfect para compartirlo"
+
+msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga bit-perfect para compartirlo"
 
 msgid "\"{}\" would not open ({})"
 msgstr "no se pudo abrir \"{}\" ({})"

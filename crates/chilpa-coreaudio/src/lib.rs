@@ -196,23 +196,35 @@ pub fn capabilities(name: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
     use chilpa_audio::format::SampleFormat;
     let mut formats = Vec::new();
     for physical in read::physical_formats(device) {
-        // The width alone does not say the layout, and offering the wrong
-        // one is how an open ends in a device politely saying yes and then
-        // presenting something else. A stream that carries 24 bits in four
-        // bytes is `S24In32`; one that packs them into three is
-        // `S24Packed`, and they are not interchangeable.
-        let per_channel = physical
-            .mBytesPerFrame
-            .checked_div(physical.mChannelsPerFrame.max(1))
-            .unwrap_or(0);
-        let found = match (physical.mBitsPerChannel, per_channel) {
-            (16, _) => SampleFormat::S16,
-            (24, 3) => SampleFormat::S24Packed,
-            (24, 4) => SampleFormat::S24In32,
-            (32, _) => SampleFormat::S32,
-            // Twenty bits is a real thing on HDMI and Chilpa has no sample
-            // format for it. Offering the next size up would be a guess
-            // about what the device does with the spare bits.
+        // Every field, not just the width. A description that is not
+        // interleaved signed little-endian linear PCM is not something
+        // Chilpa's samples can be handed to, and offering it would be
+        // promising a format that fails at open time -- after the DAC has
+        // already been taken and re-clocked.
+        if physical.mFormatID != ffi::kAudioFormatLinearPCM
+            || physical.mFormatFlags & ffi::kAudioFormatFlagIsFloat != 0
+            || physical.mFormatFlags & ffi::kAudioFormatFlagIsSignedInteger == 0
+            || physical.mFormatFlags & ffi::kAudioFormatFlagIsBigEndian != 0
+            || physical.mFormatFlags & ffi::kAudioFormatFlagIsNonInterleaved != 0
+            || physical.mChannelsPerFrame == 0
+        {
+            continue;
+        }
+        // Bytes per channel only means anything once interleaving is known,
+        // which is why that is checked above and not here.
+        let per_channel = physical.mBytesPerFrame / physical.mChannelsPerFrame;
+        let high = physical.mFormatFlags & ffi::kAudioFormatFlagIsAlignedHigh != 0;
+        let found = match (physical.mBitsPerChannel, per_channel, high) {
+            (16, 2, false) => SampleFormat::S16,
+            (24, 3, false) => SampleFormat::S24Packed,
+            // Twenty-four carried in four with the valid bits at the top is
+            // exactly what `S24In32` is.
+            (24, 4, true) => SampleFormat::S24In32,
+            (32, 4, false) => SampleFormat::S32,
+            // Twenty bits is a real thing on HDMI, and a 24-bit word with
+            // the bits somewhere else is a real thing too. Chilpa has no
+            // format for either, and the nearest size would be a guess about
+            // what the device does with the rest of the word.
             _ => continue,
         };
         if !formats.contains(&found) {
