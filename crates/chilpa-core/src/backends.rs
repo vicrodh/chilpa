@@ -40,6 +40,8 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
     }
     #[cfg(target_os = "macos")]
     stacks.push(Box::new(chilpa_coreaudio::CoreAudio));
+    #[cfg(target_os = "windows")]
+    stacks.push(Box::new(chilpa_wasapi::Wasapi));
     stacks.push(Box::new(chilpa_audio::capture::FileBackend::new(super::capture_path())));
     stacks
 }

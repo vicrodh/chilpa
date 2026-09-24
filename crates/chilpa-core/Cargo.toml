@@ -32,3 +32,6 @@ chilpa-jack.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 chilpa-coreaudio.workspace = true
+
+[target.'cfg(target_os = "windows")'.dependencies]
+chilpa-wasapi.workspace = true
