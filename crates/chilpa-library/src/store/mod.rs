@@ -76,8 +76,16 @@ impl Library {
     }
 
     /// An in-memory library, for tests.
+    ///
+    /// It gets the same pragmas as one on disk. It did not, and the one that
+    /// matters is `foreign_keys`: with it off, every test in this crate ran
+    /// against a database that could not notice a row pointing at nothing,
+    /// so a rescan that broke a foreign key passed here and failed on a real
+    /// library. A fixture that cannot fail the way the real thing fails is
+    /// not testing the real thing.
     pub fn in_memory() -> rusqlite::Result<Self> {
         let db = Connection::open_in_memory()?;
+        schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
         Ok(Self { db })
     }
@@ -576,6 +584,52 @@ mod tests {
             .unwrap_or(None)
             .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
             .unwrap_or(0)
+    }
+
+    #[test]
+    fn a_track_with_no_album_never_makes_up_a_rollup_row() {
+        // A loose file -- opened, not scanned into an album -- has a null
+        // album_id. The rollup trigger used to insert that null into a
+        // column that is INTEGER PRIMARY KEY, so SQLite made up a rowid and
+        // the library got a rollup row for an album that does not exist.
+        // On disk, where foreign keys are on, it was not junk but a hard
+        // error out of the statement a scan runs on every file it finds
+        // again, so a library with one loose file could not be rescanned.
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist,
+                                     duration_ms, added_at)
+                 VALUES (1, ?1, '/loose.flac', 'On its own', 'Someone', 200000, 0)",
+                params![source],
+            )
+            .unwrap();
+
+        // What a rescan does to a file it finds again.
+        lib.db.execute("UPDATE tracks SET present = 1 WHERE id = 1", []).expect("it rescans");
+        lib.db.execute("UPDATE tracks SET present = 0 WHERE id = 1", []).expect("and it goes");
+        lib.db.execute("UPDATE tracks SET present = 1 WHERE id = 1", []).expect("and comes back");
+
+        let rollups: i64 = lib
+            .db
+            .query_row("SELECT count(*) FROM album_rollup", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(rollups, 0, "no album, no rollup row");
+        assert!(lib.check().unwrap().is_empty(), "and nothing points at nothing");
+
+        // And a track that does have an album still gets counted.
+        lib.db
+            .execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'A', 'B')", [])
+            .unwrap();
+        lib.db.execute("UPDATE tracks SET album_id = 1 WHERE id = 1", []).unwrap();
+        let (album, present): (i64, i64) = lib
+            .db
+            .query_row("SELECT album_id, present_tracks FROM album_rollup", [], |r| {
+                Ok((r.get(0)?, r.get(1)?))
+            })
+            .unwrap();
+        assert_eq!((album, present), (1, 1), "it moved into the album and was counted");
     }
 
     #[test]

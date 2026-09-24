@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 12;
+pub const VERSION: i64 = 13;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -27,7 +27,7 @@ pub const VERSION: i64 = 12;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -990,6 +990,51 @@ SELECT t.id,
                  JOIN genres g ON g.id = tg.genre_id
                  WHERE tg.track_id = t.id), '')
 FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
+
+ANALYZE;
+"#;
+
+/// From 12 to 13: a track with no album stops inventing one.
+///
+/// `album_rollup_track_moved` fires whenever a track's `present`, `added_at`
+/// or `album_id` changes, and it began with an unguarded
+/// `INSERT INTO album_rollup (album_id, added_at) VALUES (NEW.album_id, ...)`.
+/// When the track has no album that inserts a NULL into a column that is
+/// `INTEGER PRIMARY KEY`, so SQLite makes up a rowid, and the result is a
+/// rollup row for an album that does not exist.
+///
+/// With `foreign_keys` on -- which is every library on disk -- that is not
+/// junk, it is an error, and it comes out of the statement a scan runs on
+/// every file it finds again: marking a track present. So a library holding
+/// one loose file, not in any album, could not be rescanned at all.
+///
+/// Nothing caught it because `Library::in_memory` did not apply the pragmas,
+/// so every test in this crate ran against a database with foreign keys
+/// switched off. That is fixed in the same commit, and it is the more
+/// important half: this bug was a consequence.
+///
+/// The sibling trigger on INSERT already had the guard. This gives the same
+/// one to the UPDATE, as a `SELECT ... WHERE` rather than a trigger-level
+/// `WHEN`, because the second half of the trigger still has to run when the
+/// track moves out of an album and into none -- that is exactly when the
+/// album it left has to be counted again.
+const MIGRATION_V13: &str = r#"
+DROP TRIGGER album_rollup_track_moved;
+
+CREATE TRIGGER album_rollup_track_moved AFTER UPDATE OF album_id, added_at, present ON tracks
+BEGIN
+    INSERT INTO album_rollup (album_id, added_at)
+    SELECT NEW.album_id, NEW.added_at WHERE NEW.album_id IS NOT NULL
+    ON CONFLICT(album_id) DO UPDATE SET added_at = max(added_at, NEW.added_at);
+    UPDATE album_rollup
+       SET present_tracks = (SELECT count(*) FROM tracks t
+                             WHERE t.album_id = album_rollup.album_id AND t.present = 1)
+     WHERE album_id IN (OLD.album_id, NEW.album_id);
+END;
+
+-- What the old one made up, in libraries that had foreign keys off.
+DELETE FROM album_rollup
+ WHERE album_id NOT IN (SELECT id FROM albums);
 
 ANALYZE;
 "#;

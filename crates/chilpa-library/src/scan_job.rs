@@ -165,7 +165,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("album")).unwrap();
         for n in 0..4 {
-            std::fs::write(dir.join("album").join(format!("{n:02}.flac")), b"no es audio").unwrap();
+            std::fs::write(dir.join("album").join(format!("{n:02}.flac")), b"not audio").unwrap();
         }
         std::fs::write(dir.join("notes.txt"), b"x").unwrap();
 
