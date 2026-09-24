@@ -1,23 +1,23 @@
-//! Conectar una cuenta sin que el plugin toque el token.
+//! Connecting an account without the plugin ever touching the token.
 //!
-//! El ADR-008 lo decide así y la razón es una: **el refresh token es lo más
-//! valioso que hay**. No caduca pronto y sirve para pedir accesos nuevos
-//! indefinidamente. Si pasara por las manos del plugin, aunque fuera un
-//! momento, todo lo demás sería decoración. Así que el plugin declara sus
-//! endpoints en el manifest y Chilpa corre el flujo entero.
+//! ADR-008 decides it this way for one reason: **the refresh token is the
+//! most valuable thing there is**. It does not expire soon and it can mint
+//! new access indefinitely. If it passed through the plugin's hands, even
+//! for a moment, everything else would be decoration. So the plugin
+//! declares its endpoints in the manifest and Chilpa runs the whole flow.
 //!
-//! # Qué flujo
+//! # Which flow
 //!
-//! Authorization Code con PKCE y redirección a loopback, que es lo que el
-//! RFC 8252 dice para una aplicación de escritorio. Sin `client_secret`:
-//! un secreto dentro de un binario que se distribuye no es un secreto, y
-//! PKCE es justo lo que lo reemplaza.
+//! Authorization Code with PKCE and a loopback redirect, which is what RFC
+//! 8252 says for a desktop application. No `client_secret`: a secret inside
+//! a binary that gets distributed is not a secret, and PKCE is exactly what
+//! replaces it.
 //!
-//! # Lo que este crate no hace
+//! # What this crate does not do
 //!
-//! No guarda nada. Contesta [`Tokens`] y quien llame decide dónde ponerlos
-//! —en Chilpa, cifrados, con `chilpa-secrets`—. Tampoco abre el navegador:
-//! devuelve la URL a la que hay que mandar al usuario.
+//! It stores nothing. It answers [`Tokens`] and the caller decides where to
+//! put them — in Chilpa, sealed, with `chilpa-secrets`. It does not open a
+//! browser either: it returns the URL the user has to be sent to.
 
 mod flow;
 mod pkce;
@@ -27,36 +27,36 @@ pub use pkce::Pkce;
 
 use serde::{Deserialize, Serialize};
 
-/// Cómo se conecta una cuenta en ese source. Sale del manifest del plugin.
+/// How an account connects on that source. Comes from the plugin's manifest.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Auth {
-    /// Una credencial que el usuario pega y ya: una API key, un token de
-    /// larga vida. Chilpa la guarda cifrada y la pone en cada petición.
+    /// A credential the user pastes and that is it: an API key, a long-lived
+    /// token. Chilpa keeps it sealed and puts it on every request.
     Token,
-    /// OAuth 2.0 con código y PKCE.
+    /// OAuth 2.0 with a code and PKCE.
     ///
-    /// El nombre va escrito a mano: `rename_all` lo volvería `o_auth2`, y
-    /// esto cruza el ABI. Un manifest dice `"type": "oauth2"`.
+    /// The name is written by hand: `rename_all` would turn it into `o_auth2`,
+    /// and this crosses the ABI. A manifest says `"type": "oauth2"`.
     #[serde(rename = "oauth2")]
     OAuth2 {
-        /// A dónde se manda al usuario a decir que sí.
+        /// Where the user is sent to say yes.
         authorize_url: String,
-        /// A dónde se cambia el código por los tokens, y de donde se
-        /// renuevan.
+        /// Where the code is exchanged for the tokens, and where they are
+        /// renewed from.
         token_url: String,
-        /// La identidad de la aplicación ante ese servicio. No es un
-        /// secreto: va en la URL que ve el usuario.
+        /// The application's identity to that service. Not a secret: it goes
+        /// in the URL the user sees.
         client_id: String,
-        /// Qué se le pide permiso de hacer.
+        /// What permission is asked for.
         #[serde(default)]
         scopes: Vec<String>,
     },
 }
 
 impl Auth {
-    /// Con qué servidor va a hablar el usuario, para poder decírselo antes
-    /// de mandarlo. Vacío si no hay a dónde ir.
+    /// Which server the user is going to talk to, so they can be told before
+    /// being sent. Empty when there is nowhere to go.
     pub fn host(&self) -> String {
         match self {
             Auth::Token => String::new(),
@@ -64,10 +64,11 @@ impl Auth {
         }
     }
 
-    /// Qué está mal, si algo. Vacío si se puede usar.
+    /// What is wrong, if anything. Empty when it can be used.
     ///
-    /// Se revisa al leer el manifest y no al conectarse: un plugin que pide
-    /// mandar al usuario a `http://` no se instala, no falla a la mitad.
+    /// Checked when the manifest is read and not when connecting: a plugin that
+    /// would send the user to `http://` does not install, it does not fail
+    /// halfway.
     pub fn problem(&self) -> Option<String> {
         let Auth::OAuth2 { authorize_url, token_url, client_id, .. } = self else {
             return None;
@@ -87,37 +88,37 @@ impl Auth {
     }
 }
 
-/// Lo que el servicio entrega cuando el usuario dice que sí.
+/// What the service hands over once the user says yes.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Tokens {
-    /// Con esto se firman las peticiones. Caduca.
+    /// Requests are signed with this. It expires.
     pub access_token: String,
-    /// Con esto se pide uno nuevo cuando el de arriba caduca. Es el que
-    /// hay que cuidar.
+    /// A new one is asked for with this when the one above expires. This is
+    /// the one to look after.
     #[serde(default)]
     pub refresh_token: String,
-    /// Cuándo deja de servir el de arriba, en segundos unix. `None` si el
-    /// servicio no lo dijo.
+    /// When the one above stops working, in unix seconds. `None` if the
+    /// service did not say.
     #[serde(default)]
     pub expires_at: Option<i64>,
 }
 
 impl Tokens {
-    /// Cierto si ya caducó, o está por caducar.
+    /// True when it has expired, or is about to.
     ///
-    /// Se renueva un minuto antes a propósito: entre que se revisa y llega
-    /// la petición pasa tiempo, y un token que caduca en el camino se ve
-    /// como un 401 que nadie sabe de dónde salió.
+    /// It is renewed a minute early on purpose: time passes between the check
+    /// and the request landing, and a token that expires on the way looks like
+    /// a 401 nobody can place.
     pub fn stale(&self, now_unix: i64) -> bool {
         self.expires_at.is_some_and(|t| t - 60 <= now_unix)
     }
 
-    /// Cierto si se puede renovar sin volver a molestar al usuario.
+    /// True when it can be renewed without bothering the user again.
     pub fn renewable(&self) -> bool {
         !self.refresh_token.trim().is_empty()
     }
 
-    /// Cómo va en la cabecera `Authorization`.
+    /// How it goes in the `Authorization` header.
     pub fn header(&self) -> String {
         format!("Bearer {}", self.access_token)
     }
@@ -141,10 +142,10 @@ pub enum AuthError {
     Io(#[from] std::io::Error),
 }
 
-/// Cierto si esa URL se puede usar sin exponer la sesión.
+/// True when that URL can be used without exposing the session.
 ///
-/// `https` siempre; `http` solo a loopback, que no sale de la máquina y es
-/// justo a donde el navegador regresa.
+/// `https` always; `http` only to loopback, which never leaves the machine
+/// and is exactly where the browser comes back to.
 pub(crate) fn secure(url: &str) -> bool {
     if url.starts_with("https://") {
         return true;
@@ -152,7 +153,7 @@ pub(crate) fn secure(url: &str) -> bool {
     host_of(url).is_some_and(|h| h == "127.0.0.1" || h == "localhost" || h == "[::1]")
 }
 
-/// La máquina de una URL, sin puerto ni usuario.
+/// A URL's host, without port or user.
 pub(crate) fn host_of(url: &str) -> Option<String> {
     let rest = url.split_once("://")?.1;
     let rest = rest.split(['/', '?', '#']).next()?;

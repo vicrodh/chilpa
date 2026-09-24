@@ -1,18 +1,18 @@
-//! De dónde sale el contenido.
+//! Where the content comes from.
 
 use crate::quality::AudioQuality;
 use std::fmt;
 
-/// El origen de algo: quién lo provee más de qué instancia suya.
+/// The origin of something: who provides it, plus which instance of theirs.
 ///
-/// Dos cuentas del mismo proveedor son dos sources distintas (ADR-003). En
-/// QBZ solo cabía una instancia por tipo, y esa fue una de las fallas que
-/// encontró la auditoría.
+/// Two accounts of the same provider are two different sources (ADR-003).
+/// In QBZ only one instance per kind fit, and that was one of the failures
+/// the audit found.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct SourceId {
-    /// `local`, el id de un plugin o el de un servidor.
+    /// `local`, a plugin's id, or a server's.
     pub provider: String,
-    /// Cuál de sus instancias: una cuenta, un servidor, un root.
+    /// Which of its instances: an account, a server, a root.
     pub instance: String,
 }
 
@@ -21,7 +21,7 @@ impl SourceId {
         Self { provider: provider.into(), instance: instance.into() }
     }
 
-    /// La biblioteca local: un solo provider con una sola instancia.
+    /// The local library: one provider with one instance.
     pub fn local() -> Self {
         Self::new("local", "default")
     }
@@ -37,28 +37,28 @@ impl fmt::Display for SourceId {
     }
 }
 
-/// Qué tan accesible está algo en un source. Un source apagado, en cuarentena
-/// o sin red deja su contenido [`Availability::Unreachable`]; nunca se borra
-/// (ADR-003, y el `scan.rs:1351` de la auditoría, donde un root desmontado
-/// borraba todos sus tracks).
+/// How reachable something is in a source. A source that is off, in
+/// quarantine or without network leaves its content
+/// [`Availability::Unreachable`]; it is never deleted (ADR-003, and the
+/// audit's `scan.rs:1351`, where an unmounted root deleted all its tracks).
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Reachability {
-    /// Se puede reproducir ahora.
+    /// It can be played right now.
     Playable,
-    /// El source no responde; lo que sabemos de él sigue siendo válido.
+    /// The source is not answering; what we know about it still holds.
     Unreachable,
-    /// El source respondió y dijo que ya no lo tiene.
+    /// The source answered and said it no longer has it.
     Gone,
 }
 
-/// Un track visto desde un source concreto: si se puede reproducir y con qué
-/// calidad. Un mismo track puede estar en varios sources con calidades
-/// distintas, y la vista de álbum las muestra todas (ADR-003).
+/// A track seen from one particular source: whether it can be played and at
+/// what quality. The same track can live in several sources at different
+/// qualities, and the album view shows them all (ADR-003).
 #[derive(Clone, PartialEq, Debug)]
 pub struct Availability {
     pub source: SourceId,
     pub reachability: Reachability,
-    /// La mejor calidad que ofrece ese source, si la conoce.
+    /// The best quality that source offers, if it knows it.
     pub quality: Option<AudioQuality>,
 }
 
@@ -72,7 +72,7 @@ impl Availability {
     }
 }
 
-/// Escoge dónde reproducir: primero el orden de preferencia del usuario y,
+/// Picks where to play: the user's order of preference first and,
 /// entre los que empatan, la mejor calidad. Los que no se pueden reproducir
 /// no compiten, pero siguen existiendo para la UI.
 pub fn preferred<'a>(options: &'a [Availability], order: &[SourceId]) -> Option<&'a Availability> {

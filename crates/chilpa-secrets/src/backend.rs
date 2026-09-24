@@ -1,25 +1,26 @@
-//! Cuál de los dos caminos se usa, y por qué.
+//! Which of the two paths is used, and why.
 //!
-//! Al abrir se intenta el keyring del sistema. Si se pudo, ahí vive una
-//! llave maestra de 32 bytes y con ella se cifra todo. Si no se pudo, por la
-//! razón que sea, la llave se deriva con HKDF de identificadores del equipo.
+//! Opening tries the system keyring first. If that works, a 32-byte master
+//! key lives there and everything is encrypted with it. If it does not, for
+//! whatever reason, the key is derived with HKDF from device identifiers.
 //!
-//! **Solo Linux, macOS y Windows consultan el keyring.** Es un requisito de
-//! corrección, no una preferencia: sin la feature nativa, `keyring` 3.x
-//! resuelve a un `mock` en memoria **cuyas escrituras tienen éxito**. Esa
-//! llamada no falla hacia el respaldo; entrega una llave que muere con el
-//! proceso, y todo lo cifrado en una corrida queda ilegible en la siguiente
-//! mientras el backend se reporta como "keyring". El camino derivado, en
-//! cambio, sale del mismo id de instalación en cada arranque.
+//! **Only Linux, macOS and Windows consult the keyring.** That is a
+//! correctness requirement, not a preference: without the native feature,
+//! `keyring` 3.x resolves to an in-memory `mock` **whose writes SUCCEED**.
+//! That call does not fall through to the fallback; it hands back a key
+//! that dies with the process, and everything sealed in one run is
+//! unreadable in the next while the backend reports itself as "keyring".
+//! The derived path, by contrast, comes from the same install id every
+//! start.
 //!
-//! El marcador del backend va dentro de cada sobre, para que lo que cifró
-//! uno no lo descifre el otro en silencio, y para que si alguien consigue
-//! keyring después, sus datos viejos no se ignoren sin avisar.
+//! The backend marker travels inside every envelope, so what one sealed is
+//! not silently opened by the other, and so that if someone gains keyring
+//! access later, their old data is not ignored without a word.
 
 use std::path::Path;
 
 use hkdf::Hkdf;
-// Solo el camino del keyring inventa una llave; el otro la deriva.
+// Only the keyring path mints a key; the other one derives it.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 use rand::RngExt;
 use sha2::Sha256;
@@ -36,22 +37,22 @@ const HKDF_INFO: &[u8] = b"chilpa-secrets master-key derivation v1";
 const MARKER_KEYRING: u8 = 0;
 const MARKER_DERIVED: u8 = 1;
 
-/// Cuál camino quedó activo. Sirve para decírselo al usuario: no es lo
-/// mismo tener el keyring del sistema que no tenerlo, y esconderlo sería
-/// prometer una seguridad que no está.
+/// Which path ended up active. Used to tell the user: having the system
+/// keyring is not the same as not having it, and hiding that would promise
+/// a security that is not there.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BackendKind {
-    /// La llave maestra vive en el almacén del sistema. Copiar los archivos
-    /// a otra máquina los deja ilegibles.
+    /// The master key lives in the system store. Copying the files to another
+    /// machine leaves them unreadable.
     Keyring,
-    /// La llave se deriva de `machine-id` más el id de instalación. Sigue
-    /// atada al equipo, pero quien tenga acceso al sistema de archivos y al
-    /// `machine-id` puede rehacerla.
+    /// The key is derived from `machine-id` plus the install id. Still bound
+    /// to the machine, but anyone with filesystem access and the `machine-id`
+    /// can rebuild it.
     Derived,
 }
 
 impl BackendKind {
-    /// Cómo se le dice al usuario, que no tiene por qué saber qué es HKDF.
+    /// How it is told to the user, who has no reason to know what HKDF is.
     pub fn describe(&self) -> &'static str {
         match self {
             BackendKind::Keyring => "en el llavero del sistema",
@@ -76,15 +77,15 @@ impl Backend {
         Ok(Self { kind: BackendKind::Derived, master_key })
     }
 
-    /// Solo el camino derivado, sin tocar el keyring.
+    /// The derived path only, without touching the keyring.
     ///
-    /// Existe para las pruebas. Llegar al Keychain de verdad desde una
-    /// prueba no es más fuerte, es más frágil: macOS ata el permiso de una
-    /// entrada al binario exacto que la creó, así que el **segundo** `cargo
-    /// test` después de editar código es un binario nuevo contra una entrada
-    /// vieja, y el sistema bloquea el proceso con un diálogo que una corrida
-    /// headless no puede contestar. Lo que se prueba —ida y vuelta, y
-    /// detectar manoseo— es idéntico en los dos caminos.
+    /// It exists for the tests. Reaching the real Keychain from a test is not
+    /// stronger, it is flakier: macOS binds an entry's permission to the exact
+    /// binary that created it, so the **second** `cargo test` after editing
+    /// code is a new binary against an old entry, and the system blocks the
+    /// process with a dialog a headless run can never answer. What is being
+    /// tested — the round trip, and catching tampering — is identical on either
+    /// path.
     pub fn derived_only(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         let master_key = derive_key(service_name, storage_dir)?;
         Ok(Self { kind: BackendKind::Derived, master_key })
@@ -110,7 +111,7 @@ impl Backend {
     }
 }
 
-/// Lee, o crea y guarda, la llave maestra en el almacén del sistema.
+/// Reads, or creates and stores, the master key in the system store.
 #[cfg(any(target_os = "linux", target_os = "macos", target_os = "windows"))]
 fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> {
     use base64::engine::general_purpose::STANDARD as B64;
@@ -118,17 +119,17 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
     use keyring::credential::CredentialPersistence;
     use keyring::Entry;
 
-    // Un build sin la feature de su plataforma exporta el mock en memoria,
-    // cuyas escrituras tienen éxito y cuyo contenido muere con el proceso.
-    // Eso es peor que el respaldo derivado, que al menos es estable, y no se
-    // nota porque nada falla. Se rechaza cualquier backend que no escriba a
-    // disco: los reales heredan `UntilDelete` y el mock lo cambia a
+    // A build without its platform's feature exports the in-memory mock,
+    // whose writes succeed and whose contents die with the process. That is
+    // worse than the derived fallback, which is at least stable, and it does
+    // not show because nothing fails. Any backend that does not write to
+    // disk is refused: the real ones inherit `UntilDelete` and the mock
     // `EntryOnly`.
     //
-    // Alcance: lee el builder de compilación, que es el que usa `Entry::new`
-    // aquí. No vería a alguien que lo cambiara en caliente con
-    // `keyring::set_default_credential_builder`; nadie lo hace, y contra lo
-    // que esto protege es contra un error de configuración del build.
+    // Reach: it reads the compile-time builder, which is what `Entry::new`
+    // uses here. It would not catch someone swapping it at runtime with
+    // `keyring::set_default_credential_builder`; nobody does, and what this
+    // guards against is a build configuration mistake.
     let persistence = keyring::default::default_credential_builder().persistence();
     if !matches!(persistence, CredentialPersistence::UntilDelete) {
         return Err(SecretError::Keyring(
@@ -173,8 +174,8 @@ fn derive_key(
     let install_uuid = install_id::load_or_create(storage_dir).map_err(SecretError::Io)?;
     let machine = install_id::machine_id().unwrap_or_default();
 
-    // Ninguno de los tres es secreto. La fuerza está en que los tres tienen
-    // que estar en el mismo sistema de archivos para rehacer la llave.
+    // None of the three is a secret. The strength is that all three have to
+    // be on the same filesystem to rebuild the key.
     let mut ikm: Vec<u8> = Vec::with_capacity(service_name.len() + machine.len() + 64);
     ikm.extend_from_slice(service_name.as_bytes());
     ikm.push(0);

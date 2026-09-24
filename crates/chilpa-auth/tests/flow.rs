@@ -1,15 +1,15 @@
-//! El flujo completo contra un servicio de mentiras, sin navegador.
+//! The whole flow against a fake service, with no browser.
 //!
-//! El navegador lo hace la prueba: pide la URL de regreso igual que lo haría
-//! él. Lo que importa es que el código llegue amarrado a su `state`, que el
-//! verificador viaje solo al cambiarlo por tokens, y que renovar no pierda
+//! The test plays the browser: it fetches the redirect URL just as one
+//! would. What matters is that the code arrives tied to its `state`, that
+//! the verifier travels only when exchanging it for tokens, and that
 //! el refresh.
 
 use chilpa_auth::{authorize_url, exchange, refresh, Auth, Loopback, Pkce, Tokens};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 
-/// Un servicio que entrega tokens y guarda qué le pidieron.
+/// A service that hands out tokens and records what it was asked for.
 struct Service {
     port: u16,
     seen: std::sync::Arc<std::sync::Mutex<Vec<String>>>,
@@ -23,9 +23,9 @@ fn service() -> Service {
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {
             let mut stream = stream;
-            // Se lee hasta tener el cuerpo entero: el cliente manda los
-            // encabezados y el cuerpo por separado, y quedarse con la
-            // primera lectura haría pasar la prueba sin mirar nada.
+            // Read until the whole body is there: the client sends headers and
+            // body separately, and keeping only the first read would make the
+            // test pass without looking at anything.
             let mut raw = Vec::new();
             let mut buf = [0u8; 4096];
             let body = loop {
@@ -47,16 +47,16 @@ fn service() -> Service {
             };
             mine.lock().unwrap().push(body.clone());
 
-            // Al renovar no manda refresh nuevo, como muchos servicios.
+            // On renewal it sends no new refresh, like many services.
             let json = if body.contains("grant_type=refresh_token") {
                 r#"{"access_token":"segundo","token_type":"Bearer","expires_in":3600}"#
             } else {
                 r#"{"access_token":"primero","refresh_token":"para-renovar",
                     "token_type":"Bearer","expires_in":3600}"#
             };
-            // `Connection: close` porque este servidor atiende una petición
-            // por conexión y el cliente las reutiliza: sin esto la segunda
-            // llamada se queda esperando a nadie.
+            // `Connection: close` because this server serves one request per
+            // connection and the client reuses them: without it the second call
+            // waits for nobody.
             let head = format!(
                 "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                 json.len()
@@ -78,7 +78,7 @@ fn auth(port: u16) -> Auth {
     }
 }
 
-/// Hace lo que haría el navegador: pedir la URL de regreso.
+/// Does what the browser would: fetch the redirect URL.
 fn browser(redirect: &str, query: &str) {
     let rest = redirect.strip_prefix("http://").unwrap();
     let (host, path) = rest.split_once('/').unwrap();
@@ -93,8 +93,8 @@ fn now() -> i64 {
     1_000_000
 }
 
-/// La petición de verdad, que es lo que inyecta Chilpa. El crate no conoce
-/// la red; aquí se le presta.
+/// The real request, which is what Chilpa injects. The crate does not know
+/// the network; here it is lent one.
 fn post(url: &str, body: &str) -> Result<(u16, String), String> {
     let request = serde_json::json!({
         "url": url,
@@ -128,7 +128,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     assert!(url.contains("code_challenge="), "{url}");
     assert!(!url.contains(pkce.verifier()), "el verificador no va en la URL");
 
-    // El navegador regresa con el código y el mismo state.
+    // The browser comes back with the code and the same state.
     let redirect = back.redirect_uri();
     let state = back.state().to_string();
     std::thread::spawn(move || {
@@ -139,7 +139,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     let code = chilpa_auth::wait_for_code(&back).expect("llegó el código");
     assert_eq!(code, "el-codigo");
 
-    // Se cambia por tokens. Aquí, y solo aquí, viaja el verificador.
+    // Exchanged for tokens. Here, and only here, the verifier travels.
     let tokens = exchange(&auth, &code, &pkce, &back, now(), &post).expect("cambió");
     assert_eq!(tokens.access_token, "primero");
     assert_eq!(tokens.refresh_token, "para-renovar");
@@ -152,7 +152,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
     assert!(asked[0].contains(&format!("code_verifier={}", pkce.verifier())), "{}", asked[0]);
     assert!(asked[0].contains("client_id=chilpa"));
 
-    // Y cuando caduca, se renueva sin molestar a nadie.
+    // And when it expires, it renews without bothering anyone.
     let old = Tokens { expires_at: Some(now() - 1), ..tokens.clone() };
     assert!(old.stale(now()));
     assert!(old.renewable());

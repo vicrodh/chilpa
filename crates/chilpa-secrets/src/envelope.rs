@@ -1,16 +1,16 @@
-//! El sobre que se guarda en disco.
+//! The envelope that gets written to disk.
 //!
 //! ```text
-//! [0]       versión (u8)        — hoy siempre 1
-//! [1]       marcador de backend — 0 = keyring, 1 = derivado
-//! [2..14]   nonce (12 bytes)    — distinto en cada cifrado
-//! [14..]    ciphertext + tag    — lo que sale de AES-256-GCM
+//! [0]       version (u8)        — always 1 today
+//! [1]       backend marker      — 0 = keyring, 1 = derived
+//! [2..14]   nonce (12 bytes)    — different on every seal
+//! [14..]    ciphertext + tag    — what AES-256-GCM produces
 //! ```
 //!
-//! El marcador va adentro para poder **negarse** a descifrar algo que hizo
-//! otro backend, en lugar de intentarlo y fallar con un error de cripto que
-//! no dice nada. Si alguien consigue acceso al keyring después de haber
-//! corrido con el respaldo, sus datos viejos no se ignoran en silencio.
+//! The marker travels inside so we can **refuse** to open something another
+//! backend sealed, rather than trying and failing with a cipher error that
+//! says nothing. If someone gains keyring access after having run with the
+//! fallback, their old data is not silently ignored.
 
 use crate::error::SecretError;
 
@@ -18,7 +18,7 @@ pub(crate) const ENVELOPE_VERSION: u8 = 1;
 pub(crate) const NONCE_LEN: usize = 12;
 pub(crate) const HEADER_LEN: usize = 2 + NONCE_LEN;
 
-/// Un secreto cifrado, ya separado en sus partes.
+/// A sealed secret, already split into its parts.
 #[derive(Debug)]
 pub struct Sealed<'a> {
     pub backend_marker: u8,
@@ -28,8 +28,8 @@ pub struct Sealed<'a> {
 
 impl<'a> Sealed<'a> {
     pub fn parse(bytes: &'a [u8]) -> Result<Self, SecretError> {
-        // El tag de GCM son 16 bytes: menos que eso no es un sobre corto,
-        // es otra cosa.
+        // The GCM tag is 16 bytes: less than that is not a short envelope, it
+        // is something else.
         if bytes.len() < HEADER_LEN + 16 {
             return Err(SecretError::Malformed(format!(
                 "son {} bytes, no alcanzan ni para el encabezado",

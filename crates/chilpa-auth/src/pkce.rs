@@ -1,44 +1,44 @@
-//! El reto de PKCE (RFC 7636).
+//! The PKCE challenge (RFC 7636).
 //!
-//! Sin esto, quien lograra interceptar el código de autorización —otra app
-//! en la misma máquina escuchando el loopback, un log del navegador— podría
-//! cambiarlo por tokens él mismo. Con esto, el código solo sirve para quien
-//! tenga el verificador, que nunca salió de este proceso.
+//! Without this, anyone who intercepted the authorization code — another app
+//! on the same machine listening on loopback, a browser log — could exchange
+//! it for tokens themselves. With it, the code is only good to whoever holds
+//! the verifier, which never left this process.
 
 use base64::engine::general_purpose::URL_SAFE_NO_PAD as B64;
 use base64::Engine;
 use rand::RngExt;
 use sha2::{Digest, Sha256};
 
-/// Un verificador y su reto.
+/// A verifier and its challenge.
 #[derive(Clone, Debug)]
 pub struct Pkce {
     verifier: String,
 }
 
 impl Pkce {
-    /// Uno nuevo, con 32 bytes de aleatoriedad.
+    /// A fresh one, with 32 bytes of randomness.
     ///
-    /// El RFC pide entre 43 y 128 caracteres; 32 bytes en base64url dan 43,
-    /// que es el mínimo y ya son 256 bits.
+    /// The RFC asks for 43 to 128 characters; 32 bytes in base64url give 43,
+    /// which is the minimum and is already 256 bits.
     pub fn new() -> Self {
         let mut bytes = [0u8; 32];
         rand::rng().fill(&mut bytes);
         Self { verifier: B64.encode(bytes) }
     }
 
-    /// Lo que se manda al cambiar el código por los tokens. No sale de aquí
-    /// hasta ese momento.
+    /// What is sent when exchanging the code for tokens. It does not leave here
+    /// until that moment.
     pub fn verifier(&self) -> &str {
         &self.verifier
     }
 
-    /// Lo que va en la URL a la que se manda al usuario.
+    /// What goes in the URL the user is sent to.
     pub fn challenge(&self) -> String {
         B64.encode(Sha256::digest(self.verifier.as_bytes()))
     }
 
-    /// Cómo se llama el método, tal cual lo espera el servicio.
+    /// What the method is called, exactly as the service expects it.
     pub fn method() -> &'static str {
         "S256"
     }
@@ -50,8 +50,8 @@ impl Default for Pkce {
     }
 }
 
-/// Un valor aleatorio para el `state`, que es lo que amarra la respuesta del
-/// navegador con la petición que la originó.
+/// A random value for the `state`, which is what ties the browser's reply
+/// to the request that caused it.
 pub(crate) fn nonce() -> String {
     let mut bytes = [0u8; 16];
     rand::rng().fill(&mut bytes);
@@ -75,7 +75,7 @@ mod tests {
 
     #[test]
     fn the_challenge_is_the_sha256_of_the_verifier_in_base64url() {
-        // El ejemplo del RFC 7636, apéndice B.
+        // The example from RFC 7636, appendix B.
         let p = Pkce { verifier: "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk".into() };
         assert_eq!(p.challenge(), "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM");
     }

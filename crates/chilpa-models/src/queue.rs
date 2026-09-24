@@ -1,4 +1,4 @@
-//! La cola y el estado de reproducción.
+//! The queue and the playback state.
 
 use crate::track::TrackRef;
 use std::time::Duration;
@@ -19,13 +19,13 @@ pub enum PlaybackState {
     Paused,
 }
 
-/// Un elemento de la cola: qué track y desde dónde se encoló.
+/// One item of the queue: which track, and where it was enqueued from.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct QueueItem {
     pub track: TrackRef,
-    /// El contenedor del que salió (álbum, playlist, artista), para el
-    /// "estás escuchando desde". Se sella al encolar, por elemento, así que
-    /// nunca queda un valor global viejo.
+    /// The container it came from (album, playlist, artist), for the "you are
+    /// listening from". Stamped at enqueue time, per item, so a stale global
+    /// value never lingers.
     pub context: Option<String>,
 }
 
@@ -35,13 +35,13 @@ impl QueueItem {
     }
 }
 
-/// La cola, con su orden de reproducción explícito.
+/// The queue, with its playback order made explicit.
 ///
-/// `order` son índices sobre `items`. Chilpa nunca genera un orden por su
-/// cuenta cuando alguien más manda: si la cola la gobierna un servicio
-/// remoto, se aplica el orden que ese servicio devuelve con
-/// [`Queue::set_order`]. Generar un orden local en paralelo es exactamente el
-/// error que se repitió en QBZ y que cuatro modelos volvieron a cometer.
+/// `order` is indices into `items`. Chilpa never generates an order of its
+/// own when someone else is in charge: if a remote service governs the
+/// queue, the order that service returns is applied with
+/// [`Queue::set_order`]. Generating a local order in parallel is exactly the
+/// bug that kept coming back in QBZ and that four models made again.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Queue {
     items: Vec<QueueItem>,
@@ -64,13 +64,13 @@ impl Queue {
         self.items.is_empty()
     }
 
-    /// Lo que suena ahora, si hay algo.
+    /// What is playing now, if anything.
     pub fn current(&self) -> Option<&QueueItem> {
         self.order.get(self.position).and_then(|i| self.items.get(*i))
     }
 
-    /// Aplica un orden que viene de afuera. Se rechaza el que no sea una
-    /// permutación exacta de la cola, para no quedar con una cola a medias.
+    /// Applies an order that comes from outside. One that is not an exact
+    /// permutation of the queue is refused, so the queue is never left partial.
     pub fn set_order(&mut self, order: Vec<usize>) -> Result<(), OrderError> {
         if order.len() != self.items.len() {
             return Err(OrderError::WrongLength { expected: self.items.len(), got: order.len() });
@@ -85,8 +85,8 @@ impl Queue {
         }
         let actual = self.current().cloned();
         self.order = order;
-        // Seguir sonando lo mismo: la posición se recalcula sobre el orden
-        // nuevo en lugar de saltar a otra pista.
+        // Keep playing the same thing: the position is recomputed over the new
+        // order instead of jumping to another track.
         if let Some(actual) = actual {
             if let Some(p) = self.order.iter().position(|i| self.items[*i] == actual) {
                 self.position = p;
@@ -95,7 +95,7 @@ impl Queue {
         Ok(())
     }
 
-    /// Avanza. Regresa `None` cuando la cola se acabó y no hay repetición.
+    /// Advances. Returns `None` when the queue is done and repeat is off.
     pub fn advance(&mut self) -> Option<&QueueItem> {
         if self.items.is_empty() {
             return None;
@@ -121,11 +121,11 @@ pub enum OrderError {
     OutOfRange(usize),
 }
 
-/// Cuánto lleva sonando la pista actual, contado en frames reproducidos.
+/// How far into the current track, counted in frames played.
 ///
-/// QBZ medía la posición con el reloj del sistema en segundos enteros, y de
-/// ahí salían los saltos y los cambios de pista dobles. Los frames son lo
-/// único que conoce la verdad de la salida.
+/// QBZ measured position with the system clock in whole seconds, and that
+/// is where the jumps and the double track changes came from. Frames are
+/// the only thing that knows the truth of the output.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Progress {
     pub frames_played: u64,
