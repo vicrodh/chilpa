@@ -23,16 +23,17 @@ ColumnLayout {
     // What is playing and, beside it, its lyrics when there are any.
     //
     // With a minimum, not just a preferred: when the window runs short, a
-    // ColumnLayout shrinks what it can, and this card shrunk eats the
-    // clock.
+    // ColumnLayout shrinks what it can, and this card shrunk eats the clock.
     RowLayout {
         Layout.fillWidth: true
-        Layout.preferredHeight: 152
-        Layout.minimumHeight: 152
+        // The card says how tall it needs to be: idle it is one line, and
+        // that room goes to the library instead of sitting white.
+        Layout.preferredHeight: card.implicitHeight
+        Layout.minimumHeight: card.implicitHeight
         Layout.alignment: Qt.AlignTop
         spacing: 14
 
-        NowPlayingPanel { Layout.fillWidth: true; Layout.fillHeight: true }
+        NowPlayingPanel { id: card; Layout.fillWidth: true; Layout.fillHeight: true }
 
         LyricsPanel {
             Layout.preferredWidth: 300

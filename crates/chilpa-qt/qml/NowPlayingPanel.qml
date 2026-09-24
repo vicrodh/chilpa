@@ -14,7 +14,13 @@ Rectangle {
     radius: 14
     color: "#ffffff"
     border.color: "#1a411d1f"
-    implicitHeight: compact ? 112 : 152
+    // Idle, the card has one line to show, so it takes one line's room and
+    // gives the rest to the library. An error counts as something to show:
+    // it is the one thing that appears here with nothing playing, and a
+    // card that shrank over it would hide it.
+    readonly property bool idle:
+        !Chilpa.playing && Chilpa.title === "" && Chilpa.error === ""
+    implicitHeight: idle ? 68 : (compact ? 112 : 152)
 
     // In a bottom bar the card does not fit whole: the cover shrinks and
     // the clock stops shouting.
@@ -37,7 +43,10 @@ Rectangle {
             Layout.preferredHeight: root.compact ? 64 : 120
             radius: 8
             color: "#f0eae4"
-            visible: Chilpa.playing || Chilpa.artwork !== ""
+            // Shown whenever there is a track in the card, not only while it
+            // plays: a track that just ended still has a cover, and the card
+            // jumping when it finishes is worse than an empty square.
+            visible: !root.idle
             Image {
                 anchors.fill: parent
                 source: Chilpa.artwork
@@ -83,6 +92,9 @@ Rectangle {
                 visible: !root.compact
             }
             Label {
+                // A clock at 0:00 with nothing playing says nothing, and it
+                // is the tallest thing in the card.
+                visible: !root.idle
                 text: Chilpa.totalSeconds > 0
                     ? clock(Chilpa.seconds) + " / " + clock(Chilpa.totalSeconds)
                     : clock(Chilpa.seconds)
@@ -101,7 +113,12 @@ Rectangle {
                 onMoved: Chilpa.seek(value)
             }
             Label {
-                text: Chilpa.bitPerfect ? "bit-perfect" : (Chilpa.playing ? Chilpa.translate("converted", Chilpa.trRev) : "")
+                text: Chilpa.bitPerfect
+                    ? "bit-perfect"
+                    : (Chilpa.playing ? Chilpa.translate("converted", Chilpa.trRev) : "")
+                // An empty label still takes a line, and with nothing playing
+                // there is no verdict to give.
+                visible: text !== ""
                 color: Chilpa.bitPerfect ? "#2e7d32" : "#d7272b"
             }
             Label {
