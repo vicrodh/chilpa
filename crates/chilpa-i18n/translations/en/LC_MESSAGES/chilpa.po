@@ -942,6 +942,9 @@ msgstr ""
 msgid "the wait ran out"
 msgstr ""
 
+msgid "there is no audio output on this platform yet"
+msgstr ""
+
 msgid "there is no disc in the drive"
 msgstr ""
 
