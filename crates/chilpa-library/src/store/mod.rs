@@ -78,13 +78,7 @@ impl Library {
 
     /// Where this user's library lives.
     pub fn default_path() -> PathBuf {
-        let base = std::env::var_os("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .or_else(|| {
-                std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("share"))
-            })
-            .unwrap_or_else(std::env::temp_dir);
-        base.join("chilpa").join("library.db")
+        chilpa_dirs::data().join("library.db")
     }
 
     /// The source's id, creating it if needed.
