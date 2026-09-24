@@ -186,7 +186,7 @@ ColumnLayout {
                         ? Chilpa.translate("Open", Chilpa.trRev)
                         : Chilpa.translate("Play", Chilpa.trRev)
                     onClicked: fromSource
-                        ? Chilpa.openSourcePlaylist(cols[4], cols[5])
+                        ? Chilpa.openSourcePlaylist(cols[4], cols[5], cols[1])
                         : Chilpa.playSavedPlaylist(parseInt(cols[0]))
                 }
                 Button {

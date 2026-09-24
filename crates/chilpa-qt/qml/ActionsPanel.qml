@@ -12,12 +12,21 @@ import QtQuick.Layouts
 import QtQuick.Dialogs
 import com.blitzfc.chilpa
 
-// The panel takes up what its buttons take up. Whoever places it decides
-// whether there is space to spare beside it; a filler in here would eat the
-// bar of a layout that puts something else on the same line.
-RowLayout {
+// A Flow and not a Row: at a narrow window the buttons wrap instead of
+// running off the edge. A RowLayout with no fillWidth takes its implicit
+// width and keeps it, so the last buttons end up outside the window with no
+// way to reach them.
+//
+// The height follows the rows it ends up with, so whoever places it does not
+// have to guess how many there are.
+Flow {
     id: root
     spacing: 8
+    // A Flow wraps against its width, so it has to be given one; the height
+    // then follows the rows it ends up with, and whoever places it does not
+    // have to guess how many there are.
+    Layout.fillWidth: true
+    Layout.preferredHeight: implicitHeight
 
     // The dialogs ask for a URL, not a path.
     readonly property url from_:

@@ -130,11 +130,27 @@ impl Chilpa {
 
     /// Opens a source's list: its tracks become the results, and playing
     /// one is the same click as playing a search result.
-    pub fn open_source_playlist(mut self: Pin<&mut Self>, source: &QString, id: &QString) {
+    pub fn open_source_playlist(
+        mut self: Pin<&mut Self>,
+        source: &QString,
+        id: &QString,
+        name: &QString,
+    ) {
         let source = source.to_string();
         let id = id.to_string();
-        self.as_mut().rust_mut().api.open_source_playlist(&source, &id);
+        let found = self.as_mut().rust_mut().api.open_source_playlist(&source, &id);
+        // The name comes from the row the user clicked: an open album says
+        // what it is, and a list has no reason to be the exception. Empty
+        // when nothing came back, so the panel does not open on nothing.
+        let title = if found > 0 { name.clone() } else { QString::from("") };
+        self.as_mut().set_open_list(title);
         self.as_mut().refresh_results();
+    }
+
+    pub fn close_list(mut self: Pin<&mut Self>) {
+        self.as_mut().set_open_list(QString::from(""));
+        self.as_mut().set_results(QStringList::default());
+        self.as_mut().rust_mut().result_paths.clear();
     }
 
     pub fn play_saved_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {
@@ -299,6 +315,7 @@ impl Chilpa {
     }
 
     pub fn close_album(mut self: Pin<&mut Self>) {
+        self.as_mut().set_open_list(QString::from(""));
         self.as_mut().set_open_album(QString::from(""));
         self.as_mut().set_open_album_id(0);
         self.as_mut().set_open_album_artist(QString::from(""));

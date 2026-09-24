@@ -14,6 +14,11 @@ impl Chilpa {
     pub fn load_plugins(mut self: Pin<&mut Self>) {
         let count = self.as_mut().rust_mut().api.load_plugins();
         self.as_mut().refresh_plugins();
+        // A source brings its own lists, so loading changes what lists there
+        // are. Without this the panel only learns about them if someone
+        // happens to open it again afterwards, which on startup nobody does:
+        // the tab is chosen before the plugins finish loading.
+        self.as_mut().refresh_playlists();
         let total = self.as_mut().rust_mut().api.plugins().len();
         if total > 0 {
             let loaded = self.api.t_args(
