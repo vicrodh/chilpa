@@ -40,7 +40,7 @@ Rectangle {
     Label {
         anchors.centerIn: parent
         visible: Chilpa.lyrics.length === 0
-        text: Chilpa.playing ? "Sin letra para esta pista" : "Nada sonando"
+        text: Chilpa.playing ? Chilpa.translate("No lyrics for this track", Chilpa.trRev) : Chilpa.translate("Nothing playing", Chilpa.trRev)
         color: "#7a411d1f"
     }
 }

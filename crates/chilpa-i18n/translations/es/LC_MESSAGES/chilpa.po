@@ -3,3 +3,385 @@ msgstr ""
 "Language: es\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Album"
+msgstr "Álbum"
+
+msgid "Albums"
+msgstr "Álbumes"
+
+msgid "Analyse the library"
+msgstr "Analizar la biblioteca"
+
+msgid "Approve"
+msgstr "Aprobar"
+
+msgid "Approve what is new"
+msgstr "Aprobar lo nuevo"
+
+msgid "Arrows"
+msgstr "Flechas"
+
+msgid "Artists"
+msgstr "Artistas"
+
+msgid "Bit-perfect"
+msgstr "Bit-perfect"
+
+msgid "By artist"
+msgstr "Por artista"
+
+msgid "By title"
+msgstr "Por título"
+
+msgid "By year"
+msgstr "Por año"
+
+msgid "Classic"
+msgstr "Clásico"
+
+msgid "Clear queue"
+msgstr "Vaciar cola"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Compact"
+msgstr "Compacto"
+
+msgid "Connect account"
+msgstr "Conectar cuenta"
+
+msgid "Ctrl + arrows"
+msgstr "Ctrl + flechas"
+
+msgid "Delete"
+msgstr "Borrar"
+
+msgid "Disconnect"
+msgstr "Desconectar"
+
+msgid "Distinct tracks"
+msgstr "Pistas distintas"
+
+msgid "Everything"
+msgstr "Todo"
+
+msgid "Formats"
+msgstr "Formatos"
+
+msgid "Genres"
+msgstr "Géneros"
+
+msgid "It asks for no permission at all, but whether it runs is still yours to decide."
+msgstr "No pide ningún permiso, pero igual decides tú si corre."
+
+msgid "It now also asks for:"
+msgstr "Ahora pide además:"
+
+msgid "Last played"
+msgstr "Lo último que sonó"
+
+msgid "Look for plugins"
+msgstr "Buscar plugins"
+
+msgid "Measure the output"
+msgstr "Medir la salida"
+
+msgid "Most played"
+msgstr "Más escuchadas"
+
+msgid "My library"
+msgstr "Mi biblioteca"
+
+msgid "Next"
+msgstr "Siguiente"
+
+msgid "No answer from"
+msgstr "No contestaron"
+
+msgid "No lyrics for this track"
+msgstr "Sin letra para esta pista"
+
+msgid "No plugins installed"
+msgstr "No hay plugins instalados"
+
+msgid "No saved playlists yet"
+msgstr "Todavía no hay listas guardadas"
+
+msgid "Nothing playing"
+msgstr "Nada sonando"
+
+msgid "Open a folder"
+msgstr "Abrir una carpeta"
+
+msgid "Open a playlist"
+msgstr "Abrir una lista"
+
+msgid "Open a stream"
+msgstr "Abrir un stream"
+
+msgid "Open an audio file"
+msgstr "Abrir un archivo de audio"
+
+msgid "Open file"
+msgstr "Abrir archivo"
+
+msgid "Open folder"
+msgstr "Abrir carpeta"
+
+msgid "Open playlist"
+msgstr "Abrir lista"
+
+msgid "Open stream"
+msgstr "Abrir stream"
+
+msgid "Output"
+msgstr "Salida"
+
+msgid "Output wizard"
+msgstr "Asistente de salida"
+
+msgid "Pause"
+msgstr "Pausa"
+
+msgid "Play"
+msgstr "Reproducir"
+
+msgid "Play CD"
+msgstr "Reproducir CD"
+
+msgid "Playlist name"
+msgstr "Nombre de la lista"
+
+msgid "Playlists"
+msgstr "Listas"
+
+msgid "Plays"
+msgstr "Escuchas"
+
+msgid "Press measure to see what your output can do"
+msgstr "Dale a medir para ver qué puede tu salida"
+
+msgid "Previous"
+msgstr "Anterior"
+
+msgid "Queue"
+msgstr "Encolar"
+
+msgid "Rates"
+msgstr "Frecuencias"
+
+msgid "Reactivate"
+msgstr "Reactivar"
+
+msgid "Recently added"
+msgstr "Agregados"
+
+msgid "Recently played"
+msgstr "Escuchados hace poco"
+
+msgid "Reconnect"
+msgstr "Reconectar"
+
+msgid "Repeat: off"
+msgstr "Repetir: no"
+
+msgid "Repeat: queue"
+msgstr "Repetir: cola"
+
+msgid "Repeat: track"
+msgstr "Repetir: pista"
+
+msgid "Rescan"
+msgstr "Volver a escanear"
+
+msgid "Resume"
+msgstr "Reanudar"
+
+msgid "SACD images"
+msgstr "Imágenes de SACD"
+
+msgid "Save queue"
+msgstr "Guardar cola"
+
+msgid "Save the queue"
+msgstr "Guardar la cola"
+
+msgid "Saved"
+msgstr "Guardadas"
+
+msgid "Scan a folder into the library"
+msgstr "Escanear una carpeta a la biblioteca"
+
+msgid "Scan into the library"
+msgstr "Escanear a la biblioteca"
+
+msgid "Search"
+msgstr "Buscar"
+
+msgid "Shortcuts"
+msgstr "Atajos"
+
+msgid "Shuffle"
+msgstr "Aleatorio"
+
+msgid "Since"
+msgstr "Desde"
+
+msgid "Skips"
+msgstr "Saltos"
+
+msgid "Smart"
+msgstr "Inteligentes"
+
+msgid "Space"
+msgstr "Espacio"
+
+msgid "Statistics"
+msgstr "Estadísticas"
+
+msgid "Stop"
+msgstr "Parar"
+
+msgid "Stop the analysis"
+msgstr "Detener el análisis"
+
+msgid "The library is empty"
+msgstr "La biblioteca está vacía"
+
+msgid "This plugin wants:"
+msgstr "Este plugin quiere:"
+
+msgid "Time listened"
+msgstr "Tiempo escuchado"
+
+msgid "Withdraw permission"
+msgstr "Quitar permiso"
+
+msgid "Your browser is open to grant permission. Waiting here."
+msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
+
+msgid "account connected"
+msgstr "cuenta conectada"
+
+msgid "analysing..."
+msgstr "analizando..."
+
+msgid "awaiting approval"
+msgstr "pendiente de aprobación"
+
+msgid "cannot be done"
+msgstr "no se puede"
+
+msgid "close whatever is open"
+msgstr "cerrar lo que esté abierto"
+
+msgid "converted"
+msgstr "convertido"
+
+msgid "could not open the browser: {}"
+msgstr "no se pudo abrir el navegador: {}"
+
+msgid "fine"
+msgstr "bien"
+
+msgid "mixed by tempo: {} track"
+msgid_plural "mixed by tempo: {} tracks"
+msgstr[0] "mezcla por tempo: {} pista"
+msgstr[1] "mezcla por tempo: {} pistas"
+
+msgid "next and previous track"
+msgstr "pista siguiente y anterior"
+
+msgid "no cover"
+msgstr "sin portada"
+
+msgid "open a file"
+msgstr "abrir un archivo"
+
+msgid "pause and resume"
+msgstr "pausa y reanuda"
+
+msgid "phase"
+msgstr "fase"
+
+msgid "playlist \"{}\" saved"
+msgstr "lista \"{}\" guardada"
+
+msgid "playlist saved to {}"
+msgstr "lista guardada en {}"
+
+msgid "quarantined"
+msgstr "en cuarentena"
+
+msgid "remove"
+msgstr "quitar"
+
+msgid "scanning..."
+msgstr "escaneando..."
+
+msgid "search"
+msgstr "buscar"
+
+msgid "stumbling"
+msgstr "tropezando"
+
+msgid "ten seconds forward and back"
+msgstr "diez segundos adelante y atrás"
+
+msgid "that folder could not be read; nothing was touched"
+msgstr "no se pudo leer esa carpeta; no se tocó nada"
+
+msgid "the account expired"
+msgstr "la cuenta caducó"
+
+msgid "this list"
+msgstr "esta lista"
+
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] "{} álbum"
+msgstr[1] "{} álbumes"
+
+msgid "{} analysed, {} with no pulse, {} unread"
+msgstr "{} analizadas, {} sin pulso, {} sin leer"
+
+msgid "{} artist"
+msgid_plural "{} artists"
+msgstr[0] "{} artista"
+msgstr[1] "{} artistas"
+
+msgid "{} files: {} read, {} unchanged, {} missing"
+msgstr "{} archivos: {} leídos, {} sin cambios, {} ausentes"
+
+msgid "{} of {}"
+msgstr "{} de {}"
+
+msgid "{} of {} plugins loaded"
+msgstr "{} de {} plugins cargados"
+
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] "{} escucha"
+msgstr[1] "{} escuchas"
+
+msgid "{} playlist"
+msgid_plural "{} playlists"
+msgstr[0] "{} lista"
+msgstr[1] "{} listas"
+
+msgid "{} plugin"
+msgid_plural "{} plugins"
+msgstr[0] "{} plugin"
+msgstr[1] "{} plugins"
+
+msgid "{} plugin running"
+msgid_plural "{} plugins running"
+msgstr[0] "{} plugin corriendo"
+msgstr[1] "{} plugins corriendo"
+
+msgid "{} track"
+msgid_plural "{} tracks"
+msgstr[0] "{} pista"
+msgstr[1] "{} pistas"

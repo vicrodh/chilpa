@@ -33,11 +33,11 @@ RowLayout {
     FileDialog {
         id: fileDialog
         currentFolder: root.from_
-        title: "Abrir un archivo de audio"
+        title: Chilpa.translate("Open an audio file", Chilpa.trRev)
         nameFilters: [
             "Audio (*.flac *.wav *.m4a *.mp3 *.ogg *.oga *.aiff *.aif *.dsf *.dff)",
-            "Imágenes de SACD (*.iso *.dat)",
-            "Todo (*)"
+            Chilpa.translate("SACD images", Chilpa.trRev) + " (*.iso *.dat)",
+            Chilpa.translate("Everything", Chilpa.trRev) + " (*)"
         ]
         onAccepted: Chilpa.play(selectedFile)
     }
@@ -45,39 +45,39 @@ RowLayout {
     FolderDialog {
         id: folderDialog
         currentFolder: root.from_
-        title: "Abrir una carpeta"
+        title: Chilpa.translate("Open a folder", Chilpa.trRev)
         onAccepted: Chilpa.playFolder(selectedFolder)
     }
 
     FileDialog {
         id: playlistDialog
         currentFolder: root.from_
-        title: "Abrir una lista"
-        nameFilters: ["Listas (*.m3u *.m3u8)"]
+        title: Chilpa.translate("Open a playlist", Chilpa.trRev)
+        nameFilters: [Chilpa.translate("Playlists", Chilpa.trRev) + " (*.m3u *.m3u8)"]
         onAccepted: Chilpa.playPlaylist(selectedFile)
     }
 
     FileDialog {
         id: saveDialog
         currentFolder: root.from_
-        title: "Guardar la cola"
+        title: Chilpa.translate("Save the queue", Chilpa.trRev)
         fileMode: FileDialog.SaveFile
         defaultSuffix: "m3u"
-        nameFilters: ["Listas (*.m3u)"]
+        nameFilters: [Chilpa.translate("Playlists", Chilpa.trRev) + " (*.m3u)"]
         onAccepted: Chilpa.saveQueue(selectedFile)
     }
 
     FolderDialog {
         id: scanDialog
         currentFolder: root.from_
-        title: "Escanear una carpeta a la biblioteca"
+        title: Chilpa.translate("Scan a folder into the library", Chilpa.trRev)
         onAccepted: Chilpa.scanFolder(selectedFolder)
     }
 
     // Opening a radio: an address and that is it.
     Dialog {
         id: streamDialog
-        title: "Abrir un stream"
+        title: Chilpa.translate("Open a stream", Chilpa.trRev)
         anchors.centerIn: Overlay.overlay
         width: 420
         standardButtons: Dialog.Ok | Dialog.Cancel
@@ -94,44 +94,44 @@ RowLayout {
     }
 
     Button {
-        text: "Abrir archivo"
+        text: Chilpa.translate("Open file", Chilpa.trRev)
         onClicked: fileDialog.open()
     }
     Button {
-        text: "Abrir carpeta"
+        text: Chilpa.translate("Open folder", Chilpa.trRev)
         onClicked: folderDialog.open()
     }
     Button {
-        text: "Abrir lista"
+        text: Chilpa.translate("Open playlist", Chilpa.trRev)
         onClicked: playlistDialog.open()
     }
     Button {
-        text: "Guardar cola"
+        text: Chilpa.translate("Save queue", Chilpa.trRev)
         enabled: Chilpa.queue.length > 0
         onClicked: saveDialog.open()
     }
     Button {
-        text: "Vaciar cola"
+        text: Chilpa.translate("Clear queue", Chilpa.trRev)
         enabled: Chilpa.queue.length > 0
         onClicked: Chilpa.clearQueue()
     }
     Button {
-        text: "Abrir stream"
+        text: Chilpa.translate("Open stream", Chilpa.trRev)
         onClicked: streamDialog.open()
     }
     // It only appears if there is a drive: a button that will never be
     // any use gets in the way more than it helps.
     Button {
-        text: "Reproducir CD"
+        text: Chilpa.translate("Play CD", Chilpa.trRev)
         visible: Chilpa.cdDrives.length > 0
         onClicked: Chilpa.playCd(Chilpa.cdDrives[0])
     }
     Button {
-        text: "Escanear a la biblioteca"
+        text: Chilpa.translate("Scan into the library", Chilpa.trRev)
         onClicked: scanDialog.open()
     }
     Button {
-        text: "Volver a escanear"
+        text: Chilpa.translate("Rescan", Chilpa.trRev)
         enabled: !Chilpa.scanning
         onClicked: Chilpa.rescan()
     }

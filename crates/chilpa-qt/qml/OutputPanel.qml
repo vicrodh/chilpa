@@ -15,8 +15,9 @@ RowLayout {
 
     // So a layout can decide whether it wants the search box here or separately.
     property bool withSearch: true
-    // The same with the layout selector.
+    // The same with the layout selector, and with the language.
     property bool withLayout: true
+    property bool withLanguage: true
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()
@@ -26,7 +27,7 @@ RowLayout {
             Chilpa.device = Chilpa.outputIds[0]
     }
 
-    Label { text: "Salida"; color: "#411d1f" }
+    Label { text: Chilpa.translate("Output", Chilpa.trRev); color: "#411d1f" }
 
     ComboBox {
         id: outputs
@@ -51,6 +52,11 @@ RowLayout {
     LayoutSelector {
         Layout.preferredWidth: 130
         visible: root.withLayout
+    }
+
+    LanguageSelector {
+        Layout.preferredWidth: 110
+        visible: root.withLanguage
     }
 
     CheckBox {

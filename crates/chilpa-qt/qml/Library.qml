@@ -13,21 +13,21 @@ Rectangle {
 
     // What is being looked at: the albums, the artists or the stats.
     // Entering an artist returns to the albums, already filtered.
-    property string tab: "albumes"
-    readonly property bool byArtist: tab === "artistas"
+    property string tab: "albums"
+    readonly property bool byArtist: tab === "artists"
 
     function showTab(which) {
         tab = which
-        if (which === "artistas") {
+        if (which === "artists") {
             // Entering the artists clears the filter: otherwise the full list
             // would show alongside a grid of just one.
             Chilpa.openArtistAlbums("")
             Chilpa.refreshArtists()
-        } else if (which === "estadisticas") {
+        } else if (which === "stats") {
             Chilpa.refreshStats()
-        } else if (which === "listas") {
+        } else if (which === "playlists") {
             Chilpa.refreshPlaylists()
-        } else if (which === "asistente") {
+        } else if (which === "wizard") {
             Chilpa.runWizard()
         } else if (which === "plugins") {
             Chilpa.loadPlugins()
@@ -55,19 +55,20 @@ Rectangle {
             Layout.fillWidth: true
             Label {
                 text: {
-                    if (root.tab === "artistas")
-                        return Chilpa.artists.length +
-                            (Chilpa.artists.length === 1 ? " artista" : " artistas")
-                    if (root.tab === "estadisticas") return "Estadísticas"
-                    if (root.tab === "asistente") return "Asistente de salida"
+                    if (root.tab === "artists")
+                        return Chilpa.translateCount(
+                            "{} artist", "{} artists", Chilpa.artists.length, Chilpa.trRev)
+                    if (root.tab === "stats") return Chilpa.translate("Statistics", Chilpa.trRev)
+                    if (root.tab === "wizard")
+                        return Chilpa.translate("Output wizard", Chilpa.trRev)
                     if (root.tab === "plugins") return "Plugins"
-                    if (root.tab === "listas")
-                        return Chilpa.playlists.length +
-                            (Chilpa.playlists.length === 1 ? " lista" : " listas")
+                    if (root.tab === "playlists")
+                        return Chilpa.translateCount(
+                            "{} playlist", "{} playlists", Chilpa.playlists.length, Chilpa.trRev)
                     return Chilpa.albums.length === 0
-                        ? "La biblioteca está vacía"
-                        : Chilpa.albums.length +
-                            (Chilpa.albums.length === 1 ? " álbum" : " álbumes")
+                        ? Chilpa.translate("The library is empty", Chilpa.trRev)
+                        : Chilpa.translateCount(
+                            "{} album", "{} albums", Chilpa.albums.length, Chilpa.trRev)
                 }
                 font.pixelSize: 14
                 font.weight: Font.DemiBold
@@ -76,11 +77,11 @@ Rectangle {
 
             Repeater {
                 model: [
-                    { key: "albumes", text: "Álbumes" },
-                    { key: "artistas", text: "Artistas" },
-                    { key: "listas", text: "Listas" },
-                    { key: "estadisticas", text: "Estadísticas" },
-                    { key: "asistente", text: "Salida" },
+                    { key: "albums", text: Chilpa.translate("Albums", Chilpa.trRev) },
+                    { key: "artists", text: Chilpa.translate("Artists", Chilpa.trRev) },
+                    { key: "playlists", text: Chilpa.translate("Playlists", Chilpa.trRev) },
+                    { key: "stats", text: Chilpa.translate("Statistics", Chilpa.trRev) },
+                    { key: "wizard", text: Chilpa.translate("Output", Chilpa.trRev) },
                     { key: "plugins", text: "Plugins" }
                 ]
                 delegate: Button {
@@ -93,15 +94,15 @@ Rectangle {
 
             // The artist the grid is filtered to, with its way out.
             Button {
-                visible: root.tab === "albumes" && Chilpa.openArtist !== ""
+                visible: root.tab === "albums" && Chilpa.openArtist !== ""
                 text: "← " + Chilpa.openArtist
-                onClicked: root.showTab("artistas")
+                onClicked: root.showTab("artists")
             }
 
             // The quick views: the same as ever, looked at another way.
             ComboBox {
                 Layout.preferredWidth: 180
-                visible: root.tab === "albumes"
+                visible: root.tab === "albums"
                 model: Chilpa.albumViews
                 currentIndex: Chilpa.albumView
                 onActivated: Chilpa.albumView = index
@@ -136,25 +137,25 @@ Rectangle {
         ArtistGrid {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.tab === "artistas"
+            visible: root.tab === "artists"
         }
 
         StatsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.tab === "estadisticas"
+            visible: root.tab === "stats"
         }
 
         PlaylistsPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.tab === "listas"
+            visible: root.tab === "playlists"
         }
 
         WizardPanel {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.tab === "asistente"
+            visible: root.tab === "wizard"
         }
 
         PluginsPanel {
@@ -167,7 +168,7 @@ Rectangle {
             id: grid
             Layout.fillWidth: true
             Layout.fillHeight: true
-            visible: root.tab === "albumes"
+            visible: root.tab === "albums"
             clip: true
             cellWidth: 160
             cellHeight: 216
@@ -197,7 +198,7 @@ Rectangle {
                         }
                         Label {
                             anchors.centerIn: parent
-                            text: "sin portada"
+                            text: Chilpa.translate("no cover", Chilpa.trRev)
                             font.pixelSize: 11
                             color: "#7a411d1f"
                             visible: cols[5] === ""
@@ -223,10 +224,10 @@ Rectangle {
                     // artist the elide ate them.
                     Label {
                         Layout.fillWidth: true
-                        text: (cols[3] ? cols[3] + " · " : "") + cols[4] +
-                              (cols[4] === "1" ? " pista" : " pistas") +
+                        text: (cols[3] ? cols[3] + " · " : "") +
+                              Chilpa.translateCount("{} track", "{} tracks", parseInt(cols[4]), Chilpa.trRev) +
                               (parseInt(cols[6]) > 0
-                                  ? " · " + cols[6] + (cols[6] === "1" ? " escucha" : " escuchas")
+                                  ? " · " + Chilpa.translateCount("{} play", "{} plays", parseInt(cols[6]), Chilpa.trRev)
                                   : "")
                         font.pixelSize: 11
                         color: "#7a411d1f"

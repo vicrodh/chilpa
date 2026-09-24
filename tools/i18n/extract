@@ -1,0 +1,187 @@
+#!/usr/bin/env python3
+"""Pulls every msgid out of the code and rewrites the .po catalogs.
+
+The msgid is the English string itself, so there is nothing to invent: what
+this does is find every call that asks the catalog for one and make sure the
+catalogs list them all. A msgid that is already translated keeps its msgstr;
+one that is new comes out empty, and one that no longer exists in the code is
+dropped.
+
+Run it after touching a user-facing string. `--check` fails instead of
+writing, which is what a lint wants.
+"""
+import pathlib
+import re
+import subprocess
+import sys
+
+ROOT = pathlib.Path(
+    subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+)
+CATALOGS = ROOT / "crates/chilpa-i18n/translations"
+
+# A Rust or QML string literal, with its escapes left alone.
+LIT = r'"((?:[^"\\]|\\.)*)"'
+SEP = r"\s*,\s*"
+
+# Singular calls: one msgid.
+ONE = [
+    re.compile(r"\bChilpa\.translate\(\s*" + LIT),
+    re.compile(r"\bChilpa\.translateArgs\(\s*" + LIT),
+    re.compile(r"\.t\(\s*" + LIT),
+    re.compile(r"\.t_args\(\s*" + LIT),
+    re.compile(r"\bmark\(\s*" + LIT),
+]
+
+# Plural calls: singular and plural together.
+TWO = [
+    re.compile(r"\bChilpa\.translateN\(\s*" + LIT + SEP + LIT),
+    re.compile(r"\bChilpa\.translateCount\(\s*" + LIT + SEP + LIT),
+    re.compile(r"\.tn\(\s*" + LIT + SEP + LIT),
+    re.compile(r"\.tf\(\s*" + LIT + SEP + LIT),
+]
+
+
+def found():
+    """Every msgid in the code, as {msgid: plural or None}, in order."""
+    out = {}
+    # A layout's name is its file name, and the selector shows it, so every
+    # `LayoutX.qml` that ships contributes `X`. It is read from the files for
+    # the same reason `build.rs` does: adding a layout is adding a file, and
+    # a second list would fall behind.
+    for f in sorted(ROOT.glob("crates/chilpa-qt/qml/Layout*.qml")):
+        name = f.stem.removeprefix("Layout")
+        if name and name != "Selector":
+            out[name] = None
+    files = sorted(ROOT.glob("crates/**/*.rs")) + sorted(ROOT.glob("crates/**/*.qml"))
+    for f in files:
+        if "/target/" in str(f):
+            continue
+        src = f.read_text()
+        for rx in TWO:
+            for m in rx.finditer(src):
+                out[unescape(m.group(1))] = unescape(m.group(2))
+        for rx in ONE:
+            for m in rx.finditer(src):
+                out.setdefault(unescape(m.group(1)), None)
+    return dict(sorted(out.items()))
+
+
+def unescape(s):
+    return s.replace('\\"', '"').replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\")
+
+
+def escape(s):
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n").replace("\t", "\\t")
+
+
+def read_po(path):
+    """{msgid: [msgstr, ...]} plus the header, kept as written."""
+    header, entries, msgid, plural, strings = [], {}, None, None, []
+    lines = path.read_text().split("\n") if path.exists() else []
+    for line in lines:
+        line = line.strip()
+        if line.startswith("msgid_plural "):
+            plural = unescape(line[14:-1])
+        elif line.startswith("msgid "):
+            if msgid is not None:
+                entries[msgid] = (plural, strings)
+            msgid, plural, strings = unescape(line[7:-1]), None, []
+        elif line.startswith("msgstr"):
+            strings.append(unescape(line[line.index('"') + 1 : -1]))
+        elif line.startswith('"') and strings:
+            strings[-1] += unescape(line[1:-1])
+    if msgid is not None:
+        entries[msgid] = (plural, strings)
+    if "" in entries:
+        header = entries.pop("")[1]
+    return header, entries
+
+
+def write_po(path, header, wanted, old):
+    out = ['msgid ""', 'msgstr ""']
+    for line in (header[0].split("\n") if header else []):
+        if line:
+            out.append(f'"{escape(line)}\\n"')
+    forms = 2
+    for msgid, plural in wanted.items():
+        previous = old.get(msgid, (None, []))[1]
+        out.append("")
+        out.append(f'msgid "{escape(msgid)}"')
+        if plural is None:
+            out.append(f'msgstr "{escape(previous[0] if previous else "")}"')
+        else:
+            out.append(f'msgid_plural "{escape(plural)}"')
+            for i in range(forms):
+                said = previous[i] if i < len(previous) else ""
+                out.append(f'msgstr[{i}] "{escape(said)}"')
+    path.write_text("\n".join(out) + "\n")
+
+
+# A QML property whose value the user reads. A bare literal here is a string
+# that will never follow the chosen language, which is exactly the bug that
+# `hunspell` cannot catch: "Anterior" is a word in English too.
+SHOWN = re.compile(
+    r"^\s*(?:text|title|placeholderText|ToolTip\.text)\s*:\s*" + LIT + r"\s*$",
+    re.MULTILINE,
+)
+
+
+def bare_strings():
+    """Every shown literal in QML that does not go through the catalog."""
+    allowed = {
+        line.strip()
+        for line in (ROOT / "tools/i18n/not-translated.txt").read_text().split("\n")
+        if line.strip() and not line.startswith("#")
+    }
+    out = []
+    for f in sorted(ROOT.glob("crates/**/*.qml")):
+        for m in SHOWN.finditer(f.read_text()):
+            said = unescape(m.group(1))
+            if said and said not in allowed:
+                line = f.read_text()[: m.start()].count("\n") + 1
+                out.append(f"{f.relative_to(ROOT)}:{line}: {said!r}")
+    return out
+
+
+def main():
+    check = "--check" in sys.argv
+    wanted = found()
+    problems = []
+    for language in sorted(p.name for p in CATALOGS.iterdir() if p.is_dir()):
+        path = CATALOGS / language / "LC_MESSAGES" / "chilpa.po"
+        header, old = read_po(path)
+        missing = [m for m in wanted if m not in old]
+        extra = [m for m in old if m not in wanted]
+        if check:
+            if missing or extra:
+                problems.append("Run tools/i18n/extract to bring the catalogs up to date.")
+            if missing:
+                problems.append(f"{language}: {len(missing)} msgids are not in the catalog")
+                problems += [f"  {m!r}" for m in missing[:10]]
+            if extra:
+                problems.append(f"{language}: {len(extra)} msgids are no longer in the code")
+                problems += [f"  {m!r}" for m in extra[:10]]
+        else:
+            write_po(path, header, wanted, old)
+            print(f"{language}: {len(wanted)} msgids, {len(missing)} new, {len(extra)} dropped")
+    bare = bare_strings()
+    if bare:
+        problems.append(f"{len(bare)} QML strings the user reads do not go through the catalog:")
+        problems += [f"  {b}" for b in bare[:10]]
+        problems.append("  Wrap them in Chilpa.translate(msgid, Chilpa.trRev), or, if they")
+        problems.append("  read the same in every language, list them in")
+        problems.append("  tools/i18n/not-translated.txt.")
+    if problems:
+        print("\n".join(problems))
+        print()
+        return 1
+    if check:
+        print(f"i18n: {len(wanted)} msgids, and every catalog lists them all")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

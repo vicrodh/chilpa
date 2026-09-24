@@ -68,15 +68,15 @@ Rectangle {
                 }
             }
             Button {
-                text: "Reproducir"
+                text: Chilpa.translate("Play", Chilpa.trRev)
                 onClicked: Chilpa.playAlbum(Chilpa.openAlbumId)
             }
             Button {
-                text: "Encolar"
+                text: Chilpa.translate("Queue", Chilpa.trRev)
                 onClicked: Chilpa.enqueueAlbum(Chilpa.openAlbumId)
             }
             Button {
-                text: "Cerrar"
+                text: Chilpa.translate("Close", Chilpa.trRev)
                 onClicked: Chilpa.closeAlbum()
             }
         }
@@ -86,7 +86,7 @@ Rectangle {
         Label {
             Layout.fillWidth: true
             visible: Chilpa.searchProblems !== ""
-            text: "No contestaron: " + Chilpa.searchProblems
+            text: Chilpa.translate("No answer from", Chilpa.trRev) + ": " + Chilpa.searchProblems
             font.pixelSize: 11
             color: "#a05a2c"
             elide: Text.ElideRight
@@ -152,7 +152,7 @@ Rectangle {
                 // Where it came from, and which other sources hold the same
                 // song. It is only drawn if more than one is in play.
                 Label {
-                    visible: alsoIn !== "" || (sourceName !== "" && sourceName !== "Mi biblioteca")
+                    visible: alsoIn !== "" || (sourceName !== "" && sourceName !== Chilpa.translate("My library", Chilpa.trRev))
                     text: alsoIn !== "" ? sourceName + " + " + alsoIn : sourceName
                     font.pixelSize: 11
                     elide: Text.ElideRight

@@ -68,7 +68,7 @@ ColumnLayout {
                 }
                 Label {
                     visible: root.withPlayCounts
-                    text: cols[3] + (cols[3] === "1" ? " escucha" : " escuchas")
+                    text: Chilpa.translateCount("{} play", "{} plays", parseInt(cols[3]), Chilpa.trRev)
                     font.pixelSize: 11
                     color: "#7a411d1f"
                 }

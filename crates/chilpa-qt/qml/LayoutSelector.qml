@@ -7,12 +7,9 @@ import QtQuick.Controls
 import com.blitzfc.chilpa
 
 ComboBox {
-    // The file name is ASCII on purpose; here it is shown as it is
-    // written. A layout with no entry is shown by its file name, which is
-    // ugly but never leaves the list incomplete.
-    readonly property var labels: ({ "Classic": "Clásico", "Compact": "Compacto" })
-
-    model: Chilpa.layouts.map(n => labels[n] !== undefined ? labels[n] : n)
+    // The file name is the msgid. A layout with no translation is shown by
+    // its file name, which is ugly but never leaves the list incomplete.
+    model: Chilpa.layouts.map(n => Chilpa.translate(n, Chilpa.trRev))
     currentIndex: Math.max(0, Chilpa.layouts.indexOf(Chilpa.layout))
     // The change happens afterwards: choosing here destroys the layout
     // containing this very list, and that cannot be done mid signal.

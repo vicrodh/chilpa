@@ -16,9 +16,11 @@ impl Chilpa {
         self.as_mut().refresh_plugins();
         let total = self.as_mut().rust_mut().api.plugins().len();
         if total > 0 {
-            self.as_mut().set_library_status(QString::from(&format!(
-                "{count} de {total} plugins cargados"
-            )));
+            let loaded = self.api.t_args(
+                "{} of {} plugins loaded",
+                &[&count.to_string(), &total.to_string()],
+            );
+            self.as_mut().set_library_status(QString::from(&loaded));
         }
     }
 
@@ -32,8 +34,13 @@ impl Chilpa {
         let name = id.to_string();
         let count = self.as_mut().rust_mut().api.approve_plugin(&name);
         self.as_mut().refresh_plugins();
-        self.as_mut()
-            .set_library_status(QString::from(&format!("{count} plugins corriendo")));
+        let running = self.api.tf(
+            "{} plugin running",
+            "{} plugins running",
+            i64::try_from(count).unwrap_or_default(),
+            &[&count.to_string()],
+        );
+        self.as_mut().set_library_status(QString::from(&running));
     }
 
     pub fn connect_account(mut self: Pin<&mut Self>, id: &QString) {
@@ -44,13 +51,16 @@ impl Chilpa {
                 // and the URL is left to the view: copying it by hand is ugly
                 // but it works, and keeping quiet does not.
                 match open_in_browser(&url) {
-                    Ok(()) => self.as_mut().set_library_status(QString::from(
-                        "Te abrí el navegador para dar permiso. Aquí te espero.",
-                    )),
+                    Ok(()) => {
+                        let waiting =
+                            self.api.t("Your browser is open to grant permission. Waiting here.");
+                        self.as_mut().set_library_status(QString::from(&waiting));
+                    }
                     Err(e) => {
                         self.as_mut().rust_mut().api.cancel_connect();
-                        self.as_mut()
-                            .set_error(QString::from(&format!("no se pudo abrir el navegador: {e}")));
+                        let failed =
+                            self.api.t_args("could not open the browser: {}", &[&e.to_string()]);
+                        self.as_mut().set_error(QString::from(&failed));
                     }
                 }
             }
@@ -74,8 +84,13 @@ impl Chilpa {
         let name = id.to_string();
         let count = self.as_mut().rust_mut().api.revoke_plugin(&name);
         self.as_mut().refresh_plugins();
-        self.as_mut()
-            .set_library_status(QString::from(&format!("{count} plugins corriendo")));
+        let running = self.api.tf(
+            "{} plugin running",
+            "{} plugins running",
+            i64::try_from(count).unwrap_or_default(),
+            &[&count.to_string()],
+        );
+        self.as_mut().set_library_status(QString::from(&running));
     }
 
     pub(super) fn refresh_plugins(mut self: Pin<&mut Self>) {
@@ -91,17 +106,17 @@ impl Chilpa {
                 // What is left to approve, which is what has to be read before
                 // saying yes. With " - " because a line carries no tabs.
                 p.pending.join(" · "),
-                if p.wants_more { "mas" } else { "" },
+                if p.wants_more { "more" } else { "" },
                 // How its account stands: no account, connected, or expired
                 // with no way to renew itself.
                 if p.account_expired {
-                    "vencida"
+                    "expired"
                 } else if p.connected {
-                    "conectada"
+                    "connected"
                 } else if p.account_host.is_empty() {
                     ""
                 } else {
-                    "falta"
+                    "missing"
                 },
                 p.account_host
             )));

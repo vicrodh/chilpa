@@ -32,7 +32,7 @@ ApplicationWindow {
         anchors.fill: parent
         source: "Layout" + Chilpa.layout + ".qml"
         onStatusChanged: if (status === Loader.Error && Chilpa.layout !== "Classic") {
-            console.warn("no se pudo cargar el layout", Chilpa.layout)
+            console.warn("could not load the layout", Chilpa.layout)
             Chilpa.layout = "Classic"
         }
     }
@@ -50,7 +50,7 @@ ApplicationWindow {
                 Chilpa.playResults(Chilpa.initialPlay - 1)
             } else if (tries > 40) {
                 stop()
-                console.warn("no llegaron resultados que tocar")
+                console.warn("no results arrived to play")
             }
         }
     }
@@ -69,7 +69,7 @@ ApplicationWindow {
         // before playing the first one.
         if (Chilpa.initialPlay > 0) playWhenReady.start()
         if (Chilpa.initialConnect !== "") Chilpa.connectAccount(Chilpa.initialConnect)
-        if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
+        if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, Chilpa.translate("Album", Chilpa.trRev))
         Chilpa.refreshAlbums()
         if (Chilpa.initialRescan) Chilpa.rescan()
         if (Chilpa.initialAnalysis) Chilpa.analyzeLibrary()
@@ -88,23 +88,26 @@ ApplicationWindow {
     // The list of shortcuts, which otherwise has to be guessed.
     Dialog {
         id: help
-        title: "Atajos"
+        title: Chilpa.translate("Shortcuts", Chilpa.trRev)
         anchors.centerIn: Overlay.overlay
         width: 380
-        Component.onCompleted: if (Chilpa.initialTab === "ayuda") open()
+        Component.onCompleted: if (Chilpa.initialTab === "help") open()
 
         ColumnLayout {
             anchors.fill: parent
             spacing: 4
             Repeater {
                 model: [
-                    ["Espacio", "pausa y reanuda"],
-                    ["Ctrl+O", "abrir un archivo"],
-                    ["Ctrl+F", "buscar"],
-                    ["Escape", "cerrar lo que esté abierto"],
-                    ["Ctrl + flechas", "pista siguiente y anterior"],
-                    ["Flechas", "diez segundos adelante y atrás"],
-                    ["F1", "esta lista"]
+                    [Chilpa.translate("Space", Chilpa.trRev),
+                     Chilpa.translate("pause and resume", Chilpa.trRev)],
+                    ["Ctrl+O", Chilpa.translate("open a file", Chilpa.trRev)],
+                    ["Ctrl+F", Chilpa.translate("search", Chilpa.trRev)],
+                    ["Escape", Chilpa.translate("close whatever is open", Chilpa.trRev)],
+                    [Chilpa.translate("Ctrl + arrows", Chilpa.trRev),
+                     Chilpa.translate("next and previous track", Chilpa.trRev)],
+                    [Chilpa.translate("Arrows", Chilpa.trRev),
+                     Chilpa.translate("ten seconds forward and back", Chilpa.trRev)],
+                    ["F1", Chilpa.translate("this list", Chilpa.trRev)]
                 ]
                 delegate: RowLayout {
                     Layout.fillWidth: true
@@ -123,11 +126,12 @@ ApplicationWindow {
                 }
             }
 
-            // A button of our own: Qt's standard one comes out in English.
+            // A button of our own: Qt's standard one does not go through
+            // our catalog, so it would not follow the chosen language.
             Button {
                 Layout.alignment: Qt.AlignRight
                 Layout.topMargin: 6
-                text: "Cerrar"
+                text: Chilpa.translate("Close", Chilpa.trRev)
                 onClicked: help.close()
             }
         }

@@ -30,6 +30,24 @@ impl Chilpa {
         QString::from(&self.api.tn(&singular.to_string(), &plural.to_string(), i64::from(n)))
     }
 
+    /// The common case of a count: the msgid carries one `{}` and it is
+    /// filled with `n`. "1 track" and "4 tracks" out of one call.
+    pub fn translate_count(
+        &self,
+        singular: &QString,
+        plural: &QString,
+        n: i32,
+        _rev: i32,
+    ) -> QString {
+        let shown = n.to_string();
+        QString::from(&self.api.tf(
+            &singular.to_string(),
+            &plural.to_string(),
+            i64::from(n),
+            &[&shown],
+        ))
+    }
+
     pub fn translate_args(&self, msgid: &QString, args: &QStringList, _rev: i32) -> QString {
         let owned: Vec<String> =
             QList::<QString>::from(args).iter().map(ToString::to_string).collect();

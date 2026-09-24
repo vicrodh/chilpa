@@ -59,7 +59,7 @@ Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 anchors.rightMargin: 8
-                text: "quitar"
+                text: Chilpa.translate("remove", Chilpa.trRev)
                 font.pixelSize: 11
                 color: "#7a411d1f"
                 visible: mouse.containsMouse && !parent.removed

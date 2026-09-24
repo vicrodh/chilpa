@@ -620,6 +620,12 @@ impl Chilpa {
         chilpa_i18n::languages()
     }
 
+    /// Marks a literal that is defined here and shown elsewhere, so the
+    /// extractor finds it. It translates nothing.
+    pub const fn mark(msgid: &'static str) -> &'static str {
+        chilpa_i18n::mark(msgid)
+    }
+
     /// Translates a msgid, which is the English string itself.
     ///
     /// The shell only ever talks to the facade (ADR-001), so the catalog is
@@ -636,6 +642,11 @@ impl Chilpa {
     /// The same, filling each `{}` with the next argument.
     pub fn t_args(&self, msgid: &str, args: &[&str]) -> String {
         chilpa_i18n::t_args(msgid, args)
+    }
+
+    /// Both at once: a count and its holes.
+    pub fn tf(&self, singular: &str, plural: &str, n: i64, args: &[&str]) -> String {
+        chilpa_i18n::tf(singular, plural, n, args)
     }
 
     /// Remembers the chosen window layout.
