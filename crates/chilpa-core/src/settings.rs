@@ -1,38 +1,37 @@
-//! Lo que Chilpa recuerda entre sesiones.
+//! What Chilpa remembers between sessions.
 //!
-//! Un archivo de texto con `clave = valor`, en el directorio de configuración
-//! del usuario. Nada de un formato que obligue a una dependencia: lo que se
-//! guarda aquí son un puñado de preferencias, y un archivo que se puede abrir
-//! con cualquier editor se arregla a mano cuando algo sale mal.
+//! A text file with `key = value`, in the user's configuration directory. No
+//! format that forces a dependency: what is kept here is a handful of
+//! preferences, and a file any editor can open is fixed by hand when
+//! something goes wrong.
 //!
-//! Leer nunca falla: un archivo ausente, roto o de otra versión da los
-//! valores por omisión. Guardar sí puede fallar, y quien llama decide qué
-//! hacer.
+//! Reading never fails: a missing, broken or older file gives the default
+//! values. Saving can fail, and the caller decides what to do.
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-/// Las preferencias que hoy se recuerdan.
+/// The preferences remembered today.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Settings {
-    /// El identificador de la última salida usada.
+    /// The identifier of the last output used.
     pub output: String,
-    /// Si se pide bit-perfect.
+    /// Whether bit-perfect is asked for.
     pub bit_perfect: bool,
-    /// La última carpeta que se abrió, para no empezar en el home cada vez.
+    /// The last folder opened, so as not to start at home every time.
     pub last_folder: String,
-    /// El acomodo de la ventana, por nombre.
+    /// The window layout, by name.
     pub layout: String,
-    /// La vista rápida con la que se mira la biblioteca.
+    /// The quick view the library is looked at with.
     pub album_sort: String,
-    /// Qué visualizador se dibuja, por nombre.
+    /// Which visualizer is drawn, by name.
     pub visualizer: String,
 }
 
-/// El visualizador con el que arranca quien no ha elegido ninguno.
+/// The visualizer someone who has chosen none starts with.
 pub const DEFAULT_VISUALIZER: &str = "wave";
 
-/// El acomodo con el que arranca quien no ha elegido ninguno.
+/// The layout someone who has chosen none starts with.
 pub const DEFAULT_LAYOUT: &str = "Classic";
 
 impl Default for Settings {
@@ -48,7 +47,7 @@ impl Default for Settings {
     }
 }
 
-/// Dónde vive el archivo.
+/// Where the file lives.
 pub fn path() -> PathBuf {
     let base = std::env::var_os("XDG_CONFIG_HOME")
         .map(PathBuf::from)
@@ -57,8 +56,8 @@ pub fn path() -> PathBuf {
     base.join("chilpa").join("settings.conf")
 }
 
-/// Lee las preferencias. Lo que falte o no se entienda toma su valor por
-/// omisión.
+/// Reads the preferences. Whatever is missing or not understood takes its
+/// default value.
 pub fn load() -> Settings {
     load_from(&path())
 }
@@ -76,7 +75,7 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     if let Some(v) = pares.get("last_folder") {
         s.last_folder = v.clone();
     }
-    // Un layout vacío en el archivo no deja la ventana sin nada que cargar.
+    // An empty layout in the file does not leave the window with nothing to load.
     if let Some(v) = pares.get("layout") {
         if !v.is_empty() {
             s.layout = renamed(v, OLD_LAYOUTS);
@@ -93,8 +92,8 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     s
 }
 
-/// Los nombres que estos valores tenían antes de que el código pasara a
-/// inglés. Un archivo viejo sigue abriendo la misma ventana.
+/// The names these values had before the code moved to English. An old file
+/// still opens the same window.
 const OLD_LAYOUTS: &[(&str, &str)] = &[("Clasico", "Classic"), ("Compacto", "Compact")];
 const OLD_VISUALIZERS: &[(&str, &str)] =
     &[("onda", "wave"), ("espectro", "spectrum"), ("goniometro", "goniometer")];
@@ -106,7 +105,7 @@ fn renamed(value: &str, old: &[(&str, &str)]) -> String {
         .unwrap_or_else(|| value.to_string())
 }
 
-/// Guarda las preferencias, creando el directorio si hace falta.
+/// Saves the preferences, creating the directory if needed.
 pub fn save(settings: &Settings) -> std::io::Result<()> {
     save_to(&path(), settings)
 }
@@ -172,8 +171,8 @@ mod tests {
 
     #[test]
     fn the_old_spanish_names_still_open_the_same_window() {
-        // Un settings.conf escrito antes de que el código pasara a inglés
-        // no puede dejar la ventana sin layout ni sin visualizador.
+        // A settings.conf written before the code moved to English cannot
+        // leave the window without a layout or a visualizer.
         let file = temporal("nombres-viejos");
         std::fs::write(&file, "layout = Clasico\nvisualizer = espectro\n").unwrap();
         let s = load_from(&file);

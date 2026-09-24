@@ -1,18 +1,18 @@
-//! Analizar la biblioteca sin estorbarle a nadie.
+//! Analysing the library without getting in anyone's way.
 //!
-//! El análisis lee archivos y escribe números. No toca la ruta de salida, no
-//! comparte la conexión de la interfaz y corre en su propio hilo, como el
-//! escaneo.
+//! The analysis reads files and writes numbers. It does not touch the output
+//! path, it does not share the interface's connection and it runs on its own
+//! thread, like the scan.
 //!
-//! Dos cuidados que lo hacen barato:
+//! Two precautions that make it cheap:
 //!
-//! 1. **No se lee la pista entera.** Se salta al cuarto de la pista y se
-//!    toma un minuto. Una intro larga o un final que se apaga no dicen nada
-//!    del pulso, y leer sesenta minutos de disco por cada disco convertiría
-//!    esto en algo que nadie deja terminar.
-//! 2. **Se pide por tandas.** La lista de pendientes sale de la base de a
-//!    poco; una biblioteca de cien mil pistas no entra en memoria y no tiene
-//!    por qué hacerlo.
+//! 1. **The whole track is not read.** It seeks to a quarter of the way in
+//!    and takes a minute. A long intro or a fade out says nothing about the
+//!    pulse, and reading sixty minutes off disk per album would turn this
+//!    into something nobody lets finish.
+//! 2. **It is asked for in batches.** The pending list comes out of the
+//!    database a little at a time; a library of a hundred thousand tracks
+//!    does not fit in memory and has no reason to.
 
 use chilpa_library::Library;
 use std::path::{Path, PathBuf};
@@ -20,22 +20,22 @@ use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::sync::Arc;
 use std::thread::JoinHandle;
 
-/// Cómo se llama este analizador en la base. Es el de `chilpa-analysis`,
-/// repetido aquí para que la fachada no tenga que conocer ese crate.
+/// What this analyser is called in the database. It is the one from
+/// `chilpa-analysis`, repeated here so the facade need not know that crate.
 pub const ANALYZER: &str = chilpa_analysis::NAME;
 
-/// Cuánto audio se mira de cada pista.
+/// How much audio is looked at per track.
 const SECONDS_EXAMINED: u64 = 60;
 
-/// Cuántas pistas se piden por tanda.
+/// How many tracks are asked for per batch.
 const BATCH: usize = 200;
 
-/// Cómo va el análisis.
+/// How the analysis is going.
 #[derive(Clone, PartialEq, Debug)]
 pub enum AnalysisProgress {
-    /// Ya se sabe cuántas faltan.
+    /// How many are left is now known.
     Counted { total: usize },
-    /// Van `done` de `total`, y esta fue la última que se miró.
+    /// `done` of `total` are through, and this was the last one looked at.
     Advanced {
         done: usize,
         total: usize,
@@ -47,7 +47,7 @@ pub enum AnalysisProgress {
     Failed(String),
 }
 
-/// Un análisis corriendo en segundo plano.
+/// An analysis running in the background.
 pub struct AnalysisJob {
     events: Receiver<AnalysisProgress>,
     cancel: Arc<std::sync::atomic::AtomicBool>,
@@ -55,7 +55,7 @@ pub struct AnalysisJob {
 }
 
 impl AnalysisJob {
-    /// Arranca el análisis de lo que falte en la base que está en `db_path`.
+    /// Starts the analysis of whatever is missing in the database at `db_path`.
     pub fn start(db_path: PathBuf) -> Self {
         let (tx, rx) = channel();
         let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
@@ -100,9 +100,9 @@ impl AnalysisJob {
                             break;
                         }
                         let features = analyze_file(Path::new(&track.external_id));
-                        // Aunque no se le haya encontrado pulso se guarda la
-                        // fila: si no, la pista saldría pendiente para
-                        // siempre y el análisis nunca terminaría.
+                        // Even with no pulse found, the row is saved: otherwise
+                        // the track would come out pending forever and the
+                        // analysis would never end.
                         let saved = lib.save_features(
                             track.id,
                             analyzer,
@@ -147,7 +147,7 @@ impl AnalysisJob {
         Self { events: rx, cancel, thread: Some(thread) }
     }
 
-    /// Lo que haya pasado, sin bloquear.
+    /// Whatever has happened, without blocking.
     pub fn poll(&self) -> Vec<AnalysisProgress> {
         let mut out = Vec::new();
         loop {
@@ -159,7 +159,7 @@ impl AnalysisJob {
         out
     }
 
-    /// Pide que se detenga. La pista en curso se termina.
+    /// Asks it to stop. The track in progress is finished.
     pub fn cancel(&self) {
         self.cancel.store(true, std::sync::atomic::Ordering::Relaxed);
     }
@@ -178,10 +178,10 @@ impl Drop for AnalysisJob {
     }
 }
 
-/// Decodifica un pedazo de la pista y lo analiza.
+/// Decodes a piece of the track and analyses it.
 ///
-/// `None` cuando el archivo no se pudo abrir o leer. Que no se le encuentre
-/// pulso no es una falla: es una respuesta.
+/// `None` when the file could not be opened or read. Finding no pulse is not
+/// a failure: it is an answer.
 pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
     let mut decoded = chilpa_decode::Decoded::open(path).ok()?;
     let format = decoded.stream_format();
@@ -191,8 +191,8 @@ pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
         return None;
     }
 
-    // Se empieza en el cuarto de la pista: las intros no dicen nada del
-    // pulso, y el principio de un disco suele ser lo menos representativo.
+    // It starts a quarter of the way in: intros say nothing about the
+    // pulse, and the start of an album is usually the least representative.
     if let Some(total) = decoded.frame_count() {
         let startup = total / 4;
         if startup > u64::from(rate) {
@@ -202,8 +202,8 @@ pub fn analyze_file(path: &Path) -> Option<chilpa_analysis::Analysis> {
 
     let want = SECONDS_EXAMINED * u64::from(rate);
     let mut mono: Vec<f32> = Vec::with_capacity(want as usize / 4);
-    // La sonoridad se mide al vuelo, con la señal como viene: mezclarla a
-    // mono o bajarle la frecuencia cambiaría el número.
+    // Loudness is measured on the fly, with the signal as it comes: mixing
+    // it to mono or dropping its rate would change the number.
     let mut meter = chilpa_analysis::LoudnessMeter::new(rate, format.channels.max(1));
     let mut read_frames = 0u64;
     let mut interleaved: Vec<f32> = Vec::new();

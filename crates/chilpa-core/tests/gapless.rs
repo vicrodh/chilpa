@@ -1,4 +1,4 @@
-//! Dos pistas seguidas salen pegadas, sin hueco ni muestras repetidas.
+//! Two tracks in a row come out joined, with no gap and no repeated samples.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -28,7 +28,7 @@ impl AudioSink for Capturador {
     }
 }
 
-/// Un WAV cuyo canal izquierdo cuenta desde `desde`.
+/// A WAV whose left channel counts from `from`.
 fn ramp(name: &str, from: i32, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-gapless-{name}.wav"));
@@ -85,8 +85,8 @@ fn play(tracks: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
 
 #[test]
 fn two_tracks_in_the_same_format_come_out_back_to_back() {
-    // La segunda continúa la cuenta de la primera: si hubiera hueco,
-    // repetición o recorte, la secuencia se rompe en la unión.
+    // The second continues the first one's count: with a gap, a repeat or a
+    // trim, the sequence breaks at the join.
     let a = ramp("a", 0, 5_000);
     let b = ramp("b", 5_000, 5_000);
     let (samples, opens) = play(&[a.clone(), b.clone()], &caps(&[44_100]));
@@ -105,8 +105,8 @@ fn two_tracks_in_the_same_format_come_out_back_to_back() {
 #[test]
 fn if_the_format_changes_the_device_reopens_and_nothing_is_lost() {
     let a = ramp("cd", 0, 4_000);
-    // La segunda pista es de otra frecuencia: encadenar sin hueco es
-    // imposible, pero no debe perderse ni una muestra.
+    // The second track is at another rate: chaining with no gap is
+    // impossible, but not one sample may be lost.
     let b = {
         let mut p = std::env::temp_dir();
         p.push("chilpa-gapless-hires.wav");

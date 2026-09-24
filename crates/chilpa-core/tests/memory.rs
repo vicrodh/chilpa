@@ -1,9 +1,9 @@
-//! Reproducir no debe cargar la pista entera en memoria.
+//! Playing must not load the whole track into memory.
 //!
-//! Es el candado del hallazgo más caro de la auditoría: en QBZ, AAC y ALAC en
-//! MP4 se decodificaban completos a un `Vec<f32>`, unos 2.7 GB por una hora a
-//! 24/96. La prueba reproduce un archivo grande contra un dispositivo que
-//! tira lo que recibe y mira cuánto creció la memoria del proceso.
+//! It is the lock on the audit's most expensive finding: in QBZ, AAC and
+//! ALAC in MP4 were decoded whole into a `Vec<f32>`, about 2.7 GB for an
+//! hour at 24/96. The test plays a large file against a device that throws
+//! away what it receives and watches how much the process's memory grew.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -12,7 +12,7 @@ use chilpa_core::playback::play_file;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Un dispositivo que acepta todo y no guarda nada.
+/// A device that accepts everything and keeps nothing.
 struct CountingSink(StreamFormat, u64);
 
 impl AudioSink for &mut CountingSink {
@@ -41,9 +41,9 @@ fn rss_mb() -> f64 {
         .unwrap_or(0.0)
 }
 
-/// Un FLAC largo de 24 bits a 96 kHz. Comprimido ocupa poco en disco, pero
-/// su PCM son cientos de megas: justo lo que revienta si alguien lo carga
-/// entero.
+/// A long 24 bit FLAC at 96 kHz. Compressed it takes little on disk, but its
+/// PCM is hundreds of megabytes: exactly what blows up if anyone loads it
+/// whole.
 fn long_file() -> Option<PathBuf> {
     let mut target = std::env::temp_dir();
     target.push("chilpa-memoria-24-96.flac");
@@ -78,8 +78,8 @@ fn a_five_minute_track_is_not_loaded_whole_into_memory() {
         eprintln!("sin ffmpeg: se salta");
         return;
     };
-    // 5 minutos de 24/96 estéreo son ~345 MB de PCM. Si alguien decodifica
-    // la pista completa, se nota aquí y no en la máquina de alguien más.
+    // 5 minutes of 24/96 stereo is ~345 MB of PCM. If anyone decodes the
+    // whole track, it shows up here and not on someone else's machine.
     let antes = rss_mb();
     let mut sink = CountingSink(StreamFormat::new(SampleFormat::S24In32, 96_000, 2), 0);
     let played = play_file(&path, &caps(), Policy::BitPerfect, &StopSignal::new(), |format| {
@@ -98,5 +98,5 @@ fn a_five_minute_track_is_not_loaded_whole_into_memory() {
         "la memoria creció {:.0} MB reproduciendo; se está guardando la pista entera",
         creció
     );
-    // El archivo se deja: generarlo cuesta más que borrarlo.
+    // The file is left behind: generating it costs more than deleting it.
 }

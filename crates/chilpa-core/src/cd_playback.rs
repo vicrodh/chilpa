@@ -1,10 +1,11 @@
-//! Reproducir un CD de audio.
+//! Playing an audio CD.
 //!
-//! Un CD no se decodifica: sus sectores ya son PCM de 16 bits a 44 100 Hz.
-//! Por eso la ruta es la más corta de todas: leer sectores y entregarlos.
+//! A CD is not decoded: its sectors are already 16 bit PCM at 44,100 Hz.
+//! That is why this is the shortest path of all: read sectors and deliver
+//! them.
 //!
-//! La unidad se abre una sola vez por pista. Si un sector no se puede leer,
-//! la pista se corta ahí y se dice; nunca se rellena con silencio.
+//! The drive is opened once per track. If a sector cannot be read, the
+//! track is cut off there and it is said; it is never padded with silence.
 
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
@@ -15,7 +16,7 @@ use chilpa_cd::{CdDevice, CdError, Toc, Track, TrackReader, CDDA_FORMAT};
 #[derive(Debug)]
 pub enum CdPlayError {
     Drive(CdError),
-    /// El dispositivo de salida no acepta el formato de un CD.
+    /// The output device does not accept a CD's format.
     Unsupported,
     Sink(SinkError),
 }
@@ -32,21 +33,21 @@ impl std::fmt::Display for CdPlayError {
     }
 }
 
-/// Lee el disco que haya en la unidad.
+/// Reads whatever disc is in the drive.
 pub fn read_toc(drive: &mut dyn CdDevice) -> Result<Toc, CdPlayError> {
     chilpa_cd::read_toc(drive).map_err(CdPlayError::Drive)
 }
 
-/// Lo que pasó al reproducir una pista del disco.
+/// What happened while playing a track off the disc.
 #[derive(Debug)]
 pub struct CdPlayed {
     pub delivery: Delivery,
     pub outcome: Outcome,
-    /// Si un sector no se pudo leer, aquí queda dicho.
+    /// If a sector could not be read, it is said here.
     pub read_error: Option<String>,
 }
 
-/// Reproduce una pista del disco.
+/// Plays a track off the disc.
 pub fn play_track<F, K>(
     drive: &mut dyn CdDevice,
     track: &Track,

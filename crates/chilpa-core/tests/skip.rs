@@ -1,4 +1,4 @@
-//! Saltar mientras suena: la pista sigue desde el punto pedido.
+//! Seeking while it plays: the track goes on from the point asked for.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -9,7 +9,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// Guarda lo entregado para poder mirarlo después.
+/// Keeps what was delivered so it can be looked at afterwards.
 #[derive(Clone, Default)]
 struct Capturador(std::rc::Rc<std::cell::RefCell<Vec<i16>>>);
 
@@ -29,7 +29,7 @@ impl AudioSink for Capturador {
     }
 }
 
-/// Un WAV donde la muestra del canal izquierdo dice su número de frame.
+/// A WAV where the left channel's sample says its own frame number.
 fn ramp(name: &str, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-saltar-{name}.wav"));
@@ -83,9 +83,9 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
     )
     .unwrap();
 
-    // La primera muestra que sale es la del frame 88 200, o sea el segundo 2.
+    // The first sample out is the one from frame 88,200, that is second 2.
     assert_eq!(cap.0.borrow()[0], (88_200 % 30_000) as i16, "arrancó en el punto pedido");
-    // Y la posición que se reporta cuenta desde el archivo, no desde el salto.
+    // And the reported position counts from the file, not from the seek.
     assert!(
         positions.first().is_some_and(|p| *p >= 88_200),
         "la primera posición fue {:?}",

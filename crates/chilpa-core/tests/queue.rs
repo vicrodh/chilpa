@@ -1,4 +1,4 @@
-//! La cola encadena sin hueco cuando puede, y se detiene cuando debe.
+//! The queue chains with no gap when it can, and stops when it must.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -9,7 +9,7 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-/// Cuántas veces se abrió el dispositivo y cuántos frames recibió cada vez.
+/// How many times the device was opened and how many frames it got each time.
 #[derive(Default)]
 struct CallLog {
     opens: Vec<StreamFormat>,
@@ -34,8 +34,8 @@ impl AudioSink for FakeSink {
                 return Err(SinkError::DeviceLost);
             }
         }
-        // Se escribe de a poco, como un dispositivo real, para que una
-        // pérdida pueda caer a media pista.
+        // It writes a little at a time, like a real device, so a loss can
+        // land mid track.
         let n = (frames.len() / self.stream.frame_bytes()).min(256);
         r.frames += n as u64;
         Ok(n)
@@ -139,8 +139,8 @@ fn changing_format_reopens_the_device_and_is_reported() {
 
 #[test]
 fn if_the_device_is_lost_the_queue_stops_there() {
-    // El hallazgo de QBZ: una escritura fallida se veía como fin de pista y
-    // la cola entera se saltaba sin avisar.
+    // The QBZ finding: a failed write looked like the end of a track and
+    // the whole queue was skipped without a word.
     let tracks = vec![
         track("uno", 1_000, 16, 44_100),
         track("dos", 1_000, 16, 44_100),
