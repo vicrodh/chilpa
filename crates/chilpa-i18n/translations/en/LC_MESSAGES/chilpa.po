@@ -61,9 +61,6 @@ msgstr ""
 msgid "Approve what is new"
 msgstr ""
 
-msgid "Arrows"
-msgstr ""
-
 msgid "Artists"
 msgstr ""
 
@@ -197,6 +194,9 @@ msgid "Last played"
 msgstr ""
 
 msgid "Layout"
+msgstr ""
+
+msgid "Left and right"
 msgstr ""
 
 msgid "Library"
@@ -442,10 +442,16 @@ msgstr ""
 msgid "Unmute"
 msgstr ""
 
+msgid "Up and down"
+msgstr ""
+
 msgid "Visualizer"
 msgstr ""
 
 msgid "Volume"
+msgstr ""
+
+msgid "Volume: {}%"
 msgstr ""
 
 msgid "Wave"
@@ -652,6 +658,9 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "mono"
+msgstr ""
+
+msgid "mute"
 msgstr ""
 
 msgid "next and previous track"
@@ -880,6 +889,9 @@ msgid "the next part of the track could not be opened: {}"
 msgstr ""
 
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+msgstr ""
+
+msgid "the output's volume"
 msgstr ""
 
 msgid "the plugin sandbox could not be started"

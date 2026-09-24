@@ -61,9 +61,6 @@ msgstr "Aprobar"
 msgid "Approve what is new"
 msgstr "Aprobar lo nuevo"
 
-msgid "Arrows"
-msgstr "Flechas"
-
 msgid "Artists"
 msgstr "Artistas"
 
@@ -198,6 +195,9 @@ msgstr "Lo último que sonó"
 
 msgid "Layout"
 msgstr "Acomodo"
+
+msgid "Left and right"
+msgstr "Izquierda y derecha"
 
 msgid "Library"
 msgstr "Biblioteca"
@@ -442,11 +442,17 @@ msgstr "Pista {}"
 msgid "Unmute"
 msgstr "Quitar silencio"
 
+msgid "Up and down"
+msgstr "Arriba y abajo"
+
 msgid "Visualizer"
 msgstr "Visualizador"
 
 msgid "Volume"
 msgstr "Volumen"
+
+msgid "Volume: {}%"
+msgstr "Volumen: {}%"
 
 msgid "Wave"
 msgstr "Onda"
@@ -653,6 +659,9 @@ msgstr[1] "mezcla por tempo: {} pistas"
 
 msgid "mono"
 msgstr "mono"
+
+msgid "mute"
+msgstr "silenciar"
 
 msgid "next and previous track"
 msgstr "pista siguiente y anterior"
@@ -881,6 +890,9 @@ msgstr "no se pudo abrir la siguiente parte de la pista: {}"
 
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
+
+msgid "the output's volume"
+msgstr "el volumen de la salida"
 
 msgid "the plugin sandbox could not be started"
 msgstr "no se pudo arrancar el sandbox de plugins"

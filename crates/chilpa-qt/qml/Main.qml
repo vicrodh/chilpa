@@ -110,8 +110,11 @@ ApplicationWindow {
                     ["Escape", Chilpa.translate("close whatever is open", Chilpa.trRev)],
                     [Chilpa.translate("Ctrl + arrows", Chilpa.trRev),
                      Chilpa.translate("next and previous track", Chilpa.trRev)],
-                    [Chilpa.translate("Arrows", Chilpa.trRev),
+                    [Chilpa.translate("Left and right", Chilpa.trRev),
                      Chilpa.translate("ten seconds forward and back", Chilpa.trRev)],
+                    [Chilpa.translate("Up and down", Chilpa.trRev),
+                     Chilpa.translate("the output's volume", Chilpa.trRev)],
+                    ["M", Chilpa.translate("mute", Chilpa.trRev)],
                     ["F1", Chilpa.translate("this list", Chilpa.trRev)]
                 ]
                 delegate: RowLayout {

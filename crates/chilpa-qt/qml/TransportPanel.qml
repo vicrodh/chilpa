@@ -43,6 +43,23 @@ Flow {
         enabled: !root.typing && Chilpa.playing
         onActivated: Chilpa.seek(Math.max(Chilpa.seconds - 10, 0))
     }
+    // The volume moves in fives: one step should be audible, and a hundred
+    // presses to cross the range is not a shortcut.
+    Shortcut {
+        sequence: StandardKey.MoveToPreviousLine
+        enabled: !root.typing && Chilpa.hasVolume
+        onActivated: Chilpa.chooseVolume(Math.min(Chilpa.volume + 5, 100))
+    }
+    Shortcut {
+        sequence: StandardKey.MoveToNextLine
+        enabled: !root.typing && Chilpa.hasVolume
+        onActivated: Chilpa.chooseVolume(Math.max(Chilpa.volume - 5, 0))
+    }
+    Shortcut {
+        sequence: "M"
+        enabled: !root.typing && Chilpa.canMute
+        onActivated: Chilpa.chooseMuted(!Chilpa.muted)
+    }
 
     Button {
         text: Chilpa.translate("Previous", Chilpa.trRev)
@@ -77,6 +94,33 @@ Flow {
         text: [Chilpa.translate("Repeat: off", Chilpa.trRev), Chilpa.translate("Repeat: queue", Chilpa.trRev), Chilpa.translate("Repeat: track", Chilpa.trRev)][Chilpa.repeat]
         onClicked: Chilpa.cycleRepeat()
     }
+    // The volume of the device itself, where the transport is. It only
+    // appears when the output has one: Chilpa does not scale samples, so an
+    // output without a control of its own has no volume to show. Why is in
+    // the settings panel, which is where someone goes looking.
+    RowLayout {
+        visible: Chilpa.hasVolume
+        spacing: 6
+        Button {
+            visible: Chilpa.canMute
+            text: Chilpa.muted
+                ? Chilpa.translate("Unmute", Chilpa.trRev)
+                : Chilpa.translate("Mute", Chilpa.trRev)
+            onClicked: Chilpa.chooseMuted(!Chilpa.muted)
+        }
+        Slider {
+            Layout.preferredWidth: 110
+            from: 0
+            to: 100
+            stepSize: 1
+            value: Chilpa.volume
+            ToolTip.visible: hovered
+            ToolTip.text: Chilpa.translateArgs(
+                "Volume: {}%", [String(Chilpa.volume)], Chilpa.trRev)
+            onMoved: Chilpa.chooseVolume(Math.round(value))
+        }
+    }
+
     // It reorders what is left so the tempo does not jump. It needs the
     // library to have been analysed.
     Button {
