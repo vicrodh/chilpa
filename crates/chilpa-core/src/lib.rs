@@ -234,8 +234,8 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     let from_thread = tap.clone();
     player::Player::spawn(
         Box::new(|id| measure(id)),
-        Box::new(move |id, format| {
-            let opened = open_output(id, format)?;
+        Box::new(move |id, format, exclusive| {
+            let opened = open_output(id, format, exclusive)?;
             Ok(Box::new(from_thread.wrap(opened)) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
         }),
     )
@@ -288,13 +288,16 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
 fn open_output(
     id: &str,
     format: chilpa_audio::format::StreamFormat,
+    exclusive: bool,
 ) -> Result<Box<dyn chilpa_audio::sink::AudioSink + Send>, chilpa_audio::sink::SinkError> {
     let Some((stack, bare)) = backends::resolve(id) else {
         return Err(unknown_output(id));
     };
-    // Exclusively, always. A player whose whole claim is bit-perfect asks
-    // for the output to itself; a stack that has nothing like it ignores it.
-    stack.open(&bare, format, true)
+    // Whether to ask for the output alone is the user's, not this
+    // function's. It used to ask always, which is right about fidelity and
+    // wrong about everything else: somebody turns bit-perfect off precisely
+    // so they can hear something else at the same time.
+    stack.open(&bare, format, exclusive)
 }
 
 /// Whether the road past Chilpa leaves the samples alone.
@@ -307,17 +310,16 @@ fn open_output(
 ///
 /// An identifier that names no stack is not exact, because nothing is known
 /// about it and the safe answer to "did the samples survive" is never yes.
-pub fn path_is_exact(device: &str) -> bool {
+pub fn path_is_exact(device: &str, exclusive: bool) -> bool {
     use chilpa_audio::backend::Fidelity;
     backends::resolve(device)
         .map(|(stack, _)| match stack.info().fidelity {
             Fidelity::Exact => true,
-            // "It depends" depends on being handed the output alone, and
-            // Chilpa always asks for it that way -- a player whose whole
-            // claim is bit-perfect does not share the DAC. The day there is
-            // a setting to share it, this is the line that changes, and the
-            // verdict has to change with it rather than keep saying yes.
-            Fidelity::Depends => true,
+            // "It depends" depends on exactly one thing: whether the output
+            // was asked for alone. A server hands the samples over when it
+            // has nobody else to mix them with and resamples when it does,
+            // so this is not a policy choice, it is what happened.
+            Fidelity::Depends => exclusive,
             Fidelity::Never => false,
         })
         .unwrap_or(false)

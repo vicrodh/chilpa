@@ -55,7 +55,16 @@ enum Order {
 
 /// Opens the output device. It is injected so the tests use a fake one and
 /// the application uses the real one.
-pub type OpenSink = Box<dyn FnMut(&str, StreamFormat) -> Result<Box<dyn AudioSink + Send>, SinkError> + Send>;
+/// Opens an output: its identifier, the format, and whether to ask for it
+/// alone.
+///
+/// The last one is the user's bit-perfect switch reaching the device. A
+/// player that always took the output exclusively would be right about
+/// fidelity and wrong about everything else: turning bit-perfect off is
+/// exactly what somebody does when they want to hear a video at the same
+/// time, and it has to actually let go of the DAC.
+pub type OpenSink =
+    Box<dyn FnMut(&str, StreamFormat, bool) -> Result<Box<dyn AudioSink + Send>, SinkError> + Send>;
 
 /// Measures a device by its name.
 pub type ProbeDevice = Box<dyn FnMut(&str) -> Result<DeviceCaps, SinkError> + Send>;
@@ -244,10 +253,15 @@ fn play(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
+    // Asking for the output alone is what the bit-perfect switch means at
+    // the device, and it is also what decides whether a server can pass
+    // samples through. The two are the same question, so they are the same
+    // flag.
+    let exclusive = bit_perfect;
     // What the samples meet after Chilpa hands them over. The delivery
     // cannot see that far, and a verdict that ignores it says bit-perfect
     // over a resampler.
-    let exact_path = crate::path_is_exact(device);
+    let exact_path = crate::path_is_exact(device, exclusive);
     let (stop, pause, skip) = (&controls.stop, &controls.pause, &controls.skip);
     let paths = queue.to_vec();
     let paths = paths.as_slice();
@@ -262,13 +276,13 @@ fn play(
             return play_stream(first, device, &caps, policy, stop, pause, open, events);
         }
         if is_cd(first) {
-            return play_cd(first, device, &caps, stop, pause, skip, open, events);
+            return play_cd(first, device, exclusive, &caps, stop, pause, skip, open, events);
         }
         if is_sacd(first) {
-            return play_sacd(first, device, &caps, stop, pause, skip, open, events);
+            return play_sacd(first, device, exclusive, &caps, stop, pause, skip, open, events);
         }
         if is_dsd(first) {
-            return play_dsd(first, device, &caps, stop, pause, open, events);
+            return play_dsd(first, device, exclusive, &caps, stop, pause, open, events);
         }
     }
     let results = crate::queue_playback::play_queue_with(
@@ -276,7 +290,7 @@ fn play(
         &caps,
         policy,
         controls,
-        |format| open(device, format),
+        |format| open(device, format, exclusive),
         &mut |index, path, delivery| {
             // Tags and the cover are read as each track starts, not as it is
             // queued: a long queue must not read hundreds of files before the
@@ -335,7 +349,8 @@ fn play_stream(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let exact_path = crate::path_is_exact(device);
+    let exclusive = policy == Policy::BitPerfect;
+    let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
     let stream = chilpa_stream::open_parts(&parts)
@@ -357,7 +372,7 @@ fn play_stream(
         policy,
         stop,
         pause,
-        |format| open(device, format),
+        |format| open(device, format, exclusive),
         &mut |delivery| {
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
@@ -411,6 +426,7 @@ pub fn cd_device_of(path: &Path) -> Option<PathBuf> {
 fn play_cd(
     path: &Path,
     device: &str,
+    exclusive: bool,
     caps: &chilpa_audio::negotiate::DeviceCaps,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
@@ -455,7 +471,7 @@ fn play_cd(
             stop,
             pause,
             |format| {
-                let sink = open(device, format);
+                let sink = open(device, format, exclusive);
                 if sink.is_ok() {
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
@@ -516,6 +532,7 @@ fn play_cd(
 fn play_sacd(
     path: &Path,
     device: &str,
+    exclusive: bool,
     caps: &chilpa_audio::negotiate::DeviceCaps,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
@@ -559,7 +576,7 @@ fn play_sacd(
             stop,
             pause,
             |format| {
-                let sink = open(device, format);
+                let sink = open(device, format, exclusive);
                 if sink.is_ok() {
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
@@ -602,6 +619,7 @@ fn is_dsd(path: &Path) -> bool {
 fn play_dsd(
     path: &Path,
     device: &str,
+    exclusive: bool,
     caps: &chilpa_audio::negotiate::DeviceCaps,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
@@ -626,7 +644,7 @@ fn play_dsd(
         stop,
         pause,
         |format| {
-            let sink = open(device, format);
+            let sink = open(device, format, exclusive);
             if let Ok(_) = &sink {
                 let _ = events.send(PlayerEvent::Started {
                     path: owned.clone(),
@@ -731,7 +749,7 @@ mod tests {
                     probed: true,
                 })
             }),
-            Box::new(move |_, stream| {
+            Box::new(move |_, stream, _exclusive| {
                 Ok(Box::new(NullSink { stream, written: Arc::clone(&written) }) as Box<dyn AudioSink + Send>)
             }),
         )

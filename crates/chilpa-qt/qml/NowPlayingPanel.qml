@@ -113,11 +113,15 @@ Rectangle {
                 onMoved: Chilpa.seek(value)
             }
             Label {
-                text: Chilpa.bitPerfect
-                    ? "bit-perfect"
-                    : (Chilpa.playing ? Chilpa.translate("converted", Chilpa.trRev) : "")
-                // An empty label still takes a line, and with nothing playing
-                // there is no verdict to give.
+                // Both halves of the verdict last as long as the track they
+                // are about. They did not: "bit-perfect" stayed on the card
+                // after a track ended and "converted" vanished the moment it
+                // stopped, so the good news outlived the bad one. A card
+                // that keeps showing what played has to keep showing what
+                // happened to it.
+                text: Chilpa.title === ""
+                    ? ""
+                    : (Chilpa.bitPerfect ? "bit-perfect" : Chilpa.translate("converted", Chilpa.trRev))
                 visible: text !== ""
                 color: Chilpa.bitPerfect ? "#2e7d32" : "#d7272b"
             }
