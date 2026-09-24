@@ -62,8 +62,8 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
     }
     headers.push(("User-Agent".into(), "Chilpa".into()));
 
-    // ureq distingue por tipo los métodos que llevan cuerpo de los que no,
-    // así que las dos ramas se escriben aparte.
+    // ureq distinguishes by type the methods that carry a body from those
+    // that do not, so the two branches are written separately.
     let reply = if matches!(p.method.as_str(), "POST" | "PUT" | "PATCH") {
         let mut req = match p.method.as_str() {
             "PUT" => agent.put(&p.url),

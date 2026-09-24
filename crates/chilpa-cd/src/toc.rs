@@ -18,17 +18,17 @@ pub const SESSION_GAP_SECTORS: u32 = 11_400;
 /// Bytes in an audio sector: 588 stereo frames of 16 bits.
 pub const SECTOR_BYTES: usize = 2352;
 
-/// Una entrada del TOC tal como la entrega la unidad.
+/// One TOC entry exactly as the drive hands it over.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct TocEntry {
     pub number: u8,
     pub start_lsn: u32,
     pub is_audio: bool,
-    /// En qué sesión vive. Un disco de puro audio trae todo en la 1.
+    /// Which session it lives in. An audio only disc has everything in 1.
     pub session: u8,
 }
 
-/// Una pista con su duración ya calculada.
+/// A track with its duration already computed.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Track {
     pub number: u8,
@@ -48,7 +48,7 @@ impl Track {
     }
 }
 
-/// El disco completo.
+/// The whole disc.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Toc {
     pub tracks: Vec<Track>,
@@ -64,18 +64,17 @@ impl Toc {
         self.tracks.iter().find(|t| t.number == number)
     }
 
-    /// Cierto si el disco mezcla audio y datos, o sea un CD-Extra o un disco
-    /// de modo mixto.
+    /// True if the disc mixes audio and data, that is a CD-Extra or a mixed
+    /// mode disc.
     pub fn is_mixed(&self) -> bool {
         self.tracks.iter().any(|t| t.is_audio) && self.tracks.iter().any(|t| !t.is_audio)
     }
 }
 
-/// Arma el TOC calculando duraciones.
+/// Builds the TOC, computing durations.
 ///
-/// Las entradas vienen en orden. Cuando la pista siguiente está en otra
-/// sesión, se descuenta el hueco entre sesiones en vez de contarlo como
-/// música.
+/// The entries come in order. When the next track is in another session,
+/// the gap between sessions is discounted instead of counted as music.
 pub fn build(entries: &[TocEntry], leadout_lsn: u32) -> Toc {
     let mut tracks = Vec::with_capacity(entries.len());
     for (i, e) in entries.iter().enumerate() {
@@ -119,8 +118,8 @@ mod tests {
 
     #[test]
     fn on_a_cd_extra_the_last_audio_track_does_not_swallow_the_session_gap() {
-        // El hallazgo de la auditoría: sin descontar el hueco, la pista 2
-        // medía 152 segundos de más y el rip fallaba.
+        // The audit's finding: without discounting the gap, track 2 measured
+        // 152 seconds too long and the rip failed.
         let toc = build(&[audio(1, 0, 1), audio(2, 15_000, 1), data(3, 41_400, 2)], 60_000);
         assert_eq!(toc.tracks[1].sectors, 41_400 - SESSION_GAP_SECTORS - 15_000);
         assert_eq!(toc.tracks[1].end_lsn(), 30_000);
@@ -129,8 +128,8 @@ mod tests {
 
     #[test]
     fn a_mixed_mode_disc_in_one_session_subtracts_nothing() {
-        // Datos primero y audio después, todo en la sesión 1: aquí no hay
-        // hueco que descontar.
+        // Data first and audio after, all in session 1: there is no gap to
+        // discount here.
         let toc = build(&[data(1, 0, 1), audio(2, 20_000, 1)], 40_000);
         assert_eq!(toc.tracks[0].sectors, 20_000);
         assert_eq!(toc.tracks[1].sectors, 20_000);

@@ -1,9 +1,9 @@
-//! El identificador de esta instalación, que sirve de sal para el respaldo.
+//! This installation's identifier, which serves as salt for the fallback.
 //!
-//! **No es un secreto.** Guardarlo en claro está bien. Está para dos cosas:
-//! que dos instalaciones en la misma máquina deriven llaves distintas, y que
-//! mover el directorio a otra máquina rompa la derivación, porque allá el
-//! `machine-id` es otro.
+//! **It is not a secret.** Keeping it in the clear is fine. It is there for
+//! two things: so two installations on the same machine derive different
+//! keys, and so moving the directory to another machine breaks the
+//! derivation, because the `machine-id` there is another one.
 
 use std::fs;
 use std::io::Write;
@@ -20,14 +20,14 @@ pub(crate) fn load_or_create(storage_dir: &Path) -> std::io::Result<Uuid> {
         if let Ok(uuid) = Uuid::parse_str(contents.trim()) {
             return Ok(uuid);
         }
-        // Uno ilegible se rehace. Lo que estaba cifrado con el anterior se
-        // pierde, y eso es mejor que quedarse sin arrancar.
+        // An unreadable one is remade. Whatever was encrypted with the
+        // previous one is lost, and that is better than failing to start.
     }
 
     fs::create_dir_all(storage_dir)?;
     let uuid = Uuid::new_v4();
-    // Se escribe aparte y se renombra: un corte de luz a media escritura
-    // dejaría un id truncado, y un id truncado es una llave distinta.
+    // It is written aside and renamed: a power cut mid write would leave a
+    // truncated id, and a truncated id is a different key.
     let tmp: PathBuf = path.with_extension("tmp");
     {
         let mut f = fs::File::create(&tmp)?;
@@ -38,10 +38,10 @@ pub(crate) fn load_or_create(storage_dir: &Path) -> std::io::Result<Uuid> {
     Ok(uuid)
 }
 
-/// El identificador de la máquina, si el sistema da uno.
+/// The machine's identifier, if the system gives one.
 ///
-/// Que falte es aceptable: la derivación se queda con el UUID de
-/// instalación, que sigue atado al equipo porque el directorio lo está.
+/// Its absence is acceptable: the derivation falls back to the install
+/// UUID, which is still tied to the machine because the directory is.
 pub(crate) fn machine_id() -> Option<String> {
     #[cfg(target_os = "linux")]
     {
@@ -78,8 +78,8 @@ pub(crate) fn machine_id() -> Option<String> {
     {
         use std::os::windows::process::CommandExt;
         use std::process::Command;
-        // Sin esto, Windows le abre una consola a `reg` y parpadea una caja
-        // negra en cada arranque.
+        // Without this, Windows opens a console for `reg` and flashes a black
+        // box on every startup.
         const CREATE_NO_WINDOW: u32 = 0x0800_0000;
         let output = Command::new("reg")
             .creation_flags(CREATE_NO_WINDOW)

@@ -182,7 +182,7 @@ mod tests {
         440.0 * 2f32.powf((midi - 69.0) / 12.0)
     }
 
-    /// Un acorde sostenido con esas notas MIDI.
+    /// A chord held on those MIDI notes.
     fn chord(notes: &[f32], rate: u32, seconds: u32) -> Vec<f32> {
         let total = (rate * seconds) as usize;
         (0..total)
@@ -198,10 +198,10 @@ mod tests {
 
     #[test]
     fn c_major_comes_out_as_c_major() {
-        // Las siete notas de la escala de do, para que el perfil tenga con
-        // qué trabajar: con una tríada sola, do mayor y la menor empatan.
+        // The seven notes of the C scale, so the profile has something to
+        // work with: on a lone triad, C major and A minor tie.
         let scale: Vec<f32> = [60.0, 62.0, 64.0, 65.0, 67.0, 69.0, 71.0].to_vec();
-        // Pesando la tónica y la dominante, como en la música de verdad.
+        // Weighting the tonic and the dominant, as in real music.
         let mut notes = scale.clone();
         notes.extend_from_slice(&[60.0, 67.0, 60.0]);
         let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
@@ -213,7 +213,7 @@ mod tests {
     fn a_minor_comes_out_as_a_minor() {
         let scale: Vec<f32> = [57.0, 59.0, 60.0, 62.0, 64.0, 65.0, 67.0].to_vec();
         let mut notes = scale.clone();
-        // En menor, lo que manda es la tónica y la tercera menor.
+        // In minor, what rules is the tonic and the minor third.
         notes.extend_from_slice(&[57.0, 60.0, 57.0, 64.0]);
         let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
         assert_eq!(k.name, "Am", "salió {} ({})", k.name, k.camelot);
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn the_camelot_wheel_wraps_all_the_way_around() {
-        // Las veinticuatro casillas, sin repetir ni faltar.
+        // The twenty four slots, none repeated and none missing.
         let mut vistas: Vec<String> = Vec::new();
         for i in 0..12 {
             for mayor in [true, false] {
@@ -243,13 +243,13 @@ mod tests {
         vistas.sort();
         vistas.dedup();
         assert_eq!(vistas.len(), 24, "hay 24 casillas distintas");
-        // Y las dos anclas de siempre.
+        // And the usual two anchors.
         assert_eq!(camelot(0, true), "8B", "do mayor");
         assert_eq!(camelot(9, false), "8A", "la menor");
         assert_eq!(camelot(7, true), "9B", "sol mayor, una quinta arriba");
         assert_eq!(camelot(0, false), "5A", "do menor");
         assert_eq!(camelot(6, false), "11A", "fa sostenido menor");
-        // Cada tono mayor comparte casilla con su relativo menor.
+        // Every major key shares a slot with its relative minor.
         for i in 0..12usize {
             let mayor = camelot(i, true);
             let relative = camelot((i + 9) % 12, false);
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn a_flat_chromagram_picks_nothing() {
-        // Todas las notas igual de fuertes: no hay tónica que valga.
+        // Every note equally strong: there is no meaningful tonic.
         let flat = [1.0f32 / 12.0; 12];
         let (_, _, confidence) = best_profile(&flat).unwrap_or((0, true, 0.0));
         assert!(confidence < 0.2, "no debería estar seguro: {confidence}");
