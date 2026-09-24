@@ -550,6 +550,9 @@ msgstr ""
 msgid "analysing..."
 msgstr ""
 
+msgid "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})"
+msgstr ""
+
 msgid "awaiting approval"
 msgstr ""
 

@@ -130,7 +130,7 @@ impl OutputBackend for System {
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
         -> Result<Box<dyn AudioSink + Send>, SinkError> {
-        Ok(Box::new(AlsaSink::open(id, format)?))
+        Ok(Box::new(AlsaSink::open_pcm(id, format)?))
     }
 }
 
