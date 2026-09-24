@@ -29,6 +29,9 @@ ALLOWED = {
     # Dónde se guarda un secreto sin dejarlo en claro. No depende de nadie:
     # no conoce plugins ni biblioteca, solo cierra y abre bytes.
     "chilpa-secrets": set(),
+    # Conectar una cuenta sin que el plugin toque el token. Solo necesita
+    # salir a la red; no sabe de plugins ni de dónde se guardan los tokens.
+    "chilpa-auth": {"chilpa-stream"},
     "chilpa-library": {"chilpa-models", "chilpa-tags"},
     "chilpa-stream": set(),
     "chilpa-decode": {"chilpa-audio", "chilpa-stream"},
