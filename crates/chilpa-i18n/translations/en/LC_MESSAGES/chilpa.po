@@ -187,6 +187,9 @@ msgstr ""
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
 msgstr ""
 
+msgid "File"
+msgstr ""
+
 msgid "Folders"
 msgstr ""
 
@@ -475,6 +478,9 @@ msgstr ""
 msgid "Studio 24/48"
 msgstr ""
 
+msgid "System"
+msgstr ""
+
 msgid "That answer does not belong to this window."
 msgstr ""
 
@@ -601,6 +607,9 @@ msgstr ""
 msgid "add a command you trigger"
 msgstr ""
 
+msgid "aggregate"
+msgstr ""
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr ""
 
@@ -673,6 +682,12 @@ msgstr ""
 msgid "device: {}"
 msgstr ""
 
+msgid "digital"
+msgstr ""
+
+msgid "display"
+msgstr ""
+
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr ""
 
@@ -691,6 +706,15 @@ msgstr ""
 msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr ""
 
+msgid "handset"
+msgstr ""
+
+msgid "headphones"
+msgstr ""
+
+msgid "headset"
+msgstr ""
+
 msgid "how the account connects does not work: {}"
 msgstr ""
 
@@ -698,6 +722,9 @@ msgid "impossible packet counts"
 msgstr ""
 
 msgid "in the system keyring"
+msgstr ""
+
+msgid "internal"
 msgstr ""
 
 msgid "invalid table of contents: {}"
@@ -769,6 +796,9 @@ msgstr ""
 msgid "keep things of its own on disk"
 msgstr ""
 
+msgid "microphone"
+msgstr ""
+
 msgid "mixed by tempo: {} track"
 msgid_plural "mixed by tempo: {} tracks"
 msgstr[0] ""
@@ -778,6 +808,9 @@ msgid "mono"
 msgstr ""
 
 msgid "mute"
+msgstr ""
+
+msgid "network"
 msgstr ""
 
 msgid "next and previous track"
@@ -1168,6 +1201,9 @@ msgid "track {}: {}"
 msgstr ""
 
 msgid "up to {} bits"
+msgstr ""
+
+msgid "virtual"
 msgstr ""
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"

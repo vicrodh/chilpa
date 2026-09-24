@@ -187,6 +187,9 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect para compartirlo y dejar que Windows mezcle y reconvierta."
 
+msgid "File"
+msgstr "Archivo"
+
 msgid "Folders"
 msgstr "Carpetas"
 
@@ -475,6 +478,9 @@ msgstr "Detener el análisis"
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
 
+msgid "System"
+msgstr "Sistema"
+
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
 
@@ -601,6 +607,9 @@ msgstr "cuenta conectada"
 msgid "add a command you trigger"
 msgstr "agregar un comando que tú disparas"
 
+msgid "aggregate"
+msgstr "agregado"
+
 msgid "almost nothing in the queue has an analysed tempo"
 msgstr "casi nada de la cola tiene tempo analizado"
 
@@ -673,6 +682,12 @@ msgstr "archivo dañado: {}"
 msgid "device: {}"
 msgstr "dispositivo: {}"
 
+msgid "digital"
+msgstr "digital"
+
+msgid "display"
+msgstr "pantalla"
+
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "cifrado y atado a este equipo (no hay llavero del sistema)"
 
@@ -691,6 +706,15 @@ msgstr "manejar tu cuenta él mismo, fuera de Chilpa: dice que guarda tu credenc
 msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "manejar tu cuenta él mismo, fuera de Chilpa: tu credencial queda donde él decida, que puede ser un archivo en claro. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
 
+msgid "handset"
+msgstr "auricular"
+
+msgid "headphones"
+msgstr "audífonos"
+
+msgid "headset"
+msgstr "diadema"
+
 msgid "how the account connects does not work: {}"
 msgstr "cómo conecta la cuenta no sirve: {}"
 
@@ -699,6 +723,9 @@ msgstr "cuentas de paquetes imposibles"
 
 msgid "in the system keyring"
 msgstr "en el llavero del sistema"
+
+msgid "internal"
+msgstr "interno"
 
 msgid "invalid table of contents: {}"
 msgstr "tabla de contenido inválida: {}"
@@ -769,6 +796,9 @@ msgstr "guardar una credencial tuya"
 msgid "keep things of its own on disk"
 msgstr "guardar sus propias cosas en disco"
 
+msgid "microphone"
+msgstr "micrófono"
+
 msgid "mixed by tempo: {} track"
 msgid_plural "mixed by tempo: {} tracks"
 msgstr[0] "mezcla por tempo: {} pista"
@@ -779,6 +809,9 @@ msgstr "mono"
 
 msgid "mute"
 msgstr "silenciar"
+
+msgid "network"
+msgstr "red"
 
 msgid "next and previous track"
 msgstr "pista siguiente y anterior"
@@ -1169,6 +1202,9 @@ msgstr "pista {}: {}"
 
 msgid "up to {} bits"
 msgstr "hasta {} bits"
+
+msgid "virtual"
+msgstr "virtual"
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"

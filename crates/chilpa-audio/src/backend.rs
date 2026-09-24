@@ -86,18 +86,24 @@ impl BackendKind {
         BackendKind::ALL.iter().copied().find(|k| k.key() == key)
     }
 
-    /// What it is called in the window. A stack's name is its name in every
-    /// language, so this is not a msgid.
-    pub fn name(&self) -> &'static str {
+    /// What it is called in the window.
+    ///
+    /// Most of these are the same word in every language, because they are
+    /// the names projects gave themselves: ALSA is ALSA in Spanish. Two are
+    /// not. `System` and `File` are ordinary English words that happen to
+    /// sit in the same list, and leaving them out of the catalog because
+    /// their neighbours belong there is how the picker ended up half
+    /// translated.
+    pub fn name(&self) -> String {
         match self {
-            BackendKind::System => "System",
-            BackendKind::Alsa => "ALSA",
-            BackendKind::PipeWire => "PipeWire",
-            BackendKind::Pulse => "PulseAudio",
-            BackendKind::Jack => "JACK",
-            BackendKind::CoreAudio => "CoreAudio",
-            BackendKind::Wasapi => "WASAPI",
-            BackendKind::File => "File",
+            BackendKind::System => chilpa_i18n::t("System"),
+            BackendKind::Alsa => "ALSA".to_string(),
+            BackendKind::PipeWire => "PipeWire".to_string(),
+            BackendKind::Pulse => "PulseAudio".to_string(),
+            BackendKind::Jack => "JACK".to_string(),
+            BackendKind::CoreAudio => "CoreAudio".to_string(),
+            BackendKind::Wasapi => "WASAPI".to_string(),
+            BackendKind::File => chilpa_i18n::t("File"),
         }
     }
 }

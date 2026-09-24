@@ -86,8 +86,8 @@ pub struct Endpoint {
     pub id: String,
     pub name: String,
     /// "internal", "headphones", "S/PDIF"... empty when Windows does not
-    /// say, which it often does not.
-    pub attached: &'static str,
+    /// say, which it often does not. Already in the reader's language.
+    pub attached: String,
     /// What it is set to, as the shared-mode mixer runs it. Worth showing
     /// for the same reason it is on a Mac: a device sitting at 48 will take
     /// a 96 kHz track and convert it, unless it is opened exclusively.
@@ -97,7 +97,7 @@ pub struct Endpoint {
 impl Endpoint {
     /// The line under the name.
     pub fn detail(&self) -> String {
-        let mut line = self.attached.to_string();
+        let mut line = self.attached.clone();
         if self.mixer_rate > 0 {
             if !line.is_empty() {
                 line.push_str(" · ");
@@ -128,27 +128,35 @@ fn khz(rate: f64) -> String {
 /// rest say nothing rather than guessing, and saying nothing is the right
 /// answer more often than it looks. `UnknownFormFactor` is common, and the
 /// bus a device hangs off -- USB above all -- is not in this property at all.
+///
+/// Every word here is a msgid, marked so the extractor finds it: `t` is
+/// called further down on a variable, and a call on a variable is invisible
+/// to a tool that reads the source. "S/PDIF" is not in this table for the
+/// opposite reason -- it is the name of a standard and reads the same in
+/// every language, while "headphones" does not.
 const ATTACHMENTS: &[(EndpointFormFactor, &str)] = &[
-    (Speakers, "internal"),
-    (LineLevel, "internal"),
-    (RemoteNetworkDevice, "network"),
-    (Headphones, "headphones"),
-    (Microphone, "microphone"),
-    (Headset, "headset"),
-    (Handset, "handset"),
-    (UnknownDigitalPassthrough, "digital"),
-    (SPDIF, "S/PDIF"),
+    (Speakers, chilpa_i18n::mark("internal")),
+    (LineLevel, chilpa_i18n::mark("internal")),
+    (RemoteNetworkDevice, chilpa_i18n::mark("network")),
+    (Headphones, chilpa_i18n::mark("headphones")),
+    (Microphone, chilpa_i18n::mark("microphone")),
+    (Headset, chilpa_i18n::mark("headset")),
+    (Handset, chilpa_i18n::mark("handset")),
+    (UnknownDigitalPassthrough, chilpa_i18n::mark("digital")),
     // The old name for this one was `HDMI` and it mostly still is that, but
     // DisplayPort answers to it too, so it is named for what it is rather
     // than for the cable it usually happens to be.
-    (DigitalAudioDisplayDevice, "display"),
+    (DigitalAudioDisplayDevice, chilpa_i18n::mark("display")),
 ];
 
-fn attachment(form_factor: EndpointFormFactor) -> &'static str {
+fn attachment(form_factor: EndpointFormFactor) -> String {
+    if form_factor == SPDIF {
+        return "S/PDIF".to_string();
+    }
     ATTACHMENTS
         .iter()
         .find(|(kind, _)| *kind == form_factor)
-        .map_or("", |(_, name)| *name)
+        .map_or_else(String::new, |(_, word)| chilpa_i18n::t(word))
 }
 
 /// Every active render endpoint.
@@ -424,11 +432,14 @@ mod tests {
     #[test]
     fn a_form_factor_nobody_named_says_nothing() {
         assert_eq!(attachment(SPDIF), "S/PDIF");
-        assert_eq!(attachment(Speakers), "internal");
-        // Not "internal": it is something on the network.
-        assert_eq!(attachment(RemoteNetworkDevice), "network");
-        // Windows sends `UnknownFormFactor` for most USB DACs, and an empty
-        // line is the honest answer: the property knows nothing about buses.
+        // Windows sends `UnknownFormFactor` for most USB DACs.
+        // Both of these come back translated, so what is checked is that
+        // they are not empty and not each other: a catalog with neither
+        // entry gives the msgid back, which is still the right word.
+        assert!(!attachment(Speakers).is_empty());
+        assert_ne!(attachment(Speakers), attachment(RemoteNetworkDevice));
+        // An empty line is the honest answer for a form factor nobody
+        // named: the property knows nothing about buses.
         assert_eq!(attachment(EndpointFormFactor(10)), "");
         assert_eq!(attachment(EndpointFormFactor(-1)), "");
     }

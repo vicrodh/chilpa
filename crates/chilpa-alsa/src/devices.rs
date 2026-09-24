@@ -31,11 +31,14 @@ pub enum Bus {
 
 impl Bus {
     /// The word the window shows.
-    pub fn name(&self) -> &'static str {
+    ///
+    /// "USB" and "HDMI" are the same everywhere; "internal" is an English
+    /// word and goes through the catalog like any other.
+    pub fn name(&self) -> String {
         match self {
-            Bus::Usb => "USB",
-            Bus::Hdmi => "HDMI",
-            Bus::Internal => "internal",
+            Bus::Usb => "USB".to_string(),
+            Bus::Hdmi => "HDMI".to_string(),
+            Bus::Internal => chilpa_i18n::t("internal"),
         }
     }
 }
@@ -148,7 +151,7 @@ impl Device {
     pub fn full_label(&self) -> String {
         let mut line = self.label();
         line.push_str(" (");
-        line.push_str(self.bus.name());
+        line.push_str(&self.bus.name());
         let declared = self.declared.summary();
         if !declared.is_empty() {
             line.push_str(", ");

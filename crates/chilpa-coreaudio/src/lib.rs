@@ -121,7 +121,7 @@ impl OutputBackend for CoreAudio {
                 // music into one is not choosing an output.
                 continue;
             }
-            let mut detail = read::transport_name(transport).to_string();
+            let mut detail = read::transport_name(transport);
             let says = declared(device);
             if !says.is_empty() {
                 if !detail.is_empty() {

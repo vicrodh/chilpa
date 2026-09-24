@@ -325,18 +325,29 @@ fn settable_elements(
 }
 
 /// How a transport reads in the window.
-pub fn transport_name(transport: u32) -> &'static str {
+///
+/// The standards and the brand names stay as they are -- USB is USB in every
+/// language -- and the ordinary words go through the catalog. Mixing the two
+/// kinds in one list and treating them all as names is what left "internal"
+/// in English under a Spanish window.
+pub fn transport_name(transport: u32) -> String {
     match transport {
-        kAudioDeviceTransportTypeUSB => "USB",
-        kAudioDeviceTransportTypeBuiltIn => "internal",
-        kAudioDeviceTransportTypeHDMI => "HDMI",
-        kAudioDeviceTransportTypeDisplayPort => "DisplayPort",
-        kAudioDeviceTransportTypeBluetooth | kAudioDeviceTransportTypeBluetoothLE => "Bluetooth",
-        kAudioDeviceTransportTypeThunderbolt => "Thunderbolt",
-        kAudioDeviceTransportTypeAirPlay => "AirPlay",
-        kAudioDeviceTransportTypeAggregate => "aggregate",
-        kAudioDeviceTransportTypeVirtual => "virtual",
-        _ => "",
+        kAudioDeviceTransportTypeUSB => "USB".to_string(),
+        kAudioDeviceTransportTypeBuiltIn => chilpa_i18n::t("internal"),
+        kAudioDeviceTransportTypeHDMI => "HDMI".to_string(),
+        kAudioDeviceTransportTypeDisplayPort => "DisplayPort".to_string(),
+        kAudioDeviceTransportTypeBluetooth | kAudioDeviceTransportTypeBluetoothLE => {
+            "Bluetooth".to_string()
+        }
+        kAudioDeviceTransportTypeThunderbolt => "Thunderbolt".to_string(),
+        kAudioDeviceTransportTypeAirPlay => "AirPlay".to_string(),
+        // Neither of these reaches the picker today, because `is_hardware`
+        // drops them before an output is built. They are translated anyway:
+        // the function is public and the day that filter changes is not the
+        // day to find out they were never in the catalog.
+        kAudioDeviceTransportTypeAggregate => chilpa_i18n::t("aggregate"),
+        kAudioDeviceTransportTypeVirtual => chilpa_i18n::t("virtual"),
+        _ => String::new(),
     }
 }
 
