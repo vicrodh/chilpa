@@ -126,6 +126,12 @@ impl crate::backend::OutputBackend for FileBackend {
         }
     }
 
+    /// Really measured: this output knows exactly what it accepts,
+    /// because it is the one that decides.
+    fn caps(&self, _id: &str) -> Result<crate::negotiate::DeviceCaps, SinkError> {
+        Ok(capabilities())
+    }
+
     fn outputs(&self) -> Vec<crate::backend::BackendOutput> {
         vec![crate::backend::BackendOutput {
             id: CAPTURE_ID.to_string(),

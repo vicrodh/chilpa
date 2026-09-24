@@ -131,51 +131,37 @@ pub struct VolumeState {
     pub element: String,
 }
 
-/// The volume control of that device, if it has one.
-#[cfg(target_os = "linux")]
+/// The volume control of that output, if it has one.
+///
+/// Asked of the stack the identifier names, like everything else. It used to
+/// go straight to ALSA, which meant a Mac's own knob was invisible however
+/// well CoreAudio reported it.
 pub fn volume_of(device: &str) -> VolumeState {
-    let Some(v) = chilpa_alsa::Volume::of(&bare(device)) else { return VolumeState::default() };
-    let level = v.read().unwrap_or_default();
+    let Some((stack, bare)) = backends::resolve(device) else { return VolumeState::default() };
+    let Some(knob) = stack.volume(&bare) else { return VolumeState::default() };
     VolumeState {
         available: true,
-        percent: level.percent,
-        muted: level.muted,
-        can_mute: v.can_mute(),
-        element: v.element().to_string(),
+        percent: knob.percent,
+        muted: knob.muted,
+        can_mute: knob.can_mute,
+        element: knob.name,
     }
 }
 
-#[cfg(not(target_os = "linux"))]
-pub fn volume_of(_device: &str) -> VolumeState {
-    VolumeState::default()
-}
-
-/// Moves that device's own volume control.
-#[cfg(target_os = "linux")]
+/// Moves it.
 pub fn set_volume(device: &str, percent: u8) -> Result<(), String> {
-    match chilpa_alsa::Volume::of(&bare(device)) {
-        Some(v) => v.set(percent),
-        None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-    }
+    let Some((stack, bare)) = backends::resolve(device) else {
+        return Err(chilpa_i18n::t("this output has no volume control of its own"));
+    };
+    stack.set_volume(&bare, percent)
 }
 
-#[cfg(not(target_os = "linux"))]
-pub fn set_volume(_device: &str, _percent: u8) -> Result<(), String> {
-    Err(chilpa_i18n::t("this output has no volume control of its own"))
-}
-
-/// Mutes or unmutes that device.
-#[cfg(target_os = "linux")]
+/// Mutes or unmutes it.
 pub fn set_muted(device: &str, muted: bool) -> Result<(), String> {
-    match chilpa_alsa::Volume::of(&bare(device)) {
-        Some(v) => v.mute(muted),
-        None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-    }
-}
-
-#[cfg(not(target_os = "linux"))]
-pub fn set_muted(_device: &str, _muted: bool) -> Result<(), String> {
-    Err(chilpa_i18n::t("this output has no volume control of its own"))
+    let Some((stack, bare)) = backends::resolve(device) else {
+        return Err(chilpa_i18n::t("this output has no volume control of its own"));
+    };
+    stack.set_muted(&bare, muted)
 }
 
 /// Measures an output device.
@@ -234,55 +220,18 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     )
 }
 
-/// What an output really accepts, measured by opening it.
+/// What an output really accepts.
 ///
-/// Only the stack that owns the identifier can answer, so the identifier is
-/// resolved first. A name that belongs to no stack this build has is said so
-/// plainly rather than tried against whichever one happens to be first,
-/// which is how a settings file from another machine ends up playing
-/// somewhere nobody chose.
+/// One line, because the question belongs to the stack and every one of them
+/// answers it differently: a card by being opened, a server by taking
+/// whatever it is handed, a JACK graph by publishing its one rate, a Mac by
+/// saying what its wire carries. This used to be a match over all of them
+/// here, with a cfg for the platform each needed.
 fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
-    match chilpa_audio::backend::BackendOutput::split(id) {
-        Some((chilpa_audio::backend::BackendKind::File, _)) => {
-            Ok(chilpa_audio::capture::capabilities())
-        }
-        // A server takes whatever it is handed and makes it fit, so there
-        // is nothing here that would refuse a format. What it does to the
-        // samples on the way is the stack's `fidelity`, and that is said
-        // where an output is chosen rather than smuggled in as a capability.
-        //
-        // Measuring for real would mean opening the sink, and opening one to
-        // measure it takes it from whoever is using it -- which is exactly
-        // what a listing must never do.
-        // JACK is the one server that can be measured without taking
-        // anything: the graph's rate is the graph's, it is published, and
-        // every client is told it. Handing that over lets the negotiation
-        // decide -- refuse with bit-perfect on, convert and say so with it
-        // off -- instead of this crate deciding for it.
-        #[cfg(target_os = "linux")]
-        Some((chilpa_audio::backend::BackendKind::Jack, _)) => chilpa_jack::capabilities()
-            .ok_or_else(|| {
-                chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
-                    "no JACK graph is running",
-                ))
-            }),
-        Some((
-            chilpa_audio::backend::BackendKind::PipeWire
-            | chilpa_audio::backend::BackendKind::Pulse,
-            _,
-        )) => Ok(chilpa_audio::capture::capabilities()),
-        // A Mac's device can be asked what its wire carries without being
-        // opened, which is the one platform where measuring costs nothing.
-        #[cfg(target_os = "macos")]
-        Some((chilpa_audio::backend::BackendKind::CoreAudio, device)) => {
-            chilpa_coreaudio::capabilities(device).ok_or_else(|| unknown_output(device))
-        }
-        #[cfg(target_os = "linux")]
-        Some((_, bare)) => chilpa_alsa::probe(bare),
-        #[cfg(not(target_os = "linux"))]
-        Some((_, bare)) => Err(unknown_output(bare)),
-        None => Err(unknown_output(id)),
-    }
+    let Some((stack, bare)) = backends::resolve(id) else {
+        return Err(unknown_output(id));
+    };
+    stack.caps(&bare)
 }
 
 /// Opens one, through the stack its identifier names.
@@ -342,32 +291,23 @@ pub struct PlayedSummary {
 }
 
 impl Core {
-    /// Plays a local file on a direct ALSA device.
+    /// Plays one file and waits for it: decode, measure the output,
+    /// negotiate and deliver. The error comes out already written for the
+    /// window, because the facade does not know the types in here.
     ///
-    /// It is the vertical slice's minimum path: decode, measure the
-    /// device, negotiate and deliver. The error comes out already written for
-    /// the UI, because the facade does not know the types in here.
-    /// The same where there is no backend yet (ADR-010 deuda M2).
-    #[cfg(not(target_os = "linux"))]
-    pub fn play_local(
-        &mut self,
-        _path: &std::path::Path,
-        _device: &str,
-        _bit_perfect: bool,
-    ) -> Result<PlayedSummary, String> {
-        Err(chilpa_i18n::t("there is no audio output on this platform yet"))
-    }
-
-    #[cfg(target_os = "linux")]
+    /// Through the catalogue like everything else. It spoke straight to ALSA
+    /// before, which is why it existed only on Linux and why every other
+    /// platform had a stub that refused. It now works wherever a stack does,
+    /// which is the point of having stacks.
     pub fn play_local(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) -> Result<PlayedSummary, String> {
         use chilpa_audio::negotiate::Policy;
         use chilpa_audio::render::Outcome;
         use chilpa_audio::sink::StopSignal;
 
-        let caps = chilpa_alsa::probe(device).map_err(|e| format!("{e:?}"))?;
+        let caps = measure(device).map_err(|e| format!("{e:?}"))?;
         let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
         let played = playback::play_file(path, &caps, policy, &StopSignal::new(), |format| {
-            chilpa_alsa::AlsaSink::open(device, format)
+            open_output(device, format, bit_perfect)
         })
         .map_err(|e| e.to_string())?;
         let opened = played.delivery.opened;

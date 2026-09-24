@@ -64,6 +64,14 @@ pub struct CoreAudioSink {
 }
 
 /// Whether a property can be written, asked of the object itself.
+pub(crate) fn write_property<T>(
+    object: AudioObjectID,
+    which: AudioObjectPropertySelector,
+    value: &T,
+) -> Result<(), OSStatus> {
+    set(object, &output(which), value)
+}
+
 fn set<T>(
     object: AudioObjectID,
     address: &AudioObjectPropertyAddress,

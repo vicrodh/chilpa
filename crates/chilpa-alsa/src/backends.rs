@@ -9,7 +9,7 @@
 //! it promises nothing.
 
 use crate::{devices, AlsaSink};
-use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, OutputBackend};
+use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, Knob, OutputBackend};
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::sink::{AudioSink, SinkError};
 
@@ -59,6 +59,38 @@ impl OutputBackend for Alsa {
         // board.
         outputs.sort_by_key(|o| !o.detail.starts_with("USB"));
         outputs
+    }
+
+    /// Measured by opening it, which is the only thing that can promise
+    /// bit-perfect.
+    fn caps(&self, id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        crate::probe(id)
+    }
+
+    /// The card's own mixer, when it has one.
+    fn volume(&self, id: &str) -> Option<Knob> {
+        let control = crate::Volume::of(id)?;
+        let level = control.read().ok()?;
+        Some(Knob {
+            percent: level.percent,
+            muted: level.muted,
+            can_mute: control.can_mute(),
+            name: control.element().to_string(),
+        })
+    }
+
+    fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
+        match crate::Volume::of(id) {
+            Some(control) => control.set(percent),
+            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+        }
+    }
+
+    fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
+        match crate::Volume::of(id) {
+            Some(control) => control.mute(muted),
+            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+        }
     }
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
@@ -126,6 +158,38 @@ impl OutputBackend for System {
             detail: what_default_is(),
             bit_perfect: false,
         }]
+    }
+
+    /// Measured by opening it, which is the only thing that can promise
+    /// bit-perfect.
+    fn caps(&self, id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        crate::probe(id)
+    }
+
+    /// The card's own mixer, when it has one.
+    fn volume(&self, id: &str) -> Option<Knob> {
+        let control = crate::Volume::of(id)?;
+        let level = control.read().ok()?;
+        Some(Knob {
+            percent: level.percent,
+            muted: level.muted,
+            can_mute: control.can_mute(),
+            name: control.element().to_string(),
+        })
+    }
+
+    fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
+        match crate::Volume::of(id) {
+            Some(control) => control.set(percent),
+            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+        }
+    }
+
+    fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
+        match crate::Volume::of(id) {
+            Some(control) => control.mute(muted),
+            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+        }
     }
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)

@@ -106,6 +106,14 @@ impl OutputBackend for Jack {
         }
     }
 
+    /// The one server that can be measured without taking anything: the
+    /// graph's rate is published and every client is told it.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        capabilities().ok_or_else(|| {
+            SinkError::Backend(chilpa_i18n::t("no JACK graph is running"))
+        })
+    }
+
     fn outputs(&self) -> Vec<BackendOutput> {
         let Some((client, _)) = hello() else { return Vec::new() };
         // The graph's physical inputs: the ports that are an actual way out
