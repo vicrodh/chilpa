@@ -166,6 +166,16 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     assert!(!found.is_empty());
     within("search", t, Duration::from_millis(120));
 
+    // And what typing actually looks like. FTS5 answers a prefix query by
+    // building the whole matching doclist before it returns a row, so a
+    // short prefix is the expensive one and it is the one that runs on every
+    // keystroke. `prefix='2 3 4'` is what this measures.
+    for typed in ["Tr", "Tra", "Trac"] {
+        let (found, t) = how_long(|| lib.search(typed, 200).unwrap());
+        assert!(!found.is_empty(), "\"{typed}\" found nothing");
+        within(&format!("typing \"{typed}\""), t, Duration::from_millis(30));
+    }
+
     // The stats, which sum the whole log.
     let (stats, t) = how_long(|| lib.stats().unwrap());
     assert!(stats.plays > 0);
@@ -225,15 +235,20 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
 /// | the insert on its own | 5.5 us |
 /// | with the rollup triggers | 15.6 us |
 /// | with FTS5 as well | 55.9 us |
+/// | with FTS5 indexing short prefixes | 103 us |
 ///
-/// So the indexes add about fifty microseconds to a track, and a hundred
-/// thousand of them add five seconds to a scan that takes minutes, because
-/// a scan also opens every file. An incremental rescan pays none of it:
-/// what does not change is not written.
+/// So the indexes add about a hundred microseconds to a track, and a hundred
+/// thousand of them add ten seconds to a scan that takes minutes, because a
+/// scan also opens every file. An incremental rescan pays none of it: what
+/// does not change is not written.
+///
+/// The last line is `prefix='2 3 4'` on the search index, which is what
+/// makes typing two or three letters instant (`MIGRATION_V12`). It doubles
+/// what a track costs to write, and that is the trade it is.
 ///
 /// Those are the numbers with nothing else running. Inside the suite this
-/// test shares the machine with the other two and reads around 150 us, so
-/// the ceiling is 300: it is there for the day someone adds a third trigger
+/// test shares the machine with the other two and reads around 225 us, so
+/// the ceiling is 400: it is there for the day someone adds a third trigger
 /// without measuring, not to time the machine.
 #[test]
 fn a_scan_does_not_pay_too_much_for_the_indexes() {
@@ -273,9 +288,9 @@ fn a_scan_does_not_pay_too_much_for_the_indexes() {
     let each = took / N as u32;
     eprintln!("inserting a track: {each:?} ({took:?} for {N})");
     assert!(
-        each <= Duration::from_micros(300),
-        "a track costs {each:?} to insert; it was 56 us alone, 150 in the suite, \
-         when the indexes went in"
+        each <= Duration::from_micros(400),
+        "a track costs {each:?} to insert; it was 103 us alone and 225 in the suite \
+         when the search index learned short prefixes"
     );
 }
 

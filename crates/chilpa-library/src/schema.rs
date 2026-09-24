@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 11;
+pub const VERSION: i64 = 12;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -27,7 +27,7 @@ pub const VERSION: i64 = 11;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -877,6 +877,119 @@ CREATE INDEX albums_title ON albums(title COLLATE NOCASE);
 CREATE INDEX albums_artist_year_title
     ON albums(album_artist COLLATE NOCASE, year, title COLLATE NOCASE);
 CREATE INDEX albums_year_title ON albums(year DESC, title COLLATE NOCASE);
+
+ANALYZE;
+"#;
+
+/// From 11 to 12: the search index learns short prefixes.
+///
+/// Typing is the whole point of a search box, and every keystroke is a
+/// prefix query. FTS5 answers one by building the whole matching doclist
+/// before it returns a row, so the cost is the term's reach and not the
+/// LIMIT: `"alb"*` over two hundred thousand tracks took 11 ms whether it
+/// was asked for five thousand rows or five hundred. Three keystrokes into
+/// a search, that is a whole frame gone.
+///
+/// `prefix='2 3 4'` keeps a separate index for prefixes of those lengths,
+/// which is exactly where typing lives. The match itself goes from 11.3 ms
+/// to 0.66 ms, and a whole search -- two to four letters typed, two hundred
+/// results out -- from 12 ms to 4.4 ms. What is left of those 4.4 is sorting
+/// the matches it considers to take the alphabetically first two hundred,
+/// and that cost is `CONSIDERED`, not the index. Prefixes longer than four
+/// letters still walk the term index and are unchanged.
+///
+/// It costs room: the index goes from 18 MB to 33 MB on two hundred thousand
+/// tracks, about 17 per cent of the library file. That is the trade, and it
+/// is worth it -- what it buys happens on every keystroke, and what it does
+/// not help happens once, when the word is fully typed.
+///
+/// An FTS5 table cannot be altered into another one, so it is dropped and
+/// made again, and the triggers with it because they name it. Their text is
+/// the same as in `MIGRATION_V7` and it is repeated rather than shared: a
+/// migration is a record of what a version did and cannot be edited later,
+/// so two copies is what honesty costs here. What keeps the rebuild honest
+/// is `rebuilding_the_search_index_leaves_every_trigger_working`, which
+/// drives all five of them after the migration has run.
+const MIGRATION_V12: &str = r#"
+DROP TRIGGER track_search_in;
+DROP TRIGGER track_search_out;
+DROP TRIGGER track_search_changed;
+DROP TRIGGER track_search_genre_in;
+DROP TRIGGER track_search_genre_out;
+DROP TABLE track_search;
+
+CREATE VIRTUAL TABLE track_search USING fts5(
+    title, artist, album, genres,
+    tokenize = 'unicode61 remove_diacritics 2',
+    prefix = '2 3 4'
+);
+
+-- A track arriving is indexed with its album's title. Its genres come
+-- later, in their own table, and their trigger refreshes this row.
+CREATE TRIGGER track_search_in AFTER INSERT ON tracks
+BEGIN
+    INSERT INTO track_search (rowid, title, artist, album, genres)
+    VALUES (
+        NEW.id,
+        NEW.title,
+        NEW.artist,
+        COALESCE((SELECT a.title FROM albums a WHERE a.id = NEW.album_id), ''),
+        ''
+    );
+END;
+
+CREATE TRIGGER track_search_out AFTER DELETE ON tracks
+BEGIN
+    DELETE FROM track_search WHERE rowid = OLD.id;
+END;
+
+-- An FTS5 row is replaced, not edited: delete and insert is the documented
+-- way, and it keeps the index and the text from disagreeing.
+CREATE TRIGGER track_search_changed AFTER UPDATE OF title, artist, album_id ON tracks
+BEGIN
+    DELETE FROM track_search WHERE rowid = NEW.id;
+    INSERT INTO track_search (rowid, title, artist, album, genres)
+    VALUES (
+        NEW.id,
+        NEW.title,
+        NEW.artist,
+        COALESCE((SELECT a.title FROM albums a WHERE a.id = NEW.album_id), ''),
+        COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                  JOIN genres g ON g.id = tg.genre_id
+                  WHERE tg.track_id = NEW.id), '')
+    );
+END;
+
+-- The genres of a track are rewritten wholesale (delete then insert), so
+-- both ends refresh the same row from what is in the table at that moment.
+CREATE TRIGGER track_search_genre_in AFTER INSERT ON track_genres
+BEGIN
+    UPDATE track_search
+       SET genres = COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                              JOIN genres g ON g.id = tg.genre_id
+                              WHERE tg.track_id = NEW.track_id), '')
+     WHERE rowid = NEW.track_id;
+END;
+
+CREATE TRIGGER track_search_genre_out AFTER DELETE ON track_genres
+BEGIN
+    UPDATE track_search
+       SET genres = COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                              JOIN genres g ON g.id = tg.genre_id
+                              WHERE tg.track_id = OLD.track_id), '')
+     WHERE rowid = OLD.track_id;
+END;
+
+-- What is already there, indexed once.
+INSERT INTO track_search (rowid, title, artist, album, genres)
+SELECT t.id,
+       t.title,
+       t.artist,
+       COALESCE(a.title, ''),
+       COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                 JOIN genres g ON g.id = tg.genre_id
+                 WHERE tg.track_id = t.id), '')
+FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
 
 ANALYZE;
 "#;
