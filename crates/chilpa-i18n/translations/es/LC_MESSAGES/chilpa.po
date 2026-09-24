@@ -7,6 +7,9 @@ msgstr ""
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
+msgid "\"{}\" did not switch to {} Hz"
+msgstr "\"{}\" no cambió a {} Hz"
+
 msgid "\"{}\" does not say how an account connects"
 msgstr "\"{}\" no dice cómo se conecta una cuenta"
 
