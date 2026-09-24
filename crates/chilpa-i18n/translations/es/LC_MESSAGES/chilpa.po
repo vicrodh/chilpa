@@ -64,6 +64,9 @@ msgstr "Aprobar lo nuevo"
 msgid "Artists"
 msgstr "Artistas"
 
+msgid "Audio stack"
+msgstr "Stack de audio"
+
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
 
@@ -486,6 +489,9 @@ msgstr "Volumen: {}%"
 
 msgid "Wave"
 msgstr "Onda"
+
+msgid "What the samples go through before they are sound. It decides which outputs exist and whether they can be exact."
+msgstr "Por dónde pasan las muestras antes de ser sonido. Decide qué salidas existen y si pueden ser exactas."
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"

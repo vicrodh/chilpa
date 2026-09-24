@@ -9,8 +9,56 @@ use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
 
 impl Chilpa {
+    /// Reads the stacks, then shows the outputs of the one in use.
+    ///
+    /// Which one is in use comes from the chosen output, not from a second
+    /// thing to keep in step: the identifier already names its stack, so
+    /// there is nothing that can disagree with it.
     pub fn refresh_outputs(mut self: Pin<&mut Self>) {
-        let outputs = self.api.outputs();
+        let stacks = self.api.stacks();
+        let mut rows = QList::<QString>::default();
+        for stack in &stacks {
+            rows.append(QString::from(&format!(
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                stack.key,
+                stack.label,
+                if stack.present { "1" } else { "" },
+                stack.missing,
+                stack.fidelity,
+                stack.caveat
+            )));
+        }
+        self.as_mut().set_stacks(QStringList::from(&rows));
+
+        let chosen = self.device().to_string();
+        let from_device = self.api.stack_of(&chosen);
+        // What to show when nothing is chosen yet: the first stack that is
+        // here and has something to offer.
+        let key = if stacks.iter().any(|s| s.key == from_device && s.present) {
+            from_device
+        } else {
+            stacks
+                .iter()
+                .find(|s| s.present && !self.api.stack_outputs(&s.key).is_empty())
+                .map(|s| s.key.clone())
+                .unwrap_or_default()
+        };
+        self.as_mut().choose_stack(&QString::from(&key));
+    }
+
+    /// Shows one stack's outputs.
+    pub fn choose_stack(mut self: Pin<&mut Self>, key: &QString) {
+        let key = key.to_string();
+        self.as_mut().set_stack(QString::from(&key));
+        let caveat = self
+            .api
+            .stacks()
+            .into_iter()
+            .find(|s| s.key == key)
+            .map(|s| s.caveat)
+            .unwrap_or_default();
+        self.as_mut().set_stack_caveat(QString::from(&caveat));
+        let outputs = self.api.stack_outputs(&key);
         let mut tags = QList::<QString>::default();
         let mut ids = QList::<QString>::default();
         for output in &outputs {

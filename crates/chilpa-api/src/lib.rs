@@ -60,6 +60,29 @@ pub struct Output {
     pub bit_perfect: bool,
 }
 
+/// One audio stack, as the window's first picker needs it.
+///
+/// It comes before the outputs because it decides them: which exist, what
+/// they are called, and whether bit-perfect is on the table at all.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct OutputStack {
+    /// What it is called on disk. Not translated, does not change.
+    pub key: String,
+    /// What it is called on screen, with who is answering for it when that
+    /// is not itself: "JACK (through PipeWire)".
+    pub label: String,
+    /// Whether it can be used on this machine.
+    pub present: bool,
+    /// When it cannot: what is missing, in words somebody can act on.
+    pub missing: String,
+    /// "exact", "depends" or "never". A word and not a flag, because the
+    /// middle one is the true answer for a sound server and rounding it
+    /// either way is a lie.
+    pub fidelity: String,
+    /// When the fidelity is not exact: why, and what to use instead.
+    pub caveat: String,
+}
+
 /// What is playing, as a view needs it.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct NowPlaying {
@@ -762,6 +785,53 @@ impl Chilpa {
                 false
             }
         }
+    }
+
+    /// The audio stacks, present or not.
+    ///
+    /// The ones that are not here come with their reason rather than being
+    /// dropped: a picker that silently leaves out what it could not find
+    /// teaches nobody anything, and the reason is usually one package away.
+    pub fn stacks(&self) -> Vec<OutputStack> {
+        chilpa_core::backends::described()
+            .into_iter()
+            .map(|s| OutputStack {
+                key: s.kind.key().to_string(),
+                label: s.label(),
+                present: s.present,
+                missing: s.missing,
+                fidelity: match s.fidelity {
+                    chilpa_core::backends::Fidelity::Exact => "exact",
+                    chilpa_core::backends::Fidelity::Depends => "depends",
+                    chilpa_core::backends::Fidelity::Never => "never",
+                }
+                .to_string(),
+                caveat: s.caveat,
+            })
+            .collect()
+    }
+
+    /// What one stack offers. Empty for one that is not here, and for one
+    /// that is here with nothing plugged into it -- which are different
+    /// things, and `stacks` is where they are told apart.
+    pub fn stack_outputs(&self, key: &str) -> Vec<Output> {
+        let Some(kind) = chilpa_core::backends::StackKind::from_key(key) else {
+            return Vec::new();
+        };
+        chilpa_core::backends::outputs_of(kind)
+            .into_iter()
+            .map(|o| Output {
+                id: o.id,
+                label: o.label,
+                detail: o.detail,
+                bit_perfect: o.bit_perfect,
+            })
+            .collect()
+    }
+
+    /// The stack an output belongs to, out of its identifier.
+    pub fn stack_of(&self, output_id: &str) -> String {
+        output_id.split_once(':').map(|(key, _)| key.to_string()).unwrap_or_default()
     }
 
     /// The outputs the user can choose from.

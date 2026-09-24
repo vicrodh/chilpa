@@ -21,6 +21,13 @@ pub mod chilpa_bridge {
         #[qobject]
         #[qml_element]
         #[qml_singleton]
+        /// The audio stacks, as "key, name, present, missing, fidelity,
+        /// caveat". The picker before the outputs, because it decides them.
+        #[qproperty(QStringList, stacks)]
+        /// Which stack's outputs are being shown, by key.
+        #[qproperty(QString, stack)]
+        /// What the chosen stack cannot promise, or empty when it can.
+        #[qproperty(QString, stack_caveat)]
         /// The outputs that can be chosen, already labelled for display.
         #[qproperty(QStringList, outputs)]
         /// The identifiers, in the same order as the labels.
@@ -265,6 +272,11 @@ pub mod chilpa_bridge {
         /// Reads the machine's outputs again.
         #[qinvokable]
         fn refresh_outputs(self: Pin<&mut Chilpa>);
+
+        /// Shows that stack's outputs. The window calls it when somebody
+        /// picks a stack; the bridge calls it when it reads them.
+        #[cxx_name = "chooseStack"]
+        fn choose_stack(self: Pin<&mut Chilpa>, key: &QString);
 
         /// Reads the chosen output's own volume control.
         #[qinvokable]
@@ -575,6 +587,9 @@ pub struct ChilpaRust {
     volume_control: QString,
     library_folders: QStringList,
     visualizers: QStringList,
+    stacks: QStringList,
+    stack: QString,
+    stack_caveat: QString,
     outputs: QStringList,
     output_ids: QStringList,
     track: QString,
@@ -685,6 +700,9 @@ impl Default for ChilpaRust {
             volume_control: QString::from(""),
             library_folders: QStringList::default(),
             visualizers: QStringList::from(&drawings),
+            stacks: QStringList::default(),
+            stack: QString::from(""),
+            stack_caveat: QString::from(""),
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
             track: QString::from(""),

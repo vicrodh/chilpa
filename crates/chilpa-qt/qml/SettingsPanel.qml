@@ -65,6 +65,44 @@ ScrollView {
         Group { heading: Chilpa.translate("Playback", Chilpa.trRev) }
 
         Setting {
+            label: Chilpa.translate("Audio stack", Chilpa.trRev)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 0
+                StackSelect { Layout.fillWidth: true }
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.translate(
+                        "What the samples go through before they are sound. It decides which outputs exist and whether they can be exact.",
+                        Chilpa.trRev)
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 10
+                    color: "#7a411d1f"
+                }
+                // What this stack cannot promise, said where it is chosen
+                // and not left for somebody to find out by listening.
+                Rectangle {
+                    Layout.fillWidth: true
+                    Layout.topMargin: 6
+                    visible: Chilpa.stackCaveat !== ""
+                    Layout.preferredHeight: caveat.implicitHeight + 16
+                    radius: 8
+                    color: "#14d7272b"
+                    border.color: "#33d7272b"
+                    Label {
+                        id: caveat
+                        anchors.fill: parent
+                        anchors.margins: 8
+                        text: Chilpa.stackCaveat
+                        wrapMode: Text.Wrap
+                        font.pixelSize: 11
+                        color: "#411d1f"
+                    }
+                }
+            }
+        }
+
+        Setting {
             label: Chilpa.translate("Output", Chilpa.trRev)
             ColumnLayout {
                 Layout.fillWidth: true

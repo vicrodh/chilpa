@@ -64,6 +64,9 @@ msgstr ""
 msgid "Artists"
 msgstr ""
 
+msgid "Audio stack"
+msgstr ""
+
 msgid "Bit-perfect"
 msgstr ""
 
@@ -485,6 +488,9 @@ msgid "Volume: {}%"
 msgstr ""
 
 msgid "Wave"
+msgstr ""
+
+msgid "What the samples go through before they are sound. It decides which outputs exist and whether they can be exact."
 msgstr ""
 
 msgid "What you play most"
