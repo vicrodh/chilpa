@@ -151,6 +151,9 @@ pub mod chilpa_bridge {
         #[qproperty(i64, initial_album)]
         /// Con qué pestaña de la biblioteca arranca: "artistas" o vacío.
         #[qproperty(QString, initial_tab)]
+        /// Qué resultado de la búsqueda poner a sonar al arrancar, contando
+        /// desde 1. Para probar sin teclado ni ratón, como los de arriba.
+        #[qproperty(i32, initial_play)]
         /// Cierto para volver a escanear al arrancar, sin tocar un botón.
         #[qproperty(bool, initial_rescan)]
         /// Cierto para analizar al arrancar, igual de útil para probar.
@@ -182,6 +185,9 @@ pub mod chilpa_bridge {
         fn search(self: Pin<&mut Chilpa>, text: &QString);
 
         /// Pone a sonar lo que encontró la búsqueda, desde esa posición.
+        ///
+        /// Lo de un source se resuelve antes de sonar, así que puede tardar
+        /// lo que el plugin tarde en contestar.
         #[qinvokable]
         fn play_results(self: Pin<&mut Chilpa>, from: i32);
 
@@ -494,6 +500,7 @@ pub struct ChilpaRust {
     initial_search: QString,
     initial_album: i64,
     initial_tab: QString,
+    initial_play: i32,
     initial_rescan: bool,
     initial_analysis: bool,
     api: chilpa_api::Chilpa,
@@ -591,8 +598,14 @@ impl Default for ChilpaRust {
             initial_search: QString::from(&std::env::var("CHILPA_SEARCH").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
             initial_tab: QString::from(&std::env::var("CHILPA_TAB").unwrap_or_default()),
+            // Cuál resultado poner a sonar al arrancar, contando desde 1.
+            // Con 0 no suena nada, que es lo normal.
+            initial_play: std::env::var("CHILPA_PLAY")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .unwrap_or(0),
             initial_rescan: std::env::var("CHILPA_RESCAN").is_ok(),
-            initial_analysis: std::env::var("CHILPA_ANALIZAR").is_ok(),
+            initial_analysis: std::env::var("CHILPA_ANALYZE").is_ok(),
             api: chilpa_api::Chilpa::new(),
         }
     }
@@ -723,25 +736,15 @@ impl Chilpa {
     pub fn play_results(mut self: Pin<&mut Self>, from: i32) {
         let (device, bit_perfect) = self.as_mut().chosen();
         let from = from.max(0) as usize;
-        let paths: Vec<String> = self
-            .as_mut()
-            .rust_mut()
-            .result_paths
-            .iter()
-            .skip(from)
-            .filter(|p| !p.is_empty())
-            .cloned()
-            .collect();
-        let titles = self.as_mut().rust_mut().api.play_tracks(&paths, &device, bit_perfect);
-        let mut list = QList::<QString>::default();
-        for t in &titles {
-            list.append(QString::from(t));
-        }
-        self.as_mut().set_queue(QStringList::from(&list));
+        // La fachada decide: lo local suena y encola lo que sigue, lo de un
+        // source se resuelve primero. Aquí no se sabe cuál es cuál, y está
+        // bien que no se sepa.
+        let ok = self.as_mut().rust_mut().api.play_hit(from, &device, bit_perfect);
+        let titles = self.as_mut().rust_mut().api.queue_titles();
+        self.as_mut().refresh_queue(&titles);
         self.as_mut().set_queue_index(0);
-        self.as_mut().set_playing(!titles.is_empty());
+        self.as_mut().set_playing(ok);
     }
-
     pub fn album_view(&self) -> i32 {
         self.album_view
     }

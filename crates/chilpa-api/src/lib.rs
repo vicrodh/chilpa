@@ -885,6 +885,10 @@ impl Chilpa {
                             self.now.album = String::new();
                         }
                     }
+                    // Lo que vino de un source ya trae su ficha de la
+                    // búsqueda. Sin esto la ventana mostraría la URL cruda,
+                    // que es lo único que el decodificador sabe de ella.
+                    self.name_from_source(&path);
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     self.load_lyrics(&path);

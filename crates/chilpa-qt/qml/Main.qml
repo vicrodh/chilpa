@@ -37,6 +37,24 @@ ApplicationWindow {
         }
     }
 
+    // Espera a que la búsqueda traiga resultados y toca el que se pidió.
+    Timer {
+        id: playWhenReady
+        interval: 250
+        repeat: true
+        property int tries: 0
+        onTriggered: {
+            tries += 1
+            if (Chilpa.results.length >= Chilpa.initialPlay) {
+                stop()
+                Chilpa.playResults(Chilpa.initialPlay - 1)
+            } else if (tries > 40) {
+                stop()
+                console.warn("no llegaron resultados que tocar")
+            }
+        }
+    }
+
     Component.onCompleted: {
         // Los plugins se cargan aquí y no al abrir su pestaña: la búsqueda
         // le pregunta a los sources, y no puede depender de que el usuario
@@ -47,6 +65,9 @@ ApplicationWindow {
         // Para probar sin teclado ni ratón: CHILPA_SEARCH deja la búsqueda
         // escrita y CHILPA_ALBUM abre un álbum por id.
         if (Chilpa.initialSearch !== "") Chilpa.search(Chilpa.initialSearch)
+        // Los resultados de un source llegan después de la búsqueda, así que
+        // se espera a que estén antes de tocar el primero.
+        if (Chilpa.initialPlay > 0) playWhenReady.start()
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, "Álbum")
         Chilpa.refreshAlbums()
         if (Chilpa.initialRescan) Chilpa.rescan()

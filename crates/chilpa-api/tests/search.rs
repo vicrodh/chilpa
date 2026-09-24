@@ -164,7 +164,7 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     let other = &hits[1];
     assert_eq!(other.source, "com.prueba.bueno");
     assert_eq!(other.title, "Otra que no tengo");
-    assert!(!other.playable, "lo de un plugin todavía no se resuelve a un stream");
+    assert!(other.playable, "se le puede pedir al source que la resuelva");
     assert_eq!(other.quality, "", "esa no declaró calidad y no se le inventa");
 
     // El que contestó mal se dice, y no se llevó a nadie.

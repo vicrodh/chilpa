@@ -411,6 +411,22 @@ impl Chilpa {
         p.load_all()
     }
 
+    /// Le pide una operación a un plugin con los límites cortos.
+    ///
+    /// Es lo que se usa cuando alguien está esperando frente a la ventana,
+    /// como al resolver una pista para ponerla a sonar.
+    pub fn call_plugin_short(
+        &mut self,
+        id: &str,
+        operation: &str,
+        input: &[u8],
+    ) -> Result<Vec<u8>, String> {
+        match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
+            Some(mut p) => p.call_short(id, operation, input),
+            None => Err("el sandbox de plugins no está arrancado".into()),
+        }
+    }
+
     /// Guarda la credencial de un plugin, cifrada, y dice dónde quedó.
     ///
     /// El plugin no la recibe nunca: lo único que cambia para él es que sus
