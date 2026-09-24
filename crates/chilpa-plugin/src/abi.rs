@@ -118,7 +118,7 @@ mod tests {
     fn packing_and_unpacking_are_inverses() {
         for (ptr, len) in [(0u32, 5u32), (1024, 0), (0xdead_beef, 0x1234)] {
             let v = pack(ptr, len);
-            assert_eq!(unpack(v), Some((ptr, len)), "con ({ptr}, {len})");
+            assert_eq!(unpack(v), Some((ptr, len)), "with ({ptr}, {len})");
         }
     }
 

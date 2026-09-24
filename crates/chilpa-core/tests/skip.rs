@@ -11,16 +11,16 @@ use std::time::Duration;
 
 /// Keeps what was delivered so it can be looked at afterwards.
 #[derive(Clone, Default)]
-struct Capturador(std::rc::Rc<std::cell::RefCell<Vec<i16>>>);
+struct Capture(std::rc::Rc<std::cell::RefCell<Vec<i16>>>);
 
-impl AudioSink for Capturador {
+impl AudioSink for Capture {
     fn format(&self) -> StreamFormat {
         StreamFormat::new(SampleFormat::S16, 44_100, 2)
     }
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
         let mut samples = self.0.borrow_mut();
-        for par in frames.chunks_exact(2) {
-            samples.push(i16::from_le_bytes([par[0], par[1]]));
+        for pair in frames.chunks_exact(2) {
+            samples.push(i16::from_le_bytes([pair[0], pair[1]]));
         }
         Ok(frames.len() / 4)
     }
@@ -69,7 +69,7 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
     let path = ramp("startup", 44_100 * 3);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(2));
-    let cap = Capturador::default();
+    let cap = Capture::default();
     let mut positions = Vec::new();
 
     play_queue_with(
@@ -99,7 +99,7 @@ fn seeking_past_the_end_finishes_the_track_without_crashing() {
     let path = ramp("past", 44_100);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(60));
-    let cap = Capturador::default();
+    let cap = Capture::default();
     let results = play_queue_with(
         &SharedQueue::new(vec![path.clone()]),
         &caps(),

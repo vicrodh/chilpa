@@ -389,8 +389,8 @@ mod tests {
         };
         assert_eq!(t.fingerprint().as_deref(), Some("mbid:abc-123"));
 
-        let solo_isrc = RemoteTrack { isrc: Some("usrc17607839".into()), ..Default::default() };
-        assert_eq!(solo_isrc.fingerprint().as_deref(), Some("isrc:USRC17607839"));
+        let isrc_only = RemoteTrack { isrc: Some("usrc17607839".into()), ..Default::default() };
+        assert_eq!(isrc_only.fingerprint().as_deref(), Some("isrc:USRC17607839"));
 
         // With nothing solid there is no fingerprint: matching by name is not matching.
         assert_eq!(RemoteTrack::default().fingerprint(), None);
@@ -407,8 +407,8 @@ mod tests {
         assert_eq!(Quality::default().describe(), "");
         let c = Quality { codec: Some("flac".into()), bit_depth: Some(24), sample_rate_hz: Some(96_000), channels: Some(2) };
         assert_eq!(c.describe(), "FLAC · 24 bits a 96000 Hz");
-        let solo_rate = Quality { sample_rate_hz: Some(44_100), ..Default::default() };
-        assert_eq!(solo_rate.describe(), "44100 Hz");
+        let rate_only = Quality { sample_rate_hz: Some(44_100), ..Default::default() };
+        assert_eq!(rate_only.describe(), "44100 Hz");
     }
 
     #[test]

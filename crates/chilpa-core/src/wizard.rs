@@ -187,16 +187,16 @@ mod tests {
                 true,
             ),
         );
-        let perfectos: Vec<&str> = d
+        let exact: Vec<&str> = d
             .rows
             .iter()
             .filter(|f| f.verdict == Verdict::BitPerfect)
             .map(|f| f.name.as_str())
             .collect();
-        assert!(perfectos.contains(&"CD"));
-        assert!(perfectos.contains(&"High 24/192"));
-        assert!(perfectos.contains(&"DSD64 over DoP"), "DoP va a 176.4 kHz");
-        assert!(perfectos.contains(&"DSD128 over DoP"), "y DSD128 a 352.8");
+        assert!(exact.contains(&"CD"));
+        assert!(exact.contains(&"High 24/192"));
+        assert!(exact.contains(&"DSD64 over DoP"), "DoP va a 176.4 kHz");
+        assert!(exact.contains(&"DSD128 over DoP"), "y DSD128 a 352.8");
         // 384 kHz is not on the device's list.
         let max = d.rows.iter().find(|f| f.name == "Maximum 32/384").unwrap();
         assert_ne!(max.verdict, Verdict::BitPerfect);

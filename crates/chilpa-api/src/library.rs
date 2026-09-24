@@ -240,8 +240,8 @@ impl Chilpa {
 
     /// The library's albums.
     pub fn albums(&mut self, limit: usize, offset: usize) -> Vec<Album> {
-        let vista = self.album_sort;
-        self.albums_sorted(vista, limit, offset)
+        let sort = self.album_sort;
+        self.albums_sorted(sort, limit, offset)
     }
 
     /// The library's genres, most common first.

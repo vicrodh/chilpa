@@ -33,16 +33,16 @@ fn write_dsf(path: &PathBuf, blocks: u32, bits_per_sample: u32, samples: u64) {
     f.write_all(b"data").unwrap();
     f.write_all(&(12 + data).to_le_bytes()).unwrap();
     for b in 0..blocks {
-        for canal in 0..2u32 {
+        for channel in 0..2u32 {
             for i in 0..BLOCK {
                 let v = ((b * BLOCK + i) % 251) as u8;
-                f.write_all(&[if canal == 0 { v } else { !v }]).unwrap();
+                f.write_all(&[if channel == 0 { v } else { !v }]).unwrap();
             }
         }
     }
 }
 
-fn temporal(name: &str) -> PathBuf {
+fn temp_file(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-dsd-{name}.dsf"));
     p
@@ -50,7 +50,7 @@ fn temporal(name: &str) -> PathBuf {
 
 #[test]
 fn the_header_and_every_block_are_read() {
-    let path = temporal("basic");
+    let path = temp_file("basic");
     let samples = u64::from(BLOCK) * 3 * 8;
     write_dsf(&path, 3, 1, samples);
 
@@ -76,7 +76,7 @@ fn the_header_and_every_block_are_read() {
 #[test]
 fn bits_are_delivered_with_the_earliest_one_on_top() {
     // DSF stores the earliest bit low; here it has to come out reversed.
-    let path = temporal("order");
+    let path = temp_file("order");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let channels = r.next_block().unwrap().unwrap();
@@ -87,7 +87,7 @@ fn bits_are_delivered_with_the_earliest_one_on_top() {
 
     // With bits_per_sample = 8 the file already has the earliest bit on top
     // and nothing is touched.
-    let path = temporal("order-msb");
+    let path = temp_file("order-msb");
     write_dsf(&path, 1, 8, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let channels = r.next_block().unwrap().unwrap();
@@ -97,12 +97,12 @@ fn bits_are_delivered_with_the_earliest_one_on_top() {
 
 #[test]
 fn the_padding_of_the_last_block_does_not_come_out() {
-    let path = temporal("relleno");
+    let path = temp_file("relleno");
     // Two blocks in the file, but only 100 bytes per channel are music.
     write_dsf(&path, 2, 1, 100 * 8);
     let mut r = DsfReader::open(&path).unwrap();
-    let primero = r.next_block().unwrap().unwrap();
-    assert_eq!(primero[0].len(), 100, "only what is valid");
+    let first = r.next_block().unwrap().unwrap();
+    assert_eq!(first[0].len(), 100, "only what is valid");
     assert!(r.next_block().unwrap().is_none(), "the rest was padding");
     let _ = std::fs::remove_file(path);
 }
@@ -111,7 +111,7 @@ fn the_padding_of_the_last_block_does_not_come_out() {
 fn the_file_bits_reach_the_dop_packing_intact() {
     // The DSD equivalent of bit-perfect: the payload of each DoP word is
     // exactly the byte pair the file carried.
-    let path = temporal("dop");
+    let path = temp_file("dop");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let channels = r.next_block().unwrap().unwrap();
@@ -121,14 +121,14 @@ fn the_file_bits_reach_the_dop_packing_intact() {
     packer.pack(&[&channels[0], &channels[1]], &mut words);
 
     assert_eq!(words.len(), channels[0].len() / 2 * 2, "one word per channel and per frame");
-    for (frame, par) in words.chunks(2).enumerate().take(8) {
+    for (frame, pair) in words.chunks(2).enumerate().take(8) {
         let marker = if frame % 2 == 0 { 0x05 } else { 0xFA };
-        for (canal, word) in par.iter().enumerate() {
+        for (channel, word) in pair.iter().enumerate() {
             let unjustified = word >> 8;
             assert_eq!((unjustified >> 16) & 0xFF, marker, "the marker alternates per frame");
             let payload = (unjustified & 0xFFFF) as u16;
             let expected =
-                u16::from_be_bytes([channels[canal][frame * 2], channels[canal][frame * 2 + 1]]);
+                u16::from_be_bytes([channels[channel][frame * 2], channels[channel][frame * 2 + 1]]);
             assert_eq!(payload, expected, "the payload is the file's DSD, untouched");
         }
     }
@@ -137,7 +137,7 @@ fn the_file_bits_reach_the_dop_packing_intact() {
 
 #[test]
 fn seeking_lands_at_the_start_of_a_block() {
-    let path = temporal("seek");
+    let path = temp_file("seek");
     write_dsf(&path, 4, 1, u64::from(BLOCK) * 4 * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let dropped = r.seek_to_sample(u64::from(BLOCK) * 8 * 2 + 40).unwrap();

@@ -78,14 +78,14 @@ impl Tap {
             return;
         }
         let channels = e.channels.max(1) as usize;
-        let ancho = format.sample_format.bytes();
-        if ancho == 0 {
+        let width = format.sample_format.bytes();
+        if width == 0 {
             return;
         }
         let total = e.samples.len();
         let mut cursor = e.cursor;
         let mut written = 0usize;
-        for sample in bytes.chunks_exact(ancho) {
+        for sample in bytes.chunks_exact(width) {
             e.samples[cursor] = normalize(sample, format.sample_format);
             cursor = (cursor + 1) % total;
             written += 1;
@@ -204,7 +204,7 @@ mod tests {
         format: StreamFormat,
         written: Rc<RefCell<Vec<u8>>>,
         /// How many frames it takes per write, or all of them if zero.
-        tope: usize,
+        limit: usize,
     }
 
     impl AudioSink for MirrorSink {
@@ -213,7 +213,7 @@ mod tests {
         }
         fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
             let n = frames.len() / self.format.frame_bytes();
-            let n = if self.tope > 0 { n.min(self.tope) } else { n };
+            let n = if self.limit > 0 { n.min(self.limit) } else { n };
             let bytes = n * self.format.frame_bytes();
             self.written.borrow_mut().extend_from_slice(&frames[..bytes]);
             Ok(n)
@@ -223,8 +223,8 @@ mod tests {
         }
     }
 
-    fn mirror(format: StreamFormat, tope: usize) -> MirrorSink {
-        MirrorSink { format, written: Rc::new(RefCell::new(Vec::new())), tope }
+    fn mirror(format: StreamFormat, limit: usize) -> MirrorSink {
+        MirrorSink { format, written: Rc::new(RefCell::new(Vec::new())), limit }
     }
 
     /// A 16-bit stereo ramp.

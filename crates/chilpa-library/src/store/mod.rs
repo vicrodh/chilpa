@@ -523,7 +523,7 @@ pub(crate) mod fixtures {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         // (id, title, artist, year, added_at)
-        for (id, title, artist, año, high) in [
+        for (id, title, artist, year, high) in [
             (1, "Bayou", "Creedence", 1969, 100),
             (2, "Aqualung", "Tull", 1971, 300),
             (3, "Cosmo", "Creedence", 1970, 200),
@@ -532,7 +532,7 @@ pub(crate) mod fixtures {
                 .execute(
                     "INSERT INTO albums (id, title, album_artist, year)
                      VALUES (?1, ?2, ?3, ?4)",
-                    params![id, title, artist, año],
+                    params![id, title, artist, year],
                 )
                 .unwrap();
             lib.db

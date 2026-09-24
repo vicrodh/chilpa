@@ -647,8 +647,8 @@ mod tests {
         let mbid = "B1A9C0E9-D987-4042-AE91-78D6A3267D69";
         let mut t = remote("x", "One", Some("usrc1"));
         t.musicbrainz_recording_id = Some(mbid.to_string());
-        let locales = fingerprints_of(Some("usrc1".into()), Some(mbid.to_ascii_lowercase()));
-        assert_eq!(t.fingerprint().unwrap(), locales[0]);
-        assert_eq!(locales.len(), 2, "the local side exposes both, in case the other shore carries one");
+        let local = fingerprints_of(Some("usrc1".into()), Some(mbid.to_ascii_lowercase()));
+        assert_eq!(t.fingerprint().unwrap(), local[0]);
+        assert_eq!(local.len(), 2, "the local side exposes both, in case the other shore carries one");
     }
 }

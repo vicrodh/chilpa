@@ -99,7 +99,7 @@ mod tests {
         .unwrap()
     }
 
-    fn temporal(name: &str) -> PathBuf {
+    fn temp_dir(name: &str) -> PathBuf {
         let d = std::env::temp_dir().join(format!("chilpa-approvals-{name}"));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).unwrap();
@@ -108,7 +108,7 @@ mod tests {
 
     #[test]
     fn nothing_is_approved_until_someone_says_so() {
-        let dir = temporal("new");
+        let dir = temp_dir("new");
         let a = Approvals::load(&dir);
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
         assert!(!a.covers(&m), "a fresh install approves nothing by itself");
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn what_was_approved_survives_a_restart() {
-        let dir = temporal("again");
+        let dir = temp_dir("again");
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
         Approvals::load(&dir).approve(&m).unwrap();
         assert!(Approvals::load(&dir).covers(&m), "it was read back");
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn asking_for_more_than_was_approved_asks_again() {
-        let dir = temporal("mas");
+        let dir = temp_dir("mas");
         let before = manifest("com.a.b", r#"{"type":"storage"}"#);
         let mut a = Approvals::load(&dir);
         a.approve(&before).unwrap();
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn a_version_that_asks_for_the_same_keeps_its_approval() {
-        let dir = temporal("same");
+        let dir = temp_dir("same");
         let mut a = Approvals::load(&dir);
         a.approve(&manifest("com.a.b", r#"{"type":"storage"}"#)).unwrap();
         let newer = Manifest::parse(
@@ -162,7 +162,7 @@ mod tests {
 
     #[test]
     fn revoking_asks_again_from_scratch() {
-        let dir = temporal("revoke");
+        let dir = temp_dir("revoke");
         let m = manifest("com.a.b", r#"{"type":"storage"}"#);
         let mut a = Approvals::load(&dir);
         a.approve(&m).unwrap();
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn an_unreadable_file_approves_nothing() {
         // The opposite would be assuming permissions nobody gave.
-        let dir = temporal("broken");
+        let dir = temp_dir("broken");
         std::fs::write(dir.join(FILE), "this is not json").unwrap();
         let a = Approvals::load(&dir);
         assert!(!a.covers(&manifest("com.a.b", "")));

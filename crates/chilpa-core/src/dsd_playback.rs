@@ -157,12 +157,12 @@ mod tests {
     }
 
     #[derive(Default)]
-    struct Capturador {
+    struct Capture {
         stream: Option<StreamFormat>,
         bytes: Vec<u8>,
     }
 
-    struct Handle<'a>(&'a mut Capturador);
+    struct Handle<'a>(&'a mut Capture);
 
     impl AudioSink for Handle<'_> {
         fn format(&self) -> StreamFormat {
@@ -195,7 +195,7 @@ mod tests {
 
     #[test]
     fn dsd64_opens_at_176_400_and_the_bits_come_out_intact() {
-        let mut cap = Capturador::default();
+        let mut cap = Capture::default();
         let mut f = source();
         let played = play_dsd(
             &mut f,
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn a_device_that_cannot_reach_the_carrier_is_refused() {
-        let mut cap = Capturador::default();
+        let mut cap = Capture::default();
         let mut f = source();
         let r = play_dsd(
             &mut f,

@@ -51,8 +51,8 @@ impl Lyrics {
             return None;
         }
         // `partition_point` gives how many lines have started.
-        let ya = self.lines.partition_point(|l| l.at_ms <= ms);
-        ya.checked_sub(1)
+        let started = self.lines.partition_point(|l| l.at_ms <= ms);
+        started.checked_sub(1)
     }
 
     /// The lyrics as plain text, one line each.

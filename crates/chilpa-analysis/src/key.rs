@@ -22,7 +22,7 @@ const NOTES: [&str; 12] =
     ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
 /// Krumhansl-Kessler profiles for major and minor.
-const MAYOR: [f32; 12] = [
+const MAJOR: [f32; 12] = [
     6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
 ];
 const MINOR: [f32; 12] = [
@@ -115,7 +115,7 @@ pub fn chroma(samples: &[f32], sample_rate_hz: u32) -> Option<[f32; 12]> {
 fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
     let mut results: Vec<(usize, bool, f32)> = Vec::with_capacity(24);
     for tonic in 0..12 {
-        for (is_major, profile) in [(true, &MAYOR), (false, &MINOR)] {
+        for (is_major, profile) in [(true, &MAJOR), (false, &MINOR)] {
             let rotated: Vec<f32> = (0..12).map(|i| profile[(i + 12 - tonic) % 12]).collect();
             results.push((tonic, is_major, correlation(chroma, &rotated)));
         }
@@ -160,8 +160,8 @@ fn name(index: usize, is_major: bool) -> String {
 fn camelot(index: usize, is_major: bool) -> String {
     // The circle of fifths starting at C. C major is 8B and A minor is 8A,
     // and it counts from there.
-    let quintas = [0usize, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
-    let pos = quintas.iter().position(|q| *q == index % 12).unwrap_or(0);
+    let fifths = [0usize, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
+    let pos = fifths.iter().position(|q| *q == index % 12).unwrap_or(0);
     let number = if is_major {
         // C sits at position 0 and gets 8.
         (pos + 7) % 12 + 1
@@ -234,27 +234,27 @@ mod tests {
     #[test]
     fn the_camelot_wheel_wraps_all_the_way_around() {
         // The twenty four slots, none repeated and none missing.
-        let mut vistas: Vec<String> = Vec::new();
+        let mut seen: Vec<String> = Vec::new();
         for i in 0..12 {
-            for mayor in [true, false] {
-                vistas.push(camelot(i, mayor));
+            for major in [true, false] {
+                seen.push(camelot(i, major));
             }
         }
-        vistas.sort();
-        vistas.dedup();
-        assert_eq!(vistas.len(), 24, "there are 24 distinct slots");
+        seen.sort();
+        seen.dedup();
+        assert_eq!(seen.len(), 24, "there are 24 distinct slots");
         // And the usual two anchors.
-        assert_eq!(camelot(0, true), "8B", "do mayor");
+        assert_eq!(camelot(0, true), "8B", "do major");
         assert_eq!(camelot(9, false), "8A", "A minor");
         assert_eq!(camelot(7, true), "9B", "G major, a fifth up");
         assert_eq!(camelot(0, false), "5A", "C minor");
         assert_eq!(camelot(6, false), "11A", "F sharp minor");
         // Every major key shares a slot with its relative minor.
         for i in 0..12usize {
-            let mayor = camelot(i, true);
+            let major = camelot(i, true);
             let relative = camelot((i + 9) % 12, false);
             assert_eq!(
-                mayor[..mayor.len() - 1],
+                major[..major.len() - 1],
                 relative[..relative.len() - 1],
                 "{} and its relative minor share a number",
                 NOTES[i]

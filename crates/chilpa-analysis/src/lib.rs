@@ -53,8 +53,8 @@ pub fn analyze(samples: &[f32], sample_rate_hz: u32) -> Analysis {
     let t = tempo::detect(samples, sample_rate_hz);
     // The key is looked for on the resampled signal, which is where the
     // bins land at the size the chromagram wants.
-    let bajada = tempo::resample_for_analysis(samples, sample_rate_hz);
-    let k = key::detect(&bajada, tempo::ANALYSIS_HZ)
+    let downsampled = tempo::resample_for_analysis(samples, sample_rate_hz);
+    let k = key::detect(&downsampled, tempo::ANALYSIS_HZ)
         .filter(|k| k.confidence >= MIN_KEY_CONFIDENCE);
     Analysis {
         bpm: t.map(|t| t.bpm),

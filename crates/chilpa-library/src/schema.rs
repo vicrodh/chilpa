@@ -388,10 +388,10 @@ mod tests {
     fn migrating_twice_does_nothing_the_second_time() {
         let db = in_memory();
         migrate(&db).unwrap();
-        let tablas: i64 = db
+        let tables: i64 = db
             .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
             .unwrap();
-        assert!(tablas >= 8, "hay {tablas} tablas");
+        assert!(tables >= 8, "hay {tables} tables");
     }
 
     #[test]

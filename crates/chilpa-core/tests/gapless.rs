@@ -10,16 +10,16 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 #[derive(Clone, Default)]
-struct Capturador(Rc<RefCell<Vec<i16>>>);
+struct Capture(Rc<RefCell<Vec<i16>>>);
 
-impl AudioSink for Capturador {
+impl AudioSink for Capture {
     fn format(&self) -> StreamFormat {
         StreamFormat::new(SampleFormat::S16, 44_100, 2)
     }
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
         let mut m = self.0.borrow_mut();
-        for par in frames.chunks_exact(2) {
-            m.push(i16::from_le_bytes([par[0], par[1]]));
+        for pair in frames.chunks_exact(2) {
+            m.push(i16::from_le_bytes([pair[0], pair[1]]));
         }
         Ok(frames.len() / 4)
     }
@@ -64,7 +64,7 @@ fn caps(rates: &[u32]) -> DeviceCaps {
 }
 
 fn play(tracks: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
-    let cap = Capturador::default();
+    let cap = Capture::default();
     let mut opens = 0;
     play_queue_with(
         &SharedQueue::new(tracks.to_vec()),

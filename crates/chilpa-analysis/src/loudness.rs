@@ -24,7 +24,7 @@ const RELATIVE_GATE: f64 = -10.0;
 
 /// How long a block lasts, and how far apart two of them start.
 const BLOCK_MS: f64 = 400.0;
-const PASO_MS: f64 = 100.0;
+const STEP_MS: f64 = 100.0;
 
 /// A biquad in transposed direct form II.
 #[derive(Clone, Copy, Debug, Default)]
@@ -39,7 +39,7 @@ struct Biquad {
 }
 
 impl Biquad {
-    fn paso(&mut self, x: f64) -> f64 {
+    fn step(&mut self, x: f64) -> f64 {
         let y = self.b0 * x + self.z1;
         self.z1 = self.b1 * x - self.a1 * y + self.z2;
         self.z2 = self.b2 * x - self.a2 * y;
@@ -87,13 +87,13 @@ impl Biquad {
 ///
 /// The fronts weigh one; the rears a little more, because surround is
 /// perceived as louder than it measures.
-fn peso(canal: usize, channels: usize) -> f64 {
+fn weight(channel: usize, channels: usize) -> f64 {
     // With stereo or mono there are no rears to weigh.
     if channels <= 2 {
         return 1.0;
     }
     // In 5.1 the usual order is L, R, C, LFE, Ls, Rs.
-    match canal {
+    match channel {
         3 => 0.0,           // the LFE does not count
         4 | 5 => 1.41,      // the rears
         _ => 1.0,
@@ -129,7 +129,7 @@ impl Meter {
                 .collect(),
             in_block: 0,
             samples_per_block: (rate * BLOCK_MS / 1000.0).round() as usize,
-            samples_per_step: (rate * PASO_MS / 1000.0).round() as usize,
+            samples_per_step: (rate * STEP_MS / 1000.0).round() as usize,
             segments: Vec::new(),
             current_segment: vec![0.0; channels],
             blocks: Vec::new(),
@@ -140,8 +140,8 @@ impl Meter {
     pub fn push(&mut self, interleaved: &[f32]) {
         for frame in interleaved.chunks_exact(self.channels) {
             for (c, m) in frame.iter().enumerate() {
-                let (boost, altos) = &mut self.filters[c];
-                let y = altos.paso(boost.paso(f64::from(*m)));
+                let (boost, high_pass) = &mut self.filters[c];
+                let y = high_pass.step(boost.step(f64::from(*m)));
                 self.current_segment[c] += y * y;
             }
             self.in_block += 1;
@@ -162,7 +162,7 @@ impl Meter {
             let mut z = 0.0;
             for c in 0..self.channels {
                 let sum: f64 = self.segments[from..].iter().map(|t| t[c]).sum();
-                z += peso(c, self.channels) * sum / self.samples_per_block as f64;
+                z += weight(c, self.channels) * sum / self.samples_per_block as f64;
             }
             self.blocks.push(z);
         }
@@ -187,15 +187,15 @@ impl Meter {
         // Second gate: ten units below the average of what was left. It is
         // what keeps the silences between sections from dragging down a
         // dynamic track's reading.
-        let media = pass.iter().sum::<f64>() / pass.len() as f64;
-        let umbral = level(media) + RELATIVE_GATE;
-        let finales: Vec<f64> =
-            pass.into_iter().filter(|z| level(*z) > umbral).collect();
-        if finales.is_empty() {
+        let mean = pass.iter().sum::<f64>() / pass.len() as f64;
+        let threshold = level(mean) + RELATIVE_GATE;
+        let kept: Vec<f64> =
+            pass.into_iter().filter(|z| level(*z) > threshold).collect();
+        if kept.is_empty() {
             return None;
         }
-        let media = finales.iter().sum::<f64>() / finales.len() as f64;
-        let l = level(media);
+        let mean = kept.iter().sum::<f64>() / kept.len() as f64;
+        let l = level(mean);
         l.is_finite().then_some(l)
     }
 }
@@ -237,15 +237,15 @@ mod tests {
     #[test]
     fn the_same_sine_on_both_channels_measures_three_units_more() {
         let one = integrated(&sine(1.0, 48_000, 5, 2, true), 48_000, 2).unwrap();
-        let dos = integrated(&sine(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((dos - one - 3.01).abs() < 0.1, "de {one:.2} a {dos:.2}");
+        let two = integrated(&sine(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        assert!((two - one - 3.01).abs() < 0.1, "de {one:.2} a {two:.2}");
     }
 
     #[test]
     fn twice_the_amplitude_is_six_units_more() {
         let low = integrated(&sine(0.25, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        let alto = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((alto - low - 6.02).abs() < 0.1, "de {low:.2} a {alto:.2}");
+        let high = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
+        assert!((high - low - 6.02).abs() < 0.1, "de {low:.2} a {high:.2}");
     }
 
     #[test]

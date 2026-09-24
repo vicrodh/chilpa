@@ -124,7 +124,7 @@ mod tests {
     use super::*;
 
     /// A sector with a single audio packet that starts a frame.
-    fn sector_de_audio(timecode: [u8; 3]) -> Vec<u8> {
+    fn audio_sector(timecode: [u8; 3]) -> Vec<u8> {
         let mut s = vec![0u8; SECTOR];
         // 1 packet, 1 frame-info record, no DST.
         s[0] = (1 << 5) | (1 << 2);
@@ -138,7 +138,7 @@ mod tests {
 
     #[test]
     fn an_audio_sector_decodes_and_adds_up_to_2048() {
-        let s = sector_de_audio([0, 1, 2]);
+        let s = audio_sector([0, 1, 2]);
         let p = parse(&s, 550).unwrap();
         assert!(!p.dst);
         assert_eq!(p.packets.len(), 1);
@@ -151,7 +151,7 @@ mod tests {
 
     #[test]
     fn a_sector_whose_packets_do_not_add_up_to_2048_is_refused() {
-        let mut s = sector_de_audio([0, 0, 0]);
+        let mut s = audio_sector([0, 0, 0]);
         // One byte is taken off the declared length: the sum no longer adds up.
         let w = u16::from_be_bytes([s[1], s[2]]) - 1;
         s[1..3].copy_from_slice(&w.to_be_bytes());
@@ -160,7 +160,7 @@ mod tests {
 
     #[test]
     fn an_impossible_timecode_is_refused() {
-        let s = sector_de_audio([0, 75, 0]);
+        let s = audio_sector([0, 75, 0]);
         assert!(matches!(parse(&s, 1), Err(SacdError::BadSector { .. })));
     }
 

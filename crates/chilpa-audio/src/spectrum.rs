@@ -54,19 +54,19 @@ pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
     // The bands are spread logarithmically between 20 Hz and Nyquist.
     let nyquist = sample_rate_hz as f32 / 2.0;
     let per_bin = nyquist / half as f32;
-    let (low, alto) = (20.0f32, nyquist.max(40.0));
-    let paso = (alto / low).ln() / bands as f32;
+    let (low, high) = (20.0f32, nyquist.max(40.0));
+    let step = (high / low).ln() / bands as f32;
 
     let mut output = Vec::with_capacity(bands);
     for b in 0..bands {
-        let from_hz = low * (paso * b as f32).exp();
-        let to_hz = low * (paso * (b + 1) as f32).exp();
+        let from_hz = low * (step * b as f32).exp();
+        let to_hz = low * (step * (b + 1) as f32).exp();
         let k0 = ((from_hz / per_bin) as usize).min(half.saturating_sub(1));
         let k1 = ((to_hz / per_bin).ceil() as usize).clamp(k0 + 1, half);
         // The band's peak, not its average: a narrow tone must not vanish
         // because it fell in a wide band.
-        let pico = magnitudes[k0..k1].iter().copied().fold(0.0f32, f32::max);
-        output.push(to_normalized_db(pico));
+        let peak = magnitudes[k0..k1].iter().copied().fold(0.0f32, f32::max);
+        output.push(to_normalized_db(peak));
     }
     output
 }
@@ -113,14 +113,14 @@ pub fn fft(re: &mut [f32], im: &mut [f32]) {
         }
     }
     // Butterflies, in pairs, in fours, and so on.
-    let mut largo = 2usize;
-    while largo <= n {
-        let angle = -2.0 * PI / largo as f32;
+    let mut span = 2usize;
+    while span <= n {
+        let angle = -2.0 * PI / span as f32;
         let (wr, wi) = (angle.cos(), angle.sin());
-        for start in (0..n).step_by(largo) {
+        for start in (0..n).step_by(span) {
             let (mut cr, mut ci) = (1.0f32, 0.0f32);
-            for k in 0..largo / 2 {
-                let (a, b) = (start + k, start + k + largo / 2);
+            for k in 0..span / 2 {
+                let (a, b) = (start + k, start + k + span / 2);
                 let tr = cr * re[b] - ci * im[b];
                 let ti = cr * im[b] + ci * re[b];
                 re[b] = re[a] - tr;
@@ -132,7 +132,7 @@ pub fn fft(re: &mut [f32], im: &mut [f32]) {
                 cr = new;
             }
         }
-        largo <<= 1;
+        span <<= 1;
     }
 }
 
@@ -162,7 +162,7 @@ mod tests {
         let bands = bands(&data, rate, 24);
         assert_eq!(bands.len(), 24);
 
-        let mayor = bands
+        let loudest = bands
             .iter()
             .enumerate()
             .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
@@ -170,16 +170,16 @@ mod tests {
             .unwrap();
 
         // The peak's band has to cover 1000 Hz.
-        let paso = ((rate as f32 / 2.0) / 20.0).ln() / 24.0;
-        let from = 20.0 * (paso * mayor as f32).exp();
-        let to = 20.0 * (paso * (mayor + 1) as f32).exp();
+        let step = ((rate as f32 / 2.0) / 20.0).ln() / 24.0;
+        let from = 20.0 * (step * loudest as f32).exp();
+        let to = 20.0 * (step * (loudest + 1) as f32).exp();
         assert!(
             (from..=to).contains(&1_000.0),
             "the peak landed at {from:.0}..{to:.0} Hz, not at 1000"
         );
         // And the far bands are well below.
-        let far = bands[(mayor + 8).min(23)];
-        assert!(far < bands[mayor] / 2.0, "it spilled: {far} against {}", bands[mayor]);
+        let far = bands[(loudest + 8).min(23)];
+        assert!(far < bands[loudest] / 2.0, "it spilled: {far} against {}", bands[loudest]);
     }
 
     #[test]
@@ -192,10 +192,10 @@ mod tests {
     fn a_louder_tone_gives_a_taller_band() {
         let rate = 44_100;
         let low = bands(&sine(1_000.0, rate, 4096, 0.05), rate, 24);
-        let alto = bands(&sine(1_000.0, rate, 4096, 0.9), rate, 24);
-        let pico = |v: &[f32]| v.iter().copied().fold(0.0f32, f32::max);
-        assert!(pico(&alto) > pico(&low), "{} contra {}", pico(&alto), pico(&low));
-        assert!(pico(&alto) <= 1.0, "it never goes past one");
+        let high = bands(&sine(1_000.0, rate, 4096, 0.9), rate, 24);
+        let peak = |v: &[f32]| v.iter().copied().fold(0.0f32, f32::max);
+        assert!(peak(&high) > peak(&low), "{} contra {}", peak(&high), peak(&low));
+        assert!(peak(&high) <= 1.0, "it never goes past one");
     }
 
     #[test]

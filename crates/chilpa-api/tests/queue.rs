@@ -86,9 +86,9 @@ fn going_back_does_not_trim_the_queue() {
     assert_eq!(titles.len(), 3, "all three were queued");
 
     assert!(wait_at_least(&mut chilpa, 2), "the queue advanced on its own");
-    let antes = chilpa.now_playing().index;
+    let before = chilpa.now_playing().index;
     chilpa.previous_track(OUTPUT, true);
-    assert!(wait_at_least(&mut chilpa, antes - 1), "it played again");
+    assert!(wait_at_least(&mut chilpa, before - 1), "it played again");
     assert_eq!(chilpa.now_playing().queue_len, 3, "the queue is still whole");
 
     // And with the whole queue, saving it saves all three.

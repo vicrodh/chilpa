@@ -95,11 +95,11 @@ fn labels_of(line: &str) -> (Vec<u64>, &str) {
 fn time(s: &str) -> Option<u64> {
     let (min, rest) = s.split_once(':')?;
     let minutes: u64 = min.trim().parse().ok()?;
-    let (seg, fraction) = match rest.split_once(['.', ':']) {
+    let (seconds, fraction) = match rest.split_once(['.', ':']) {
         Some((a, b)) => (a, Some(b)),
         None => (rest, None),
     };
-    let seconds: u64 = seg.trim().parse().ok()?;
+    let seconds: u64 = seconds.trim().parse().ok()?;
     let millis = match fraction {
         None => 0,
         Some(f) => {

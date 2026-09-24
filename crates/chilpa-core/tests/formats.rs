@@ -23,7 +23,7 @@ const FRAMES: u32 = 44_100 * 3;
 /// A block longer than a second is already suspect of reading too much.
 const MAX_FRAMES_PER_BLOCK: usize = RATE as usize;
 
-fn hay_ffmpeg() -> bool {
+fn have_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
@@ -112,7 +112,7 @@ fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
 
 #[test]
 fn lossless_formats_come_out_identical_and_in_blocks() {
-    if !hay_ffmpeg() {
+    if !have_ffmpeg() {
         eprintln!("no ffmpeg: skipped");
         return;
     }
@@ -156,7 +156,7 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
 
 #[test]
 fn lossy_formats_decode_in_blocks() {
-    if !hay_ffmpeg() {
+    if !have_ffmpeg() {
         eprintln!("no ffmpeg: skipped");
         return;
     }
@@ -197,7 +197,7 @@ fn lossy_formats_decode_in_blocks() {
 
 #[test]
 fn opus_is_not_supported_yet_and_says_so_plainly() {
-    if !hay_ffmpeg() {
+    if !have_ffmpeg() {
         eprintln!("no ffmpeg: skipped");
         return;
     }
