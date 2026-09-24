@@ -4,6 +4,10 @@
 //! whoever is using it, which is what makes this safe to run while music is
 //! playing -- and a listing does run then.
 
+// CoreAudio's constants keep their own names, and a `match` on one is
+// still a constant: the allow has to cover patterns too.
+#![allow(non_upper_case_globals)]
+
 use crate::ffi::*;
 use std::os::raw::c_void;
 

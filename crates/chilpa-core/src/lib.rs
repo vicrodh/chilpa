@@ -192,6 +192,7 @@ pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chi
 /// An identifier written before stacks existed has no prefix, and reading it
 /// as a bare name is right: it can only have meant the card, because that is
 /// all there was.
+#[cfg(target_os = "linux")]
 fn bare(id: &str) -> String {
     chilpa_audio::backend::BackendOutput::split(id)
         .map(|(_, rest)| rest.to_string())
