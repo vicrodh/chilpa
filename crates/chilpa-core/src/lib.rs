@@ -60,7 +60,7 @@ pub fn outputs() -> Vec<Output> {
         .collect();
     outputs.push(Output {
         id: chilpa_audio::CAPTURE_ID.to_string(),
-        label: format!("Captura a archivo ({})", capture_path().display()),
+        label: chilpa_i18n::t_args("Capture to a file ({})", &[&capture_path().display().to_string()]),
     });
     outputs
 }
@@ -184,7 +184,10 @@ impl Core {
                 bit_perfect: played.delivery.is_bit_perfect(),
             }),
             Outcome::Failed { frames, error } => {
-                Err(format!("el dispositivo falló tras {frames} frames: {error:?}"))
+                Err(chilpa_i18n::t_args(
+                    "the device failed after {} frames: {}",
+                    &[&frames.to_string(), &format!("{error:?}")],
+                ))
             }
         }
     }

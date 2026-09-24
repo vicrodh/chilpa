@@ -19,6 +19,21 @@ msgstr ""
 msgid "(unreadable manifest)"
 msgstr ""
 
+msgid "16 bit"
+msgstr ""
+
+msgid "24 bit in 3 bytes"
+msgstr ""
+
+msgid "24 bit in 32"
+msgstr ""
+
+msgid "32 bit"
+msgstr ""
+
+msgid "32 bit float"
+msgstr ""
+
 msgid "Album"
 msgstr ""
 
@@ -52,6 +67,15 @@ msgstr ""
 msgid "By year"
 msgstr ""
 
+msgid "CD in {}"
+msgstr ""
+
+msgid "CDs are not read outside Linux yet"
+msgstr ""
+
+msgid "Capture to a file ({})"
+msgstr ""
+
 msgid "Classic"
 msgstr ""
 
@@ -70,6 +94,12 @@ msgstr ""
 msgid "Ctrl + arrows"
 msgstr ""
 
+msgid "DSD128 over DoP"
+msgstr ""
+
+msgid "DSD64 over DoP"
+msgstr ""
+
 msgid "Delete"
 msgstr ""
 
@@ -86,6 +116,18 @@ msgid "Formats"
 msgstr ""
 
 msgid "Genres"
+msgstr ""
+
+msgid "High 24/176.4"
+msgstr ""
+
+msgid "High 24/192"
+msgstr ""
+
+msgid "High 24/88.2"
+msgstr ""
+
+msgid "High 24/96"
 msgstr ""
 
 msgid "I did not find a CD drive"
@@ -107,6 +149,9 @@ msgid "Last played"
 msgstr ""
 
 msgid "Look for plugins"
+msgstr ""
+
+msgid "Maximum 32/384"
 msgstr ""
 
 msgid "Measure the output"
@@ -271,6 +316,9 @@ msgstr ""
 msgid "Stop the analysis"
 msgstr ""
 
+msgid "Studio 24/48"
+msgstr ""
+
 msgid "The library is empty"
 msgstr ""
 
@@ -278,6 +326,9 @@ msgid "This plugin wants:"
 msgstr ""
 
 msgid "Time listened"
+msgstr ""
+
+msgid "Track {}"
 msgstr ""
 
 msgid "Withdraw permission"
@@ -296,6 +347,9 @@ msgid "a list needs a name"
 msgstr ""
 
 msgid "a scan is already running"
+msgstr ""
+
+msgid "a stream cannot be rewound"
 msgstr ""
 
 msgid "account connected"
@@ -352,10 +406,28 @@ msgstr ""
 msgid "could not open the browser: {}"
 msgstr ""
 
+msgid "could not open the stream: {}"
+msgstr ""
+
+msgid "could not open: {}"
+msgstr ""
+
+msgid "could not: {}"
+msgstr ""
+
+msgid "damaged file: {}"
+msgstr ""
+
+msgid "device: {}"
+msgstr ""
+
 msgid "file"
 msgstr ""
 
 msgid "fine"
+msgstr ""
+
+msgid "format not supported: {}"
 msgstr ""
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
@@ -519,6 +591,9 @@ msgstr ""
 msgid "that source does not use OAuth"
 msgstr ""
 
+msgid "the URL has to be http or https"
+msgstr ""
+
 msgid "the account connected but could not be saved: {}"
 msgstr ""
 
@@ -540,7 +615,37 @@ msgstr ""
 msgid "the credential could not be saved: {}"
 msgstr ""
 
+msgid "the device could not be measured; nothing below is verified"
+msgstr ""
+
 msgid "the device could not be opened: {}"
+msgstr ""
+
+msgid "the device does not accept {} Hz, which is what this DSD over DoP asks for"
+msgstr ""
+
+msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
+msgstr ""
+
+msgid "the device failed after {} frames: {}"
+msgstr ""
+
+msgid "the device was not measured; without that bit-perfect is not promised"
+msgstr ""
+
+msgid "the disc carries no audio tracks"
+msgstr ""
+
+msgid "the disc carries no tracks"
+msgstr ""
+
+msgid "the drive is missing"
+msgstr ""
+
+msgid "the file carries no tracks"
+msgstr ""
+
+msgid "the file carries {} bits and the device only takes {}"
 msgstr ""
 
 msgid "the folder for \"{}\" could not be deleted"
@@ -576,16 +681,37 @@ msgstr ""
 msgid "the name"
 msgstr ""
 
+msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+msgstr ""
+
 msgid "the plugin sandbox could not be started"
 msgstr ""
 
 msgid "the plugin sandbox is not started"
 msgstr ""
 
+msgid "the reply could not be built"
+msgstr ""
+
+msgid "the reply could not be read: {}"
+msgstr ""
+
+msgid "the reply does not fit"
+msgstr ""
+
 msgid "the request carries no URL that can be understood"
 msgstr ""
 
+msgid "the request carries no url"
+msgstr ""
+
+msgid "the request is not JSON: {}"
+msgstr ""
+
 msgid "the scan failed: {}"
+msgstr ""
+
+msgid "the server sent no audio: {}"
 msgstr ""
 
 msgid "the version"
@@ -609,10 +735,16 @@ msgstr ""
 msgid "there is nowhere to keep a secret on this machine"
 msgstr ""
 
+msgid "this device delivers bit-perfect in no common format"
+msgstr ""
+
 msgid "this list"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "track {}: {}"
 msgstr ""
 
 msgid "{} album"
@@ -627,6 +759,9 @@ msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} bit at {} Hz, {}"
+msgstr ""
 
 msgid "{} channel"
 msgid_plural "{} channels"
@@ -643,6 +778,9 @@ msgid "{} of the list's tracks are gone"
 msgstr ""
 
 msgid "{} of {}"
+msgstr ""
+
+msgid "{} of {} formats come out untouched"
 msgstr ""
 
 msgid "{} of {} plugins loaded"

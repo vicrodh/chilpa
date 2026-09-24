@@ -138,18 +138,18 @@ mod tests {
     fn the_start_trim_spans_blocks() {
         // 5 frames of delay spread across two blocks of 3.
         let mut t = Trimmer::new(5, 0, 2);
-        assert!(t.push(&frames(0, 3)).is_empty(), "el primer bloque es todo relleno");
+        assert!(t.push(&frames(0, 3)).is_empty(), "the first block is all padding");
         let second = t.push(&frames(3, 3));
-        assert_eq!(second, frames(5, 1), "solo sale el frame 5 en adelante");
+        assert_eq!(second, frames(5, 1), "only frame 5 onwards comes out");
     }
 
     #[test]
     fn the_tail_trim_keeps_the_final_padding_in() {
         let mut t = Trimmer::new(0, 4, 2);
         let primero = t.push(&frames(0, 10));
-        assert_eq!(primero, frames(0, 6), "se retienen los 4 últimos");
-        assert!(t.finish().is_empty(), "el relleno retenido se tira");
-        assert_eq!(t.emitted(), 6, "la pista duró 6 frames de música");
+        assert_eq!(primero, frames(0, 6), "the last 4 are held back");
+        assert!(t.finish().is_empty(), "the held back padding is thrown away");
+        assert_eq!(t.emitted(), 6, "the track lasted 6 frames of music");
     }
 
     #[test]
@@ -157,7 +157,7 @@ mod tests {
         let mut t = Trimmer::new(0, 4, 2);
         t.push(&frames(0, 10));
         let second = t.push(&frames(10, 2));
-        assert_eq!(second, frames(6, 2), "lo retenido resulta ser música");
+        assert_eq!(second, frames(6, 2), "what was held back turns out to be music");
     }
 
     #[test]
@@ -165,6 +165,6 @@ mod tests {
         let mut t = Trimmer::new(3, 2, 2);
         let mut output = t.push(&frames(0, 12));
         output.extend(t.finish());
-        assert_eq!(output, frames(3, 7), "12 frames menos 3 de arranque y 2 de cola");
+        assert_eq!(output, frames(3, 7), "12 frames less 3 at the start and 2 at the tail");
     }
 }

@@ -87,7 +87,7 @@ mod tests {
     #[test]
     fn capture_accepts_whatever_it_is_given_and_declares_itself_measured() {
         let caps = capabilities();
-        assert!(caps.probed, "sin esto no se podría prometer bit-perfect");
+        assert!(caps.probed, "without this bit-perfect could not be promised");
         assert!(caps.accepts(&StreamFormat::new(SampleFormat::S24In32, 192_000, 2)));
     }
 }

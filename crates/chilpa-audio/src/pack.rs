@@ -66,7 +66,7 @@ fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Resu
             // one stays zero.
             SampleFormat::S24In32 => out.extend_from_slice(&(v << 8).to_le_bytes()),
             SampleFormat::S32 => out.extend_from_slice(&v.to_le_bytes()),
-            SampleFormat::F32 => unreachable!("se resolvió arriba"),
+            SampleFormat::F32 => unreachable!("handled above"),
         }
     }
     Ok(())
@@ -112,7 +112,7 @@ mod tests {
             .chunks(2)
             .map(|c| i16::from_le_bytes([c[0], c[1]]) as i32)
             .collect();
-        assert_eq!(wrap, data, "ida y vuelta sin perder un solo LSB");
+        assert_eq!(wrap, data, "a round trip without losing a single LSB");
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn the_low_byte_of_24_in_32_stays_zero() {
         let bytes = packed(&Samples::Int { data: &[0x7FFFFF], bits: 24 }, SampleFormat::S24In32);
-        assert_eq!(bytes[0], 0, "justificado a la izquierda");
+        assert_eq!(bytes[0], 0, "left justified");
     }
 
     #[test]

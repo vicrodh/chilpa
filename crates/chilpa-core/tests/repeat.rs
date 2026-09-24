@@ -42,7 +42,7 @@ impl AudioSink for CappedSink {
 
 fn wave(name: &str, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-repetir-{name}.wav"));
+    p.push(format!("chilpa-repeat-{name}.wav"));
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -86,7 +86,7 @@ fn played(tracks: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
     let results =
         play_queue_with(&SharedQueue::new(tracks.to_vec()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
-            .expect("la cola corre");
+            .expect("the queue runs");
     results.into_iter().map(|r| r.path).collect()
 }
 
@@ -110,9 +110,9 @@ fn repeat_all_starts_over() {
     let tracks = vec![a.clone(), b.clone()];
     // Cap at two and a half laps; the stop lands mid third track.
     let played = played(&tracks, Repeat::All, 4_410 * 5);
-    assert!(played.len() > 2, "dio más de una vuelta: {played:?}");
-    assert_eq!(played[0], a, "empezó por la primera");
-    assert_eq!(played[2], a, "y volvió a ella tras la última");
+    assert!(played.len() > 2, "it went round more than once: {played:?}");
+    assert_eq!(played[0], a, "it started with the first");
+    assert_eq!(played[2], a, "and came back to it after the last");
     for p in tracks {
         let _ = std::fs::remove_file(p);
     }
@@ -124,8 +124,8 @@ fn repeat_one_stays_on_the_same_track() {
     let b = wave("one-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
     let played = played(&tracks, Repeat::One, 4_410 * 3);
-    assert!(played.len() > 1, "se repitió: {played:?}");
-    assert!(played.iter().all(|p| *p == a), "nunca pasó a la segunda: {played:?}");
+    assert!(played.len() > 1, "it repeated: {played:?}");
+    assert!(played.iter().all(|p| *p == a), "it never moved to the second: {played:?}");
     for p in tracks {
         let _ = std::fs::remove_file(p);
     }
@@ -133,8 +133,8 @@ fn repeat_one_stays_on_the_same_track() {
 
 #[test]
 fn under_repeat_one_skipping_does_advance() {
-    let a = wave("salto-a", 44_100);
-    let b = wave("salto-b", 4_410);
+    let a = wave("skip-a", 44_100);
+    let b = wave("skip-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
 
     let controls = Controls::new();
@@ -150,10 +150,10 @@ fn under_repeat_one_skipping_does_advance() {
     let results =
         play_queue_with(&SharedQueue::new(tracks.clone()), &caps(), Policy::BitPerfect, &controls, |_| Ok(sink.clone()),
             &mut |_, _, _| {}, &mut |_, _| {})
-            .expect("la cola corre");
+            .expect("the queue runs");
     let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
     assert_eq!(paths[0], a);
-    assert_eq!(paths[1], b, "el salto ganó sobre la repetición: {paths:?}");
+    assert_eq!(paths[1], b, "the skip beat the repeat: {paths:?}");
     for p in tracks {
         let _ = std::fs::remove_file(p);
     }
@@ -161,13 +161,13 @@ fn under_repeat_one_skipping_does_advance() {
 
 #[test]
 fn an_explicit_order_changes_what_plays() {
-    let a = wave("orden-a", 4_410);
-    let b = wave("orden-b", 4_410);
-    let c = wave("orden-c", 4_410);
+    let a = wave("order-a", 4_410);
+    let b = wave("order-b", 4_410);
+    let c = wave("order-c", 4_410);
     let tracks = vec![a.clone(), b.clone(), c.clone()];
 
     let controls = Controls::new();
-    assert!(controls.order.set(vec![2, 0, 1], 3), "el orden es una permutación");
+    assert!(controls.order.set(vec![2, 0, 1], 3), "the order is a permutation");
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
         tope: 1_000_000,
@@ -182,9 +182,9 @@ fn an_explicit_order_changes_what_plays() {
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
-    .expect("la cola corre");
+    .expect("the queue runs");
     let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
-    assert_eq!(paths, vec![c, a, b], "sonaron en el orden pedido");
+    assert_eq!(paths, vec![c, a, b], "they played in the order asked for");
     for p in tracks {
         let _ = std::fs::remove_file(p);
     }
@@ -192,8 +192,8 @@ fn an_explicit_order_changes_what_plays() {
 
 #[test]
 fn what_is_enqueued_mid_queue_does_play() {
-    let a = wave("crece-a", 4_410);
-    let b = wave("crece-b", 4_410);
+    let a = wave("grow-a", 4_410);
+    let b = wave("grow-b", 4_410);
 
     let queue = SharedQueue::new(vec![a.clone()]);
     let controls = Controls::new();
@@ -219,25 +219,25 @@ fn what_is_enqueued_mid_queue_does_play() {
         },
         &mut |_, _| {},
     )
-    .expect("la cola corre");
+    .expect("the queue runs");
 
     let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
-    assert_eq!(paths, vec![a.clone(), b.clone()], "la agregada también sonó");
+    assert_eq!(paths, vec![a.clone(), b.clone()], "the added one played too");
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
 }
 
 #[test]
 fn a_removed_track_does_not_play_and_the_others_do_not_move() {
-    let a = wave("quita-a", 4_410);
-    let b = wave("quita-b", 4_410);
-    let c = wave("quita-c", 4_410);
+    let a = wave("remove-a", 4_410);
+    let b = wave("remove-b", 4_410);
+    let c = wave("remove-c", 4_410);
 
     let queue = SharedQueue::new(vec![a.clone(), b.clone(), c.clone()]);
     // The middle one is removed before starting.
     assert!(queue.remove(1));
-    assert!(!queue.remove(1), "quitarla dos veces no cuenta");
-    assert_eq!(queue.len(), 3, "la posición se conserva vacía");
+    assert!(!queue.remove(1), "removing it twice does not count");
+    assert_eq!(queue.len(), 3, "the position is kept, empty");
 
     let controls = Controls::new();
     let sink = CappedSink {
@@ -254,10 +254,10 @@ fn a_removed_track_does_not_play_and_the_others_do_not_move() {
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
-    .expect("la cola corre");
+    .expect("the queue runs");
 
     let paths: Vec<PathBuf> = results.into_iter().map(|r| r.path).collect();
-    assert_eq!(paths, vec![a.clone(), c.clone()], "la de en medio se saltó");
+    assert_eq!(paths, vec![a.clone(), c.clone()], "the middle one was skipped");
     for p in [a, b, c] {
         let _ = std::fs::remove_file(p);
     }
@@ -265,7 +265,7 @@ fn a_removed_track_does_not_play_and_the_others_do_not_move() {
 
 #[test]
 fn emptying_the_queue_under_repeat_does_not_leave_the_thread_spinning() {
-    let a = wave("vacia-a", 4_410);
+    let a = wave("empty-a", 4_410);
     let queue = SharedQueue::new(vec![a.clone()]);
     queue.remove(0);
 
@@ -285,7 +285,7 @@ fn emptying_the_queue_under_repeat_does_not_leave_the_thread_spinning() {
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
-    .expect("la cola corre");
-    assert!(results.is_empty(), "no sonó nada, y terminó");
+    .expect("the queue runs");
+    assert!(results.is_empty(), "nothing played, and it finished");
     let _ = std::fs::remove_file(a);
 }

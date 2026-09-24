@@ -29,8 +29,12 @@ pub enum StreamError {
 impl std::fmt::Display for StreamError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            StreamError::Open(s) => write!(f, "no se pudo abrir el stream: {s}"),
-            StreamError::NotAudio(s) => write!(f, "el servidor no mandó audio: {s}"),
+            StreamError::Open(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("could not open the stream: {}", &[s]))
+            }
+            StreamError::NotAudio(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("the server sent no audio: {}", &[s]))
+            }
         }
     }
 }
@@ -136,7 +140,7 @@ impl Seek for HttpStream {
             SeekFrom::Start(n) if n == self.position => Ok(self.position),
             _ => Err(io::Error::new(
                 io::ErrorKind::Unsupported,
-                "un stream no se puede rebobinar",
+                chilpa_i18n::t("a stream cannot be rewound"),
             )),
         }
     }
@@ -214,15 +218,15 @@ mod tests {
         );
         let mut buf = [0u8; 10];
         assert_eq!(s.read(&mut buf).unwrap(), 10);
-        assert_eq!(s.seek(SeekFrom::Current(0)).unwrap(), 10, "sí dice dónde va");
-        assert!(s.seek(SeekFrom::Start(0)).is_err(), "pero no vuelve atrás");
+        assert_eq!(s.seek(SeekFrom::Current(0)).unwrap(), 10, "it does say where it is");
+        assert!(s.seek(SeekFrom::Start(0)).is_err(), "but it does not go back");
     }
 
     #[test]
     fn the_station_title_is_shared_across_threads() {
         let np = NowPlaying::new();
         let copy = np.clone();
-        std::thread::spawn(move || copy.set(Some("Una canción".into()))).join().unwrap();
-        assert_eq!(np.get().as_deref(), Some("Una canción"));
+        std::thread::spawn(move || copy.set(Some("A song".into()))).join().unwrap();
+        assert_eq!(np.get().as_deref(), Some("A song"));
     }
 }

@@ -111,7 +111,10 @@ impl Player {
                                 Ok(Outcome::Finished { frames }) => PlayerEvent::Finished { frames },
                                 Ok(Outcome::Stopped { frames }) => PlayerEvent::Stopped { frames },
                                 Ok(Outcome::Failed { frames, error }) => PlayerEvent::Failed {
-                                    message: format!("el dispositivo falló tras {frames} frames: {error:?}"),
+                                    message: chilpa_i18n::t_args(
+                    "the device failed after {} frames: {}",
+                    &[&frames.to_string(), &format!("{error:?}")],
+                ),
                                 },
                                 Err(e) => PlayerEvent::Failed { message: e.to_string() },
                             };
@@ -120,7 +123,7 @@ impl Player {
                     }
                 }
             })
-            .expect("el hilo del reproductor arranca");
+            .expect("the player thread starts");
 
         Self { orders: orders_tx, events: events_rx, controls, queue, thread: Some(thread) }
     }
@@ -400,7 +403,7 @@ fn play_cd(
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
     let node = cd_device_of(path)
-        .ok_or_else(|| PlayError::Sink(SinkError::Backend("falta la unidad".into())))?;
+        .ok_or_else(|| PlayError::Sink(SinkError::Backend(chilpa_i18n::t("the drive is missing"))))?;
     let mut unit = chilpa_cd::linux::LinuxDrive::open(&node)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
     let toc = crate::cd_playback::read_toc(&mut unit)
@@ -408,20 +411,20 @@ fn play_cd(
     let tracks: Vec<chilpa_cd::Track> = toc.audio_tracks().copied().collect();
     if tracks.is_empty() {
         return Err(PlayError::Sink(SinkError::Backend(
-            "el disco no trae pistas de audio".into(),
+            chilpa_i18n::t("the disc carries no audio tracks"),
         )));
     }
 
     let total = tracks.len();
-    let mut ultimo = Outcome::Finished { frames: 0 };
+    let mut last = Outcome::Finished { frames: 0 };
     for (index, track) in tracks.iter().enumerate() {
         if stop.is_stopped() {
-            return Ok(Outcome::Stopped { frames: ultimo.frames() });
+            return Ok(Outcome::Stopped { frames: last.frames() });
         }
         skip.take();
         let tag = chilpa_tags::Tags {
-            title: Some(format!("Pista {}", track.number)),
-            album: Some(format!("CD en {}", node.display())),
+            title: Some(chilpa_i18n::t_args("Track {}", &[&track.number.to_string()])),
+            album: Some(chilpa_i18n::t_args("CD in {}", &[&node.display().to_string()])),
             ..chilpa_tags::Tags::default()
         };
         let events = events.clone();
@@ -464,15 +467,18 @@ fn play_cd(
         // padding with silence.
         if let Some(problem) = played.read_error {
             let _ = events.send(PlayerEvent::Failed {
-                message: format!("pista {}: {problem}", track.number),
+                message: chilpa_i18n::t_args(
+                    "track {}: {}",
+                    &[&track.number.to_string(), &problem],
+                ),
             });
         }
-        ultimo = played.outcome;
-        if !ultimo.may_advance_queue() {
+        last = played.outcome;
+        if !last.may_advance_queue() {
             break;
         }
     }
-    Ok(ultimo)
+    Ok(last)
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -487,7 +493,7 @@ fn play_cd(
     _events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
     Err(PlayError::Sink(SinkError::Backend(
-        "todavía no se leen CD fuera de Linux".into(),
+        chilpa_i18n::t("CDs are not read outside Linux yet"),
     )))
 }
 
@@ -505,25 +511,25 @@ fn play_sacd(
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
     let tracks = image.area.tracks.clone();
     if tracks.is_empty() {
-        return Err(PlayError::Sink(SinkError::Backend("el disco no trae pistas".into())));
+        return Err(PlayError::Sink(SinkError::Backend(chilpa_i18n::t("the disc carries no tracks"))));
     }
     let total = tracks.len();
-    let mut ultimo = Outcome::Finished { frames: 0 };
+    let mut last = Outcome::Finished { frames: 0 };
 
     for (index, track) in tracks.iter().enumerate() {
         if stop.is_stopped() {
-            return Ok(Outcome::Stopped { frames: ultimo.frames() });
+            return Ok(Outcome::Stopped { frames: last.frames() });
         }
         skip.take();
         // Every track opens the image again: the reader keeps hold of it, so
         // a track that fails does not take the rest of the disc with it.
         let image = chilpa_sacd::open(path)
             .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-        let mut lector = chilpa_sacd::SacdTrackReader::open(image, track)
+        let mut reader = chilpa_sacd::SacdTrackReader::open(image, track)
             .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
 
         let tag = chilpa_tags::Tags {
-            title: Some(format!("Pista {}", track.number)),
+            title: Some(chilpa_i18n::t_args("Track {}", &[&track.number.to_string()])),
             album: path.file_stem().map(|s| s.to_string_lossy().to_string()),
             ..chilpa_tags::Tags::default()
         };
@@ -532,7 +538,7 @@ fn play_sacd(
         let duration = Some(u64::from(track.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16);
 
         let played = crate::dsd_playback::play_dsd(
-            &mut lector,
+            &mut reader,
             caps,
             stop,
             pause,
@@ -559,12 +565,12 @@ fn play_sacd(
         )
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
 
-        ultimo = played.outcome;
-        if !ultimo.may_advance_queue() {
+        last = played.outcome;
+        if !last.may_advance_queue() {
             break;
         }
     }
-    Ok(ultimo)
+    Ok(last)
 }
 
 /// True if the file is DSD by its extension.
@@ -639,13 +645,13 @@ mod tests {
         // A bare device node is NOT a CD: opening the drive by mistake
         // startles anyone.
         assert!(!is_cd(Path::new("/dev/sr0")));
-        assert!(!is_cd(Path::new("/musica/una.flac")));
+        assert!(!is_cd(Path::new("/music/one.flac")));
     }
 
     #[test]
     fn a_cd_path_yields_its_drive() {
         assert_eq!(cd_device_of(Path::new("cdda:/dev/sr0")), Some(PathBuf::from("/dev/sr0")));
-        assert_eq!(cd_device_of(Path::new("cdda:")), None, "sin unidad no hay nada que abrir");
+        assert_eq!(cd_device_of(Path::new("cdda:")), None, "with no drive there is nothing to open");
         assert_eq!(cd_device_of(Path::new("/dev/sr0")), None);
     }
 
@@ -732,11 +738,11 @@ mod tests {
     fn playing_does_not_block_and_reports_progress_and_end() {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
-        let file = wav("basico", 5_000);
+        let file = wav("basic", 5_000);
 
         let antes = Instant::now();
-        p.play(&file, "falso", true);
-        assert!(antes.elapsed() < Duration::from_millis(100), "play() regresa de inmediato");
+        p.play(&file, "fake", true);
+        assert!(antes.elapsed() < Duration::from_millis(100), "play() returns immediately");
 
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(events.iter().any(|e| matches!(e, PlayerEvent::Started { .. })));
@@ -752,7 +758,7 @@ mod tests {
         let p = player(Arc::clone(&written));
         let a = wav("cola-a", 1_000);
         let b = wav("cola-b", 2_000);
-        p.play_all(&[a.clone(), b.clone()], "falso", true);
+        p.play_all(&[a.clone(), b.clone()], "fake", true);
 
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         let startups: Vec<(usize, usize)> = events
@@ -762,8 +768,8 @@ mod tests {
                 _ => None,
             })
             .collect();
-        assert_eq!(startups, vec![(0, 2), (1, 2)], "las dos pistas, en orden");
-        assert_eq!(written.load(Ordering::Relaxed), 3_000, "salieron todos los frames");
+        assert_eq!(startups, vec![(0, 2), (1, 2)], "both tracks, in order");
+        assert_eq!(written.load(Ordering::Relaxed), 3_000, "every frame went out");
         let _ = std::fs::remove_file(a);
         let _ = std::fs::remove_file(b);
     }
@@ -773,9 +779,9 @@ mod tests {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
         // Long tracks: without skipping, the test would take a while to reach the end.
-        let a = wav("saltar-a", 400_000);
-        let b = wav("saltar-b", 1_000);
-        p.play_all(&[a.clone(), b.clone()], "falso", true);
+        let a = wav("skip-a", 400_000);
+        let b = wav("skip-b", 1_000);
+        p.play_all(&[a.clone(), b.clone()], "fake", true);
 
         // As soon as the first one starts, a skip is asked for. The events
         // are gathered from both waits: each one consumes what it picked up.
@@ -790,10 +796,10 @@ mod tests {
             .iter()
             .filter(|e| matches!(e, PlayerEvent::Started { .. }))
             .count();
-        assert!(startups >= 2, "la segunda pista arrancó: {startups} arranques");
+        assert!(startups >= 2, "the second track started: {startups} startups");
         assert!(
             written.load(Ordering::Relaxed) < 401_000,
-            "no sonó la primera entera"
+            "the first one did not play whole"
         );
         let _ = std::fs::remove_file(a);
         let _ = std::fs::remove_file(b);
@@ -802,14 +808,14 @@ mod tests {
     #[test]
     fn a_missing_file_is_reported_and_the_player_stays_alive() {
         let p = player(Arc::new(AtomicU64::new(0)));
-        p.play(Path::new("/no/existe.flac"), "falso", true);
+        p.play(Path::new("/does/not/exist.flac"), "fake", true);
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })));
 
-        let file = wav("despues-de-fallar", 1_000);
-        p.play(&file, "falso", true);
+        let file = wav("after-failing", 1_000);
+        p.play(&file, "fake", true);
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
-        assert!(events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "sigue aceptando órdenes");
+        assert!(events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "it still accepts orders");
         let _ = std::fs::remove_file(file);
     }
 }

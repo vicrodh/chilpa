@@ -32,7 +32,7 @@ impl AudioSink for Capturador {
 /// A WAV where the left channel's sample says its own frame number.
 fn ramp(name: &str, frames: u32) -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-saltar-{name}.wav"));
+    p.push(format!("chilpa-skip-{name}.wav"));
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
     f.write_all(b"RIFF").unwrap();
@@ -66,7 +66,7 @@ fn caps() -> DeviceCaps {
 
 #[test]
 fn a_seek_asked_for_before_the_start_begins_at_that_point() {
-    let path = ramp("arranque", 44_100 * 3);
+    let path = ramp("startup", 44_100 * 3);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(2));
     let cap = Capturador::default();
@@ -84,11 +84,11 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
     .unwrap();
 
     // The first sample out is the one from frame 88,200, that is second 2.
-    assert_eq!(cap.0.borrow()[0], (88_200 % 30_000) as i16, "arrancó en el punto pedido");
+    assert_eq!(cap.0.borrow()[0], (88_200 % 30_000) as i16, "it started at the point asked for");
     // And the reported position counts from the file, not from the seek.
     assert!(
         positions.first().is_some_and(|p| *p >= 88_200),
-        "la primera posición fue {:?}",
+        "the first position was {:?}",
         positions.first()
     );
     let _ = std::fs::remove_file(path);
@@ -96,7 +96,7 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
 
 #[test]
 fn seeking_past_the_end_finishes_the_track_without_crashing() {
-    let path = ramp("pasado", 44_100);
+    let path = ramp("past", 44_100);
     let seek = SeekSignal::new();
     seek.request(Duration::from_secs(60));
     let cap = Capturador::default();
@@ -111,6 +111,6 @@ fn seeking_past_the_end_finishes_the_track_without_crashing() {
     )
     .unwrap();
     assert_eq!(results.len(), 1);
-    assert!(results[0].outcome.may_advance_queue(), "terminó como fin natural");
+    assert!(results[0].outcome.may_advance_queue(), "it ended as a natural end");
     let _ = std::fs::remove_file(path);
 }

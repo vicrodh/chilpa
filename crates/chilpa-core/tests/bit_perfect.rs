@@ -25,12 +25,12 @@ struct Handle<'a>(&'a mut Capturador);
 
 impl AudioSink for Handle<'_> {
     fn format(&self) -> StreamFormat {
-        self.0.stream.expect("abierto")
+        self.0.stream.expect("opened")
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
         self.0.bytes.extend_from_slice(frames);
-        Ok(frames.len() / self.0.stream.expect("abierto").frame_bytes())
+        Ok(frames.len() / self.0.stream.expect("opened").frame_bytes())
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
@@ -113,9 +113,9 @@ fn a_16_bit_wav_goes_out_identical_over_the_wire() {
             Ok(Handle(&mut cap))
         },
     )
-    .expect("debe reproducir");
+    .expect("it must play");
 
-    assert!(played.delivery.is_bit_perfect(), "la entrega se declara bit-perfect");
+    assert!(played.delivery.is_bit_perfect(), "the delivery is declared bit-perfect");
     assert!(matches!(played.outcome, Outcome::Finished { .. }));
 
     let came_out: Vec<i32> = cap
@@ -123,8 +123,8 @@ fn a_16_bit_wav_goes_out_identical_over_the_wire() {
         .chunks_exact(2)
         .map(|c| i32::from(i16::from_le_bytes([c[0], c[1]])))
         .collect();
-    assert_eq!(came_out.len(), originals.len(), "salieron todas las muestras");
-    assert_eq!(came_out, originals, "ni un LSB de diferencia");
+    assert_eq!(came_out.len(), originals.len(), "every sample went out");
+    assert_eq!(came_out, originals, "not one LSB of difference");
     let _ = std::fs::remove_file(path);
 }
 
@@ -145,7 +145,7 @@ fn a_24_bit_wav_goes_out_identical_over_the_wire() {
             Ok(Handle(&mut cap))
         },
     )
-    .expect("debe reproducir");
+    .expect("it must play");
 
     assert!(played.delivery.is_bit_perfect());
     // S24In32 is left justified: the 24 valid bits on top.
@@ -154,13 +154,13 @@ fn a_24_bit_wav_goes_out_identical_over_the_wire() {
         .chunks_exact(4)
         .map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]) >> 8)
         .collect();
-    assert_eq!(came_out, originals, "ni un LSB de diferencia a 24 bits");
+    assert_eq!(came_out, originals, "not one LSB of difference at 24 bits");
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn with_a_device_that_cannot_do_it_we_fail_instead_of_resampling() {
-    let path = temporal("rechazo");
+    let path = temporal("refusal");
     write_wav(&path, &samples(16), 16, 44_100, 2);
     let solo_48k = caps(SampleFormat::S16, 48_000);
 
@@ -169,7 +169,7 @@ fn with_a_device_that_cannot_do_it_we_fail_instead_of_resampling() {
         cap.stream = Some(format);
         Ok(Handle(&mut cap))
     });
-    assert!(r.is_err(), "no se resamplea a escondidas");
-    assert!(cap.bytes.is_empty(), "no se le escribió nada al dispositivo");
+    assert!(r.is_err(), "nothing is resampled behind your back");
+    assert!(cap.bytes.is_empty(), "nothing was written to the device");
     let _ = std::fs::remove_file(path);
 }

@@ -61,7 +61,7 @@ impl AnalysisJob {
         let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let flag = Arc::clone(&cancel);
         let thread = std::thread::Builder::new()
-            .name("chilpa-analisis".into())
+            .name("chilpa-analysis".into())
             .spawn(move || {
                 let lib = match Library::open(&db_path) {
                     Ok(l) => l,
@@ -143,7 +143,7 @@ impl AnalysisJob {
                     failed: failed,
                 });
             })
-            .expect("el hilo de análisis arranca");
+            .expect("the analysis thread starts");
         Self { events: rx, cancel, thread: Some(thread) }
     }
 
@@ -261,7 +261,7 @@ mod tests {
 
     #[test]
     fn with_nothing_to_analyze_it_finishes_at_once() {
-        let dir = std::env::temp_dir().join("chilpa-analisis-vacio");
+        let dir = std::env::temp_dir().join("chilpa-analysis-empty");
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
 
@@ -269,7 +269,7 @@ mod tests {
         let events = wait(&job);
         match events.first() {
             Some(AnalysisProgress::Counted { total }) => assert_eq!(*total, 0),
-            other => panic!("lo primero es la cuenta: {other:?}"),
+            other => panic!("the count comes first: {other:?}"),
         }
         assert!(matches!(
             events.last(),
@@ -281,6 +281,6 @@ mod tests {
 
     #[test]
     fn a_file_that_cannot_be_opened_does_not_bring_the_analysis_down() {
-        assert!(analyze_file(Path::new("/no/existe.flac")).is_none());
+        assert!(analyze_file(Path::new("/does/not/exist.flac")).is_none());
     }
 }

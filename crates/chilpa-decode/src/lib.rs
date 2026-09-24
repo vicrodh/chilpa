@@ -27,9 +27,15 @@ pub enum DecodeError {
 impl std::fmt::Display for DecodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DecodeError::Open(e) => write!(f, "no se pudo abrir: {e}"),
-            DecodeError::Unsupported(s) => write!(f, "formato no soportado: {s}"),
-            DecodeError::Corrupt(s) => write!(f, "archivo dañado: {s}"),
+            DecodeError::Open(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("could not open: {}", &[&e.to_string()]))
+            }
+            DecodeError::Unsupported(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("format not supported: {}", &[s]))
+            }
+            DecodeError::Corrupt(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("damaged file: {}", &[s]))
+            }
         }
     }
 }
@@ -104,7 +110,7 @@ impl Decoded {
         let format = probed.format;
         let track = format
             .default_track()
-            .ok_or_else(|| DecodeError::Unsupported("el archivo no trae pistas".into()))?;
+            .ok_or_else(|| DecodeError::Unsupported(chilpa_i18n::t("the file carries no tracks").into()))?;
         let track_id = track.id;
         let params = &track.codec_params;
         // An MP4 does not always declare channels or rate in the container:
@@ -319,7 +325,7 @@ mod tests {
 
     #[test]
     fn a_file_that_does_not_exist_fails_to_open() {
-        let r = Decoded::open(Path::new("/no/existe.flac"));
+        let r = Decoded::open(Path::new("/does/not/exist.flac"));
         assert!(matches!(r, Err(DecodeError::Open(_))));
     }
 

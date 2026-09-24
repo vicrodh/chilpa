@@ -165,7 +165,7 @@ mod tests {
                 pause_thread.set(false);
             });
             let out = render_paused(&mut source, &mut sink, &StopSignal::new(), &pause, &mut |_| {});
-            assert!(ready.load(Ordering::Acquire), "no escribió antes de que se quitara la pausa");
+            assert!(ready.load(Ordering::Acquire), "it did not write before the pause was lifted");
             assert_eq!(out, Outcome::Finished { frames: 8 });
         });
     }
@@ -190,7 +190,7 @@ mod tests {
         let out = render_with(&mut source, &mut sink, &StopSignal::new(), &mut |f| warnings.push(f));
         assert_eq!(out, Outcome::Finished { frames: 16 });
         assert_eq!(warnings.last(), Some(&16));
-        assert!(warnings.windows(2).all(|p| p[0] < p[1]), "el progreso solo avanza");
+        assert!(warnings.windows(2).all(|p| p[0] < p[1]), "progress only moves forward");
     }
 
     struct Blocks(Vec<Vec<u8>>);
@@ -268,7 +268,7 @@ mod tests {
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 10 });
         assert_eq!(sink.received, 10);
-        assert!(sink.writes > 1, "se necesitaron varias escrituras");
+        assert!(sink.writes > 1, "several writes were needed");
     }
 
     #[test]

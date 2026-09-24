@@ -469,7 +469,7 @@ where
             let new = open_sink(delivery.opened).map_err(PlayError::Sink)?;
             opened = Some((delivery.opened, new));
         }
-        let (_, sink) = opened.as_mut().expect("recién abierto");
+        let (_, sink) = opened.as_mut().expect("freshly opened");
 
         let trimmer = Trimmer::new(
             decoded.encoder_delay(),
@@ -569,8 +569,8 @@ mod tests {
         let o = Order::new();
         assert_eq!(o.first(3), 0);
         assert_eq!(o.next(0, 3, false), Some(1));
-        assert_eq!(o.next(2, 3, false), None, "ahí se acaba");
-        assert_eq!(o.next(2, 3, true), Some(0), "con vuelta, vuelve a la primera");
+        assert_eq!(o.next(2, 3, false), None, "it ends there");
+        assert_eq!(o.next(2, 3, true), Some(0), "with repeat, it goes back to the first");
     }
 
     #[test]
@@ -579,7 +579,7 @@ mod tests {
         assert!(o.set(vec![2, 0, 1], 3));
         assert_eq!(o.first(3), 2);
         assert_eq!(o.next(2, 3, false), Some(0));
-        assert_eq!(o.next(1, 3, false), None, "la 1 es la última del orden");
+        assert_eq!(o.next(1, 3, false), None, "1 is the last of the order");
         assert_eq!(o.next(1, 3, true), Some(2));
     }
 
@@ -595,21 +595,21 @@ mod tests {
     #[test]
     fn an_order_that_is_not_a_permutation_is_refused() {
         let o = Order::new();
-        assert!(!o.set(vec![0, 0, 1], 3), "repetida");
-        assert!(!o.set(vec![0, 1], 3), "incompleta");
-        assert!(!o.set(vec![0, 1, 5], 3), "fuera de rango");
-        assert!(o.get().is_empty(), "nada de eso se guardó");
+        assert!(!o.set(vec![0, 0, 1], 3), "repeated");
+        assert!(!o.set(vec![0, 1], 3), "incomplete");
+        assert!(!o.set(vec![0, 1, 5], 3), "out of range");
+        assert!(o.get().is_empty(), "none of that was kept");
     }
 
     #[test]
     fn shuffling_gives_a_permutation_and_not_always_the_same_one() {
         for seed in [1u64, 42, 99_999] {
             let o = shuffled(8, seed);
-            assert!(is_permutation(&o, 8), "{o:?} no es una permutación");
+            assert!(is_permutation(&o, 8), "{o:?} is not a permutation");
         }
-        assert_ne!(shuffled(16, 1), shuffled(16, 2), "semillas distintas, barajas distintas");
-        assert_eq!(shuffled(16, 7), shuffled(16, 7), "la misma semilla siempre da lo mismo");
-        assert_eq!(shuffled(1, 3), vec![0], "una sola pista no se baraja");
+        assert_ne!(shuffled(16, 1), shuffled(16, 2), "different seeds, different shuffles");
+        assert_eq!(shuffled(16, 7), shuffled(16, 7), "the same seed always gives the same thing");
+        assert_eq!(shuffled(1, 3), vec![0], "a single track is not shuffled");
         assert!(shuffled(0, 3).is_empty());
     }
 

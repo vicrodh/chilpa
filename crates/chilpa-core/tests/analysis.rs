@@ -13,7 +13,7 @@ fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
     let rate = 44_100u32;
     let frames = rate * seconds;
     let mut p = std::env::temp_dir();
-    p.push(format!("chilpa-analisis-{name}.wav"));
+    p.push(format!("chilpa-analysis-{name}.wav"));
 
     let data = frames * 4;
     let mut f = std::fs::File::create(&p).unwrap();
@@ -51,12 +51,12 @@ fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
 #[test]
 fn a_file_beat_comes_out_through_the_whole_path() {
     let path = pulse("128", 128.0, 25);
-    let features = analyze_file(&path).expect("se pudo leer y analizar");
-    let bpm = features.bpm.expect("se le encontró pulso");
-    assert!((bpm - 128.0).abs() < 3.0, "salió {bpm}");
+    let features = analyze_file(&path).expect("it could be read and analysed");
+    let bpm = features.bpm.expect("a pulse was found");
+    assert!((bpm - 128.0).abs() < 3.0, "it came out at {bpm}");
     assert!(
         features.tempo_confidence.is_some_and(|c| c > 0.1),
-        "confianza: {:?}",
+        "confidence: {:?}",
         features.tempo_confidence
     );
     let _ = std::fs::remove_file(path);
@@ -65,7 +65,7 @@ fn a_file_beat_comes_out_through_the_whole_path() {
 #[test]
 fn a_file_without_a_beat_is_analyzed_and_says_nothing() {
     // Silence: it reads fine, but there is nothing to count.
-    let path = pulse("silencio", 128.0, 25);
+    let path = pulse("silence", 128.0, 25);
     // The audio is overwritten with zeros, leaving the header.
     let mut data = std::fs::read(&path).unwrap();
     for b in data.iter_mut().skip(44) {
@@ -73,16 +73,16 @@ fn a_file_without_a_beat_is_analyzed_and_says_nothing() {
     }
     std::fs::write(&path, &data).unwrap();
 
-    let features = analyze_file(&path).expect("el archivo se leyó");
-    assert_eq!(features.bpm, None, "no se inventó un tempo");
+    let features = analyze_file(&path).expect("the file was read");
+    assert_eq!(features.bpm, None, "no tempo was invented");
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn a_file_that_is_not_audio_brings_nothing_down() {
     let mut p = std::env::temp_dir();
-    p.push("chilpa-analisis-basura.wav");
-    std::fs::write(&p, b"esto no es un WAV").unwrap();
+    p.push("chilpa-analysis-junk.wav");
+    std::fs::write(&p, b"this is not a WAV").unwrap();
     assert!(analyze_file(&p).is_none());
     let _ = std::fs::remove_file(p);
 }

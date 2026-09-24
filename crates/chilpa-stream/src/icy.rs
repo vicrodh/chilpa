@@ -114,7 +114,7 @@ mod tests {
         // 16 bytes of audio, a block with a title, and 16 more of audio.
         let mut data = Vec::new();
         data.extend_from_slice(&[1u8; 16]);
-        data.extend_from_slice(&block("StreamTitle='Una canción';"));
+        data.extend_from_slice(&block("StreamTitle='A song';"));
         data.extend_from_slice(&[2u8; 16]);
         data.push(0); // the empty block that comes next
 
@@ -124,8 +124,8 @@ mod tests {
         let mut audio = Vec::new();
         lector.read_to_end(&mut audio).unwrap();
 
-        assert_eq!(audio, [[1u8; 16], [2u8; 16]].concat(), "el audio salió limpio");
-        assert_eq!(np.get().as_deref(), Some("Una canción"));
+        assert_eq!(audio, [[1u8; 16], [2u8; 16]].concat(), "the audio came out clean");
+        assert_eq!(np.get().as_deref(), Some("A song"));
     }
 
     #[test]

@@ -78,7 +78,7 @@ fn play(tracks: &[PathBuf], caps: &DeviceCaps) -> (Vec<i16>, usize) {
         &mut |_, _, _| {},
         &mut |_, _| {},
     )
-    .expect("la cola corre");
+    .expect("the queue runs");
     let samples = cap.0.borrow().clone();
     (samples, opens)
 }
@@ -91,12 +91,12 @@ fn two_tracks_in_the_same_format_come_out_back_to_back() {
     let b = ramp("b", 5_000, 5_000);
     let (samples, opens) = play(&[a.clone(), b.clone()], &caps(&[44_100]));
 
-    assert_eq!(opens, 1, "el dispositivo se abrió una sola vez");
-    assert_eq!(samples.len(), 20_000, "salieron los 10 000 frames estéreo");
+    assert_eq!(opens, 1, "the device was opened once");
+    assert_eq!(samples.len(), 20_000, "all 10,000 stereo frames came out");
 
     let left: Vec<i16> = samples.iter().step_by(2).copied().collect();
     let expected: Vec<i16> = (0..10_000).map(|i| (i % 30_000) as i16).collect();
-    assert_eq!(left, expected, "la unión entre pistas no es continua");
+    assert_eq!(left, expected, "the join between tracks is not continuous");
 
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
@@ -134,8 +134,8 @@ fn if_the_format_changes_the_device_reopens_and_nothing_is_lost() {
     };
 
     let (samples, opens) = play(&[a.clone(), b.clone()], &caps(&[44_100, 96_000]));
-    assert_eq!(opens, 2, "cambiar de frecuencia obliga a reabrir");
-    assert_eq!(samples.len(), (4_000 + 3_000) * 2, "no se perdió ninguna muestra");
+    assert_eq!(opens, 2, "changing the rate forces a reopen");
+    assert_eq!(samples.len(), (4_000 + 3_000) * 2, "not one sample was lost");
 
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
