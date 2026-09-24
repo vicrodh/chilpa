@@ -30,4 +30,13 @@ impl Chilpa {
         }
         self.as_mut().set_library_folders(QStringList::from(&l));
     }
+
+    /// Forgets a folder and refreshes what the panel shows.
+    pub fn forget_library_folder(mut self: Pin<&mut Self>, folder: &QString) {
+        let folder = folder.to_string();
+        if self.as_mut().rust_mut().api.forget_folder(&folder) {
+            self.as_mut().refresh_library_folders();
+            self.as_mut().refresh_albums();
+        }
+    }
 }

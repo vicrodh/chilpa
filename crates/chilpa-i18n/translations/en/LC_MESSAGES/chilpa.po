@@ -142,6 +142,9 @@ msgstr ""
 msgid "For a long while"
 msgstr ""
 
+msgid "Forget"
+msgstr ""
+
 msgid "Formats"
 msgstr ""
 
@@ -808,6 +811,9 @@ msgid "the file carries {} bits and the device only takes {}"
 msgstr ""
 
 msgid "the fmt chunk is missing"
+msgstr ""
+
+msgid "the folder could not be forgotten: {}"
 msgstr ""
 
 msgid "the folder for \"{}\" could not be deleted"

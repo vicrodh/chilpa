@@ -117,12 +117,24 @@ ScrollView {
                 spacing: 2
                 Repeater {
                     model: Chilpa.libraryFolders
-                    Label {
+                    RowLayout {
                         Layout.fillWidth: true
-                        text: modelData
-                        elide: Text.ElideMiddle
-                        font.pixelSize: 11
-                        color: "#411d1f"
+                        spacing: 8
+                        Label {
+                            Layout.fillWidth: true
+                            text: modelData
+                            elide: Text.ElideMiddle
+                            font.pixelSize: 11
+                            color: "#411d1f"
+                        }
+                        // Forgetting deletes nothing: adding the folder back
+                        // finds its tracks again, with the listening history
+                        // they already had. The button says forget and not
+                        // remove for exactly that reason.
+                        Button {
+                            text: Chilpa.translate("Forget", Chilpa.trRev)
+                            onClicked: Chilpa.forgetLibraryFolder(modelData)
+                        }
                     }
                 }
                 Label {
