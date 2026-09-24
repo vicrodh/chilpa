@@ -117,7 +117,7 @@ impl AlbumSort {
             AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
             AlbumSort::Added => "r.added_at DESC, a.title COLLATE NOCASE",
             AlbumSort::Played => "r.plays DESC, a.title COLLATE NOCASE",
-            AlbumSort::LastPlayed => "COALESCE(r.last_played, 0) DESC, a.title COLLATE NOCASE",
+            AlbumSort::LastPlayed => "r.last_played DESC, a.title COLLATE NOCASE",
         }
     }
 }
@@ -182,7 +182,7 @@ impl Library {
             "WITH page AS MATERIALIZED (
                  SELECT a.id AS id
                  FROM albums a
-                 JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
+                 JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
                  WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE)
                  ORDER BY {}
                  LIMIT ?1 OFFSET ?2
@@ -229,7 +229,7 @@ impl Library {
                     sum(r.present_tracks),
                     max(a.artwork_path)
              FROM albums a
-             JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
+             JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
              WHERE a.album_artist <> ''
              GROUP BY a.album_artist COLLATE NOCASE
              ORDER BY a.album_artist COLLATE NOCASE
@@ -359,6 +359,38 @@ mod tests {
             titles(&lib, AlbumSort::LastPlayed),
             ["Cosmo", "Bayou", "Aqualung"],
             "the last thing that played, and what never played at the end"
+        );
+    }
+
+    #[test]
+    fn an_album_that_never_played_sorts_last_and_not_first() {
+        // The ordering used to wrap last_played in a COALESCE to put a null
+        // at the end. SQLite already sorts a null last on DESC, and the
+        // COALESCE was the reason the index could not serve the ordering.
+        // Same answer, so this is what says the answer is the same.
+        let lib = sample_library();
+        lib.db
+            .execute(
+                "INSERT INTO albums (id, title, album_artist, year)
+                 VALUES (4, 'Zeta', 'Nobody', 1990)",
+                [],
+            )
+            .unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, album_id,
+                                     duration_ms, added_at)
+                 VALUES (40, ?1, '/z.flac', 'Z', 4, 200000, 1)",
+                params![source],
+            )
+            .unwrap();
+
+        let order = titles(&lib, AlbumSort::LastPlayed);
+        assert_eq!(
+            order,
+            ["Cosmo", "Bayou", "Aqualung", "Zeta"],
+            "what played is first, and what never played comes after it, by title"
         );
     }
 
