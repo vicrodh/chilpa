@@ -2,34 +2,59 @@
 # abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
 acq
 aes
+airp
+blea
+bltn
 by
 catalogue
 cd
+cf
+cfrelease
+cfstring
+cfstringgetcstring
 ch
 # De dos letras: abreviaturas y palabras inglesas que el diccionario
+dev
 dir
+dout
 doy
 # doy: "day of year", del algoritmo de fecha civil en bridge.rs
+dprt
 # español también acepta. Sin esto, mirar las de dos letras es puro ruido.
+fourcc
 gcm
+glob
+grup
+hdmi
 hi
 # Inglés que el diccionario español también acepta
 is
+kcfstringencodingutf8
 len
 linux
+lnam
 ne
 # Nombres de crates y algoritmos que el diccionario no conoce.
+nsrt
 num
 of
+oink
 on
 os
+outp
 # Palabras que el diccionario marca como españolas y no lo son:
+pfta
 pl
 pos
 rel
 res
 # Rust y std
 si
+slay
+stm
 stream
+thun
 ti
+tran
 usb
+virt
