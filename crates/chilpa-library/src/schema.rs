@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 13;
+pub const VERSION: i64 = 14;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -27,7 +27,7 @@ pub const VERSION: i64 = 13;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -1039,6 +1039,74 @@ DELETE FROM album_rollup
 ANALYZE;
 "#;
 
+/// From 13 to 14: an album is one row, not one row per track in it.
+///
+/// `albums` carried `UNIQUE (title, album_artist, mbid)`, and the scan
+/// writes an album with no mbid, because a file's tags rarely carry one. In
+/// SQLite a unique index lets nulls through -- two nulls are not equal to
+/// each other -- so that constraint rejected nothing, and the scan's
+/// `INSERT OR IGNORE` never once ignored.
+///
+/// Every track of an album therefore wrote its own `albums` row. The lookup
+/// right after it takes the lowest id, so the tracks all ended up pointing
+/// at the same album and the library looked right; what was wrong was
+/// underneath. A ten-track album left nine rows nothing points at, and a
+/// hundred thousand tracks leave a hundred thousand of them.
+///
+/// They are also what hid `MIGRATION_V13`'s bug for a while: `album_rollup`
+/// has `album_id INTEGER PRIMARY KEY`, so a row inserted with a null gets a
+/// made-up id, and whether that is a foreign key error or silent corruption
+/// comes down to whether the id it makes up happens to name one of these
+/// leftovers.
+///
+/// The fix is an index that says what identity means with a null in it. The
+/// old table constraint stays -- taking it off means rebuilding a table two
+/// others point at -- and it is harmless: with an mbid it is a weaker form
+/// of the same rule, and without one it never did anything.
+///
+/// Before that, the leftovers are merged: whatever a duplicate knew that the
+/// one being kept did not -- its cover, its year -- moves over, then the
+/// tracks are pointed at the survivor and the rest go. `album_rollup`
+/// follows them by its own cascade.
+const MIGRATION_V14: &str = r#"
+-- What a duplicate knew and the survivor did not.
+UPDATE albums
+   SET artwork_path = COALESCE(artwork_path,
+         (SELECT other.artwork_path FROM albums other
+           WHERE other.title = albums.title
+             AND other.album_artist = albums.album_artist
+             AND ifnull(other.mbid, '') = ifnull(albums.mbid, '')
+             AND other.artwork_path IS NOT NULL
+           LIMIT 1)),
+       year = COALESCE(year,
+         (SELECT other.year FROM albums other
+           WHERE other.title = albums.title
+             AND other.album_artist = albums.album_artist
+             AND ifnull(other.mbid, '') = ifnull(albums.mbid, '')
+             AND other.year IS NOT NULL
+           LIMIT 1))
+ WHERE id IN (SELECT min(id) FROM albums
+               GROUP BY title, album_artist, ifnull(mbid, ''));
+
+-- Every track onto the one that is being kept.
+UPDATE tracks
+   SET album_id = (SELECT min(other.id) FROM albums other
+                    JOIN albums mine ON mine.id = tracks.album_id
+                   WHERE other.title = mine.title
+                     AND other.album_artist = mine.album_artist
+                     AND ifnull(other.mbid, '') = ifnull(mine.mbid, ''))
+ WHERE album_id IS NOT NULL;
+
+DELETE FROM albums
+ WHERE id NOT IN (SELECT min(id) FROM albums
+                   GROUP BY title, album_artist, ifnull(mbid, ''));
+
+CREATE UNIQUE INDEX albums_identity
+    ON albums(title, album_artist, ifnull(mbid, ''));
+
+ANALYZE;
+"#;
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1114,6 +1182,65 @@ mod tests {
             )
             .is_err(),
             "a second row for the same analyzer is refused"
+        );
+    }
+
+    #[test]
+    fn the_albums_a_scan_duplicated_are_made_one_again() {
+        // What every library written before version 14 looks like: a row per
+        // track of each album, with the tracks all pointing at the first.
+        let db = Connection::open_in_memory().unwrap();
+        stop_at(&db, 13);
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'd')", []).unwrap();
+        for id in 1..=3 {
+            db.execute(
+                "INSERT INTO albums (id, title, album_artist, year, artwork_path)
+                 VALUES (?1, 'Kind of Blue', 'Miles', ?2, ?3)",
+                rusqlite::params![
+                    id,
+                    // Only the third one got a year, and only the second a cover.
+                    if id == 3 { Some(1959) } else { None },
+                    if id == 2 { Some("/covers/kob.jpg") } else { None }
+                ],
+            )
+            .unwrap();
+        }
+        // One track on the survivor, one that a later scan left on a duplicate.
+        db.execute(
+            "INSERT INTO tracks (id, source_id, external_id, title, album_id, added_at)
+             VALUES (1, 1, '/a.flac', 'So What', 1, 0),
+                    (2, 1, '/b.flac', 'Blue in Green', 3, 0)",
+            [],
+        )
+        .unwrap();
+
+        migrate(&db).unwrap();
+
+        let (rows, id, year, cover): (i64, i64, Option<i64>, Option<String>) = db
+            .query_row(
+                "SELECT (SELECT count(*) FROM albums), id, year, artwork_path FROM albums",
+                [],
+                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(rows, 1, "one album");
+        assert_eq!(id, 1, "the first one is the one that stays");
+        assert_eq!(year, Some(1959), "and it kept what the others knew");
+        assert_eq!(cover, Some("/covers/kob.jpg".to_string()));
+
+        let on_it: i64 = db
+            .query_row("SELECT count(*) FROM tracks WHERE album_id = 1", [], |r| r.get(0))
+            .unwrap();
+        assert_eq!(on_it, 2, "both tracks point at it");
+
+        // And it cannot happen again.
+        assert!(
+            db.execute(
+                "INSERT INTO albums (title, album_artist) VALUES ('Kind of Blue', 'Miles')",
+                [],
+            )
+            .is_err(),
+            "a second row for the same album is refused"
         );
     }
 

@@ -372,10 +372,16 @@ fn cover_in_folder(path: &Path) -> Option<PathBuf> {
     loose.into_iter().next()
 }
 
-fn album_id(lib: &Library, title: &str, artist: &str, año: Option<u32>) -> rusqlite::Result<i64> {
+/// The album with that title and artist, made if it is not there yet.
+///
+/// The `OR IGNORE` leans on `albums_identity` (`MIGRATION_V14`), which is
+/// the index that knows an album with no MusicBrainz id is still the same
+/// album. The table constraint it was written against did not: it let every
+/// null through, so this made a row per track for years.
+fn album_id(lib: &Library, title: &str, artist: &str, year: Option<u32>) -> rusqlite::Result<i64> {
     lib.db.execute(
         "INSERT OR IGNORE INTO albums (title, album_artist, year) VALUES (?1, ?2, ?3)",
-        params![title, artist, año],
+        params![title, artist, year],
     )?;
     lib.db.query_row(
         "SELECT id FROM albums WHERE title = ?1 AND album_artist = ?2",
