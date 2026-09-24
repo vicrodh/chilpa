@@ -59,6 +59,16 @@ fn a_scan_reads_the_tags_and_builds_the_album() {
     assert_eq!(albums[0].album_artist, "Artist");
     assert_eq!(albums[0].track_count, 3);
 
+    // Counted in the table and not through the view that joins it: the view
+    // showed one album while `albums` held one row per track, because the
+    // unique constraint let every null mbid through and the lookup after the
+    // insert always picked the lowest id.
+    let rows: i64 = lib
+        .connection()
+        .query_row("SELECT count(*) FROM albums", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(rows, 1, "one album, not one per track");
+
     let tracks = lib.album_tracks(albums[0].id).unwrap();
     assert_eq!(tracks.len(), 3);
     assert_eq!(tracks[0].title, "Track 1", "they come in the disc's order");
@@ -265,6 +275,105 @@ fn a_copy_is_a_new_track_and_not_a_move() {
 
     scan_root(&lib, &dir).unwrap();
     assert_eq!(lib.track_count(true).unwrap(), 2, "two names, two tracks");
+
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_scan_into_a_library_on_disk_works_the_same() {
+    // Every other test here uses a library in memory. That is not the same
+    // thing: a library on disk has a write-ahead log, a busy timeout and a
+    // file another process can hold. The bug this test exists for -- a
+    // rescan failing on a track with no album -- was invisible in memory and
+    // came out the first time five thousand files went into a real file.
+    let Some(dir) = album("on-disk", 3) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    // A loose file, in no album: what "Open an audio file" leaves behind.
+    let loose = dir.join("loose.flac");
+    std::fs::copy(dir.join("disc 1").join("01-track.flac"), &loose).unwrap();
+    let stripped = std::process::Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-i"])
+        .arg(&loose)
+        .args(["-map_metadata", "-1", "-c:a", "flac"])
+        .arg(dir.join("bare.flac"))
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false);
+    if !stripped {
+        eprintln!("ffmpeg could not strip the tags: skipped");
+        let _ = std::fs::remove_dir_all(dir);
+        return;
+    }
+    std::fs::remove_file(&loose).unwrap();
+
+    let db = dir.join("library.db");
+    let lib = Library::open(&db).unwrap();
+    let first = scan_root(&lib, &dir).unwrap();
+    assert_eq!(first.read, 4, "three in the album and one on its own");
+
+    // Without this the test passes without ever reaching the bug.
+    let loose_tracks: i64 = lib
+        .connection()
+        .query_row("SELECT count(*) FROM tracks WHERE album_id IS NULL", [], |r| r.get(0))
+        .unwrap();
+    assert_eq!(loose_tracks, 1, "one track really has no album");
+
+    // The rescan is the one that used to fail.
+    let again = scan_root(&lib, &dir).unwrap();
+    assert_eq!(again.read, 0, "nothing changed");
+    assert_eq!(again.unchanged, 4);
+    assert_eq!(again.missing, 0);
+
+    assert!(lib.check().unwrap().is_empty(), "and nothing points at nothing");
+    assert_eq!(lib.track_count(false).unwrap(), 4);
+
+    drop(lib);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn the_library_can_be_read_while_it_is_being_scanned() {
+    // The interface reads on its own connection while the scan writes on
+    // another. WAL is what makes that work, and a batch is what keeps the
+    // wait short; this is the test that says both are still true.
+    let Some(dir) = album("while-scanning", 40) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let db = dir.join("library.db");
+    let writer = Library::open(&db).unwrap();
+    let reader = Library::open(&db).unwrap();
+
+    let stop = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let flag = stop.clone();
+    let reads = std::thread::spawn(move || {
+        let mut done = 0usize;
+        let mut slowest = std::time::Duration::ZERO;
+        while !flag.load(std::sync::atomic::Ordering::Relaxed) {
+            let start = std::time::Instant::now();
+            // What the window asks for while a scan runs.
+            reader.albums_sorted(chilpa_library::AlbumSort::Artist, 50, 0).expect("the grid");
+            reader.stats().expect("the stats");
+            reader.search("Track", 20).expect("the search");
+            slowest = slowest.max(start.elapsed());
+            done += 1;
+        }
+        (done, slowest)
+    });
+
+    scan_root(&writer, &dir).unwrap();
+    stop.store(true, std::sync::atomic::Ordering::Relaxed);
+    let (done, slowest) = reads.join().unwrap();
+
+    assert!(done > 0, "the reader never got a turn");
+    assert!(
+        slowest < std::time::Duration::from_secs(1),
+        "a read waited {slowest:?} on the scan; the point of WAL and of batching is that it \
+         does not"
+    );
+    assert_eq!(writer.track_count(false).unwrap(), 40);
 
     let _ = std::fs::remove_dir_all(dir);
 }
