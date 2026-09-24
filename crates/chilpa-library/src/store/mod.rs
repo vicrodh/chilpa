@@ -579,6 +579,53 @@ mod tests {
     }
 
     #[test]
+    fn rebuilding_the_search_index_leaves_every_trigger_working() {
+        // MIGRATION_V12 drops the search table and its five triggers and
+        // makes them again, with their text repeated from MIGRATION_V7
+        // because a migration cannot be edited once it has shipped. Two
+        // copies drift, so this drives all five after the migration has run.
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'Kind of Blue', 'Miles')", [])
+            .unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id,
+                                     duration_ms, added_at)
+                 VALUES (1, ?1, '/a.flac', 'So What', 'Miles Davis', 1, 200000, 0)",
+                params![source],
+            )
+            .unwrap();
+
+        // Inserting indexes it, by title, by artist and by its album.
+        assert_eq!(lib.search("So What", 10).unwrap().len(), 1, "by title");
+        assert_eq!(lib.search("Davis", 10).unwrap().len(), 1, "by artist");
+        assert_eq!(lib.search("Kind of Blue", 10).unwrap().len(), 1, "by album");
+
+        // A genre arriving and leaving refreshes it.
+        lib.db.execute("INSERT INTO genres (id, name) VALUES (1, 'Modal')", []).unwrap();
+        lib.db.execute("INSERT INTO track_genres (track_id, genre_id) VALUES (1, 1)", []).unwrap();
+        assert_eq!(lib.search("Modal", 10).unwrap().len(), 1, "by genre");
+        lib.db.execute("DELETE FROM track_genres WHERE track_id = 1", []).unwrap();
+        assert!(lib.search("Modal", 10).unwrap().is_empty(), "and gone when the genre goes");
+
+        // Retitling it moves it.
+        lib.db.execute("UPDATE tracks SET title = 'Blue in Green' WHERE id = 1", []).unwrap();
+        assert!(lib.search("So What", 10).unwrap().is_empty(), "not under the old title");
+        assert_eq!(lib.search("Blue in Green", 10).unwrap().len(), 1, "under the new one");
+
+        // And what typing looks like: two and three letters, which is what
+        // the prefix index is for.
+        assert_eq!(lib.search("Bl", 10).unwrap().len(), 1, "two letters");
+        assert_eq!(lib.search("Gre", 10).unwrap().len(), 1, "three letters");
+
+        // Deleting it takes it out.
+        lib.db.execute("DELETE FROM tracks WHERE id = 1", []).unwrap();
+        assert!(lib.search("Blue in Green", 10).unwrap().is_empty(), "and gone when the track goes");
+    }
+
+    #[test]
     fn upgrading_a_library_leaves_a_copy_of_what_it_was() {
         // The copy is only worth having if it opens. This one is opened as a
         // library and asked for the track that was in it.
