@@ -48,6 +48,35 @@ pub struct Library {
     pub(crate) db: Connection,
 }
 
+/// A transaction of one's own, or somebody else's.
+///
+/// `Deref` to a `Connection` either way, so the code that uses it does not
+/// have to know which. `finish` commits when it is ours and does nothing
+/// when it is not: whoever opened the outer one decides when it lands.
+pub(crate) enum MaybeTransaction<'a> {
+    Own(rusqlite::Transaction<'a>),
+    Someone(&'a Connection),
+}
+
+impl MaybeTransaction<'_> {
+    fn finish(self) -> rusqlite::Result<()> {
+        match self {
+            MaybeTransaction::Own(tx) => tx.commit(),
+            MaybeTransaction::Someone(_) => Ok(()),
+        }
+    }
+}
+
+impl std::ops::Deref for MaybeTransaction<'_> {
+    type Target = Connection;
+    fn deref(&self) -> &Connection {
+        match self {
+            MaybeTransaction::Own(tx) => tx,
+            MaybeTransaction::Someone(db) => db,
+        }
+    }
+}
+
 impl Library {
     /// The connection, for tests that need to seed data in one go.
     ///
@@ -129,12 +158,31 @@ impl Library {
             .query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
     }
 
+    /// A transaction, unless the caller already opened one.
+    ///
+    /// SQLite has no nested `BEGIN`: asking for one inside another is an
+    /// error, not a no-op. A method that wants its writes to land together
+    /// needs one when it is called on its own and needs to stay out of the
+    /// way when it is called from inside a bigger one.
+    pub(crate) fn own_transaction(&self) -> rusqlite::Result<MaybeTransaction<'_>> {
+        if self.db.is_autocommit() {
+            Ok(MaybeTransaction::Own(self.db.unchecked_transaction()?))
+        } else {
+            Ok(MaybeTransaction::Someone(&self.db))
+        }
+    }
+
     /// Sets those genres as a track's, dropping the ones that no longer apply.
     ///
     /// They are replaced, not added to: if a file was retagged, the old genres
     /// are no longer its own.
+    ///
+    /// The transaction is its own only when there is not one already. SQLite
+    /// has no nested `BEGIN`, and a scan wraps whole batches of files in one
+    /// (`scan.rs`), so opening a second here is an error and not a nicety:
+    /// inside somebody else's transaction, theirs is what makes this atomic.
     pub fn set_track_genres(&self, track_id: i64, genres: &[String]) -> rusqlite::Result<()> {
-        let tx = self.db.unchecked_transaction()?;
+        let tx = self.own_transaction()?;
         tx.execute("DELETE FROM track_genres WHERE track_id = ?1", params![track_id])?;
         {
             let mut insert = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
@@ -152,7 +200,7 @@ impl Library {
                 link.execute(params![track_id, id])?;
             }
         }
-        tx.commit()
+        tx.finish()
     }
 
     /// The library's genres, with how many present tracks each has.
@@ -630,6 +678,42 @@ mod tests {
             })
             .unwrap();
         assert_eq!((album, present), (1, 1), "it moved into the album and was counted");
+    }
+
+    #[test]
+    fn writing_from_inside_a_transaction_does_not_ask_for_another() {
+        // SQLite has no nested BEGIN, and a scan wraps batches of files in
+        // one while calling straight into these. Before this, scanning a
+        // file with a genre tag failed with "cannot start a transaction
+        // within a transaction" -- and only when the file had genres, which
+        // is why the tests that used bare files never saw it.
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist,
+                                     duration_ms, added_at)
+                 VALUES (1, ?1, '/a.flac', 'One', 'Someone', 200000, 0)",
+                params![source],
+            )
+            .unwrap();
+
+        let tx = lib.db.unchecked_transaction().unwrap();
+        lib.set_track_genres(1, &["Rock".into(), "Jazz".into()]).expect("inside a transaction");
+        let playlist = lib.create_playlist(source, "Mine", "").unwrap();
+        lib.set_playlist_entries(
+            playlist,
+            &[PlaylistEntry { track_id: Some(1), external_id: "/a.flac".into() }],
+        )
+        .expect("inside a transaction");
+        tx.commit().unwrap();
+
+        assert_eq!(lib.track_genres(1).unwrap(), vec!["Jazz".to_string(), "Rock".to_string()]);
+        assert_eq!(lib.playlist_entries(playlist).unwrap().len(), 1);
+
+        // And on their own they still land together.
+        lib.set_track_genres(1, &["Soul".into()]).unwrap();
+        assert_eq!(lib.track_genres(1).unwrap(), vec!["Soul".to_string()]);
     }
 
     #[test]

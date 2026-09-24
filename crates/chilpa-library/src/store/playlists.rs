@@ -83,7 +83,9 @@ impl Library {
         playlist_id: i64,
         entries: &[PlaylistEntry],
     ) -> rusqlite::Result<()> {
-        let tx = self.db.unchecked_transaction()?;
+        // Its own transaction unless the caller already has one: SQLite has
+        // no nested BEGIN. See `Library::own_transaction`.
+        let tx = self.own_transaction()?;
         tx.execute("DELETE FROM playlist_tracks WHERE playlist_id = ?1", params![playlist_id])?;
         {
             let mut stmt = tx.prepare(
@@ -98,7 +100,7 @@ impl Library {
             "UPDATE playlists SET updated_at = ?2 WHERE id = ?1",
             params![playlist_id, now_unix()],
         )?;
-        tx.commit()
+        tx.finish()
     }
 
     /// The playlists, with how many tracks each carries.
