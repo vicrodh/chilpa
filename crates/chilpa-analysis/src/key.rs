@@ -1,28 +1,27 @@
-//! Estimar la tonalidad de una pista.
+//! Estimating a track's key.
 //!
-//! Se arma un cromagrama —cuánta energía hay en cada una de las doce notas,
-//! sin importar la octava— y se compara contra los perfiles de
-//! Krumhansl-Schmuckler, que son los que salieron de preguntarle a gente
-//! qué tan bien encaja cada nota en un tono. La rotación que mejor
-//! correlaciona es la tonalidad.
+//! A chromagram is built — how much energy sits on each of the twelve
+//! pitch classes, whatever the octave — and compared against the
+//! Krumhansl-Schmuckler profiles, which came out of asking people how well
+//! each note fits in a key. The rotation that correlates best is the key.
 //!
-//! Lo que hay que decir de esto:
+//! What has to be said about this:
 //!
-//! - **Se equivoca con lo relativo.** Do mayor y la menor usan las mismas
-//!   notas; lo que las distingue es cuál se siente como reposo, y eso no
-//!   está en el cromagrama. Por eso se reporta la confianza.
-//! - **Se equivoca con música que cambia de tono.** Devuelve el tono que
-//!   más pesa en lo que se miró, no una historia.
-//! - **Sale en dos notaciones.** La musical ("F#m") y la de Camelot ("11A"),
-//!   que es con la que se mezcla.
+//! - **It confuses relative keys.** A major and its relative minor use the
+//!   same notes; what tells them apart is which one feels like rest, and
+//!   that is not in the chromagram. Hence the confidence figure.
+//! - **It is wrong about music that modulates.** It returns the key that
+//!   weighs most over what was examined, not a history.
+//! - **It comes out in two notations.** The musical one ("F#m") and the
+//!   Camelot one ("11A"), which is the one you mix with.
 
 use std::f32::consts::PI;
 
-/// Los nombres de las doce notas, con sostenidos.
+/// The names of the twelve pitch classes, with sharps.
 const NOTES: [&str; 12] =
     ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
 
-/// Perfiles de Krumhansl-Kessler para mayor y menor.
+/// Krumhansl-Kessler profiles for major and minor.
 const MAYOR: [f32; 12] = [
     6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88,
 ];
@@ -30,23 +29,23 @@ const MINOR: [f32; 12] = [
     6.33, 2.68, 3.52, 5.38, 2.60, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17,
 ];
 
-/// Cuántas muestras entran en cada ventana. A 11 025 Hz son 0.74 s, que dan
-/// 1.35 Hz por bin: tres bins por semitono en el registro grave.
+/// How many samples fit in a window. At 11,025 Hz that is 0.74 s, giving
+/// 1.35 Hz per bin: three bins per semitone down low.
 const WINDOW: usize = 8192;
 
-/// La tonalidad que se encontró.
+/// The key that was found.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Key {
-    /// Como se escribe: "C", "F#m".
+    /// How it is written: "C", "F#m".
     pub name: String,
-    /// Como se mezcla: "8B", "11A".
+    /// How you mix with it: "8B", "11A".
     pub camelot: String,
-    /// De 0 a 1. Por debajo de 0.6 el perfil apenas distingue una cosa de
-    /// otra y más vale no afirmar nada.
+    /// From 0 to 1. Below 0.6 the profile barely tells one from another and
+    /// it is better to claim nothing.
     pub confidence: f32,
 }
 
-/// Estima la tonalidad de una señal mono.
+/// Estimates the key of a mono signal.
 pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Key> {
     let chroma = chroma(samples, sample_rate_hz)?;
     let (index, is_major, confidence) = best_profile(&chroma)?;
@@ -57,15 +56,15 @@ pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Key> {
     })
 }
 
-/// Cuánta energía hay en cada nota, sumando todas las octavas.
+/// How much energy sits on each pitch class, summing every octave.
 pub fn chroma(samples: &[f32], sample_rate_hz: u32) -> Option<[f32; 12]> {
     if sample_rate_hz == 0 || samples.len() < WINDOW {
         return None;
     }
     let half = WINDOW / 2;
     let per_bin = sample_rate_hz as f32 / WINDOW as f32;
-    // Se mira de 65 Hz (C2) a 2100 Hz (C7): abajo está el ruido del bombo y
-    // arriba los armónicos ya no dicen de qué tono es.
+    // Looked at from 65 Hz (C2) to 2100 Hz (C7): below is kick drum noise and
+    // above, the harmonics no longer say what key it is in.
     let k_min = ((65.0 / per_bin) as usize).max(1);
     let k_max = ((2100.0 / per_bin) as usize).min(half - 1);
     if k_max <= k_min {
@@ -112,7 +111,7 @@ pub fn chroma(samples: &[f32], sample_rate_hz: u32) -> Option<[f32; 12]> {
     Some(chroma)
 }
 
-/// La rotación y el modo que mejor correlacionan, con su confianza.
+/// The rotation and mode that correlate best, with their confidence.
 fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
     let mut results: Vec<(usize, bool, f32)> = Vec::with_capacity(24);
     for tonic in 0..12 {
@@ -126,14 +125,14 @@ fn best_profile(chroma: &[f32; 12]) -> Option<(usize, bool, f32)> {
     if !best.2.is_finite() || best.2 <= 0.0 {
         return None;
     }
-    // La confianza es qué tanto le gana al segundo lugar: un cromagrama que
-    // encaja igual de bien en dos tonos no dice nada.
+    // Confidence is how far it beats the runner-up: a chromagram that fits
+    // two keys equally well says nothing.
     let second = results.get(1).map(|r| r.2).unwrap_or(0.0).max(0.0);
     let confidence = ((best.2 - second) / best.2).clamp(0.0, 1.0);
     Some((best.0, best.1, confidence))
 }
 
-/// Correlación de Pearson entre dos vectores del mismo largo.
+/// Pearson correlation between two vectors of the same length.
 fn correlation(a: &[f32], b: &[f32]) -> f32 {
     let n = a.len() as f32;
     let (ma, mb) = (a.iter().sum::<f32>() / n, b.iter().sum::<f32>() / n);
@@ -156,19 +155,19 @@ fn name(index: usize, is_major: bool) -> String {
     format!("{}{}", NOTES[index % 12], if is_major { "" } else { "m" })
 }
 
-/// La rueda de Camelot: el número dice qué tan lejos está en el círculo de
-/// quintas, y la letra si es menor (A) o mayor (B).
+/// The Camelot wheel: the number says how far along the circle of fifths it
+/// sits, and the letter whether it is minor (A) or major (B).
 fn camelot(index: usize, is_major: bool) -> String {
-    // El círculo de quintas empezando en do. Do mayor es 8B y la menor es
-    // 8A, y de ahí se cuenta.
+    // The circle of fifths starting at C. C major is 8B and A minor is 8A,
+    // and it counts from there.
     let quintas = [0usize, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5];
     let pos = quintas.iter().position(|q| *q == index % 12).unwrap_or(0);
     let number = if is_major {
-        // Do está en la posición 0 y le toca el 8.
+        // C sits at position 0 and gets 8.
         (pos + 7) % 12 + 1
     } else {
-        // La está en la posición 3 y le toca el 8: la rueda menor va tres
-        // quintas atrás de la mayor.
+        // A sits at position 3 and gets 8: the minor wheel runs three fifths
+        // behind the major one.
         (pos + 4) % 12 + 1
     };
     format!("{number}{}", if is_major { "B" } else { "A" })
@@ -178,7 +177,7 @@ fn camelot(index: usize, is_major: bool) -> String {
 mod tests {
     use super::*;
 
-    /// La frecuencia de una nota MIDI.
+    /// A MIDI note's frequency.
     fn hz(midi: f32) -> f32 {
         440.0 * 2f32.powf((midi - 69.0) / 12.0)
     }
