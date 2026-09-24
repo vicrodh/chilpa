@@ -701,22 +701,113 @@ ANALYZE;
 mod tests {
     use super::*;
 
-    fn memoria() -> Connection {
+    fn in_memory() -> Connection {
         let db = Connection::open_in_memory().unwrap();
         migrate(&db).unwrap();
         db
     }
 
+    /// A database stopped at an older version, with whatever was in it then.
+    fn at_version(v: usize) -> Connection {
+        let db = Connection::open_in_memory().unwrap();
+        for step in STEPS.iter().take(v) {
+            db.execute_batch(step).unwrap();
+        }
+        db.execute_batch(&format!("PRAGMA user_version = {v}")).unwrap();
+        db
+    }
+
+    #[test]
+    fn an_older_library_is_brought_up_and_keeps_what_it_had() {
+        // Nothing tested the upgrade path, which is the one every library
+        // that already exists takes. This one starts where a shipped Chilpa
+        // left it and walks it to today.
+        let db = at_version(8);
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
+            .unwrap();
+        db.execute(
+            "INSERT INTO tracks (id, source_id, external_id, title, added_at)
+             VALUES (1, 1, '/a.flac', 'One', 0)",
+            [],
+        )
+        .unwrap();
+        // The same track measured twice by the same analyzer, and once by
+        // another. Version 8 held all three.
+        for (analyzer, version, bpm) in [("chilpa", 1, 130.0), ("chilpa", 2, 90.0), ("other", 1, 77.0)] {
+            db.execute(
+                "INSERT INTO audio_features (track_id, analyzer, version, bpm, analyzed_at)
+                 VALUES (1, ?1, ?2, ?3, 0)",
+                rusqlite::params![analyzer, version, bpm],
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            db.query_row("SELECT count(*) FROM audio_features", [], |r| r.get::<_, i64>(0))
+                .unwrap(),
+            3
+        );
+
+        migrate(&db).unwrap();
+
+        assert_eq!(
+            db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(),
+            VERSION
+        );
+        let rows: Vec<(String, i64, f64)> = db
+            .prepare("SELECT analyzer, version, bpm FROM audio_features ORDER BY analyzer")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .map(|r| r.unwrap())
+            .collect();
+        assert_eq!(
+            rows,
+            vec![("chilpa".to_string(), 2, 90.0), ("other".to_string(), 1, 77.0)],
+            "the newest of each analyzer, and the superseded one gone"
+        );
+        assert_eq!(
+            db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0))
+                .unwrap(),
+            "One",
+            "and the track it was about is still there"
+        );
+
+        // And what the old key allowed cannot happen again.
+        assert!(
+            db.execute(
+                "INSERT INTO audio_features (track_id, analyzer, version, bpm, analyzed_at)
+                 VALUES (1, 'chilpa', 3, 999.0, 0)",
+                [],
+            )
+            .is_err(),
+            "a second row for the same analyzer is refused"
+        );
+    }
+
+    #[test]
+    fn every_version_in_between_can_be_walked_forward() {
+        // A library can have stopped at any of them.
+        for v in 0..STEPS.len() {
+            let db = at_version(v);
+            migrate(&db).unwrap_or_else(|e| panic!("from version {v}: {e}"));
+            assert_eq!(
+                db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(),
+                VERSION,
+                "from version {v}"
+            );
+        }
+    }
+
     #[test]
     fn the_schema_is_created_and_stamped_with_its_version() {
-        let db = memoria();
+        let db = in_memory();
         let v: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
         assert_eq!(v, VERSION);
     }
 
     #[test]
     fn migrating_twice_does_nothing_the_second_time() {
-        let db = memoria();
+        let db = in_memory();
         migrate(&db).unwrap();
         let tablas: i64 = db
             .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
@@ -756,7 +847,7 @@ mod tests {
 
     #[test]
     fn tempo_confidence_has_a_column_of_its_own() {
-        let db = memoria();
+        let db = in_memory();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
         db.execute(
@@ -782,7 +873,7 @@ mod tests {
 
     #[test]
     fn a_genre_is_the_same_however_it_is_spelled() {
-        let db = memoria();
+        let db = in_memory();
         db.execute("INSERT INTO genres (name) VALUES ('Rock')", []).unwrap();
         assert!(
             db.execute("INSERT INTO genres (name) VALUES ('rock')", []).is_err(),
@@ -792,7 +883,7 @@ mod tests {
 
     #[test]
     fn a_playlist_never_repeats_a_position() {
-        let db = memoria();
+        let db = in_memory();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
         db.execute(
@@ -825,7 +916,7 @@ mod tests {
 
     #[test]
     fn two_tracks_cannot_share_a_source_and_an_external_id() {
-        let db = memoria();
+        let db = in_memory();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
         let insert = |external: &str| {
@@ -842,7 +933,7 @@ mod tests {
 
     #[test]
     fn the_play_log_accepts_what_the_stats_need() {
-        let db = memoria();
+        let db = in_memory();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
             .unwrap();
         db.execute(
