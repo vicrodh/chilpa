@@ -10,6 +10,7 @@
 //! 3. **DoP is never interrupted.** A partial write resumes where it left
 //!    off, and gaps are filled with DSD silence, not with zeros.
 
+pub mod backend;
 pub mod capture;
 pub mod dop;
 pub mod format;

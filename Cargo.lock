@@ -424,6 +424,9 @@ dependencies = [
 [[package]]
 name = "chilpa-audio"
 version = "0.0.0"
+dependencies = [
+ "chilpa-i18n",
+]
 
 [[package]]
 name = "chilpa-auth"

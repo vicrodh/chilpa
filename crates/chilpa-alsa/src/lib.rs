@@ -5,9 +5,11 @@
 //! cannot take the format, that is said and that is all. In QBZ that fall
 //! back was silent and the UI kept saying "bit-perfect".
 
+pub mod backends;
 pub mod devices;
 pub mod volume;
 
+pub use backends::{Alsa, System};
 pub use devices::{list, Device};
 pub use volume::{Level, Volume};
 

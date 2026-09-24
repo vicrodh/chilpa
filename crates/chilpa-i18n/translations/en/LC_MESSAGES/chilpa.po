@@ -451,6 +451,9 @@ msgstr ""
 msgid "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means."
 msgstr ""
 
+msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
+msgstr ""
+
 msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
 msgstr ""
 
@@ -485,6 +488,9 @@ msgid "Wave"
 msgstr ""
 
 msgid "What you play most"
+msgstr ""
+
+msgid "Wherever the system is sending sound"
 msgstr ""
 
 msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
@@ -697,6 +703,9 @@ msgid "no cover"
 msgstr ""
 
 msgid "no pulse"
+msgstr ""
+
+msgid "no sound card is listed in /proc/asound"
 msgstr ""
 
 msgid "not supported: {}"
@@ -1015,6 +1024,9 @@ msgid "this output has no volume control of its own"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "through {}"
 msgstr ""
 
 msgid "track {}: {}"
