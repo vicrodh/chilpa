@@ -1,61 +1,60 @@
-//! Estimar el tempo de una pista.
+//! Estimating a track's tempo.
 //!
-//! El método es el de siempre y no tiene misterio: se saca una envolvente de
-//! ataques, se autocorrelaciona, y el lag que más se repite es el pulso.
+//! The method is the usual one and holds no mystery: pull an onset envelope,
+//! autocorrelate it, and the lag that repeats most is the beat.
 //!
-//! Lo que sí importa decir:
+//! What does matter to say:
 //!
-//! - **Es una estimación, y se llama así.** Un detector de tempo se equivoca
-//!   con música que no lleva pulso marcado, y se equivoca al doble o a la
-//!   mitad con la que sí. Chilpa guarda el número con la versión del
-//!   analizador para poder recalcularlo cuando haya uno mejor.
-//! - **La octava se resuelve, no se ignora.** 75 y 150 explican igual de
-//!   bien la misma señal; se prefiere el rango en el que de verdad se
-//!   cuenta la música, y esa preferencia está aquí escrita, no escondida.
-//! - **No se lee la pista entera.** Con un minuto del centro alcanza, y
-//!   analizar una biblioteca no puede costar lo que costaría reproducirla.
+//! - **It is an estimate, and it is called one.** A tempo detector gets
+//!   music without a marked beat wrong, and gets music that has one wrong
+//!   by double or half. Chilpa stores the number with the analyzer's
+//!   version so it can be recomputed when there is a better one.
+//! - **The octave is resolved, not ignored.** 75 and 150 explain the same
+//!   signal equally well; the range music is actually counted in wins, and
+//!   that preference is written here, not hidden.
+//! - **The whole track is not read.** A minute from the middle is enough,
+//!   and analyzing a library cannot cost what playing it would.
 
-/// A qué frecuencia se trabaja. Para el pulso no hace falta más, y baja el
-/// costo de la autocorrelación a la décima parte.
+/// The rate this works at. The beat needs no more, and it cuts the cost of
+/// the autocorrelation to a tenth.
 pub const ANALYSIS_HZ: u32 = 11_025;
 
-/// Cuántas muestras avanza cada cuadro de la envolvente. A 11 025 Hz son
-/// unos 12 ms.
+/// How many samples each envelope frame advances. At 11,025 Hz that is
+/// about 12 ms.
 ///
-/// Con cuadros más largos, un tempo cuyo periodo no cae en un número
-/// redondo de cuadros reparte su correlación entre dos lags y pierde contra
-/// su propia mitad. Eso es exactamente lo que hacía que 140 BPM saliera
-/// como 70.
+/// With longer frames, a tempo whose period does not land on a round number
+/// of frames splits its correlation between two lags and loses to its own
+/// half. That is exactly what made 140 BPM come out as 70.
 const HOP: usize = 128;
 
-/// El rango en el que se busca. Fuera de esto no hay música que contar.
+/// The range searched. Outside it there is no music to count.
 pub const BPM_MIN: f32 = 50.0;
 pub const BPM_MAX: f32 = 210.0;
 
-/// Dónde se prefiere caer cuando dos respuestas explican lo mismo.
+/// Where to prefer landing when two answers explain the same thing.
 const PREFERRED_MIN: f32 = 80.0;
 const PREFERRED_MAX: f32 = 160.0;
 
-/// Lo que se pudo decir del pulso.
+/// What could be said about the beat.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Tempo {
     pub bpm: f32,
-    /// De 0 a 1: qué tan marcado está el pulso. Por debajo de 0.1 más vale
-    /// no decir nada que decir un número inventado.
+    /// From 0 to 1: how pronounced the beat is. Below 0.1 it is better to say
+    /// nothing than to say an invented number.
     pub confidence: f32,
 }
 
-/// Estima el tempo de una señal mono.
+/// Estimates the tempo of a mono signal.
 ///
-/// Devuelve `None` cuando no hay material suficiente o cuando no se
-/// encuentra un pulso: un reproductor que inventa 120 BPM para todo no le
-/// sirve a nadie.
+/// Returns `None` when there is not enough material or when no beat is
+/// found: a player that invents 120 BPM for everything is no use to
+/// anyone.
 pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Tempo> {
     if sample_rate_hz == 0 {
         return None;
     }
     let mono = remuestrear(samples, sample_rate_hz, ANALYSIS_HZ);
-    // Menos de ocho segundos no alcanzan para contar compases.
+    // Less than eight seconds is not enough to count bars.
     if mono.len() < ANALYSIS_HZ as usize * 8 {
         return None;
     }
@@ -66,10 +65,10 @@ pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Tempo> {
     tempo_from_envelope(&envelope, ANALYSIS_HZ as f32 / HOP as f32)
 }
 
-/// La envolvente de ataques: cuánto subió la energía de un cuadro al otro.
+/// The onset envelope: how much energy rose from one frame to the next.
 ///
-/// Solo las subidas. Una bajada de energía no es un golpe, y contarla
-/// duplicaría el pulso.
+/// Rises only. A drop in energy is not a hit, and counting it would double
+/// the beat.
 fn onset_envelope(mono: &[f32]) -> Vec<f32> {
     let frames = mono.len() / HOP;
     let mut energy = Vec::with_capacity(frames);

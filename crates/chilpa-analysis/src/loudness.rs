@@ -1,32 +1,32 @@
-//! Medir qué tan fuerte suena una pista, en LUFS.
+//! Measuring how loud a track sounds, in LUFS.
 //!
-//! Es la UIT-R BS.1770: se filtra con la curva K —que es lo que se parece a
-//! cómo oye una cabeza—, se mide la potencia en bloques de 400 ms y se
-//! promedian solo los bloques que pasan dos compuertas, para que el silencio
-//! entre canciones no baje la cuenta.
+//! This is ITU-R BS.1770: filter with the K curve — which is what resembles
+//! how a head hears — measure power in 400 ms blocks, and average only the
+//! blocks that pass two gates, so the silence between songs does not drag
+//! the reading down.
 //!
-//! **Esto mide, no corrige.** Aplicar una ganancia cambiaría las muestras y
-//! ahí se acabó el bit-perfect. Lo que hace este módulo es decir un número;
-//! qué se hace con él es otra decisión.
+//! **This measures, it does not correct.** Applying a gain would change the
+//! samples and there goes bit-perfect. What this module does is say a
+//! number; what is done with it is another decision.
 //!
-//! Se mide al vuelo, bloque por bloque: una pista de una hora no tiene por
-//! qué caber en memoria para saber qué tan fuerte suena.
+//! Measured on the fly, block by block: an hour-long track has no business
+//! fitting in memory just to learn how loud it is.
 
-/// El desplazamiento de la norma. Cancela la ganancia de la curva K en 1 kHz,
-/// que es por lo que un seno de 0 dBFS en un canal mide -3.01 LKFS.
+/// The standard's offset. It cancels the K curve's gain at 1 kHz, which is
+/// why a 0 dBFS sine on one channel measures -3.01 LKFS.
 const OFFSET: f64 = -0.691;
 
-/// Por debajo de esto un bloque es silencio y no cuenta.
+/// Below this a block is silence and does not count.
 const ABSOLUTE_GATE: f64 = -70.0;
 
-/// La segunda compuerta va diez unidades abajo del promedio.
+/// The second gate sits ten units below the average.
 const RELATIVE_GATE: f64 = -10.0;
 
-/// Cuánto dura un bloque, y cuánto se avanza entre uno y otro.
+/// How long a block lasts, and how far apart two of them start.
 const BLOCK_MS: f64 = 400.0;
 const PASO_MS: f64 = 100.0;
 
-/// Un biquad en forma directa II transpuesta.
+/// A biquad in transposed direct form II.
 #[derive(Clone, Copy, Debug, Default)]
 struct Biquad {
     b0: f64,
@@ -46,8 +46,8 @@ impl Biquad {
         y
     }
 
-    /// El primer tramo de la curva K: un realce de agudos, el que imita la
-    /// cabeza.
+    /// The K curve's first stage: a treble shelf, the one that imitates the
+    /// head.
     fn boost(rate: f64) -> Self {
         let (f0, gain_db, q) = (1681.974450955533, 3.999843853973347, 0.7071752369554196);
         let k = (std::f64::consts::PI * f0 / rate).tan();
@@ -65,8 +65,8 @@ impl Biquad {
         }
     }
 
-    /// El segundo tramo: quita lo que está tan abajo que no se oye como
-    /// volumen.
+    /// The second stage: it takes out what sits so low it is not heard as
+    /// loudness.
     fn high_pass(rate: f64) -> Self {
         let (f0, q) = (38.13547087602444, 0.5003270373238773);
         let k = (std::f64::consts::PI * f0 / rate).tan();
@@ -83,35 +83,35 @@ impl Biquad {
     }
 }
 
-/// El peso de cada canal, según la norma.
+/// Each channel's weight, per the standard.
 ///
-/// Los frontales pesan uno; los de atrás, un poco más, porque el envolvente
-/// se percibe más fuerte de lo que mide.
+/// The fronts weigh one; the rears a little more, because surround is
+/// perceived as louder than it measures.
 fn peso(canal: usize, channels: usize) -> f64 {
-    // Con estéreo o mono no hay traseros que pesar.
+    // With stereo or mono there are no rears to weigh.
     if channels <= 2 {
         return 1.0;
     }
-    // En 5.1 el orden habitual es I, D, C, LFE, TI, TD.
+    // In 5.1 the usual order is L, R, C, LFE, Ls, Rs.
     match canal {
-        3 => 0.0,           // el LFE no entra en la cuenta
-        4 | 5 => 1.41,      // los traseros
+        3 => 0.0,           // the LFE does not count
+        4 | 5 => 1.41,      // the rears
         _ => 1.0,
     }
 }
 
-/// Un medidor que se va comiendo la señal bloque por bloque.
+/// A meter that eats the signal block by block.
 pub struct Meter {
     channels: usize,
     filters: Vec<(Biquad, Biquad)>,
-    /// Cuántas muestras por canal lleva el bloque en curso.
+    /// How many samples per channel the current block holds.
     in_block: usize,
     samples_per_block: usize,
     samples_per_step: usize,
-    /// La suma de cuadrados de cada canal, por cada tramo de `PASO_MS`.
+    /// The sum of squares per channel, for each `STEP_MS` stretch.
     segments: Vec<Vec<f64>>,
     current_segment: Vec<f64>,
-    /// La potencia de cada bloque ya cerrado.
+    /// The power of each block already closed.
     blocks: Vec<f64>,
 }
 
@@ -136,7 +136,7 @@ impl Meter {
         })
     }
 
-    /// Come un pedazo de audio intercalado por canal.
+    /// Eats a chunk of channel-interleaved audio.
     pub fn push(&mut self, interleaved: &[f32]) {
         for frame in interleaved.chunks_exact(self.channels) {
             for (c, m) in frame.iter().enumerate() {
@@ -154,8 +154,8 @@ impl Meter {
     fn close_segment(&mut self) {
         self.segments.push(std::mem::replace(&mut self.current_segment, vec![0.0; self.channels]));
         self.in_block = 0;
-        // Un bloque son cuatro tramos; se cierra uno por cada tramo nuevo,
-        // que es el traslape del 75 % que pide la norma.
+        // A block is four stretches; one closes for every new stretch, which
+        // is the 75% overlap the standard asks for.
         let per_block = self.samples_per_block / self.samples_per_step;
         if self.segments.len() >= per_block {
             let from = self.segments.len() - per_block;
