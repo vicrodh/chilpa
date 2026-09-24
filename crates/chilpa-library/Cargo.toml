@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Where the library file goes, per platform (ADR-010 M3).
+chilpa-dirs.workspace = true
 # Why a library could not be opened is read by the user.
 chilpa-i18n.workspace = true
 chilpa-models.workspace = true

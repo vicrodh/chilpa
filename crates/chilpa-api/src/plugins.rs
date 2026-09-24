@@ -545,13 +545,7 @@ impl Plugins {
 impl Chilpa {
     /// Where the plugins live.
     pub fn plugins_dir() -> PathBuf {
-        let base = std::env::var_os("XDG_DATA_HOME")
-            .map(PathBuf::from)
-            .or_else(|| {
-                std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".local").join("share"))
-            })
-            .unwrap_or_else(std::env::temp_dir);
-        base.join("chilpa").join("plugins")
+        chilpa_dirs::data().join("plugins")
     }
 
     /// Loads whatever plugins there are. It is called once at startup.

@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Where Chilpa's files go, per platform (ADR-010 M3).
+chilpa-dirs.workspace = true
 chilpa-models.workspace = true
 chilpa-audio.workspace = true
 chilpa-decode.workspace = true

@@ -54,11 +54,7 @@ impl Default for Settings {
 
 /// Where the file lives.
 pub fn path() -> PathBuf {
-    let base = std::env::var_os("XDG_CONFIG_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|h| PathBuf::from(h).join(".config")))
-        .unwrap_or_else(std::env::temp_dir);
-    base.join("chilpa").join("settings.conf")
+    chilpa_dirs::config().join("settings.conf")
 }
 
 /// Reads the preferences. Whatever is missing or not understood takes its

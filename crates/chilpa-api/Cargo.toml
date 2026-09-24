@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Where the plugins go, per platform (ADR-010 M3).
+chilpa-dirs.workspace = true
 chilpa-core.workspace = true
 chilpa-models.workspace = true
 chilpa-library.workspace = true

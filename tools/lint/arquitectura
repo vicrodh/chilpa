@@ -13,16 +13,22 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# Lo mismo para chilpa-dirs: dónde van los archivos de Chilpa en cada
+# plataforma es una pregunta que se hace desde muchos lados, y tenerla en un
+# solo lugar es justamente la medida M3 del ADR-010.
+#
 # El catálogo de traducción lo puede usar cualquiera. No depende de nada, así
 # que no puede meter un ciclo ni arrastrar una pila que un crate no quiera; y
 # el texto que lee el usuario tiene que poder escribirse donde se sabe el
 # detalle, no solo en la fachada. Lo que NO se relaja es al revés:
 # chilpa-i18n no depende de nadie.
-ABIERTO = {"chilpa-i18n"}
+ABIERTO = {"chilpa-i18n", "chilpa-dirs"}
 
 # Quién puede depender de quién, dentro del workspace.
 ALLOWED = {
     "chilpa-models": set(),
+    # Dónde van los archivos de Chilpa, por plataforma. No depende de nadie.
+    "chilpa-dirs": set(),
     "chilpa-audio": {"chilpa-models"},
     "chilpa-tags": {"chilpa-models"},
     # Las letras que vienen con la música. No habla con nadie por la red.
@@ -93,6 +99,37 @@ def check_deps(errors):
             errors.append(f"{name}: no puede depender de {dep} (ADR-001)")
 
 
+# Lo que una plataforma da por hecho y otra no. ADR-010 M3: esto vive en
+# chilpa-dirs y en los crates de plataforma, y en ningún otro lado.
+SUPUESTOS = re.compile(r'\bXDG_[A-Z_]+|"/proc/|"/etc/|\bUSERPROFILE\b|\bAPPDATA\b')
+
+# Los crates a los que sí les toca saber de una plataforma.
+PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-cd", "chilpa-secrets"}
+
+
+def check_supuestos(errors):
+    """Ningún crate del motor escribe a mano una convención de sistema."""
+    for path in tracked_files():
+        if path.suffix != ".rs" or not path.exists():
+            continue
+        parts = path.relative_to(ROOT).parts
+        if len(parts) < 2 or parts[0] != "crates" or parts[1] in PLATAFORMA:
+            continue
+        # Una prueba puede apuntar XDG_DATA_HOME a un directorio temporal:
+        # es justamente la variable que chilpa-dirs respeta, y ponerla es
+        # cómo una prueba no escribe en la biblioteca de quien la corre.
+        if "tests" in parts or path.name.endswith("_test.rs"):
+            continue
+        for n, line in enumerate(path.read_text().split("\n"), 1):
+            if line.lstrip().startswith("//"):
+                continue
+            if SUPUESTOS.search(line):
+                errors.append(
+                    f"{path.relative_to(ROOT)}:{n}: una convención de sistema escrita a "
+                    "mano; eso vive en chilpa-dirs (ADR-010)"
+                )
+
+
 def check_qt(errors):
     for path in tracked_files():
         if path.suffix not in CODE_SUFFIXES or not path.exists():
@@ -126,6 +163,7 @@ def check_loc(errors):
 def main():
     errors = []
     check_deps(errors)
+    check_supuestos(errors)
     check_qt(errors)
     check_loc(errors)
     if errors:

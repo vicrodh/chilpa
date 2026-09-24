@@ -407,6 +407,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-auth",
  "chilpa-core",
+ "chilpa-dirs",
  "chilpa-i18n",
  "chilpa-library",
  "chilpa-lyrics",
@@ -456,6 +457,7 @@ dependencies = [
  "chilpa-audio",
  "chilpa-cd",
  "chilpa-decode",
+ "chilpa-dirs",
  "chilpa-dsd",
  "chilpa-i18n",
  "chilpa-library",
@@ -477,6 +479,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-dirs"
+version = "0.0.0"
+
+[[package]]
 name = "chilpa-dsd"
 version = "0.0.0"
 dependencies = [
@@ -492,6 +498,7 @@ version = "0.0.0"
 name = "chilpa-library"
 version = "0.0.0"
 dependencies = [
+ "chilpa-dirs",
  "chilpa-i18n",
  "chilpa-models",
  "chilpa-tags",
