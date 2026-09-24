@@ -6,7 +6,11 @@
 //! from `<CoreAudio/AudioHardware.h>`, and the four-character codes are the
 //! same ones the header spells as `'dev#'`.
 
-#![allow(non_upper_case_globals, non_camel_case_types)]
+// Apple's own names, kept as Apple spells them. Renaming a field of a
+// `#[repr(C)]` struct to look like Rust would make it one letter harder to
+// check against the header, which is the only way anybody can verify this
+// file is right.
+#![allow(non_upper_case_globals, non_camel_case_types, non_snake_case)]
 
 use std::os::raw::{c_char, c_void};
 

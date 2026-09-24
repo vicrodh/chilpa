@@ -61,7 +61,20 @@ fn declared(device: ffi::AudioObjectID) -> String {
     if highest > 0.0 {
         parts.push(khz(highest));
     }
-    parts.join(" / ")
+    let mut line = parts.join(" / ");
+
+    // And what it is set to right now, which is the difference this whole
+    // crate is about: a device that can do 192 and is sitting at 44.1 will
+    // take a 96 kHz track and convert it. Saying the ceiling alone invites
+    // exactly that misunderstanding.
+    let now = read::current_rate(device);
+    if now > 0.0 {
+        if !line.is_empty() {
+            line.push_str(" · ");
+        }
+        line.push_str(&chilpa_i18n::t_args("now at {}", &[&khz(now)]));
+    }
+    line
 }
 
 impl OutputBackend for CoreAudio {

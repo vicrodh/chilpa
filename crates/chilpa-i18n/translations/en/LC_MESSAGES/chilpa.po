@@ -753,6 +753,9 @@ msgstr ""
 msgid "not supported: {}"
 msgstr ""
 
+msgid "now at {}"
+msgstr ""
+
 msgid "open a file"
 msgstr ""
 
