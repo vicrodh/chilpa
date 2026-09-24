@@ -406,6 +406,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-auth",
  "chilpa-core",
+ "chilpa-i18n",
  "chilpa-library",
  "chilpa-lyrics",
  "chilpa-models",

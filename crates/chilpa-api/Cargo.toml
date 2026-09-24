@@ -14,16 +14,17 @@ chilpa-lyrics.workspace = true
 chilpa-plugin.workspace = true
 chilpa-secrets.workspace = true
 chilpa-auth.workspace = true
-# Las aprobaciones se guardan en JSON, legible a mano a propósito.
+chilpa-i18n.workspace = true
+# Approvals are kept as JSON, readable by hand on purpose.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 [dev-dependencies]
-# Los plugins de prueba se escriben en texto de wasm, para no necesitar una
-# cadena de compilación aparte.
+# The test plugins are written in wasm text, so no separate toolchain is
+# needed.
 wat = "1"
-# Para dejar un ISRC en una pista escaneada, que es lo que hace que la
-# búsqueda pueda emparejar lo local con lo de un source. Es el mismo
-# rusqlite que ya usa chilpa-library.
+# For putting an ISRC on a scanned track, which is what lets the search
+# match what is local with what a source gives. It is the same rusqlite
+# chilpa-library already uses.
 chilpa-library.workspace = true
 rusqlite = "0.40"
