@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 7;
+pub const VERSION: i64 = 8;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -26,7 +26,7 @@ pub const VERSION: i64 = 7;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8];
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -46,14 +46,14 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
             )),
         ));
     }
-    for (i, paso) in STEPS.iter().enumerate() {
+    for (i, step) in STEPS.iter().enumerate() {
         let target = i as i64 + 1;
         if actual >= target {
             continue;
         }
         // Each step goes in its own transaction: if it blows up halfway, the
         // version does not advance and the database stays as it was.
-        db.execute_batch(&format!("BEGIN; {paso} PRAGMA user_version = {target}; COMMIT;"))?;
+        db.execute_batch(&format!("BEGIN; {step} PRAGMA user_version = {target}; COMMIT;"))?;
     }
     Ok(())
 }
@@ -534,6 +534,41 @@ SELECT t.id,
                  JOIN genres g ON g.id = tg.genre_id
                  WHERE tg.track_id = t.id), '')
 FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
+
+ANALYZE;
+"#;
+
+/// From 7 to 8: the indexes a two-hundred-thousand-track library asks for.
+///
+/// V6 and V7 were measured against fifty thousand, and at that size these
+/// did not show. At two hundred thousand, on disk, three things did, and
+/// `EXPLAIN QUERY PLAN` named all three:
+///
+/// - **Most played, 78 ms.** `ORDER BY plays DESC, last_played DESC` used
+///   the index for the first term and a temporary B-tree for the second.
+///   Most played tracks have been played once, so tens of thousands tie on
+///   the first term and every one of them got sorted. A composite index
+///   gives the whole ordering.
+/// - **The smart lists, 365 ms to count eight.** The rules filter on
+///   `added_at` and `duration_ms`, and neither had an index, so a rule that
+///   matches little walked the library to find out.
+/// - The third was the search, and it is not an index: see `search`.
+const MIGRATION_V8: &str = r#"
+CREATE INDEX track_rollup_top ON track_rollup(plays DESC, last_played DESC);
+CREATE INDEX album_rollup_top ON album_rollup(plays DESC, last_played DESC);
+
+-- What the smart lists filter on. `present` goes first in both because
+-- every list starts with it, so the index answers the whole condition
+-- instead of narrowing it.
+CREATE INDEX tracks_present_added ON tracks(present, added_at);
+CREATE INDEX tracks_present_duration ON tracks(present, duration_ms);
+
+-- "Played in the last week" asks the rollup, not the log.
+CREATE INDEX track_rollup_last_played ON track_rollup(last_played DESC);
+
+-- What the tempo lists filter on. Without it, a library with no analysis
+-- yet walks itself to find out it has none.
+CREATE INDEX audio_features_bpm ON audio_features(bpm);
 
 ANALYZE;
 "#;

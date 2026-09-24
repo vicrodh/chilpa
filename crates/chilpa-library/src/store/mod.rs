@@ -227,14 +227,14 @@ impl Library {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present
-             FROM track_search s
+             FROM (SELECT rowid FROM track_search WHERE track_search MATCH ?1 LIMIT ?3) s
              JOIN tracks t ON t.id = s.rowid
              LEFT JOIN albums a ON a.id = t.album_id
-             WHERE track_search MATCH ?1 AND t.present = 1
+             WHERE t.present = 1
              ORDER BY t.artist COLLATE NOCASE, t.title COLLATE NOCASE
              LIMIT ?2",
         )?;
-        let rows = stmt.query_map(params![query, limit as i64], row_to_track)?;
+        let rows = stmt.query_map(params![query, limit as i64, CONSIDERED as i64], row_to_track)?;
         rows.collect()
     }
 
@@ -367,6 +367,26 @@ impl Library {
             .optional()
     }
 }
+
+/// How many matches are looked at before sorting them.
+///
+/// The index finds them fast; putting them in order is what costs, and the
+/// order asked for -- by artist, then title -- is not the index's. At two
+/// hundred thousand tracks a one-letter search matched everything and spent
+/// 143 ms sorting a library to show two hundred rows of it, on the thread
+/// that draws the window.
+///
+/// So there is a ceiling. Below it nothing changes: a real search matches
+/// hundreds, they all get sorted, the answer is exactly what it was. Above
+/// it the answer is a bounded slice of the matches rather than the first
+/// page of all of them -- and a query matching five thousand tracks is not
+/// a search, it is a browse, and nobody reads to the end of it.
+///
+/// What this is not is a fix for the shape of the problem. If someone ever
+/// wants the true first page of a hundred-thousand-match query, that needs
+/// the ordering to come from the index, which means keeping a sorted key,
+/// which is a different piece of work.
+const CONSIDERED: usize = 5_000;
 
 /// What someone typed, as something FTS5 will accept.
 ///
