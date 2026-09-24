@@ -18,22 +18,22 @@ pub struct IcyReader<R: Read> {
     /// How many audio bytes go between metadata blocks.
     metaint: usize,
     /// How many audio bytes are left before the next block.
-    restante: usize,
+    left: usize,
     now_playing: NowPlaying,
 }
 
 impl<R: Read> IcyReader<R> {
     pub fn new(inner: R, metaint: usize, now_playing: NowPlaying) -> Self {
-        Self { inner, metaint, restante: metaint, now_playing }
+        Self { inner, metaint, left: metaint, now_playing }
     }
 
     /// Reads a metadata block and applies it.
-    fn leer_metadata(&mut self) -> io::Result<()> {
-        let mut largo = [0u8; 1];
-        if self.inner.read(&mut largo)? == 0 {
+    fn read_metadata(&mut self) -> io::Result<()> {
+        let mut length = [0u8; 1];
+        if self.inner.read(&mut length)? == 0 {
             return Ok(());
         }
-        let bytes = largo[0] as usize * 16;
+        let bytes = length[0] as usize * 16;
         if bytes == 0 {
             // The usual case: the server has nothing new to say.
             return Ok(());
@@ -52,15 +52,15 @@ impl<R: Read> Read for IcyReader<R> {
         if self.metaint == 0 {
             return self.inner.read(buf);
         }
-        if self.restante == 0 {
-            self.leer_metadata()?;
-            self.restante = self.metaint;
+        if self.left == 0 {
+            self.read_metadata()?;
+            self.left = self.metaint;
         }
         // Never read past the next metadata block: overshooting would put
         // those bytes into the audio.
-        let hasta = buf.len().min(self.restante);
-        let n = self.inner.read(&mut buf[..hasta])?;
-        self.restante -= n;
+        let to = buf.len().min(self.left);
+        let n = self.inner.read(&mut buf[..to])?;
+        self.left -= n;
         Ok(n)
     }
 }
@@ -75,8 +75,8 @@ pub fn title_of(block: &[u8]) -> Option<String> {
     let start = text.find("StreamTitle=")? + "StreamTitle=".len();
     let rest = &text[start..];
     let rest = rest.strip_prefix('\'').unwrap_or(rest);
-    let fin = rest.find("';").unwrap_or(rest.len());
-    let title = rest[..fin].trim();
+    let end = rest.find("';").unwrap_or(rest.len());
+    let title = rest[..end].trim();
     (!title.is_empty()).then(|| title.to_string())
 }
 
@@ -119,10 +119,10 @@ mod tests {
         data.push(0); // the empty block that comes next
 
         let np = NowPlaying::new();
-        let mut lector = IcyReader::new(std::io::Cursor::new(data), 16, np.clone());
+        let mut reader = IcyReader::new(std::io::Cursor::new(data), 16, np.clone());
 
         let mut audio = Vec::new();
-        lector.read_to_end(&mut audio).unwrap();
+        reader.read_to_end(&mut audio).unwrap();
 
         assert_eq!(audio, [[1u8; 16], [2u8; 16]].concat(), "the audio came out clean");
         assert_eq!(np.get().as_deref(), Some("A song"));
@@ -131,10 +131,10 @@ mod tests {
     #[test]
     fn without_metaint_the_stream_passes_through_unchanged() {
         let data: Vec<u8> = (0..50u8).collect();
-        let mut lector =
+        let mut reader =
             IcyReader::new(std::io::Cursor::new(data.clone()), 0, NowPlaying::new());
         let mut output = Vec::new();
-        lector.read_to_end(&mut output).unwrap();
+        reader.read_to_end(&mut output).unwrap();
         assert_eq!(output, data);
     }
 }

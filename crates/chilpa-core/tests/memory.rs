@@ -80,7 +80,7 @@ fn a_five_minute_track_is_not_loaded_whole_into_memory() {
     };
     // 5 minutes of 24/96 stereo is ~345 MB of PCM. If anyone decodes the
     // whole track, it shows up here and not on someone else's machine.
-    let antes = rss_mb();
+    let before = rss_mb();
     let mut sink = CountingSink(StreamFormat::new(SampleFormat::S24In32, 96_000, 2), 0);
     let played = play_file(&path, &caps(), Policy::BitPerfect, &StopSignal::new(), |format| {
         sink.0 = format;
@@ -89,14 +89,14 @@ fn a_five_minute_track_is_not_loaded_whole_into_memory() {
     .expect("it must play");
 
     let after = rss_mb();
-    let creció = after - antes;
+    let grew = after - before;
 
     assert!(played.outcome.may_advance_queue(), "it finished cleanly");
     assert!(sink.1 > 96_000 * 290, "{} frames came out", sink.1);
     assert!(
-        creció < 60.0,
+        grew < 60.0,
         "memory grew {:.0} MB while playing; the whole track is being kept",
-        creció
+        grew
     );
     // The file is left behind: generating it costs more than deleting it.
 }

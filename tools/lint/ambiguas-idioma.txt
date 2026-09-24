@@ -1,0 +1,72 @@
+# Español que el inglés también acepta.
+#
+# Ningún diccionario las distingue: `paso`, `pico`, `hasta` y `temporal` son
+# palabras de los dos idiomas, así que la regla de este candado -- el inglés
+# la rechaza y es_MX la acepta -- no dispara nunca. Este es el punto ciego que
+# el propio archivo declaraba y que aquí se cierra a mano.
+#
+# Entra una palabra cuando en ESTE repo se leyó en español al menos una vez.
+# Eso la prohíbe como identificador incluso donde alguien podría defenderla en
+# inglés, y está bien: hay otra palabra para ese caso, y el candado vale más
+# que el sinónimo.
+#
+# Y no entra cuando la palabra choca con algo que no se puede renombrar.
+# `media` está en `MediaSourceStream` de Symphonia y en la feature
+# `Win32_Media_Audio`; `actual` es un campo de Symphonia; `den` es la mitad de
+# `num`/`den`, que es notación, no idioma. Esas se revisan leyendo el diff, que
+# es lo que este candado nunca sustituye.
+#
+# Revisadas una por una, en contexto, el 2026-09-24.
+alto
+altos
+ancho
+anterior
+antes
+bajada
+canal
+causa
+con
+de
+der
+dice
+dif
+disco
+dos
+en
+fin
+finales
+hasta
+hay
+largo
+lector
+leer
+locales
+mayor
+memoria
+motor
+par
+pares
+paso
+perfectos
+peso
+pico
+primero
+puntajes
+quintas
+restante
+seg
+si
+sid
+solo
+tablas
+temporal
+tic
+tics
+tope
+ultimo
+umbral
+valor
+vista
+vistas
+vivo
+ya

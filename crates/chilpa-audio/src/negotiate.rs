@@ -180,7 +180,7 @@ pub fn negotiate(
 mod tests {
     /// A device offering 16 and 32 bits, only at 48 kHz: the case of a
     /// laptop codec.
-    fn codec_de_laptop() -> DeviceCaps {
+    fn laptop_codec() -> DeviceCaps {
         DeviceCaps {
             sample_rates: vec![48_000],
             formats: vec![SampleFormat::S16, SampleFormat::S32],
@@ -194,7 +194,7 @@ mod tests {
         // 24/88.2 does not fit: it has to resample. But the device does 32
         // bits, so cutting down to 16 would be a loss too many.
         let request = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
-        let d = negotiate(request, &codec_de_laptop(), Policy::AllowAnything).unwrap();
+        let d = negotiate(request, &laptop_codec(), Policy::AllowAnything).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32, "it fits in 32, nothing is truncated");
         assert_eq!(d.opened.sample_rate_hz, 48_000);
         assert!(!d.nothing_was_converted(), "resampling is never bit-perfect");

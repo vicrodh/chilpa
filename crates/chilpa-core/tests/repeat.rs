@@ -18,7 +18,7 @@ use std::rc::Rc;
 #[derive(Clone)]
 struct CappedSink {
     frames: Rc<RefCell<u64>>,
-    tope: u64,
+    ceiling: u64,
     stop: chilpa_audio::sink::StopSignal,
 }
 
@@ -30,7 +30,7 @@ impl AudioSink for CappedSink {
         let n = (frames.len() / 4) as u64;
         let mut total = self.frames.borrow_mut();
         *total += n;
-        if *total >= self.tope {
+        if *total >= self.ceiling {
             self.stop.stop();
         }
         Ok(n as usize)
@@ -75,12 +75,12 @@ fn caps() -> DeviceCaps {
 }
 
 /// Plays until `cap` frames are delivered and returns which tracks played.
-fn played(tracks: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
+fn played(tracks: &[PathBuf], repeat: Repeat, ceiling: u64) -> Vec<PathBuf> {
     let controls = Controls::new();
     controls.repeat.set(repeat);
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope,
+        ceiling,
         stop: controls.stop.clone(),
     };
     let results =
@@ -144,7 +144,7 @@ fn under_repeat_one_skipping_does_advance() {
     controls.skip.skip();
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope: 4_410 * 2,
+        ceiling: 4_410 * 2,
         stop: controls.stop.clone(),
     };
     let results =
@@ -170,7 +170,7 @@ fn an_explicit_order_changes_what_plays() {
     assert!(controls.order.set(vec![2, 0, 1], 3), "the order is a permutation");
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope: 1_000_000,
+        ceiling: 1_000_000,
         stop: controls.stop.clone(),
     };
     let results = play_queue_with(
@@ -199,7 +199,7 @@ fn what_is_enqueued_mid_queue_does_play() {
     let controls = Controls::new();
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope: 1_000_000,
+        ceiling: 1_000_000,
         stop: controls.stop.clone(),
     };
     // The second comes in once the first has started: the queue is not
@@ -242,7 +242,7 @@ fn a_removed_track_does_not_play_and_the_others_do_not_move() {
     let controls = Controls::new();
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope: 1_000_000,
+        ceiling: 1_000_000,
         stop: controls.stop.clone(),
     };
     let results = play_queue_with(
@@ -273,7 +273,7 @@ fn emptying_the_queue_under_repeat_does_not_leave_the_thread_spinning() {
     controls.repeat.set(Repeat::All);
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
-        tope: 1_000_000,
+        ceiling: 1_000_000,
         stop: controls.stop.clone(),
     };
     let results = play_queue_with(

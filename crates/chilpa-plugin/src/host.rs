@@ -21,7 +21,7 @@ use wasmtime::{Caller, Config, Engine, Linker, Module, Store, StoreLimits, Store
 pub type Services = Arc<Mutex<dyn HostServices>>;
 
 /// How often the interruption clock ticks.
-const TIC: std::time::Duration = std::time::Duration::from_millis(50);
+const TICK: std::time::Duration = std::time::Duration::from_millis(50);
 
 /// Why a plugin could not be loaded or called.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -33,7 +33,7 @@ pub enum PluginError {
     /// It is missing something every plugin has to export.
     MissingExport(String),
     /// It claims a different API version than the manifest does.
-    VersionMismatch { dice: i32, manifest: u32 },
+    VersionMismatch { claimed: i32, manifest: u32 },
     /// It went over one of its limits.
     Stopped(Halt),
     /// It blew up inside.
@@ -59,12 +59,12 @@ impl std::fmt::Display for PluginError {
                     &[n],
                 )
             ),
-            PluginError::VersionMismatch { dice, manifest } => write!(
+            PluginError::VersionMismatch { claimed, manifest } => write!(
                 f,
                 "{}",
                 chilpa_i18n::t_args(
                     "the manifest says API {} and the module answers {}; it does not load",
-                    &[&manifest.to_string(), &dice.to_string()],
+                    &[&manifest.to_string(), &claimed.to_string()],
                 )
             ),
             PluginError::Stopped(d) => write!(f, "{d}"),
@@ -103,7 +103,7 @@ struct State {
 pub struct Host {
     engine: Engine,
     /// The thread that advances the interruption clock.
-    vivo: Arc<std::sync::atomic::AtomicBool>,
+    running: Arc<std::sync::atomic::AtomicBool>,
     clock: Option<std::thread::JoinHandle<()>>,
 }
 
@@ -116,20 +116,20 @@ impl Host {
         config.epoch_interruption(true);
         let engine = Engine::new(&config).map_err(|e| PluginError::WontCompile(e.to_string()))?;
 
-        let vivo = Arc::new(std::sync::atomic::AtomicBool::new(true));
-        let flag = Arc::clone(&vivo);
-        let motor = engine.clone();
+        let running = Arc::new(std::sync::atomic::AtomicBool::new(true));
+        let flag = Arc::clone(&running);
+        let engine_for_clock = engine.clone();
         let clock = std::thread::Builder::new()
             .name("chilpa-plugins-clock".into())
             .spawn(move || {
                 while flag.load(std::sync::atomic::Ordering::Relaxed) {
-                    std::thread::sleep(TIC);
-                    motor.increment_epoch();
+                    std::thread::sleep(TICK);
+                    engine_for_clock.increment_epoch();
                 }
             })
             .ok();
 
-        Ok(Self { engine, vivo, clock })
+        Ok(Self { engine, running, clock })
     }
 
     /// Compiles a plugin and checks it is what it says it is.
@@ -154,7 +154,7 @@ impl Host {
 
 impl Drop for Host {
     fn drop(&mut self) {
-        self.vivo.store(false, std::sync::atomic::Ordering::Relaxed);
+        self.running.store(false, std::sync::atomic::Ordering::Relaxed);
         if let Some(t) = self.clock.take() {
             let _ = t.join();
         }
@@ -188,10 +188,10 @@ impl Plugin {
         let f = instance
             .get_typed_func::<(), i32>(&mut store, abi::F_VERSION)
             .map_err(|_| PluginError::MissingExport(abi::F_VERSION.to_string()))?;
-        let dice = f.call(&mut store, ()).map_err(|e| self.translate(e, &mut store))?;
-        if dice as u32 != self.manifest.api_version {
+        let claimed = f.call(&mut store, ()).map_err(|e| self.translate(e, &mut store))?;
+        if claimed as u32 != self.manifest.api_version {
             return Err(PluginError::VersionMismatch {
-                dice,
+                claimed,
                 manifest: self.manifest.api_version,
             });
         }
@@ -213,7 +213,7 @@ impl Plugin {
             .instantiate(&mut store, &self.module)
             .map_err(|e| PluginError::Crashed(e.to_string()))?;
 
-        let memoria = instance
+        let memory = instance
             .get_memory(&mut store, abi::MEMORY)
             .ok_or_else(|| PluginError::MissingExport(abi::MEMORY.to_string()))?;
         let alloc = instance
@@ -227,7 +227,7 @@ impl Plugin {
         let ptr = alloc
             .call(&mut store, input.len() as i32)
             .map_err(|e| self.translate(e, &mut store))?;
-        write(&memoria, &mut store, ptr as u32, input)?;
+        write(&memory, &mut store, ptr as u32, input)?;
 
         let packed = op
             .call(&mut store, (ptr, input.len() as i32))
@@ -236,7 +236,7 @@ impl Plugin {
         let Some((rptr, rlen)) = abi::unpack(packed) else {
             return Ok(abi::Reply::Error(chilpa_i18n::t("it answered nothing").into()));
         };
-        let bytes = read(&memoria, &mut store, rptr, rlen)?;
+        let bytes = read(&memory, &mut store, rptr, rlen)?;
         Ok(abi::read_reply(bytes))
     }
 
@@ -266,8 +266,8 @@ impl Plugin {
             .set_fuel(limits.fuel)
             .map_err(|e| PluginError::WontCompile(e.to_string()))?;
         // The clock advances every TICK; the deadline is as many ticks as fit.
-        let tics = (limits.timeout.as_millis() / TIC.as_millis()).max(1) as u64;
-        store.set_epoch_deadline(tics);
+        let ticks = (limits.timeout.as_millis() / TICK.as_millis()).max(1) as u64;
+        store.set_epoch_deadline(ticks);
         Ok(store)
     }
 
@@ -289,11 +289,11 @@ impl Plugin {
         if store.get_fuel().map(|f| f == 0).unwrap_or(false) {
             return PluginError::Stopped(Halt::OutOfFuel);
         }
-        let causa = format!("{e:#}");
-        if causa.contains("memory") && (causa.contains("limit") || causa.contains("grow")) {
+        let cause = format!("{e:#}");
+        if cause.contains("memory") && (cause.contains("limit") || cause.contains("grow")) {
             return PluginError::Stopped(Halt::OutOfMemory);
         }
-        PluginError::Crashed(causa)
+        PluginError::Crashed(cause)
     }
 
     fn build_linker(&self, host: &Host) -> Result<Linker<State>, PluginError> {
@@ -422,8 +422,8 @@ fn domain_of(request: &[u8]) -> Option<String> {
 /// Pulls the host out of a URL without dragging in a whole URL parser.
 pub fn host_of_url(url: &str) -> Option<String> {
     let rest = url.split_once("://")?.1;
-    let fin = rest.find(['/', '?', '#']).unwrap_or(rest.len());
-    let authority = &rest[..fin];
+    let end = rest.find(['/', '?', '#']).unwrap_or(rest.len());
+    let authority = &rest[..end];
     // The userinfo and the port are thrown away: what is compared is the host.
     let no_user = authority.rsplit_once('@').map(|(_, h)| h).unwrap_or(authority);
     let host = no_user.split(':').next()?.to_ascii_lowercase();
@@ -452,8 +452,8 @@ fn bytes_at(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<Vec<u8
     }
     let mem = memory_of(caller)?;
     let data = mem.data(&caller);
-    let (from, hasta) = (ptr as usize, (ptr as usize).checked_add(len as usize)?);
-    data.get(from..hasta).map(<[u8]>::to_vec)
+    let (from, to) = (ptr as usize, (ptr as usize).checked_add(len as usize)?);
+    data.get(from..to).map(<[u8]>::to_vec)
 }
 
 fn text_of(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<String> {
@@ -468,8 +468,8 @@ fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: 
     if let (abi::Room::Fits(n), Some(d)) = (verdict, data) {
         let Some(mem) = memory_of(caller) else { return abi::Room::Nothing.code() };
         let target = mem.data_mut(caller);
-        let (from, hasta) = (out.max(0) as usize, out.max(0) as usize + n as usize);
-        match target.get_mut(from..hasta) {
+        let (from, to) = (out.max(0) as usize, out.max(0) as usize + n as usize);
+        match target.get_mut(from..to) {
             Some(gap) => gap.copy_from_slice(d),
             // A buffer outside its memory is treated as not fitting: there is
             // never a half write and never one outside.
@@ -480,30 +480,30 @@ fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: 
 }
 
 fn write(
-    memoria: &wasmtime::Memory,
+    memory: &wasmtime::Memory,
     store: &mut Store<State>,
     ptr: u32,
     data: &[u8],
 ) -> Result<(), PluginError> {
-    let target = memoria.data_mut(store);
-    let (from, hasta) = (ptr as usize, ptr as usize + data.len());
+    let target = memory.data_mut(store);
+    let (from, to) = (ptr as usize, ptr as usize + data.len());
     target
-        .get_mut(from..hasta)
+        .get_mut(from..to)
         .ok_or(PluginError::OutOfMemory)?
         .copy_from_slice(data);
     Ok(())
 }
 
 fn read(
-    memoria: &wasmtime::Memory,
+    memory: &wasmtime::Memory,
     store: &mut Store<State>,
     ptr: u32,
     len: u32,
 ) -> Result<Vec<u8>, PluginError> {
-    let data = memoria.data(store);
-    let (from, hasta) = (ptr as usize, (ptr as usize).saturating_add(len as usize));
+    let data = memory.data(store);
+    let (from, to) = (ptr as usize, (ptr as usize).saturating_add(len as usize));
     data
-        .get(from..hasta)
+        .get(from..to)
         .map(<[u8]>::to_vec)
         .ok_or(PluginError::OutOfMemory)
 }

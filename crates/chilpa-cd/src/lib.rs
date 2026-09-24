@@ -185,13 +185,13 @@ mod tests {
         let mut d = FakeSink { fail_at: None };
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
-        let mut lector = TrackReader::new(&mut d, &track);
+        let mut reader = TrackReader::new(&mut d, &track);
         let mut bytes = 0;
-        while let Some(block) = lector.next_block() {
+        while let Some(block) = reader.next_block() {
             bytes += block.len();
         }
         assert_eq!(bytes, 150 * SECTOR_BYTES, "all 150 sectors came out");
-        assert!(lector.error.is_none());
+        assert!(reader.error.is_none());
     }
 
     #[test]
@@ -199,10 +199,10 @@ mod tests {
         let mut d = FakeSink { fail_at: Some(75) };
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
-        let mut lector = TrackReader::new(&mut d, &track);
-        let primero = lector.next_block().expect("the first block does come out");
-        assert_eq!(primero.len(), 75 * SECTOR_BYTES);
-        assert!(lector.next_block().is_none());
-        assert!(matches!(lector.error, Some(CdError::Read { lsn: 75, .. })));
+        let mut reader = TrackReader::new(&mut d, &track);
+        let first = reader.next_block().expect("the first block does come out");
+        assert_eq!(first.len(), 75 * SECTOR_BYTES);
+        assert!(reader.next_block().is_none());
+        assert!(matches!(reader.error, Some(CdError::Read { lsn: 75, .. })));
     }
 }

@@ -164,7 +164,7 @@ fn scan(
         // decision of its own; here it comes out as a new track and the old
         // one goes missing, which is what would happen today.
         if known.is_none() {
-            if let Some(moved) = moved_here(lib, root_id, mtime, size, inodo(&meta))? {
+            if let Some(moved) = moved_here(lib, root_id, mtime, size, inode(&meta))? {
                 lib.db.execute(
                     "UPDATE tracks SET external_id = ?2, present = 1 WHERE id = ?1",
                     params![moved.track_id, path],
@@ -185,7 +185,7 @@ fn scan(
              ON CONFLICT(path) DO UPDATE SET
                 mtime = excluded.mtime, size = excluded.size,
                 track_id = excluded.track_id, scanned_at = excluded.scanned_at",
-            params![root_id, path, mtime, size, inodo(&meta), track_id, now],
+            params![root_id, path, mtime, size, inode(&meta), track_id, now],
         )?;
         report.read += 1;
     }
@@ -411,13 +411,13 @@ fn is_audio(path: &Path) -> bool {
 }
 
 #[cfg(target_family = "unix")]
-fn inodo(meta: &std::fs::Metadata) -> Option<i64> {
+fn inode(meta: &std::fs::Metadata) -> Option<i64> {
     use std::os::unix::fs::MetadataExt;
     Some(meta.ino() as i64)
 }
 
 #[cfg(not(target_family = "unix"))]
-fn inodo(_: &std::fs::Metadata) -> Option<i64> {
+fn inode(_: &std::fs::Metadata) -> Option<i64> {
     None
 }
 

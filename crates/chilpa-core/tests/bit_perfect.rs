@@ -16,12 +16,12 @@ use std::path::{Path, PathBuf};
 
 /// A fake device that keeps everything written to it.
 #[derive(Default)]
-struct Capturador {
+struct Capture {
     stream: Option<StreamFormat>,
     bytes: Vec<u8>,
 }
 
-struct Handle<'a>(&'a mut Capturador);
+struct Handle<'a>(&'a mut Capture);
 
 impl AudioSink for Handle<'_> {
     fn format(&self) -> StreamFormat {
@@ -66,7 +66,7 @@ fn write_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u16) 
     }
 }
 
-fn temporal(name: &str) -> PathBuf {
+fn temp_file(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-bitperfect-{name}.wav"));
     p
@@ -99,10 +99,10 @@ fn caps(format: SampleFormat, rate: u32) -> DeviceCaps {
 #[test]
 fn a_16_bit_wav_goes_out_identical_over_the_wire() {
     let originals = samples(16);
-    let path = temporal("16");
+    let path = temp_file("16");
     write_wav(&path, &originals, 16, 44_100, 2);
 
-    let mut cap = Capturador { stream: None, bytes: Vec::new() };
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
     let played = play_file(
         &path,
         &caps(SampleFormat::S16, 44_100),
@@ -131,10 +131,10 @@ fn a_16_bit_wav_goes_out_identical_over_the_wire() {
 #[test]
 fn a_24_bit_wav_goes_out_identical_over_the_wire() {
     let originals = samples(24);
-    let path = temporal("24");
+    let path = temp_file("24");
     write_wav(&path, &originals, 24, 96_000, 2);
 
-    let mut cap = Capturador { stream: None, bytes: Vec::new() };
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
     let played = play_file(
         &path,
         &caps(SampleFormat::S24In32, 96_000),
@@ -160,12 +160,12 @@ fn a_24_bit_wav_goes_out_identical_over_the_wire() {
 
 #[test]
 fn with_a_device_that_cannot_do_it_we_fail_instead_of_resampling() {
-    let path = temporal("refusal");
+    let path = temp_file("refusal");
     write_wav(&path, &samples(16), 16, 44_100, 2);
-    let solo_48k = caps(SampleFormat::S16, 48_000);
+    let only_48k = caps(SampleFormat::S16, 48_000);
 
-    let mut cap = Capturador { stream: None, bytes: Vec::new() };
-    let r = play_file(&path, &solo_48k, Policy::BitPerfect, &StopSignal::new(), |format| {
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let r = play_file(&path, &only_48k, Policy::BitPerfect, &StopSignal::new(), |format| {
         cap.stream = Some(format);
         Ok(Handle(&mut cap))
     });

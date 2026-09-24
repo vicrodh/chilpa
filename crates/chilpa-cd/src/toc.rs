@@ -79,7 +79,7 @@ pub fn build(entries: &[TocEntry], leadout_lsn: u32) -> Toc {
     let mut tracks = Vec::with_capacity(entries.len());
     for (i, e) in entries.iter().enumerate() {
         let next = entries.get(i + 1);
-        let fin = match next {
+        let end = match next {
             Some(s) if s.session != e.session => s.start_lsn.saturating_sub(SESSION_GAP_SECTORS),
             Some(s) => s.start_lsn,
             None => leadout_lsn,
@@ -87,7 +87,7 @@ pub fn build(entries: &[TocEntry], leadout_lsn: u32) -> Toc {
         tracks.push(Track {
             number: e.number,
             start_lsn: e.start_lsn,
-            sectors: fin.saturating_sub(e.start_lsn),
+            sectors: end.saturating_sub(e.start_lsn),
             is_audio: e.is_audio,
             session: e.session,
         });

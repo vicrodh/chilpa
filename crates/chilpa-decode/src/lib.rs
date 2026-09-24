@@ -271,9 +271,9 @@ fn interleave(buffer: &AudioBufferRef<'_>, declared_bits: Option<u8>) -> Block {
     // the low bits are zero, and that way the packing knows how many bits
     // it is dealing with.
     macro_rules! ints {
-        ($buf:expr, $ancho:expr, $conv:expr) => {{
-            let bits = declared_bits.unwrap_or($ancho).min($ancho);
-            let offset = $ancho - bits;
+        ($buf:expr, $width:expr, $conv:expr) => {{
+            let bits = declared_bits.unwrap_or($width).min($width);
+            let offset = $width - bits;
             let frames = $buf.frames();
             let channels = $buf.spec().channels.count();
             let mut data = Vec::with_capacity(frames * channels);

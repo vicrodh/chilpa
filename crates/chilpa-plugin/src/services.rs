@@ -85,7 +85,7 @@ impl HostServices for NoServices {
     fn store_get(&mut self, _plugin: &str, _key: &str) -> Option<Vec<u8>> {
         None
     }
-    fn store_set(&mut self, _plugin: &str, _key: &str, _valor: &[u8]) -> bool {
+    fn store_set(&mut self, _plugin: &str, _key: &str, _value: &[u8]) -> bool {
         false
     }
     fn http(&mut self, _plugin: &str, _request: &[u8]) -> Vec<u8> {

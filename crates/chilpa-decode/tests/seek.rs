@@ -48,7 +48,7 @@ fn first_sample(decoded: &mut Decoded, mut discard: u64) -> i32 {
     }
 }
 
-fn temporal(name: &str) -> PathBuf {
+fn temp_file(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();
     p.push(format!("chilpa-seek-{name}.wav"));
     p
@@ -56,7 +56,7 @@ fn temporal(name: &str) -> PathBuf {
 
 #[test]
 fn seeking_leaves_the_reader_on_the_requested_frame() {
-    let path = temporal("ramp");
+    let path = temp_file("ramp");
     write_ramp(&path, 60_000);
     let mut decoded = Decoded::open(&path).unwrap();
 
@@ -75,7 +75,7 @@ fn seeking_leaves_the_reader_on_the_requested_frame() {
 
 #[test]
 fn the_file_declares_its_duration_in_frames() {
-    let path = temporal("duration");
+    let path = temp_file("duration");
     write_ramp(&path, 1_000);
     let decoded = Decoded::open(&path).unwrap();
     assert_eq!(decoded.frame_count(), Some(1_000));

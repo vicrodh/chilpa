@@ -146,8 +146,8 @@ mod tests {
     #[test]
     fn the_tail_trim_keeps_the_final_padding_in() {
         let mut t = Trimmer::new(0, 4, 2);
-        let primero = t.push(&frames(0, 10));
-        assert_eq!(primero, frames(0, 6), "the last 4 are held back");
+        let first = t.push(&frames(0, 10));
+        assert_eq!(first, frames(0, 6), "the last 4 are held back");
         assert!(t.finish().is_empty(), "the held back padding is thrown away");
         assert_eq!(t.emitted(), 6, "the track lasted 6 frames of music");
     }

@@ -220,8 +220,8 @@ mod tests {
             Self { accept, fail_at: None, writes: 0, received: 0, closed: false }
         }
 
-        fn failing(accept: usize, en: usize, error: SinkError) -> Self {
-            Self { fail_at: Some((en, error)), ..Self::new(accept) }
+        fn failing(accept: usize, at: usize, error: SinkError) -> Self {
+            Self { fail_at: Some((at, error)), ..Self::new(accept) }
         }
     }
 
@@ -232,8 +232,8 @@ mod tests {
 
         fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
             self.writes += 1;
-            if let Some((en, error)) = &self.fail_at {
-                if self.writes == *en {
+            if let Some((at, error)) = &self.fail_at {
+                if self.writes == *at {
                     return Err(error.clone());
                 }
             }

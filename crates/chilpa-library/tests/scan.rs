@@ -4,13 +4,13 @@ use chilpa_library::{scan_root, Library};
 use std::path::PathBuf;
 use std::process::Command;
 
-fn hay_ffmpeg() -> bool {
+fn have_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
 /// A test album on disk.
 fn album(name: &str, tracks: usize) -> Option<PathBuf> {
-    if !hay_ffmpeg() {
+    if !have_ffmpeg() {
         return None;
     }
     let mut dir = std::env::temp_dir();

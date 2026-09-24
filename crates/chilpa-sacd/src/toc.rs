@@ -92,12 +92,12 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
         (be32(&master, 0x48), be32(&master, 0x4c), be16(&master, 0x56)),
     ];
     let mut area_toc = None;
-    for (primary, backup, tamaño) in slots {
-        if tamaño == 0 || tamaño > MAX_AREA_TOC_SECTORS {
+    for (primary, backup, size) in slots {
+        if size == 0 || size > MAX_AREA_TOC_SECTORS {
             continue;
         }
         for start in [primary, backup].into_iter().filter(|s| *s != 0) {
-            let mut toc = vec![0u8; SECTOR * tamaño as usize];
+            let mut toc = vec![0u8; SECTOR * size as usize];
             let mut ok = true;
             for (i, chunk) in toc.chunks_mut(SECTOR).enumerate() {
                 if image.read_sector(u64::from(start) + i as u64, chunk).is_err() {
@@ -165,10 +165,10 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
         {
             return Err(SacdError::MalformedToc(format!("invalid timecode in track {}", i + 1)));
         }
-        let fin = u64::from(start_lsn) + u64::from(length_lsn);
+        let end = u64::from(start_lsn) + u64::from(length_lsn);
         if length_lsn == 0
             || start_lsn < audio_start_lsn
-            || fin > u64::from(audio_end_lsn) + 1
+            || end > u64::from(audio_end_lsn) + 1
             || previous_end.is_some_and(|previous| start_lsn <= previous)
         {
             return Err(SacdError::MalformedToc(format!(

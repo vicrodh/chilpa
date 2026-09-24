@@ -89,32 +89,32 @@ fn carried_over(id: &str) -> String {
 
 pub fn load_from(file: &std::path::Path) -> Settings {
     let text = std::fs::read_to_string(file).unwrap_or_default();
-    let pares = parse(&text);
+    let pairs = parse(&text);
     let mut s = Settings::default();
-    if let Some(v) = pares.get("output") {
+    if let Some(v) = pairs.get("output") {
         s.output = carried_over(v);
     }
-    if let Some(v) = pares.get("bit_perfect") {
+    if let Some(v) = pairs.get("bit_perfect") {
         s.bit_perfect = v != "false";
     }
-    if let Some(v) = pares.get("last_folder") {
+    if let Some(v) = pairs.get("last_folder") {
         s.last_folder = v.clone();
     }
     // An empty layout in the file does not leave the window with nothing to load.
-    if let Some(v) = pares.get("layout") {
+    if let Some(v) = pairs.get("layout") {
         if !v.is_empty() {
             s.layout = renamed(v, OLD_LAYOUTS);
         }
     }
-    if let Some(v) = pares.get("album_sort") {
+    if let Some(v) = pairs.get("album_sort") {
         s.album_sort = v.clone();
     }
-    if let Some(v) = pares.get("visualizer") {
+    if let Some(v) = pairs.get("visualizer") {
         if !v.is_empty() {
             s.visualizer = renamed(v, OLD_VISUALIZERS);
         }
     }
-    if let Some(v) = pares.get("language") {
+    if let Some(v) = pairs.get("language") {
         s.language = v.clone();
     }
     s

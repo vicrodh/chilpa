@@ -114,9 +114,9 @@ impl DopWriter {
                 WriteOutcome::Xrun => {
                     // The silence advances the phase just like the frames that were
                     // lost, so the DAC keeps seeing the alternation.
-                    let mut relleno = Vec::new();
-                    packer.silence(self.recovery_frames, self.channels, &mut relleno);
-                    sink(&relleno);
+                    let mut filler = Vec::new();
+                    packer.silence(self.recovery_frames, self.channels, &mut filler);
+                    sink(&filler);
                     recovered += self.recovery_frames;
                 }
             }
@@ -142,9 +142,9 @@ mod tests {
     #[test]
     fn markers_alternate_and_both_channels_carry_the_same_one() {
         let left = dsd(&[0xAB, 0xCD, 0x12, 0x34]);
-        let der = dsd(&[0x55, 0xAA, 0x9C, 0x63]);
+        let right = dsd(&[0x55, 0xAA, 0x9C, 0x63]);
         let mut out = Vec::new();
-        DopPacker::new().pack(&[&left, &der], &mut out);
+        DopPacker::new().pack(&[&left, &right], &mut out);
         assert_eq!(out[0], ((0x05 << 16) | 0xABCD) << 8);
         assert_eq!(out[1], ((0x05 << 16) | 0x55AA) << 8);
         assert_eq!(out[2], ((0xFA << 16) | 0x1234) << 8);
@@ -195,17 +195,17 @@ mod tests {
         let mut packer = DopPacker::new();
         let mut words = Vec::new();
         packer.pack(&[&dsd(&[1, 2]), &dsd(&[3, 4])], &mut words);
-        let mut vistas: Vec<i32> = Vec::new();
+        let mut seen: Vec<i32> = Vec::new();
         let mut fail = true;
         let recovered = DopWriter::new(2).write_all(&mut packer, &words, |chunk| {
             if fail {
                 fail = false;
                 return WriteOutcome::Xrun;
             }
-            vistas.extend_from_slice(chunk);
+            seen.extend_from_slice(chunk);
             WriteOutcome::Wrote(chunk.len() / 2)
         });
         assert_eq!(recovered, 1);
-        assert_eq!(vistas[0], ((0xFA << 16) | 0x6969) << 8, "the padding carries on the alternation");
+        assert_eq!(seen[0], ((0xFA << 16) | 0x6969) << 8, "the padding carries on the alternation");
     }
 }

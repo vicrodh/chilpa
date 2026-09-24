@@ -85,9 +85,9 @@ pub fn split_channels(frame: &[u8]) -> Vec<Vec<u8>> {
     let half = frame.len() / 2;
     let mut left = Vec::with_capacity(half);
     let mut right = Vec::with_capacity(half);
-    for par in frame.chunks_exact(2) {
-        left.push(par[0]);
-        right.push(par[1]);
+    for pair in frame.chunks_exact(2) {
+        left.push(pair[0]);
+        right.push(pair[1]);
     }
     vec![left, right]
 }

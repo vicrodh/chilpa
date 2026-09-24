@@ -53,7 +53,7 @@ pub fn detect(samples: &[f32], sample_rate_hz: u32) -> Option<Tempo> {
     if sample_rate_hz == 0 {
         return None;
     }
-    let mono = remuestrear(samples, sample_rate_hz, ANALYSIS_HZ);
+    let mono = downsample(samples, sample_rate_hz, ANALYSIS_HZ);
     // Less than eight seconds is not enough to count bars.
     if mono.len() < ANALYSIS_HZ as usize * 8 {
         return None;
@@ -90,8 +90,8 @@ fn onset_envelope(mono: &[f32]) -> Vec<f32> {
 fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> {
     // It is centred: without removing the mean, the autocorrelation rewards
     // lag 0 and everything else is lost under the slope.
-    let media = onsets.iter().sum::<f32>() / onsets.len() as f32;
-    let centered: Vec<f32> = onsets.iter().map(|a| a - media).collect();
+    let mean = onsets.iter().sum::<f32>() / onsets.len() as f32;
+    let centered: Vec<f32> = onsets.iter().map(|a| a - mean).collect();
     let energy: f32 = centered.iter().map(|a| a * a).sum();
     if energy <= 0.0 {
         return None;
@@ -104,7 +104,7 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         return None;
     }
 
-    let mut puntajes = vec![0.0f32; lag_max + 2];
+    let mut scores = vec![0.0f32; lag_max + 2];
     for lag in lag_min..=lag_max {
         let mut sum = 0.0f32;
         for i in 0..centered.len() - lag {
@@ -112,7 +112,7 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         }
         // It is normalized by how many terms went in: without that, long lags
         // lose just for having less overlap.
-        puntajes[lag] = sum / energy * (centered.len() as f32 / (centered.len() - lag) as f32);
+        scores[lag] = sum / energy * (centered.len() as f32 / (centered.len() - lag) as f32);
     }
 
     // A period that does not land on a whole number of frames splits its
@@ -122,8 +122,8 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
     // the peak's sum with its neighbours is compared, not the bin alone.
     let neighborhood = |lag: usize| -> f32 {
         let from = lag.saturating_sub(1);
-        let hasta = (lag + 1).min(puntajes.len() - 1);
-        puntajes[from..=hasta].iter().map(|p| p.max(0.0)).sum()
+        let to = (lag + 1).min(scores.len() - 1);
+        scores[from..=to].iter().map(|p| p.max(0.0)).sum()
     };
 
     let mut best = (0usize, 0.0f32);
@@ -140,12 +140,12 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
     // Of all the lags that explain it about equally well, the one falling in
     // the range music is actually counted in is preferred. 70 and 140
     // explain the same thing; music is counted at 140.
-    let umbral = best.1 * 0.85;
+    let threshold = best.1 * 0.85;
     let mut chosen = best.0;
     let mut best_in_range = 0.0f32;
     for lag in lag_min..=lag_max {
         let v = neighborhood(lag);
-        if v < umbral {
+        if v < threshold {
             continue;
         }
         let bpm = frames_per_second * 60.0 / lag as f32;
@@ -159,30 +159,30 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
     // the frame. Within the chosen neighbourhood the real peak is the
     // highest bin: interpolating around its poor neighbour sends the result
     // far off (measured: 140 BPM came out as 146).
-    let chosen = argmax_local(&puntajes, chosen);
-    let lag = interpolar(&puntajes, chosen);
+    let chosen = argmax_local(&scores, chosen);
+    let lag = interpolate(&scores, chosen);
     // The confidence is the raw peak's: it is what says how marked the
     // pulse is, not how much it was split between two frames.
-    let confidence = puntajes[best.0].clamp(0.0, 1.0);
+    let confidence = scores[best.0].clamp(0.0, 1.0);
     Some(Tempo { bpm: frames_per_second * 60.0 / lag, confidence: confidence })
 }
 
 /// The highest bin among `lag` and its two neighbours.
-fn argmax_local(puntajes: &[f32], lag: usize) -> usize {
+fn argmax_local(scores: &[f32], lag: usize) -> usize {
     let from = lag.saturating_sub(1);
-    let hasta = (lag + 1).min(puntajes.len() - 1);
-    (from..=hasta).max_by(|a, b| puntajes[*a].total_cmp(&puntajes[*b])).unwrap_or(lag)
+    let to = (lag + 1).min(scores.len() - 1);
+    (from..=to).max_by(|a, b| scores[*a].total_cmp(&scores[*b])).unwrap_or(lag)
 }
 
 /// The vertex of the parabola through the peak and its two neighbours.
 ///
 /// Without this the tempo can only take the values that land on a whole
 /// number of frames, and at 140 BPM that is already several BPM of error.
-fn interpolar(puntajes: &[f32], lag: usize) -> f32 {
-    if lag == 0 || lag + 1 >= puntajes.len() {
+fn interpolate(scores: &[f32], lag: usize) -> f32 {
+    if lag == 0 || lag + 1 >= scores.len() {
         return lag as f32;
     }
-    let (a, b, c) = (puntajes[lag - 1], puntajes[lag], puntajes[lag + 1]);
+    let (a, b, c) = (scores[lag - 1], scores[lag], scores[lag + 1]);
     let denominator = a - 2.0 * b + c;
     if denominator.abs() < 1e-9 {
         return lag as f32;
@@ -196,16 +196,16 @@ fn interpolar(puntajes: &[f32], lag: usize) -> f32 {
 
 /// The signal at the rate the analysis works at.
 pub fn resample_for_analysis(samples: &[f32], sample_rate_hz: u32) -> Vec<f32> {
-    remuestrear(samples, sample_rate_hz.max(1), ANALYSIS_HZ)
+    downsample(samples, sample_rate_hz.max(1), ANALYSIS_HZ)
 }
 
 /// Drops the sample rate by averaging. It is not a fine resampler; for
 /// counting beats none is needed.
-fn remuestrear(samples: &[f32], de: u32, a: u32) -> Vec<f32> {
-    if de <= a || samples.is_empty() {
+fn downsample(samples: &[f32], from: u32, to: u32) -> Vec<f32> {
+    if from <= to || samples.is_empty() {
         return samples.to_vec();
     }
-    let factor = (de / a).max(1) as usize;
+    let factor = (from / to).max(1) as usize;
     samples
         .chunks(factor)
         .map(|t| t.iter().sum::<f32>() / t.len() as f32)
@@ -297,10 +297,10 @@ mod tests {
     #[test]
     fn resampling_averages_and_shortens() {
         let v: Vec<f32> = (0..8).map(|i| i as f32).collect();
-        let r = remuestrear(&v, 44_100, 11_025);
+        let r = downsample(&v, 44_100, 11_025);
         assert_eq!(r.len(), 2, "four at a time");
         assert!((r[0] - 1.5).abs() < 1e-6, "the average of 0..3: {}", r[0]);
         // Going up in rate does nothing.
-        assert_eq!(remuestrear(&v, 11_025, 44_100).len(), 8);
+        assert_eq!(downsample(&v, 11_025, 44_100).len(), 8);
     }
 }

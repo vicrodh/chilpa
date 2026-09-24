@@ -124,12 +124,12 @@ fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
     let path = build(false).write("audio");
     let img = open(&path).unwrap();
     let track = img.area.tracks[0].clone();
-    let mut lector = SacdTrackReader::open(img, &track).unwrap();
+    let mut reader = SacdTrackReader::open(img, &track).unwrap();
 
-    assert_eq!(lector.info().dsd_rate_hz, 2_822_400, "DSD64");
-    assert_eq!(lector.info().channels, 2);
+    assert_eq!(reader.info().dsd_rate_hz, 2_822_400, "DSD64");
+    assert_eq!(reader.info().channels, 2);
 
-    let block = lector.next_block().unwrap().expect("hay audio");
+    let block = reader.next_block().unwrap().expect("hay audio");
     assert_eq!(block.len(), 2);
     assert_eq!(block[0].len(), 9408 / 2, "half a frame per channel");
     // The left one carries the sample and the right one its complement.

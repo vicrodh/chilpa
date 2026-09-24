@@ -70,9 +70,9 @@ where
     let delivery =
         negotiate(CDDA_FORMAT, caps, Policy::BitPerfect).map_err(|_| CdPlayError::Unsupported)?;
     let mut sink = open_sink(delivery.opened).map_err(CdPlayError::Sink)?;
-    let mut lector = TrackReader::new(drive, track);
-    let outcome = render_paused(&mut lector, &mut sink, stop, pause, on_progress);
-    let read_error = lector.error.as_ref().map(|e| e.to_string());
+    let mut reader = TrackReader::new(drive, track);
+    let outcome = render_paused(&mut reader, &mut sink, stop, pause, on_progress);
+    let read_error = reader.error.as_ref().map(|e| e.to_string());
     sink.close().map_err(CdPlayError::Sink)?;
     Ok(CdPlayed { delivery, outcome, read_error })
 }
@@ -83,11 +83,11 @@ mod tests {
     use chilpa_audio::format::SampleFormat;
     use chilpa_cd::{TocEntry, SECTOR_BYTES};
 
-    struct Disco {
+    struct Disc {
         fail_at: Option<u32>,
     }
 
-    impl CdDevice for Disco {
+    impl CdDevice for Disc {
         fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError> {
             Ok((
                 vec![
@@ -134,12 +134,12 @@ mod tests {
 
     #[test]
     fn a_track_off_the_disc_comes_out_whole_and_bit_perfect() {
-        let mut disco = Disco { fail_at: None };
-        let toc = read_toc(&mut disco).unwrap();
+        let mut disc = Disc { fail_at: None };
+        let toc = read_toc(&mut disc).unwrap();
         let track = *toc.track(1).unwrap();
         let mut sink = NullSink(CDDA_FORMAT, 0);
         let played = play_track(
-            &mut disco,
+            &mut disc,
             &track,
             &caps(),
             &StopSignal::new(),
@@ -157,12 +157,12 @@ mod tests {
 
     #[test]
     fn an_unreadable_sector_cuts_the_track_and_it_is_said() {
-        let mut disco = Disco { fail_at: Some(75) };
-        let toc = read_toc(&mut disco).unwrap();
+        let mut disc = Disc { fail_at: Some(75) };
+        let toc = read_toc(&mut disc).unwrap();
         let track = *toc.track(1).unwrap();
         let mut sink = NullSink(CDDA_FORMAT, 0);
         let played = play_track(
-            &mut disco,
+            &mut disc,
             &track,
             &caps(),
             &StopSignal::new(),

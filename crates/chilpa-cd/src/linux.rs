@@ -134,21 +134,21 @@ pub fn looks_byte_swapped(pcm: &[u8]) -> bool {
     if pcm.len() < 8 {
         return false;
     }
-    let mut dif_le: u64 = 0;
-    let mut dif_be: u64 = 0;
-    let mut anterior_le = 0i32;
-    let mut anterior_be = 0i32;
-    for (i, par) in pcm.chunks_exact(2).enumerate() {
-        let le = i16::from_le_bytes([par[0], par[1]]) as i32;
-        let be = i16::from_be_bytes([par[0], par[1]]) as i32;
+    let mut difference_le: u64 = 0;
+    let mut difference_be: u64 = 0;
+    let mut previous_le = 0i32;
+    let mut previous_be = 0i32;
+    for (i, pair) in pcm.chunks_exact(2).enumerate() {
+        let le = i16::from_le_bytes([pair[0], pair[1]]) as i32;
+        let be = i16::from_be_bytes([pair[0], pair[1]]) as i32;
         if i > 0 {
-            dif_le += (le - anterior_le).unsigned_abs() as u64;
-            dif_be += (be - anterior_be).unsigned_abs() as u64;
+            difference_le += (le - previous_le).unsigned_abs() as u64;
+            difference_be += (be - previous_be).unsigned_abs() as u64;
         }
-        anterior_le = le;
-        anterior_be = be;
+        previous_le = le;
+        previous_be = be;
     }
-    dif_be * 4 < dif_le
+    difference_be * 4 < difference_le
 }
 
 #[cfg(test)]
