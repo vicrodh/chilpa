@@ -1,29 +1,29 @@
-//! El lazo que lleva las muestras al dispositivo y dice cómo terminó.
+//! The loop that carries samples to the device and says how it ended.
 //!
-//! El punto de este módulo es que **el final de una pista tiene tipo**. En
-//! QBZ, una escritura fallida caía en el mismo camino que un fin natural, así
-//! que un DAC desconectado se veía como "ya acabó" y la cola se saltaba
-//! entera en silencio. Aquí solo [`Outcome::Finished`] permite avanzar la
-//! cola; lo demás se le cuenta al usuario.
+//! The point of this module is that **the end of a track has a type**. In
+//! QBZ a failed write went down the same path as a natural end, so an
+//! unplugged DAC looked like "it is over" and the whole queue skipped
+//! through in silence. Here only [`Outcome::Finished`] lets the queue
+//! advance; everything else is told to the user.
 
 use crate::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 
-/// De dónde salen los bytes que van al dispositivo.
+/// Where the bytes going to the device come from.
 pub trait FrameSource {
-    /// El siguiente bloque, ya en el formato del dispositivo. `None` = se
-    /// acabó la pista de forma natural.
+    /// The next block, already in the device's format. `None` = the track
+    /// ended naturally.
     fn next_block(&mut self) -> Option<Vec<u8>>;
 }
 
-/// Cómo terminó una pista.
+/// How a track ended.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Outcome {
-    /// La fuente se agotó y todo lo suyo se entregó. Es el ÚNICO final que
-    /// permite avanzar a la siguiente pista.
+    /// The source ran out and everything of its was delivered. It is the
+    /// ONLY ending that allows moving to the next track.
     Finished { frames: u64 },
-    /// Alguien pidió parar.
+    /// Somebody asked to stop.
     Stopped { frames: u64 },
-    /// El dispositivo falló. La cola no avanza y el usuario se entera.
+    /// The device failed. The queue does not advance and the user finds out.
     Failed { frames: u64, error: SinkError },
 }
 
@@ -39,15 +39,15 @@ impl Outcome {
     }
 }
 
-/// Cuántos xruns seguidos se toleran antes de dar el dispositivo por perdido.
+/// How many xruns in a row are tolerated before giving the device up.
 const MAX_CONSECUTIVE_XRUNS: u32 = 8;
 
-/// Entrega todo lo que dé la fuente y regresa cómo terminó.
+/// Delivers everything the source gives and returns how it ended.
 ///
-/// Mira la señal de paro entre bloques, así que parar no depende de que el
-/// dispositivo conteste. Reintenta las escrituras parciales, tolera algunos
-/// xruns seguidos y, cuando el dispositivo se pierde o se tarda de más, no
-/// finge un final natural.
+/// It checks the stop signal between blocks, so stopping does not depend on
+/// the device answering. It retries partial writes, tolerates a few xruns
+/// in a row, and when the device is lost or takes too long it does not fake
+/// a natural end.
 pub fn render<S, K>(source: &mut S, sink: &mut K, stop: &StopSignal) -> Outcome
 where
     S: FrameSource,
@@ -56,12 +56,12 @@ where
     render_with(source, sink, stop, &mut |_| {})
 }
 
-/// Lo mismo, avisando cuántos frames llevan entregados.
+/// The same, reporting how many frames have gone out.
 ///
-/// El aviso sale del lazo de entrega, así que la posición que ve la interfaz
-/// es la que de verdad salió por el cable y no una cuenta del reloj. Se llama
-/// una vez por escritura aceptada, y nunca desde el hilo de audio del
-/// sistema.
+/// The report comes from the delivery loop, so the position the interface
+/// sees is what really went over the wire and not a clock's count. It is
+/// called once per accepted write, and never from the system's audio
+/// thread.
 pub fn render_with<S, K>(
     source: &mut S,
     sink: &mut K,
@@ -75,11 +75,11 @@ where
     render_paused(source, sink, stop, &PauseSignal::new(), on_progress)
 }
 
-/// Lo mismo, atendiendo también la pausa.
+/// The same, minding the pause as well.
 ///
-/// En pausa el lazo deja de escribir y espera, y le avisa al dispositivo por
-/// si sabe pausar de verdad. Sigue mirando la señal de paro, así que parar
-/// desde una pausa sale de inmediato.
+/// While paused the loop stops writing and waits, and tells the device in
+/// case it can really pause. It keeps watching the stop signal, so stopping
+/// from a pause returns at once.
 pub fn render_paused<S, K>(
     source: &mut S,
     sink: &mut K,
@@ -159,7 +159,7 @@ mod tests {
             let pause_thread = pause.clone();
             let ready_thread = Arc::clone(&ready);
             s.spawn(move || {
-                // Mientras está en pausa no debe salir nada.
+                // While paused, nothing must go out.
                 std::thread::sleep(Duration::from_millis(60));
                 ready_thread.store(true, Ordering::Release);
                 pause_thread.set(false);
@@ -205,8 +205,8 @@ mod tests {
         }
     }
 
-    /// Un dispositivo de mentiras: acepta `accept` frames por escritura y
-    /// falla en la escritura número `fail_at` con `error`.
+    /// A fake device: it takes `accept` frames per write and fails on write
+    /// number `fail_at` with `error`.
     struct FakeSink {
         accept: usize,
         fail_at: Option<(usize, SinkError)>,
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn a_lost_device_is_not_mistaken_for_end_of_track() {
-        // El hallazgo: en QBZ esto avanzaba la cola entera sin avisar.
+        // The finding: in QBZ this advanced the whole queue without a word.
         let mut source = Blocks(vec![block(10), block(10)]);
         let mut sink = FakeSink::failing(100, 1, SinkError::DeviceLost);
         let out = render(&mut source, &mut sink, &StopSignal::new());
@@ -318,8 +318,8 @@ mod tests {
 
     #[test]
     fn stopping_does_not_wait_for_the_device() {
-        // La señal ya está puesta antes de empezar: el lazo la ve entre
-        // bloques y sale sin pedirle nada al dispositivo.
+        // The signal is already set before starting: the loop sees it
+        // between blocks and returns without asking the device anything.
         let stop = StopSignal::new();
         stop.stop();
         let mut source = Blocks(vec![block(10)]);

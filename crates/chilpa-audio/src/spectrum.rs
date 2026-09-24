@@ -1,35 +1,35 @@
-//! El espectro de lo que sale.
+//! The spectrum of what goes out.
 //!
-//! Una FFT de radix-2 escrita aquí, de unas cuarenta líneas. Para 1024
-//! puntos diez veces por segundo no hace falta una biblioteca, y una
-//! dependencia menos es una dependencia menos que auditar.
+//! A radix-2 FFT written here, about forty lines. For 1024 points ten times
+//! a second no library is needed, and one dependency fewer is one
+//! dependency fewer to audit.
 //!
-//! Tres cosas que hacen que el dibujo se parezca a lo que se oye:
+//! Three things that make the drawing resemble what is heard:
 //!
-//! 1. **Ventana de Hann antes de transformar.** Sin ventana, el corte del
-//!    bloque mete energía en todas las frecuencias y el espectro se ve como
-//!    una alfombra.
-//! 2. **Bandas repartidas en logaritmo.** El oído oye en octavas: repartir
-//!    las bandas lineales deja media pantalla para los agudos que nadie
-//!    distingue y aplasta los graves.
-//! 3. **Decibeles, no amplitud.** Una escala lineal deja todo pegado al
-//!    piso salvo el bombo.
+//! 1. **A Hann window before transforming.** Without one, the block's edge
+//!    puts energy into every frequency and the spectrum looks like a
+//!    carpet.
+//! 2. **Bands spread logarithmically.** The ear hears in octaves: spreading
+//!    them linearly gives half the screen to treble nobody tells apart and
+//!    squashes the bass.
+//! 3. **Decibels, not amplitude.** A linear scale leaves everything stuck
+//!    to the floor except the kick drum.
 
 use std::f32::consts::PI;
 
-/// El piso del dibujo. Por debajo de esto es silencio para lo que importa.
+/// The drawing's floor. Below this it is silence for what matters.
 pub const DB_FLOOR: f32 = -90.0;
 
-/// Reparte el espectro de `samples` en `bandas`, de 0.0 a 1.0.
+/// Spreads the spectrum of `samples` into `bands`, from 0.0 to 1.0.
 ///
-/// `sample_rate_hz` decide hasta dónde llegan las bandas: la mitad, que es
-/// lo único que una FFT puede decir de una señal muestreada.
+/// `sample_rate_hz` decides how far the bands reach: half of it, which is
+/// all an FFT can say about a sampled signal.
 pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
     if samples.is_empty() || bands == 0 || sample_rate_hz == 0 {
         return Vec::new();
     }
-    // Se usa la última potencia de dos que quepa: la FFT de radix-2 no sabe
-    // de otros tamaños, y lo último es lo que se está oyendo.
+    // The last power of two that fits is used: the radix-2 FFT knows no
+    // other sizes, and the last of it is what is being heard.
     let n = power_of_two(samples.len());
     if n < 32 {
         return Vec::new();
@@ -45,13 +45,13 @@ pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
     let mut im = vec![0.0f32; n];
     fft(&mut re, &mut im);
 
-    // La mitad útil, en magnitud normalizada por el tamaño.
+    // The useful half, in magnitude normalized by the size.
     let half = n / 2;
     let magnitudes: Vec<f32> = (0..half)
         .map(|k| (re[k] * re[k] + im[k] * im[k]).sqrt() * 2.0 / n as f32)
         .collect();
 
-    // Las bandas se reparten en logaritmo entre 20 Hz y Nyquist.
+    // The bands are spread logarithmically between 20 Hz and Nyquist.
     let nyquist = sample_rate_hz as f32 / 2.0;
     let per_bin = nyquist / half as f32;
     let (low, alto) = (20.0f32, nyquist.max(40.0));
@@ -63,15 +63,15 @@ pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
         let hasta_hz = low * (paso * (b + 1) as f32).exp();
         let k0 = ((from_hz / per_bin) as usize).min(half.saturating_sub(1));
         let k1 = ((hasta_hz / per_bin).ceil() as usize).clamp(k0 + 1, half);
-        // El pico de la banda, no el promedio: un tono fino no debe
-        // desaparecer por caer en una banda ancha.
+        // The band's peak, not its average: a narrow tone must not vanish
+        // because it fell in a wide band.
         let pico = magnitudes[k0..k1].iter().copied().fold(0.0f32, f32::max);
         output.push(to_normalized_db(pico));
     }
     output
 }
 
-/// Una magnitud de 0..1 llevada a 0..1 en decibeles sobre el piso.
+/// A 0..1 magnitude taken to 0..1 in decibels above the floor.
 fn to_normalized_db(magnitude: f32) -> f32 {
     if magnitude <= 0.0 {
         return 0.0;
@@ -80,7 +80,7 @@ fn to_normalized_db(magnitude: f32) -> f32 {
     ((db - DB_FLOOR) / -DB_FLOOR).clamp(0.0, 1.0)
 }
 
-/// La mayor potencia de dos que cabe en `n`.
+/// The largest power of two that fits in `n`.
 fn power_of_two(n: usize) -> usize {
     if n == 0 {
         return 0;
@@ -88,17 +88,17 @@ fn power_of_two(n: usize) -> usize {
     1usize << (usize::BITS - 1 - n.leading_zeros()) as usize
 }
 
-/// FFT de radix-2, en el lugar. `re` e `im` tienen que medir lo mismo y ser
-/// una potencia de dos.
+/// Radix-2 FFT, in place. `re` and `im` have to be the same length and a
+/// power of two.
 ///
-/// Es pública porque el análisis de tonalidad la necesita y escribirla dos
-/// veces sería tener dos FFT que se pueden desincronizar.
+/// It is public because key analysis needs it and writing it twice would
+/// mean two FFTs that can drift apart.
 pub fn fft(re: &mut [f32], im: &mut [f32]) {
     let n = re.len();
     if n <= 1 {
         return;
     }
-    // Reordenar por inversión de bits.
+    // Reorder by bit reversal.
     let mut j = 0usize;
     for i in 1..n {
         let mut bit = n >> 1;
@@ -112,7 +112,7 @@ pub fn fft(re: &mut [f32], im: &mut [f32]) {
             im.swap(i, j);
         }
     }
-    // Mariposas, de a pares, de a cuartetos, y así.
+    // Butterflies, in pairs, in fours, and so on.
     let mut largo = 2usize;
     while largo <= n {
         let angle = -2.0 * PI / largo as f32;
@@ -140,7 +140,7 @@ pub fn fft(re: &mut [f32], im: &mut [f32]) {
 mod tests {
     use super::*;
 
-    /// Un seno de esa frecuencia, en mono.
+    /// A sine at that frequency, in mono.
     fn sine(hz: f32, rate: u32, frames: usize, amplitude: f32) -> Vec<f32> {
         (0..frames)
             .map(|i| amplitude * (2.0 * PI * hz * i as f32 / rate as f32).sin())
@@ -169,7 +169,7 @@ mod tests {
             .map(|(i, _)| i)
             .unwrap();
 
-        // La banda del pico tiene que cubrir los 1000 Hz.
+        // The peak's band has to cover 1000 Hz.
         let paso = ((rate as f32 / 2.0) / 20.0).ln() / 24.0;
         let from = 20.0 * (paso * mayor as f32).exp();
         let hasta = 20.0 * (paso * (mayor + 1) as f32).exp();
@@ -177,7 +177,7 @@ mod tests {
             (from..=hasta).contains(&1_000.0),
             "el pico cayó en {from:.0}..{hasta:.0} Hz, no en 1000"
         );
-        // Y las bandas lejanas están muy por debajo.
+        // And the far bands are well below.
         let far = bands[(mayor + 8).min(23)];
         assert!(far < bands[mayor] / 2.0, "se derramó: {far} contra {}", bands[mayor]);
     }

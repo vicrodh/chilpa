@@ -1,27 +1,26 @@
-//! Pegar dos pistas sin hueco y sin muestras de más.
+//! Joining two tracks with no gap and no extra samples.
 //!
-//! Dos cosas hay que resolver para que gapless sea de verdad:
+//! Two things have to be solved for gapless to be real:
 //!
-//! 1. **El relleno del codificador.** AAC y MP3 traen frames de arranque y de
-//!    cola que el codificador metió y que no son música. Si no se recortan,
-//!    entre pista y pista se oye un chasquido; si se recortan de más, se come
-//!    música. El recorte tiene que ser exacto aunque caiga a mitad de un
-//!    bloque.
-//! 2. **El formato.** Solo se puede seguir sin cortar si la pista que sigue
-//!    suena con el MISMO formato de stream. Si cambia la frecuencia o los
-//!    bits, hay que renegociar el dispositivo, y eso siempre deja un hueco:
-//!    se dice, no se disimula.
+//! 1. **The encoder's padding.** AAC and MP3 carry leading and trailing
+//!    frames the encoder added that are not music. Left in, you hear a
+//!    click between tracks; trimmed too far, it eats music. The trim has to
+//!    be exact even when it falls in the middle of a block.
+//! 2. **The format.** You can only carry on uncut if the next track plays at
+//!    the SAME stream format. If the rate or the bits change, the device
+//!    has to be renegotiated, and that always leaves a gap: it is stated,
+//!    not covered up.
 
 use crate::format::StreamFormat;
 
-/// Qué se puede hacer al llegar a la siguiente pista.
+/// What can be done on reaching the next track.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Transition {
-    /// Mismo formato: se sigue escribiendo en el mismo dispositivo, sin
-    /// cortar ni vaciar el búfer.
+    /// Same format: keep writing to the same device, without cutting or
+    /// draining the buffer.
     Seamless,
-    /// Cambia el formato: hay que reabrir el dispositivo. El hueco es
-    /// inevitable, y el usuario merece saber por qué.
+    /// The format changes: the device has to be reopened. The gap is
+    /// unavoidable, and the user deserves to know why.
     Renegotiate { from: StreamFormat, to: StreamFormat },
 }
 
@@ -31,7 +30,7 @@ impl Transition {
     }
 }
 
-/// Decide cómo pasar de una pista a la siguiente.
+/// Decides how to move from one track to the next.
 pub fn transition(current: StreamFormat, next: StreamFormat) -> Transition {
     if current.same_stream(&next) {
         Transition::Seamless
@@ -40,23 +39,23 @@ pub fn transition(current: StreamFormat, next: StreamFormat) -> Transition {
     }
 }
 
-/// Recorta el relleno del codificador contando frames, no bloques.
+/// Trims the encoder's padding by counting frames, not blocks.
 ///
-/// El recorte del final necesita saber cuántos frames tiene la pista; si el
-/// contenedor no lo dice, se retienen los últimos `padding` frames hasta
-/// saber si eran los últimos (`finish`).
+/// Trimming the end needs to know how many frames the track has; if the
+/// container does not say, the last `padding` frames are held back until it
+/// is known whether they were the last (`finish`).
 #[derive(Debug)]
 pub struct Trimmer {
     delay: u64,
     padding: usize,
     channels: usize,
     consumed: u64,
-    /// Frames retenidos a la espera de saber si son el final.
+    /// Frames held back until it is known whether they are the end.
     queue: Vec<i32>,
 }
 
 impl Trimmer {
-    /// `delay` y `padding` en frames, como los declara el contenedor.
+    /// `delay` and `padding` in frames, as the container declares them.
     pub fn new(delay: u64, padding: u32, channels: u16) -> Self {
         Self {
             delay,
@@ -67,17 +66,17 @@ impl Trimmer {
         }
     }
 
-    /// Frames que ya salieron, sin contar los recortados.
+    /// Frames that have gone out, not counting the trimmed ones.
     pub fn emitted(&self) -> u64 {
         self.consumed
     }
 
-    /// Pasa un bloque por el recorte. Lo que regresa ya es música.
+    /// Runs a block through the trim. What comes back is music.
     pub fn push(&mut self, block: &[i32]) -> Vec<i32> {
         let mut data = std::mem::take(&mut self.queue);
         data.extend_from_slice(block);
 
-        // Recorte del arranque: puede abarcar varios bloques.
+        // The leading trim: it can span several blocks.
         let pending = self.delay.saturating_sub(self.consumed);
         let frames = data.len() / self.channels;
         let skip = pending.min(frames as u64) as usize;
@@ -86,7 +85,7 @@ impl Trimmer {
             self.consumed += skip as u64;
         }
 
-        // Se retienen los últimos `padding` frames por si son la cola.
+        // The last `padding` frames are held back in case they are the tail.
         let frames = data.len() / self.channels;
         let hold = self.padding.min(frames);
         let cut = (frames - hold) * self.channels;
@@ -95,7 +94,7 @@ impl Trimmer {
         data
     }
 
-    /// Se acabó la pista: lo retenido era relleno y se tira.
+    /// The track is over: what was held back was padding and is dropped.
     pub fn finish(&mut self) -> Vec<i32> {
         self.queue.clear();
         Vec::new()
@@ -137,7 +136,7 @@ mod tests {
 
     #[test]
     fn the_start_trim_spans_blocks() {
-        // 5 frames de delay repartidos entre dos bloques de 3.
+        // 5 frames of delay spread across two blocks of 3.
         let mut t = Trimmer::new(5, 0, 2);
         assert!(t.push(&frames(0, 3)).is_empty(), "el primer bloque es todo relleno");
         let second = t.push(&frames(3, 3));

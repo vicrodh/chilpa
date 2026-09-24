@@ -1,8 +1,9 @@
-//! Una salida que escribe a un archivo en vez de a un DAC.
+//! An output that writes to a file instead of to a DAC.
 //!
-//! Sirve para dos cosas: probar la ruta completa sin sacar sonido, y
-//! comprobar el bit-perfect contra lo que de verdad salió. No resamplea ni
-//! convierte nada: acepta el formato que le den y guarda los bytes tal cual.
+//! It is good for two things: exercising the whole path without making a
+//! sound, and checking bit-perfect against what actually went out. It
+//! neither resamples nor converts: it takes the format it is given and
+//! stores the bytes as they are.
 
 use crate::format::StreamFormat;
 use crate::negotiate::DeviceCaps;
@@ -11,11 +12,11 @@ use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
 
-/// El identificador con el que se pide esta salida.
+/// The identifier this output is asked for by.
 pub const CAPTURE_ID: &str = "capture";
 
-/// Capacidades de la captura: acepta cualquier formato entero, así que
-/// nunca obliga a convertir.
+/// The capture's caps: it accepts any integer format, so it never forces
+/// a conversion.
 pub fn capabilities() -> DeviceCaps {
     use crate::format::SampleFormat::*;
     DeviceCaps {
@@ -24,12 +25,12 @@ pub fn capabilities() -> DeviceCaps {
         ],
         formats: vec![S16, S24Packed, S24In32, S32],
         channels: vec![1, 2, 4, 6, 8],
-        // Medidas de verdad: esta salida sabe exactamente lo que acepta.
+        // Really measured: this output knows exactly what it accepts.
         probed: true,
     }
 }
 
-/// Guarda lo entregado en un archivo crudo.
+/// Stores what was delivered in a raw file.
 pub struct CaptureSink {
     file: BufWriter<File>,
     stream: StreamFormat,

@@ -1,27 +1,27 @@
-//! Cómo se ve un stream en el cable.
+//! What a stream looks like on the wire.
 
-/// Lo que el dispositivo acepta en cada muestra.
+/// What the device accepts in each sample.
 ///
-/// No hay un formato "hi-res" ni banderas: hay un formato de muestra, una
-/// frecuencia y un número de canales.
+/// There is no "hi-res" format and no flags: there is a sample format, a
+/// rate and a channel count.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub enum SampleFormat {
-    /// Entero de 16 bits, little endian.
+    /// 16-bit integer, little endian.
     S16,
-    /// Entero de 24 bits en 3 bytes.
+    /// 24-bit integer in 3 bytes.
     S24Packed,
-    /// Entero de 24 bits dentro de 32, justificado a la izquierda: los 24
-    /// bits válidos van en los bytes altos y el byte bajo queda en cero.
+    /// 24-bit integer inside 32, left-justified: the 24 valid bits go in the
+    /// high bytes and the low byte stays zero.
     S24In32,
-    /// Entero de 32 bits.
+    /// 32-bit integer.
     S32,
-    /// Flotante de 32 bits. El dispositivo convierte, así que lo que llega al
-    /// DAC ya no es lo que produjimos.
+    /// 32-bit float. The device converts, so what reaches the DAC is no
+    /// longer what we produced.
     F32,
 }
 
 impl SampleFormat {
-    /// Bytes que ocupa una muestra en el cable.
+    /// Bytes a sample takes on the wire.
     pub const fn bytes(self) -> usize {
         match self {
             SampleFormat::S16 => 2,
@@ -30,7 +30,7 @@ impl SampleFormat {
         }
     }
 
-    /// Bits con información, no bits en el cable. `S24In32` lleva 24.
+    /// Bits carrying information, not bits on the wire. `S24In32` carries 24.
     pub const fn valid_bits(self) -> u8 {
         match self {
             SampleFormat::S16 => 16,
@@ -40,14 +40,14 @@ impl SampleFormat {
         }
     }
 
-    /// Cierto si el dispositivo recibe enteros tal cual. Un stream de
-    /// flotantes nunca puede ser bit-perfect, porque alguien convierte.
+    /// True when the device receives integers as they are. A float stream can
+    /// never be bit-perfect, because somebody converts.
     pub const fn is_integer(self) -> bool {
         !matches!(self, SampleFormat::F32)
     }
 }
 
-/// Un stream concreto: formato, frecuencia y canales.
+/// One concrete stream: format, rate and channels.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct StreamFormat {
     pub sample_format: SampleFormat,
@@ -64,9 +64,9 @@ impl StreamFormat {
         self.sample_format.bytes() * self.channels as usize
     }
 
-    /// Cierto si los dos pueden sonar sin reconfigurar el dispositivo.
-    /// Cambiar de frecuencia o de formato entre pistas obliga a renegociar,
-    /// y ahí es donde QBZ metía clicks.
+    /// True when both can play without reconfiguring the device. Changing
+    /// rate or format between tracks forces a renegotiation, and that is
+    /// where QBZ put clicks.
     pub fn same_stream(&self, other: &Self) -> bool {
         self == other
     }

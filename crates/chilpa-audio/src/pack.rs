@@ -1,35 +1,35 @@
-//! De muestras decodificadas a los bytes del cable.
+//! From decoded samples to the bytes on the wire.
 //!
-//! La regla: **un entero nunca pasa por flotante.** En QBZ el packer recibía
-//! `f32` y lo escalaba de vuelta (`s * 32767.0`, con redondeo), así que una
-//! muestra de 24 bits podía salir 1 LSB abajo mientras la UI decía
-//! "bit-perfect". Aquí los enteros se acomodan con corrimientos, que no
-//! pierden nada, y el camino de flotantes existe solo para las fuentes que
-//! de verdad son flotantes.
+//! The rule: **an integer never goes through a float.** In QBZ the packer
+//! took `f32` and scaled it back (`s * 32767.0`, with rounding), so a
+//! 24-bit sample could come out 1 LSB low while the UI said
+//! "bit-perfect". Here integers are laid out with shifts, which lose
+//! nothing, and the float path exists only for sources that really are
+//! float.
 
 use crate::format::SampleFormat;
 
-/// Muestras ya decodificadas, en el tipo en el que venían.
+/// Already decoded samples, in the type they arrived as.
 pub enum Samples<'a> {
-    /// Enteros con signo, justificados a la derecha, con `bits` útiles.
+    /// Signed integers, right-justified, with `bits` useful ones.
     Int { data: &'a [i32], bits: u8 },
-    /// Flotantes en el rango [-1.0, 1.0].
+    /// Floats in the range [-1.0, 1.0].
     Float(&'a [f32]),
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum PackError {
-    /// Los bits de la fuente no caben en el formato del cable sin tirar
-    /// información. Nunca se trunca en silencio.
+    /// The source's bits do not fit the wire format without throwing
+    /// information away. Nothing is ever truncated silently.
     WouldTruncate { from_bits: u8, to_bits: u8 },
 }
 
-/// Escribe las muestras en el formato del cable.
+/// Writes the samples in the wire format.
 ///
-/// Subir de bits (16 a 24, por ejemplo) es exacto: se corre a la izquierda.
-/// Bajar de bits no: se rechaza, y quien llame decide si aplica dither o
-/// cambia de dispositivo. Un `f32` a un formato entero sí escala, y eso ya
-/// no es bit-perfect; la ruta bit-perfect nunca llega aquí con flotantes.
+/// Widening (16 to 24, say) is exact: a left shift. Narrowing is not: it is
+/// refused, and the caller decides whether to dither or change device. An
+/// `f32` into an integer format does scale, and that is no longer
+/// bit-perfect; the bit-perfect path never arrives here with floats.
 pub fn pack(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
     match samples {
         Samples::Int { data, bits } => pack_int(data, *bits, to, out),
@@ -42,8 +42,8 @@ pub fn pack(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Resul
 
 fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
     if to == SampleFormat::F32 {
-        // El dispositivo solo toma flotantes: se convierte, y quien llama ya
-        // sabe por `Delivery` que esto no es bit-perfect.
+        // The device only takes floats: convert, and the caller already knows
+        // from `Delivery` that this is not bit-perfect.
         out.reserve(data.len() * 4);
         let full = (1i64 << (bits - 1)) as f32;
         for &v in data {
@@ -62,8 +62,8 @@ fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Resu
         match to {
             SampleFormat::S16 => out.extend_from_slice(&(v as i16).to_le_bytes()),
             SampleFormat::S24Packed => out.extend_from_slice(&v.to_le_bytes()[..3]),
-            // Justificado a la izquierda: los 24 bits válidos ocupan los
-            // bytes altos y el bajo queda en cero.
+            // Left-justified: the 24 valid bits take the high bytes and the low
+            // one stays zero.
             SampleFormat::S24In32 => out.extend_from_slice(&(v << 8).to_le_bytes()),
             SampleFormat::S32 => out.extend_from_slice(&v.to_le_bytes()),
             SampleFormat::F32 => unreachable!("se resolvió arriba"),
@@ -128,8 +128,8 @@ mod tests {
 
     #[test]
     fn the_maximum_24_bit_value_keeps_its_last_lsb() {
-        // Este es el hallazgo del packer de QBZ: escalar por 8_388_607.0 y
-        // redondear movía las muestras fuertes un LSB.
+        // This is the finding from QBZ's packer: scaling by 8_388_607.0 and
+        // rounding moved loud samples by an LSB.
         let data = [8_388_607i32, -8_388_608, 4_194_303];
         let bytes = packed(&Samples::Int { data: &data, bits: 24 }, SampleFormat::S24Packed);
         let wrap: Vec<i32> = bytes

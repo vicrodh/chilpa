@@ -1,14 +1,14 @@
-//! El motor de audio: qué se le pide al dispositivo, cómo se acomodan las
-//! muestras y cómo se entrega DSD sin romperlo.
+//! The audio engine: what is asked of the device, how samples are laid out,
+//! and how DSD is delivered without breaking it.
 //!
-//! Tres reglas que vienen de la auditoría del motor de QBZ (CHD-0001):
+//! Three rules that come from the audit of QBZ's engine (CHD-0001):
 //!
-//! 1. **Un entero nunca pasa por flotante.** Escalar y redondear movía las
-//!    muestras un LSB mientras la UI decía "bit-perfect".
-//! 2. **No hay caída silenciosa.** O se abre lo que se pidió, o se dice qué
-//!    se cambió ([`negotiate::Delivery`]), o se falla.
-//! 3. **DoP no se interrumpe.** Una escritura parcial se reanuda donde se
-//!    quedó, y los huecos se rellenan con silencio DSD, no con ceros.
+//! 1. **An integer never goes through a float.** Scaling and rounding moved
+//!    samples by an LSB while the UI said "bit-perfect".
+//! 2. **There is no silent fallback.** Either what was asked for opens, or
+//!    what changed is stated ([`negotiate::Delivery`]), or it fails.
+//! 3. **DoP is never interrupted.** A partial write resumes where it left
+//!    off, and gaps are filled with DSD silence, not with zeros.
 
 pub mod capture;
 pub mod dop;
