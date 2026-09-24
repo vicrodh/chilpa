@@ -75,6 +75,77 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
 /// lose the last transactions, and cannot corrupt the file. For a library
 /// that is rebuilt by rescanning, losing the last few seconds is cheap and
 /// paying `FULL` on every write is not.
+/// Lets the planner see the library it actually has.
+///
+/// Every query plan in this file was chosen by the planner out of
+/// `sqlite_stat1`, and until this existed that table held the statistics of
+/// an **empty** database: the migrations end in `ANALYZE`, and a migration
+/// runs before there is a single track. The planner then spent the rest of
+/// the library's life guessing, and it guessed the same way every time --
+/// drive from `tracks`, probe everything else once per row.
+///
+/// What that cost, measured on two hundred thousand tracks on disk:
+///
+/// | | guessing | knowing |
+/// | --- | --- | --- |
+/// | "What you play most", counted | 72 ms | 44 us |
+/// | "Played this week", counted | 73 ms | 41 us |
+/// | search | 48-76 ms | 18 ms |
+/// | search, short prefix | 67 ms | 13 ms |
+///
+/// The eight smart lists counted together, which is what the panel does
+/// every time its tab opens, went from 365 ms to 2 ms. Part of that is these
+/// statistics and part is `MIGRATION_V9`; the numbers above are the part
+/// that is only this.
+///
+/// This is `ANALYZE` and not `PRAGMA optimize`, which is the pragma written
+/// for the job and is wrong for it: optimize samples two thousand rows per
+/// index and will not be talked out of it -- `analysis_limit` at zero means
+/// "unset", and it re-imposes its own cap; at a billion it caps anyway
+/// (SQLite 3.53). Two thousand rows of `track_rollup(plays)` say that about
+/// two thousand tracks share a play count when forty thousand do, and on a
+/// hundredfold underestimate the planner decides the index is worth driving
+/// from. Counting "What you play most" is 72 ms on the sampled estimate and
+/// 44 us on the true one, so the sampling costs more than it saves.
+///
+/// The full pass is about 200 ms on two hundred thousand tracks. A scan
+/// pays it, because a scan already took seconds and is the only thing that
+/// changes the shape of the library.
+pub fn update_statistics(db: &Connection) -> rusqlite::Result<()> {
+    db.execute_batch("ANALYZE;")
+}
+
+/// The same, but only when what the planner believes is far from what is
+/// there.
+///
+/// Opening cannot pay 200 ms every time, and it does not have to: the
+/// statistics only go wrong when the library changes size, and a scan
+/// updates them itself. What this is for is the library that already exists
+/// -- filled before any of this was written, carrying the statistics of an
+/// empty database, and with no reason to ever scan again.
+///
+/// The check is one count, about 2 ms at two hundred thousand tracks. The
+/// factor is four rather than something tighter because a plan does not turn
+/// on a rounding error: what ruins one is believing there are no tracks when
+/// there are two hundred thousand.
+pub fn update_statistics_if_stale(db: &Connection) -> rusqlite::Result<()> {
+    use rusqlite::OptionalExtension;
+    // The first field of `stat` is the table's row count as last analyzed.
+    let recorded: Option<String> = db
+        .query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| r.get(0))
+        .optional()
+        // No `sqlite_stat1` at all: nothing has ever been analyzed.
+        .unwrap_or(None);
+    let believed: i64 = recorded
+        .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
+        .unwrap_or(0);
+    let real: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0))?;
+    if real > believed.saturating_mul(4) || believed > real.saturating_mul(4) {
+        update_statistics(db)?;
+    }
+    Ok(())
+}
+
 pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
     db.pragma_update(None, "journal_mode", "WAL")?;
     db.pragma_update(None, "synchronous", "NORMAL")?;

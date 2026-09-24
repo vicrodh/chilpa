@@ -12,25 +12,31 @@
 //! nothing can hit it is not a gate, and these used to all be 1500 ms with
 //! everything running in 3.
 //!
-//! Measured on this machine with fifty thousand tracks, before and after the
-//! V6 and V7 migrations (the rollups and FTS5):
+//! Measured on this machine with fifty thousand tracks, at each step:
+//! first the rollups and FTS5 (V6 and V7), then giving the planner the
+//! statistics of the library it actually has.
 //!
-//! | what | before | after |
-//! | --- | --- | --- |
-//! | grid, sorted on an album column | 7 ms | 3 ms |
-//! | grid, sorted by plays or by date | 135-155 ms | 3-4 ms |
-//! | artists | 78 ms | 7 ms |
-//! | search | 80 ms | 12 ms |
-//! | most played | 72 ms | 10 ms |
-//! | last played | 70 ms | 0.2 ms |
-//! | the eight smart lists, counted | 200 ms | 60 ms |
+//! | what | walking it | V6/V7 | with statistics |
+//! | --- | --- | --- | --- |
+//! | grid, sorted on an album column | 7 ms | 3 ms | 3 ms |
+//! | grid, sorted by plays or by date | 135-155 ms | 3-4 ms | 3-4 ms |
+//! | artists | 78 ms | 7 ms | 7 ms |
+//! | search | 80 ms | 12 ms | 11 ms |
+//! | most played | 72 ms | 10 ms | 0.25 ms |
+//! | last played | 70 ms | 0.2 ms | 0.16 ms |
+//! | the eight smart lists, counted | 200 ms | 60 ms | 1.7 ms |
 //!
-//! That last one is the worst case by construction and not by accident: in
+//! The last row is the worst case by construction and not by accident: in
 //! this fixture every track has been played, so "Never played" cannot stop
 //! at its limit and walks the whole library to find nothing. A real library
 //! is the other way round -- most of it has never been played -- and the
 //! count stops at two hundred. The number to keep an eye on is this one,
 //! because it is the one that cannot get lucky.
+//!
+//! Resolving a list is the other half and it is not in the table: the panel
+//! counts, and pressing play on one resolves it. "Never played" resolves in
+//! 51 ms here for the same reason, and that is a query taking what a query
+//! takes, once, on purpose.
 
 use chilpa_library::{AlbumSort, Library, Rule, SmartList, SmartOrder};
 use rusqlite::params;
@@ -101,6 +107,10 @@ fn large_library() -> Library {
         }
     }
     tx.commit().unwrap();
+    // A real library gets this from its scan; this one was filled by hand.
+    // Without it the planner works from the statistics of an empty database,
+    // which is what made the smart lists slow before anyone noticed.
+    lib.update_statistics().unwrap();
     lib
 }
 
@@ -164,10 +174,14 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     // something that runs while someone scrolls.
     within("statistics", t, Duration::from_millis(300));
 
+    // These two read a rollup by an index that carries the whole ordering,
+    // so they are a couple of hundred microseconds and the ceiling can say
+    // so. A ceiling of a hundred milliseconds here would have let the
+    // planner's empty-database statistics through without a word.
     let (_, t) = how_long(|| lib.top_tracks(20).unwrap());
-    within("most played", t, Duration::from_millis(100));
+    within("most played", t, Duration::from_millis(20));
     let (_, t) = how_long(|| lib.recently_played(20).unwrap());
-    within("last played", t, Duration::from_millis(50));
+    within("last played", t, Duration::from_millis(20));
 
     // The smart lists. Counting them is what the panel does -- eight side
     // by side, every time the tab opens -- and resolving one is what
@@ -179,7 +193,7 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
             .map(|l| lib.smart_count(l).unwrap())
             .sum::<usize>()
     });
-    within("the eight lists, counted", t, Duration::from_millis(200));
+    within("the eight lists, counted", t, Duration::from_millis(20));
 
     for list in chilpa_library::smart_builtins() {
         let (_, t) = how_long(|| lib.smart_tracks(&list).unwrap());
