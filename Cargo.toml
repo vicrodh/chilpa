@@ -9,6 +9,7 @@ members = [
     "crates/chilpa-plugin",
     "crates/chilpa-secrets",
     "crates/chilpa-auth",
+    "crates/chilpa-i18n",
     "crates/chilpa-library",
     "crates/chilpa-stream",
     "crates/chilpa-decode",
@@ -36,6 +37,7 @@ chilpa-analysis = { path = "crates/chilpa-analysis" }
 chilpa-plugin = { path = "crates/chilpa-plugin" }
 chilpa-secrets = { path = "crates/chilpa-secrets" }
 chilpa-auth = { path = "crates/chilpa-auth" }
+chilpa-i18n = { path = "crates/chilpa-i18n" }
 chilpa-library = { path = "crates/chilpa-library" }
 chilpa-stream = { path = "crates/chilpa-stream" }
 chilpa-decode = { path = "crates/chilpa-decode" }

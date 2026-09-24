@@ -478,6 +478,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-i18n"
+version = "0.0.0"
+
+[[package]]
 name = "chilpa-library"
 version = "0.0.0"
 dependencies = [

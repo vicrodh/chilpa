@@ -466,6 +466,30 @@ impl Plugins {
         self.registry.installed().find(|i| i.id == id)?.manifest.as_ref()?.auth.clone()
     }
 
+    /// Se lleva la carpeta del plugin. Devuelve cierto si ya no está.
+    pub fn uninstall(&mut self, id: &str) -> bool {
+        let Some(dir) = valid_id(id).then(|| self.root.join(id)) else { return false };
+        if !dir.exists() {
+            return true;
+        }
+        std::fs::remove_dir_all(&dir).is_ok()
+    }
+
+    /// Cierto si ese plugin dijo que maneja su propia cuenta.
+    pub fn manages_own_account(&self, id: &str) -> bool {
+        self.registry
+            .installed()
+            .find(|i| i.id == id)
+            .and_then(|i| i.manifest.as_ref())
+            .is_some_and(|m| {
+                m.capabilities
+                    .iter()
+                    .any(|c| {
+                        matches!(c, chilpa_plugin::manifest::Capability::OwnAccount { .. })
+                    })
+            })
+    }
+
     /// Cierto si ese source dice que puede entregar audio.
     pub fn delivers_audio(&self, id: &str) -> bool {
         self.registry
@@ -577,6 +601,10 @@ impl Chilpa {
         }
         // Quitar el permiso borra el secreto: dejarlo guardado para un
         // plugin que ya no corre es guardar un token por nada.
+        //
+        // Quitar el permiso no desinstala: el plugin sigue en su carpeta y
+        // lo suyo también. Lo que lo borra todo es desinstalarlo, que le
+        // pide primero que limpie.
         p.forget_credential(id);
         p.forget();
         p.load_all()
@@ -710,6 +738,45 @@ impl Chilpa {
             .and_then(|p| p.secrets_backend())
             .map(|b| b.describe().to_string())
             .unwrap_or_default()
+    }
+
+    /// Lo desinstala: le pide que borre lo suyo, le quita el permiso y se
+    /// lleva su carpeta.
+    ///
+    /// El orden importa. Primero se le avisa, **mientras todavía puede
+    /// correr**: un plugin que maneja su propia cuenta guardó su credencial
+    /// donde Chilpa no llega, y la única forma de que se vaya es que él la
+    /// borre. Quitarle el permiso antes lo dejaría sin poder hacerlo.
+    ///
+    /// Que no conteste no detiene nada: se desinstala igual y se dice qué
+    /// quedó sin limpiar, porque callarlo sería dejar al usuario creyendo
+    /// que se llevó todo.
+    pub fn uninstall_plugin(&mut self, id: &str) -> bool {
+        let Some(shared) = self.plugins.clone() else { return false };
+        let Ok(mut p) = shared.lock() else { return false };
+
+        let own = p.manages_own_account(id);
+        let told = p
+            .call_short(id, chilpa_plugin::messages::op::REVOKE, b"{}")
+            .is_ok();
+        p.forget_credential(id);
+        let _ = p.revoke(id);
+        p.forget();
+        let gone = p.uninstall(id);
+        p.load_all();
+        drop(p);
+
+        if !gone {
+            self.now.error = format!("no se pudo borrar la carpeta de \"{id}\"");
+            return false;
+        }
+        if own && !told {
+            self.now.error = "lo desinstalé, pero manejaba su cuenta por su lado y no \
+                 contestó cuando le pedí borrarla: puede que tu credencial siga guardada \
+                 donde él la haya puesto"
+                .into();
+        }
+        true
     }
 
     /// Saca un plugin de cuarentena.

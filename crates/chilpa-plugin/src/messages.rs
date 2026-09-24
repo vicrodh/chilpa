@@ -29,6 +29,14 @@ pub mod op {
     pub const PLAYLIST_TRACKS: &str = "chilpa_playlist_tracks";
     /// De un id externo a algo que se pueda reproducir.
     pub const RESOLVER: &str = "chilpa_resolver";
+    /// "Olvida lo que tengas mío." Se le pide antes de desinstalarlo.
+    ///
+    /// Es la única operación que Chilpa manda sin que nadie la pida desde
+    /// la ventana, y la única cuya respuesta no se usa para nada: lo que
+    /// importa es haberla mandado. Un plugin que maneja su propia cuenta
+    /// (`own_account`) es el que tiene algo que borrar aquí; para los demás
+    /// es no hacer nada.
+    pub const REVOKE: &str = "chilpa_revoke";
 }
 
 /// Cuánto se acepta de una sola respuesta, por tipo de entidad.

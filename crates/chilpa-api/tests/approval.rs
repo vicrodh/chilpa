@@ -108,5 +108,10 @@ fn a_plugin_does_not_run_until_the_user_approves_what_it_asks() {
         .expect_err("ya no hay instancia");
     assert!(e.contains("aprobado"), "{e}");
 
+    // Y desinstalarlo se lleva su carpeta entera, no solo el permiso.
+    assert!(other.uninstall_plugin("com.prueba.uno"), "{}", other.now_playing().error);
+    assert!(!root.join("com.prueba.uno").exists(), "la carpeta se fue");
+    assert!(other.plugins().is_empty(), "y ya no se lista");
+
     let _ = std::fs::remove_dir_all(dir);
 }
