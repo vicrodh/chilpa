@@ -292,6 +292,12 @@ msgstr ""
 msgid "Pause"
 msgstr ""
 
+msgid "PipeWire has no output called \"{}\" any more"
+msgstr ""
+
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr ""
+
 msgid "Play"
 msgstr ""
 
@@ -717,6 +723,9 @@ msgstr ""
 msgid "no sound card is listed in /proc/asound"
 msgstr ""
 
+msgid "no sound server answered; install pipewire and pipewire-pulse"
+msgstr ""
+
 msgid "not supported: {}"
 msgstr ""
 
@@ -973,6 +982,9 @@ msgid "the scan failed: {}"
 msgstr ""
 
 msgid "the sector is DST compressed"
+msgstr ""
+
+msgid "the server answering is {}, not PipeWire"
 msgstr ""
 
 msgid "the server sent no audio: {}"

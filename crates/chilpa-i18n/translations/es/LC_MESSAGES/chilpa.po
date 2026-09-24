@@ -292,6 +292,12 @@ msgstr "Asistente de salida"
 msgid "Pause"
 msgstr "Pausa"
 
+msgid "PipeWire has no output called \"{}\" any more"
+msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
+
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr "PipeWire deja pasar las muestras sin tocarlas solo cuando entrega la salida a un programa a la vez. Chilpa se lo pide siempre que bit-perfect esté encendido. Apagado, el grafo mezcla esto con todo lo demás y remuestrea el resultado a la frecuencia a la que esté corriendo."
+
 msgid "Play"
 msgstr "Reproducir"
 
@@ -717,6 +723,9 @@ msgstr "sin pulso"
 msgid "no sound card is listed in /proc/asound"
 msgstr "no hay ninguna tarjeta de sonido listada en /proc/asound"
 
+msgid "no sound server answered; install pipewire and pipewire-pulse"
+msgstr "ningún servidor de sonido contestó; instala pipewire y pipewire-pulse"
+
 msgid "not supported: {}"
 msgstr "no soportado: {}"
 
@@ -974,6 +983,9 @@ msgstr "el escaneo falló: {}"
 
 msgid "the sector is DST compressed"
 msgstr "el sector viene comprimido con DST"
+
+msgid "the server answering is {}, not PipeWire"
+msgstr "el servidor que contesta es {}, no PipeWire"
 
 msgid "the server sent no audio: {}"
 msgstr "el servidor no mandó audio: {}"

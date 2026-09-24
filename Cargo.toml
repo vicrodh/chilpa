@@ -18,6 +18,7 @@ members = [
     "crates/chilpa-sacd",
     "crates/chilpa-cd",
     "crates/chilpa-alsa",
+    "crates/chilpa-pipewire",
     "crates/chilpa-core",
     "crates/chilpa-api",
     "crates/chilpa-qt",
@@ -47,5 +48,6 @@ chilpa-dsd = { path = "crates/chilpa-dsd" }
 chilpa-sacd = { path = "crates/chilpa-sacd" }
 chilpa-cd = { path = "crates/chilpa-cd" }
 chilpa-alsa = { path = "crates/chilpa-alsa" }
+chilpa-pipewire = { path = "crates/chilpa-pipewire" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }
