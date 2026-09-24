@@ -214,6 +214,9 @@ msgstr ""
 msgid "Most played"
 msgstr ""
 
+msgid "Mute"
+msgstr ""
+
 msgid "My library"
 msgstr ""
 
@@ -418,6 +421,12 @@ msgstr ""
 msgid "The service's answer is missing."
 msgstr ""
 
+msgid "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means."
+msgstr ""
+
+msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
+msgstr ""
+
 msgid "This plugin wants:"
 msgstr ""
 
@@ -430,7 +439,13 @@ msgstr ""
 msgid "Track {}"
 msgstr ""
 
+msgid "Unmute"
+msgstr ""
+
 msgid "Visualizer"
+msgstr ""
+
+msgid "Volume"
 msgstr ""
 
 msgid "Wave"
@@ -792,6 +807,9 @@ msgstr ""
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr ""
 
+msgid "the device's volume control is gone"
+msgstr ""
+
 msgid "the disc carries no audio tracks"
 msgstr ""
 
@@ -943,6 +961,9 @@ msgid "this library is version {} and this Chilpa understands up to {}; update C
 msgstr ""
 
 msgid "this list"
+msgstr ""
+
+msgid "this output has no volume control of its own"
 msgstr ""
 
 msgid "this plugin declared no network permission"

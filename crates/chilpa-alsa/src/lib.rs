@@ -6,8 +6,10 @@
 //! back was silent and the UI kept saying "bit-perfect".
 
 pub mod devices;
+pub mod volume;
 
 pub use devices::{list, Device};
+pub use volume::{Level, Volume};
 
 use alsa::pcm::{Access, Format, HwParams, State, PCM};
 use alsa::{Direction, ValueOr};

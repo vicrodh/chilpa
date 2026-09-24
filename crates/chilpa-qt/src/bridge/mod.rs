@@ -173,6 +173,18 @@ pub mod chilpa_bridge {
         /// it to `translate` re-evaluates, which is what makes the window
         /// change language without being rebuilt.
         #[qproperty(i32, tr_rev)]
+        /// True if the chosen output has a volume control of its own.
+        /// Chilpa never scales samples, so when it is false there is no
+        /// volume to offer and the window says so instead of growing a
+        /// slider that would end bit-perfect.
+        #[qproperty(bool, has_volume)]
+        /// Where that control sits, from 0 to 100.
+        #[qproperty(i32, volume)]
+        /// True if the output is muted, and true if it can be.
+        #[qproperty(bool, muted)]
+        #[qproperty(bool, can_mute)]
+        /// Which control it is, as the card names it: `Master`, `PCM`...
+        #[qproperty(QString, volume_control)]
         /// The folders the library is made of, one per line.
         #[qproperty(QStringList, library_folders)]
         /// The visualizers that ship, as "id\tname".
@@ -245,6 +257,18 @@ pub mod chilpa_bridge {
         /// Reads the machine's outputs again.
         #[qinvokable]
         fn refresh_outputs(self: Pin<&mut Chilpa>);
+
+        /// Reads the chosen output's own volume control.
+        #[qinvokable]
+        fn refresh_volume(self: Pin<&mut Chilpa>);
+
+        /// Moves the output's own volume control.
+        #[qinvokable]
+        fn choose_volume(self: Pin<&mut Chilpa>, percent: i32);
+
+        /// Mutes or unmutes the output.
+        #[qinvokable]
+        fn choose_muted(self: Pin<&mut Chilpa>, muted: bool);
 
         /// Starts a file playing on the chosen output.
         #[qinvokable]
@@ -536,6 +560,11 @@ pub struct ChilpaRust {
     language: QString,
     languages: QStringList,
     tr_rev: i32,
+    has_volume: bool,
+    volume: i32,
+    muted: bool,
+    can_mute: bool,
+    volume_control: QString,
     library_folders: QStringList,
     visualizers: QStringList,
     outputs: QStringList,
@@ -641,6 +670,11 @@ impl Default for ChilpaRust {
             language: QString::from(api.language()),
             languages: QStringList::from(&codes),
             tr_rev: 0,
+            has_volume: false,
+            volume: 0,
+            muted: false,
+            can_mute: false,
+            volume_control: QString::from(""),
             library_folders: QStringList::default(),
             visualizers: QStringList::from(&drawings),
             outputs: QStringList::default(),

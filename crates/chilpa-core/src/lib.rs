@@ -99,6 +99,74 @@ pub fn outputs() -> Vec<Output> {
     Vec::new()
 }
 
+/// What a device's own volume control is doing.
+///
+/// `None` means the device has no control of its own, which is the common
+/// case on a USB DAC with a knob. Chilpa does not make one up: a volume
+/// applied by multiplying the samples is not a volume, it is a conversion,
+/// and it is the end of bit-perfect.
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct VolumeState {
+    /// True if the device has a control at all.
+    pub available: bool,
+    /// Where it sits, from 0 to 100.
+    pub percent: u8,
+    /// True if it is muted.
+    pub muted: bool,
+    /// True if it can be muted at all.
+    pub can_mute: bool,
+    /// Which control it is, as the card names it: `Master`, `PCM`... Worth
+    /// showing when the knob does not do what someone expected.
+    pub element: String,
+}
+
+/// The volume control of that device, if it has one.
+#[cfg(target_os = "linux")]
+pub fn volume_of(device: &str) -> VolumeState {
+    let Some(v) = chilpa_alsa::Volume::of(device) else { return VolumeState::default() };
+    let level = v.read().unwrap_or_default();
+    VolumeState {
+        available: true,
+        percent: level.percent,
+        muted: level.muted,
+        can_mute: v.can_mute(),
+        element: v.element().to_string(),
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn volume_of(_device: &str) -> VolumeState {
+    VolumeState::default()
+}
+
+/// Moves that device's own volume control.
+#[cfg(target_os = "linux")]
+pub fn set_volume(device: &str, percent: u8) -> Result<(), String> {
+    match chilpa_alsa::Volume::of(device) {
+        Some(v) => v.set(percent),
+        None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn set_volume(_device: &str, _percent: u8) -> Result<(), String> {
+    Err(chilpa_i18n::t("this output has no volume control of its own"))
+}
+
+/// Mutes or unmutes that device.
+#[cfg(target_os = "linux")]
+pub fn set_muted(device: &str, muted: bool) -> Result<(), String> {
+    match chilpa_alsa::Volume::of(device) {
+        Some(v) => v.mute(muted),
+        None => Err(chilpa_i18n::t("this output has no volume control of its own")),
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+pub fn set_muted(_device: &str, _muted: bool) -> Result<(), String> {
+    Err(chilpa_i18n::t("this output has no volume control of its own"))
+}
+
 /// Measures an output device.
 ///
 /// It is the same thing the player uses to negotiate; the wizard calls it

@@ -725,6 +725,40 @@ impl Chilpa {
         self.outputs().first().map(|o| o.id.clone()).unwrap_or_default()
     }
 
+    /// What the chosen output's own volume control is doing.
+    ///
+    /// Chilpa never scales samples, so the only volume there is is the
+    /// device's. An output without one says so rather than growing a slider
+    /// that would silently stop the audio being bit-perfect.
+    pub fn volume(&mut self, device: &str) -> chilpa_core::VolumeState {
+        let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
+        chilpa_core::volume_of(&id)
+    }
+
+    /// Moves the output's own volume control. Says why if it cannot.
+    pub fn set_volume(&mut self, device: &str, percent: u8) -> bool {
+        let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
+        match chilpa_core::set_volume(&id, percent) {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error = e;
+                false
+            }
+        }
+    }
+
+    /// Mutes or unmutes the output. Says why if it cannot.
+    pub fn set_muted(&mut self, device: &str, muted: bool) -> bool {
+        let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
+        match chilpa_core::set_muted(&id, muted) {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error = e;
+                false
+            }
+        }
+    }
+
     /// The outputs the user can choose from.
     pub fn outputs(&self) -> Vec<Output> {
         chilpa_core::outputs()

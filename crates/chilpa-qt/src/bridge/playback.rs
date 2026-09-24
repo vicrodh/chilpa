@@ -148,6 +148,8 @@ impl Chilpa {
         self.as_mut().set_device(device.clone());
         self.as_mut().set_want_bit_perfect(bit_perfect);
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
+        // Another output means another control, or none at all.
+        self.as_mut().refresh_volume();
     }
 
     pub fn automix(mut self: Pin<&mut Self>) {
@@ -222,6 +224,38 @@ impl Chilpa {
         let owned = name.to_string();
         self.as_mut().set_layout(name.clone());
         self.as_mut().rust_mut().api.remember_layout(&owned);
+    }
+
+    /// Reads the chosen output's own volume control into the properties.
+    ///
+    /// Called when the output changes and when the window asks, not on the
+    /// tick: it is a mixer syscall, and nothing moves the knob but the user
+    /// and whatever else is on the machine.
+    pub fn refresh_volume(mut self: Pin<&mut Self>) {
+        let (device, _) = self.as_mut().chosen();
+        let v = self.as_mut().rust_mut().api.volume(&device);
+        self.as_mut().set_has_volume(v.available);
+        self.as_mut().set_volume(i32::from(v.percent));
+        self.as_mut().set_muted(v.muted);
+        self.as_mut().set_can_mute(v.can_mute);
+        self.as_mut().set_volume_control(QString::from(&v.element));
+    }
+
+    /// Moves the output's own volume control.
+    pub fn choose_volume(mut self: Pin<&mut Self>, percent: i32) {
+        let (device, _) = self.as_mut().chosen();
+        let percent = percent.clamp(0, 100) as u8;
+        if self.as_mut().rust_mut().api.set_volume(&device, percent) {
+            self.as_mut().set_volume(i32::from(percent));
+        }
+    }
+
+    /// Mutes or unmutes the output.
+    pub fn choose_muted(mut self: Pin<&mut Self>, muted: bool) {
+        let (device, _) = self.as_mut().chosen();
+        if self.as_mut().rust_mut().api.set_muted(&device, muted) {
+            self.as_mut().set_muted(muted);
+        }
     }
 
     pub fn run_wizard(mut self: Pin<&mut Self>) {
