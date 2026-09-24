@@ -12,6 +12,7 @@ pub mod analysis_job;
 pub mod cd_playback;
 pub mod dsd_playback;
 pub mod playback;
+pub mod backends;
 pub mod player;
 pub mod settings;
 pub mod wizard;
@@ -62,35 +63,26 @@ pub struct Output {
     pub bit_perfect: bool,
 }
 
-/// The machine's outputs, plus the diagnostic one.
+/// Every output of every stack that is on this machine.
 ///
-/// The capture goes last and is named plainly: it is for exercising the
-/// whole path without making a sound, and for checking bit-perfect against
-/// the file it produces.
-#[cfg(target_os = "linux")]
+/// Flat, because a window that only offers one picker still has to offer
+/// everything. The one that offers two -- the stack, and then its outputs --
+/// asks `backends::outputs_of` instead and gets the same rows.
 pub fn outputs() -> Vec<Output> {
-    let mut outputs: Vec<Output> = chilpa_alsa::list()
-        .into_iter()
-        .map(|d| {
-            let mut detail = d.bus.name().to_string();
-            let declared = d.declared.summary();
-            if !declared.is_empty() {
-                detail.push_str(" · ");
-                detail.push_str(&declared);
-            }
-            Output { id: d.id.clone(), label: d.label(), detail, bit_perfect: true }
+    backends::all()
+        .iter()
+        .filter(|stack| stack.info().present)
+        .flat_map(|stack| {
+            let kind = stack.info().kind;
+            backends::outputs_of(kind)
         })
-        .collect();
-    // The real outputs first, and a USB DAC before what is soldered to the
-    // board: somebody who plugged one in plugged it in to use it.
-    outputs.sort_by_key(|o| !o.detail.starts_with("USB"));
-    outputs.push(Output {
-        id: chilpa_audio::CAPTURE_ID.to_string(),
-        label: chilpa_i18n::t("Capture to a file"),
-        detail: capture_path().display().to_string(),
-        bit_perfect: false,
-    });
-    outputs
+        .map(|o| Output {
+            id: o.id,
+            label: o.label,
+            detail: o.detail,
+            bit_perfect: o.bit_perfect,
+        })
+        .collect()
 }
 
 /// Opens the user's library, creating it if needed.
@@ -147,7 +139,7 @@ pub struct VolumeState {
 /// The volume control of that device, if it has one.
 #[cfg(target_os = "linux")]
 pub fn volume_of(device: &str) -> VolumeState {
-    let Some(v) = chilpa_alsa::Volume::of(device) else { return VolumeState::default() };
+    let Some(v) = chilpa_alsa::Volume::of(&bare(device)) else { return VolumeState::default() };
     let level = v.read().unwrap_or_default();
     VolumeState {
         available: true,
@@ -166,7 +158,7 @@ pub fn volume_of(_device: &str) -> VolumeState {
 /// Moves that device's own volume control.
 #[cfg(target_os = "linux")]
 pub fn set_volume(device: &str, percent: u8) -> Result<(), String> {
-    match chilpa_alsa::Volume::of(device) {
+    match chilpa_alsa::Volume::of(&bare(device)) {
         Some(v) => v.set(percent),
         None => Err(chilpa_i18n::t("this output has no volume control of its own")),
     }
@@ -180,7 +172,7 @@ pub fn set_volume(_device: &str, _percent: u8) -> Result<(), String> {
 /// Mutes or unmutes that device.
 #[cfg(target_os = "linux")]
 pub fn set_muted(device: &str, muted: bool) -> Result<(), String> {
-    match chilpa_alsa::Volume::of(device) {
+    match chilpa_alsa::Volume::of(&bare(device)) {
         Some(v) => v.mute(muted),
         None => Err(chilpa_i18n::t("this output has no volume control of its own")),
     }
@@ -197,11 +189,19 @@ pub fn set_muted(_device: &str, _muted: bool) -> Result<(), String> {
 /// separately so it can say what is possible before playing anything.
 #[cfg(target_os = "linux")]
 pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
-    if id == chilpa_audio::CAPTURE_ID {
-        Ok(chilpa_audio::capture::capabilities())
-    } else {
-        chilpa_alsa::probe(id)
-    }
+    measure(id)
+}
+
+/// What a stack calls an output, out of the identifier that names both.
+///
+/// An identifier written before stacks existed has no prefix, and reading it
+/// as a bare name is right: it can only have meant the card, because that is
+/// all there was.
+#[cfg(target_os = "linux")]
+fn bare(id: &str) -> String {
+    chilpa_audio::backend::BackendOutput::split(id)
+        .map(|(_, rest)| rest.to_string())
+        .unwrap_or_else(|| id.to_string())
 }
 
 /// The same where there is no backend yet.
@@ -233,23 +233,51 @@ pub fn spawn_player() -> player::Player {
 pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     let from_thread = tap.clone();
     player::Player::spawn(
-        Box::new(|id| {
-            if id == chilpa_audio::CAPTURE_ID {
-                Ok(chilpa_audio::capture::capabilities())
-            } else {
-                chilpa_alsa::probe(id)
-            }
-        }),
+        Box::new(|id| measure(id)),
         Box::new(move |id, format| {
-            let opened: Box<dyn chilpa_audio::sink::AudioSink + Send> =
-                if id == chilpa_audio::CAPTURE_ID {
-                    Box::new(chilpa_audio::CaptureSink::create(&capture_path(), format)?)
-                } else {
-                    Box::new(chilpa_alsa::AlsaSink::open(id, format)?)
-                };
+            let opened = open_output(id, format)?;
             Ok(Box::new(from_thread.wrap(opened)) as Box<dyn chilpa_audio::sink::AudioSink + Send>)
         }),
     )
+}
+
+/// What an output really accepts, measured by opening it.
+///
+/// Only the stack that owns the identifier can answer, so the identifier is
+/// resolved first. A name that belongs to no stack this build has is said so
+/// plainly rather than tried against whichever one happens to be first,
+/// which is how a settings file from another machine ends up playing
+/// somewhere nobody chose.
+#[cfg(target_os = "linux")]
+fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+    match chilpa_audio::backend::BackendOutput::split(id) {
+        Some((chilpa_audio::backend::BackendKind::File, _)) => {
+            Ok(chilpa_audio::capture::capabilities())
+        }
+        Some((_, bare)) => chilpa_alsa::probe(bare),
+        None => Err(unknown_output(id)),
+    }
+}
+
+/// Opens one, through the stack its identifier names.
+#[cfg(target_os = "linux")]
+fn open_output(
+    id: &str,
+    format: chilpa_audio::format::StreamFormat,
+) -> Result<Box<dyn chilpa_audio::sink::AudioSink + Send>, chilpa_audio::sink::SinkError> {
+    let Some((stack, bare)) = backends::resolve(id) else {
+        return Err(unknown_output(id));
+    };
+    stack.open(&bare, format)
+}
+
+/// The error for an identifier that names no stack this build has.
+#[cfg(target_os = "linux")]
+fn unknown_output(id: &str) -> chilpa_audio::sink::SinkError {
+    chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t_args(
+        "there is no output called \"{}\" on this machine",
+        &[id],
+    ))
 }
 
 /// The same where there is no backend yet (ADR-010 deuda M2).

@@ -8,7 +8,7 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-const OUTPUT: &str = "capture";
+const OUTPUT: &str = "file:capture";
 
 fn wave(dir: &PathBuf, name: &str, frames: u32) -> PathBuf {
     let p = dir.join(name);

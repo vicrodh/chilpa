@@ -43,6 +43,9 @@ pub enum BackendKind {
     Pulse,
     /// The JACK graph, whoever is answering it.
     Jack,
+    /// A file on disk. It makes no sound, and it is the only output whose
+    /// result can be compared byte for byte against the source.
+    File,
 }
 
 impl BackendKind {
@@ -54,6 +57,7 @@ impl BackendKind {
         BackendKind::PipeWire,
         BackendKind::Pulse,
         BackendKind::Jack,
+        BackendKind::File,
     ];
 
     /// What it is called in a settings file. It is written to disk, so it is
@@ -65,6 +69,7 @@ impl BackendKind {
             BackendKind::PipeWire => "pipewire",
             BackendKind::Pulse => "pulse",
             BackendKind::Jack => "jack",
+            BackendKind::File => "file",
         }
     }
 
@@ -82,6 +87,7 @@ impl BackendKind {
             BackendKind::PipeWire => "PipeWire",
             BackendKind::Pulse => "PulseAudio",
             BackendKind::Jack => "JACK",
+            BackendKind::File => "File",
         }
     }
 }
@@ -178,6 +184,25 @@ pub struct BackendOutput {
     pub bit_perfect: bool,
 }
 
+impl BackendOutput {
+    /// The identifier as everything outside a backend uses it: the stack's
+    /// key, a colon, and whatever that stack calls the output.
+    ///
+    /// One string that identifies an output completely. It is what gets
+    /// written to the settings, and it is why a remembered output that is no
+    /// longer there can still say which stack it belonged to instead of
+    /// quietly reading as "system".
+    pub fn full_id(kind: BackendKind, id: &str) -> String {
+        format!("{}:{}", kind.key(), id)
+    }
+
+    /// The stack and the bare identifier inside one of those.
+    pub fn split(full: &str) -> Option<(BackendKind, &str)> {
+        let (key, rest) = full.split_once(':')?;
+        BackendKind::from_key(key).map(|kind| (kind, rest))
+    }
+}
+
 /// A stack Chilpa can hand samples to.
 pub trait OutputBackend: Send + Sync {
     /// What it is, without opening anything.
@@ -190,7 +215,13 @@ pub trait OutputBackend: Send + Sync {
     fn outputs(&self) -> Vec<BackendOutput>;
 
     /// Opens one. The only call here that touches the hardware.
-    fn open(&self, id: &str, format: StreamFormat) -> Result<Box<dyn AudioSink>, SinkError>;
+    ///
+    /// `Send` because playing happens on its own thread: whoever opens the
+    /// device is not who writes to it. A sink that cannot move there cannot
+    /// be played through, so the trait asks for it rather than leaving it to
+    /// be discovered at the call site.
+    fn open(&self, id: &str, format: StreamFormat)
+        -> Result<Box<dyn AudioSink + Send>, SinkError>;
 }
 
 #[cfg(test)]
@@ -204,6 +235,23 @@ mod tests {
         }
         assert_eq!(BackendKind::from_key("oss"), None);
         assert_eq!(BackendKind::from_key(""), None);
+    }
+
+    #[test]
+    fn an_identifier_says_which_stack_it_came_from() {
+        // A bare "hw:1,0" does not: read back from a settings file it could
+        // belong to any of them, and the one it actually belonged to is
+        // exactly what somebody needs to be told when it is gone.
+        let full = BackendOutput::full_id(BackendKind::Alsa, "hw:1,0");
+        assert_eq!(full, "alsa:hw:1,0");
+        assert_eq!(BackendOutput::split(&full), Some((BackendKind::Alsa, "hw:1,0")));
+        // The rest is handed back whole, colons and all.
+        assert_eq!(
+            BackendOutput::split("pulse:alsa_output.usb-Fosi:0"),
+            Some((BackendKind::Pulse, "alsa_output.usb-Fosi:0"))
+        );
+        assert_eq!(BackendOutput::split("hw:1,0"), None, "no stack, no answer");
+        assert_eq!(BackendOutput::split("oss:dsp"), None);
     }
 
     #[test]

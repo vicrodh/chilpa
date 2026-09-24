@@ -91,3 +91,55 @@ mod tests {
         assert!(caps.accepts(&StreamFormat::new(SampleFormat::S24In32, 192_000, 2)));
     }
 }
+
+/// The file as a stack of its own.
+///
+/// It is a stack and not an odd entry in somebody else's list because that
+/// is what it is: samples go somewhere, nothing touches them on the way, and
+/// what comes out the other end can be compared against the source. The one
+/// thing it does not do is make a sound, which is said rather than implied.
+pub struct FileBackend {
+    path: std::path::PathBuf,
+}
+
+impl FileBackend {
+    /// Writing to that file.
+    pub fn new(path: std::path::PathBuf) -> Self {
+        FileBackend { path }
+    }
+}
+
+impl crate::backend::OutputBackend for FileBackend {
+    fn info(&self) -> crate::backend::BackendInfo {
+        crate::backend::BackendInfo {
+            kind: crate::backend::BackendKind::File,
+            present: true,
+            missing: String::new(),
+            provider: String::new(),
+            // Nothing is between: what it is handed is what it stores.
+            fidelity: crate::backend::Fidelity::Exact,
+            caveat: chilpa_i18n::t(
+                "This one makes no sound. It writes what would have gone to the device, so the \
+                 file can be compared against the track it came from -- which is the only way to \
+                 prove bit-perfect rather than claim it.",
+            ),
+        }
+    }
+
+    fn outputs(&self) -> Vec<crate::backend::BackendOutput> {
+        vec![crate::backend::BackendOutput {
+            id: CAPTURE_ID.to_string(),
+            label: chilpa_i18n::t("Write to a file"),
+            detail: self.path.display().to_string(),
+            bit_perfect: true,
+        }]
+    }
+
+    fn open(
+        &self,
+        _id: &str,
+        format: StreamFormat,
+    ) -> Result<Box<dyn AudioSink + Send>, SinkError> {
+        Ok(Box::new(CaptureSink::create(&self.path, format)?))
+    }
+}

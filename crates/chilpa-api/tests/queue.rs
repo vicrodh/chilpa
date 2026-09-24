@@ -20,7 +20,7 @@ fn other_library(dir: &std::path::Path) {
 
 /// The capture output writes to a file, so this runs without sound and
 /// without hardware.
-const OUTPUT: &str = "capture";
+const OUTPUT: &str = "file:capture";
 
 fn folder(name: &str) -> PathBuf {
     let mut p = std::env::temp_dir();

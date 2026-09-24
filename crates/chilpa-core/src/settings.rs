@@ -63,12 +63,36 @@ pub fn load() -> Settings {
     load_from(&path())
 }
 
+/// An output identifier as it is written today, out of one that may have
+/// been written before stacks existed.
+///
+/// Until there were stacks an identifier was whatever ALSA called the
+/// device, and there is only one thing it could have meant: a `hw:` name was
+/// the card and `capture` was the file. Reading it that way costs one line
+/// and saves everybody who already has a settings file from being silently
+/// moved to a different output the first time they open a new Chilpa.
+fn carried_over(id: &str) -> String {
+    if chilpa_audio::backend::BackendOutput::split(id).is_some() {
+        return id.to_string();
+    }
+    let kind = if id == chilpa_audio::CAPTURE_ID {
+        chilpa_audio::backend::BackendKind::File
+    } else if id.starts_with("hw:") {
+        chilpa_audio::backend::BackendKind::Alsa
+    } else if id.is_empty() {
+        return String::new();
+    } else {
+        chilpa_audio::backend::BackendKind::System
+    };
+    chilpa_audio::backend::BackendOutput::full_id(kind, id)
+}
+
 pub fn load_from(file: &std::path::Path) -> Settings {
     let text = std::fs::read_to_string(file).unwrap_or_default();
     let pares = parse(&text);
     let mut s = Settings::default();
     if let Some(v) = pares.get("output") {
-        s.output = v.clone();
+        s.output = carried_over(v);
     }
     if let Some(v) = pares.get("bit_perfect") {
         s.bit_perfect = v != "false";
@@ -143,6 +167,20 @@ fn parse(text: &str) -> BTreeMap<String, String> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_settings_file_written_before_stacks_still_names_its_output() {
+        // Until there were stacks an identifier was whatever ALSA called the
+        // device. Reading one as "no stack, start over" would quietly move
+        // everybody who already has a settings file onto a different output,
+        // and the one they would land on is the one that resamples.
+        assert_eq!(carried_over("hw:1,0"), "alsa:hw:1,0");
+        assert_eq!(carried_over("capture"), "file:capture");
+        assert_eq!(carried_over("default"), "system:default");
+        assert_eq!(carried_over(""), "", "nothing remembered stays nothing");
+        // And one that already names its stack is left alone.
+        assert_eq!(carried_over("pulse:alsa_output.x"), "pulse:alsa_output.x");
+    }
+
     use super::*;
 
     fn temporary(name: &str) -> PathBuf {
@@ -162,7 +200,7 @@ mod tests {
     fn what_was_saved_reads_back_the_same() {
         let file = temporary("round-trip");
         let s = Settings {
-            output: "hw:1,0".into(),
+            output: "alsa:hw:1,0".into(),
             bit_perfect: false,
             last_folder: "/music/albums".into(),
             layout: "Column".into(),
@@ -192,7 +230,7 @@ mod tests {
         let file = temporary("broken");
         std::fs::write(&file, "this is not\na valid file }{\noutput = hw:0,0\n").unwrap();
         let s = load_from(&file);
-        assert_eq!(s.output, "hw:0,0", "what does parse is salvaged");
+        assert_eq!(s.output, "alsa:hw:0,0", "what does parse is salvaged");
         assert!(s.bit_perfect, "the rest takes its default value");
         let _ = std::fs::remove_file(file);
     }
@@ -210,7 +248,7 @@ mod tests {
         let file = temporary("comments");
         std::fs::write(&file, "# a comment\n  output   =   hw:2,0  \nbit_perfect = false\n").unwrap();
         let s = load_from(&file);
-        assert_eq!(s.output, "hw:2,0");
+        assert_eq!(s.output, "alsa:hw:2,0");
         assert!(!s.bit_perfect);
         let _ = std::fs::remove_file(file);
     }

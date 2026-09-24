@@ -85,9 +85,6 @@ msgstr "todavía no se leen CD fuera de Linux"
 msgid "Calm"
 msgstr "Tranquilo"
 
-msgid "Capture to a file"
-msgstr "Captura a archivo"
-
 msgid "Check"
 msgstr "Revisar"
 
@@ -454,6 +451,9 @@ msgstr "Este es el control del propio dispositivo ({}). Chilpa nunca escala las 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
 
+msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
+
 msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
 msgstr "Esta salida no tiene control de volumen propio. Chilpa no se lo va a inventar escalando las muestras, porque ahí se acabó el bit-perfect: usa la perilla del dispositivo."
 
@@ -498,6 +498,9 @@ msgstr "Con esto encendido, una pista que el dispositivo no acepta en su propio 
 
 msgid "Withdraw permission"
 msgstr "Quitar permiso"
+
+msgid "Write to a file"
+msgstr "Escribir a un archivo"
 
 msgid "Your browser is open to grant permission. Waiting here."
 msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
@@ -992,6 +995,9 @@ msgstr "no hay disco en la unidad"
 
 msgid "there is no folder in the library yet"
 msgstr "todavía no hay ninguna carpeta en la biblioteca"
+
+msgid "there is no output called \"{}\" on this machine"
+msgstr "no hay ninguna salida llamada \"{}\" en esta máquina"
 
 msgid "there is no part to open"
 msgstr "no hay ninguna parte que abrir"
