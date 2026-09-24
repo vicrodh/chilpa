@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 9;
+pub const VERSION: i64 = 10;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -27,7 +27,7 @@ pub const VERSION: i64 = 9;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -759,6 +759,73 @@ ALTER TABLE audio_features_one RENAME TO audio_features;
 
 -- The index V8 added went with the old table.
 CREATE INDEX audio_features_bpm ON audio_features(bpm);
+
+ANALYZE;
+"#;
+
+/// From 9 to 10: the totals the stats view adds up.
+///
+/// `stats()` summed the whole play log. That was the last query in the
+/// library that grew with something other than its answer, and the thing it
+/// grew with was the worst one: not how much music somebody has, but how
+/// long they have been using Chilpa. Forty thousand plays read in 33 ms, and
+/// somebody who listens for five years has a log ten times that.
+///
+/// Six numbers, one row, kept by the same kind of trigger as the other
+/// rollups. Five of them are running totals. The sixth, how many different
+/// tracks have been played, is the one that is not a sum, and it is exact
+/// anyway: a play adds one when the log holds no earlier play of that track,
+/// which is an index probe. That keeps what the old query counted, including
+/// a track that has since left the library -- the log remembers it was
+/// played and so does this.
+///
+/// Nothing deletes from `play_events`, so there is no trigger for it. If
+/// that ever changes, this needs one, and `rebuild_rollups` is the way back
+/// in the meantime.
+const MIGRATION_V10: &str = r#"
+CREATE TABLE library_totals (
+    id          INTEGER PRIMARY KEY CHECK (id = 1),
+    plays       INTEGER NOT NULL DEFAULT 0,
+    listened_ms INTEGER NOT NULL DEFAULT 0,
+    tracks      INTEGER NOT NULL DEFAULT 0,
+    skips       INTEGER NOT NULL DEFAULT 0,
+    bit_perfect INTEGER NOT NULL DEFAULT 0,
+    since       INTEGER
+);
+
+INSERT INTO library_totals (id) VALUES (1);
+
+CREATE TRIGGER library_totals_play AFTER INSERT ON play_events
+BEGIN
+    UPDATE library_totals
+       SET plays = plays + (CASE WHEN NEW.duration_ms = 0
+                                   OR NEW.played_ms * 2 >= NEW.duration_ms
+                                 THEN 1 ELSE 0 END),
+           listened_ms = listened_ms + COALESCE(NEW.played_ms, 0),
+           skips = skips + COALESCE(NEW.skipped, 0),
+           bit_perfect = bit_perfect + COALESCE(NEW.bit_perfect, 0),
+           tracks = tracks + (CASE WHEN NEW.track_id IS NOT NULL
+                                    AND NOT EXISTS (SELECT 1 FROM play_events p
+                                                     WHERE p.track_id = NEW.track_id
+                                                       AND p.rowid <> NEW.rowid)
+                                   THEN 1 ELSE 0 END),
+           -- min() over a NULL is NULL, and the first play is the one that
+           -- finds it NULL.
+           since = COALESCE(min(since, NEW.started_at), NEW.started_at)
+     WHERE id = 1;
+END;
+
+-- What is already in the log.
+UPDATE library_totals
+   SET plays = COALESCE((SELECT sum(CASE WHEN duration_ms = 0
+                                           OR played_ms * 2 >= duration_ms
+                                         THEN 1 ELSE 0 END) FROM play_events), 0),
+       listened_ms = COALESCE((SELECT sum(played_ms) FROM play_events), 0),
+       tracks = (SELECT count(DISTINCT track_id) FROM play_events),
+       skips = COALESCE((SELECT sum(skipped) FROM play_events), 0),
+       bit_perfect = COALESCE((SELECT sum(bit_perfect) FROM play_events), 0),
+       since = (SELECT min(started_at) FROM play_events)
+ WHERE id = 1;
 
 ANALYZE;
 "#;
