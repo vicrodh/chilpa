@@ -130,6 +130,9 @@ msgstr "Revisar"
 msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
 msgstr "Revisar lee el archivo entero y reporta lo que encuentre. Reconstruir rehace las cuentas de escuchas y el índice de búsqueda a partir de las pistas y del log, que no se tocan: no se pierde nada por correrlo."
 
+msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
+
 msgid "Classic"
 msgstr "Clásico"
 
@@ -180,6 +183,9 @@ msgstr "Todo"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
+
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
+msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect para compartirlo y dejar que Windows mezcle y reconvierta."
 
 msgid "Folders"
 msgstr "Carpetas"
@@ -550,6 +556,15 @@ msgstr "Lo que más escuchas"
 msgid "Wherever the system is sending sound"
 msgstr "A donde el sistema esté mandando el sonido"
 
+msgid "Windows audio would not answer ({})"
+msgstr "el audio de Windows no respondió ({})"
+
+msgid "Windows reports no playback device"
+msgstr "Windows no reporta ningún aparato de reproducción"
+
+msgid "Windows would not say what \"{}\" accepts ({})"
+msgstr "Windows no dijo qué acepta \"{}\" ({})"
+
 msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
 msgstr "Con esto encendido, una pista que el dispositivo no acepta en su propio formato no suena, y se dice. Apagado, Chilpa convierte y también lo dice."
 
@@ -842,6 +857,9 @@ msgstr "sector {} inválido: {}"
 
 msgid "send you to grant permission at {}"
 msgstr "mandarte a dar permiso en {}"
+
+msgid "shared at {}"
+msgstr "compartido a {}"
 
 msgid "stereo"
 msgstr "estéreo"

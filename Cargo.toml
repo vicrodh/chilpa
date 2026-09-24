@@ -22,6 +22,7 @@ members = [
     "crates/chilpa-pulse",
     "crates/chilpa-jack",
     "crates/chilpa-coreaudio",
+    "crates/chilpa-wasapi",
     "crates/chilpa-core",
     "crates/chilpa-api",
     "crates/chilpa-qt",
@@ -55,5 +56,6 @@ chilpa-pipewire = { path = "crates/chilpa-pipewire" }
 chilpa-pulse = { path = "crates/chilpa-pulse" }
 chilpa-jack = { path = "crates/chilpa-jack" }
 chilpa-coreaudio = { path = "crates/chilpa-coreaudio" }
+chilpa-wasapi = { path = "crates/chilpa-wasapi" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }

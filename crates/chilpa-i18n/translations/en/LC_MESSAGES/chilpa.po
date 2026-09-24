@@ -130,6 +130,9 @@ msgstr ""
 msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
 msgstr ""
 
+msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr ""
+
 msgid "Classic"
 msgstr ""
 
@@ -179,6 +182,9 @@ msgid "Everything"
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
+msgstr ""
+
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
 msgstr ""
 
 msgid "Folders"
@@ -550,6 +556,15 @@ msgstr ""
 msgid "Wherever the system is sending sound"
 msgstr ""
 
+msgid "Windows audio would not answer ({})"
+msgstr ""
+
+msgid "Windows reports no playback device"
+msgstr ""
+
+msgid "Windows would not say what \"{}\" accepts ({})"
+msgstr ""
+
 msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
 msgstr ""
 
@@ -841,6 +856,9 @@ msgid "sector {} is invalid: {}"
 msgstr ""
 
 msgid "send you to grant permission at {}"
+msgstr ""
+
+msgid "shared at {}"
 msgstr ""
 
 msgid "stereo"

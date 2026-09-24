@@ -45,6 +45,8 @@ pub enum BackendKind {
     Jack,
     /// A Mac's own audio.
     CoreAudio,
+    /// A Windows endpoint, reached through its own session API.
+    Wasapi,
     /// A file on disk. It makes no sound, and it is the only output whose
     /// result can be compared byte for byte against the source.
     File,
@@ -60,6 +62,7 @@ impl BackendKind {
         BackendKind::Pulse,
         BackendKind::Jack,
         BackendKind::CoreAudio,
+        BackendKind::Wasapi,
         BackendKind::File,
     ];
 
@@ -73,6 +76,7 @@ impl BackendKind {
             BackendKind::Pulse => "pulse",
             BackendKind::Jack => "jack",
             BackendKind::CoreAudio => "coreaudio",
+            BackendKind::Wasapi => "wasapi",
             BackendKind::File => "file",
         }
     }
@@ -92,6 +96,7 @@ impl BackendKind {
             BackendKind::Pulse => "PulseAudio",
             BackendKind::Jack => "JACK",
             BackendKind::CoreAudio => "CoreAudio",
+            BackendKind::Wasapi => "WASAPI",
             BackendKind::File => "File",
         }
     }
