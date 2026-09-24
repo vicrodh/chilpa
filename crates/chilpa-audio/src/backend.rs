@@ -43,6 +43,8 @@ pub enum BackendKind {
     Pulse,
     /// The JACK graph, whoever is answering it.
     Jack,
+    /// A Mac's own audio.
+    CoreAudio,
     /// A file on disk. It makes no sound, and it is the only output whose
     /// result can be compared byte for byte against the source.
     File,
@@ -57,6 +59,7 @@ impl BackendKind {
         BackendKind::PipeWire,
         BackendKind::Pulse,
         BackendKind::Jack,
+        BackendKind::CoreAudio,
         BackendKind::File,
     ];
 
@@ -69,6 +72,7 @@ impl BackendKind {
             BackendKind::PipeWire => "pipewire",
             BackendKind::Pulse => "pulse",
             BackendKind::Jack => "jack",
+            BackendKind::CoreAudio => "coreaudio",
             BackendKind::File => "file",
         }
     }
@@ -87,6 +91,7 @@ impl BackendKind {
             BackendKind::PipeWire => "PipeWire",
             BackendKind::Pulse => "PulseAudio",
             BackendKind::Jack => "JACK",
+            BackendKind::CoreAudio => "CoreAudio",
             BackendKind::File => "File",
         }
     }

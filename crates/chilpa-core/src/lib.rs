@@ -270,6 +270,12 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
             | chilpa_audio::backend::BackendKind::Pulse,
             _,
         )) => Ok(chilpa_audio::capture::capabilities()),
+        // A Mac's device can be asked what its wire carries without being
+        // opened, which is the one platform where measuring costs nothing.
+        #[cfg(target_os = "macos")]
+        Some((chilpa_audio::backend::BackendKind::CoreAudio, device)) => {
+            chilpa_coreaudio::capabilities(device).ok_or_else(|| unknown_output(device))
+        }
         #[cfg(target_os = "linux")]
         Some((_, bare)) => chilpa_alsa::probe(bare),
         #[cfg(not(target_os = "linux"))]

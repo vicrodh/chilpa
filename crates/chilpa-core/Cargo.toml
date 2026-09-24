@@ -29,3 +29,6 @@ chilpa-alsa.workspace = true
 chilpa-pipewire.workspace = true
 chilpa-pulse.workspace = true
 chilpa-jack.workspace = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+chilpa-coreaudio.workspace = true

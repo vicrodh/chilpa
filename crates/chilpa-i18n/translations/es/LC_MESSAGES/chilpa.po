@@ -97,6 +97,9 @@ msgstr "Revisar"
 msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
 msgstr "Revisar lee el archivo entero y reporta lo que encuentre. Reconstruir rehace las cuentas de escuchas y el índice de búsqueda a partir de las pistas y del log, que no se tocan: no se pierde nada por correrlo."
 
+msgid "Chilpa can see this Mac's outputs but cannot play through them yet"
+msgstr "Chilpa ya ve las salidas de esta Mac pero todavía no puede reproducir por ellas"
+
 msgid "Classic"
 msgstr "Clásico"
 
@@ -111,6 +114,9 @@ msgstr "Compacto"
 
 msgid "Connect account"
 msgstr "Conectar cuenta"
+
+msgid "CoreAudio reports no device that can play"
+msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
 msgid "Ctrl + arrows"
 msgstr "Ctrl + flechas"

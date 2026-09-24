@@ -459,6 +459,7 @@ dependencies = [
  "chilpa-analysis",
  "chilpa-audio",
  "chilpa-cd",
+ "chilpa-coreaudio",
  "chilpa-decode",
  "chilpa-dirs",
  "chilpa-dsd",
@@ -472,6 +473,14 @@ dependencies = [
  "chilpa-stream",
  "chilpa-tags",
  "rusqlite",
+]
+
+[[package]]
+name = "chilpa-coreaudio"
+version = "0.0.0"
+dependencies = [
+ "chilpa-audio",
+ "chilpa-i18n",
 ]
 
 [[package]]

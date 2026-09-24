@@ -97,6 +97,9 @@ msgstr ""
 msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
 msgstr ""
 
+msgid "Chilpa can see this Mac's outputs but cannot play through them yet"
+msgstr ""
+
 msgid "Classic"
 msgstr ""
 
@@ -110,6 +113,9 @@ msgid "Compact"
 msgstr ""
 
 msgid "Connect account"
+msgstr ""
+
+msgid "CoreAudio reports no device that can play"
 msgstr ""
 
 msgid "Ctrl + arrows"

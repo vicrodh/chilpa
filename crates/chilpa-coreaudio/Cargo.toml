@@ -1,0 +1,11 @@
+[package]
+name = "chilpa-coreaudio"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# What a stack cannot promise is read by the user.
+chilpa-i18n.workspace = true
+chilpa-audio.workspace = true
