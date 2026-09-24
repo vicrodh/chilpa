@@ -1021,7 +1021,7 @@ msgid "the module could not be loaded: {}"
 msgstr "el módulo no se pudo cargar: {}"
 
 msgid "the mute would not move ({})"
-msgstr ""
+msgstr "el silencio no se movió ({})"
 
 msgid "the name"
 msgstr "el nombre"
@@ -1084,7 +1084,7 @@ msgid "the version"
 msgstr "la versión"
 
 msgid "the volume would not move ({})"
-msgstr ""
+msgstr "el volumen no se movió ({})"
 
 msgid "the wait ran out"
 msgstr "se acabó la espera"
@@ -1131,11 +1131,14 @@ msgstr "esta biblioteca es de la versión {} y este Chilpa entiende hasta la {};
 msgid "this list"
 msgstr "esta lista"
 
+msgid "this output cannot be muted"
+msgstr "esta salida no se puede silenciar"
+
 msgid "this output has no volume control of its own"
 msgstr "esta salida no tiene control de volumen propio"
 
 msgid "this output is not there any more"
-msgstr ""
+msgstr "esta salida ya no está"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"

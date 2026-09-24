@@ -211,20 +211,117 @@ pub fn hogged_by(device: AudioObjectID) -> i32 {
     read(device, &global(kAudioDevicePropertyHogMode)).unwrap_or(-1)
 }
 
+/// Whether the object really has that property.
+///
+/// The difference between "this device has no volume" and "reading it did
+/// not work", which a read that hands back an option cannot tell apart. It
+/// is worth the extra call: the first is an honest answer to show somebody
+/// and the second is a bug.
+pub fn has(object: AudioObjectID, address: &AudioObjectPropertyAddress) -> bool {
+    unsafe { AudioObjectHasProperty(object, address) != 0 }
+}
+
+/// Whether it can be written. Having a control and being allowed to move it
+/// are different things.
+pub fn settable(object: AudioObjectID, address: &AudioObjectPropertyAddress) -> bool {
+    let mut yes = 0u8;
+    let status = unsafe { AudioObjectIsPropertySettable(object, address, &mut yes) };
+    status == 0 && yes != 0
+}
+
+/// The elements a device's volume might live on, master first.
+///
+/// Master first because a device that has one is answered in a single read.
+/// Then the stereo pair, because plenty of devices -- the Mac's own speakers
+/// among them -- carry no master and a knob per channel, and a reader that
+/// only asks element zero decides they have no volume at all. The pair is
+/// asked for rather than assumed to be 1 and 2: CoreAudio publishes which
+/// two it is.
+pub fn volume_elements(device: AudioObjectID) -> Vec<AudioObjectPropertyElement> {
+    let mut elements = vec![kAudioObjectPropertyElementMain];
+    let stereo: Vec<u32> = read_all(device, &output(kAudioDevicePropertyPreferredChannelsForStereo));
+    elements.extend(stereo);
+    elements.dedup();
+    elements
+}
+
 /// Where the device's own knob sits, from 0 to 1.
 ///
 /// `None` when it has none, which is the usual answer for a USB DAC with a
 /// knob on the front: the hardware owns the volume and says nothing about
 /// it. Inventing one by scaling the samples would be the end of bit-perfect,
 /// so nothing is invented.
+///
+/// When the control is per channel rather than shared, what comes back is
+/// their average. CoreAudio has no canonical "the device's volume" in that
+/// case, and an average is the honest single number to show.
 pub fn volume(device: AudioObjectID) -> Option<f32> {
-    read(device, &output(kAudioDevicePropertyVolumeScalar))
+    let mut found = Vec::new();
+    for element in volume_elements(device) {
+        let address = output_element(kAudioDevicePropertyVolumeScalar, element);
+        if !has(device, &address) {
+            continue;
+        }
+        if let Some(level) = read::<f32>(device, &address) {
+            found.push(level);
+            // A master answer is the device's answer; the channels are only
+            // consulted when there is none.
+            if element == kAudioObjectPropertyElementMain {
+                return Some(level);
+            }
+        }
+    }
+    (!found.is_empty()).then(|| found.iter().sum::<f32>() / found.len() as f32)
 }
 
 /// Whether it is muted, when it can be.
+///
+/// Muting and volume are separate capabilities: a device can have one and
+/// not the other, so this asks its own question rather than riding along.
 pub fn muted(device: AudioObjectID) -> Option<bool> {
-    let on: u32 = read(device, &output(kAudioDevicePropertyMute))?;
-    Some(on != 0)
+    for element in volume_elements(device) {
+        let address = output_element(kAudioDevicePropertyMute, element);
+        if !has(device, &address) {
+            continue;
+        }
+        if let Some(on) = read::<u32>(device, &address) {
+            return Some(on != 0);
+        }
+    }
+    None
+}
+
+/// Every element whose volume can actually be moved.
+pub fn movable_volume(device: AudioObjectID) -> Vec<AudioObjectPropertyElement> {
+    settable_elements(device, kAudioDevicePropertyVolumeScalar)
+}
+
+/// Every element whose mute can actually be moved.
+pub fn movable_mute(device: AudioObjectID) -> Vec<AudioObjectPropertyElement> {
+    settable_elements(device, kAudioDevicePropertyMute)
+}
+
+/// The elements that carry a writable copy of that property.
+///
+/// Master alone when it has one, because writing both the master and the
+/// channels is writing the same thing twice and devices disagree about what
+/// that means.
+fn settable_elements(
+    device: AudioObjectID,
+    selector: AudioObjectPropertySelector,
+) -> Vec<AudioObjectPropertyElement> {
+    let master = output_element(selector, kAudioObjectPropertyElementMain);
+    if has(device, &master) && settable(device, &master) {
+        return vec![kAudioObjectPropertyElementMain];
+    }
+    volume_elements(device)
+        .into_iter()
+        .filter(|e| *e != kAudioObjectPropertyElementMain)
+        .filter(|e| {
+            let address = output_element(selector, *e);
+            has(device, &address) && settable(device, &address)
+        })
+        .collect()
 }
 
 /// How a transport reads in the window.

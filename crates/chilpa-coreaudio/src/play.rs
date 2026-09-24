@@ -64,12 +64,17 @@ pub struct CoreAudioSink {
 }
 
 /// Whether a property can be written, asked of the object itself.
-pub(crate) fn write_property<T>(
+/// Writes one of a device's output properties, on one element.
+///
+/// The element matters: a device whose volume lives on its channels has
+/// nothing at the master, and writing there succeeds at nothing.
+pub(crate) fn write_element<T>(
     object: AudioObjectID,
     which: AudioObjectPropertySelector,
+    element: AudioObjectPropertyElement,
     value: &T,
 ) -> Result<(), OSStatus> {
-    set(object, &output(which), value)
+    set(object, &output_element(which, element), value)
 }
 
 fn set<T>(
