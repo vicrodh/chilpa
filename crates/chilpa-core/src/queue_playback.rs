@@ -458,11 +458,11 @@ where
         let delivery = negotiate(decoded.stream_format(), caps, policy)
             .map_err(PlayError::Negotiation)?;
 
-        let paso = match &opened {
+        let transition = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
             None => Transition::Seamless,
         };
-        if !paso.is_seamless() || opened.is_none() {
+        if !transition.is_seamless() || opened.is_none() {
             if let Some((_, mut old)) = opened.take() {
                 old.close().map_err(PlayError::Sink)?;
             }
@@ -502,7 +502,7 @@ where
             path: path.clone(),
             delivery,
             outcome,
-            transition: paso,
+            transition: transition,
         });
         if !finished_ok || consecutive_silent > queue.len() {
             break;

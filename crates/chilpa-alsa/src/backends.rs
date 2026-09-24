@@ -42,7 +42,13 @@ impl OutputBackend for Alsa {
     }
 
     fn outputs(&self) -> Vec<BackendOutput> {
-        let mut outputs: Vec<BackendOutput> = devices::list()
+        let mut found = devices::list();
+        // What somebody plugged in on purpose, above what is soldered to the
+        // board. Sorted on the bus and not on the line the window shows: that
+        // line is in the reader's language now, so `starts_with("USB")` would
+        // have held only while the window spoke English.
+        found.sort_by_key(|d| d.bus != devices::Bus::Usb);
+        found
             .into_iter()
             .map(|d| BackendOutput {
                 id: d.id.clone(),
@@ -54,11 +60,19 @@ impl OutputBackend for Alsa {
                 // and the wizard answers it by measuring.
                 bit_perfect: true,
             })
-            .collect();
-        // What somebody plugged in on purpose, above what is soldered to the
-        // board.
-        outputs.sort_by_key(|o| !o.detail.starts_with("USB"));
-        outputs
+            .collect()
+    }
+
+    /// Every card and every device on it, which is what changes when a DAC is
+    /// plugged in or taken out.
+    ///
+    /// `/proc/asound/pcm` is one line per device -- 350 bytes on this machine
+    /// -- and the kernel rewrites it the moment a card appears or goes. Read
+    /// once a second it costs nothing, and it is the one watch that covers
+    /// every stack on this platform: PipeWire, PulseAudio and JACK hand out
+    /// what the cards offer, so a card arriving is their event too.
+    fn generation(&self) -> String {
+        std::fs::read_to_string("/proc/asound/pcm").unwrap_or_default()
     }
 
     /// Measured by opening it, which is the only thing that can promise

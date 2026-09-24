@@ -278,6 +278,30 @@ pub trait OutputBackend: Send + Sync {
         Err(chilpa_i18n::t("this output has no volume control of its own"))
     }
 
+    /// Something short that changes when the set of outputs changes.
+    ///
+    /// The window needs to notice a DAC being plugged in without asking
+    /// `outputs()` sixty times a minute, and `outputs()` is not always cheap:
+    /// a sound server is asked over a socket, with a timeout, and calling
+    /// that on a timer would stall the very window it is meant to keep
+    /// current. So a stack that can answer cheaply answers here, and the
+    /// caller only does the real work when this string moves.
+    ///
+    /// **An empty answer means "do not poll me", not "nothing changed".** A
+    /// stack that cannot tell without doing the expensive thing says nothing
+    /// and is left alone. On Linux that costs nothing: sound servers hand out
+    /// what the cards offer, so the cards changing is the event, and ALSA can
+    /// see that in one small file.
+    ///
+    /// This is polling, and polling is not the right answer. Every one of
+    /// these platforms can say when a device arrives -- udev on Linux, a
+    /// property listener on CoreAudio, `IMMNotificationClient` on Windows --
+    /// and each of those is a thread with a callback in it. This is the cheap
+    /// half of that, written down as the cheap half.
+    fn generation(&self) -> String {
+        String::new()
+    }
+
     /// Opens one. The only call here that touches the hardware.
     ///
     /// `Send` because playing happens on its own thread: whoever opens the
