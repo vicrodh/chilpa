@@ -9,17 +9,17 @@ rust-version.workspace = true
 # The page the browser lands on is read by the user, and so is why an
 # account did not connect.
 chilpa-i18n.workspace = true
-# El reto de PKCE es un SHA-256 en base64url.
+# The PKCE challenge is a SHA-256 in base64url.
 sha2 = "0.10"
 base64 = "0.22"
-# El verificador y el estado son aleatorios.
+# The verifier and the state are random.
 rand = "0.10"
 serde = { version = "1", features = ["derive"] }
-# Las respuestas del servicio vienen en JSON.
+# The service's answers come as JSON.
 serde_json = "1"
 thiserror = "2"
 
 [dev-dependencies]
-# Solo las pruebas salen a la red de verdad: el crate no la conoce.
+# Only the tests reach a real network: the crate does not know one.
 chilpa-stream.workspace = true
 serde_json = "1"
