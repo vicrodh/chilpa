@@ -132,9 +132,21 @@ mod tests {
         // exists to stop making.
         for info in described() {
             for output in outputs_of(info.kind) {
-                let exact = super::super::path_is_exact(&output.id);
-                let never = info.fidelity == chilpa_audio::backend::Fidelity::Never;
-                assert_eq!(exact, !never, "{} disagrees with its stack", output.id);
+                use chilpa_audio::backend::Fidelity;
+                let alone = super::super::path_is_exact(&output.id, true);
+                let shared = super::super::path_is_exact(&output.id, false);
+                match info.fidelity {
+                    // Nothing is between, however it was asked for.
+                    Fidelity::Exact => assert!(alone && shared, "{}", output.id),
+                    // The whole of what "it depends" depends on.
+                    Fidelity::Depends => assert!(
+                        alone && !shared,
+                        "{} says the same either way, so it does not depend on anything",
+                        output.id
+                    ),
+                    Fidelity::Never => assert!(!alone && !shared, "{}", output.id),
+                }
+                let never = info.fidelity == Fidelity::Never;
                 assert!(
                     !(never && output.bit_perfect),
                     "{} is marked bit-perfect on a stack that never is",
@@ -148,9 +160,11 @@ mod tests {
     fn an_output_nobody_has_heard_of_is_never_called_exact() {
         // The safe answer to "did the samples survive" is never yes when
         // nothing is known about the road.
-        assert!(!super::super::path_is_exact("oss:dsp0"));
-        assert!(!super::super::path_is_exact("hw:1,0"));
-        assert!(!super::super::path_is_exact(""));
+        for alone in [true, false] {
+            assert!(!super::super::path_is_exact("oss:dsp0", alone));
+            assert!(!super::super::path_is_exact("hw:1,0", alone));
+            assert!(!super::super::path_is_exact("", alone));
+        }
     }
 
     #[test]
