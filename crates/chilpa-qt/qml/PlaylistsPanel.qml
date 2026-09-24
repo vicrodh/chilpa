@@ -153,6 +153,8 @@ ColumnLayout {
 
             readonly property var cols: root.fields(modelData)
 
+            readonly property bool fromSource: cols.length > 4 && cols[4] !== ""
+
             RowLayout {
                 anchors.fill: parent
                 anchors.leftMargin: 10
@@ -176,11 +178,21 @@ ColumnLayout {
                         color: "#7a411d1f"
                     }
                 }
+                // A source's list opens instead of playing: its tracks
+                // become the results, and playing one from there is the
+                // same click as playing a search result.
                 Button {
-                    text: Chilpa.translate("Play", Chilpa.trRev)
-                    onClicked: Chilpa.playSavedPlaylist(parseInt(cols[0]))
+                    text: fromSource
+                        ? Chilpa.translate("Open", Chilpa.trRev)
+                        : Chilpa.translate("Play", Chilpa.trRev)
+                    onClicked: fromSource
+                        ? Chilpa.openSourcePlaylist(cols[4], cols[5])
+                        : Chilpa.playSavedPlaylist(parseInt(cols[0]))
                 }
                 Button {
+                    // A source's list is not ours to delete. Withdrawing the
+                    // plugin is what takes it away.
+                    visible: !fromSource
                     text: Chilpa.translate("Delete", Chilpa.trRev)
                     onClicked: Chilpa.deletePlaylist(parseInt(cols[0]))
                 }

@@ -89,9 +89,11 @@ impl Chilpa {
         let lists = self.as_mut().rust_mut().api.playlists();
         let mut l = QList::<QString>::default();
         for p in &lists {
+            // The source and its id go along so a source's list can be asked
+            // for again: it has no row in the library to look it up by.
             l.append(QString::from(&format!(
-                "{}\t{}\t{}\t{}",
-                p.id, p.name, p.provider, p.track_count
+                "{}\t{}\t{}\t{}\t{}\t{}",
+                p.id, p.name, p.provider, p.track_count, p.source, p.external_id
             )));
         }
         self.as_mut().set_playlists(QStringList::from(&l));
@@ -124,6 +126,15 @@ impl Chilpa {
             self.as_mut().set_library_status(QString::from(&saved));
             self.as_mut().refresh_playlists();
         }
+    }
+
+    /// Opens a source's list: its tracks become the results, and playing
+    /// one is the same click as playing a search result.
+    pub fn open_source_playlist(mut self: Pin<&mut Self>, source: &QString, id: &QString) {
+        let source = source.to_string();
+        let id = id.to_string();
+        self.as_mut().rust_mut().api.open_source_playlist(&source, &id);
+        self.as_mut().refresh_results();
     }
 
     pub fn play_saved_playlist(mut self: Pin<&mut Self>, playlist_id: i64) {

@@ -107,7 +107,7 @@ pub mod chilpa_bridge {
         #[qproperty(QStringList, genres)]
         /// The smart lists, as "name\ttracks".
         #[qproperty(QStringList, smart_lists)]
-        /// The saved lists, as "id\tname\tprovider\ttracks".
+        /// The saved lists, as "id\tname\tprovider\ttracks\tsource\texternal id".
         #[qproperty(QStringList, playlists)]
         /// The listening summary, already in "label\tvalue" lines.
         #[qproperty(QStringList, stats)]
@@ -295,6 +295,10 @@ pub mod chilpa_bridge {
         /// Starts a saved list playing.
         #[qinvokable]
         fn play_saved_playlist(self: Pin<&mut Chilpa>, playlist_id: i64);
+
+        /// Opens a source's list: its tracks become the results.
+        #[qinvokable]
+        fn open_source_playlist(self: Pin<&mut Chilpa>, source: &QString, id: &QString);
 
         /// Deletes a saved list. The tracks are not touched.
         #[qinvokable]

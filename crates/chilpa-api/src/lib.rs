@@ -248,10 +248,15 @@ pub struct SmartListInfo {
 /// the ones from here.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Playlist {
+    /// The library's row id. Zero on a source's list, which has no row.
     pub id: i64,
     pub name: String,
     pub provider: String,
     pub track_count: usize,
+    /// The plugin it came from, empty when it is one of ours.
+    pub source: String,
+    /// The id that source gives it, empty when it is one of ours.
+    pub external_id: String,
 }
 
 /// What the wizard found about an output.

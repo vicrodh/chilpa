@@ -4,6 +4,7 @@
 //! it is looked at. Both come out the same door.
 
 use super::*;
+use chilpa_plugin::messages;
 
 impl Chilpa {
     /// Starts a genre playing, shuffled.
@@ -57,18 +58,104 @@ impl Chilpa {
     }
 
     /// The saved lists, the ones from here and whatever a source brings.
+    ///
+    /// A source's lists are asked for here and not kept: they live on the
+    /// source, and a copy in the library would be a second truth that goes
+    /// stale without anyone noticing. A source that does not answer is left
+    /// out and says nothing: its lists missing is not worth breaking the
+    /// panel over.
     pub fn playlists(&mut self) -> Vec<Playlist> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.playlists()
-            .unwrap_or_default()
+        let mut all: Vec<Playlist> = match self.library() {
+            Some(lib) => lib
+                .playlists()
+                .unwrap_or_default()
+                .into_iter()
+                .map(|p| Playlist {
+                    id: p.id,
+                    name: p.name,
+                    provider: p.provider,
+                    track_count: p.track_count,
+                    source: String::new(),
+                    external_id: String::new(),
+                })
+                .collect(),
+            None => Vec::new(),
+        };
+        for (id, name) in self.sources() {
+            all.extend(self.source_playlists(&id, &name));
+        }
+        all
+    }
+
+    /// What one source says its lists are. Empty when it cannot answer.
+    fn source_playlists(&mut self, id: &str, name: &str) -> Vec<Playlist> {
+        let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
+        let Ok(bytes) = self.call_plugin_short(id, messages::op::PLAYLISTS, &request) else {
+            return Vec::new();
+        };
+        let Ok(reply) = messages::read::<messages::Results>(&bytes) else { return Vec::new() };
+        reply
+            .playlists
             .into_iter()
             .map(|p| Playlist {
-                id: p.id,
+                id: 0,
                 name: p.name,
-                provider: p.provider,
+                provider: name.to_string(),
                 track_count: p.track_count,
+                source: id.to_string(),
+                external_id: p.external_id,
             })
             .collect()
+    }
+
+    /// Opens a source's list: its tracks become the results.
+    ///
+    /// It does not play. A source's track has to be resolved one at a time,
+    /// and the queue holds resolved addresses, so putting a whole list in it
+    /// would mean asking the source for every signed URL up front. Showing
+    /// the tracks means playing one is the same click as playing a search
+    /// result, down the same path.
+    ///
+    /// Returns how many tracks came back.
+    pub fn open_source_playlist(&mut self, source: &str, external_id: &str) -> usize {
+        let names: std::collections::HashMap<String, String> =
+            self.sources().into_iter().collect();
+        let name = names.get(source).cloned().unwrap_or_else(|| source.to_string());
+        let request = messages::write(&messages::Resolve::new(external_id));
+        let bytes = match self.call_plugin_short(source, messages::op::PLAYLIST_TRACKS, &request) {
+            Ok(b) => b,
+            Err(e) => {
+                self.now.error = format!("{name}: {e}");
+                return 0;
+            }
+        };
+        let reply: messages::Results = match messages::read(&bytes) {
+            Ok(r) => r,
+            Err(e) => {
+                self.now.error = format!("{name}: {e}");
+                return 0;
+            }
+        };
+        let plays = self
+            .plugins
+            .as_ref()
+            .and_then(|p| p.lock().ok())
+            .is_none_or(|p| p.delivers_audio(source));
+        let hits: Vec<search::Hit> = reply
+            .tracks
+            .into_iter()
+            .map(|t| search::Hit::remote(t, source, &name, plays))
+            .collect();
+        let found = hits.len();
+        self.search.text = String::new();
+        self.search.replies = Vec::new();
+        self.search.local = Vec::new();
+        self.search.hits = hits;
+        self.search.changed = true;
+        if found == 0 {
+            self.now.error = chilpa_i18n::t_args("\"{}\" brings nothing today", &[&name]);
+        }
+        found
     }
 
     /// Saves the queue as a list under that name.
