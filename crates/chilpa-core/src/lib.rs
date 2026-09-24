@@ -192,7 +192,6 @@ pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chi
 /// An identifier written before stacks existed has no prefix, and reading it
 /// as a bare name is right: it can only have meant the card, because that is
 /// all there was.
-#[cfg(target_os = "linux")]
 fn bare(id: &str) -> String {
     chilpa_audio::backend::BackendOutput::split(id)
         .map(|(_, rest)| rest.to_string())
@@ -215,7 +214,6 @@ pub fn probe_device(
 }
 
 /// Starts a player wired to the machine's real outputs.
-#[cfg(target_os = "linux")]
 pub fn spawn_player() -> player::Player {
     spawn_player_with(chilpa_audio::tap::Tap::new())
 }
@@ -224,7 +222,6 @@ pub fn spawn_player() -> player::Player {
 ///
 /// The tap wraps the device: it copies what is delivered and passes it
 /// through. Whoever draws reads from there, and the audio never finds out.
-#[cfg(target_os = "linux")]
 pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     let from_thread = tap.clone();
     player::Player::spawn(
@@ -243,7 +240,6 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
 /// plainly rather than tried against whichever one happens to be first,
 /// which is how a settings file from another machine ends up playing
 /// somewhere nobody chose.
-#[cfg(target_os = "linux")]
 fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
     match chilpa_audio::backend::BackendOutput::split(id) {
         Some((chilpa_audio::backend::BackendKind::File, _)) => {
@@ -262,6 +258,7 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
         // every client is told it. Handing that over lets the negotiation
         // decide -- refuse with bit-perfect on, convert and say so with it
         // off -- instead of this crate deciding for it.
+        #[cfg(target_os = "linux")]
         Some((chilpa_audio::backend::BackendKind::Jack, _)) => chilpa_jack::capabilities()
             .ok_or_else(|| {
                 chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
@@ -273,13 +270,15 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
             | chilpa_audio::backend::BackendKind::Pulse,
             _,
         )) => Ok(chilpa_audio::capture::capabilities()),
+        #[cfg(target_os = "linux")]
         Some((_, bare)) => chilpa_alsa::probe(bare),
+        #[cfg(not(target_os = "linux"))]
+        Some((_, bare)) => Err(unknown_output(bare)),
         None => Err(unknown_output(id)),
     }
 }
 
 /// Opens one, through the stack its identifier names.
-#[cfg(target_os = "linux")]
 fn open_output(
     id: &str,
     format: chilpa_audio::format::StreamFormat,
@@ -321,35 +320,11 @@ pub fn path_is_exact(device: &str, exclusive: bool) -> bool {
 }
 
 /// The error for an identifier that names no stack this build has.
-#[cfg(target_os = "linux")]
 fn unknown_output(id: &str) -> chilpa_audio::sink::SinkError {
     chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t_args(
         "there is no output called \"{}\" on this machine",
         &[id],
     ))
-}
-
-/// The same where there is no backend yet (ADR-010 deuda M2).
-///
-/// A real player over a device that refuses to open: the queue, the signals
-/// and the events all work, and what fails is the one thing that actually is
-/// missing. That is what makes the rest of the engine testable on a platform
-/// whose audio nobody has written.
-#[cfg(not(target_os = "linux"))]
-pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
-    let _ = tap;
-    fn nothing_yet<T>() -> Result<T, chilpa_audio::sink::SinkError> {
-        Err(chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
-            "there is no audio output on this platform yet",
-        )))
-    }
-    player::Player::spawn(Box::new(|_| nothing_yet()), Box::new(|_, _, _| nothing_yet()))
-}
-
-/// The same where there is no backend yet (ADR-010 deuda M2).
-#[cfg(not(target_os = "linux"))]
-pub fn spawn_player() -> player::Player {
-    spawn_player_with(chilpa_audio::tap::Tap::new())
 }
 
 /// What the core tells the facade when something has finished playing.
