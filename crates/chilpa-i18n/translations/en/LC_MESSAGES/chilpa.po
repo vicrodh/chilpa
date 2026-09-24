@@ -592,9 +592,6 @@ msgstr ""
 msgid "it blew up inside: {}"
 msgstr ""
 
-msgid "it delivers the track in {} files in a row, and they are not read one after another yet"
-msgstr ""
-
 msgid "it delivers {}"
 msgstr ""
 
@@ -852,6 +849,9 @@ msgstr ""
 msgid "the name"
 msgstr ""
 
+msgid "the next part of the track could not be opened: {}"
+msgstr ""
+
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr ""
 
@@ -907,6 +907,9 @@ msgid "there is no disc in the drive"
 msgstr ""
 
 msgid "there is no folder in the library yet"
+msgstr ""
+
+msgid "there is no part to open"
 msgstr ""
 
 msgid "there is no plugin \"{}\" with a manifest to approve"

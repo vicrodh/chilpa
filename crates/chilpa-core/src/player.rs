@@ -309,6 +309,16 @@ fn is_url(path: &Path) -> bool {
     path.to_string_lossy().starts_with("http://") || path.to_string_lossy().starts_with("https://")
 }
 
+/// The parts of a track that came in several URLs.
+///
+/// A queue entry is one string, and a track in several parts is still one
+/// track, so its parts travel joined by a space. A space cannot appear in a
+/// URL -- it has to be written `%20` -- so splitting on whitespace can never
+/// cut a URL in half, and a single URL comes back as a list of one.
+fn parts_of(url: &Path) -> Vec<String> {
+    url.to_string_lossy().split_whitespace().map(str::to_string).collect()
+}
+
 /// Plays a radio, or any stream over HTTP.
 #[allow(clippy::too_many_arguments)]
 fn play_stream(
@@ -321,8 +331,9 @@ fn play_stream(
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let address = url.to_string_lossy().to_string();
-    let stream = chilpa_stream::open(&address)
+    let parts = parts_of(url);
+    let address = parts.first().cloned().unwrap_or_default();
+    let stream = chilpa_stream::open_parts(&parts)
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
     let titles = stream.now_playing();
     let station = stream.info().name.clone();

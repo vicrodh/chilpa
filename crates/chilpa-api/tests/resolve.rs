@@ -64,6 +64,34 @@ fn serve(audio: Vec<u8>) -> u16 {
     port
 }
 
+/// Serves a WAV cut in pieces, one piece per connection, in order.
+///
+/// That is what a source that signs a URL per part looks like from here: the
+/// chained reader opens the next one only when the current runs out, so the
+/// order is the order of the connections.
+fn serve_in_parts(audio: Vec<u8>, pieces: usize) -> u16 {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let size = audio.len().div_ceil(pieces);
+    let parts: Vec<Vec<u8>> = audio.chunks(size).map(<[u8]>::to_vec).collect();
+    std::thread::spawn(move || {
+        for (stream, part) in listener.incoming().flatten().zip(parts) {
+            let mut stream = stream;
+            let mut buf = [0u8; 1024];
+            let _ = stream.read(&mut buf);
+            let head = format!(
+                "HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\n\r\n",
+                part.len()
+            );
+            if stream.write_all(head.as_bytes()).is_ok() {
+                let _ = stream.write_all(&part);
+            }
+            let _ = stream.flush();
+        }
+    });
+    port
+}
+
 /// A source that finds a track and can say what it is played with.
 fn install(dir: &Path, id: &str, found: &str, stream: &str) {
     std::fs::create_dir_all(dir.join(id)).unwrap();
@@ -123,6 +151,20 @@ fn a_track_from_a_source_resolves_and_plays() {
         &format!(r#"{{"url":"http://127.0.0.1:{port}/track.wav","codec":"wav"}}"#),
     );
 
+    // A source that hands the track over in two parts, which is the normal
+    // case in hi-res. The two URLs are the same address on purpose: the
+    // server answers a different piece per connection, so what is being
+    // checked is that both are read and in order.
+    let split = serve_in_parts(wave(44_100), 2);
+    install(
+        &root,
+        "com.test.parts",
+        r#"{"tracks":[{"external_id":"c1","title":"One in two parts","artist":"Someone"}]}"#,
+        &format!(
+            r#"{{"urls":["http://127.0.0.1:{split}/a.wav","http://127.0.0.1:{split}/b.wav"],"codec":"wav"}}"#
+        ),
+    );
+
     // And one that answers with an address that is not http, to check it
     // is not opened.
     install(
@@ -135,13 +177,14 @@ fn a_track_from_a_source_resolves_and_plays() {
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
     chilpa.approve_plugin("com.test.source");
-    assert_eq!(chilpa.approve_plugin("com.test.liar"), 2, "both running");
+    chilpa.approve_plugin("com.test.parts");
+    assert_eq!(chilpa.approve_plugin("com.test.liar"), 3, "all three running");
 
     // Search: the local side is empty, so the only result is the source's.
     chilpa.search_all("one", 20);
-    assert!(wait_for(&mut chilpa, |c| c.found().len() >= 2), "both answered");
+    assert!(wait_for(&mut chilpa, |c| c.found().len() >= 3), "all three answered");
     let hits = chilpa.found().to_vec();
-    assert_eq!(hits.len(), 2);
+    assert_eq!(hits.len(), 3);
     let good = hits.iter().position(|h| h.source == "com.test.source").unwrap();
     let liar = hits.iter().position(|h| h.source == "com.test.liar").unwrap();
     assert_eq!(hits[good].title, "One from a source");
@@ -166,6 +209,24 @@ fn a_track_from_a_source_resolves_and_plays() {
     assert_eq!(now.title, "One from a source", "the title shows, not the URL");
     assert_eq!(now.artist, "Someone");
     assert!(now.total_seconds > 0.0 || now.seconds > 0.0, "something went out the device: {now:?}");
+
+    // And the one in two parts: it used to be refused for having more than
+    // one, saying how many. It plays now, and the whole thing plays: a WAV
+    // cut in half only decodes if the second half arrives behind the first.
+    chilpa.search_all("one", 20);
+    assert!(wait_for(&mut chilpa, |c| c.found().len() >= 3), "the sources answered again");
+    let hits = chilpa.found().to_vec();
+    let split = hits.iter().position(|h| h.source == "com.test.parts").unwrap();
+    assert!(chilpa.play_hit(split, OUTPUT, true), "{}", chilpa.now_playing().error);
+    assert!(
+        wait_for(&mut chilpa, |c| !c.now_playing().playing && c.now_playing().seconds > 0.0),
+        "the whole thing played: {:?}",
+        chilpa.now_playing()
+    );
+    let now = chilpa.now_playing().clone();
+    assert!(now.error.is_empty(), "it played without complaining: {}", now.error);
+    assert_eq!(now.title, "One in two parts", "the card is the source's, not a URL");
+    assert!(now.seconds > 0.9, "both parts came out, not just the first: {now:?}");
 
     let _ = std::fs::remove_dir_all(dir);
 }

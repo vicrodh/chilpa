@@ -592,9 +592,6 @@ msgstr "pide el runtime {}, que todavía no existe"
 msgid "it blew up inside: {}"
 msgstr "tronó adentro: {}"
 
-msgid "it delivers the track in {} files in a row, and they are not read one after another yet"
-msgstr "entrega la pista en {} archivos seguidos, y todavía no se leen encadenados"
-
 msgid "it delivers {}"
 msgstr "entrega {}"
 
@@ -852,6 +849,9 @@ msgstr "el módulo no se pudo cargar: {}"
 msgid "the name"
 msgstr "el nombre"
 
+msgid "the next part of the track could not be opened: {}"
+msgstr "no se pudo abrir la siguiente parte de la pista: {}"
+
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
 
@@ -908,6 +908,9 @@ msgstr "no hay disco en la unidad"
 
 msgid "there is no folder in the library yet"
 msgstr "todavía no hay ninguna carpeta en la biblioteca"
+
+msgid "there is no part to open"
+msgstr "no hay ninguna parte que abrir"
 
 msgid "there is no plugin \"{}\" with a manifest to approve"
 msgstr "no hay un plugin \"{}\" con manifest que aprobar"
