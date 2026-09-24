@@ -125,7 +125,7 @@ fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
             vec![Value::Integer(*n as i64)],
         ),
         Rule::AddedWithinDays(d) => ("t.added_at >= ?".into(), vec![days_ago(*d)]),
-        Rule::PlayedWithinDays(d) => ("e.last_at >= ?".into(), vec![days_ago(*d)]),
+        Rule::PlayedWithinDays(d) => ("e.last_played >= ?".into(), vec![days_ago(*d)]),
         // High resolution is anything above CD.
         Rule::HiRes => (
             "(t.bit_depth > 16 OR t.sample_rate_hz > 48000)".into(),
@@ -173,16 +173,17 @@ fn sql_order(order: Order) -> &'static str {
 }
 
 impl Library {
-    /// Resolves a smart list against the library.
+    /// What a rule list comes down to: the `WHERE` and its parameters.
     ///
-    /// Present tracks only: a list offering what cannot be played is no use at
-    /// all.
-    pub fn smart_tracks(&self, list: &SmartList) -> rusqlite::Result<Vec<StoredTrack>> {
+    /// Shared so that counting a list and resolving it can never drift into
+    /// two different answers to the same question.
+    fn smart_where(&self, list: &SmartList) -> (String, Vec<Value>) {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
-
+        // Present tracks only: a list offering what cannot be played is no
+        // use at all.
         let mut conditions = vec!["t.present = 1".to_string()];
         let mut values: Vec<Value> = Vec::new();
         for rule in &list.rules {
@@ -190,6 +191,41 @@ impl Library {
             conditions.push(sql);
             values.extend(params);
         }
+        (conditions.join(" AND "), values)
+    }
+
+    /// How many tracks a list would give, without building it.
+    ///
+    /// The panel shows eight of these side by side, and it wants a number,
+    /// not the tracks. Counting inside a `LIMIT` is what makes the
+    /// difference: with the ordering gone there is nothing to sort, and a
+    /// list with plenty of matches stops as soon as it has enough instead of
+    /// walking the library to sort what it was going to throw away.
+    ///
+    /// It is capped at the list's limit for the same reason the list is:
+    /// the number is what you would get, not how many exist.
+    pub fn smart_count(&self, list: &SmartList) -> rusqlite::Result<usize> {
+        let (where_sql, mut values) = self.smart_where(list);
+        values.push(Value::Integer(list.limit.max(1) as i64));
+        let sql = format!(
+            "SELECT count(*) FROM (
+                 SELECT 1
+                 FROM tracks t
+                 LEFT JOIN track_rollup e ON e.track_id = t.id
+                 WHERE {where_sql}
+                 LIMIT ?
+             )"
+        );
+        let n: i64 = self.db.query_row(&sql, rusqlite::params_from_iter(values), |r| r.get(0))?;
+        Ok(n as usize)
+    }
+
+    /// Resolves a smart list against the library.
+    ///
+    /// Present tracks only: a list offering what cannot be played is no use at
+    /// all.
+    pub fn smart_tracks(&self, list: &SmartList) -> rusqlite::Result<Vec<StoredTrack>> {
+        let (where_sql, mut values) = self.smart_where(list);
         values.push(Value::Integer(list.limit.max(1) as i64));
 
         let sql = format!(
@@ -197,18 +233,11 @@ impl Library {
                     t.track_number, t.duration_ms, t.present
              FROM tracks t
              LEFT JOIN albums a ON a.id = t.album_id
-             LEFT JOIN (
-                 SELECT p.track_id AS tid,
-                        count(*) AS plays,
-                        max(p.started_at) AS last_at
-                 FROM play_events p
-                 WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
-                 GROUP BY p.track_id
-             ) e ON e.tid = t.id
+             LEFT JOIN track_rollup e ON e.track_id = t.id
              WHERE {}
              ORDER BY {}
              LIMIT ?",
-            conditions.join(" AND "),
+            where_sql,
             sql_order(list.order)
         );
 
@@ -389,5 +418,25 @@ mod tests {
             lib.smart_tracks(&list)
                 .unwrap_or_else(|e| panic!("the list \"{}\" did not run: {e}", list.name));
         }
+    }
+
+    #[test]
+    fn counting_a_list_and_building_it_answer_the_same() {
+        // They are two queries over one set of rules, and the panel shows
+        // the first while the button hands you the second. A list that says
+        // fourteen and gives nine is worse than a slow one.
+        let lib = library();
+        for list in builtins() {
+            let built = lib.smart_tracks(&list).unwrap().len();
+            let counted = lib.smart_count(&list).unwrap();
+            assert_eq!(built, counted, "the list \"{}\"", list.name);
+        }
+        let compound = SmartList::new(
+            "compound",
+            vec![Rule::HiRes, Rule::LongerThanMs(1)],
+            Order::Artist,
+            200,
+        );
+        assert_eq!(lib.smart_tracks(&compound).unwrap().len(), lib.smart_count(&compound).unwrap());
     }
 }

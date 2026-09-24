@@ -97,30 +97,27 @@ impl AlbumSort {
     /// True when the ordering needs to aggregate the whole library to decide
     /// what comes first.
     ///
-    /// By artist, title or year it sorts on `albums` columns and that is it:
-    /// the page can be trimmed before counting anything. By plays or by date
-    /// added there is no way, because the order comes from exactly that.
-    fn needs_adding(&self) -> bool {
-        matches!(self, AlbumSort::Added | AlbumSort::Played | AlbumSort::LastPlayed)
-    }
-
-    /// The ordering when only `albums` columns are looked at.
-    fn cheap_order_by(&self) -> &'static str {
-        match self {
-            AlbumSort::Title => "a.title COLLATE NOCASE",
-            AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
-            _ => "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE",
-        }
-    }
-
+    /// The ordering, in terms of columns that exist before anything is
+    /// counted.
+    ///
+    /// Three of these used to be an aggregate over the whole play log, so
+    /// the page could not be trimmed until after it: the order *was* the
+    /// aggregate. Since the V6 migration the three live in `album_rollup`,
+    /// kept by triggers, so every ordering here reads a column and the page
+    /// is trimmed first -- which is the difference between seven
+    /// milliseconds and a hundred and fifty.
+    ///
+    /// `r` is the rollup. Every album has a row -- the triggers make one the
+    /// moment it gets a track -- so only `last_played` needs a default: an
+    /// album nobody has played has none, and zero is what puts it last.
     fn order_by(&self) -> &'static str {
         match self {
             AlbumSort::Artist => "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE",
             AlbumSort::Title => "a.title COLLATE NOCASE",
             AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
-            AlbumSort::Added => "max(t.added_at) DESC, a.title COLLATE NOCASE",
-            AlbumSort::Played => "plays DESC, a.title COLLATE NOCASE",
-            AlbumSort::LastPlayed => "last_at DESC, a.title COLLATE NOCASE",
+            AlbumSort::Added => "r.added_at DESC, a.title COLLATE NOCASE",
+            AlbumSort::Played => "r.plays DESC, a.title COLLATE NOCASE",
+            AlbumSort::LastPlayed => "COALESCE(r.last_played, 0) DESC, a.title COLLATE NOCASE",
         }
     }
 }
@@ -174,84 +171,31 @@ impl Library {
         limit: usize,
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
-        if !order.needs_adding() {
-            return self.albums_page_cheap(order, artist, limit, offset);
-        }
+        // The page is trimmed first and only then is anything counted, for
+        // the hundred rows that are going to come out. Counting the whole
+        // library on every page was the QBZ audit's high finding; doing it
+        // for three of the six orderings was what was left of it here.
+        //
         // The filter goes as a parameter, never interpolated: a name with
         // quotes in it has no business breaking a query.
-        let sql = format!(
-            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
-                    count(t.id),
-                    COALESCE(e.plays, 0) AS plays,
-                    e.last_at AS last_at
-             FROM albums a
-             JOIN tracks t ON t.album_id = a.id AND t.present = 1
-             LEFT JOIN (
-                 SELECT t2.album_id AS aid,
-                        count(*) AS plays,
-                        max(p.started_at) AS last_at
-                 FROM play_events p
-                 JOIN tracks t2 ON t2.id = p.track_id
-                 WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
-                 GROUP BY t2.album_id
-             ) e ON e.aid = a.id
-             WHERE ?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE
-             GROUP BY a.id
-             ORDER BY {}
-             LIMIT ?1 OFFSET ?2",
-            order.order_by()
-        );
-        let mut stmt = self.db.prepare(&sql)?;
-        let rows = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
-            Ok((
-                StoredAlbum {
-                    id: r.get(0)?,
-                    title: r.get(1)?,
-                    album_artist: r.get(2)?,
-                    year: r.get(3)?,
-                    artwork_path: r.get(4)?,
-                    track_count: r.get::<_, i64>(5)? as usize,
-                },
-                r.get::<_, i64>(6)? as usize,
-            ))
-        })?;
-        rows.collect()
-    }
-
-    /// The grid when the ordering does not depend on aggregating anything.
-    ///
-    /// The page is trimmed first and only then are tracks and plays counted,
-    /// for the hundred rows that are going to come out. Counting the whole
-    /// library on every page was the QBZ audit's high finding, and it shows
-    /// here: from 137 ms down to a few, with fifty thousand tracks.
-    fn albums_page_cheap(
-        &self,
-        order: AlbumSort,
-        artist: Option<&str>,
-        limit: usize,
-        offset: usize,
-    ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let sql = format!(
             "WITH page AS MATERIALIZED (
                  SELECT a.id AS id
                  FROM albums a
+                 JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
                  WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE)
-                   AND EXISTS (SELECT 1 FROM tracks t WHERE t.album_id = a.id AND t.present = 1)
                  ORDER BY {}
                  LIMIT ?1 OFFSET ?2
              )
              SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
-                    (SELECT count(*) FROM tracks t
-                     WHERE t.album_id = a.id AND t.present = 1),
-                    (SELECT count(*) FROM play_events p
-                     JOIN tracks t2 ON t2.id = p.track_id
-                     WHERE t2.album_id = a.id
-                       AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms))
+                    r.present_tracks,
+                    r.plays
              FROM page g
              JOIN albums a ON a.id = g.id
+             JOIN album_rollup r ON r.album_id = a.id
              ORDER BY {}",
-            order.cheap_order_by(),
-            order.cheap_order_by()
+            order.order_by(),
+            order.order_by()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(params![limit as i64, offset as i64, artist], |r| {
@@ -275,13 +219,17 @@ impl Library {
     /// An artist with no present tracks does not show up: the view shows what
     /// can be played, not what was once there.
     pub fn artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredArtist>> {
+        // It groups over albums and not over tracks: the track count comes
+        // from the rollup, so this walks five thousand rows where it used to
+        // walk fifty thousand. Same answer, and the join it removes was the
+        // whole cost.
         let mut stmt = self.db.prepare(
             "SELECT a.album_artist,
-                    count(DISTINCT a.id),
-                    count(t.id),
+                    count(a.id),
+                    sum(r.present_tracks),
                     max(a.artwork_path)
              FROM albums a
-             JOIN tracks t ON t.album_id = a.id AND t.present = 1
+             JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> ''
              GROUP BY a.album_artist COLLATE NOCASE
              ORDER BY a.album_artist COLLATE NOCASE

@@ -223,23 +223,67 @@ impl Library {
 
     /// Searches by title, artist or album.
     pub fn search(&self, text: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
-        let patron = format!("%{text}%");
+        let Some(query) = fts_query(text) else { return Ok(Vec::new()) };
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present
-             FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
-             WHERE t.present = 1
-               AND (t.title LIKE ?1 OR t.artist LIKE ?1 OR a.title LIKE ?1
-                    OR EXISTS (SELECT 1 FROM track_genres tg
-                               JOIN genres g ON g.id = tg.genre_id
-                               WHERE tg.track_id = t.id AND g.name LIKE ?1))
+             FROM track_search s
+             JOIN tracks t ON t.id = s.rowid
+             LEFT JOIN albums a ON a.id = t.album_id
+             WHERE track_search MATCH ?1 AND t.present = 1
              ORDER BY t.artist COLLATE NOCASE, t.title COLLATE NOCASE
              LIMIT ?2",
         )?;
-        let rows = stmt.query_map(params![patron, limit as i64], row_to_track)?;
+        let rows = stmt.query_map(params![query, limit as i64], row_to_track)?;
         rows.collect()
     }
 
+    /// Recomputes what is kept, from what it is kept from.
+    ///
+    /// Everything the grid, the artists view and the stats read fast is a
+    /// number the triggers maintain. **A number that is kept can drift**, and
+    /// one that drifts is worse than one that is slow: it is wrong without
+    /// saying so. Three things guard against that, and this is the third.
+    ///
+    /// The first is that the triggers cover every way a row gets in. The
+    /// second is that the tests compare kept against counted. The third is
+    /// this: a repair anyone can run, and what the tests compare against.
+    ///
+    /// It is one transaction, so a library is never left half rebuilt.
+    pub fn rebuild_rollups(&self) -> rusqlite::Result<()> {
+        self.db.execute_batch(
+            "BEGIN;
+             DELETE FROM album_rollup;
+             INSERT INTO album_rollup (album_id, plays, last_played, added_at, present_tracks)
+             SELECT a.id,
+                    COALESCE(e.plays, 0),
+                    e.last_at,
+                    COALESCE((SELECT max(t.added_at) FROM tracks t WHERE t.album_id = a.id), 0),
+                    (SELECT count(*) FROM tracks t
+                     WHERE t.album_id = a.id AND t.present = 1)
+             FROM albums a
+             LEFT JOIN (
+                 SELECT t2.album_id AS aid, count(*) AS plays, max(p.started_at) AS last_at
+                 FROM play_events p
+                 JOIN tracks t2 ON t2.id = p.track_id
+                 WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+                 GROUP BY t2.album_id
+             ) e ON e.aid = a.id;
+
+             DELETE FROM track_rollup;
+             INSERT INTO track_rollup (track_id, plays, last_played, last_touched)
+             SELECT p.track_id,
+                    sum(CASE WHEN p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+                             THEN 1 ELSE 0 END),
+                    max(CASE WHEN p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
+                             THEN p.started_at END),
+                    max(p.started_at)
+             FROM play_events p
+             WHERE p.track_id IS NOT NULL
+             GROUP BY p.track_id;
+             COMMIT;",
+        )
+    }
 
     /// The track at that path, if it is in the library.
     pub fn track_by_path(&self, source_id: i64, path: &Path) -> rusqlite::Result<Option<i64>> {
@@ -251,6 +295,26 @@ impl Library {
             )
             .optional()
     }
+}
+
+/// What someone typed, as something FTS5 will accept.
+///
+/// Every token is quoted and given a `*`, which is prefix matching: typing
+/// "suz" finds "Suzie" before the word is finished, which is what a search
+/// box is for. Quoting is what makes the rest safe -- FTS5 has an operator
+/// language, and `AND`, `NOT`, `*`, `^`, `:` and `"` in a title would
+/// otherwise either change the query or fail it.
+///
+/// `None` when there is nothing to search for: whitespace, or punctuation
+/// that tokenizes to nothing. An empty FTS5 query is a syntax error, and
+/// answering "nothing found" is the truth anyway.
+fn fts_query(text: &str) -> Option<String> {
+    let tokens: Vec<String> = text
+        .split(|c: char| !c.is_alphanumeric())
+        .filter(|t| !t.is_empty())
+        .map(|t| format!("\"{}\"*", t.replace('"', "\"\"")))
+        .collect();
+    (!tokens.is_empty()).then(|| tokens.join(" "))
 }
 
 pub(crate) fn now_unix() -> i64 {
