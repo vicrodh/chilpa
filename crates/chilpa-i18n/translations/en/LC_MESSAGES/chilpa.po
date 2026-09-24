@@ -1131,6 +1131,9 @@ msgstr ""
 msgid "this list"
 msgstr ""
 
+msgid "this output cannot be muted"
+msgstr ""
+
 msgid "this output has no volume control of its own"
 msgstr ""
 

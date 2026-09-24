@@ -43,6 +43,10 @@ pub const kAudioDevicePropertyHogMode: AudioObjectPropertySelector = fourcc(b"oi
 /// The knob, from 0 to 1. A device that has none simply does not answer.
 pub const kAudioDevicePropertyVolumeScalar: AudioObjectPropertySelector = fourcc(b"volm");
 pub const kAudioDevicePropertyMute: AudioObjectPropertySelector = fourcc(b"mute");
+/// Which two elements are the left and right of a stereo output. Volume
+/// often lives on these and not on the master element.
+pub const kAudioDevicePropertyPreferredChannelsForStereo: AudioObjectPropertySelector =
+    fourcc(b"dch2");
 pub const kAudioStreamPropertyAvailablePhysicalFormats: AudioObjectPropertySelector =
     fourcc(b"pfta");
 pub const kAudioDevicePropertyStreams: AudioObjectPropertySelector = fourcc(b"stm#");
@@ -177,6 +181,22 @@ extern "C" {
         outDataSize: *mut u32,
     ) -> OSStatus;
 
+    /// Whether the object has that property at all.
+    ///
+    /// The difference between "this device has no volume" and "reading it
+    /// failed", which a read that returns an option cannot tell apart.
+    pub fn AudioObjectHasProperty(
+        inObjectID: AudioObjectID,
+        inAddress: *const AudioObjectPropertyAddress,
+    ) -> u8;
+
+    /// Whether it can be written, which is not the same as having it.
+    pub fn AudioObjectIsPropertySettable(
+        inObjectID: AudioObjectID,
+        inAddress: *const AudioObjectPropertyAddress,
+        outIsSettable: *mut u8,
+    ) -> OSStatus;
+
     pub fn AudioObjectSetPropertyData(
         inObjectID: AudioObjectID,
         inAddress: *const AudioObjectPropertyAddress,
@@ -233,9 +253,22 @@ pub const fn global(selector: AudioObjectPropertySelector) -> AudioObjectPropert
 
 /// The same, for what a device sends out rather than what it takes in.
 pub const fn output(selector: AudioObjectPropertySelector) -> AudioObjectPropertyAddress {
+    output_element(selector, kAudioObjectPropertyElementMain)
+}
+
+/// One element of a device's output: the master, or a single channel.
+///
+/// Worth having by hand because volume is the property that is often not on
+/// the master at all. A device whose left and right each carry their own
+/// knob answers nothing at element zero, and a reader that only asks there
+/// concludes the device has no volume.
+pub const fn output_element(
+    selector: AudioObjectPropertySelector,
+    element: AudioObjectPropertyElement,
+) -> AudioObjectPropertyAddress {
     AudioObjectPropertyAddress {
         mSelector: selector,
         mScope: kAudioObjectPropertyScopeOutput,
-        mElement: kAudioObjectPropertyElementMain,
+        mElement: element,
     }
 }

@@ -162,16 +162,23 @@ impl OutputBackend for CoreAudio {
     /// Most DACs worth owning do not: the volume lives in the hardware and
     /// CoreAudio reports nothing. That is the right answer and it is given
     /// as such, rather than offering a slider that would work by scaling the
-    /// samples.
+    /// samples -- which is not a volume, it is a conversion, and it is the
+    /// end of bit-perfect.
+    ///
+    /// It is looked for on the master element and then on the stereo pair,
+    /// because plenty of devices carry no master and a knob per channel.
+    /// Asking only the master said the Mac's own speakers had no volume.
     fn volume(&self, id: &str) -> Option<Knob> {
         let device = find(id)?;
         let level = read::volume(device)?;
         Some(Knob {
             percent: (level.clamp(0.0, 1.0) * 100.0).round() as u8,
             muted: read::muted(device).unwrap_or(false),
-            can_mute: read::muted(device).is_some(),
-            // CoreAudio has no name for it: there is one knob and it belongs
-            // to the device.
+            // Muting is its own capability, and having one is not being
+            // allowed to move it.
+            can_mute: !read::movable_mute(device).is_empty(),
+            // CoreAudio has no name for it: there is one control and it
+            // belongs to the device.
             name: String::new(),
         })
     }
@@ -180,24 +187,35 @@ impl OutputBackend for CoreAudio {
         let Some(device) = find(id) else {
             return Err(chilpa_i18n::t("this output is not there any more"));
         };
-        if read::volume(device).is_none() {
+        let elements = read::movable_volume(device);
+        if elements.is_empty() {
             return Err(chilpa_i18n::t("this output has no volume control of its own"));
         }
         let level = f32::from(percent.min(100)) / 100.0;
-        play::write_property(device, ffi::kAudioDevicePropertyVolumeScalar, &level)
-            .map_err(|s| chilpa_i18n::t_args("the volume would not move ({})", &[&s.to_string()]))
+        for element in elements {
+            play::write_element(device, ffi::kAudioDevicePropertyVolumeScalar, element, &level)
+                .map_err(|s| {
+                    chilpa_i18n::t_args("the volume would not move ({})", &[&s.to_string()])
+                })?;
+        }
+        Ok(())
     }
 
     fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
         let Some(device) = find(id) else {
             return Err(chilpa_i18n::t("this output is not there any more"));
         };
-        if read::muted(device).is_none() {
-            return Err(chilpa_i18n::t("this output has no volume control of its own"));
+        let elements = read::movable_mute(device);
+        if elements.is_empty() {
+            return Err(chilpa_i18n::t("this output cannot be muted"));
         }
-        let on: u32 = u32::from(muted);
-        play::write_property(device, ffi::kAudioDevicePropertyMute, &on)
-            .map_err(|s| chilpa_i18n::t_args("the mute would not move ({})", &[&s.to_string()]))
+        let on = u32::from(muted);
+        for element in elements {
+            play::write_element(device, ffi::kAudioDevicePropertyMute, element, &on).map_err(
+                |s| chilpa_i18n::t_args("the mute would not move ({})", &[&s.to_string()]),
+            )?;
+        }
+        Ok(())
     }
 
     fn open(
