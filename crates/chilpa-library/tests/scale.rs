@@ -167,10 +167,15 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     within("search", t, Duration::from_millis(120));
 
     // And what typing actually looks like. FTS5 answers a prefix query by
-    // building the whole matching doclist before it returns a row, so a
-    // short prefix is the expensive one and it is the one that runs on every
-    // keystroke. `prefix='2 3 4'` is what this measures.
-    for typed in ["Tr", "Tra", "Trac"] {
+    // building the whole matching doclist before it returns a row, and the
+    // window queries on every keystroke, so each of these really runs.
+    //
+    // Every length is measured and not only the short ones: a prefix index
+    // makes the term index it sits beside bigger, so the lengths it does not
+    // cover get *slower*. Covering two to four and stopping there made a
+    // whole word four times slower than having no index at all, which is the
+    // query whose results somebody reads. See `MIGRATION_V15`.
+    for typed in ["Tr", "Tra", "Trac", "Track"] {
         let (found, t) = how_long(|| lib.search(typed, 200).unwrap());
         assert!(!found.is_empty(), "\"{typed}\" found nothing");
         within(&format!("typing \"{typed}\""), t, Duration::from_millis(30));
@@ -235,19 +240,20 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
 /// | the insert on its own | 5.5 us |
 /// | with the rollup triggers | 15.6 us |
 /// | with FTS5 as well | 55.9 us |
-/// | with FTS5 indexing short prefixes | 103 us |
+/// | with FTS5 indexing prefixes | 118 us |
 ///
 /// So the indexes add about a hundred microseconds to a track, and a hundred
-/// thousand of them add ten seconds to a scan that takes minutes, because a
-/// scan also opens every file. An incremental rescan pays none of it: what
+/// thousand of them add twelve seconds to a scan that takes minutes, because
+/// a scan also opens every file. An incremental rescan pays none of it: what
 /// does not change is not written.
 ///
-/// The last line is `prefix='2 3 4'` on the search index, which is what
-/// makes typing two or three letters instant (`MIGRATION_V12`). It doubles
-/// what a track costs to write, and that is the trade it is.
+/// The last line is `prefix='2 3 4 5 6 7'` on the search index, which is
+/// what makes typing anything up to a whole word instant
+/// (`MIGRATION_V15`). It roughly doubles what a track costs to write, and
+/// that is the trade it is.
 ///
 /// Those are the numbers with nothing else running. Inside the suite this
-/// test shares the machine with the other two and reads around 225 us, so
+/// test shares the machine with the other two and reads around 260 us, so
 /// the ceiling is 400: it is there for the day someone adds a third trigger
 /// without measuring, not to time the machine.
 #[test]
@@ -289,8 +295,8 @@ fn a_scan_does_not_pay_too_much_for_the_indexes() {
     eprintln!("inserting a track: {each:?} ({took:?} for {N})");
     assert!(
         each <= Duration::from_micros(400),
-        "a track costs {each:?} to insert; it was 103 us alone and 225 in the suite \
-         when the search index learned short prefixes"
+        "a track costs {each:?} to insert; it was 118 us alone and 260 in the suite \
+         when the search index learned prefixes"
     );
 }
 
