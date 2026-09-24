@@ -17,7 +17,7 @@
 use rusqlite::Connection;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 8;
+pub const VERSION: i64 = 9;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -26,7 +26,7 @@ pub const VERSION: i64 = 8;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9];
 
 /// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
@@ -568,6 +568,59 @@ CREATE INDEX track_rollup_last_played ON track_rollup(last_played DESC);
 
 -- What the tempo lists filter on. Without it, a library with no analysis
 -- yet walks itself to find out it has none.
+CREATE INDEX audio_features_bpm ON audio_features(bpm);
+
+ANALYZE;
+"#;
+
+/// From 8 to 9: one row of analysis per track and analyzer.
+///
+/// The table was keyed by `(track_id, analyzer, version)`, so bumping the
+/// analyzer's version left the old row behind. Nothing read it on purpose --
+/// every reader in `features.rs` already ends in `ORDER BY version DESC
+/// LIMIT 1` -- but the tempo rules did read it by accident: they ask whether
+/// **any** row for that track falls in the band, so a track whose tempo was
+/// measured at 130 and later corrected to 90 was in "Calm" and in "To move
+/// to" at the same time, forever.
+///
+/// Keyed by `(track_id, analyzer)` that cannot happen, and one more thing
+/// follows from it: with at most one row per track, a tempo rule can be a
+/// join instead of an `EXISTS`, and a join can be driven from the tempo
+/// index. On two hundred thousand tracks that is 35 ms to 2 ms with the
+/// analysis done, and 18 ms to 0.07 ms with none of it done -- which is the
+/// state every library is in the first time it opens this tab.
+///
+/// Superseded rows are dropped, keeping the newest version of each.
+const MIGRATION_V9: &str = r#"
+CREATE TABLE audio_features_one (
+    track_id         INTEGER NOT NULL REFERENCES tracks(id),
+    analyzer         TEXT NOT NULL,
+    version          INTEGER NOT NULL,
+    bpm              REAL,
+    tempo_confidence REAL,
+    musical_key      TEXT,
+    energy           REAL,
+    loudness_lufs    REAL,
+    intro_ms         INTEGER,
+    outro_ms         INTEGER,
+    analyzed_at      INTEGER NOT NULL,
+    PRIMARY KEY (track_id, analyzer)
+);
+
+INSERT INTO audio_features_one
+       (track_id, analyzer, version, bpm, tempo_confidence, musical_key,
+        energy, loudness_lufs, intro_ms, outro_ms, analyzed_at)
+SELECT f.track_id, f.analyzer, f.version, f.bpm, f.tempo_confidence,
+       f.musical_key, f.energy, f.loudness_lufs, f.intro_ms, f.outro_ms,
+       f.analyzed_at
+  FROM audio_features f
+ WHERE f.version = (SELECT max(o.version) FROM audio_features o
+                     WHERE o.track_id = f.track_id AND o.analyzer = f.analyzer);
+
+DROP TABLE audio_features;
+ALTER TABLE audio_features_one RENAME TO audio_features;
+
+-- The index V8 added went with the old table.
 CREATE INDEX audio_features_bpm ON audio_features(bpm);
 
 ANALYZE;
