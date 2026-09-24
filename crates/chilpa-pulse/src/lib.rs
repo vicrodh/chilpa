@@ -41,6 +41,21 @@ fn spec_format(f: SampleFormat) -> Option<Format> {
     })
 }
 
+/// The name inside what the server calls itself.
+///
+/// It answers "PulseAudio (on PipeWire 1.6.8)" when PipeWire is wearing the
+/// hat, and putting that whole string after the stack's own name reads
+/// "PulseAudio (through PulseAudio (on PipeWire 1.6.8))". What is worth
+/// reading is the part in the parentheses; when there is none, PulseAudio is
+/// answering for itself and there is nothing to add.
+fn behind(server: &str) -> String {
+    server
+        .rsplit_once("(on ")
+        .and_then(|(_, rest)| rest.strip_suffix(')'))
+        .map(|inner| inner.trim().to_string())
+        .unwrap_or_default()
+}
+
 impl OutputBackend for Pulse {
     fn info(&self) -> BackendInfo {
         let Some(name) = crate::server::name() else {
@@ -56,7 +71,7 @@ impl OutputBackend for Pulse {
             // Who really replied. "PulseAudio (on PipeWire 1.6.8)" is a
             // different machine from one running PulseAudio itself, and only
             // this line can tell somebody which one they are on.
-            provider: name,
+            provider: behind(&name),
             fidelity: Fidelity::Never,
             caveat: chilpa_i18n::t(
                 "The PulseAudio protocol mixes every program together and resamples the result to \
@@ -230,6 +245,14 @@ mod tests {
         } else {
             assert!(!info.missing.is_empty());
         }
+    }
+
+    #[test]
+    fn the_name_says_who_is_behind_it_without_saying_it_twice() {
+        assert_eq!(behind("PulseAudio (on PipeWire 1.6.8)"), "PipeWire 1.6.8");
+        // PulseAudio answering for itself adds nothing.
+        assert_eq!(behind("pulseaudio"), "");
+        assert_eq!(behind(""), "");
     }
 
     #[test]
