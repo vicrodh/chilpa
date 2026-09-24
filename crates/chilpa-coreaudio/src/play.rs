@@ -172,6 +172,31 @@ fn settles_at(device: AudioObjectID, rate: f64) -> bool {
     false
 }
 
+/// Waits for a stream to really be in that format, and says what it ended
+/// up in.
+///
+/// The same patience the rate needs, for the same reason: the set hands the
+/// ask to the driver and returns. What comes back is whatever it settled on,
+/// which is then compared -- this waits, it does not decide.
+fn format_settles(
+    stream_id: AudioObjectID,
+    which: AudioObjectPropertySelector,
+    asked: &AudioStreamBasicDescription,
+) -> Option<AudioStreamBasicDescription> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    let mut last = read::format(stream_id, which);
+    loop {
+        match &last {
+            Some(got) if disagrees(asked, got).is_none() => return last,
+            _ if std::time::Instant::now() >= deadline => return last,
+            _ => {
+                std::thread::sleep(std::time::Duration::from_millis(20));
+                last = read::format(stream_id, which);
+            }
+        }
+    }
+}
+
 /// Why what a stream opened as is not what was asked for, or `None`.
 ///
 /// Checked in full and not just on the rate. The one that would otherwise go
@@ -406,13 +431,16 @@ impl CoreAudioSink {
                         &[name, which, &s.to_string()],
                     )))
                 })?;
-                // Read back. A set that returns success and a device that
-                // gives something else is the ordinary case in audio, not
-                // the strange one; the ALSA sink checks the same way after
-                // hw_params. Both sides are checked: only checking the one
-                // the program is handed leaves the wire unverified, and the
-                // wire is what reaches the DAC.
-                let Some(got) = read::format(stream_id, address) else {
+                // Read back, and wait for it like the rate.
+                //
+                // Setting a format is a request too, and it took a second
+                // round on real hardware to see it: a track whose rate
+                // already matched skipped the rate wait, the format was read
+                // back a microsecond after being asked for, and it still
+                // said float. The one whose rate had to change worked --
+                // because waiting for the clock had given the driver time to
+                // do both.
+                let Some(got) = format_settles(stream_id, address, &asked) else {
                     return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
                         "\"{}\" would not say what format it opened",
                         &[name],
