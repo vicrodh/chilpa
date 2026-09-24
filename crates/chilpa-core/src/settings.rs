@@ -149,7 +149,7 @@ fn parse(text: &str) -> BTreeMap<String, String> {
 mod tests {
     use super::*;
 
-    fn temporal(name: &str) -> PathBuf {
+    fn temporary(name: &str) -> PathBuf {
         let mut p = std::env::temp_dir();
         p.push(format!("chilpa-settings-{name}.conf"));
         p
@@ -157,21 +157,22 @@ mod tests {
 
     #[test]
     fn with_no_file_the_defaults_are_used() {
-        let s = load_from(&temporal("no-existe"));
+        let s = load_from(&temporary("missing"));
         assert_eq!(s, Settings::default());
-        assert!(s.bit_perfect, "bit-perfect viene encendido");
+        assert!(s.bit_perfect, "bit-perfect comes switched on");
     }
 
     #[test]
     fn what_was_saved_reads_back_the_same() {
-        let file = temporal("ida-y-vuelta");
+        let file = temporary("round-trip");
         let s = Settings {
             output: "hw:1,0".into(),
             bit_perfect: false,
-            last_folder: "/musica/albumes".into(),
-            layout: "Columna".into(),
+            last_folder: "/music/albums".into(),
+            layout: "Column".into(),
             album_sort: "played".into(),
             visualizer: "spectrum".into(),
+            language: "es".into(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);
@@ -182,7 +183,7 @@ mod tests {
     fn the_old_spanish_names_still_open_the_same_window() {
         // A settings.conf written before the code moved to English cannot
         // leave the window without a layout or a visualizer.
-        let file = temporal("nombres-viejos");
+        let file = temporary("old-names");
         std::fs::write(&file, "layout = Clasico\nvisualizer = espectro\n").unwrap();
         let s = load_from(&file);
         assert_eq!(s.layout, "Classic");
@@ -192,17 +193,17 @@ mod tests {
 
     #[test]
     fn a_broken_file_brings_nothing_down() {
-        let file = temporal("roto");
-        std::fs::write(&file, "esto no es\nun archivo válido }{\noutput = hw:0,0\n").unwrap();
+        let file = temporary("broken");
+        std::fs::write(&file, "this is not\na valid file }{\noutput = hw:0,0\n").unwrap();
         let s = load_from(&file);
-        assert_eq!(s.output, "hw:0,0", "se rescata lo que sí se entiende");
-        assert!(s.bit_perfect, "lo demás toma su valor por omisión");
+        assert_eq!(s.output, "hw:0,0", "what does parse is salvaged");
+        assert!(s.bit_perfect, "the rest takes its default value");
         let _ = std::fs::remove_file(file);
     }
 
     #[test]
     fn with_no_saved_layout_the_window_still_has_something_to_start_with() {
-        let file = temporal("sin-layout");
+        let file = temporary("no-layout");
         std::fs::write(&file, "layout =\n").unwrap();
         assert_eq!(load_from(&file).layout, DEFAULT_LAYOUT);
         let _ = std::fs::remove_file(file);
@@ -210,8 +211,8 @@ mod tests {
 
     #[test]
     fn comments_and_whitespace_do_not_get_in_the_way() {
-        let file = temporal("comentarios");
-        std::fs::write(&file, "# un comentario\n  output   =   hw:2,0  \nbit_perfect = false\n").unwrap();
+        let file = temporary("comments");
+        std::fs::write(&file, "# a comment\n  output   =   hw:2,0  \nbit_perfect = false\n").unwrap();
         let s = load_from(&file);
         assert_eq!(s.output, "hw:2,0");
         assert!(!s.bit_perfect);
