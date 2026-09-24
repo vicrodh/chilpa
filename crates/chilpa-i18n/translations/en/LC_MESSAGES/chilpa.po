@@ -7,6 +7,9 @@ msgstr ""
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
+msgid "\"{}\" did not switch to {} Hz"
+msgstr ""
+
 msgid "\"{}\" does not say how an account connects"
 msgstr ""
 

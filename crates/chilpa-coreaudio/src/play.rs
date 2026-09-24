@@ -115,6 +115,23 @@ fn describe(stream: StreamFormat) -> Option<AudioStreamBasicDescription> {
     })
 }
 
+/// Waits for a device to really be at that rate.
+///
+/// Two seconds, which is longer than any DAC takes to re-lock and short
+/// enough that a device that is never going to switch does not hang the
+/// thread that asked. Polling and not a property listener: a listener means
+/// a run loop, and this is called from whatever thread is starting a track.
+fn settles_at(device: AudioObjectID, rate: f64) -> bool {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    while std::time::Instant::now() < deadline {
+        if (read::current_rate(device) - rate).abs() <= 0.5 {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    false
+}
+
 /// Why what a stream opened as is not what was asked for, or `None`.
 ///
 /// Checked in full and not just on the rate. The one that would otherwise go
@@ -244,6 +261,14 @@ impl CoreAudioSink {
         };
 
         // 2. The device at the track's rate.
+        //
+        // Setting it is a request, not a change: CoreAudio hands the ask to
+        // the driver and returns, and the device switches when it is ready.
+        // A DAC re-locking its clock takes a moment, and reading the rate
+        // straight back gives the old one -- which is how the format set
+        // right after this lands at the wrong rate and the whole thing comes
+        // apart with a message about the device refusing. So it is asked
+        // for, and then waited for.
         let rate = f64::from(stream.sample_rate_hz);
         if (read::current_rate(device) - rate).abs() > 0.5 {
             set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate).map_err(|s| {
@@ -252,6 +277,12 @@ impl CoreAudioSink {
                     &[name, &stream.sample_rate_hz.to_string(), &s.to_string()],
                 )))
             })?;
+            if !settles_at(device, rate) {
+                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                    "\"{}\" did not switch to {} Hz",
+                    &[name, &stream.sample_rate_hz.to_string()],
+                ))));
+            }
         }
 
         // 3. The wire carrying the track's own samples, and the program
