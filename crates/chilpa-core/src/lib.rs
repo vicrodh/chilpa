@@ -262,10 +262,20 @@ fn measure(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio
         // Measuring for real would mean opening the sink, and opening one to
         // measure it takes it from whoever is using it -- which is exactly
         // what a listing must never do.
+        // JACK is the one server that can be measured without taking
+        // anything: the graph's rate is the graph's, it is published, and
+        // every client is told it. Handing that over lets the negotiation
+        // decide -- refuse with bit-perfect on, convert and say so with it
+        // off -- instead of this crate deciding for it.
+        Some((chilpa_audio::backend::BackendKind::Jack, _)) => chilpa_jack::capabilities()
+            .ok_or_else(|| {
+                chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t(
+                    "no JACK graph is running",
+                ))
+            }),
         Some((
             chilpa_audio::backend::BackendKind::PipeWire
-            | chilpa_audio::backend::BackendKind::Pulse
-            | chilpa_audio::backend::BackendKind::Jack,
+            | chilpa_audio::backend::BackendKind::Pulse,
             _,
         )) => Ok(chilpa_audio::capture::capabilities()),
         Some((_, bare)) => chilpa_alsa::probe(bare),

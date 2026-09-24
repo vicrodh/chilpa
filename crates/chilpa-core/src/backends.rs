@@ -36,6 +36,7 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
         stacks.push(Box::new(chilpa_alsa::Alsa));
         stacks.push(Box::new(chilpa_pipewire::PipeWire));
         stacks.push(Box::new(chilpa_pulse::Pulse));
+        stacks.push(Box::new(chilpa_jack::Jack));
     }
     stacks.push(Box::new(chilpa_audio::capture::FileBackend::new(super::capture_path())));
     stacks

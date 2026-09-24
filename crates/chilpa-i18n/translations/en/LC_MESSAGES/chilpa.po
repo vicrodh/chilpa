@@ -34,6 +34,9 @@ msgstr ""
 msgid "32 bit float"
 msgstr ""
 
+msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
+msgstr ""
+
 msgid "Add a folder"
 msgstr ""
 
@@ -720,6 +723,12 @@ msgstr ""
 msgid "next and previous track"
 msgstr ""
 
+msgid "no JACK graph is running"
+msgstr ""
+
+msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
+msgstr ""
+
 msgid "no cover"
 msgstr ""
 
@@ -822,6 +831,9 @@ msgstr ""
 msgid "that source does not use OAuth"
 msgstr ""
 
+msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
+msgstr ""
+
 msgid "the PulseAudio protocol does not carry this format"
 msgstr ""
 
@@ -916,6 +928,9 @@ msgid "the folder for \"{}\" could not be deleted"
 msgstr ""
 
 msgid "the frame-info table is cut off"
+msgstr ""
+
+msgid "the graph runs at {} Hz"
 msgstr ""
 
 msgid "the host could not serve it"

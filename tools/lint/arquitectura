@@ -69,7 +69,10 @@ ALLOWED = {
     # El protocolo de PulseAudio, por su propia biblioteca. No pasa por ALSA:
     # el servidor es el que escribe al aparato.
     "chilpa-pulse": {"chilpa-audio"},
-    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse"},
+    # El grafo de JACK, por su biblioteca de cliente. Hoy suele ser la de
+    # PipeWire y no jack2, y el crate lo dice.
+    "chilpa-jack": {"chilpa-audio"},
+    "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack"},
     "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},
@@ -111,7 +114,7 @@ def check_deps(errors):
 SUPUESTOS = re.compile(r'\bXDG_[A-Z_]+|"/proc/|"/etc/|\bUSERPROFILE\b|\bAPPDATA\b')
 
 # Los crates a los que sí les toca saber de una plataforma.
-PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-cd", "chilpa-secrets"}
+PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-cd", "chilpa-secrets"}
 
 
 def check_supuestos(errors):
