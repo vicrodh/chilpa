@@ -67,5 +67,24 @@ impl Chilpa {
         self.as_mut().set_language(now);
         let next = self.tr_rev().wrapping_add(1);
         self.as_mut().set_tr_rev(next);
+        // The lists whose labels are built on the Rust side do not hang off
+        // a QML binding, so bumping `tr_rev` is not enough for them: they
+        // are rebuilt here.
+        self.retranslate();
+    }
+
+    /// Rebuilds the labels this side owns, in the language chosen now.
+    fn retranslate(mut self: Pin<&mut Self>) {
+        let mut views = QList::<QString>::default();
+        for v in super::VIEWS {
+            views.append(QString::from(&self.api.t(v.1)));
+        }
+        self.as_mut().set_album_views(QStringList::from(&views));
+
+        let mut drawings = QList::<QString>::default();
+        for (id, name) in super::settings::VISUALIZERS {
+            drawings.append(QString::from(&format!("{id}\t{}", self.api.t(name))));
+        }
+        self.as_mut().set_visualizers(QStringList::from(&drawings));
     }
 }

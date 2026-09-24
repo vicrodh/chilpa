@@ -166,6 +166,10 @@ pub mod chilpa_bridge {
         /// it to `translate` re-evaluates, which is what makes the window
         /// change language without being rebuilt.
         #[qproperty(i32, tr_rev)]
+        /// The folders the library is made of, one per line.
+        #[qproperty(QStringList, library_folders)]
+        /// The visualizers that ship, as "id\tname".
+        #[qproperty(QStringList, visualizers)]
         type Chilpa = super::ChilpaRust;
 
         /// Translates a msgid, which is the English string itself.
@@ -209,6 +213,10 @@ pub mod chilpa_bridge {
         /// the environment asks for.
         #[qinvokable]
         fn choose_language(self: Pin<&mut Chilpa>, code: &QString);
+
+        /// Reads the folders the library is made of.
+        #[qinvokable]
+        fn refresh_library_folders(self: Pin<&mut Chilpa>);
 
         /// Chooses the visualizer and remembers it.
         #[qinvokable]
@@ -448,6 +456,7 @@ mod library;
 mod playback;
 mod plugins;
 mod search;
+mod settings;
 mod tick;
 
 /// A long span said the way it is said: "3 h 21 min", not 12,060,000 ms.
@@ -502,6 +511,8 @@ pub struct ChilpaRust {
     language: QString,
     languages: QStringList,
     tr_rev: i32,
+    library_folders: QStringList,
+    visualizers: QStringList,
     outputs: QStringList,
     output_ids: QStringList,
     track: QString,
@@ -595,10 +606,16 @@ impl Default for ChilpaRust {
         for code in api.languages() {
             codes.append(QString::from(*code));
         }
+        let mut drawings = QList::<QString>::default();
+        for (id, name) in settings::VISUALIZERS {
+            drawings.append(QString::from(&format!("{id}\t{}", api.t(name))));
+        }
         Self {
             language: QString::from(api.language()),
             languages: QStringList::from(&codes),
             tr_rev: 0,
+            library_folders: QStringList::default(),
+            visualizers: QStringList::from(&drawings),
             outputs: QStringList::default(),
             output_ids: QStringList::default(),
             track: QString::from(""),

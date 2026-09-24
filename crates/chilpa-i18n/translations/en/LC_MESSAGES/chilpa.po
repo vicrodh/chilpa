@@ -34,6 +34,9 @@ msgstr ""
 msgid "32 bit float"
 msgstr ""
 
+msgid "Add a folder"
+msgstr ""
+
 msgid "Added this month"
 msgstr ""
 
@@ -44,6 +47,12 @@ msgid "Albums"
 msgstr ""
 
 msgid "Analyse the library"
+msgstr ""
+
+msgid "Analysis"
+msgstr ""
+
+msgid "Appearance"
 msgstr ""
 
 msgid "Approve"
@@ -112,6 +121,9 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
+msgid "Deliver the samples untouched"
+msgstr ""
+
 msgid "Disconnect"
 msgstr ""
 
@@ -124,6 +136,9 @@ msgstr ""
 msgid "Everything"
 msgstr ""
 
+msgid "Folders"
+msgstr ""
+
 msgid "For a long while"
 msgstr ""
 
@@ -134,6 +149,9 @@ msgid "From this week"
 msgstr ""
 
 msgid "Genres"
+msgstr ""
+
+msgid "Goniometer"
 msgstr ""
 
 msgid "High 24/176.4"
@@ -169,7 +187,16 @@ msgstr ""
 msgid "It now also asks for:"
 msgstr ""
 
+msgid "Language"
+msgstr ""
+
 msgid "Last played"
+msgstr ""
+
+msgid "Layout"
+msgstr ""
+
+msgid "Library"
 msgstr ""
 
 msgid "Look for plugins"
@@ -194,6 +221,9 @@ msgid "Next"
 msgstr ""
 
 msgid "No answer from"
+msgstr ""
+
+msgid "No folder scanned yet"
 msgstr ""
 
 msgid "No lyrics for this track"
@@ -247,6 +277,9 @@ msgstr ""
 msgid "Play CD"
 msgstr ""
 
+msgid "Playback"
+msgstr ""
+
 msgid "Playlist name"
 msgstr ""
 
@@ -269,6 +302,9 @@ msgid "Rates"
 msgstr ""
 
 msgid "Reactivate"
+msgstr ""
+
+msgid "Reads a minute of each track and works out its tempo, its key and its loudness. It is what fills the tempo lists and AutoMix."
 msgstr ""
 
 msgid "Recently added"
@@ -325,6 +361,9 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
+msgid "Settings"
+msgstr ""
+
 msgid "Shortcuts"
 msgstr ""
 
@@ -341,6 +380,9 @@ msgid "Smart"
 msgstr ""
 
 msgid "Space"
+msgstr ""
+
+msgid "Spectrum"
 msgstr ""
 
 msgid "Statistics"
@@ -382,7 +424,16 @@ msgstr ""
 msgid "Track {}"
 msgstr ""
 
+msgid "Visualizer"
+msgstr ""
+
+msgid "Wave"
+msgstr ""
+
 msgid "What you play most"
+msgstr ""
+
+msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
 msgstr ""
 
 msgid "Withdraw permission"

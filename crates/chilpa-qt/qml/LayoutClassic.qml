@@ -68,7 +68,6 @@ ColumnLayout {
         // place. It used to hide with an empty library too, and that left its
         // other tabs with no way in: on a fresh install there was no way to
         // reach approving a plugin (ADR-008) without scanning music first.
-        // primero.
         visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
     }
 

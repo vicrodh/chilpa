@@ -26,6 +26,7 @@ const QML: &[&str] = &[
     "qml/PlaylistsPanel.qml",
     "qml/WizardPanel.qml",
     "qml/PluginsPanel.qml",
+    "qml/SettingsPanel.qml",
     "qml/TrackList.qml",
     "qml/Results.qml",
 ];
