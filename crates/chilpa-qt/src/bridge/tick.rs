@@ -22,9 +22,18 @@ impl Chilpa {
             };
             self.as_mut().set_analysis_progress(progress);
             if state.running {
+                // Through the catalog like every other line somebody reads.
+                // This one was Spanish, written straight into the source, and
+                // it stayed English-free in an English window: the repo's own
+                // rule broken in the one direction the language lint cannot
+                // see, because a format string is not an identifier.
+                let counted = self.api.t_args(
+                    "{} of {}",
+                    &[&state.done.to_string(), &state.total.to_string()],
+                );
                 self.as_mut().set_analysis_status(QString::from(&format!(
-                    "{} de {} · {}",
-                    state.done, state.total, state.last
+                    "{counted} · {}",
+                    state.last
                 )));
             } else {
                 self.as_mut().set_analyzing(false);
@@ -93,9 +102,9 @@ impl Chilpa {
             }
             self.as_mut().set_spectrum(QStringList::from(&b));
 
-            let pares = self.api.scope_pairs(400);
+            let pairs = self.api.scope_pairs(400);
             let mut pl = QList::<QString>::default();
-            for (i, d) in &pares {
+            for (i, d) in &pairs {
                 pl.append(QString::from(&format!("{i:.4}\t{d:.4}")));
             }
             self.as_mut().set_pairs(QStringList::from(&pl));
@@ -104,8 +113,8 @@ impl Chilpa {
 
             let levels = self.api.scope_levels();
             let mut l = QList::<QString>::default();
-            for (pico, rms) in &levels {
-                l.append(QString::from(&format!("{pico:.4}\t{rms:.4}")));
+            for (peak, rms) in &levels {
+                l.append(QString::from(&format!("{peak:.4}\t{rms:.4}")));
             }
             self.as_mut().set_levels(QStringList::from(&l));
         }
@@ -163,6 +172,15 @@ impl Chilpa {
         // start and finish between two ticks.
         if self.as_mut().rust_mut().api.search_changed() {
             self.as_mut().refresh_results();
+        }
+
+        // A DAC that was plugged in or taken out. Asked here because it is
+        // cheap -- the stacks that can answer do it without opening anything
+        // -- and rebuilding the list is only done when the answer moves. It
+        // is what makes the picker show a device somebody just connected
+        // without them having to go and press anything.
+        if self.as_mut().rust_mut().api.outputs_changed() {
+            self.as_mut().refresh_outputs();
         }
     }
 }

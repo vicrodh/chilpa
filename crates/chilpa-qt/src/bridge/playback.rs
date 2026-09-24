@@ -199,11 +199,22 @@ impl Chilpa {
         (self.device.to_string(), self.want_bit_perfect)
     }
 
+    /// Chooses the output, and moves the music to it if something is playing.
+    ///
+    /// Moving is the point. Somebody who plugs in a DAC and picks it wants to
+    /// hear the track they are listening to come out of it, not the next one:
+    /// a picker that only takes effect on the next track is a setting, not a
+    /// control. What it costs is a short gap, because bit-perfect means one
+    /// device at a time and the old one is released before the new one opens.
     pub fn choose(mut self: Pin<&mut Self>, device: &QString, bit_perfect: bool) {
         let id = device.to_string();
+        let moved = id != self.device().to_string() || bit_perfect != *self.want_bit_perfect();
         self.as_mut().set_device(device.clone());
         self.as_mut().set_want_bit_perfect(bit_perfect);
         self.as_mut().rust_mut().api.remember(&id, bit_perfect);
+        if moved {
+            self.as_mut().rust_mut().api.move_output(&id, bit_perfect);
+        }
         // Another output means another control, or none at all.
         self.as_mut().refresh_volume();
     }

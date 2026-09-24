@@ -156,11 +156,11 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
 fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
     let mut missing: Vec<usize> = (0..bpms.len()).filter(|i| *i != from).collect();
     let mut order = vec![from];
-    let mut ultimo = bpms.get(from).copied().flatten();
+    let mut previous = bpms.get(from).copied().flatten();
 
     while !missing.is_empty() {
         // Of those with a tempo, the closest to the previous one.
-        let chosen = match ultimo {
+        let chosen = match previous {
             Some(t) => missing
                 .iter()
                 .enumerate()
@@ -176,7 +176,7 @@ fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
         // If none with a tempo are left, the rest is emptied out as is.
         let pos = chosen.unwrap_or(0);
         let i = missing.remove(pos);
-        ultimo = bpms[i].or(ultimo);
+        previous = bpms[i].or(previous);
         order.push(i);
     }
     order
@@ -422,6 +422,29 @@ pub struct Chilpa {
     connecting: Option<plugins::Connecting>,
     now: NowPlaying,
     sample_rate: u32,
+    /// Set while a relaunch we asked for is unwinding the old playback.
+    ///
+    /// Stopping in order to start again is not the listener stopping, and
+    /// without this the `Stopped` that comes back would be filed as a skip
+    /// and the window would blink to "not playing" on its way to the new
+    /// device. What it holds is what to do with the interrupted listen.
+    relaunching: Option<Relaunch>,
+    /// The last answer from the catalogue about which outputs exist. Kept so
+    /// the window can be told when it changed without asking the stacks for
+    /// their whole list on a timer.
+    outputs_generation: String,
+}
+
+/// Why the player was told to stop, when it was us who told it.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Relaunch {
+    /// Another track of the same queue: going back is the case. The one that
+    /// was interrupted is a skip, because somebody chose to leave it.
+    Track,
+    /// The same track, on another output. Nobody skipped anything: the music
+    /// is where it was and it is coming out somewhere else, so the
+    /// interrupted stretch is dropped rather than logged as its own listen.
+    Output,
 }
 
 impl Default for Chilpa {
@@ -463,7 +486,33 @@ impl Chilpa {
             connecting: None,
             now: NowPlaying::default(),
             sample_rate: 0,
+            relaunching: None,
+            outputs_generation: String::new(),
         }
+    }
+
+    /// Whether the machine's outputs changed since this was last asked.
+    ///
+    /// The window calls it on its timer so that plugging a DAC in makes it
+    /// appear without anybody pressing anything. It is cheap on purpose: the
+    /// stacks that can answer without opening or asking over a socket hand
+    /// back something short, and only when that moves does the window go and
+    /// rebuild the list.
+    ///
+    /// The first call is always false. There is nothing to have changed from
+    /// yet, and answering true would make the window rebuild the list one
+    /// tick after it had just built it.
+    pub fn outputs_changed(&mut self) -> bool {
+        let now = chilpa_core::backends::generation();
+        if self.outputs_generation.is_empty() {
+            self.outputs_generation = now;
+            return false;
+        }
+        if now == self.outputs_generation {
+            return false;
+        }
+        self.outputs_generation = now;
+        true
     }
 
     /// The library, opened the first time it is used.
@@ -876,14 +925,14 @@ impl Chilpa {
             if from >= frames {
                 break;
             }
-            let hasta = (from + per_point).min(frames);
-            let mut pico = 0.0f32;
-            for f in from..hasta {
+            let to = (from + per_point).min(frames);
+            let mut peak = 0.0f32;
+            for f in from..to {
                 for c in 0..channels {
-                    pico = pico.max(snapshot.samples[f * channels + c].abs());
+                    peak = peak.max(snapshot.samples[f * channels + c].abs());
                 }
             }
-            output.push(pico);
+            output.push(peak);
         }
         output
     }
@@ -942,15 +991,15 @@ impl Chilpa {
         if channels < 2 || snapshot.samples.is_empty() {
             return None;
         }
-        let (mut si, mut sd, mut sid) = (0.0f64, 0.0f64, 0.0f64);
+        let (mut left_sum, mut right_sum, mut cross_sum) = (0.0f64, 0.0f64, 0.0f64);
         for f in snapshot.samples.chunks_exact(channels) {
             let (i, d) = (f64::from(f[0]), f64::from(f[1]));
-            si += i * i;
-            sd += d * d;
-            sid += i * d;
+            left_sum += i * i;
+            right_sum += d * d;
+            cross_sum += i * d;
         }
-        let den = (si * sd).sqrt();
-        (den > 0.0).then(|| (sid / den) as f32)
+        let den = (left_sum * right_sum).sqrt();
+        (den > 0.0).then(|| (cross_sum / den) as f32)
     }
 
     /// The level per channel, from 0 to 1: peak and rms.
@@ -1017,6 +1066,11 @@ impl Chilpa {
     /// There is no signal for this: the queue is relaunched from the previous
     /// track, which is what the player knows how to do. The queue is not
     /// trimmed, only where it starts changes.
+    ///
+    /// Relaunching stops what is playing first, and it has to: the player
+    /// thread serves one order at a time and a play order blocks in it until
+    /// the queue is done, so without the stop this did nothing at all until
+    /// the queue ran out -- and with repeat on, nothing ever.
     ///
     /// With shuffle on there is no meaningful "previous one": what happens
     /// is that the playing one restarts.
@@ -1152,9 +1206,24 @@ impl Chilpa {
                 }
                 PlayerEvent::Stopped { frames } => {
                     self.now.frames = frames;
-                    self.now.playing = false;
-                    // Stopping mid track counts as a skip.
-                    self.log_play(true);
+                    // A stop we asked for in order to start again is not the
+                    // listener stopping. Saying `playing = false` here would
+                    // blink the window to stopped on its way to the new
+                    // device, and the play that is already queued behind this
+                    // event is what decides what happens next.
+                    match self.relaunching.take() {
+                        // Going back: the track that was left is a skip,
+                        // because somebody chose to leave it.
+                        Some(Relaunch::Track) => self.log_play(true),
+                        // Moving output: `in_progress` was already dropped,
+                        // so there is nothing to write down.
+                        Some(Relaunch::Output) => {}
+                        None => {
+                            self.now.playing = false;
+                            // Stopping mid track counts as a skip.
+                            self.log_play(true);
+                        }
+                    }
                 }
                 PlayerEvent::Failed { message } => {
                     self.now.playing = false;

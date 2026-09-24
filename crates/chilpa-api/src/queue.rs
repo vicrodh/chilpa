@@ -11,10 +11,47 @@ impl Chilpa {
     /// Everything that plays a list goes through here: that way repeat,
     /// shuffle and the position count are applied in one place.
     pub(crate) fn spawn(&mut self, from: usize, device: &str, bit_perfect: bool) {
+        self.spawn_from(from, device, bit_perfect, None, Relaunch::Track);
+    }
+
+    /// The same, with the first track starting somewhere other than its
+    /// beginning, and saying why the old playback is being cut off.
+    ///
+    /// **The stop is what makes this work at all.** The player is one thread
+    /// serving one order at a time, and an order to play blocks in it until
+    /// the whole queue is done. Sending a second one without stopping first
+    /// leaves it sitting in the channel: with repeat on, forever. That was
+    /// the bug in going back to the previous track -- it did nothing until
+    /// the queue ran out -- and it would have been the bug in changing output
+    /// too.
+    ///
+    /// Stopping first is also what keeps the old device released before the
+    /// new one is opened, which matters more here than anywhere: the orders
+    /// are served in the order they arrive, so the play that is unwinding
+    /// closes its sink before this one is even read.
+    pub(crate) fn spawn_from(
+        &mut self,
+        from: usize,
+        device: &str,
+        bit_perfect: bool,
+        start_at: Option<std::time::Duration>,
+        why: Relaunch,
+    ) {
         let tracks: Vec<std::path::PathBuf> =
             self.queue.iter().skip(from).map(std::path::PathBuf::from).collect();
         if tracks.is_empty() {
             return;
+        }
+        if self.player.is_some() && self.now.playing {
+            self.relaunching = Some(why);
+            if why == Relaunch::Output {
+                // The listen did not end and it was not skipped: it is the
+                // same track, still going, coming out somewhere else. What
+                // was played so far is dropped rather than written down as a
+                // listen of its own, so one track logs one listen.
+                self.in_progress = None;
+            }
+            self.stop();
         }
         self.base = from;
         self.removed = vec![false; self.queue.len()];
@@ -29,8 +66,30 @@ impl Chilpa {
         } else {
             player.clear_order();
         }
-        self.now = NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() };
-        player.play_all(&tracks, device, bit_perfect);
+        // Moving output is the same track going on somewhere else, so what
+        // the window is showing stays up. Clearing it would blank the title,
+        // the artwork and the position for the moment the new device takes to
+        // open, and there is nothing to tell somebody in that blink. Every
+        // other relaunch really is a different track and starts from nothing.
+        self.now = if why == Relaunch::Output {
+            NowPlaying { playing: true, queue_len: total, ..std::mem::take(&mut self.now) }
+        } else {
+            NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() }
+        };
+        player.play_all_from(&tracks, device, bit_perfect, start_at);
+    }
+
+    /// Moves what is playing to another output, keeping its place.
+    ///
+    /// Nothing happens if nothing is playing: the chosen output is already
+    /// remembered, and the next track will start there.
+    pub fn move_output(&mut self, device: &str, bit_perfect: bool) {
+        if self.player.is_none() || !self.now.playing || self.queue.is_empty() {
+            return;
+        }
+        let at = std::time::Duration::from_secs_f64(self.now.seconds.max(0.0));
+        let index = self.now.index.min(self.queue.len() - 1);
+        self.spawn_from(index, device, bit_perfect, Some(at), Relaunch::Output);
     }
 
     /// Starts what a search found playing, in that order.
@@ -134,7 +193,7 @@ impl Chilpa {
         // Positions within what the player holds, not within the whole
         // queue.
         let paths: Vec<String> = self.queue.iter().skip(self.base).cloned().collect();
-        let actual = self.now.index.saturating_sub(self.base);
+        let current = self.now.index.saturating_sub(self.base);
 
         let Some(lib) = self.library() else { return 0 };
         let source = match lib.source_id("local", "default") {
@@ -149,21 +208,21 @@ impl Chilpa {
             })
             .collect();
 
-        let con_tempo = bpms.iter().filter(|b| b.is_some()).count();
-        if con_tempo < 3 {
+        let with_tempo = bpms.iter().filter(|b| b.is_some()).count();
+        if with_tempo < 3 {
             self.now.error =
                 chilpa_i18n::t("almost nothing in the queue has an analysed tempo");
             return 0;
         }
 
-        let order = order_by_tempo(&bpms, actual.min(paths.len().saturating_sub(1)));
+        let order = order_by_tempo(&bpms, current.min(paths.len().saturating_sub(1)));
         if let Some(p) = &self.player {
             p.set_order(order, paths.len());
         }
         // Mixing and shuffling are two forms of the same thing: they cannot
         // both be on.
         self.shuffle = false;
-        con_tempo
+        with_tempo
     }
 
     /// Whether the queue plays shuffled.

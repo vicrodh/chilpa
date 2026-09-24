@@ -77,6 +77,25 @@ pub fn resolve(full_id: &str) -> Option<(Box<dyn OutputBackend>, String)> {
     of(kind).map(|stack| (stack, id.to_string()))
 }
 
+/// Something short that changes when the machine's outputs change.
+///
+/// Every stack that can answer cheaply is asked and the answers are joined.
+/// The ones that cannot say nothing, and on Linux that is the right shape
+/// rather than a gap: PipeWire, PulseAudio and JACK hand out what the cards
+/// offer, so ALSA seeing a card arrive is their event too, and none of them
+/// gets asked over a socket on a timer.
+///
+/// It is meant to be compared against the last one, not read. What it
+/// contains is nobody's business and it is not shown to anyone.
+pub fn generation() -> String {
+    all()
+        .iter()
+        .map(|stack| stack.generation())
+        .filter(|g| !g.is_empty())
+        .collect::<Vec<_>>()
+        .join("\u{1f}")
+}
+
 /// The first output worth starting on, when nothing is remembered.
 ///
 /// The card before the server: somebody who installed a player that says

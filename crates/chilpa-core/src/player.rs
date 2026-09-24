@@ -48,7 +48,22 @@ pub enum PlayerEvent {
 }
 
 enum Order {
-    Play { paths: Vec<PathBuf>, device: String, bit_perfect: bool },
+    Play {
+        paths: Vec<PathBuf>,
+        device: String,
+        bit_perfect: bool,
+        /// Where the first track starts, when it is not at the beginning.
+        ///
+        /// It travels with the order instead of being asked for separately
+        /// through `seek`, and that is the whole reason it exists. A caller
+        /// that stops what is playing and then asks for a seek is racing the
+        /// source it just told to die: the seek signal is one shared slot, and
+        /// the old source reads it between blocks, so whichever got there
+        /// first won. Carried here it cannot be taken by anything but the
+        /// play it belongs to, because the thread arms it after the previous
+        /// one has already returned.
+        start_at: Option<std::time::Duration>,
+    },
     Stop,
     Quit,
 }
@@ -92,6 +107,7 @@ impl Player {
         let stop_thread = controls.stop.clone();
         let pause_thread = controls.pause.clone();
         let skip_thread = controls.skip.clone();
+        let seek_thread = controls.seek.clone();
 
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
@@ -100,12 +116,20 @@ impl Player {
                     match order {
                         Order::Quit => break,
                         Order::Stop => {}
-                        Order::Play { paths, device, bit_perfect } => {
+                        Order::Play { paths, device, bit_perfect, start_at } => {
                             // Every track starts with the flag clear: an old
                             // stop order does not kill the next one.
                             stop_thread.reset();
                             pause_thread.set(false);
                             skip_thread.take();
+                            // Whatever seek was left pending belonged to the
+                            // play that just ended, and serving it to the new
+                            // one would drop somebody into the middle of a
+                            // track they just chose from the start.
+                            let _ = seek_thread.take();
+                            if let Some(at) = start_at {
+                                seek_thread.request(at);
+                            }
                             queue_thread.set(paths.clone());
                             let result = play(
                                 &queue_thread,
@@ -144,10 +168,28 @@ impl Player {
 
     /// Asks to play several tracks in order, one after another.
     pub fn play_all(&self, paths: &[PathBuf], device: &str, bit_perfect: bool) {
+        self.play_all_from(paths, device, bit_perfect, None);
+    }
+
+    /// The same, with the first track starting somewhere other than its
+    /// beginning.
+    ///
+    /// This is what moving the music to another output is made of: the track
+    /// is relaunched on the new device and picks up where it was. The caller
+    /// still has to `stop` first -- orders are served in the order they
+    /// arrive, and the one playing has to return before this one is read.
+    pub fn play_all_from(
+        &self,
+        paths: &[PathBuf],
+        device: &str,
+        bit_perfect: bool,
+        start_at: Option<std::time::Duration>,
+    ) {
         let _ = self.orders.send(Order::Play {
             paths: paths.to_vec(),
             device: device.to_string(),
             bit_perfect,
+            start_at,
         });
     }
 
@@ -756,12 +798,12 @@ mod tests {
         )
     }
 
-    fn wait<F: Fn(&[PlayerEvent]) -> bool>(p: &Player, hasta: F) -> Vec<PlayerEvent> {
+    fn wait<F: Fn(&[PlayerEvent]) -> bool>(p: &Player, ready: F) -> Vec<PlayerEvent> {
         let limit = Instant::now() + Duration::from_secs(5);
         let mut all = Vec::new();
         while Instant::now() < limit {
             all.extend(p.poll());
-            if hasta(&all) {
+            if ready(&all) {
                 return all;
             }
             std::thread::sleep(Duration::from_millis(5));
@@ -775,9 +817,9 @@ mod tests {
         let p = player(Arc::clone(&written));
         let file = wav("basic", 5_000);
 
-        let antes = Instant::now();
+        let started = Instant::now();
         p.play(&file, "fake", true);
-        assert!(antes.elapsed() < Duration::from_millis(100), "play() returns immediately");
+        assert!(started.elapsed() < Duration::from_millis(100), "play() returns immediately");
 
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(events.iter().any(|e| matches!(e, PlayerEvent::Started { .. })));

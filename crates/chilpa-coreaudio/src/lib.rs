@@ -218,6 +218,16 @@ impl OutputBackend for CoreAudio {
         Ok(())
     }
 
+    /// Every device the Mac has, by id.
+    ///
+    /// An in-process property read, which is as cheap as this gets: no
+    /// device is opened and nothing is asked over a socket. The ids
+    /// themselves are the fingerprint -- CoreAudio hands out a new one for
+    /// a device that was plugged in, and drops the one that went away.
+    fn generation(&self) -> String {
+        read::every_device().iter().map(|d| d.to_string()).collect::<Vec<_>>().join(",")
+    }
+
     fn open(
         &self,
         id: &str,
