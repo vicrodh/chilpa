@@ -165,6 +165,20 @@ fn disagrees(wanted: &AudioStreamBasicDescription, got: &AudioStreamBasicDescrip
     if got.mFormatFlags & kAudioFormatFlagIsNonInterleaved != 0 {
         return Some("one buffer per channel".to_string());
     }
+    if got.mBytesPerFrame != wanted.mBytesPerFrame {
+        // The same width with different room around it. The bytes handed
+        // over would land in the wrong places, which is noise, not music.
+        return Some(format!("{} bytes a frame", got.mBytesPerFrame));
+    }
+    if got.mFormatFlags & kAudioFormatFlagIsAlignedHigh
+        != wanted.mFormatFlags & kAudioFormatFlagIsAlignedHigh
+    {
+        return Some("the valid bits at the other end of the word".to_string());
+    }
+    // Whether the stream ended up non-mixable is not compared: it is asked
+    // for, and a device that will not give it still carries the samples
+    // untouched. What it costs is that something else could be mixed in,
+    // and hog mode has already made that impossible.
     None
 }
 
