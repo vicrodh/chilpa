@@ -85,7 +85,7 @@ msgstr ""
 msgid "Calm"
 msgstr ""
 
-msgid "Capture to a file ({})"
+msgid "Capture to a file"
 msgstr ""
 
 msgid "Check"
@@ -209,6 +209,9 @@ msgid "Left and right"
 msgstr ""
 
 msgid "Library"
+msgstr ""
+
+msgid "Look again"
 msgstr ""
 
 msgid "Look for plugins"
@@ -425,6 +428,9 @@ msgid "The account did not connect. You can close this tab."
 msgstr ""
 
 msgid "The counts and the search index were rebuilt."
+msgstr ""
+
+msgid "The device the music comes out of. \"BP\" marks the ones Chilpa writes to directly, with nothing in between; look again after plugging one in."
 msgstr ""
 
 msgid "The library has a problem: {}"
@@ -1012,6 +1018,9 @@ msgid "this plugin declared no network permission"
 msgstr ""
 
 msgid "track {}: {}"
+msgstr ""
+
+msgid "up to {} bits"
 msgstr ""
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"

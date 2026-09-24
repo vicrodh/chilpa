@@ -31,16 +31,9 @@ RowLayout {
 
     Label { text: Chilpa.translate("Output", Chilpa.trRev); color: "#411d1f" }
 
-    ComboBox {
+    OutputSelect {
         id: outputs
         Layout.fillWidth: true
-        model: Chilpa.outputs
-        // What is chosen lives in the bridge; this only shows it. That way
-        // the list stays put even if something else changes the output.
-        currentIndex: {
-            const i = Chilpa.outputIds.indexOf(Chilpa.device)
-            return i >= 0 ? i : 0
-        }
         onActivated: Chilpa.choose(
             index >= 0 && index < Chilpa.outputIds.length ? Chilpa.outputIds[index] : "",
             bitPerfect.checked)

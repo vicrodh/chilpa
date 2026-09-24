@@ -11,6 +11,7 @@ const QML: &[&str] = &[
     "qml/LayoutCompact.qml",
     // The pieces a layout can place wherever it likes.
     "qml/OutputPanel.qml",
+    "qml/OutputSelect.qml",
     "qml/ActionsPanel.qml",
     "qml/TransportPanel.qml",
     "qml/NowPlayingPanel.qml",

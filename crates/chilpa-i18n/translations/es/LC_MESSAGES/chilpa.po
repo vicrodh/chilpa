@@ -85,8 +85,8 @@ msgstr "todavía no se leen CD fuera de Linux"
 msgid "Calm"
 msgstr "Tranquilo"
 
-msgid "Capture to a file ({})"
-msgstr "Captura a archivo ({})"
+msgid "Capture to a file"
+msgstr "Captura a archivo"
 
 msgid "Check"
 msgstr "Revisar"
@@ -210,6 +210,9 @@ msgstr "Izquierda y derecha"
 
 msgid "Library"
 msgstr "Biblioteca"
+
+msgid "Look again"
+msgstr "Volver a buscar"
 
 msgid "Look for plugins"
 msgstr "Buscar plugins"
@@ -426,6 +429,9 @@ msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
 msgid "The counts and the search index were rebuilt."
 msgstr "Se reconstruyeron las cuentas y el índice de búsqueda."
+
+msgid "The device the music comes out of. \"BP\" marks the ones Chilpa writes to directly, with nothing in between; look again after plugging one in."
+msgstr "El aparato por el que sale la música. \"BP\" marca los que Chilpa escribe directo, sin nada en medio; vuelve a buscar después de conectar uno."
 
 msgid "The library has a problem: {}"
 msgstr "La biblioteca tiene un problema: {}"
@@ -1013,6 +1019,9 @@ msgstr "este plugin no declaró permiso de red"
 
 msgid "track {}: {}"
 msgstr "pista {}: {}"
+
+msgid "up to {} bits"
+msgstr "hasta {} bits"
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
