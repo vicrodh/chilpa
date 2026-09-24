@@ -77,37 +77,37 @@ impl SmartList {
 /// and rhythm join them as soon as there is `audio_features`.
 pub fn builtins() -> Vec<SmartList> {
     vec![
-        SmartList::new("Nunca escuchadas", vec![Rule::NeverPlayed], Order::Random, 200),
+        SmartList::new(chilpa_i18n::mark("Never played"), vec![Rule::NeverPlayed], Order::Random, 200),
         SmartList::new(
-            "Agregadas este mes",
+            chilpa_i18n::mark("Added this month"),
             vec![Rule::AddedWithinDays(30)],
             Order::NewestFirst,
             200,
         ),
         SmartList::new(
-            "Lo que más escuchas",
+            chilpa_i18n::mark("What you play most"),
             vec![Rule::PlayedAtLeast(2)],
             Order::MostPlayed,
             100,
         ),
-        SmartList::new("Alta resolución", vec![Rule::HiRes], Order::Artist, 500),
+        SmartList::new(chilpa_i18n::mark("High resolution"), vec![Rule::HiRes], Order::Artist, 500),
         SmartList::new(
-            "De esta semana",
+            chilpa_i18n::mark("From this week"),
             vec![Rule::PlayedWithinDays(7)],
             Order::MostPlayed,
             100,
         ),
         SmartList::new(
-            "Para un rato largo",
+            chilpa_i18n::mark("For a long while"),
             vec![Rule::LongerThanMs(8 * 60 * 1000)],
             Order::Artist,
             200,
         ),
         // These two need the analysis; without it they come out empty, which
         // is the honest answer: there is nothing to fill them with yet.
-        SmartList::new("Tranquilo", vec![Rule::BpmBetween(50.0, 95.0)], Order::Random, 200),
+        SmartList::new(chilpa_i18n::mark("Calm"), vec![Rule::BpmBetween(50.0, 95.0)], Order::Random, 200),
         SmartList::new(
-            "Para moverse",
+            chilpa_i18n::mark("To move to"),
             vec![Rule::BpmBetween(118.0, 145.0)],
             Order::Random,
             200,
@@ -119,13 +119,13 @@ pub fn builtins() -> Vec<SmartList> {
 fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
     let days_ago = |d: u32| Value::Integer(now - i64::from(d) * 86_400);
     match rule {
-        Rule::NeverPlayed => ("COALESCE(e.escuchas, 0) = 0".into(), vec![]),
+        Rule::NeverPlayed => ("COALESCE(e.plays, 0) = 0".into(), vec![]),
         Rule::PlayedAtLeast(n) => (
-            "COALESCE(e.escuchas, 0) >= ?".into(),
+            "COALESCE(e.plays, 0) >= ?".into(),
             vec![Value::Integer(*n as i64)],
         ),
         Rule::AddedWithinDays(d) => ("t.added_at >= ?".into(), vec![days_ago(*d)]),
-        Rule::PlayedWithinDays(d) => ("e.ultima >= ?".into(), vec![days_ago(*d)]),
+        Rule::PlayedWithinDays(d) => ("e.last_at >= ?".into(), vec![days_ago(*d)]),
         // High resolution is anything above CD.
         Rule::HiRes => (
             "(t.bit_depth > 16 OR t.sample_rate_hz > 48000)".into(),
@@ -167,7 +167,7 @@ fn sql_order(order: Order) -> &'static str {
     match order {
         Order::Artist => "t.artist COLLATE NOCASE, t.title COLLATE NOCASE",
         Order::NewestFirst => "t.added_at DESC, t.title COLLATE NOCASE",
-        Order::MostPlayed => "COALESCE(e.escuchas, 0) DESC, t.title COLLATE NOCASE",
+        Order::MostPlayed => "COALESCE(e.plays, 0) DESC, t.title COLLATE NOCASE",
         Order::Random => "RANDOM()",
     }
 }
@@ -199,8 +199,8 @@ impl Library {
              LEFT JOIN albums a ON a.id = t.album_id
              LEFT JOIN (
                  SELECT p.track_id AS tid,
-                        count(*) AS escuchas,
-                        max(p.started_at) AS ultima
+                        count(*) AS plays,
+                        max(p.started_at) AS last_at
                  FROM play_events p
                  WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
                  GROUP BY p.track_id
@@ -233,10 +233,10 @@ mod tests {
             .as_secs() as i64;
         // (id, title, artist, duration, bits, rate, added_at)
         let rows = [
-            (1, "Vieja", "Uno", 200_000i64, 16, 44_100, now - 400 * 86_400),
-            (2, "Nueva", "Dos", 200_000, 24, 96_000, now - 2 * 86_400),
-            (3, "Larga", "Uno", 10 * 60_000, 16, 44_100, now - 2 * 86_400),
-            (4, "Ausente", "Tres", 100_000, 16, 44_100, now - 2 * 86_400),
+            (1, "Old", "One", 200_000i64, 16, 44_100, now - 400 * 86_400),
+            (2, "New", "Dos", 200_000, 24, 96_000, now - 2 * 86_400),
+            (3, "Long", "One", 10 * 60_000, 16, 44_100, now - 2 * 86_400),
+            (4, "Missing", "Three", 100_000, 16, 44_100, now - 2 * 86_400),
         ];
         for (id, title, artist, dur, bits, rate, high) in rows {
             lib.db
@@ -283,7 +283,7 @@ mod tests {
             &SmartList::new("x", vec![Rule::NeverPlayed], Order::Artist, 50),
         );
         come_out.sort();
-        assert_eq!(come_out, ["Larga"], "la ausente no cuenta aunque nunca sonó");
+        assert_eq!(come_out, ["Long"], "the missing one does not count even though it never played");
     }
 
     #[test]
@@ -294,7 +294,7 @@ mod tests {
             &SmartList::new("x", vec![Rule::AddedWithinDays(30)], Order::NewestFirst, 50),
         );
         come_out.sort();
-        assert_eq!(come_out, ["Larga", "Nueva"]);
+        assert_eq!(come_out, ["Long", "New"]);
     }
 
     #[test]
@@ -302,8 +302,8 @@ mod tests {
         let lib = library();
         assert_eq!(
             titles(&lib, &SmartList::new("x", vec![Rule::PlayedWithinDays(7)], Order::MostPlayed, 50)),
-            ["Nueva"],
-            "la vieja sonó hace trescientos días"
+            ["New"],
+            "the old one played three hundred days ago"
         );
     }
 
@@ -312,7 +312,7 @@ mod tests {
         let lib = library();
         assert_eq!(
             titles(&lib, &SmartList::new("x", vec![Rule::HiRes], Order::Artist, 50)),
-            ["Nueva"]
+            ["New"]
         );
     }
 
@@ -325,7 +325,7 @@ mod tests {
             Order::Artist,
             50,
         );
-        assert_eq!(titles(&lib, &list), ["Larga"], "nueva y larga a la vez");
+        assert_eq!(titles(&lib, &list), ["Long"], "new and long at the same time");
     }
 
     #[test]
@@ -344,10 +344,10 @@ mod tests {
         lib.save_features(3, "chilpa", 1, None, None, None, None).unwrap();
 
         let fast = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
-        assert_eq!(titles(&lib, &fast), ["Vieja"]);
+        assert_eq!(titles(&lib, &fast), ["Old"]);
 
         let slow = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
-        assert_eq!(titles(&lib, &slow), ["Nueva"]);
+        assert_eq!(titles(&lib, &slow), ["New"]);
 
         // And without analysis the list comes out empty instead of bringing everything.
         let clean = Library::in_memory().unwrap();
@@ -360,13 +360,13 @@ mod tests {
         lib.save_features(1, "chilpa", 1, Some(100.0), None, None, None).unwrap();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.track_bpm(1, "chilpa").unwrap(), Some(128.0));
-        assert_eq!(lib.analyzed_count("chilpa", 1).unwrap(), 1, "una fila, no dos");
+        assert_eq!(lib.analyzed_count("chilpa", 1).unwrap(), 1, "one row, not two");
     }
 
     #[test]
     fn pending_means_whatever_lacks_that_version() {
         let lib = library();
-        assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
+        assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "without the missing one");
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 2);
         // A new analyzer asks for all of them again.
@@ -376,10 +376,10 @@ mod tests {
     #[test]
     fn an_odd_artist_name_is_just_a_name() {
         let lib = library();
-        let odd = "Uno'; DROP TABLE tracks; --";
+        let odd = "One'; DROP TABLE tracks; --";
         let list = SmartList::new("x", vec![Rule::ArtistIs(odd.into())], Order::Artist, 50);
         assert!(lib.smart_tracks(&list).unwrap().is_empty());
-        assert_eq!(lib.track_count(true).unwrap(), 4, "la tabla sigue");
+        assert_eq!(lib.track_count(true).unwrap(), 4, "the table is still there");
     }
 
     #[test]
@@ -387,7 +387,7 @@ mod tests {
         let lib = library();
         for list in builtins() {
             lib.smart_tracks(&list)
-                .unwrap_or_else(|e| panic!("la lista \"{}\" no corrió: {e}", list.name));
+                .unwrap_or_else(|e| panic!("the list \"{}\" did not run: {e}", list.name));
         }
     }
 }

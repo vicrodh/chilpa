@@ -291,7 +291,7 @@ pub(crate) mod fixtures {
             lib.db
                 .execute(
                     "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
-                     VALUES (?1, ?2, 'Pista', ?3, 1000, ?4)",
+                     VALUES (?1, ?2, 'Track', ?3, 1000, ?4)",
                     params![source, format!("/{title}.flac"), id, high],
                 )
                 .unwrap();
@@ -324,8 +324,8 @@ mod tests {
         let a = lib.source_id("local", "default").unwrap();
         let b = lib.source_id("local", "default").unwrap();
         assert_eq!(a, b);
-        let r1 = lib.root_id(a, Path::new("/musica")).unwrap();
-        let r2 = lib.root_id(a, Path::new("/musica")).unwrap();
+        let r1 = lib.root_id(a, Path::new("/music")).unwrap();
+        let r2 = lib.root_id(a, Path::new("/music")).unwrap();
         assert_eq!(r1, r2);
     }
 
@@ -337,7 +337,7 @@ mod tests {
         lib.db
             .execute(
                 "INSERT INTO tracks (source_id, external_id, title, added_at)
-                 VALUES (?1, '/nas/a.flac', 'Una', 0)",
+                 VALUES (?1, '/nas/a.flac', 'One', 0)",
                 params![source],
             )
             .unwrap();
@@ -351,8 +351,8 @@ mod tests {
 
         lib.set_root_reachable(root, false).unwrap();
 
-        assert_eq!(lib.track_count(true).unwrap(), 1, "la fila sigue ahí");
-        assert_eq!(lib.track_count(false).unwrap(), 0, "pero ya no cuenta como presente");
+        assert_eq!(lib.track_count(true).unwrap(), 1, "the row is still there");
+        assert_eq!(lib.track_count(false).unwrap(), 0, "but it no longer counts as present");
     }
 
 
@@ -367,7 +367,7 @@ mod tests {
         lib.set_track_genres(id, &["Delta Blues".to_string()]).unwrap();
 
         let found = lib.search("blues", 50).unwrap();
-        assert_eq!(found.len(), 1, "salió por su género, no por su título");
+        assert_eq!(found.len(), 1, "it came out by its genre, not by its title");
         assert_eq!(found[0].id, id);
     }
 

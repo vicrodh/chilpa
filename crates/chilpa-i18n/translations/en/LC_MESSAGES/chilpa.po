@@ -34,6 +34,9 @@ msgstr ""
 msgid "32 bit float"
 msgstr ""
 
+msgid "Added this month"
+msgstr ""
+
 msgid "Album"
 msgstr ""
 
@@ -71,6 +74,9 @@ msgid "CD in {}"
 msgstr ""
 
 msgid "CDs are not read outside Linux yet"
+msgstr ""
+
+msgid "Calm"
 msgstr ""
 
 msgid "Capture to a file ({})"
@@ -118,7 +124,13 @@ msgstr ""
 msgid "Everything"
 msgstr ""
 
+msgid "For a long while"
+msgstr ""
+
 msgid "Formats"
+msgstr ""
+
+msgid "From this week"
 msgstr ""
 
 msgid "Genres"
@@ -134,6 +146,9 @@ msgid "High 24/88.2"
 msgstr ""
 
 msgid "High 24/96"
+msgstr ""
+
+msgid "High resolution"
 msgstr ""
 
 msgid "I did not find a CD drive"
@@ -170,6 +185,9 @@ msgid "Most played"
 msgstr ""
 
 msgid "My library"
+msgstr ""
+
+msgid "Never played"
 msgstr ""
 
 msgid "Next"
@@ -358,7 +376,13 @@ msgstr ""
 msgid "Time listened"
 msgstr ""
 
+msgid "To move to"
+msgstr ""
+
 msgid "Track {}"
+msgstr ""
+
+msgid "What you play most"
 msgstr ""
 
 msgid "Withdraw permission"

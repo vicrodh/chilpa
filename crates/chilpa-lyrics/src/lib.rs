@@ -134,56 +134,56 @@ mod tests {
 
     #[test]
     fn the_current_line_is_the_last_one_that_started() {
-        let l = lrc::parse("[00:05.00]Uno\n[00:10.00]Dos\n[00:20.00]Tres\n");
-        assert_eq!(l.line_at(0), None, "antes del primero no hay ninguno");
+        let l = lrc::parse("[00:05.00]One\n[00:10.00]Two\n[00:20.00]Three\n");
+        assert_eq!(l.line_at(0), None, "before the first there is none");
         assert_eq!(l.line_at(4_999), None);
-        assert_eq!(l.line_at(5_000), Some(0), "justo cuando entra");
+        assert_eq!(l.line_at(5_000), Some(0), "right as it comes in");
         assert_eq!(l.line_at(9_999), Some(0));
         assert_eq!(l.line_at(10_000), Some(1));
-        assert_eq!(l.line_at(999_999), Some(2), "y el último se queda");
+        assert_eq!(l.line_at(999_999), Some(2), "and the last one stays");
     }
 
     #[test]
     fn lyrics_without_timings_are_not_followed() {
-        let l = lrc::parse("Nomás el texto\n");
+        let l = lrc::parse("Just the text\n");
         assert_eq!(l.line_at(5_000), None);
-        assert_eq!(l.plain(), "Nomás el texto");
+        assert_eq!(l.plain(), "Just the text");
     }
 
     #[test]
     fn the_lrc_next_to_the_file_wins() {
         let dir = folder("sidecar");
-        let track = dir.join("cancion.flac");
-        std::fs::write(&track, b"no importa el contenido").unwrap();
-        std::fs::write(dir.join("cancion.lrc"), "[00:01.00]De al lado\n").unwrap();
+        let track = dir.join("song.flac");
+        std::fs::write(&track, b"the content does not matter").unwrap();
+        std::fs::write(dir.join("song.lrc"), "[00:01.00]From next door\n").unwrap();
 
-        let found = find(&track).expect("se encontró");
-        assert_eq!(found.source, Source::Sidecar(dir.join("cancion.lrc")));
+        let found = find(&track).expect("it was found");
+        assert_eq!(found.source, Source::Sidecar(dir.join("song.lrc")));
         assert!(found.lyrics.synced);
-        assert_eq!(found.lyrics.lines[0].text, "De al lado");
+        assert_eq!(found.lyrics.lines[0].text, "From next door");
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn with_no_lyrics_nothing_is_invented() {
-        let dir = folder("vacio");
-        let track = dir.join("cancion.flac");
-        std::fs::write(&track, b"tampoco importa").unwrap();
+        let dir = folder("empty");
+        let track = dir.join("song.flac");
+        std::fs::write(&track, b"it does not matter either").unwrap();
         assert!(find(&track).is_none());
 
         // An empty .lrc does not count as lyrics either.
-        std::fs::write(dir.join("cancion.lrc"), "\n\n").unwrap();
+        std::fs::write(dir.join("song.lrc"), "\n\n").unwrap();
         assert!(find(&track).is_none());
         let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
     fn an_uppercase_extension_is_found_too() {
-        let dir = folder("mayusculas");
-        let track = dir.join("cancion.flac");
+        let dir = folder("uppercase");
+        let track = dir.join("song.flac");
         std::fs::write(&track, b"x").unwrap();
-        std::fs::write(dir.join("cancion.LRC"), "[00:01.00]Arriba\n").unwrap();
-        assert!(find(&track).is_some(), "en Linux la extensión distingue");
+        std::fs::write(dir.join("song.LRC"), "[00:01.00]Up there\n").unwrap();
+        assert!(find(&track).is_some(), "on Linux the extension is case sensitive");
         let _ = std::fs::remove_dir_all(dir);
     }
 }

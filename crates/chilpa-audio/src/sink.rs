@@ -169,7 +169,7 @@ mod tests {
         assert!(!s.take());
         s.skip();
         assert!(s.take());
-        assert!(!s.take(), "la petición ya se atendió");
+        assert!(!s.take(), "the request has already been served");
     }
 
     #[test]

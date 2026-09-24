@@ -171,40 +171,40 @@ mod tests {
         let entries = vec![
             PlaylistEntry { track_id: Some(2), external_id: "/Aqualung.flac".into() },
             // Something the playlist names that has not been scanned yet.
-            PlaylistEntry { track_id: None, external_id: "/pendiente.flac".into() },
+            PlaylistEntry { track_id: None, external_id: "/pending.flac".into() },
             PlaylistEntry { track_id: Some(1), external_id: "/Bayou.flac".into() },
         ];
         lib.set_playlist_entries(id, &entries).unwrap();
 
         let read_back = lib.playlist_entries(id).unwrap();
-        assert_eq!(read_back, entries, "el orden es el que se guardó");
-        assert_eq!(read_back[1].track_id, None, "lo que no está sigue anotado");
+        assert_eq!(read_back, entries, "the order is the one that was saved");
+        assert_eq!(read_back[1].track_id, None, "what is not there is still noted");
 
         let lists = lib.playlists().unwrap();
         assert_eq!(lists.len(), 1);
         assert_eq!(lists[0].track_count, 3);
         assert_eq!(lists[0].provider, "local");
-        assert!(lists[0].external_id.is_empty(), "una lista de aquí no tiene id externo");
+        assert!(lists[0].external_id.is_empty(), "a list from here has no external id");
     }
 
     #[test]
     fn fetching_a_source_playlist_again_updates_it_without_duplicating_it() {
         let lib = Library::in_memory().unwrap();
-        let source = lib.source_id("servidor", "casa").unwrap();
-        let a = lib.create_playlist(source, "Mezcla", "abc123").unwrap();
-        let b = lib.create_playlist(source, "Mezcla renombrada", "abc123").unwrap();
-        assert_eq!(a, b, "el mismo id externo es la misma lista");
+        let source = lib.source_id("server", "home").unwrap();
+        let a = lib.create_playlist(source, "Mix", "abc123").unwrap();
+        let b = lib.create_playlist(source, "Renamed mix", "abc123").unwrap();
+        assert_eq!(a, b, "the same external id is the same list");
         let lists = lib.playlists().unwrap();
         assert_eq!(lists.len(), 1);
-        assert_eq!(lists[0].name, "Mezcla renombrada", "se quedó el nombre nuevo");
+        assert_eq!(lists[0].name, "Renamed mix", "the new name stuck");
     }
 
     #[test]
     fn two_hand_made_playlists_with_the_same_name_are_two_playlists() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        let a = lib.create_playlist(source, "Sin nombre", "").unwrap();
-        let b = lib.create_playlist(source, "Sin nombre", "").unwrap();
+        let a = lib.create_playlist(source, "Unnamed", "").unwrap();
+        let b = lib.create_playlist(source, "Unnamed", "").unwrap();
         assert_ne!(a, b);
         assert_eq!(lib.playlists().unwrap().len(), 2);
     }
@@ -213,13 +213,13 @@ mod tests {
     fn replacing_the_contents_leaves_no_leftovers() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        let id = lib.create_playlist(source, "Mía", "").unwrap();
+        let id = lib.create_playlist(source, "Mine", "").unwrap();
         let three: Vec<PlaylistEntry> = (0..3)
             .map(|i| PlaylistEntry { track_id: None, external_id: format!("/{i}.flac") })
             .collect();
         lib.set_playlist_entries(id, &three).unwrap();
         lib.set_playlist_entries(id, &three[..1]).unwrap();
-        assert_eq!(lib.playlist_entries(id).unwrap().len(), 1, "no quedaron las viejas");
+        assert_eq!(lib.playlist_entries(id).unwrap().len(), 1, "the old ones did not stay");
     }
 
     #[test]
@@ -234,7 +234,7 @@ mod tests {
         .unwrap();
         lib.delete_playlist(id).unwrap();
         assert!(lib.playlists().unwrap().is_empty());
-        assert_eq!(lib.track_count(false).unwrap(), 3, "las pistas siguen");
+        assert_eq!(lib.track_count(false).unwrap(), 3, "the tracks are still there");
     }
 
 }

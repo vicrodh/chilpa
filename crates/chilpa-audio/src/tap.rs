@@ -255,9 +255,9 @@ mod tests {
         assert_eq!(
             *direct.written.borrow(),
             *examined.written.borrow(),
-            "lo entregado con tap y sin tap es lo mismo"
+            "what is delivered with and without a tap is the same"
         );
-        assert_eq!(*examined.written.borrow(), data, "y es lo que se le dio");
+        assert_eq!(*examined.written.borrow(), data, "and it is what it was given");
     }
 
     #[test]
@@ -268,7 +268,7 @@ mod tests {
         let mut s = tap.wrap(mirror(format, 10));
         let accepted = s.write(&ramp(100)).unwrap();
         assert_eq!(accepted, 10);
-        assert_eq!(tap.frames(), 10, "no se copiaron los que no sonaron");
+        assert_eq!(tap.frames(), 10, "the ones that did not play were not copied");
     }
 
     #[test]
@@ -288,8 +288,8 @@ mod tests {
         let snapshot = tap.snapshot();
         assert_eq!(snapshot.channels, 2);
         assert_eq!(snapshot.sample_rate_hz, 44_100);
-        assert!(snapshot.peaks[0] > 0.99, "el izquierdo va a tope: {}", snapshot.peaks[0]);
-        assert_eq!(snapshot.peaks[1], 0.0, "el derecho está callado");
+        assert!(snapshot.peaks[0] > 0.99, "the left one is at full scale: {}", snapshot.peaks[0]);
+        assert_eq!(snapshot.peaks[1], 0.0, "the right one is silent");
         assert!(snapshot.rms[0] > 0.99);
         assert_eq!(snapshot.rms[1], 0.0);
     }
@@ -310,9 +310,9 @@ mod tests {
         let snapshot = tap.snapshot();
         assert_eq!(snapshot.samples.len(), FRAMES_KEPT);
         // The last sample is the last one written, not one from the middle.
-        let ultima = (((FRAMES_KEPT + 99) % 1000) as i16) as f32 / 32_768.0;
-        let vista = *snapshot.samples.last().unwrap();
-        assert!((vista - ultima).abs() < 1e-6, "quedó {vista}, se esperaba {ultima}");
+        let last = (((FRAMES_KEPT + 99) % 1000) as i16) as f32 / 32_768.0;
+        let seen = *snapshot.samples.last().unwrap();
+        assert!((seen - last).abs() < 1e-6, "it ended up {seen}, {last} was expected");
     }
 
     #[test]

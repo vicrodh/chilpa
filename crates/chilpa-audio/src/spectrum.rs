@@ -60,9 +60,9 @@ pub fn bands(samples: &[f32], sample_rate_hz: u32, bands: usize) -> Vec<f32> {
     let mut output = Vec::with_capacity(bands);
     for b in 0..bands {
         let from_hz = low * (paso * b as f32).exp();
-        let hasta_hz = low * (paso * (b + 1) as f32).exp();
+        let to_hz = low * (paso * (b + 1) as f32).exp();
         let k0 = ((from_hz / per_bin) as usize).min(half.saturating_sub(1));
-        let k1 = ((hasta_hz / per_bin).ceil() as usize).clamp(k0 + 1, half);
+        let k1 = ((to_hz / per_bin).ceil() as usize).clamp(k0 + 1, half);
         // The band's peak, not its average: a narrow tone must not vanish
         // because it fell in a wide band.
         let pico = magnitudes[k0..k1].iter().copied().fold(0.0f32, f32::max);
@@ -172,14 +172,14 @@ mod tests {
         // The peak's band has to cover 1000 Hz.
         let paso = ((rate as f32 / 2.0) / 20.0).ln() / 24.0;
         let from = 20.0 * (paso * mayor as f32).exp();
-        let hasta = 20.0 * (paso * (mayor + 1) as f32).exp();
+        let to = 20.0 * (paso * (mayor + 1) as f32).exp();
         assert!(
-            (from..=hasta).contains(&1_000.0),
-            "el pico cayó en {from:.0}..{hasta:.0} Hz, no en 1000"
+            (from..=to).contains(&1_000.0),
+            "the peak landed at {from:.0}..{to:.0} Hz, not at 1000"
         );
         // And the far bands are well below.
         let far = bands[(mayor + 8).min(23)];
-        assert!(far < bands[mayor] / 2.0, "se derramó: {far} contra {}", bands[mayor]);
+        assert!(far < bands[mayor] / 2.0, "it spilled: {far} against {}", bands[mayor]);
     }
 
     #[test]
@@ -195,14 +195,14 @@ mod tests {
         let alto = bands(&sine(1_000.0, rate, 4096, 0.9), rate, 24);
         let pico = |v: &[f32]| v.iter().copied().fold(0.0f32, f32::max);
         assert!(pico(&alto) > pico(&low), "{} contra {}", pico(&alto), pico(&low));
-        assert!(pico(&alto) <= 1.0, "nunca se pasa de uno");
+        assert!(pico(&alto) <= 1.0, "it never goes past one");
     }
 
     #[test]
     fn too_little_material_invents_no_spectrum() {
         assert!(bands(&[], 44_100, 16).is_empty());
-        assert!(bands(&[0.1; 8], 44_100, 16).is_empty(), "ocho muestras no son un espectro");
-        assert!(bands(&[0.1; 2048], 0, 16).is_empty(), "sin frecuencia de muestreo, nada");
+        assert!(bands(&[0.1; 8], 44_100, 16).is_empty(), "eight samples are not a spectrum");
+        assert!(bands(&[0.1; 2048], 0, 16).is_empty(), "with no sample rate, nothing");
         assert!(bands(&[0.1; 2048], 44_100, 0).is_empty());
     }
 
@@ -211,9 +211,9 @@ mod tests {
         let mut re = vec![1.0f32; 8];
         let mut im = vec![0.0f32; 8];
         fft(&mut re, &mut im);
-        assert!((re[0] - 8.0).abs() < 1e-4, "la suma va en el bin 0: {}", re[0]);
+        assert!((re[0] - 8.0).abs() < 1e-4, "the sum goes in bin 0: {}", re[0]);
         for k in 1..8 {
-            assert!(re[k].abs() < 1e-4 && im[k].abs() < 1e-4, "el bin {k} debía ser cero");
+            assert!(re[k].abs() < 1e-4 && im[k].abs() < 1e-4, "bin {k} should have been zero");
         }
     }
 }

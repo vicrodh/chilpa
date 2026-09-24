@@ -141,8 +141,8 @@ mod tests {
         assert_eq!(s.take(), None);
         s.request(Duration::from_secs(10));
         s.request(Duration::from_secs(30));
-        assert_eq!(s.take(), Some(Duration::from_secs(30)), "gana el más reciente");
-        assert_eq!(s.take(), None, "se consume una sola vez");
+        assert_eq!(s.take(), Some(Duration::from_secs(30)), "the most recent one wins");
+        assert_eq!(s.take(), None, "it is consumed once");
     }
 
     #[test]
@@ -162,6 +162,6 @@ mod tests {
     #[test]
     fn overshooting_never_leaves_a_negative_discard() {
         let plan = SeekPlan::after_landing(1_000, 2_000);
-        assert_eq!(plan.discard, 0, "nunca se descarta hacia atrás");
+        assert_eq!(plan.discard, 0, "nothing is ever discarded backwards");
     }
 }

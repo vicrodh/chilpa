@@ -37,7 +37,8 @@ impl Chilpa {
     ) -> Vec<String> {
         let Some(list) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
         else {
-            self.now.error = chilpa_i18n::t_args("I do not know the list \"{}\"", &[name]);
+            self.now.error =
+                chilpa_i18n::t_args("I do not know the list \"{}\"", &[&chilpa_i18n::t(name)]);
             return Vec::new();
         };
         let Some(lib) = self.library() else { return Vec::new() };
@@ -48,7 +49,8 @@ impl Chilpa {
             .map(|t| t.external_id)
             .collect();
         if paths.is_empty() {
-            self.now.error = chilpa_i18n::t_args("\"{}\" brings nothing today", &[name]);
+            self.now.error =
+                chilpa_i18n::t_args("\"{}\" brings nothing today", &[&chilpa_i18n::t(name)]);
             return Vec::new();
         }
         self.play_tracks(&paths, device, bit_perfect)

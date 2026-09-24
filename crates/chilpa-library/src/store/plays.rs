@@ -87,12 +87,12 @@ impl Library {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present,
-                    count(p.id), max(p.started_at) AS ultima
+                    count(p.id), max(p.started_at) AS last_at
              FROM play_events p
              JOIN tracks t ON t.id = p.track_id
              LEFT JOIN albums a ON a.id = t.album_id
              GROUP BY t.id
-             ORDER BY ultima DESC
+             ORDER BY last_at DESC
              LIMIT ?1",
         )?;
         let rows = stmt.query_map(params![limit as i64], row_to_track_stat)?;
@@ -163,19 +163,19 @@ mod tests {
     fn the_stats_come_from_the_whole_log() {
         let lib = sample_library();
         let s = lib.stats().unwrap();
-        assert_eq!(s.plays, 3, "tres escuchas completas");
-        assert_eq!(s.distinct_tracks, 2, "de dos pistas distintas");
+        assert_eq!(s.plays, 3, "three complete plays");
+        assert_eq!(s.distinct_tracks, 2, "of two distinct tracks");
         assert_eq!(s.listened_ms, 3_000);
         assert_eq!(s.bit_perfect, 3);
         assert_eq!(s.skips, 0);
-        assert_eq!(s.since, Some(10), "la primera fue en el segundo 10");
+        assert_eq!(s.since, Some(10), "the first was at second 10");
     }
 
     #[test]
     fn without_a_single_play_the_stats_are_zeros() {
         let lib = Library::in_memory().unwrap();
         let s = lib.stats().unwrap();
-        assert_eq!(s, Stats::default(), "ceros, no un error");
+        assert_eq!(s, Stats::default(), "zeros, not an error");
     }
 
     #[test]
@@ -184,13 +184,13 @@ mod tests {
         // Album 3's track plays twice; album 1's once, and earlier.
         let top = lib.top_tracks(10).unwrap();
         assert_eq!(top.len(), 2);
-        assert_eq!(top[0].count, 2, "primero la más escuchada");
+        assert_eq!(top[0].count, 2, "the most played first");
         assert_eq!(top[1].count, 1);
 
         let recent = lib.recently_played(10).unwrap();
-        assert_eq!(recent[0].at, Some(30), "primero la última que sonó");
+        assert_eq!(recent[0].at, Some(30), "the last one played first");
         assert_eq!(recent[1].at, Some(10));
-        assert_eq!(recent.len(), 2, "una pista por renglón, no una por escucha");
+        assert_eq!(recent.len(), 2, "one track per line, not one per play");
     }
 
 
@@ -201,13 +201,13 @@ mod tests {
         lib.db
             .execute(
                 "INSERT INTO tracks (source_id, external_id, title, duration_ms, added_at)
-                 VALUES (?1, '/a.flac', 'Una', 200000, 0)",
+                 VALUES (?1, '/a.flac', 'One', 200000, 0)",
                 params![source],
             )
             .unwrap();
         lib.log_play(Some(1), Some(source), 1, 20_000, 200_000, true, Some(44_100), Some(16), true)
             .unwrap();
-        assert_eq!(lib.play_count(1).unwrap(), 0, "20 s de 200 no es una escucha");
+        assert_eq!(lib.play_count(1).unwrap(), 0, "20 s out of 200 is not a play");
         lib.log_play(Some(1), Some(source), 2, 150_000, 200_000, false, Some(44_100), Some(16), true)
             .unwrap();
         assert_eq!(lib.play_count(1).unwrap(), 1);

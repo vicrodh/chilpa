@@ -221,14 +221,14 @@ mod tests {
     fn the_year_comes_from_the_date_without_truncating_it() {
         let tags = Tags { date: Some("2019-03-15".into()), ..Tags::default() };
         assert_eq!(tags.year(), Some(2019));
-        assert_eq!(tags.date.as_deref(), Some("2019-03-15"), "la fecha se conserva completa");
+        assert_eq!(tags.date.as_deref(), Some("2019-03-15"), "the date is kept whole");
     }
 
     #[test]
     fn several_artists_show_on_one_line_without_getting_lost() {
-        let tags = Tags { artists: vec!["Uno".into(), "Dos".into()], ..Tags::default() };
-        assert_eq!(tags.artist_line(), "Uno, Dos");
-        assert_eq!(tags.artists.len(), 2, "siguen siendo dos, no una cadena");
+        let tags = Tags { artists: vec!["One".into(), "Dos".into()], ..Tags::default() };
+        assert_eq!(tags.artist_line(), "One, Two");
+        assert_eq!(tags.artists.len(), 2, "they are still two, not one string");
     }
 
     #[test]
@@ -240,6 +240,6 @@ mod tests {
 
     #[test]
     fn a_file_that_does_not_exist_is_reported() {
-        assert!(read(Path::new("/no/existe.flac")).is_err());
+        assert!(read(Path::new("/does/not/exist.flac")).is_err());
     }
 }

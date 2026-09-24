@@ -307,7 +307,7 @@ mod tests {
             .unwrap();
         db.execute(
             "INSERT INTO tracks (source_id, external_id, title, added_at)
-             VALUES (1, '/musica/a.flac', 'Una', 0)",
+             VALUES (1, '/music/a.flac', 'One', 0)",
             [],
         )
         .unwrap();
@@ -315,13 +315,13 @@ mod tests {
         migrate(&db).unwrap();
 
         let v: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0)).unwrap();
-        assert_eq!(v, VERSION, "quedó en la versión de hoy");
+        assert_eq!(v, VERSION, "it ended up on today's version");
         let n: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0)).unwrap();
-        assert_eq!(n, 1, "lo que había sigue ahí");
+        assert_eq!(n, 1, "what was there is still there");
         // And the new table is there.
         db.execute(
             "INSERT INTO playlists (source_id, name, created_at, updated_at)
-             VALUES (1, 'Una lista', 0, 0)",
+             VALUES (1, 'A list', 0, 0)",
             [],
         )
         .unwrap();
@@ -334,7 +334,7 @@ mod tests {
             .unwrap();
         db.execute(
             "INSERT INTO tracks (id, source_id, external_id, title, added_at)
-             VALUES (1, 1, '/a.flac', 'Una', 0)",
+             VALUES (1, 1, '/a.flac', 'One', 0)",
             [],
         )
         .unwrap();
@@ -359,7 +359,7 @@ mod tests {
         db.execute("INSERT INTO genres (name) VALUES ('Rock')", []).unwrap();
         assert!(
             db.execute("INSERT INTO genres (name) VALUES ('rock')", []).is_err(),
-            "mayúsculas distintas no son dos géneros"
+            "different case is not two genres"
         );
     }
 
@@ -370,7 +370,7 @@ mod tests {
             .unwrap();
         db.execute(
             "INSERT INTO playlists (source_id, name, created_at, updated_at)
-             VALUES (1, 'Mía', 0, 0)",
+             VALUES (1, 'Mine', 0, 0)",
             [],
         )
         .unwrap();
@@ -382,7 +382,7 @@ mod tests {
             )
         };
         set(0).unwrap();
-        assert!(set(0).is_err(), "el orden de una lista no se duplica");
+        assert!(set(0).is_err(), "a list's order is not duplicated");
         set(1).unwrap();
     }
 
@@ -390,10 +390,10 @@ mod tests {
     fn a_newer_database_is_left_alone() {
         let db = Connection::open_in_memory().unwrap();
         db.pragma_update(None, "user_version", VERSION + 1).unwrap();
-        let e = migrate(&db).expect_err("bajar de versión perdería datos");
+        let e = migrate(&db).expect_err("going down a version would lose data");
         let said = e.to_string();
-        assert!(said.contains("versión"), "el error tiene que explicarse: {said}");
-        assert!(said.contains("actualiza"), "y decir qué hacer: {said}");
+        assert!(said.contains("version"), "the error has to explain itself: {said}");
+        assert!(said.contains("update"), "and say what to do: {said}");
     }
 
     #[test]
@@ -408,9 +408,9 @@ mod tests {
                 [external],
             )
         };
-        insert("/musica/a.flac").unwrap();
-        assert!(insert("/musica/a.flac").is_err(), "la identidad no se repite");
-        insert("/musica/b.flac").unwrap();
+        insert("/music/a.flac").unwrap();
+        assert!(insert("/music/a.flac").is_err(), "the identity does not repeat");
+        insert("/music/b.flac").unwrap();
     }
 
     #[test]
@@ -420,7 +420,7 @@ mod tests {
             .unwrap();
         db.execute(
             "INSERT INTO tracks (source_id, external_id, title, added_at)
-             VALUES (1, '/a.flac', 'Una', 0)",
+             VALUES (1, '/a.flac', 'One', 0)",
             [],
         )
         .unwrap();

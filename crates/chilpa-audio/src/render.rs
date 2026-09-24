@@ -278,7 +278,7 @@ mod tests {
         let mut sink = FakeSink::failing(100, 1, SinkError::DeviceLost);
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::DeviceLost });
-        assert!(!out.may_advance_queue(), "la cola NO avanza");
+        assert!(!out.may_advance_queue(), "the queue does NOT advance");
     }
 
     #[test]
@@ -325,7 +325,7 @@ mod tests {
         let mut source = Blocks(vec![block(10)]);
         let mut sink = FakeSink::new(1);
         assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 0 });
-        assert_eq!(sink.writes, 0, "no se le escribió nada al dispositivo");
+        assert_eq!(sink.writes, 0, "nothing was written to the device");
     }
 
     #[test]

@@ -119,8 +119,8 @@ impl AlbumSort {
             AlbumSort::Title => "a.title COLLATE NOCASE",
             AlbumSort::Year => "a.year DESC, a.title COLLATE NOCASE",
             AlbumSort::Added => "max(t.added_at) DESC, a.title COLLATE NOCASE",
-            AlbumSort::Played => "escuchas DESC, a.title COLLATE NOCASE",
-            AlbumSort::LastPlayed => "ultima DESC, a.title COLLATE NOCASE",
+            AlbumSort::Played => "plays DESC, a.title COLLATE NOCASE",
+            AlbumSort::LastPlayed => "last_at DESC, a.title COLLATE NOCASE",
         }
     }
 }
@@ -182,14 +182,14 @@ impl Library {
         let sql = format!(
             "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
                     count(t.id),
-                    COALESCE(e.escuchas, 0) AS escuchas,
-                    e.ultima AS ultima
+                    COALESCE(e.plays, 0) AS plays,
+                    e.last_at AS last_at
              FROM albums a
              JOIN tracks t ON t.album_id = a.id AND t.present = 1
              LEFT JOIN (
                  SELECT t2.album_id AS aid,
-                        count(*) AS escuchas,
-                        max(p.started_at) AS ultima
+                        count(*) AS plays,
+                        max(p.started_at) AS last_at
                  FROM play_events p
                  JOIN tracks t2 ON t2.id = p.track_id
                  WHERE p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms
@@ -232,7 +232,7 @@ impl Library {
         offset: usize,
     ) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let sql = format!(
-            "WITH pagina AS MATERIALIZED (
+            "WITH page AS MATERIALIZED (
                  SELECT a.id AS id
                  FROM albums a
                  WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE)
@@ -247,7 +247,7 @@ impl Library {
                      JOIN tracks t2 ON t2.id = p.track_id
                      WHERE t2.album_id = a.id
                        AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms))
-             FROM pagina g
+             FROM page g
              JOIN albums a ON a.id = g.id
              ORDER BY {}",
             order.cheap_order_by(),
@@ -401,16 +401,16 @@ mod tests {
         assert_eq!(
             titles(&lib, AlbumSort::Artist),
             ["Bayou", "Cosmo", "Aqualung"],
-            "artista, luego año"
+            "artist, then year"
         );
         assert_eq!(titles(&lib, AlbumSort::Title), ["Aqualung", "Bayou", "Cosmo"]);
-        assert_eq!(titles(&lib, AlbumSort::Year), ["Aqualung", "Cosmo", "Bayou"], "del más nuevo");
-        assert_eq!(titles(&lib, AlbumSort::Added), ["Aqualung", "Cosmo", "Bayou"], "lo último que entró");
+        assert_eq!(titles(&lib, AlbumSort::Year), ["Aqualung", "Cosmo", "Bayou"], "newest first");
+        assert_eq!(titles(&lib, AlbumSort::Added), ["Aqualung", "Cosmo", "Bayou"], "the last thing that came in");
         assert_eq!(titles(&lib, AlbumSort::Played), ["Cosmo", "Bayou", "Aqualung"]);
         assert_eq!(
             titles(&lib, AlbumSort::LastPlayed),
             ["Cosmo", "Bayou", "Aqualung"],
-            "lo último que sonó, y lo que nunca sonó al final"
+            "the last thing that played, and what never played at the end"
         );
     }
 
@@ -433,12 +433,12 @@ mod tests {
     #[test]
     fn a_single_album_brings_its_own_and_its_plays() {
         let lib = sample_library();
-        let (album, listens) = lib.album(3).unwrap().expect("el álbum existe");
+        let (album, listens) = lib.album(3).unwrap().expect("the album exists");
         assert_eq!(album.title, "Cosmo");
         assert_eq!(album.album_artist, "Creedence");
         assert_eq!(album.track_count, 1);
         assert_eq!(listens, 2);
-        assert!(lib.album(99).unwrap().is_none(), "uno que no existe no es un error");
+        assert!(lib.album(99).unwrap().is_none(), "one that does not exist is not an error");
     }
 
     #[test]
@@ -448,10 +448,10 @@ mod tests {
         assert_eq!(
             artists.iter().map(|a| a.name.as_str()).collect::<Vec<_>>(),
             ["Creedence", "Tull"],
-            "por nombre"
+            "by name"
         );
-        assert_eq!(artists[0].album_count, 2, "Creedence trae dos discos");
-        assert_eq!(artists[0].track_count, 2, "con una pista cada uno");
+        assert_eq!(artists[0].album_count, 2, "Creedence carries two albums");
+        assert_eq!(artists[0].track_count, 2, "with one track each");
         assert_eq!(artists[1].album_count, 1);
     }
 
@@ -469,7 +469,7 @@ mod tests {
         // With no filter, all of them come out.
         assert_eq!(lib.albums_filtered(AlbumSort::Title, None, 50, 0).unwrap().len(), 3);
         // And a name that does not exist brings nothing, without crashing.
-        assert!(lib.albums_filtered(AlbumSort::Title, Some("Nadie"), 50, 0).unwrap().is_empty());
+        assert!(lib.albums_filtered(AlbumSort::Title, Some("Nobody"), 50, 0).unwrap().is_empty());
     }
 
     #[test]
@@ -477,14 +477,14 @@ mod tests {
         let lib = sample_library();
         let odd = "O'Connor'; DROP TABLE albums; --";
         assert!(lib.albums_filtered(AlbumSort::Title, Some(odd), 50, 0).unwrap().is_empty());
-        assert_eq!(lib.albums_sorted(AlbumSort::Title, 50, 0).unwrap().len(), 3, "la tabla sigue");
+        assert_eq!(lib.albums_sorted(AlbumSort::Title, 50, 0).unwrap().len(), 3, "the table is still there");
     }
 
     #[test]
     fn an_unknown_view_name_does_not_leave_the_grid_empty() {
-        assert_eq!(AlbumSort::from_name("lo que sea"), AlbumSort::Artist);
+        assert_eq!(AlbumSort::from_name("whatever"), AlbumSort::Artist);
         for v in AlbumSort::all() {
-            assert_eq!(AlbumSort::from_name(v.name()), v, "{} va y viene", v.name());
+            assert_eq!(AlbumSort::from_name(v.name()), v, "{} goes there and back", v.name());
         }
     }
 
@@ -492,17 +492,17 @@ mod tests {
     fn the_most_played_come_from_the_log_and_in_order() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        for (album, title) in [(1, "Uno"), (2, "Dos")] {
+        for (album, title) in [(1, "One"), (2, "Dos")] {
             lib.db
                 .execute(
-                    "INSERT INTO albums (id, title, album_artist) VALUES (?1, ?2, 'Artista')",
+                    "INSERT INTO albums (id, title, album_artist) VALUES (?1, ?2, 'Artist')",
                     params![album, title],
                 )
                 .unwrap();
             lib.db
                 .execute(
                     "INSERT INTO tracks (source_id, external_id, title, album_id, duration_ms, added_at)
-                     VALUES (?1, ?2, 'Pista', ?3, 1000, 0)",
+                     VALUES (?1, ?2, 'Track', ?3, 1000, 0)",
                     params![source, format!("/{title}.flac"), album],
                 )
                 .unwrap();
@@ -520,7 +520,7 @@ mod tests {
         assert_eq!(top.len(), 2);
         assert_eq!(top[0].0.title, "Dos");
         assert_eq!(top[0].1, 3);
-        assert_eq!(top[1].1, 1, "la escucha a medias no suma");
+        assert_eq!(top[1].1, 1, "a half play does not count");
         assert_eq!(lib.album_play_count(2).unwrap(), 3);
     }
 
