@@ -242,6 +242,36 @@ ScrollView {
             }
         }
 
+        Setting {
+            label: Chilpa.translate("Health", Chilpa.trRev)
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 2
+                RowLayout {
+                    spacing: 8
+                    Button {
+                        text: Chilpa.translate("Check", Chilpa.trRev)
+                        onClicked: Chilpa.checkLibrary()
+                    }
+                    Button {
+                        text: Chilpa.translate("Rebuild the counts", Chilpa.trRev)
+                        onClicked: Chilpa.repairLibrary()
+                    }
+                }
+                // Said plainly because someone reaching for a Repair button
+                // wants to know what it is about to do to their library.
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.translate(
+                        "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it.",
+                        Chilpa.trRev)
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 10
+                    color: "#7a411d1f"
+                }
+            }
+        }
+
         Group { heading: Chilpa.translate("Appearance", Chilpa.trRev) }
 
         Setting {

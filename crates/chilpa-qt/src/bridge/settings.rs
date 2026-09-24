@@ -31,6 +31,26 @@ impl Chilpa {
         self.as_mut().set_library_folders(QStringList::from(&l));
     }
 
+    /// Checks the library and says what it found, or that it is fine.
+    pub fn check_library(mut self: Pin<&mut Self>) {
+        let found = self.as_mut().rust_mut().api.check_library();
+        let said = if found.is_empty() {
+            self.api.t("The library is healthy.")
+        } else {
+            self.api.t_args("The library has a problem: {}", &[&found])
+        };
+        self.as_mut().set_library_status(QString::from(&said));
+    }
+
+    /// Rebuilds the counts and the search index.
+    pub fn repair_library(mut self: Pin<&mut Self>) {
+        if self.as_mut().rust_mut().api.repair_library() {
+            let said = self.api.t("The counts and the search index were rebuilt.");
+            self.as_mut().set_library_status(QString::from(&said));
+            self.as_mut().refresh_albums();
+        }
+    }
+
     /// Forgets a folder and refreshes what the panel shows.
     pub fn forget_library_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let folder = folder.to_string();

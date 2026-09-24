@@ -242,6 +242,14 @@ pub mod chilpa_bridge {
         #[qinvokable]
         fn forget_library_folder(self: Pin<&mut Chilpa>, folder: &QString);
 
+        /// Checks the library and says what it found.
+        #[qinvokable]
+        fn check_library(self: Pin<&mut Chilpa>);
+
+        /// Rebuilds the counts and the search index. Nothing is lost.
+        #[qinvokable]
+        fn repair_library(self: Pin<&mut Chilpa>);
+
         /// Chooses the visualizer and remembers it.
         #[qinvokable]
         fn choose_visualizer(self: Pin<&mut Chilpa>, name: &QString);

@@ -238,6 +238,77 @@ impl Library {
         rows.collect()
     }
 
+    /// What is wrong with the library, if anything.
+    ///
+    /// Two questions SQLite can answer and nobody ever asks it until the
+    /// day something is already broken: is the file itself intact, and do
+    /// the rows still point at rows that exist.
+    ///
+    /// It is not run on open. `integrity_check` reads the whole file, which
+    /// on a large library is seconds, and paying that every launch to catch
+    /// something that almost never happens is the wrong trade. It is here so
+    /// that when something does look wrong there is an answer better than a
+    /// guess.
+    ///
+    /// An empty list means nothing was found.
+    pub fn check(&self) -> rusqlite::Result<Vec<String>> {
+        let mut found = Vec::new();
+        let mut stmt = self.db.prepare("PRAGMA integrity_check")?;
+        let rows = stmt.query_map([], |r| r.get::<_, String>(0))?;
+        for row in rows {
+            let row = row?;
+            // It says "ok" when there is nothing to say.
+            if row != "ok" {
+                found.push(row);
+            }
+        }
+        let mut stmt = self.db.prepare("PRAGMA foreign_key_check")?;
+        let rows = stmt.query_map([], |r| {
+            Ok(format!(
+                "{}: a row points at a {} that is not there",
+                r.get::<_, String>(0)?,
+                r.get::<_, String>(2)?
+            ))
+        })?;
+        for row in rows {
+            found.push(row?);
+        }
+        Ok(found)
+    }
+
+    /// Rebuilds everything that is derived, from what it is derived from.
+    ///
+    /// The rollups and the search index exist because recomputing them per
+    /// view was too slow. That makes them a copy, and a copy can be wrong.
+    /// This is the way back: it throws the copies away and makes them again
+    /// from the tracks and the log, which are the only things that are not
+    /// derived from anything.
+    ///
+    /// It does not repair a corrupt file -- nothing in here can -- but it is
+    /// the answer to a library whose numbers stopped adding up.
+    pub fn repair(&self) -> rusqlite::Result<()> {
+        self.rebuild_rollups()?;
+        self.rebuild_search()
+    }
+
+    /// Builds the search index again from the tracks.
+    pub fn rebuild_search(&self) -> rusqlite::Result<()> {
+        self.db.execute_batch(
+            "BEGIN;
+             DELETE FROM track_search;
+             INSERT INTO track_search (rowid, title, artist, album, genres)
+             SELECT t.id,
+                    t.title,
+                    t.artist,
+                    COALESCE(a.title, ''),
+                    COALESCE((SELECT group_concat(g.name, ' ') FROM track_genres tg
+                              JOIN genres g ON g.id = tg.genre_id
+                              WHERE tg.track_id = t.id), '')
+             FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
+             COMMIT;",
+        )
+    }
+
     /// Recomputes what is kept, from what it is kept from.
     ///
     /// Everything the grid, the artists view and the stats read fast is a
@@ -384,6 +455,62 @@ pub(crate) mod fixtures {
             .collect()
     }
 
+}
+
+#[cfg(test)]
+mod repair_tests {
+    use super::*;
+
+    #[test]
+    fn a_healthy_library_has_nothing_to_report() {
+        let lib = Library::in_memory().unwrap();
+        assert!(lib.check().unwrap().is_empty());
+    }
+
+    #[test]
+    fn repair_puts_back_what_was_taken_away() {
+        // The rollups and the search index are copies, and this is what a
+        // copy going wrong looks like: they are emptied behind the code's
+        // back, which is what a crash mid-write or a file someone edited
+        // would leave. Repair has to put them back from the tracks and the
+        // log, and nothing else has to be touched.
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO albums (id, title, album_artist) VALUES (1, 'An album', 'Someone')",
+                [],
+            )
+            .unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id,
+                                     duration_ms, added_at)
+                 VALUES (1, ?1, '/music/a.flac', 'A song', 'Someone', 1, 200000, 5)",
+                params![source],
+            )
+            .unwrap();
+        lib.set_track_genres(1, &["Delta Blues".to_string()]).unwrap();
+        lib.log_play(Some(1), Some(source), 10, 200_000, 200_000, false, None, None, true).unwrap();
+
+        assert_eq!(lib.search("song", 10).unwrap().len(), 1);
+        assert_eq!(lib.search("delta", 10).unwrap().len(), 1, "the genre is indexed too");
+        assert_eq!(lib.top_tracks(10).unwrap().len(), 1);
+
+        lib.db.execute("DELETE FROM track_search", []).unwrap();
+        lib.db.execute("DELETE FROM track_rollup", []).unwrap();
+        lib.db.execute("DELETE FROM album_rollup", []).unwrap();
+        assert!(lib.search("song", 10).unwrap().is_empty(), "gone, as staged");
+        assert!(lib.top_tracks(10).unwrap().is_empty());
+
+        lib.repair().unwrap();
+
+        assert_eq!(lib.search("song", 10).unwrap().len(), 1, "the index came back");
+        assert_eq!(lib.search("delta", 10).unwrap().len(), 1, "with the genres");
+        assert_eq!(lib.top_tracks(10).unwrap().len(), 1, "and the counts");
+        assert_eq!(lib.albums_sorted(crate::AlbumSort::Played, 10, 0).unwrap().len(), 1);
+        assert!(lib.check().unwrap().is_empty(), "and it is healthy");
+    }
 }
 
 #[cfg(test)]

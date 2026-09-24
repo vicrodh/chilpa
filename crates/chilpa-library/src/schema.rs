@@ -60,6 +60,21 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
 
 /// The pragmas it opens with. WAL lets the interface read while the scan
 /// writes, which is exactly what gave "database is locked" in QBZ.
+///
+/// **What is not here was measured and left out.** `temp_store = MEMORY`,
+/// `cache_size = -32000` and `mmap_size = 256 MB` are on every SQLite
+/// performance list. Measured against a fifty-thousand-track library on
+/// disk, each of them and all three together moved the grid, the search and
+/// the stats by less than the noise -- the file is sixteen megabytes and the
+/// operating system is already holding it. A pragma that does nothing is not
+/// free: it is a promise in the code that nobody will re-check. If the
+/// library ever grows past what the machine will cache, this is the place
+/// to measure again, not to assume.
+///
+/// `synchronous = NORMAL` with WAL is the deliberate trade: a power cut can
+/// lose the last transactions, and cannot corrupt the file. For a library
+/// that is rebuilt by rescanning, losing the last few seconds is cheap and
+/// paying `FULL` on every write is not.
 pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
     db.pragma_update(None, "journal_mode", "WAL")?;
     db.pragma_update(None, "synchronous", "NORMAL")?;

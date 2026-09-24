@@ -88,6 +88,12 @@ msgstr "Tranquilo"
 msgid "Capture to a file ({})"
 msgstr "Captura a archivo ({})"
 
+msgid "Check"
+msgstr "Revisar"
+
+msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
+msgstr "Revisar lee el archivo entero y reporta lo que encuentre. Reconstruir rehace las cuentas de escuchas y el índice de búsqueda a partir de las pistas y del log, que no se tocan: no se pierde nada por correrlo."
+
 msgid "Classic"
 msgstr "Clásico"
 
@@ -153,6 +159,9 @@ msgstr "Géneros"
 
 msgid "Goniometer"
 msgstr "Goniómetro"
+
+msgid "Health"
+msgstr "Salud"
 
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
@@ -316,6 +325,9 @@ msgstr "Reactivar"
 msgid "Reads a minute of each track and works out its tempo, its key and its loudness. It is what fills the tempo lists and AutoMix."
 msgstr "Lee un minuto de cada pista y le saca el tempo, la tonalidad y la sonoridad. Es lo que llena las listas de tempo y el AutoMix."
 
+msgid "Rebuild the counts"
+msgstr "Reconstruir las cuentas"
+
 msgid "Recently added"
 msgstr "Agregados"
 
@@ -412,8 +424,17 @@ msgstr "Esa respuesta no corresponde a esta ventana."
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
+msgid "The counts and the search index were rebuilt."
+msgstr "Se reconstruyeron las cuentas y el índice de búsqueda."
+
+msgid "The library has a problem: {}"
+msgstr "La biblioteca tiene un problema: {}"
+
 msgid "The library is empty"
 msgstr "La biblioteca está vacía"
+
+msgid "The library is healthy."
+msgstr "La biblioteca está sana."
 
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
@@ -858,8 +879,14 @@ msgstr "no se pudo leer la imagen: {}"
 msgid "the image is shorter than its master table"
 msgstr "la imagen es más corta que su tabla maestra"
 
+msgid "the library could not be checked: {}"
+msgstr "no se pudo revisar la biblioteca: {}"
+
 msgid "the library could not be opened: {}"
 msgstr "no se pudo abrir la biblioteca: {}"
+
+msgid "the library could not be repaired: {}"
+msgstr "no se pudo reparar la biblioteca: {}"
 
 msgid "the link it gave has already expired"
 msgstr "el enlace que dio ya caducó"

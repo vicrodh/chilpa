@@ -127,6 +127,35 @@ impl Chilpa {
         lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
     }
 
+    /// Checks the library and says what is wrong, in one line.
+    ///
+    /// Empty when there is nothing to say. It reads the whole file, so it is
+    /// something someone asks for, not something that runs on its own.
+    pub fn check_library(&mut self) -> String {
+        let Some(lib) = self.library() else { return String::new() };
+        match lib.check() {
+            Ok(found) if found.is_empty() => String::new(),
+            Ok(found) => found.join(" · "),
+            Err(e) => chilpa_i18n::t_args("the library could not be checked: {}", &[&e.to_string()]),
+        }
+    }
+
+    /// Rebuilds what is derived: the counts and the search index.
+    ///
+    /// The tracks and the play log are not touched, because they are what
+    /// everything else is rebuilt from. Nothing is lost by running it.
+    pub fn repair_library(&mut self) -> bool {
+        let Some(lib) = self.library() else { return false };
+        match lib.repair() {
+            Ok(()) => true,
+            Err(e) => {
+                self.now.error =
+                    chilpa_i18n::t_args("the library could not be repaired: {}", &[&e.to_string()]);
+                false
+            }
+        }
+    }
+
     /// Forgets a folder: it stops being rescanned and what came from it
     /// stops counting as present.
     ///
