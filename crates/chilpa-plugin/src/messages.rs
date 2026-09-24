@@ -172,11 +172,13 @@ impl Delivery {
     }
 
     /// How the user is told when it cannot be done.
-    pub fn describe(&self) -> &'static str {
+    pub fn describe(&self) -> String {
         match self {
-            Delivery::Progressive => "una URL directa",
-            Delivery::Dash => "un manifiesto DASH, que Chilpa todavía no sabe leer",
-            Delivery::Hls => "un manifiesto HLS, que Chilpa todavía no sabe leer",
+            Delivery::Progressive => chilpa_i18n::t("a direct URL"),
+            Delivery::Dash => {
+                chilpa_i18n::t("a DASH manifest, which Chilpa cannot read yet")
+            }
+            Delivery::Hls => chilpa_i18n::t("an HLS manifest, which Chilpa cannot read yet"),
         }
     }
 }
@@ -340,7 +342,7 @@ impl Stream {
 
 /// Reads what a plugin answered, trusting nothing.
 pub fn read<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
-    serde_json::from_slice(bytes).map_err(|e| format!("contestó algo que no se entiende: {e}"))
+    serde_json::from_slice(bytes).map_err(|e| chilpa_i18n::t_args("it answered something that is not understood: {}", &[&e.to_string()]))
 }
 
 /// Builds what is going to be sent to it.
@@ -354,16 +356,16 @@ mod tests {
 
     #[test]
     fn a_query_never_asks_for_more_than_fits() {
-        assert_eq!(Query::new("algo", 10).limit, 10);
-        assert_eq!(Query::new("algo", 100_000).limit, MAX_PER_REPLY);
+        assert_eq!(Query::new("something", 10).limit, 10);
+        assert_eq!(Query::new("something", 100_000).limit, MAX_PER_REPLY);
     }
 
     #[test]
     fn what_is_useless_is_dropped_and_what_is_extra_is_trimmed() {
         let mut r = Results::default();
-        r.tracks.push(RemoteTrack { external_id: "a".into(), title: "Una".into(), ..Default::default() });
+        r.tracks.push(RemoteTrack { external_id: "a".into(), title: "One".into(), ..Default::default() });
         // With no id it cannot be asked for again; with no title it cannot be shown.
-        r.tracks.push(RemoteTrack { external_id: "".into(), title: "Otra".into(), ..Default::default() });
+        r.tracks.push(RemoteTrack { external_id: "".into(), title: "Another".into(), ..Default::default() });
         r.tracks.push(RemoteTrack { external_id: "b".into(), title: "   ".into(), ..Default::default() });
         for i in 0..1000 {
             r.albums.push(RemoteAlbum {
@@ -373,8 +375,8 @@ mod tests {
             });
         }
         let r = r.clean();
-        assert_eq!(r.tracks.len(), 1, "solo la que sirve");
-        assert_eq!(r.albums.len(), MAX_PER_REPLY, "lo demás se recorta");
+        assert_eq!(r.tracks.len(), 1, "only the one that works");
+        assert_eq!(r.albums.len(), MAX_PER_REPLY, "the rest is trimmed");
         assert_eq!(r.count(), 1 + MAX_PER_REPLY);
     }
 
@@ -452,7 +454,7 @@ mod tests {
             ..Default::default()
         };
         assert!(!s.expired(999));
-        assert!(s.expired(1000), "justo al filo ya no sirve");
+        assert!(s.expired(1000), "right at the edge it no longer works");
         assert!(s.expired(1001));
         // With no date it does not expire.
         let undated = Stream { expires_at: None, ..s };
@@ -461,12 +463,12 @@ mod tests {
 
     #[test]
     fn what_a_plugin_answers_is_read_or_it_says_why_not() {
-        let r: Results = read(br#"{"tracks":[{"external_id":"a","title":"Una"}]}"#).unwrap();
+        let r: Results = read(br#"{"tracks":[{"external_id":"a","title":"One"}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);
-        assert_eq!(r.tracks[0].artist, "", "lo que falta toma su valor por omisión");
+        assert_eq!(r.tracks[0].artist, "", "what is missing takes its default value");
 
-        let e = read::<Results>(b"esto no es json").expect_err("no se entiende");
-        assert!(e.contains("no se entiende"), "{e}");
+        let e = read::<Results>(b"this is not json").expect_err("not understood");
+        assert!(e.contains("not understood"), "{e}");
     }
 
     #[test]
@@ -474,7 +476,7 @@ mod tests {
         // A plugin from a newer version can send fields this Chilpa does not
         // know; they are ignored instead of rejecting everything.
         let r: Results =
-            read(br#"{"tracks":[{"external_id":"a","title":"Una","algo_nuevo":42}]}"#).unwrap();
+            read(br#"{"tracks":[{"external_id":"a","title":"One","something_new":42}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);
     }
 }

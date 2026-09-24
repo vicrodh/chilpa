@@ -66,7 +66,7 @@ impl Hit {
             album: t.album,
             duration_ms: t.duration_ms,
             source: LOCAL.into(),
-            source_name: "Mi biblioteca".into(),
+            source_name: chilpa_i18n::t("My library"),
             quality: String::new(),
             analysis: t.analysis,
             also_in: Vec::new(),
@@ -380,19 +380,20 @@ impl Chilpa {
         let bytes = self.call_plugin_short(&hit.source, messages::op::RESOLVER, &request)?;
         let stream: messages::Stream = messages::read(&bytes)?;
         if !stream.usable() {
-            return Err("contestó algo que no es una dirección http".into());
+            return Err(chilpa_i18n::t("it answered something that is not an http address"));
         }
         if !stream.delivery.playable() {
-            return Err(format!("entrega {}", stream.delivery.describe()));
+            return Err(chilpa_i18n::t_args("it delivers {}", &[&stream.delivery.describe()]));
         }
         // Several parts is the normal case in hi-res, and they are not yet
         // read one after another. How many there are is said instead of
         // playing only the first, which would sound like a cut off track
         // with no explanation.
         if stream.parts().len() > 1 {
-            return Err(format!(
-                "entrega la pista en {} archivos seguidos, y todavía no se leen encadenados",
-                stream.parts().len()
+            return Err(chilpa_i18n::t_args(
+                "it delivers the track in {} files in a row, and they are not read one \
+                 after another yet",
+                &[&stream.parts().len().to_string()],
             ));
         }
         let now = std::time::SystemTime::now()
@@ -400,7 +401,7 @@ impl Chilpa {
             .map(|d| d.as_secs() as i64)
             .unwrap_or(0);
         if stream.expired(now) {
-            return Err("el enlace que dio ya caducó".into());
+            return Err(chilpa_i18n::t("the link it gave has already expired"));
         }
         Ok(stream)
     }
@@ -516,10 +517,10 @@ mod tests {
     fn local(id: i64, title: &str) -> LibraryTrack {
         LibraryTrack {
             id,
-            path: format!("/musica/{title}.flac"),
+            path: format!("/music/{title}.flac"),
             title: title.to_string(),
-            artist: "Alguien".into(),
-            album: "Un disco".into(),
+            artist: "Someone".into(),
+            album: "An album".into(),
             track_number: None,
             duration_ms: 200_000,
             present: true,
@@ -531,7 +532,7 @@ mod tests {
         messages::RemoteTrack {
             external_id: id.to_string(),
             title: title.to_string(),
-            artist: "Alguien".into(),
+            artist: "Someone".into(),
             isrc: isrc.map(str::to_string),
             quality: messages::Quality {
                 codec: Some("flac".into()),
@@ -560,68 +561,68 @@ mod tests {
 
     #[test]
     fn what_is_local_always_comes_first() {
-        let mine = vec![local(1, "Una"), local(2, "Otra")];
+        let mine = vec![local(1, "One"), local(2, "Another")];
         let replies = vec![reply("a", vec![remote("x", "De un plugin", None)])];
         let all = merge(mine, &HashMap::new(), &replies);
         assert_eq!(all.len(), 3);
         assert_eq!(all[0].source, LOCAL);
         assert_eq!(all[1].source, LOCAL);
-        assert_eq!(all[2].source, "a", "lo del plugin va después");
+        assert_eq!(all[2].source, "a", "what the plugin gave comes after");
     }
 
     #[test]
     fn the_same_song_shows_once_and_says_where_else_it_is() {
-        let mine = vec![local(1, "Una")];
+        let mine = vec![local(1, "One")];
         let mut fps = HashMap::new();
-        fps.insert("/musica/Una.flac".to_string(), vec!["isrc:USRC17607839".to_string()]);
+        fps.insert("/music/One.flac".to_string(), vec!["isrc:USRC17607839".to_string()]);
         let replies = vec![
-            reply("a", vec![remote("x", "Una", Some("USRC17607839"))]),
-            reply("b", vec![remote("y", "Una", Some("usrc17607839"))]),
+            reply("a", vec![remote("x", "One", Some("USRC17607839"))]),
+            reply("b", vec![remote("y", "One", Some("usrc17607839"))]),
         ];
         let all = merge(mine, &fps, &replies);
-        assert_eq!(all.len(), 1, "es la misma canción");
+        assert_eq!(all.len(), 1, "it is the same song");
         assert_eq!(all[0].source, LOCAL);
-        assert_eq!(all[0].also_in, vec!["Source a", "Source b"], "y se dice dónde más está");
+        assert_eq!(all[0].also_in, vec!["Source a", "Source b"], "and where else it is gets said");
     }
 
     #[test]
     fn without_a_fingerprint_nothing_is_matched() {
         // Same title and same artist, but with no ISRC and no MBID: they are
         // two rows, because matching by name is guessing.
-        let mine = vec![local(1, "Una")];
-        let replies = vec![reply("a", vec![remote("x", "Una", None)])];
+        let mine = vec![local(1, "One")];
+        let replies = vec![reply("a", vec![remote("x", "One", None)])];
         assert_eq!(merge(mine, &HashMap::new(), &replies).len(), 2);
     }
 
     #[test]
     fn two_plugins_with_a_song_that_is_not_local_show_it_once() {
         let replies = vec![
-            reply("a", vec![remote("x", "Una", Some("USRC1"))]),
-            reply("b", vec![remote("y", "Una", Some("USRC1"))]),
+            reply("a", vec![remote("x", "One", Some("USRC1"))]),
+            reply("b", vec![remote("y", "One", Some("USRC1"))]),
         ];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
         assert_eq!(all.len(), 1);
-        assert_eq!(all[0].source, "a", "se queda con el primero que contestó");
+        assert_eq!(all[0].source, "a", "it keeps the first that answered");
         assert_eq!(all[0].also_in, vec!["Source b"]);
     }
 
     #[test]
     fn a_source_that_did_not_answer_does_not_erase_the_others() {
         let broken = SourceReply::failed(
-            "roto".into(),
-            "Source roto".into(),
-            "se pasó del cómputo permitido".into(),
+            "broken".into(),
+            "Source broken".into(),
+            "it went over the allowed compute".into(),
         );
-        let replies = vec![broken, reply("b", vec![remote("y", "Una", None)])];
+        let replies = vec![broken, reply("b", vec![remote("y", "One", None)])];
         let all = merge(vec![local(1, "Local")], &HashMap::new(), &replies);
-        assert_eq!(all.len(), 2, "lo local y lo del que sí contestó");
+        assert_eq!(all.len(), 2, "what is local and what the one that answered gave");
     }
 
     #[test]
     fn the_quality_of_a_source_shows_and_the_local_one_is_not_invented() {
-        let replies = vec![reply("a", vec![remote("x", "Una", None)])];
+        let replies = vec![reply("a", vec![remote("x", "One", None)])];
         let all = merge(vec![local(1, "Local")], &HashMap::new(), &replies);
-        assert_eq!(all[0].quality, "", "de lo local no se inventa una calidad aquí");
+        assert_eq!(all[0].quality, "", "no quality is invented here for what is local");
         assert_eq!(all[1].quality, "FLAC · 24 bits a 96000 Hz");
     }
 
@@ -630,10 +631,10 @@ mod tests {
         // There are services whose API lets you search and browse but never
         // hands bytes to a third party. Their results come out greyed from
         // the start: letting every click fail would be worse.
-        let replies = vec![control_only("a", vec![remote("x", "Una", None)])];
+        let replies = vec![control_only("a", vec![remote("x", "One", None)])];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
         assert!(!all[0].playable);
-        assert_eq!(all[0].source_name, "Source a", "y se sabe de quién es");
+        assert_eq!(all[0].source_name, "Source a", "and whose it is, is known");
     }
 
     #[test]
@@ -642,7 +643,7 @@ mod tests {
         // `chilpa_resolver`. Whether it answers is its own business, and if
         // it cannot it is said with its name; greying out everything remote
         // just in case would be a list that does nothing.
-        let replies = vec![reply("a", vec![remote("x", "Una", None)])];
+        let replies = vec![reply("a", vec![remote("x", "One", None)])];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
         assert!(all[0].playable);
     }
@@ -652,10 +653,10 @@ mod tests {
         // The local library and a plugin have to produce exactly the same
         // string, or matching matches nothing.
         let mbid = "B1A9C0E9-D987-4042-AE91-78D6A3267D69";
-        let mut t = remote("x", "Una", Some("usrc1"));
+        let mut t = remote("x", "One", Some("usrc1"));
         t.musicbrainz_recording_id = Some(mbid.to_string());
         let locales = fingerprints_of(Some("usrc1".into()), Some(mbid.to_ascii_lowercase()));
         assert_eq!(t.fingerprint().unwrap(), locales[0]);
-        assert_eq!(locales.len(), 2, "lo local expone las dos, por si la otra orilla trae una");
+        assert_eq!(locales.len(), 2, "the local side exposes both, in case the other shore carries one");
     }
 }

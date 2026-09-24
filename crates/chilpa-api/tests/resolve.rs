@@ -70,7 +70,7 @@ fn install(dir: &Path, id: &str, found: &str, stream: &str) {
     std::fs::write(
         dir.join(id).join("manifest.json"),
         format!(
-            r#"{{"id": "{id}", "name": "Source de prueba", "version": "0.1.0",
+            r#"{{"id": "{id}", "name": "Test source", "version": "0.1.0",
                  "api_version": 1, "kind": "source", "capabilities": []}}"#
         ),
     )
@@ -94,7 +94,7 @@ fn install(dir: &Path, id: &str, found: &str, stream: &str) {
             (data (i32.const 2048) "{stream_esc}")
             (func (export "chilpa_search") (param i32 i32) (result i64)
               (i64.or (i64.shl (i64.const 16) (i64.const 32)) (i64.const {found_len})))
-            ;; No mira el id que le mandan: solo tiene una pista.
+            ;; It does not look at the id it is sent: it has only one track.
             (func (export "chilpa_resolver") (param i32 i32) (result i64)
               (i64.or (i64.shl (i64.const 2048) (i64.const 32)) (i64.const {stream_len}))))"#,
         found_esc = esc(found),
@@ -102,7 +102,7 @@ fn install(dir: &Path, id: &str, found: &str, stream: &str) {
         stream_esc = esc(stream),
         stream_len = stream.len(),
     );
-    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("compila"))
+    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("it compiles"))
         .unwrap();
 }
 
@@ -111,15 +111,15 @@ fn a_track_from_a_source_resolves_and_plays() {
     let dir = std::env::temp_dir().join("chilpa-api-resolve");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     let port = serve(wave(44_100));
     let root = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&root).unwrap();
     install(
         &root,
-        "com.prueba.fuente",
-        r#"{"tracks":[{"external_id":"a1","title":"Una de un source","artist":"Alguien"}]}"#,
+        "com.test.source",
+        r#"{"tracks":[{"external_id":"a1","title":"One from a source","artist":"Someone"}]}"#,
         &format!(r#"{{"url":"http://127.0.0.1:{port}/track.wav","codec":"wav"}}"#),
     );
 
@@ -127,45 +127,45 @@ fn a_track_from_a_source_resolves_and_plays() {
     // is not opened.
     install(
         &root,
-        "com.prueba.mentiroso",
-        r#"{"tracks":[{"external_id":"b1","title":"Una que miente","artist":"Alguien"}]}"#,
+        "com.test.liar",
+        r#"{"tracks":[{"external_id":"b1","title":"One that lies","artist":"Someone"}]}"#,
         r#"{"url":"file:///etc/passwd"}"#,
     );
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
-    chilpa.approve_plugin("com.prueba.fuente");
-    assert_eq!(chilpa.approve_plugin("com.prueba.mentiroso"), 2, "los dos corriendo");
+    chilpa.approve_plugin("com.test.source");
+    assert_eq!(chilpa.approve_plugin("com.test.liar"), 2, "both running");
 
     // Search: the local side is empty, so the only result is the source's.
-    chilpa.search_all("una", 20);
-    assert!(wait_for(&mut chilpa, |c| c.found().len() >= 2), "los dos contestaron");
+    chilpa.search_all("one", 20);
+    assert!(wait_for(&mut chilpa, |c| c.found().len() >= 2), "both answered");
     let hits = chilpa.found().to_vec();
     assert_eq!(hits.len(), 2);
-    let good = hits.iter().position(|h| h.source == "com.prueba.fuente").unwrap();
-    let liar = hits.iter().position(|h| h.source == "com.prueba.mentiroso").unwrap();
-    assert_eq!(hits[good].title, "Una de un source");
-    assert!(hits[good].playable, "ahora sí se puede intentar");
+    let good = hits.iter().position(|h| h.source == "com.test.source").unwrap();
+    let liar = hits.iter().position(|h| h.source == "com.test.liar").unwrap();
+    assert_eq!(hits[good].title, "One from a source");
+    assert!(hits[good].playable, "now it can be attempted");
 
     // The one that lies: it is not opened, and why is said.
-    assert!(!chilpa.play_hit(liar, OUTPUT, true), "no se abre un file://");
+    assert!(!chilpa.play_hit(liar, OUTPUT, true), "a file:// is not opened");
     let e = chilpa.now_playing().error.clone();
-    assert!(e.contains("http"), "y se dice por qué: {e}");
-    assert!(e.starts_with("Source de prueba"), "con el nombre del source: {e}");
+    assert!(e.contains("http"), "and why is said: {e}");
+    assert!(e.starts_with("Test source"), "with the source's name: {e}");
 
     // And the good one: a click, it resolves and it plays.
     assert!(chilpa.play_hit(good, OUTPUT, true), "{}", chilpa.now_playing().error);
     assert!(
         wait_for(&mut chilpa, |c| c.now_playing().seconds > 0.0 || !c.now_playing().playing),
-        "arrancó la reproducción"
+        "playback started"
     );
     let now = chilpa.now_playing().clone();
-    assert!(now.error.is_empty(), "sonó sin quejarse: {}", now.error);
+    assert!(now.error.is_empty(), "it played without complaining: {}", now.error);
     // The window shows the source's card, not the URL it resolved to: a
     // stream's decoder knows nothing beyond that.
-    assert_eq!(now.title, "Una de un source", "se ve el título, no la URL");
-    assert_eq!(now.artist, "Alguien");
-    assert!(now.total_seconds > 0.0 || now.seconds > 0.0, "algo salió por el dispositivo: {now:?}");
+    assert_eq!(now.title, "One from a source", "the title shows, not the URL");
+    assert_eq!(now.artist, "Someone");
+    assert!(now.total_seconds > 0.0 || now.seconds > 0.0, "something went out the device: {now:?}");
 
     let _ = std::fs::remove_dir_all(dir);
 }

@@ -49,14 +49,14 @@ fn source_plugin(dir: &Path, id: &str, reply: &str) {
               (local.get 1))
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
             (data (i32.const 8) "{escaped}")
-            ;; Contesta lo mismo sin mirar la consulta: lo que se prueba aquí
-            ;; es el camino, no el buscador.
+            ;; It answers the same thing without looking at the query: what is
+            ;; tested here is the path, not the search itself.
             (func (export "chilpa_search") (param i32 i32) (result i64)
               (i64.or
                 (i64.shl (i64.const 8) (i64.const 32))
                 (i64.const {len}))))"#
     );
-    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("compila"))
+    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("it compiles"))
         .unwrap();
 }
 
@@ -92,17 +92,17 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     let dir = std::env::temp_dir().join("chilpa-api-search");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     // A library with one track, and its ISRC noted the way a scan of a
     // file that does carry one would leave it.
-    let music = dir.join("musica");
+    let music = dir.join("music");
     std::fs::create_dir_all(&music).unwrap();
     wave(&music, "Suzie Q.wav");
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.scan(&music);
     let local = chilpa.search("Suzie", 20);
-    assert_eq!(local.len(), 1, "la pista se escaneó");
+    assert_eq!(local.len(), 1, "the track was scanned");
 
     // The scan leaves the ISRC when the file carries one; this WAV carries
     // no tags, so it is put in by hand in the same database.
@@ -117,26 +117,26 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     std::fs::create_dir_all(&plugins).unwrap();
     source_plugin(
         &plugins,
-        "com.prueba.bueno",
+        "com.test.good",
         &format!(
             r#"{{"tracks":[
                  {{"external_id":"a1","title":"Suzie Q","artist":"CCR","isrc":"{ISRC}",
                    "quality":{{"codec":"flac","bit_depth":24,"sample_rate_hz":96000,
                                "channels":2}}}},
-                 {{"external_id":"a2","title":"Otra que no tengo","artist":"CCR"}}]}}"#
+                 {{"external_id":"a2","title":"Another I do not have","artist":"CCR"}}]}}"#
         ),
     );
-    source_plugin(&plugins, "com.prueba.roto", "esto no es json");
+    source_plugin(&plugins, "com.test.broken", "this is not json");
 
-    assert_eq!(chilpa.load_plugins(), 0, "nadie busca sin aprobación (ADR-008)");
-    chilpa.approve_plugin("com.prueba.bueno");
-    assert_eq!(chilpa.approve_plugin("com.prueba.roto"), 2, "los dos cargaron");
+    assert_eq!(chilpa.load_plugins(), 0, "nobody searches without approval (ADR-008)");
+    chilpa.approve_plugin("com.test.good");
+    assert_eq!(chilpa.approve_plugin("com.test.broken"), 2, "both loaded");
 
     // What is local comes out at once, waiting for nobody.
     let immediate = chilpa.search_all("Suzie", 20);
-    assert_eq!(immediate.len(), 1, "lo local no espera a los plugins");
+    assert_eq!(immediate.len(), 1, "what is local does not wait for the plugins");
     assert_eq!(immediate[0].source, "local");
-    assert!(immediate[0].playable, "lo que está en disco sí se puede tocar");
+    assert!(immediate[0].playable, "what is on disk can be played");
 
     // And what the sources give arrives through poll, once the typing rest
     // is over. It is watched the way the window watches it: only when a
@@ -149,34 +149,34 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
         }
         hits.len() >= 2
     });
-    assert!(arrived, "los sources contestaron: {hits:?}");
-    assert!(!chilpa.search_running(), "y ya no falta nadie");
-    assert_eq!(hits.len(), 2, "la misma canción no se muestra dos veces: {hits:?}");
+    assert!(arrived, "the sources answered: {hits:?}");
+    assert!(!chilpa.search_running(), "and nobody is missing any more");
+    assert_eq!(hits.len(), 2, "the same song is not shown twice: {hits:?}");
 
     let suzie = &hits[0];
-    assert_eq!(suzie.source, "local", "lo local conserva su lugar");
+    assert_eq!(suzie.source, "local", "what is local keeps its place");
     assert_eq!(
         suzie.also_in,
-        vec!["Source com.prueba.bueno"],
-        "y dice en qué source más está"
+        vec!["Source com.test.good"],
+        "and it says which other source holds it"
     );
 
     let other = &hits[1];
-    assert_eq!(other.source, "com.prueba.bueno");
-    assert_eq!(other.title, "Otra que no tengo");
-    assert!(other.playable, "se le puede pedir al source que la resuelva");
-    assert_eq!(other.quality, "", "esa no declaró calidad y no se le inventa");
+    assert_eq!(other.source, "com.test.good");
+    assert_eq!(other.title, "Another I do not have");
+    assert!(other.playable, "the source can be asked to resolve it");
+    assert_eq!(other.quality, "", "that one declared no quality and none is invented for it");
 
     // The one that answered badly is named, and it took nobody with it.
     let problems = chilpa.search_problems();
     assert_eq!(problems.len(), 1, "{problems:?}");
-    assert!(problems[0].starts_with("Source com.prueba.roto"), "{problems:?}");
+    assert!(problems[0].starts_with("Source com.test.broken"), "{problems:?}");
 
     // Searching for something else throws away the previous query's results at once.
-    let other_search = chilpa.search_all("no existe nada así", 20);
+    let other_search = chilpa.search_all("nothing like that exists", 20);
     assert!(other_search.is_empty());
-    assert!(chilpa.found().is_empty(), "no se quedan resultados de la búsqueda vieja");
-    assert!(chilpa.search_problems().is_empty(), "ni sus problemas");
+    assert!(chilpa.found().is_empty(), "no results from the old search stay behind");
+    assert!(chilpa.search_problems().is_empty(), "nor its problems");
 
     let _ = std::fs::remove_dir_all(dir);
 }

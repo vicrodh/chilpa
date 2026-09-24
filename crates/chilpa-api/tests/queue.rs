@@ -15,7 +15,7 @@ use std::path::PathBuf;
 /// the code being tested. That already broke an old binary that was still
 /// open.
 fn other_library(dir: &std::path::Path) {
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 }
 
 /// The capture output writes to a file, so this runs without sound and
@@ -74,7 +74,7 @@ fn wait_at_least(chilpa: &mut chilpa_api::Chilpa, index: usize) -> bool {
 
 #[test]
 fn going_back_does_not_trim_the_queue() {
-    let dir = folder("atras");
+    let dir = folder("back");
     other_library(&dir);
     // Half second tracks: enough for the queue to advance on its own.
     for n in ["01.wav", "02.wav", "03.wav"] {
@@ -83,20 +83,20 @@ fn going_back_does_not_trim_the_queue() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
     let titles = chilpa.play_folder(&dir, OUTPUT, true);
-    assert_eq!(titles.len(), 3, "se encolaron las tres");
+    assert_eq!(titles.len(), 3, "all three were queued");
 
-    assert!(wait_at_least(&mut chilpa, 2), "la cola avanzó sola");
+    assert!(wait_at_least(&mut chilpa, 2), "the queue advanced on its own");
     let antes = chilpa.now_playing().index;
     chilpa.previous_track(OUTPUT, true);
-    assert!(wait_at_least(&mut chilpa, antes - 1), "volvió a sonar");
-    assert_eq!(chilpa.now_playing().queue_len, 3, "la cola sigue completa");
+    assert!(wait_at_least(&mut chilpa, antes - 1), "it played again");
+    assert_eq!(chilpa.now_playing().queue_len, 3, "the queue is still whole");
 
     // And with the whole queue, saving it saves all three.
     let list = dir.join("cola.m3u");
-    assert!(chilpa.save_queue(&list), "se guardó");
+    assert!(chilpa.save_queue(&list), "it was saved");
     let text = std::fs::read_to_string(&list).unwrap();
     for n in ["01.wav", "02.wav", "03.wav"] {
-        assert!(text.contains(n), "falta {n} en:\n{text}");
+        assert!(text.contains(n), "{n} is missing from:\n{text}");
     }
 
     chilpa.stop();
@@ -106,7 +106,7 @@ fn going_back_does_not_trim_the_queue() {
 #[test]
 fn shuffle_and_repeat_are_remembered_by_the_facade() {
     let mut chilpa = chilpa_api::Chilpa::new();
-    assert!(!chilpa.shuffle(), "arranca en orden");
+    assert!(!chilpa.shuffle(), "it starts in order");
     assert_eq!(chilpa.repeat(), chilpa_api::Repeat::Off);
     chilpa.set_shuffle(true);
     chilpa.set_repeat(chilpa_api::Repeat::All);
@@ -116,7 +116,7 @@ fn shuffle_and_repeat_are_remembered_by_the_facade() {
 
 #[test]
 fn enqueuing_with_nothing_playing_starts_the_queue() {
-    let dir = folder("encolar");
+    let dir = folder("queue");
     other_library(&dir);
     let paths: Vec<String> = ["01.wav", "02.wav"]
         .iter()
@@ -125,8 +125,8 @@ fn enqueuing_with_nothing_playing_starts_the_queue() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
     let titles = chilpa.enqueue(&paths, OUTPUT, true);
-    assert_eq!(titles.len(), 2, "encolar con nada sonando es reproducir");
-    assert!(wait_at_least(&mut chilpa, 1), "la cola avanzó");
+    assert_eq!(titles.len(), 2, "queueing with nothing playing means playing");
+    assert!(wait_at_least(&mut chilpa, 1), "the queue advanced");
     assert_eq!(chilpa.queue_titles().len(), 2);
 
     chilpa.stop();

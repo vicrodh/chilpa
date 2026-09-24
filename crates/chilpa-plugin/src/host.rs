@@ -48,20 +48,37 @@ impl std::fmt::Display for PluginError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PluginError::Manifest(e) => write!(f, "{e}"),
-            PluginError::WontCompile(e) => write!(f, "el módulo no se pudo cargar: {e}"),
-            PluginError::MissingExport(n) => {
-                write!(f, "no exporta \"{n}\", que todo plugin tiene que exportar")
+            PluginError::WontCompile(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("the module could not be loaded: {}", &[e]))
             }
+            PluginError::MissingExport(n) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args(
+                    "it does not export \"{}\", which every plugin has to export",
+                    &[n],
+                )
+            ),
             PluginError::VersionMismatch { dice, manifest } => write!(
                 f,
-                "el manifest dice API {manifest} y el módulo contesta {dice}; no se carga"
+                "{}",
+                chilpa_i18n::t_args(
+                    "the manifest says API {} and the module answers {}; it does not load",
+                    &[&manifest.to_string(), &dice.to_string()],
+                )
             ),
             PluginError::Stopped(d) => write!(f, "{d}"),
-            PluginError::Crashed(e) => write!(f, "tronó adentro: {e}"),
-            PluginError::OutOfMemory => {
-                write!(f, "contestó una dirección que no está en su memoria")
+            PluginError::Crashed(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("it blew up inside: {}", &[e]))
             }
-            PluginError::NotAllowed(q) => write!(f, "pidió {q}, que su manifest no declaró"),
+            PluginError::OutOfMemory => {
+                write!(f, "{}", chilpa_i18n::t("it answered an address not in its memory"))
+            }
+            PluginError::NotAllowed(q) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args("it asked for {}, which its manifest did not declare", &[q])
+            ),
         }
     }
 }
@@ -103,7 +120,7 @@ impl Host {
         let flag = Arc::clone(&vivo);
         let motor = engine.clone();
         let clock = std::thread::Builder::new()
-            .name("chilpa-plugins-reloj".into())
+            .name("chilpa-plugins-clock".into())
             .spawn(move || {
                 while flag.load(std::sync::atomic::Ordering::Relaxed) {
                     std::thread::sleep(TIC);
@@ -217,7 +234,7 @@ impl Plugin {
             .map_err(|e| self.translate(e, &mut store))?;
 
         let Some((rptr, rlen)) = abi::unpack(packed) else {
-            return Ok(abi::Reply::Error("no contestó nada".into()));
+            return Ok(abi::Reply::Error(chilpa_i18n::t("it answered nothing").into()));
         };
         let bytes = read(&memoria, &mut store, rptr, rlen)?;
         Ok(abi::read_reply(bytes))
@@ -366,12 +383,14 @@ impl Plugin {
                                 .unwrap_or_default()
                         };
                         let reply = if !caller.data().can_go_out {
-                            denied("este plugin no declaró permiso de red")
+                            denied(&chilpa_i18n::t("this plugin declared no network permission"))
                         } else {
                             match domain_of(&request) {
-                                None => denied("la petición no trae una URL que se entienda"),
+                                None => denied(&chilpa_i18n::t("the request carries no URL that can be understood")),
                                 Some(d) if !allowed(&d, &caller.data().domains) => denied(
-                                    "ese dominio no está en los que el plugin declaró",
+                                    &chilpa_i18n::t(
+                                        "that domain is not among the ones the plugin declared",
+                                    ),
                                 ),
                                 Some(_) => {
                                     let id = caller.data().plugin.clone();
@@ -379,7 +398,7 @@ impl Plugin {
                                     services
                                         .lock()
                                         .map(|mut s| s.http(&id, &request))
-                                        .unwrap_or_else(|_| denied("el host no pudo atender"))
+                                        .unwrap_or_else(|_| denied(&chilpa_i18n::t("the host could not serve it")))
                                 }
                             }
                         };
@@ -445,7 +464,7 @@ fn text_of(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<String>
 /// Writes a host function's reply into the guest's buffer.
 fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: i32) -> i32 {
     let room_u = room.max(0) as u32;
-    let verdict = abi::Room::para(data, room_u);
+    let verdict = abi::Room::holding(data, room_u);
     if let (abi::Room::Fits(n), Some(d)) = (verdict, data) {
         let Some(mem) = memory_of(caller) else { return abi::Room::Nothing.code() };
         let target = mem.data_mut(caller);
@@ -510,7 +529,7 @@ mod tests {
     fn the_sandbox_offers_exactly_what_is_declared_and_nothing_more() {
         let host = Host::new().unwrap();
         let manifest = crate::manifest::Manifest::parse(
-            r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source"}"#,
+            r#"{"id":"com.a.b","name":"One","version":"1","api_version":1,"kind":"source"}"#,
         )
         .unwrap();
         // A guest that imports nothing: enough to build the linker.
@@ -539,7 +558,7 @@ mod tests {
 
         assert_eq!(
             offered, declared,
-            "el sandbox ofrece algo que no está en abi::HOST_IMPORTS, o al revés"
+            "the sandbox offers something not in abi::HOST_IMPORTS, or the other way round"
         );
     }
 
@@ -552,7 +571,7 @@ mod tests {
             for forbidden in ["credential", "secret", "token", "password", "keyring"] {
                 assert!(
                     !name.contains(forbidden),
-                    "\"{name}\" suena a entregarle un secreto al plugin (ADR-008)"
+                    "\"{name}\" sounds like handing a secret to the plugin (ADR-008)"
                 );
             }
         }
@@ -560,37 +579,37 @@ mod tests {
 
     #[test]
     fn a_url_yields_its_host() {
-        assert_eq!(host_of_url("https://api.ejemplo.com/v1/buscar"), Some("api.ejemplo.com".into()));
-        assert_eq!(host_of_url("http://API.Ejemplo.COM"), Some("api.ejemplo.com".into()));
-        assert_eq!(host_of_url("https://api.ejemplo.com:8443/x"), Some("api.ejemplo.com".into()));
+        assert_eq!(host_of_url("https://api.example.com/v1/search"), Some("api.example.com".into()));
+        assert_eq!(host_of_url("http://API.Example.COM"), Some("api.example.com".into()));
+        assert_eq!(host_of_url("https://api.example.com:8443/x"), Some("api.example.com".into()));
         assert_eq!(
-            host_of_url("https://usuario:clave@api.ejemplo.com/x"),
-            Some("api.ejemplo.com".into()),
-            "el usuario no es la máquina"
+            host_of_url("https://user:secret@api.example.com/x"),
+            Some("api.example.com".into()),
+            "the userinfo is not the host"
         );
-        assert_eq!(host_of_url("api.ejemplo.com/x"), None, "sin esquema no se adivina");
+        assert_eq!(host_of_url("api.example.com/x"), None, "with no scheme nothing is guessed");
         assert_eq!(host_of_url("https:///x"), None);
     }
 
     #[test]
     fn an_allowed_domain_covers_its_subdomains_and_nothing_else() {
-        let list = vec!["ejemplo.com".to_string()];
-        assert!(allowed("ejemplo.com", &list));
-        assert!(allowed("api.ejemplo.com", &list));
-        assert!(allowed("a.b.ejemplo.com", &list));
-        assert!(!allowed("ejemplo.com.malo.net", &list), "el sufijo no basta");
-        assert!(!allowed("noejemplo.com", &list));
-        assert!(!allowed("otro.net", &list));
-        assert!(!allowed("ejemplo.com", &[]), "sin lista no se permite nada");
+        let list = vec!["example.com".to_string()];
+        assert!(allowed("example.com", &list));
+        assert!(allowed("api.example.com", &list));
+        assert!(allowed("a.b.example.com", &list));
+        assert!(!allowed("example.com.evil.net", &list), "a suffix is not enough");
+        assert!(!allowed("noexample.com", &list));
+        assert!(!allowed("other.net", &list));
+        assert!(!allowed("example.com", &[]), "with no list nothing is allowed");
     }
 
     #[test]
     fn a_request_yields_its_domain() {
         assert_eq!(
-            domain_of(br#"{"url":"https://api.ejemplo.com/buscar","metodo":"GET"}"#),
-            Some("api.ejemplo.com".into())
+            domain_of(br#"{"url":"https://api.example.com/buscar","metodo":"GET"}"#),
+            Some("api.example.com".into())
         );
-        assert_eq!(domain_of(b"{}"), None, "sin url no hay dominio");
+        assert_eq!(domain_of(b"{}"), None, "with no url there is no domain");
         assert_eq!(domain_of(b"no es json"), None);
     }
 }

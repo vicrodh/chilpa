@@ -65,7 +65,7 @@ pub enum Reply {
 /// plugin: they are different things and they are counted differently.
 pub fn read_reply(bytes: Vec<u8>) -> Reply {
     let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
-        return Reply::Error("contestó algo que no es JSON".into());
+        return Reply::Error(chilpa_i18n::t("it answered something that is not JSON"));
     };
     if let Some(e) = v.get("error") {
         let text = e.as_str().map(str::to_string).unwrap_or_else(|| e.to_string());
@@ -101,7 +101,7 @@ impl Room {
     }
 
     /// Decides whether some data fits in the buffer the guest gave.
-    pub fn para(data: Option<&[u8]>, room: u32) -> Self {
+    pub fn holding(data: Option<&[u8]>, room: u32) -> Self {
         match data {
             None => Room::Nothing,
             Some(d) if d.len() as u32 <= room => Room::Fits(d.len() as u32),
@@ -131,8 +131,8 @@ mod tests {
 
     #[test]
     fn a_reply_carrying_an_error_reads_as_an_error() {
-        let r = read_reply(r#"{"error":"no encontré esa pista"}"#.as_bytes().to_vec());
-        assert_eq!(r, Reply::Error("no encontré esa pista".into()));
+        let r = read_reply(r#"{"error":"I did not find that track"}"#.as_bytes().to_vec());
+        assert_eq!(r, Reply::Error("I did not find that track".into()));
     }
 
     #[test]
@@ -143,16 +143,16 @@ mod tests {
 
     #[test]
     fn anything_that_is_not_json_is_the_plugin_fault() {
-        let r = read_reply(b"basura".to_vec());
-        assert!(matches!(r, Reply::Error(e) if e.contains("no es JSON")));
+        let r = read_reply(b"junk".to_vec());
+        assert!(matches!(r, Reply::Error(e) if e.contains("not JSON")));
     }
 
     #[test]
     fn the_room_check_says_how_much_was_needed() {
-        assert_eq!(Room::para(Some(b"hola"), 10), Room::Fits(4));
-        assert_eq!(Room::para(Some(b"hola"), 4), Room::Fits(4), "justo cabe");
-        assert_eq!(Room::para(Some(b"hola"), 2), Room::TooBig(4));
-        assert_eq!(Room::para(None, 10), Room::Nothing);
+        assert_eq!(Room::holding(Some(b"four"), 10), Room::Fits(4));
+        assert_eq!(Room::holding(Some(b"four"), 4), Room::Fits(4), "it fits exactly");
+        assert_eq!(Room::holding(Some(b"four"), 2), Room::TooBig(4));
+        assert_eq!(Room::holding(None, 10), Room::Nothing);
     }
 
     #[test]

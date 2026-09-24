@@ -4,6 +4,21 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "\"{}\" brings nothing today"
+msgstr ""
+
+msgid "\"{}\" does not say how an account connects"
+msgstr ""
+
+msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
+msgstr ""
+
+msgid "\"{}\" is not a domain permission can be given to"
+msgstr ""
+
+msgid "(unreadable manifest)"
+msgstr ""
+
 msgid "Album"
 msgstr ""
 
@@ -71,6 +86,15 @@ msgid "Formats"
 msgstr ""
 
 msgid "Genres"
+msgstr ""
+
+msgid "I did not find a CD drive"
+msgstr ""
+
+msgid "I do not know the list \"{}\""
+msgstr ""
+
+msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr ""
 
 msgid "It asks for no permission at all, but whether it runs is still yours to decide."
@@ -262,13 +286,55 @@ msgstr ""
 msgid "Your browser is open to grant permission. Waiting here."
 msgstr ""
 
+msgid "a DASH manifest, which Chilpa cannot read yet"
+msgstr ""
+
+msgid "a direct URL"
+msgstr ""
+
+msgid "a list needs a name"
+msgstr ""
+
+msgid "a scan is already running"
+msgstr ""
+
 msgid "account connected"
+msgstr ""
+
+msgid "add a command you trigger"
+msgstr ""
+
+msgid "almost nothing in the queue has an analysed tempo"
+msgstr ""
+
+msgid "an HLS manifest, which Chilpa cannot read yet"
+msgstr ""
+
+msgid "an analysis is already running"
 msgstr ""
 
 msgid "analysing..."
 msgstr ""
 
 msgid "awaiting approval"
+msgstr ""
+
+msgid "be a plugin of another kind: {}"
+msgstr ""
+
+msgid "bring catalogue: search for and fetch music"
+msgstr ""
+
+msgid "calling \"{}\", which did not load"
+msgstr ""
+
+msgid "calling \"{}\", which is in quarantine"
+msgstr ""
+
+msgid "calling \"{}\", which is not installed"
+msgstr ""
+
+msgid "calling \"{}\", which nobody has approved"
 msgstr ""
 
 msgid "cannot be done"
@@ -280,10 +346,85 @@ msgstr ""
 msgid "converted"
 msgstr ""
 
+msgid "converted to {}"
+msgstr ""
+
 msgid "could not open the browser: {}"
 msgstr ""
 
+msgid "file"
+msgstr ""
+
 msgid "fine"
+msgstr ""
+
+msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr ""
+
+msgid "handle your account itself, outside Chilpa: your credential ends up wherever it decides, which may be a plaintext file. Chilpa does not see it, cannot delete it and cannot check any of this"
+msgstr ""
+
+msgid "how the account connects does not work: {}"
+msgstr ""
+
+msgid "it answered an address not in its memory"
+msgstr ""
+
+msgid "it answered nothing"
+msgstr ""
+
+msgid "it answered something that is not JSON"
+msgstr ""
+
+msgid "it answered something that is not an http address"
+msgstr ""
+
+msgid "it answered something that is not understood: {}"
+msgstr ""
+
+msgid "it asked for more memory than it is allowed"
+msgstr ""
+
+msgid "it asked for {}, which its manifest did not declare"
+msgstr ""
+
+msgid "it asks for API version {} and this Chilpa understands {}; it does not load"
+msgstr ""
+
+msgid "it asks for the {} runtime, which does not exist yet"
+msgstr ""
+
+msgid "it blew up inside: {}"
+msgstr ""
+
+msgid "it delivers the track in {} files in a row, and they are not read one after another yet"
+msgstr ""
+
+msgid "it delivers {}"
+msgstr ""
+
+msgid "it did not answer in {} and was stopped"
+msgstr ""
+
+msgid "it does not export \"{}\", which every plugin has to export"
+msgstr ""
+
+msgid "it failed {} times in a row; the last one: {}"
+msgstr ""
+
+msgid "it is not installed"
+msgstr ""
+
+msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
+msgstr ""
+
+msgid "it went over the compute it was allowed and was stopped"
+msgstr ""
+
+msgid "keep a credential of yours"
+msgstr ""
+
+msgid "keep things of its own on disk"
 msgstr ""
 
 msgid "mixed by tempo: {} track"
@@ -291,10 +432,16 @@ msgid_plural "mixed by tempo: {} tracks"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "mono"
+msgstr ""
+
 msgid "next and previous track"
 msgstr ""
 
 msgid "no cover"
+msgstr ""
+
+msgid "no pulse"
 msgstr ""
 
 msgid "open a file"
@@ -312,7 +459,16 @@ msgstr ""
 msgid "playlist saved to {}"
 msgstr ""
 
+msgid "put a panel of its own in the window"
+msgstr ""
+
 msgid "quarantined"
+msgstr ""
+
+msgid "reach the internet, only {}"
+msgstr ""
+
+msgid "read your library, without being able to change it"
 msgstr ""
 
 msgid "remove"
@@ -324,19 +480,139 @@ msgstr ""
 msgid "search"
 msgstr ""
 
+msgid "send you to grant permission at {}"
+msgstr ""
+
+msgid "stereo"
+msgstr ""
+
+msgid "stop using the account it had"
+msgstr ""
+
 msgid "stumbling"
+msgstr ""
+
+msgid "tags"
 msgstr ""
 
 msgid "ten seconds forward and back"
 msgstr ""
 
+msgid "that album has no playable tracks"
+msgstr ""
+
+msgid "that does not look like a stream address"
+msgstr ""
+
+msgid "that domain is not among the ones the plugin declared"
+msgstr ""
+
 msgid "that folder could not be read; nothing was touched"
+msgstr ""
+
+msgid "that id does not work as a folder"
+msgstr ""
+
+msgid "that list is empty"
+msgstr ""
+
+msgid "that source does not use OAuth"
+msgstr ""
+
+msgid "the account connected but could not be saved: {}"
+msgstr ""
+
+msgid "the account did not connect: {}"
 msgstr ""
 
 msgid "the account expired"
 msgstr ""
 
+msgid "the analysis stopped: {}"
+msgstr ""
+
+msgid "the approval could not be saved: {}"
+msgstr ""
+
+msgid "the approval could not be withdrawn: {}"
+msgstr ""
+
+msgid "the credential could not be saved: {}"
+msgstr ""
+
+msgid "the device could not be opened: {}"
+msgstr ""
+
+msgid "the folder for \"{}\" could not be deleted"
+msgstr ""
+
+msgid "the host could not serve it"
+msgstr ""
+
+msgid "the library could not be opened: {}"
+msgstr ""
+
+msgid "the link it gave has already expired"
+msgstr ""
+
+msgid "the list carries no tracks"
+msgstr ""
+
+msgid "the list could not be read: {}"
+msgstr ""
+
+msgid "the list could not be saved: {}"
+msgstr ""
+
+msgid "the manifest is not understood: {}"
+msgstr ""
+
+msgid "the manifest says API {} and the module answers {}; it does not load"
+msgstr ""
+
+msgid "the module could not be loaded: {}"
+msgstr ""
+
+msgid "the name"
+msgstr ""
+
+msgid "the plugin sandbox could not be started"
+msgstr ""
+
+msgid "the plugin sandbox is not started"
+msgstr ""
+
+msgid "the request carries no URL that can be understood"
+msgstr ""
+
+msgid "the scan failed: {}"
+msgstr ""
+
+msgid "the version"
+msgstr ""
+
+msgid "there is no folder in the library yet"
+msgstr ""
+
+msgid "there is no plugin \"{}\" with a manifest to approve"
+msgstr ""
+
+msgid "there is no queue to save"
+msgstr ""
+
+msgid "there is not enough queue to mix"
+msgstr ""
+
+msgid "there is nothing under {}"
+msgstr ""
+
+msgid "there is nowhere to keep a secret on this machine"
+msgstr ""
+
 msgid "this list"
+msgstr ""
+
+msgid "this plugin declared no network permission"
 msgstr ""
 
 msgid "{} album"
@@ -352,7 +628,18 @@ msgid_plural "{} artists"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} channel"
+msgid_plural "{} channels"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} files: {} read, {} unchanged, {} missing"
+msgstr ""
+
+msgid "{} is missing"
+msgstr ""
+
+msgid "{} of the list's tracks are gone"
 msgstr ""
 
 msgid "{} of {}"

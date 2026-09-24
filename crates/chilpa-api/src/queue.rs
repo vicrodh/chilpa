@@ -128,7 +128,7 @@ impl Chilpa {
     /// It returns how many tracks went into the mix.
     pub fn automix(&mut self) -> usize {
         if self.queue.len() < 3 {
-            self.now.error = "hace falta más cola para mezclar".into();
+            self.now.error = chilpa_i18n::t("there is not enough queue to mix");
             return 0;
         }
         // Positions within what the player holds, not within the whole
@@ -151,7 +151,8 @@ impl Chilpa {
 
         let con_tempo = bpms.iter().filter(|b| b.is_some()).count();
         if con_tempo < 3 {
-            self.now.error = "casi nada de la cola tiene tempo analizado".into();
+            self.now.error =
+                chilpa_i18n::t("almost nothing in the queue has an analysed tempo");
             return 0;
         }
 
@@ -210,19 +211,19 @@ impl Chilpa {
         let list = match chilpa_library::playlist::read(path) {
             Ok(l) => l,
             Err(e) => {
-                self.now.error = format!("no se pudo leer la lista: {e}");
+                self.now.error = chilpa_i18n::t_args("the list could not be read: {}", &[&e.to_string()]);
                 return Vec::new();
             }
         };
         if !list.missing.is_empty() {
-            self.now.error = format!(
-                "{} de las pistas de la lista ya no están",
-                list.missing.len()
+            self.now.error = chilpa_i18n::t_args(
+                "{} of the list's tracks are gone",
+                &[&list.missing.len().to_string()],
             );
         }
         if list.tracks.is_empty() {
             if self.now.error.is_empty() {
-                self.now.error = "la lista no trae pistas".into();
+                self.now.error = chilpa_i18n::t("the list carries no tracks");
             }
             return Vec::new();
         }
@@ -236,7 +237,7 @@ impl Chilpa {
     /// Saves the current queue as an M3U list.
     pub fn save_queue(&mut self, path: &std::path::Path) -> bool {
         if self.queue.is_empty() {
-            self.now.error = "no hay cola que guardar".into();
+            self.now.error = chilpa_i18n::t("there is no queue to save");
             return false;
         }
         let tracks: Vec<std::path::PathBuf> =
@@ -244,7 +245,7 @@ impl Chilpa {
         match chilpa_library::playlist::write_m3u(path, &tracks) {
             Ok(()) => true,
             Err(e) => {
-                self.now.error = format!("no se pudo guardar la lista: {e}");
+                self.now.error = chilpa_i18n::t_args("the list could not be saved: {}", &[&e.to_string()]);
                 false
             }
         }
@@ -258,7 +259,7 @@ impl Chilpa {
         let available: Vec<LibraryTrack> =
             self.album_tracks(album_id).into_iter().filter(|t| t.present).collect();
         if available.is_empty() {
-            self.now.error = "ese álbum no tiene pistas disponibles".into();
+            self.now.error = chilpa_i18n::t("that album has no playable tracks");
             return Vec::new();
         }
         let tracks: Vec<std::path::PathBuf> =

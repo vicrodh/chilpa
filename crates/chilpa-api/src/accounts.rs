@@ -76,7 +76,7 @@ mod tests {
     fn oauth(expires_at: Option<i64>, refresh: &str) -> Account {
         Account::OAuth {
             tokens: Tokens {
-                access_token: "acceso".into(),
+                access_token: "access".into(),
                 refresh_token: refresh.into(),
                 expires_at,
             },
@@ -89,7 +89,7 @@ mod tests {
         // "Token x". Inventing a prefix would break half of them.
         let a = Account::Token { header: "Token abc123".into() };
         assert_eq!(a.header().unwrap(), "Token abc123");
-        assert!(!a.stale(9_999), "una fija no caduca sola");
+        assert!(!a.stale(9_999), "a fixed one does not expire on its own");
         assert!(!a.dead(9_999));
     }
 
@@ -100,14 +100,14 @@ mod tests {
 
     #[test]
     fn an_oauth_account_signs_as_bearer() {
-        assert_eq!(oauth(None, "r").header().unwrap(), "Bearer acceso");
+        assert_eq!(oauth(None, "r").header().unwrap(), "Bearer access");
     }
 
     #[test]
     fn one_that_expired_and_can_be_renewed_is_stale_not_dead() {
-        let a = oauth(Some(1_000), "para-renovar");
+        let a = oauth(Some(1_000), "to-renew");
         assert!(a.stale(1_001));
-        assert!(!a.dead(1_001), "hay con qué renovarla sin molestar a nadie");
+        assert!(!a.dead(1_001), "there is something to renew it with, bothering nobody");
     }
 
     #[test]
@@ -115,7 +115,7 @@ mod tests {
         // Trying to renew with no refresh would be a request known to be
         // doomed. It is said and the user connects again.
         let a = oauth(Some(1_000), "");
-        assert!(!a.stale(1_001), "no hay nada que intentar");
+        assert!(!a.stale(1_001), "there is nothing to try");
         assert!(a.dead(1_001));
     }
 

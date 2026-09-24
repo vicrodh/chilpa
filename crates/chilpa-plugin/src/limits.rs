@@ -82,11 +82,19 @@ pub enum Halt {
 impl std::fmt::Display for Halt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Halt::OutOfFuel => {
-                write!(f, "se pasó del cómputo que tenía permitido y se detuvo")
+            Halt::OutOfFuel => write!(
+                f,
+                "{}",
+                chilpa_i18n::t("it went over the compute it was allowed and was stopped")
+            ),
+            Halt::OutOfMemory => {
+                write!(f, "{}", chilpa_i18n::t("it asked for more memory than it is allowed"))
             }
-            Halt::OutOfMemory => write!(f, "pidió más memoria de la permitida"),
-            Halt::Timeout(d) => write!(f, "no contestó en {d:?} y se detuvo"),
+            Halt::Timeout(d) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args("it did not answer in {} and was stopped", &[&format!("{d:?}")])
+            ),
         }
     }
 }
@@ -99,7 +107,7 @@ mod tests {
     fn the_default_limits_are_reasonable() {
         let l = Limits::default();
         assert!(l.fuel > 0 && l.memory_bytes > 0 && !l.timeout.is_zero());
-        assert_eq!(l.max_pages(), 512, "32 MiB son 512 páginas de 64 KiB");
+        assert_eq!(l.max_pages(), 512, "32 MiB is 512 pages of 64 KiB");
     }
 
     #[test]
@@ -113,9 +121,9 @@ mod tests {
     #[test]
     fn memory_is_rounded_up_to_whole_pages() {
         let l = Limits { memory_bytes: 100_000, ..Limits::default() };
-        assert_eq!(l.max_pages(), 1, "100 KB no alcanzan para dos páginas");
+        assert_eq!(l.max_pages(), 1, "100 KB is not enough for two pages");
         let l = Limits { memory_bytes: 1000, ..Limits::default() };
-        assert_eq!(l.max_pages(), 0, "menos de una página es ninguna");
+        assert_eq!(l.max_pages(), 0, "less than one page is none");
     }
 
     #[test]
@@ -127,7 +135,7 @@ mod tests {
         ] {
             let text = d.to_string();
             assert!(text.len() > 10, "{text}");
-            assert!(!text.contains("Error"), "nada de jerga: {text}");
+            assert!(!text.contains("Error"), "no jargon: {text}");
         }
     }
 }

@@ -104,8 +104,9 @@ impl Watchdog {
         c.failures.retain(|t| at.duration_since(*t) < WINDOW);
         c.failures.push(at);
         if c.failures.len() >= FAILURES_TO_QUARANTINE {
-            c.quarantine = Some(format!(
-                "falló {FAILURES_TO_QUARANTINE} veces seguidas; la última: {reason}"
+            c.quarantine = Some(chilpa_i18n::t_args(
+                "it failed {} times in a row; the last one: {}",
+                &[&FAILURES_TO_QUARANTINE.to_string(), reason],
             ));
         }
         self.state(id)
@@ -152,23 +153,23 @@ mod tests {
     #[test]
     fn two_failures_are_not_quarantine_but_they_show() {
         let mut w = Watchdog::new();
-        assert_eq!(w.failure("com.a.b", "truena"), State::Stumbling { failures: 1 });
-        assert_eq!(w.failure("com.a.b", "truena"), State::Stumbling { failures: 2 });
-        assert!(w.usable("com.a.b"), "todavía se le puede pedir algo");
+        assert_eq!(w.failure("com.a.b", "it blows up"), State::Stumbling { failures: 1 });
+        assert_eq!(w.failure("com.a.b", "it blows up"), State::Stumbling { failures: 2 });
+        assert!(w.usable("com.a.b"), "it can still be asked for something");
     }
 
     #[test]
     fn on_the_third_it_goes_to_quarantine_and_says_why() {
         let mut w = Watchdog::new();
-        w.failure("com.a.b", "una");
-        w.failure("com.a.b", "otra");
-        let state = w.failure("com.a.b", "se quedó sin combustible");
+        w.failure("com.a.b", "one");
+        w.failure("com.a.b", "another");
+        let state = w.failure("com.a.b", "it ran out of fuel");
         match &state {
             State::Quarantined { reason } => {
-                assert!(reason.contains("3 veces"), "{reason}");
-                assert!(reason.contains("sin combustible"), "la última razón: {reason}");
+                assert!(reason.contains("3 times"), "{reason}");
+                assert!(reason.contains("out of fuel"), "the last reason: {reason}");
             }
-            other => panic!("debía quedar en cuarentena: {other:?}"),
+            other => panic!("it should have ended up quarantined: {other:?}"),
         }
         assert!(!w.usable("com.a.b"));
     }
@@ -176,13 +177,13 @@ mod tests {
     #[test]
     fn one_good_call_forgives_what_came_before() {
         let mut w = Watchdog::new();
-        w.failure("com.a.b", "una");
-        w.failure("com.a.b", "otra");
+        w.failure("com.a.b", "one");
+        w.failure("com.a.b", "another");
         w.success("com.a.b");
         assert_eq!(w.state("com.a.b"), State::Healthy);
         // And now it has three chances again.
-        w.failure("com.a.b", "una");
-        w.failure("com.a.b", "otra");
+        w.failure("com.a.b", "one");
+        w.failure("com.a.b", "another");
         assert!(w.usable("com.a.b"));
     }
 
@@ -191,10 +192,10 @@ mod tests {
         let mut w = Watchdog::new();
         let now = Instant::now();
         let a_while_ago = now - WINDOW - Duration::from_secs(1);
-        w.failure_at("com.a.b", "vieja", a_while_ago);
-        w.failure_at("com.a.b", "vieja", a_while_ago);
+        w.failure_at("com.a.b", "old", a_while_ago);
+        w.failure_at("com.a.b", "old", a_while_ago);
         // This is the first of the current window, not the third.
-        assert_eq!(w.failure_at("com.a.b", "nueva", now), State::Stumbling { failures: 1 });
+        assert_eq!(w.failure_at("com.a.b", "new", now), State::Stumbling { failures: 1 });
         assert!(w.usable("com.a.b"));
     }
 
@@ -202,13 +203,13 @@ mod tests {
     fn only_the_user_takes_it_out_of_quarantine() {
         let mut w = Watchdog::new();
         for _ in 0..3 {
-            w.failure("com.a.b", "truena");
+            w.failure("com.a.b", "it blows up");
         }
         assert!(!w.usable("com.a.b"));
         // Failing more changes nothing, and a success does not get it out either.
-        w.failure("com.a.b", "otra vez");
+        w.failure("com.a.b", "again");
         w.success("com.a.b");
-        assert!(!w.usable("com.a.b"), "un éxito no lo saca de cuarentena");
+        assert!(!w.usable("com.a.b"), "a success does not take it out of quarantine");
 
         w.reactivate("com.a.b");
         assert_eq!(w.state("com.a.b"), State::Healthy);
@@ -217,13 +218,13 @@ mod tests {
     #[test]
     fn some_things_go_to_quarantine_at_once() {
         let mut w = Watchdog::new();
-        w.quarantine("com.a.b", "el manifest pide una versión de API que no existe");
+        w.quarantine("com.a.b", "the manifest asks for an API version that does not exist");
         assert!(!w.usable("com.a.b"));
         assert_eq!(
             w.quarantined(),
             vec![(
                 "com.a.b".to_string(),
-                "el manifest pide una versión de API que no existe".to_string()
+                "the manifest asks for an API version that does not exist".to_string()
             )]
         );
     }
@@ -232,10 +233,10 @@ mod tests {
     fn a_broken_plugin_does_not_drag_the_others_down() {
         let mut w = Watchdog::new();
         for _ in 0..3 {
-            w.failure("com.roto.plugin", "truena");
+            w.failure("com.broken.plugin", "it blows up");
         }
-        assert!(!w.usable("com.roto.plugin"));
-        assert!(w.usable("com.sano.plugin"), "el otro sigue entero");
+        assert!(!w.usable("com.broken.plugin"));
+        assert!(w.usable("com.healthy.plugin"), "the other one is still whole");
         assert_eq!(w.quarantined().len(), 1);
     }
 }

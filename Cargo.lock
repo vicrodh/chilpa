@@ -507,6 +507,7 @@ name = "chilpa-plugin"
 version = "0.0.0"
 dependencies = [
  "chilpa-auth",
+ "chilpa-i18n",
  "serde",
  "serde_json",
  "wasmtime",

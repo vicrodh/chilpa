@@ -32,10 +32,10 @@ fn wave(dir: &PathBuf, name: &str) -> PathBuf {
 
 #[test]
 fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
-    let dir = std::env::temp_dir().join("chilpa-api-mezcla");
+    let dir = std::env::temp_dir().join("chilpa-api-mix");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     let paths: Vec<String> = ["a.wav", "b.wav", "c.wav", "d.wav"]
         .iter()
@@ -54,14 +54,14 @@ fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
 
     // With no queue there is nothing to mix, and it is said.
     assert_eq!(chilpa.automix(), 0);
-    assert!(chilpa.now_playing().error.contains("cola"));
+    assert!(chilpa.now_playing().error.contains("queue"));
 
     chilpa.play_tracks(&paths, OUTPUT, true);
     // With no analysis there is nothing either, and that is said too.
-    assert_eq!(chilpa.automix(), 0, "sin tempos no se mezcla a ciegas");
+    assert_eq!(chilpa.automix(), 0, "with no tempos nothing is mixed blind");
     assert!(
         chilpa.now_playing().error.contains("tempo"),
-        "dijo: {}",
+        "it said: {}",
         chilpa.now_playing().error
     );
 
@@ -72,14 +72,14 @@ fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
         let id = lib
             .track_by_path(source, std::path::Path::new(path))
             .unwrap()
-            .expect("la pista quedó registrada en el escaneo");
+            .expect("the track was recorded by the scan");
         lib.save_features(id, "chilpa", 1, Some(bpm), Some(0.8), None, None).unwrap();
     }
     drop(lib);
 
     let mixed = chilpa.automix();
-    assert_eq!(mixed, 4, "las cuatro entraron a la mezcla");
-    assert!(!chilpa.shuffle(), "mezclar apaga el aleatorio");
+    assert_eq!(mixed, 4, "all four went into the mix");
+    assert!(!chilpa.shuffle(), "mixing switches shuffle off");
 
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);

@@ -66,9 +66,9 @@ fn service() -> Service {
             // second, from the renewal, lasts an hour.
             let json = if target.starts_with("/token") {
                 if text.contains("grant_type=refresh_token") {
-                    r#"{"access_token":"token-nuevo","token_type":"Bearer","expires_in":3600}"#
+                    r#"{"access_token":"new-token","token_type":"Bearer","expires_in":3600}"#
                 } else {
-                    r#"{"access_token":"token-viejo","refresh_token":"para-renovar",
+                    r#"{"access_token":"old-token","refresh_token":"to-renew",
                         "token_type":"Bearer","expires_in":0}"#
                 }
             } else {
@@ -93,7 +93,7 @@ fn install(dir: &Path, id: &str, port: u16) {
     std::fs::write(
         dir.join(id).join("manifest.json"),
         format!(
-            r#"{{"id": "{id}", "name": "Uno", "version": "0.1.0", "api_version": 1,
+            r#"{{"id": "{id}", "name": "One", "version": "0.1.0", "api_version": 1,
                  "kind": "source",
                  "auth": {{"type": "oauth2",
                            "authorize_url": "http://127.0.0.1:{port}/authorize",
@@ -118,16 +118,16 @@ fn install(dir: &Path, id: &str, port: u16) {
               (local.get 1))
             (func (export "chilpa_api_version") (result i32) (i32.const 1))
             (data (i32.const 16) "{esc}")
-            (data (i32.const 4096) "{{\"listo\":true}}")
-            ;; Sale a la red y contesta algo fijo: lo que se mira es con qué
-            ;; salió, no qué contestó.
-            (func (export "salir") (param i32 i32) (result i64)
+            (data (i32.const 4096) "{{\"ready\":true}}")
+            ;; It reaches the network and answers something fixed: what is
+            ;; watched is what it went out with, not what it answered.
+            (func (export "go_out") (param i32 i32) (result i64)
               (drop (call $http (i32.const 16) (i32.const {len})
                                 (i32.const 6000) (i32.const 1024)))
               (i64.or (i64.shl (i64.const 4096) (i64.const 32)) (i64.const 14))))"#,
         len = request.len(),
     );
-    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("compila"))
+    std::fs::write(dir.join(id).join("plugin.wasm"), wat::parse_str(&wat).expect("it compiles"))
         .unwrap();
 }
 
@@ -136,81 +136,81 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     let dir = std::env::temp_dir().join("chilpa-api-renewal");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
-    std::env::set_var("XDG_DATA_HOME", dir.join("datos"));
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
 
     let svc = service();
     let root = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&root).unwrap();
-    install(&root, "com.prueba.cuenta", svc.port);
+    install(&root, "com.test.account", svc.port);
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
 
     // What it asks for includes where it will send the user to grant permission.
     let listed = chilpa.plugins();
-    assert_eq!(listed[0].state, "pendiente de aprobación", "{:?}", listed[0].problem);
+    assert_eq!(listed[0].state, "awaiting approval", "{:?}", listed[0].problem);
     let pending = listed[0].pending.clone();
     assert!(
-        pending.iter().any(|p| p.contains("dar permiso en 127.0.0.1")),
-        "se aprueba también a dónde te manda: {pending:?}"
+        pending.iter().any(|p| p.contains("grant permission at 127.0.0.1")),
+        "where it sends you is approved too: {pending:?}"
     );
     assert_eq!(chilpa.plugins()[0].account_host, "127.0.0.1");
-    assert_eq!(chilpa.approve_plugin("com.prueba.cuenta"), 1);
+    assert_eq!(chilpa.approve_plugin("com.test.account"), 1);
 
     // The account is connected down the real path: Chilpa gives the URL,
     // the browser comes back with the code, and Chilpa swaps it for tokens.
-    let url = chilpa.connect_account("com.prueba.cuenta").expect("hay a dónde mandar");
-    assert!(url.contains("code_challenge="), "con PKCE: {url}");
-    assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A"), "a loopback: {url}");
+    let url = chilpa.connect_account("com.test.account").expect("there is somewhere to send you");
+    assert!(url.contains("code_challenge="), "with PKCE: {url}");
+    assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A"), "to a loopback: {url}");
 
     let redirect = between(&url, "redirect_uri=", "&");
     let state = between(&url, "state=", "&");
     std::thread::spawn(move || {
         std::thread::sleep(std::time::Duration::from_millis(100));
-        browser(&unescape(&redirect), &format!("code=el-codigo&state={state}"));
+        browser(&unescape(&redirect), &format!("code=the-code&state={state}"));
     });
     // The wait runs on another thread; what it answers arrives through
     // poll, which is how the window will see it.
-    assert!(chilpa.connecting(), "se está esperando al navegador");
+    assert!(chilpa.connecting(), "the browser is being waited for");
     assert!(
         wait_for(&mut chilpa, |c| c.plugins()[0].connected),
-        "la cuenta quedó conectada: {}",
+        "the account ended up connected: {}",
         chilpa.now_playing().error
     );
-    assert!(!chilpa.connecting(), "y ya no se espera a nadie");
-    assert!(!chilpa.plugins()[0].account_expired, "venció, pero hay con qué renovarla");
+    assert!(!chilpa.connecting(), "and nobody is being waited for any more");
+    assert!(!chilpa.plugins()[0].account_expired, "it expired, but there is something to renew it with");
 
     // The plugin reaches the network. It asked for no token: it has no way to.
-    chilpa.call_plugin("com.prueba.cuenta", "salir", b"{}").expect("salió");
+    chilpa.call_plugin("com.test.account", "go_out", b"{}").expect("it went out");
 
     let seen = svc.seen.lock().unwrap().clone();
     // Two: the code exchange on connecting, and this renewal.
     let at_token: Vec<_> = seen.iter().filter(|(t, _)| t.starts_with("/token")).collect();
     let calls: Vec<_> = seen.iter().filter(|(t, _)| t.starts_with("/api/")).collect();
 
-    assert_eq!(at_token.len(), 2, "el intercambio y la renovación: {seen:?}");
-    assert_eq!(calls.len(), 1, "y la petición del plugin salió: {seen:?}");
+    assert_eq!(at_token.len(), 2, "the exchange and the renewal: {seen:?}");
+    assert_eq!(calls.len(), 1, "and the plugin's request went out: {seen:?}");
     assert_eq!(
-        calls[0].1, "Bearer token-nuevo",
-        "firmada con el token renovado, no con el vencido"
+        calls[0].1, "Bearer new-token",
+        "signed with the renewed token, not the expired one"
     );
 
     // What is kept ended up current, so the next one does not renew again.
-    chilpa.call_plugin("com.prueba.cuenta", "salir", b"{}").expect("salió otra vez");
+    chilpa.call_plugin("com.test.account", "go_out", b"{}").expect("it went out again");
     let seen = svc.seen.lock().unwrap().clone();
     assert_eq!(
         seen.iter().filter(|(t, _)| t.starts_with("/token")).count(),
         2,
-        "el token nuevo se guardó: no se renueva en cada petición"
+        "the new token was kept: it does not renew on every request"
     );
 
     // And neither of the two is on disk in the clear.
     let sealed =
-        std::fs::read(root.join("com.prueba.cuenta").join("credential.sealed")).unwrap();
-    for secret in ["token-viejo", "token-nuevo", "para-renovar"] {
+        std::fs::read(root.join("com.test.account").join("credential.sealed")).unwrap();
+    for secret in ["old-token", "new-token", "to-renew"] {
         assert!(
             !sealed.windows(secret.len()).any(|w| w == secret.as_bytes()),
-            "{secret} quedó en claro"
+            "{secret} was left in the clear"
         );
     }
 

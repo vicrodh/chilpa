@@ -26,21 +26,26 @@ CATALOGS = ROOT / "crates/chilpa-i18n/translations"
 LIT = r'"((?:[^"\\]|\\.)*)"'
 SEP = r"\s*,\s*"
 
+# The catalog is reached two ways: `chilpa_i18n::t(...)` from a crate that
+# depends on it, and `self.api.t(...)` from the shell, which only talks to
+# the facade. Both have to be found, so the call is matched by `::` or `.`.
+CALL = r"(?:\.|::)"
+
 # Singular calls: one msgid.
 ONE = [
-    re.compile(r"\bChilpa\.translate\(\s*" + LIT),
-    re.compile(r"\bChilpa\.translateArgs\(\s*" + LIT),
-    re.compile(r"\.t\(\s*" + LIT),
-    re.compile(r"\.t_args\(\s*" + LIT),
-    re.compile(r"\bmark\(\s*" + LIT),
+    re.compile(r"\bChilpa\.translate\(\s*" + LIT, re.DOTALL),
+    re.compile(r"\bChilpa\.translateArgs\(\s*" + LIT, re.DOTALL),
+    re.compile(CALL + r"t\(\s*" + LIT, re.DOTALL),
+    re.compile(CALL + r"t_args\(\s*" + LIT, re.DOTALL),
+    re.compile(CALL + r"mark\(\s*" + LIT, re.DOTALL),
 ]
 
 # Plural calls: singular and plural together.
 TWO = [
-    re.compile(r"\bChilpa\.translateN\(\s*" + LIT + SEP + LIT),
-    re.compile(r"\bChilpa\.translateCount\(\s*" + LIT + SEP + LIT),
-    re.compile(r"\.tn\(\s*" + LIT + SEP + LIT),
-    re.compile(r"\.tf\(\s*" + LIT + SEP + LIT),
+    re.compile(r"\bChilpa\.translateN\(\s*" + LIT + SEP + LIT, re.DOTALL),
+    re.compile(r"\bChilpa\.translateCount\(\s*" + LIT + SEP + LIT, re.DOTALL),
+    re.compile(CALL + r"tn\(\s*" + LIT + SEP + LIT, re.DOTALL),
+    re.compile(CALL + r"tf\(\s*" + LIT + SEP + LIT, re.DOTALL),
 ]
 
 
@@ -70,6 +75,10 @@ def found():
 
 
 def unescape(s):
+    # A Rust `\` at the end of a line eats the newline and the indentation
+    # that follows, exactly as rustc does; otherwise the msgid in the catalog
+    # would carry the source file's layout.
+    s = re.sub(r"\\\n\s*", "", s)
     return s.replace('\\"', '"').replace("\\n", "\n").replace("\\t", "\t").replace("\\\\", "\\")
 
 

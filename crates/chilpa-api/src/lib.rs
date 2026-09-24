@@ -212,9 +212,14 @@ fn now_unix() -> i64 {
 /// How a channel count is named, already plural where it should be.
 fn channels(n: u16) -> String {
     match n {
-        1 => "mono".to_string(),
-        2 => "estéreo".to_string(),
-        others => format!("{others} canales"),
+        1 => chilpa_i18n::t("mono"),
+        2 => chilpa_i18n::t("stereo"),
+        others => chilpa_i18n::tf(
+            "{} channel",
+            "{} channels",
+            i64::from(others),
+            &[&others.to_string()],
+        ),
     }
 }
 
@@ -434,7 +439,7 @@ impl Chilpa {
             match chilpa_core::open_library() {
                 Ok(lib) => self.library = Some(lib),
                 Err(e) => {
-                    self.now.error = format!("no se pudo abrir la biblioteca: {e}");
+                    self.now.error = chilpa_i18n::t_args("the library could not be opened: {}", &[&e.to_string()]);
                     return None;
                 }
             }
@@ -477,8 +482,8 @@ impl Chilpa {
             .unwrap_or_default();
         self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.lyrics.synced);
         self.now.lyrics_source = match found.as_ref().map(|h| &h.source) {
-            Some(chilpa_lyrics::Source::Sidecar(_)) => "archivo".into(),
-            Some(chilpa_lyrics::Source::Embedded) => "tags".into(),
+            Some(chilpa_lyrics::Source::Sidecar(_)) => chilpa_i18n::t("file"),
+            Some(chilpa_lyrics::Source::Embedded) => chilpa_i18n::t("tags"),
             None => String::new(),
         };
         self.now.lyrics_line = -1;
@@ -547,7 +552,7 @@ impl Chilpa {
             match self.cd_drives().first() {
                 Some(u) => u.clone(),
                 None => {
-                    self.now.error = "no encontré una unidad de CD".into();
+                    self.now.error = chilpa_i18n::t("I did not find a CD drive");
                     return false;
                 }
             }
@@ -564,7 +569,7 @@ impl Chilpa {
     pub fn play_url(&mut self, url: &str, device: &str, bit_perfect: bool) {
         let url = url.trim().to_string();
         if !url.starts_with("http://") && !url.starts_with("https://") {
-            self.now.error = "eso no parece una dirección de stream".into();
+            self.now.error = chilpa_i18n::t("that does not look like a stream address");
             return;
         }
         self.queue = vec![url.clone()];
@@ -675,7 +680,7 @@ impl Chilpa {
                 return WizardReport {
                     device: id,
                     probed: false,
-                    summary: format!("no se pudo abrir el dispositivo: {e:?}"),
+                    summary: chilpa_i18n::t_args("the device could not be opened: {}", &[&format!("{e:?}")]),
                     rates: Vec::new(),
                     formats: Vec::new(),
                     rows: Vec::new(),
@@ -698,9 +703,9 @@ impl Chilpa {
                     verdict: match f.verdict {
                         chilpa_core::wizard::Verdict::BitPerfect => "bit-perfect".into(),
                         chilpa_core::wizard::Verdict::Converted { a } => {
-                            format!("convertido a {a}")
+                            chilpa_i18n::t_args("converted to {}", &[&a])
                         }
-                        chilpa_core::wizard::Verdict::Unsupported => "no se puede".into(),
+                        chilpa_core::wizard::Verdict::Unsupported => chilpa_i18n::t("cannot be done"),
                     },
                 })
                 .collect(),
@@ -1089,7 +1094,7 @@ impl Chilpa {
                 }
             }
             Command::Play(_) | Command::Pause | Command::Resume => {
-                Event::Failed { message: "el player todavía no se porta".into() }
+                Event::Failed { message: "the player is not behaving yet".into() }
             }
         }
     }
@@ -1116,9 +1121,9 @@ mod tests {
     fn what_has_no_tempo_goes_last() {
         let bpms = vec![Some(120.0), None, Some(122.0), None, Some(160.0)];
         let order = order_by_tempo(&bpms, 0);
-        assert_eq!(&order[..3], &[0, 2, 4], "primero las que sí, de cerca en cerca");
+        assert_eq!(&order[..3], &[0, 2, 4], "the ones that do come first, nearest to nearest");
         let queue: Vec<usize> = order[3..].to_vec();
-        assert_eq!(queue, vec![1, 3], "y las ciegas al final, en su orden");
+        assert_eq!(queue, vec![1, 3], "and the blind ones at the end, in their own order");
     }
 
     #[test]
@@ -1127,8 +1132,8 @@ mod tests {
         let order = order_by_tempo(&bpms, 3);
         let mut seen = order.clone();
         seen.sort_unstable();
-        assert_eq!(seen, (0..6).collect::<Vec<_>>(), "es una permutación: {order:?}");
-        assert_eq!(order[0], 3, "arranca donde se le dijo");
+        assert_eq!(seen, (0..6).collect::<Vec<_>>(), "it is a permutation: {order:?}");
+        assert_eq!(order[0], 3, "it starts where it was told to");
     }
 
     #[test]
@@ -1140,23 +1145,23 @@ mod tests {
     #[test]
     fn channels_are_named_the_way_they_are_said() {
         assert_eq!(channels(1), "mono");
-        assert_eq!(channels(2), "estéreo");
-        assert_eq!(channels(6), "6 canales");
+        assert_eq!(channels(2), "stereo");
+        assert_eq!(channels(6), "6 channels");
     }
 
     #[test]
     fn a_folder_yields_audio_files_only_and_in_order() {
         let mut dir = std::env::temp_dir();
-        dir.push("chilpa-api-carpeta");
+        dir.push("chilpa-api-folder");
         let _ = std::fs::create_dir_all(&dir);
-        for name in ["b.flac", "a.wav", "notas.txt", "c.MP3"] {
+        for name in ["b.flac", "a.wav", "notes.txt", "c.MP3"] {
             std::fs::write(dir.join(name), b"x").unwrap();
         }
         let found: Vec<String> = audio_files_in(&dir)
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
             .collect();
-        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3"], "sin el .txt y ordenados");
+        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3"], "without the .txt and in order");
         let _ = std::fs::remove_dir_all(dir);
     }
 
@@ -1173,7 +1178,7 @@ mod tests {
         for output in Chilpa::new().outputs() {
             assert!(
                 output.id.starts_with("hw:") || output.id == "capture",
-                "{} no es una salida válida",
+                "{} is not a valid output",
                 output.id
             );
         }
