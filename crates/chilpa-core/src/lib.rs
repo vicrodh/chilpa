@@ -110,11 +110,6 @@ pub fn capture_path() -> std::path::PathBuf {
     p
 }
 
-#[cfg(not(target_os = "linux"))]
-pub fn outputs() -> Vec<Output> {
-    Vec::new()
-}
-
 /// What a device's own volume control is doing.
 ///
 /// `None` means the device has no control of its own, which is the common
@@ -348,7 +343,7 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
             "there is no audio output on this platform yet",
         )))
     }
-    player::Player::spawn(Box::new(|_| nothing_yet()), Box::new(|_, _| nothing_yet()))
+    player::Player::spawn(Box::new(|_| nothing_yet()), Box::new(|_, _, _| nothing_yet()))
 }
 
 /// The same where there is no backend yet (ADR-010 deuda M2).

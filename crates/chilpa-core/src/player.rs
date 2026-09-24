@@ -517,6 +517,7 @@ fn play_cd(
 fn play_cd(
     _path: &Path,
     _device: &str,
+    _exclusive: bool,
     _caps: &chilpa_audio::negotiate::DeviceCaps,
     _stop: &StopSignal,
     _pause: &chilpa_audio::sink::PauseSignal,
