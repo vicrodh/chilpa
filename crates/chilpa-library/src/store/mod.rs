@@ -368,6 +368,17 @@ impl Library {
              FROM play_events p
              WHERE p.track_id IS NOT NULL
              GROUP BY p.track_id;
+
+             UPDATE library_totals
+                SET plays = COALESCE((SELECT sum(CASE WHEN duration_ms = 0
+                                                        OR played_ms * 2 >= duration_ms
+                                                      THEN 1 ELSE 0 END) FROM play_events), 0),
+                    listened_ms = COALESCE((SELECT sum(played_ms) FROM play_events), 0),
+                    tracks = (SELECT count(DISTINCT track_id) FROM play_events),
+                    skips = COALESCE((SELECT sum(skipped) FROM play_events), 0),
+                    bit_perfect = COALESCE((SELECT sum(bit_perfect) FROM play_events), 0),
+                    since = (SELECT min(started_at) FROM play_events)
+              WHERE id = 1;
              COMMIT;",
         )
     }

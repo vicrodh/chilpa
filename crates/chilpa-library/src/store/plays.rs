@@ -40,16 +40,12 @@ pub struct TrackStat {
 impl Library {
     /// The summary of everything that has been played.
     pub fn stats(&self) -> rusqlite::Result<Stats> {
+        // One row, kept by a trigger. Summing the log grew with how long
+        // somebody had been using Chilpa, which is the one thing a query
+        // must never grow with. See `MIGRATION_V10`.
         self.db.query_row(
-            "SELECT
-                 COALESCE(sum(CASE WHEN duration_ms = 0 OR played_ms * 2 >= duration_ms
-                                   THEN 1 ELSE 0 END), 0),
-                 COALESCE(sum(played_ms), 0),
-                 count(DISTINCT track_id),
-                 COALESCE(sum(skipped), 0),
-                 COALESCE(sum(bit_perfect), 0),
-                 min(started_at)
-             FROM play_events",
+            "SELECT plays, listened_ms, tracks, skips, bit_perfect, since
+             FROM library_totals WHERE id = 1",
             [],
             |r| {
                 Ok(Stats {
@@ -291,6 +287,27 @@ mod tests {
                 })
                 .unwrap();
             out.extend(rows.map(Result::unwrap));
+            let t = lib
+                .db
+                .query_row(
+                    "SELECT plays, listened_ms, tracks, skips, bit_perfect,
+                            COALESCE(since, -1)
+                     FROM library_totals WHERE id = 1",
+                    [],
+                    |r| {
+                        Ok(format!(
+                            "totals {} {} {} {} {} {}",
+                            r.get::<_, i64>(0)?,
+                            r.get::<_, i64>(1)?,
+                            r.get::<_, i64>(2)?,
+                            r.get::<_, i64>(3)?,
+                            r.get::<_, i64>(4)?,
+                            r.get::<_, i64>(5)?
+                        ))
+                    },
+                )
+                .unwrap();
+            out.push(t);
             out
         };
 
@@ -302,6 +319,17 @@ mod tests {
         // And the numbers themselves are the ones the rules ask for.
         assert!(kept.contains(&"track 1 1 10 20".to_string()), "{kept:?}");
         assert!(kept.contains(&"album 1 2 30 3 3".to_string()), "{kept:?}");
+        // Two plays and a skip, 410 s listened, two different tracks, one
+        // skip, all three bit-perfect, and the log starts at 10.
+        assert!(kept.contains(&"totals 2 410000 2 1 3 10".to_string()), "{kept:?}");
+
+        // And the view that reads them says the same.
+        let stats = lib.stats().unwrap();
+        assert_eq!(stats.plays, 2);
+        assert_eq!(stats.distinct_tracks, 2);
+        assert_eq!(stats.skips, 1);
+        assert_eq!(stats.bit_perfect, 3);
+        assert_eq!(stats.since, Some(10));
     }
 
 }
