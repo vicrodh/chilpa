@@ -1,55 +1,55 @@
-//! Lo que Chilpa y un plugin se dicen.
+//! What Chilpa and a plugin say to each other.
 //!
-//! Son los mensajes de la API v1, en JSON (ADR-007). Viven aquí y no en la
-//! fachada para que un plugin de primera parte y uno de tercera hablen
-//! exactamente el mismo idioma: si la API no aguanta nuestras propias
-//! features, no sirve (ADR-003).
+//! These are the v1 API messages, in JSON (ADR-007). They live here and not
+//! in the facade so that a first party plugin and a third party one speak
+//! exactly the same language: if the API cannot carry our own features, it
+//! is no good (ADR-003).
 //!
-//! Dos reglas que se ven en los tipos:
+//! Two rules visible in the types:
 //!
-//! 1. **Nada nombra a un servicio** (ADR-004). Un plugin describe lo suyo
-//!    con datos —id externo, calidad, disponibilidad—, nunca con conceptos
-//!    de una plataforma.
-//! 2. **Todo lo que entra se limpia.** Un plugin puede contestar cualquier
-//!    cosa; lo que pase de aquí para adentro ya viene recortado, sin campos
-//!    vacíos y sin listas infinitas.
+//! 1. **Nothing names a service** (ADR-004). A plugin describes what is its
+//!    own with data -- external id, quality, availability -- never with a
+//!    platform's concepts.
+//! 2. **Everything coming in is cleaned.** A plugin can answer anything;
+//!    what gets past here is already trimmed, with no empty fields and no
+//!    endless lists.
 
 use serde::{Deserialize, Serialize};
 
-/// Las operaciones que un plugin puede exportar.
+/// The operations a plugin can export.
 ///
-/// Un plugin exporta las que sepa hacer; Chilpa le pregunta solo por las que
-/// su manifest declaró.
+/// A plugin exports the ones it knows how to do; Chilpa only asks it for the
+/// ones its manifest declared.
 pub mod op {
-    /// Buscar. Entra [`super::Query`], sale [`super::Results`].
+    /// Search. [`super::Query`] in, [`super::Results`] out.
     pub const SEARCH: &str = "chilpa_search";
-    /// Las listas del usuario en ese source.
+    /// The user's lists on that source.
     pub const PLAYLISTS: &str = "chilpa_playlists";
-    /// Las pistas de una de esas listas.
+    /// The tracks of one of those lists.
     pub const PLAYLIST_TRACKS: &str = "chilpa_playlist_tracks";
-    /// De un id externo a algo que se pueda reproducir.
+    /// From an external id to something playable.
     pub const RESOLVER: &str = "chilpa_resolver";
-    /// "Olvida lo que tengas mío." Se le pide antes de desinstalarlo.
+    /// "Forget whatever of mine you hold." It is asked before uninstalling.
     ///
-    /// Es la única operación que Chilpa manda sin que nadie la pida desde
-    /// la ventana, y la única cuya respuesta no se usa para nada: lo que
-    /// importa es haberla mandado. Un plugin que maneja su propia cuenta
-    /// (`own_account`) es el que tiene algo que borrar aquí; para los demás
-    /// es no hacer nada.
+    /// It is the only operation Chilpa sends without anyone asking for it
+    /// from the window, and the only one whose reply is used for nothing:
+    /// what matters is having sent it. A plugin that handles its own
+    /// account (`own_account`) is the one with something to delete here;
+    /// for the rest it is a no-op.
     pub const REVOKE: &str = "chilpa_revoke";
 }
 
-/// Cuánto se acepta de una sola respuesta, por tipo de entidad.
+/// How much is accepted from a single reply, per kind of entity.
 ///
-/// Un plugin que contesta cien mil tracks no está ayudando: está llenando la
-/// memoria de Chilpa. Se recorta y se sigue.
+/// A plugin that answers a hundred thousand tracks is not helping: it is
+/// filling Chilpa's memory. It is trimmed and things move on.
 pub const MAX_PER_REPLY: usize = 500;
 
-/// Lo que se le pregunta a un plugin al buscar.
+/// What a plugin is asked when searching.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Query {
     pub text: String,
-    /// Cuántos resultados se quieren, como mucho.
+    /// How many results are wanted, at most.
     pub limit: usize,
 }
 
@@ -59,10 +59,10 @@ impl Query {
     }
 }
 
-/// La calidad con la que un source ofrece algo.
+/// The quality a source offers something at.
 ///
-/// Todo es opcional porque no todos los sources lo saben, y decir cero
-/// cuando no se sabe es peor que no decir nada.
+/// Everything is optional because not every source knows it, and saying zero
+/// when it is not known is worse than saying nothing.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Quality {
     pub codec: Option<String>,
@@ -72,7 +72,7 @@ pub struct Quality {
 }
 
 impl Quality {
-    /// Cómo se dice, para mostrarla. Vacío si no se sabe nada.
+    /// How it is said, for display. Empty if nothing is known.
     pub fn describe(&self) -> String {
         let mut parts: Vec<String> = Vec::new();
         if let Some(c) = &self.codec {
@@ -88,11 +88,11 @@ impl Quality {
     }
 }
 
-/// Una pista que vive en un source.
+/// A track that lives on a source.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct RemoteTrack {
-    /// El id que le da su source. Es la mitad de su identidad; la otra es el
-    /// source mismo, y esa la pone Chilpa.
+    /// The id its source gives it. It is half of its identity; the other
+    /// half is the source itself, and Chilpa supplies that.
     pub external_id: String,
     pub title: String,
     #[serde(default)]
@@ -101,29 +101,29 @@ pub struct RemoteTrack {
     pub album: String,
     #[serde(default)]
     pub duration_ms: u64,
-    /// Para emparejar con lo local sin depender del nombre.
+    /// For matching against what is local without relying on the name.
     #[serde(default)]
     pub isrc: Option<String>,
     #[serde(default)]
     pub musicbrainz_recording_id: Option<String>,
     #[serde(default)]
     pub quality: Quality,
-    /// La portada, si el source la ofrece por URL.
+    /// The cover, if the source offers it by URL.
     #[serde(default)]
     pub artwork_url: Option<String>,
 }
 
 impl RemoteTrack {
-    /// Cierto si tiene lo mínimo para mostrarse y volverse a pedir.
+    /// True if it has the minimum to be shown and asked for again.
     pub fn usable(&self) -> bool {
         !self.external_id.trim().is_empty() && !self.title.trim().is_empty()
     }
 
-    /// Con qué se puede emparejar contra lo local. `None` si no trae nada
-    /// firme: emparejar por nombre es como no emparejar.
+    /// What it can be matched against the local library by. `None` if it
+    /// carries nothing solid: matching by name is as good as not matching.
     ///
-    /// Se prefiere el MBID porque identifica la grabación; el ISRC puede
-    /// repetirse entre reediciones del mismo master.
+    /// The MBID is preferred because it identifies the recording; an ISRC
+    /// can repeat across reissues of the same master.
     pub fn fingerprint(&self) -> Option<String> {
         self.musicbrainz_recording_id
             .as_deref()
@@ -132,46 +132,46 @@ impl RemoteTrack {
     }
 }
 
-/// La huella de un MBID, normalizada. Vive suelta porque la biblioteca
-/// local tiene que escribir exactamente la misma cadena para que emparejar
-/// signifique algo; dos normalizaciones parecidas no emparejan nada.
+/// A MBID's fingerprint, normalized. It lives on its own because the local
+/// library has to write exactly the same string for matching to mean
+/// anything; two similar normalizations match nothing.
 pub fn mbid_fingerprint(mbid: &str) -> Option<String> {
     let m = mbid.trim();
     (!m.is_empty()).then(|| format!("mbid:{}", m.to_ascii_lowercase()))
 }
 
-/// Lo mismo para un ISRC, que por norma se escribe en mayúsculas.
+/// The same for an ISRC, which by standard is written in uppercase.
 pub fn isrc_fingerprint(isrc: &str) -> Option<String> {
     let i = isrc.trim();
     (!i.is_empty()).then(|| format!("isrc:{}", i.to_ascii_uppercase()))
 }
 
-/// Cómo viene lo que un source entrega para reproducir.
+/// How what a source hands over to play arrives.
 ///
-/// Medido en las APIs de dos servicios grandes: lo normal es una URL sola
-/// ya firmada, pero también se entregan manifiestos segmentados. Se declara
-/// en lugar de adivinarlo por la extensión, porque una URL firmada no tiene
-/// extensión que mirar.
+/// Measured against the APIs of two large services: the usual case is a
+/// single already signed URL, but segmented manifests are handed over too.
+/// It is declared rather than guessed from the extension, because a signed
+/// URL has no extension to look at.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Delivery {
-    /// Una sola URL que se abre y se lee de corrido. Es lo que Chilpa sabe
-    /// reproducir hoy.
+    /// A single URL that is opened and read straight through. It is what
+    /// Chilpa knows how to play today.
     #[default]
     Progressive,
-    /// Un manifiesto DASH: el audio viene en segmentos.
+    /// A DASH manifest: the audio comes in segments.
     Dash,
-    /// Un manifiesto HLS, por las mismas.
+    /// An HLS manifest, for the same reasons.
     Hls,
 }
 
 impl Delivery {
-    /// Cierto si Chilpa sabe reproducir eso hoy.
+    /// True if Chilpa knows how to play that today.
     pub fn playable(&self) -> bool {
         matches!(self, Delivery::Progressive)
     }
 
-    /// Cómo se le dice al usuario cuando no se puede.
+    /// How the user is told when it cannot be done.
     pub fn describe(&self) -> &'static str {
         match self {
             Delivery::Progressive => "una URL directa",
@@ -181,15 +181,15 @@ impl Delivery {
     }
 }
 
-/// Lo que se le pide al source para poder reproducir algo suyo.
+/// What the source is asked for in order to play something of its own.
 ///
-/// Entra por [`op::RESOLVER`] y sale un [`Stream`]. Va aparte de la
-/// búsqueda porque resolver cuesta: muchos sources firman una URL por
-/// llamada, y pedirla para cada resultado de una lista sería regalarles
-/// trabajo y quemar el límite de la cuenta.
+/// It goes in through [`op::RESOLVER`] and a [`Stream`] comes out. It is
+/// separate from search because resolving costs: many sources sign one URL
+/// per call, and asking for one per result in a list would hand them work
+/// and burn the account's rate limit.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Resolve {
-    /// El id que el mismo source dio al buscar.
+    /// The id that same source gave when searching.
     pub external_id: String,
 }
 
@@ -199,7 +199,7 @@ impl Resolve {
     }
 }
 
-/// Un álbum que vive en un source.
+/// An album that lives on a source.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct RemoteAlbum {
     pub external_id: String,
@@ -222,7 +222,7 @@ impl RemoteAlbum {
     }
 }
 
-/// Una lista que vive en un source.
+/// A list that lives on a source.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct RemotePlaylist {
     pub external_id: String,
@@ -241,7 +241,7 @@ impl RemotePlaylist {
     }
 }
 
-/// Lo que un plugin contesta a una búsqueda.
+/// What a plugin answers to a search.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Results {
     #[serde(default)]
@@ -253,11 +253,11 @@ pub struct Results {
 }
 
 impl Results {
-    /// Quita lo que no sirve y recorta lo que sobra.
+    /// Drops what is no good and trims what is too much.
     ///
-    /// Se hace de este lado, siempre, antes de que nada toque una vista. Un
-    /// plugin puede contestar lo que quiera; lo que pase de aquí ya está
-    /// limpio.
+    /// It happens on this side, always, before anything touches a view. A
+    /// plugin can answer whatever it likes; what gets past here is already
+    /// clean.
     pub fn clean(mut self) -> Self {
         self.tracks.retain(RemoteTrack::usable);
         self.albums.retain(RemoteAlbum::usable);
@@ -272,50 +272,51 @@ impl Results {
         self.tracks.is_empty() && self.albums.is_empty() && self.playlists.is_empty()
     }
 
-    /// Cuántas cosas trae en total.
+    /// How many things it carries in total.
     pub fn count(&self) -> usize {
         self.tracks.len() + self.albums.len() + self.playlists.len()
     }
 }
 
-/// Lo que un plugin contesta cuando se le pide resolver una pista.
+/// What a plugin answers when it is asked to resolve a track.
 ///
-/// Chilpa decodifica y entrega; el plugin no toca el audio ni el dispositivo
-/// (ADR-003). Por eso aquí solo hay de dónde leer, no cómo sonar.
+/// Chilpa decodes and delivers; the plugin touches neither the audio nor the
+/// device (ADR-003). That is why there is only where to read from here, not
+/// how to sound.
 #[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Stream {
-    /// De dónde se lee. Tiene que ser `http` o `https`.
+    /// Where it is read from. It has to be `http` or `https`.
     ///
-    /// Medido en las APIs de dos servicios grandes: la URL viene **ya
-    /// firmada en la query**, así que no lleva cabecera de autenticación.
-    /// Lo que sí va firmado es la llamada a la API que la entrega, y eso el
-    /// plugin ya lo hace con `http` (ADR-008).
+    /// Measured against the APIs of two large services: the URL comes
+    /// **already signed in the query**, so it carries no authentication
+    /// header. What is signed is the API call that hands it over, and the
+    /// plugin already does that with `http` (ADR-008).
     #[serde(default)]
     pub url: String,
-    /// Cuando una pista viene partida en varias URLs que se leen en orden.
+    /// When a track comes split across several URLs read in order.
     ///
-    /// No es lo mismo que un manifiesto segmentado: son archivos completos,
-    /// uno tras otro. **El plugin decodifica el manifiesto de su servicio y
-    /// entrega la lista ya lista**; Chilpa no sabe de formatos de
-    /// manifiesto, que es lo que dice el ADR-004.
+    /// It is not the same as a segmented manifest: these are whole files,
+    /// one after another. **The plugin decodes its service's manifest and
+    /// hands over the finished list**; Chilpa knows nothing about manifest
+    /// formats, which is what ADR-004 says.
     #[serde(default)]
     pub urls: Vec<String>,
-    /// Lo que el source dice que es, para elegir el decodificador.
+    /// What the source says it is, for choosing the decoder.
     #[serde(default)]
     pub codec: Option<String>,
     #[serde(default)]
     pub quality: Quality,
-    /// Hasta cuándo sirve esa URL, en segundos unix. Muchos sources dan
-    /// enlaces que caducan.
+    /// How long that URL is good for, in unix seconds. Many sources hand
+    /// out links that expire.
     #[serde(default)]
     pub expires_at: Option<i64>,
-    /// Cómo viene. Por omisión, una URL directa, que es lo más común.
+    /// How it arrives. By default a direct URL, which is the common case.
     #[serde(default)]
     pub delivery: Delivery,
 }
 
 impl Stream {
-    /// De dónde se lee, en orden. `url` primero si viene, luego `urls`.
+    /// Where to read from, in order. `url` first if present, then `urls`.
     pub fn parts(&self) -> Vec<&str> {
         std::iter::once(self.url.as_str())
             .filter(|u| !u.is_empty())
@@ -323,26 +324,26 @@ impl Stream {
             .collect()
     }
 
-    /// Cierto si se puede intentar abrir: hay al menos una parte y todas
-    /// son http.
+    /// True if opening can be attempted: there is at least one part and all
+    /// of them are http.
     pub fn usable(&self) -> bool {
         let parts = self.parts();
         !parts.is_empty()
             && parts.iter().all(|u| u.starts_with("https://") || u.starts_with("http://"))
     }
 
-    /// Cierto si ya caducó según el reloj que se le pase.
+    /// True if it has already expired according to the clock it is given.
     pub fn expired(&self, now_unix: i64) -> bool {
         self.expires_at.is_some_and(|t| t <= now_unix)
     }
 }
 
-/// Lee lo que contestó un plugin, sin confiar en nada.
+/// Reads what a plugin answered, trusting nothing.
 pub fn read<T: for<'de> Deserialize<'de>>(bytes: &[u8]) -> Result<T, String> {
     serde_json::from_slice(bytes).map_err(|e| format!("contestó algo que no se entiende: {e}"))
 }
 
-/// Arma lo que se le va a mandar.
+/// Builds what is going to be sent to it.
 pub fn write<T: Serialize>(v: &T) -> Vec<u8> {
     serde_json::to_vec(v).unwrap_or_else(|_| b"{}".to_vec())
 }
@@ -361,7 +362,7 @@ mod tests {
     fn what_is_useless_is_dropped_and_what_is_extra_is_trimmed() {
         let mut r = Results::default();
         r.tracks.push(RemoteTrack { external_id: "a".into(), title: "Una".into(), ..Default::default() });
-        // Sin id no se puede volver a pedir; sin título no se puede mostrar.
+        // With no id it cannot be asked for again; with no title it cannot be shown.
         r.tracks.push(RemoteTrack { external_id: "".into(), title: "Otra".into(), ..Default::default() });
         r.tracks.push(RemoteTrack { external_id: "b".into(), title: "   ".into(), ..Default::default() });
         for i in 0..1000 {
@@ -389,7 +390,7 @@ mod tests {
         let solo_isrc = RemoteTrack { isrc: Some("usrc17607839".into()), ..Default::default() };
         assert_eq!(solo_isrc.fingerprint().as_deref(), Some("isrc:USRC17607839"));
 
-        // Sin nada firme no hay huella: emparejar por nombre es no emparejar.
+        // With nothing solid there is no fingerprint: matching by name is not matching.
         assert_eq!(RemoteTrack::default().fingerprint(), None);
         let blank = RemoteTrack {
             isrc: Some("  ".into()),
@@ -410,9 +411,9 @@ mod tests {
 
     #[test]
     fn a_track_can_come_in_several_files_read_in_order() {
-        // Es el caso normal en hi-res: el manifiesto del servicio trae
-        // varias URLs completas. El plugin lo decodifica y entrega la
-        // lista; Chilpa no sabe de manifiestos.
+        // This is the normal case in hi-res: the service's manifest carries
+        // several whole URLs. The plugin decodes it and hands over the list;
+        // Chilpa knows nothing about manifests.
         let s: Stream = read(
             br#"{"urls":["https://a.b/1.flac","https://a.b/2.flac"],"codec":"flac"}"#,
         )
@@ -420,15 +421,15 @@ mod tests {
         assert_eq!(s.parts(), ["https://a.b/1.flac", "https://a.b/2.flac"]);
         assert!(s.usable());
 
-        // Una sola sigue escribiéndose como siempre.
+        // A single one is still written the way it always was.
         let one: Stream = read(br#"{"url":"https://a.b/x.flac"}"#).unwrap();
         assert_eq!(one.parts(), ["https://a.b/x.flac"]);
     }
 
     #[test]
     fn one_bad_part_spoils_the_whole_stream() {
-        // Basta con que una no sea http para no intentar ninguna: leer la
-        // mitad de una pista y fallar es peor que no empezar.
+        // One part that is not http is enough not to try any: reading half a
+        // track and failing is worse than not starting.
         let s: Stream =
             read(br#"{"urls":["https://a.b/1.flac","file:///etc/passwd"]}"#).unwrap();
         assert!(!s.usable());
@@ -453,7 +454,7 @@ mod tests {
         assert!(!s.expired(999));
         assert!(s.expired(1000), "justo al filo ya no sirve");
         assert!(s.expired(1001));
-        // Sin fecha no caduca.
+        // With no date it does not expire.
         let undated = Stream { expires_at: None, ..s };
         assert!(!undated.expired(i64::MAX));
     }
@@ -470,8 +471,8 @@ mod tests {
 
     #[test]
     fn one_extra_field_does_not_break_the_read() {
-        // Un plugin de una versión más nueva puede mandar campos que este
-        // Chilpa no conoce; se ignoran en vez de rechazar todo.
+        // A plugin from a newer version can send fields this Chilpa does not
+        // know; they are ignored instead of rejecting everything.
         let r: Results =
             read(br#"{"tracks":[{"external_id":"a","title":"Una","algo_nuevo":42}]}"#).unwrap();
         assert_eq!(r.tracks.len(), 1);

@@ -1,9 +1,9 @@
-//! El registro: qué plugins hay, cuáles sirven y cuáles están castigados.
+//! The registry: which plugins exist, which work and which are in the corner.
 //!
-//! Es la pieza que junta el manifest, el host y el vigilante, y la que
-//! cumple la promesa del ADR-003: *antes de romper Chilpa, no carga.* Un
-//! plugin que no pasa se anota con su razón y se sigue con los demás; nunca
-//! se aborta el arranque por culpa de uno.
+//! It is the piece that joins the manifest, the host and the watchdog, and
+//! the one that keeps ADR-003's promise: *before breaking Chilpa, it does
+//! not load.* A plugin that does not pass is noted with its reason and the
+//! rest carry on; startup is never aborted because of one.
 
 use crate::host::{Host, Plugin, PluginError, Services};
 use crate::limits::Limits;
@@ -12,19 +12,19 @@ use crate::watchdog::{State, Watchdog};
 use crate::Reply;
 use std::collections::BTreeMap;
 
-/// Un plugin que se encontró en disco.
+/// A plugin found on disk.
 pub struct Installed {
     pub id: String,
     pub name: String,
-    /// Lo que dice de sí mismo, si su manifest se pudo leer. Hace falta
-    /// aunque no cargue: es lo que se le muestra al usuario para que
-    /// apruebe o niegue.
+    /// What it says about itself, if its manifest could be read. It is
+    /// needed even when it does not load: it is what the user is shown so
+    /// they can approve or refuse.
     pub manifest: Option<Manifest>,
-    /// El plugin listo, o `None` si no cargó o si nadie lo ha aprobado.
+    /// The plugin, ready, or `None` if it did not load or nobody approved it.
     pub plugin: Option<Plugin>,
-    /// Por qué no cargó, si no cargó.
+    /// Why it did not load, if it did not.
     pub problem: Option<String>,
-    /// Cierto si está esperando que el usuario apruebe lo que pide.
+    /// True if it is waiting for the user to approve what it asks for.
     pub pending: bool,
 }
 
@@ -33,11 +33,11 @@ impl Installed {
         self.plugin.is_some()
     }
 
-    /// Lo que pide, en palabras, para preguntar.
+    /// What it asks for, in words, for asking.
     ///
-    /// Sale de comparar contra "nada aprobado", que es la misma cuenta que
-    /// hace la aprobación: así no hay dos listas de lo que pide un plugin
-    /// que se puedan separar.
+    /// It comes from comparing against "nothing approved", which is the
+    /// same reckoning approval does: that way there are not two lists of
+    /// what a plugin asks for that can drift apart.
     pub fn asks(&self) -> Vec<String> {
         let Some(m) = &self.manifest else { return Vec::new() };
         let nothing = Asked { kind: m.kind, capabilities: Vec::new(), auth: None };
@@ -45,7 +45,7 @@ impl Installed {
     }
 }
 
-/// Todos los plugins de esta sesión.
+/// Every plugin in this session.
 #[derive(Default)]
 pub struct Registry {
     plugins: BTreeMap<String, Installed>,
@@ -57,16 +57,16 @@ impl Registry {
         Self::default()
     }
 
-    /// Intenta cargar un plugin. Nunca falla hacia afuera: lo que no se pudo
-    /// se anota y se sigue.
+    /// Tries to load a plugin. It never fails outward: what could not be done
+    /// is noted and things carry on.
     ///
-    /// `approved` recibe el manifest ya leído y contesta si el usuario
-    /// aprobó eso mismo. Si dice que no, el wasm **no se compila**: el
-    /// plugin queda anotado como pendiente y su código nunca se toca
-    /// (ADR-008). El registro no sabe dónde viven las aprobaciones; eso lo
-    /// resuelve quien lo llama.
+    /// `approved` receives the already read manifest and answers whether the
+    /// user approved that very thing. If it says no, the wasm **is not
+    /// compiled**: the plugin is noted as pending and its code is never
+    /// touched (ADR-008). The registry does not know where approvals live;
+    /// the caller sorts that out.
     ///
-    /// Devuelve cierto si quedó utilizable.
+    /// Returns true if it ended up usable.
     pub fn install(
         &mut self,
         host: &Host,
@@ -77,9 +77,9 @@ impl Registry {
         let manifest = match Manifest::parse(manifest_json) {
             Ok(m) => m,
             Err(e) => {
-                // El manifest no pasó, pero puede que su JSON sí se lea: se
-                // rescata el id y el nombre para que en la lista aparezca
-                // como lo que es y no como una cadena de puntos.
+                // The manifest did not pass, but its JSON may still parse: the
+                // id and the name are salvaged so it shows up in the list as
+                // what it is and not as a string of dots.
                 let (id, name) = salvage(manifest_json);
                 self.watchdog.quarantine(&id, &e.to_string());
                 self.plugins.insert(
@@ -148,23 +148,23 @@ impl Registry {
         }
     }
 
-    /// Lo que un plugin pide, para preguntarle al usuario. Vacío si no está
-    /// o si su manifest no se pudo leer.
+    /// What a plugin asks for, for asking the user. Empty if it is not there
+    /// or its manifest could not be read.
     pub fn asks(&self, id: &str) -> Vec<String> {
         self.plugins.get(id).map(Installed::asks).unwrap_or_default()
     }
 
-    /// Lo que habría que aprobar de ese plugin, tal como se guarda.
+    /// What would have to be approved of that plugin, exactly as it is kept.
     pub fn asked(&self, id: &str) -> Option<Asked> {
         self.plugins.get(id)?.manifest.as_ref().map(Manifest::asks_for)
     }
 
-    /// Los plugins instalados, cargados o no.
+    /// The installed plugins, loaded or not.
     pub fn installed(&self) -> impl Iterator<Item = &Installed> {
         self.plugins.values()
     }
 
-    /// Los que se pueden usar ahora mismo.
+    /// The ones usable right now.
     pub fn usable(&self) -> Vec<&str> {
         self.plugins
             .values()
@@ -173,11 +173,11 @@ impl Registry {
             .collect()
     }
 
-    /// Los que sirven ahora y son de ese tipo, con su nombre, en el orden
-    /// en que se instalaron.
+    /// The ones that work now and are of that kind, with their name, in the
+    /// order they were installed.
     ///
-    /// El orden importa: un plugin no puede colarse antes que otro, y el
-    /// mapa está ordenado por id, así que la lista es siempre la misma.
+    /// The order matters: one plugin cannot cut in front of another, and
+    /// the map is sorted by id, so the list is always the same.
     pub fn usable_of_kind(&self, kind: Kind) -> Vec<(String, String)> {
         self.plugins
             .values()
@@ -202,7 +202,7 @@ impl Registry {
         self.watchdog.state(id)
     }
 
-    /// Lo saca de cuarentena. Solo lo llama el usuario.
+    /// Takes it out of quarantine. Only the user calls it.
     pub fn reactivate(&mut self, id: &str) {
         self.watchdog.reactivate(id);
     }
@@ -211,11 +211,11 @@ impl Registry {
         self.watchdog.quarantined()
     }
 
-    /// Le pide algo a un plugin y lleva la cuenta de cómo le fue.
+    /// Asks a plugin for something and keeps score of how it went.
     ///
-    /// Un error del plugin (un JSON con `error`) **no** cuenta como falla:
-    /// "no encontré esa canción" es una respuesta, no una rotura. Lo que
-    /// cuenta es tronar, pasarse de los límites o no contestar.
+    /// An error from the plugin (JSON with `error`) does **not** count as a
+    /// failure: "I did not find that song" is an answer, not a breakage.
+    /// What counts is blowing up, going over the limits or not answering.
     pub fn call(
         &mut self,
         host: &Host,
@@ -255,7 +255,7 @@ impl Registry {
     }
 }
 
-/// Lo que se pueda rescatar de un manifest que no pasó.
+/// Whatever can be salvaged from a manifest that did not pass.
 fn salvage(json: &str) -> (String, String) {
     let v = serde_json::from_str::<serde_json::Value>(json).ok();
     let take = |field: &str| {
@@ -286,7 +286,7 @@ mod tests {
     fn a_broken_manifest_that_has_an_id_is_recorded_under_it() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
-        // Tiene id pero le falta todo lo demás.
+        // It has an id but is missing everything else.
         assert!(!r.install(&host, r#"{"id":"com.a.b"}"#, b"", |_| true));
         assert_eq!(r.installed().next().unwrap().id, "com.a.b");
         assert!(matches!(r.state("com.a.b"), State::Quarantined { .. }));
@@ -296,7 +296,7 @@ mod tests {
     fn one_that_failed_validation_keeps_its_name() {
         let host = Host::new().unwrap();
         let mut r = Registry::new();
-        // El JSON se lee; lo que no pasa es la versión de la API.
+        // The JSON parses; what does not pass is the API version.
         let json = r#"{"id":"com.a.b","name":"Se llama así","version":"1",
                        "api_version":42,"kind":"source"}"#;
         assert!(!r.install(&host, json, b"", |_| true));

@@ -1,47 +1,47 @@
-//! Cómo se pasan los mensajes entre Chilpa y un plugin.
+//! How messages pass between Chilpa and a plugin.
 //!
-//! Wasm solo sabe de enteros, así que todo lo que no sea un entero viaja por
-//! la memoria del guest. El trato es corto a propósito (ADR-007):
+//! Wasm only knows integers, so anything that is not an integer travels
+//! through the guest's memory. The deal is short on purpose (ADR-007):
 //!
-//! 1. Chilpa le pide al plugin un pedazo de memoria con `chilpa_alloc(len)`.
-//! 2. Escribe ahí el mensaje, en JSON.
-//! 3. Llama a la función de la operación con `(ptr, len)`.
-//! 4. El plugin contesta un `i64` con la dirección y el largo de su
-//!    respuesta empacados, y Chilpa la lee.
+//! 1. Chilpa asks the plugin for a piece of memory with `chilpa_alloc(len)`.
+//! 2. It writes the message there, as JSON.
+//! 3. It calls the operation's function with `(ptr, len)`.
+//! 4. The plugin answers with an `i64` packing the address and length of its
+//!    reply, and Chilpa reads it.
 //!
-//! **Los errores son datos, no un canal aparte.** La respuesta siempre es
-//! JSON; si algo salió mal, trae `error`. Así hay una sola forma de contestar
-//! y no dos que se puedan contradecir.
+//! **Errors are data, not a separate channel.** The reply is always JSON; if
+//! something went wrong, it carries `error`. That way there is one way to
+//! answer and not two that can contradict each other.
 
-/// El nombre de la memoria que un plugin tiene que exportar.
+/// The name of the memory a plugin has to export.
 pub const MEMORY: &str = "memory";
 
-/// Las funciones que todo plugin exporta, pase lo que pase.
+/// The functions every plugin exports, no matter what.
 pub const F_VERSION: &str = "chilpa_api_version";
 pub const F_ALLOC: &str = "chilpa_alloc";
 
-/// El módulo bajo el que se importan las funciones del host.
+/// The module the host functions are imported under.
 pub const HOST_MODULE: &str = "chilpa";
 
-/// **Todo** lo que un plugin puede pedirle al mundo.
+/// **Everything** a plugin can ask of the world.
 ///
-/// Esta lista es la superficie completa del sandbox: lo que no está aquí no
-/// existe para el guest, porque en WASM no hay syscalls. Por eso está
-/// escrita en un solo lugar y hay una prueba que falla si el linker ofrece
-/// algo que no aparezca.
+/// This list is the sandbox's whole surface: what is not here does not exist
+/// for the guest, because there are no syscalls in WASM. That is why it is
+/// written in one place and there is a test that fails if the linker offers
+/// anything not listed.
 ///
-/// **Nunca se agrega una importación que devuelva un secreto** (ADR-008).
-/// Nada de `credential()`. El plugin dice a dónde quiere ir con `http` y
-/// Chilpa pone el permiso; si pudiera pedir el token, lo tendría, y lo
-/// sacaría en la siguiente petición a su propio dominio.
+/// **An import that returns a secret is never added** (ADR-008). No
+/// `credential()`. The plugin says where it wants to go with `http` and
+/// Chilpa adds the permission; if it could ask for the token it would hold
+/// it, and it would ship it out on its next request to its own domain.
 pub const HOST_IMPORTS: &[&str] = &["log", "now", "store_get", "store_set", "http"];
 
-/// Empaca una dirección y un largo en el `i64` que contesta el guest.
+/// Packs an address and a length into the `i64` the guest answers with.
 pub fn pack(ptr: u32, len: u32) -> i64 {
     ((u64::from(ptr) << 32) | u64::from(len)) as i64
 }
 
-/// Lo contrario. Un cero quiere decir "no contesté nada".
+/// The opposite. A zero means "I answered nothing".
 pub fn unpack(v: i64) -> Option<(u32, u32)> {
     if v == 0 {
         return None;
@@ -50,19 +50,19 @@ pub fn unpack(v: i64) -> Option<(u32, u32)> {
     Some(((v >> 32) as u32, (v & 0xffff_ffff) as u32))
 }
 
-/// Lo que un plugin contestó, ya leído.
+/// What a plugin answered, already read.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Reply {
-    /// Contestó, y esto es su JSON.
+    /// It answered, and this is its JSON.
     Ok(Vec<u8>),
-    /// Contestó un error suyo, con su texto.
+    /// It answered with an error of its own, with its text.
     Error(String),
 }
 
-/// Lee la respuesta de un plugin, que siempre es JSON.
+/// Reads a plugin's reply, which is always JSON.
 ///
-/// Un JSON con `error` es un error del plugin, no una falla del plugin: son
-/// cosas distintas y se cuentan distinto.
+/// JSON with `error` is an error from the plugin, not a failure of the
+/// plugin: they are different things and they are counted differently.
 pub fn read_reply(bytes: Vec<u8>) -> Reply {
     let Ok(v) = serde_json::from_slice::<serde_json::Value>(&bytes) else {
         return Reply::Error("contestó algo que no es JSON".into());
@@ -74,23 +74,24 @@ pub fn read_reply(bytes: Vec<u8>) -> Reply {
     Reply::Ok(bytes)
 }
 
-/// Lo que una función del host contesta cuando devuelve datos.
+/// What a host function answers when it returns data.
 ///
-/// El guest da un búfer y su tamaño; si no cabe, no se escribe nada y se
-/// contesta cuánto hacía falta. Así nunca hay una escritura a medias.
+/// The guest gives a buffer and its size; if it does not fit, nothing is
+/// written and the needed size is answered. That way there is never a half
+/// write.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Room {
-    /// Cupo, y se escribieron tantos bytes.
+    /// It fit, and this many bytes were written.
     Fits(u32),
-    /// No cupo; hacían falta tantos.
+    /// It did not fit; this many were needed.
     TooBig(u32),
-    /// No había nada que dar.
+    /// There was nothing to give.
     Nothing,
 }
 
 impl Room {
-    /// Lo que se le contesta al guest: positivo cabe, negativo no cabe,
-    /// menos uno no hay nada.
+    /// What the guest is answered: positive fits, negative does not fit,
+    /// minus one means there is nothing.
     pub fn code(self) -> i32 {
         match self {
             Room::Fits(n) => n as i32,
@@ -99,7 +100,7 @@ impl Room {
         }
     }
 
-    /// Decide si unos datos caben en el búfer que dio el guest.
+    /// Decides whether some data fits in the buffer the guest gave.
     pub fn para(data: Option<&[u8]>, room: u32) -> Self {
         match data {
             None => Room::Nothing,
@@ -124,7 +125,7 @@ mod tests {
     #[test]
     fn a_zero_means_it_did_not_answer() {
         assert_eq!(unpack(0), None);
-        // Y una dirección cero con largo cero es lo mismo que nada.
+        // And a zero address with zero length is the same as nothing.
         assert_eq!(pack(0, 0), 0);
     }
 
@@ -159,7 +160,7 @@ mod tests {
         assert_eq!(Room::Fits(4).code(), 4);
         assert_eq!(Room::TooBig(4).code(), -4);
         assert_eq!(Room::Nothing.code(), -1);
-        // Cupo cero que sí cupo es cero, y no se confunde con "nada".
+        // A zero size that did fit is zero, and is not confused with "nothing".
         assert_eq!(Room::Fits(0).code(), 0);
         assert_ne!(Room::Fits(0).code(), Room::Nothing.code());
     }

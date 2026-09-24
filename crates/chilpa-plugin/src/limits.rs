@@ -1,37 +1,37 @@
-//! Los límites con los que corre un plugin.
+//! The limits a plugin runs under.
 //!
-//! No son avisos ni buenas intenciones: son del store de wasmtime, y el
-//! motor los aplica aunque el plugin no quiera. Un plugin que se pasa no se
-//! "porta mal": se detiene.
+//! They are not warnings or good intentions: they belong to wasmtime's
+//! store, and the engine enforces them whether the plugin likes it or not. A
+//! plugin that goes over does not "misbehave": it is stopped.
 //!
-//! Los tres son distintos y hacen falta los tres:
+//! The three are different and all three are needed:
 //!
-//! - **Combustible** para el que se cuelga calculando.
-//! - **Memoria** para el que crece sin parar.
-//! - **Reloj** para el que se queda esperando algo que nunca llega, que no
-//!   gasta combustible porque no está ejecutando nada.
+//! - **Fuel** for the one that hangs computing.
+//! - **Memory** for the one that grows without stopping.
+//! - **Clock** for the one that waits on something that never arrives, which
+//!   burns no fuel because it is not executing anything.
 
 use std::time::Duration;
 
-/// Cuánto puede gastar un plugin por llamada.
+/// How much a plugin can spend per call.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Limits {
-    /// Instrucciones, más o menos. Lo que se le da por llamada.
+    /// Instructions, roughly. What it is given per call.
     pub fuel: u64,
-    /// Cuánta memoria lineal puede tener, en bytes.
+    /// How much linear memory it can hold, in bytes.
     pub memory_bytes: usize,
-    /// Cuánto puede tardar una llamada de reloj de pared.
+    /// How long a call can take in wall clock time.
     pub timeout: Duration,
 }
 
 impl Default for Limits {
     fn default() -> Self {
-        // Mil millones de unidades de combustible son del orden de un
-        // segundo de cómputo; un plugin que parsea una respuesta usa una
-        // fracción. Treinta y dos megabytes alcanzan para tener en memoria
-        // una respuesta grande y su resultado. Cinco segundos de reloj es
-        // más de lo que ninguna llamada razonable necesita, contando que el
-        // host es quien espera a la red, no el plugin.
+        // A billion units of fuel is on the order of a second of compute; a
+        // plugin parsing a reply uses a fraction of it. Thirty two megabytes
+        // is enough to hold a large reply and its result in memory. Five
+        // seconds of wall clock is more than any reasonable call needs,
+        // given that the host is the one waiting on the network, not the
+        // plugin.
         Self {
             fuel: 1_000_000_000,
             memory_bytes: 32 * 1024 * 1024,
@@ -41,7 +41,7 @@ impl Default for Limits {
 }
 
 impl Limits {
-    /// Los de una llamada que se espera corta, como resolver una letra.
+    /// Those of a call expected to be short, like resolving a lyric.
     pub fn short() -> Self {
         Self {
             fuel: 50_000_000,
@@ -50,7 +50,7 @@ impl Limits {
         }
     }
 
-    /// Los de algo que sí puede tardar, como traer un catálogo entero.
+    /// Those of something that can take a while, like fetching a whole catalogue.
     pub fn long() -> Self {
         Self {
             fuel: 10_000_000_000,
@@ -59,23 +59,23 @@ impl Limits {
         }
     }
 
-    /// Las páginas de wasm que corresponden a la memoria permitida.
+    /// The wasm pages that correspond to the allowed memory.
     ///
-    /// Una página son 64 KiB; es la unidad con la que crece la memoria de un
-    /// guest, así que el límite se redondea hacia abajo a páginas enteras.
+    /// A page is 64 KiB; it is the unit a guest's memory grows in, so the limit
+    /// is rounded down to whole pages.
     pub fn max_pages(&self) -> usize {
         self.memory_bytes / (64 * 1024)
     }
 }
 
-/// Por qué se detuvo una llamada a un plugin.
+/// Why a call to a plugin was stopped.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Halt {
-    /// Se acabó el combustible: estaba calculando de más.
+    /// The fuel ran out: it was computing too much.
     OutOfFuel,
-    /// Pidió más memoria de la que tiene permitida.
+    /// It asked for more memory than it is allowed.
     OutOfMemory,
-    /// Se pasó del reloj.
+    /// It went over the clock.
     Timeout(Duration),
 }
 

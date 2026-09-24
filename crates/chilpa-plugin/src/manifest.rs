@@ -1,86 +1,87 @@
-//! El manifest de un plugin: quién es y qué pide.
+//! A plugin's manifest: who it is and what it asks for.
 //!
-//! Se valida entero antes de cargar nada. Las reglas de aquí no son
-//! formalidades: el `id` se vuelve un nombre de carpeta y los dominios se
-//! vuelven la lista de a dónde puede salir. Un manifest que no se entiende
-//! **no carga**, en vez de cargar con lo que sí se entendió.
+//! It is validated whole before anything is loaded. The rules here are not
+//! formalities: the `id` becomes a folder name and the domains become the
+//! list of where it may go. A manifest that is not understood **does not
+//! load**, instead of loading with the part that was.
 //!
-//! Se falla cerrado a propósito. Una capacidad desconocida no se ignora: si
-//! este Chilpa no sabe qué quiere decir, no puede saber si es peligrosa.
+//! It fails closed on purpose. An unknown capability is not ignored: if this
+//! Chilpa does not know what it means, it cannot know whether it is
+//! dangerous.
 
 use serde::{Deserialize, Serialize};
 
-/// La versión de la API de plugins que entiende este Chilpa.
+/// The plugin API version this Chilpa understands.
 pub const API_VERSION: u32 = 1;
 
-/// Para qué sirve un plugin.
+/// What a plugin is for.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Kind {
-    /// Aporta catálogo: playlists, álbumes, artistas, tracks.
+    /// It brings catalogue: playlists, albums, artists, tracks.
     Source,
-    /// Completa metadata de lo que ya hay.
+    /// It fills in metadata for what is already there.
     Metadata,
-    /// Trae letras.
+    /// It fetches lyrics.
     Lyrics,
-    /// Reporta lo escuchado a un servicio.
+    /// It reports what was listened to, to a service.
     Scrobbler,
 }
 
-/// Dónde corre.
+/// Where it runs.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Runtime {
-    /// Adentro, en sandbox. Lo normal (ADR-007).
+    /// Inside, sandboxed. The usual (ADR-007).
     #[default]
     Wasm,
-    /// Proceso aparte, para lo que necesite código nativo. Todavía no se
-    /// implementa; un manifest que lo pida se rechaza diciéndolo.
+    /// A separate process, for anything that needs native code. Not
+    /// implemented yet; a manifest asking for it is refused, saying so.
     Process,
 }
 
-/// Lo que un plugin pide poder hacer.
+/// What a plugin asks to be able to do.
 ///
-/// El usuario las aprueba al instalarlo. Lo que no está aquí, no se puede:
-/// no hay una capacidad "todo lo demás".
+/// The user approves them on install. What is not here cannot be done: there
+/// is no "everything else" capability.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Capability {
-    /// Salir a la red, solo a estos dominios.
+    /// Reach the network, only these domains.
     Network { domains: Vec<String> },
-    /// Guardar cosas en su propio almacén.
+    /// Keep things in its own store.
     Storage,
-    /// Leer la biblioteca. Nunca escribirla.
+    /// Read the library. Never write it.
     LibraryRead,
-    /// Registrar una source con su catálogo.
+    /// Register a source with its catalogue.
     RegisterSource,
-    /// Aportar un panel a la interfaz, como descriptor.
+    /// Contribute a panel to the interface, as a descriptor.
     RegisterPanel,
-    /// Registrar un comando que el usuario puede disparar.
+    /// Register a command the user can trigger.
     RegisterCommand,
-    /// Maneja su propia cuenta: se autentica solo y guarda su credencial
-    /// donde él quiera. Chilpa no la ve, no la pone en sus peticiones y no
-    /// la puede borrar.
+    /// It handles its own account: it authenticates itself and keeps its
+    /// credential wherever it likes. Chilpa does not see it, does not put
+    /// it in its requests and cannot delete it.
     ///
-    /// Existe porque hay bibliotecas que hablan el protocolo propio de un
-    /// servicio y **se autentican ellas mismas**: necesitan sockets crudos
-    /// y la credencial en sus manos. Con esas, el invariante normal —el
-    /// plugin usa la credencial pero nunca la tiene— no se puede sostener,
-    /// y fingir que sí sería peor que decirlo.
+    /// It exists because there are libraries that speak a service's own
+    /// protocol and **authenticate themselves**: they need raw sockets and
+    /// the credential in their hands. With those the normal invariant --
+    /// the plugin uses the credential but never holds it -- cannot be
+    /// upheld, and pretending it can would be worse than saying so.
     ///
-    /// Solo tiene sentido con [`Runtime::Process`]: un plugin de WASM no
-    /// tiene sockets ni disco propio, así que no podría manejar nada.
+    /// It only makes sense with [`Runtime::Process`]: a WASM plugin has
+    /// neither sockets nor a disk of its own, so it could handle nothing.
     ///
-    /// `keyring` dice **dónde** lo guarda. Si es cierto, en el llavero del
-    /// sistema bajo su propio nombre —una entrada suya, aparte de la de
-    /// Chilpa, nunca la misma—. Si es falso, donde él decida, que puede ser
-    /// un archivo en claro.
+    /// `keyring` says **where** it keeps it. If true, in the system keyring
+    /// under its own name -- an entry of its own, separate from Chilpa's,
+    /// never the same one. If false, wherever it decides, which may be a
+    /// plaintext file.
     ///
-    /// **Es una declaración, no una garantía.** Las otras capacidades
-    /// Chilpa las hace cumplir: un dominio que no está en la lista no sale
-    /// a la red, y punto. Esta no la puede comprobar, porque justamente se
-    /// trata de lo que pasa fuera de su alcance. Por eso se le dice al
-    /// usuario como lo que es: lo que el plugin dice de sí mismo.
+    /// **It is a declaration, not a guarantee.** The other capabilities
+    /// Chilpa enforces: a domain that is not on the list does not reach the
+    /// network, full stop. This one it cannot check, because it is
+    /// precisely about what happens beyond its reach. That is why the user
+    /// is told what it is: what the plugin says about itself.
     OwnAccount {
         #[serde(default)]
         keyring: bool,
@@ -88,10 +89,10 @@ pub enum Capability {
 }
 
 impl Capability {
-    /// Qué pide, dicho para que alguien lo pueda aprobar o negar.
+    /// What it asks for, said so someone can approve it or refuse it.
     ///
-    /// Va en palabras y no en JSON a propósito: una lista de `{"type":
-    /// "network"}` no es una decisión informada, es un trámite.
+    /// It is in words and not JSON on purpose: a list of `{"type":
+    /// "network"}` is not an informed decision, it is paperwork.
     pub fn describe(&self) -> String {
         match self {
             Capability::Network { domains } => {
@@ -102,10 +103,11 @@ impl Capability {
             Capability::RegisterSource => "aportar catálogo: buscar y traer música".into(),
             Capability::RegisterPanel => "poner un panel suyo en la ventana".into(),
             Capability::RegisterCommand => "agregar un comando que tú disparas".into(),
-            // Se dice distinto de las demás a propósito: es la única que
-            // deja a Chilpa fuera, y aprobarla no debería sentirse igual
-            // que aprobar un panel. Y se dice "dice que", porque es lo
-            // único honesto: Chilpa no lo puede comprobar.
+            // It is worded differently from the rest on purpose: it is
+            // the only one that leaves Chilpa out, and approving it
+            // should not feel like approving a panel. And it says "says
+            // it", because that is the only honest wording: Chilpa
+            // cannot check it.
             Capability::OwnAccount { keyring: true } => "manejar tu cuenta él mismo, fuera \
                 de Chilpa: dice que guarda tu credencial en el llavero del sistema, bajo su \
                 propio nombre. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
@@ -118,35 +120,35 @@ impl Capability {
     }
 }
 
-/// Lo que un plugin dice de sí mismo.
+/// What a plugin says about itself.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Manifest {
-    /// Identidad, en dominio al revés: `com.ejemplo.mi-plugin`.
+    /// Identity, as a reversed domain: `com.example.my-plugin`.
     pub id: String,
-    /// Cómo se llama para el usuario.
+    /// What it is called for the user.
     pub name: String,
-    /// Su versión, que es suya y no nos importa más que para mostrarla.
+    /// Its version, which is its own and matters to us only to show it.
     pub version: String,
-    /// Con qué versión de la API de Chilpa trabaja.
+    /// Which version of Chilpa's API it works with.
     pub api_version: u32,
     pub kind: Kind,
     #[serde(default)]
     pub runtime: Runtime,
-    /// Cómo se conecta una cuenta en ese source, si necesita una.
+    /// How an account is connected on that source, if it needs one.
     ///
-    /// Los endpoints los declara el plugin, pero el flujo lo corre Chilpa:
-    /// el token no pasa por sus manos (ADR-008).
+    /// The plugin declares the endpoints, but Chilpa runs the flow: the
+    /// token never passes through its hands (ADR-008).
     #[serde(default)]
     pub auth: Option<chilpa_auth::Auth>,
     #[serde(default)]
     pub capabilities: Vec<Capability>,
-    /// Cierto si este source puede entregar audio que Chilpa reproduzca.
+    /// True if this source can deliver audio for Chilpa to play.
     ///
-    /// Hay servicios grandes cuya API deja buscar y navegar pero **nunca**
-    /// entrega bytes de audio a un tercero: solo controlan su propio
-    /// reproductor. Un source así se declara aquí, y sus resultados salen
-    /// marcados como no reproducibles desde el principio, en lugar de que
-    /// cada clic falle. No es una limitación nuestra y no se esconde.
+    /// There are large services whose API lets you search and browse but
+    /// **never** hands audio bytes to a third party: they only control
+    /// their own player. Such a source is declared here, and its results
+    /// come out marked unplayable from the start instead of every click
+    /// failing. It is not a limitation of ours and it is not hidden.
     #[serde(default = "yes")]
     pub delivers_audio: bool,
 }
@@ -155,22 +157,22 @@ fn yes() -> bool {
     true
 }
 
-/// Por qué no se aceptó un manifest.
+/// Why a manifest was not accepted.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum ManifestError {
-    /// No es JSON, o le falta algo que no tiene valor por omisión.
+    /// It is not JSON, or it is missing something with no default.
     Unreadable(String),
-    /// El `id` no sirve como identidad ni como nombre de carpeta.
+    /// The `id` works neither as an identity nor as a folder name.
     BadId(String),
-    /// Un campo obligatorio vino vacío.
+    /// A required field came in empty.
     Empty(&'static str),
-    /// Pide una versión de la API que este Chilpa no entiende.
+    /// It asks for an API version this Chilpa does not understand.
     ApiIncompatible { wants: u32, have: u32 },
-    /// Pide un runtime que todavía no existe.
+    /// It asks for a runtime that does not exist yet.
     RuntimeNotImplemented(Runtime),
-    /// Un dominio de la lista de red no es un dominio.
+    /// A domain on the network list is not a domain.
     BadDomain(String),
-    /// Cómo dice conectarse la cuenta no sirve.
+    /// How it says the account connects does not work.
     BadAuth(String),
 }
 
@@ -201,7 +203,7 @@ impl std::fmt::Display for ManifestError {
 }
 
 impl Manifest {
-    /// Lee un manifest y lo valida entero.
+    /// Reads a manifest and validates it whole.
     pub fn parse(json: &str) -> Result<Self, ManifestError> {
         let m: Manifest =
             serde_json::from_str(json).map_err(|e| ManifestError::Unreadable(e.to_string()))?;
@@ -237,17 +239,18 @@ impl Manifest {
                 }
             }
         }
-        // Se revisa aquí y no al conectarse: un plugin que mandaría al
-        // usuario a escribir su contraseña por http no se instala, no falla
-        // a la mitad del flujo con el navegador ya abierto.
+        // It is checked here and not at connect time: a plugin that would
+        // send the user to type their password over http is not installed,
+        // it does not fail halfway through the flow with the browser
+        // already open.
         if let Some(a) = &self.auth {
             if let Some(e) = a.problem() {
                 return Err(ManifestError::BadAuth(e));
             }
         }
-        // Un plugin de WASM no tiene sockets ni disco propio: no podría
-        // manejar una cuenta aunque dijera que sí. Se rechaza al instalar,
-        // no se ignora en silencio.
+        // A WASM plugin has neither sockets nor a disk of its own: it could
+        // not handle an account even if it said it could. It is refused at
+        // install, not ignored in silence.
         if self.runtime != Runtime::Process
             && self.capabilities.iter().any(|c| matches!(c, Capability::OwnAccount { .. }))
         {
@@ -260,7 +263,7 @@ impl Manifest {
         Ok(())
     }
 
-    /// Los dominios a los que puede salir. Vacío quiere decir a ninguno.
+    /// The domains it may reach. Empty means none.
     pub fn allowed_domains(&self) -> Vec<&str> {
         self.capabilities
             .iter()
@@ -272,55 +275,55 @@ impl Manifest {
             .collect()
     }
 
-    /// Cierto si pidió esa capacidad.
+    /// True if it asked for that capability.
     pub fn has(&self, which: &Capability) -> bool {
         self.capabilities.contains(which)
     }
 
-    /// Cierto si puede guardar cosas.
+    /// True if it can keep things.
     pub fn can_store(&self) -> bool {
         self.capabilities.iter().any(|c| matches!(c, Capability::Storage))
     }
 
-    /// Cierto si puede salir a la red.
+    /// True if it can reach the network.
     pub fn can_go_out(&self) -> bool {
         !self.allowed_domains().is_empty()
     }
 
-    /// Lo que el usuario aprobó cuando dijo que sí (ADR-008).
+    /// What the user approved when they said yes (ADR-008).
     ///
-    /// Es el tipo de plugin y lo que pide, no el manifest entero: subir de
-    /// versión sin pedir nada nuevo no tiene por qué volver a preguntar,
-    /// pero agregar un dominio sí. Se compara tal cual, así que un cambio
-    /// se puede mostrar diciendo qué es lo nuevo.
+    /// It is the plugin's kind and what it asks for, not the whole manifest:
+    /// bumping a version without asking for anything new has no reason to ask
+    /// again, but adding a domain does. It is compared as is, so a change can
+    /// be shown by saying what is new.
     pub fn asks_for(&self) -> Asked {
         let mut capabilities = self.capabilities.clone();
         capabilities.sort_by_key(|c| c.describe());
         Asked { kind: self.kind, capabilities, auth: self.auth.clone() }
     }
 
-    /// Cierto si hay que conectar una cuenta antes de que sirva de algo.
+    /// True if an account has to be connected before it is good for anything.
     pub fn needs_account(&self) -> bool {
         self.auth.is_some()
     }
 }
 
-/// Lo que se aprueba de un plugin, y lo que se guarda para saber si sigue
-/// valiendo.
+/// What is approved of a plugin, and what is kept to know whether it still
+/// holds.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Asked {
     pub kind: Kind,
     pub capabilities: Vec<Capability>,
-    /// Cómo se conecta la cuenta. Va en lo aprobado porque cambiar a dónde
-    /// se manda al usuario a poner su contraseña es lo último que debería
-    /// pasar sin que lo vuelva a ver.
+    /// How the account connects. It is part of what was approved because
+    /// changing where the user is sent to type their password is the last
+    /// thing that should happen without them seeing it again.
     #[serde(default)]
     pub auth: Option<chilpa_auth::Auth>,
 }
 
 impl Asked {
-    /// Lo que pide ahora y no estaba aprobado. Vacío quiere decir que la
-    /// aprobación anterior alcanza.
+    /// What it asks for now that was not approved. Empty means the earlier
+    /// approval is enough.
     pub fn beyond(&self, approved: &Asked) -> Vec<String> {
         if self.kind != approved.kind {
             return vec![format!("ser un plugin de otro tipo: {:?}", self.kind)];
@@ -342,11 +345,11 @@ impl Asked {
     }
 }
 
-/// Un id sirve si se puede usar como nombre de carpeta sin pensarlo.
+/// An id works if it can be used as a folder name without thinking.
 ///
-/// Nada de barras, nada de `..`, nada de mayúsculas —dos ids que solo se
-/// distinguen por eso serían la misma carpeta en un sistema que no
-/// distingue— y nada vacío entre puntos.
+/// No slashes, no `..`, no uppercase -- two ids differing only in case
+/// would be the same folder on a system that does not distinguish -- and
+/// nothing empty between dots.
 fn valid_id(id: &str) -> bool {
     if id.is_empty() || id.len() > 128 {
         return false;
@@ -360,13 +363,14 @@ fn valid_id(id: &str) -> bool {
     id.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '.' || c == '-')
 }
 
-/// Un dominio sirve si es un nombre de máquina, no un comodín ni una URL.
+/// A domain works if it is a host name, not a wildcard and not a URL.
 fn valid_domain(d: &str) -> bool {
     if d.is_empty() || d.len() > 253 || d.contains('/') || d.contains(':') {
         return false;
     }
-    // Sin comodines: "*" o "*.algo" es pedir permiso para todo o para un
-    // árbol entero, y eso no se puede revisar de un vistazo.
+    // No wildcards: "*" or "*.something" is asking permission for
+    // everything or for a whole tree, and that cannot be reviewed at a
+    // glance.
     if d.contains('*') {
         return false;
     }
@@ -421,8 +425,8 @@ mod tests {
 
     #[test]
     fn an_unknown_capability_is_not_ignored() {
-        // Fallar cerrado: si no se sabe qué pide, no se puede saber si es
-        // peligroso.
+        // Fail closed: if what it asks for is unknown, whether it is
+        // dangerous cannot be known.
         let json = base().replace(r#"{"type": "storage"}"#, r#"{"type": "leer_todo_el_disco"}"#);
         let e = Manifest::parse(&json).expect_err("no se acepta");
         assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");
@@ -454,7 +458,7 @@ mod tests {
                 "\"{bad}\" no debería pasar"
             );
         }
-        // Y uno que sí.
+        // And one that does.
         let json = base().replace("com.ejemplo.prueba", "org.mi-servicio.plugin2");
         assert!(Manifest::parse(&json).is_ok());
     }
@@ -472,8 +476,8 @@ mod tests {
 
     #[test]
     fn a_wasm_plugin_cannot_claim_it_manages_its_own_account() {
-        // No tiene sockets ni disco suyo: decirlo sería mentir, y se
-        // rechaza al instalar en lugar de ignorarse.
+        // It has neither sockets nor a disk of its own: saying so would be
+        // a lie, and it is refused at install instead of ignored.
         let e = Manifest::parse(
             r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source",
                 "capabilities":[{"type":"own_account"}]}"#,
@@ -484,18 +488,18 @@ mod tests {
 
     #[test]
     fn managing_its_own_account_is_said_plainly_and_not_like_the_others() {
-        // Es la única capacidad que deja a Chilpa fuera. Aprobarla no
-        // debería sentirse igual que aprobar un panel.
-        // Guardarla en el llavero del sistema es mejor noticia que
-        // guardarla donde sea, y se dice distinto.
+        // It is the only capability that leaves Chilpa out. Approving it
+        // should not feel like approving a panel.
+        // Keeping it in the system keyring is better news than keeping
+        // it just anywhere, and it is worded differently.
         let in_keyring = Capability::OwnAccount { keyring: true }.describe();
-        assert!(in_keyring.contains("llavero del sistema"), "{llavero}");
-        assert!(in_keyring.contains("su propio nombre"), "aparte de la de Chilpa: {llavero}");
+        assert!(in_keyring.contains("llavero del sistema"), "{in_keyring}");
+        assert!(in_keyring.contains("su propio nombre"), "separate from Chilpa's: {in_keyring}");
 
         let anywhere = Capability::OwnAccount { keyring: false }.describe();
-        assert!(anywhere.contains("archivo en claro"), "{donde_sea}");
+        assert!(anywhere.contains("archivo en claro"), "{anywhere}");
 
-        // Las dos dicen lo mismo de fondo, incluido que no se comprueba.
+        // Both say the same thing underneath, including that it is not checked.
         for said in [in_keyring, anywhere] {
             assert!(said.contains("fuera de Chilpa"), "{said}");
             assert!(said.contains("no la ve"), "{said}");

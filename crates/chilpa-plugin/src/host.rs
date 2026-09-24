@@ -1,14 +1,14 @@
-//! El host: carga un plugin, lo llama y lo detiene si se pasa.
+//! The host: it loads a plugin, calls it and stops it if it goes over.
 //!
-//! Todo lo que un guest puede hacer entra por aquí, y aquí se aplica lo que
-//! el manifest prometió. Un plugin que pidió red a un dominio no puede salir
-//! a otro, y no porque se le pida que no: porque la llamada se rechaza antes
-//! de llegar al host de verdad.
+//! Everything a guest can do comes through here, and here is where what the
+//! manifest promised is enforced. A plugin that asked for network to one
+//! domain cannot reach another, and not because it is asked not to: because
+//! the call is refused before it reaches the real host.
 //!
-//! **El plugin no recuerda nada entre llamadas.** Cada llamada arma su
-//! instancia nueva, con su combustible y su memoria. Lo que quiera recordar
-//! lo manda a su almacén, que es del host. Así una fuga de memoria no se
-//! acumula y una llamada no puede envenenar a la siguiente.
+//! **A plugin remembers nothing between calls.** Every call builds its own
+//! fresh instance, with its own fuel and its own memory. Whatever it wants
+//! to remember it sends to its store, which belongs to the host. That way a
+//! memory leak does not pile up and one call cannot poison the next.
 
 use crate::abi;
 use crate::limits::{Halt, Limits};
@@ -17,30 +17,30 @@ use crate::services::{HostServices, Level};
 use std::sync::{Arc, Mutex};
 use wasmtime::{Caller, Config, Engine, Linker, Module, Store, StoreLimits, StoreLimitsBuilder};
 
-/// Los servicios del host, compartidos entre llamadas y plugins.
+/// The host's services, shared between calls and plugins.
 pub type Services = Arc<Mutex<dyn HostServices>>;
 
-/// Cada cuánto avanza el reloj de las interrupciones.
+/// How often the interruption clock ticks.
 const TIC: std::time::Duration = std::time::Duration::from_millis(50);
 
-/// Por qué no se pudo cargar o llamar a un plugin.
+/// Why a plugin could not be loaded or called.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum PluginError {
-    /// El manifest no pasó.
+    /// The manifest did not pass.
     Manifest(ManifestError),
-    /// El módulo no es wasm válido, o el motor no lo aceptó.
+    /// The module is not valid wasm, or the engine did not accept it.
     WontCompile(String),
-    /// Le falta algo que todo plugin tiene que exportar.
+    /// It is missing something every plugin has to export.
     MissingExport(String),
-    /// Dice trabajar con otra versión de la API que la del manifest.
+    /// It claims a different API version than the manifest does.
     VersionMismatch { dice: i32, manifest: u32 },
-    /// Se pasó de alguno de sus límites.
+    /// It went over one of its limits.
     Stopped(Halt),
-    /// Tronó adentro.
+    /// It blew up inside.
     Crashed(String),
-    /// Dio una dirección que no está en su memoria.
+    /// It gave an address that is not in its memory.
     OutOfMemory,
-    /// Pidió algo que su manifest no declaró.
+    /// It asked for something its manifest did not declare.
     NotAllowed(String),
 }
 
@@ -72,7 +72,7 @@ impl From<ManifestError> for PluginError {
     }
 }
 
-/// Lo que vive en el store mientras corre una llamada.
+/// What lives in the store while a call runs.
 struct State {
     plugin: String,
     domains: Vec<String>,
@@ -82,10 +82,10 @@ struct State {
     limits: StoreLimits,
 }
 
-/// El motor, compartido por todos los plugins.
+/// The engine, shared by every plugin.
 pub struct Host {
     engine: Engine,
-    /// El hilo que hace avanzar el reloj de las interrupciones.
+    /// The thread that advances the interruption clock.
     vivo: Arc<std::sync::atomic::AtomicBool>,
     clock: Option<std::thread::JoinHandle<()>>,
 }
@@ -93,8 +93,8 @@ pub struct Host {
 impl Host {
     pub fn new() -> Result<Self, PluginError> {
         let mut config = Config::new();
-        // Combustible para el que calcula de más, reloj para el que se
-        // cuelga. Hacen falta los dos.
+        // Fuel for the one that computes too much, a clock for the one that
+        // hangs. Both are needed.
         config.consume_fuel(true);
         config.epoch_interruption(true);
         let engine = Engine::new(&config).map_err(|e| PluginError::WontCompile(e.to_string()))?;
@@ -115,14 +115,14 @@ impl Host {
         Ok(Self { engine, vivo, clock })
     }
 
-    /// Compila un plugin y comprueba que sea lo que dice ser.
+    /// Compiles a plugin and checks it is what it says it is.
     pub fn load(&self, manifest: Manifest, wasm: &[u8]) -> Result<Plugin, PluginError> {
         let module = Module::new(&self.engine, wasm)
             .map_err(|e| PluginError::WontCompile(e.to_string()))?;
 
-        // Tiene que exportar lo mínimo, o no se carga. Preguntarlo aquí y no
-        // a media llamada es la diferencia entre "no cargó" y "se rompió
-        // mientras lo usabas".
+        // It has to export the minimum, or it does not load. Asking here and
+        // not mid call is the difference between "it did not load" and "it
+        // broke while you were using it".
         for export in [abi::MEMORY, abi::F_VERSION, abi::F_ALLOC] {
             if module.get_export(export).is_none() {
                 return Err(PluginError::MissingExport(export.to_string()));
@@ -144,7 +144,7 @@ impl Drop for Host {
     }
 }
 
-/// Un plugin ya compilado y listo para llamarse.
+/// A plugin already compiled and ready to be called.
 pub struct Plugin {
     manifest: Manifest,
     module: Module,
@@ -159,8 +159,8 @@ impl Plugin {
         &self.manifest.id
     }
 
-    /// Le pregunta al módulo con qué versión trabaja y la compara con la que
-    /// dijo el manifest. Si no coinciden, alguien mintió y no se carga.
+    /// Asks the module which version it works with and compares it to the one
+    /// the manifest stated. If they disagree, someone lied and it does not load.
     fn check_version(&self, host: &Host) -> Result<(), PluginError> {
         let services: Services = Arc::new(Mutex::new(crate::services::NoServices));
         let mut store = self.build_store(host, &services, Limits::short())?;
@@ -181,7 +181,7 @@ impl Plugin {
         Ok(())
     }
 
-    /// Llama una operación del plugin con su presupuesto.
+    /// Calls one of the plugin's operations with its budget.
     pub fn call(
         &self,
         host: &Host,
@@ -206,7 +206,7 @@ impl Plugin {
             .get_typed_func::<(i32, i32), i64>(&mut store, operation)
             .map_err(|_| PluginError::MissingExport(operation.to_string()))?;
 
-        // Se le pide un pedazo de su memoria y se le escribe la entrada.
+        // A piece of its memory is asked for and the input is written there.
         let ptr = alloc
             .call(&mut store, input.len() as i32)
             .map_err(|e| self.translate(e, &mut store))?;
@@ -237,8 +237,8 @@ impl Plugin {
             services: Arc::clone(services),
             limits: StoreLimitsBuilder::new()
                 .memory_size(limits.memory_bytes)
-                // Una sola memoria y una sola tabla: un plugin no necesita
-                // más, y cada una es memoria que se puede pedir.
+                // One memory and one table: a plugin needs no more, and
+                // each one is memory that can be asked for.
                 .memories(1)
                 .tables(1)
                 .build(),
@@ -248,16 +248,16 @@ impl Plugin {
         store
             .set_fuel(limits.fuel)
             .map_err(|e| PluginError::WontCompile(e.to_string()))?;
-        // El reloj avanza cada TIC; el plazo son tantos tics como quepan.
+        // The clock advances every TICK; the deadline is as many ticks as fit.
         let tics = (limits.timeout.as_millis() / TIC.as_millis()).max(1) as u64;
         store.set_epoch_deadline(tics);
         Ok(store)
     }
 
-    /// Traduce lo que wasmtime contesta a algo que el usuario pueda leer.
+    /// Translates what wasmtime answers into something the user can read.
     ///
-    /// La razón de verdad viene en la cadena de causas, no en el mensaje de
-    /// arriba: el de arriba siempre dice "error while executing".
+    /// The real reason comes in the chain of causes, not in the top message: the
+    /// top one always says "error while executing".
     fn translate(&self, e: wasmtime::Error, store: &mut Store<State>) -> PluginError {
         if let Some(trap) = e.downcast_ref::<wasmtime::Trap>() {
             return match trap {
@@ -268,7 +268,7 @@ impl Plugin {
                 other => PluginError::Crashed(other.to_string()),
             };
         }
-        // Quedarse sin combustible se nota también en lo que queda.
+        // Running out of fuel also shows in what is left.
         if store.get_fuel().map(|f| f == 0).unwrap_or(false) {
             return PluginError::Stopped(Halt::OutOfFuel);
         }
@@ -393,29 +393,29 @@ impl Plugin {
     }
 }
 
-/// El dominio al que apunta una petición, si se entiende.
+/// The domain a request points at, if it can be understood.
 fn domain_of(request: &[u8]) -> Option<String> {
     let v: serde_json::Value = serde_json::from_slice(request).ok()?;
     let url = v.get("url")?.as_str()?;
     host_of_url(url)
 }
 
-/// Saca la máquina de una URL sin arrastrar un parser de URLs entero.
+/// Pulls the host out of a URL without dragging in a whole URL parser.
 pub fn host_of_url(url: &str) -> Option<String> {
     let rest = url.split_once("://")?.1;
     let fin = rest.find(['/', '?', '#']).unwrap_or(rest.len());
     let authority = &rest[..fin];
-    // Se tira el usuario y el puerto: lo que se compara es la máquina.
+    // The userinfo and the port are thrown away: what is compared is the host.
     let no_user = authority.rsplit_once('@').map(|(_, h)| h).unwrap_or(authority);
     let host = no_user.split(':').next()?.to_ascii_lowercase();
     (!host.is_empty()).then_some(host)
 }
 
-/// Cierto si el dominio está en la lista, exacto o como subdominio.
+/// True if the domain is on the list, exactly or as a subdomain.
 ///
-/// Se permite el subdominio porque un servicio reparte sus respuestas entre
-/// varias máquinas del mismo dominio; lo que no se permite es que la lista
-/// traiga un comodín, que es donde se pierde el control.
+/// Subdomains are allowed because a service spreads its replies across
+/// several hosts of the same domain; what is not allowed is a wildcard on
+/// the list, which is where control is lost.
 fn allowed(host: &str, domains: &[String]) -> bool {
     domains.iter().any(|d| {
         let d = d.to_ascii_lowercase();
@@ -442,7 +442,7 @@ fn text_of(caller: &mut Caller<'_, State>, ptr: i32, len: i32) -> Option<String>
     String::from_utf8(bytes).ok()
 }
 
-/// Escribe la respuesta de una función del host en el búfer del guest.
+/// Writes a host function's reply into the guest's buffer.
 fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: i32) -> i32 {
     let room_u = room.max(0) as u32;
     let verdict = abi::Room::para(data, room_u);
@@ -452,8 +452,8 @@ fn deliver(caller: &mut Caller<'_, State>, data: Option<&[u8]>, out: i32, room: 
         let (from, hasta) = (out.max(0) as usize, out.max(0) as usize + n as usize);
         match target.get_mut(from..hasta) {
             Some(gap) => gap.copy_from_slice(d),
-            // Un búfer fuera de su memoria se trata como que no cupo: nunca
-            // se escribe a medias ni fuera.
+            // A buffer outside its memory is treated as not fitting: there is
+            // never a half write and never one outside.
             None => return abi::Room::TooBig(n).code(),
         }
     }
@@ -489,7 +489,7 @@ fn read(
         .ok_or(PluginError::OutOfMemory)
 }
 
-/// Lo que un plugin tiene que declarar para que se le den servicios.
+/// What a plugin has to declare to be given services.
 pub fn network_capability(domains: &[&str]) -> Capability {
     Capability::Network { domains: domains.iter().map(|d| d.to_string()).collect() }
 }
@@ -498,15 +498,14 @@ pub fn network_capability(domains: &[&str]) -> Capability {
 mod tests {
     use super::*;
 
-    /// Todo lo que el sandbox le ofrece al guest, y nada más.
+    /// Everything the sandbox offers the guest, and nothing more.
     ///
-    /// Esta prueba es el candado del ADR-008. Si alguien agrega una
-    /// importación al linker, falla hasta que la escriba en
-    /// `abi::HOST_IMPORTS`, que es donde está dicho que **nunca** se agrega
-    /// una que devuelva un secreto.
+    /// This test is ADR-008's lock. If anyone adds an import to the linker,
+    /// it fails until they write it into `abi::HOST_IMPORTS`, which is where
+    /// it is stated that one returning a secret is **never** added.
     ///
-    /// No revisa una lista contra otra lista escrita a mano: le pregunta al
-    /// linker qué tiene. Una prueba que repitiera la lista no vería nada.
+    /// It does not check one list against another hand written list: it asks
+    /// the linker what it has. A test that repeated the list would see nothing.
     #[test]
     fn the_sandbox_offers_exactly_what_is_declared_and_nothing_more() {
         let host = Host::new().unwrap();
@@ -514,7 +513,7 @@ mod tests {
             r#"{"id":"com.a.b","name":"Uno","version":"1","api_version":1,"kind":"source"}"#,
         )
         .unwrap();
-        // Un guest que no importa nada: alcanza para armar el linker.
+        // A guest that imports nothing: enough to build the linker.
         let wasm = wat::parse_str(
             r#"(module (memory (export "memory") 1)
                  (func (export "chilpa_api_version") (result i32) (i32.const 1))
@@ -546,9 +545,9 @@ mod tests {
 
     #[test]
     fn nothing_the_sandbox_offers_hands_over_a_secret() {
-        // No es una prueba de comportamiento: es un recordatorio con
-        // dientes. Si alguien llama "credential" a una importación nueva,
-        // esto falla antes de que llegue a una revisión.
+        // This is not a behaviour test: it is a reminder with teeth. If
+        // anyone names a new import "credential", this fails before it
+        // reaches a review.
         for name in abi::HOST_IMPORTS {
             for forbidden in ["credential", "secret", "token", "password", "keyring"] {
                 assert!(

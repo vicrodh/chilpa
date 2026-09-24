@@ -1,39 +1,39 @@
-//! El vigilante: cuenta fallas y manda a cuarentena.
+//! The watchdog: it counts failures and sends plugins to quarantine.
 //!
-//! El ADR-003 lo dice sin rodeos: *un plugin roto nunca rompe Chilpa; antes
-//! de romperla, no carga*. Este módulo es la mitad que se acuerda de las
-//! fallas; la otra mitad son los límites del store, que están en `limits`.
+//! ADR-003 says it plainly: *a broken plugin never breaks Chilpa; before
+//! breaking it, it does not load*. This module is the half that remembers
+//! the failures; the other half is the store's limits, over in `limits`.
 //!
-//! Tres decisiones que valen la pena decir:
+//! Three decisions worth stating:
 //!
-//! 1. **Tres fallas seguidas en una ventana corta, y a cuarentena.** No al
-//!    primer tropiezo: una red que se cae no es un plugin roto.
-//! 2. **De la cuarentena solo sale el usuario.** Nada de reintentar solo al
-//!    rato: si algo se rompió tres veces, que alguien lo mire.
-//! 3. **Una llamada que sale bien limpia la cuenta.** Lo que se castiga es
-//!    fallar seguido, no haber fallado alguna vez.
+//! 1. **Three failures in a row in a short window, and it is quarantined.**
+//!    Not on the first stumble: a network that drops is not a broken plugin.
+//! 2. **Only the user takes it out of quarantine.** No retrying on its own
+//!    later: if something broke three times, someone should look at it.
+//! 3. **A call that goes well clears the count.** What is punished is
+//!    failing repeatedly, not having failed once.
 
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
-/// Cuántas fallas seguidas mandan a cuarentena.
+/// How many failures in a row send a plugin to quarantine.
 pub const FAILURES_TO_QUARANTINE: usize = 3;
 
-/// En cuánto tiempo tienen que caber esas fallas para contar como seguidas.
+/// The span those failures have to fit in to count as consecutive.
 pub const WINDOW: Duration = Duration::from_secs(60);
 
-/// Cómo está un plugin.
+/// How a plugin is doing.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum State {
-    /// Encontrado en disco, pero el usuario todavía no aprueba lo que pide.
-    /// No se compiló ni se instanció: existe como una carpeta y nada más
+    /// Found on disk, but the user has not yet approved what it asks for.
+    /// It has been neither compiled nor instantiated: it exists as a folder
     /// (ADR-008).
     PendingApproval,
-    /// Funcionando.
+    /// Working.
     Healthy,
-    /// Ha fallado, pero todavía no lo suficiente.
+    /// It has failed, but not enough yet.
     Stumbling { failures: usize },
-    /// Apagado hasta que el usuario lo reactive.
+    /// Switched off until the user turns it back on.
     Quarantined { reason: String },
 }
 
@@ -49,7 +49,7 @@ struct Tally {
     quarantine: Option<String>,
 }
 
-/// Lleva la cuenta de cómo se porta cada plugin.
+/// Keeps score of how each plugin behaves.
 #[derive(Default)]
 pub struct Watchdog {
     tallies: HashMap<String, Tally>,
@@ -60,7 +60,7 @@ impl Watchdog {
         Self::default()
     }
 
-    /// Cómo está un plugin. Uno que nunca ha hecho nada está bien.
+    /// How a plugin is doing. One that has never done anything is fine.
     pub fn state(&self, id: &str) -> State {
         let Some(c) = self.tallies.get(id) else { return State::Healthy };
         if let Some(reason) = &c.quarantine {
@@ -74,12 +74,12 @@ impl Watchdog {
         }
     }
 
-    /// Cierto si se le puede pedir algo.
+    /// True if it can be asked for something.
     pub fn usable(&self, id: &str) -> bool {
         self.state(id).usable()
     }
 
-    /// Anota que una llamada salió bien. Perdona lo anterior.
+    /// Notes that a call went well. It forgives what came before.
     pub fn success(&mut self, id: &str) {
         if let Some(c) = self.tallies.get_mut(id) {
             if c.quarantine.is_none() {
@@ -88,19 +88,19 @@ impl Watchdog {
         }
     }
 
-    /// Anota una falla. Devuelve el estado en que quedó.
+    /// Notes a failure. Returns the state it ended up in.
     pub fn failure(&mut self, id: &str, reason: &str) -> State {
         self.failure_at(id, reason, Instant::now())
     }
 
-    /// Lo mismo, con el momento a la mano. Es lo que hace que esto se pueda
-    /// probar sin dormir un minuto.
+    /// The same, with the moment supplied. It is what makes this testable
+    /// without sleeping for a minute.
     pub fn failure_at(&mut self, id: &str, reason: &str, at: Instant) -> State {
         let c = self.tallies.entry(id.to_string()).or_default();
         if c.quarantine.is_some() {
             return self.state(id);
         }
-        // Lo viejo se olvida: lo que se castiga es fallar seguido.
+        // The old is forgotten: what is punished is failing repeatedly.
         c.failures.retain(|t| at.duration_since(*t) < WINDOW);
         c.failures.push(at);
         if c.failures.len() >= FAILURES_TO_QUARANTINE {
@@ -111,14 +111,14 @@ impl Watchdog {
         self.state(id)
     }
 
-    /// Manda a cuarentena de inmediato, sin contar. Es para lo que no tiene
-    /// vuelta: un manifest que no se entiende, un módulo que no carga.
+    /// Quarantines it immediately, without counting. It is for what has no way
+    /// back: a manifest that is not understood, a module that does not load.
     pub fn quarantine(&mut self, id: &str, reason: &str) {
         let c = self.tallies.entry(id.to_string()).or_default();
         c.quarantine = Some(reason.to_string());
     }
 
-    /// Lo saca de cuarentena. Solo lo llama el usuario.
+    /// Takes it out of quarantine. Only the user calls it.
     pub fn reactivate(&mut self, id: &str) {
         if let Some(c) = self.tallies.get_mut(id) {
             c.quarantine = None;
@@ -126,7 +126,7 @@ impl Watchdog {
         }
     }
 
-    /// Los que están en cuarentena, con su razón.
+    /// The ones in quarantine, with their reason.
     pub fn quarantined(&self) -> Vec<(String, String)> {
         let mut v: Vec<(String, String)> = self
             .tallies
@@ -180,7 +180,7 @@ mod tests {
         w.failure("com.a.b", "otra");
         w.success("com.a.b");
         assert_eq!(w.state("com.a.b"), State::Healthy);
-        // Y ahora vuelve a tener tres oportunidades.
+        // And now it has three chances again.
         w.failure("com.a.b", "una");
         w.failure("com.a.b", "otra");
         assert!(w.usable("com.a.b"));
@@ -193,7 +193,7 @@ mod tests {
         let a_while_ago = now - WINDOW - Duration::from_secs(1);
         w.failure_at("com.a.b", "vieja", a_while_ago);
         w.failure_at("com.a.b", "vieja", a_while_ago);
-        // Esta es la primera de la ventana actual, no la tercera.
+        // This is the first of the current window, not the third.
         assert_eq!(w.failure_at("com.a.b", "nueva", now), State::Stumbling { failures: 1 });
         assert!(w.usable("com.a.b"));
     }
@@ -205,7 +205,7 @@ mod tests {
             w.failure("com.a.b", "truena");
         }
         assert!(!w.usable("com.a.b"));
-        // Fallar más no cambia nada, y un éxito tampoco lo saca.
+        // Failing more changes nothing, and a success does not get it out either.
         w.failure("com.a.b", "otra vez");
         w.success("com.a.b");
         assert!(!w.usable("com.a.b"), "un éxito no lo saca de cuarentena");
