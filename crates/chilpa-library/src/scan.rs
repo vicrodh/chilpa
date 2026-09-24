@@ -315,11 +315,6 @@ fn save_file(
     Ok(track_id)
 }
 
-/// Cover file names that turn up in music folders.
-const COVERS: &[&str] = &[
-    "cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.jpeg", "folder.png",
-    "front.jpg", "front.png", "album.jpg", "album.png", "Cover.jpg", "Folder.jpg",
-];
 
 /// Gives the album a cover if it does not have one yet.
 ///
@@ -333,10 +328,7 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
     if has.is_some() {
         return Ok(());
     }
-    let cover = chilpa_tags::extract_artwork(path, cache)
-        .ok()
-        .flatten()
-        .or_else(|| cover_in_folder(path));
+    let cover = chilpa_tags::artwork_for(path, cache);
     if let Some(cover) = cover {
         lib.db.execute(
             "UPDATE albums SET artwork_path = ?2 WHERE id = ?1",
@@ -346,31 +338,6 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
     Ok(())
 }
 
-/// The cover sitting next to the file, if there is one.
-fn cover_in_folder(path: &Path) -> Option<PathBuf> {
-    let dir = path.parent()?;
-    for name in COVERS {
-        let candidate = dir.join(name);
-        if candidate.is_file() {
-            return Some(candidate);
-        }
-    }
-    // Any loose image, when there is none with a known name.
-    let mut loose: Vec<PathBuf> = std::fs::read_dir(dir)
-        .ok()?
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| {
-            p.is_file()
-                && p.extension()
-                    .and_then(|e| e.to_str())
-                    .map(|e| matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png"))
-                    .unwrap_or(false)
-        })
-        .collect();
-    loose.sort();
-    loose.into_iter().next()
-}
 
 /// The album with that title and artist, made if it is not there yet.
 ///
