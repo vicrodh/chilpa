@@ -80,8 +80,20 @@ impl AlsaSink {
     /// Opens the device at that exact format. If ALSA hands back a different
     /// rate or format, it is closed and the call fails: a "close enough" is
     /// never accepted.
+    /// The same, for a PCM the caller named on purpose.
+    ///
+    /// See [`open_named`]: this is the door for a stack that has declared
+    /// what its path costs, not a way around the direct-device rule.
+    pub fn open_pcm(device: &str, stream: StreamFormat) -> Result<Self, SinkError> {
+        Self::opening(device, stream, true)
+    }
+
     pub fn open(device: &str, stream: StreamFormat) -> Result<Self, SinkError> {
-        let pcm = open(device)?;
+        Self::opening(device, stream, false)
+    }
+
+    fn opening(device: &str, stream: StreamFormat, named: bool) -> Result<Self, SinkError> {
+        let pcm = if named { open_named(device)? } else { open(device)? };
         {
             let params = HwParams::any(&pcm).map_err(backend)?;
             params.set_access(Access::RWInterleaved).map_err(backend)?;
@@ -156,6 +168,21 @@ fn open(device: &str) -> Result<PCM, SinkError> {
             &[device],
         )));
     }
+    open_named(device)
+}
+
+/// Opens whatever PCM it is given, direct or not.
+///
+/// The guard above is what keeps this crate from ever *choosing* something
+/// that converts: in QBZ a `hw:` that would not open fell back to `plughw:`
+/// on its own and the window went on saying bit-perfect. It is not what
+/// stops a caller from naming one deliberately, and two do -- the system
+/// stack opens `default` and the PipeWire stack opens the PCM PipeWire
+/// installs. Both of them declare what that costs before anything is opened.
+///
+/// So the rule is not "only hw: exists"; it is "nobody ends up somewhere
+/// they did not ask for". Whoever calls this asked, and owns the answer.
+pub fn open_named(device: &str) -> Result<PCM, SinkError> {
     PCM::new(device, Direction::Playback, false).map_err(|e| match e.errno() {
         ENODEV | ENOENT => SinkError::DeviceLost,
         _ => SinkError::Backend(e.to_string()),

@@ -550,6 +550,9 @@ msgstr "ya hay un análisis corriendo"
 msgid "analysing..."
 msgstr "analizando..."
 
+msgid "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})"
+msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect para compartirlo ({})"
+
 msgid "awaiting approval"
 msgstr "pendiente de aprobación"
 

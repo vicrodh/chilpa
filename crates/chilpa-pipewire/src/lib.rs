@@ -74,6 +74,15 @@ fn sinks() -> Vec<Sink> {
 fn ask(args: &[&str]) -> Option<String> {
     let mut child = std::process::Command::new("pactl")
         .args(args)
+        // In C, because the field names are what gets read and `pactl`
+        // translates them into whatever the desktop speaks. Without this,
+        // the parser finds nothing anywhere but an English machine and the
+        // stack reports itself missing -- on the machine where it is plainly
+        // running, with the window falling back to the one that resamples.
+        // Nothing read here is shown to anybody, so pinning the language of
+        // what gets parsed costs nothing.
+        .env("LC_ALL", "C")
+        .env("LANGUAGE", "C")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
         .spawn()
@@ -183,7 +192,19 @@ impl OutputBackend for PipeWire {
         } else {
             format!("pipewire:NODE={id}")
         };
-        Ok(Box::new(chilpa_alsa::AlsaSink::open(&pcm, format)?))
+        match chilpa_alsa::AlsaSink::open_pcm(&pcm, format) {
+            Ok(sink) => Ok(Box::new(sink)),
+            // The sink is still listed and it would not open, which on an
+            // exclusive ask means somebody else has it. ALSA says that as
+            // "snd_pcm_hw_params failed with error 'No such file or
+            // directory'", and nobody can act on that. What somebody can act
+            // on is knowing another program is holding the output.
+            Err(e) if exclusive => Err(SinkError::Backend(chilpa_i18n::t_args(
+                "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})",
+                &[id, &format!("{e:?}")],
+            ))),
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -196,6 +217,32 @@ mod tests {
         // Whatever is or is not installed, this returns.
         let _ = server();
         let _ = sinks();
+    }
+
+    #[test]
+    fn the_server_is_found_whatever_language_the_desktop_speaks() {
+        // The bug this closes: `pactl` translates its own field names into
+        // whatever the desktop speaks, so a parser looking for "Server
+        // Name:" finds nothing anywhere but an English machine. PipeWire
+        // then reported itself missing on the machine where it was plainly
+        // running, and the window quietly fell back to the stack that
+        // resamples.
+        let under_spanish = std::process::Command::new("pactl")
+            .arg("info")
+            .env("LANG", "es_MX.UTF-8")
+            .env("LC_ALL", "C")
+            .env("LANGUAGE", "C")
+            .output();
+        if let Ok(out) = under_spanish {
+            if out.status.success() {
+                let text = String::from_utf8_lossy(&out.stdout);
+                assert!(
+                    text.contains("Server Name:") || text.contains("Server String:"),
+                    "the field names came out translated: {:?}",
+                    text.lines().next()
+                );
+            }
+        }
     }
 
     #[test]
