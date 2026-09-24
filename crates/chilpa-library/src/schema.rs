@@ -18,7 +18,7 @@ use rusqlite::Connection;
 use std::path::{Path, PathBuf};
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 10;
+pub const VERSION: i64 = 11;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -27,7 +27,7 @@ pub const VERSION: i64 = 10;
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
 const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10];
+    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -826,6 +826,57 @@ UPDATE library_totals
        bit_perfect = COALESCE((SELECT sum(bit_perfect) FROM play_events), 0),
        since = (SELECT min(started_at) FROM play_events)
  WHERE id = 1;
+
+ANALYZE;
+"#;
+
+/// From 10 to 11: the grid stops sorting the whole library to show a page.
+///
+/// `albums` had no index on the columns the grid sorts by, so every page
+/// walked all twenty thousand albums into a temporary B-tree and took a
+/// hundred off the top. Three indexes, in the collation the ordering uses --
+/// an index on `title` is no use to `ORDER BY title COLLATE NOCASE`.
+///
+/// The indexes alone changed nothing, and that is the part worth writing
+/// down. The grid's inner query joins `album_rollup` to drop albums with no
+/// present tracks, and the planner has no way to know that keeps nearly
+/// everything: a range constraint it cannot see statistics for is guessed at
+/// one in four. On that guess, walking the title index and probing the
+/// rollup looks like four hundred probes per hundred rows and sorting
+/// everything looks cheaper. `likely()` is the supported way to say what is
+/// true -- almost every album has tracks -- and with it the planner takes
+/// the index and stops at a hundred.
+///
+/// On two hundred thousand tracks in twenty thousand albums, the page:
+///
+/// | | before | after |
+/// | --- | --- | --- |
+/// | by title | 8.8 ms | 0.44 ms |
+/// | by artist | 10.2 ms | 0.59 ms |
+/// | by year | 9.6 ms | 0.58 ms |
+/// | by date added | 15.1 ms | 0.78 ms |
+/// | by last played | 15.4 ms | 0.61 ms |
+/// | by plays | 11.0 ms | 2.9 ms |
+/// | the artists | 20 ms | 6.8 ms |
+///
+/// Sorting by last played also stopped wrapping the column in a COALESCE to
+/// push what never played to the end. SQLite already sorts a null last on
+/// DESC, so it was the same order, and the COALESCE was what kept the index
+/// from serving it.
+///
+/// Sorting by plays is the one that still ends in a temporary B-tree, and it
+/// is clear about why: the tiebreak is the album's title, which lives in the
+/// other table, so albums tied on plays get sorted. The first page -- the
+/// most played -- has few ties and comes out in 2.9 ms. Page 190 of 200 is
+/// the bottom of the ordering, where every album with the fewest plays is
+/// one group, and that is 37 ms. It is the page nobody opens, and paging by
+/// offset reads the rows it skips whatever the ordering, so the way out of
+/// that one is not an index.
+const MIGRATION_V11: &str = r#"
+CREATE INDEX albums_title ON albums(title COLLATE NOCASE);
+CREATE INDEX albums_artist_year_title
+    ON albums(album_artist COLLATE NOCASE, year, title COLLATE NOCASE);
+CREATE INDEX albums_year_title ON albums(year DESC, title COLLATE NOCASE);
 
 ANALYZE;
 "#;
