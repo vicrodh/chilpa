@@ -158,7 +158,7 @@ mod tests {
         packer.pack(&[&dsd(&[0, 0]), &dsd(&[0, 0])], &mut out);
         out.clear();
         packer.pack(&[&dsd(&[0, 0]), &dsd(&[0, 0])], &mut out);
-        assert_eq!((out[0] >> 24) & 0xFF, 0xFA, "el segundo bloque sigue donde quedó el primero");
+        assert_eq!((out[0] >> 24) & 0xFF, 0xFA, "the second block carries on where the first left off");
     }
 
     #[test]
@@ -166,7 +166,7 @@ mod tests {
         let mut out = Vec::new();
         DopPacker::new().silence(1, 2, &mut out);
         assert_eq!(out[0], ((0x05 << 16) | 0x6969) << 8);
-        assert_ne!(out[0], 0, "ceros de PCM sacarían al DAC de modo DSD");
+        assert_ne!(out[0], 0, "PCM zeros would take the DAC out of DSD mode");
     }
 
     #[test]
@@ -187,7 +187,7 @@ mod tests {
             }
             WriteOutcome::Wrote(frames)
         });
-        assert_eq!(written.borrow().len(), 6, "los tres frames estéreo salieron en dos escrituras");
+        assert_eq!(written.borrow().len(), 6, "the three stereo frames came out in two writes");
     }
 
     #[test]
@@ -206,6 +206,6 @@ mod tests {
             WriteOutcome::Wrote(chunk.len() / 2)
         });
         assert_eq!(recovered, 1);
-        assert_eq!(vistas[0], ((0xFA << 16) | 0x6969) << 8, "el relleno continúa la alternancia");
+        assert_eq!(vistas[0], ((0xFA << 16) | 0x6969) << 8, "the padding carries on the alternation");
     }
 }

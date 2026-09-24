@@ -24,18 +24,36 @@ impl std::fmt::Display for PlayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             PlayError::Decode(e) => write!(f, "{e}"),
-            PlayError::Negotiation(NegotiationError::CapsNotProbed) => {
-                write!(f, "no se midió el dispositivo; sin eso no se promete bit-perfect")
-            }
+            PlayError::Negotiation(NegotiationError::CapsNotProbed) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t(
+                    "the device was not measured; without that bit-perfect is not promised"
+                )
+            ),
             PlayError::Negotiation(NegotiationError::Unsupported { requested, .. }) => write!(
                 f,
-                "el dispositivo no acepta {:?} a {} Hz y la política no deja convertir",
-                requested.sample_format, requested.sample_rate_hz
+                "{}",
+                chilpa_i18n::t_args(
+                    "the device does not accept {} at {} Hz, and the policy does not allow \
+                     converting",
+                    &[
+                        &format!("{:?}", requested.sample_format),
+                        &requested.sample_rate_hz.to_string(),
+                    ],
+                )
             ),
-            PlayError::Pack(PackError::WouldTruncate { from_bits, to_bits }) => {
-                write!(f, "el archivo trae {from_bits} bits y el dispositivo solo toma {to_bits}")
+            PlayError::Pack(PackError::WouldTruncate { from_bits, to_bits }) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args(
+                    "the file carries {} bits and the device only takes {}",
+                    &[&from_bits.to_string(), &to_bits.to_string()],
+                )
+            ),
+            PlayError::Sink(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
             }
-            PlayError::Sink(e) => write!(f, "dispositivo: {e:?}"),
         }
     }
 }
@@ -197,7 +215,7 @@ mod tests {
     #[test]
     fn a_file_that_does_not_exist_is_reported_as_such() {
         let r = play_file(
-            Path::new("/no/existe.flac"),
+            Path::new("/does/not/exist.flac"),
             &caps(),
             Policy::BitPerfect,
             &StopSignal::new(),

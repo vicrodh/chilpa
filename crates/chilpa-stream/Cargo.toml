@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Why a stream could not be opened is read by the user.
+chilpa-i18n.workspace = true
 symphonia = { version = "0.5", default-features = false }
 ureq = { version = "3", default-features = false, features = ["rustls"] }
 # Ya venía en el árbol por ureq; aquí se usa para las peticiones que Chilpa

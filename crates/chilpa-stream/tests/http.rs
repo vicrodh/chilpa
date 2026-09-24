@@ -37,7 +37,7 @@ fn reply(headers: &[(&str, &str)], body: &[u8]) -> Vec<u8> {
 fn the_station_name_and_its_format_are_read() {
     let url = server(reply(
         &[("icy-name", "Radio Chilpa"), ("content-type", "audio/mpeg")],
-        b"datos de audio",
+        b"audio data",
     ));
     let stream = open(&url).unwrap();
     assert_eq!(stream.info().name.as_deref(), Some("Radio Chilpa"));
@@ -48,7 +48,7 @@ fn the_station_name_and_its_format_are_read() {
 fn the_icy_metadata_comes_out_of_the_audio_and_leaves_the_title() {
     // 16 bytes of audio, the block with the title, and 16 more.
     let mut body = vec![7u8; 16];
-    let text = b"StreamTitle='Radio Chilpa - Una';";
+    let text = b"StreamTitle='Radio Chilpa - One';";
     let mut block = text.to_vec();
     while block.len() % 16 != 0 {
         block.push(0);
@@ -67,8 +67,8 @@ fn the_icy_metadata_comes_out_of_the_audio_and_leaves_the_title() {
     let mut audio = Vec::new();
     stream.read_to_end(&mut audio).unwrap();
 
-    assert_eq!(audio, [[7u8; 16], [9u8; 16]].concat(), "el audio salió sin la metadata");
-    assert_eq!(titles.get().as_deref(), Some("Radio Chilpa - Una"));
+    assert_eq!(audio, [[7u8; 16], [9u8; 16]].concat(), "the audio came out without the metadata");
+    assert_eq!(titles.get().as_deref(), Some("Radio Chilpa - One"));
 }
 
 #[test]
@@ -76,8 +76,8 @@ fn a_web_page_is_not_a_station() {
     let url = server(reply(&[("content-type", "text/html")], b"<html>"));
     match open(&url) {
         Err(StreamError::NotAudio(kind)) => assert!(kind.contains("html")),
-        Err(other) => panic!("debía rechazarse por no ser audio: {other}"),
-        Ok(_) => panic!("una página web no se abre como estación"),
+        Err(other) => panic!("it should have been refused for not being audio: {other}"),
+        Ok(_) => panic!("a web page does not open as a station"),
     }
 }
 
@@ -86,7 +86,7 @@ fn a_dead_address_is_reported_without_crashing() {
     // Closed port: nobody answers.
     match open("http://127.0.0.1:1/stream") {
         Err(StreamError::Open(_)) => {}
-        Err(other) => panic!("el error debía ser de apertura: {other}"),
-        Ok(_) => panic!("no hay nadie escuchando en ese puerto"),
+        Err(other) => panic!("the error should have been an open one: {other}"),
+        Ok(_) => panic!("nobody is listening on that port"),
     }
 }

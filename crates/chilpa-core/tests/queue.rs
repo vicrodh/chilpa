@@ -93,7 +93,7 @@ fn play(
         log.borrow_mut().opens.push(stream);
         Ok(FakeSink { log: Rc::clone(log), stream })
     })
-    .expect("la cola corre")
+    .expect("the queue runs")
 }
 
 #[test]
@@ -107,9 +107,9 @@ fn three_tracks_in_the_same_format_open_the_device_once() {
     let results = play(&tracks, &log);
 
     assert_eq!(results.len(), 3);
-    assert_eq!(log.borrow().opens.len(), 1, "el dispositivo se abrió una sola vez");
-    assert_eq!(renegotiations(&results), 0, "nada de huecos entre pistas");
-    assert_eq!(log.borrow().frames, 4_500, "salieron todos los frames de las tres");
+    assert_eq!(log.borrow().opens.len(), 1, "the device was opened once");
+    assert_eq!(renegotiations(&results), 0, "no gaps between tracks");
+    assert_eq!(log.borrow().frames, 4_500, "every frame of all three came out");
     assert_eq!(finished(&results).count(), 3);
     for p in tracks {
         let _ = std::fs::remove_file(p);
@@ -127,11 +127,11 @@ fn changing_format_reopens_the_device_and_is_reported() {
     let results = play(&tracks, &log);
 
     let opens = log.borrow().opens.clone();
-    assert_eq!(opens.len(), 2, "solo se reabre cuando cambia el formato");
+    assert_eq!(opens.len(), 2, "it only reopens when the format changes");
     assert_eq!(opens[0].sample_rate_hz, 44_100);
     assert_eq!(opens[1].sample_rate_hz, 96_000);
-    assert_eq!(renegotiations(&results), 1, "la segunda pista dice que hubo corte");
-    assert!(results[2].transition.is_seamless(), "la tercera sí encadena");
+    assert_eq!(renegotiations(&results), 1, "the second track says there was a break");
+    assert!(results[2].transition.is_seamless(), "the third one does chain");
     for p in tracks {
         let _ = std::fs::remove_file(p);
     }
@@ -142,16 +142,16 @@ fn if_the_device_is_lost_the_queue_stops_there() {
     // The QBZ finding: a failed write looked like the end of a track and
     // the whole queue was skipped without a word.
     let tracks = vec![
-        track("uno", 1_000, 16, 44_100),
+        track("one", 1_000, 16, 44_100),
         track("dos", 1_000, 16, 44_100),
-        track("tres", 1_000, 16, 44_100),
+        track("three", 1_000, 16, 44_100),
     ];
     let log = Rc::new(RefCell::new(CallLog { fail_after: Some(500), ..Default::default() }));
     let results = play(&tracks, &log);
 
-    assert_eq!(results.len(), 1, "la cola se detuvo en la pista que falló");
-    assert!(!results[0].outcome.may_advance_queue(), "esa pista no deja avanzar");
-    assert!(results[0].frames() > 0, "alcanzó a sonar antes de perderse");
+    assert_eq!(results.len(), 1, "the queue stopped at the track that failed");
+    assert!(!results[0].outcome.may_advance_queue(), "that track does not let things move on");
+    assert!(results[0].frames() > 0, "it managed to play before it was lost");
     assert_eq!(finished(&results).count(), 0);
     for p in tracks {
         let _ = std::fs::remove_file(p);

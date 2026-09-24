@@ -31,9 +31,15 @@ impl std::fmt::Display for DsdPlayError {
             DsdPlayError::Read(e) => write!(f, "{e}"),
             DsdPlayError::Unsupported { carrier_hz } => write!(
                 f,
-                "el dispositivo no acepta {carrier_hz} Hz, que es lo que pide este DSD por DoP"
+                "{}",
+                chilpa_i18n::t_args(
+                    "the device does not accept {} Hz, which is what this DSD over DoP asks for",
+                    &[&carrier_hz.to_string()],
+                )
             ),
-            DsdPlayError::Sink(e) => write!(f, "dispositivo: {e:?}"),
+            DsdPlayError::Sink(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
+            }
         }
     }
 }
@@ -160,11 +166,11 @@ mod tests {
 
     impl AudioSink for Handle<'_> {
         fn format(&self) -> StreamFormat {
-            self.0.stream.expect("abierto")
+            self.0.stream.expect("opened")
         }
         fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
             self.0.bytes.extend_from_slice(frames);
-            Ok(frames.len() / self.0.stream.expect("abierto").frame_bytes())
+            Ok(frames.len() / self.0.stream.expect("opened").frame_bytes())
         }
         fn close(&mut self) -> Result<(), SinkError> {
             Ok(())
@@ -230,8 +236,8 @@ mod tests {
         );
         match r {
             Err(DsdPlayError::Unsupported { carrier_hz }) => assert_eq!(carrier_hz, 176_400),
-            other => panic!("debía rechazarse: {other:?}"),
+            other => panic!("it should have been refused: {other:?}"),
         }
-        assert!(cap.bytes.is_empty(), "no se le escribió nada al dispositivo");
+        assert!(cap.bytes.is_empty(), "nothing was written to the device");
     }
 }

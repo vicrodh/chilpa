@@ -454,6 +454,7 @@ dependencies = [
  "chilpa-cd",
  "chilpa-decode",
  "chilpa-dsd",
+ "chilpa-i18n",
  "chilpa-library",
  "chilpa-models",
  "chilpa-sacd",
@@ -467,6 +468,7 @@ name = "chilpa-decode"
 version = "0.0.0"
 dependencies = [
  "chilpa-audio",
+ "chilpa-i18n",
  "chilpa-stream",
  "symphonia",
 ]
@@ -551,6 +553,7 @@ dependencies = [
 name = "chilpa-stream"
 version = "0.0.0"
 dependencies = [
+ "chilpa-i18n",
  "serde_json",
  "symphonia",
  "ureq",

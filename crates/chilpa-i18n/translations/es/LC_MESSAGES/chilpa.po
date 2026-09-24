@@ -19,6 +19,21 @@ msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
 msgid "(unreadable manifest)"
 msgstr "(manifest ilegible)"
 
+msgid "16 bit"
+msgstr "16 bits"
+
+msgid "24 bit in 3 bytes"
+msgstr "24 bits en 3 bytes"
+
+msgid "24 bit in 32"
+msgstr "24 bits en 32"
+
+msgid "32 bit"
+msgstr "32 bits"
+
+msgid "32 bit float"
+msgstr "flotante de 32"
+
 msgid "Album"
 msgstr "Álbum"
 
@@ -52,6 +67,15 @@ msgstr "Por título"
 msgid "By year"
 msgstr "Por año"
 
+msgid "CD in {}"
+msgstr "CD en {}"
+
+msgid "CDs are not read outside Linux yet"
+msgstr "todavía no se leen CD fuera de Linux"
+
+msgid "Capture to a file ({})"
+msgstr "Captura a archivo ({})"
+
 msgid "Classic"
 msgstr "Clásico"
 
@@ -70,6 +94,12 @@ msgstr "Conectar cuenta"
 msgid "Ctrl + arrows"
 msgstr "Ctrl + flechas"
 
+msgid "DSD128 over DoP"
+msgstr "DSD128 por DoP"
+
+msgid "DSD64 over DoP"
+msgstr "DSD64 por DoP"
+
 msgid "Delete"
 msgstr "Borrar"
 
@@ -87,6 +117,18 @@ msgstr "Formatos"
 
 msgid "Genres"
 msgstr "Géneros"
+
+msgid "High 24/176.4"
+msgstr "Alta 24/176.4"
+
+msgid "High 24/192"
+msgstr "Alta 24/192"
+
+msgid "High 24/88.2"
+msgstr "Alta 24/88.2"
+
+msgid "High 24/96"
+msgstr "Alta 24/96"
 
 msgid "I did not find a CD drive"
 msgstr "no encontré una unidad de CD"
@@ -108,6 +150,9 @@ msgstr "Lo último que sonó"
 
 msgid "Look for plugins"
 msgstr "Buscar plugins"
+
+msgid "Maximum 32/384"
+msgstr "Máximo 32/384"
 
 msgid "Measure the output"
 msgstr "Medir la salida"
@@ -271,6 +316,9 @@ msgstr "Parar"
 msgid "Stop the analysis"
 msgstr "Detener el análisis"
 
+msgid "Studio 24/48"
+msgstr "Estudio 24/48"
+
 msgid "The library is empty"
 msgstr "La biblioteca está vacía"
 
@@ -279,6 +327,9 @@ msgstr "Este plugin quiere:"
 
 msgid "Time listened"
 msgstr "Tiempo escuchado"
+
+msgid "Track {}"
+msgstr "Pista {}"
 
 msgid "Withdraw permission"
 msgstr "Quitar permiso"
@@ -297,6 +348,9 @@ msgstr "una lista necesita un nombre"
 
 msgid "a scan is already running"
 msgstr "ya hay un escaneo corriendo"
+
+msgid "a stream cannot be rewound"
+msgstr "un stream no se puede rebobinar"
 
 msgid "account connected"
 msgstr "cuenta conectada"
@@ -352,11 +406,29 @@ msgstr "convertido a {}"
 msgid "could not open the browser: {}"
 msgstr "no se pudo abrir el navegador: {}"
 
+msgid "could not open the stream: {}"
+msgstr "no se pudo abrir el stream: {}"
+
+msgid "could not open: {}"
+msgstr "no se pudo abrir: {}"
+
+msgid "could not: {}"
+msgstr "no se pudo: {}"
+
+msgid "damaged file: {}"
+msgstr "archivo dañado: {}"
+
+msgid "device: {}"
+msgstr "dispositivo: {}"
+
 msgid "file"
 msgstr "archivo"
 
 msgid "fine"
 msgstr "bien"
+
+msgid "format not supported: {}"
+msgstr "formato no soportado: {}"
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
 msgstr "manejar tu cuenta él mismo, fuera de Chilpa: dice que guarda tu credencial en el llavero del sistema, bajo su propio nombre. Chilpa no la ve, no la puede borrar y no puede comprobarlo"
@@ -519,6 +591,9 @@ msgstr "esa lista está vacía"
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
 
+msgid "the URL has to be http or https"
+msgstr "la URL tiene que ser http o https"
+
 msgid "the account connected but could not be saved: {}"
 msgstr "la cuenta se conectó pero no se pudo guardar: {}"
 
@@ -540,8 +615,38 @@ msgstr "no se pudo quitar la aprobación: {}"
 msgid "the credential could not be saved: {}"
 msgstr "no se pudo guardar la credencial: {}"
 
+msgid "the device could not be measured; nothing below is verified"
+msgstr "no se pudo medir el dispositivo; nada de lo de abajo está comprobado"
+
 msgid "the device could not be opened: {}"
 msgstr "no se pudo abrir el dispositivo: {}"
+
+msgid "the device does not accept {} Hz, which is what this DSD over DoP asks for"
+msgstr "el dispositivo no acepta {} Hz, que es lo que pide este DSD por DoP"
+
+msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
+msgstr "el dispositivo no acepta {} a {} Hz y la política no deja convertir"
+
+msgid "the device failed after {} frames: {}"
+msgstr "el dispositivo falló tras {} frames: {}"
+
+msgid "the device was not measured; without that bit-perfect is not promised"
+msgstr "no se midió el dispositivo; sin eso no se promete bit-perfect"
+
+msgid "the disc carries no audio tracks"
+msgstr "el disco no trae pistas de audio"
+
+msgid "the disc carries no tracks"
+msgstr "el disco no trae pistas"
+
+msgid "the drive is missing"
+msgstr "falta la unidad"
+
+msgid "the file carries no tracks"
+msgstr "el archivo no trae pistas"
+
+msgid "the file carries {} bits and the device only takes {}"
+msgstr "el archivo trae {} bits y el dispositivo solo toma {}"
 
 msgid "the folder for \"{}\" could not be deleted"
 msgstr "no se pudo borrar la carpeta de \"{}\""
@@ -576,17 +681,38 @@ msgstr "el módulo no se pudo cargar: {}"
 msgid "the name"
 msgstr "el nombre"
 
+msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
+
 msgid "the plugin sandbox could not be started"
 msgstr "no se pudo arrancar el sandbox de plugins"
 
 msgid "the plugin sandbox is not started"
 msgstr "el sandbox de plugins no está arrancado"
 
+msgid "the reply could not be built"
+msgstr "no se pudo armar la respuesta"
+
+msgid "the reply could not be read: {}"
+msgstr "no se pudo leer la respuesta: {}"
+
+msgid "the reply does not fit"
+msgstr "la respuesta no cabe"
+
 msgid "the request carries no URL that can be understood"
 msgstr "la petición no trae una URL que se entienda"
 
+msgid "the request carries no url"
+msgstr "la petición no trae url"
+
+msgid "the request is not JSON: {}"
+msgstr "la petición no es JSON: {}"
+
 msgid "the scan failed: {}"
 msgstr "el escaneo falló: {}"
+
+msgid "the server sent no audio: {}"
+msgstr "el servidor no mandó audio: {}"
 
 msgid "the version"
 msgstr "la versión"
@@ -609,11 +735,17 @@ msgstr "no hay nada de {}"
 msgid "there is nowhere to keep a secret on this machine"
 msgstr "no hay dónde guardar un secreto en este equipo"
 
+msgid "this device delivers bit-perfect in no common format"
+msgstr "este dispositivo no entrega bit-perfect en ningún formato común"
+
 msgid "this list"
 msgstr "esta lista"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"
+
+msgid "track {}: {}"
+msgstr "pista {}: {}"
 
 msgid "{} album"
 msgid_plural "{} albums"
@@ -627,6 +759,9 @@ msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] "{} artista"
 msgstr[1] "{} artistas"
+
+msgid "{} bit at {} Hz, {}"
+msgstr "{} bits a {} Hz, {}"
 
 msgid "{} channel"
 msgid_plural "{} channels"
@@ -644,6 +779,9 @@ msgstr "{} de las pistas de la lista ya no están"
 
 msgid "{} of {}"
 msgstr "{} de {}"
+
+msgid "{} of {} formats come out untouched"
+msgstr "{} de {} formatos salen tal cual"
 
 msgid "{} of {} plugins loaded"
 msgstr "{} de {} plugins cargados"

@@ -37,8 +37,8 @@ fn write_ramp(path: &PathBuf, frames: u32) {
 /// music sample that is left.
 fn first_sample(decoded: &mut Decoded, mut discard: u64) -> i32 {
     loop {
-        let block = decoded.next_block().unwrap().expect("hay música");
-        let Block::Int { data, .. } = block else { panic!("el WAV es entero") };
+        let block = decoded.next_block().unwrap().expect("there is music");
+        let Block::Int { data, .. } = block else { panic!("the WAV is integer") };
         let frames = (data.len() / 2) as u64;
         if discard >= frames {
             discard -= frames;
@@ -56,18 +56,18 @@ fn temporal(name: &str) -> PathBuf {
 
 #[test]
 fn seeking_leaves_the_reader_on_the_requested_frame() {
-    let path = temporal("rampa");
+    let path = temporal("ramp");
     write_ramp(&path, 60_000);
     let mut decoded = Decoded::open(&path).unwrap();
 
     for target in [0u64, 1, 44_100, 12_345, 59_999] {
         let plan = decoded.seek_to_frame(target).unwrap();
-        assert!(plan.request <= target, "el contenedor nunca se pasa del objetivo");
+        assert!(plan.request <= target, "the container never overshoots the target");
         let sample = first_sample(&mut decoded, plan.discard);
         assert_eq!(
             sample,
             (target % 30_000) as i32,
-            "tras buscar a {target} la música empieza en ese frame"
+            "after seeking to {target} the music starts at that frame"
         );
     }
     let _ = std::fs::remove_file(path);
@@ -75,11 +75,11 @@ fn seeking_leaves_the_reader_on_the_requested_frame() {
 
 #[test]
 fn the_file_declares_its_duration_in_frames() {
-    let path = temporal("duracion");
+    let path = temporal("duration");
     write_ramp(&path, 1_000);
     let decoded = Decoded::open(&path).unwrap();
     assert_eq!(decoded.frame_count(), Some(1_000));
-    assert_eq!(decoded.encoder_delay(), 0, "un WAV no trae relleno de codificador");
+    assert_eq!(decoded.encoder_delay(), 0, "a WAV carries no encoder padding");
     assert_eq!(decoded.encoder_padding(), 0);
     let _ = std::fs::remove_file(path);
 }

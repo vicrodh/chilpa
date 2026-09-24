@@ -41,7 +41,7 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
         Err(e) => return error(&e),
     };
     if !p.url.starts_with("https://") && !p.url.starts_with("http://") {
-        return error("la URL tiene que ser http o https");
+        return error(&chilpa_i18n::t("the URL has to be http or https"));
     }
 
     let agent = ureq::Agent::config_builder()
@@ -88,7 +88,7 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
 
     match reply {
         Ok(r) => read_reply(r),
-        Err(e) => error(&format!("no se pudo: {e}")),
+        Err(e) => error(&chilpa_i18n::t_args("could not: {}", &[&e.to_string()])),
     }
 }
 
@@ -101,24 +101,24 @@ fn read_reply(r: ureq::http::Response<ureq::Body>) -> Vec<u8> {
         .collect();
     let body = match r.into_body().read_to_string() {
         Ok(s) if s.len() <= MAX => s,
-        Ok(_) => return error("la respuesta no cabe"),
-        Err(e) => return error(&format!("no se pudo leer la respuesta: {e}")),
+        Ok(_) => return error(&chilpa_i18n::t("the reply does not fit")),
+        Err(e) => return error(&chilpa_i18n::t_args("the reply could not be read: {}", &[&e.to_string()])),
     };
     serde_json::to_vec(&serde_json::json!({
         "status": status,
         "headers": headers,
         "body": body,
     }))
-    .unwrap_or_else(|_| error("no se pudo armar la respuesta"))
+    .unwrap_or_else(|_| error(&chilpa_i18n::t("the reply could not be built")))
 }
 
 fn read(json: &[u8]) -> Result<Request, String> {
     let v: serde_json::Value =
-        serde_json::from_slice(json).map_err(|e| format!("la petición no es JSON: {e}"))?;
+        serde_json::from_slice(json).map_err(|e| chilpa_i18n::t_args("the request is not JSON: {}", &[&e.to_string()]))?;
     let url = v
         .get("url")
         .and_then(|u| u.as_str())
-        .ok_or("la petición no trae url")?
+        .ok_or(&chilpa_i18n::t("the request carries no url"))?
         .to_string();
     let method = v
         .get("method")
@@ -147,41 +147,41 @@ mod tests {
     use super::*;
 
     fn as_json(bytes: &[u8]) -> serde_json::Value {
-        serde_json::from_slice(bytes).expect("siempre se contesta JSON")
+        serde_json::from_slice(bytes).expect("JSON is always answered")
     }
 
     #[test]
     fn a_request_that_is_not_json_answers_an_error_in_json() {
-        let r = as_json(&send(b"basura", None));
-        assert!(r["error"].as_str().unwrap().contains("no es JSON"));
+        let r = as_json(&send(b"junk", None));
+        assert!(r["error"].as_str().unwrap().contains("not JSON"));
     }
 
     #[test]
     fn no_url_means_no_request() {
         let r = as_json(&send(b"{}", None));
-        assert!(r["error"].as_str().unwrap().contains("no trae url"));
+        assert!(r["error"].as_str().unwrap().contains("no url"));
     }
 
     #[test]
     fn a_scheme_that_is_not_http_is_refused_without_going_out() {
-        for url in ["file:///etc/passwd", "ftp://algo/x", "chilpa://interno"] {
+        for url in ["file:///etc/passwd", "ftp://something/x", "chilpa://internal"] {
             let request = format!(r#"{{"url":"{url}"}}"#);
             let r = as_json(&send(request.as_bytes(), None));
             assert!(
                 r["error"].as_str().unwrap().contains("http"),
-                "\"{url}\" no debería intentarse: {r}"
+                "\"{url}\" should not be attempted: {r}"
             );
         }
     }
 
     #[test]
     fn what_the_plugin_asked_for_is_read() {
-        let p = read(br#"{"url":"https://a.b/c","method":"post","headers":{"X":"1"},"body":"hola"}"#)
+        let p = read(br#"{"url":"https://a.b/c","method":"post","headers":{"X":"1"},"body":"hi"}"#)
             .unwrap();
         assert_eq!(p.url, "https://a.b/c");
-        assert_eq!(p.method, "POST", "el método se normaliza");
+        assert_eq!(p.method, "POST", "the method is normalized");
         assert_eq!(p.headers.get("X").map(String::as_str), Some("1"));
-        assert_eq!(p.body, "hola");
+        assert_eq!(p.body, "hi");
     }
 
     #[test]

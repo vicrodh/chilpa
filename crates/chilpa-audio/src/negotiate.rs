@@ -185,12 +185,12 @@ mod tests {
         // bits, so cutting down to 16 would be a loss too many.
         let request = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
         let d = negotiate(request, &codec_de_laptop(), Policy::AllowAnything).unwrap();
-        assert_eq!(d.opened.sample_format, SampleFormat::S32, "cabe en 32, no se recorta");
+        assert_eq!(d.opened.sample_format, SampleFormat::S32, "it fits in 32, nothing is truncated");
         assert_eq!(d.opened.sample_rate_hz, 48_000);
-        assert!(!d.is_bit_perfect(), "remuestrear nunca es bit-perfect");
+        assert!(!d.is_bit_perfect(), "resampling is never bit-perfect");
         assert!(
             d.transforms.iter().any(|t| matches!(t, Transform::Resampled { .. })),
-            "se dijo que se remuestreó: {:?}",
+            "it was said that it resampled: {:?}",
             d.transforms
         );
     }
@@ -209,10 +209,10 @@ mod tests {
         assert_eq!(d.opened.sample_format, SampleFormat::S16);
         assert!(
             d.transforms.contains(&Transform::Narrowed { from_bits: 24, to_bits: 16 }),
-            "el recorte tiene que aparecer: {:?}",
+            "the truncation has to show up: {:?}",
             d.transforms
         );
-        assert!(!d.is_bit_perfect(), "recortar no conserva las muestras");
+        assert!(!d.is_bit_perfect(), "truncating does not keep the samples");
     }
 
     use super::*;
@@ -250,7 +250,7 @@ mod tests {
         let d = negotiate(cd(), &caps, Policy::AllowWidening).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32);
         assert_eq!(d.transforms, vec![Transform::Widened { from_bits: 16, to_bits: 32 }]);
-        assert!(d.is_bit_perfect(), "un corrimiento no cambia el valor");
+        assert!(d.is_bit_perfect(), "a shift does not change the value");
     }
 
     #[test]

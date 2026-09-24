@@ -75,7 +75,7 @@ fn caps() -> DeviceCaps {
 #[test]
 fn a_five_minute_track_is_not_loaded_whole_into_memory() {
     let Some(path) = long_file() else {
-        eprintln!("sin ffmpeg: se salta");
+        eprintln!("no ffmpeg: skipped");
         return;
     };
     // 5 minutes of 24/96 stereo is ~345 MB of PCM. If anyone decodes the
@@ -86,16 +86,16 @@ fn a_five_minute_track_is_not_loaded_whole_into_memory() {
         sink.0 = format;
         Ok(&mut sink)
     })
-    .expect("debe reproducir");
+    .expect("it must play");
 
     let after = rss_mb();
     let creció = after - antes;
 
-    assert!(played.outcome.may_advance_queue(), "terminó bien");
-    assert!(sink.1 > 96_000 * 290, "salieron {} frames", sink.1);
+    assert!(played.outcome.may_advance_queue(), "it finished cleanly");
+    assert!(sink.1 > 96_000 * 290, "{} frames came out", sink.1);
     assert!(
         creció < 60.0,
-        "la memoria creció {:.0} MB reproduciendo; se está guardando la pista entera",
+        "memory grew {:.0} MB while playing; the whole track is being kept",
         creció
     );
     // The file is left behind: generating it costs more than deleting it.

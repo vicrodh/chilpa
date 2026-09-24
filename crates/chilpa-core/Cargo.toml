@@ -13,6 +13,8 @@ chilpa-stream.workspace = true
 chilpa-tags.workspace = true
 chilpa-library.workspace = true
 chilpa-analysis.workspace = true
+# What a device refused, and why a track stopped, are read by the user.
+chilpa-i18n.workspace = true
 rusqlite = "0.40"
 chilpa-dsd.workspace = true
 chilpa-sacd.workspace = true

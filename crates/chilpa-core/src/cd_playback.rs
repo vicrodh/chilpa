@@ -25,10 +25,16 @@ impl std::fmt::Display for CdPlayError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             CdPlayError::Drive(e) => write!(f, "{e}"),
-            CdPlayError::Unsupported => {
-                write!(f, "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD")
+            CdPlayError::Unsupported => write!(
+                f,
+                "{}",
+                chilpa_i18n::t(
+                    "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
+                )
+            ),
+            CdPlayError::Sink(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
             }
-            CdPlayError::Sink(e) => write!(f, "dispositivo: {e:?}"),
         }
     }
 }
@@ -146,7 +152,7 @@ mod tests {
         assert!(played.delivery.is_bit_perfect());
         assert!(played.outcome.may_advance_queue());
         assert!(played.read_error.is_none());
-        assert_eq!(played.outcome.frames(), 100 * 588, "los 100 sectores de la pista");
+        assert_eq!(played.outcome.frames(), 100 * 588, "the track's 100 sectors");
     }
 
     #[test]
@@ -165,7 +171,7 @@ mod tests {
             &mut |_| {},
         )
         .unwrap();
-        assert!(played.read_error.is_some(), "el error de lectura se reporta");
-        assert!(played.outcome.frames() < 100 * 588, "no salió la pista entera");
+        assert!(played.read_error.is_some(), "the read error is reported");
+        assert!(played.outcome.frames() < 100 * 588, "the whole track did not come out");
     }
 }

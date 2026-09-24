@@ -698,7 +698,10 @@ impl Chilpa {
                 .rows
                 .into_iter()
                 .map(|f| WizardRow {
-                    name: f.name,
+                    // The name and the spelled out format are marked where
+                    // they are built, in the wizard; translating them here is
+                    // what makes the panel follow the chosen language.
+                    name: chilpa_i18n::t(&f.name),
                     format: f.format,
                     verdict: match f.verdict {
                         chilpa_core::wizard::Verdict::BitPerfect => "bit-perfect".into(),

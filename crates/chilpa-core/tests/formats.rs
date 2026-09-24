@@ -29,7 +29,7 @@ fn hay_ffmpeg() -> bool {
 
 fn dir() -> PathBuf {
     let mut p = std::env::temp_dir();
-    p.push("chilpa-formatos");
+    p.push("chilpa-formats");
     std::fs::create_dir_all(&p).unwrap();
     p
 }
@@ -79,9 +79,9 @@ fn convert(origin: &Path, target: &Path, args: &[&str]) -> bool {
         .args(args)
         .arg(target)
         .output()
-        .expect("ffmpeg corre");
+        .expect("ffmpeg runs");
     if !output.status.success() {
-        eprintln!("ffmpeg falló: {}", String::from_utf8_lossy(&output.stderr));
+        eprintln!("ffmpeg failed: {}", String::from_utf8_lossy(&output.stderr));
     }
     output.status.success()
 }
@@ -92,28 +92,28 @@ fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
     let mut decoded = Decoded::open(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let channels = decoded.stream_format().channels as usize;
     let mut left = Vec::new();
-    let mut mayor = 0usize;
+    let mut largest = 0usize;
     let mut bits = 0u8;
     while let Some(block) = decoded.next_block().unwrap() {
         match block {
             Block::Int { data, bits: b } => {
                 bits = b;
-                mayor = mayor.max(data.len() / channels);
+                largest = largest.max(data.len() / channels);
                 left.extend(data.iter().step_by(channels));
             }
             Block::Float(data) => {
-                mayor = mayor.max(data.len() / channels);
+                largest = largest.max(data.len() / channels);
                 left.extend(data.iter().step_by(channels).map(|v| (v * 32768.0) as i32));
             }
         }
     }
-    (left, mayor, bits)
+    (left, largest, bits)
 }
 
 #[test]
 fn lossless_formats_come_out_identical_and_in_blocks() {
     if !hay_ffmpeg() {
-        eprintln!("sin ffmpeg: se salta");
+        eprintln!("no ffmpeg: skipped");
         return;
     }
     let d = dir();
@@ -137,16 +137,16 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
     for (name, origin, args, expected, expected_bits) in cases {
         let target = d.join(name);
         if !convert(origin, &target, args) {
-            eprintln!("{name}: ffmpeg no pudo, se salta");
+            eprintln!("{name}: ffmpeg could not, skipped");
             continue;
         }
-        let (came_out, mayor, bits) = decode(&target);
-        assert_eq!(bits, *expected_bits, "{name}: los bits del archivo mandan");
-        assert_eq!(came_out.len(), expected.len(), "{name}: faltaron o sobraron frames");
-        assert_eq!(&came_out, *expected, "{name}: la señal cambió");
+        let (came_out, largest, bits) = decode(&target);
+        assert_eq!(bits, *expected_bits, "{name}: the file's bits rule");
+        assert_eq!(came_out.len(), expected.len(), "{name}: frames were missing or left over");
+        assert_eq!(&came_out, *expected, "{name}: the signal changed");
         assert!(
-            mayor <= MAX_FRAMES_PER_BLOCK,
-            "{name}: un bloque de {mayor} frames; se está decodificando de más"
+            largest <= MAX_FRAMES_PER_BLOCK,
+            "{name}: a block of {largest} frames; too much is being decoded"
         );
         let _ = std::fs::remove_file(target);
     }
@@ -157,11 +157,11 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
 #[test]
 fn lossy_formats_decode_in_blocks() {
     if !hay_ffmpeg() {
-        eprintln!("sin ffmpeg: se salta");
+        eprintln!("no ffmpeg: skipped");
         return;
     }
     let d = dir();
-    let wav = d.join("ref-perdida.wav");
+    let wav = d.join("ref-lossy.wav");
     write_wav(&wav, 16);
 
     // Opus does not make it: the decoder we use does not carry it yet. It
@@ -173,22 +173,22 @@ fn lossy_formats_decode_in_blocks() {
     ] {
         let target = d.join(name);
         if !convert(&wav, &target, &args) {
-            eprintln!("{name}: ffmpeg no pudo, se salta");
+            eprintln!("{name}: ffmpeg could not, skipped");
             continue;
         }
-        let (came_out, mayor, _) = decode(&target);
-        assert!(!came_out.is_empty(), "{name}: no salió audio");
+        let (came_out, largest, _) = decode(&target);
+        assert!(!came_out.is_empty(), "{name}: no audio came out");
         // With lossy the duration moves a little because of encoder padding;
         // close enough is enough.
         let difference = (came_out.len() as i64 - FRAMES as i64).abs();
         assert!(
             difference < RATE as i64 / 2,
-            "{name}: salieron {} frames contra {FRAMES}",
+            "{name}: {} frames came out against {FRAMES}",
             came_out.len()
         );
         assert!(
-            mayor <= MAX_FRAMES_PER_BLOCK,
-            "{name}: un bloque de {mayor} frames; se está decodificando de más"
+            largest <= MAX_FRAMES_PER_BLOCK,
+            "{name}: a block of {largest} frames; too much is being decoded"
         );
         let _ = std::fs::remove_file(target);
     }
@@ -198,23 +198,23 @@ fn lossy_formats_decode_in_blocks() {
 #[test]
 fn opus_is_not_supported_yet_and_says_so_plainly() {
     if !hay_ffmpeg() {
-        eprintln!("sin ffmpeg: se salta");
+        eprintln!("no ffmpeg: skipped");
         return;
     }
     let d = dir();
     let wav = d.join("ref-opus.wav");
     write_wav(&wav, 16);
-    let target = d.join("prueba.opus");
+    let target = d.join("test.opus");
     if !convert(&wav, &target, &["-c:a", "libopus"]) {
-        eprintln!("sin codificador de opus: se salta");
+        eprintln!("no opus encoder: skipped");
         return;
     }
     match Decoded::open(&target) {
         Err(e) => {
             let text = e.to_string();
-            assert!(text.contains("no soportado"), "el error debe decir qué pasó: {text}");
+            assert!(text.contains("not supported"), "the error must say what happened: {text}");
         }
-        Ok(_) => panic!("ya se puede abrir opus: quita esta prueba y agrégalo a la matriz"),
+        Ok(_) => panic!("opus can be opened now: drop this test and add it to the matrix"),
     }
     let _ = std::fs::remove_file(target);
     let _ = std::fs::remove_file(wav);
