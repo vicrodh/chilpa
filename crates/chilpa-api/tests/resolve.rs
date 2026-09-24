@@ -16,7 +16,7 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::path::Path;
 
-const OUTPUT: &str = "capture";
+const OUTPUT: &str = "file:capture";
 
 /// A short WAV with a tone, in memory.
 fn wave(frames: u32) -> Vec<u8> {

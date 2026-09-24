@@ -6,7 +6,7 @@
 use std::io::Write;
 use std::path::PathBuf;
 
-const OUTPUT: &str = "capture";
+const OUTPUT: &str = "file:capture";
 
 /// A short WAV of silence. What matters here is the order, not the sound.
 fn wave(dir: &PathBuf, name: &str) -> PathBuf {

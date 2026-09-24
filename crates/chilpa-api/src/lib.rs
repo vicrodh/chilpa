@@ -1226,13 +1226,27 @@ mod tests {
     }
 
     #[test]
-    fn the_listed_outputs_are_direct_ones() {
+    fn every_listed_output_names_the_stack_it_belongs_to() {
+        // A bare "hw:1,0" does not say which stack it came from, and that is
+        // exactly what somebody has to be told when a remembered output is
+        // no longer there.
         for output in Chilpa::new().outputs() {
+            let (stack, bare) = output
+                .id
+                .split_once(':')
+                .unwrap_or_else(|| panic!("{} names no stack", output.id));
+            // Asked of the core and not of the audio crate. The facade is
+            // not allowed to reach into the engine (ADR-001), and the answer
+            // to "which stacks are there" belongs to whoever assembles them.
+            // Writing the list out here instead would be the same leak with
+            // the wires hidden: a copy that goes stale the day one is added.
             assert!(
-                output.id.starts_with("hw:") || output.id == "capture",
-                "{} is not a valid output",
+                chilpa_core::backends::StackKind::from_key(stack).is_some(),
+                "{} names no stack this build has",
                 output.id
             );
+            assert!(!bare.is_empty(), "{} names no output", output.id);
+            assert!(!output.label.is_empty(), "{} has no name to show", output.id);
         }
     }
 
