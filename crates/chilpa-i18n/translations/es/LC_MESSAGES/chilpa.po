@@ -34,6 +34,9 @@ msgstr "32 bits"
 msgid "32 bit float"
 msgstr "flotante de 32"
 
+msgid "Add a folder"
+msgstr "Agregar una carpeta"
+
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
@@ -45,6 +48,12 @@ msgstr "Álbumes"
 
 msgid "Analyse the library"
 msgstr "Analizar la biblioteca"
+
+msgid "Analysis"
+msgstr "Análisis"
+
+msgid "Appearance"
+msgstr "Apariencia"
 
 msgid "Approve"
 msgstr "Aprobar"
@@ -112,6 +121,9 @@ msgstr "DSD64 por DoP"
 msgid "Delete"
 msgstr "Borrar"
 
+msgid "Deliver the samples untouched"
+msgstr "Entregar las muestras sin tocarlas"
+
 msgid "Disconnect"
 msgstr "Desconectar"
 
@@ -124,6 +136,9 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 msgid "Everything"
 msgstr "Todo"
 
+msgid "Folders"
+msgstr "Carpetas"
+
 msgid "For a long while"
 msgstr "Para un rato largo"
 
@@ -135,6 +150,9 @@ msgstr "De esta semana"
 
 msgid "Genres"
 msgstr "Géneros"
+
+msgid "Goniometer"
+msgstr "Goniómetro"
 
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
@@ -169,8 +187,17 @@ msgstr "No pide ningún permiso, pero igual decides tú si corre."
 msgid "It now also asks for:"
 msgstr "Ahora pide además:"
 
+msgid "Language"
+msgstr "Idioma"
+
 msgid "Last played"
 msgstr "Lo último que sonó"
+
+msgid "Layout"
+msgstr "Acomodo"
+
+msgid "Library"
+msgstr "Biblioteca"
 
 msgid "Look for plugins"
 msgstr "Buscar plugins"
@@ -195,6 +222,9 @@ msgstr "Siguiente"
 
 msgid "No answer from"
 msgstr "No contestaron"
+
+msgid "No folder scanned yet"
+msgstr "Todavía no se ha escaneado ninguna carpeta"
 
 msgid "No lyrics for this track"
 msgstr "Sin letra para esta pista"
@@ -247,6 +277,9 @@ msgstr "Reproducir"
 msgid "Play CD"
 msgstr "Reproducir CD"
 
+msgid "Playback"
+msgstr "Reproducción"
+
 msgid "Playlist name"
 msgstr "Nombre de la lista"
 
@@ -270,6 +303,9 @@ msgstr "Frecuencias"
 
 msgid "Reactivate"
 msgstr "Reactivar"
+
+msgid "Reads a minute of each track and works out its tempo, its key and its loudness. It is what fills the tempo lists and AutoMix."
+msgstr "Lee un minuto de cada pista y le saca el tempo, la tonalidad y la sonoridad. Es lo que llena las listas de tempo y el AutoMix."
 
 msgid "Recently added"
 msgstr "Agregados"
@@ -325,6 +361,9 @@ msgstr "Escanear a la biblioteca"
 msgid "Search"
 msgstr "Buscar"
 
+msgid "Settings"
+msgstr "Ajustes"
+
 msgid "Shortcuts"
 msgstr "Atajos"
 
@@ -342,6 +381,9 @@ msgstr "Inteligentes"
 
 msgid "Space"
 msgstr "Espacio"
+
+msgid "Spectrum"
+msgstr "Espectro"
 
 msgid "Statistics"
 msgstr "Estadísticas"
@@ -382,8 +424,17 @@ msgstr "Para moverse"
 msgid "Track {}"
 msgstr "Pista {}"
 
+msgid "Visualizer"
+msgstr "Visualizador"
+
+msgid "Wave"
+msgstr "Onda"
+
 msgid "What you play most"
 msgstr "Lo que más escuchas"
+
+msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
+msgstr "Con esto encendido, una pista que el dispositivo no acepta en su propio formato no suena, y se dice. Apagado, Chilpa convierte y también lo dice."
 
 msgid "Withdraw permission"
 msgstr "Quitar permiso"

@@ -15,9 +15,11 @@ RowLayout {
 
     // So a layout can decide whether it wants the search box here or separately.
     property bool withSearch: true
-    // The same with the layout selector, and with the language.
-    property bool withLayout: true
-    property bool withLanguage: true
+    // The layout and the language live in the settings panel now. A layout
+    // that wants them back in the bar switches them on: the properties are
+    // what keeps that a layout's decision and not this panel's.
+    property bool withLayout: false
+    property bool withLanguage: false
 
     Component.onCompleted: {
         Chilpa.refreshOutputs()

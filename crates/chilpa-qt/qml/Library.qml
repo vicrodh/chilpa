@@ -31,6 +31,8 @@ Rectangle {
             Chilpa.runWizard()
         } else if (which === "plugins") {
             Chilpa.loadPlugins()
+        } else if (which === "settings") {
+            Chilpa.refreshLibraryFolders()
         }
     }
 
@@ -62,6 +64,8 @@ Rectangle {
                     if (root.tab === "wizard")
                         return Chilpa.translate("Output wizard", Chilpa.trRev)
                     if (root.tab === "plugins") return "Plugins"
+                    if (root.tab === "settings")
+                        return Chilpa.translate("Settings", Chilpa.trRev)
                     if (root.tab === "playlists")
                         return Chilpa.translateCount(
                             "{} playlist", "{} playlists", Chilpa.playlists.length, Chilpa.trRev)
@@ -82,7 +86,8 @@ Rectangle {
                     { key: "playlists", text: Chilpa.translate("Playlists", Chilpa.trRev) },
                     { key: "stats", text: Chilpa.translate("Statistics", Chilpa.trRev) },
                     { key: "wizard", text: Chilpa.translate("Output", Chilpa.trRev) },
-                    { key: "plugins", text: "Plugins" }
+                    { key: "plugins", text: "Plugins" },
+                    { key: "settings", text: Chilpa.translate("Settings", Chilpa.trRev) }
                 ]
                 delegate: Button {
                     text: modelData.text
@@ -162,6 +167,12 @@ Rectangle {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: root.tab === "plugins"
+        }
+
+        SettingsPanel {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: root.tab === "settings"
         }
 
         GridView {
