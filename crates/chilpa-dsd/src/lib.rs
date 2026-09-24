@@ -1,26 +1,26 @@
-//! DSD: leer 1 bit por muestra y entregarlo sin tocarlo.
+//! DSD: read one bit per sample and hand it over untouched.
 //!
-//! DSD no se "decodifica": los bits que trae el archivo son los que tiene que
-//! recibir el DAC. Este crate abre los contenedores (DSF hoy, DFF y SACD
-//! después), normaliza el orden de bits dentro del byte y entrega bloques
-//! planares por canal, listos para el empaquetado DoP de `chilpa-audio` o
-//! para una salida nativa.
+//! DSD is not "decoded": the bits in the file are the bits the DAC has to
+//! receive. This crate opens the containers (DSF today, DFF and SACD later),
+//! normalizes the bit order inside the byte, and hands over planar blocks
+//! per channel, ready for the DoP packing in `chilpa-audio` or for a native
+//! output.
 //!
-//! Lo único que se toca es el orden de los bits dentro del byte, porque DSF
-//! los guarda con el primero en tiempo en la posición menos significativa y
-//! el cable los quiere al revés. Esa inversión es exacta y reversible.
+//! The only thing touched is the bit order inside the byte, because DSF
+//! stores the earliest bit in the least significant position and the cable
+//! wants it the other way round. That inversion is exact and reversible.
 
 pub mod dsf;
 
 pub use dsf::DsfReader;
 
-/// Errores al leer DSD.
+/// What can go wrong reading DSD.
 #[derive(Debug)]
 pub enum DsdError {
     Open(std::io::Error),
-    /// El archivo no es lo que dice ser.
+    /// The file is not what it says it is.
     Corrupt(String),
-    /// Una frecuencia o un número de canales que no manejamos.
+    /// A rate or a channel count we do not handle.
     Unsupported(String),
 }
 
@@ -40,23 +40,23 @@ impl From<std::io::Error> for DsdError {
     }
 }
 
-/// Lo que se sabe de un stream de DSD antes de leerlo.
+/// What is known about a DSD stream before reading it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct DsdInfo {
-    /// Bits de DSD por segundo y por canal: 2 822 400 es DSD64.
+    /// DSD bits per second per channel: 2,822,400 is DSD64.
     pub dsd_rate_hz: u32,
     pub channels: u16,
-    /// Total de bits por canal, o sea de muestras.
+    /// Total bits per channel, which is the sample count.
     pub samples: u64,
 }
 
 impl DsdInfo {
-    /// El múltiplo de 44 100 que nombra la tasa: 64 para DSD64.
+    /// The multiple of 44,100 that names the rate: 64 for DSD64.
     pub fn multiple(&self) -> u32 {
         self.dsd_rate_hz / 44_100
     }
 
-    /// Duración en segundos.
+    /// Duration in seconds.
     pub fn seconds(&self) -> f64 {
         if self.dsd_rate_hz == 0 {
             return 0.0;
@@ -65,25 +65,25 @@ impl DsdInfo {
     }
 }
 
-/// Una fuente de DSD abierta.
+/// An open DSD source.
 pub trait DsdSource {
     fn info(&self) -> &DsdInfo;
 
-    /// Siguiente bloque: un vector de bytes por canal, todos del mismo largo,
-    /// con el bit primero en tiempo en la posición más significativa.
-    /// `None` cuando se acabó.
+    /// The next block: one byte vector per channel, all the same length, with
+    /// the earliest bit in the most significant position. `None` when it is
+    /// over.
     fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, DsdError>;
 }
 
-/// Invierte el orden de los bits de un byte.
+/// Reverses the bit order of a byte.
 ///
-/// DSF guarda el bit primero en tiempo en la posición menos significativa;
-/// DoP y las salidas nativas lo quieren en la más significativa.
+/// DSF stores the earliest bit in the least significant position; DoP and
+/// native outputs want it in the most significant one.
 pub const fn reverse_bits(b: u8) -> u8 {
     b.reverse_bits()
 }
 
-/// Frecuencias de DSD que aceptamos, de DSD64 a DSD512.
+/// The DSD rates we accept, from DSD64 to DSD512.
 pub fn is_supported_rate(rate_hz: u32) -> bool {
     matches!(rate_hz, 2_822_400 | 5_644_800 | 11_289_600 | 22_579_200)
 }

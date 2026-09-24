@@ -1,4 +1,4 @@
-//! Leer tags de archivos de verdad, generados con ffmpeg.
+//! Reading tags from real files, generated with ffmpeg.
 
 use chilpa_tags::read;
 use std::path::PathBuf;
@@ -8,7 +8,7 @@ fn hay_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
-/// Un FLAC de un segundo con los tags que se le pidan.
+/// A one-second FLAC carrying whatever tags it is given.
 fn file(name: &str, tags: &[(&str, &str)]) -> Option<PathBuf> {
     if !hay_ffmpeg() {
         return None;

@@ -1,9 +1,9 @@
-//! Salida por ALSA directo a hardware.
+//! ALSA output, straight to the hardware.
 //!
-//! Este backend abre el dispositivo `hw:` y nada más. No cae a `plughw`, que
-//! resamplea, ni al mixer compartido: si el dispositivo no puede con el
-//! formato, se dice y punto. En QBZ esa caída era silenciosa y la UI seguía
-//! diciendo "bit-perfect".
+//! This backend opens the `hw:` device and nothing else. It does not fall
+//! back to `plughw`, which resamples, nor to the shared mixer: if the device
+//! cannot take the format, that is said and that is all. In QBZ that fall
+//! back was silent and the UI kept saying "bit-perfect".
 
 pub mod devices;
 
@@ -15,14 +15,14 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::DeviceCaps;
 use chilpa_audio::sink::{AudioSink, SinkError};
 
-/// Números de error de POSIX que nos importan. El crate de ALSA los entrega
-/// como `i32` crudos.
+/// The POSIX error numbers that matter here. The ALSA crate hands them over
+/// as raw `i32`.
 const EPIPE: i32 = 32;
 const ENODEV: i32 = 19;
 const ENXIO: i32 = 6;
 const ENOENT: i32 = 2;
 
-/// Frecuencias que se prueban al medir un dispositivo.
+/// The rates tried when measuring a device.
 const RATES: &[u32] = &[
     44_100, 48_000, 88_200, 96_000, 176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
 ];
@@ -39,11 +39,11 @@ fn alsa_format(f: SampleFormat) -> Format {
     FORMATS.iter().find(|(s, _)| *s == f).map(|(_, a)| *a).expect("formato cubierto")
 }
 
-/// Mide qué acepta de verdad un dispositivo, abriéndolo.
+/// Measures what a device really accepts, by opening it.
 ///
-/// Lo que regresa lleva `probed: true`, que es lo único con lo que se puede
-/// prometer bit-perfect. Adivinar frecuencias y apagar el resampleo, como
-/// hacía el asistente de QBZ, es peor que no saber.
+/// What comes back carries `probed: true`, which is the only thing that can
+/// promise bit-perfect. Guessing rates and turning resampling off, the way
+/// the QBZ wizard did, is worse than not knowing.
 pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
     let pcm = open(device)?;
     let params = HwParams::any(&pcm).map_err(backend)?;
@@ -66,23 +66,23 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
     Ok(caps)
 }
 
-/// Un dispositivo ALSA abierto con un formato exacto.
+/// An ALSA device opened at one exact format.
 pub struct AlsaSink {
     pcm: PCM,
     stream: StreamFormat,
 }
 
 impl AlsaSink {
-    /// Abre el dispositivo con ese formato exacto. Si ALSA entrega otra
-    /// frecuencia o formato, se cierra y se falla: nunca se acepta un
-    /// "parecido".
+    /// Opens the device at that exact format. If ALSA hands back a different
+    /// rate or format, it is closed and the call fails: a "close enough" is
+    /// never accepted.
     pub fn open(device: &str, stream: StreamFormat) -> Result<Self, SinkError> {
         let pcm = open(device)?;
         {
             let params = HwParams::any(&pcm).map_err(backend)?;
             params.set_access(Access::RWInterleaved).map_err(backend)?;
             params.set_format(alsa_format(stream.sample_format)).map_err(backend)?;
-            // Exacta, no la más cercana: aquí es donde se colaba el resampleo.
+            // Exact, not nearest: this is where resampling used to sneak in.
             params.set_rate(stream.sample_rate_hz, ValueOr::Nearest).map_err(backend)?;
             params.set_channels(u32::from(stream.channels)).map_err(backend)?;
             pcm.hw_params(&params).map_err(backend)?;
@@ -109,7 +109,7 @@ impl AudioSink for AlsaSink {
         match io.writei(frames) {
             Ok(written) => Ok(written),
             Err(e) => match e.errno() {
-                // El dispositivo se quedó sin datos: se prepara y se sigue.
+                // The device ran dry: prepare it and carry on.
                 EPIPE => {
                     self.pcm.prepare().map_err(backend)?;
                     Err(SinkError::Xrun)
@@ -122,9 +122,9 @@ impl AudioSink for AlsaSink {
     }
 
     fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
-        // Con hardware que sabe pausar, el stream se queda listo y no hay
-        // xrun al reanudar. El que no sabe se queda sin datos y se recupera
-        // con el xrun normal, que ya se maneja arriba.
+        // On hardware that can pause, the stream stays ready and there is no
+        // xrun on resume. Hardware that cannot runs dry and recovers through
+        // the ordinary xrun path, which is handled above.
         if self.pcm.hw_params_current().map(|p| p.can_pause()).unwrap_or(false) {
             self.pcm.pause(paused).map_err(backend)?;
         }
@@ -132,9 +132,9 @@ impl AudioSink for AlsaSink {
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
-        // Sin `drain`: soltar el dispositivo no espera a que termine de
-        // vaciarse, porque un endpoint que dejó de responder colgaría el
-        // paro (el deadlock de stop() en QBZ).
+        // No `drain`: releasing the device does not wait for it to empty,
+        // because an endpoint that stopped answering would hang the stop
+        // (the stop() deadlock in QBZ).
         self.pcm.drop().map_err(backend)?;
         Ok(())
     }
