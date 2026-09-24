@@ -11,6 +11,9 @@ use std::pin::Pin;
 impl Chilpa {
 
     pub fn search(mut self: Pin<&mut Self>, text: &QString) {
+        // A search takes over the results panel, so a list that was open
+        // stops being what is on screen.
+        self.as_mut().set_open_list(QString::from(""));
         let owned = text.to_string();
         self.as_mut().set_search_text(text.clone());
         // This only brings what is local, which comes out at once. Whatever

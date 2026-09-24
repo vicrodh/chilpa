@@ -70,6 +70,11 @@ ApplicationWindow {
         if (Chilpa.initialPlay > 0) playWhenReady.start()
         if (Chilpa.initialConnect !== "") Chilpa.connectAccount(Chilpa.initialConnect)
         if (Chilpa.initialAlbum > 0) Chilpa.openAlbumTracks(Chilpa.initialAlbum, Chilpa.translate("Album", Chilpa.trRev))
+        // CHILPA_LIST="<source> <external id>" opens a source's list.
+        if (Chilpa.initialList !== "") {
+            const which = Chilpa.initialList.split(" ")
+            Chilpa.openSourcePlaylist(which[0], which[1], which[1])
+        }
         Chilpa.refreshAlbums()
         if (Chilpa.initialRescan) Chilpa.rescan()
         if (Chilpa.initialAnalysis) Chilpa.analyzeLibrary()

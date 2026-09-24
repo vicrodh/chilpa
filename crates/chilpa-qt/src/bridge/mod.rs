@@ -47,6 +47,10 @@ pub mod chilpa_bridge {
         /// The sources that answered badly, already written for display. Empty
         /// when all of them answered fine.
         #[qproperty(QString, search_problems)]
+        /// The source list being looked at, empty if none is open. The
+        /// results panel shows it the way it shows an open album: with a
+        /// title and a way out.
+        #[qproperty(QString, open_list)]
         /// The album being looked at, empty if none is open.
         #[qproperty(QString, open_album)]
         #[qproperty(i64, open_album_id)]
@@ -147,6 +151,9 @@ pub mod chilpa_bridge {
         #[qproperty(QString, initial_search)]
         /// A startup album, by id, for exercising the view without a mouse.
         #[qproperty(i64, initial_album)]
+        /// A source's list to open at startup, as "source id", for the same
+        /// reason: exercising the view without a mouse.
+        #[qproperty(QString, initial_list)]
         /// Which library tab it starts on: "artists" or empty.
         #[qproperty(QString, initial_tab)]
         /// Which search result to start playing at startup, counting from 1.
@@ -298,7 +305,12 @@ pub mod chilpa_bridge {
 
         /// Opens a source's list: its tracks become the results.
         #[qinvokable]
-        fn open_source_playlist(self: Pin<&mut Chilpa>, source: &QString, id: &QString);
+        fn open_source_playlist(
+            self: Pin<&mut Chilpa>,
+            source: &QString,
+            id: &QString,
+            name: &QString,
+        );
 
         /// Deletes a saved list. The tracks are not touched.
         #[qinvokable]
@@ -327,6 +339,10 @@ pub mod chilpa_bridge {
         /// Closes the open album.
         #[qinvokable]
         fn close_album(self: Pin<&mut Chilpa>);
+
+        /// Closes the open source list.
+        #[qinvokable]
+        fn close_list(self: Pin<&mut Chilpa>);
 
         /// Queues what the search found, from that position.
         #[qinvokable]
@@ -530,6 +546,7 @@ pub struct ChilpaRust {
     albums: QStringList,
     results: QStringList,
     search_problems: QString,
+    open_list: QString,
     result_paths: Vec<String>,
     /// Whether the previous tick already knew the browser was being waited
     /// on, so the plugin list is not rebuilt on every tick.
@@ -592,6 +609,7 @@ pub struct ChilpaRust {
     autoplay_device: QString,
     initial_search: QString,
     initial_album: i64,
+    initial_list: QString,
     initial_tab: QString,
     initial_play: i32,
     initial_connect: QString,
@@ -633,6 +651,7 @@ impl Default for ChilpaRust {
             albums: QStringList::default(),
             results: QStringList::default(),
             search_problems: QString::from(""),
+            open_list: QString::from(""),
             result_paths: Vec::new(),
             connecting_shown: false,
             open_album: QString::from(""),
@@ -708,6 +727,9 @@ impl Default for ChilpaRust {
             autoplay_device: QString::from(&std::env::args().nth(2).unwrap_or_default()),
             initial_search: QString::from(&std::env::var("CHILPA_SEARCH").unwrap_or_default()),
             initial_album: std::env::var("CHILPA_ALBUM").ok().and_then(|v| v.parse().ok()).unwrap_or(0),
+            initial_list: QString::from(
+                &std::env::var("CHILPA_LIST").unwrap_or_default(),
+            ),
             initial_tab: QString::from(&std::env::var("CHILPA_TAB").unwrap_or_default()),
             // Which plugin to connect at startup. Empty connects nothing.
             initial_connect: QString::from(

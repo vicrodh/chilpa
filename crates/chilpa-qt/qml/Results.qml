@@ -20,10 +20,11 @@ Rectangle {
         anchors.margins: 10
         spacing: 8
 
-        // The header only appears when an album has been opened.
+        // The header appears when an album or a source's list is open. A
+        // search has the search box for a title, so it needs none.
         RowLayout {
             Layout.fillWidth: true
-            visible: Chilpa.openAlbum !== ""
+            visible: Chilpa.openAlbum !== "" || Chilpa.openList !== ""
             spacing: 12
 
             Rectangle {
@@ -45,7 +46,7 @@ Rectangle {
                 spacing: 2
                 Label {
                     Layout.fillWidth: true
-                    text: Chilpa.openAlbum
+                    text: Chilpa.openAlbum !== "" ? Chilpa.openAlbum : Chilpa.openList
                     font.pixelSize: 16
                     font.weight: Font.DemiBold
                     color: "#411d1f"
@@ -61,23 +62,33 @@ Rectangle {
                 }
                 Label {
                     Layout.fillWidth: true
-                    text: Chilpa.openAlbumLine
+                    // A source's list says where it came from where an album
+                    // says its year and its tracks.
+                    text: Chilpa.openAlbum !== ""
+                        ? Chilpa.openAlbumLine
+                        : Chilpa.translateCount(
+                            "{} track", "{} tracks", Chilpa.results.length, Chilpa.trRev)
                     font.pixelSize: 11
                     color: "#7a411d1f"
                     elide: Text.ElideRight
                 }
             }
+            // Play and Queue are the album's: a source's list cannot be
+            // queued whole, because every track would have to be resolved
+            // first. From the rows below, playing one is a single click.
             Button {
+                visible: Chilpa.openAlbum !== ""
                 text: Chilpa.translate("Play", Chilpa.trRev)
                 onClicked: Chilpa.playAlbum(Chilpa.openAlbumId)
             }
             Button {
+                visible: Chilpa.openAlbum !== ""
                 text: Chilpa.translate("Queue", Chilpa.trRev)
                 onClicked: Chilpa.enqueueAlbum(Chilpa.openAlbumId)
             }
             Button {
                 text: Chilpa.translate("Close", Chilpa.trRev)
-                onClicked: Chilpa.closeAlbum()
+                onClicked: Chilpa.openAlbum !== "" ? Chilpa.closeAlbum() : Chilpa.closeList()
             }
         }
 

@@ -5,9 +5,13 @@ import QtQuick.Layouts
 import QtQuick.Window
 import com.blitzfc.chilpa
 
-RowLayout {
+// A Flow and not a Row, for the same reason as the actions: at a narrow
+// window the buttons wrap instead of running off the edge.
+Flow {
     id: root
     spacing: 8
+    Layout.fillWidth: true
+    Layout.preferredHeight: implicitHeight
 
     // With the cursor inside a text field, the space bar types a space;
     // it does not pause.

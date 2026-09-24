@@ -16,9 +16,9 @@ ColumnLayout {
 
     OutputPanel { Layout.fillWidth: true }
 
-    ActionsPanel { Layout.alignment: Qt.AlignLeft }
+    ActionsPanel { Layout.fillWidth: true }
 
-    TransportPanel { Layout.alignment: Qt.AlignLeft }
+    TransportPanel { Layout.fillWidth: true }
 
     // What is playing and, beside it, its lyrics when there are any.
     //
@@ -55,6 +55,7 @@ ColumnLayout {
         Layout.fillHeight: true
         Layout.minimumHeight: 200
         visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
+                 || Chilpa.openList !== ""
     }
 
     Library {
@@ -69,6 +70,7 @@ ColumnLayout {
         // other tabs with no way in: on a fresh install there was no way to
         // reach approving a plugin (ADR-008) without scanning music first.
         visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
+                 && Chilpa.openList === ""
     }
 
     // The queue only shows itself when there is more than one track.

@@ -12,7 +12,7 @@ ColumnLayout {
 
     OutputPanel { Layout.fillWidth: true }
 
-    ActionsPanel { Layout.alignment: Qt.AlignLeft }
+    ActionsPanel { Layout.fillWidth: true }
 
     // The bulk of the window: what is being looked at and, to the right,
     // the lyrics of what is playing.
@@ -25,12 +25,14 @@ ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: Chilpa.searchText !== "" || Chilpa.openAlbum !== ""
+                 || Chilpa.openList !== ""
         }
 
         Library {
             Layout.fillWidth: true
             Layout.fillHeight: true
             visible: Chilpa.searchText === "" && Chilpa.openAlbum === ""
+                 && Chilpa.openList === ""
         }
 
         LyricsPanel {
