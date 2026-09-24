@@ -173,17 +173,6 @@ pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chi
     measure(id)
 }
 
-/// What a stack calls an output, out of the identifier that names both.
-///
-/// An identifier written before stacks existed has no prefix, and reading it
-/// as a bare name is right: it can only have meant the card, because that is
-/// all there was.
-#[cfg(target_os = "linux")]
-fn bare(id: &str) -> String {
-    chilpa_audio::backend::BackendOutput::split(id)
-        .map(|(_, rest)| rest.to_string())
-        .unwrap_or_else(|| id.to_string())
-}
 
 /// The same where there is no backend yet.
 ///

@@ -9,7 +9,11 @@
 
 mod bridge;
 
-use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QString, QUrl};
+use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
+// Only Linux has a desktop file to be named after, and only there is the
+// name what makes the window pick up its icon.
+#[cfg(target_os = "linux")]
+use cxx_qt_lib::QString;
 
 fn main() {
     let mut app = QGuiApplication::new();
