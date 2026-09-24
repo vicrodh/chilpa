@@ -233,12 +233,12 @@ impl Chilpa {
         let albums = self.as_mut().rust_mut().api.albums(500, 0);
         let mut list = QList::<QString>::default();
         for a in &albums {
-            let año = a.year.map(|y| y.to_string()).unwrap_or_default();
+            let year = a.year.map(|y| y.to_string()).unwrap_or_default();
             // One line per album, tab separated: QML splits it and builds its
             // model without the bridge inventing a new type.
             let line = format!(
                 "{}\t{}\t{}\t{}\t{}\t{}\t{}",
-                a.id, a.title, a.artist, año, a.track_count, a.artwork_path, a.play_count
+                a.id, a.title, a.artist, year, a.track_count, a.artwork_path, a.play_count
             );
             list.append(QString::from(&line));
         }

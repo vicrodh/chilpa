@@ -175,6 +175,48 @@ pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>,
     Ok(Some(target))
 }
 
+/// The names a cover goes by when it sits beside the music.
+const COVERS: &[&str] = &[
+    "cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.jpeg", "folder.png",
+    "front.jpg", "front.png", "album.jpg", "album.png", "Cover.jpg", "Folder.jpg",
+];
+
+/// The cover sitting next to the file, if there is one.
+pub fn cover_beside(path: &Path) -> Option<PathBuf> {
+    let dir = path.parent()?;
+    for name in COVERS {
+        let candidate = dir.join(name);
+        if candidate.is_file() {
+            return Some(candidate);
+        }
+    }
+    // Any loose image, when there is none with a known name.
+    let mut loose: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|e| e.path())
+        .filter(|p| {
+            p.is_file()
+                && p.extension()
+                    .and_then(|e| e.to_str())
+                    .map(|e| matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png"))
+                    .unwrap_or(false)
+        })
+        .collect();
+    loose.sort();
+    loose.into_iter().next()
+}
+
+/// The cover for a track: the one inside the file, or the one beside it.
+///
+/// Both, because a library has both kinds and somebody looking at the window
+/// does not care which. The scan knew this rule and the player did not, so an
+/// album whose cover is a `cover.jpg` in its folder -- which is most of
+/// them -- showed its cover in the grid and "no cover" while it played.
+pub fn artwork_for(path: &Path, cache_dir: &Path) -> Option<PathBuf> {
+    extract_artwork(path, cache_dir).ok().flatten().or_else(|| cover_beside(path))
+}
+
 /// A short, stable hash of the path, to name the cache file.
 fn path_hash(path: &Path) -> u64 {
     use std::hash::{Hash, Hasher};
@@ -215,6 +257,33 @@ pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn a_cover_beside_the_file_counts_as_the_track_s_cover() {
+        // The scan knew this and the player did not: an album whose cover is
+        // a cover.jpg in its folder, which is most of them, showed its cover
+        // in the grid and "no cover" while it played.
+        let dir = std::env::temp_dir().join("chilpa-tags-cover");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let track = dir.join("01.flac");
+        std::fs::write(&track, b"not really a flac").unwrap();
+        let cache = dir.join("cache");
+
+        assert_eq!(artwork_for(&track, &cache), None, "nothing to find yet");
+
+        // A name nobody uses, to prove the loose-image fallback works.
+        let loose = dir.join("scan0001.png");
+        std::fs::write(&loose, b"not really a png").unwrap();
+        assert_eq!(artwork_for(&track, &cache), Some(loose), "any image beside it");
+
+        // And a known name wins over a loose one.
+        let named = dir.join("cover.jpg");
+        std::fs::write(&named, b"not really a jpeg").unwrap();
+        assert_eq!(artwork_for(&track, &cache), Some(named));
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
     use super::*;
 
     #[test]

@@ -278,7 +278,7 @@ fn play(
             // queued: a long queue must not read hundreds of files before the
             // first one plays.
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
-            let artwork = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
+            let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
             let total_frames = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
@@ -604,7 +604,7 @@ fn play_dsd(
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
     let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
-    let artwork = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
+    let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
     use chilpa_dsd::DsdSource as _;
     let info = chilpa_dsd::DsfReader::open(path)
         .map(|r| r.info().clone())
