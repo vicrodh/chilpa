@@ -21,7 +21,7 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: 10
         Button {
-            text: "Medir la salida"
+            text: Chilpa.translate("Measure the output", Chilpa.trRev)
             onClicked: Chilpa.runWizard()
         }
         Label {
@@ -35,7 +35,7 @@ ColumnLayout {
 
     Label {
         visible: Chilpa.wizardRows.length === 0
-        text: "Dale a medir para ver qué puede tu salida"
+        text: Chilpa.translate("Press measure to see what your output can do", Chilpa.trRev)
         color: "#7a411d1f"
     }
 
@@ -52,7 +52,7 @@ ColumnLayout {
 
             readonly property var cols: root.fields(modelData)
             readonly property bool perfect: cols[2] === "bit-perfect"
-            readonly property bool impossible: cols[2] === "no se puede"
+            readonly property bool impossible: cols[2] === Chilpa.translate("cannot be done", Chilpa.trRev)
 
             RowLayout {
                 anchors.fill: parent

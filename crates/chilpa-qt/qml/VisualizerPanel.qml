@@ -182,7 +182,7 @@ Rectangle {
             // below zero there is something out of phase.
             Label {
                 visible: Chilpa.correlation <= 1.0
-                text: "fase " + Chilpa.correlation.toFixed(2)
+                text: Chilpa.translate("phase", Chilpa.trRev) + " " + Chilpa.correlation.toFixed(2)
                 font.pixelSize: 10
                 color: Chilpa.correlation < 0 ? "#d7272b" : "#7a411d1f"
             }

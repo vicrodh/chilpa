@@ -3,3 +3,385 @@ msgstr ""
 "Language: en\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Album"
+msgstr ""
+
+msgid "Albums"
+msgstr ""
+
+msgid "Analyse the library"
+msgstr ""
+
+msgid "Approve"
+msgstr ""
+
+msgid "Approve what is new"
+msgstr ""
+
+msgid "Arrows"
+msgstr ""
+
+msgid "Artists"
+msgstr ""
+
+msgid "Bit-perfect"
+msgstr ""
+
+msgid "By artist"
+msgstr ""
+
+msgid "By title"
+msgstr ""
+
+msgid "By year"
+msgstr ""
+
+msgid "Classic"
+msgstr ""
+
+msgid "Clear queue"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Compact"
+msgstr ""
+
+msgid "Connect account"
+msgstr ""
+
+msgid "Ctrl + arrows"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Disconnect"
+msgstr ""
+
+msgid "Distinct tracks"
+msgstr ""
+
+msgid "Everything"
+msgstr ""
+
+msgid "Formats"
+msgstr ""
+
+msgid "Genres"
+msgstr ""
+
+msgid "It asks for no permission at all, but whether it runs is still yours to decide."
+msgstr ""
+
+msgid "It now also asks for:"
+msgstr ""
+
+msgid "Last played"
+msgstr ""
+
+msgid "Look for plugins"
+msgstr ""
+
+msgid "Measure the output"
+msgstr ""
+
+msgid "Most played"
+msgstr ""
+
+msgid "My library"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "No answer from"
+msgstr ""
+
+msgid "No lyrics for this track"
+msgstr ""
+
+msgid "No plugins installed"
+msgstr ""
+
+msgid "No saved playlists yet"
+msgstr ""
+
+msgid "Nothing playing"
+msgstr ""
+
+msgid "Open a folder"
+msgstr ""
+
+msgid "Open a playlist"
+msgstr ""
+
+msgid "Open a stream"
+msgstr ""
+
+msgid "Open an audio file"
+msgstr ""
+
+msgid "Open file"
+msgstr ""
+
+msgid "Open folder"
+msgstr ""
+
+msgid "Open playlist"
+msgstr ""
+
+msgid "Open stream"
+msgstr ""
+
+msgid "Output"
+msgstr ""
+
+msgid "Output wizard"
+msgstr ""
+
+msgid "Pause"
+msgstr ""
+
+msgid "Play"
+msgstr ""
+
+msgid "Play CD"
+msgstr ""
+
+msgid "Playlist name"
+msgstr ""
+
+msgid "Playlists"
+msgstr ""
+
+msgid "Plays"
+msgstr ""
+
+msgid "Press measure to see what your output can do"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Queue"
+msgstr ""
+
+msgid "Rates"
+msgstr ""
+
+msgid "Reactivate"
+msgstr ""
+
+msgid "Recently added"
+msgstr ""
+
+msgid "Recently played"
+msgstr ""
+
+msgid "Reconnect"
+msgstr ""
+
+msgid "Repeat: off"
+msgstr ""
+
+msgid "Repeat: queue"
+msgstr ""
+
+msgid "Repeat: track"
+msgstr ""
+
+msgid "Rescan"
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "SACD images"
+msgstr ""
+
+msgid "Save queue"
+msgstr ""
+
+msgid "Save the queue"
+msgstr ""
+
+msgid "Saved"
+msgstr ""
+
+msgid "Scan a folder into the library"
+msgstr ""
+
+msgid "Scan into the library"
+msgstr ""
+
+msgid "Search"
+msgstr ""
+
+msgid "Shortcuts"
+msgstr ""
+
+msgid "Shuffle"
+msgstr ""
+
+msgid "Since"
+msgstr ""
+
+msgid "Skips"
+msgstr ""
+
+msgid "Smart"
+msgstr ""
+
+msgid "Space"
+msgstr ""
+
+msgid "Statistics"
+msgstr ""
+
+msgid "Stop"
+msgstr ""
+
+msgid "Stop the analysis"
+msgstr ""
+
+msgid "The library is empty"
+msgstr ""
+
+msgid "This plugin wants:"
+msgstr ""
+
+msgid "Time listened"
+msgstr ""
+
+msgid "Withdraw permission"
+msgstr ""
+
+msgid "Your browser is open to grant permission. Waiting here."
+msgstr ""
+
+msgid "account connected"
+msgstr ""
+
+msgid "analysing..."
+msgstr ""
+
+msgid "awaiting approval"
+msgstr ""
+
+msgid "cannot be done"
+msgstr ""
+
+msgid "close whatever is open"
+msgstr ""
+
+msgid "converted"
+msgstr ""
+
+msgid "could not open the browser: {}"
+msgstr ""
+
+msgid "fine"
+msgstr ""
+
+msgid "mixed by tempo: {} track"
+msgid_plural "mixed by tempo: {} tracks"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "next and previous track"
+msgstr ""
+
+msgid "no cover"
+msgstr ""
+
+msgid "open a file"
+msgstr ""
+
+msgid "pause and resume"
+msgstr ""
+
+msgid "phase"
+msgstr ""
+
+msgid "playlist \"{}\" saved"
+msgstr ""
+
+msgid "playlist saved to {}"
+msgstr ""
+
+msgid "quarantined"
+msgstr ""
+
+msgid "remove"
+msgstr ""
+
+msgid "scanning..."
+msgstr ""
+
+msgid "search"
+msgstr ""
+
+msgid "stumbling"
+msgstr ""
+
+msgid "ten seconds forward and back"
+msgstr ""
+
+msgid "that folder could not be read; nothing was touched"
+msgstr ""
+
+msgid "the account expired"
+msgstr ""
+
+msgid "this list"
+msgstr ""
+
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} analysed, {} with no pulse, {} unread"
+msgstr ""
+
+msgid "{} artist"
+msgid_plural "{} artists"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} files: {} read, {} unchanged, {} missing"
+msgstr ""
+
+msgid "{} of {}"
+msgstr ""
+
+msgid "{} of {} plugins loaded"
+msgstr ""
+
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} playlist"
+msgid_plural "{} playlists"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} plugin"
+msgid_plural "{} plugins"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} plugin running"
+msgid_plural "{} plugins running"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track"
+msgid_plural "{} tracks"
+msgstr[0] ""
+msgstr[1] ""

@@ -47,7 +47,7 @@ Rectangle {
             }
             Label {
                 anchors.centerIn: parent
-                text: "sin portada"
+                text: Chilpa.translate("no cover", Chilpa.trRev)
                 color: "#7a411d1f"
                 font.pixelSize: 11
                 visible: Chilpa.artwork === "" && !root.compact
@@ -61,7 +61,7 @@ Rectangle {
 
             Label {
                 Layout.fillWidth: true
-                text: Chilpa.title === "" ? "Nada sonando" : Chilpa.title
+                text: Chilpa.title === "" ? Chilpa.translate("Nothing playing", Chilpa.trRev) : Chilpa.title
                 elide: Text.ElideRight
                 font.pixelSize: 18
                 font.weight: Font.DemiBold
@@ -101,7 +101,7 @@ Rectangle {
                 onMoved: Chilpa.seek(value)
             }
             Label {
-                text: Chilpa.bitPerfect ? "bit-perfect" : (Chilpa.playing ? "convertido" : "")
+                text: Chilpa.bitPerfect ? "bit-perfect" : (Chilpa.playing ? Chilpa.translate("converted", Chilpa.trRev) : "")
                 color: Chilpa.bitPerfect ? "#2e7d32" : "#d7272b"
             }
             Label {

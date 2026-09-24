@@ -130,19 +130,38 @@ fn fill(text: &str, args: &[&str]) -> String {
 
 #[cfg(test)]
 mod tests {
+    /// The chosen language is one value for the whole process, and the tests
+    /// share a process. Whoever changes it takes this first, so two of them
+    /// cannot leave a third reading the wrong catalog.
+    static SPEAKING: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
     use super::*;
+
+    #[test]
+    fn the_shipped_spanish_catalog_actually_says_something() {
+        // Not a parse test: this is the round trip the window does, and it
+        // is what would catch a catalog that ships empty.
+        let _speaking = SPEAKING.lock();
+        set_language("es");
+        assert_eq!(t("Search"), "Buscar");
+        assert_eq!(tf("{} track", "{} tracks", 1, &["1"]), "1 pista");
+        assert_eq!(tf("{} track", "{} tracks", 4, &["4"]), "4 pistas");
+        set_language("en");
+        assert_eq!(t("Search"), "Search");
+    }
 
     #[test]
     fn an_untranslated_string_shows_its_english() {
         // The msgid is the English sentence, so the fallback is already a
-        // correct one and never a placeholder.
-        set_language("es");
+        // correct one and never a placeholder. It does not set a language:
+        // a string no catalog carries comes out the same in all of them, and
+        // the tests share one process.
         assert_eq!(t("A string nobody has translated"), "A string nobody has translated");
-        set_language("en");
     }
 
     #[test]
     fn an_unknown_language_leaves_the_current_one_alone() {
+        let _speaking = SPEAKING.lock();
         set_language("es");
         set_language("klingon");
         assert_eq!(current_language(), "es");
@@ -164,10 +183,12 @@ mod tests {
 
     #[test]
     fn a_count_falls_back_to_the_english_pair() {
-        set_language("en");
-        assert_eq!(tn("{} track", "{} tracks", 1), "{} track");
-        assert_eq!(tn("{} track", "{} tracks", 2), "{} tracks");
-        assert_eq!(tf("{} track", "{} tracks", 3, &["3"]), "3 tracks");
+        // A pair no catalog carries, on purpose: a msgid that is translated
+        // would test the catalog instead of the fallback, and would depend
+        // on whichever language another test left set.
+        assert_eq!(tn("{} widget", "{} widgets", 1), "{} widget");
+        assert_eq!(tn("{} widget", "{} widgets", 2), "{} widgets");
+        assert_eq!(tf("{} widget", "{} widgets", 3, &["3"]), "3 widgets");
     }
 
     #[test]

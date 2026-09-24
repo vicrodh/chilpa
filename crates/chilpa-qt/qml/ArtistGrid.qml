@@ -45,7 +45,7 @@ GridView {
                 }
                 Label {
                     anchors.centerIn: parent
-                    text: "sin portada"
+                    text: Chilpa.translate("no cover", Chilpa.trRev)
                     font.pixelSize: 11
                     color: "#7a411d1f"
                     visible: cols[3] === ""
@@ -63,8 +63,9 @@ GridView {
             }
             Label {
                 Layout.fillWidth: true
-                text: cols[1] + (cols[1] === "1" ? " disco · " : " discos · ") +
-                      cols[2] + (cols[2] === "1" ? " pista" : " pistas")
+                text: Chilpa.translateCount("{} album", "{} albums", parseInt(cols[1]), Chilpa.trRev) +
+                      " · " +
+                      Chilpa.translateCount("{} track", "{} tracks", parseInt(cols[2]), Chilpa.trRev)
                 horizontalAlignment: Text.AlignHCenter
                 font.pixelSize: 11
                 color: "#7a411d1f"

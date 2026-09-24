@@ -96,7 +96,8 @@ impl Chilpa {
         let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
         let ok = self.as_mut().rust_mut().api.save_queue(std::path::Path::new(&path));
         if ok {
-            self.as_mut().set_library_status(QString::from(&format!("lista guardada en {path}")));
+            let saved = self.api.t_args("playlist saved to {}", &[&path]);
+            self.as_mut().set_library_status(QString::from(&saved));
         }
     }
 
@@ -152,9 +153,13 @@ impl Chilpa {
     pub fn automix(mut self: Pin<&mut Self>) {
         let mixed = self.as_mut().rust_mut().api.automix();
         if mixed > 0 {
-            self.as_mut().set_library_status(QString::from(&format!(
-                "mezcla por tempo: {mixed} pistas"
-            )));
+            let mix = self.api.tf(
+                "mixed by tempo: {} track",
+                "mixed by tempo: {} tracks",
+                i64::try_from(mixed).unwrap_or_default(),
+                &[&mixed.to_string()],
+            );
+            self.as_mut().set_library_status(QString::from(&mix));
             // The mix switches shuffle off: they are two forms of the same thing.
             self.as_mut().rust_mut().shuffle = false;
             self.as_mut().shuffle_changed();
@@ -225,16 +230,14 @@ impl Chilpa {
         let mut l = QList::<QString>::default();
         // First what the device said about itself.
         if report.probed {
+            let rates =
+                report.rates.iter().map(ToString::to_string).collect::<Vec<_>>().join(", ");
+            l.append(QString::from(&format!("{}\t{}\t", self.api.t("Rates"), rates)));
             l.append(QString::from(&format!(
-                "Frecuencias\t{}\t",
-                report
-                    .rates
-                    .iter()
-                    .map(|r| r.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", ")
+                "{}\t{}\t",
+                self.api.t("Formats"),
+                report.formats.join(", ")
             )));
-            l.append(QString::from(&format!("Formatos\t{}\t", report.formats.join(", "))));
         }
         for f in &report.rows {
             l.append(QString::from(&format!("{}\t{}\t{}", f.name, f.format, f.verdict)));

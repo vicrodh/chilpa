@@ -21,14 +21,16 @@ impl Chilpa {
         self.as_mut().rust_mut().api.start_scan(std::path::Path::new(&path));
         self.as_mut().set_scanning(true);
         self.as_mut().set_scan_progress(0.0);
-        self.as_mut().set_library_status(QString::from("escaneando..."));
+        let scanning = self.api.t("scanning...");
+        self.as_mut().set_library_status(QString::from(&scanning));
     }
 
     pub fn analyze_library(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().api.start_analysis();
         self.as_mut().set_analyzing(true);
         self.as_mut().set_analysis_progress(0.0);
-        self.as_mut().set_analysis_status(QString::from("analizando..."));
+        let running = self.api.t("analysing...");
+        self.as_mut().set_analysis_status(QString::from(&running));
     }
 
     pub fn cancel_analysis(mut self: Pin<&mut Self>) {
@@ -39,7 +41,8 @@ impl Chilpa {
         self.as_mut().rust_mut().api.rescan();
         self.as_mut().set_scanning(true);
         self.as_mut().set_scan_progress(0.0);
-        self.as_mut().set_library_status(QString::from("escaneando..."));
+        let scanning = self.api.t("scanning...");
+        self.as_mut().set_library_status(QString::from(&scanning));
     }
     pub fn album_view(&self) -> i32 {
         self.album_view
@@ -117,8 +120,8 @@ impl Chilpa {
         let name = name.to_string();
         let saved = self.as_mut().rust_mut().api.save_queue_as(&name).is_some();
         if saved {
-            self.as_mut()
-                .set_library_status(QString::from(&format!("lista \"{name}\" guardada")));
+            let saved = self.api.t_args("playlist \"{}\" saved", &[&name]);
+            self.as_mut().set_library_status(QString::from(&saved));
             self.as_mut().refresh_playlists();
         }
     }
@@ -143,22 +146,25 @@ impl Chilpa {
     pub fn refresh_stats(mut self: Pin<&mut Self>) {
         let s = self.as_mut().rust_mut().api.stats();
         let mut summary = QList::<QString>::default();
-        let mut line = |tag: &str, value: String| {
+        let mut line = |tag: String, value: String| {
             summary.append(QString::from(&format!("{tag}\t{value}")));
         };
-        line("Escuchas", s.plays.to_string());
-        line("Pistas distintas", s.distinct_tracks.to_string());
-        line("Tiempo escuchado", long_duration(s.listened_ms));
-        line("Saltos", s.skips.to_string());
+        line(self.api.t("Plays"), s.plays.to_string());
+        line(self.api.t("Distinct tracks"), s.distinct_tracks.to_string());
+        line(self.api.t("Time listened"), long_duration(s.listened_ms));
+        line(self.api.t("Skips"), s.skips.to_string());
         line(
-            "Bit-perfect",
+            self.api.t("Bit-perfect"),
             if s.plays + s.skips == 0 {
                 "—".to_string()
             } else {
-                format!("{} de {}", s.bit_perfect, s.plays + s.skips)
+                self.api.t_args(
+                    "{} of {}",
+                    &[&s.bit_perfect.to_string(), &(s.plays + s.skips).to_string()],
+                )
             },
         );
-        line("Desde", s.since.map(short_date).unwrap_or_else(|| "—".into()));
+        line(self.api.t("Since"), s.since.map(short_date).unwrap_or_else(|| "—".into()));
         self.as_mut().set_stats(QStringList::from(&summary));
 
         let to_lines = |tracks: Vec<(chilpa_api::LibraryTrack, usize)>| {
@@ -248,20 +254,22 @@ impl Chilpa {
                     format!("file://{}", a.artwork_path)
                 };
                 let mut parts: Vec<String> = Vec::new();
-                if let Some(año) = a.year {
-                    parts.push(año.to_string());
+                if let Some(year) = a.year {
+                    parts.push(year.to_string());
                 }
-                parts.push(format!(
-                    "{} {}",
-                    a.track_count,
-                    if a.track_count == 1 { "pista" } else { "pistas" }
+                parts.push(self.api.tf(
+                    "{} track",
+                    "{} tracks",
+                    i64::try_from(a.track_count).unwrap_or_default(),
+                    &[&a.track_count.to_string()],
                 ));
                 parts.push(long_duration(duration));
                 if a.play_count > 0 {
-                    parts.push(format!(
-                        "{} {}",
-                        a.play_count,
-                        if a.play_count == 1 { "escucha" } else { "escuchas" }
+                    parts.push(self.api.tf(
+                        "{} play",
+                        "{} plays",
+                        i64::try_from(a.play_count).unwrap_or_default(),
+                        &[&a.play_count.to_string()],
                     ));
                 }
                 // The title comes from the library, not from whoever opened

@@ -19,6 +19,7 @@ const QML: &[&str] = &[
     "qml/VisualizerPanel.qml",
     "qml/SearchBox.qml",
     "qml/LayoutSelector.qml",
+    "qml/LanguageSelector.qml",
     "qml/Library.qml",
     "qml/ArtistGrid.qml",
     "qml/StatsPanel.qml",
@@ -42,7 +43,7 @@ fn write_layouts() {
         out,
         format!("pub const LAYOUTS: &[&str] = &[\n{}];\n", names.concat()),
     )
-    .expect("se escribe la lista de acomodos");
+    .expect("the list of layouts is written");
 }
 
 fn main() {

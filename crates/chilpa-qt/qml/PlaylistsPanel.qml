@@ -24,11 +24,11 @@ ColumnLayout {
         TextField {
             id: name
             Layout.preferredWidth: 220
-            placeholderText: "Nombre de la lista"
+            placeholderText: Chilpa.translate("Playlist name", Chilpa.trRev)
             onAccepted: root.save()
         }
         Button {
-            text: "Guardar la cola"
+            text: Chilpa.translate("Save the queue", Chilpa.trRev)
             enabled: Chilpa.queue.length > 0 && name.text.trim() !== ""
             onClicked: root.save()
         }
@@ -47,7 +47,7 @@ ColumnLayout {
         spacing: 8
 
         Button {
-            text: Chilpa.analyzing ? "Detener el análisis" : "Analizar la biblioteca"
+            text: Chilpa.analyzing ? Chilpa.translate("Stop the analysis", Chilpa.trRev) : Chilpa.translate("Analyse the library", Chilpa.trRev)
             onClicked: Chilpa.analyzing ? Chilpa.cancelAnalysis() : Chilpa.analyzeLibrary()
         }
         Rectangle {
@@ -76,7 +76,7 @@ ColumnLayout {
     // every time they are looked at, so they always carry what qualifies
     // today.
     Label {
-        text: "Inteligentes"
+        text: Chilpa.translate("Smart", Chilpa.trRev)
         font.pixelSize: 12
         font.weight: Font.DemiBold
         color: "#7a411d1f"
@@ -100,7 +100,7 @@ ColumnLayout {
     Label {
         Layout.topMargin: 6
         visible: Chilpa.genres.length > 0
-        text: "Géneros"
+        text: Chilpa.translate("Genres", Chilpa.trRev)
         font.pixelSize: 12
         font.weight: Font.DemiBold
         color: "#7a411d1f"
@@ -123,7 +123,7 @@ ColumnLayout {
 
     Label {
         Layout.topMargin: 6
-        text: "Guardadas"
+        text: Chilpa.translate("Saved", Chilpa.trRev)
         font.pixelSize: 12
         font.weight: Font.DemiBold
         color: "#7a411d1f"
@@ -131,7 +131,7 @@ ColumnLayout {
 
     Label {
         visible: Chilpa.playlists.length === 0
-        text: "Todavía no hay listas guardadas"
+        text: Chilpa.translate("No saved playlists yet", Chilpa.trRev)
         color: "#7a411d1f"
     }
 
@@ -167,17 +167,18 @@ ColumnLayout {
                         color: "#411d1f"
                     }
                     Label {
-                        text: cols[3] + (cols[3] === "1" ? " pista · " : " pistas · ") + cols[2]
+                        text: Chilpa.translateCount("{} track", "{} tracks", parseInt(cols[3]), Chilpa.trRev) +
+                              " · " + cols[2]
                         font.pixelSize: 10
                         color: "#7a411d1f"
                     }
                 }
                 Button {
-                    text: "Reproducir"
+                    text: Chilpa.translate("Play", Chilpa.trRev)
                     onClicked: Chilpa.playSavedPlaylist(parseInt(cols[0]))
                 }
                 Button {
-                    text: "Borrar"
+                    text: Chilpa.translate("Delete", Chilpa.trRev)
                     onClicked: Chilpa.deletePlaylist(parseInt(cols[0]))
                 }
             }

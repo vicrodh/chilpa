@@ -49,14 +49,14 @@ ColumnLayout {
         TrackList {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Más escuchadas"
+            title: Chilpa.translate("Most played", Chilpa.trRev)
             tracks: Chilpa.topTracks
         }
 
         TrackList {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            title: "Lo último que sonó"
+            title: Chilpa.translate("Last played", Chilpa.trRev)
             tracks: Chilpa.recentTracks
             withPlayCounts: false
         }

@@ -1,0 +1,9 @@
+# QML strings assigned to a property the user reads, that are deliberately
+# not translated. One per line; the text is compared exactly.
+#
+# The reason has to be that the string is the same in every language: a brand
+# name, a symbol, a format spec. "It is short" is not a reason.
+Plugins
+Bit-perfect
+AutoMix
+http://...

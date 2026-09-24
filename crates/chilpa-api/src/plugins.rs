@@ -367,10 +367,10 @@ impl Plugins {
                     id: i.id.clone(),
                     name: if i.name.is_empty() { i.id.clone() } else { i.name.clone() },
                     state: match &state {
-                        chilpa_plugin::State::PendingApproval => "pendiente de aprobación".into(),
-                        chilpa_plugin::State::Healthy => "bien".into(),
-                        chilpa_plugin::State::Stumbling { .. } => "tropezando".into(),
-                        chilpa_plugin::State::Quarantined { .. } => "en cuarentena".into(),
+                        chilpa_plugin::State::PendingApproval => chilpa_i18n::mark("awaiting approval").into(),
+                        chilpa_plugin::State::Healthy => chilpa_i18n::mark("fine").into(),
+                        chilpa_plugin::State::Stumbling { .. } => chilpa_i18n::mark("stumbling").into(),
+                        chilpa_plugin::State::Quarantined { .. } => chilpa_i18n::mark("quarantined").into(),
                     },
                     problem: match (&state, &i.problem) {
                         (chilpa_plugin::State::Quarantined { reason }, _) => reason.clone(),
@@ -891,7 +891,7 @@ mod tests {
         assert_eq!(p.load_all(), 0, "no quedó utilizable");
         let list = p.list();
         assert_eq!(list.len(), 1);
-        assert_eq!(list[0].state, "en cuarentena");
+        assert_eq!(list[0].state, "quarantined");
         assert!(list[0].problem.contains("versión"), "{}", list[0].problem);
         let _ = std::fs::remove_dir_all(dir);
     }

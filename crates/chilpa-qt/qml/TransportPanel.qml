@@ -41,22 +41,22 @@ RowLayout {
     }
 
     Button {
-        text: "Anterior"
+        text: Chilpa.translate("Previous", Chilpa.trRev)
         enabled: Chilpa.playing
         onClicked: Chilpa.previousTrack()
     }
     Button {
-        text: Chilpa.paused ? "Reanudar" : "Pausa"
+        text: Chilpa.paused ? Chilpa.translate("Resume", Chilpa.trRev) : Chilpa.translate("Pause", Chilpa.trRev)
         enabled: Chilpa.playing
         onClicked: Chilpa.pause(!Chilpa.paused)
     }
     Button {
-        text: "Siguiente"
+        text: Chilpa.translate("Next", Chilpa.trRev)
         enabled: Chilpa.playing && Chilpa.queue.length > 1
         onClicked: Chilpa.nextTrack()
     }
     Button {
-        text: "Parar"
+        text: Chilpa.translate("Stop", Chilpa.trRev)
         enabled: Chilpa.playing
         onClicked: Chilpa.stop()
     }
@@ -64,13 +64,13 @@ RowLayout {
     // Shuffle and repeat change what comes next, not what is playing:
     // they can be touched with the queue running.
     Button {
-        text: "Aleatorio"
+        text: Chilpa.translate("Shuffle", Chilpa.trRev)
         checkable: true
         checked: Chilpa.shuffle
         onToggled: Chilpa.shuffle = checked
     }
     Button {
-        text: ["Repetir: no", "Repetir: cola", "Repetir: pista"][Chilpa.repeat]
+        text: [Chilpa.translate("Repeat: off", Chilpa.trRev), Chilpa.translate("Repeat: queue", Chilpa.trRev), Chilpa.translate("Repeat: track", Chilpa.trRev)][Chilpa.repeat]
         onClicked: Chilpa.cycleRepeat()
     }
     // It reorders what is left so the tempo does not jump. It needs the

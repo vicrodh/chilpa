@@ -25,14 +25,15 @@ ColumnLayout {
         Layout.fillWidth: true
         spacing: 10
         Button {
-            text: "Buscar plugins"
+            text: Chilpa.translate("Look for plugins", Chilpa.trRev)
             onClicked: Chilpa.loadPlugins()
         }
         Label {
             Layout.fillWidth: true
             text: Chilpa.plugins.length === 0
-                ? "No hay plugins instalados"
-                : Chilpa.plugins.length + (Chilpa.plugins.length === 1 ? " plugin" : " plugins")
+                ? Chilpa.translate("No plugins installed", Chilpa.trRev)
+                : Chilpa.translateCount(
+                    "{} plugin", "{} plugins", Chilpa.plugins.length, Chilpa.trRev)
             font.pixelSize: 12
             color: "#7a411d1f"
         }
@@ -56,12 +57,12 @@ ColumnLayout {
             border.color: pending ? "#e0a96d" : "transparent"
 
             readonly property var cols: root.fields(modelData)
-            readonly property bool quarantined: cols[2] === "en cuarentena"
-            readonly property bool pending: cols[2] === "pendiente de aprobación"
+            readonly property bool quarantined: cols[2] === "quarantined"
+            readonly property bool pending: cols[2] === "awaiting approval"
             // What is left to approve, one line per thing.
             readonly property var asks: cols.length > 4 && cols[4] !== "" ? cols[4].split(" · ") : []
             // One that was already running and now asks for more is not a new one.
-            readonly property bool wantsMore: cols.length > 5 && cols[5] === "mas"
+            readonly property bool wantsMore: cols.length > 5 && cols[5] === "more"
             // How its account stands: "", "missing", "connected" or "expired".
             readonly property string account: cols.length > 6 ? cols[6] : ""
             readonly property string accountHost: cols.length > 7 ? cols[7] : ""
@@ -97,49 +98,55 @@ ColumnLayout {
                         }
                     }
                     Label {
-                        text: cols[2]
+                        // The state travels as its English msgid and is
+                        // translated here, so what is compared against never
+                        // depends on the chosen language.
+                        text: Chilpa.translate(cols[2], Chilpa.trRev)
                         font.pixelSize: 11
                         color: quarantined ? "#d7272b"
                              : pending ? "#a05a2c" : "#2e7d32"
                     }
                     Button {
                         visible: pending
-                        text: wantsMore ? "Aprobar lo nuevo" : "Aprobar"
+                        text: wantsMore ? Chilpa.translate("Approve what is new", Chilpa.trRev)
+                                        : Chilpa.translate("Approve", Chilpa.trRev)
                         onClicked: Chilpa.approvePlugin(cols[0])
                     }
                     // The account: what it lacks or what it has. It only
                     // appears on one that already runs; before approval there
                     // is nothing to connect.
                     Label {
-                        visible: !pending && account === "conectada"
-                        text: "cuenta conectada"
+                        visible: !pending && account === "connected"
+                        text: Chilpa.translate("account connected", Chilpa.trRev)
                         font.pixelSize: 11
                         color: "#2e7d32"
                     }
                     Label {
-                        visible: !pending && account === "vencida"
-                        text: "la cuenta caducó"
+                        visible: !pending && account === "expired"
+                        text: Chilpa.translate("the account expired", Chilpa.trRev)
                         font.pixelSize: 11
                         color: "#a05a2c"
                     }
                     Button {
-                        visible: !pending && !quarantined && (account === "falta" || account === "vencida")
-                        text: account === "vencida" ? "Reconectar" : "Conectar cuenta"
+                        visible: !pending && !quarantined && (account === "missing" || account === "expired")
+                        text: account === "expired"
+                            ? Chilpa.translate("Reconnect", Chilpa.trRev)
+                            : Chilpa.translate("Connect account", Chilpa.trRev)
                         onClicked: Chilpa.connectAccount(cols[0])
                     }
                     Button {
-                        visible: !pending && account === "conectada"
-                        text: "Desconectar"
+                        visible: !pending && account === "connected"
+                        text: Chilpa.translate("Disconnect", Chilpa.trRev)
                         onClicked: Chilpa.disconnectAccount(cols[0])
                     }
                     Button {
                         visible: !pending && !quarantined
-                        text: "Quitar permiso"
+                        text: Chilpa.translate("Withdraw permission", Chilpa.trRev)
                         onClicked: Chilpa.revokePlugin(cols[0])
                     }
                     Button {
                         visible: quarantined
-                        text: "Reactivar"
+                        text: Chilpa.translate("Reactivate", Chilpa.trRev)
                         onClicked: Chilpa.reactivatePlugin(cols[0])
                     }
                 }
@@ -149,8 +156,12 @@ ColumnLayout {
                     Layout.fillWidth: true
                     visible: pending
                     text: asks.length === 0
-                        ? "No pide ningún permiso, pero igual decides tú si corre."
-                        : (wantsMore ? "Ahora pide además:" : "Este plugin quiere:")
+                        ? Chilpa.translate(
+                            "It asks for no permission at all, but whether it runs is still yours to decide.",
+                            Chilpa.trRev)
+                        : (wantsMore
+                            ? Chilpa.translate("It now also asks for:", Chilpa.trRev)
+                            : Chilpa.translate("This plugin wants:", Chilpa.trRev))
                     font.pixelSize: 10
                     color: "#7a411d1f"
                 }

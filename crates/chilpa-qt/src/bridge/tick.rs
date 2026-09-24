@@ -29,10 +29,15 @@ impl Chilpa {
             } else {
                 self.as_mut().set_analyzing(false);
                 self.as_mut().set_analysis_progress(1.0);
-                self.as_mut().set_analysis_status(QString::from(&format!(
-                    "{} analizadas, {} sin pulso, {} sin leer",
-                    state.analyzed, state.without_pulse, state.failed
-                )));
+                let done = self.api.t_args(
+                    "{} analysed, {} with no pulse, {} unread",
+                    &[
+                        &state.analyzed.to_string(),
+                        &state.without_pulse.to_string(),
+                        &state.failed.to_string(),
+                    ],
+                );
+                self.as_mut().set_analysis_status(QString::from(&done));
                 // The tempo lists now have something to fill themselves with.
                 self.as_mut().refresh_playlists();
             }
@@ -50,11 +55,16 @@ impl Chilpa {
             if !state.running {
                 let r = &state.summary;
                 let text = if r.unreachable {
-                    "no se pudo leer esa carpeta; no se tocó nada".to_string()
+                    self.api.t("that folder could not be read; nothing was touched")
                 } else {
-                    format!(
-                        "{} archivos: {} leídos, {} sin cambios, {} ausentes",
-                        r.seen, r.read, r.unchanged, r.missing
+                    self.api.t_args(
+                        "{} files: {} read, {} unchanged, {} missing",
+                        &[
+                            &r.seen.to_string(),
+                            &r.read.to_string(),
+                            &r.unchanged.to_string(),
+                            &r.missing.to_string(),
+                        ],
                     )
                 };
                 self.as_mut().set_library_status(QString::from(&text));

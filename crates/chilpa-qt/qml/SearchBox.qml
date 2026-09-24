@@ -10,7 +10,7 @@ import com.blitzfc.chilpa
 
 TextField {
     id: box
-    placeholderText: "Buscar"
+    placeholderText: Chilpa.translate("Search", Chilpa.trRev)
     text: Chilpa.searchText
     onTextEdited: Chilpa.search(text)
 
