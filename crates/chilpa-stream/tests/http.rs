@@ -1,15 +1,15 @@
-//! Abrir un stream de verdad, contra un servidor local.
+//! Opening a real stream, against a local server.
 //!
-//! Sin red de por medio: el servidor vive en la misma prueba, así que lo que
-//! se comprueba es el plomería (encabezados, metadata ICY, tipo de
-//! contenido), no la suerte que se tenga con una estación.
+//! With no network in between: the server lives in the same test, so what is
+//! checked is the plumbing (headers, ICY metadata, content type), not the
+//! luck one has with a station.
 
 use chilpa_stream::{open, StreamError};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
 
-/// Un servidor de un solo cliente que contesta lo que se le diga.
+/// A single client server that answers whatever it is told to.
 fn server(reply: Vec<u8>) -> String {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
@@ -46,7 +46,7 @@ fn the_station_name_and_its_format_are_read() {
 
 #[test]
 fn the_icy_metadata_comes_out_of_the_audio_and_leaves_the_title() {
-    // 16 bytes de audio, el bloque con el título, y 16 más.
+    // 16 bytes of audio, the block with the title, and 16 more.
     let mut body = vec![7u8; 16];
     let text = b"StreamTitle='Radio Chilpa - Una';";
     let mut block = text.to_vec();
@@ -83,7 +83,7 @@ fn a_web_page_is_not_a_station() {
 
 #[test]
 fn a_dead_address_is_reported_without_crashing() {
-    // Puerto cerrado: nadie contesta.
+    // Closed port: nobody answers.
     match open("http://127.0.0.1:1/stream") {
         Err(StreamError::Open(_)) => {}
         Err(other) => panic!("el error debía ser de apertura: {other}"),

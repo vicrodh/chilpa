@@ -168,25 +168,25 @@ impl Meter {
         }
     }
 
-    /// La sonoridad integrada, en LUFS.
+    /// The integrated loudness, in LUFS.
     ///
-    /// `None` cuando no hubo ni un bloque que pasara la compuerta: silencio,
-    /// o una pista más corta que 400 ms.
+    /// `None` when not one block passed the gate: silence, or a track
+    /// shorter than 400 ms.
     pub fn integrated(&self) -> Option<f64> {
         if self.blocks.is_empty() {
             return None;
         }
         let level = |z: f64| if z > 0.0 { OFFSET + 10.0 * z.log10() } else { f64::NEG_INFINITY };
 
-        // Primera compuerta: lo que sea silencio no cuenta.
+        // First gate: anything that is silence does not count.
         let pass: Vec<f64> =
             self.blocks.iter().copied().filter(|z| level(*z) > ABSOLUTE_GATE).collect();
         if pass.is_empty() {
             return None;
         }
-        // Segunda compuerta: diez unidades abajo del promedio de lo que
-        // quedó. Es lo que evita que los silencios entre partes bajen la
-        // cuenta de una pista dinámica.
+        // Second gate: ten units below the average of what was left. It is
+        // what keeps the silences between sections from dragging down a
+        // dynamic track's reading.
         let media = pass.iter().sum::<f64>() / pass.len() as f64;
         let umbral = level(media) + RELATIVE_GATE;
         let finales: Vec<f64> =
@@ -200,7 +200,7 @@ impl Meter {
     }
 }
 
-/// Mide una señal ya completa.
+/// Measures a signal that is already complete.
 pub fn integrated(interleaved: &[f32], sample_rate_hz: u32, channels: u16) -> Option<f64> {
     let mut m = Meter::new(sample_rate_hz, channels)?;
     m.push(interleaved);
@@ -212,7 +212,7 @@ mod tests {
     use super::*;
     use std::f64::consts::PI;
 
-    /// Un seno de 997 Hz repartido en los canales que se pidan.
+    /// A 997 Hz sine spread across whatever channels are asked for.
     fn sine(amplitude: f32, rate: u32, seconds: u32, channels: u16, only_one: bool) -> Vec<f32> {
         let frames = (rate * seconds) as usize;
         let mut v = Vec::with_capacity(frames * channels as usize);
@@ -227,8 +227,8 @@ mod tests {
 
     #[test]
     fn a_zero_dbfs_sine_on_one_channel_measures_minus_three_lkfs() {
-        // Es la calibración de la norma: 0 dBFS a 997 Hz en un solo canal
-        // son -3.01 LKFS. Si esto se mueve, la curva K está mal.
+        // It is the standard's calibration: 0 dBFS at 997 Hz on a single
+        // channel is -3.01 LKFS. If this moves, the K curve is wrong.
         let data = sine(1.0, 48_000, 5, 2, true);
         let l = integrated(&data, 48_000, 2).expect("hay sonido");
         assert!((l - (-3.01)).abs() < 0.1, "midió {l:.3} LKFS, se esperaba -3.01");
@@ -250,8 +250,8 @@ mod tests {
 
     #[test]
     fn the_measurement_does_not_depend_on_the_sample_rate() {
-        // La curva K se recalcula para cada frecuencia; si estuviera fija a
-        // 48 kHz, esto se separaría.
+        // The K curve is recomputed for each rate; if it were fixed at 48
+        // kHz, these two would drift apart.
         let a = integrated(&sine(0.5, 44_100, 5, 2, false), 44_100, 2).unwrap();
         let b = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
         let c = integrated(&sine(0.5, 96_000, 5, 2, false), 96_000, 2).unwrap();
@@ -266,7 +266,7 @@ mod tests {
 
     #[test]
     fn a_track_shorter_than_a_block_gives_no_number() {
-        // 400 ms es el bloque; 200 no alcanzan.
+        // 400 ms is the block; 200 is not enough.
         assert_eq!(integrated(&sine(0.5, 48_000, 0, 2, false), 48_000, 2), None);
         let short = sine(0.5, 48_000, 1, 2, false);
         assert!(integrated(&short[..48_000 * 2 / 5], 48_000, 2).is_none());
@@ -274,8 +274,8 @@ mod tests {
 
     #[test]
     fn silences_do_not_drag_the_reading_down() {
-        // Cinco segundos de tono y cinco de silencio: la compuerta relativa
-        // tiene que dejar fuera el silencio.
+        // Five seconds of tone and five of silence: the relative gate has to
+        // leave the silence out.
         let mut data = sine(0.5, 48_000, 5, 2, false);
         let tone_only = integrated(&data, 48_000, 2).unwrap();
         data.extend(std::iter::repeat(0.0).take(48_000 * 5 * 2));

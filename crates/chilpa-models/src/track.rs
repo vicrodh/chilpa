@@ -1,14 +1,14 @@
-//! Tracks, álbumes y artistas, vistos desde cualquier source.
+//! Tracks, albums and artists, as seen from any source.
 
 use crate::artwork::ArtworkRef;
 use crate::source::{Availability, SourceId};
 use std::time::Duration;
 
-/// La identidad de un track: el source y el id que ese source le da.
+/// A track's identity: the source and the id that source gives it.
 ///
-/// El id externo es opaco: Chilpa no lo interpreta ni asume que sea un
-/// número. En QBZ el id era un `u64` compartido entre orígenes, y dos tracks
-/// de sources distintos podían colisionar.
+/// The external id is opaque: Chilpa neither interprets it nor assumes it is
+/// a number. In QBZ the id was a `u64` shared across origins, and two tracks
+/// from different sources could collide.
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 pub struct TrackRef {
     pub source: SourceId,
@@ -21,12 +21,12 @@ impl TrackRef {
     }
 }
 
-/// Un artista, con su id externo cuando el source lo da.
+/// An artist, with their external id when the source gives one.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ArtistRef {
     pub name: String,
     pub external_id: Option<String>,
-    /// MusicBrainz artist id, cuando se conoce.
+    /// MusicBrainz artist id, when it is known.
     pub mbid: Option<String>,
 }
 
@@ -36,12 +36,12 @@ impl ArtistRef {
     }
 }
 
-/// El álbum al que pertenece un track.
+/// The album a track belongs to.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct AlbumRef {
     pub title: String,
     pub external_id: Option<String>,
-    /// MusicBrainz release id, la llave para juntar el mismo álbum entre
+    /// MusicBrainz release id, the key for joining the same album across
     /// sources (ADR-003).
     pub mbid: Option<String>,
     pub disc_number: Option<u16>,
@@ -53,12 +53,12 @@ impl AlbumRef {
     }
 }
 
-/// Un track con lo que la UI necesita para mostrarlo y el player para
-/// reproducirlo.
+/// A track with what the UI needs to show it and the player needs to play
+/// it.
 ///
-/// `availability` puede traer varios sources para el mismo track: el archivo
-/// local, un servidor y un plugin. Quién gana lo decide
-/// [`crate::source::preferred`] con la preferencia del usuario.
+/// `availability` can carry several sources for the same track: the local
+/// file, a server and a plugin. Who wins is decided by
+/// [`crate::source::preferred`] with the user's preference.
 #[derive(Clone, PartialEq, Debug)]
 pub struct Track {
     pub id: TrackRef,
@@ -68,15 +68,15 @@ pub struct Track {
     pub duration: Duration,
     pub track_number: Option<u16>,
     pub artwork: ArtworkRef,
-    /// La llave que liga el mismo track entre sources, junto con el MBID de
-    /// grabación. No son identidad por sí solos.
+    /// The key that links the same track across sources, together with the
+    /// recording MBID. On their own they are not identity.
     pub isrc: Option<String>,
     pub recording_mbid: Option<String>,
     pub availability: Vec<Availability>,
 }
 
 impl Track {
-    /// Un track mínimo de un source, sin más datos que su título.
+    /// A minimal track from a source, with no data beyond its title.
     pub fn new(id: TrackRef, title: impl Into<String>) -> Self {
         Self {
             id,
@@ -92,15 +92,14 @@ impl Track {
         }
     }
 
-    /// Los artistas como un solo texto, para las vistas que muestran una
-    /// línea.
+    /// The artists as a single string, for views that show one line.
     pub fn artist_line(&self) -> String {
         self.artists.iter().map(|a| a.name.as_str()).collect::<Vec<_>>().join(", ")
     }
 
-    /// Cierto si este track y el otro son la misma grabación, aunque vengan
-    /// de sources distintos. Se emparejan por MBID de grabación o por ISRC;
-    /// nunca por título.
+    /// True if this track and the other are the same recording, even coming
+    /// from different sources. They are matched by recording MBID or by
+    /// ISRC; never by title.
     pub fn same_recording(&self, other: &Self) -> bool {
         match (&self.recording_mbid, &other.recording_mbid) {
             (Some(a), Some(b)) if a == b => return true,

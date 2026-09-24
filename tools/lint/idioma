@@ -33,8 +33,6 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 BASE = Path(__file__).resolve().parent
-# Cuántos comentarios en español quedan por traducir. Solo baja.
-BUDGET = BASE / "comentarios-pendientes.txt"
 
 
 def sin_acentos(s):
@@ -272,22 +270,13 @@ def main():
         hay = sorted({w for w in palabras_de(texto) if w in espanol})
         if len(hay) >= 2:
             prosa.append((f, n, hay[:4]))
-    # Trinquete mientras dura la traducción del código viejo: el número de
-    # comentarios en español solo puede bajar. Cuando llegue a cero se
-    # quita el archivo y esto se vuelve un "ninguno" a secas.
-    quedan = BUDGET.read_text().strip() if BUDGET.exists() else "0"
-    tope = int(quedan) if quedan.isdigit() else 0
-    if len(prosa) > tope:
-        errores.append(
-            f"los comentarios también van en inglés; hay {len(prosa)} en español y el "
-            f"tope es {tope}. Traduce los que tocaste:"
-        )
+    # El trinquete se quitó el 2026-09-23, cuando la cuenta llegó a cero.
+    # Ahora no hay tope: ni un comentario en español.
+    if prosa:
+        errores.append(f"los comentarios también van en inglés; hay {len(prosa)} en español:")
         errores += [f"  {f}:{n}: {', '.join(w)}…" for f, n, w in prosa[:15]]
         if len(prosa) > 15:
             errores.append(f"  … y {len(prosa) - 15} más")
-    elif len(prosa) < tope and BUDGET.exists():
-        BUDGET.write_text(f"{len(prosa)}\n")
-        print(f"idioma: bajan a {len(prosa)} los comentarios en español (eran {tope})")
 
     if errores:
         print("\n".join(errores))
@@ -295,10 +284,9 @@ def main():
         print("Si alguno no es español, agrégalo a tools/lint/permitidas-idioma.txt.")
         return 1
 
-    pendientes = f"; quedan {len(prosa)} comentarios por traducir" if prosa else ""
     print(
-        f"idioma: {len(donde)} identificadores en inglés, "
-        f"{len(comentarios) - len(prosa)} de {len(comentarios)} comentarios{pendientes}"
+        f"idioma: {len(donde)} identificadores y {len(comentarios)} comentarios, "
+        f"todos en inglés"
     )
     if aviso:
         print(aviso)

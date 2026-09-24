@@ -73,8 +73,8 @@ impl Availability {
 }
 
 /// Picks where to play: the user's order of preference first and,
-/// entre los que empatan, la mejor calidad. Los que no se pueden reproducir
-/// no compiten, pero siguen existiendo para la UI.
+/// among those that tie, the best quality. The ones that cannot be played do
+/// not compete, but they still exist for the UI.
 pub fn preferred<'a>(options: &'a [Availability], order: &[SourceId]) -> Option<&'a Availability> {
     options
         .iter()

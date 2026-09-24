@@ -75,7 +75,7 @@ fn onset_envelope(mono: &[f32]) -> Vec<f32> {
     for c in 0..frames {
         let slice = &mono[c * HOP..(c + 1) * HOP];
         let sum: f32 = slice.iter().map(|m| m * m).sum();
-        // En logaritmo: el oído oye los golpes en proporción, no en resta.
+        // In the log domain: the ear hears beats in proportion, not by subtraction.
         energy.push((sum / HOP as f32 + 1e-9).ln());
     }
     let mut onsets = Vec::with_capacity(energy.len());
@@ -86,10 +86,10 @@ fn onset_envelope(mono: &[f32]) -> Vec<f32> {
     onsets
 }
 
-/// El tempo de una envolvente muestreada a `cuadros_por_segundo`.
+/// The tempo of an envelope sampled at `frames_per_second`.
 fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> {
-    // Se centra: sin quitar la media, la autocorrelación premia el lag 0 y
-    // todo lo demás se pierde bajo la pendiente.
+    // It is centred: without removing the mean, the autocorrelation rewards
+    // lag 0 and everything else is lost under the slope.
     let media = onsets.iter().sum::<f32>() / onsets.len() as f32;
     let centered: Vec<f32> = onsets.iter().map(|a| a - media).collect();
     let energy: f32 = centered.iter().map(|a| a * a).sum();
@@ -110,16 +110,16 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         for i in 0..centered.len() - lag {
             sum += centered[i] * centered[i + lag];
         }
-        // Se normaliza por cuántos términos entraron: sin eso, los lags
-        // largos pierden solo por tener menos traslape.
+        // It is normalized by how many terms went in: without that, long lags
+        // lose just for having less overlap.
         puntajes[lag] = sum / energy * (centered.len() as f32 / (centered.len() - lag) as f32);
     }
 
-    // Un periodo que no cae en un número redondo de cuadros reparte su
-    // correlación entre dos lags vecinos, y así pierde contra su propio
-    // doble, que a lo mejor cayó más centrado. Medido con un pulso de 128
-    // BPM: 0.65 en el lag 40 y 0.37 en el 41, contra 0.77 en el 81. Por eso
-    // se compara la suma del pico con sus vecinos, no el bin solo.
+    // A period that does not land on a whole number of frames splits its
+    // correlation between two neighbouring lags, and so loses to its own
+    // double, which may have landed better centred. Measured with a 128 BPM
+    // pulse: 0.65 at lag 40 and 0.37 at 41, against 0.77 at 81. That is why
+    // the peak's sum with its neighbours is compared, not the bin alone.
     let neighborhood = |lag: usize| -> f32 {
         let from = lag.saturating_sub(1);
         let hasta = (lag + 1).min(puntajes.len() - 1);
@@ -137,9 +137,9 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         return None;
     }
 
-    // De todos los lags que explican casi igual de bien, se prefiere el que
-    // cae en el rango en que de verdad se cuenta la música. 70 y 140
-    // explican lo mismo; la música se cuenta en 140.
+    // Of all the lags that explain it about equally well, the one falling in
+    // the range music is actually counted in is preferred. 70 and 140
+    // explain the same thing; music is counted at 140.
     let umbral = best.1 * 0.85;
     let mut chosen = best.0;
     let mut best_in_range = 0.0f32;
@@ -155,29 +155,29 @@ fn tempo_from_envelope(onsets: &[f32], frames_per_second: f32) -> Option<Tempo> 
         }
     }
 
-    // La vecindad sirve para comparar octavas, no para señalar el cuadro.
-    // Dentro de la vecindad elegida, el pico de verdad es el bin más alto:
-    // interpolar alrededor de su vecino pobre manda el resultado lejos
-    // (medido: 140 BPM salía como 146).
+    // The neighbourhood serves for comparing octaves, not for pointing at
+    // the frame. Within the chosen neighbourhood the real peak is the
+    // highest bin: interpolating around its poor neighbour sends the result
+    // far off (measured: 140 BPM came out as 146).
     let chosen = argmax_local(&puntajes, chosen);
     let lag = interpolar(&puntajes, chosen);
-    // La confianza es la del pico crudo: es lo que dice qué tan marcado
-    // está el pulso, no cuánto se repartió entre dos cuadros.
+    // The confidence is the raw peak's: it is what says how marked the
+    // pulse is, not how much it was split between two frames.
     let confidence = puntajes[best.0].clamp(0.0, 1.0);
     Some(Tempo { bpm: frames_per_second * 60.0 / lag, confidence: confidence })
 }
 
-/// El bin más alto entre `lag` y sus dos vecinos.
+/// The highest bin among `lag` and its two neighbours.
 fn argmax_local(puntajes: &[f32], lag: usize) -> usize {
     let from = lag.saturating_sub(1);
     let hasta = (lag + 1).min(puntajes.len() - 1);
     (from..=hasta).max_by(|a, b| puntajes[*a].total_cmp(&puntajes[*b])).unwrap_or(lag)
 }
 
-/// El vértice de la parábola que pasa por el pico y sus dos vecinos.
+/// The vertex of the parabola through the peak and its two neighbours.
 ///
-/// Sin esto, el tempo solo puede tomar los valores que caen en un número
-/// entero de cuadros, y a 140 BPM eso ya son varios BPM de error.
+/// Without this the tempo can only take the values that land on a whole
+/// number of frames, and at 140 BPM that is already several BPM of error.
 fn interpolar(puntajes: &[f32], lag: usize) -> f32 {
     if lag == 0 || lag + 1 >= puntajes.len() {
         return lag as f32;
@@ -194,13 +194,13 @@ fn interpolar(puntajes: &[f32], lag: usize) -> f32 {
     lag as f32 + adjustment
 }
 
-/// La señal a la frecuencia con la que trabaja el análisis.
+/// The signal at the rate the analysis works at.
 pub fn resample_for_analysis(samples: &[f32], sample_rate_hz: u32) -> Vec<f32> {
     remuestrear(samples, sample_rate_hz.max(1), ANALYSIS_HZ)
 }
 
-/// Baja la frecuencia de muestreo promediando. No es un remuestreador fino;
-/// para contar golpes no hace falta.
+/// Drops the sample rate by averaging. It is not a fine resampler; for
+/// counting beats none is needed.
 fn remuestrear(samples: &[f32], de: u32, a: u32) -> Vec<f32> {
     if de <= a || samples.is_empty() {
         return samples.to_vec();
@@ -216,14 +216,14 @@ fn remuestrear(samples: &[f32], de: u32, a: u32) -> Vec<f32> {
 mod tests {
     use super::*;
 
-    /// Golpes secos a ese tempo, con un poco de cola.
+    /// Dry beats at that tempo, with a little tail.
     fn pulse(bpm: f32, rate: u32, seconds: u32) -> Vec<f32> {
         let total = (rate * seconds) as usize;
         let period = (rate as f32 * 60.0 / bpm) as usize;
         let mut v = vec![0.0f32; total];
         let mut i = 0;
         while i < total {
-            // Un golpe que decae en 30 ms.
+            // A beat that decays in 30 ms.
             let tail = (rate / 33) as usize;
             for k in 0..tail.min(total - i) {
                 let decay = 1.0 - k as f32 / tail as f32;
@@ -243,8 +243,8 @@ mod tests {
 
     #[test]
     fn several_tempos_land_close() {
-        // Dos BPM de margen: con la interpolación del pico, el error de
-        // cuantización de los cuadros se queda por debajo de eso.
+        // Two BPM of margin: with the peak interpolation, the frames'
+        // quantization error stays below that.
         for expected in [85.0f32, 90.0, 100.0, 110.0, 128.0, 140.0, 150.0] {
             let t = detect(&pulse(expected, 44_100, 20), 44_100)
                 .unwrap_or_else(|| panic!("no se detectó {expected}"));
@@ -258,7 +258,7 @@ mod tests {
 
     #[test]
     fn a_beat_under_noise_still_comes_out() {
-        // Ruido determinista, para que la prueba no dependa del día.
+        // Deterministic noise, so the test does not depend on the day.
         let mut x: u32 = 0x1234_5678;
         let mut v = pulse(120.0, 44_100, 20);
         for m in v.iter_mut() {
@@ -273,7 +273,7 @@ mod tests {
 
     #[test]
     fn a_slow_tempo_is_reported_in_the_range_it_is_counted_in() {
-        // 60 BPM se cuenta igual de bien como 120: se prefiere el doble.
+        // 60 BPM counts just as well as 120: the double is preferred.
         let t = detect(&pulse(60.0, 44_100, 24), 44_100).expect("hay pulso");
         assert!(
             (t.bpm - 120.0).abs() < 4.0 || (t.bpm - 60.0).abs() < 4.0,
@@ -300,7 +300,7 @@ mod tests {
         let r = remuestrear(&v, 44_100, 11_025);
         assert_eq!(r.len(), 2, "de cuatro en cuatro");
         assert!((r[0] - 1.5).abs() < 1e-6, "el promedio de 0..3: {}", r[0]);
-        // Subir de frecuencia no hace nada.
+        // Going up in rate does nothing.
         assert_eq!(remuestrear(&v, 11_025, 44_100).len(), 8);
     }
 }

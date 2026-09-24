@@ -10,7 +10,7 @@
 pub enum PluralRule {
     /// One form for everything: Japanese, Chinese, Korean.
     Single,
-    /// `n != 1`: English, Spanish, German, Dutch, Portuguese.
+    /// `n != 1`: English, German, Dutch, Portuguese and the like.
     NotOne,
     /// `n > 1`: French, and Portuguese in Brazil.
     MoreThanOne,
