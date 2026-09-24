@@ -164,7 +164,7 @@ mod tests {
     #[test]
     fn the_artist_line_joins_them_all() {
         let mut t = track("local", "1");
-        t.artists = vec![ArtistRef::named("One"), ArtistRef::named("Dos")];
+        t.artists = vec![ArtistRef::named("One"), ArtistRef::named("Two")];
         assert_eq!(t.artist_line(), "One, Two");
     }
 }

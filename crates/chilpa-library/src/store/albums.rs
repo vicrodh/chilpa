@@ -440,7 +440,7 @@ mod tests {
     fn the_most_played_come_from_the_log_and_in_order() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        for (album, title) in [(1, "One"), (2, "Dos")] {
+        for (album, title) in [(1, "One"), (2, "Two")] {
             lib.db
                 .execute(
                     "INSERT INTO albums (id, title, album_artist) VALUES (?1, ?2, 'Artist')",
@@ -466,7 +466,7 @@ mod tests {
 
         let top = lib.most_played_albums(10).unwrap();
         assert_eq!(top.len(), 2);
-        assert_eq!(top[0].0.title, "Dos");
+        assert_eq!(top[0].0.title, "Two");
         assert_eq!(top[0].1, 3);
         assert_eq!(top[1].1, 1, "a half play does not count");
         assert_eq!(lib.album_play_count(2).unwrap(), 3);

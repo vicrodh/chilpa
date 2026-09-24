@@ -141,7 +141,7 @@ fn a_whole_connection_from_the_browser_coming_back_to_a_renewed_token() {
 
     // Exchanged for tokens. Here, and only here, the verifier travels.
     let tokens = exchange(&auth, &code, &pkce, &back, now(), &post).expect("exchanged");
-    assert_eq!(tokens.access_token, "primero");
+    assert_eq!(tokens.access_token, "first");
     assert_eq!(tokens.refresh_token, "to-renew");
     assert_eq!(tokens.expires_at, Some(now() + 3600));
     assert!(!tokens.stale(now()), "freshly minted");
