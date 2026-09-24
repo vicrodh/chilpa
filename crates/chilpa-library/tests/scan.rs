@@ -195,3 +195,76 @@ fn the_genres_in_the_file_reach_the_library() {
 
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_track_that_moves_keeps_its_history() {
+    // The thing every player keyed by path gets wrong. Someone reorganises
+    // their music, and the play counts, the ratings and the analysis are
+    // left behind under the old name while a brand new empty track appears
+    // under the new one.
+    let Some(dir) = album("moved", 2) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+
+    let source = lib.source_id("local", "default").unwrap();
+    let before = dir.join("disco 1").join("01-track.flac");
+    let track = lib.track_by_path(source, &before).unwrap().expect("it was scanned");
+
+    // A history worth losing: plays, and what the analysis found.
+    lib.log_play(Some(track), Some(source), 100, 1_000, 1_000, false, None, None, true).unwrap();
+    lib.log_play(Some(track), Some(source), 200, 1_000, 1_000, false, None, None, true).unwrap();
+    lib.save_features(track, "chilpa", 2, Some(128.0), Some(0.7), None, Some(-9.0)).unwrap();
+    assert_eq!(lib.top_tracks(5).unwrap().len(), 1);
+
+    // Reorganised: another folder, another name. Same file.
+    let elsewhere = dir.join("otro disco");
+    std::fs::create_dir_all(&elsewhere).unwrap();
+    let after = elsewhere.join("la misma.flac");
+    std::fs::rename(&before, &after).unwrap();
+
+    let report = scan_root(&lib, &dir).unwrap();
+
+    assert_eq!(report.missing, 0, "nothing went missing: it moved");
+    assert_eq!(lib.track_count(true).unwrap(), 2, "no new row was made");
+    assert_eq!(
+        lib.track_by_path(source, &after).unwrap(),
+        Some(track),
+        "it is the same track under the new name"
+    );
+    assert!(lib.track_by_path(source, &before).unwrap().is_none(), "and not under the old one");
+
+    let top = lib.top_tracks(5).unwrap();
+    assert_eq!(top.len(), 1, "the history is still one track's");
+    assert_eq!(top[0].count, 2, "with both its plays");
+    assert!(
+        lib.track_features(track, "chilpa").unwrap().is_some(),
+        "and what the analysis found"
+    );
+
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_copy_is_a_new_track_and_not_a_move() {
+    // The same inode, the same size, the same mtime -- and the old name
+    // still resolves. That is a hardlink or a copy, and it is two files.
+    let Some(dir) = album("copied", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(lib.track_count(true).unwrap(), 1);
+
+    let original = dir.join("disco 1").join("01-track.flac");
+    let link = dir.join("disco 1").join("02-link.flac");
+    std::fs::hard_link(&original, &link).unwrap();
+
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(lib.track_count(true).unwrap(), 2, "two names, two tracks");
+
+    let _ = std::fs::remove_dir_all(dir);
+}

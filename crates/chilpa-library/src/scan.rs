@@ -123,6 +123,37 @@ fn scan(
             }
         }
 
+        // A path nobody has seen might not be a new file: it might be one
+        // that moved. Every player that keys a track by its path loses the
+        // play count, the rating and the analysis the moment somebody
+        // reorganises their music, and the whole history is sitting right
+        // there under the old name.
+        //
+        // What identifies it: the same inode, the same size, the same mtime
+        // to the nanosecond, and the old path no longer on disk. Together
+        // that is a file that was renamed. A hardlink shares an inode but
+        // leaves the old path in place, so it does not count -- and it is
+        // not one file anyway.
+        //
+        // What this does NOT cover is a move to another filesystem, which
+        // gives the file a new inode. That takes reading the file, and is a
+        // decision of its own; here it comes out as a new track and the old
+        // one goes missing, which is what would happen today.
+        if known.is_none() {
+            if let Some(moved) = moved_here(lib, root_id, mtime, size, inodo(&meta))? {
+                lib.db.execute(
+                    "UPDATE tracks SET external_id = ?2, present = 1 WHERE id = ?1",
+                    params![moved.track_id, path],
+                )?;
+                lib.db.execute(
+                    "UPDATE scanned_files SET path = ?2, scanned_at = ?3 WHERE id = ?1",
+                    params![moved.row_id, path, now],
+                )?;
+                report.unchanged += 1;
+                continue;
+            }
+        }
+
         let track_id = save_file(lib, source, file, now, cache)?;
         lib.db.execute(
             "INSERT INTO scanned_files (root_id, path, mtime, size, inode, track_id, scanned_at)
@@ -143,6 +174,45 @@ fn scan(
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     Ok(report)
+}
+
+/// A row of `scanned_files` whose file is not where it was.
+struct Moved {
+    row_id: i64,
+    track_id: i64,
+}
+
+/// The track a file used to be, when what arrived is the same file under
+/// another name.
+///
+/// The three numbers have to match and the old path has to be gone. The
+/// last part is what tells a move apart from a copy and from a hardlink: if
+/// the old name still resolves, there are two files now, not one that
+/// walked.
+fn moved_here(
+    lib: &Library,
+    root_id: i64,
+    mtime: i64,
+    size: i64,
+    inode: Option<i64>,
+) -> rusqlite::Result<Option<Moved>> {
+    // Without an inode there is nothing to match on that is not a guess.
+    let Some(inode) = inode else { return Ok(None) };
+    let mut stmt = lib.db.prepare(
+        "SELECT id, path, track_id FROM scanned_files
+         WHERE root_id = ?1 AND inode = ?2 AND size = ?3 AND mtime = ?4
+           AND track_id IS NOT NULL",
+    )?;
+    let rows = stmt.query_map(params![root_id, inode, size, mtime], |r| {
+        Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, i64>(2)?))
+    })?;
+    for row in rows {
+        let (row_id, old_path, track_id) = row?;
+        if !Path::new(&old_path).exists() {
+            return Ok(Some(Moved { row_id, track_id }));
+        }
+    }
+    Ok(None)
 }
 
 fn save_file(
