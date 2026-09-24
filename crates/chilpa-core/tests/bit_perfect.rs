@@ -115,7 +115,7 @@ fn a_16_bit_wav_goes_out_identical_over_the_wire() {
     )
     .expect("it must play");
 
-    assert!(played.delivery.is_bit_perfect(), "the delivery is declared bit-perfect");
+    assert!(played.delivery.nothing_was_converted(), "the delivery is declared bit-perfect");
     assert!(matches!(played.outcome, Outcome::Finished { .. }));
 
     let came_out: Vec<i32> = cap
@@ -147,7 +147,7 @@ fn a_24_bit_wav_goes_out_identical_over_the_wire() {
     )
     .expect("it must play");
 
-    assert!(played.delivery.is_bit_perfect());
+    assert!(played.delivery.nothing_was_converted());
     // S24In32 is left justified: the 24 valid bits on top.
     let came_out: Vec<i32> = cap
         .bytes

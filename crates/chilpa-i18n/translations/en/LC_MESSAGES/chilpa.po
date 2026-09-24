@@ -430,6 +430,9 @@ msgstr ""
 msgid "That answer does not belong to this window."
 msgstr ""
 
+msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
+msgstr ""
+
 msgid "The account did not connect. You can close this tab."
 msgstr ""
 
@@ -723,6 +726,9 @@ msgstr ""
 msgid "no pulse"
 msgstr ""
 
+msgid "no server is answering the PulseAudio protocol"
+msgstr ""
+
 msgid "no sound card is listed in /proc/asound"
 msgstr ""
 
@@ -814,6 +820,12 @@ msgid "that list is empty"
 msgstr ""
 
 msgid "that source does not use OAuth"
+msgstr ""
+
+msgid "the PulseAudio protocol does not carry this format"
+msgstr ""
+
+msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
 msgstr ""
 
 msgid "the URL has to be http or https"

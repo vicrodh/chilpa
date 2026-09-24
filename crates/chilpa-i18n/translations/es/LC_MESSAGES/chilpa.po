@@ -430,6 +430,9 @@ msgstr "Estudio 24/48"
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
 
+msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
+msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el resultado a una sola frecuencia, así que una pista nunca llega al aparato como salió del archivo. No hay ningún ajuste aquí que cambie eso. Es el que funciona en todos lados; para que las muestras lleguen sin tocarse, elige la tarjeta directo o PipeWire."
+
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
@@ -723,6 +726,9 @@ msgstr "sin portada"
 msgid "no pulse"
 msgstr "sin pulso"
 
+msgid "no server is answering the PulseAudio protocol"
+msgstr "ningún servidor está contestando el protocolo de PulseAudio"
+
 msgid "no sound card is listed in /proc/asound"
 msgstr "no hay ninguna tarjeta de sonido listada en /proc/asound"
 
@@ -815,6 +821,12 @@ msgstr "esa lista está vacía"
 
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
+
+msgid "the PulseAudio protocol does not carry this format"
+msgstr "el protocolo de PulseAudio no lleva este formato"
+
+msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
+msgstr "el protocolo de PulseAudio no lleva {} Hz con {} canales"
 
 msgid "the URL has to be http or https"
 msgstr "la URL tiene que ser http o https"

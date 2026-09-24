@@ -149,7 +149,7 @@ mod tests {
         )
         .unwrap();
 
-        assert!(played.delivery.is_bit_perfect());
+        assert!(played.delivery.nothing_was_converted());
         assert!(played.outcome.may_advance_queue());
         assert!(played.read_error.is_none());
         assert_eq!(played.outcome.frames(), 100 * 588, "the track's 100 sectors");
