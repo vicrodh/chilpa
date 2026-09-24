@@ -115,6 +115,42 @@ fn describe(stream: StreamFormat) -> Option<AudioStreamBasicDescription> {
     })
 }
 
+/// Why what a stream opened as is not what was asked for, or `None`.
+///
+/// Checked in full and not just on the rate. The one that would otherwise go
+/// unnoticed is interleaving: a device that hands back one buffer per
+/// channel instead of one buffer with every channel would be fed this
+/// stream's bytes in order, and what comes out is the left channel playing
+/// the first half of the track and the right channel the second. It would
+/// sound like a bug in the file.
+fn disagrees(wanted: &AudioStreamBasicDescription, got: &AudioStreamBasicDescription) -> Option<String> {
+    if (got.mSampleRate - wanted.mSampleRate).abs() > 0.5 {
+        return Some(format!("{} Hz", got.mSampleRate as u32));
+    }
+    if got.mBitsPerChannel != wanted.mBitsPerChannel {
+        return Some(format!("{} bits", got.mBitsPerChannel));
+    }
+    if got.mChannelsPerFrame != wanted.mChannelsPerFrame {
+        return Some(format!("{} channels", got.mChannelsPerFrame));
+    }
+    if got.mFormatID != kAudioFormatLinearPCM {
+        return Some("a format that is not linear PCM".to_string());
+    }
+    if got.mFormatFlags & kAudioFormatFlagIsFloat != 0 {
+        return Some("floating point".to_string());
+    }
+    if got.mFormatFlags & kAudioFormatFlagIsSignedInteger == 0 {
+        return Some("unsigned samples".to_string());
+    }
+    if got.mFormatFlags & kAudioFormatFlagIsBigEndian != 0 {
+        return Some("big-endian samples".to_string());
+    }
+    if got.mFormatFlags & kAudioFormatFlagIsNonInterleaved != 0 {
+        return Some("one buffer per channel".to_string());
+    }
+    None
+}
+
 /// What the device asks for, every period.
 ///
 /// It runs on the device's own thread and must not block: taking the lock is
@@ -229,6 +265,22 @@ impl CoreAudioSink {
                     "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let \
                      the Mac convert",
                     &[name, &wanted.mBitsPerChannel.to_string()],
+                ))));
+            }
+            // Read back what it actually took. A set that returns success
+            // and a device that gives something else is the ordinary case
+            // in audio, not the strange one -- the ALSA sink checks the same
+            // way after hw_params, for the same reason.
+            let Some(got) = read::virtual_format(stream_id) else {
+                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                    "\"{}\" would not say what format it opened",
+                    &[name],
+                ))));
+            };
+            if let Some(wrong) = disagrees(&wanted, &got) {
+                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
+                    "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert",
+                    &[name, &wrong],
                 ))));
             }
         }

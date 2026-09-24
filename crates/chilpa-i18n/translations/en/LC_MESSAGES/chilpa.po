@@ -16,6 +16,9 @@ msgstr ""
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr ""
 
+msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
+msgstr ""
+
 msgid "\"{}\" will not carry {} bit samples untouched; turn bit-perfect off to let the Mac convert"
 msgstr ""
 
@@ -23,6 +26,9 @@ msgid "\"{}\" would not open ({})"
 msgstr ""
 
 msgid "\"{}\" would not run at {} Hz ({})"
+msgstr ""
+
+msgid "\"{}\" would not say what format it opened"
 msgstr ""
 
 msgid "\"{}\" would not start ({})"

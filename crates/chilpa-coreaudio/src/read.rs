@@ -186,6 +186,14 @@ pub fn physical_formats(device: AudioObjectID) -> Vec<AudioStreamBasicDescriptio
     out
 }
 
+/// What a stream is presented as right now.
+///
+/// The one to read back after asking for a format: a set that returns
+/// success and a device that gives something else is the ordinary case.
+pub fn virtual_format(stream: AudioObjectID) -> Option<AudioStreamBasicDescription> {
+    read(stream, &global(kAudioStreamPropertyVirtualFormat))
+}
+
 /// Who has the device to themselves, or nobody.
 ///
 /// CoreAudio answers with a process id, and -1 means nobody. It is read and
