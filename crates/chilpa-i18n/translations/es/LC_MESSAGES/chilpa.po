@@ -753,6 +753,9 @@ msgstr "ningún servidor de sonido contestó; instala pipewire y pipewire-pulse"
 msgid "not supported: {}"
 msgstr "no soportado: {}"
 
+msgid "now at {}"
+msgstr "ahora en {}"
+
 msgid "open a file"
 msgstr "abrir un archivo"
 
