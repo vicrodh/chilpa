@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Why a library could not be opened is read by the user.
+chilpa-i18n.workspace = true
 chilpa-models.workspace = true
 chilpa-tags.workspace = true
 rusqlite = "0.40"

@@ -83,7 +83,7 @@ fn card_devices(card: u32) -> Vec<(u32, String)> {
         let name = info
             .lines()
             .find_map(|l| l.strip_prefix("name: "))
-            .unwrap_or("salida")
+            .unwrap_or("output")
             .trim()
             .to_string();
         out.push((number, name));
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn every_identifier_is_a_direct_device() {
         for d in list() {
-            assert!(d.id.starts_with("hw:"), "{} no es un dispositivo directo", d.id);
+            assert!(d.id.starts_with("hw:"), "{} is not a direct device", d.id);
         }
     }
 }

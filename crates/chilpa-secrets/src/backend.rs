@@ -53,10 +53,12 @@ pub enum BackendKind {
 
 impl BackendKind {
     /// How it is told to the user, who has no reason to know what HKDF is.
-    pub fn describe(&self) -> &'static str {
+    pub fn describe(&self) -> String {
         match self {
-            BackendKind::Keyring => "en el llavero del sistema",
-            BackendKind::Derived => "cifrado y atado a este equipo (no hay llavero del sistema)",
+            BackendKind::Keyring => chilpa_i18n::t("in the system keyring"),
+            BackendKind::Derived => chilpa_i18n::t(
+                "encrypted and tied to this machine (there is no system keyring)",
+            ),
         }
     }
 }
@@ -133,7 +135,7 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
     let persistence = keyring::default::default_credential_builder().persistence();
     if !matches!(persistence, CredentialPersistence::UntilDelete) {
         return Err(SecretError::Keyring(
-            "el backend del keyring no escribe a disco (¿mock?); no se usa".into(),
+            "the keyring backend does not write to disk (a mock?); it is not used".into(),
         ));
     }
 
@@ -147,7 +149,7 @@ fn try_keyring(service_name: &str) -> Result<[u8; MASTER_KEY_LEN], SecretError> 
                 .map_err(|e| SecretError::Keyring(format!("base64: {e}")))?;
             if bytes.len() != MASTER_KEY_LEN {
                 return Err(SecretError::Keyring(format!(
-                    "la entrada mide {} bytes y deberían ser {MASTER_KEY_LEN}",
+                    "the entry is {} bytes and should be {MASTER_KEY_LEN}",
                     bytes.len()
                 )));
             }

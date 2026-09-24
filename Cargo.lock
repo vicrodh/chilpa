@@ -391,6 +391,7 @@ version = "0.0.0"
 dependencies = [
  "alsa",
  "chilpa-audio",
+ "chilpa-i18n",
 ]
 
 [[package]]
@@ -428,6 +429,7 @@ name = "chilpa-auth"
 version = "0.0.0"
 dependencies = [
  "base64 0.22.1",
+ "chilpa-i18n",
  "chilpa-stream",
  "rand 0.10.3",
  "serde",
@@ -441,6 +443,7 @@ name = "chilpa-cd"
 version = "0.0.0"
 dependencies = [
  "chilpa-audio",
+ "chilpa-i18n",
  "libc",
 ]
 
@@ -478,6 +481,7 @@ name = "chilpa-dsd"
 version = "0.0.0"
 dependencies = [
  "chilpa-audio",
+ "chilpa-i18n",
 ]
 
 [[package]]
@@ -488,6 +492,7 @@ version = "0.0.0"
 name = "chilpa-library"
 version = "0.0.0"
 dependencies = [
+ "chilpa-i18n",
  "chilpa-models",
  "chilpa-tags",
  "rusqlite",
@@ -532,6 +537,7 @@ name = "chilpa-sacd"
 version = "0.0.0"
 dependencies = [
  "chilpa-dsd",
+ "chilpa-i18n",
 ]
 
 [[package]]
@@ -540,6 +546,7 @@ version = "0.0.0"
 dependencies = [
  "aes-gcm",
  "base64 0.22.1",
+ "chilpa-i18n",
  "hkdf",
  "keyring",
  "rand 0.10.3",
@@ -563,6 +570,7 @@ dependencies = [
 name = "chilpa-tags"
 version = "0.0.0"
 dependencies = [
+ "chilpa-i18n",
  "chilpa-models",
  "lofty",
 ]

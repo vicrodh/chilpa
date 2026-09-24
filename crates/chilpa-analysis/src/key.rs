@@ -204,8 +204,8 @@ mod tests {
         // Weighting the tonic and the dominant, as in real music.
         let mut notes = scale.clone();
         notes.extend_from_slice(&[60.0, 67.0, 60.0]);
-        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
-        assert_eq!(k.name, "C", "salió {} ({})", k.name, k.camelot);
+        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("there is a key");
+        assert_eq!(k.name, "C", "it came out {} ({})", k.name, k.camelot);
         assert_eq!(k.camelot, "8B");
     }
 
@@ -215,8 +215,8 @@ mod tests {
         let mut notes = scale.clone();
         // In minor, what rules is the tonic and the minor third.
         notes.extend_from_slice(&[57.0, 60.0, 57.0, 64.0]);
-        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("hay tonalidad");
-        assert_eq!(k.name, "Am", "salió {} ({})", k.name, k.camelot);
+        let k = detect(&chord(&notes, 11_025, 6), 11_025).expect("there is a key");
+        assert_eq!(k.name, "Am", "it came out {} ({})", k.name, k.camelot);
         assert_eq!(k.camelot, "8A");
     }
 
@@ -242,13 +242,13 @@ mod tests {
         }
         vistas.sort();
         vistas.dedup();
-        assert_eq!(vistas.len(), 24, "hay 24 casillas distintas");
+        assert_eq!(vistas.len(), 24, "there are 24 distinct slots");
         // And the usual two anchors.
         assert_eq!(camelot(0, true), "8B", "do mayor");
-        assert_eq!(camelot(9, false), "8A", "la menor");
-        assert_eq!(camelot(7, true), "9B", "sol mayor, una quinta arriba");
-        assert_eq!(camelot(0, false), "5A", "do menor");
-        assert_eq!(camelot(6, false), "11A", "fa sostenido menor");
+        assert_eq!(camelot(9, false), "8A", "A minor");
+        assert_eq!(camelot(7, true), "9B", "G major, a fifth up");
+        assert_eq!(camelot(0, false), "5A", "C minor");
+        assert_eq!(camelot(6, false), "11A", "F sharp minor");
         // Every major key shares a slot with its relative minor.
         for i in 0..12usize {
             let mayor = camelot(i, true);
@@ -256,7 +256,7 @@ mod tests {
             assert_eq!(
                 mayor[..mayor.len() - 1],
                 relative[..relative.len() - 1],
-                "{} y su relativo menor comparten número",
+                "{} and its relative minor share a number",
                 NOTES[i]
             );
         }
@@ -267,6 +267,6 @@ mod tests {
         // Every note equally strong: there is no meaningful tonic.
         let flat = [1.0f32 / 12.0; 12];
         let (_, _, confidence) = best_profile(&flat).unwrap_or((0, true, 0.0));
-        assert!(confidence < 0.2, "no debería estar seguro: {confidence}");
+        assert!(confidence < 0.2, "it should not be confident: {confidence}");
     }
 }

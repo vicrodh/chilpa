@@ -6,6 +6,8 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Where a secret ended up, and why it could not be kept, are read by the user.
+chilpa-i18n.workspace = true
 # AES-256-GCM para el cifrado en reposo.
 aes-gcm = "0.10"
 # La derivación del respaldo cuando no hay keyring.

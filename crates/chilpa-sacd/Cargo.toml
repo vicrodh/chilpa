@@ -6,4 +6,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Why an image could not be read is read by the user.
+chilpa-i18n.workspace = true
 chilpa-dsd.workspace = true

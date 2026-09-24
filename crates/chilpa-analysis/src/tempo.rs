@@ -236,9 +236,9 @@ mod tests {
 
     #[test]
     fn a_120_beat_is_detected_as_120() {
-        let t = detect(&pulse(120.0, 44_100, 20), 44_100).expect("hay pulso");
-        assert!((t.bpm - 120.0).abs() < 3.0, "salió {}", t.bpm);
-        assert!(t.confidence > 0.1, "confianza baja: {}", t.confidence);
+        let t = detect(&pulse(120.0, 44_100, 20), 44_100).expect("there is a pulse");
+        assert!((t.bpm - 120.0).abs() < 3.0, "it came out {}", t.bpm);
+        assert!(t.confidence > 0.1, "low confidence: {}", t.confidence);
     }
 
     #[test]
@@ -247,10 +247,10 @@ mod tests {
         // quantization error stays below that.
         for expected in [85.0f32, 90.0, 100.0, 110.0, 128.0, 140.0, 150.0] {
             let t = detect(&pulse(expected, 44_100, 20), 44_100)
-                .unwrap_or_else(|| panic!("no se detectó {expected}"));
+                .unwrap_or_else(|| panic!("{expected} was not detected"));
             assert!(
                 (t.bpm - expected).abs() < 2.0,
-                "se esperaba {expected}, salió {}",
+                "{expected} was expected, it came out {}",
                 t.bpm
             );
         }
@@ -267,17 +267,17 @@ mod tests {
             x ^= x << 5;
             *m += ((x % 1000) as f32 / 1000.0 - 0.5) * 0.2;
         }
-        let t = detect(&v, 44_100).expect("el pulso aguanta el ruido");
-        assert!((t.bpm - 120.0).abs() < 3.0, "salió {}", t.bpm);
+        let t = detect(&v, 44_100).expect("the pulse survives the noise");
+        assert!((t.bpm - 120.0).abs() < 3.0, "it came out {}", t.bpm);
     }
 
     #[test]
     fn a_slow_tempo_is_reported_in_the_range_it_is_counted_in() {
         // 60 BPM counts just as well as 120: the double is preferred.
-        let t = detect(&pulse(60.0, 44_100, 24), 44_100).expect("hay pulso");
+        let t = detect(&pulse(60.0, 44_100, 24), 44_100).expect("there is a pulse");
         assert!(
             (t.bpm - 120.0).abs() < 4.0 || (t.bpm - 60.0).abs() < 4.0,
-            "salió {}, que no es ni 60 ni su doble",
+            "it came out {}, which is neither 60 nor its double",
             t.bpm
         );
     }
@@ -289,17 +289,17 @@ mod tests {
 
     #[test]
     fn a_very_short_track_gives_no_invented_number() {
-        assert!(detect(&pulse(120.0, 44_100, 3), 44_100).is_none(), "tres segundos no bastan");
+        assert!(detect(&pulse(120.0, 44_100, 3), 44_100).is_none(), "three seconds are not enough");
         assert!(detect(&[], 44_100).is_none());
-        assert!(detect(&pulse(120.0, 44_100, 20), 0).is_none(), "sin frecuencia, nada");
+        assert!(detect(&pulse(120.0, 44_100, 20), 0).is_none(), "with no rate, nothing");
     }
 
     #[test]
     fn resampling_averages_and_shortens() {
         let v: Vec<f32> = (0..8).map(|i| i as f32).collect();
         let r = remuestrear(&v, 44_100, 11_025);
-        assert_eq!(r.len(), 2, "de cuatro en cuatro");
-        assert!((r[0] - 1.5).abs() < 1e-6, "el promedio de 0..3: {}", r[0]);
+        assert_eq!(r.len(), 2, "four at a time");
+        assert!((r[0] - 1.5).abs() < 1e-6, "the average of 0..3: {}", r[0]);
         // Going up in rate does nothing.
         assert_eq!(remuestrear(&v, 11_025, 44_100).len(), 8);
     }

@@ -50,7 +50,7 @@ fn temporal(name: &str) -> PathBuf {
 
 #[test]
 fn the_header_and_every_block_are_read() {
-    let path = temporal("basico");
+    let path = temporal("basic");
     let samples = u64::from(BLOCK) * 3 * 8;
     write_dsf(&path, 3, 1, samples);
 
@@ -69,29 +69,29 @@ fn the_header_and_every_block_are_read() {
         blocks += 1;
     }
     assert_eq!(blocks, 3);
-    assert_eq!(left_bytes as u64, samples / 8, "salieron todos los bytes válidos");
+    assert_eq!(left_bytes as u64, samples / 8, "every valid byte came out");
     let _ = std::fs::remove_file(path);
 }
 
 #[test]
 fn bits_are_delivered_with_the_earliest_one_on_top() {
     // DSF stores the earliest bit low; here it has to come out reversed.
-    let path = temporal("orden");
+    let path = temporal("order");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let channels = r.next_block().unwrap().unwrap();
     assert_eq!(channels[0][0], 0u8.reverse_bits());
     assert_eq!(channels[0][1], 1u8.reverse_bits());
-    assert_eq!(channels[1][1], (!1u8).reverse_bits(), "el canal derecho es el complemento");
+    assert_eq!(channels[1][1], (!1u8).reverse_bits(), "the right channel is the complement");
     let _ = std::fs::remove_file(path);
 
     // With bits_per_sample = 8 the file already has the earliest bit on top
     // and nothing is touched.
-    let path = temporal("orden-msb");
+    let path = temporal("order-msb");
     write_dsf(&path, 1, 8, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let channels = r.next_block().unwrap().unwrap();
-    assert_eq!(channels[0][1], 1u8, "sin invertir");
+    assert_eq!(channels[0][1], 1u8, "not inverted");
     let _ = std::fs::remove_file(path);
 }
 
@@ -102,8 +102,8 @@ fn the_padding_of_the_last_block_does_not_come_out() {
     write_dsf(&path, 2, 1, 100 * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let primero = r.next_block().unwrap().unwrap();
-    assert_eq!(primero[0].len(), 100, "solo lo válido");
-    assert!(r.next_block().unwrap().is_none(), "el resto era relleno");
+    assert_eq!(primero[0].len(), 100, "only what is valid");
+    assert!(r.next_block().unwrap().is_none(), "the rest was padding");
     let _ = std::fs::remove_file(path);
 }
 
@@ -120,16 +120,16 @@ fn the_file_bits_reach_the_dop_packing_intact() {
     let mut words = Vec::new();
     packer.pack(&[&channels[0], &channels[1]], &mut words);
 
-    assert_eq!(words.len(), channels[0].len() / 2 * 2, "una palabra por canal y por frame");
+    assert_eq!(words.len(), channels[0].len() / 2 * 2, "one word per channel and per frame");
     for (frame, par) in words.chunks(2).enumerate().take(8) {
         let marker = if frame % 2 == 0 { 0x05 } else { 0xFA };
         for (canal, word) in par.iter().enumerate() {
             let unjustified = word >> 8;
-            assert_eq!((unjustified >> 16) & 0xFF, marker, "el marker alterna por frame");
+            assert_eq!((unjustified >> 16) & 0xFF, marker, "the marker alternates per frame");
             let payload = (unjustified & 0xFFFF) as u16;
             let expected =
                 u16::from_be_bytes([channels[canal][frame * 2], channels[canal][frame * 2 + 1]]);
-            assert_eq!(payload, expected, "la carga útil es el DSD del archivo, sin tocar");
+            assert_eq!(payload, expected, "the payload is the file's DSD, untouched");
         }
     }
     let _ = std::fs::remove_file(path);
@@ -137,13 +137,13 @@ fn the_file_bits_reach_the_dop_packing_intact() {
 
 #[test]
 fn seeking_lands_at_the_start_of_a_block() {
-    let path = temporal("buscar");
+    let path = temporal("seek");
     write_dsf(&path, 4, 1, u64::from(BLOCK) * 4 * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let dropped = r.seek_to_sample(u64::from(BLOCK) * 8 * 2 + 40).unwrap();
-    assert_eq!(dropped, u64::from(BLOCK) * 8 * 2, "se alinea al bloque, hacia atrás");
+    assert_eq!(dropped, u64::from(BLOCK) * 8 * 2, "it aligns to the block, backwards");
     let channels = r.next_block().unwrap().unwrap();
     let expected = ((BLOCK * 2) % 251) as u8;
-    assert_eq!(channels[0][0], expected.reverse_bits(), "empieza en el bloque correcto");
+    assert_eq!(channels[0][0], expected.reverse_bits(), "it starts at the right block");
     let _ = std::fs::remove_file(path);
 }

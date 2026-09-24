@@ -29,7 +29,7 @@ impl SacdTrackReader {
     pub fn open(image: SacdImage, track: &SacdTrack) -> Result<Self, SacdError> {
         if track.encoding.is_compressed() {
             return Err(SacdError::Unsupported(
-                "la pista viene comprimida con DST y todavía no hay decodificador".into(),
+                chilpa_i18n::mark("the track is DST compressed and there is no decoder yet").into(),
             ));
         }
         let samples = u64::from(track.duration_frames) * u64::from(crate::DSD64_HZ / 75);
@@ -50,7 +50,7 @@ impl SacdTrackReader {
             let packets = sector::parse(&sector_buf, self.lsn)?;
             if packets.dst {
                 return Err(SacdError::Unsupported(
-                    "el sector viene comprimido con DST".into(),
+                    chilpa_i18n::mark("the sector is DST compressed").into(),
                 ));
             }
             for p in packets.packets.iter().filter(|p| p.is_audio()) {
@@ -105,8 +105,8 @@ mod tests {
     fn channels_come_interleaved_byte_by_byte() {
         let frame: Vec<u8> = (0..8u8).collect();
         let channels = split_channels(&frame);
-        assert_eq!(channels[0], vec![0, 2, 4, 6], "el izquierdo toma los pares");
-        assert_eq!(channels[1], vec![1, 3, 5, 7], "el derecho toma los impares");
+        assert_eq!(channels[0], vec![0, 2, 4, 6], "the left one takes the even ones");
+        assert_eq!(channels[1], vec![1, 3, 5, 7], "the right one takes the odd ones");
     }
 
     #[test]

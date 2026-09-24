@@ -28,8 +28,12 @@ pub enum TagError {
 impl std::fmt::Display for TagError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TagError::Open(e) => write!(f, "no se pudo abrir: {e}"),
-            TagError::Unreadable(s) => write!(f, "no se pudieron leer los tags: {s}"),
+            TagError::Open(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("could not open: {}", &[&e.to_string()]))
+            }
+            TagError::Unreadable(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("the tags could not be read: {}", &[s]))
+            }
         }
     }
 }

@@ -39,10 +39,20 @@ pub enum CdError {
 impl std::fmt::Display for CdError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CdError::Device(s) => write!(f, "la unidad no responde: {s}"),
-            CdError::NoDisc => write!(f, "no hay disco en la unidad"),
-            CdError::NotAudio => write!(f, "el disco no trae pistas de audio"),
-            CdError::Read { lsn, why } => write!(f, "no se pudo leer el sector {lsn}: {why}"),
+            CdError::Device(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("the drive does not answer: {}", &[s]))
+            }
+            CdError::NoDisc => {
+                write!(f, "{}", chilpa_i18n::t("there is no disc in the drive"))
+            }
+            CdError::NotAudio => {
+                write!(f, "{}", chilpa_i18n::t("the disc carries no audio tracks"))
+            }
+            CdError::Read { lsn, why } => write!(
+                f,
+                "{}",
+                chilpa_i18n::t_args("sector {} could not be read: {}", &[&lsn.to_string(), why])
+            ),
         }
     }
 }
@@ -180,7 +190,7 @@ mod tests {
         while let Some(block) = lector.next_block() {
             bytes += block.len();
         }
-        assert_eq!(bytes, 150 * SECTOR_BYTES, "salieron los 150 sectores");
+        assert_eq!(bytes, 150 * SECTOR_BYTES, "all 150 sectors came out");
         assert!(lector.error.is_none());
     }
 
@@ -190,7 +200,7 @@ mod tests {
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
         let mut lector = TrackReader::new(&mut d, &track);
-        let primero = lector.next_block().expect("el primer bloque sí sale");
+        let primero = lector.next_block().expect("the first block does come out");
         assert_eq!(primero.len(), 75 * SECTOR_BYTES);
         assert!(lector.next_block().is_none());
         assert!(matches!(lector.error, Some(CdError::Read { lsn: 75, .. })));

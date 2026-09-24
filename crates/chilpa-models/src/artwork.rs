@@ -47,13 +47,13 @@ mod tests {
 
     #[test]
     fn a_local_file_does_have_an_external_url() {
-        let art = ArtworkRef::File(PathBuf::from("/musica/album/cover.jpg"));
-        assert_eq!(art.external_url().as_deref(), Some("file:///musica/album/cover.jpg"));
+        let art = ArtworkRef::File(PathBuf::from("/music/album/cover.jpg"));
+        assert_eq!(art.external_url().as_deref(), Some("file:///music/album/cover.jpg"));
     }
 
     #[test]
     fn embedded_artwork_has_no_url_until_it_is_extracted() {
-        let art = ArtworkRef::Embedded { path: PathBuf::from("/musica/a.flac"), index: 0 };
+        let art = ArtworkRef::Embedded { path: PathBuf::from("/music/a.flac"), index: 0 };
         assert_eq!(art.external_url(), None);
     }
 }

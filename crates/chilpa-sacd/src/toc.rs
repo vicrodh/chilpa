@@ -46,7 +46,7 @@ pub struct SacdImage {
 impl SacdImage {
     pub(crate) fn read_sector(&mut self, lsn: u64, into: &mut [u8]) -> Result<(), SacdError> {
         if lsn >= self.sectors {
-            return Err(SacdError::BadSector { lsn, why: "fuera de la imagen".into() });
+            return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("outside the image").into() });
         }
         self.file.seek(SeekFrom::Start(lsn * SECTOR as u64))?;
         self.file.read_exact(into)?;
@@ -59,7 +59,7 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
     let file = File::open(path)?;
     let sectors = file.metadata()?.len() / SECTOR as u64;
     if sectors <= MASTER_TOC_LSN[0] {
-        return Err(SacdError::MalformedToc("la imagen es más corta que su tabla maestra".into()));
+        return Err(SacdError::MalformedToc(chilpa_i18n::mark("the image is shorter than its master table").into()));
     }
     let mut image = SacdImage {
         file: BufReader::new(file),
@@ -79,11 +79,11 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
             image.read_sector(lsn, &mut sector).ok()?;
             (&sector[..8] == b"SACDMTOC").then(|| sector.clone())
         })
-        .ok_or_else(|| SacdError::MalformedToc("no se encontró SACDMTOC".into()))?;
+        .ok_or_else(|| SacdError::MalformedToc(chilpa_i18n::mark("SACDMTOC was not found").into()))?;
 
     let version = (master[8], master[9]);
     if version.0 != 1 {
-        return Err(SacdError::Unsupported(format!("Master TOC versión {}.{}", version.0, version.1)));
+        return Err(SacdError::Unsupported(format!("Master TOC version {}.{}", version.0, version.1)));
     }
 
     // Two area slots: stereo and multichannel. Every copy is tried.
@@ -115,7 +115,7 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
         }
     }
     let toc = area_toc
-        .ok_or_else(|| SacdError::MalformedToc("no se encontró el área estéreo (TWOCHTOC)".into()))?;
+        .ok_or_else(|| SacdError::MalformedToc(chilpa_i18n::mark("the stereo area (TWOCHTOC) was not found").into()))?;
 
     image.area = parse_area(&toc, image.sectors)?;
     Ok(image)
@@ -124,36 +124,36 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
 fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
     let channels = toc[0x20];
     if channels != 2 || toc[0x21] & 0x1f != 0 {
-        return Err(SacdError::Unsupported(format!("{channels} canales en el área estéreo")));
+        return Err(SacdError::Unsupported(format!("{channels} channels in the stereo area")));
     }
     if toc[0x14] != 4 {
-        return Err(SacdError::Unsupported(format!("frecuencia código {}", toc[0x14])));
+        return Err(SacdError::Unsupported(format!("rate code {}", toc[0x14])));
     }
     let encoding = match toc[0x15] & 0x0f {
         0 => Encoding::Dst,
         2 => Encoding::Dsd3In14,
         3 => Encoding::Dsd3In16,
-        other => return Err(SacdError::Unsupported(format!("formato de frame {other}"))),
+        other => return Err(SacdError::Unsupported(format!("frame format {other}"))),
     };
     let track_count = toc[0x45] as usize;
     if track_count == 0 {
-        return Err(SacdError::MalformedToc("el área no declara pistas".into()));
+        return Err(SacdError::MalformedToc(chilpa_i18n::mark("the area declares no tracks").into()));
     }
     let audio_start_lsn = be32(toc, 0x48);
     let audio_end_lsn = be32(toc, 0x4c);
     if audio_start_lsn > audio_end_lsn || u64::from(audio_end_lsn) >= sectors {
-        return Err(SacdError::MalformedToc("el área de audio cae fuera de la imagen".into()));
+        return Err(SacdError::MalformedToc(chilpa_i18n::mark("the audio area falls outside the image").into()));
     }
 
     let trl1 = find_block(toc, b"SACDTRL1")
-        .ok_or_else(|| SacdError::MalformedToc("falta SACDTRL1".into()))?;
+        .ok_or_else(|| SacdError::MalformedToc(chilpa_i18n::mark("SACDTRL1 is missing").into()))?;
     let trl2 = find_block(toc, b"SACDTRL2")
-        .ok_or_else(|| SacdError::MalformedToc("falta SACDTRL2".into()))?;
+        .ok_or_else(|| SacdError::MalformedToc(chilpa_i18n::mark("SACDTRL2 is missing").into()))?;
     // Each block carries two arrays of 255 four-byte entries.
     const SECOND_ARRAY: usize = 8 + 255 * 4;
 
     let mut tracks = Vec::with_capacity(track_count);
-    let mut anterior: Option<u32> = None;
+    let mut previous_end: Option<u32> = None;
     for i in 0..track_count {
         let start_lsn = be32(trl1, 8 + i * 4);
         let length_lsn = be32(trl1, SECOND_ARRAY + i * 4);
@@ -163,20 +163,20 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
             || trl2[SECOND_ARRAY + i * 4 + 1] >= 60
             || trl2[SECOND_ARRAY + i * 4 + 2] >= 75
         {
-            return Err(SacdError::MalformedToc(format!("código de tiempo inválido en la pista {}", i + 1)));
+            return Err(SacdError::MalformedToc(format!("invalid timecode in track {}", i + 1)));
         }
         let fin = u64::from(start_lsn) + u64::from(length_lsn);
         if length_lsn == 0
             || start_lsn < audio_start_lsn
             || fin > u64::from(audio_end_lsn) + 1
-            || anterior.is_some_and(|previous| start_lsn <= previous)
+            || previous_end.is_some_and(|previous| start_lsn <= previous)
         {
             return Err(SacdError::MalformedToc(format!(
-                "la pista {} cae fuera del área o desordenada",
+                "track {} falls outside the area, or out of order",
                 i + 1
             )));
         }
-        anterior = Some(start_lsn);
+        previous_end = Some(start_lsn);
         tracks.push(SacdTrack {
             number: (i + 1) as u8,
             start_lsn,

@@ -27,9 +27,15 @@ pub enum DsdError {
 impl std::fmt::Display for DsdError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DsdError::Open(e) => write!(f, "no se pudo abrir: {e}"),
-            DsdError::Corrupt(s) => write!(f, "archivo de DSD dañado: {s}"),
-            DsdError::Unsupported(s) => write!(f, "DSD no soportado: {s}"),
+            DsdError::Open(e) => {
+                write!(f, "{}", chilpa_i18n::t_args("could not open: {}", &[&e.to_string()]))
+            }
+            DsdError::Corrupt(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("damaged DSD file: {}", &[s]))
+            }
+            DsdError::Unsupported(s) => {
+                write!(f, "{}", chilpa_i18n::t_args("DSD not supported: {}", &[s]))
+            }
         }
     }
 }
@@ -96,7 +102,7 @@ mod tests {
     fn dsd_rates_are_multiples_of_44_100() {
         assert!(is_supported_rate(2_822_400));
         assert!(is_supported_rate(11_289_600));
-        assert!(!is_supported_rate(44_100), "eso es PCM");
+        assert!(!is_supported_rate(44_100), "that is PCM");
         assert!(!is_supported_rate(3_000_000));
     }
 

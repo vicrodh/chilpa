@@ -91,9 +91,9 @@ mod tests {
     fn what_goes_in_comes_back_out() {
         let dir = tempfile::tempdir().unwrap();
         let b = box_in(dir.path());
-        let sealed = b.seal(b"un token que nadie debe leer").unwrap();
-        assert_ne!(sealed, b"un token que nadie debe leer", "no quedó en claro");
-        assert_eq!(b.open_sealed(&sealed).unwrap(), b"un token que nadie debe leer");
+        let sealed = b.seal(b"a token nobody should read").unwrap();
+        assert_ne!(sealed, b"a token nobody should read", "it was not left in the clear");
+        assert_eq!(b.open_sealed(&sealed).unwrap(), b"a token nobody should read");
     }
 
     #[test]
@@ -102,7 +102,7 @@ mod tests {
         // look identical on disk, and that already says something.
         let dir = tempfile::tempdir().unwrap();
         let b = box_in(dir.path());
-        assert_ne!(b.seal(b"igual").unwrap(), b.seal(b"igual").unwrap());
+        assert_ne!(b.seal(b"same").unwrap(), b.seal(b"same").unwrap());
     }
 
     #[test]
@@ -112,7 +112,7 @@ mod tests {
         let mut sealed = b.seal(b"token").unwrap();
         let last = sealed.len() - 1;
         sealed[last] ^= 1;
-        assert!(b.open_sealed(&sealed).is_err(), "GCM autentica, no solo cifra");
+        assert!(b.open_sealed(&sealed).is_err(), "GCM authenticates, it does not only encrypt");
     }
 
     #[test]
@@ -130,7 +130,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let b = box_in(dir.path());
         assert!(matches!(b.open_sealed(b"").unwrap_err(), SecretError::Malformed(_)));
-        assert!(matches!(b.open_sealed(b"\x01\x01corto").unwrap_err(), SecretError::Malformed(_)));
+        assert!(matches!(b.open_sealed(b"\x01\x01short").unwrap_err(), SecretError::Malformed(_)));
     }
 
     #[test]

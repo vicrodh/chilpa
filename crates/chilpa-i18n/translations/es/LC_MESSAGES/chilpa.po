@@ -94,6 +94,9 @@ msgstr "Conectar cuenta"
 msgid "Ctrl + arrows"
 msgstr "Ctrl + flechas"
 
+msgid "DSD not supported: {}"
+msgstr "DSD no soportado: {}"
+
 msgid "DSD128 over DoP"
 msgstr "DSD128 por DoP"
 
@@ -108,6 +111,9 @@ msgstr "Desconectar"
 
 msgid "Distinct tracks"
 msgstr "Pistas distintas"
+
+msgid "Done. You can close this tab and go back to Chilpa."
+msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 
 msgid "Everything"
 msgstr "Todo"
@@ -132,6 +138,9 @@ msgstr "Alta 24/96"
 
 msgid "I did not find a CD drive"
 msgstr "no encontré una unidad de CD"
+
+msgid "I did not understand that request."
+msgstr "No entendí esa petición."
 
 msgid "I do not know the list \"{}\""
 msgstr "no conozco la lista \"{}\""
@@ -271,6 +280,15 @@ msgstr "Reanudar"
 msgid "SACD images"
 msgstr "Imágenes de SACD"
 
+msgid "SACDMTOC was not found"
+msgstr "no se encontró SACDMTOC"
+
+msgid "SACDTRL1 is missing"
+msgstr "falta SACDTRL1"
+
+msgid "SACDTRL2 is missing"
+msgstr "falta SACDTRL2"
+
 msgid "Save queue"
 msgstr "Guardar cola"
 
@@ -319,8 +337,20 @@ msgstr "Detener el análisis"
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
 
+msgid "That answer does not belong to this window."
+msgstr "Esa respuesta no corresponde a esta ventana."
+
+msgid "The account did not connect. You can close this tab."
+msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
+
 msgid "The library is empty"
 msgstr "La biblioteca está vacía"
+
+msgid "The service sent no code."
+msgstr "El servicio no mandó un código."
+
+msgid "The service's answer is missing."
+msgstr "Falta la respuesta del servicio."
 
 msgid "This plugin wants:"
 msgstr "Este plugin quiere:"
@@ -415,11 +445,17 @@ msgstr "no se pudo abrir: {}"
 msgid "could not: {}"
 msgstr "no se pudo: {}"
 
+msgid "damaged DSD file: {}"
+msgstr "archivo de DSD dañado: {}"
+
 msgid "damaged file: {}"
 msgstr "archivo dañado: {}"
 
 msgid "device: {}"
 msgstr "dispositivo: {}"
+
+msgid "encrypted and tied to this machine (there is no system keyring)"
+msgstr "cifrado y atado a este equipo (no hay llavero del sistema)"
 
 msgid "file"
 msgstr "archivo"
@@ -438,6 +474,18 @@ msgstr "manejar tu cuenta él mismo, fuera de Chilpa: tu credencial queda donde 
 
 msgid "how the account connects does not work: {}"
 msgstr "cómo conecta la cuenta no sirve: {}"
+
+msgid "impossible packet counts"
+msgstr "cuentas de paquetes imposibles"
+
+msgid "in the system keyring"
+msgstr "en el llavero del sistema"
+
+msgid "invalid table of contents: {}"
+msgstr "tabla de contenido inválida: {}"
+
+msgid "invalid timecode in frame-info"
+msgstr "código de tiempo inválido en frame-info"
 
 msgid "it answered an address not in its memory"
 msgstr "contestó una dirección que no está en su memoria"
@@ -481,8 +529,14 @@ msgstr "no contestó en {} y se detuvo"
 msgid "it does not export \"{}\", which every plugin has to export"
 msgstr "no exporta \"{}\", que todo plugin tiene que exportar"
 
+msgid "it does not start with the DSD chunk"
+msgstr "no empieza con el chunk DSD"
+
 msgid "it failed {} times in a row; the last one: {}"
 msgstr "falló {} veces seguidas; la última: {}"
+
+msgid "it is not 2048 bytes"
+msgstr "no mide 2048 bytes"
 
 msgid "it is not installed"
 msgstr "no está instalado"
@@ -516,8 +570,14 @@ msgstr "sin portada"
 msgid "no pulse"
 msgstr "sin pulso"
 
+msgid "not supported: {}"
+msgstr "no soportado: {}"
+
 msgid "open a file"
 msgstr "abrir un archivo"
+
+msgid "outside the image"
+msgstr "fuera de la imagen"
 
 msgid "pause and resume"
 msgstr "pausa y reanuda"
@@ -551,6 +611,12 @@ msgstr "escaneando..."
 
 msgid "search"
 msgstr "buscar"
+
+msgid "sector {} could not be read: {}"
+msgstr "no se pudo leer el sector {}: {}"
+
+msgid "sector {} is invalid: {}"
+msgstr "sector {} inválido: {}"
 
 msgid "send you to grant permission at {}"
 msgstr "mandarte a dar permiso en {}"
@@ -612,8 +678,20 @@ msgstr "no se pudo guardar la aprobación: {}"
 msgid "the approval could not be withdrawn: {}"
 msgstr "no se pudo quitar la aprobación: {}"
 
+msgid "the area declares no tracks"
+msgstr "el área no declara pistas"
+
+msgid "the audio area falls outside the image"
+msgstr "el área de audio cae fuera de la imagen"
+
+msgid "the client_id came in empty"
+msgstr "el client_id viene vacío"
+
 msgid "the credential could not be saved: {}"
 msgstr "no se pudo guardar la credencial: {}"
+
+msgid "the data chunk is missing"
+msgstr "falta el chunk data"
 
 msgid "the device could not be measured; nothing below is verified"
 msgstr "no se pudo medir el dispositivo; nada de lo de abajo está comprobado"
@@ -630,6 +708,9 @@ msgstr "el dispositivo no acepta {} a {} Hz y la política no deja convertir"
 msgid "the device failed after {} frames: {}"
 msgstr "el dispositivo falló tras {} frames: {}"
 
+msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
+msgstr "el dispositivo abrió {} Hz y {} canales, no {} Hz y {}"
+
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr "no se midió el dispositivo; sin eso no se promete bit-perfect"
 
@@ -638,6 +719,9 @@ msgstr "el disco no trae pistas de audio"
 
 msgid "the disc carries no tracks"
 msgstr "el disco no trae pistas"
+
+msgid "the drive does not answer: {}"
+msgstr "la unidad no responde: {}"
 
 msgid "the drive is missing"
 msgstr "falta la unidad"
@@ -648,11 +732,23 @@ msgstr "el archivo no trae pistas"
 msgid "the file carries {} bits and the device only takes {}"
 msgstr "el archivo trae {} bits y el dispositivo solo toma {}"
 
+msgid "the fmt chunk is missing"
+msgstr "falta el chunk fmt"
+
 msgid "the folder for \"{}\" could not be deleted"
 msgstr "no se pudo borrar la carpeta de \"{}\""
 
+msgid "the frame-info table is cut off"
+msgstr "la tabla de frame-info está cortada"
+
 msgid "the host could not serve it"
 msgstr "el host no pudo atender"
+
+msgid "the image could not be read: {}"
+msgstr "no se pudo leer la imagen: {}"
+
+msgid "the image is shorter than its master table"
+msgstr "la imagen es más corta que su tabla maestra"
 
 msgid "the library could not be opened: {}"
 msgstr "no se pudo abrir la biblioteca: {}"
@@ -711,11 +807,29 @@ msgstr "la petición no es JSON: {}"
 msgid "the scan failed: {}"
 msgstr "el escaneo falló: {}"
 
+msgid "the sector is DST compressed"
+msgstr "el sector viene comprimido con DST"
+
 msgid "the server sent no audio: {}"
 msgstr "el servidor no mandó audio: {}"
 
+msgid "the stereo area (TWOCHTOC) was not found"
+msgstr "no se encontró el área estéreo (TWOCHTOC)"
+
+msgid "the tags could not be read: {}"
+msgstr "no se pudieron leer los tags: {}"
+
+msgid "the track is DST compressed and there is no decoder yet"
+msgstr "la pista viene comprimida con DST y todavía no hay decodificador"
+
 msgid "the version"
 msgstr "la versión"
+
+msgid "the wait ran out"
+msgstr "se acabó la espera"
+
+msgid "there is no disc in the drive"
+msgstr "no hay disco en la unidad"
 
 msgid "there is no folder in the library yet"
 msgstr "todavía no hay ninguna carpeta en la biblioteca"
@@ -737,6 +851,9 @@ msgstr "no hay dónde guardar un secreto en este equipo"
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "este dispositivo no entrega bit-perfect en ningún formato común"
+
+msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
+msgstr "esta biblioteca es de la versión {} y este Chilpa entiende hasta la {}; actualiza Chilpa en vez de abrirla con uno viejo"
 
 msgid "this list"
 msgstr "esta lista"
@@ -771,8 +888,14 @@ msgstr[1] "{} canales"
 msgid "{} files: {} read, {} unchanged, {} missing"
 msgstr "{} archivos: {} leídos, {} sin cambios, {} ausentes"
 
+msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
+msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
+
 msgid "{} is missing"
 msgstr "falta {}"
+
+msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
+msgstr "{} no es un dispositivo directo; solo se abre hw: (nada de plughw ni default)"
 
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"

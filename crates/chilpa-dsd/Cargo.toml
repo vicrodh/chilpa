@@ -6,4 +6,6 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+# Why a DSD file could not be opened is read by the user.
+chilpa-i18n.workspace = true
 chilpa-audio.workspace = true

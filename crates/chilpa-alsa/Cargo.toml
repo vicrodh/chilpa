@@ -9,4 +9,6 @@ rust-version.workspace = true
 alsa = "0.12"
 
 [dependencies]
+# Why a device could not be opened is read by the user.
+chilpa-i18n.workspace = true
 chilpa-audio.workspace = true

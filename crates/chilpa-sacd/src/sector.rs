@@ -52,7 +52,7 @@ pub struct SectorPackets {
 /// Decodes a sector's packing.
 pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
     if sector.len() != SECTOR {
-        return Err(SacdError::BadSector { lsn, why: "no mide 2048 bytes".into() });
+        return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("it is not 2048 bytes").into() });
     }
     let b0 = sector[0];
     let dst = b0 & 0x01 != 0;
@@ -62,7 +62,7 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
     let frame_info_at = 1 + packet_count * 2;
     let header_len = frame_info_at + frame_info_count * frame_info_size;
     if packet_count == 0 || header_len > SECTOR {
-        return Err(SacdError::BadSector { lsn, why: "cuentas de paquetes imposibles".into() });
+        return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("impossible packet counts").into() });
     }
 
     let mut packets = Vec::with_capacity(packet_count);
@@ -84,12 +84,12 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
             if data_type == DATA_TYPE_AUDIO {
                 let t = sector.get(info..info + 3).ok_or_else(|| SacdError::BadSector {
                     lsn,
-                    why: "la tabla de frame-info está cortada".into(),
+                    why: chilpa_i18n::mark("the frame-info table is cut off").into(),
                 })?;
                 if t[1] >= 60 || t[2] >= 75 {
                     return Err(SacdError::BadSector {
                         lsn,
-                        why: "código de tiempo inválido en frame-info".into(),
+                        why: chilpa_i18n::mark("invalid timecode in frame-info").into(),
                     });
                 }
                 Some((u32::from(t[0]) * 60 + u32::from(t[1])) * 75 + u32::from(t[2]))
@@ -104,7 +104,7 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
         if total > SECTOR {
             return Err(SacdError::BadSector {
                 lsn,
-                why: format!("los paquetes suman {total} bytes"),
+                why: format!("the packets add up to {total} bytes"),
             });
         }
         packets.push(Packet { frame_start, data_type, at, len, timecode });
@@ -113,7 +113,7 @@ pub fn parse(sector: &[u8], lsn: u64) -> Result<SectorPackets, SacdError> {
     if total != SECTOR {
         return Err(SacdError::BadSector {
             lsn,
-            why: format!("los paquetes suman {total} y no 2048"),
+            why: format!("the packets add up to {total} and not 2048"),
         });
     }
     Ok(SectorPackets { dst, packets })
