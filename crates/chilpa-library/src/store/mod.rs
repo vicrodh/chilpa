@@ -66,6 +66,10 @@ impl Library {
         let db = Connection::open(path)?;
         schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
+        // Not only after a scan: a library that already exists carries the
+        // statistics of an empty database and would keep them until its next
+        // scan, which may be never.
+        schema::update_statistics_if_stale(&db)?;
         Ok(Self { db })
     }
 
@@ -74,6 +78,16 @@ impl Library {
         let db = Connection::open_in_memory()?;
         schema::migrate(&db)?;
         Ok(Self { db })
+    }
+
+    /// Lets the planner see the library it actually has.
+    ///
+    /// A scan does this on its own. It is public because a library filled by
+    /// any other route -- a test fixture, an import -- needs it too, and
+    /// because the numbers in `schema::update_statistics` are what the
+    /// difference is worth.
+    pub fn update_statistics(&self) -> rusqlite::Result<()> {
+        schema::update_statistics(&self.db)
     }
 
     /// Where this user's library lives.
@@ -537,6 +551,83 @@ mod repair_tests {
 mod tests {
     use super::*;
     use fixtures::*;
+
+    /// What the planner knows about the library on a fresh row of numbers.
+    fn believed_tracks(lib: &Library) -> i64 {
+        use rusqlite::OptionalExtension;
+        lib.db
+            .query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .optional()
+            .unwrap_or(None)
+            .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
+            .unwrap_or(0)
+    }
+
+    #[test]
+    fn a_library_that_was_filled_gets_its_statistics_when_it_opens() {
+        // The bug this closes: the migrations end in ANALYZE and a migration
+        // runs on an empty database, so the planner spent every library's
+        // life believing it had no tracks. What that cost is in
+        // `schema::update_statistics`.
+        let dir = std::env::temp_dir().join("chilpa-stats-test");
+        let _ = std::fs::remove_dir_all(&dir);
+        let path = dir.join("library.db");
+        {
+            let lib = Library::open(&path).unwrap();
+            let source = lib.source_id("local", "default").unwrap();
+            for i in 1..=5_000i64 {
+                lib.db
+                    .execute(
+                        "INSERT INTO tracks (id, source_id, external_id, title, artist,
+                                             duration_ms, added_at)
+                         VALUES (?1, ?2, ?3, ?4, 'Someone', 200000, ?1)",
+                        params![i, source, format!("/music/{i}.flac"), format!("Track {i}")],
+                    )
+                    .unwrap();
+            }
+            assert_eq!(believed_tracks(&lib), 0, "nothing has looked at it yet");
+        }
+
+        let lib = Library::open(&path).unwrap();
+        assert_eq!(believed_tracks(&lib), 5_000, "opening it noticed");
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn statistics_that_are_current_are_not_redone() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for i in 1..=100i64 {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, artist,
+                                         duration_ms, added_at)
+                     VALUES (?1, ?2, ?3, ?4, 'Someone', 200000, ?1)",
+                    params![i, source, format!("/music/{i}.flac"), format!("Track {i}")],
+                )
+                .unwrap();
+        }
+        lib.update_statistics().unwrap();
+        assert_eq!(believed_tracks(&lib), 100);
+
+        // Ten more is not a different library, and re-analyzing costs what a
+        // full pass costs. The check is a factor, not an equality.
+        for i in 101..=110i64 {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, artist,
+                                         duration_ms, added_at)
+                     VALUES (?1, ?2, ?3, ?4, 'Someone', 200000, ?1)",
+                    params![i, source, format!("/music/{i}.flac"), format!("Track {i}")],
+                )
+                .unwrap();
+        }
+        crate::schema::update_statistics_if_stale(&lib.db).unwrap();
+        assert_eq!(believed_tracks(&lib), 100, "still what it was");
+    }
 
     #[test]
     fn the_source_and_the_root_are_created_once() {

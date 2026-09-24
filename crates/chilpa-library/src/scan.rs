@@ -173,6 +173,14 @@ fn scan(
     report.missing = mark_missing(lib, root_id, &seen)?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
+    // A scan is the only thing that changes the size of the library, so it is
+    // the only moment the planner's statistics can go stale. See
+    // `schema::update_statistics` for what they are worth. A rescan that
+    // found nothing new changed nothing and pays nothing, which matters
+    // because that is the scan that runs at every startup.
+    if report.read > 0 || report.missing > 0 {
+        crate::schema::update_statistics(&lib.db)?;
+    }
     Ok(report)
 }
 
