@@ -259,11 +259,23 @@ pub struct PluginInfo {
 
 /// Una conexión de cuenta a medias: ya se mandó al usuario al navegador y
 /// se está esperando a que regrese.
+///
+/// La espera corre en su propio hilo porque el usuario puede tardar lo que
+/// quiera —hasta cinco minutos— y la ventana no puede quedarse tiesa
+/// mientras tanto. Lo que contesta llega por `poll`, igual que la búsqueda.
 pub struct Connecting {
     pub id: String,
-    pub auth: chilpa_auth::Auth,
-    pub back: chilpa_auth::Loopback,
-    pub pkce: chilpa_auth::Pkce,
+    pub answer: std::sync::mpsc::Receiver<Result<chilpa_auth::Tokens, String>>,
+    pub thread: Option<std::thread::JoinHandle<()>>,
+}
+
+impl Drop for Connecting {
+    fn drop(&mut self) {
+        // No se espera al hilo: si el usuario abandonó el navegador, seguir
+        // esperándolo dejaría la aplicación sin cerrar. El hilo se acaba
+        // solo cuando se le agota la paciencia.
+        self.thread.take();
+    }
 }
 
 /// Todo lo de plugins que la fachada guarda.
@@ -581,41 +593,71 @@ impl Chilpa {
     /// al usuario.
     ///
     /// No abre el navegador: cómo se abre uno es cosa del sistema, y quien
-    /// llama sabe si hay ventana o no. Guarda el loopback y el verificador
-    /// hasta que se termine con [`Chilpa::finish_connect`].
-    pub fn begin_connect(&mut self, id: &str) -> Result<String, String> {
+    /// llama sabe si hay ventana o no. A partir de aquí se espera en otro
+    /// hilo, y el resultado llega por [`Chilpa::poll`].
+    pub fn connect_account(&mut self, id: &str) -> Result<String, String> {
         let auth = self
-            .plugins()
-            .iter()
-            .find(|p| p.id == id)
-            .map(|_| ())
-            .and_then(|_| self.auth_of(id))
+            .auth_of(id)
             .ok_or_else(|| format!("\"{id}\" no dice cómo se conecta una cuenta"))?;
-
         let back = chilpa_auth::Loopback::bind().map_err(|e| e.to_string())?;
         let pkce = chilpa_auth::Pkce::new();
-        let url = chilpa_auth::authorize_url(&auth, &pkce, &back)
-            .ok_or("ese source no usa OAuth")?;
-        self.connecting = Some(Connecting { id: id.to_string(), auth, back, pkce });
+        let url =
+            chilpa_auth::authorize_url(&auth, &pkce, &back).ok_or("ese source no usa OAuth")?;
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        let thread = std::thread::Builder::new()
+            .name("chilpa-connect".into())
+            .spawn(move || {
+                let answer = chilpa_auth::wait_for_code(&back)
+                    .map_err(|e| e.to_string())
+                    .and_then(|code| {
+                        chilpa_auth::exchange(&auth, &code, &pkce, &back, now_unix(), &post)
+                            .map_err(|e| e.to_string())
+                    });
+                let _ = tx.send(answer);
+            })
+            .ok();
+
+        self.connecting = Some(Connecting { id: id.to_string(), answer: rx, thread });
         Ok(url)
     }
 
-    /// Espera a que el navegador regrese y guarda la cuenta, cifrada.
+    /// Cierto mientras se espera a que el usuario termine en el navegador.
+    pub fn connecting(&self) -> bool {
+        self.connecting.is_some()
+    }
+
+    /// Deja de esperar. El usuario cerró el navegador o cambió de opinión.
+    pub fn cancel_connect(&mut self) {
+        self.connecting = None;
+    }
+
+    /// Recoge lo que haya contestado el navegador. Lo llama `poll`.
     ///
-    /// Bloquea hasta que el usuario decide, o hasta que se acaba la
-    /// paciencia. Quien llama lo corre donde pueda esperar.
-    pub fn finish_connect(&mut self) -> Result<String, String> {
-        let Some(c) = self.connecting.take() else {
-            return Err("no hay ninguna conexión empezada".into());
-        };
-        let code = chilpa_auth::wait_for_code(&c.back).map_err(|e| e.to_string())?;
-        let tokens =
-            chilpa_auth::exchange(&c.auth, &code, &c.pkce, &c.back, now_unix(), &post)
-                .map_err(|e| e.to_string())?;
-        let Some(p) = self.plugins.clone() else { return Err("no hay sandbox".into()) };
-        let Ok(mut p) = p.lock() else { return Err("el sandbox está ocupado".into()) };
-        p.save_account(&c.id, &Account::OAuth { tokens })?;
-        Ok(c.id)
+    /// Devuelve el id del plugin que quedó conectado, si alguno.
+    pub(crate) fn advance_connect(&mut self) -> Option<String> {
+        let answer = self.connecting.as_ref()?.answer.try_recv().ok()?;
+        let c = self.connecting.take()?;
+        match answer {
+            Ok(tokens) => {
+                let saved = self
+                    .plugins
+                    .clone()
+                    .and_then(|p| p.lock().ok().map(|mut p| p.save_account(&c.id, &Account::OAuth { tokens })));
+                match saved {
+                    Some(Ok(())) => Some(c.id.clone()),
+                    Some(Err(e)) => {
+                        self.now.error = format!("la cuenta se conectó pero no se pudo guardar: {e}");
+                        None
+                    }
+                    None => None,
+                }
+            }
+            Err(e) => {
+                self.now.error = format!("no se conectó la cuenta: {e}");
+                None
+            }
+        }
     }
 
     /// Cómo conecta su cuenta ese plugin, según su manifest.

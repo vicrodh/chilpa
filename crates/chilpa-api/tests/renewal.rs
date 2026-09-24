@@ -159,7 +159,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
 
     // Se conecta la cuenta por el camino de verdad: Chilpa da la URL, el
     // navegador regresa con el código, y Chilpa lo cambia por tokens.
-    let url = chilpa.begin_connect("com.prueba.cuenta").expect("hay a dónde mandar");
+    let url = chilpa.connect_account("com.prueba.cuenta").expect("hay a dónde mandar");
     assert!(url.contains("code_challenge="), "con PKCE: {url}");
     assert!(url.contains("redirect_uri=http%3A%2F%2F127.0.0.1%3A"), "a loopback: {url}");
 
@@ -169,8 +169,15 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
         std::thread::sleep(std::time::Duration::from_millis(100));
         browser(&unescape(&redirect), &format!("code=el-codigo&state={state}"));
     });
-    assert_eq!(chilpa.finish_connect().expect("conectó"), "com.prueba.cuenta");
-    assert!(chilpa.plugins()[0].connected);
+    // La espera corre en otro hilo; lo que contesta llega por poll, que es
+    // como lo va a ver la ventana.
+    assert!(chilpa.connecting(), "se está esperando al navegador");
+    assert!(
+        wait_for(&mut chilpa, |c| c.plugins()[0].connected),
+        "la cuenta quedó conectada: {}",
+        chilpa.now_playing().error
+    );
+    assert!(!chilpa.connecting(), "y ya no se espera a nadie");
     assert!(!chilpa.plugins()[0].account_expired, "venció, pero hay con qué renovarla");
 
     // El plugin sale a la red. No pidió ningún token: no tiene cómo.
@@ -208,6 +215,22 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
     }
 
     let _ = std::fs::remove_dir_all(dir);
+}
+
+/// Llama a `poll` hasta que se cumpla la condición, o se acabe la paciencia.
+fn wait_for(
+    chilpa: &mut chilpa_api::Chilpa,
+    mut cond: impl FnMut(&mut chilpa_api::Chilpa) -> bool,
+) -> bool {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while std::time::Instant::now() < deadline {
+        chilpa.poll();
+        if cond(chilpa) {
+            return true;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    false
 }
 
 /// Lo que hay entre dos marcas de una URL.
