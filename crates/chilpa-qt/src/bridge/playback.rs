@@ -14,7 +14,15 @@ impl Chilpa {
         let mut tags = QList::<QString>::default();
         let mut ids = QList::<QString>::default();
         for output in &outputs {
-            tags.append(QString::from(&output.label));
+            // Three fields, tab separated, as everything else that crosses
+            // the bridge as a list: the name, the line under it, and whether
+            // it carries samples untouched.
+            tags.append(QString::from(&format!(
+                "{}\t{}\t{}",
+                output.label,
+                output.detail,
+                if output.bit_perfect { "1" } else { "" }
+            )));
             ids.append(QString::from(&output.id));
         }
         self.as_mut().set_outputs(QStringList::from(&tags));

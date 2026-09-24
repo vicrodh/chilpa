@@ -66,21 +66,33 @@ ScrollView {
 
         Setting {
             label: Chilpa.translate("Output", Chilpa.trRev)
-            ComboBox {
+            ColumnLayout {
                 Layout.fillWidth: true
-                model: Chilpa.outputs
-                currentIndex: {
-                    const i = Chilpa.outputIds.indexOf(Chilpa.device)
-                    return i >= 0 ? i : 0
+                spacing: 0
+                RowLayout {
+                    Layout.fillWidth: true
+                    spacing: 8
+                    OutputSelect {
+                        Layout.fillWidth: true
+                        onActivated: Chilpa.choose(
+                            index >= 0 && index < Chilpa.outputIds.length
+                                ? Chilpa.outputIds[index] : "",
+                            Chilpa.wantBitPerfect)
+                    }
+                    Button {
+                        text: Chilpa.translate("Look again", Chilpa.trRev)
+                        onClicked: Chilpa.refreshOutputs()
+                    }
                 }
-                onActivated: Chilpa.choose(
-                    index >= 0 && index < Chilpa.outputIds.length
-                        ? Chilpa.outputIds[index] : "",
-                    Chilpa.wantBitPerfect)
-            }
-            Button {
-                text: Chilpa.translate("Rescan", Chilpa.trRev)
-                onClicked: Chilpa.refreshOutputs()
+                Label {
+                    Layout.fillWidth: true
+                    text: Chilpa.translate(
+                        "The device the music comes out of. \"BP\" marks the ones Chilpa writes to directly, with nothing in between; look again after plugging one in.",
+                        Chilpa.trRev)
+                    wrapMode: Text.Wrap
+                    font.pixelSize: 10
+                    color: "#7a411d1f"
+                }
             }
         }
 

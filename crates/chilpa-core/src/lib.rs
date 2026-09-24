@@ -48,7 +48,18 @@ impl Core {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Output {
     pub id: String,
+    /// What a person recognises: "Fosi Audio ZH3".
     pub label: String,
+    /// The second line: how it is attached and what it says it can do.
+    pub detail: String,
+    /// Whether samples reach it without anything in between.
+    ///
+    /// It is what the path is, not what was measured: Chilpa opens direct
+    /// devices (`hw:`) and nothing else, so every real output here can carry
+    /// a track untouched, and what it cannot do is refuse a format -- that
+    /// is the wizard's answer, and it measures. The one output that is not
+    /// bit-perfect is the capture, which writes what was handed to it.
+    pub bit_perfect: bool,
 }
 
 /// The machine's outputs, plus the diagnostic one.
@@ -60,11 +71,24 @@ pub struct Output {
 pub fn outputs() -> Vec<Output> {
     let mut outputs: Vec<Output> = chilpa_alsa::list()
         .into_iter()
-        .map(|d| Output { id: d.id.clone(), label: d.label() })
+        .map(|d| {
+            let mut detail = d.bus.name().to_string();
+            let declared = d.declared.summary();
+            if !declared.is_empty() {
+                detail.push_str(" · ");
+                detail.push_str(&declared);
+            }
+            Output { id: d.id.clone(), label: d.label(), detail, bit_perfect: true }
+        })
         .collect();
+    // The real outputs first, and a USB DAC before what is soldered to the
+    // board: somebody who plugged one in plugged it in to use it.
+    outputs.sort_by_key(|o| !o.detail.starts_with("USB"));
     outputs.push(Output {
         id: chilpa_audio::CAPTURE_ID.to_string(),
-        label: chilpa_i18n::t_args("Capture to a file ({})", &[&capture_path().display().to_string()]),
+        label: chilpa_i18n::t("Capture to a file"),
+        detail: capture_path().display().to_string(),
+        bit_perfect: false,
     });
     outputs
 }

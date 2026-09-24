@@ -7,3 +7,6 @@ Plugins
 Bit-perfect
 AutoMix
 http://...
+# The mark on an output that takes samples untouched: the same two letters
+# in every language, like a unit.
+BP

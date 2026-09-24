@@ -52,7 +52,12 @@ pub enum Event {
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Output {
     pub id: String,
+    /// What a person recognises: "Fosi Audio ZH3".
     pub label: String,
+    /// The second line: how it is attached and what it says it can do.
+    pub detail: String,
+    /// Whether samples reach it with nothing in between.
+    pub bit_perfect: bool,
 }
 
 /// What is playing, as a view needs it.
@@ -763,7 +768,12 @@ impl Chilpa {
     pub fn outputs(&self) -> Vec<Output> {
         chilpa_core::outputs()
             .into_iter()
-            .map(|o| Output { id: o.id, label: o.label })
+            .map(|o| Output {
+                id: o.id,
+                label: o.label,
+                detail: o.detail,
+                bit_perfect: o.bit_perfect,
+            })
             .collect()
     }
 

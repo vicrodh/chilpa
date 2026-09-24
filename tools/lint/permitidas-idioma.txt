@@ -1,37 +1,35 @@
-# Palabras que el diccionario marca como españolas y no lo son:
+
 # abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
-
-# Rust y std
 acq
-rel
-dir
-len
-pos
-res
-
-# Inglés que el diccionario español también acepta
-catalogue
-
-# doy: "day of year", del algoritmo de fecha civil en bridge.rs
-doy
-num
-linux
-
-# De dos letras: abreviaturas y palabras inglesas que el diccionario
-# español también acepta. Sin esto, mirar las de dos letras es puro ruido.
-cd
-os
-is
-ti
-si
-pl
-on
-of
-ne
-hi
-ch
-by
-
-# Nombres de crates y algoritmos que el diccionario no conoce.
 aes
+by
+catalogue
+cd
+ch
+# De dos letras: abreviaturas y palabras inglesas que el diccionario
+dir
+doy
+# doy: "day of year", del algoritmo de fecha civil en bridge.rs
+# español también acepta. Sin esto, mirar las de dos letras es puro ruido.
 gcm
+hi
+# Inglés que el diccionario español también acepta
+is
+len
+linux
+ne
+# Nombres de crates y algoritmos que el diccionario no conoce.
+num
+of
+on
+os
+# Palabras que el diccionario marca como españolas y no lo son:
+pl
+pos
+rel
+res
+# Rust y std
+si
+stream
+ti
+usb
