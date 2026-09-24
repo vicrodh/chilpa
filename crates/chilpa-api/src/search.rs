@@ -75,7 +75,12 @@ impl Hit {
         }
     }
 
-    fn remote(t: messages::RemoteTrack, source: &str, source_name: &str) -> Self {
+    fn remote(
+        t: messages::RemoteTrack,
+        source: &str,
+        source_name: &str,
+        delivers_audio: bool,
+    ) -> Self {
         Self {
             id: t.external_id,
             title: t.title,
@@ -87,12 +92,12 @@ impl Hit {
             quality: t.quality.describe(),
             analysis: String::new(),
             also_in: Vec::new(),
-            // Se puede intentar: al hacer clic se le pide `chilpa_resolver`
-            // al source y lo que conteste se pone a sonar. Si no sabe
-            // resolver, o si el enlace ya caducó, se dice con su razón,
-            // igual que un archivo local que desapareció. Apagar todo lo
-            // remoto por si acaso sería una lista que no hace nada.
-            playable: true,
+            // Se puede intentar, salvo que el source ya haya dicho que no
+            // entrega audio. Al hacer clic se le pide `chilpa_resolver` y
+            // lo que conteste se pone a sonar; si no sabe resolver o el
+            // enlace caducó, se dice con su razón, igual que un archivo
+            // local que desapareció.
+            playable: delivers_audio,
         }
     }
 }
@@ -105,11 +110,21 @@ pub struct SourceReply {
     pub results: messages::Results,
     /// Vacío si contestó bien.
     pub problem: String,
+    /// Cierto si ese source puede entregar audio. Hay servicios cuya API
+    /// deja buscar pero nunca da bytes: lo suyo se muestra apagado desde el
+    /// principio en lugar de fallar en cada clic.
+    pub delivers_audio: bool,
 }
 
 impl SourceReply {
     fn failed(source: String, source_name: String, problem: String) -> Self {
-        Self { source, source_name, results: messages::Results::default(), problem }
+        Self {
+            source,
+            source_name,
+            results: messages::Results::default(),
+            problem,
+            delivers_audio: true,
+        }
     }
 }
 
@@ -156,7 +171,12 @@ pub fn merge(
                     }
                 }
                 None => {
-                    let hit = Hit::remote(track.clone(), &reply.source, &reply.source_name);
+                    let hit = Hit::remote(
+                        track.clone(),
+                        &reply.source,
+                        &reply.source_name,
+                        reply.delivers_audio,
+                    );
                     if let Some(f) = track.fingerprint() {
                         at.insert(f, out.len());
                     }
@@ -188,6 +208,8 @@ impl SearchJob {
                 // bloquear al resto de la fachada.
                 let Ok(who) = plugins.lock().map(|p| p.searchers()) else { return };
                 for (id, name) in who {
+                    let delivers =
+                        plugins.lock().map(|p| p.delivers_audio(&id)).unwrap_or(true);
                     let answer = match plugins.lock() {
                         Ok(mut p) => p.call_short(&id, messages::op::SEARCH, &query),
                         Err(_) => return,
@@ -199,6 +221,7 @@ impl SearchJob {
                                 source_name: name,
                                 results: r.clean(),
                                 problem: String::new(),
+                                delivers_audio: delivers,
                             },
                             Err(e) => SourceReply::failed(id, name, e),
                         },
@@ -337,8 +360,9 @@ impl Chilpa {
 
         match self.resolve(&hit) {
             Ok(stream) => {
-                self.search.playing = Some((stream.url.clone(), hit));
-                self.play_url(&stream.url, device, bit_perfect);
+                let url = stream.parts()[0].to_string();
+                self.search.playing = Some((url.clone(), hit));
+                self.play_url(&url, device, bit_perfect);
                 true
             }
             Err(e) => {
@@ -359,6 +383,18 @@ impl Chilpa {
         let stream: messages::Stream = messages::read(&bytes)?;
         if !stream.usable() {
             return Err("contestó algo que no es una dirección http".into());
+        }
+        if !stream.delivery.playable() {
+            return Err(format!("entrega {}", stream.delivery.describe()));
+        }
+        // Varias partes es el caso normal en hi-res, y todavía no se leen
+        // encadenadas. Se dice cuántas son en lugar de tocar solo la
+        // primera, que sonaría a pista cortada sin explicación.
+        if stream.parts().len() > 1 {
+            return Err(format!(
+                "entrega la pista en {} archivos seguidos, y todavía no se leen encadenados",
+                stream.parts().len()
+            ));
         }
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -514,7 +550,13 @@ mod tests {
             source_name: format!("Source {source}"),
             results: messages::Results { tracks, ..Default::default() },
             problem: String::new(),
+            delivers_audio: true,
         }
+    }
+
+    /// Uno cuya API deja buscar pero nunca entrega audio.
+    fn control_only(source: &str, tracks: Vec<messages::RemoteTrack>) -> SourceReply {
+        SourceReply { delivers_audio: false, ..reply(source, tracks) }
     }
 
     #[test]
@@ -582,6 +624,17 @@ mod tests {
         let all = merge(vec![local(1, "Local")], &HashMap::new(), &replies);
         assert_eq!(all[0].quality, "", "de lo local no se inventa una calidad aquí");
         assert_eq!(all[1].quality, "FLAC · 24 bits a 96000 Hz");
+    }
+
+    #[test]
+    fn a_source_that_cannot_deliver_audio_says_so_from_the_start() {
+        // Hay servicios cuya API deja buscar y navegar pero nunca entrega
+        // bytes a un tercero. Sus resultados salen apagados desde el
+        // principio: dejar que cada clic falle sería peor.
+        let replies = vec![control_only("a", vec![remote("x", "Una", None)])];
+        let all = merge(Vec::new(), &HashMap::new(), &replies);
+        assert!(!all[0].playable);
+        assert_eq!(all[0].source_name, "Source a", "y se sabe de quién es");
     }
 
     #[test]

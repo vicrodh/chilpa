@@ -101,6 +101,19 @@ pub struct Manifest {
     pub auth: Option<chilpa_auth::Auth>,
     #[serde(default)]
     pub capabilities: Vec<Capability>,
+    /// Cierto si este source puede entregar audio que Chilpa reproduzca.
+    ///
+    /// Hay servicios grandes cuya API deja buscar y navegar pero **nunca**
+    /// entrega bytes de audio a un tercero: solo controlan su propio
+    /// reproductor. Un source así se declara aquí, y sus resultados salen
+    /// marcados como no reproducibles desde el principio, en lugar de que
+    /// cada clic falle. No es una limitación nuestra y no se esconde.
+    #[serde(default = "yes")]
+    pub delivers_audio: bool,
+}
+
+fn yes() -> bool {
+    true
 }
 
 /// Por qué no se aceptó un manifest.
