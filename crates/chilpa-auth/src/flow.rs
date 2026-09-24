@@ -1,5 +1,5 @@
-//! El flujo: a dónde se manda al usuario, qué contesta el navegador, y cómo
-//! eso se vuelve tokens.
+//! The flow: where the user is sent, what the browser answers, and how that
+//! becomes tokens.
 
 use crate::pkce::{nonce, Pkce};
 use crate::{secure, Auth, AuthError, Tokens};
@@ -7,15 +7,14 @@ use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::time::Duration;
 
-/// Cuánto se espera a que el usuario termine en el navegador.
+/// How long to wait for the user to finish in the browser.
 const PATIENCE: Duration = Duration::from_secs(300);
 
-/// La dirección a la que el navegador regresa.
+/// The address the browser comes back to.
 ///
-/// Es loopback con puerto efímero: el RFC 8252 lo prefiere sobre un esquema
-/// propio (`chilpa://`) porque un esquema lo puede registrar cualquier otra
-/// aplicación instalada, y entonces el código de autorización llega a manos
-/// ajenas.
+/// Loopback on an ephemeral port: RFC 8252 prefers it over a custom scheme
+/// (`chilpa://`) because any other installed application can register a
+/// scheme, and then the authorization code lands in someone else's hands.
 pub struct Loopback {
     listener: TcpListener,
     state: String,
@@ -28,7 +27,7 @@ impl Loopback {
         Ok(Self { listener, state: nonce() })
     }
 
-    /// A dónde le decimos al servicio que mande de vuelta al navegador.
+    /// Where we tell the service to send the browser back to.
     pub fn redirect_uri(&self) -> String {
         let port = self.listener.local_addr().map(|a| a.port()).unwrap_or(0);
         format!("http://127.0.0.1:{port}/callback")
@@ -39,10 +38,10 @@ impl Loopback {
     }
 }
 
-/// La URL a la que hay que mandar al usuario.
+/// The URL the user has to be sent to.
 ///
-/// No la abre: quien llama decide cómo se abre un navegador, que es cosa
-/// del sistema y no de este crate.
+/// It does not open it: the caller decides how a browser opens, which is the
+/// system's business and not this crate's.
 pub fn authorize_url(auth: &Auth, pkce: &Pkce, back: &Loopback) -> Option<String> {
     let Auth::OAuth2 { authorize_url, client_id, scopes, .. } = auth else {
         return None;
@@ -63,10 +62,10 @@ pub fn authorize_url(auth: &Auth, pkce: &Pkce, back: &Loopback) -> Option<String
     Some(url)
 }
 
-/// Espera a que el navegador regrese y contesta el código.
+/// Waits for the browser to come back and answers the code.
 ///
-/// Bloquea. Quien llama lo corre en su propio hilo, porque el usuario puede
-/// tardar lo que quiera en decidir.
+/// Blocks. The caller runs it on its own thread, because the user can take
+/// as long as they like to decide.
 pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
     back.listener.set_nonblocking(false)?;
     let deadline = std::time::Instant::now() + PATIENCE;
@@ -80,8 +79,8 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
             let _ = answer(&mut stream, "No entendí esa petición.");
             continue;
         };
-        // El navegador pide el favicon además del callback; eso no es la
-        // respuesta que se espera.
+        // The browser asks for the favicon as well as the callback; that is
+        // not the answer being waited for.
         let Some(query) = target.split_once('?').map(|(_, q)| q.to_string()) else {
             let _ = answer(&mut stream, "Falta la respuesta del servicio.");
             continue;
@@ -103,8 +102,8 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
             let _ = answer(&mut stream, "No se conectó la cuenta. Puedes cerrar esta pestaña.");
             return Err(AuthError::NoCode(e));
         }
-        // Se compara antes de usar el código: un `state` que no es el
-        // nuestro quiere decir que esta respuesta la provocó alguien más.
+        // Compared before the code is used: a `state` that is not ours means
+        // somebody else caused this reply.
         if state.as_deref() != Some(back.state()) {
             let _ = answer(&mut stream, "Esa respuesta no corresponde a esta ventana.");
             return Err(AuthError::WrongState);
@@ -119,18 +118,18 @@ pub fn wait_for_code(back: &Loopback) -> Result<String, AuthError> {
     Err(AuthError::NoCode("se acabó la espera".into()))
 }
 
-/// Cómo se manda una petición al servicio.
+/// How a request is sent to the service.
 ///
-/// Se inyecta en lugar de traer un cliente HTTP adentro. Así este crate no
-/// depende de la red, y `chilpa-plugin` puede usar su tipo [`Auth`] para
-/// leer un manifest sin que el sandbox acabe enlazando un cliente HTTP que
-/// no tiene por qué existir ahí.
+/// Injected instead of carrying an HTTP client inside. That way this crate
+/// does not depend on the network, and `chilpa-plugin` can use its [`Auth`]
+/// type to read a manifest without the sandbox ending up linking an HTTP
+/// client that has no business being there.
 ///
-/// Recibe la URL y el cuerpo ya formado; contesta el código de estado y el
-/// cuerpo de la respuesta.
+/// Takes the URL and the body already built; answers the status code and the
+/// reply body.
 pub type Post<'a> = &'a dyn Fn(&str, &str) -> Result<(u16, String), String>;
 
-/// Cambia el código por los tokens.
+/// Exchanges the code for the tokens.
 pub fn exchange(
     auth: &Auth,
     code: &str,
@@ -152,7 +151,7 @@ pub fn exchange(
     post(token_url, &form, now_unix, "", post_with)
 }
 
-/// Pide un access nuevo con el refresh, sin molestar al usuario.
+/// Asks for fresh access with the refresh token, without bothering the user.
 pub fn refresh(
     auth: &Auth,
     tokens: &Tokens,
@@ -167,8 +166,8 @@ pub fn refresh(
         ("refresh_token", &tokens.refresh_token),
         ("client_id", client_id),
     ]);
-    // Muchos servicios no devuelven un refresh nuevo al renovar; el que se
-    // tenía sigue valiendo, y perderlo obligaría a reconectar la cuenta.
+    // Many services return no new refresh on renewal; the one already held
+    // still works, and losing it would force reconnecting the account.
     post(token_url, &form, now_unix, &tokens.refresh_token, post_with)
 }
 
@@ -185,8 +184,8 @@ fn post(
     let (status, text) = post_with(url, body).map_err(AuthError::Network)?;
     let text = text.as_str();
     if !(200..300).contains(&status) {
-        // Se corta: el cuerpo de un error puede traer el token de otra
-        // cuenta, o media página de HTML.
+        // Truncated: an error body can carry another account's token, or half
+        // a page of HTML.
         let short: String = text.chars().take(200).collect();
         return Err(AuthError::Refused(status, short));
     }
@@ -215,8 +214,8 @@ fn form(pairs: &[(&str, &str)]) -> String {
     pairs.iter().map(|(k, v)| format!("{k}={}", escape(v))).collect::<Vec<_>>().join("&")
 }
 
-/// Escapa para una URL. Solo se dejan pasar los caracteres que el RFC 3986
-/// llama "unreserved"; todo lo demás va en por ciento.
+/// Escapes for a URL. Only the characters RFC 3986 calls "unreserved" pass
+/// through; everything else goes percent-encoded.
 fn escape(s: &str) -> String {
     let mut out = String::with_capacity(s.len());
     for b in s.bytes() {
@@ -262,15 +261,15 @@ fn unescape(s: &str) -> String {
     String::from_utf8_lossy(&out).to_string()
 }
 
-/// La primera línea de la petición, leyendo hasta encontrarla.
+/// The request's first line, reading until it is there.
 ///
-/// Una lectura no trae una petición: TCP entrega lo que quiera y cuando
-/// quiera. Medido en loopback, la primera trajo `GET /` y nada más, y
-/// quedarse con eso hacía que la respuesta del navegador se tirara y la
-/// espera nunca terminara.
+/// One read does not bring a request: TCP delivers what it likes when it
+/// likes. Measured on loopback, the first one brought `GET /` and nothing
+/// else, and keeping only that threw the browser's reply away and the wait
+/// never ended.
 fn request_line(stream: &mut std::net::TcpStream) -> String {
-    // Una petición cuya primera línea no cabe aquí no es un navegador
-    // regresando de dar permiso.
+    // A request whose first line does not fit here is not a browser coming
+    // back from granting permission.
     const MAX: usize = 8 * 1024;
     let mut raw = Vec::with_capacity(512);
     let mut byte = [0u8; 1];

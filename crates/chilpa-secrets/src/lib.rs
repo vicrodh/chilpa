@@ -1,40 +1,38 @@
-//! Dónde se guarda un secreto para que no quede en claro.
+//! Where a secret is kept so it does not sit there in the clear.
 //!
-//! Lo usa Chilpa para las credenciales de los plugins (ADR-008). Un token en
-//! texto plano lo lee cualquier proceso que corra como el usuario, y eso no
-//! se puede sostener en un programa que promete que un plugin no ve tus
-//! secretos.
+//! Chilpa uses it for plugin credentials (ADR-008). A plaintext token is
+//! readable by any process running as the user, and that cannot be
+//! sustained in a program that promises a plugin never sees your secrets.
 //!
-//! # Dos caminos, una sola API
+//! # Two paths, one API
 //!
-//! 1. **El llavero del sistema** (lo preferido): una llave maestra AES-256
-//!    vive adentro del almacén del sistema —libsecret en Linux, Keychain en
-//!    macOS, DPAPI en Windows— y con ella se cifra todo lo demás.
-//! 2. **Derivado del equipo** (cuando no hay llavero): la llave sale de
-//!    HKDF-SHA256 sobre el `machine-id` más un UUID de instalación. Es más
-//!    débil, porque quien tenga acceso al sistema de archivos puede
-//!    rehacerla, pero sirve en una caja headless y **sigue atada a ese
-//!    equipo**.
+//! 1. **The system keyring** (preferred): an AES-256 master key lives inside
+//!    the system store — libsecret on Linux, Keychain on macOS, DPAPI on
+//!    Windows — and everything else is encrypted with it.
+//! 2. **Derived from the machine** (when there is no keyring): the key comes
+//!    from HKDF-SHA256 over `machine-id` plus an install UUID. Weaker,
+//!    because anyone with filesystem access can rebuild it, but it works on
+//!    a headless box and **is still bound to that machine**.
 //!
-//! Los dos producen el mismo sobre, así que quien llama no tiene que saber
-//! cuál se usó. Lo que sí puede saber, y decirle al usuario, es
+//! Both produce the same envelope, so the caller does not have to know which
+//! was used. What it can know, and tell the user, is
 //! [`SecretBox::backend`].
 //!
-//! # Contra qué protege
+//! # What it protects against
 //!
-//! - Copiar el directorio a otra máquina. Allá no está la entrada del
-//!   llavero, o el `machine-id` es otro, y lo cifrado no abre.
-//! - Mirar los archivos. Un token no se saca leyendo el blob.
+//! - Copying the directory to another machine. The keyring entry is not
+//!   there, or the `machine-id` differs, and what was sealed does not open.
+//! - Looking at the files. A token is not pulled out of the blob by reading.
 //!
-//! # Contra qué no
+//! # What it does not
 //!
-//! - Alguien con shell en la misma máquina que pueda correr Chilpa: siempre
-//!   puede pedirle a Chilpa que abra, y eso está bien, es el mismo modelo
-//!   que cualquier cifrado local.
-//! - Recompilar Chilpa para que copie lo descifrado. Eso es un ataque al
-//!   código fuente, no al cifrado.
+//! - Someone with a shell on the same machine who can run Chilpa: they can
+//!   always ask Chilpa to open it, and that is right, it is the same model
+//!   as any local encryption.
+//! - Recompiling Chilpa to copy what it decrypts. That is an attack on the
+//!   source, not on the cipher.
 //!
-//! **Nada se guarda en claro, nunca, en ninguno de los dos caminos.**
+//! **Nothing is stored in the clear, ever, on either path.**
 
 mod backend;
 mod cipher;
@@ -47,35 +45,35 @@ pub use error::SecretError;
 
 use std::path::Path;
 
-/// Cierra y abre secretos pequeños.
+/// Seals and opens small secrets.
 pub struct SecretBox {
     backend: backend::Backend,
 }
 
 impl SecretBox {
-    /// Abre la caja. `service_name` es cómo se llama la entrada del llavero;
-    /// `storage_dir` es dónde vive el id de instalación.
+    /// Opens the box. `service_name` is what the keyring entry is called;
+    /// `storage_dir` is where the install id lives.
     pub fn open(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         Ok(Self { backend: backend::Backend::new(service_name, storage_dir)? })
     }
 
-    /// Solo el camino derivado, sin tocar el llavero. Para pruebas.
+    /// The derived path only, without touching the keyring. For tests.
     pub fn derived_only(service_name: &str, storage_dir: &Path) -> Result<Self, SecretError> {
         Ok(Self { backend: backend::Backend::derived_only(service_name, storage_dir)? })
     }
 
-    /// Qué camino quedó activo, para poder decirlo.
+    /// Which path ended up active, so it can be said.
     pub fn backend(&self) -> BackendKind {
         self.backend.kind()
     }
 
-    /// Cifra. Lo que sale se puede escribir a disco tal cual.
+    /// Seals. What comes out can be written to disk as is.
     pub fn seal(&self, plaintext: &[u8]) -> Result<Vec<u8>, SecretError> {
         self.backend.seal(plaintext)
     }
 
-    /// Descifra. Falla si lo tocaron, si lo cifró el otro backend, o si la
-    /// llave maestra ya no es la misma.
+    /// Opens. Fails if it was tampered with, if the other backend sealed it, or
+    /// if the master key is no longer the same.
     pub fn open_sealed(&self, sealed: &[u8]) -> Result<Vec<u8>, SecretError> {
         self.backend.open(sealed)
     }
@@ -100,8 +98,8 @@ mod tests {
 
     #[test]
     fn the_same_secret_twice_does_not_look_the_same() {
-        // Un nonce por cifrado: si no, dos cuentas con el mismo token se
-        // verían iguales en disco, y eso ya dice algo.
+        // One nonce per seal: otherwise two accounts with the same token would
+        // look identical on disk, and that already says something.
         let dir = tempfile::tempdir().unwrap();
         let b = box_in(dir.path());
         assert_ne!(b.seal(b"igual").unwrap(), b.seal(b"igual").unwrap());
@@ -119,8 +117,8 @@ mod tests {
 
     #[test]
     fn what_another_install_sealed_does_not_open_here() {
-        // Es la promesa de fondo: copiar los archivos a otro lado no
-        // alcanza, porque allá el id de instalación es otro.
+        // This is the underlying promise: copying the files elsewhere is not
+        // enough, because over there the install id is another one.
         let one = tempfile::tempdir().unwrap();
         let other = tempfile::tempdir().unwrap();
         let sealed = box_in(one.path()).seal(b"token").unwrap();
@@ -137,11 +135,11 @@ mod tests {
 
     #[test]
     fn what_one_backend_sealed_the_other_refuses_by_name() {
-        // Sin el marcador, esto fallaría con un error de cripto que no dice
-        // nada. Con él se puede decir qué pasó.
+        // Without the marker this would fail with a cipher error that says
+        // nothing. With it we can say what happened.
         let dir = tempfile::tempdir().unwrap();
         let mut sealed = box_in(dir.path()).seal(b"token").unwrap();
-        sealed[1] = 0; // como si lo hubiera cerrado el llavero
+        sealed[1] = 0; // as if the keyring had sealed it
         assert!(matches!(
             box_in(dir.path()).open_sealed(&sealed).unwrap_err(),
             SecretError::BackendMismatch

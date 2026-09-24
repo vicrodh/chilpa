@@ -1,4 +1,4 @@
-//! AES-256-GCM, que es lo que usan los dos backends.
+//! AES-256-GCM, which is what both backends use.
 
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};

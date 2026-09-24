@@ -1,40 +1,39 @@
-//! Cómo suena algo, en términos que no dependen de ningún servicio.
+//! How something sounds, in terms that depend on no service.
 
-/// Formato, profundidad de bits, frecuencia y canales.
+/// Format, bit depth, rate and channels.
 ///
-/// En QBZ esto era un `hires: bool` más campos sueltos, y la UI etiquetaba
-/// como bit-perfect salidas que no lo eran. Aquí no hay etiquetas: hay
-/// números (ADR-004).
+/// In QBZ this was a `hires: bool` plus loose fields, and the UI labelled
+/// outputs bit-perfect that were not. Here there are no labels: there are
+/// numbers (ADR-004).
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct AudioQuality {
     /// `flac`, `alac`, `opus`, `dsd`, `pcm`…
     pub codec: String,
-    /// `None` para formatos con pérdida, donde no significa nada.
+    /// `None` for lossy formats, where it means nothing.
     pub bit_depth: Option<u8>,
     pub sample_rate_hz: u32,
     pub channels: u8,
 }
 
 impl AudioQuality {
-    /// Cierto si conserva la señal original. Un formato con pérdida nunca lo
-    /// es, y por eso tampoco declara profundidad de bits.
+    /// True when it keeps the original signal. A lossy format never does, which
+    /// is why it declares no bit depth either.
     pub fn is_lossless(&self) -> bool {
         self.bit_depth.is_some()
     }
 
-    /// Bits por segundo del PCM equivalente. Sirve para comparar dos
-    /// versiones del mismo track; no es el bitrate del archivo.
+    /// Bits per second of the equivalent PCM. Useful for comparing two versions
+    /// of the same track; it is not the file's bitrate.
     pub fn rank(&self) -> u64 {
         u64::from(self.bit_depth.unwrap_or(0))
             * u64::from(self.sample_rate_hz)
             * u64::from(self.channels)
     }
 
-    /// Cierto si las dos pueden salir por el mismo dispositivo sin
-    /// reconfigurarlo. Cambiar de frecuencia o de formato entre pistas obliga
-    /// a renegociar la salida, que es donde QBZ metía clicks y resampling
-    /// silencioso.
-    pub fn same_stream_format(&self, other: &Self) -> bool {
+    /// True when both can go out the same device without reconfiguring it.
+    /// Changing rate or format between tracks forces a renegotiation of the
+    /// output, which is where QBZ put clicks and silent resampling.
+        pub fn same_stream_format(&self, other: &Self) -> bool {
         self.sample_rate_hz == other.sample_rate_hz
             && self.bit_depth == other.bit_depth
             && self.channels == other.channels

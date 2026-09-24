@@ -1,22 +1,22 @@
-//! Referencias a portadas.
+//! References to cover art.
 
 use std::path::PathBuf;
 
-/// Dónde está una portada. La UI hace match y la trae como corresponda.
+/// Where a cover lives. The UI matches on it and fetches it accordingly.
 ///
-/// En QBZ el pipeline de portadas solo sabía de URLs remotas, así que las
-/// carátulas locales y las de servidores no llegaban a la UI. Aquí cada
-/// origen es una variante explícita.
+/// In QBZ the artwork pipeline only knew about remote URLs, so local covers
+/// and server ones never reached the UI. Here every origin is an explicit
+/// variant.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub enum ArtworkRef {
-    /// No hay portada conocida.
+    /// No cover is known.
     #[default]
     None,
-    /// Un archivo en disco: la carátula junto al álbum, o una ya cacheada.
+    /// A file on disk: the cover next to the album, or one already cached.
     File(PathBuf),
-    /// Metida en los tags del archivo, en el índice que indica.
+    /// Embedded in the file's tags, at the index it names.
     Embedded { path: PathBuf, index: usize },
-    /// Una URL que resuelve el source. El plugin ya la dejó lista para pedir.
+    /// A URL the source resolves. The plugin already left it ready to fetch.
     Remote(String),
 }
 
@@ -25,8 +25,8 @@ impl ArtworkRef {
         matches!(self, ArtworkRef::None)
     }
 
-    /// Una URL que otro proceso pueda abrir, para MPRIS o para el sistema.
-    /// Lo embebido no la tiene hasta que se extrae a la caché.
+    /// A URL another process can open, for MPRIS or for the system. Embedded
+    /// art has none until it is extracted to the cache.
     pub fn external_url(&self) -> Option<String> {
         match self {
             ArtworkRef::File(path) => Some(format!("file://{}", path.display())),
