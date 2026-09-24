@@ -1,15 +1,15 @@
-//! Nadie corre sin permiso (ADR-008).
+//! Nobody runs without permission (ADR-008).
 //!
-//! Lo que se comprueba aquí no es que se le nieguen las llamadas a un
-//! plugin no aprobado: es que **no carga**. Su wasm no se compila y no
-//! existe una instancia suya en el proceso.
+//! What is checked here is not that an unapproved plugin's calls are
+//! refused: it is that it **does not load**. Its wasm is not compiled and no
+//! instance of it exists in the process.
 //!
-//! Es una sola prueba porque apunta `XDG_DATA_HOME` a un directorio
-//! temporal, y esa variable es del proceso entero.
+//! It is a single test because it points `XDG_DATA_HOME` at a temporary
+//! directory, and that variable belongs to the whole process.
 
 use std::path::Path;
 
-/// Un plugin que contesta un JSON fijo, con las capacidades que se le den.
+/// A plugin that answers a fixed JSON, with whatever capabilities it is given.
 fn install(dir: &Path, id: &str, capabilities: &str) {
     std::fs::create_dir_all(dir.join(id)).unwrap();
     std::fs::write(
@@ -65,26 +65,26 @@ fn a_plugin_does_not_run_until_the_user_approves_what_it_asks() {
     assert_eq!(one.state, "pendiente de aprobación");
     assert!(!one.wants_more, "es nuevo, no uno que empezó a pedir más");
 
-    // Lo que pide se dice en palabras, que es lo que se puede aprobar.
+    // What it asks for is said in words, which is what can be approved.
     assert_eq!(one.asks.len(), 2, "{:?}", one.asks);
     assert_eq!(one.pending, one.asks, "de uno nuevo, todo está por aprobar");
     assert!(one.asks.iter().any(|a| a.contains("api.ejemplo.com")), "{:?}", one.asks);
     assert!(one.asks.iter().any(|a| a.contains("guardar")), "{:?}", one.asks);
 
-    // Y no se le puede pedir nada, porque no hay a quién.
+    // And it cannot be asked for anything, because there is nobody to ask.
     let e = chilpa
         .call_plugin("com.prueba.uno", "chilpa_search", b"{}")
         .expect_err("no hay instancia que llamar");
     assert!(e.contains("aprobado"), "{e}");
 
-    // El usuario dice que sí: ahora sí carga y contesta.
+    // The user says yes: now it loads and answers.
     assert_eq!(chilpa.approve_plugin("com.prueba.uno"), 1, "aprobar lo pone a correr");
     assert_eq!(chilpa.plugins()[0].state, "bien");
     let r = chilpa.call_plugin("com.prueba.uno", "chilpa_search", b"{}").expect("contesta");
     assert!(String::from_utf8_lossy(&r).contains("Una"));
 
-    // Una versión nueva que pide más vuelve a preguntar, y dice qué es lo
-    // nuevo en lugar de pedir todo otra vez.
+    // A new version that asks for more asks again, and says what is new
+    // instead of asking for everything over.
     install(
         &root,
         "com.prueba.uno",
@@ -99,7 +99,7 @@ fn a_plugin_does_not_run_until_the_user_approves_what_it_asks() {
     assert_eq!(after.pending.len(), 1, "solo lo nuevo: {:?}", after.pending);
     assert!(after.pending[0].contains("biblioteca"), "{:?}", after.pending);
 
-    // Y revocar lo apaga en el momento, no hasta el siguiente arranque.
+    // And revoking switches it off right away, not at the next startup.
     assert_eq!(other.approve_plugin("com.prueba.uno"), 1);
     assert_eq!(other.revoke_plugin("com.prueba.uno"), 0, "revocar lo deja fuera");
     assert_eq!(other.plugins()[0].state, "pendiente de aprobación");
@@ -108,7 +108,7 @@ fn a_plugin_does_not_run_until_the_user_approves_what_it_asks() {
         .expect_err("ya no hay instancia");
     assert!(e.contains("aprobado"), "{e}");
 
-    // Y desinstalarlo se lleva su carpeta entera, no solo el permiso.
+    // And uninstalling takes its whole folder, not just the permission.
     assert!(other.uninstall_plugin("com.prueba.uno"), "{}", other.now_playing().error);
     assert!(!root.join("com.prueba.uno").exists(), "la carpeta se fue");
     assert!(other.plugins().is_empty(), "y ya no se lista");

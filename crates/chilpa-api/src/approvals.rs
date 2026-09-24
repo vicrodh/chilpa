@@ -1,22 +1,22 @@
-//! Qué aprobó el usuario de cada plugin (ADR-008).
+//! What the user approved of each plugin (ADR-008).
 //!
-//! Un plugin no corre hasta que alguien dijo que sí. Lo que se guarda no es
-//! un "sí" a secas sino **lo que pidió cuando se le dijo que sí**: el tipo
-//! de plugin y sus capacidades. Si una versión nueva pide algo más, la
-//! aprobación deja de valer y se vuelve a preguntar, y se puede decir qué
-//! es lo nuevo en lugar de un "cambió, vuelve a aprobar".
+//! A plugin does not run until someone said yes. What is kept is not a bare
+//! "yes" but **what it asked for when it was told yes**: the plugin's kind
+//! and its capabilities. If a new version asks for anything more, the
+//! approval stops holding and the question is put again, and what is new can
+//! be named instead of a bare "it changed, approve it again".
 //!
-//! Vive en un archivo de texto junto a los plugins, legible a propósito:
-//! quien quiera saber qué autorizó puede leerlo sin la aplicación.
+//! It lives in a text file next to the plugins, readable on purpose: anyone
+//! who wants to know what they authorized can read it without the app.
 
 use chilpa_plugin::manifest::{Asked, Manifest};
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
-/// El archivo, al lado de las carpetas de los plugins.
+/// The file, next to the plugins' folders.
 const FILE: &str = "approvals.json";
 
-/// Lo aprobado, por id de plugin.
+/// What was approved, by plugin id.
 #[derive(Default)]
 pub struct Approvals {
     path: PathBuf,
@@ -24,10 +24,10 @@ pub struct Approvals {
 }
 
 impl Approvals {
-    /// Lee lo que haya. Un archivo que no existe quiere decir que no se ha
-    /// aprobado nada, que es lo correcto para una instalación nueva; uno
-    /// ilegible quiere decir lo mismo, porque la alternativa sería asumir
-    /// permisos que nadie dio.
+    /// Reads whatever is there. A file that does not exist means nothing has
+    /// been approved, which is right for a fresh install; an unreadable one
+    /// means the same, because the alternative would be assuming permissions
+    /// nobody gave.
     pub fn load(root: &Path) -> Self {
         let path = root.join(FILE);
         let approved = std::fs::read_to_string(&path)
@@ -37,7 +37,7 @@ impl Approvals {
         Self { path, approved }
     }
 
-    /// Cierto si lo que el manifest pide hoy cabe en lo que se aprobó.
+    /// True if what the manifest asks for today fits in what was approved.
     pub fn covers(&self, manifest: &Manifest) -> bool {
         match self.approved.get(&manifest.id) {
             Some(before) => manifest.asks_for().beyond(before).is_empty(),
@@ -45,32 +45,33 @@ impl Approvals {
         }
     }
 
-    /// Lo que pide de más respecto a lo aprobado. Vacío si no hay nada
-    /// nuevo; todo lo que pide si nunca se aprobó.
+    /// What it asks for beyond what was approved. Empty if there is nothing
+    /// new; everything it asks for if it was never approved.
     pub fn beyond(&self, manifest: &Manifest) -> Vec<String> {
-        // Uno nunca aprobado se compara contra "nada aprobado", y no por un
-        // camino aparte: tenerlos separados hacía que a un plugin nuevo no
-        // se le dijera a dónde te manda a dar permiso, porque esa línea
-        // solo la ponía el otro camino.
+        // One never approved is compared against "nothing approved", and not
+        // down a separate path: keeping them apart meant a brand new plugin
+        // never said where it sends you to grant permission, because only
+        // the other path added that line.
         let nothing = Asked { kind: manifest.kind, capabilities: Vec::new(), auth: None };
         let before = self.approved.get(&manifest.id).unwrap_or(&nothing);
         manifest.asks_for().beyond(before)
     }
 
-    /// Cierto si a ese id se le aprobó algo alguna vez, sea lo que pide hoy
-    /// o no. Sirve para decir "pide algo nuevo" en lugar de "es nuevo".
+    /// True if anything was ever approved for that id, whether or not it is
+    /// what it asks for today. It serves to say "it asks for something new"
+    /// instead of "it is new".
     pub fn knows(&self, id: &str) -> bool {
         self.approved.contains_key(id)
     }
 
-    /// Guarda que el usuario aprobó lo que ese plugin pide ahora.
+    /// Records that the user approved what that plugin asks for now.
     pub fn approve(&mut self, manifest: &Manifest) -> std::io::Result<()> {
         self.approved.insert(manifest.id.clone(), manifest.asks_for());
         self.write()
     }
 
-    /// Quita la aprobación. El plugin deja de correr en el siguiente
-    /// arranque y lo que pida vuelve a preguntarse.
+    /// Withdraws the approval. The plugin stops running at the next startup
+    /// and what it asks for is put to the user again.
     pub fn revoke(&mut self, id: &str) -> std::io::Result<()> {
         self.approved.remove(id);
         self.write()
@@ -132,7 +133,7 @@ mod tests {
         let mut a = Approvals::load(&dir);
         a.approve(&before).unwrap();
 
-        // La versión nueva quiere salir a internet, y eso nadie lo aprobó.
+        // The new version wants to reach the internet, and nobody approved that.
         let now = manifest(
             "com.a.b",
             r#"{"type":"storage"},{"type":"network","domains":["api.ejemplo.com"]}"#,
@@ -173,7 +174,7 @@ mod tests {
 
     #[test]
     fn an_unreadable_file_approves_nothing() {
-        // Lo contrario sería asumir permisos que nadie dio.
+        // The opposite would be assuming permissions nobody gave.
         let dir = temporal("roto");
         std::fs::write(dir.join(FILE), "esto no es json").unwrap();
         let a = Approvals::load(&dir);

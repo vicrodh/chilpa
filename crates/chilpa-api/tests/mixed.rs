@@ -1,14 +1,14 @@
-//! AutoMix: la cola reordenada para que el tempo no dé saltos.
+//! AutoMix: the queue reordered so the tempo does not jump.
 //!
-//! Una sola prueba, como en `listas.rs`: apunta `XDG_DATA_HOME` a un
-//! directorio temporal y esa variable es del proceso entero.
+//! A single test, as in `playlists.rs`: it points `XDG_DATA_HOME` at a
+//! temporary directory and that variable belongs to the whole process.
 
 use std::io::Write;
 use std::path::PathBuf;
 
 const OUTPUT: &str = "capture";
 
-/// Un WAV corto de silencio. Lo que importa aquí es el orden, no el sonido.
+/// A short WAV of silence. What matters here is the order, not the sound.
 fn wave(dir: &PathBuf, name: &str) -> PathBuf {
     let p = dir.join(name);
     let frames = 4_410u32;
@@ -42,8 +42,8 @@ fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
         .map(|n| wave(&dir, n).display().to_string())
         .collect();
 
-    // La mezcla lee los tempos de la biblioteca, así que las pistas tienen
-    // que estar escaneadas: reproducir un archivo no lo registra.
+    // The mix reads the tempos from the library, so the tracks have to be
+    // scanned: playing a file does not record it.
     {
         let lib =
             chilpa_library::Library::open(&chilpa_library::Library::default_path()).unwrap();
@@ -52,12 +52,12 @@ fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
 
-    // Sin cola no hay nada que mezclar, y se dice.
+    // With no queue there is nothing to mix, and it is said.
     assert_eq!(chilpa.automix(), 0);
     assert!(chilpa.now_playing().error.contains("cola"));
 
     chilpa.play_tracks(&paths, OUTPUT, true);
-    // Sin análisis tampoco, y también se dice.
+    // With no analysis there is nothing either, and that is said too.
     assert_eq!(chilpa.automix(), 0, "sin tempos no se mezcla a ciegas");
     assert!(
         chilpa.now_playing().error.contains("tempo"),
@@ -65,7 +65,7 @@ fn the_mix_needs_tempos_and_reorders_once_it_has_them() {
         chilpa.now_playing().error
     );
 
-    // Se meten los tempos a mano, como si el análisis ya hubiera corrido.
+    // The tempos are put in by hand, as if the analysis had already run.
     let lib = chilpa_library::Library::open(&chilpa_library::Library::default_path()).unwrap();
     let source = lib.source_id("local", "default").unwrap();
     for (path, bpm) in paths.iter().zip([90.0f32, 140.0, 92.0, 138.0]) {

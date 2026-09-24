@@ -1,29 +1,30 @@
-//! La cuenta conectada de un plugin, y cómo se renueva sola.
+//! A plugin's connected account, and how it renews itself.
 //!
-//! Lo que se guarda no es "un token": es cómo se conecta esa cuenta. Una
-//! credencial fija se guarda y ya; una de OAuth trae además con qué pedir
-//! otra cuando caduque, y eso es lo que hay que cuidar más (ADR-008).
+//! What is kept is not "a token": it is how that account connects. A fixed
+//! credential is kept and that is that; an OAuth one also carries what to
+//! ask for another with when it expires, and that is what needs guarding
+//! most (ADR-008).
 //!
-//! **El plugin no ve nada de esto.** Pide salir a un dominio suyo y Chilpa
-//! pone la cabecera; si el acceso ya venció, lo renueva antes, aquí, y el
-//! plugin ni se entera de que hubo una renovación.
+//! **The plugin sees none of this.** It asks to reach a domain of its own
+//! and Chilpa adds the header; if the access has expired, it is renewed
+//! first, here, and the plugin never finds out a renewal happened.
 
 use chilpa_auth::{Auth, Tokens};
 use serde::{Deserialize, Serialize};
 
-/// Lo que Chilpa guarda por cada cuenta, cifrado.
+/// What Chilpa keeps per account, encrypted.
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Account {
-    /// Lo que el usuario pegó: una API key, un token de larga vida. Va tal
-    /// cual en la cabecera, porque cada servicio la escribe a su manera.
+    /// What the user pasted: an API key, a long lived token. It goes into
+    /// the header as is, because every service writes it its own way.
     Token { header: String },
-    /// Lo que salió de conectar con OAuth.
+    /// What came out of connecting over OAuth.
     OAuth { tokens: Tokens },
 }
 
 impl Account {
-    /// Qué va en `Authorization`, si hay algo que poner.
+    /// What goes in `Authorization`, if there is anything to put there.
     pub fn header(&self) -> Option<String> {
         match self {
             Account::Token { header } => {
@@ -36,7 +37,7 @@ impl Account {
         }
     }
 
-    /// Cierto si hay que renovar antes de usarla.
+    /// True if it has to be renewed before being used.
     pub fn stale(&self, now_unix: i64) -> bool {
         match self {
             Account::Token { .. } => false,
@@ -44,8 +45,8 @@ impl Account {
         }
     }
 
-    /// Cierto si caducó y no hay cómo renovarla: el usuario tiene que
-    /// volver a conectar. Se dice, no se intenta en vano.
+    /// True if it expired and there is no way to renew it: the user has to
+    /// connect again. It is said, not attempted in vain.
     pub fn dead(&self, now_unix: i64) -> bool {
         match self {
             Account::Token { .. } => false,
@@ -53,7 +54,7 @@ impl Account {
         }
     }
 
-    /// Pide un acceso nuevo. Devuelve la cuenta renovada.
+    /// Asks for a fresh access. Returns the renewed account.
     pub fn renew(
         &self,
         auth: &Auth,
@@ -84,8 +85,8 @@ mod tests {
 
     #[test]
     fn a_static_credential_goes_in_the_header_the_way_it_was_given() {
-        // Cada servicio escribe la suya distinto: unos "Bearer x", otros
-        // "Token x". Inventarle un prefijo sería romper la mitad.
+        // Every service writes its own differently: some "Bearer x", others
+        // "Token x". Inventing a prefix would break half of them.
         let a = Account::Token { header: "Token abc123".into() };
         assert_eq!(a.header().unwrap(), "Token abc123");
         assert!(!a.stale(9_999), "una fija no caduca sola");
@@ -111,8 +112,8 @@ mod tests {
 
     #[test]
     fn one_that_expired_without_a_refresh_is_dead_and_says_so() {
-        // Intentar renovar sin refresh sería una petición que se sabe que
-        // va a fallar. Se dice y el usuario vuelve a conectar.
+        // Trying to renew with no refresh would be a request known to be
+        // doomed. It is said and the user connects again.
         let a = oauth(Some(1_000), "");
         assert!(!a.stale(1_001), "no hay nada que intentar");
         assert!(a.dead(1_001));

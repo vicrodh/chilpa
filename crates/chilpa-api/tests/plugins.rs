@@ -1,16 +1,16 @@
-//! Un plugin de verdad, en disco, de punta a punta.
+//! A real plugin, on disk, end to end.
 //!
-//! Las pruebas del sandbox viven en `chilpa-plugin` y no tocan el disco.
-//! Esta comprueba lo otro: que un plugin puesto en su carpeta se cargue, se
-//! le pueda pedir algo, y que lo que Chilpa le presta —el almacén, la hora,
-//! el log— llegue y funcione.
+//! The sandbox tests live in `chilpa-plugin` and touch no disk. This one
+//! checks the other half: that a plugin dropped in its folder loads, can be
+//! asked for something, and that what Chilpa lends it -- the store, the
+//! time, the log -- arrives and works.
 //!
-//! Es una sola prueba porque apunta `XDG_DATA_HOME` a un directorio
-//! temporal, y esa variable es del proceso entero.
+//! It is a single test because it points `XDG_DATA_HOME` at a temporary
+//! directory, and that variable belongs to the whole process.
 
 use std::path::{Path, PathBuf};
 
-/// Lo mínimo que un plugin tiene que exportar, más un bloc de notas.
+/// The minimum a plugin has to export, plus a scratchpad.
 const PRELUDE: &str = r#"
   (memory (export "memory") 1)
   (global $siguiente (mut i32) (i32.const 1024))
@@ -63,7 +63,7 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     let root: PathBuf = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&root).unwrap();
 
-    // Uno que guarda algo, lo vuelve a leer, anota en el log y contesta.
+    // One that keeps something, reads it back, writes to the log and answers.
     install(
         &root,
         "com.prueba.bueno",
@@ -75,7 +75,7 @@ fn a_plugin_in_its_folder_loads_and_answers() {
              (drop (call $now))
              (i64.const 17))"#,
     );
-    // Y uno que pide una versión de API que no existe.
+    // And one that asks for an API version that does not exist.
     install(&root, "com.prueba.viejo", "", "(func (export \"saludar\") (param i32 i32) (result i64) (i64.const 17))");
     let old = root.join("com.prueba.viejo").join("manifest.json");
     let m = std::fs::read_to_string(&old).unwrap().replace(r#""api_version": 1"#, r#""api_version": 42"#);
@@ -84,8 +84,8 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     let mut chilpa = chilpa_api::Chilpa::new();
     assert_eq!(chilpa.load_plugins(), 0, "nadie corre sin aprobación (ADR-008)");
 
-    // Al viejo no se le puede aprobar nada: su manifest ni siquiera se lee,
-    // así que no hay qué mostrarle al usuario para que decida.
+    // Nothing can be approved for the old one: its manifest is not even
+    // read, so there is nothing to show the user to decide on.
     assert_eq!(chilpa.approve_plugin("com.prueba.viejo"), 0);
     let usable = chilpa.approve_plugin("com.prueba.bueno");
     assert_eq!(usable, 1, "uno cargó y el otro no");
@@ -99,26 +99,26 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     assert_eq!(old.state, "en cuarentena");
     assert!(old.problem.contains("versión"), "{}", old.problem);
 
-    // Se le pide algo y contesta su JSON.
+    // It is asked for something and answers its JSON.
     let r = chilpa.call_plugin("com.prueba.bueno", "saludar", b"{}").expect("contesta");
     assert_eq!(String::from_utf8_lossy(&r), r#"{"saludo":"hola"}"#);
 
-    // Y lo que guardó quedó en su carpeta, no en la de nadie más.
+    // And what it kept ended up in its folder, not in anyone else's.
     let saved = root.join("com.prueba.bueno").join("store").join("ultima-sync");
     assert_eq!(std::fs::read(&saved).unwrap(), b"42");
     assert!(!root.join("com.prueba.viejo").join("store").exists());
 
-    // Al que está en cuarentena no se le pide nada, ni aunque se insista.
+    // The quarantined one is asked for nothing, however much one insists.
     let e = chilpa.call_plugin("com.prueba.viejo", "saludar", b"{}").expect_err("no se le llama");
     assert!(e.contains("cuarentena"), "{e}");
 
-    // Hasta que el usuario lo reactive; entonces vuelve a fallar al cargar,
-    // porque nunca cargó.
+    // Until the user turns it back on; then it fails to load again,
+    // because it never loaded.
     chilpa.reactivate_plugin("com.prueba.viejo");
     let e = chilpa.call_plugin("com.prueba.viejo", "saludar", b"{}").expect_err("sigue sin cargar");
     assert!(e.contains("no cargó"), "{e}");
 
-    // Uno que no existe se dice y ya.
+    // One that does not exist is said and that is that.
     let e = chilpa.call_plugin("com.no.existe", "saludar", b"{}").expect_err("no está");
     assert!(e.contains("no está instalado"), "{e}");
 

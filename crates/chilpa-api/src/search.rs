@@ -1,19 +1,19 @@
-//! La búsqueda, juntando lo local con lo que aporten los plugins.
+//! Search, joining what is local with whatever the plugins contribute.
 //!
-//! Las reglas vienen del spec CHD-0002 y no son adornos:
+//! The rules come from the CHD-0002 spec and are not decoration:
 //!
-//! - **Lo local sale primero y al instante.** Un plugin nunca hace esperar a
-//!   lo que ya está en disco.
-//! - **Cada source llega cuando contesta**, con su límite de tiempo. El que
-//!   no contesta se omite y se marca; no detiene a los demás.
-//! - **Chilpa ordena y agrupa.** Un plugin no puede reordenar ni esconder
-//!   los resultados de otro: lo suyo se agrega al final, en el orden en que
-//!   se registró.
-//! - **Lo que es la misma canción se muestra una vez**, emparejado por ISRC
-//!   o MBID, diciendo en dónde más está. Emparejar por nombre es no
-//!   emparejar, así que no se hace.
-//! - **Nunca una consulta por tecla.** Se espera a que el usuario deje de
-//!   escribir, y cada source tiene un descanso mínimo entre consultas.
+//! - **What is local comes first and at once.** A plugin never makes what is
+//!   already on disk wait.
+//! - **Each source arrives when it answers**, with its own time limit. One
+//!   that does not answer is left out and marked; it does not stop the rest.
+//! - **Chilpa orders and groups.** A plugin cannot reorder or hide another's
+//!   results: what is its own is appended at the end, in the order it was
+//!   registered.
+//! - **What is the same song is shown once**, matched by ISRC or MBID,
+//!   saying where else it is. Matching by name is not matching, so it is not
+//!   done.
+//! - **Never a query per keystroke.** It waits for the user to stop typing,
+//!   and each source has a minimum rest between queries.
 
 use super::*;
 use chilpa_plugin::messages;
@@ -21,40 +21,39 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-/// Cuánto se espera a que el usuario deje de escribir antes de molestar a
-/// un plugin.
+/// How long to wait for the user to stop typing before bothering a plugin.
 pub const KEYSTROKE_DEBOUNCE: Duration = Duration::from_millis(350);
 
-/// Lo menos que puede pasar entre dos consultas a los sources.
+/// The least that can pass between two queries to the sources.
 pub const SOURCE_COOLDOWN: Duration = Duration::from_millis(800);
 
-/// Cuántos resultados se le piden a cada source.
+/// How many results each source is asked for.
 const PER_SOURCE: usize = 50;
 
-/// De dónde salió un resultado que ya estaba en disco.
+/// Where a result already on disk came from.
 const LOCAL: &str = "local";
 
-/// Un resultado de búsqueda, venga de donde venga.
+/// A search result, wherever it came from.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Hit {
-    /// La ruta si es local, o el id externo si es de un source.
+    /// The path if it is local, or the external id if it is from a source.
     pub id: String,
     pub title: String,
     pub artist: String,
     pub album: String,
     pub duration_ms: u64,
-    /// De dónde salió: `"local"` o el id del plugin.
+    /// Where it came from: `"local"` or the plugin's id.
     pub source: String,
-    /// Cómo se llama ese source para el usuario.
+    /// What that source is called for the user.
     pub source_name: String,
-    /// La calidad que ofrece, vacía si no se sabe.
+    /// The quality it offers, empty if unknown.
     pub quality: String,
-    /// Lo que el análisis sacó de una pista local, vacío si no se ha
-    /// analizado. De lo remoto no hay nada que analizar todavía.
+    /// What the analysis found for a local track, empty if it has not been
+    /// analysed. There is nothing to analyse on a remote one yet.
     pub analysis: String,
-    /// Los demás sources donde está la misma canción.
+    /// The other sources where the same song is.
     pub also_in: Vec<String>,
-    /// Cierto si se puede poner a sonar hoy. Lo de un plugin todavía no.
+    /// True if it can be started playing today.
     pub playable: bool,
 }
 
@@ -92,27 +91,27 @@ impl Hit {
             quality: t.quality.describe(),
             analysis: String::new(),
             also_in: Vec::new(),
-            // Se puede intentar, salvo que el source ya haya dicho que no
-            // entrega audio. Al hacer clic se le pide `chilpa_resolver` y
-            // lo que conteste se pone a sonar; si no sabe resolver o el
-            // enlace caducó, se dice con su razón, igual que un archivo
-            // local que desapareció.
+            // It can be attempted, unless the source has already said it
+            // delivers no audio. On a click it is asked for
+            // `chilpa_resolver` and whatever it answers is played; if it
+            // cannot resolve or the link expired, it is said with its
+            // reason, just like a local file that went missing.
             playable: delivers_audio,
         }
     }
 }
 
-/// Lo que un source contestó a una consulta.
+/// What a source answered to a query.
 #[derive(Clone, Debug)]
 pub struct SourceReply {
     pub source: String,
     pub source_name: String,
     pub results: messages::Results,
-    /// Vacío si contestó bien.
+    /// Empty if it answered fine.
     pub problem: String,
-    /// Cierto si ese source puede entregar audio. Hay servicios cuya API
-    /// deja buscar pero nunca da bytes: lo suyo se muestra apagado desde el
-    /// principio en lugar de fallar en cada clic.
+    /// True if that source can deliver audio. There are services whose API
+    /// lets you search but never hands over bytes: what is theirs is shown
+    /// greyed out from the start instead of failing on every click.
     pub delivers_audio: bool,
 }
 
@@ -128,8 +127,8 @@ impl SourceReply {
     }
 }
 
-/// Las huellas de un track local: el ISRC y el MBID que traiga, ya
-/// normalizados como los escribe un plugin.
+/// A local track's fingerprints: whatever ISRC and MBID it carries,
+/// already normalized the way a plugin writes them.
 fn fingerprints_of(isrc: Option<String>, mbid: Option<String>) -> Vec<String> {
     let mut v = Vec::new();
     if let Some(f) = mbid.as_deref().and_then(messages::mbid_fingerprint) {
@@ -141,10 +140,10 @@ fn fingerprints_of(isrc: Option<String>, mbid: Option<String>) -> Vec<String> {
     v
 }
 
-/// Junta lo local con lo de los plugins, sin que ninguno pise al otro.
+/// Joins what is local with what the plugins gave, with neither treading on the other.
 ///
-/// `local_fingerprints` dice qué ISRC o MBID tiene cada resultado local (por
-/// ruta), para no mostrar dos veces la misma canción.
+/// `local_fingerprints` says which ISRC or MBID each local result has (by
+/// path), so the same song is not shown twice.
 pub fn merge(
     local: Vec<LibraryTrack>,
     local_fingerprints: &HashMap<String, Vec<String>>,
@@ -152,7 +151,7 @@ pub fn merge(
 ) -> Vec<Hit> {
     let mut out: Vec<Hit> = local.into_iter().map(Hit::local).collect();
 
-    // Dónde está cada huella dentro de lo que ya se va a mostrar.
+    // Where each fingerprint sits within what is already going to be shown.
     let mut at: HashMap<String, usize> = HashMap::new();
     for (i, hit) in out.iter().enumerate() {
         for fp in local_fingerprints.get(&hit.id).into_iter().flatten() {
@@ -163,7 +162,7 @@ pub fn merge(
     for reply in replies {
         for track in &reply.results.tracks {
             match track.fingerprint().and_then(|f| at.get(&f).copied()) {
-                // Ya estaba: no se repite, se anota dónde más vive.
+                // It was already there: it is not repeated, where else it lives is noted.
                 Some(i) => {
                     let name = reply.source_name.clone();
                     if !out[i].also_in.contains(&name) {
@@ -188,7 +187,7 @@ pub fn merge(
     out
 }
 
-/// Una búsqueda en los plugins, corriendo en su propio hilo.
+/// A search across the plugins, running on its own thread.
 pub struct SearchJob {
     text: String,
     replies: std::sync::mpsc::Receiver<SourceReply>,
@@ -196,16 +195,16 @@ pub struct SearchJob {
 }
 
 impl SearchJob {
-    /// Lanza la consulta a cada plugin que sepa buscar.
+    /// Fires the query at every plugin that knows how to search.
     pub fn start(plugins: Arc<Mutex<plugins::Plugins>>, text: String, limit: usize) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         let query = messages::write(&messages::Query::new(&text, limit));
         let thread = std::thread::Builder::new()
             .name("chilpa-search".into())
             .spawn(move || {
-                // Se toma la lista primero y se suelta el candado entre
-                // plugins: uno lento no puede dejar la ventana esperando ni
-                // bloquear al resto de la fachada.
+                // The list is taken first and the lock is released between
+                // plugins: a slow one must not leave the window waiting nor
+                // block the rest of the facade.
                 let Ok(who) = plugins.lock().map(|p| p.searchers()) else { return };
                 for (id, name) in who {
                     let delivers =
@@ -228,7 +227,7 @@ impl SearchJob {
                         Err(e) => SourceReply::failed(id, name, e),
                     };
                     if tx.send(reply).is_err() {
-                        // Ya no hay quien escuche: la búsqueda cambió.
+                        // There is nobody listening any more: the search changed.
                         return;
                     }
                 }
@@ -237,12 +236,12 @@ impl SearchJob {
         Self { text, replies: rx, thread }
     }
 
-    /// Para qué texto es esta búsqueda.
+    /// Which text this search is for.
     pub fn text(&self) -> &str {
         &self.text
     }
 
-    /// Lo que haya llegado, sin bloquear.
+    /// Whatever has arrived, without blocking.
     pub fn collect(&self) -> Vec<SourceReply> {
         let mut v = Vec::new();
         while let Ok(r) = self.replies.try_recv() {
@@ -258,48 +257,48 @@ impl SearchJob {
 
 impl Drop for SearchJob {
     fn drop(&mut self) {
-        // El hilo se acaba solo en cuanto el canal se cierra; no se espera,
-        // porque una búsqueda vieja no debe frenar a la nueva.
+        // The thread ends on its own as soon as the channel closes; it is not
+        // waited on, because an old search must not hold up the new one.
         self.thread.take();
     }
 }
 
-/// Lo que la fachada guarda de la búsqueda en curso.
+/// What the facade keeps about the search in progress.
 #[derive(Default)]
 pub(crate) struct SearchState {
-    /// Lo que el usuario tiene escrito ahora.
+    /// What the user has typed now.
     pub text: String,
-    /// Cuándo tecleó por última vez.
+    /// When they last typed.
     pub keystroke: Option<Instant>,
-    /// Cuándo se le preguntó a los sources por última vez.
+    /// When the sources were last asked.
     pub last_query: Option<Instant>,
-    /// La consulta a los plugins, mientras corre.
+    /// The query to the plugins, while it runs.
     pub job: Option<SearchJob>,
-    /// Lo que cada source contestó, uno por source.
+    /// What each source answered, one per source.
     pub replies: Vec<SourceReply>,
-    /// Lo que salió de la biblioteca, sin mezclar.
+    /// What came out of the library, unmerged.
     pub local: Vec<LibraryTrack>,
-    /// Las huellas de eso local, por ruta.
+    /// The fingerprints of what is local, by path.
     pub fingerprints: HashMap<String, Vec<String>>,
-    /// Lo local y lo remoto ya juntos, que es lo que la vista dibuja.
+    /// Local and remote already joined, which is what the view draws.
     pub hits: Vec<Hit>,
-    /// El resultado de un source que se mandó a sonar, con la URL a la que
-    /// se resolvió. El decodificador de un stream no sabe más que la URL,
-    /// así que la ficha tiene que venir de aquí.
+    /// The source result that was sent to play, with the URL it resolved
+    /// to. A stream's decoder knows nothing but the URL, so the card has
+    /// to come from here.
     pub playing: Option<(String, Hit)>,
-    /// Cierto desde que los resultados cambiaron hasta que alguien los
-    /// recoge. Sin esto la vista tendría que adivinar cuándo mirar: una
-    /// consulta puede empezar y acabar entre dos pulsos, y el último source
-    /// en contestar se quedaría sin dibujar.
+    /// True from when the results changed until someone picks them up.
+    /// Without it the view would have to guess when to look: a query can
+    /// start and finish between two ticks, and the last source to answer
+    /// would go undrawn.
     pub changed: bool,
 }
 
 impl Chilpa {
-    /// Busca en la biblioteca y, si hay plugins, se los pregunta también.
+    /// Searches the library and, if there are plugins, asks them too.
     ///
-    /// Lo local sale de inmediato, en el valor que regresa. Lo de los
-    /// plugins llega después por [`Chilpa::poll`] y se recoge con
-    /// [`Chilpa::found`].
+    /// What is local comes out at once, in the returned value. What the
+    /// plugins give arrives later through [`Chilpa::poll`] and is picked up
+    /// with [`Chilpa::found`].
     pub fn search_all(&mut self, text: &str, limit: usize) -> Vec<Hit> {
         let text = text.trim().to_string();
         if text.is_empty() {
@@ -308,9 +307,8 @@ impl Chilpa {
         }
         let local = self.search(&text, limit);
         let fingerprints = self.fingerprints_of(&local);
-        // Una búsqueda nueva tira lo que contestaron los sources de la
-        // anterior: mostrar resultados de otra consulta es peor que no
-        // mostrar nada.
+        // A new search throws away what the previous one's sources answered:
+        // showing results from another query is worse than showing nothing.
         self.search = SearchState {
             text,
             keystroke: Some(Instant::now()),
@@ -321,34 +319,34 @@ impl Chilpa {
             fingerprints,
             hits: Vec::new(),
             changed: false,
-            // Lo que ya está sonando sigue sonando aunque se busque otra
-            // cosa, así que su ficha se conserva.
+            // What is already playing goes on playing even if something else
+            // is searched for, so its card is kept.
             playing: self.search.playing.take(),
         };
         self.rebuild_hits();
         self.search.hits.clone()
     }
 
-    /// Lo último que se juntó, para que la vista lo dibuje.
+    /// The last thing joined, for the view to draw.
     pub fn found(&self) -> &[Hit] {
         &self.search.hits
     }
 
-    /// Pone a sonar el resultado que está en esa posición.
+    /// Starts the result at that position playing.
     ///
-    /// Lo local suena de inmediato y encola lo que sigue, como siempre. Lo
-    /// de un source hay que resolverlo primero: el plugin contesta con una
-    /// URL, y de ahí en adelante es el mismo camino que una radio.
+    /// What is local plays at once and queues what follows, as always.
+    /// What is a source's has to be resolved first: the plugin answers with
+    /// a URL, and from there on it is the same path as a radio.
     ///
-    /// Devuelve falso y deja dicho el porqué en `now_playing().error` si no
-    /// se pudo. Un source que no sabe resolver no es una falla de Chilpa,
-    /// pero tampoco algo que se deba tragar en silencio.
+    /// It returns false and leaves the reason in `now_playing().error` if it
+    /// could not be done. A source that cannot resolve is not a failure of
+    /// Chilpa's, but not something to swallow in silence either.
     pub fn play_hit(&mut self, index: usize, device: &str, bit_perfect: bool) -> bool {
         let Some(hit) = self.search.hits.get(index).cloned() else { return false };
 
         if hit.source == LOCAL {
-            // Desde aquí para abajo, saltándose lo remoto: encolar algo que
-            // todavía no se ha resuelto pondría a la cola a esperar.
+            // From here down, skipping the remote ones: queueing something not
+            // yet resolved would leave the queue waiting.
             let paths: Vec<String> = self.search.hits[index..]
                 .iter()
                 .filter(|h| h.source == LOCAL)
@@ -372,11 +370,11 @@ impl Chilpa {
         }
     }
 
-    /// Le pide al source con qué se reproduce uno de sus ids.
+    /// Asks the source what one of its ids is played with.
     ///
-    /// Se revisa lo que contesta antes de creerle: una URL que no es http
-    /// no se intenta, y un enlace que ya caducó se dice en lugar de abrirlo
-    /// para que falle con un 403 que nadie sabe leer.
+    /// What it answers is checked before being believed: a URL that is not
+    /// http is not attempted, and a link that already expired is said
+    /// instead of being opened to fail with a 403 nobody can read.
     fn resolve(&mut self, hit: &Hit) -> Result<messages::Stream, String> {
         let request = messages::write(&messages::Resolve::new(&hit.id));
         let bytes = self.call_plugin_short(&hit.source, messages::op::RESOLVER, &request)?;
@@ -387,9 +385,10 @@ impl Chilpa {
         if !stream.delivery.playable() {
             return Err(format!("entrega {}", stream.delivery.describe()));
         }
-        // Varias partes es el caso normal en hi-res, y todavía no se leen
-        // encadenadas. Se dice cuántas son en lugar de tocar solo la
-        // primera, que sonaría a pista cortada sin explicación.
+        // Several parts is the normal case in hi-res, and they are not yet
+        // read one after another. How many there are is said instead of
+        // playing only the first, which would sound like a cut off track
+        // with no explanation.
         if stream.parts().len() > 1 {
             return Err(format!(
                 "entrega la pista en {} archivos seguidos, y todavía no se leen encadenados",
@@ -406,7 +405,7 @@ impl Chilpa {
         Ok(stream)
     }
 
-    /// Le pone a lo que suena la ficha que dio el source, si es suya.
+    /// Attaches the card the source gave to what is playing, if it is its own.
     pub(crate) fn name_from_source(&mut self, path: &std::path::Path) {
         let path = path.display().to_string();
         let Some((url, hit)) = &self.search.playing else { return };
@@ -418,20 +417,20 @@ impl Chilpa {
         self.now.album = hit.album.clone();
     }
 
-    /// Cierto si los resultados cambiaron desde la última vez que se
-    /// preguntó. Preguntar los marca como vistos.
+    /// True if the results changed since they were last asked about. Asking
+    /// marks them as seen.
     pub fn search_changed(&mut self) -> bool {
         std::mem::take(&mut self.search.changed)
     }
 
-    /// Cierto mientras algún source siga sin contestar, para que la vista
-    /// pueda decir que todavía falta algo en lugar de fingir que eso es
-    /// todo lo que hay.
+    /// True while some source has still not answered, so the view can say
+    /// something is still missing instead of pretending that is all there
+    /// is.
     pub fn search_running(&self) -> bool {
         self.search.job.as_ref().is_some_and(|j| !j.finished())
     }
 
-    /// Los sources que contestaron mal, para decirlo sin esconderlo.
+    /// The sources that answered badly, to say so without hiding it.
     pub fn search_problems(&self) -> Vec<String> {
         self.search
             .replies
@@ -441,10 +440,10 @@ impl Chilpa {
             .collect()
     }
 
-    /// Mueve la búsqueda: recoge lo que haya llegado y lanza la consulta
-    /// cuando el usuario dejó de escribir. Lo llama `poll`.
+    /// Moves the search along: it picks up whatever arrived and fires the
+    /// query once the user stopped typing. `poll` calls it.
     pub(crate) fn advance_search(&mut self) {
-        // Lo que ya llegó, primero.
+        // What has already arrived, first.
         let arrived: Vec<SourceReply> =
             self.search.job.as_ref().map(|j| j.collect()).unwrap_or_default();
         if !arrived.is_empty() {
@@ -458,15 +457,15 @@ impl Chilpa {
         if self.search.text.is_empty() {
             return;
         }
-        // Todavía está escribiendo.
+        // They are still typing.
         if !self.search.keystroke.is_some_and(|t| t.elapsed() >= KEYSTROKE_DEBOUNCE) {
             return;
         }
-        // Esta consulta ya se lanzó.
+        // This query has already been fired.
         if self.search.job.as_ref().is_some_and(|j| j.text() == self.search.text) {
             return;
         }
-        // Se le acaba de preguntar a los sources: se espera.
+        // The sources were just asked: it waits.
         if self.search.last_query.is_some_and(|t| t.elapsed() < SOURCE_COOLDOWN) {
             return;
         }
@@ -488,7 +487,7 @@ impl Chilpa {
         );
     }
 
-    /// Qué ISRC o MBID tiene cada resultado local, en una sola consulta.
+    /// Which ISRC or MBID each local result has, in a single query.
     fn fingerprints_of(&mut self, local: &[LibraryTrack]) -> HashMap<String, Vec<String>> {
         if local.is_empty() {
             return HashMap::new();
@@ -554,7 +553,7 @@ mod tests {
         }
     }
 
-    /// Uno cuya API deja buscar pero nunca entrega audio.
+    /// One whose API lets you search but never delivers audio.
     fn control_only(source: &str, tracks: Vec<messages::RemoteTrack>) -> SourceReply {
         SourceReply { delivers_audio: false, ..reply(source, tracks) }
     }
@@ -587,8 +586,8 @@ mod tests {
 
     #[test]
     fn without_a_fingerprint_nothing_is_matched() {
-        // Mismo título y mismo artista, pero sin ISRC ni MBID: son dos
-        // renglones, porque emparejar por nombre es adivinar.
+        // Same title and same artist, but with no ISRC and no MBID: they are
+        // two rows, because matching by name is guessing.
         let mine = vec![local(1, "Una")];
         let replies = vec![reply("a", vec![remote("x", "Una", None)])];
         assert_eq!(merge(mine, &HashMap::new(), &replies).len(), 2);
@@ -628,9 +627,9 @@ mod tests {
 
     #[test]
     fn a_source_that_cannot_deliver_audio_says_so_from_the_start() {
-        // Hay servicios cuya API deja buscar y navegar pero nunca entrega
-        // bytes a un tercero. Sus resultados salen apagados desde el
-        // principio: dejar que cada clic falle sería peor.
+        // There are services whose API lets you search and browse but never
+        // hands bytes to a third party. Their results come out greyed from
+        // the start: letting every click fail would be worse.
         let replies = vec![control_only("a", vec![remote("x", "Una", None)])];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
         assert!(!all[0].playable);
@@ -639,10 +638,10 @@ mod tests {
 
     #[test]
     fn what_a_plugin_offers_can_be_tried() {
-        // Se marca como reproducible porque al hacer clic se le pide
-        // `chilpa_resolver` al source. Que conteste o no es suyo, y si no
-        // puede se dice con su nombre; apagar todo lo remoto por si acaso
-        // sería una lista que no hace nada.
+        // It is marked playable because on a click the source is asked for
+        // `chilpa_resolver`. Whether it answers is its own business, and if
+        // it cannot it is said with its name; greying out everything remote
+        // just in case would be a list that does nothing.
         let replies = vec![reply("a", vec![remote("x", "Una", None)])];
         let all = merge(Vec::new(), &HashMap::new(), &replies);
         assert!(all[0].playable);
@@ -650,8 +649,8 @@ mod tests {
 
     #[test]
     fn the_mbid_wins_over_the_isrc_and_both_sides_write_it_the_same() {
-        // La biblioteca local y un plugin tienen que producir exactamente la
-        // misma cadena, o emparejar no empareja nada.
+        // The local library and a plugin have to produce exactly the same
+        // string, or matching matches nothing.
         let mbid = "B1A9C0E9-D987-4042-AE91-78D6A3267D69";
         let mut t = remote("x", "Una", Some("usrc1"));
         t.musicbrainz_recording_id = Some(mbid.to_string());

@@ -1,12 +1,12 @@
-//! Las listas: guardadas, inteligentes y por género.
+//! The lists: saved, smart and by genre.
 //!
-//! Una lista guardada tiene pistas; una inteligente tiene reglas y se
-//! resuelve cada vez que se mira. Las dos salen por la misma puerta.
+//! A saved list has tracks; a smart one has rules and is resolved every time
+//! it is looked at. Both come out the same door.
 
 use super::*;
 
 impl Chilpa {
-    /// Pone a sonar un género, revuelto.
+    /// Starts a genre playing, shuffled.
     pub fn play_genre(&mut self, genre: &str, device: &str, bit_perfect: bool) -> Vec<String> {
         let list = chilpa_library::SmartList::new(
             genre,
@@ -28,7 +28,7 @@ impl Chilpa {
         self.play_tracks(&paths, device, bit_perfect)
     }
 
-    /// Pone a sonar una lista inteligente, por su nombre.
+    /// Starts a smart list playing, by its name.
     pub fn play_smart_list(
         &mut self,
         name: &str,
@@ -54,7 +54,7 @@ impl Chilpa {
         self.play_tracks(&paths, device, bit_perfect)
     }
 
-    /// Las listas guardadas, las de aquí y las que traiga un source.
+    /// The saved lists, the ones from here and whatever a source brings.
     pub fn playlists(&mut self) -> Vec<Playlist> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.playlists()
@@ -69,10 +69,10 @@ impl Chilpa {
             .collect()
     }
 
-    /// Guarda la cola como una lista con ese nombre.
+    /// Saves the queue as a list under that name.
     ///
-    /// Regresa el id de la lista. Lo que no esté en la biblioteca se guarda
-    /// igual, por su ruta: la lista vale aunque falte escanear.
+    /// It returns the list's id. Whatever is not in the library is saved
+    /// anyway, by its path: the list holds even with the scan still pending.
     pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
         let name = name.trim().to_string();
         if name.is_empty() {
@@ -101,7 +101,7 @@ impl Chilpa {
         Some(id)
     }
 
-    /// Pone a sonar una lista guardada.
+    /// Starts a saved list playing.
     pub fn play_saved_playlist(
         &mut self,
         playlist_id: i64,
@@ -123,14 +123,14 @@ impl Chilpa {
         self.play_tracks(&paths, device, bit_perfect)
     }
 
-    /// Borra una lista. Las pistas no se tocan.
+    /// Deletes a list. The tracks are not touched.
     pub fn delete_playlist(&mut self, playlist_id: i64) {
         if let Some(lib) = self.library() {
             let _ = lib.delete_playlist(playlist_id);
         }
     }
 
-    /// Cambia el nombre de una lista.
+    /// Renames a list.
     pub fn rename_playlist(&mut self, playlist_id: i64, name: &str) {
         let name = name.trim().to_string();
         if name.is_empty() {
