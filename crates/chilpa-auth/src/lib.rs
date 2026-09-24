@@ -139,7 +139,7 @@ pub enum AuthError {
     WrongState,
     #[error("the user did not finish granting permission")]
     NoCode(String),
-    #[error("disco: {0}")]
+    #[error("disk: {0}")]
     Io(#[from] std::io::Error),
 }
 
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn a_service_reached_over_plain_http_is_refused_before_installing() {
-        let a = oauth("http://ejemplo.com/authorize", "https://ejemplo.com/token");
+        let a = oauth("http://example.com/authorize", "https://example.com/token");
         assert!(a.problem().unwrap().contains("https"));
     }
 
@@ -224,7 +224,7 @@ mod tests {
 
     #[test]
     fn the_user_can_be_told_where_they_are_going() {
-        assert_eq!(oauth("https://cuentas.ejemplo.com/authorize", "https://a.b/t").host(),
+        assert_eq!(oauth("https://accounts.example.com/authorize", "https://a.b/t").host(),
                    "accounts.example.com");
     }
 

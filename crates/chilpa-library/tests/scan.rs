@@ -16,9 +16,9 @@ fn album(name: &str, tracks: usize) -> Option<PathBuf> {
     let mut dir = std::env::temp_dir();
     dir.push(format!("chilpa-scan-{name}"));
     let _ = std::fs::remove_dir_all(&dir);
-    std::fs::create_dir_all(dir.join("disco 1")).ok()?;
+    std::fs::create_dir_all(dir.join("disc 1")).ok()?;
     for i in 1..=tracks {
-        let target = dir.join("disco 1").join(format!("{i:02}-track.flac"));
+        let target = dir.join("disc 1").join(format!("{i:02}-track.flac"));
         let ok = Command::new("ffmpeg")
             .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "flac"])
             .args(["-metadata", &format!("title=Track {i}")])
@@ -122,7 +122,7 @@ fn a_deleted_file_is_marked_missing_and_keeps_its_history() {
     let lib = Library::in_memory().unwrap();
     scan_root(&lib, &dir).unwrap();
 
-    std::fs::remove_file(dir.join("disco 1").join("02-track.flac")).unwrap();
+    std::fs::remove_file(dir.join("disc 1").join("02-track.flac")).unwrap();
     let report = scan_root(&lib, &dir).unwrap();
 
     assert_eq!(report.missing, 1);
@@ -156,7 +156,7 @@ fn the_folder_cover_is_used_when_the_file_carries_none() {
         return;
     };
     // The files the test generates carry no embedded cover.
-    let cover = dir.join("disco 1").join("cover.jpg");
+    let cover = dir.join("disc 1").join("cover.jpg");
     std::fs::write(&cover, b"not a real jpeg, but it exists").unwrap();
 
     let lib = Library::in_memory().unwrap();
@@ -188,7 +188,7 @@ fn the_genres_in_the_file_reach_the_library() {
     // And every track carries it.
     let source = lib.source_id("local", "default").unwrap();
     let id = lib
-        .track_by_path(source, &dir.join("disco 1").join("01-track.flac"))
+        .track_by_path(source, &dir.join("disc 1").join("01-track.flac"))
         .unwrap()
         .expect("the track is there");
     assert_eq!(lib.track_genres(id).unwrap(), vec!["Rock".to_string()]);
@@ -210,7 +210,7 @@ fn a_track_that_moves_keeps_its_history() {
     scan_root(&lib, &dir).unwrap();
 
     let source = lib.source_id("local", "default").unwrap();
-    let before = dir.join("disco 1").join("01-track.flac");
+    let before = dir.join("disc 1").join("01-track.flac");
     let track = lib.track_by_path(source, &before).unwrap().expect("it was scanned");
 
     // A history worth losing: plays, and what the analysis found.
@@ -220,7 +220,7 @@ fn a_track_that_moves_keeps_its_history() {
     assert_eq!(lib.top_tracks(5).unwrap().len(), 1);
 
     // Reorganised: another folder, another name. Same file.
-    let elsewhere = dir.join("otro disco");
+    let elsewhere = dir.join("another disc");
     std::fs::create_dir_all(&elsewhere).unwrap();
     let after = elsewhere.join("la misma.flac");
     std::fs::rename(&before, &after).unwrap();
@@ -259,8 +259,8 @@ fn a_copy_is_a_new_track_and_not_a_move() {
     scan_root(&lib, &dir).unwrap();
     assert_eq!(lib.track_count(true).unwrap(), 1);
 
-    let original = dir.join("disco 1").join("01-track.flac");
-    let link = dir.join("disco 1").join("02-link.flac");
+    let original = dir.join("disc 1").join("01-track.flac");
+    let link = dir.join("disc 1").join("02-link.flac");
     std::fs::hard_link(&original, &link).unwrap();
 
     scan_root(&lib, &dir).unwrap();

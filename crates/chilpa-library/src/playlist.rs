@@ -124,9 +124,9 @@ mod tests {
     #[test]
     fn what_is_written_reads_back_the_same_and_with_relative_paths() {
         let dir = folder("round-trip");
-        std::fs::create_dir_all(dir.join("disco")).unwrap();
+        std::fs::create_dir_all(dir.join("album")).unwrap();
         let tracks: Vec<PathBuf> =
-            ["disco/01.flac", "disco/02.flac"].iter().map(|n| dir.join(n)).collect();
+            ["album/01.flac", "album/02.flac"].iter().map(|n| dir.join(n)).collect();
         for p in &tracks {
             std::fs::write(p, b"x").unwrap();
         }
@@ -134,7 +134,7 @@ mod tests {
         write_m3u(&list, &tracks).unwrap();
 
         let text = std::fs::read_to_string(&list).unwrap();
-        assert!(text.contains("disco/01.flac"), "it was saved relative: {text}");
+        assert!(text.contains("album/01.flac"), "it was saved relative: {text}");
         assert!(!text.contains(dir.to_str().unwrap()), "no absolute paths");
 
         assert_eq!(read(&list).unwrap().tracks, tracks);

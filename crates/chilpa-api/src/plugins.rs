@@ -824,7 +824,7 @@ mod tests {
             assert!(s.file("com.a.b", bad).is_none(), "\"{bad}\" should not pass");
         }
         assert!(s.file("com.a.b", "token").is_some());
-        assert!(s.file("com.a.b", "ultima-sync.json").is_some());
+        assert!(s.file("com.a.b", "last-sync.json").is_some());
     }
 
     #[test]

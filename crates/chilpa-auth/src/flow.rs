@@ -310,10 +310,10 @@ mod tests {
 
     fn auth() -> Auth {
         Auth::OAuth2 {
-            authorize_url: "https://cuentas.ejemplo.com/authorize".into(),
-            token_url: "https://cuentas.ejemplo.com/token".into(),
+            authorize_url: "https://accounts.example.com/authorize".into(),
+            token_url: "https://accounts.example.com/token".into(),
             client_id: "chilpa app".into(),
-            scopes: vec!["leer".into(), "write".into()],
+            scopes: vec!["read".into(), "write".into()],
         }
     }
 

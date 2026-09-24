@@ -163,9 +163,9 @@ mod tests {
     fn counting_comes_before_progress_and_the_total_does_not_move() {
         let dir = std::env::temp_dir().join("chilpa-scanjob-progress");
         let _ = std::fs::remove_dir_all(&dir);
-        std::fs::create_dir_all(dir.join("disco")).unwrap();
+        std::fs::create_dir_all(dir.join("album")).unwrap();
         for n in 0..4 {
-            std::fs::write(dir.join("disco").join(format!("{n:02}.flac")), b"no es audio").unwrap();
+            std::fs::write(dir.join("album").join(format!("{n:02}.flac")), b"no es audio").unwrap();
         }
         std::fs::write(dir.join("notes.txt"), b"x").unwrap();
 

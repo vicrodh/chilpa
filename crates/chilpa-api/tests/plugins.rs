@@ -69,9 +69,9 @@ fn a_plugin_in_its_folder_loads_and_answers() {
         "com.test.good",
         r#"{"type": "storage"}"#,
         r#"(func (export "greet") (param i32 i32) (result i64)
-             (drop (call $set (i32.const 64) (i32.const 11) (i32.const 96) (i32.const 2)))
-             (drop (call $get (i32.const 64) (i32.const 11) (i32.const 2048) (i32.const 64)))
-             (call $log (i32.const 1) (i32.const 64) (i32.const 11))
+             (drop (call $set (i32.const 64) (i32.const 9) (i32.const 96) (i32.const 2)))
+             (drop (call $get (i32.const 64) (i32.const 9) (i32.const 2048) (i32.const 64)))
+             (call $log (i32.const 1) (i32.const 64) (i32.const 9))
              (drop (call $now))
              (i64.const 17))"#,
     );
@@ -104,7 +104,7 @@ fn a_plugin_in_its_folder_loads_and_answers() {
     assert_eq!(String::from_utf8_lossy(&r), r#"{"greeting":"hi"}"#);
 
     // And what it kept ended up in its folder, not in anyone else's.
-    let saved = root.join("com.test.good").join("store").join("ultima-sync");
+    let saved = root.join("com.test.good").join("store").join("last-sync");
     assert_eq!(std::fs::read(&saved).unwrap(), b"42");
     assert!(!root.join("com.test.old").join("store").exists());
 

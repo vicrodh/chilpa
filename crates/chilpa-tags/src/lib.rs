@@ -226,7 +226,7 @@ mod tests {
 
     #[test]
     fn several_artists_show_on_one_line_without_getting_lost() {
-        let tags = Tags { artists: vec!["One".into(), "Dos".into()], ..Tags::default() };
+        let tags = Tags { artists: vec!["One".into(), "Two".into()], ..Tags::default() };
         assert_eq!(tags.artist_line(), "One, Two");
         assert_eq!(tags.artists.len(), 2, "they are still two, not one string");
     }
