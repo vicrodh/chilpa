@@ -1,14 +1,15 @@
-//! Leer los tags de un archivo, sin interpretarlos de más.
+//! Read a file's tags, without reading more into them than they say.
 //!
-//! Dos reglas que vienen de la auditoría de QBZ, donde el editor de tags
-//! perdía datos:
+//! Two rules that come from the QBZ audit, where the tag editor lost
+//! data:
 //!
-//! 1. **Los campos multivalor se conservan.** Un disco con tres géneros tiene
-//!    tres géneros, no uno con comas. QBZ los colapsaba al guardar.
-//! 2. **La fecha se conserva completa.** Si el archivo dice `2019-03-15`, eso
-//!    es lo que hay; QBZ la truncaba al año aunque no hubiera cambiado.
+//! 1. **Multi-value fields are kept.** A record with three genres has three
+//!    genres, not one with commas in it. QBZ collapsed them on save.
+//! 2. **The date is kept whole.** If the file says `2019-03-15`, that is what
+//!    there is; QBZ truncated it to the year even when nothing had changed.
 //!
-//! Este crate solo lee. Escribir tags es otra historia y llega con el editor.
+//! This crate only reads. Writing tags is another story and arrives with the
+//! editor.
 
 use chilpa_models::{ArtworkRef, Track, TrackRef};
 use lofty::file::{AudioFile, TaggedFileExt};
@@ -33,39 +34,39 @@ impl std::fmt::Display for TagError {
     }
 }
 
-/// Lo que un archivo dice de sí mismo.
+/// What a file says about itself.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct Tags {
     pub title: Option<String>,
-    /// Todos los artistas que declara, en orden.
+    /// Every artist it declares, in order.
     pub artists: Vec<String>,
     pub album: Option<String>,
     pub album_artist: Option<String>,
-    /// Todos los géneros, sin juntarlos en una sola cadena.
+    /// Every genre, without joining them into one string.
     pub genres: Vec<String>,
-    /// La fecha tal como viene: puede ser `2019` o `2019-03-15`.
+    /// The date as it comes: it may be `2019` or `2019-03-15`.
     pub date: Option<String>,
     pub track_number: Option<u16>,
     pub disc_number: Option<u16>,
     pub isrc: Option<String>,
     pub musicbrainz_recording_id: Option<String>,
-    /// Cuántas portadas trae adentro.
+    /// How many covers it carries inside.
     pub pictures: usize,
 }
 
 impl Tags {
-    /// El año, cuando la fecha lo trae. No modifica la fecha guardada.
+    /// The year, when the date carries one. Does not touch the stored date.
     pub fn year(&self) -> Option<u32> {
         self.date.as_ref()?.get(..4)?.parse().ok()
     }
 
-    /// Los artistas en una línea, para las vistas que muestran una sola.
+    /// The artists on one line, for views that show a single one.
     pub fn artist_line(&self) -> String {
         self.artists.join(", ")
     }
 }
 
-/// Lo que se sabe de un archivo: sus tags y cuánto dura.
+/// What is known about a file: its tags and how long it runs.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct FileInfo {
     pub tags: Tags,
@@ -75,7 +76,7 @@ pub struct FileInfo {
     pub channels: Option<u8>,
 }
 
-/// Lee tags y propiedades de un archivo.
+/// Reads a file's tags and properties.
 pub fn read(path: &Path) -> Result<FileInfo, TagError> {
     let file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?
@@ -135,11 +136,11 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
     Ok(info)
 }
 
-/// Saca la portada embebida a un archivo, para que la interfaz la muestre.
+/// Writes the embedded cover out to a file, so the interface can show it.
 ///
-/// Se escribe una sola vez por archivo de origen: el nombre sale de la ruta
-/// y de su fecha de modificación, así que cambiar los tags produce otro
-/// nombre y la vista no se queda con la portada vieja.
+/// Written once per source file: the name comes from the path and its
+/// modification time, so changing the tags produces a different name and the
+/// view is never left holding the old cover.
 pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>, TagError> {
     let file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?
@@ -170,7 +171,7 @@ pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>,
     Ok(Some(target))
 }
 
-/// Un hash corto y estable de la ruta, para nombrar el archivo de caché.
+/// A short, stable hash of the path, to name the cache file.
 fn path_hash(path: &Path) -> u64 {
     use std::hash::{Hash, Hasher};
     let mut h = std::collections::hash_map::DefaultHasher::new();
@@ -178,7 +179,7 @@ fn path_hash(path: &Path) -> u64 {
     h.finish()
 }
 
-/// Arma un [`Track`] de la biblioteca local a partir de un archivo.
+/// Builds a local-library [`Track`] from a file.
 pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
     let info = read(path)?;
     let title = info.tags.title.clone().unwrap_or_else(|| {
@@ -228,7 +229,7 @@ mod tests {
 
     #[test]
     fn the_cover_name_changes_when_the_file_changes() {
-        // Dos rutas distintas no pueden compartir archivo de caché.
+        // Two different paths must never share a cache file.
         assert_ne!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/b.flac")));
         assert_eq!(path_hash(Path::new("/a.flac")), path_hash(Path::new("/a.flac")));
     }

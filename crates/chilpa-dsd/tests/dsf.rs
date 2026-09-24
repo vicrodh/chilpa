@@ -1,4 +1,4 @@
-//! Un DSF sintético que se lee entero, con los bits intactos.
+//! A synthetic DSF read end to end, with its bits intact.
 
 use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::{DsdSource, DsfReader};
@@ -8,10 +8,10 @@ use std::path::PathBuf;
 const BLOCK: u32 = 4096;
 const RATE: u32 = 2_822_400; // DSD64
 
-/// Escribe un DSF de dos canales con `bloques` bloques por canal.
+/// Writes a two-channel DSF with `blocks` blocks per channel.
 ///
-/// El byte n del canal izquierdo vale n, y el del derecho su complemento,
-/// así que cualquier corrimiento o mezcla entre canales se nota.
+/// Byte n of the left channel is n and the right one its complement, so any
+/// shift or mixing between channels shows.
 fn write_dsf(path: &PathBuf, blocks: u32, bits_per_sample: u32, samples: u64) {
     let data = u64::from(blocks) * u64::from(BLOCK) * 2;
     let mut f = std::fs::File::create(path).unwrap();
@@ -21,15 +21,15 @@ fn write_dsf(path: &PathBuf, blocks: u32, bits_per_sample: u32, samples: u64) {
     f.write_all(&0u64.to_le_bytes()).unwrap(); // sin tags
     f.write_all(b"fmt ").unwrap();
     f.write_all(&52u64.to_le_bytes()).unwrap();
-    f.write_all(&1u32.to_le_bytes()).unwrap(); // versión
-    f.write_all(&0u32.to_le_bytes()).unwrap(); // format id: DSD crudo
-    f.write_all(&2u32.to_le_bytes()).unwrap(); // estéreo
-    f.write_all(&2u32.to_le_bytes()).unwrap(); // canales
+    f.write_all(&1u32.to_le_bytes()).unwrap(); // version
+    f.write_all(&0u32.to_le_bytes()).unwrap(); // format id: raw DSD
+    f.write_all(&2u32.to_le_bytes()).unwrap(); // stereo
+    f.write_all(&2u32.to_le_bytes()).unwrap(); // channels
     f.write_all(&RATE.to_le_bytes()).unwrap();
     f.write_all(&bits_per_sample.to_le_bytes()).unwrap();
     f.write_all(&samples.to_le_bytes()).unwrap();
     f.write_all(&BLOCK.to_le_bytes()).unwrap();
-    f.write_all(&0u32.to_le_bytes()).unwrap(); // reservado
+    f.write_all(&0u32.to_le_bytes()).unwrap(); // reserved
     f.write_all(b"data").unwrap();
     f.write_all(&(12 + data).to_le_bytes()).unwrap();
     for b in 0..blocks {
@@ -75,7 +75,7 @@ fn the_header_and_every_block_are_read() {
 
 #[test]
 fn bits_are_delivered_with_the_earliest_one_on_top() {
-    // DSF guarda el bit primero en tiempo abajo; aquí debe salir invertido.
+    // DSF stores the earliest bit low; here it has to come out reversed.
     let path = temporal("orden");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
@@ -85,8 +85,8 @@ fn bits_are_delivered_with_the_earliest_one_on_top() {
     assert_eq!(channels[1][1], (!1u8).reverse_bits(), "el canal derecho es el complemento");
     let _ = std::fs::remove_file(path);
 
-    // Con bits_per_sample = 8 el archivo ya viene con el primero arriba y no
-    // se toca.
+    // With bits_per_sample = 8 the file already has the earliest bit on top
+    // and nothing is touched.
     let path = temporal("orden-msb");
     write_dsf(&path, 1, 8, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();
@@ -98,7 +98,7 @@ fn bits_are_delivered_with_the_earliest_one_on_top() {
 #[test]
 fn the_padding_of_the_last_block_does_not_come_out() {
     let path = temporal("relleno");
-    // Dos bloques en el archivo, pero solo 100 bytes por canal son música.
+    // Two blocks in the file, but only 100 bytes per channel are music.
     write_dsf(&path, 2, 1, 100 * 8);
     let mut r = DsfReader::open(&path).unwrap();
     let primero = r.next_block().unwrap().unwrap();
@@ -109,8 +109,8 @@ fn the_padding_of_the_last_block_does_not_come_out() {
 
 #[test]
 fn the_file_bits_reach_the_dop_packing_intact() {
-    // El equivalente de bit-perfect en DSD: la carga útil de cada palabra
-    // DoP es exactamente el par de bytes que traía el archivo.
+    // The DSD equivalent of bit-perfect: the payload of each DoP word is
+    // exactly the byte pair the file carried.
     let path = temporal("dop");
     write_dsf(&path, 1, 1, u64::from(BLOCK) * 8);
     let mut r = DsfReader::open(&path).unwrap();

@@ -1,8 +1,8 @@
-//! Buscar deja la lectura en el frame exacto, no cerca.
+//! Seeking leaves the reader on the exact frame, not near it.
 //!
-//! Se escribe un WAV cuya muestra número N vale N, así que basta mirar la
-//! primera muestra que sale después de buscar para saber si quedó donde se
-//! pidió.
+//! A WAV is written whose sample number N is worth N, so looking at the
+//! first sample that comes out after seeking is enough to tell whether it
+//! landed where it was asked to.
 
 use chilpa_decode::{Block, Decoded};
 use std::io::Write;
@@ -11,7 +11,7 @@ use std::path::PathBuf;
 const RATE: u32 = 44_100;
 
 fn write_ramp(path: &PathBuf, frames: u32) {
-    let data_len = frames * 4; // 2 canales de 16 bits
+    let data_len = frames * 4; // 2 channels of 16 bits
     let mut f = std::fs::File::create(path).unwrap();
     f.write_all(b"RIFF").unwrap();
     f.write_all(&(36 + data_len).to_le_bytes()).unwrap();
@@ -26,15 +26,15 @@ fn write_ramp(path: &PathBuf, frames: u32) {
     f.write_all(b"data").unwrap();
     f.write_all(&data_len.to_le_bytes()).unwrap();
     for i in 0..frames {
-        // El canal izquierdo lleva el número de frame; el derecho, su negado.
+        // The left channel carries the frame number; the right one, its negation.
         let v = (i % 30_000) as i16;
         f.write_all(&v.to_le_bytes()).unwrap();
         f.write_all(&(-v).to_le_bytes()).unwrap();
     }
 }
 
-/// Lee bloques, tira los frames que el plan indica y regresa la primera
-/// muestra de música que queda.
+/// Reads blocks, drops the frames the plan calls for, and returns the first
+/// music sample that is left.
 fn first_sample(decoded: &mut Decoded, mut discard: u64) -> i32 {
     loop {
         let block = decoded.next_block().unwrap().expect("hay música");

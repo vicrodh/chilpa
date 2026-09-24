@@ -1,14 +1,14 @@
-//! DSF, el contenedor de Sony.
+//! DSF, Sony's container.
 //!
-//! La estructura es simple: un chunk `DSD ` con el puntero a los tags, un
-//! chunk `fmt ` con la descripción del stream, y un chunk `data` con los
-//! bits. Los datos vienen en BLOQUES por canal (4096 bytes por canal, uno
-//! tras otro), y el último bloque puede traer relleno que no es música: por
-//! eso se cuentan los bytes válidos a partir del número de muestras.
+//! The layout is simple: a `DSD ` chunk with the pointer to the tags, a
+//! `fmt ` chunk describing the stream, and a `data` chunk with the bits.
+//! The data comes in BLOCKS per channel (4096 bytes each, one after
+//! another), and the last block may carry padding that is not music, so the
+//! valid bytes are counted from the sample count.
 //!
-//! `bits_per_sample` no dice cuántos bits mide una muestra (siempre es una):
-//! dice el orden dentro del byte. 1 = el primero en tiempo va en el bit menos
-//! significativo, que es lo normal; 8 = al revés.
+//! `bits_per_sample` does not say how wide a sample is (always one bit): it
+//! says the order inside the byte. 1 = the earliest one goes in the least
+//! significant bit, which is the usual case; 8 = the other way round.
 
 use crate::{is_supported_rate, reverse_bits, DsdError, DsdInfo, DsdSource};
 use std::fs::File;
@@ -19,11 +19,11 @@ pub struct DsfReader {
     file: BufReader<File>,
     info: DsdInfo,
     block_size: usize,
-    /// Bytes válidos que quedan por canal.
+    /// Valid bytes left, per channel.
     remaining_per_channel: u64,
-    /// Dónde empiezan los datos. No se supone: se toma de la posición real
-    /// después de leer el encabezado, porque el chunk fmt puede traer más
-    /// campos de los que leemos.
+    /// Where the data starts. Not assumed: taken from the real position after
+    /// reading the header, because the fmt chunk may carry more fields than we
+    /// read.
     data_start: u64,
     lsb_first: bool,
 }
@@ -93,8 +93,8 @@ impl DsfReader {
         })
     }
 
-    /// Se coloca en el bit pedido, alineado al bloque del contenedor. Regresa
-    /// el bit en el que quedó de verdad, que puede ser antes del pedido.
+    /// Lands on the requested bit, aligned to the container's block. Returns the
+    /// bit it actually landed on, which may be earlier than the one asked for.
     pub fn seek_to_sample(&mut self, sample: u64) -> Result<u64, DsdError> {
         let total = self.info.samples.div_ceil(8);
         let byte = (sample / 8).min(total);
@@ -122,7 +122,7 @@ impl DsdSource for DsfReader {
             let mut block = vec![0u8; self.block_size];
             match self.file.read_exact(&mut block) {
                 Ok(()) => {}
-                // Un archivo cortado no es un error: se entrega lo que hay.
+                // A truncated file is not an error: what is there is what is handed over.
                 Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
                     self.remaining_per_channel = 0;
                     return Ok(None);

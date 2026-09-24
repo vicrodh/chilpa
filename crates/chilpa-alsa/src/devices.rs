@@ -1,36 +1,37 @@
-//! Qué salidas hay en la máquina.
+//! What outputs this machine has.
 //!
-//! Solo se listan dispositivos directos (`hw:tarjeta,dispositivo`), porque
-//! son los únicos por los que Chilpa reproduce. Lo que la lista dice de cada
-//! uno sale de abrirlo y medirlo, no de adivinar.
+//! Only direct devices are listed (`hw:card,device`), because they are the
+//! only ones Chilpa plays through. What the list says about each one comes
+//! from opening it and measuring, not from guessing.
 
 use crate::probe;
 use chilpa_audio::negotiate::DeviceCaps;
 use std::fs;
 
-/// Una salida disponible.
+/// An output that is there.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Device {
-    /// Lo que se le pasa a ALSA: `hw:0,0`.
+    /// What gets handed to ALSA: `hw:0,0`.
     pub id: String,
-    /// Nombre de la tarjeta, como lo reporta el sistema.
+    /// The card's name, as the system reports it.
     pub card: String,
-    /// Nombre del dispositivo dentro de la tarjeta.
+    /// The device's name inside the card.
     pub name: String,
 }
 
 impl Device {
-    /// Cómo se ve en una lista: "ALC3254 Analog (hw:0,0)".
+    /// How it reads in a list: "ALC3254 Analog (hw:0,0)".
     pub fn label(&self) -> String {
         format!("{} ({})", self.name, self.id)
     }
 }
 
-/// Lista las salidas directas leyendo `/proc/asound`.
+/// Lists the direct outputs by reading `/proc/asound`.
 ///
-/// Se usa `/proc` en vez de la enumeración de ALSA porque esta lista no debe
-/// abrir nada: abrir un dispositivo ocupado se lo quita a quien lo esté
-/// usando. Medir capacidades sí abre, y por eso va aparte ([`capabilities`]).
+/// `/proc` and not ALSA's own enumeration, because listing must not open
+/// anything: opening a busy device takes it away from whoever is using it.
+/// Measuring what a device accepts does open it, which is why it lives
+/// apart ([`capabilities`]).
 pub fn list() -> Vec<Device> {
     let mut outputs = Vec::new();
     let Ok(cards) = fs::read_to_string("/proc/asound/cards") else {
@@ -60,7 +61,7 @@ pub fn list() -> Vec<Device> {
     outputs
 }
 
-/// Los dispositivos de reproducción de una tarjeta, con su nombre.
+/// A card's playback devices, with their names.
 fn card_devices(card: u32) -> Vec<(u32, String)> {
     let mut out = Vec::new();
     let Ok(dir) = fs::read_dir(format!("/proc/asound/card{card}")) else {
@@ -70,7 +71,7 @@ fn card_devices(card: u32) -> Vec<(u32, String)> {
         .flatten()
         .filter_map(|e| {
             let name = e.file_name().to_string_lossy().to_string();
-            // Los de reproducción terminan en "p": pcm0p, pcm3p...
+            // The playback ones end in "p": pcm0p, pcm3p...
             let rest = name.strip_prefix("pcm")?.strip_suffix('p')?;
             rest.parse::<u32>().ok().map(|n| (n, name))
         })
@@ -90,7 +91,7 @@ fn card_devices(card: u32) -> Vec<(u32, String)> {
     out
 }
 
-/// Mide un dispositivo abriéndolo. Falla si está ocupado.
+/// Measures a device by opening it. Fails if it is busy.
 pub fn capabilities(id: &str) -> Result<DeviceCaps, chilpa_audio::sink::SinkError> {
     probe(id)
 }
@@ -111,7 +112,7 @@ mod tests {
 
     #[test]
     fn listing_does_not_crash_without_cards() {
-        // En una máquina sin audio la lista sale vacía, no en error.
+        // On a machine with no audio the list comes back empty, not failing.
         let _ = list();
     }
 
