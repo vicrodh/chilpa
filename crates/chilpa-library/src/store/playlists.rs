@@ -1,19 +1,19 @@
-//! Las listas guardadas: las hechas a mano y las que trae un source.
+//! Saved playlists: the hand-made ones and the ones a source brings in.
 //!
-//! Una entrada guarda la ruta o el id externo además del track, para que
-//! una lista no se rompa porque algo todavía no esté en la biblioteca.
+//! An entry stores the path or the external id as well as the track, so a
+//! playlist does not break because something is not in the library yet.
 
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::now_unix;
 
-/// Una lista de reproducción, de aquí o traída por un source.
+/// A playlist, either local or brought in by a source.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredPlaylist {
     pub id: i64,
-    /// De dónde viene: "local" o el proveedor que la trajo.
+    /// Where it comes from: "local", or the provider that brought it.
     pub provider: String,
-    /// El id que le da su source, vacío si es de aquí.
+    /// The id its source gives it, empty when it is local.
     pub external_id: String,
     pub name: String,
     pub description: String,
@@ -22,10 +22,10 @@ pub struct StoredPlaylist {
     pub updated_at: i64,
 }
 
-/// Una entrada de una lista.
+/// One entry of a playlist.
 ///
-/// Guarda la ruta o el id externo además del track: una lista no se rompe
-/// porque algo todavía no esté en la biblioteca.
+/// It stores the path or the external id as well as the track: a playlist
+/// does not break because something is not in the library yet.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PlaylistEntry {
     pub track_id: Option<i64>,
@@ -33,12 +33,11 @@ pub struct PlaylistEntry {
 }
 
 impl Library {
-    /// Crea una lista, o devuelve la que ya existe con ese id externo.
+    /// Creates a playlist, or returns the one that already has that external id.
     ///
-    /// `external_id` vacío quiere decir que la lista es de aquí: dos listas
-    /// hechas a mano con el mismo nombre son dos listas distintas, como en
-    /// cualquier reproductor.
-    pub fn create_playlist(
+    /// An empty `external_id` means the playlist is local: two hand-made lists
+    /// with the same name are two different lists, as in any player.
+        pub fn create_playlist(
         &self,
         source_id: i64,
         name: &str,
@@ -75,10 +74,10 @@ impl Library {
         Ok(self.db.last_insert_rowid())
     }
 
-    /// Reemplaza el contenido de una lista, en ese orden.
+    /// Replaces a playlist's contents, in that order.
     ///
-    /// Se hace en una transacción: una lista a medio escribir es peor que
-    /// una lista vieja.
+    /// Done in a transaction: a half-written playlist is worse than an old
+    /// one.
     pub fn set_playlist_entries(
         &self,
         playlist_id: i64,
@@ -102,7 +101,7 @@ impl Library {
         tx.commit()
     }
 
-    /// Las listas, con cuántas pistas trae cada una.
+    /// The playlists, with how many tracks each carries.
     pub fn playlists(&self) -> rusqlite::Result<Vec<StoredPlaylist>> {
         let mut stmt = self.db.prepare(
             "SELECT p.id, s.provider, COALESCE(p.external_id, ''), p.name, p.description,
@@ -128,7 +127,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Lo que trae una lista, en su orden.
+    /// What a playlist carries, in its order.
     pub fn playlist_entries(&self, playlist_id: i64) -> rusqlite::Result<Vec<PlaylistEntry>> {
         let mut stmt = self.db.prepare(
             "SELECT track_id, external_id FROM playlist_tracks
@@ -140,7 +139,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Cambia el nombre de una lista.
+    /// Renames a playlist.
     pub fn rename_playlist(&self, playlist_id: i64, name: &str) -> rusqlite::Result<()> {
         self.db.execute(
             "UPDATE playlists SET name = ?2, updated_at = ?3 WHERE id = ?1",
@@ -149,7 +148,7 @@ impl Library {
         Ok(())
     }
 
-    /// Borra una lista. Las pistas no se tocan: una lista es una vista.
+    /// Deletes a playlist. The tracks are untouched: a playlist is a view.
     pub fn delete_playlist(&self, playlist_id: i64) -> rusqlite::Result<()> {
         self.db
             .execute("DELETE FROM playlist_tracks WHERE playlist_id = ?1", params![playlist_id])?;
@@ -171,7 +170,7 @@ mod tests {
 
         let entries = vec![
             PlaylistEntry { track_id: Some(2), external_id: "/Aqualung.flac".into() },
-            // Algo que la lista menciona y todavía no se escanea.
+            // Something the playlist names that has not been scanned yet.
             PlaylistEntry { track_id: None, external_id: "/pendiente.flac".into() },
             PlaylistEntry { track_id: Some(1), external_id: "/Bayou.flac".into() },
         ];

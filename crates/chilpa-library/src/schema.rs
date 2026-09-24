@@ -1,42 +1,42 @@
-//! El esquema de la biblioteca.
+//! The library's schema.
 //!
-//! Cuatro decisiones vienen de la auditoría de QBZ (CHD-0001), donde la base
-//! de datos era el cuello de botella y la fuente de las pérdidas de datos:
+//! Four decisions come from the QBZ audit (CHD-0001), where the database was
+//! the bottleneck and the source of the data losses:
 //!
-//! 1. **La identidad de un track es `(source, id externo)`.** Un entero
-//!    autoincremental como identidad hacía que reindexar cambiara los ids y
-//!    rompiera las playlists.
-//! 2. **El log de reproducciones es append-only y existe desde el día uno.**
-//!    Las stats y las smart lists son consultas sobre él. Si no se guarda
-//!    desde el principio, esa historia no se puede recuperar después.
-//! 3. **Las features de audio llevan la versión del analizador.** Un
-//!    analizador mejor puede recalcular sin revolver lo viejo.
-//! 4. **Nada se borra por no encontrarse.** Un root desmontado marca sus
-//!    tracks como ausentes; borrarlos fue el hallazgo alto de la auditoría.
+//! 1. **A track's identity is `(source, external id)`.** An autoincrement
+//!    integer as identity meant reindexing changed the ids and broke the
+//!    playlists.
+//! 2. **The play log is append-only and exists from day one.** The stats and
+//!    the smart lists are queries over it. If it is not kept from the
+//!    start, that history cannot be recovered later.
+//! 3. **Audio features carry the analyzer's version.** A better analyzer can
+//!    recompute without disturbing the old rows.
+//! 4. **Nothing is deleted for not being found.** An unmounted root marks
+//!    its tracks missing; deleting them was the audit's high finding.
 
 use rusqlite::Connection;
 
-/// La versión del esquema que entiende este código.
+/// The schema version this code understands.
 pub const VERSION: i64 = 5;
 
-/// Los pasos, en orden. El índice es la versión a la que llevan: el primero
-/// lleva de 0 a 1, el segundo de 1 a 2.
+/// The steps, in order. The index is the version they lead to: the first
+/// goes from 0 to 1, the second from 1 to 2.
 ///
-/// Cada paso corre una sola vez y nunca se edita después de salir: una base
-/// que ya lo aplicó no lo va a volver a aplicar, así que cambiarlo solo
-/// crearía dos formas distintas de la misma versión.
+/// Each step runs once and is never edited after shipping: a database that
+/// already applied it will not apply it again, so changing it would only
+/// create two different shapes of the same version.
 const STEPS: &[&str] =
     &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5];
 
-/// Crea o actualiza el esquema.
+/// Creates or upgrades the schema.
 pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
     let actual: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
     if actual > VERSION {
-        // Una base de una versión más nueva no se toca: bajar de versión
-        // pierde datos en silencio. Se dice qué pasó, porque el error
-        // genérico de rusqlite ("Query is not read-only") no le dice nada a
-        // nadie y esto sí ocurre: un Chilpa viejo contra una biblioteca que
-        // ya abrió uno nuevo.
+        // A database from a newer version is left alone: downgrading loses
+        // data silently. What happened is said, because rusqlite's generic
+        // error ("Query is not read-only") tells nobody anything and this
+        // does happen: an old Chilpa against a library a newer one already
+        // opened.
         return Err(rusqlite::Error::SqliteFailure(
             rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
             Some(format!(
@@ -50,21 +50,21 @@ pub fn migrate(db: &Connection) -> rusqlite::Result<()> {
         if actual >= target {
             continue;
         }
-        // Cada paso va en su transacción: si truena a la mitad, la versión
-        // no avanza y la base queda como estaba.
+        // Each step goes in its own transaction: if it blows up halfway, the
+        // version does not advance and the database stays as it was.
         db.execute_batch(&format!("BEGIN; {paso} PRAGMA user_version = {target}; COMMIT;"))?;
     }
     Ok(())
 }
 
-/// Los pragmas con los que se abre. WAL deja que la interfaz lea mientras el
-/// escaneo escribe, que es justo lo que en QBZ daba "database is locked".
+/// The pragmas it opens with. WAL lets the interface read while the scan
+/// writes, which is exactly what gave "database is locked" in QBZ.
 pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
     db.pragma_update(None, "journal_mode", "WAL")?;
     db.pragma_update(None, "synchronous", "NORMAL")?;
     db.pragma_update(None, "foreign_keys", "ON")?;
-    // Una espera antes de rendirse: un escaneo largo no debe tirar una
-    // lectura de la interfaz.
+    // A wait before giving up: a long scan must not knock over a read
+    // from the interface.
     db.busy_timeout(std::time::Duration::from_secs(5))?;
     Ok(())
 }
@@ -195,12 +195,12 @@ CREATE TABLE audio_features (
 );
 "#;
 
-/// De 1 a 2: las listas de reproducción.
+/// From 1 to 2: the playlists.
 ///
-/// Una lista puede ser de aquí o traída por un source; por eso lleva su id
-/// externo, para poder volver a sincronizarla sin duplicarla. Y una entrada
-/// guarda la ruta además del track: una lista no se rompe porque algo
-/// todavía no esté escaneado.
+/// A playlist can be local or brought in by a source; that is why it carries
+/// its external id, so it can be synced again without duplicating it. And an
+/// entry stores the path as well as the track: a playlist does not break
+/// because something has not been scanned yet.
 const MIGRATION_V2: &str = r#"
 CREATE TABLE playlists (
     id           INTEGER PRIMARY KEY,
@@ -227,12 +227,12 @@ CREATE TABLE playlist_tracks (
 CREATE INDEX playlist_tracks_track ON playlist_tracks(track_id);
 "#;
 
-/// De 2 a 3: los géneros.
+/// From 2 to 3: the genres.
 ///
-/// En una tabla aparte porque un archivo declara varios y juntarlos en una
-/// cadena hace que "Rock; Blues" no sea ni Rock ni Blues a la hora de
-/// filtrar. `COLLATE NOCASE` en el nombre para que "rock" y "Rock" sean el
-/// mismo género, que es lo que quiere decir quien los escribió.
+/// In their own table because a file declares several and joining them into
+/// one string makes "Rock; Blues" neither Rock nor Blues when filtering.
+/// `COLLATE NOCASE` on the name so "rock" and "Rock" are the same genre,
+/// which is what whoever wrote them meant.
 const MIGRATION_V3: &str = r#"
 CREATE TABLE genres (
     id   INTEGER PRIMARY KEY,
@@ -248,22 +248,22 @@ CREATE TABLE track_genres (
 CREATE INDEX track_genres_genre ON track_genres(genre_id);
 "#;
 
-/// De 3 a 4: qué tan seguro está el analizador del tempo.
+/// From 3 to 4: how sure the analyzer is of the tempo.
 ///
-/// Va en su propia columna y no dentro de `energy`, que es otra cosa.
-/// Guardar un número bajo el nombre de otro es la clase de mentira
-/// silenciosa que después nadie encuentra.
+/// It gets its own column and does not go inside `energy`, which is
+/// something else. Storing one number under another's name is the kind of
+/// silent lie nobody finds later.
 const MIGRATION_V4: &str = r#"
 ALTER TABLE audio_features ADD COLUMN tempo_confidence REAL;
 "#;
 
-/// De 4 a 5: un índice sobre `(album_id, present)`.
+/// From 4 to 5: an index over `(album_id, present)`.
 ///
-/// Sin él, SQLite elegía `tracks_present` para `album_id = ? AND present = 1`
-/// y, como todas las pistas están presentes, recorría la tabla entera por
-/// cada álbum. Medido con cinco mil álbumes: la reja pasó de 30 segundos a
-/// 7 milisegundos. Es el mismo hallazgo de la auditoría de QBZ, con otra
-/// cara.
+/// Without it, SQLite picked `tracks_present` for `album_id = ? AND
+/// present = 1` and, since every track is present, walked the whole table
+/// for every album. Measured with five thousand albums: the grid went from
+/// 30 seconds to 7 milliseconds. It is the same finding as the QBZ audit,
+/// wearing another face.
 const MIGRATION_V5: &str = r#"
 CREATE INDEX tracks_album_present ON tracks(album_id, present);
 ANALYZE;
@@ -299,7 +299,7 @@ mod tests {
     #[test]
     fn a_version_one_database_upgrades_without_losing_anything() {
         let db = Connection::open_in_memory().unwrap();
-        // Una base como la dejaba la versión 1.
+        // A database as version 1 left it.
         db.execute_batch(SCHEMA_V1).unwrap();
         db.pragma_update(None, "user_version", 1).unwrap();
         db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
@@ -317,7 +317,7 @@ mod tests {
         assert_eq!(v, VERSION, "quedó en la versión de hoy");
         let n: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0)).unwrap();
         assert_eq!(n, 1, "lo que había sigue ahí");
-        // Y la tabla nueva existe.
+        // And the new table is there.
         db.execute(
             "INSERT INTO playlists (source_id, name, created_at, updated_at)
              VALUES (1, 'Una lista', 0, 0)",

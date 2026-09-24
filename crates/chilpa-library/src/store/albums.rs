@@ -1,13 +1,14 @@
-//! La reja de álbumes y los artistas.
+//! The album grid and the artists.
 //!
-//! Todo sale de una consulta con `GROUP BY`: en QBZ cada página volvía a
-//! agregar la biblioteca entera, y ese era el hallazgo alto de la auditoría.
+//! Everything comes from one query with a `GROUP BY`: in QBZ every page
+//! aggregated the whole library again, and that was the audit's high
+//! finding.
 
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{row_to_track, StoredTrack};
 
-/// Un álbum, ya juntado.
+/// An album, already grouped.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredAlbum {
     pub id: i64,
@@ -19,43 +20,44 @@ pub struct StoredAlbum {
 }
 
 
-/// Un artista de la biblioteca, con lo que tiene.
+/// An artist in the library, with what they have.
 ///
-/// Sale de `albums.album_artist`, que es lo que el disco dice de sí mismo.
-/// La tabla `artists` está para cuando haya identidades de MusicBrainz; hoy
-/// inventar filas ahí no agregaría nada que el tag no diga.
+/// It comes from `albums.album_artist`, which is what the record says about
+/// itself. The `artists` table is there for when there are MusicBrainz
+/// identities; today, inventing rows there would add nothing the tag does
+/// not already say.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredArtist {
     pub name: String,
     pub album_count: usize,
     pub track_count: usize,
-    /// La portada de uno de sus discos, para no mostrar un hueco.
+    /// The cover of one of their records, so there is no empty slot.
     pub artwork_path: Option<String>,
 }
 
-/// Cómo ordenar la reja de álbumes.
+/// How to sort the album grid.
 ///
-/// Son las vistas rápidas: lo mismo de siempre, mirado de otra forma. Todas
-/// salen de la misma consulta, con otro `ORDER BY`; ninguna agrega la
-/// biblioteca entera dos veces.
+/// These are the quick views: the same thing, looked at another way. They
+/// all come from the same query with a different `ORDER BY`; none of them
+/// aggregates the whole library twice.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum AlbumSort {
-    /// Artista, año y título: el orden de una repisa.
+    /// Artist, year and title: the order of a shelf.
     #[default]
     Artist,
     Title,
-    /// Del más nuevo al más viejo.
+    /// Newest to oldest.
     Year,
-    /// Lo último que entró a la biblioteca.
+    /// The latest arrivals in the library.
     Added,
-    /// Lo más escuchado.
+    /// The most played.
     Played,
-    /// Lo último que sonó.
+    /// The last thing that played.
     LastPlayed,
 }
 
 impl AlbumSort {
-    /// Cómo se llama esta vista, para guardarla y para leerla.
+    /// What this view is called, for storing and for reading back.
     pub fn name(&self) -> &'static str {
         match self {
             AlbumSort::Artist => "artist",
@@ -67,8 +69,8 @@ impl AlbumSort {
         }
     }
 
-    /// Lo contrario. Un nombre que no se reconoce da el orden de siempre, no
-    /// un error: una preferencia vieja no debe dejar la reja vacía.
+    /// The other way round. An unrecognized name gives the usual order, not
+    /// an error: an old preference must not leave the grid empty.
     pub fn from_name(name: &str) -> Self {
         match name {
             "title" => AlbumSort::Title,
@@ -80,7 +82,7 @@ impl AlbumSort {
         }
     }
 
-    /// Todas, en el orden en que se ofrecen.
+    /// All of them, in the order they are offered.
     pub fn all() -> [AlbumSort; 6] {
         [
             AlbumSort::Artist,
@@ -92,17 +94,17 @@ impl AlbumSort {
         ]
     }
 
-    /// Cierto si el orden necesita agregar la biblioteca entera para
-    /// decidir qué va primero.
+    /// True when the ordering needs to aggregate the whole library to decide
+    /// what comes first.
     ///
-    /// Por artista, título o año se ordena con columnas de `albums` y ya:
-    /// se puede recortar la página antes de contar nada. Por escuchas o por
-    /// fecha de alta no hay manera, porque el orden sale justo de eso.
+    /// By artist, title or year it sorts on `albums` columns and that is it:
+    /// the page can be trimmed before counting anything. By plays or by date
+    /// added there is no way, because the order comes from exactly that.
     fn needs_adding(&self) -> bool {
         matches!(self, AlbumSort::Added | AlbumSort::Played | AlbumSort::LastPlayed)
     }
 
-    /// El orden cuando solo se miran columnas de `albums`.
+    /// The ordering when only `albums` columns are looked at.
     fn cheap_order_by(&self) -> &'static str {
         match self {
             AlbumSort::Title => "a.title COLLATE NOCASE",
@@ -124,12 +126,11 @@ impl AlbumSort {
 }
 
 impl Library {
-    /// Los álbumes, ordenados por artista y título, con su cuenta de pistas.
+    /// The albums, sorted by artist and title, with their track count.
     ///
-    /// Una sola consulta con un `GROUP BY`: en QBZ cada página volvía a
-    /// agregar la biblioteca entera, y ese era el hallazgo alto de la
-    /// auditoría.
-    pub fn albums(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredAlbum>> {
+    /// One query with a `GROUP BY`: in QBZ every page aggregated the whole
+    /// library again, and that was the audit's high finding.
+        pub fn albums(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredAlbum>> {
         let mut stmt = self.db.prepare(
             "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, count(t.id)
              FROM albums a
@@ -151,13 +152,12 @@ impl Library {
         rows.collect()
     }
 
-    /// Los álbumes con su cuenta de escuchas, en el orden que se pida.
+    /// The albums with their play count, in whatever order is asked for.
     ///
-    /// Una sola consulta: las escuchas salen de un `GROUP BY` sobre el log
-    /// unido una vez, no de una consulta por álbum. Preguntarle a la base
-    /// una vez por cada fila de una reja es justo lo que hacía lenta a la
-    /// biblioteca de QBZ.
-    pub fn albums_sorted(
+    /// One query: the plays come from a `GROUP BY` over the log joined once,
+    /// not from a query per album. Asking the database once per row of a grid
+    /// is exactly what made QBZ's library slow.
+        pub fn albums_sorted(
         &self,
         order: AlbumSort,
         limit: usize,
@@ -166,7 +166,7 @@ impl Library {
         self.albums_filtered(order, None, limit, offset)
     }
 
-    /// Lo mismo, pero solo los de un artista cuando se pide uno.
+    /// The same, but only one artist's when one is asked for.
     pub fn albums_filtered(
         &self,
         order: AlbumSort,
@@ -177,8 +177,8 @@ impl Library {
         if !order.needs_adding() {
             return self.albums_page_cheap(order, artist, limit, offset);
         }
-        // El filtro va como parámetro, nunca interpolado: un nombre con
-        // comillas no tiene por qué romper una consulta.
+        // The filter goes as a parameter, never interpolated: a name with
+        // quotes in it has no business breaking a query.
         let sql = format!(
             "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
                     count(t.id),
@@ -218,12 +218,12 @@ impl Library {
         rows.collect()
     }
 
-    /// La reja cuando el orden no depende de agregar nada.
+    /// The grid when the ordering does not depend on aggregating anything.
     ///
-    /// Se recorta la página primero y solo después se cuentan pistas y
-    /// escuchas, para las cien filas que van a salir. Contar la biblioteca
-    /// entera en cada página era el hallazgo alto de la auditoría de QBZ, y
-    /// aquí se nota: de 137 ms a unos pocos, con cincuenta mil pistas.
+    /// The page is trimmed first and only then are tracks and plays counted,
+    /// for the hundred rows that are going to come out. Counting the whole
+    /// library on every page was the QBZ audit's high finding, and it shows
+    /// here: from 137 ms down to a few, with fifty thousand tracks.
     fn albums_page_cheap(
         &self,
         order: AlbumSort,
@@ -270,10 +270,10 @@ impl Library {
         rows.collect()
     }
 
-    /// Los artistas de la biblioteca, por nombre.
+    /// The library's artists, by name.
     ///
-    /// Un artista sin pistas presentes no aparece: la vista muestra lo que
-    /// se puede poner a sonar, no lo que alguna vez estuvo.
+    /// An artist with no present tracks does not show up: the view shows what
+    /// can be played, not what was once there.
     pub fn artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredArtist>> {
         let mut stmt = self.db.prepare(
             "SELECT a.album_artist,
@@ -298,7 +298,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Un álbum por su id, con su cuenta de escuchas.
+    /// One album by its id, with its play count.
     pub fn album(&self, album_id: i64) -> rusqlite::Result<Option<(StoredAlbum, usize)>> {
         let album = self
             .db
@@ -330,7 +330,7 @@ impl Library {
         }
     }
 
-    /// Las pistas de un álbum, en el orden del disco.
+    /// An album's tracks, in the record's order.
     pub fn album_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
@@ -343,11 +343,11 @@ impl Library {
         rows.collect()
     }
 
-    /// Los álbumes más escuchados, con su cuenta de reproducciones.
+    /// The most played albums, with their play count.
     ///
-    /// Cuenta solo lo que sonó más de la mitad, igual que
-    /// [`Library::play_count`]. Es la primera smart list: sale del log de
-    /// eventos, no de un contador que haya que mantener a mano.
+    /// It only counts what played more than halfway, like
+    /// [`Library::play_count`]. It is the first smart list: it comes from the
+    /// event log, not from a counter somebody has to maintain by hand.
     pub fn most_played_albums(&self, limit: usize) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let mut stmt = self.db.prepare(
             "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
@@ -376,7 +376,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Cuántas veces se ha escuchado cada pista de un álbum.
+    /// How many times each track of an album has been played.
     pub fn album_play_count(&self, album_id: i64) -> rusqlite::Result<usize> {
         let n: i64 = self.db.query_row(
             "SELECT count(*) FROM play_events p
@@ -466,9 +466,9 @@ mod tests {
             .collect();
         assert_eq!(own, ["Bayou", "Cosmo"]);
 
-        // Sin filtro, salen todos.
+        // With no filter, all of them come out.
         assert_eq!(lib.albums_filtered(AlbumSort::Title, None, 50, 0).unwrap().len(), 3);
-        // Y un nombre que no existe no trae nada, sin tronar.
+        // And a name that does not exist brings nothing, without crashing.
         assert!(lib.albums_filtered(AlbumSort::Title, Some("Nadie"), 50, 0).unwrap().is_empty());
     }
 
@@ -507,13 +507,13 @@ mod tests {
                 )
                 .unwrap();
         }
-        // El álbum 2 se escucha tres veces; el 1, una.
+        // Album 2 is played three times; album 1, once.
         lib.log_play(Some(1), Some(source), 1, 1000, 1000, false, None, None, true).unwrap();
         for i in 0..3 {
             lib.log_play(Some(2), Some(source), 10 + i, 1000, 1000, false, None, None, true)
                 .unwrap();
         }
-        // Y una a medias, que no cuenta.
+        // And one halfway through, which does not count.
         lib.log_play(Some(1), Some(source), 20, 100, 1000, true, None, None, true).unwrap();
 
         let top = lib.most_played_albums(10).unwrap();

@@ -1,10 +1,10 @@
-//! La biblioteca local: qué música hay y dónde.
+//! The local library: what music there is and where.
 //!
-//! El escaneo es incremental y conservador. Lo primero viene de la auditoría
-//! de QBZ: un rescan sin cambios hacía tres recorridos y reescribía cada
-//! fila, alrededor de un millón de escrituras en una biblioteca mediana. Lo
-//! segundo también: un root cuyo mountpoint no estaba montado se veía vacío
-//! y el prune borraba todos sus tracks.
+//! The scan is incremental and conservative. The first part comes from the
+//! QBZ audit: a rescan with no changes did three passes and rewrote every
+//! row, around a million writes on a mid-sized library. So does the second:
+//! a root whose mountpoint was not mounted looked empty and the prune
+//! deleted all its tracks.
 
 pub mod playlist;
 pub mod schema;

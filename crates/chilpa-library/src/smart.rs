@@ -1,65 +1,65 @@
-//! Listas inteligentes: reglas sobre la biblioteca, no una lista a mano.
+//! Smart lists: rules over the library, not a list made by hand.
 //!
-//! Una lista inteligente no guarda pistas, guarda condiciones. Se vuelve a
-//! resolver cada vez que se mira, así que una pista nueva que cumple entra
-//! sola y una que dejó de cumplir sale sola.
+//! A smart list does not store tracks, it stores conditions. It is resolved
+//! again every time it is looked at, so a new track that matches joins on
+//! its own and one that stopped matching leaves on its own.
 //!
-//! Las reglas de hoy salen de lo que la biblioteca ya sabe: cuándo entró una
-//! pista, cuántas veces sonó, con qué formato y cuánto dura. Las de mood y
-//! ritmo van a ser reglas más sobre `audio_features`, que ya está en el
-//! esquema y versionada por analizador; por eso esto se arma como una lista
-//! de reglas y no como seis consultas escritas a mano.
+//! Today's rules come from what the library already knows: when a track
+//! arrived, how often it played, at what format and how long it runs. Mood
+//! and rhythm will be further rules over `audio_features`, which is already
+//! in the schema and versioned per analyzer; that is why this is built as a
+//! list of rules and not as six hand-written queries.
 //!
-//! Todo lo que viene del usuario viaja como parámetro. Lo único que se
-//! interpola en el SQL son las plantillas de este archivo.
+//! Everything that comes from the user travels as a parameter. The only
+//! thing interpolated into the SQL are the templates in this file.
 
 use crate::store::{Library, StoredTrack};
 use rusqlite::types::Value;
 
-/// Una condición que una pista tiene que cumplir.
+/// A condition a track has to meet.
 #[derive(Clone, PartialEq, Debug)]
 pub enum Rule {
-    /// Nunca ha sonado completa.
+    /// It has never played all the way through.
     NeverPlayed,
-    /// Ha sonado completa por lo menos tantas veces.
+    /// It has played all the way through at least that many times.
     PlayedAtLeast(usize),
-    /// Entró a la biblioteca en los últimos tantos días.
+    /// It arrived in the library within that many days.
     AddedWithinDays(u32),
-    /// Sonó en los últimos tantos días.
+    /// It played within that many days.
     PlayedWithinDays(u32),
-    /// Más de 16 bits o más de 48 kHz.
+    /// More than 16 bits or more than 48 kHz.
     HiRes,
-    /// Dura más que esto.
+    /// It runs longer than this.
     LongerThanMs(u64),
-    /// Dura menos que esto.
+    /// It runs shorter than this.
     ShorterThanMs(u64),
-    /// De ese artista, sin distinguir mayúsculas.
+    /// By that artist, ignoring case.
     ArtistIs(String),
-    /// De ese género.
+    /// In that genre.
     GenreIs(String),
-    /// Con un tempo analizado dentro de ese rango.
+    /// With an analyzed tempo inside that range.
     BpmBetween(f32, f32),
 }
 
-/// Cómo se ordena lo que sale.
+/// How what comes out is ordered.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Order {
-    /// Artista y título, como una repisa.
+    /// Artist and title, like a shelf.
     #[default]
     Artist,
-    /// Lo último que entró primero.
+    /// The latest arrivals first.
     NewestFirst,
-    /// Lo más escuchado primero.
+    /// The most played first.
     MostPlayed,
-    /// Al azar, distinto cada vez que se mira.
+    /// At random, different every time it is looked at.
     Random,
 }
 
-/// Una lista inteligente: un nombre y sus condiciones.
+/// A smart list: a name and its conditions.
 #[derive(Clone, PartialEq, Debug)]
 pub struct SmartList {
     pub name: String,
-    /// Todas se tienen que cumplir. Un "o" se arma con dos listas.
+    /// All of them have to hold. An "or" is built with two lists.
     pub rules: Vec<Rule>,
     pub order: Order,
     pub limit: usize,
@@ -71,10 +71,10 @@ impl SmartList {
     }
 }
 
-/// Las listas que Chilpa trae de fábrica.
+/// The lists Chilpa ships with.
 ///
-/// Son las que se pueden calcular sin análisis de audio. Las de mood y ritmo
-/// se suman aquí en cuanto haya `audio_features`.
+/// These are the ones that can be worked out without audio analysis. Mood
+/// and rhythm join them as soon as there is `audio_features`.
 pub fn builtins() -> Vec<SmartList> {
     vec![
         SmartList::new("Nunca escuchadas", vec![Rule::NeverPlayed], Order::Random, 200),
@@ -103,8 +103,8 @@ pub fn builtins() -> Vec<SmartList> {
             Order::Artist,
             200,
         ),
-        // Estas dos necesitan el análisis; sin él salen vacías, que es lo
-        // honesto: no hay con qué llenarlas todavía.
+        // These two need the analysis; without it they come out empty, which
+        // is the honest answer: there is nothing to fill them with yet.
         SmartList::new("Tranquilo", vec![Rule::BpmBetween(50.0, 95.0)], Order::Random, 200),
         SmartList::new(
             "Para moverse",
@@ -115,7 +115,7 @@ pub fn builtins() -> Vec<SmartList> {
     ]
 }
 
-/// El pedazo de `WHERE` de una regla, con sus parámetros.
+/// A rule's piece of the `WHERE`, with its parameters.
 fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
     let days_ago = |d: u32| Value::Integer(now - i64::from(d) * 86_400);
     match rule {
@@ -126,7 +126,7 @@ fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
         ),
         Rule::AddedWithinDays(d) => ("t.added_at >= ?".into(), vec![days_ago(*d)]),
         Rule::PlayedWithinDays(d) => ("e.ultima >= ?".into(), vec![days_ago(*d)]),
-        // Alta resolución es cualquier cosa por encima del CD.
+        // High resolution is anything above CD.
         Rule::HiRes => (
             "(t.bit_depth > 16 OR t.sample_rate_hz > 48000)".into(),
             vec![],
@@ -136,8 +136,8 @@ fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
             vec![Value::Integer(*ms as i64)],
         ),
         Rule::ShorterThanMs(ms) => (
-            // Una duración de cero quiere decir que no se sabe; no cuenta
-            // como "corta".
+            // A duration of zero means it is unknown; it does not count as
+            // "short".
             "(t.duration_ms > 0 AND t.duration_ms < ?)".into(),
             vec![Value::Integer(*ms as i64)],
         ),
@@ -146,8 +146,8 @@ fn condition(rule: &Rule, now: i64) -> (String, Vec<Value>) {
             vec![Value::Text(name.clone())],
         ),
         Rule::BpmBetween(min, max) => (
-            // Cualquier versión del analizador sirve: la lista dice qué
-            // cumple hoy, no con qué analizador se midió.
+            // Any analyzer version will do: the list says what matches today,
+            // not which analyzer measured it.
             "EXISTS (SELECT 1 FROM audio_features f
                      WHERE f.track_id = t.id AND f.bpm BETWEEN ? AND ?)"
                 .into(),
@@ -173,10 +173,10 @@ fn sql_order(order: Order) -> &'static str {
 }
 
 impl Library {
-    /// Resuelve una lista inteligente contra la biblioteca.
+    /// Resolves a smart list against the library.
     ///
-    /// Solo pistas presentes: una lista que ofrece lo que no se puede poner
-    /// a sonar no sirve de nada.
+    /// Present tracks only: a list offering what cannot be played is no use at
+    /// all.
     pub fn smart_tracks(&self, list: &SmartList) -> rusqlite::Result<Vec<StoredTrack>> {
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
@@ -223,7 +223,7 @@ mod tests {
     use super::*;
     use rusqlite::params;
 
-    /// Cuatro pistas con historias distintas.
+    /// Four tracks with different histories.
     fn library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
@@ -231,7 +231,7 @@ mod tests {
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap()
             .as_secs() as i64;
-        // (id, título, artista, duración, bits, rate, added_at)
+        // (id, title, artist, duration, bits, rate, added_at)
         let rows = [
             (1, "Vieja", "Uno", 200_000i64, 16, 44_100, now - 400 * 86_400),
             (2, "Nueva", "Dos", 200_000, 24, 96_000, now - 2 * 86_400),
@@ -259,7 +259,7 @@ mod tests {
                 )
                 .unwrap();
         }
-        // La vieja sonó tres veces, hace mucho; la nueva, dos, ayer.
+        // The old one played three times, long ago; the new one twice, yesterday.
         for i in 0..3 {
             lib.log_play(Some(1), Some(source), now - 300 * 86_400 + i, 200_000, 200_000, false, None, None, true)
                 .unwrap();
@@ -340,7 +340,7 @@ mod tests {
         let lib = library();
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         lib.save_features(2, "chilpa", 1, Some(72.0), None, None, None).unwrap();
-        // La 3 se analizó y no se le encontró pulso.
+        // Number 3 was analyzed and no beat was found.
         lib.save_features(3, "chilpa", 1, None, None, None, None).unwrap();
 
         let fast = SmartList::new("x", vec![Rule::BpmBetween(118.0, 145.0)], Order::Artist, 50);
@@ -349,7 +349,7 @@ mod tests {
         let slow = SmartList::new("x", vec![Rule::BpmBetween(50.0, 95.0)], Order::Artist, 50);
         assert_eq!(titles(&lib, &slow), ["Nueva"]);
 
-        // Y sin análisis, la lista sale vacía en vez de traerlo todo.
+        // And without analysis the list comes out empty instead of bringing everything.
         let clean = Library::in_memory().unwrap();
         assert!(clean.smart_tracks(&fast).unwrap().is_empty());
     }
@@ -369,7 +369,7 @@ mod tests {
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 3, "sin la ausente");
         lib.save_features(1, "chilpa", 1, Some(128.0), None, None, None).unwrap();
         assert_eq!(lib.tracks_pending_analysis("chilpa", 1, 50).unwrap().len(), 2);
-        // Un analizador nuevo las vuelve a pedir todas.
+        // A new analyzer asks for all of them again.
         assert_eq!(lib.tracks_pending_analysis("chilpa", 2, 50).unwrap().len(), 3);
     }
 

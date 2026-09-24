@@ -1,8 +1,8 @@
-//! La base de datos abierta, y lo que se le pregunta.
+//! The open database, and what gets asked of it.
 //!
-//! Cada tema tiene su archivo: la reja de álbumes, las listas, lo que el
-//! análisis saca, el log de reproducciones y las huellas para emparejar.
-//! Aquí quedan la conexión, los sources y roots, los géneros y la búsqueda.
+//! Each subject has its file: the album grid, the playlists, what the
+//! analysis extracts, the play log, and the fingerprints used to match.
+//! What stays here is the connection, sources and roots, genres and search.
 
 pub mod albums;
 pub mod features;
@@ -18,7 +18,7 @@ use crate::schema;
 use rusqlite::{params, Connection, OptionalExtension};
 use std::path::{Path, PathBuf};
 
-/// Un track como lo guarda la biblioteca.
+/// A track as the library stores it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredTrack {
     pub id: i64,
@@ -32,33 +32,33 @@ pub struct StoredTrack {
 }
 
 
-/// Una carpeta que forma parte de la biblioteca.
+/// A folder that is part of the library.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredRoot {
     pub id: i64,
     pub path: std::path::PathBuf,
-    /// Cuándo se escaneó por última vez, en segundos unix.
+    /// When it was last scanned, in unix seconds.
     pub last_scan: Option<i64>,
     pub reachable: bool,
 }
 
 
-/// La biblioteca abierta.
+/// The open library.
 pub struct Library {
     pub(crate) db: Connection,
 }
 
 impl Library {
-    /// La conexión, para las pruebas que necesitan sembrar datos de golpe.
+    /// The connection, for tests that need to seed data in one go.
     ///
-    /// No es para la aplicación: lo que la aplicación necesita sale por un
-    /// método con nombre, no por SQL suelto.
+    /// It is not for the application: what the application needs comes out
+    /// through a named method, not through loose SQL.
     #[doc(hidden)]
     pub fn connection(&self) -> &Connection {
         &self.db
     }
 
-    /// Abre (o crea) la biblioteca en ese archivo.
+    /// Opens (or creates) the library in that file.
     pub fn open(path: &Path) -> rusqlite::Result<Self> {
         if let Some(dir) = path.parent() {
             let _ = std::fs::create_dir_all(dir);
@@ -69,14 +69,14 @@ impl Library {
         Ok(Self { db })
     }
 
-    /// Una biblioteca en memoria, para pruebas.
+    /// An in-memory library, for tests.
     pub fn in_memory() -> rusqlite::Result<Self> {
         let db = Connection::open_in_memory()?;
         schema::migrate(&db)?;
         Ok(Self { db })
     }
 
-    /// Dónde vive la biblioteca de este usuario.
+    /// Where this user's library lives.
     pub fn default_path() -> PathBuf {
         let base = std::env::var_os("XDG_DATA_HOME")
             .map(PathBuf::from)
@@ -87,7 +87,7 @@ impl Library {
         base.join("chilpa").join("library.db")
     }
 
-    /// El id del source, creándolo si hace falta.
+    /// The source's id, creating it if needed.
     pub fn source_id(&self, provider: &str, instance: &str) -> rusqlite::Result<i64> {
         self.db.execute(
             "INSERT OR IGNORE INTO sources (provider, instance) VALUES (?1, ?2)",
@@ -100,7 +100,7 @@ impl Library {
         )
     }
 
-    /// El id del root, creándolo si hace falta.
+    /// The root's id, creating it if needed.
     pub fn root_id(&self, source_id: i64, path: &Path) -> rusqlite::Result<i64> {
         let path = path.display().to_string();
         self.db.execute(
@@ -111,10 +111,10 @@ impl Library {
             .query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
     }
 
-    /// Deja esos géneros como los de una pista, quitando los que ya no.
+    /// Sets those genres as a track's, dropping the ones that no longer apply.
     ///
-    /// Se reemplazan, no se suman: si un archivo se reetiquetó, los géneros
-    /// viejos ya no son suyos.
+    /// They are replaced, not added to: if a file was retagged, the old genres
+    /// are no longer its own.
     pub fn set_track_genres(&self, track_id: i64, genres: &[String]) -> rusqlite::Result<()> {
         let tx = self.db.unchecked_transaction()?;
         tx.execute("DELETE FROM track_genres WHERE track_id = ?1", params![track_id])?;
@@ -137,7 +137,7 @@ impl Library {
         tx.commit()
     }
 
-    /// Los géneros de la biblioteca, con cuántas pistas presentes tienen.
+    /// The library's genres, with how many present tracks each has.
     pub fn genres(&self) -> rusqlite::Result<Vec<(String, usize)>> {
         let mut stmt = self.db.prepare(
             "SELECT g.name, count(t.id)
@@ -152,7 +152,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Los géneros de una pista.
+    /// A track's genres.
     pub fn track_genres(&self, track_id: i64) -> rusqlite::Result<Vec<String>> {
         let mut stmt = self.db.prepare(
             "SELECT g.name FROM genres g
@@ -164,10 +164,10 @@ impl Library {
         rows.collect()
     }
 
-    /// Las carpetas que se han escaneado alguna vez, con cuándo fue.
+    /// The folders that have ever been scanned, with when that was.
     ///
-    /// Es lo que hace falta para volver a escanear sin que el usuario tenga
-    /// que acordarse de dónde está su música.
+    /// It is what is needed to rescan without the user having to remember
+    /// where their music is.
     pub fn roots(&self) -> rusqlite::Result<Vec<StoredRoot>> {
         let mut stmt = self.db.prepare(
             "SELECT id, path, last_scan, reachable FROM roots ORDER BY path COLLATE NOCASE",
@@ -183,14 +183,14 @@ impl Library {
         rows.collect()
     }
 
-    /// Marca si un root está alcanzable. Un root ausente NO poda nada.
+    /// Marks whether a root is reachable. A missing root prunes NOTHING.
     pub fn set_root_reachable(&self, root_id: i64, reachable: bool) -> rusqlite::Result<()> {
         self.db.execute(
             "UPDATE roots SET reachable = ?2 WHERE id = ?1",
             params![root_id, i64::from(reachable)],
         )?;
         if !reachable {
-            // Lo suyo queda marcado como ausente, no borrado.
+            // What is its own is marked missing, not deleted.
             self.db.execute(
                 "UPDATE tracks SET present = 0 WHERE id IN
                  (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
@@ -200,7 +200,7 @@ impl Library {
         Ok(())
     }
 
-    /// Cuántos tracks hay, contando o no los ausentes.
+    /// How many tracks there are, counting the missing ones or not.
     pub fn track_count(&self, include_absent: bool) -> rusqlite::Result<usize> {
         let sql = if include_absent {
             "SELECT count(*) FROM tracks"
@@ -212,7 +212,7 @@ impl Library {
     }
 
 
-    /// Busca por título, artista o álbum.
+    /// Searches by title, artist or album.
     pub fn search(&self, text: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
         let patron = format!("%{text}%");
         let mut stmt = self.db.prepare(
@@ -232,7 +232,7 @@ impl Library {
     }
 
 
-    /// El track de esa ruta, si está en la biblioteca.
+    /// The track at that path, if it is in the library.
     pub fn track_by_path(&self, source_id: i64, path: &Path) -> rusqlite::Result<Option<i64>> {
         self.db
             .query_row(
@@ -264,18 +264,18 @@ pub(crate) fn row_to_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrac
     })
 }
 
-/// Lo que las pruebas de todos los temas siembran, en un solo lugar: si
-/// cada archivo armara su biblioteca de muestra, al cambiar el esquema
-/// habría que arreglar cinco.
+/// What every subject's tests seed, in one place: if each file built its
+/// own sample library, a schema change would have to be fixed five times
+/// over instead of once.
 #[cfg(test)]
 pub(crate) mod fixtures {
     use super::*;
 
-    /// Tres álbumes con distinto artista, año, fecha de alta y escuchas.
+    /// Three albums with different artist, year, date added and plays.
     pub(crate) fn sample_library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        // (id, título, artista, año, added_at)
+        // (id, title, artist, year, added_at)
         for (id, title, artist, año, high) in [
             (1, "Bayou", "Creedence", 1969, 100),
             (2, "Aqualung", "Tull", 1971, 300),
@@ -296,7 +296,7 @@ pub(crate) mod fixtures {
                 )
                 .unwrap();
         }
-        // El 3 se escucha dos veces, y la última de todas; el 1, una.
+        // Number 3 plays twice, and last of all; number 1, once.
         lib.log_play(Some(1), Some(source), 10, 1000, 1000, false, None, None, true).unwrap();
         lib.log_play(Some(3), Some(source), 20, 1000, 1000, false, None, None, true).unwrap();
         lib.log_play(Some(3), Some(source), 30, 1000, 1000, false, None, None, true).unwrap();
@@ -359,7 +359,7 @@ mod tests {
     #[test]
     fn search_looks_at_the_genre_too() {
         let lib = sample_library();
-        // La pista del álbum 1 es de blues; las demás, no.
+        // Album 1's track is blues; the others are not.
         let id: i64 = lib
             .db
             .query_row("SELECT id FROM tracks WHERE album_id = 1", [], |r| r.get(0))

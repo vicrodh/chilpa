@@ -1,4 +1,4 @@
-//! Escanear de verdad: incremental, y sin borrar lo que no se ve.
+//! Scanning for real: incremental, and deleting nothing it cannot see.
 
 use chilpa_library::{scan_root, Library};
 use std::path::PathBuf;
@@ -8,7 +8,7 @@ fn hay_ffmpeg() -> bool {
     Command::new("ffmpeg").arg("-version").output().map(|o| o.status.success()).unwrap_or(false)
 }
 
-/// Un álbum de prueba en disco.
+/// A test album on disk.
 fn album(name: &str, tracks: usize) -> Option<PathBuf> {
     if !hay_ffmpeg() {
         return None;
@@ -35,7 +35,7 @@ fn album(name: &str, tracks: usize) -> Option<PathBuf> {
             return None;
         }
     }
-    // Algo que no es audio, para comprobar que no entra.
+    // Something that is not audio, to check it does not get in.
     std::fs::write(dir.join("notas.txt"), b"hola").ok()?;
     Some(dir)
 }
@@ -87,8 +87,8 @@ fn a_second_scan_does_not_reread_what_did_not_change() {
 
 #[test]
 fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
-    // El hallazgo alto de la auditoría: un mountpoint desmontado se veía
-    // vacío y el prune borraba todos sus tracks.
+    // The audit's high finding: an unmounted mountpoint looked empty and
+    // the prune deleted all its tracks.
     let Some(dir) = album("desmontado", 2) else {
         eprintln!("sin ffmpeg: se salta");
         return;
@@ -105,7 +105,7 @@ fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
     assert_eq!(lib.track_count(true).unwrap(), 2, "las filas siguen ahí");
     assert_eq!(lib.track_count(false).unwrap(), 0, "marcadas como ausentes");
 
-    // Y al volver, vuelven a contar.
+    // And when it comes back, they count again.
     let dir2 = album("desmontado", 2).unwrap();
     let wrap = scan_root(&lib, &dir2).unwrap();
     assert_eq!(wrap.read, 2);
@@ -155,7 +155,7 @@ fn the_folder_cover_is_used_when_the_file_carries_none() {
         eprintln!("sin ffmpeg: se salta");
         return;
     };
-    // Los archivos que genera la prueba no traen portada embebida.
+    // The files the test generates carry no embedded cover.
     let cover = dir.join("disco 1").join("cover.jpg");
     std::fs::write(&cover, b"no es un jpeg de verdad, pero existe").unwrap();
 
@@ -185,7 +185,7 @@ fn the_genres_in_the_file_reach_the_library() {
     let genres = lib.genres().unwrap();
     assert_eq!(genres, vec![("Rock".to_string(), 2)], "un género con sus dos pistas");
 
-    // Y cada pista lo trae.
+    // And every track carries it.
     let source = lib.source_id("local", "default").unwrap();
     let id = lib
         .track_by_path(source, &dir.join("disco 1").join("01-pista.flac"))

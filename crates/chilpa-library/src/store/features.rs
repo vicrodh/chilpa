@@ -1,18 +1,18 @@
-//! Lo que el análisis le saca a una pista: tempo, tonalidad y sonoridad.
+//! What analysis pulls out of a track: tempo, key and loudness.
 //!
-//! Se guarda con la versión del analizador que lo sacó, para que analizar
-//! de nuevo con una versión más nueva reemplace la fila en lugar de dejar
-//! dos verdades.
+//! Stored with the version of the analyzer that produced it, so analyzing
+//! again with a newer version replaces the row instead of leaving two
+//! truths.
 
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{now_unix, row_to_track, StoredTrack};
 
 impl Library {
-    /// Pistas presentes a las que les falta el análisis de esa versión.
+    /// Present tracks that are missing that version's analysis.
     ///
-    /// Se piden por tanda: analizar una biblioteca grande no puede empezar
-    /// cargando su lista entera en memoria.
+    /// Asked for in batches: analyzing a large library cannot start by loading
+    /// its whole list into memory.
     pub fn tracks_pending_analysis(
         &self,
         analyzer: &str,
@@ -36,7 +36,7 @@ impl Library {
         rows.collect()
     }
 
-    /// Cuántas pistas presentes ya tienen análisis de esa versión.
+    /// How many present tracks already have that version's analysis.
     pub fn analyzed_count(&self, analyzer: &str, version: i64) -> rusqlite::Result<usize> {
         let n: i64 = self.db.query_row(
             "SELECT count(*) FROM audio_features f
@@ -48,10 +48,10 @@ impl Library {
         Ok(n as usize)
     }
 
-    /// Guarda lo que el análisis sacó de una pista.
+    /// Stores what analysis pulled out of a track.
     ///
-    /// Una fila por analizador y versión: un analizador mejor escribe la
-    /// suya y no revuelve la vieja.
+    /// One row per analyzer and version: a better analyzer writes its own and
+    /// does not disturb the old one.
     pub fn save_features(
         &self,
         track_id: i64,
@@ -85,11 +85,10 @@ impl Library {
         Ok(())
     }
 
-    /// Lo que el análisis le puso a varias pistas, en una sola consulta.
+    /// What analysis attached to several tracks, in one query.
     ///
-    /// Una consulta por renglón de una lista es justo lo que hacía lenta a
-    /// la biblioteca de QBZ.
-    pub fn features_for(
+    /// One query per row of a list is exactly what made QBZ's library slow.
+        pub fn features_for(
         &self,
         track_ids: &[i64],
         analyzer: &str,
@@ -99,8 +98,8 @@ impl Library {
         if track_ids.is_empty() {
             return Ok(output);
         }
-        // Los ids son enteros que vienen de la propia base; aun así van como
-        // parámetros, para no tener dos formas de armar una consulta.
+        // The ids are integers that came from the database itself; even so
+        // they go as parameters, to avoid two ways of building a query.
         let gaps = vec!["?"; track_ids.len()].join(",");
         let sql = format!(
             "SELECT track_id, bpm, musical_key, loudness_lufs FROM audio_features
@@ -116,14 +115,13 @@ impl Library {
         })?;
         for row in rows {
             let (id, data) = row?;
-            // Ordenado por versión, así que la última que entra es la más
-            // nueva.
-            output.insert(id, data);
+            // Ordered by version, so the last one in is the newest.
+                        output.insert(id, data);
         }
         Ok(output)
     }
 
-    /// Lo que el análisis le puso a una pista: tempo, tonalidad y sonoridad.
+    /// What analysis attached to a track: tempo, key and loudness.
     #[allow(clippy::type_complexity)]
     pub fn track_features(
         &self,
@@ -141,7 +139,7 @@ impl Library {
             .optional()
     }
 
-    /// El BPM que el análisis le puso a una pista, si se lo puso.
+    /// The BPM analysis attached to a track, if it attached one.
     pub fn track_bpm(&self, track_id: i64, analyzer: &str) -> rusqlite::Result<Option<f32>> {
         self.db
             .query_row(
@@ -166,7 +164,7 @@ mod tests {
         lib.save_features(1, "chilpa", 1, Some(128.0), None, Some("C · 8B".into()), Some(-9.5))
             .unwrap();
         lib.save_features(2, "chilpa", 1, Some(90.0), None, None, None).unwrap();
-        // Una versión más nueva de la misma pista gana.
+        // A newer version of the same track wins.
         lib.save_features(1, "chilpa", 2, Some(129.0), None, Some("G · 9B".into()), Some(-8.0))
             .unwrap();
 

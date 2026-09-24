@@ -1,39 +1,39 @@
-//! Escanear una carpeta hacia la biblioteca.
+//! Scanning a folder into the library.
 //!
-//! Dos reglas que vienen de la auditoría de QBZ:
+//! Two rules that come from the QBZ audit:
 //!
-//! 1. **Lo que no cambió no se toca.** Un archivo cuya fecha y tamaño son los
-//!    mismos no se vuelve a leer ni se reescribe su fila. En QBZ un rescan sin
-//!    cambios hacía tres recorridos y reescribía cada fila.
-//! 2. **Un root que no se puede leer no borra nada.** Si la carpeta no
-//!    existe o no se puede abrir, se marca como inalcanzable y se sale. En
-//!    QBZ un mountpoint desmontado se veía vacío y podaba todos sus tracks.
+//! 1. **What did not change is not touched.** A file whose time and size are
+//!    the same is neither reread nor has its row rewritten. In QBZ a rescan
+//!    with no changes did three passes and rewrote every row.
+//! 2. **A root that cannot be read deletes nothing.** If the folder is not
+//!    there or cannot be opened, it is marked unreachable and we leave. In
+//!    QBZ an unmounted mountpoint looked empty and pruned all its tracks.
 
 use crate::store::Library;
 use rusqlite::params;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-/// Qué pasó en un escaneo.
+/// What happened in a scan.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ScanReport {
     pub root: PathBuf,
-    /// Archivos de audio vistos.
+    /// Audio files seen.
     pub seen: usize,
-    /// Los que se leyeron porque son nuevos o cambiaron.
+    /// The ones read because they are new or changed.
     pub read: usize,
-    /// Los que se saltaron por no haber cambiado.
+    /// The ones skipped because nothing changed.
     pub unchanged: usize,
-    /// Los que ya no están y se marcaron ausentes.
+    /// The ones that are gone and were marked missing.
     pub missing: usize,
-    /// Cierto si el root no se pudo leer; entonces no se tocó nada.
+    /// True when the root could not be read; then nothing was touched.
     pub unreachable: bool,
 }
 
 const EXTENSIONS: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
 
-/// Escanea una carpeta y sus subcarpetas, dejando las portadas en `cache`.
+/// Scans a folder and its subfolders, leaving covers in `cache`.
 pub fn scan_root_with_cache(
     lib: &Library,
     root: &Path,
@@ -42,12 +42,12 @@ pub fn scan_root_with_cache(
     scan(lib, root, cache, &|_| {})
 }
 
-/// Escanea una carpeta y sus subcarpetas.
+/// Scans a folder and its subfolders.
 pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
     scan(lib, root, None, &|_| {})
 }
 
-/// Lo mismo, avisando cuántos archivos lleva mirados.
+/// The same, reporting how many files it has looked at.
 pub fn scan_root_reporting(
     lib: &Library,
     root: &Path,
@@ -57,7 +57,7 @@ pub fn scan_root_reporting(
     scan(lib, root, cache, on_progress)
 }
 
-/// Cuántos archivos de audio hay bajo una carpeta. No toca la base.
+/// How many audio files live under a folder. It does not touch the database.
 pub fn count_audio_files(root: &Path) -> usize {
     walk(root).len()
 }
@@ -84,15 +84,15 @@ fn scan(
     report.seen = files.len();
 
     for (examined, file) in files.iter().enumerate() {
-        // Se avisa cada 25 archivos: uno por uno inunda el canal sin que la
-        // interfaz pueda dibujar más rápido.
+        // Reported every 25 files: one by one floods the channel without the
+        // interface being able to draw any faster.
         if examined % 25 == 0 {
             on_progress(examined);
         }
         let Ok(meta) = std::fs::metadata(file) else { continue };
-        // En nanosegundos, no en segundos: dos versiones distintas de un
-        // archivo escritas dentro del mismo segundo se verían iguales, y el
-        // escaneo se saltaría el cambio.
+        // In nanoseconds, not seconds: two different versions of a file
+        // written within the same second would look identical, and the scan
+        // would skip the change.
         let mtime = meta
             .modified()
             .ok()
@@ -113,7 +113,7 @@ fn scan(
 
         if let Some((m, s, track)) = &known {
             if *m == mtime && *s == size && track.is_some() {
-                // Igual que la última vez: ni se lee ni se reescribe.
+                // Same as last time: neither read nor rewritten.
                 report.unchanged += 1;
                 lib.db.execute(
                     "UPDATE tracks SET present = 1 WHERE id = ?1",
@@ -137,7 +137,7 @@ fn scan(
 
     on_progress(files.len());
 
-    // Lo que estaba y ya no: se marca ausente, nunca se borra.
+    // What was there and is not: marked missing, never deleted.
     let seen: Vec<String> = files.iter().map(|p| p.display().to_string()).collect();
     report.missing = mark_missing(lib, root_id, &seen)?;
     lib.db
@@ -162,7 +162,7 @@ fn save_file(
         Some(album_title) => {
             let album_artist = tags.album_artist.clone().unwrap_or_else(|| artist.clone());
             let id = album_id(lib, album_title, &album_artist, tags.year())?;
-            // La portada del álbum sale del primer archivo que traiga una.
+            // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
                 save_cover(lib, id, path, cache)?;
             }
@@ -206,22 +206,22 @@ fn save_file(
         params![source, path.display().to_string()],
         |r| r.get(0),
     )?;
-    // Los géneros van en su tabla: un archivo declara varios, y juntarlos en
-    // una cadena hace que ninguno sirva para filtrar.
+    // Genres go in their own table: a file declares several, and joining
+    // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;
     Ok(track_id)
 }
 
-/// Nombres de portada que se usan en las carpetas de música.
+/// Cover file names that turn up in music folders.
 const COVERS: &[&str] = &[
     "cover.jpg", "cover.jpeg", "cover.png", "folder.jpg", "folder.jpeg", "folder.png",
     "front.jpg", "front.png", "album.jpg", "album.png", "Cover.jpg", "Folder.jpg",
 ];
 
-/// Le pone portada al álbum si todavía no tiene.
+/// Gives the album a cover if it does not have one yet.
 ///
-/// Primero la del archivo; si no trae, la que esté junto a él en la carpeta,
-/// que es como guarda las portadas media biblioteca del mundo.
+/// The file's own first; failing that, the one next to it in the folder,
+/// which is how half the libraries in the world keep their covers.
 fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite::Result<()> {
     let has: Option<String> = lib
         .db
@@ -243,7 +243,7 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
     Ok(())
 }
 
-/// La portada que esté junto al archivo, si la hay.
+/// The cover sitting next to the file, if there is one.
 fn cover_in_folder(path: &Path) -> Option<PathBuf> {
     let dir = path.parent()?;
     for name in COVERS {
@@ -252,7 +252,7 @@ fn cover_in_folder(path: &Path) -> Option<PathBuf> {
             return Some(candidate);
         }
     }
-    // Cualquier imagen suelta, si no hay una con nombre conocido.
+    // Any loose image, when there is none with a known name.
     let mut loose: Vec<PathBuf> = std::fs::read_dir(dir)
         .ok()?
         .flatten()
@@ -281,7 +281,7 @@ fn album_id(lib: &Library, title: &str, artist: &str, año: Option<u32>) -> rusq
     )
 }
 
-/// Marca ausentes los archivos del root que ya no aparecieron.
+/// Marks the root's files that did not turn up as missing.
 fn mark_missing(lib: &Library, root_id: i64, seen: &[String]) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
@@ -303,15 +303,15 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &[String]) -> rusqlite::Resul
     Ok(missing)
 }
 
-/// Todos los archivos de audio bajo una carpeta.
+/// Every audio file under a folder.
 fn walk(root: &Path) -> Vec<PathBuf> {
     let mut output = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
         let Ok(entries) = std::fs::read_dir(&dir) else {
-            // Una subcarpeta ilegible no cancela el escaneo ni desactiva el
-            // prune: se salta y ya. En QBZ un lost+found lo desactivaba para
-            // siempre.
+            // An unreadable subfolder neither cancels the scan nor disables the
+            // prune: it is skipped and that is all. In QBZ a lost+found disabled
+            // it forever.
             continue;
         };
         for entry in entries.flatten() {
