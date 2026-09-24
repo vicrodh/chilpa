@@ -124,7 +124,12 @@ pub const kAudioFormatFlagIsFloat: u32 = 1 << 0;
 pub const kAudioFormatFlagIsBigEndian: u32 = 1 << 1;
 pub const kAudioFormatFlagIsSignedInteger: u32 = 1 << 2;
 pub const kAudioFormatFlagIsPacked: u32 = 1 << 3;
+pub const kAudioFormatFlagIsAlignedHigh: u32 = 1 << 4;
 pub const kAudioFormatFlagIsNonInterleaved: u32 = 1 << 5;
+/// The flag that asks a device for the stream nobody else can be mixed
+/// into. It is the other half of hog mode: hog takes the device, this takes
+/// the stream, and a DAC lights up its bit-perfect lamp for the second one.
+pub const kAudioFormatFlagIsNonMixable: u32 = 1 << 6;
 
 /// Nobody has the device. CoreAudio spells "no owner" as -1.
 pub const kAudioHogModeNobody: i32 = -1;

@@ -196,19 +196,27 @@ pub fn capabilities(name: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
     use chilpa_audio::format::SampleFormat;
     let mut formats = Vec::new();
     for physical in read::physical_formats(device) {
-        let found = match physical.mBitsPerChannel {
-            16 => SampleFormat::S16,
-            // CoreAudio says 24 for both layouts and the flags say which;
-            // both are carried, so both are offered and negotiation picks.
-            24 => SampleFormat::S24Packed,
-            32 => SampleFormat::S32,
+        // The width alone does not say the layout, and offering the wrong
+        // one is how an open ends in a device politely saying yes and then
+        // presenting something else. A stream that carries 24 bits in four
+        // bytes is `S24In32`; one that packs them into three is
+        // `S24Packed`, and they are not interchangeable.
+        let per_channel = physical
+            .mBytesPerFrame
+            .checked_div(physical.mChannelsPerFrame.max(1))
+            .unwrap_or(0);
+        let found = match (physical.mBitsPerChannel, per_channel) {
+            (16, _) => SampleFormat::S16,
+            (24, 3) => SampleFormat::S24Packed,
+            (24, 4) => SampleFormat::S24In32,
+            (32, _) => SampleFormat::S32,
+            // Twenty bits is a real thing on HDMI and Chilpa has no sample
+            // format for it. Offering the next size up would be a guess
+            // about what the device does with the spare bits.
             _ => continue,
         };
         if !formats.contains(&found) {
             formats.push(found);
-        }
-        if found == SampleFormat::S24Packed && !formats.contains(&SampleFormat::S24In32) {
-            formats.push(SampleFormat::S24In32);
         }
     }
     let channels = read::output_channels(device) as u16;
