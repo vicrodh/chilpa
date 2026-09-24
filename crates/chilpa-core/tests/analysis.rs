@@ -1,14 +1,14 @@
-//! Analizar un archivo de verdad: decodificarlo y sacarle el pulso.
+//! Analysing a real file: decoding it and pulling out its pulse.
 //!
-//! La prueba del analizador solo, con muestras en memoria, vive en
-//! `chilpa-analysis`. Esta comprueba el camino completo: abrir el archivo,
-//! decodificarlo, mezclarlo a mono y contar.
+//! The test of the analyser alone, with samples in memory, lives in
+//! `chilpa-analysis`. This one checks the whole path: open the file, decode
+//! it, mix it down to mono and count.
 
 use chilpa_core::analysis_job::analyze_file;
 use std::io::Write;
 use std::path::PathBuf;
 
-/// Un WAV de 16 bits en estéreo con golpes a ese tempo.
+/// A 16 bit stereo WAV with beats at that tempo.
 fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
     let rate = 44_100u32;
     let frames = rate * seconds;
@@ -36,7 +36,7 @@ fn pulse(name: &str, bpm: f32, seconds: u32) -> PathBuf {
         let from_beat = i % period;
         let v = if from_beat < tail {
             let decay = 1.0 - from_beat as f32 / tail as f32;
-            // Un golpe con algo de tono, para que no sea un clic puro.
+            // A beat with some tone, so it is not a pure click.
             let tone = (2.0 * std::f32::consts::PI * 80.0 * i as f32 / rate as f32).sin();
             (decay * decay * tone * 20_000.0) as i16
         } else {
@@ -64,9 +64,9 @@ fn a_file_beat_comes_out_through_the_whole_path() {
 
 #[test]
 fn a_file_without_a_beat_is_analyzed_and_says_nothing() {
-    // Silencio: se lee bien, pero no hay qué contar.
+    // Silence: it reads fine, but there is nothing to count.
     let path = pulse("silencio", 128.0, 25);
-    // Se sobrescribe el audio con ceros dejando el encabezado.
+    // The audio is overwritten with zeros, leaving the header.
     let mut data = std::fs::read(&path).unwrap();
     for b in data.iter_mut().skip(44) {
         *b = 0;

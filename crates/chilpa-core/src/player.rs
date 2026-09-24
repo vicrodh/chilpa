@@ -1,8 +1,9 @@
-//! El reproductor: suena en su propio hilo y cuenta lo que pasa.
+//! The player: it plays on its own thread and reports what happens.
 //!
-//! La interfaz no se bloquea nunca. Manda una orden, sigue con lo suyo y va
-//! recogiendo eventos. Parar levanta una bandera que el lazo de entrega mira
-//! entre bloques, así que no espera al dispositivo.
+//! The interface never blocks. It sends an order, goes on with its own
+//! business and picks up events as they come. Stopping raises a flag that
+//! the delivery loop checks between blocks, so it does not wait on the
+//! device.
 
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::render::Outcome;
@@ -14,35 +15,35 @@ use std::thread::JoinHandle;
 
 use crate::playback::PlayError;
 
-/// Lo que el reproductor le cuenta a quien lo controla.
+/// What the player tells whoever controls it.
 #[derive(Clone, PartialEq, Debug)]
 pub enum PlayerEvent {
-    /// Empezó a sonar: con qué formato se abrió el dispositivo y si la
-    /// entrega es bit-perfect.
+    /// It started playing: what format the device was opened with and
+    /// whether the delivery is bit-perfect.
     Started {
         path: PathBuf,
         opened: StreamFormat,
         bit_perfect: bool,
         total_frames: Option<u64>,
-        /// Lo que el archivo dice de sí mismo, cuando se pudo leer.
+        /// What the file says about itself, when it could be read.
         tags: Option<chilpa_tags::Tags>,
-        /// La portada ya extraída a disco, cuando el archivo trae una.
+        /// The cover already extracted to disk, when the file carries one.
         artwork: Option<PathBuf>,
-        /// Qué lugar ocupa en la cola y de cuántas.
+        /// Its place in the queue, and out of how many.
         index: usize,
         queue_len: usize,
-        /// Para DSD: el múltiplo que lo nombra (64, 128…). `None` en PCM.
+        /// For DSD: the multiple that names it (64, 128...). `None` on PCM.
         dsd_multiple: Option<u32>,
     },
-    /// Frames entregados hasta ahora.
+    /// Frames delivered so far.
     Progress { frames: u64 },
-    /// Lo que la estación dice que suena.
+    /// What the station says is playing.
     StreamTitle { title: String },
-    /// Terminó de forma natural.
+    /// It finished naturally.
     Finished { frames: u64 },
-    /// Se detuvo porque alguien lo pidió.
+    /// It stopped because someone asked.
     Stopped { frames: u64 },
-    /// Algo falló, en un texto que la interfaz puede mostrar.
+    /// Something failed, in text the interface can show.
     Failed { message: String },
 }
 
@@ -52,26 +53,26 @@ enum Order {
     Quit,
 }
 
-/// Abre el dispositivo de salida. Se inyecta para que las pruebas usen uno
-/// falso y la aplicación use el real.
+/// Opens the output device. It is injected so the tests use a fake one and
+/// the application uses the real one.
 pub type OpenSink = Box<dyn FnMut(&str, StreamFormat) -> Result<Box<dyn AudioSink + Send>, SinkError> + Send>;
 
-/// Mide un dispositivo por su nombre.
+/// Measures a device by its name.
 pub type ProbeDevice = Box<dyn FnMut(&str) -> Result<DeviceCaps, SinkError> + Send>;
 
-/// El reproductor, visto desde la interfaz.
+/// The player, as the interface sees it.
 pub struct Player {
     orders: Sender<Order>,
     events: Receiver<PlayerEvent>,
     controls: crate::queue_playback::Controls,
-    /// La cola que está sonando. Se comparte con el hilo para poder
-    /// agregarle sin cortar lo que suena.
+    /// The queue that is playing. It is shared with the thread so things
+    /// can be added without cutting off what is playing.
     queue: crate::queue_playback::SharedQueue,
     thread: Option<JoinHandle<()>>,
 }
 
 impl Player {
-    /// Arranca el hilo del reproductor.
+    /// Starts the player thread.
     pub fn spawn(mut probe: ProbeDevice, mut open: OpenSink) -> Self {
         let (orders_tx, orders_rx) = channel::<Order>();
         let (events_tx, events_rx) = channel::<PlayerEvent>();
@@ -91,8 +92,8 @@ impl Player {
                         Order::Quit => break,
                         Order::Stop => {}
                         Order::Play { paths, device, bit_perfect } => {
-                            // Cada pista arranca con la bandera limpia: una
-                            // orden de paro vieja no mata la siguiente.
+                            // Every track starts with the flag clear: an old
+                            // stop order does not kill the next one.
                             stop_thread.reset();
                             pause_thread.set(false);
                             skip_thread.take();
@@ -124,12 +125,12 @@ impl Player {
         Self { orders: orders_tx, events: events_rx, controls, queue, thread: Some(thread) }
     }
 
-    /// Pide reproducir un archivo. Regresa de inmediato.
+    /// Asks to play a file. Returns immediately.
     pub fn play(&self, path: &Path, device: &str, bit_perfect: bool) {
         self.play_all(&[path.to_path_buf()], device, bit_perfect);
     }
 
-    /// Pide reproducir varias pistas en orden, encadenadas.
+    /// Asks to play several tracks in order, one after another.
     pub fn play_all(&self, paths: &[PathBuf], device: &str, bit_perfect: bool) {
         let _ = self.orders.send(Order::Play {
             paths: paths.to_vec(),
@@ -138,7 +139,7 @@ impl Player {
         });
     }
 
-    /// Pausa o reanuda. La pista no pierde su lugar.
+    /// Pauses or resumes. The track does not lose its place.
     pub fn set_paused(&self, paused: bool) {
         self.controls.pause.set(paused);
     }
@@ -147,19 +148,19 @@ impl Player {
         self.controls.pause.is_paused()
     }
 
-    /// Salta a la siguiente pista de la cola. La actual termina como si se
-    /// hubiera acabado, así que la cola avanza en vez de detenerse.
+    /// Skips to the next track in the queue. The current one ends as if it
+    /// had finished, so the queue advances instead of stopping.
     pub fn next(&self) {
         self.controls.skip.skip();
     }
 
-    /// Pide saltar a ese punto de la pista que suena. El salto se atiende
-    /// entre bloques; pedirlo no bloquea.
+    /// Asks to seek to that point of the playing track. The seek is handled
+    /// between blocks; asking does not block.
     pub fn seek(&self, position: std::time::Duration) {
         self.controls.seek.request(position);
     }
 
-    /// Cambia la repetición. Toma efecto al terminar la pista que suena.
+    /// Changes repeat. It takes effect when the playing track ends.
     pub fn set_repeat(&self, repeat: crate::queue_playback::Repeat) {
         self.controls.repeat.set(repeat);
     }
@@ -168,47 +169,47 @@ impl Player {
         self.controls.repeat.get()
     }
 
-    /// Agrega pistas al final de la cola que suena, sin cortarla.
+    /// Adds tracks to the end of the playing queue, without cutting it off.
     ///
-    /// Regresa cuántas quedaron en la cola. Si no hay nada sonando, la cola
-    /// compartida está vacía y quien llama decide si arrancarla.
+    /// Returns how many are left in the queue. If nothing is playing, the
+    /// shared queue is empty and the caller decides whether to start it.
     pub fn enqueue(&self, paths: &[PathBuf]) -> usize {
         self.queue.extend(paths)
     }
 
-    /// Quita una pista de la cola que suena, por su posición dentro de lo
-    /// que se le dio al reproductor. La que ya está sonando no se quita.
+    /// Removes a track from the playing queue, by its position within what
+    /// was given to the player. The one already playing is not removed.
     pub fn remove_from_queue(&self, index: usize) -> bool {
         self.queue.remove(index)
     }
 
-    /// Cuántas pistas trae la cola que suena.
+    /// How many tracks the playing queue carries.
     pub fn queue_len(&self) -> usize {
         self.queue.len()
     }
 
-    /// Baraja la cola que suena. Toma efecto al terminar la pista.
+    /// Shuffles the playing queue. It takes effect when the track ends.
     pub fn shuffle(&self, len: usize) {
         self.controls.order.set(crate::queue_playback::shuffled_now(len), len);
     }
 
-    /// Pone un orden de recorrido para la cola que suena.
+    /// Sets a traversal order for the playing queue.
     pub fn set_order(&self, order: Vec<usize>, len: usize) -> bool {
         self.controls.order.set(order, len)
     }
 
-    /// Vuelve al orden en que se encoló.
+    /// Goes back to the order things were queued in.
     pub fn clear_order(&self) {
         self.controls.order.clear();
     }
 
-    /// Pide parar. No espera al dispositivo.
+    /// Asks to stop. It does not wait on the device.
     pub fn stop(&self) {
         self.controls.stop.stop();
         let _ = self.orders.send(Order::Stop);
     }
 
-    /// Los eventos que haya, sin bloquear.
+    /// Whatever events there are, without blocking.
     pub fn poll(&self) -> Vec<PlayerEvent> {
         let mut out = Vec::new();
         loop {
@@ -247,8 +248,8 @@ fn play(
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
     let total = paths.len();
 
-    // DSD no pasa por el decodificador de PCM: va por DoP, y hoy se
-    // reproduce de a una pista.
+    // DSD does not go through the PCM decoder: it goes over DoP, and
+    // today it plays one track at a time.
     if let Some(first) = paths.first() {
         if is_url(first) {
             return play_stream(first, device, &caps, policy, stop, pause, open, events);
@@ -270,9 +271,9 @@ fn play(
         controls,
         |format| open(device, format),
         &mut |index, path, delivery| {
-            // Los tags y la portada se leen al arrancar cada pista, no al
-            // encolarla: una cola larga no debe leer cientos de archivos
-            // antes de que suene el primero.
+            // Tags and the cover are read as each track starts, not as it is
+            // queued: a long queue must not read hundreds of files before the
+            // first one plays.
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
             let artwork = chilpa_tags::extract_artwork(path, &crate::artwork_cache()).ok().flatten();
             let total_frames = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
@@ -293,19 +294,19 @@ fn play(
         },
     )?;
 
-    // El final de la cola es el final de su última pista.
+    // The end of the queue is the end of its last track.
     Ok(results
         .last()
         .map(|r| r.outcome.clone())
         .unwrap_or(Outcome::Finished { frames: 0 }))
 }
 
-/// Cierto si lo que se pidió es una URL y no un archivo.
+/// True if what was asked for is a URL and not a file.
 fn is_url(path: &Path) -> bool {
     path.to_string_lossy().starts_with("http://") || path.to_string_lossy().starts_with("https://")
 }
 
-/// Reproduce una radio o cualquier stream por HTTP.
+/// Plays a radio, or any stream over HTTP.
 #[allow(clippy::too_many_arguments)]
 fn play_stream(
     url: &Path,
@@ -352,8 +353,8 @@ fn play_stream(
             });
         },
         &mut |frames| {
-            // El título de la estación cambia con cada canción; se publica
-            // con el progreso, que es lo único que viaja seguido.
+            // The station title changes with every song; it is published
+            // with the progress, which is the only thing that travels often.
             if let Some(title) = titles.get() {
                 let _ = events.send(PlayerEvent::StreamTitle { title: title });
             }
@@ -363,7 +364,7 @@ fn play_stream(
     Ok(played.outcome)
 }
 
-/// Cierto si el archivo es una imagen de SACD.
+/// True if the file is a SACD image.
 fn is_sacd(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
@@ -371,16 +372,16 @@ fn is_sacd(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Reproduce las pistas del área estéreo de una imagen de SACD, en orden.
+/// Plays the tracks of a SACD image's stereo area, in order.
 #[allow(clippy::too_many_arguments)]
-/// Un CD se pide como `cdda:/dev/sr0`. El prefijo no es adorno: un nodo de
-/// dispositivo a secas no se distingue de un archivo, y abrir la unidad por
-/// equivocación asusta a cualquiera.
+/// A CD is asked for as `cdda:/dev/sr0`. The prefix is not decoration: a
+/// bare device node is indistinguishable from a file, and opening the drive
+/// by mistake startles anyone.
 fn is_cd(path: &Path) -> bool {
     path.to_string_lossy().starts_with("cdda:")
 }
 
-/// La unidad que pide una ruta `cdda:`.
+/// The drive a `cdda:` path asks for.
 pub fn cd_device_of(path: &Path) -> Option<PathBuf> {
     let s = path.to_string_lossy();
     let node = s.strip_prefix("cdda:")?;
@@ -425,7 +426,7 @@ fn play_cd(
         };
         let events = events.clone();
         let path = path.to_path_buf();
-        // Un CD son 44 100 frames por segundo, y sus sectores ya son PCM.
+        // A CD is 44,100 frames per second, and its sectors are already PCM.
         let duration = Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64);
 
         let played = crate::cd_playback::play_track(
@@ -440,8 +441,8 @@ fn play_cd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
-                        // Un CD entregado tal cual siempre es bit-perfect:
-                        // si la salida no acepta 16/44.1, no se abre.
+                        // A CD delivered as is is always bit-perfect: if
+                        // the output does not accept 16/44.1, it is not opened.
                         bit_perfect: true,
                         total_frames: duration,
                         tags: Some(tag.clone()),
@@ -459,8 +460,8 @@ fn play_cd(
         )
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
 
-        // Un sector ilegible corta la pista, y se dice en vez de rellenar
-        // con silencio.
+        // An unreadable sector cuts the track, and it is said instead of
+        // padding with silence.
         if let Some(problem) = played.read_error {
             let _ = events.send(PlayerEvent::Failed {
                 message: format!("pista {}: {problem}", track.number),
@@ -514,8 +515,8 @@ fn play_sacd(
             return Ok(Outcome::Stopped { frames: ultimo.frames() });
         }
         skip.take();
-        // Cada pista abre la imagen otra vez: el lector se queda con ella, y
-        // así una pista que falla no se lleva el resto del disco.
+        // Every track opens the image again: the reader keeps hold of it, so
+        // a track that fails does not take the rest of the disc with it.
         let image = chilpa_sacd::open(path)
             .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
         let mut lector = chilpa_sacd::SacdTrackReader::open(image, track)
@@ -566,7 +567,7 @@ fn play_sacd(
     Ok(ultimo)
 }
 
-/// Cierto si el archivo es DSD por su extensión.
+/// True if the file is DSD by its extension.
 fn is_dsd(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())
@@ -574,7 +575,7 @@ fn is_dsd(path: &Path) -> bool {
         .unwrap_or(false)
 }
 
-/// Reproduce un archivo DSD y cuenta lo mismo que la ruta de PCM.
+/// Plays a DSD file and reports the same things the PCM path does.
 #[allow(clippy::too_many_arguments)]
 fn play_dsd(
     path: &Path,
@@ -635,8 +636,8 @@ mod tests {
     #[test]
     fn a_cd_path_is_recognized_by_its_prefix() {
         assert!(is_cd(Path::new("cdda:/dev/sr0")));
-        // Un nodo de dispositivo a secas NO es un CD: abrir la unidad por
-        // equivocación asusta a cualquiera.
+        // A bare device node is NOT a CD: opening the drive by mistake
+        // startles anyone.
         assert!(!is_cd(Path::new("/dev/sr0")));
         assert!(!is_cd(Path::new("/musica/una.flac")));
     }
@@ -771,13 +772,13 @@ mod tests {
     fn skipping_advances_the_queue_instead_of_stopping_it() {
         let written = Arc::new(AtomicU64::new(0));
         let p = player(Arc::clone(&written));
-        // Pistas largas: sin saltar, la prueba tardaría en llegar al final.
+        // Long tracks: without skipping, the test would take a while to reach the end.
         let a = wav("saltar-a", 400_000);
         let b = wav("saltar-b", 1_000);
         p.play_all(&[a.clone(), b.clone()], "falso", true);
 
-        // En cuanto arranca la primera, se pide saltar. Los eventos se
-        // juntan de las dos esperas: cada una consume lo que ya recogió.
+        // As soon as the first one starts, a skip is asked for. The events
+        // are gathered from both waits: each one consumes what it picked up.
         let mut events =
             wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Started { .. })));
         p.next();

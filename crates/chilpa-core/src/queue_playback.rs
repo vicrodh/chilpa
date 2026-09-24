@@ -1,12 +1,12 @@
-//! Reproducir varias pistas seguidas.
+//! Playing several tracks in a row.
 //!
-//! La cola encadena sin hueco mientras el formato del stream no cambie. Si
-//! cambia, hay que reabrir el dispositivo y el corte es inevitable: se
-//! reporta, no se disimula.
+//! The queue chains with no gap as long as the stream format does not
+//! change. If it changes, the device has to be reopened and the break is
+//! unavoidable: it is reported, not hidden.
 //!
-//! Cada pista termina con su propio [`Outcome`], y solo un fin natural deja
-//! pasar a la siguiente. Una falla del dispositivo detiene la cola ahí mismo,
-//! que es justo lo que QBZ no hacía: se saltaba todo en silencio.
+//! Every track ends with its own [`Outcome`], and only a natural end lets
+//! the next one through. A device failure stops the queue right there, which
+//! is exactly what QBZ did not do: it skipped everything in silence.
 
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
@@ -20,23 +20,23 @@ use std::path::{Path, PathBuf};
 
 use crate::playback::PlayError;
 
-/// Qué hacer al llegar al final de la cola.
+/// What to do on reaching the end of the queue.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Repeat {
-    /// Se acaba la cola y se para.
+    /// The queue ends and it stops.
     #[default]
     Off = 0,
-    /// Vuelve a empezar desde la primera.
+    /// It starts over from the first one.
     All = 1,
-    /// Repite la pista que suena. Saltar de pista sí avanza: repetir no es
-    /// quedarse atorado.
+    /// Repeats the playing track. Skipping does advance: repeating is not
+    /// getting stuck.
     One = 2,
 }
 
-/// La repetición, compartida con quien maneja la cola.
+/// Repeat, shared with whoever drives the queue.
 ///
-/// Se puede cambiar mientras algo suena y se atiende al terminar la pista:
-/// cortar el audio para cambiar de modo no tendría sentido.
+/// It can be changed while something is playing and is handled when the
+/// track ends: cutting the audio to change mode would make no sense.
 #[derive(Clone, Default)]
 pub struct RepeatMode(std::sync::Arc<std::sync::atomic::AtomicU8>);
 
@@ -60,17 +60,17 @@ impl RepeatMode {
     }
 }
 
-/// La lista de pistas, compartida con quien maneja la cola.
+/// The list of tracks, shared with whoever drives the queue.
 ///
-/// Se puede agregar mientras suena: encolar algo no debería cortar lo que
-/// está sonando ni obligar a rearmar la cola desde el principio. El lazo
-/// vuelve a leer el largo en cada pista, así que lo agregado entra solo.
+/// Things can be added while it plays: queueing something should not cut
+/// off what is playing or force rebuilding the queue from scratch. The loop
+/// reads the length again on every track, so what is added comes in by itself.
 #[derive(Clone, Default)]
 pub struct SharedQueue(std::sync::Arc<std::sync::Mutex<Vec<Entry>>>);
 
-/// Una pista de la cola. Quitarla no la saca del arreglo: se marca, y así
-/// las posiciones de las demás no se mueven bajo los pies de quien está
-/// reproduciendo.
+/// A track in the queue. Removing it does not take it out of the array: it
+/// is marked, so the other positions do not move under the feet of whoever
+/// is playing.
 #[derive(Clone, PartialEq, Eq, Debug)]
 struct Entry {
     path: PathBuf,
@@ -88,7 +88,7 @@ impl SharedQueue {
         }
     }
 
-    /// Agrega al final. Regresa el largo nuevo.
+    /// Adds at the end. Returns the new length.
     pub fn extend(&self, paths: &[PathBuf]) -> usize {
         match self.0.lock() {
             Ok(mut g) => {
@@ -99,7 +99,7 @@ impl SharedQueue {
         }
     }
 
-    /// Cuántas posiciones tiene, incluyendo las quitadas.
+    /// How many positions it has, counting the removed ones.
     pub fn len(&self) -> usize {
         self.0.lock().map(|g| g.len()).unwrap_or(0)
     }
@@ -108,7 +108,7 @@ impl SharedQueue {
         self.len() == 0
     }
 
-    /// Quita una pista de la cola. La posición se conserva vacía.
+    /// Removes a track from the queue. The position is kept, empty.
     pub fn remove(&self, i: usize) -> bool {
         match self.0.lock() {
             Ok(mut g) => match g.get_mut(i) {
@@ -122,20 +122,20 @@ impl SharedQueue {
         }
     }
 
-    /// Cierto si esa posición ya se quitó.
+    /// True if that position has already been removed.
     pub fn is_removed(&self, i: usize) -> bool {
         self.0.lock().ok().and_then(|g| g.get(i).map(|e| e.removed)).unwrap_or(false)
     }
 
-    /// La pista de esa posición, o `None` si no existe o si se quitó.
+    /// The track at that position, or `None` if it does not exist or was removed.
     pub fn get(&self, i: usize) -> Option<PathBuf> {
         let g = self.0.lock().ok()?;
         let e = g.get(i)?;
         (!e.removed).then(|| e.path.clone())
     }
 
-    /// Todas las rutas, incluyendo las quitadas, para que quien muestre la
-    /// cola sepa de qué posición habla.
+    /// Every path, including the removed ones, so whoever shows the queue
+    /// knows which position it is talking about.
     pub fn to_vec(&self) -> Vec<PathBuf> {
         self.0.lock().map(|g| g.iter().map(|e| e.path.clone()).collect()).unwrap_or_default()
     }
@@ -145,11 +145,11 @@ fn entries(paths: Vec<PathBuf>) -> Vec<Entry> {
     paths.into_iter().map(|path| Entry { path, removed: false }).collect()
 }
 
-/// El orden en que se recorre la cola, compartido.
+/// The order the queue is traversed in, shared.
 ///
-/// Se puede cambiar mientras algo suena: al terminar la pista se busca dónde
-/// quedó en el orden nuevo y se sigue desde ahí, sin cortar el audio. Vacío
-/// quiere decir el orden del arreglo.
+/// It can be changed while something is playing: when the track ends, where
+/// it landed in the new order is looked up and it goes on from there,
+/// without cutting the audio. Empty means the array's own order.
 #[derive(Clone, Default)]
 pub struct Order(std::sync::Arc<std::sync::Mutex<Vec<usize>>>);
 
@@ -158,8 +158,8 @@ impl Order {
         Self::default()
     }
 
-    /// Pone un orden. Uno que no sea una permutación de `0..len` se ignora:
-    /// un orden a medias dejaría pistas sin sonar o sonando dos veces.
+    /// Sets an order. One that is not a permutation of `0..len` is ignored: a
+    /// half order would leave tracks unplayed or playing twice.
     pub fn set(&self, order: Vec<usize>, len: usize) -> bool {
         if !is_permutation(&order, len) {
             return false;
@@ -171,7 +171,7 @@ impl Order {
         false
     }
 
-    /// Vuelve al orden del arreglo.
+    /// Goes back to the array's own order.
     pub fn clear(&self) {
         if let Ok(mut g) = self.0.lock() {
             g.clear();
@@ -182,11 +182,11 @@ impl Order {
         self.0.lock().map(|g| g.clone()).unwrap_or_default()
     }
 
-    /// Qué pista sigue después de `actual`, o `None` si ahí se acaba.
+    /// Which track comes after `current`, or `None` if it ends there.
     fn next(&self, actual: usize, len: usize, wrap: bool) -> Option<usize> {
         let order = self.get();
         if order.len() != len {
-            // Sin orden propio, la cola va como viene.
+            // With no order of its own, the queue goes as it comes.
             let n = actual + 1;
             return if n < len {
                 Some(n)
@@ -196,8 +196,8 @@ impl Order {
                 None
             };
         }
-        // Se busca dónde quedó la pista actual: si el orden cambió a media
-        // reproducción, se sigue desde su lugar nuevo.
+        // Where the current track landed is looked up: if the order changed
+        // mid playback, it goes on from its new place.
         let pos = order.iter().position(|i| *i == actual)?;
         match order.get(pos + 1) {
             Some(n) => Some(*n),
@@ -206,22 +206,21 @@ impl Order {
         }
     }
 
-    /// Por dónde empieza.
+    /// Where it starts.
     fn first(&self, len: usize) -> usize {
         let order = self.get();
         if order.len() == len { order.first().copied().unwrap_or(0) } else { 0 }
     }
 }
 
-/// Una permutación al azar de `0..len`.
+/// A random permutation of `0..len`.
 ///
-/// El generador es un xorshift de tres líneas: para barajar una cola no hace
-/// falta nada mejor, y una dependencia más es una dependencia más.
+/// The generator is a three line xorshift: shuffling a queue needs nothing
+/// better, and one more dependency is one more dependency.
 pub fn shuffled(len: usize, seed: u64) -> Vec<usize> {
     let mut order: Vec<usize> = (0..len).collect();
     let mut x = seed | 1;
-    // Fisher-Yates, de atrás hacia adelante: cada permutación sale con la
-    // misma probabilidad.
+    // Fisher and Yates, from the end backwards: every ordering is as likely.
     for i in (1..len).rev() {
         x ^= x << 13;
         x ^= x >> 7;
@@ -231,7 +230,7 @@ pub fn shuffled(len: usize, seed: u64) -> Vec<usize> {
     order
 }
 
-/// Lo mismo, sembrado con el reloj.
+/// The same, seeded from the clock.
 pub fn shuffled_now(len: usize) -> Vec<usize> {
     let seed = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -254,10 +253,11 @@ fn is_permutation(order: &[usize], len: usize) -> bool {
     true
 }
 
-/// Las señales con las que se maneja una cola mientras suena.
+/// The signals a queue is driven with while it plays.
 ///
-/// Van juntas porque siempre se usan juntas, y porque todas se miran entre
-/// bloques o entre pistas: ninguna bloquea esperando al dispositivo.
+/// They travel together because they are always used together, and because
+/// all of them are checked between blocks or between tracks: none of them
+/// blocks waiting on the device.
 #[derive(Clone, Default)]
 pub struct Controls {
     pub stop: StopSignal,
@@ -274,12 +274,12 @@ impl Controls {
     }
 }
 
-/// Cómo terminó una pista de la cola.
+/// How a track in the queue ended.
 pub struct TrackResult {
     pub path: PathBuf,
     pub delivery: Delivery,
     pub outcome: Outcome,
-    /// Cómo se llegó a esta pista desde la anterior.
+    /// How this track was reached from the previous one.
     pub transition: Transition,
 }
 
@@ -289,25 +289,25 @@ impl TrackResult {
     }
 }
 
-/// Fuente de una pista, con su recorte de relleno aplicado.
+/// A track's source, with its padding trim applied.
 struct TrackFrames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
     trimmer: Trimmer,
     exhausted: bool,
-    /// Dónde se piden los saltos. Se atienden entre bloques, nunca a media
-    /// escritura.
+    /// Where seeks are asked for. They are handled between blocks, never mid
+    /// write.
     seek: SeekSignal,
-    /// Dónde se pide saltar de pista. Se atiende terminando la fuente, que
-    /// es lo que hace que la cola avance en lugar de detenerse.
+    /// Where a track skip is asked for. It is handled by ending the source,
+    /// which is what makes the queue advance instead of stopping.
     skip: SkipSignal,
-    /// Cierto si esta pista terminó porque alguien saltó, no porque se
-    /// acabara.
+    /// True if this track ended because someone skipped, not because it
+    /// ran out.
     skipped: bool,
-    /// Frames que hay que tirar para caer en el punto exacto pedido.
+    /// Frames to throw away to land on the exact point asked for.
     discard: u64,
-    /// Dónde cayó el último salto. La posición que ve la interfaz cuenta
-    /// desde el archivo, así que a los frames entregados se les suma esto.
+    /// Where the last seek landed. The position the interface sees counts
+    /// from the file, so this is added to the delivered frames.
     base: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
@@ -328,13 +328,14 @@ impl FrameSource for TrackFrames<'_> {
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
                         self.discard = plan.discard;
-                        // La base es el punto PEDIDO, no donde aterrizó el
-                        // contenedor: los frames que se descartan no salen,
-                        // así que sumarlos aparte dejaría la posición corta.
+                        // The base is the point ASKED FOR, not where the
+                        // container landed: the discarded frames never come
+                        // out, so counting them separately would leave the
+                        // position short.
                         self.base.store(frame, std::sync::atomic::Ordering::Relaxed);
                     }
-                    // Un contenedor que no sabe saltar sigue sonando desde
-                    // donde iba, en vez de tirar la pista.
+                    // A container that cannot seek goes on playing from
+                    // where it was, instead of dropping the track.
                     Err(_) => self.discard = 0,
                 }
             }
@@ -360,7 +361,7 @@ impl FrameSource for TrackFrames<'_> {
                     bytes
                 }
                 Ok(None) => {
-                    // Lo que quedó retenido era relleno del codificador.
+                    // What was held back was encoder padding.
                     self.exhausted = true;
                     self.trimmer.finish();
                     return None;
@@ -375,8 +376,8 @@ impl FrameSource for TrackFrames<'_> {
 }
 
 impl TrackFrames<'_> {
-    /// Tira los frames que sobran de un salto, que pueden abarcar varios
-    /// bloques.
+    /// Throws away the leftover frames of a seek, which can span several
+    /// blocks.
     fn drop_discard(&mut self, data: Vec<i32>, channels: usize) -> Vec<i32> {
         if self.discard == 0 {
             return data;
@@ -392,10 +393,10 @@ impl TrackFrames<'_> {
     }
 }
 
-/// Reproduce las pistas en orden.
+/// Plays the tracks in order.
 ///
-/// `open_sink` abre el dispositivo con el formato que se le pase. Se le llama
-/// una vez por cada renegociación, no una vez por pista.
+/// `open_sink` opens the device with the format it is handed. It is called
+/// once per renegotiation, not once per track.
 pub fn play_queue<F, K>(
     paths: &[PathBuf],
     caps: &DeviceCaps,
@@ -419,10 +420,10 @@ where
     )
 }
 
-/// Lo mismo, avisando cuándo arranca cada pista y cuántos frames lleva.
+/// The same, reporting when each track starts and how many frames it has.
 ///
-/// `on_track` recibe el índice, la ruta y cómo quedó la entrega; `on_progress`
-/// el índice y los frames entregados de esa pista.
+/// `on_track` receives the index, the path and how the delivery turned out;
+/// `on_progress` the index and the frames delivered for that track.
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_with<F, K>(
     queue: &SharedQueue,
@@ -441,16 +442,16 @@ where
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());
-    // Un archivo que no entrega un solo frame y una repetición encendida
-    // serían un lazo que gira para siempre. Se cuenta cuántas pistas
-    // seguidas no sonaron y se corta al dar una vuelta completa.
+    // A file that delivers not one frame plus repeat turned on would be a
+    // loop that spins forever. How many tracks in a row did not play is
+    // counted, and it cuts off after one full lap.
     let mut consecutive_silent = 0usize;
 
-    // El largo se vuelve a leer en cada vuelta: la cola puede crecer
-    // mientras suena.
+    // The length is read again on every lap: the queue can grow while it
+    // plays.
     loop {
-        // Una pista quitada se salta sin sonar; si ya no queda ninguna, se
-        // acabó la cola.
+        // A removed track is skipped without playing; if none are left, the
+        // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
         let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
@@ -494,8 +495,8 @@ where
             });
         let finished_ok = outcome.may_advance_queue();
         consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
-        // Saltar de pista termina la fuente igual que un final natural, así
-        // que hay que preguntarle: con repeat-one, saltar avanza.
+        // Skipping a track ends the source just like a natural end, so it has
+        // to be asked: with repeat-one, skipping advances.
         let skipped = frames.skipped;
         results.push(TrackResult {
             path: path.clone(),
@@ -522,11 +523,11 @@ where
     Ok(results)
 }
 
-/// La pista de `indice`, saltándose las que se quitaron.
+/// The track at `index`, skipping the removed ones.
 ///
-/// Avanza `indice` hasta dar con una viva. Devuelve `None` cuando ya no
-/// queda ninguna, contando las vueltas para no girar para siempre si se
-/// quitó la cola entera con la repetición encendida.
+/// Advances `index` until it finds a live one. Returns `None` when none
+/// are left, counting laps so as not to spin forever if the whole queue
+/// was removed with repeat turned on.
 fn next_live(
     queue: &SharedQueue,
     order: &Order,
@@ -546,12 +547,12 @@ fn next_live(
     None
 }
 
-/// Cuántas veces se reabrió el dispositivo en una cola ya reproducida.
+/// How many times the device was reopened over an already played queue.
 pub fn renegotiations(results: &[TrackResult]) -> usize {
     results.iter().filter(|r| !r.transition.is_seamless()).count()
 }
 
-/// Las pistas que sí sonaron completas.
+/// The tracks that did play all the way through.
 pub fn finished(results: &[TrackResult]) -> impl Iterator<Item = &Path> {
     results
         .iter()
@@ -586,7 +587,7 @@ mod tests {
     fn changing_the_order_mid_queue_continues_from_where_it_was() {
         let o = Order::new();
         assert!(o.set(vec![0, 1, 2, 3], 4));
-        // Suena la 1 y se reordena: lo que sigue es lo que la siga ahora.
+        // Track 1 plays and the order changes: what comes next is whatever follows it now.
         assert!(o.set(vec![3, 1, 0, 2], 4));
         assert_eq!(o.next(1, 4, false), Some(0));
     }

@@ -1,13 +1,13 @@
-//! Reproducir DSD por DoP.
+//! Playing DSD over DoP.
 //!
-//! DoP mete los bits de DSD dentro de palabras PCM de 24 bits, bajo un marker
-//! que alterna. Para el dispositivo es un stream normal de 24 bits a la
-//! frecuencia portadora; para el DAC es DSD. Por eso la ruta es la misma de
-//! siempre: negociar, empaquetar y entregar.
+//! DoP puts the DSD bits inside 24 bit PCM words, under an alternating
+//! marker. To the device it is an ordinary 24 bit stream at the carrier
+//! rate; to the DAC it is DSD. That is why the path is the usual one:
+//! negotiate, pack and deliver.
 //!
-//! La única diferencia, y es la importante: si el dispositivo no puede abrir
-//! esa frecuencia exacta, NO se convierte nada. Un DoP resampleado no es DSD
-//! degradado, es ruido.
+//! The one difference, and it is the important one: if the device cannot
+//! open that exact rate, nothing is converted. Resampled DoP is not degraded
+//! DSD, it is noise.
 
 use chilpa_audio::dop::{carrier_rate, DopPacker};
 use chilpa_audio::format::{SampleFormat, StreamFormat};
@@ -20,7 +20,7 @@ use std::path::Path;
 #[derive(Debug)]
 pub enum DsdPlayError {
     Read(DsdError),
-    /// El dispositivo no puede con la frecuencia portadora.
+    /// The device cannot handle the carrier rate.
     Unsupported { carrier_hz: u32 },
     Sink(SinkError),
 }
@@ -38,7 +38,7 @@ impl std::fmt::Display for DsdPlayError {
     }
 }
 
-/// Convierte bloques de DSD en palabras DoP listas para el cable.
+/// Turns DSD blocks into DoP words ready for the cable.
 struct DopFrames<'a> {
     source: &'a mut dyn DsdSource,
     packer: DopPacker,
@@ -57,8 +57,8 @@ impl FrameSource for DopFrames<'_> {
         if words.is_empty() {
             return None;
         }
-        // Las palabras ya vienen justificadas a la izquierda dentro de 32
-        // bits: al cable van tal cual, sin tocar un bit.
+        // The words already come left justified inside 32 bits: they go to
+        // the cable as they are, without touching a bit.
         let mut bytes = Vec::with_capacity(words.len() * 4);
         for word in words {
             bytes.extend_from_slice(&word.to_le_bytes());
@@ -68,18 +68,18 @@ impl FrameSource for DopFrames<'_> {
     }
 }
 
-/// Lo que pasó al reproducir DSD.
+/// What happened while playing DSD.
 #[derive(Debug)]
 pub struct DsdPlayed {
     pub delivery: Delivery,
     pub outcome: Outcome,
-    /// La frecuencia del portador PCM que se usó.
+    /// The rate of the PCM carrier that was used.
     pub carrier_hz: u32,
 }
 
-/// Reproduce una fuente de DSD por DoP.
+/// Plays a DSD source over DoP.
 ///
-/// `open_sink` recibe el formato negociado, igual que en la ruta de PCM.
+/// `open_sink` receives the negotiated format, just as on the PCM path.
 pub fn play_dsd<F, K>(
     source: &mut dyn DsdSource,
     caps: &DeviceCaps,
@@ -97,8 +97,8 @@ where
     let carrier_hz = carrier_rate(info.dsd_rate_hz);
     let request = StreamFormat::new(SampleFormat::S32, carrier_hz, info.channels);
 
-    // Bit-perfect siempre: convertir DoP lo vuelve ruido, así que aquí no hay
-    // política que elegir.
+    // Always bit-perfect: converting DoP turns it into noise, so there is no
+    // policy to choose here.
     let delivery = match negotiate(request, caps, Policy::BitPerfect) {
         Ok(d) => d,
         Err(NegotiationError::Unsupported { .. }) | Err(NegotiationError::CapsNotProbed) => {
@@ -113,7 +113,7 @@ where
     Ok(DsdPlayed { delivery, outcome, carrier_hz })
 }
 
-/// Abre un archivo DSF y lo reproduce por DoP.
+/// Opens a DSF file and plays it over DoP.
 pub fn play_dsf<F, K>(
     path: &Path,
     caps: &DeviceCaps,
@@ -135,7 +135,7 @@ mod tests {
     use super::*;
     use chilpa_dsd::DsdInfo;
 
-    /// Una fuente de DSD de mentiras con bloques conocidos.
+    /// A fake DSD source with known blocks.
     struct TestSource {
         info: DsdInfo,
         blocks: Vec<Vec<Vec<u8>>>,
@@ -208,7 +208,7 @@ mod tests {
         assert_eq!(played.delivery.opened.sample_rate_hz, 176_400);
         assert!(played.delivery.is_bit_perfect());
 
-        // Primera palabra: marker 0x05 y la carga del archivo, justificada.
+        // First word: marker 0x05 and the file's payload, justified.
         let first = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
         assert_eq!(first, ((0x05 << 16) | 0xABCD) << 8);
     }

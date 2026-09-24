@@ -1,8 +1,8 @@
-//! Reproducir un archivo local de principio a fin.
+//! Playing a local file from start to finish.
 //!
-//! Es la rebanada vertical que amarra todo: decodificar sin tocar los
-//! enteros, medir el dispositivo, negociar un formato exacto y entregar sin
-//! confundir una falla con un fin de pista.
+//! It is the vertical slice that ties everything together: decode without
+//! touching the integers, measure the device, negotiate an exact format and
+//! deliver without mistaking a failure for the end of a track.
 
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::negotiate::{negotiate, Delivery, NegotiationError, Policy};
@@ -40,12 +40,12 @@ impl std::fmt::Display for PlayError {
     }
 }
 
-/// Puente entre el decodificador y el dispositivo: cada bloque se empaqueta
-/// en el formato con el que se abrió la salida.
+/// Bridge between the decoder and the device: every block is packed in the
+/// format the output was opened with.
 struct Frames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
-    /// El primer error de empaquetado, para reportarlo en vez de callarlo.
+    /// The first packing error, to report it instead of swallowing it.
     error: Option<PackError>,
 }
 
@@ -73,22 +73,22 @@ impl FrameSource for Frames<'_> {
     }
 }
 
-/// Lo que pasó al reproducir.
+/// What happened while playing.
 pub struct Played {
     pub delivery: Delivery,
     pub outcome: Outcome,
-    /// Cuántos frames tenía la pista, cuando el contenedor lo dice.
+    /// How many frames the track had, when the container says so.
     pub total_frames: Option<u64>,
 }
 
 /// Reproduce un stream de red.
 ///
-/// No hay duración ni búsqueda: un stream se oye hasta que se corta o hasta
-/// que alguien lo para.
+/// There is no duration and no seeking: a stream plays until it is cut off
+/// or until someone stops it.
 ///
-/// `on_delivery` se llama con la entrega ya negociada, antes de abrir el
-/// dispositivo: es el único momento en que se sabe si el stream va
-/// bit-perfect, porque en una radio no hay un final donde decirlo después.
+/// `on_delivery` is called with the delivery already negotiated, before the
+/// device is opened: it is the only moment when it is known whether the
+/// stream goes bit-perfect, because a radio has no end at which to say so.
 #[allow(clippy::too_many_arguments)]
 pub fn play_stream<F, K>(
     stream: chilpa_stream::HttpStream,
@@ -119,11 +119,11 @@ where
     Ok(Played { delivery, outcome, total_frames: None })
 }
 
-/// Reproduce un archivo en un dispositivo, con la política dada.
+/// Plays a file on a device, with the given policy.
 ///
-/// `open_sink` recibe el formato negociado y entrega el dispositivo abierto;
-/// así el core no depende de un backend concreto y las pruebas usan uno
-/// falso.
+/// `open_sink` receives the negotiated format and hands back the opened
+/// device; that way the core does not depend on a concrete backend and the
+/// tests use a fake one.
 pub fn play_file<F, K>(
     path: &Path,
     caps: &chilpa_audio::negotiate::DeviceCaps,
@@ -138,7 +138,7 @@ where
     play_file_with(path, caps, policy, stop, open_sink, &mut |_| {})
 }
 
-/// Lo mismo, avisando el progreso en frames mientras suena.
+/// The same, reporting progress in frames while it plays.
 pub fn play_file_with<F, K>(
     path: &Path,
     caps: &chilpa_audio::negotiate::DeviceCaps,

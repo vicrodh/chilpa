@@ -1,11 +1,10 @@
-//! El invariante del proyecto: lo que sale por el cable es, muestra por
-//! muestra, lo que traía el archivo.
+//! The project's invariant: what goes out the cable is, sample by sample,
+//! what the file carried.
 //!
-//! La prueba no necesita un DAC: el dispositivo es un capturador en memoria
-//! que guarda cada byte que recibe. Se genera un WAV, se reproduce y se
-//! compara lo capturado contra las muestras originales. Si alguien mete un
-//! resampleo, una conversión a flotante o un volumen por software en la
-//! ruta, esta prueba lo caza.
+//! The test needs no DAC: the device is an in-memory capture that keeps
+//! every byte it receives. A WAV is generated, played, and what was captured
+//! is compared against the original samples. If anyone puts a resample, a
+//! float conversion or a software volume in the path, this test catches it.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -15,7 +14,7 @@ use chilpa_core::playback::play_file;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-/// Dispositivo de mentiras que se queda con todo lo que le escriben.
+/// A fake device that keeps everything written to it.
 #[derive(Default)]
 struct Capturador {
     stream: Option<StreamFormat>,
@@ -39,7 +38,7 @@ impl AudioSink for Handle<'_> {
     }
 }
 
-/// Escribe un WAV PCM con esas muestras enteras.
+/// Writes a PCM WAV with those integer samples.
 fn write_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u16) {
     let bytes_per_sample = u32::from(bits) / 8;
     let data_len = samples.len() as u32 * bytes_per_sample;
@@ -50,7 +49,7 @@ fn write_wav(path: &Path, samples: &[i32], bits: u16, rate: u32, channels: u16) 
     f.write_all(&(36 + data_len).to_le_bytes()).unwrap();
     f.write_all(b"WAVEfmt ").unwrap();
     f.write_all(&16u32.to_le_bytes()).unwrap();
-    f.write_all(&1u16.to_le_bytes()).unwrap(); // PCM entero
+    f.write_all(&1u16.to_le_bytes()).unwrap(); // Integer PCM
     f.write_all(&channels.to_le_bytes()).unwrap();
     f.write_all(&rate.to_le_bytes()).unwrap();
     f.write_all(&byte_rate.to_le_bytes()).unwrap();
@@ -73,8 +72,8 @@ fn temporal(name: &str) -> PathBuf {
     p
 }
 
-/// Muestras que pegan en los bordes: silencio, ±1 LSB, y los extremos del
-/// rango, que es justo donde el escalado por flotante se equivocaba.
+/// Samples that hit the edges: silence, +/-1 LSB, and the ends of the range,
+/// which is exactly where float scaling used to get it wrong.
 fn samples(bits: u8) -> Vec<i32> {
     let max = (1i64 << (bits - 1)) as i32 - 1;
     let min = -(1i64 << (bits - 1)) as i32;
@@ -83,8 +82,8 @@ fn samples(bits: u8) -> Vec<i32> {
         v.push((max / 64) * i - (max / 2));
     }
     v.extend_from_slice(&[max, min]);
-    // Estéreo: el canal derecho va invertido. El mínimo no tiene opuesto
-    // dentro del rango, así que ahí se usa el máximo.
+    // Stereo: the right channel is inverted. The minimum has no opposite
+    // inside the range, so the maximum is used there.
     v.iter().flat_map(|&s| [s, if s == min { max } else { -s }]).collect()
 }
 
@@ -149,7 +148,7 @@ fn a_24_bit_wav_goes_out_identical_over_the_wire() {
     .expect("debe reproducir");
 
     assert!(played.delivery.is_bit_perfect());
-    // S24In32 va justificado a la izquierda: los 24 bits válidos arriba.
+    // S24In32 is left justified: the 24 valid bits on top.
     let came_out: Vec<i32> = cap
         .bytes
         .chunks_exact(4)

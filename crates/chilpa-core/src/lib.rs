@@ -1,7 +1,7 @@
-//! El core headless de Chilpa: biblioteca, player, sources y plugins.
+//! Chilpa's headless core: library, player, sources and plugins.
 //!
-//! Nadie habla con este crate desde un frontend. La única puerta pública es
-//! `chilpa-api` (ADR-001); aquí adentro vive la implementación.
+//! No frontend talks to this crate. The only public door is `chilpa-api`
+//! (ADR-001); the implementation lives in here.
 
 #[cfg(target_os = "linux")]
 pub mod analysis_job;
@@ -13,17 +13,17 @@ pub mod settings;
 pub mod wizard;
 pub mod queue_playback;
 
-/// Lo que sale por el dispositivo, para quien lo quiera dibujar.
+/// What goes out the device, for whoever wants to draw it.
 pub use chilpa_audio::{spectrum, tap};
 
-/// Una petición hecha por cuenta de un plugin. La credencial la pone quien
-/// llama, nunca el plugin (ADR-007).
+/// A request made on a plugin's behalf. The caller supplies the credential,
+/// never the plugin (ADR-007).
 pub use chilpa_stream::send_request;
 
 use chilpa_models::SourceId;
 
-/// Estado del proceso, por ahora vacío. Crece conforme entran los crates
-/// portados.
+/// The process's state, empty for now. It grows as the ported crates
+/// arrive.
 #[derive(Default)]
 pub struct Core {
     sources: Vec<SourceId>,
@@ -34,24 +34,24 @@ impl Core {
         Self { sources: vec![SourceId::local()] }
     }
 
-    /// Los sources registrados, en el orden en que se agregaron.
+    /// The registered sources, in the order they were added.
     pub fn sources(&self) -> &[SourceId] {
         &self.sources
     }
 }
 
-/// Una salida disponible, vista desde la fachada.
+/// An available output, as the facade sees it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Output {
     pub id: String,
     pub label: String,
 }
 
-/// Las salidas de la máquina, más la de diagnóstico.
+/// The machine's outputs, plus the diagnostic one.
 ///
-/// La captura va al final y se llama por su nombre: sirve para probar la
-/// ruta completa sin sacar sonido y para comprobar el bit-perfect contra el
-/// archivo que produce.
+/// The capture goes last and is named plainly: it is for exercising the
+/// whole path without making a sound, and for checking bit-perfect against
+/// the file it produces.
 #[cfg(target_os = "linux")]
 pub fn outputs() -> Vec<Output> {
     let mut outputs: Vec<Output> = chilpa_alsa::list()
@@ -65,13 +65,12 @@ pub fn outputs() -> Vec<Output> {
     outputs
 }
 
-/// Abre la biblioteca del usuario, creándola si hace falta.
+/// Opens the user's library, creating it if needed.
 pub fn open_library() -> rusqlite::Result<chilpa_library::Library> {
     chilpa_library::Library::open(&chilpa_library::Library::default_path())
 }
 
-/// Escanea una carpeta hacia la biblioteca, dejando las portadas en la
-/// caché.
+/// Scans a folder into the library, leaving the covers in the cache.
 pub fn scan_into_library(
     lib: &chilpa_library::Library,
     root: &std::path::Path,
@@ -79,7 +78,7 @@ pub fn scan_into_library(
     chilpa_library::scan_root_with_cache(lib, root, Some(&artwork_cache()))
 }
 
-/// Dónde se guardan las portadas que se sacan de los archivos.
+/// Where the covers pulled out of files are kept.
 pub fn artwork_cache() -> std::path::PathBuf {
     let base = std::env::var_os("XDG_CACHE_HOME")
         .map(std::path::PathBuf::from)
@@ -88,7 +87,7 @@ pub fn artwork_cache() -> std::path::PathBuf {
     base.join("chilpa").join("artwork")
 }
 
-/// Dónde escribe la salida de captura.
+/// Where the capture output writes.
 pub fn capture_path() -> std::path::PathBuf {
     let mut p = std::env::temp_dir();
     p.push("chilpa-capture.raw");
@@ -100,10 +99,10 @@ pub fn outputs() -> Vec<Output> {
     Vec::new()
 }
 
-/// Mide un dispositivo de salida.
+/// Measures an output device.
 ///
-/// Es lo mismo que usa el reproductor para negociar; el asistente lo llama
-/// aparte para poder decir qué se puede antes de poner nada a sonar.
+/// It is the same thing the player uses to negotiate; the wizard calls it
+/// separately so it can say what is possible before playing anything.
 #[cfg(target_os = "linux")]
 pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
     if id == chilpa_audio::CAPTURE_ID {
@@ -113,16 +112,16 @@ pub fn probe_device(id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chi
     }
 }
 
-/// Arranca un reproductor conectado a las salidas reales de la máquina.
+/// Starts a player wired to the machine's real outputs.
 #[cfg(target_os = "linux")]
 pub fn spawn_player() -> player::Player {
     spawn_player_with(chilpa_audio::tap::Tap::new())
 }
 
-/// Lo mismo, mirando lo que sale por ese `tap`.
+/// The same, watching what goes out through that `tap`.
 ///
-/// El tap envuelve al dispositivo: copia lo entregado y lo pasa tal cual.
-/// Quien dibuja lee de ahí, y el audio no se entera.
+/// The tap wraps the device: it copies what is delivered and passes it
+/// through. Whoever draws reads from there, and the audio never finds out.
 #[cfg(target_os = "linux")]
 pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     let from_thread = tap.clone();
@@ -146,7 +145,7 @@ pub fn spawn_player_with(tap: chilpa_audio::tap::Tap) -> player::Player {
     )
 }
 
-/// Lo que el core le cuenta a la fachada cuando terminó de sonar algo.
+/// What the core tells the facade when something has finished playing.
 pub struct PlayedSummary {
     pub frames: u64,
     pub quality: chilpa_models::AudioQuality,
@@ -154,11 +153,11 @@ pub struct PlayedSummary {
 }
 
 impl Core {
-    /// Reproduce un archivo local en un dispositivo ALSA directo.
+    /// Plays a local file on a direct ALSA device.
     ///
-    /// Es la ruta mínima de la rebanada vertical: decodificar, medir el
-    /// dispositivo, negociar y entregar. El error sale ya redactado para la
-    /// UI, porque la fachada no conoce los tipos de adentro.
+    /// It is the vertical slice's minimum path: decode, measure the
+    /// device, negotiate and deliver. The error comes out already written for
+    /// the UI, because the facade does not know the types in here.
     #[cfg(target_os = "linux")]
     pub fn play_local(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) -> Result<PlayedSummary, String> {
         use chilpa_audio::negotiate::Policy;

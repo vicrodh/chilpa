@@ -1,17 +1,17 @@
-//! La misma música en varios contenedores y códecs.
+//! The same music in several containers and codecs.
 //!
-//! Dos cosas se verifican aquí:
+//! Two things are verified here:
 //!
-//! 1. **Los sin pérdida salen idénticos** al original, sin importar el
-//!    contenedor. Es el invariante de bit-perfect aplicado a cada formato.
-//! 2. **La decodificación es por bloques**, nunca la pista entera en
-//!    memoria. En QBZ, AAC y ALAC en MP4 se decodificaban completos a un
-//!    `Vec<f32>` (unos 2.7 GB por una hora a 24/96). Aquí se mide el bloque
-//!    más grande que entrega el decodificador: si alguien vuelve a leer el
-//!    archivo entero, esta prueba lo caza.
+//! 1. **The lossless ones come out identical** to the original, whatever the
+//!    container. It is the bit-perfect invariant applied to each format.
+//! 2. **Decoding happens in blocks**, never the whole track in memory. In
+//!    QBZ, AAC and ALAC in MP4 were decoded whole into a `Vec<f32>` (about
+//!    2.7 GB for an hour at 24/96). Here the largest block the decoder
+//!    delivers is measured: if anyone reads the whole file again, this test
+//!    catches it.
 //!
-//! Los archivos se generan con ffmpeg. Si no está instalado, las pruebas se
-//! saltan en vez de fallar.
+//! The files are generated with ffmpeg. If it is not installed, the tests
+//! are skipped instead of failing.
 
 use chilpa_decode::{Block, Decoded};
 use std::io::Write;
@@ -20,7 +20,7 @@ use std::process::Command;
 
 const RATE: u32 = 44_100;
 const FRAMES: u32 = 44_100 * 3;
-/// Un bloque de más de un segundo ya es sospechoso de leer de más.
+/// A block longer than a second is already suspect of reading too much.
 const MAX_FRAMES_PER_BLOCK: usize = RATE as usize;
 
 fn hay_ffmpeg() -> bool {
@@ -34,8 +34,8 @@ fn dir() -> PathBuf {
     p
 }
 
-/// WAV de referencia: el canal izquierdo lleva una rampa y el derecho su
-/// negado, así que cualquier desfase o conversión se nota.
+/// Reference WAV: the left channel carries a ramp and the right its
+/// negation, so any shift or conversion shows up.
 fn write_wav(path: &Path, bits: u16) {
     let bytes = u32::from(bits) / 8;
     let data_len = FRAMES * 2 * bytes;
@@ -86,8 +86,8 @@ fn convert(origin: &Path, target: &Path, args: &[&str]) -> bool {
     output.status.success()
 }
 
-/// Decodifica todo y regresa las muestras del canal izquierdo más el bloque
-/// más grande que entregó el decodificador.
+/// Decodes everything and returns the left channel's samples plus the
+/// largest block the decoder delivered.
 fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
     let mut decoded = Decoded::open(path).unwrap_or_else(|e| panic!("{}: {e}", path.display()));
     let channels = decoded.stream_format().channels as usize;
@@ -164,8 +164,8 @@ fn lossy_formats_decode_in_blocks() {
     let wav = d.join("ref-perdida.wav");
     write_wav(&wav, 16);
 
-    // Opus no entra: el decodificador que usamos todavía no lo trae. Queda
-    // como hueco conocido, y la prueba de abajo lo fija.
+    // Opus does not make it: the decoder we use does not carry it yet. It
+    // stays a known gap, and the test below pins it.
     for (name, args) in [
         ("aac.m4a", ["-c:a", "aac"]),
         ("mp3.mp3", ["-c:a", "mp3"]),
@@ -178,8 +178,8 @@ fn lossy_formats_decode_in_blocks() {
         }
         let (came_out, mayor, _) = decode(&target);
         assert!(!came_out.is_empty(), "{name}: no salió audio");
-        // Con pérdida la duración se mueve un poco por el relleno del
-        // codificador; basta con que ande cerca.
+        // With lossy the duration moves a little because of encoder padding;
+        // close enough is enough.
         let difference = (came_out.len() as i64 - FRAMES as i64).abs();
         assert!(
             difference < RATE as i64 / 2,

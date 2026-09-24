@@ -1,8 +1,8 @@
-//! Cómo se recorre la cola: repetición y orden.
+//! How the queue is traversed: repeat and order.
 //!
-//! Lo que se cuida aquí es que repetir no sea un lazo del que no se sale:
-//! parar corta la vuelta, saltar avanza aunque esté en repeat-one, y una
-//! pista que no entrega un solo frame no deja girando el hilo.
+//! What is guarded here is that repeat is not a loop with no way out:
+//! stopping cuts the lap, skipping advances even under repeat-one, and a
+//! track that delivers not one frame does not leave the thread spinning.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
@@ -13,8 +13,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-/// Cuenta frames y, cuando llega al tope, pide parar: es lo que corta una
-/// repetición que si no seguiría para siempre.
+/// Counts frames and, on reaching the cap, asks to stop: that is what cuts a
+/// repeat that would otherwise go on forever.
 #[derive(Clone)]
 struct CappedSink {
     frames: Rc<RefCell<u64>>,
@@ -74,7 +74,7 @@ fn caps() -> DeviceCaps {
     }
 }
 
-/// Reproduce hasta entregar `tope` frames y regresa qué pistas sonaron.
+/// Plays until `cap` frames are delivered and returns which tracks played.
 fn played(tracks: &[PathBuf], repeat: Repeat, tope: u64) -> Vec<PathBuf> {
     let controls = Controls::new();
     controls.repeat.set(repeat);
@@ -95,8 +95,8 @@ fn without_repeat_the_queue_ends() {
     let a = wave("off-a", 4_410);
     let b = wave("off-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
-    // El tope es más alto que las dos pistas juntas: si la cola no se
-    // acabara sola, este test no terminaría.
+    // The cap is higher than both tracks together: if the queue did not
+    // end on its own, this test would never finish.
     assert_eq!(played(&tracks, Repeat::Off, 1_000_000), vec![a.clone(), b.clone()]);
     for p in tracks {
         let _ = std::fs::remove_file(p);
@@ -108,7 +108,7 @@ fn repeat_all_starts_over() {
     let a = wave("all-a", 4_410);
     let b = wave("all-b", 4_410);
     let tracks = vec![a.clone(), b.clone()];
-    // Tope a dos vueltas y media; el paro llega a media tercera pista.
+    // Cap at two and a half laps; the stop lands mid third track.
     let played = played(&tracks, Repeat::All, 4_410 * 5);
     assert!(played.len() > 2, "dio más de una vuelta: {played:?}");
     assert_eq!(played[0], a, "empezó por la primera");
@@ -139,8 +139,8 @@ fn under_repeat_one_skipping_does_advance() {
 
     let controls = Controls::new();
     controls.repeat.set(Repeat::One);
-    // Se pide el salto antes de empezar: la primera pista termina enseguida
-    // y, aunque esté en repeat-one, la cola tiene que pasar a la segunda.
+    // The skip is asked for before starting: the first track ends right
+    // away and, even under repeat-one, the queue has to move to the second.
     controls.skip.skip();
     let sink = CappedSink {
         frames: Rc::new(RefCell::new(0)),
@@ -202,8 +202,8 @@ fn what_is_enqueued_mid_queue_does_play() {
         tope: 1_000_000,
         stop: controls.stop.clone(),
     };
-    // La segunda entra cuando la primera ya arrancó: la cola no se rearma,
-    // le crece la cola.
+    // The second comes in once the first has started: the queue is not
+    // rebuilt, it grows.
     let mut added = false;
     let results = play_queue_with(
         &queue,
@@ -234,7 +234,7 @@ fn a_removed_track_does_not_play_and_the_others_do_not_move() {
     let c = wave("quita-c", 4_410);
 
     let queue = SharedQueue::new(vec![a.clone(), b.clone(), c.clone()]);
-    // Se quita la de en medio antes de empezar.
+    // The middle one is removed before starting.
     assert!(queue.remove(1));
     assert!(!queue.remove(1), "quitarla dos veces no cuenta");
     assert_eq!(queue.len(), 3, "la posición se conserva vacía");
