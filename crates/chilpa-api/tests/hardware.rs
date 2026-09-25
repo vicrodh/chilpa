@@ -385,7 +385,16 @@ fn a_queue_that_changes_rate_reopens_the_card_at_each_one() {
             if rates.last() != Some(&rate) {
                 rates.push(rate);
                 since.push(Instant::now());
-                eprintln!("smoke: opened\n{}", hw_params(&card));
+                let kernel = hw_params(&card);
+                eprintln!("smoke: opened\n{kernel}");
+                // What waits on the buffer -- a skip, a seek, the clock --
+                // waits as long as it holds. Left to itself ALSA gave this
+                // DAC two seconds.
+                let held: u32 = field(&kernel, "buffer_size").and_then(|b| b.parse().ok()).unwrap_or(0);
+                assert!(
+                    held <= rate * 6 / 10,
+                    "{held} frames of buffer at {rate} Hz: more than half a second"
+                );
             }
         }
         let now = chilpa.poll().clone();
@@ -412,4 +421,45 @@ fn a_queue_that_changes_rate_reopens_the_card_at_each_one() {
     }
     assert!(owner_of(&card).is_none(), "the card was let go after stopping");
     let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+#[ignore = "opens a real device and makes a real sound; run it on purpose"]
+fn half_a_second_of_buffer_never_runs_dry() {
+    // CHILPA_SMOKE_DEVICE, CHILPA_SMOKE_TRACK (a long hi-res file) and
+    // CHILPA_SMOKE_CARD. The kernel's avail_max is the most room the buffer
+    // has had since it was last read: reaching the whole buffer is running
+    // dry, which is a click.
+    let Some((device, track, card)) = asked_for() else {
+        eprintln!("smoke: set CHILPA_SMOKE_DEVICE, CHILPA_SMOKE_TRACK and CHILPA_SMOKE_CARD to run this");
+        return;
+    };
+    free(&card);
+    other_library();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_file(&track, &device, true);
+    let status = format!("/proc/asound/card{card}/pcm0p/sub0/status");
+    let (mut buffer, mut worst, mut samples) = (0u64, 0u64, 0);
+    let started = Instant::now();
+    while started.elapsed() < Duration::from_secs(10) {
+        let now = chilpa.poll().clone();
+        assert!(now.error.is_empty(), "{}", now.error);
+        if let Some(kernel) = ours(&card) {
+            buffer = field(&kernel, "buffer_size").and_then(|b| b.parse().ok()).unwrap_or(buffer);
+            let text = std::fs::read_to_string(&status).unwrap_or_default();
+            if text.contains("RUNNING") {
+                let room: u64 = field(&text.replace("  ", ""), "avail_max")
+                    .or_else(|| text.lines().find_map(|l| l.trim().strip_prefix("avail_max").map(|v| v.trim_start_matches([' ', ':']).to_string())))
+                    .and_then(|v| v.trim().parse().ok())
+                    .unwrap_or(0);
+                worst = worst.max(room);
+                samples += 1;
+            }
+        }
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    chilpa.stop();
+    eprintln!("smoke: {samples} readings, at most {worst} of {buffer} frames free");
+    assert!(samples > 50, "the card was not running long enough to say");
+    assert!(worst < buffer, "the buffer ran dry: {worst} of {buffer} frames free");
 }
