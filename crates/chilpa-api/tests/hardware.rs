@@ -273,3 +273,58 @@ fn what_the_window_would_claim_matches_what_the_kernel_did() {
     }
     chilpa.stop();
 }
+
+#[test]
+#[ignore = "opens a real device and makes a real sound; run it on purpose"]
+fn through_a_sound_server_asked_alone_the_card_runs_at_the_track_s_rate() {
+    // A server holds the card, so the owner is the server and is not checked.
+    // What is checked is the promise a server stack makes: asked for alone,
+    // the samples go through untouched -- so if Chilpa plays with bit-perfect
+    // on, the card runs at the track's own rate, and if the server cannot run
+    // at it, Chilpa refuses and says which rate.
+    //
+    // CHILPA_SMOKE_SERVER_DEVICE=pipewire:alsa_output.usb-...analog-stereo
+    let (Some(device), Some(track)) = (
+        std::env::var("CHILPA_SMOKE_SERVER_DEVICE").ok(),
+        std::env::var("CHILPA_SMOKE_TRACK").ok().map(PathBuf::from),
+    ) else {
+        eprintln!("smoke: set CHILPA_SMOKE_SERVER_DEVICE and CHILPA_SMOKE_TRACK to run this");
+        return;
+    };
+    let card = std::env::var("CHILPA_SMOKE_CARD").unwrap_or_else(|_| "1".to_string());
+    let source_rate = rate_of(&track).expect("ffprobe says what the track carries");
+    other_library();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_file(&track, &device, true);
+
+    let limit = Instant::now() + Duration::from_secs(10);
+    let mut opened = String::new();
+    while Instant::now() < limit {
+        let now = chilpa.poll().clone();
+        if !now.error.is_empty() {
+            eprintln!("smoke: Chilpa refused: {}", now.error);
+            assert!(
+                now.error.contains(&source_rate.to_string()),
+                "a refusal has to say which rate: {}",
+                now.error
+            );
+            return;
+        }
+        let kernel = hw_params(&card);
+        if kernel.contains("rate:") && !now.format.is_empty() {
+            opened = kernel;
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    }
+    let now = chilpa.poll().clone();
+    assert!(!opened.is_empty(), "nothing opened and nothing was refused: {:?}", now.error);
+    let rate: u32 = field(&opened, "rate")
+        .and_then(|r| r.split_whitespace().next().map(str::to_string))
+        .and_then(|r| r.parse().ok())
+        .expect("the kernel states a rate");
+    eprintln!("smoke: Chilpa says: {} · bit-perfect {}", now.format, now.bit_perfect);
+    eprintln!("smoke: {source_rate} Hz in, the card runs at {rate} Hz");
+    assert_eq!(rate, source_rate, "the server resampled with the output asked for alone");
+    chilpa.stop();
+}
