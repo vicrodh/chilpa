@@ -1186,12 +1186,18 @@ impl Chilpa {
                                 &channels(opened.channels),
                             ],
                         ),
-                        None => format!(
-                            "{} Hz · {} bits · {}",
-                            opened.sample_rate_hz,
-                            bits.unwrap_or(opened.sample_format.valid_bits()),
-                            channels(opened.channels)
-                        ),
+                        None => match bits {
+                            Some(bits) => format!(
+                                "{} Hz · {} bits · {}",
+                                opened.sample_rate_hz,
+                                bits,
+                                channels(opened.channels)
+                            ),
+                            // A lossy track has no bit depth, and the word it
+                            // was rounded into is not one: "32 bits" on an
+                            // MP3 reads as more than it is.
+                            None => format!("{} Hz · {}", opened.sample_rate_hz, channels(opened.channels)),
+                        },
                     };
                 }
                 PlayerEvent::StreamTitle { title } => {

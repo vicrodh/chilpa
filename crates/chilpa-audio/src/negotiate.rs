@@ -45,6 +45,10 @@ pub enum Policy {
     /// not play a CD with the switch on, while the same DAC with the switch
     /// off was handed the same widened bytes and the verdict called them
     /// bit-perfect.
+    ///
+    /// A source that decodes to floats is the exception, because it has no
+    /// integer values to keep: it plays, rounded into the widest word the
+    /// device takes at its own rate, and it is never called bit-perfect.
     BitPerfect,
     /// Anything goes, as long as it plays.
     AllowAnything,
@@ -60,6 +64,10 @@ pub enum Transform {
     Resampled { from_hz: u32, to_hz: u32 },
     /// It went through floats: the device converts.
     Floated,
+    /// A source that decodes to floats -- MP3, AAC, Vorbis -- was rounded
+    /// into integers of this width. It never had integer samples, so there
+    /// was nothing exact to keep; it is said because it is not bit-perfect.
+    Quantized { to_bits: u8 },
     /// It was mixed with other applications.
     Mixed,
     /// Software volume was applied to it.
@@ -107,16 +115,17 @@ impl Delivery {
 }
 
 /// How many bits carry the music when `source` goes out as `opened`, or
-/// `None` when the device takes floats.
+/// `None` when either is a float.
 ///
 /// Not the width of the word the output opened at. A 16 bit track laid out
 /// in a 32 bit word, for a DAC that takes nothing narrower, still carries 16,
 /// and calling it 24 or 32 shows a CD rip as something it is not, in the
 /// window and in the play history. When bits were dropped, what is left is
-/// the word.
+/// the word. A lossy track decodes to floats and has no depth of its own:
+/// the word it was rounded into is not one.
 pub fn bits_carried(source: StreamFormat, opened: StreamFormat) -> Option<u8> {
-    let word = opened.sample_format;
-    word.is_integer().then(|| word.valid_bits().min(source.sample_format.valid_bits()))
+    let (from, word) = (source.sample_format, opened.sample_format);
+    (from.is_integer() && word.is_integer()).then(|| word.valid_bits().min(from.valid_bits()))
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -137,7 +146,12 @@ pub fn negotiate(
         return Err(NegotiationError::CapsNotProbed);
     }
     if caps.accepts(&requested) {
-        return Ok(Delivery { requested, opened: requested, transforms: Vec::new() });
+        // A float handed over as a float is still not bit-perfect: the device
+        // rounds it into whatever its DAC takes, and that is a rounding
+        // nobody here can see.
+        let transforms =
+            if requested.sample_format.is_integer() { Vec::new() } else { vec![Transform::Floated] };
+        return Ok(Delivery { requested, opened: requested, transforms });
     }
 
     // Another integer word that holds at least the same bits keeps every
@@ -165,6 +179,27 @@ pub fn negotiate(
                 Vec::new()
             };
             return Ok(Delivery { requested, opened, transforms });
+        }
+    }
+
+    // A source that decodes to floats -- MP3, AAC, Vorbis -- never had
+    // integer samples, so no word keeps them. Refusing it would silence every
+    // lossy track and every radio with the switch on; letting it through
+    // with nothing to report is what this used to do, and the verdict called
+    // an MP3 bit-perfect. It is rounded once, into the widest integer word
+    // the device takes at the track's own rate, and it is said.
+    if !requested.sample_format.is_integer() {
+        let widest = caps
+            .formats
+            .iter()
+            .filter(|f| f.is_integer())
+            .max_by_key(|f| f.valid_bits())
+            .map(|f| StreamFormat { sample_format: *f, ..requested });
+        if let Some(opened) = widest {
+            if caps.accepts(&opened) {
+                let to_bits = opened.sample_format.valid_bits();
+                return Ok(Delivery { requested, opened, transforms: vec![Transform::Quantized { to_bits }] });
+            }
         }
     }
 
@@ -200,6 +235,8 @@ pub fn negotiate(
     }
     if !format.is_integer() {
         transforms.push(Transform::Floated);
+    } else if !requested.sample_format.is_integer() {
+        transforms.push(Transform::Quantized { to_bits: format.valid_bits() });
     } else if format.valid_bits() > requests {
         transforms.push(Transform::Widened { from_bits: requests, to_bits: format.valid_bits() });
     } else if format.valid_bits() < requests {
@@ -345,12 +382,41 @@ mod tests {
         assert_eq!(d.bits_carried(), Some(24));
     }
 
+    fn lossy() -> StreamFormat {
+        StreamFormat::new(SampleFormat::F32, 44_100, 2)
+    }
+
     #[test]
     fn a_float_is_never_passed_off_as_a_32_bit_integer() {
-        // Both are 32 bits wide, and only one of them is an integer.
-        let float = StreamFormat::new(SampleFormat::F32, 44_100, 2);
-        let r = negotiate(float, &caps(&[44_100], &[SampleFormat::S32]), Policy::BitPerfect);
-        assert!(r.is_err(), "a float laid into an integer word is scaled, not kept: {r:?}");
+        // Both are 32 bits wide, and only one of them is an integer: laying a
+        // float into it scales it. It plays, and it is said.
+        let d = negotiate(lossy(), &caps(&[44_100], &[SampleFormat::S32]), Policy::BitPerfect)
+            .expect("a lossy track still plays with the switch on");
+        assert_eq!(d.transforms, vec![Transform::Quantized { to_bits: 32 }]);
+        assert!(!d.nothing_was_converted());
+    }
+
+    #[test]
+    fn a_lossy_track_goes_out_in_the_widest_word_at_its_own_rate_and_is_never_bit_perfect() {
+        let only_integers = caps(&[44_100, 48_000], &[SampleFormat::S16, SampleFormat::S24In32, SampleFormat::S32]);
+        let d = negotiate(lossy(), &only_integers, Policy::BitPerfect).expect("it plays");
+        assert_eq!(d.opened, StreamFormat::new(SampleFormat::S32, 44_100, 2));
+        assert!(!d.nothing_was_converted(), "an MP3 is not bit-perfect: {:?}", d.transforms);
+        assert_eq!(d.bits_carried(), None, "and it has no bit depth of its own to report");
+    }
+
+    #[test]
+    fn a_float_handed_to_a_dac_that_takes_floats_is_still_not_bit_perfect() {
+        // The DAC does the rounding then, not Chilpa, and it is still a
+        // rounding.
+        let d = negotiate(lossy(), &caps(&[44_100], &[SampleFormat::F32]), Policy::BitPerfect).unwrap();
+        assert!(!d.nothing_was_converted(), "{:?}", d.transforms);
+    }
+
+    #[test]
+    fn a_lossy_track_is_not_resampled_with_the_switch_on() {
+        let r = negotiate(lossy(), &caps(&[48_000], &[SampleFormat::S32]), Policy::BitPerfect);
+        assert!(r.is_err(), "{r:?}");
     }
 
     #[test]

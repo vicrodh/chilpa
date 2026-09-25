@@ -196,6 +196,38 @@ fn lossy_formats_decode_in_blocks() {
 }
 
 #[test]
+fn a_lossy_file_announces_the_floats_it_decodes_to() {
+    // A lossy codec declares no bit depth, and the fallback announced 16 bit
+    // integers. Negotiation then opened a 16 bit word with nothing to report,
+    // the packing scaled the floats into it, and the verdict called an MP3
+    // bit-perfect.
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let d = dir();
+    let wav = d.join("ref-announce.wav");
+    write_wav(&wav, 16);
+    for (name, args) in [("announce.m4a", ["-c:a", "aac"]), ("announce.ogg", ["-c:a", "libvorbis"])] {
+        let target = d.join(name);
+        if !convert(&wav, &target, &args) {
+            eprintln!("{name}: ffmpeg could not, skipped");
+            continue;
+        }
+        let mut decoded = Decoded::open(&target).unwrap();
+        let first = decoded.next_block().unwrap().expect("there is audio");
+        assert!(matches!(first, Block::Float(_)), "{name} decodes to floats");
+        assert_eq!(
+            decoded.stream_format().sample_format,
+            chilpa_audio::format::SampleFormat::F32,
+            "{name} says so"
+        );
+        let _ = std::fs::remove_file(target);
+    }
+    let _ = std::fs::remove_file(wav);
+}
+
+#[test]
 fn opus_is_not_supported_yet_and_says_so_plainly() {
     if !have_ffmpeg() {
         eprintln!("no ffmpeg: skipped");
