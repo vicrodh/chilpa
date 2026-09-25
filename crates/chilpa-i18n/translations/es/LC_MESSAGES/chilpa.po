@@ -82,6 +82,9 @@ msgstr "Agregar una carpeta"
 msgid "Add a folder to the library"
 msgstr "Agregar una carpeta a la biblioteca"
 
+msgid "Add to the queue"
+msgstr "Agregar a la cola"
+
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
@@ -190,6 +193,9 @@ msgstr "DSD{} · DoP a {} Hz · {}"
 msgid "Dark"
 msgstr "Oscuro"
 
+msgid "Date added"
+msgstr "Fecha de alta"
+
 msgid "Device: {}"
 msgstr "Dispositivo: {}"
 
@@ -210,6 +216,9 @@ msgstr "Disco {}"
 
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
+
+msgid "Duration"
+msgstr "Duración"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
@@ -240,6 +249,9 @@ msgstr "De esta semana"
 
 msgid "Genre"
 msgstr "Género"
+
+msgid "Hide the columns"
+msgstr "Ocultar las columnas"
 
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
@@ -427,6 +439,9 @@ msgstr "Agregados recientemente"
 msgid "Recently played"
 msgstr "Escuchados recientemente"
 
+msgid "Records"
+msgstr "Discos"
+
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
 
@@ -477,6 +492,9 @@ msgstr "Buscar"
 
 msgid "Settings"
 msgstr "Ajustes"
+
+msgid "Show the columns"
+msgstr "Mostrar las columnas"
 
 msgid "Show the sidebar"
 msgstr "Mostrar la barra lateral"
@@ -540,6 +558,9 @@ msgstr "Listas de pistas"
 
 msgid "Track {}"
 msgstr "Pista {}"
+
+msgid "Tracks"
+msgstr "Pistas"
 
 msgid "Updates"
 msgstr "Actualizaciones"

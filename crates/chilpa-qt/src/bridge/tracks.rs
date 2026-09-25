@@ -60,6 +60,10 @@ pub mod qobject {
         #[qinvokable]
         fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
 
+        /// Adds the whole list to the end of the queue.
+        #[qinvokable]
+        fn queue_all(self: Pin<&mut TrackListModel>);
+
         /// Selects a row. `modifiers`: 1 toggles it (Ctrl or Cmd), 2 extends
         /// from the anchor (Shift).
         #[qinvokable]
@@ -342,6 +346,31 @@ impl qobject::TrackListModel {
                 worker::submit(move |reader| {
                     let paths = reader.paths(&ids);
                     let _ = thread.queue(move |_| app::with(|api| api.play_from(&paths, row)));
+                });
+            }
+        }
+    }
+
+    pub fn queue_all(self: Pin<&mut Self>) {
+        match &self.rust().rows {
+            Rows::Loaded(_) => {
+                let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
+                app::with(|api| {
+                    let (device, bit_perfect) = api.chosen_output();
+                    api.enqueue(&paths, &device, bit_perfect);
+                });
+            }
+            Rows::Snapshot { ids, .. } => {
+                let ids = ids.ids.clone();
+                let thread = self.qt_thread();
+                worker::submit(move |reader| {
+                    let paths = reader.paths(&ids);
+                    let _ = thread.queue(move |_| {
+                        app::with(|api| {
+                            let (device, bit_perfect) = api.chosen_output();
+                            api.enqueue(&paths, &device, bit_perfect);
+                        })
+                    });
                 });
             }
         }

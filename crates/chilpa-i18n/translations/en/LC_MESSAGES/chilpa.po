@@ -82,6 +82,9 @@ msgstr ""
 msgid "Add a folder to the library"
 msgstr ""
 
+msgid "Add to the queue"
+msgstr ""
+
 msgid "Added this month"
 msgstr ""
 
@@ -190,6 +193,9 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Date added"
+msgstr ""
+
 msgid "Device: {}"
 msgstr ""
 
@@ -209,6 +215,9 @@ msgid "Disc {}"
 msgstr ""
 
 msgid "Done. You can close this tab and go back to Chilpa."
+msgstr ""
+
+msgid "Duration"
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
@@ -239,6 +248,9 @@ msgid "From this week"
 msgstr ""
 
 msgid "Genre"
+msgstr ""
+
+msgid "Hide the columns"
 msgstr ""
 
 msgid "High 24/176.4"
@@ -427,6 +439,9 @@ msgstr ""
 msgid "Recently played"
 msgstr ""
 
+msgid "Records"
+msgstr ""
+
 msgid "Remove from the library"
 msgstr ""
 
@@ -476,6 +491,9 @@ msgid "Search"
 msgstr ""
 
 msgid "Settings"
+msgstr ""
+
+msgid "Show the columns"
 msgstr ""
 
 msgid "Show the sidebar"
@@ -539,6 +557,9 @@ msgid "Track lists"
 msgstr ""
 
 msgid "Track {}"
+msgstr ""
+
+msgid "Tracks"
 msgstr ""
 
 msgid "Updates"
