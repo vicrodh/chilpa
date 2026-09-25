@@ -9,8 +9,9 @@
 //! A bar that advances without knowing how many files there are is lying,
 //! so here we count first and advance afterwards.
 
-use crate::scan::ScanReport;
+use crate::scan::{Containers, NoContainers, ScanReport};
 use crate::store::Library;
+use std::sync::Arc;
 use std::path::{Path, PathBuf};
 use std::sync::mpsc::{channel, Receiver, TryRecvError};
 use std::thread::JoinHandle;
@@ -49,6 +50,17 @@ impl ScanJob {
         roots: Vec<PathBuf>,
         artwork_cache: Option<PathBuf>,
     ) -> Self {
+        Self::start_with(db_path, roots, artwork_cache, Arc::new(NoContainers))
+    }
+
+    /// The same, with files that hold several tracks -- disc images -- read
+    /// by `containers`.
+    pub fn start_with(
+        db_path: PathBuf,
+        roots: Vec<PathBuf>,
+        artwork_cache: Option<PathBuf>,
+        containers: Arc<dyn Containers + Send + Sync>,
+    ) -> Self {
         let (tx, rx) = channel();
         let thread = std::thread::Builder::new()
             .name("chilpa-scan".into())
@@ -61,7 +73,8 @@ impl ScanJob {
                     }
                 };
                 // Count first: without a total, a progress bar invents one.
-                let total: usize = roots.iter().map(|r| crate::scan::count_audio_files(r)).sum();
+                let total: usize =
+                    roots.iter().map(|r| crate::scan::count_files(r, &*containers)).sum();
                 let _ = tx.send(ScanProgress::Counted { total });
 
                 let mut accumulated = ScanReport {
@@ -76,11 +89,12 @@ impl ScanJob {
                     let warn = |done: usize| {
                         let _ = tx.send(ScanProgress::Advanced { done: previous + done, total });
                     };
-                    match crate::scan::scan_root_reporting(
+                    match crate::scan::scan_root_with(
                         &lib,
                         root,
                         artwork_cache.as_deref(),
                         &warn,
+                        &*containers,
                     ) {
                         Ok(r) => {
                             previous += r.seen;
@@ -88,6 +102,7 @@ impl ScanJob {
                             accumulated.read += r.read;
                             accumulated.unchanged += r.unchanged;
                             accumulated.missing += r.missing;
+                            accumulated.unreadable += r.unreadable;
                             // As long as one folder could be read, the scan was worth
                             // something.
                             accumulated.unreachable &= r.unreachable;

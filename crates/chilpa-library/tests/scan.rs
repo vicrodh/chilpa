@@ -403,3 +403,116 @@ fn the_library_can_be_read_while_it_is_being_scanned() {
 
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// A file that holds two tracks, standing in for a disc image: `.box`, its
+/// tracks `box:<file>#1` and `#2`. A box holds tracks only if it says "box";
+/// anything else in a `.box` holds none. It counts how often it is opened.
+#[derive(Default)]
+struct Boxes {
+    opened: std::sync::atomic::AtomicUsize,
+}
+
+impl chilpa_library::scan::Containers for Boxes {
+    fn may_hold(&self, path: &std::path::Path) -> bool {
+        path.extension().is_some_and(|e| e == "box")
+    }
+
+    fn tracks(&self, path: &std::path::Path) -> Option<Vec<chilpa_library::scan::ContainedTrack>> {
+        self.opened.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if std::fs::read(path).ok()? != b"box" {
+            return None;
+        }
+        Some(
+            (1..=2u16)
+                .map(|n| chilpa_library::scan::ContainedTrack {
+                    path: format!("box:{}#{n}", path.display()),
+                    info: chilpa_tags::FileInfo {
+                        tags: chilpa_tags::Tags {
+                            title: Some(format!("Boxed {n}")),
+                            artists: vec!["Boxer".into()],
+                            album: Some("The Box".into()),
+                            track_number: Some(n),
+                            ..chilpa_tags::Tags::default()
+                        },
+                        duration: std::time::Duration::from_secs(60),
+                        sample_rate_hz: Some(2_822_400),
+                        bit_depth: Some(1),
+                        channels: Some(2),
+                    },
+                })
+                .collect(),
+        )
+    }
+}
+
+fn scan_boxes(lib: &Library, dir: &std::path::Path, boxes: &Boxes) -> chilpa_library::ScanReport {
+    chilpa_library::scan::scan_root_with(lib, dir, None, &|_| {}, boxes).unwrap()
+}
+
+#[test]
+fn a_file_that_holds_tracks_goes_in_as_its_tracks() {
+    let Some(dir) = album("boxes", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    std::fs::write(dir.join("album.box"), b"box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let report = scan_boxes(&lib, &dir, &Boxes::default());
+    assert_eq!((report.seen, report.read), (3, 3), "the FLAC and the box's two tracks");
+    let boxed = lib.search("Boxed", 10).unwrap();
+    let mut titles: Vec<&str> = boxed.iter().map(|t| t.title.as_str()).collect();
+    titles.sort();
+    assert_eq!(titles, ["Boxed 1", "Boxed 2"]);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_file_that_holds_tracks_is_not_opened_again_when_it_did_not_change() {
+    // Reading a disc image's tables costs about 0.4 s over the network, and
+    // a rescan that finds nothing changed is the one that runs at startup.
+    let Some(dir) = album("boxes-again", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    std::fs::write(dir.join("album.box"), b"box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let boxes = Boxes::default();
+    scan_boxes(&lib, &dir, &boxes);
+    let again = scan_boxes(&lib, &dir, &boxes);
+    assert_eq!(boxes.opened.load(std::sync::atomic::Ordering::Relaxed), 1, "opened on the first scan only");
+    assert_eq!((again.read, again.unchanged, again.missing), (0, 3, 0));
+    assert_eq!(lib.track_count(false).unwrap(), 3, "and all three still present");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_file_that_holds_tracks_and_goes_away_leaves_them_missing() {
+    let Some(dir) = album("boxes-gone", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    std::fs::write(dir.join("album.box"), b"box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let boxes = Boxes::default();
+    scan_boxes(&lib, &dir, &boxes);
+    std::fs::remove_file(dir.join("album.box")).unwrap();
+    let again = scan_boxes(&lib, &dir, &boxes);
+    assert_eq!(again.missing, 2);
+    assert_eq!(lib.track_count(false).unwrap(), 1, "the FLAC is left present");
+    assert_eq!(lib.track_count(true).unwrap(), 3, "the box's rows survive, missing");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn a_file_that_holds_nothing_is_not_audio() {
+    // A DVD image beside the music has the extension and none of the tracks.
+    let Some(dir) = album("boxes-empty", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    std::fs::write(dir.join("film.box"), b"not a box").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let report = scan_boxes(&lib, &dir, &Boxes::default());
+    assert_eq!((report.seen, report.read, report.unreadable), (1, 1, 0));
+    let _ = std::fs::remove_dir_all(dir);
+}
