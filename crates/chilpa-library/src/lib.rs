@@ -18,6 +18,6 @@ pub use scan_job::{ScanJob, ScanProgress};
 pub use playlist::Playlist;
 pub use smart::{builtins as smart_builtins, Order as SmartOrder, Rule, SmartList};
 pub use store::{
-    AlbumSort, BrowseTrack, FacetEntry, Filter, Library, PlaylistEntry, Stats, StoredAlbum, StoredArtist, StoredPlaylist,
+    AlbumSort, BrowseTrack, FacetEntry, Filter, FolderEntry, Library, PlaylistEntry, Stats, StoredAlbum, StoredArtist, StoredPlaylist,
     Snapshot, StoredRoot, StoredTrack, Totals, TrackOrder, TrackStat,
 };

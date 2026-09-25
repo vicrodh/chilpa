@@ -164,6 +164,15 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     assert_eq!(page.len(), 128);
     within("128 albums by id from deep in", t, Duration::from_millis(15));
 
+    // The Folders screen: the top of the tree, with five thousand folders
+    // under it, and one record's folder.
+    let (top, t) = how_long(|| lib.folder_children("/music").unwrap());
+    assert_eq!(top.0.len(), ALBUMS as usize);
+    within("five thousand folders", t, Duration::from_millis(400));
+    let (one, t) = how_long(|| lib.folder_children("/music/42").unwrap());
+    assert_eq!(one.1.len(), PER_ALBUM as usize);
+    within("one folder's tracks", t, Duration::from_millis(15));
+
     // The artists.
     let (artists, t) = how_long(|| lib.artists(500, 0).unwrap());
     assert_eq!(artists.len(), 200, "two hundred artists");

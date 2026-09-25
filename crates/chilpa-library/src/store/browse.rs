@@ -95,6 +95,28 @@ pub struct FacetEntry {
     pub year: Option<i32>,
 }
 
+/// A folder inside the library, as the Folders screen lists it.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FolderEntry {
+    pub name: String,
+    pub path: String,
+    /// Tracks under it, all the way down.
+    pub tracks: usize,
+    /// A cover from one of its records, if any has one.
+    pub artwork_path: Option<String>,
+}
+
+/// The paths under `dir`, as a range: every path that starts with `dir/`
+/// sorts between `dir/` and `dir0`, the character after `/`. A range keeps
+/// the query to what is under the folder instead of every track.
+fn under(dir: &str) -> (String, String, i64) {
+    let dir = dir.trim_end_matches('/');
+    // SQLite counts characters, not bytes, in substr and instr.
+    (format!("{dir}/"), format!("{dir}0"), dir.chars().count() as i64 + 2)
+}
+
+const LOCAL: &str = "t.source_id = (SELECT id FROM sources WHERE provider = 'local' AND instance = 'default')";
+
 /// How much a filter leaves.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Totals {
@@ -302,6 +324,63 @@ impl Library {
         Ok(paths.iter().map(|p| found.get(p).cloned()).collect())
     }
 
+    /// What lies directly under `dir`: the subfolders that hold tracks, with
+    /// how many each holds and a cover, and the tracks that sit in it.
+    pub fn folder_children(&self, dir: &str) -> rusqlite::Result<(Vec<FolderEntry>, Vec<BrowseTrack>)> {
+        let (from, to, cut) = under(dir);
+        let base = from.clone();
+        let sql = format!(
+            "SELECT substr(t.external_id, ?3, instr(substr(t.external_id, ?3), '/') - 1) AS name,
+                    count(*), max(a.artwork_path)
+             FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
+             WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
+               AND instr(substr(t.external_id, ?3), '/') > 0
+             GROUP BY name ORDER BY name COLLATE NOCASE"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let folders = stmt
+            .query_map(rusqlite::params![from, to, cut], |r| {
+                let name: String = r.get(0)?;
+                Ok(FolderEntry {
+                    path: format!("{base}{name}"),
+                    name,
+                    tracks: r.get::<_, i64>(1)? as usize,
+                    artwork_path: r.get(2)?,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+        let sql = format!(
+            "{ROW} {FROM} WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
+               AND instr(substr(t.external_id, ?3), '/') = 0
+             ORDER BY t.disc_number, t.track_number, t.external_id"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let tracks = stmt.query_map(rusqlite::params![from, to, cut], row)?.collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok((folders, tracks))
+    }
+
+    /// How many tracks there are under `dir`, all the way down.
+    pub fn folder_track_count(&self, dir: &str) -> rusqlite::Result<usize> {
+        let (from, to, _) = under(dir);
+        let sql = format!(
+            "SELECT count(*) FROM tracks t WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2"
+        );
+        self.db.query_row(&sql, rusqlite::params![from, to], |r| r.get::<_, i64>(0)).map(|n| n as usize)
+    }
+
+    /// Every file under `dir`, all the way down, in path order: what playing
+    /// a folder queues.
+    pub fn folder_paths(&self, dir: &str) -> rusqlite::Result<Vec<String>> {
+        let (from, to, _) = under(dir);
+        let sql = format!(
+            "SELECT t.external_id FROM tracks t WHERE {LOCAL} AND t.present = 1
+               AND t.external_id >= ?1 AND t.external_id < ?2 ORDER BY t.external_id"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params![from, to], |r| r.get(0))?;
+        rows.collect()
+    }
+
     /// All the tracks a small filter leaves, in one go: one record, one
     /// shelf of a home screen. For the whole library, the snapshot.
     pub fn browse_tracks(&self, f: &Filter, order: TrackOrder, limit: usize) -> rusqlite::Result<Vec<BrowseTrack>> {
@@ -430,6 +509,28 @@ mod tests {
         let rows = lib.tracks_by_paths(&["/20.flac".into(), "/nowhere.flac".into(), "/10.flac".into()]).unwrap();
         let ids: Vec<Option<i64>> = rows.iter().map(|r| r.as_ref().map(|t| t.id)).collect();
         assert_eq!(ids, [Some(20), None, Some(10)]);
+    }
+
+    #[test]
+    fn a_folder_lists_its_subfolders_and_its_own_tracks() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'A', 'X')", []).unwrap();
+        for (id, path) in [(1, "/m/Box/Disc 1/01.flac"), (2, "/m/Box/Disc 1/02.flac"), (3, "/m/Box/Disc 2/01.flac"), (4, "/m/Box/bonus.flac"), (5, "/m/Other/01.flac"), (6, "/m/Box0/x.flac")] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, album_id, added_at) VALUES (?1, ?2, ?3, 'T', 1, 1)",
+                    params![id, source, path],
+                )
+                .unwrap();
+        }
+        let (folders, tracks) = lib.folder_children("/m/Box").unwrap();
+        let names: Vec<(String, usize)> = folders.iter().map(|f| (f.name.clone(), f.tracks)).collect();
+        assert_eq!(names, [("Disc 1".to_string(), 2), ("Disc 2".to_string(), 1)]);
+        assert_eq!(folders[0].path, "/m/Box/Disc 1");
+        assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
+        assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
+        assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");
     }
 
     #[test]

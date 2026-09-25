@@ -12,7 +12,7 @@ pub mod playlists;
 pub mod plays;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
-pub use browse::{BrowseTrack, FacetEntry, Filter, Snapshot, Totals, TrackOrder};
+pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
 pub use playlists::{PlaylistEntry, StoredPlaylist};
 pub use plays::{Stats, TrackStat};
 
