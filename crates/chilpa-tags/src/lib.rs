@@ -19,6 +19,8 @@ use lofty::tag::Accessor;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+mod dsf;
+
 #[derive(Debug)]
 pub enum TagError {
     Open(std::io::Error),
@@ -80,23 +82,53 @@ pub struct FileInfo {
     pub channels: Option<u8>,
 }
 
-/// Reads a file's tags and properties.
-pub fn read(path: &Path) -> Result<FileInfo, TagError> {
-    let file = Probe::open(path)
+/// A file opened for its tags: read by lofty, or by this crate for the
+/// formats lofty does not know.
+pub(crate) struct Opened {
+    pub(crate) tag: Option<lofty::tag::Tag>,
+    pub(crate) duration: Duration,
+    pub(crate) sample_rate_hz: Option<u32>,
+    pub(crate) bit_depth: Option<u8>,
+    pub(crate) channels: Option<u8>,
+}
+
+fn open(path: &Path) -> Result<Opened, TagError> {
+    if dsf::is_dsf(path) {
+        return dsf::open(path);
+    }
+    let mut file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?
         .read()
         .map_err(|e| TagError::Unreadable(e.to_string()))?;
-
     let properties = file.properties();
+    let (duration, sample_rate_hz, bit_depth, channels) = (
+        properties.duration(),
+        properties.sample_rate(),
+        properties.bit_depth(),
+        properties.channels(),
+    );
+    // Taken out of the file rather than borrowed from it, so nothing -- a
+    // cover of several megabytes, say -- is copied to be looked at.
+    let primary = file.primary_tag_type();
+    let tag = file.remove(primary).or_else(|| {
+        let first = file.first_tag()?.tag_type();
+        file.remove(first)
+    });
+    Ok(Opened { tag, duration, sample_rate_hz, bit_depth, channels })
+}
+
+/// Reads a file's tags and properties.
+pub fn read(path: &Path) -> Result<FileInfo, TagError> {
+    let opened = open(path)?;
     let mut info = FileInfo {
         tags: Tags::default(),
-        duration: properties.duration(),
-        sample_rate_hz: properties.sample_rate(),
-        bit_depth: properties.bit_depth(),
-        channels: properties.channels(),
+        duration: opened.duration,
+        sample_rate_hz: opened.sample_rate_hz,
+        bit_depth: opened.bit_depth,
+        channels: opened.channels,
     };
 
-    let Some(tag) = file.primary_tag().or_else(|| file.first_tag()) else {
+    let Some(tag) = opened.tag.as_ref() else {
         return Ok(info);
     };
 
@@ -146,11 +178,8 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
 /// modification time, so changing the tags produces a different name and the
 /// view is never left holding the old cover.
 pub fn extract_artwork(path: &Path, cache_dir: &Path) -> Result<Option<PathBuf>, TagError> {
-    let file = Probe::open(path)
-        .map_err(|e| TagError::Unreadable(e.to_string()))?
-        .read()
-        .map_err(|e| TagError::Unreadable(e.to_string()))?;
-    let Some(tag) = file.primary_tag().or_else(|| file.first_tag()) else {
+    let opened = open(path)?;
+    let Some(tag) = opened.tag.as_ref() else {
         return Ok(None);
     };
     let Some(cover) = tag.pictures().first() else {
