@@ -22,7 +22,7 @@ use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, O
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use jack::PortSpec as _;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -59,6 +59,58 @@ enum Silence {
     Late,
 }
 
+/// Threads of this crate still at work where nobody waits for them:
+/// joining the graph, asking it something, or leaving it.
+///
+/// PipeWire's JACK library tears its loop down when the process exits, and a
+/// thread still inside a close waits on that loop forever, so the exit never
+/// finished: `pw_deinit` destroying a condition variable that
+/// `jack_deactivate` was waiting on. Quitting the window right after playing
+/// through JACK was enough. The process now waits for these threads, at most
+/// [`PATIENCE`], before the library's teardown runs. A close takes about a
+/// millisecond; one that never returns still hangs the exit, as it would
+/// hang anything else.
+static BUSY: AtomicUsize = AtomicUsize::new(0);
+
+/// One of those threads, counted from before it starts until it is done.
+struct Busy;
+
+impl Busy {
+    /// Counted before the thread is started, so an exit cannot slip in
+    /// between the two.
+    fn new() -> Self {
+        static AT_EXIT: AtomicBool = AtomicBool::new(false);
+        // Registered at run time, so on glibc it runs before the libraries'
+        // own teardown, which the loader registered when the process
+        // started. Elsewhere it is a wait of two seconds at most. A failed
+        // registration is tried again by the next thread.
+        if AT_EXIT.compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed).is_ok() {
+            // SAFETY: `wait_for_busy` is a plain `extern "C" fn()` that
+            // lives as long as the process and cannot unwind.
+            if unsafe { libc::atexit(wait_for_busy) } != 0 {
+                AT_EXIT.store(false, Ordering::Relaxed);
+            }
+        }
+        BUSY.fetch_add(1, Ordering::Relaxed);
+        Busy
+    }
+}
+
+impl Drop for Busy {
+    /// After the client is gone: what leaving did has to be seen by the
+    /// teardown that waited for it.
+    fn drop(&mut self) {
+        BUSY.fetch_sub(1, Ordering::Release);
+    }
+}
+
+extern "C" fn wait_for_busy() {
+    let limit = std::time::Instant::now() + PATIENCE;
+    while BUSY.load(Ordering::Acquire) > 0 && std::time::Instant::now() < limit {
+        std::thread::sleep(Duration::from_millis(5));
+    }
+}
+
 /// Runs `work` on a thread of its own and waits at most `patience` for what
 /// it sends back.
 ///
@@ -75,11 +127,15 @@ fn within<T: Send + 'static>(
     work: impl FnOnce(Sender<T>) + Send + 'static,
 ) -> Result<T, Silence> {
     let (answer, answered) = mpsc::channel();
+    let busy = Busy::new();
     // A thread that cannot be started is a question that was not asked, and
     // of the two answers "late" is the nearer.
     std::thread::Builder::new()
         .name("chilpa-jack".into())
-        .spawn(move || work(answer))
+        .spawn(move || {
+            work(answer);
+            drop(busy);
+        })
         .map_err(|_| Silence::Late)?;
     match answered.recv_timeout(patience) {
         Ok(value) => Ok(value),
@@ -109,9 +165,11 @@ fn let_go<C: Send + 'static>(client: C) {
     // one left in the graph until Chilpa exits is better than a caller that
     // never comes back.
     let client = std::mem::ManuallyDrop::new(client);
-    let _ = std::thread::Builder::new()
-        .name("chilpa-jack".into())
-        .spawn(move || drop(std::mem::ManuallyDrop::into_inner(client)));
+    let busy = Busy::new();
+    let _ = std::thread::Builder::new().name("chilpa-jack".into()).spawn(move || {
+        drop(std::mem::ManuallyDrop::into_inner(client));
+        drop(busy);
+    });
 }
 
 /// What the graph accepts, which is one rate and nothing else.
@@ -573,6 +631,56 @@ mod tests {
         let silence = vec![0u8; 64 * format.frame_bytes()];
         assert_eq!(sink.write(&silence).unwrap(), 64);
         let _ = sink.close();
+    }
+
+    /// Run by the test below, in a process of its own: joins the graph,
+    /// drops the sink and returns at once, so the process exits while the
+    /// client is still leaving.
+    #[test]
+    #[ignore = "run by quitting_while_a_client_leaves_the_graph_does_not_hang"]
+    fn leave_and_quit() {
+        if std::env::var_os("CHILPA_JACK_LEAVE_AND_QUIT").is_none() {
+            return;
+        }
+        let (Some(output), Ok(caps)) = (Jack.outputs().into_iter().next(), Jack.caps("")) else {
+            return;
+        };
+        let format = StreamFormat::new(caps.formats[0], caps.sample_rates[0], 2);
+        if let Ok(sink) = Jack.open(&output.id, format, false) {
+            drop(sink);
+        }
+    }
+
+    #[test]
+    fn quitting_while_a_client_leaves_the_graph_does_not_hang() {
+        // PipeWire's JACK library tears its loop down when the process exits,
+        // and a client still leaving on its own thread waits on that loop
+        // forever: the exit never finished. Seen as a test binary that had
+        // passed and was still alive five minutes later.
+        if Jack.outputs().is_empty() {
+            eprintln!("no JACK graph: skipped");
+            return;
+        }
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "tests::leave_and_quit", "--ignored", "--test-threads=1"])
+            .env("CHILPA_JACK_LEAVE_AND_QUIT", "1")
+            .stdout(std::process::Stdio::null())
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .unwrap();
+        let limit = std::time::Instant::now() + Duration::from_secs(20);
+        loop {
+            if let Some(status) = child.try_wait().unwrap() {
+                assert!(status.success(), "the process that left the graph failed: {status}");
+                return;
+            }
+            if std::time::Instant::now() > limit {
+                let _ = child.kill();
+                let _ = child.wait();
+                panic!("a process whose JACK client was still leaving could not exit");
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
     }
 
     #[test]
