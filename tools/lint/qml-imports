@@ -79,11 +79,21 @@ def main():
             line = code[: m.start()].count("\n") + 1
             if layer == "Screens" and to == "Screens":
                 errors.append(f"{name}:{line}: a screen uses the screen {used}; compose it from the layers below")
+            elif to == GALLERY:
+                if layer != GALLERY:
+                    errors.append(f"{name}:{line}: only the Gallery uses {used}")
             elif ORDER[to] > rank(layer) or (layer == GALLERY and to == "Screens"):
                 errors.append(f"{name}:{line}: a {layer} file uses {used}, from {to}")
 
+    # A singleton is not instantiated; it is shown by the pieces that use it.
+    singletons = {
+        line.split()[1]
+        for qmldir in QML.rglob("qmldir")
+        for line in qmldir.read_text().split("\n")
+        if line.startswith("singleton ")
+    }
     for used, (layer, where) in sorted(types.items()):
-        if layer in IN_GALLERY and used not in gallery_uses:
+        if layer in IN_GALLERY and used not in gallery_uses and used not in singletons:
             errors.append(f"{where}: {used} is not shown in the Gallery")
 
     if errors:

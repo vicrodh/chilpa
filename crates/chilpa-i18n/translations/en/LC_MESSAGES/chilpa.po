@@ -82,7 +82,19 @@ msgstr ""
 msgid "All ({})"
 msgstr ""
 
+msgid "All music"
+msgstr ""
+
+msgid "Artist"
+msgstr ""
+
 msgid "Artists"
+msgstr ""
+
+msgid "Back"
+msgstr ""
+
+msgid "Bit perfect"
 msgstr ""
 
 msgid "CD in {}"
@@ -95,6 +107,21 @@ msgid "Calm"
 msgstr ""
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr ""
+
+msgid "Clear filters"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Close tab"
+msgstr ""
+
+msgid "Collapse sidebar"
+msgstr ""
+
+msgid "Compact rows"
 msgstr ""
 
 msgid "CoreAudio reports no device that can play"
@@ -115,6 +142,9 @@ msgstr ""
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr ""
 
+msgid "Dark"
+msgstr ""
+
 msgid "Disc {}"
 msgstr ""
 
@@ -127,13 +157,22 @@ msgstr ""
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
 msgstr ""
 
+msgid "Expand sidebar"
+msgstr ""
+
 msgid "File"
 msgstr ""
 
 msgid "For a long while"
 msgstr ""
 
+msgid "Forward"
+msgstr ""
+
 msgid "From this week"
+msgstr ""
+
+msgid "Genre"
 msgstr ""
 
 msgid "High 24/176.4"
@@ -172,13 +211,34 @@ msgstr ""
 msgid "Library"
 msgstr ""
 
+msgid "Light"
+msgstr ""
+
+msgid "Maximize"
+msgstr ""
+
 msgid "Maximum 32/384"
+msgstr ""
+
+msgid "Minimize"
 msgstr ""
 
 msgid "My library"
 msgstr ""
 
 msgid "Never played"
+msgstr ""
+
+msgid "New tab"
+msgstr ""
+
+msgid "Next"
+msgstr ""
+
+msgid "Output: {}"
+msgstr ""
+
+msgid "Pause"
 msgstr ""
 
 msgid "PipeWire has no output called \"{}\" any more"
@@ -193,6 +253,24 @@ msgstr ""
 msgid "Play"
 msgstr ""
 
+msgid "Plays"
+msgstr ""
+
+msgid "Previous"
+msgstr ""
+
+msgid "Processed on the way out"
+msgstr ""
+
+msgid "Quality"
+msgstr ""
+
+msgid "Repeat"
+msgstr ""
+
+msgid "Rich rows"
+msgstr ""
+
 msgid "SACDMTOC was not found"
 msgstr ""
 
@@ -202,7 +280,16 @@ msgstr ""
 msgid "SACDTRL2 is missing"
 msgstr ""
 
+msgid "Search"
+msgstr ""
+
 msgid "Settings"
+msgstr ""
+
+msgid "Shuffle"
+msgstr ""
+
+msgid "Source: {}"
 msgstr ""
 
 msgid "Studio 24/48"
@@ -232,6 +319,12 @@ msgstr ""
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr ""
 
+msgid "Time"
+msgstr ""
+
+msgid "Title"
+msgstr ""
+
 msgid "To move to"
 msgstr ""
 
@@ -254,6 +347,9 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr ""
 
 msgid "Write to a file"
+msgstr ""
+
+msgid "Year"
 msgstr ""
 
 msgid "a DASH manifest, which Chilpa cannot read yet"

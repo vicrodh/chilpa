@@ -31,6 +31,9 @@ pub mod qobject {
         /// Seconds, published in quarters.
         #[qproperty(f64, position)]
         #[qproperty(f64, duration)]
+        /// "1:42" and "-2:22", set when the second changes.
+        #[qproperty(QString, elapsed)]
+        #[qproperty(QString, remaining)]
         /// "FLAC 24/96", with the bits of the signal.
         #[qproperty(QString, quality_label)]
         /// "FLAC · 24-bit / 96 kHz".
@@ -72,7 +75,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for Player {}
 }
 
-use crate::app;
+use crate::{app, format};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QString, QUrl};
 use std::pin::Pin;
@@ -90,6 +93,8 @@ pub struct PlayerRust {
     paused: bool,
     position: f64,
     duration: f64,
+    elapsed: QString,
+    remaining: QString,
     quality_label: QString,
     quality_long: QString,
     quality_tier: i32,
@@ -175,6 +180,13 @@ impl qobject::Player {
         let quarter = (now.seconds * 4.0).floor() / 4.0;
         if quarter != self.rust().position {
             self.as_mut().set_position(quarter);
+            let (at, total) = ((now.seconds * 1000.0) as u64, (now.total_seconds * 1000.0) as u64);
+            let elapsed = QString::from(&format::clock(at));
+            if elapsed != self.rust().elapsed {
+                self.as_mut().set_elapsed(elapsed);
+                let left = format!("-{}", format::clock(total.saturating_sub(at)));
+                self.as_mut().set_remaining(QString::from(&left));
+            }
         }
         if QString::from(&now.error) != self.rust().error {
             self.as_mut().set_error(QString::from(&now.error));

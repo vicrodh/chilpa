@@ -139,6 +139,10 @@ def bare_strings():
     }
     out = []
     for f in sorted(ROOT.glob("crates/**/*.qml")):
+        # The Gallery is read by whoever builds the window, not by whoever
+        # uses it: its labels are English and are not translated.
+        if "/qml/Gallery/" in str(f):
+            continue
         for m in SHOWN.finditer(f.read_text()):
             said = unescape(m.group(1))
             if said and said not in allowed:

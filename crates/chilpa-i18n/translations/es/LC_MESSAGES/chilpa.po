@@ -82,8 +82,20 @@ msgstr "Álbumes"
 msgid "All ({})"
 msgstr "Todo ({})"
 
+msgid "All music"
+msgstr "Toda la música"
+
+msgid "Artist"
+msgstr "Artista"
+
 msgid "Artists"
 msgstr "Artistas"
+
+msgid "Back"
+msgstr "Atrás"
+
+msgid "Bit perfect"
+msgstr "Bit perfect"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -96,6 +108,21 @@ msgstr "Tranquilo"
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
+
+msgid "Clear filters"
+msgstr "Quitar filtros"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Close tab"
+msgstr "Cerrar pestaña"
+
+msgid "Collapse sidebar"
+msgstr "Contraer barra lateral"
+
+msgid "Compact rows"
+msgstr "Filas compactas"
 
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
@@ -115,6 +142,9 @@ msgstr "DSDIFF comprimido con DST"
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
 
+msgid "Dark"
+msgstr "Oscuro"
+
 msgid "Disc {}"
 msgstr "Disco {}"
 
@@ -127,14 +157,23 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect para compartirlo y dejar que Windows mezcle y reconvierta."
 
+msgid "Expand sidebar"
+msgstr "Expandir barra lateral"
+
 msgid "File"
 msgstr "Archivo"
 
 msgid "For a long while"
 msgstr "Para un rato largo"
 
+msgid "Forward"
+msgstr "Adelante"
+
 msgid "From this week"
 msgstr "De esta semana"
+
+msgid "Genre"
+msgstr "Género"
 
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
@@ -172,14 +211,35 @@ msgstr "Info: etiquetas del archivo"
 msgid "Library"
 msgstr "Biblioteca"
 
+msgid "Light"
+msgstr "Claro"
+
+msgid "Maximize"
+msgstr "Maximizar"
+
 msgid "Maximum 32/384"
 msgstr "Máximo 32/384"
+
+msgid "Minimize"
+msgstr "Minimizar"
 
 msgid "My library"
 msgstr "Mi biblioteca"
 
 msgid "Never played"
 msgstr "Nunca escuchadas"
+
+msgid "New tab"
+msgstr "Nueva pestaña"
+
+msgid "Next"
+msgstr "Siguiente"
+
+msgid "Output: {}"
+msgstr "Salida: {}"
+
+msgid "Pause"
+msgstr "Pausa"
 
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
@@ -193,6 +253,24 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Play"
 msgstr "Reproducir"
 
+msgid "Plays"
+msgstr "Reproducciones"
+
+msgid "Previous"
+msgstr "Anterior"
+
+msgid "Processed on the way out"
+msgstr "Procesado en la salida"
+
+msgid "Quality"
+msgstr "Calidad"
+
+msgid "Repeat"
+msgstr "Repetir"
+
+msgid "Rich rows"
+msgstr "Filas amplias"
+
 msgid "SACDMTOC was not found"
 msgstr "no se encontró SACDMTOC"
 
@@ -202,8 +280,17 @@ msgstr "falta SACDTRL1"
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
 
+msgid "Search"
+msgstr "Buscar"
+
 msgid "Settings"
 msgstr "Ajustes"
+
+msgid "Shuffle"
+msgstr "Aleatorio"
+
+msgid "Source: {}"
+msgstr "Fuente: {}"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -232,6 +319,12 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
 
+msgid "Time"
+msgstr "Duración"
+
+msgid "Title"
+msgstr "Título"
+
 msgid "To move to"
 msgstr "Para moverse"
 
@@ -255,6 +348,9 @@ msgstr "Windows no dijo qué acepta \"{}\" ({})"
 
 msgid "Write to a file"
 msgstr "Escribir a un archivo"
+
+msgid "Year"
+msgstr "Año"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"

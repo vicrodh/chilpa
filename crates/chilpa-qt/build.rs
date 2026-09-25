@@ -24,10 +24,11 @@ fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
 
 fn main() {
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
-    // A layer's `qmldir` declares its singletons, and the fonts are the
-    // icons. Both travel in the same resource tree as the QML.
+    // A layer's `qmldir` declares its singletons, the fonts are the icons
+    // and the .qsb files are compiled shaders. All of them travel in the same
+    // resource tree as the QML.
     let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
-    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "ttf")));
+    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "ttf" || e == "qsb")));
     // Only the files that declare a bridge: `mod.rs` just lists them.
     let bridges = files("src/bridge", &|p| {
         p.extension().is_some_and(|e| e == "rs")

@@ -21,7 +21,9 @@ pub mod qobject {
         #[qml_singleton]
         #[qproperty(bool, frames)]
         #[qproperty(QString, shot)]
+        /// The screen to open at start, and which record: from "album:7".
         #[qproperty(QString, route)]
+        #[qproperty(i64, route_id)]
         type Dev = super::DevRust;
 
         /// Called on every presented frame while `frames` is on.
@@ -39,6 +41,7 @@ pub struct DevRust {
     frames: bool,
     shot: QString,
     route: QString,
+    route_id: i64,
     last: Option<Instant>,
     intervals: Vec<f64>,
 }
@@ -46,10 +49,13 @@ pub struct DevRust {
 impl Default for DevRust {
     fn default() -> Self {
         let var = |k: &str| std::env::var(k).unwrap_or_default();
+        let route = var("CHILPA_ROUTE");
+        let (screen, id) = route.split_once(':').unwrap_or((&route, "0"));
         Self {
             frames: !var("CHILPA_FRAMES").is_empty(),
             shot: QString::from(&var("CHILPA_SHOT")),
-            route: QString::from(&var("CHILPA_ROUTE")),
+            route: QString::from(screen),
+            route_id: id.parse().unwrap_or(0),
             last: None,
             intervals: Vec::new(),
         }
