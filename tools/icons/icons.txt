@@ -3,6 +3,7 @@
 # check). Run tools/icons/subset after editing this list.
 adjustments-horizontal
 alarm
+alert-triangle
 arrow-up-right
 arrows-shuffle
 arrows-sort
@@ -26,8 +27,10 @@ dots-vertical
 filter
 folder
 folder-open
+folder-plus
 grip-vertical
 heart
+hierarchy-2
 home
 info-circle
 layout-bottombar-expand
@@ -47,6 +50,7 @@ playlist
 playlist-add
 plus
 quote
+refresh
 repeat
 repeat-once
 rewind-backward-10
@@ -61,6 +65,7 @@ square
 stack-2
 star
 table
+trash
 user
 volume
 volume-2

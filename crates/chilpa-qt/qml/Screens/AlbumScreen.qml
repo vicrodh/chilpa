@@ -23,6 +23,7 @@ Flickable {
         id: tracks
         kind: "album"
         albumId: Navigation.routeId
+        filterRev: Library.contentRev
         playingPath: Player.path
     }
 

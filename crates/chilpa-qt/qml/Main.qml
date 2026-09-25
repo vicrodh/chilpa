@@ -65,6 +65,12 @@ Window {
         window: window
     }
 
+    Shortcuts {}
+
+    // The folders object watches the scans Settings starts, so it exists from
+    // the start and not from the first time its page opens.
+    readonly property int folders: LibraryFolders.count
+
     // Nothing starts with the keyboard: the search field only takes it when
     // it is clicked or asked for.
     Component.onCompleted: contentItem.forceActiveFocus()

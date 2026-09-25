@@ -70,7 +70,22 @@ msgstr ""
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr ""
 
+msgid "Active"
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Add a folder"
+msgstr ""
+
+msgid "Add a folder to the library"
+msgstr ""
+
 msgid "Added this month"
+msgstr ""
+
+msgid "Advanced"
 msgstr ""
 
 msgid "Album"
@@ -85,16 +100,37 @@ msgstr ""
 msgid "All music"
 msgstr ""
 
+msgid "Appearance"
+msgstr ""
+
 msgid "Artist"
 msgstr ""
 
 msgid "Artists"
 msgstr ""
 
+msgid "Audio"
+msgstr ""
+
+msgid "Audio stack"
+msgstr ""
+
+msgid "BP marks an output that takes the samples untouched."
+msgstr ""
+
 msgid "Back"
 msgstr ""
 
 msgid "Bit perfect"
+msgstr ""
+
+msgid "Bit-perfect"
+msgstr ""
+
+msgid "Browse for a music folder, or type its full path."
+msgstr ""
+
+msgid "Browse…"
 msgstr ""
 
 msgid "CD in {}"
@@ -121,7 +157,13 @@ msgstr ""
 msgid "Collapse sidebar"
 msgstr ""
 
+msgid "Compact"
+msgstr ""
+
 msgid "Compact rows"
+msgstr ""
+
+msgid "Compact rows like a spreadsheet, or rich rows with the cover."
 msgstr ""
 
 msgid "CoreAudio reports no device that can play"
@@ -145,6 +187,18 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Devices & cast"
+msgstr ""
+
+msgid "Diagnose"
+msgstr ""
+
+msgid "Diagnose the output"
+msgstr ""
+
+msgid "Diagnosis"
+msgstr ""
+
 msgid "Disc {}"
 msgstr ""
 
@@ -161,6 +215,12 @@ msgid "Expand sidebar"
 msgstr ""
 
 msgid "File"
+msgstr ""
+
+msgid "Folders"
+msgstr ""
+
+msgid "Font"
 msgstr ""
 
 msgid "For a long while"
@@ -208,10 +268,25 @@ msgstr ""
 msgid "Info: Embedded tags"
 msgstr ""
 
+msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
+msgstr ""
+
 msgid "Library"
 msgstr ""
 
+msgid "Library folders"
+msgstr ""
+
 msgid "Light"
+msgstr ""
+
+msgid "Look"
+msgstr ""
+
+msgid "Maintenance"
+msgstr ""
+
+msgid "Manage"
 msgstr ""
 
 msgid "Maximize"
@@ -220,13 +295,22 @@ msgstr ""
 msgid "Maximum 32/384"
 msgstr ""
 
+msgid "Menu"
+msgstr ""
+
 msgid "Minimize"
+msgstr ""
+
+msgid "Missing"
 msgstr ""
 
 msgid "Most played"
 msgstr ""
 
 msgid "My library"
+msgstr ""
+
+msgid "Navigation"
 msgstr ""
 
 msgid "Never played"
@@ -239,6 +323,18 @@ msgid "Next"
 msgstr ""
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
+msgstr ""
+
+msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
+msgstr ""
+
+msgid "Opens the device and says which formats reach it untouched."
+msgstr ""
+
+msgid "Output"
+msgstr ""
+
+msgid "Output device"
 msgstr ""
 
 msgid "Output: {}"
@@ -259,6 +355,9 @@ msgstr ""
 msgid "Play"
 msgstr ""
 
+msgid "Playback"
+msgstr ""
+
 msgid "Plays"
 msgstr ""
 
@@ -271,13 +370,43 @@ msgstr ""
 msgid "Quality"
 msgstr ""
 
+msgid "Quit"
+msgstr ""
+
+msgid "Reading {} of {} files"
+msgstr ""
+
+msgid "Reads every folder again. What did not change is not read twice."
+msgstr ""
+
+msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
+msgstr ""
+
 msgid "Recently added"
 msgstr ""
 
 msgid "Recently played"
 msgstr ""
 
+msgid "Remove from the library"
+msgstr ""
+
+msgid "Repair"
+msgstr ""
+
+msgid "Repair the library"
+msgstr ""
+
+msgid "Repaired. Nothing was lost."
+msgstr ""
+
 msgid "Repeat"
+msgstr ""
+
+msgid "Rescan"
+msgstr ""
+
+msgid "Rich"
 msgstr ""
 
 msgid "Rich rows"
@@ -292,6 +421,12 @@ msgstr ""
 msgid "SACDTRL2 is missing"
 msgstr ""
 
+msgid "Scan again"
+msgstr ""
+
+msgid "Scan every folder again"
+msgstr ""
+
 msgid "Search"
 msgstr ""
 
@@ -302,6 +437,9 @@ msgid "Shuffle"
 msgstr ""
 
 msgid "Source: {}"
+msgstr ""
+
+msgid "Sources"
 msgstr ""
 
 msgid "Studio 24/48"
@@ -325,6 +463,9 @@ msgstr ""
 msgid "The service's answer is missing."
 msgstr ""
 
+msgid "Theme"
+msgstr ""
+
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr ""
 
@@ -332,6 +473,9 @@ msgid "This one makes no sound. It writes what would have gone to the device, so
 msgstr ""
 
 msgid "This screen is not built yet."
+msgstr ""
+
+msgid "This section is not built yet."
 msgstr ""
 
 msgid "Time"
@@ -343,10 +487,19 @@ msgstr ""
 msgid "To move to"
 msgstr ""
 
+msgid "Track lists"
+msgstr ""
+
 msgid "Track {}"
 msgstr ""
 
+msgid "Updates"
+msgstr ""
+
 msgid "What you play most"
+msgstr ""
+
+msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr ""
 
 msgid "Wherever the system is sending sound"
@@ -1024,6 +1177,11 @@ msgid_plural "{} discs"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} folder"
+msgid_plural "{} folders"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr ""
 
@@ -1037,6 +1195,9 @@ msgid "{} of the list's tracks are gone"
 msgstr ""
 
 msgid "{} of {} formats come out untouched"
+msgstr ""
+
+msgid "{} read, {} unchanged, {} missing"
 msgstr ""
 
 msgid "{} song"

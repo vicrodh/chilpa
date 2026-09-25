@@ -400,3 +400,6 @@ diag
 flickable
 hor
 ver
+# Rust macro fragment specifiers.
+ident
+ty

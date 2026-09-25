@@ -70,8 +70,23 @@ msgstr "flotante de 32"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentro corren a esa -- este va a {} Hz. Una pista grabada a cualquier otra se remuestrea antes de que Chilpa tenga voz, y ningún ajuste aquí lo cambia. JACK es para enrutar audio entre programas; para entregarle un archivo a un DAC sin tocarlo, elige la tarjeta directo."
 
+msgid "Active"
+msgstr "Activa"
+
+msgid "Add"
+msgstr "Agregar"
+
+msgid "Add a folder"
+msgstr "Agregar una carpeta"
+
+msgid "Add a folder to the library"
+msgstr "Agregar una carpeta a la biblioteca"
+
 msgid "Added this month"
 msgstr "Agregadas este mes"
+
+msgid "Advanced"
+msgstr "Avanzado"
 
 msgid "Album"
 msgstr "Álbum"
@@ -85,17 +100,38 @@ msgstr "Todo ({})"
 msgid "All music"
 msgstr "Toda la música"
 
+msgid "Appearance"
+msgstr "Apariencia"
+
 msgid "Artist"
 msgstr "Artista"
 
 msgid "Artists"
 msgstr "Artistas"
 
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Audio stack"
+msgstr "Pila de audio"
+
+msgid "BP marks an output that takes the samples untouched."
+msgstr "BP marca una salida que recibe las muestras intactas."
+
 msgid "Back"
 msgstr "Atrás"
 
 msgid "Bit perfect"
 msgstr "Bit perfect"
+
+msgid "Bit-perfect"
+msgstr "Bit-perfect"
+
+msgid "Browse for a music folder, or type its full path."
+msgstr "Busca una carpeta de música o escribe su ruta completa."
+
+msgid "Browse…"
+msgstr "Buscar…"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -121,8 +157,14 @@ msgstr "Cerrar pestaña"
 msgid "Collapse sidebar"
 msgstr "Contraer barra lateral"
 
+msgid "Compact"
+msgstr "Compacta"
+
 msgid "Compact rows"
 msgstr "Filas compactas"
+
+msgid "Compact rows like a spreadsheet, or rich rows with the cover."
+msgstr "Filas compactas como una hoja de cálculo, o filas amplias con la portada."
 
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
@@ -145,6 +187,18 @@ msgstr "DSD{} · DoP a {} Hz · {}"
 msgid "Dark"
 msgstr "Oscuro"
 
+msgid "Devices & cast"
+msgstr "Dispositivos y transmisión"
+
+msgid "Diagnose"
+msgstr "Diagnosticar"
+
+msgid "Diagnose the output"
+msgstr "Diagnosticar la salida"
+
+msgid "Diagnosis"
+msgstr "Diagnóstico"
+
 msgid "Disc {}"
 msgstr "Disco {}"
 
@@ -162,6 +216,12 @@ msgstr "Expandir barra lateral"
 
 msgid "File"
 msgstr "Archivo"
+
+msgid "Folders"
+msgstr "Carpetas"
+
+msgid "Font"
+msgstr "Fuente"
 
 msgid "For a long while"
 msgstr "Para un rato largo"
@@ -208,11 +268,26 @@ msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuand
 msgid "Info: Embedded tags"
 msgstr "Info: etiquetas del archivo"
 
+msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
+msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
+
 msgid "Library"
 msgstr "Biblioteca"
 
+msgid "Library folders"
+msgstr "Carpetas de la biblioteca"
+
 msgid "Light"
 msgstr "Claro"
+
+msgid "Look"
+msgstr "Aspecto"
+
+msgid "Maintenance"
+msgstr "Mantenimiento"
+
+msgid "Manage"
+msgstr "Administrar"
 
 msgid "Maximize"
 msgstr "Maximizar"
@@ -220,14 +295,23 @@ msgstr "Maximizar"
 msgid "Maximum 32/384"
 msgstr "Máximo 32/384"
 
+msgid "Menu"
+msgstr "Menú"
+
 msgid "Minimize"
 msgstr "Minimizar"
+
+msgid "Missing"
+msgstr "No está"
 
 msgid "Most played"
 msgstr "Lo más escuchado"
 
 msgid "My library"
 msgstr "Mi biblioteca"
+
+msgid "Navigation"
+msgstr "Navegación"
 
 msgid "Never played"
 msgstr "Nunca escuchadas"
@@ -240,6 +324,18 @@ msgstr "Siguiente"
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
+
+msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
+msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
+
+msgid "Opens the device and says which formats reach it untouched."
+msgstr "Abre el dispositivo y dice qué formatos le llegan intactos."
+
+msgid "Output"
+msgstr "Salida"
+
+msgid "Output device"
+msgstr "Dispositivo de salida"
 
 msgid "Output: {}"
 msgstr "Salida: {}"
@@ -259,6 +355,9 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Play"
 msgstr "Reproducir"
 
+msgid "Playback"
+msgstr "Reproducción"
+
 msgid "Plays"
 msgstr "Reproducciones"
 
@@ -271,14 +370,44 @@ msgstr "Procesado en la salida"
 msgid "Quality"
 msgstr "Calidad"
 
+msgid "Quit"
+msgstr "Salir"
+
+msgid "Reading {} of {} files"
+msgstr "Leyendo {} de {} archivos"
+
+msgid "Reads every folder again. What did not change is not read twice."
+msgstr "Vuelve a leer todas las carpetas. Lo que no cambió no se lee dos veces."
+
+msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
+msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
+
 msgid "Recently added"
 msgstr "Agregados recientemente"
 
 msgid "Recently played"
 msgstr "Escuchados recientemente"
 
+msgid "Remove from the library"
+msgstr "Quitar de la biblioteca"
+
+msgid "Repair"
+msgstr "Reparar"
+
+msgid "Repair the library"
+msgstr "Reparar la biblioteca"
+
+msgid "Repaired. Nothing was lost."
+msgstr "Reparada. No se perdió nada."
+
 msgid "Repeat"
 msgstr "Repetir"
+
+msgid "Rescan"
+msgstr "Volver a escanear"
+
+msgid "Rich"
+msgstr "Amplia"
 
 msgid "Rich rows"
 msgstr "Filas amplias"
@@ -292,6 +421,12 @@ msgstr "falta SACDTRL1"
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
 
+msgid "Scan again"
+msgstr "Escanear de nuevo"
+
+msgid "Scan every folder again"
+msgstr "Escanear todas las carpetas de nuevo"
+
 msgid "Search"
 msgstr "Buscar"
 
@@ -303,6 +438,9 @@ msgstr "Aleatorio"
 
 msgid "Source: {}"
 msgstr "Fuente: {}"
+
+msgid "Sources"
+msgstr "Fuentes"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -325,6 +463,9 @@ msgstr "El servicio no mandó un código."
 msgid "The service's answer is missing."
 msgstr "Falta la respuesta del servicio."
 
+msgid "Theme"
+msgstr "Tema"
+
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
 
@@ -333,6 +474,9 @@ msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder co
 
 msgid "This screen is not built yet."
 msgstr "Esta pantalla todavía no está hecha."
+
+msgid "This section is not built yet."
+msgstr "Esta sección todavía no está hecha."
 
 msgid "Time"
 msgstr "Duración"
@@ -343,11 +487,20 @@ msgstr "Título"
 msgid "To move to"
 msgstr "Para moverse"
 
+msgid "Track lists"
+msgstr "Listas de pistas"
+
 msgid "Track {}"
 msgstr "Pista {}"
 
+msgid "Updates"
+msgstr "Actualizaciones"
+
 msgid "What you play most"
 msgstr "Lo que más escuchas"
+
+msgid "Where the samples go: straight to the device, or through a sound server."
+msgstr "Por dónde van las muestras: directo al dispositivo o a través de un servidor de sonido."
 
 msgid "Wherever the system is sending sound"
 msgstr "A donde el sistema esté mandando el sonido"
@@ -1024,6 +1177,11 @@ msgid_plural "{} discs"
 msgstr[0] "{} disco"
 msgstr[1] "{} discos"
 
+msgid "{} folder"
+msgid_plural "{} folders"
+msgstr[0] "{} carpeta"
+msgstr[1] "{} carpetas"
+
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
 
@@ -1038,6 +1196,9 @@ msgstr "{} de las pistas de la lista ya no están"
 
 msgid "{} of {} formats come out untouched"
 msgstr "{} de {} formatos salen tal cual"
+
+msgid "{} read, {} unchanged, {} missing"
+msgstr "{} leídos, {} sin cambios, {} faltantes"
 
 msgid "{} song"
 msgid_plural "{} songs"

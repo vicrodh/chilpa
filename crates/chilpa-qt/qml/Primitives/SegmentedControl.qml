@@ -1,8 +1,8 @@
 import QtQuick
 import "../Theme"
 
-// Exclusive options as icons in a field (design/03 SegmentedControl).
-// `options` is a list of { glyph, tip }.
+// Exclusive options in a field (design/03 SegmentedControl). `options` is
+// a list of { glyph, tip } for icons, or of { text } for words.
 Rectangle {
     id: root
 
@@ -30,16 +30,27 @@ Rectangle {
                 required property var modelData
                 readonly property bool active: index === root.current
 
-                width: Metrics.segmentWidth
+                width: segment.modelData.text ? label.implicitWidth + Metrics.gap12 * 2 : Metrics.segmentWidth // derived: padding on both sides
                 height: Metrics.segmentHeight
                 radius: Metrics.radiusItem
                 color: active ? Theme.color.surfaceRaised : "transparent"
 
                 Edge { visible: segment.active }
 
+                Text {
+                    id: label
+                    anchors.centerIn: parent
+                    visible: !!segment.modelData.text
+                    text: segment.modelData.text || ""
+                    font.pointSize: Type.row
+                    font.weight: segment.active ? Type.medium : Type.regular
+                    color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
+                }
+
                 Icon {
                     anchors.centerIn: parent
-                    glyph: segment.modelData.glyph
+                    visible: !segment.modelData.text
+                    glyph: segment.modelData.glyph || ""
                     size: Metrics.iconMd
                     color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
                 }
@@ -48,7 +59,8 @@ Rectangle {
                     anchors.fill: parent
                     hoverEnabled: true
                     onClicked: root.activated(segment.index)
-                    onContainsMouseChanged: containsMouse ? TipState.show(segment.modelData.tip, segment) : TipState.hide(segment)
+                    onContainsMouseChanged: !segment.modelData.tip ? undefined
+                        : containsMouse ? TipState.show(segment.modelData.tip, segment) : TipState.hide(segment)
                 }
             }
         }

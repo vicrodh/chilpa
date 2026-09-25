@@ -7,6 +7,8 @@ Rectangle {
 
     property string text
     property string glyph
+    // A glyph from the filled font: play, pause, a filled heart.
+    property bool filled: false
     // "primary" or "secondary".
     property string kind: "secondary"
 
@@ -30,7 +32,7 @@ Rectangle {
             anchors.verticalCenter: parent.verticalCenter
             visible: root.glyph !== ""
             glyph: root.glyph
-            filled: root.primary
+            filled: root.filled
             size: Metrics.iconSm
             color: root.primary ? Theme.color.textOnAccent : Theme.color.textPrimary
         }

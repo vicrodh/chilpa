@@ -14,6 +14,7 @@ pub enum Screen {
     Albums,
     Album,
     Settings,
+    Folders,
 }
 
 impl Screen {
@@ -25,26 +26,29 @@ impl Screen {
             Screen::Albums => "albums",
             Screen::Album => "album",
             Screen::Settings => "settings",
+            Screen::Folders => "folders",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Settings]
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Settings, Screen::Folders]
             .into_iter()
             .find(|s| s.name() == name)
     }
 }
 
-/// Where a tab is: a screen and, for a record, which one.
+/// Where a tab is: a screen and, for a record, which one; for Settings,
+/// which section.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Route {
     pub screen: Screen,
     pub id: i64,
+    pub section: &'static str,
 }
 
 impl Route {
     pub fn of(screen: Screen) -> Route {
-        Route { screen, id: 0 }
+        Route { screen, id: 0, section: "" }
     }
 }
 
@@ -153,7 +157,7 @@ mod tests {
     use super::*;
 
     fn album(id: i64) -> Route {
-        Route { screen: Screen::Album, id }
+        Route { screen: Screen::Album, id, section: "" }
     }
 
     #[test]
