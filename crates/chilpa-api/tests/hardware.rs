@@ -56,6 +56,18 @@ fn field(text: &str, name: &str) -> Option<String> {
         .map(|v| v.trim().to_string())
 }
 
+/// Points the library somewhere disposable.
+///
+/// This smoke needs the real device and nothing else. Without this it opened
+/// the real library and wrote plays into it, which is the one thing a test
+/// must never do to the machine it runs on: every other facade test here
+/// isolates, and this one did not until it had already put rows in mine.
+fn other_library() {
+    let dir = std::env::temp_dir().join("chilpa-hardware-smoke");
+    let _ = std::fs::create_dir_all(&dir);
+    std::env::set_var("XDG_DATA_HOME", dir);
+}
+
 fn asked_for() -> Option<(String, PathBuf, String)> {
     let device = std::env::var("CHILPA_SMOKE_DEVICE").ok()?;
     let track = std::env::var("CHILPA_SMOKE_TRACK").ok()?;
@@ -73,6 +85,7 @@ fn the_card_opens_in_the_track_s_own_format() {
         return;
     };
     assert!(track.exists(), "{} is not there", track.display());
+    other_library();
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.play_file(&track, &device, true);
@@ -142,6 +155,7 @@ fn what_the_window_would_claim_matches_what_the_kernel_did() {
         eprintln!("smoke: set the three variables to run this");
         return;
     };
+    other_library();
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.play_file(&track, &device, true);
 
