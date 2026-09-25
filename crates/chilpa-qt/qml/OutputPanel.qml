@@ -29,6 +29,16 @@ RowLayout {
             Chilpa.device = Chilpa.outputIds[0]
     }
 
+    // The stack first, because it decides the outputs: which exist, what they
+    // are called and whether bit-perfect is on the table at all. Without it
+    // here the window showed one stack's outputs and there was no way from
+    // this panel to reach any other, so a machine with a USB DAC on it
+    // offered "wherever the system is sending sound" and nothing else. The
+    // DAC was listed all along, under a stack nobody could get to.
+    Label { text: Chilpa.translate("Through", Chilpa.trRev); color: "#411d1f" }
+
+    StackSelect { Layout.preferredWidth: 150 }
+
     Label { text: Chilpa.translate("Output", Chilpa.trRev); color: "#411d1f" }
 
     OutputSelect {

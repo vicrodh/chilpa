@@ -518,9 +518,13 @@ fn play_cd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
-                        // A CD delivered as is is always bit-perfect: if
-                        // the output does not accept 16/44.1, it is not opened.
-                        bit_perfect: true,
+                        // A CD delivered as is is not converted on the way
+                        // out of Chilpa: if the output does not accept
+                        // 16/44.1 it is not opened at all. That is half the
+                        // answer. The other half is where it went, and it
+                        // used to be missing: through `default` this said
+                        // bit-perfect while the samples went into a mixer.
+                        bit_perfect: crate::path_is_exact(device, exclusive),
                         total_frames: duration,
                         tags: Some(tag.clone()),
                         artwork: None,
@@ -624,7 +628,11 @@ fn play_sacd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
-                        bit_perfect: true,
+                        // DSD over DoP carries the bits untouched inside the
+                        // PCM frames, so nothing is converted here. Whether
+                        // anything happens to them afterwards is the stack's
+                        // answer, and asking it is what this used to skip.
+                        bit_perfect: crate::path_is_exact(device, exclusive),
                         total_frames: duration,
                         tags: Some(tag.clone()),
                         artwork: None,
@@ -692,7 +700,10 @@ fn play_dsd(
                 let _ = events.send(PlayerEvent::Started {
                     path: owned.clone(),
                     opened: format,
-                    bit_perfect: true,
+                    // Same as the SACD path: the DoP carrier preserves the
+                    // bits, and where they go afterwards is the stack's to
+                    // say.
+                    bit_perfect: crate::path_is_exact(device, exclusive),
                     total_frames,
                     tags: tags.clone(),
                     artwork: artwork.clone(),

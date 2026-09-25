@@ -117,8 +117,24 @@ impl Decoded {
         // the first decoded block carries them. So when they are missing, one
         // block is decoded up front and kept to hand over later.
         let declared = (params.sample_rate, params.channels.map(|c| c.count() as u16));
+        // What the file says it carries. `bits_per_sample` is empty for ALAC
+        // -- symphonia leaves it unset and the depth lives in the magic
+        // cookie -- which is the whole reason `alac_bit_depth` exists.
+        //
+        // It is read once, here, and used for both answers. It used to feed
+        // only the packing, while the stream format fell through to
+        // `unwrap_or(16)`: every ALAC file, whatever it held, was announced
+        // as 16 bit. A DAC that takes no S16 refused the track outright,
+        // which is how this was found; one that takes S16 would have played
+        // a 24 bit album at 16 and the window would have called it
+        // bit-perfect, because nothing in Chilpa had converted anything --
+        // it had simply asked for the wrong thing.
+        let declared_bits = params
+            .bits_per_sample
+            .map(|b| b.min(32) as u8)
+            .or_else(|| alac_bit_depth(params));
         // The file's bits win: 16 goes out as S16, 24 as S24In32.
-        let sample_format = match params.bits_per_sample.unwrap_or(16) {
+        let sample_format = match declared_bits.unwrap_or(16) {
             0..=16 => SampleFormat::S16,
             17..=24 => SampleFormat::S24In32,
             _ => SampleFormat::S32,
@@ -129,10 +145,6 @@ impl Decoded {
         let delay = u64::from(params.delay.unwrap_or(0));
         let padding = params.padding.unwrap_or(0);
         let frames = params.n_frames;
-        let declared_bits = params
-            .bits_per_sample
-            .map(|b| b.min(32) as u8)
-            .or_else(|| alac_bit_depth(params));
         let mut format = format;
         let mut pending = None;
         let (sample_rate_hz, channels) = match declared {
@@ -242,7 +254,7 @@ fn first_block(
     loop {
         let packet = match format.next_packet() {
             Ok(p) => p,
-            Err(e) => return Err(DecodeError::Unsupported(format!("sin audio legible: {e}"))),
+            Err(e) => return Err(DecodeError::Unsupported(format!("no readable audio: {e}"))),
         };
         if packet.track_id() != track_id {
             continue;
