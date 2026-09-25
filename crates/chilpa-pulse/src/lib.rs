@@ -179,6 +179,14 @@ impl AudioSink for PulseSink {
         self.simple.flush().map_err(|e| SinkError::Backend(e.to_string().unwrap_or_default()))
     }
 
+    /// The server's latency in frames: two seconds of them by default.
+    fn held(&self) -> u64 {
+        self.simple
+            .get_latency()
+            .map(|latency| latency.0 * u64::from(self.stream.sample_rate_hz) / 1_000_000)
+            .unwrap_or(0)
+    }
+
     /// Watches the server's latency run down instead of asking it to drain,
     /// which blocks until it is done: a stop has to be able to cut in. The
     /// server holds two seconds by default; never longer than three.

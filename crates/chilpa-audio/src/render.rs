@@ -121,6 +121,8 @@ where
     let mut xruns = 0;
     // Since when the device has taken nothing, while it says it is full.
     let mut full_since: Option<std::time::Instant> = None;
+    // Frames handed over and then thrown away at a seek: never heard.
+    let mut thrown_away: u64 = 0;
 
     while !stop.is_stopped() {
         let block = match source.next_block() {
@@ -131,6 +133,7 @@ where
         // From somewhere else in the track: what the device holds is from
         // before, and it goes.
         if source.moved() {
+            thrown_away += sink.held();
             if let Err(error) = sink.flush() {
                 return Outcome::Failed { frames, error };
             }
@@ -171,7 +174,9 @@ where
                     xruns = 0;
                     offset += written * frame_bytes;
                     frames += written as u64;
-                    on_progress(frames);
+                    // What was heard: not what the device still holds, nor
+                    // what a seek threw away.
+                    on_progress(frames.saturating_sub(thrown_away + sink.held()));
                 }
                 Err(e) if e.is_recoverable() => {
                     xruns += 1;
@@ -276,6 +281,60 @@ mod tests {
         });
         assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 0 });
         assert!(asked.elapsed() < Duration::from_secs(1), "it waited {:?}", asked.elapsed());
+    }
+
+    /// A device that plays nothing: it holds all it is handed, until a flush.
+    struct Holding(u64);
+
+    impl AudioSink for Holding {
+        fn format(&self) -> StreamFormat {
+            StreamFormat::new(SampleFormat::S16, 44_100, 2)
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            self.0 += frames.len() as u64 / 4;
+            Ok(frames.len() / 4)
+        }
+        fn held(&self) -> u64 {
+            self.0
+        }
+        fn flush(&mut self) -> Result<(), SinkError> {
+            self.0 = 0;
+            Ok(())
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    /// Blocks, the second of them from somewhere else in the track.
+    struct Moving(Vec<Vec<u8>>, bool);
+
+    impl FrameSource for Moving {
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            if self.0.is_empty() {
+                return Ok(None);
+            }
+            self.1 = self.0.len() == 1;
+            Ok(Some(self.0.remove(0)))
+        }
+        fn moved(&mut self) -> bool {
+            std::mem::take(&mut self.1)
+        }
+    }
+
+    #[test]
+    fn progress_counts_what_was_heard_and_not_what_the_device_holds() {
+        // The device holds everything and plays nothing, so nothing has been
+        // heard: before a seek, and after one that threw away what it held.
+        let mut heard = Vec::new();
+        let out = render_with(
+            &mut Moving(vec![block(10), block(10)], false),
+            &mut Holding(0),
+            &StopSignal::new(),
+            &mut |f| heard.push(f),
+        );
+        assert_eq!(out, Outcome::Finished { frames: 20 }, "twenty frames handed over");
+        assert_eq!(heard, [0, 0], "and none of them heard");
     }
 
     /// Blocks to hand over, and then either the end or, when set, a failure.

@@ -83,6 +83,14 @@ pub trait AudioSink {
         Ok(())
     }
 
+    /// Frames written and not played yet: what the device holds. Progress
+    /// counts what was heard, and without this it ran ahead of the music by
+    /// all of it -- half a second on a DAC, which synced lyrics show. By
+    /// default nothing is held.
+    fn held(&self) -> u64 {
+        0
+    }
+
     /// Throws away what the device holds and has not played yet. After a
     /// seek or a skip that is the music being left, and playing it out first
     /// put half a second of it between the button and what was asked for.
@@ -124,6 +132,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn flush(&mut self) -> Result<(), SinkError> {
         (**self).flush()
+    }
+
+    fn held(&self) -> u64 {
+        (**self).held()
     }
 }
 

@@ -539,6 +539,11 @@ impl AudioSink for CoreAudioSink {
         Ok(())
     }
 
+    fn held(&self) -> u64 {
+        let bytes = self.shared.waiting.lock().map(|w| w.len()).unwrap_or(0);
+        (bytes / self.stream.frame_bytes().max(1)) as u64
+    }
+
     /// Waits for the device to take what is queued: a quarter of a second
     /// at most, and a second more before giving up on one that stopped.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {

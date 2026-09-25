@@ -186,6 +186,10 @@ impl AudioSink for AlsaSink {
         Ok(())
     }
 
+    fn held(&self) -> u64 {
+        self.pcm.delay().map(|frames| frames.max(0) as u64).unwrap_or(0)
+    }
+
     /// Drops what the device holds and makes it ready for more, without
     /// closing it.
     fn flush(&mut self) -> Result<(), SinkError> {
