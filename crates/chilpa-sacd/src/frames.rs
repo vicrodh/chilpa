@@ -21,6 +21,16 @@ pub struct SacdTrackReader {
     end_lsn: u64,
     /// Audio read that does not yet make up a whole frame.
     pending: Vec<u8>,
+    /// Whether the track's first frame has been reached. Until it is, audio
+    /// is dropped: a track's first sector begins with the tail of the last
+    /// frame of the track before -- 672 or 1344 bytes of it on most tracks of
+    /// the discs this was measured on -- and taking it cut every frame of
+    /// the track across two real ones, which QBZ measured as noise with the
+    /// music behind it.
+    synced: bool,
+    /// Frames the disc says the track still has. Its sectors can hold a
+    /// whole frame more, and that frame is the next track's.
+    frames_left: u32,
     info: DsdInfo,
 }
 
@@ -38,6 +48,8 @@ impl SacdTrackReader {
             end_lsn: u64::from(track.start_lsn) + u64::from(track.length_lsn),
             image,
             pending: Vec::with_capacity(STEREO_FRAME * 2),
+            synced: false,
+            frames_left: track.duration_frames,
             info: DsdInfo { dsd_rate_hz: crate::DSD64_HZ, channels: 2, samples },
         })
     }
@@ -54,6 +66,10 @@ impl SacdTrackReader {
                 ));
             }
             for p in packets.packets.iter().filter(|p| p.is_audio()) {
+                if !self.synced && !p.frame_start {
+                    continue;
+                }
+                self.synced = true;
                 self.pending.extend_from_slice(&sector_buf[p.at..p.at + p.len]);
             }
             self.lsn += 1;
@@ -68,6 +84,9 @@ impl DsdSource for SacdTrackReader {
     }
 
     fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, chilpa_dsd::DsdError> {
+        if self.frames_left == 0 {
+            return Ok(None);
+        }
         self.fill().map_err(|e| chilpa_dsd::DsdError::Corrupt(e.to_string()))?;
         if self.pending.len() < STEREO_FRAME {
             // What is left does not make a frame: it is the end of the track.
@@ -75,6 +94,7 @@ impl DsdSource for SacdTrackReader {
             return Ok(None);
         }
         let frame: Vec<u8> = self.pending.drain(..STEREO_FRAME).collect();
+        self.frames_left -= 1;
         Ok(Some(split_channels(&frame)))
     }
 }

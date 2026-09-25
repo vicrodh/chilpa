@@ -61,3 +61,43 @@ fn every_sacd_image_under_a_folder_opens() {
     }
     assert!(failed.is_empty(), "these SACD images could not be read: {failed:#?}");
 }
+
+/// FNV-1a over 64 bits, the hash QBZ's `sacd_verify` prints per channel, so
+/// the two readers can be compared without writing the audio anywhere.
+fn fnv1a(mut hash: u64, bytes: &[u8]) -> u64 {
+    for byte in bytes {
+        hash ^= u64::from(*byte);
+        hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+    }
+    hash
+}
+
+#[test]
+#[ignore = "reads a real disc image; run it on purpose"]
+fn a_real_track_hashes_the_way_qbz_s_reader_did() {
+    // CHILPA_SMOKE_SACD_TRACK="/path/to/image.iso#2", then compare with
+    // `cargo run -p qbz-dsd --example sacd_verify -- /path/to/image.iso 2` in QBZ.
+    let Some(spec) = std::env::var("CHILPA_SMOKE_SACD_TRACK").ok() else {
+        eprintln!("smoke: set CHILPA_SMOKE_SACD_TRACK to image.iso#number to run this");
+        return;
+    };
+    let (image, number) = spec.rsplit_once('#').expect("image.iso#number");
+    let number: u8 = number.parse().unwrap();
+    let img = chilpa_sacd::open(Path::new(image)).unwrap();
+    let track = img.area.tracks.iter().find(|t| t.number == number).unwrap().clone();
+    let expected = u64::from(track.duration_frames) * 4704;
+    let mut reader = chilpa_sacd::SacdTrackReader::open(img, &track).unwrap();
+    use chilpa_dsd::DsdSource as _;
+    let (mut total, mut hashes) = (0u64, [0xcbf2_9ce4_8422_2325u64; 2]);
+    while let Some(block) = reader.next_block().unwrap() {
+        for (hash, channel) in hashes.iter_mut().zip(&block) {
+            *hash = fnv1a(*hash, channel);
+        }
+        total += block[0].len() as u64;
+    }
+    eprintln!(
+        "smoke: track {number}: {total} bytes/channel (the track is {expected}) fnv1a64={:016x}/{:016x}",
+        hashes[0], hashes[1]
+    );
+    assert_eq!(total, expected, "a track is as long as the disc says, no more and no less");
+}
