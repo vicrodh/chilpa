@@ -64,6 +64,42 @@ pub struct Facets {
     pub albums: Vec<FacetEntry>,
 }
 
+/// A folder as the Folders screen shows it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct FolderView {
+    pub folders: Vec<FolderItem>,
+    pub tracks: Vec<TrackRow>,
+    /// False for a folder outside the library, read from the disk as it is.
+    pub in_library: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FolderItem {
+    pub name: String,
+    pub path: String,
+    /// Tracks under it, all the way down; zero when it is not known.
+    pub tracks: usize,
+    pub artwork_path: String,
+}
+
+/// A row for a file the library does not have: its name, and what its
+/// extension says.
+pub(crate) fn file_row(path: &str) -> TrackRow {
+    TrackRow {
+        title: crate::title_of(std::path::Path::new(path)),
+        quality: Quality::of_file(path, None, None),
+        id: 0,
+        path: path.to_string(),
+        artist: String::new(),
+        album: String::new(),
+        album_id: 0,
+        disc: 0,
+        number: 0,
+        duration_ms: 0,
+        plays: 0,
+    }
+}
+
 /// A record as its page shows it.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AlbumDetail {
@@ -105,6 +141,56 @@ impl Reader {
     /// Every album with something present, in that order.
     pub fn album_ids(&self, order: chilpa_library::AlbumSort) -> Vec<i64> {
         self.lib.album_ids(order).unwrap_or_default()
+    }
+
+    /// A folder: the library's roots for an empty path, what the library
+    /// has under a folder inside it, or what the disk has in one outside it.
+    pub fn folder(&self, dir: &str) -> FolderView {
+        let roots = self.lib.roots().unwrap_or_default();
+        if dir.is_empty() {
+            let folders = roots
+                .iter()
+                .map(|r| {
+                    let path = r.path.to_string_lossy().into_owned();
+                    FolderItem {
+                        name: path.clone(),
+                        tracks: self.lib.folder_track_count(&path).unwrap_or(0),
+                        artwork_path: String::new(),
+                        path,
+                    }
+                })
+                .collect();
+            return FolderView { folders, tracks: Vec::new(), in_library: true };
+        }
+        let inside = roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path));
+        if inside {
+            let (folders, tracks) = self.lib.folder_children(dir).unwrap_or_default();
+            return FolderView {
+                folders: folders
+                    .into_iter()
+                    .map(|f| FolderItem {
+                        name: f.name,
+                        path: f.path,
+                        tracks: f.tracks,
+                        artwork_path: f.artwork_path.unwrap_or_default(),
+                    })
+                    .collect(),
+                tracks: tracks.into_iter().map(row_of).collect(),
+                in_library: true,
+            };
+        }
+        crate::folders::disk_folder(std::path::Path::new(dir))
+    }
+
+    /// Every playable file under a folder, in order: the library's for one
+    /// inside it, the disk's for one outside.
+    pub fn folder_files(&self, dir: &str) -> Vec<String> {
+        let roots = self.lib.roots().unwrap_or_default();
+        if roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path)) {
+            return self.lib.folder_paths(dir).unwrap_or_default();
+        }
+        let files = crate::folders::audio_files_in(std::path::Path::new(dir));
+        chilpa_core::sacd_tracks::expand(&files).iter().map(|p| p.display().to_string()).collect()
     }
 
     /// The four columns for this filter. Each column is narrowed only by
@@ -158,19 +244,7 @@ impl Chilpa {
             .filter(|(_, gone)| !gone)
             .map(|((path, row), _)| match row {
                 Some(t) => row_of(t),
-                None => TrackRow {
-                    title: crate::title_of(std::path::Path::new(&path)),
-                    quality: Quality::of_file(&path, None, None),
-                    id: 0,
-                    path,
-                    artist: String::new(),
-                    album: String::new(),
-                    album_id: 0,
-                    disc: 0,
-                    number: 0,
-                    duration_ms: 0,
-                    plays: 0,
-                },
+                None => file_row(&path),
             })
             .collect()
     }

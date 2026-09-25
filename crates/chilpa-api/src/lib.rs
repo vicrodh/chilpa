@@ -20,7 +20,7 @@ mod plugins;
 mod search;
 mod folders;
 
-pub use browse::{AlbumDetail, FacetEntry, Facets, Filter, Reader, Snapshot, Totals, TrackOrder, TrackRow};
+pub use browse::{AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Reader, Snapshot, Totals, TrackOrder, TrackRow};
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
 

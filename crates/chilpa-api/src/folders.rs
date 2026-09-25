@@ -23,18 +23,22 @@ pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
         for path in entries.flatten().map(|e| e.path()) {
             if path.is_dir() {
                 pending.push(path);
-            } else if path.is_file()
-                && path
-                    .extension()
-                    .and_then(|e| e.to_str())
-                    .is_some_and(|e| EXTENSIONS.contains(&e.to_lowercase().as_str()))
-            {
+            } else if is_audio(&path) {
                 files.push(path);
             }
         }
     }
     files.sort_by(|a, b| in_natural_order(a, b));
     files
+}
+
+/// A file Chilpa knows how to open, by its extension.
+fn is_audio(path: &std::path::Path) -> bool {
+    path.is_file()
+        && path
+            .extension()
+            .and_then(|e| e.to_str())
+            .is_some_and(|e| EXTENSIONS.contains(&e.to_lowercase().as_str()))
 }
 
 /// Two paths compared name by name, with a run of digits compared as the
@@ -138,4 +142,36 @@ mod tests {
         );
         let _ = std::fs::remove_dir_all(dir);
     }
+}
+
+/// A folder outside the library, read from the disk as it is: its
+/// subfolders, by name, and the audio files that sit in it. Nothing goes into
+/// the library; this is for opening a folder, not for adding one.
+pub(crate) fn disk_folder(dir: &std::path::Path) -> crate::FolderView {
+    let mut folders = Vec::new();
+    let mut files = Vec::new();
+    for entry in std::fs::read_dir(dir).into_iter().flatten().flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            // Hidden folders are the system's, not the music's.
+            if !name.starts_with('.') {
+                folders.push(crate::FolderItem {
+                    name,
+                    path: path.display().to_string(),
+                    tracks: 0,
+                    artwork_path: String::new(),
+                });
+            }
+        } else if is_audio(&path) {
+            files.push(path);
+        }
+    }
+    folders.sort_by(|a, b| in_natural_order(std::path::Path::new(&a.name), std::path::Path::new(&b.name)));
+    files.sort_by(|a, b| in_natural_order(a, b));
+    let tracks = chilpa_core::sacd_tracks::expand(&files)
+        .iter()
+        .map(|p| crate::browse::file_row(&p.display().to_string()))
+        .collect();
+    crate::FolderView { folders, tracks, in_library: false }
 }
