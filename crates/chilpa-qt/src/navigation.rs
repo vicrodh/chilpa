@@ -198,7 +198,7 @@ mod tests {
     }
 
     #[test]
-    fn closing_the_active_tab_activates_its_left_neighbour_and_one_always_stays() {
+    fn closing_the_active_tab_activates_its_left_neighbor_and_one_always_stays() {
         let mut t = Tabs::default();
         t.open(Route::of(Screen::Library));
         t.open(Route::of(Screen::Albums));
