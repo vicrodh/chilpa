@@ -219,6 +219,18 @@ mod tests {
     }
 
     #[test]
+    fn a_dac_with_three_byte_words_is_told_it_plays_24_bits_and_dop_untouched() {
+        let d = diagnose(
+            "hw:1,0",
+            &caps(&[44_100, 48_000, 96_000, 176_400], &[SampleFormat::S16, SampleFormat::S24Packed], true),
+        );
+        for name in ["Studio 24/48", "High 24/96", "DSD64 over DoP"] {
+            let row = d.rows.iter().find(|f| f.name == name).unwrap();
+            assert_eq!(row.verdict, Verdict::BitPerfect, "{name} on a DAC with three byte words");
+        }
+    }
+
+    #[test]
     fn a_format_spelled_the_way_it_is_spoken() {
         let f = StreamFormat::new(SampleFormat::S24In32, 96_000, 2);
         assert_eq!(describe(f), "24 bit at 96000 Hz, stereo");
