@@ -4,7 +4,7 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, SinkError};
-use chilpa_core::queue_playback::{play_queue_with, Controls, SharedQueue};
+use chilpa_core::queue_playback::{play_queue_with, Controls, Progress, SharedQueue};
 use std::io::Write;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -79,7 +79,7 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
         &Controls { seek: seek.clone(), ..Controls::new() },
         |_| Ok(cap.clone()),
         &mut |_, _, _| {},
-        &mut |_, frames| positions.push(frames),
+        &mut |_, progress| positions.push(progress.position),
     )
     .unwrap();
 
@@ -114,7 +114,8 @@ fn a_seek_halfway_through_reports_the_position_it_moved_to() {
         &Controls { seek: seek.clone(), ..Controls::new() },
         |_| Ok(cap.clone()),
         &mut |_, _, _| {},
-        &mut |_, frames| {
+        &mut |_, progress| {
+            let frames = progress.position;
             positions.push(frames);
             if !sought && frames >= 44_100 {
                 asked.request(Duration::from_secs(2));
@@ -127,6 +128,28 @@ fn a_seek_halfway_through_reports_the_position_it_moved_to() {
     assert!(sought, "the track played past its first second");
     let furthest = positions.iter().copied().max().unwrap_or(0);
     assert!(furthest <= u64::from(length), "a position of {furthest} in a track of {length} frames");
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn after_a_seek_forward_what_was_heard_is_less_than_where_the_track_is() {
+    // The history logged the position as the time listened: a seek to the
+    // last second of a track logged the whole track as heard.
+    let path = ramp("heard", 44_100 * 3);
+    let seek = SeekSignal::new();
+    seek.request(Duration::from_secs(2));
+    let mut last = Progress::default();
+    play_queue_with(
+        &SharedQueue::new(vec![path.clone()]),
+        &caps(),
+        Policy::BitPerfect,
+        &Controls { seek: seek.clone(), ..Controls::new() },
+        |_| Ok(Capture::default()),
+        &mut |_, _, _| {},
+        &mut |_, progress| last = progress,
+    )
+    .unwrap();
+    assert_eq!(last, Progress { position: 132_300, delivered: 44_100 }, "at the end, one second of three heard");
     let _ = std::fs::remove_file(path);
 }
 

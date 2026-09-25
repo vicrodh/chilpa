@@ -41,8 +41,9 @@ pub enum PlayerEvent {
         /// For DSD: the multiple that names it (64, 128...). `None` on PCM.
         dsd_multiple: Option<u32>,
     },
-    /// Frames delivered so far.
-    Progress { frames: u64 },
+    /// Where the track is, in frames, and how many frames of it have gone
+    /// out: after a seek the two differ, and the second is what was heard.
+    Progress { frames: u64, played: u64 },
     /// What the station says is playing.
     StreamTitle { title: String },
     /// It finished naturally.
@@ -386,8 +387,8 @@ fn play(
                 dsd_multiple: dsd.as_ref().map(|info| info.multiple()),
             });
         },
-        &mut |_, frames| {
-            let _ = events.send(PlayerEvent::Progress { frames });
+        &mut |_, progress| {
+            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
         },
     )?;
 
@@ -470,7 +471,7 @@ fn play_stream(
             if let Some(title) = titles.get() {
                 let _ = events.send(PlayerEvent::StreamTitle { title: title });
             }
-            let _ = events.send(PlayerEvent::Progress { frames });
+            let _ = events.send(PlayerEvent::Progress { frames, played: frames });
         },
     )?;
     Ok(played.outcome)
@@ -565,7 +566,7 @@ fn play_cd(
                 sink
             },
             &mut |frames| {
-                let _ = events.send(PlayerEvent::Progress { frames });
+                let _ = events.send(PlayerEvent::Progress { frames, played: frames });
             },
         )
         .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;

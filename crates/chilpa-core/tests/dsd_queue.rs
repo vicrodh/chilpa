@@ -187,7 +187,7 @@ fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
         &Controls { seek, ..Controls::new() },
         |format| Ok(Swallow(format)),
         &mut |_, _, _| {},
-        &mut |_, frames| positions.push(frames),
+        &mut |_, progress| positions.push(progress.position),
     )
     .expect("the queue runs");
 
