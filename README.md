@@ -52,3 +52,19 @@ MIT. See [LICENSE](LICENSE).
 Some optional features link libraries under copyleft licenses. When a build
 includes those, the resulting binary ships under their terms; the source in
 this repository stays MIT either way.
+
+## Legal
+
+- **Your own music.** Chilpa plays the files, discs and disc images you give
+  it. It ships no music, no disc images and no keys.
+- **SACD images.** Chilpa reads the stereo area of Super Audio CD images that
+  are not encrypted. It has no way to decrypt a disc or an image and does not
+  try, and it contains nothing that gets around copy protection. An image it
+  plays is one somebody already made from a disc they have.
+- **Copying discs.** Ripping a CD, or making an image of a disc, may or may
+  not be allowed where you live, even for your own discs. Checking that is up
+  to you.
+- **Trademarks.** Super Audio CD, SACD, Direct Stream Digital and DSD are
+  trademarks of their respective owners. Chilpa is not affiliated with,
+  endorsed by or certified by them, and uses the names only to say which
+  formats it reads.
