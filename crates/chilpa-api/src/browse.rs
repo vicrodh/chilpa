@@ -138,6 +138,22 @@ impl Reader {
             .collect()
     }
 
+    /// Every artist with something present, by name, with their records,
+    /// tracks and a cover of theirs.
+    pub fn artists(&self) -> Vec<crate::Artist> {
+        self.lib
+            .artists(1_000_000, 0)
+            .unwrap_or_default()
+            .into_iter()
+            .map(|a| crate::Artist {
+                name: a.name,
+                album_count: a.album_count,
+                track_count: a.track_count,
+                artwork_path: a.artwork_path.unwrap_or_default(),
+            })
+            .collect()
+    }
+
     /// Every album with something present, in that order.
     pub fn album_ids(&self, order: chilpa_library::AlbumSort) -> Vec<i64> {
         self.lib.album_ids(order).unwrap_or_default()
@@ -247,6 +263,23 @@ impl Chilpa {
                 None => file_row(&path),
             })
             .collect()
+    }
+
+    /// An artist's records, newest first.
+    pub fn artist_albums(&mut self, name: &str) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0)
+            .unwrap_or_default()
+            .into_iter()
+            .map(album_of)
+            .collect()
+    }
+
+    /// An artist's tracks, in that order, as many as asked for.
+    pub fn artist_tracks(&mut self, name: &str, order: TrackOrder, limit: usize) -> Vec<TrackRow> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        let f = Filter { artist: Some(name.to_string()), ..Filter::default() };
+        lib.browse_tracks(&f, order, limit).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
     /// A record's tracks, in disc order.
