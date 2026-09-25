@@ -505,6 +505,8 @@ fn a_seek_on_the_card_drops_what_it_held_and_carries_on() {
     eprintln!("smoke: at 10 s after {landed:?}; a second later at {:.2} s", now.seconds);
     assert!(now.error.is_empty(), "{}", now.error);
     assert!(running(), "the card stopped playing after the seek");
-    assert!(now.seconds > 10.5 && now.seconds < 12.0, "it went on from there: {:.2} s", now.seconds);
+    // A second after landing on 10 s. The position is what was heard: at
+    // 11.43 it was counting the half second the card holds.
+    assert!(now.seconds > 10.5 && now.seconds < 11.25, "it went on from there: {:.2} s", now.seconds);
     chilpa.stop();
 }

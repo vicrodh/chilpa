@@ -482,6 +482,11 @@ impl AudioSink for JackSink {
         Ok(())
     }
 
+    fn held(&self) -> u64 {
+        let samples = self.shared.waiting.lock().map(|w| w.len()).unwrap_or(0);
+        (samples / usize::from(self.stream.channels.max(1))) as u64
+    }
+
     /// Waits for the graph to take what is queued: a quarter of a second at
     /// most, and a second more before giving up on a graph that stopped.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
