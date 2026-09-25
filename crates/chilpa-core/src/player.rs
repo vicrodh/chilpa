@@ -314,7 +314,7 @@ fn play(
     // cannot see that far, and a verdict that ignores it says bit-perfect
     // over a resampler.
     let exact_path = crate::path_is_exact(device, exclusive);
-    let (stop, pause, skip) = (&controls.stop, &controls.pause, &controls.skip);
+    let (stop, pause) = (&controls.stop, &controls.pause);
     let paths = queue.to_vec();
     let paths = paths.as_slice();
     let caps = probe(device).map_err(PlayError::Sink)?;
@@ -326,7 +326,7 @@ fn play(
             return play_stream(first, device, &caps, policy, stop, pause, open, events);
         }
         if is_cd(first) {
-            return play_cd(first, device, exclusive, &caps, stop, pause, skip, open, events);
+            return play_cd(first, device, exclusive, &caps, controls, open, events);
         }
     }
     let results = crate::queue_playback::play_queue_with(
@@ -494,9 +494,7 @@ fn play_cd(
     device: &str,
     exclusive: bool,
     caps: &chilpa_audio::negotiate::DeviceCaps,
-    stop: &StopSignal,
-    pause: &chilpa_audio::sink::PauseSignal,
-    skip: &chilpa_audio::sink::SkipSignal,
+    controls: &crate::queue_playback::Controls,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
@@ -512,78 +510,55 @@ fn play_cd(
             chilpa_i18n::t("the disc carries no audio tracks"),
         )));
     }
-
     let total = tracks.len();
-    let mut last = Outcome::Finished { frames: 0 };
-    for (index, track) in tracks.iter().enumerate() {
-        if stop.is_stopped() {
-            return Ok(Outcome::Stopped { frames: last.frames() });
-        }
-        skip.take();
-        let tag = chilpa_tags::Tags {
-            title: Some(chilpa_i18n::t_args("Track {}", &[&track.number.to_string()])),
-            album: Some(chilpa_i18n::t_args("CD in {}", &[&node.display().to_string()])),
-            ..chilpa_tags::Tags::default()
-        };
-        let events = events.clone();
-        let path = path.to_path_buf();
-        // A CD is 44,100 frames per second, and its sectors are already PCM.
-        let duration = Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64);
+    let album = chilpa_i18n::t_args("CD in {}", &[&node.display().to_string()]);
+    // A CD is not converted on the way out of Chilpa: it goes out as 16/44.1
+    // or widened, which keeps every sample, and if the output takes neither
+    // it is not opened at all. That is half the answer. The other half is
+    // where it went, and it used to be missing: through `default` this said
+    // bit-perfect while the samples went into a mixer.
+    let bit_perfect = crate::path_is_exact(device, exclusive);
 
-        let played = crate::cd_playback::play_track(
-            &mut unit,
-            track,
-            caps,
-            stop,
-            pause,
-            |format| {
-                let sink = open(device, format, exclusive);
-                if sink.is_ok() {
-                    let _ = events.send(PlayerEvent::Started {
-                        path: path.clone(),
-                        opened: format,
-                        channels: chilpa_cd::CDDA_FORMAT.channels,
-                        bits: chilpa_audio::negotiate::bits_carried(chilpa_cd::CDDA_FORMAT, format),
-                        // A CD is not converted on the way out of Chilpa: it
-                        // goes out as 16/44.1 or widened, which keeps every
-                        // sample, and if the output takes neither it is not
-                        // opened at all. That is half the answer. The other
-                        // half is where it went, and it
-                        // used to be missing: through `default` this said
-                        // bit-perfect while the samples went into a mixer.
-                        bit_perfect: crate::path_is_exact(device, exclusive),
-                        total_frames: duration,
-                        tags: Some(tag.clone()),
-                        artwork: None,
-                        index: index,
-                        queue_len: total,
-                        dsd_multiple: None,
-                    });
-                }
-                sink
-            },
-            &mut |frames| {
-                let _ = events.send(PlayerEvent::Progress { frames, played: frames });
-            },
-        )
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-
+    crate::cd_playback::play_disc(
+        &mut unit,
+        &tracks,
+        caps,
+        controls,
+        |format| open(device, format, exclusive),
+        &mut |index, delivery| {
+            let track = &tracks[index];
+            let _ = events.send(PlayerEvent::Started {
+                path: path.to_path_buf(),
+                opened: delivery.opened,
+                channels: chilpa_cd::CDDA_FORMAT.channels,
+                bits: delivery.bits_carried(),
+                bit_perfect,
+                // A CD is 44,100 frames per second, and its sectors are
+                // already PCM.
+                total_frames: Some(u64::from(track.sectors) * chilpa_cd::FRAMES_PER_SECTOR as u64),
+                tags: Some(chilpa_tags::Tags {
+                    title: Some(chilpa_i18n::t_args("Track {}", &[&track.number.to_string()])),
+                    album: Some(album.clone()),
+                    ..chilpa_tags::Tags::default()
+                }),
+                artwork: None,
+                index,
+                queue_len: total,
+                dsd_multiple: None,
+            });
+        },
+        &mut |_, progress| {
+            let _ = events.send(PlayerEvent::Progress { frames: progress.position, played: progress.delivered });
+        },
         // An unreadable sector cuts the track, and it is said instead of
         // padding with silence.
-        if let Some(problem) = played.read_error {
+        &mut |index, problem| {
             let _ = events.send(PlayerEvent::Failed {
-                message: chilpa_i18n::t_args(
-                    "track {}: {}",
-                    &[&track.number.to_string(), &problem],
-                ),
+                message: chilpa_i18n::t_args("track {}: {}", &[&tracks[index].number.to_string(), &problem]),
             });
-        }
-        last = played.outcome;
-        if !last.may_advance_queue() {
-            break;
-        }
-    }
-    Ok(last)
+        },
+    )
+    .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))
 }
 
 #[cfg(not(target_os = "linux"))]
@@ -592,9 +567,7 @@ fn play_cd(
     _device: &str,
     _exclusive: bool,
     _caps: &chilpa_audio::negotiate::DeviceCaps,
-    _stop: &StopSignal,
-    _pause: &chilpa_audio::sink::PauseSignal,
-    _skip: &chilpa_audio::sink::SkipSignal,
+    _controls: &crate::queue_playback::Controls,
     _open: &mut OpenSink,
     _events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
