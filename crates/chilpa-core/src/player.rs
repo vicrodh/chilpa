@@ -155,7 +155,7 @@ impl Player {
                                 Ok(Outcome::Failed { frames, error }) => PlayerEvent::Failed {
                                     message: chilpa_i18n::t_args(
                     "the device failed after {} frames: {}",
-                    &[&frames.to_string(), &format!("{error:?}")],
+                    &[&frames.to_string(), &error.to_string()],
                 ),
                                 },
                                 Ok(Outcome::Unreadable { reason, .. }) => PlayerEvent::Failed { message: reason },

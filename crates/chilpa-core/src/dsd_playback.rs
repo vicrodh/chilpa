@@ -45,7 +45,7 @@ impl std::fmt::Display for DsdPlayError {
                 write!(f, "{}", crate::playback::channels_refused(*requested, offered))
             }
             DsdPlayError::Sink(e) => {
-                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }
         }
     }

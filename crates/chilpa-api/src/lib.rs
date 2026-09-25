@@ -771,7 +771,7 @@ impl Chilpa {
                 return WizardReport {
                     device: id,
                     probed: false,
-                    summary: chilpa_i18n::t_args("the device could not be opened: {}", &[&format!("{e:?}")]),
+                    summary: chilpa_i18n::t_args("the device could not be opened: {}", &[&e.to_string()]),
                     rates: Vec::new(),
                     formats: Vec::new(),
                     rows: Vec::new(),

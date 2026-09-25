@@ -34,7 +34,7 @@ impl std::fmt::Display for CdPlayError {
                 )
             ),
             CdPlayError::Sink(e) => {
-                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }
         }
     }

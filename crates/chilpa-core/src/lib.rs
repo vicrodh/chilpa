@@ -292,7 +292,7 @@ impl Core {
         use chilpa_audio::render::Outcome;
         use chilpa_audio::sink::StopSignal;
 
-        let caps = measure(device).map_err(|e| format!("{e:?}"))?;
+        let caps = measure(device).map_err(|e| e.to_string())?;
         let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
         let played = playback::play_file(path, &caps, policy, &StopSignal::new(), |format| {
             open_output(device, format, bit_perfect)
@@ -318,7 +318,7 @@ impl Core {
             Outcome::Failed { frames, error } => {
                 Err(chilpa_i18n::t_args(
                     "the device failed after {} frames: {}",
-                    &[&frames.to_string(), &format!("{error:?}")],
+                    &[&frames.to_string(), &error.to_string()],
                 ))
             }
             Outcome::Unreadable { reason, .. } => Err(reason),

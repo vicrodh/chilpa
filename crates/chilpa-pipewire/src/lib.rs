@@ -287,7 +287,7 @@ impl OutputBackend for PipeWire {
             // on is knowing another program is holding the output.
             Err(e) if exclusive => Err(SinkError::Backend(chilpa_i18n::t_args(
                 "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})",
-                &[id, &format!("{e:?}")],
+                &[id, &e.to_string()],
             ))),
             Err(e) => Err(e),
         }

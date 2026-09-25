@@ -67,7 +67,7 @@ impl std::fmt::Display for PlayError {
                 )
             ),
             PlayError::Sink(e) => {
-                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
+                write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }
         }
     }
@@ -230,6 +230,15 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_device_error_reads_as_a_sentence_and_not_as_code() {
+        // The window said "device: DeviceLost" and "device: Backend(\"...\")".
+        let lost = PlayError::Sink(SinkError::DeviceLost).to_string();
+        assert!(!lost.contains("DeviceLost"), "{lost}");
+        let backend = PlayError::Sink(SinkError::Backend("the graph is gone".into())).to_string();
+        assert!(backend.ends_with("the graph is gone") && !backend.contains("Backend"), "{backend}");
+    }
     use chilpa_audio::format::SampleFormat;
     use chilpa_audio::negotiate::DeviceCaps;
 
