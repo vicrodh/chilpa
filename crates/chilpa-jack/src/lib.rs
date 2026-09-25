@@ -633,6 +633,41 @@ mod tests {
         let _ = sink.close();
     }
 
+    #[test]
+    #[ignore = "plays two seconds of silence into the running graph; run it on purpose"]
+    fn a_track_reaches_the_graph_whole_and_at_the_graph_s_pace() {
+        // The graph takes a quarter of a second at a time and answers "full"
+        // in between. The renderer took that as "on to the next block" and
+        // raced through the track, dropping most of it.
+        let (Some(output), Ok(caps)) = (Jack.outputs().into_iter().next(), Jack.caps("")) else {
+            eprintln!("no JACK graph: skipped");
+            return;
+        };
+        let format = StreamFormat::new(caps.formats[0], caps.sample_rates[0], 2);
+        let mut sink = Jack.open(&output.id, format, false).expect("the graph takes a stream");
+
+        struct Silence(u64, usize);
+        impl chilpa_audio::render::FrameSource for Silence {
+            fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+                let frames = self.0.min(4096);
+                self.0 -= frames;
+                Ok((frames > 0).then(|| vec![0u8; frames as usize * self.1]))
+            }
+        }
+        let total = 2 * u64::from(format.sample_rate_hz);
+        let started = std::time::Instant::now();
+        let out = chilpa_audio::render::render(
+            &mut Silence(total, format.frame_bytes()),
+            &mut sink,
+            &chilpa_audio::sink::StopSignal::new(),
+        );
+        let took = started.elapsed();
+        let _ = sink.close();
+        eprintln!("smoke: {out:?} in {took:?}");
+        assert_eq!(out, chilpa_audio::render::Outcome::Finished { frames: total }, "all of it went out");
+        assert!(took > Duration::from_millis(1_500), "two seconds went out in {took:?}");
+    }
+
     /// Run by the test below, in a process of its own: joins the graph,
     /// drops the sink and returns at once, so the process exits while the
     /// client is still leaving.

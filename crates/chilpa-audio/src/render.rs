@@ -53,6 +53,13 @@ impl Outcome {
 /// How many xruns in a row are tolerated before giving the device up.
 const MAX_CONSECUTIVE_XRUNS: u32 = 8;
 
+/// How long a device that answers "full" is waited on between tries.
+const FULL_WAIT: std::time::Duration = std::time::Duration::from_millis(5);
+
+/// How long a device may take nothing before it is given up: twenty times
+/// the quarter second JACK keeps queued.
+const STALL_LIMIT: std::time::Duration = std::time::Duration::from_secs(5);
+
 /// Delivers everything the source gives and returns how it ended.
 ///
 /// It checks the stop signal between blocks, so stopping does not depend on
@@ -105,6 +112,8 @@ where
     let frame_bytes = sink.format().frame_bytes();
     let mut frames: u64 = 0;
     let mut xruns = 0;
+    // Since when the device has taken nothing, while it says it is full.
+    let mut full_since: Option<std::time::Instant> = None;
 
     while !stop.is_stopped() {
         let block = match source.next_block() {
@@ -123,6 +132,7 @@ where
                     let _ = sink.set_paused(true);
                     warned = true;
                 }
+                full_since = None;
                 std::thread::sleep(std::time::Duration::from_millis(20));
                 continue;
             }
@@ -131,8 +141,19 @@ where
                 warned = false;
             }
             match sink.write(&block[offset..]) {
-                Ok(0) => break,
+                // Full: nothing was taken, and the rest of the block is
+                // offered again. Taking this for "on to the next block"
+                // dropped the rest of it, which on a device with a queue of
+                // its own was most of every track.
+                Ok(0) => {
+                    let since = *full_since.get_or_insert_with(std::time::Instant::now);
+                    if since.elapsed() > STALL_LIMIT {
+                        return Outcome::Failed { frames, error: SinkError::Timeout(since.elapsed()) };
+                    }
+                    std::thread::sleep(FULL_WAIT);
+                }
                 Ok(written) => {
+                    full_since = None;
                     xruns = 0;
                     offset += written * frame_bytes;
                     frames += written as u64;
@@ -214,6 +235,35 @@ mod tests {
         assert!(!out.may_advance_queue());
     }
 
+    #[test]
+    fn a_full_device_is_waited_for_and_nothing_is_dropped() {
+        // JACK and CoreAudio answer 0 while their queue is full: nothing was
+        // taken, and the caller comes back. The loop took 0 as "on to the
+        // next block" and dropped the rest of this one.
+        let mut source = Blocks(vec![block(10), block(6)], None);
+        let mut sink = FakeSink::new(100);
+        sink.full = 3;
+        let out = render(&mut source, &mut sink, &StopSignal::new());
+        assert_eq!(out, Outcome::Finished { frames: 16 });
+        assert_eq!(sink.received, 16, "every frame reached the device");
+    }
+
+    #[test]
+    fn stopping_while_the_device_is_full_returns_at_once() {
+        let mut source = Blocks(vec![block(10)], None);
+        let mut sink = FakeSink::new(100);
+        sink.full = usize::MAX;
+        let stop = StopSignal::new();
+        let stopper = stop.clone();
+        let asked = std::time::Instant::now();
+        std::thread::spawn(move || {
+            std::thread::sleep(Duration::from_millis(50));
+            stopper.stop();
+        });
+        assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 0 });
+        assert!(asked.elapsed() < Duration::from_secs(1), "it waited {:?}", asked.elapsed());
+    }
+
     /// Blocks to hand over, and then either the end or, when set, a failure.
     struct Blocks(Vec<Vec<u8>>, Option<String>);
 
@@ -229,10 +279,12 @@ mod tests {
         }
     }
 
-    /// A fake device: it takes `accept` frames per write and fails on write
-    /// number `fail_at` with `error`.
+    /// A fake device: it takes `accept` frames per write, answers the first
+    /// `full` writes with nothing taken, and fails on write number `fail_at`
+    /// with `error`.
     struct FakeSink {
         accept: usize,
+        full: usize,
         fail_at: Option<(usize, SinkError)>,
         writes: usize,
         received: usize,
@@ -241,7 +293,7 @@ mod tests {
 
     impl FakeSink {
         fn new(accept: usize) -> Self {
-            Self { accept, fail_at: None, writes: 0, received: 0, closed: false }
+            Self { accept, full: 0, fail_at: None, writes: 0, received: 0, closed: false }
         }
 
         fn failing(accept: usize, at: usize, error: SinkError) -> Self {
@@ -260,6 +312,10 @@ mod tests {
                 if self.writes == *at {
                     return Err(error.clone());
                 }
+            }
+            if self.full > 0 {
+                self.full -= 1;
+                return Ok(0);
             }
             let fits = (frames.len() / 4).min(self.accept);
             self.received += fits;
