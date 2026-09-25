@@ -223,6 +223,9 @@ msgstr ""
 msgid "Minimize"
 msgstr ""
 
+msgid "Most played"
+msgstr ""
+
 msgid "My library"
 msgstr ""
 
@@ -233,6 +236,9 @@ msgid "New tab"
 msgstr ""
 
 msgid "Next"
+msgstr ""
+
+msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr ""
 
 msgid "Output: {}"
@@ -263,6 +269,12 @@ msgid "Processed on the way out"
 msgstr ""
 
 msgid "Quality"
+msgstr ""
+
+msgid "Recently added"
+msgstr ""
+
+msgid "Recently played"
 msgstr ""
 
 msgid "Repeat"
@@ -317,6 +329,9 @@ msgid "This is wherever the machine is already sending sound, so what happens to
 msgstr ""
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr ""
+
+msgid "This screen is not built yet."
 msgstr ""
 
 msgid "Time"
