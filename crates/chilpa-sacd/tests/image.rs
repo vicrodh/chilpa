@@ -275,3 +275,66 @@ fn a_disc_without_text_still_plays_and_says_nothing() {
     assert!(img.area.tracks.iter().all(|t| t.title.is_none()));
     let _ = std::fs::remove_file(path);
 }
+
+/// The two-track image with the second track's first sector laid out as on
+/// real discs: 672 bytes of the first track's last frame, then the second
+/// track's first frame, the only packet marked as a frame start. On "Wish
+/// You Were Here", "Das Rheingold" and "Led Zeppelin IV" most tracks after
+/// the first begin 672 or 1344 bytes before their first frame.
+fn misaligned() -> TestImage {
+    let mut img = build(false);
+    let s = img.sector(AUDIO_START + 10);
+    s.fill(0);
+    s[0] = (2 << 5) | (1 << 2); // two packets, one frame-info record
+    let header = 1 + 2 * 2 + 3;
+    let tail = 672usize;
+    let rest = SECTOR - header - tail;
+    let before: u16 = (DATA_TYPE_AUDIO << 11) | tail as u16;
+    let first: u16 = 0x8000 | (DATA_TYPE_AUDIO << 11) | rest as u16;
+    s[1..3].copy_from_slice(&before.to_be_bytes());
+    s[3..5].copy_from_slice(&first.to_be_bytes());
+    for b in &mut s[header..header + tail] {
+        *b = 0xEE;
+    }
+    for (k, b) in s[header + tail..].iter_mut().enumerate() {
+        *b = if k % 2 == 0 { 0x11 } else { 0x22 };
+    }
+    img
+}
+
+#[test]
+fn a_track_starts_at_its_first_frame_and_not_at_the_last_one_s_tail() {
+    // Read from the first byte, every 9408-byte window straddles two real
+    // frames; QBZ measured that as noise with the music behind it.
+    let path = misaligned().write("misaligned");
+    let img = open(&path).unwrap();
+    let track = img.area.tracks[1].clone();
+    let block = SacdTrackReader::open(img, &track).unwrap().next_block().unwrap().expect("there is audio");
+    assert_eq!(
+        (block[0][0], block[1][0]),
+        (0x11, 0x22),
+        "the second track begins at its own first frame, not at 0xEE left over from the first"
+    );
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_track_ends_where_the_disc_says_and_not_where_its_sectors_do() {
+    // The sectors of a track can hold a whole frame more than its length,
+    // and that frame is the next track's. The disc says the first track
+    // runs one frame here.
+    let mut img = build(false);
+    let t2 = img.sector(AREA_TOC_LSN + 2);
+    const SECOND_ARRAY: usize = 8 + 255 * 4;
+    t2[SECOND_ARRAY..SECOND_ARRAY + 4].copy_from_slice(&[0, 0, 1, 0]); // 0:00, frame 1
+    let path = img.write("one-frame");
+    let img = open(&path).unwrap();
+    let track = img.area.tracks[0].clone();
+    let mut reader = SacdTrackReader::open(img, &track).unwrap();
+    let mut frames = 0;
+    while reader.next_block().unwrap().is_some() {
+        frames += 1;
+    }
+    assert_eq!(frames, 1, "one frame, though its ten sectors hold two");
+    let _ = std::fs::remove_file(path);
+}

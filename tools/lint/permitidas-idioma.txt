@@ -24,6 +24,7 @@ doy
 dprt
 # español también acepta. Sin esto, mirar las de dos letras es puro ruido.
 euc
+fnv
 fourcc
 gbk
 gcm
@@ -55,6 +56,7 @@ pfta
 pl
 png
 pos
+qbz
 rel
 res
 # Rust y std
