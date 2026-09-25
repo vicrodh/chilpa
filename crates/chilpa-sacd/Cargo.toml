@@ -9,3 +9,6 @@ rust-version.workspace = true
 # Why an image could not be read is read by the user.
 chilpa-i18n.workspace = true
 chilpa-dsd.workspace = true
+# A disc names itself in the character set it declares: ISO-8859-1, and
+# Shift-JIS, EUC-KR, GBK or Big5 on the discs pressed in Asia.
+encoding_rs = "0.8"

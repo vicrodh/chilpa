@@ -589,6 +589,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-dsd",
  "chilpa-i18n",
+ "encoding_rs",
 ]
 
 [[package]]

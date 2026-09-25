@@ -197,3 +197,81 @@ fn an_image_of_2064_byte_sectors_plays_the_same_dsd() {
     let _ = std::fs::remove_file(physical_path);
     let _ = std::fs::remove_file(logical_path);
 }
+
+/// The two-track image with the text a pressed disc carries: the album's
+/// title and artist in the master table's text sector, and a title for each
+/// track -- and a performer for the first -- in the area's SACDTTxt block,
+/// all in ISO-8859-1 so the umlaut has to be decoded rather than passed.
+///
+/// The block spans two sectors and its records sit in the second, past byte
+/// 2048 of the block, the way they do on the discs this was checked against:
+/// on "Das Rheingold" the first record is 4096 bytes in. A block cut to one
+/// sector read every real disc's titles as missing.
+fn with_text() -> TestImage {
+    let mut img = build(false);
+    {
+        let m = img.sector(510);
+        m[0x54..0x56].copy_from_slice(&5u16.to_be_bytes()); // two more TOC sectors
+        m[0x80] = 1; // one text channel
+        m[0x8a] = 2; // ISO-8859-1
+    }
+    {
+        let t = img.sector(511);
+        t[..8].copy_from_slice(b"SACDText");
+        t[0x10..0x12].copy_from_slice(&0x40u16.to_be_bytes());
+        t[0x12..0x14].copy_from_slice(&0x80u16.to_be_bytes());
+        t[0x40..0x40 + 18].copy_from_slice(b"Agents Of Fortune\0");
+        t[0x80..0x80 + 17].copy_from_slice(b"Blue \xD6yster Cult\0");
+    }
+    {
+        let a = img.sector(AREA_TOC_LSN);
+        a[0x5a] = 2; // ISO-8859-1
+        a[0x80..0x82].copy_from_slice(&3u16.to_be_bytes()); // SACDTTxt is the fourth sector
+    }
+    {
+        let b = img.sector(AREA_TOC_LSN + 3);
+        b[..8].copy_from_slice(b"SACDTTxt");
+        // Pointers relative to the block, into its second sector.
+        b[8..10].copy_from_slice(&(SECTOR as u16 + 0x20).to_be_bytes());
+        b[10..12].copy_from_slice(&(SECTOR as u16 + 0x80).to_be_bytes());
+    }
+    {
+        let b = img.sector(AREA_TOC_LSN + 4);
+        // Track 1: two items, a title and a performer, each a kind byte, a
+        // spare byte and a string, padded with zeros.
+        b[0x20] = 2;
+        let title = b"This Ain't The Summer Of Love\0";
+        b[0x24] = 1;
+        b[0x26..0x26 + title.len()].copy_from_slice(title);
+        let at = 0x26 + title.len() + 2;
+        b[at] = 2;
+        b[at + 2..at + 2 + 17].copy_from_slice(b"Blue \xD6yster Cult\0");
+        // Track 2: a title and nothing else.
+        b[0x80] = 1;
+        b[0x84] = 1;
+        b[0x86..0x86 + 17].copy_from_slice(b"True Confessions\0");
+    }
+    img
+}
+
+#[test]
+fn a_disc_names_itself_and_its_tracks() {
+    let path = with_text().write("text");
+    let img = open(&path).unwrap();
+    assert_eq!(img.area.album.as_deref(), Some("Agents Of Fortune"));
+    assert_eq!(img.area.artist.as_deref(), Some("Blue \u{d6}yster Cult"), "decoded, not passed through");
+    assert_eq!(img.area.tracks[0].title.as_deref(), Some("This Ain't The Summer Of Love"));
+    assert_eq!(img.area.tracks[0].performer.as_deref(), Some("Blue \u{d6}yster Cult"));
+    assert_eq!(img.area.tracks[1].title.as_deref(), Some("True Confessions"));
+    assert_eq!(img.area.tracks[1].performer, None);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_disc_without_text_still_plays_and_says_nothing() {
+    let path = build(false).write("no-text");
+    let img = open(&path).unwrap();
+    assert_eq!(img.area.album, None);
+    assert!(img.area.tracks.iter().all(|t| t.title.is_none()));
+    let _ = std::fs::remove_file(path);
+}
