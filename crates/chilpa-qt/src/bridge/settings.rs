@@ -26,6 +26,11 @@ pub mod qobject {
         #[qproperty(bool, queue_open)]
         #[qproperty(bool, lyrics_open)]
         #[qproperty(i32, queue_height)]
+        /// The Library screen: its filter columns shown or not, their
+        /// height, and "tracks" or "grid".
+        #[qproperty(bool, panes_open)]
+        #[qproperty(i32, panes_height)]
+        #[qproperty(QString, library_view)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -53,6 +58,9 @@ const SIDEBAR_WIDTH: &str = "ui.sidebar.width";
 const QUEUE_MODE: &str = "ui.queue.mode";
 const LYRICS_OPEN: &str = "ui.lyrics.open";
 const QUEUE_HEIGHT: &str = "ui.rightPanel.queueHeight";
+const PANES_OPEN: &str = "ui.library.panesOpen";
+const PANES_HEIGHT: &str = "ui.library.panesHeight";
+const LIBRARY_VIEW: &str = "ui.library.view";
 
 #[derive(Default)]
 pub struct SettingsRust {
@@ -62,6 +70,9 @@ pub struct SettingsRust {
     queue_open: bool,
     lyrics_open: bool,
     queue_height: i32,
+    panes_open: bool,
+    panes_height: i32,
+    library_view: QString,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -98,6 +109,9 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (queue, lyrics, queue_height) = app::with(|api| {
             (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_HEIGHT))
         });
+        let (panes, panes_height, view) = app::with(|api| {
+            (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW))
+        });
         {
             let mut this = self.as_mut().rust_mut();
             let all = crate::settings_schema::SECTIONS;
@@ -111,6 +125,9 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.queue_open = queue.as_deref() == Some("side");
             this.lyrics_open = lyrics.as_deref() == Some("true");
             this.queue_height = queue_height.and_then(|h| h.parse().ok()).unwrap_or(0);
+            this.panes_open = panes.as_deref() != Some("false");
+            this.panes_height = panes_height.and_then(|h| h.parse().ok()).unwrap_or(0);
+            this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut()
@@ -125,6 +142,13 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         self.as_mut().on_lyrics_open_changed(|m| remember(LYRICS_OPEN, m.lyrics_open().to_string())).release();
         self.as_mut()
             .on_queue_height_changed(|m| remember(QUEUE_HEIGHT, m.queue_height().to_string()))
+            .release();
+        self.as_mut().on_panes_open_changed(|m| remember(PANES_OPEN, m.panes_open().to_string())).release();
+        self.as_mut()
+            .on_panes_height_changed(|m| remember(PANES_HEIGHT, m.panes_height().to_string()))
+            .release();
+        self.as_mut()
+            .on_library_view_changed(|m| remember(LIBRARY_VIEW, m.library_view().to_string()))
             .release();
     }
 }

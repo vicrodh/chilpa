@@ -21,6 +21,11 @@ Item {
     property bool fitContent: false
     // Room below the last row, for what floats over the list.
     property int bottomInset: 0
+    // Titles that reorder the list, and the order in use.
+    property bool sortable: false
+    property string order
+
+    signal sortRequested(string order)
 
     readonly property alias contentHeight: view.contentHeight
 
@@ -41,6 +46,9 @@ Item {
         visible: list.header
         height: list.header ? Metrics.rowHeader : 0
         cols: columns
+        sortable: list.sortable
+        order: list.order
+        onSortRequested: (order) => list.sortRequested(order)
     }
 
     ListView {

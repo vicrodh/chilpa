@@ -35,7 +35,8 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "recentlyPlayed", "recentlyAdded" or "all".
+        /// "recentlyPlayed", "recentlyAdded", "all", or "library": the
+        /// records the Library screen's filter leaves.
         #[qproperty(QString, kind)]
         /// For "all": "artist", "title", "year", "added", "played" or
         /// "last_played".
@@ -46,7 +47,8 @@ pub mod qobject {
         #[qproperty(i32, max_rows)]
         #[qproperty(i32, albums)]
         #[qproperty(i32, rev)]
-        /// Bound to `Library.contentRev`: the library changed.
+        /// Bound to `Library.contentRev`: the library changed. A grid of
+        /// kind "library" binds it to `Library.rev`: the filter moved.
         #[qproperty(i32, content_rev)]
         type AlbumGridModel = super::AlbumGridRust;
 
@@ -279,6 +281,13 @@ impl qobject::AlbumGridModel {
                     let _ = thread.queue(move |model| model.arrive(generation, ids));
                 });
                 return;
+            }
+            "library" => {
+                // The album column already holds the records the filter
+                // leaves, in shelf order: its ids are the grid's snapshot.
+                let ids: Vec<i64> =
+                    crate::browse::read(|s| s.facets.albums.iter().filter_map(|a| a.key.parse().ok()).collect());
+                return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
             }
             _ => Vec::new(),
         };

@@ -5,16 +5,29 @@ import "../Primitives"
 import "../Components"
 
 // Library (design/02 9, design/06): the four filter columns in cascade and
-// the tracks they leave. A fixed layout, with no scroll of its own: only the
-// columns and the list scroll.
+// what they leave, as tracks or as records. A fixed layout with no scroll of
+// its own: only the columns and the result scroll.
 Item {
     id: page
+
+    // The columns' height while their grip is dragged, or -1.
+    property real dragged: -1
+    readonly property real panesHeight: !SettingsModel.panesOpen ? 0
+        : dragged >= 0 ? dragged
+        : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
+    readonly property bool grid: SettingsModel.libraryView === "grid"
 
     TrackListModel {
         id: tracks
         kind: "library"
         filterRev: Library.rev
         playingPath: Player.path
+    }
+    AlbumGridModel {
+        id: records
+        kind: page.grid ? "library" : ""
+        contentRev: Library.rev
+        columns: result.item && page.grid ? result.item.columns : 0
     }
 
     Item {
@@ -32,12 +45,30 @@ Item {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
-        Text {
+        Row {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: Library.summary
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
+            spacing: Metrics.gap12
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: Library.summary
+                font.pointSize: Type.meta
+                color: Theme.color.textSecondary
+            }
+            SortButton {
+                value: Library.order
+                options: [
+                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                    { value: "album", text: I18n.tr("Album", I18n.rev) },
+                    { value: "year", text: I18n.tr("Year", I18n.rev) },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev) },
+                    { value: "title", text: I18n.tr("Title", I18n.rev) },
+                    { value: "plays", text: I18n.tr("Most played", I18n.rev) },
+                    { value: "duration", text: I18n.tr("Duration", I18n.rev) }
+                ]
+                onPicked: (value) => Library.order = value
+            }
         }
     }
 
@@ -45,81 +76,82 @@ Item {
         id: crumbs
         anchors.top: head.bottom
         x: head.x
-        width: head.width
+        width: head.width - toggle.width - Metrics.gap8
         height: Metrics.breadcrumb
     }
+    IconButton {
+        id: toggle
+        anchors.right: head.right
+        anchors.verticalCenter: crumbs.verticalCenter
+        tip: SettingsModel.panesOpen ? I18n.tr("Hide the columns", I18n.rev) : I18n.tr("Show the columns", I18n.rev)
+        glyph: Icons.columns3
+        checked: SettingsModel.panesOpen
+        onClicked: SettingsModel.panesOpen = !SettingsModel.panesOpen
+    }
 
-    Rectangle {
+    LibraryPanes {
         id: panes
         anchors.top: crumbs.bottom
         x: head.x
         width: head.width
-        height: Metrics.panesHeight
-        radius: Metrics.radiusMenu
-        color: Theme.color.strokeHairline
-        border.color: Theme.color.strokeHairline
-        clip: true
-
-        Row {
-            anchors.fill: parent
-            anchors.margins: 1
-            spacing: 1
-
-            Repeater {
-                model: [
-                    { column: "year", title: I18n.tr("Year", I18n.rev) },
-                    { column: "genre", title: I18n.tr("Genre", I18n.rev) },
-                    { column: "artist", title: I18n.tr("Artist", I18n.rev) },
-                    { column: "album", title: I18n.tr("Album", I18n.rev) }
-                ]
-
-                PaneColumn {
-                    required property int index
-                    required property var modelData
-                    width: (panes.width - Metrics.paneSeams) * Metrics.paneShares[index] / Metrics.paneShareTotal
-                    height: parent.height
-                    column: modelData.column
-                    title: modelData.title
-                }
-            }
-        }
+        height: page.panesHeight
+        visible: SettingsModel.panesOpen
     }
 
-    Row {
-        id: toolbar
+    ResizeHandle {
+        id: grip
+        visible: SettingsModel.panesOpen
+        vertical: false
         anchors.top: panes.bottom
-        anchors.topMargin: Metrics.gap12
-        x: head.x
-        spacing: Metrics.gap8
-
-        PillButton {
-            kind: "primary"
-            glyph: Icons.playerPlayFilled
-            filled: true
-            text: I18n.tr("Play", I18n.rev)
-            onClicked: tracks.playAll(false)
+        anchors.horizontalCenter: panes.horizontalCenter
+        width: head.width
+        onMoved: (delta) => {
+            const from = page.dragged >= 0 ? page.dragged : page.panesHeight
+            page.dragged = Math.max(Metrics.panesMin, Math.min(Metrics.panesMax, from + delta))
         }
-        PillButton {
-            glyph: Icons.arrowsShuffle
-            text: I18n.tr("Shuffle", I18n.rev)
-            onClicked: tracks.playAll(true)
-        }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            leftPadding: Metrics.gap8
-            text: tracks.summary
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
+        onReleased: {
+            if (page.dragged >= 0)
+                SettingsModel.panesHeight = Math.round(page.dragged)
+            page.dragged = -1
         }
     }
 
-    TrackList {
+    LibraryToolbar {
+        id: toolbar
+        anchors.top: SettingsModel.panesOpen ? grip.bottom : crumbs.bottom
+        anchors.topMargin: SettingsModel.panesOpen ? 0 : Metrics.gap12
+        x: head.x
+        width: head.width
+        tracks: tracks
+    }
+
+    // Tracks or records: only the one on screen is built.
+    Loader {
+        id: result
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         x: head.x
         width: head.width
-        bottomInset: Metrics.contentBottom
-        model: tracks
+        sourceComponent: page.grid ? grid : list
+    }
+
+    Component {
+        id: list
+        TrackList {
+            bottomInset: Metrics.contentBottom
+            sortable: true
+            order: Library.order
+            onSortRequested: (order) => Library.order = order
+            model: tracks
+        }
+    }
+    Component {
+        id: grid
+        AlbumGrid {
+            bottomInset: Metrics.contentBottom
+            model: records
+            onOpen: (albumId) => Navigation.go("album", albumId)
+        }
     }
 }

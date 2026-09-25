@@ -33,7 +33,18 @@ pub mod qobject {
         #[qproperty(QString, genre)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
+        /// How the tracks are ordered: "artist", "album", "year", "added",
+        /// "title", "plays" or "duration".
+        #[qproperty(QString, order, READ = order, WRITE = choose_order, NOTIFY = order_changed)]
         type Library = super::LibraryRust;
+
+        #[cxx_name = "order"]
+        fn order(self: &Library) -> QString;
+        #[cxx_name = "setOrder"]
+        fn choose_order(self: Pin<&mut Library>, order: QString);
+        #[qsignal]
+        #[cxx_name = "orderChanged"]
+        fn order_changed(self: Pin<&mut Library>);
 
         /// Chooses in a column ("year", "genre", "artist", "album") and
         /// clears the ones to its right. An empty key is "All".
@@ -50,7 +61,7 @@ pub mod qobject {
 }
 
 use crate::{app, browse, worker};
-use chilpa_api::{Facets, Filter, Snapshot};
+use chilpa_api::{Facets, Filter, Snapshot, TrackOrder};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
@@ -66,7 +77,23 @@ pub struct LibraryRust {
     genre: QString,
     artist: QString,
     album: QString,
+    order: QString,
     generation: u64,
+}
+
+const ORDER_KEY: &str = "ui.library.order";
+
+/// An order by its name, and back.
+fn order_of(name: &str) -> TrackOrder {
+    match name {
+        "album" => TrackOrder::Album,
+        "year" => TrackOrder::Year,
+        "added" => TrackOrder::Added,
+        "title" => TrackOrder::Title,
+        "plays" => TrackOrder::Plays,
+        "duration" => TrackOrder::Duration,
+        _ => TrackOrder::Artist,
+    }
 }
 
 const ORDER: [&str; 4] = ["year", "genre", "artist", "album"];
@@ -127,6 +154,22 @@ impl qobject::Library {
         self.refresh();
     }
 
+    pub fn order(&self) -> QString {
+        self.rust().order.clone()
+    }
+
+    pub fn choose_order(mut self: Pin<&mut Self>, order: QString) {
+        if order == self.rust().order {
+            return;
+        }
+        let name = order.to_string();
+        app::with(|api| api.remember_preference(ORDER_KEY, &name));
+        browse::write(|s| s.order = order_of(&name));
+        self.as_mut().rust_mut().order = order;
+        self.as_mut().order_changed();
+        self.refresh();
+    }
+
     /// The library changed under the screens: read it again and tell them.
     pub fn content_changed(mut self: Pin<&mut Self>) {
         let next = self.content_rev().wrapping_add(1);
@@ -173,8 +216,11 @@ impl qobject::Library {
 }
 
 impl cxx_qt::Initialize for qobject::Library {
-    fn initialize(self: Pin<&mut Self>) {
+    fn initialize(mut self: Pin<&mut Self>) {
         crate::registry::register_library(self.qt_thread());
+        let name = app::with(|api| api.preference(ORDER_KEY)).unwrap_or_else(|| "artist".to_string());
+        browse::write(|s| s.order = order_of(&name));
+        self.as_mut().rust_mut().order = QString::from(&name);
         self.refresh();
     }
 }

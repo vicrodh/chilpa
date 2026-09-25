@@ -33,6 +33,9 @@ GallerySection {
         }
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
         LibraryCrumbs { width: parent.width; height: Metrics.breadcrumb }
+        LibraryPanes { width: parent.width; height: Metrics.panesHeight }
+        LibraryToolbar { width: parent.width; tracks: most }
+        SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
