@@ -309,7 +309,7 @@ impl qobject::SettingsPage {
                 self.as_mut().rust_mut().report = Some(report);
             }
             "library.folders" => {
-                registry::navigation(|nav| nav.go(&QString::from("folders"), 0));
+                registry::navigation(|nav| nav.go(&QString::from("libraryFolders"), 0));
                 return;
             }
             "library.rescan" => {

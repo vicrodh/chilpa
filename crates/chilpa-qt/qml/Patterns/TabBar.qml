@@ -101,7 +101,7 @@ Item {
                     { text: I18n.tr("Quit", I18n.rev), hint: "Ctrl+Q" }
                 ]
                 onChosen: (index) => index === 0 ? Navigation.openSection("")
-                    : index === 1 ? Navigation.go("folders", 0)
+                    : index === 1 ? Navigation.go("libraryFolders", 0)
                     : Qt.quit()
             }
         }

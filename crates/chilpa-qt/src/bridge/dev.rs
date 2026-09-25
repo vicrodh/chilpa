@@ -35,6 +35,8 @@ pub mod qobject {
         /// The screen to open at start, and which record: from "album:7".
         #[qproperty(QString, route)]
         #[qproperty(i64, route_id)]
+        /// For "folders:/some/path", the path.
+        #[qproperty(QString, route_key)]
         #[qproperty(QString, add_folder)]
         type Dev = super::DevRust;
 
@@ -60,6 +62,7 @@ pub struct DevRust {
     period: f64,
     route: QString,
     route_id: i64,
+    route_key: QString,
     add_folder: QString,
     last: Option<Instant>,
     intervals: Vec<f64>,
@@ -78,6 +81,7 @@ impl Default for DevRust {
             period: 0.0,
             route: QString::from(screen),
             route_id: id.parse().unwrap_or(0),
+            route_key: QString::from(if id.parse::<i64>().is_ok() { "" } else { id }),
             add_folder: QString::from(&var("CHILPA_ADD_FOLDER")),
             last: None,
             intervals: Vec::new(),

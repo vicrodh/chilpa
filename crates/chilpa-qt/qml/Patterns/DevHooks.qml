@@ -77,7 +77,9 @@ Item {
     }
 
     Component.onCompleted: {
-        if (Dev.route !== "")
+        if (Dev.route === "folders")
+            Navigation.openFolder(Dev.routeKey)
+        else if (Dev.route !== "")
             Navigation.go(Dev.route, Dev.routeId)
         if (Dev.addFolder !== "")
             LibraryFolders.add(Dev.addFolder)

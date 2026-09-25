@@ -10,6 +10,7 @@ pub mod albums;
 pub mod dev;
 pub mod facets;
 pub mod folder_list;
+pub mod folder_view;
 pub mod folders;
 pub mod i18n;
 pub mod library;

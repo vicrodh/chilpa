@@ -334,7 +334,13 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+msgid "No folders in the library yet."
+msgstr ""
+
 msgid "No lyrics for this track."
+msgstr ""
+
+msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
@@ -344,6 +350,12 @@ msgid "Nothing queued."
 msgstr ""
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
+msgstr ""
+
+msgid "Open a folder"
+msgstr ""
+
+msgid "Open a folder…"
 msgstr ""
 
 msgid "Opens the device and says which formats reach it untouched."
@@ -371,6 +383,12 @@ msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it 
 msgstr ""
 
 msgid "Play"
+msgstr ""
+
+msgid "Play folder"
+msgstr ""
+
+msgid "Play the CD"
 msgstr ""
 
 msgid "Playback"
@@ -1243,5 +1261,10 @@ msgstr ""
 
 msgid "{} song"
 msgid_plural "{} songs"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} track"
+msgid_plural "{} tracks"
 msgstr[0] ""
 msgstr[1] ""
