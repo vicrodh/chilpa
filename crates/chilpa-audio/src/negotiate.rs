@@ -33,11 +33,18 @@ impl DeviceCaps {
 /// How much the signal may be touched.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Policy {
-    /// Not one bit is touched. If the device cannot, it fails.
+    /// Every sample reaches the device with the value it left the decoder
+    /// with. If the device cannot take that, it fails.
+    ///
+    /// Laying a sample out in a wider word is allowed, because a shift with
+    /// zeros below keeps every bit: it is the one transform
+    /// [`Transform::preserves_samples`] admits, and the gate and the verdict
+    /// have to agree on what the word means. They did not. This refused to
+    /// widen, so a DAC that only takes 32 bit words -- most USB DACs -- could
+    /// not play a CD with the switch on, while the same DAC with the switch
+    /// off was handed the same widened bytes and the verdict called them
+    /// bit-perfect.
     BitPerfect,
-    /// The sample may be laid out in a wider format, which is exact, but
-    /// never resampled nor converted to float.
-    AllowWidening,
     /// Anything goes, as long as it plays.
     AllowAnything,
 }
@@ -112,11 +119,9 @@ pub fn negotiate(
     if caps.accepts(&requested) {
         return Ok(Delivery { requested, opened: requested, transforms: Vec::new() });
     }
-    if policy == Policy::BitPerfect {
-        return Err(NegotiationError::Unsupported { requested, policy });
-    }
 
-    // Widening is exact: same rate, same channels, more bits.
+    // Widening is exact: same rate, same channels, more bits. That is why it
+    // is tried before bit-perfect gives up and not after.
     let widened = caps
         .formats
         .iter()
@@ -136,7 +141,7 @@ pub fn negotiate(
         }
     }
 
-    if policy == Policy::AllowWidening {
+    if policy == Policy::BitPerfect {
         return Err(NegotiationError::Unsupported { requested, policy });
     }
 
@@ -257,10 +262,48 @@ mod tests {
     #[test]
     fn widening_keeps_the_samples_and_stays_bit_perfect() {
         let caps = caps(&[44_100], &[SampleFormat::S32]);
-        let d = negotiate(cd(), &caps, Policy::AllowWidening).unwrap();
+        let d = negotiate(cd(), &caps, Policy::BitPerfect).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32);
         assert_eq!(d.transforms, vec![Transform::Widened { from_bits: 16, to_bits: 32 }]);
         assert!(d.nothing_was_converted(), "a shift does not change the value");
+    }
+
+    /// What a USB DAC that publishes only `S32_LE` looks like once measured.
+    /// ALSA's one format is both of Chilpa's 32 bit words, so both are listed.
+    /// This is most USB DACs sold today, and the one this was found on.
+    fn only_32_bit_words() -> DeviceCaps {
+        caps(&[44_100, 48_000, 96_000], &[SampleFormat::S24In32, SampleFormat::S32])
+    }
+
+    #[test]
+    fn a_cd_reaches_a_dac_that_only_takes_32_bit_words_bit_perfect() {
+        // The switch refused this while the switch turned off played the
+        // same bytes and called them bit-perfect: the gate and the verdict
+        // disagreed about what the word means.
+        let d = negotiate(cd(), &only_32_bit_words(), Policy::BitPerfect)
+            .expect("16 bits fit in a wider word without losing one");
+        assert_eq!(d.opened.sample_rate_hz, 44_100, "widening never resamples");
+        assert_eq!(d.opened.channels, 2);
+        assert_eq!(d.transforms, vec![Transform::Widened { from_bits: 16, to_bits: 24 }]);
+        assert!(d.nothing_was_converted());
+    }
+
+    #[test]
+    fn bit_perfect_still_refuses_everything_that_changes_a_sample() {
+        // Widening is the one thing let through. Each of these would be
+        // accepted by a gate that let through too much.
+        let narrowing = negotiate(
+            StreamFormat::new(SampleFormat::S24In32, 44_100, 2),
+            &caps(&[44_100], &[SampleFormat::S16]),
+            Policy::BitPerfect,
+        );
+        assert!(narrowing.is_err(), "24 bits into 16 drops eight of them: {narrowing:?}");
+
+        let resampling = negotiate(cd(), &caps(&[48_000], &[SampleFormat::S32]), Policy::BitPerfect);
+        assert!(resampling.is_err(), "a wider word at another rate is a resample: {resampling:?}");
+
+        let floating = negotiate(cd(), &caps(&[44_100], &[SampleFormat::F32]), Policy::BitPerfect);
+        assert!(floating.is_err(), "a float is 32 bits and still not the same sample: {floating:?}");
     }
 
     #[test]
