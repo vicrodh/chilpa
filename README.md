@@ -61,6 +61,14 @@ this repository stays MIT either way.
   are not encrypted. It has no way to decrypt a disc or an image and does not
   try, and it contains nothing that gets around copy protection. An image it
   plays is one somebody already made from a disc they have.
+- **DST.** Most SACDs are pressed in DST, a lossless compression, and Chilpa
+  decodes it with `dst-decoder` 0.1.2, under Apache-2.0 and based on the
+  MPEG-4 DST reference implementation. Its
+  [license](licenses/Apache-2.0-dst-decoder.txt), a
+  [note on where it comes from](licenses/dst-decoder-NOTICE.md) and the
+  [notice of the reference implementation's authors](licenses/dst-decoder-upstream-NOTICE.txt)
+  are in `licenses/`. That notice warns that using the module may infringe
+  existing patents; Chilpa does not claim to be clear of them anywhere.
 - **Copying discs.** Ripping a CD, or making an image of a disc, may or may
   not be allowed where you live, even for your own discs. Checking that is up
   to you.

@@ -589,6 +589,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-dsd",
  "chilpa-i18n",
+ "dst-decoder",
  "encoding_rs",
 ]
 
@@ -1157,6 +1158,15 @@ dependencies = [
  "block-buffer",
  "crypto-common",
  "subtle",
+]
+
+[[package]]
+name = "dst-decoder"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d22ef63dfde0eac89eca20926f8bb64eec4bf12016647274a51d3bb11f6147c"
+dependencies = [
+ "anyhow",
 ]
 
 [[package]]

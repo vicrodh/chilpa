@@ -6,10 +6,14 @@
 //! result left 23% of the energy above the audible band; with byte
 //! interleaving it came to 99.8% inside. The wrong hypothesis made it into a
 //! release, so it is written down here.
+//!
+//! A DST track decodes each frame back into those same 9408 bytes, in the
+//! same order, so both end up in the same place.
 
-use crate::sector;
-use crate::{Encoding, SacdError, SECTOR, STEREO_FRAME};
+use crate::sector::{self, Packet};
+use crate::{SacdError, SECTOR, STEREO_FRAME};
 use chilpa_dsd::{DsdInfo, DsdSource};
+use dst_decoder::decoder::DstDecoder;
 
 use crate::toc::{SacdImage, SacdTrack};
 
@@ -31,17 +35,18 @@ pub struct SacdTrackReader {
     /// Frames the disc says the track still has. Its sectors can hold a
     /// whole frame more, and that frame is the next track's.
     frames_left: u32,
+    /// What a DST track needs on top; `None` for uncompressed DSD.
+    dst: Option<Dst>,
     info: DsdInfo,
 }
 
 impl SacdTrackReader {
-    /// Opens a track. DST cannot be played yet.
+    /// Opens a track, uncompressed or DST.
     pub fn open(image: SacdImage, track: &SacdTrack) -> Result<Self, SacdError> {
-        if track.encoding.is_compressed() {
-            return Err(SacdError::Unsupported(
-                chilpa_i18n::mark("the track is DST compressed and there is no decoder yet").into(),
-            ));
-        }
+        let dst = match track.encoding.is_compressed() {
+            true => Some(Dst::new(track)?),
+            false => None,
+        };
         let samples = u64::from(track.duration_frames) * u64::from(crate::DSD64_HZ / 75);
         Ok(Self {
             lsn: u64::from(track.start_lsn),
@@ -50,6 +55,7 @@ impl SacdTrackReader {
             pending: Vec::with_capacity(STEREO_FRAME * 2),
             synced: false,
             frames_left: track.duration_frames,
+            dst,
             info: DsdInfo { dsd_rate_hz: crate::DSD64_HZ, channels: 2, samples },
         })
     }
@@ -60,12 +66,17 @@ impl SacdTrackReader {
         while self.pending.len() < STEREO_FRAME && self.lsn < self.end_lsn {
             self.image.read_sector(self.lsn, &mut sector_buf)?;
             let packets = sector::parse(&sector_buf, self.lsn)?;
-            if packets.dst {
-                return Err(SacdError::Unsupported(
-                    chilpa_i18n::mark("the sector is DST compressed").into(),
-                ));
+            if packets.dst != self.dst.is_some() {
+                return Err(SacdError::BadSector {
+                    lsn: self.lsn,
+                    why: chilpa_i18n::mark("the sector is not encoded the way its area says").into(),
+                });
             }
             for p in packets.packets.iter().filter(|p| p.is_audio()) {
+                if let Some(dst) = self.dst.as_mut() {
+                    dst.take(p, &sector_buf[p.at..p.at + p.len], self.lsn, &mut self.pending)?;
+                    continue;
+                }
                 if !self.synced && !p.frame_start {
                     continue;
                 }
@@ -99,6 +110,129 @@ impl DsdSource for SacdTrackReader {
     }
 }
 
+/// The most a DST frame may take on the disc. An uncompressed one is 9408
+/// bytes, and DST that does not save space stores the frame as it is.
+const MAX_DST_FRAME: usize = 64 * 1024;
+
+/// A DST track's frames, whole again and decoded.
+///
+/// A compressed frame spans as many packets as its first packet's record
+/// says, and several can start in one sector: the sector a track starts in
+/// can hold the start of the previous track's last frame, and its sectors
+/// can hold the next track's first. So the timecode, and not the order the
+/// frames come in, says which are this track's.
+struct Dst {
+    decoder: DstDecoder,
+    /// The frame whose packets are being gathered.
+    open: Option<OpenFrame>,
+    /// Whether a frame has started since the track's first sector. Before
+    /// one does, a packet that starts nothing is the tail of a frame from
+    /// before the track; after, it is one no frame counted.
+    begun: bool,
+    /// Timecode of the track's first frame, the next it will play, and one
+    /// past its last.
+    first: u32,
+    next: u32,
+    end: u32,
+    decoded: Vec<u8>,
+}
+
+struct OpenFrame {
+    payload: Vec<u8>,
+    /// Packets still to come.
+    missing: u8,
+    timecode: u32,
+    lsn: u64,
+}
+
+impl Dst {
+    fn new(track: &SacdTrack) -> Result<Self, SacdError> {
+        let decoder = DstDecoder::new(2, crate::DSD64_HZ as usize)
+            .map_err(|e| SacdError::Unsupported(e.to_string()))?;
+        Ok(Self {
+            decoder,
+            open: None,
+            begun: false,
+            first: track.start_frame,
+            next: track.start_frame,
+            end: track.start_frame.saturating_add(track.duration_frames),
+            decoded: vec![0; STEREO_FRAME],
+        })
+    }
+
+    /// Takes one audio packet. A frame is decoded when its last packet is
+    /// in, and goes to `out` if it is this track's.
+    fn take(&mut self, p: &Packet, bytes: &[u8], lsn: u64, out: &mut Vec<u8>) -> Result<(), SacdError> {
+        let bad = |why: &str| SacdError::BadSector { lsn, why: why.into() };
+        if p.frame_start {
+            if self.open.is_some() {
+                return Err(bad(chilpa_i18n::mark("a DST frame ends before all its packets came")));
+            }
+            let missing = match p.dst_packets {
+                Some(n @ 1..=31) => n,
+                _ => return Err(bad(chilpa_i18n::mark("a DST frame says it spans no packets"))),
+            };
+            if p.dst_channels != Some(2) {
+                return Err(bad(chilpa_i18n::mark("a frame of the stereo area is not stereo")));
+            }
+            let timecode = p.timecode.ok_or_else(|| bad(chilpa_i18n::mark("a DST frame has no timecode")))?;
+            self.open = Some(OpenFrame { payload: Vec::with_capacity(16 * 1024), missing, timecode, lsn });
+            self.begun = true;
+        }
+        let Some(frame) = self.open.as_mut() else {
+            return match self.begun {
+                true => Err(bad(chilpa_i18n::mark("a DST packet belongs to no frame"))),
+                false => Ok(()),
+            };
+        };
+        frame.payload.extend_from_slice(bytes);
+        if frame.payload.len() > MAX_DST_FRAME {
+            return Err(bad(chilpa_i18n::mark("a DST frame is larger than 64 KiB")));
+        }
+        frame.missing -= 1;
+        if frame.missing == 0 {
+            if let Some(frame) = self.open.take() {
+                self.finish(frame, out)?;
+            }
+        }
+        Ok(())
+    }
+
+    fn finish(&mut self, frame: OpenFrame, out: &mut Vec<u8>) -> Result<(), SacdError> {
+        if frame.timecode < self.first || frame.timecode >= self.end {
+            // The previous track's last frame, or the next track's first.
+            return Ok(());
+        }
+        if frame.timecode != self.next {
+            return Err(SacdError::BadSector {
+                lsn: frame.lsn,
+                why: chilpa_i18n::t_args(
+                    "the DST frames jump from {} to {}",
+                    &[&self.next.to_string(), &frame.timecode.to_string()],
+                ),
+            });
+        }
+        // Nothing is kept unless the frame decoded whole: on an error the
+        // decoder fills the frame with 0x55, which is silence that would
+        // reach the DAC as if it were the disc's.
+        match self.decoder.decode_frame(&frame.payload, &mut self.decoded) {
+            Ok(STEREO_FRAME) => {
+                out.extend_from_slice(&self.decoded);
+                self.next += 1;
+                Ok(())
+            }
+            Ok(n) => Err(SacdError::BadSector {
+                lsn: frame.lsn,
+                why: chilpa_i18n::t_args("a DST frame decoded to {} bytes and not 9408", &[&n.to_string()]),
+            }),
+            Err(e) => Err(SacdError::BadSector {
+                lsn: frame.lsn,
+                why: chilpa_i18n::t_args("a DST frame does not decode: {}", &[&e.to_string()]),
+            }),
+        }
+    }
+}
+
 /// Splits a stereo frame into its two channels. The bytes alternate: even
 /// goes left, odd goes right.
 pub fn split_channels(frame: &[u8]) -> Vec<Vec<u8>> {
@@ -110,11 +244,6 @@ pub fn split_channels(frame: &[u8]) -> Vec<Vec<u8>> {
         right.push(pair[1]);
     }
     vec![left, right]
-}
-
-/// Which encodings can be played today.
-pub fn is_playable(encoding: Encoding) -> bool {
-    !encoding.is_compressed()
 }
 
 #[cfg(test)]
@@ -134,11 +263,5 @@ mod tests {
         let channels = split_channels(&vec![0u8; STEREO_FRAME]);
         assert_eq!(channels[0].len(), STEREO_FRAME / 2);
         assert_eq!(channels[0].len(), channels[1].len());
-    }
-
-    #[test]
-    fn dst_is_not_playable_yet() {
-        assert!(!is_playable(Encoding::Dst));
-        assert!(is_playable(Encoding::Dsd3In14));
     }
 }

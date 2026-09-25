@@ -595,10 +595,34 @@ msgstr ""
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr ""
 
+msgid "a DST frame decoded to {} bytes and not 9408"
+msgstr ""
+
+msgid "a DST frame does not decode: {}"
+msgstr ""
+
+msgid "a DST frame ends before all its packets came"
+msgstr ""
+
+msgid "a DST frame has no timecode"
+msgstr ""
+
+msgid "a DST frame is larger than 64 KiB"
+msgstr ""
+
+msgid "a DST frame says it spans no packets"
+msgstr ""
+
+msgid "a DST packet belongs to no frame"
+msgstr ""
+
 msgid "a Mac's outputs take integer samples, not floating point"
 msgstr ""
 
 msgid "a direct URL"
+msgstr ""
+
+msgid "a frame of the stereo area is not stereo"
 msgstr ""
 
 msgid "a list needs a name"
@@ -939,6 +963,9 @@ msgstr ""
 msgid "that source does not use OAuth"
 msgstr ""
 
+msgid "the DST frames jump from {} to {}"
+msgstr ""
+
 msgid "the JACK graph did not answer in time"
 msgstr ""
 
@@ -1041,6 +1068,9 @@ msgstr ""
 msgid "the folder for \"{}\" could not be deleted"
 msgstr ""
 
+msgid "the frame-info records do not match the frames that start"
+msgstr ""
+
 msgid "the frame-info table is cut off"
 msgstr ""
 
@@ -1137,7 +1167,7 @@ msgstr ""
 msgid "the scan failed: {}"
 msgstr ""
 
-msgid "the sector is DST compressed"
+msgid "the sector is not encoded the way its area says"
 msgstr ""
 
 msgid "the server answering is {}, not PipeWire"
@@ -1153,9 +1183,6 @@ msgid "the tags could not be read: {}"
 msgstr ""
 
 msgid "the token_url is not https"
-msgstr ""
-
-msgid "the track is DST compressed and there is no decoder yet"
 msgstr ""
 
 msgid "the version"
