@@ -61,7 +61,6 @@ pub enum Transform {
     Widened { from_bits: u8, to_bits: u8 },
     /// Bits were dropped. That does lose information, which is why it is said.
     Narrowed { from_bits: u8, to_bits: u8 },
-    Resampled { from_hz: u32, to_hz: u32 },
     /// It went through floats: the device converts.
     Floated,
     /// A source that decodes to floats -- MP3, AAC, Vorbis -- was rounded
@@ -147,6 +146,9 @@ pub enum NegotiationError {
     /// The device takes none of the channel counts this track could go out
     /// in: six into two is a downmix, and there is none.
     Channels { requested: u16, offered: Vec<u16> },
+    /// The device does not run at the track's rate, and nothing here
+    /// converts rates.
+    Rate { requested_hz: u32, offered: Vec<u32> },
 }
 
 /// Decides what format to open at. Returns what opens and what it cost.
@@ -260,16 +262,18 @@ pub fn negotiate(
         .or_else(|| caps.formats.first())
         .copied()
         .ok_or(NegotiationError::Unsupported { requested, policy })?;
-    let rate = *caps
-        .sample_rates
-        .iter()
-        .min_by_key(|r| r.abs_diff(requested.sample_rate_hz))
-        .ok_or(NegotiationError::Unsupported { requested, policy })?;
-    let opened = StreamFormat::new(format, rate, channels);
-    let mut transforms = Vec::new();
-    if rate != requested.sample_rate_hz {
-        transforms.push(Transform::Resampled { from_hz: requested.sample_rate_hz, to_hz: rate });
+    // Only the track's own rate. There is no resampler: this used to open
+    // the nearest rate the device lists, record "resampled", and hand over
+    // the samples as they were, so a 44.1 kHz track on a 48 kHz device
+    // played 8.8 per cent fast and a semitone and a half high.
+    if !caps.sample_rates.contains(&requested.sample_rate_hz) {
+        return Err(NegotiationError::Rate {
+            requested_hz: requested.sample_rate_hz,
+            offered: caps.sample_rates.clone(),
+        });
     }
+    let opened = StreamFormat::new(format, requested.sample_rate_hz, channels);
+    let mut transforms = Vec::new();
     if !format.is_integer() {
         transforms.push(Transform::Floated);
     } else if !requested.sample_format.is_integer() {
@@ -296,19 +300,21 @@ mod tests {
     }
 
     #[test]
-    fn when_resampling_is_needed_no_bits_are_thrown_in_for_free() {
-        // 24/88.2 does not fit: it has to resample. But the device does 32
-        // bits, so cutting down to 16 would be a loss too many.
+    fn a_rate_the_device_lacks_is_refused_even_with_the_switch_off() {
+        // This used to open at 48 kHz, record "resampled", and hand the 88.2
+        // kHz samples over as they were: nothing resamples. Refusing, and
+        // naming both rates, is the honest answer until something does.
         let request = StreamFormat::new(SampleFormat::S24In32, 88_200, 2);
+        let r = negotiate(request, &laptop_codec(), Policy::AllowAnything);
+        assert_eq!(r, Err(NegotiationError::Rate { requested_hz: 88_200, offered: vec![48_000] }));
+    }
+
+    #[test]
+    fn no_bits_are_thrown_in_for_free() {
+        // The device does 16 and 32. A 24 bit track goes in 32, not 16.
+        let request = StreamFormat::new(SampleFormat::S24In32, 48_000, 2);
         let d = negotiate(request, &laptop_codec(), Policy::AllowAnything).unwrap();
         assert_eq!(d.opened.sample_format, SampleFormat::S32, "it fits in 32, nothing is truncated");
-        assert_eq!(d.opened.sample_rate_hz, 48_000);
-        assert!(!d.nothing_was_converted(), "resampling is never bit-perfect");
-        assert!(
-            d.transforms.iter().any(|t| matches!(t, Transform::Resampled { .. })),
-            "it was said that it resampled: {:?}",
-            d.transforms
-        );
     }
 
     #[test]
@@ -507,10 +513,9 @@ mod tests {
     }
 
     #[test]
-    fn resampling_or_floating_stops_being_bit_perfect_and_says_so() {
-        let caps = caps(&[48_000], &[SampleFormat::F32]);
+    fn floating_stops_being_bit_perfect_and_says_so() {
+        let caps = caps(&[44_100], &[SampleFormat::F32]);
         let d = negotiate(cd(), &caps, Policy::AllowAnything).unwrap();
-        assert!(d.transforms.contains(&Transform::Resampled { from_hz: 44_100, to_hz: 48_000 }));
         assert!(d.transforms.contains(&Transform::Floated));
         assert!(!d.nothing_was_converted());
     }

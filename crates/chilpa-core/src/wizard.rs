@@ -154,11 +154,10 @@ mod tests {
         let cd = d.rows.iter().find(|f| f.name == "CD").unwrap();
         assert_eq!(cd.verdict, Verdict::BitPerfect);
 
+        // Nothing converts rates, so a rate the device lacks is not
+        // "converted to 44.1": it does not play there at all.
         let high = d.rows.iter().find(|f| f.name == "High 24/96").unwrap();
-        match &high.verdict {
-            Verdict::Converted { a } => assert!(a.contains("44100"), "it converts to {a}"),
-            other => panic!("24/96 does not fit a CD device: {other:?}"),
-        }
+        assert_eq!(high.verdict, Verdict::Unsupported, "24/96 on a device that only runs at 44.1");
         assert!(d.summary.contains("1 of"), "{}", d.summary);
     }
 

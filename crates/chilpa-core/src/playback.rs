@@ -46,6 +46,18 @@ impl std::fmt::Display for PlayError {
             PlayError::Negotiation(NegotiationError::Channels { requested, offered }) => {
                 write!(f, "{}", channels_refused(*requested, offered))
             }
+            PlayError::Negotiation(NegotiationError::Rate { requested_hz, offered }) => {
+                let offered: Vec<String> = offered.iter().map(u32::to_string).collect();
+                write!(
+                    f,
+                    "{}",
+                    chilpa_i18n::t_args(
+                        "the device does not play {} Hz (it plays {}), and Chilpa does not convert \
+                         rates",
+                        &[&requested_hz.to_string(), &offered.join(", ")],
+                    )
+                )
+            }
             PlayError::Pack(PackError::WouldTruncate { from_bits, to_bits }) => write!(
                 f,
                 "{}",

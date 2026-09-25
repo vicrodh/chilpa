@@ -20,8 +20,13 @@ pub const CAPTURE_ID: &str = "capture";
 pub fn capabilities() -> DeviceCaps {
     use crate::format::SampleFormat::*;
     DeviceCaps {
+        // The low ones too. The servers that answer with these caps convert
+        // whatever they are handed, and a 32 kHz or 22.05 kHz file missing
+        // from the list is refused now that Chilpa no longer pretends to
+        // resample.
         sample_rates: vec![
-            44_100, 48_000, 88_200, 96_000, 176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
+            8_000, 11_025, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000,
+            176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
         ],
         formats: vec![S16, S24Packed, S24In32, S32],
         channels: vec![1, 2, 4, 6, 8],

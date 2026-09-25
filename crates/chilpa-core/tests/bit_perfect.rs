@@ -312,6 +312,51 @@ fn a_mono_wav_reaches_a_stereo_only_dac_with_each_sample_in_both_channels() {
     let _ = std::fs::remove_file(path);
 }
 
+#[test]
+fn with_the_switch_off_a_rate_the_device_lacks_never_plays_at_the_wrong_speed() {
+    // A 44.1 kHz track on a device that runs only at 48: a laptop codec, or
+    // a JACK graph. Opening at 48 and handing over the 44.1 samples as they
+    // are plays them 8.8 per cent fast and a semitone and a half high, and
+    // the transform said "resampled" while nothing had been. Whatever
+    // happens, it is not that: it plays resampled or it is refused.
+    // A second of it: long enough that 8.8 per cent is thousands of frames
+    // and not something a tolerance could swallow.
+    let originals: Vec<i32> = (0..44_100).flat_map(|i| [i % 30_000, -(i % 30_000)]).collect();
+    let path = temp_file("wrong-speed");
+    write_wav(&path, &originals, 16, 44_100, 2);
+    let only_48k = caps(SampleFormat::S16, 48_000);
+
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let played = play_file(&path, &only_48k, Policy::AllowAnything, &StopSignal::new(), |format| {
+        cap.stream = Some(format);
+        Ok(Handle(&mut cap))
+    });
+    if let Err(e) = &played {
+        assert!(
+            matches!(
+                e,
+                chilpa_core::playback::PlayError::Negotiation(
+                    chilpa_audio::negotiate::NegotiationError::Rate { requested_hz: 44_100, .. }
+                )
+            ),
+            "refused, but not for the rate: {e}"
+        );
+    }
+    if let Ok(played) = played {
+        let rate = cap.stream.expect("opened").sample_rate_hz;
+        let frames_in = (originals.len() / 2) as f64;
+        let frames_out = (cap.bytes.len() / 4) as f64;
+        let expected = frames_in * f64::from(rate) / 44_100.0;
+        assert!(
+            (frames_out - expected).abs() <= expected * 0.01,
+            "opened at {rate} Hz, {frames_in} frames in and {frames_out} out: the samples were \
+             not resampled, so they play at the wrong speed ({:?})",
+            played.delivery.transforms
+        );
+    }
+    let _ = std::fs::remove_file(path);
+}
+
 /// A device that takes whatever it is given, at the format it was opened
 /// with.
 struct Swallow(StreamFormat);
