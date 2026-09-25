@@ -82,6 +82,7 @@ pub fn read_toc(device: &mut dyn CdDevice) -> Result<Toc, CdError> {
 /// Hands a CD track over as PCM blocks, ready for the output device.
 pub struct TrackReader<'a> {
     device: &'a mut dyn CdDevice,
+    start_lsn: u32,
     lsn: u32,
     end_lsn: u32,
     /// Sectors per read. More sectors means fewer round trips with the
@@ -95,6 +96,7 @@ impl<'a> TrackReader<'a> {
     pub fn new(device: &'a mut dyn CdDevice, track: &Track) -> Self {
         Self {
             device,
+            start_lsn: track.start_lsn,
             lsn: track.start_lsn,
             end_lsn: track.end_lsn(),
             chunk: MAX_SECTORS_PER_READ,
@@ -105,6 +107,13 @@ impl<'a> TrackReader<'a> {
     /// How many sectors are left.
     pub fn remaining(&self) -> u32 {
         self.end_lsn.saturating_sub(self.lsn)
+    }
+
+    /// Moves to sector `offset` of the track, or to its end when there are
+    /// not that many. Nothing else changes: a sector on a CD is 1/75 s, and
+    /// any of them can be read.
+    pub fn seek_to_sector(&mut self, offset: u32) {
+        self.lsn = self.start_lsn.saturating_add(offset).min(self.end_lsn);
     }
 }
 
