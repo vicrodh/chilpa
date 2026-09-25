@@ -96,11 +96,12 @@ struct Frames<'a> {
 }
 
 impl FrameSource for Frames<'_> {
-    fn next_block(&mut self) -> Option<Vec<u8>> {
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
             let block = match self.decoded.next_block() {
                 Ok(Some(b)) => b,
-                Ok(None) | Err(_) => return None,
+                Ok(None) => return Ok(None),
+                Err(e) => return Err(e.to_string()),
             };
             let block = match block {
                 Block::Int { data, bits } if self.spread => Block::Int { data: duplicate_mono(&data), bits },
@@ -114,10 +115,10 @@ impl FrameSource for Frames<'_> {
             let mut bytes = Vec::new();
             match pack(&samples, self.opened.sample_format, &mut bytes) {
                 Ok(()) if bytes.is_empty() => continue,
-                Ok(()) => return Some(bytes),
+                Ok(()) => return Ok(Some(bytes)),
                 Err(e) => {
                     self.error = Some(e);
-                    return None;
+                    return Ok(None);
                 }
             }
         }

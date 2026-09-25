@@ -109,22 +109,24 @@ impl<'a> TrackReader<'a> {
 }
 
 impl chilpa_audio::render::FrameSource for TrackReader<'_> {
-    fn next_block(&mut self) -> Option<Vec<u8>> {
+    /// An unreadable sector ends the track and stays in `error`, for the
+    /// player to say which track it cut; the disc goes on with the next.
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         if self.lsn >= self.end_lsn || self.error.is_some() {
-            return None;
+            return Ok(None);
         }
         let sectors = self.chunk.min(self.remaining());
         let mut buf = Vec::new();
         match self.device.read_audio(self.lsn, sectors, &mut buf) {
             Ok(()) => {
                 self.lsn += sectors;
-                Some(buf)
+                Ok(Some(buf))
             }
             Err(e) => {
                 // An unreadable sector is not quietly filled with silence: the track
                 // is cut and it is reported.
                 self.error = Some(e);
-                None
+                Ok(None)
             }
         }
     }
@@ -187,7 +189,7 @@ mod tests {
         let track = *toc.track(1).unwrap();
         let mut reader = TrackReader::new(&mut d, &track);
         let mut bytes = 0;
-        while let Some(block) = reader.next_block() {
+        while let Some(block) = reader.next_block().unwrap() {
             bytes += block.len();
         }
         assert_eq!(bytes, 150 * SECTOR_BYTES, "all 150 sectors came out");
@@ -200,9 +202,9 @@ mod tests {
         let toc = read_toc(&mut d).unwrap();
         let track = *toc.track(1).unwrap();
         let mut reader = TrackReader::new(&mut d, &track);
-        let first = reader.next_block().expect("the first block does come out");
+        let first = reader.next_block().unwrap().expect("the first block does come out");
         assert_eq!(first.len(), 75 * SECTOR_BYTES);
-        assert!(reader.next_block().is_none());
+        assert!(reader.next_block().unwrap().is_none());
         assert!(matches!(reader.error, Some(CdError::Read { lsn: 75, .. })));
     }
 }
