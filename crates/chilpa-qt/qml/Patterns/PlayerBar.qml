@@ -13,6 +13,15 @@ Item {
 
     implicitHeight: Metrics.playerHeight
 
+    // The bar floats over the content: the pointer, a click in its empty
+    // space and the wheel stay here instead of reaching the list beneath.
+    MouseArea {
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.AllButtons
+        onWheel: (wheel) => wheel.accepted = true
+    }
+
     RectangularShadow {
         anchors.fill: panel
         radius: panel.radius

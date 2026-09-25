@@ -19,6 +19,8 @@ pub mod qobject {
         type QModelIndex = cxx_qt_lib::QModelIndex;
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qvector.h");
+        type QVector_i32 = cxx_qt_lib::QVector<i32>;
     }
 
     #[auto_cxx_name]
@@ -49,6 +51,17 @@ pub mod qobject {
         #[inherit]
         #[cxx_name = "endResetModel"]
         unsafe fn end_reset_model(self: Pin<&mut SettingsPage>);
+        #[inherit]
+        #[qsignal]
+        #[cxx_name = "dataChanged"]
+        fn data_changed(
+            self: Pin<&mut SettingsPage>,
+            top_left: &QModelIndex,
+            bottom_right: &QModelIndex,
+            roles: &QVector_i32,
+        );
+        #[inherit]
+        fn index(self: &SettingsPage, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
 
     unsafe extern "RustQt" {
@@ -71,7 +84,7 @@ pub mod qobject {
 use crate::settings_schema;
 use crate::{app, registry};
 use cxx_qt::CxxQtType as _;
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant};
+use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
 use std::pin::Pin;
 
 const ROLES: &[&str] = &[
@@ -316,11 +329,39 @@ impl qobject::SettingsPage {
         self.reload();
     }
 
+    /// Reads the rows again. The same number of rows is the same page with
+    /// new values: they change in place, and the control that caused it --
+    /// an open menu, a toggle mid-animation -- is not destroyed under the
+    /// pointer. A different number is a different page, and resets.
     fn reload(mut self: Pin<&mut Self>) {
-        // SAFETY: the reset is begun and ended around the swap, as Qt asks.
-        unsafe { self.as_mut().begin_reset_model() };
-        self.as_mut().rust_mut().build();
-        unsafe { self.as_mut().end_reset_model() };
+        let before = self.rust().rows.len();
+        let mut next = SettingsPageRust { section: self.rust().section.clone(), ..SettingsPageRust::default() };
+        next.report = self.as_mut().rust_mut().report.take();
+        next.said = self.as_mut().rust_mut().said.take();
+        next.build();
+        if next.rows.len() == before && before > 0 {
+            {
+                let mut this = self.as_mut().rust_mut();
+                this.rows = std::mem::take(&mut next.rows);
+                this.pending = next.pending;
+                this.report = next.report.take();
+                this.said = next.said.take();
+            }
+            let parent = QModelIndex::default();
+            let (top, bottom) = (self.index(0, 0, &parent), self.index(before as i32 - 1, 0, &parent));
+            self.as_mut().data_changed(&top, &bottom, &QVector::<i32>::default());
+        } else {
+            // SAFETY: the reset is begun and ended around the swap, as Qt asks.
+            unsafe { self.as_mut().begin_reset_model() };
+            {
+                let mut this = self.as_mut().rust_mut();
+                this.rows = std::mem::take(&mut next.rows);
+                this.pending = next.pending;
+                this.report = next.report.take();
+                this.said = next.said.take();
+            }
+            unsafe { self.as_mut().end_reset_model() };
+        }
         let pending = self.rust().pending;
         self.as_mut().set_pending(pending);
     }
