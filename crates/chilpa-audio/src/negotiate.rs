@@ -97,6 +97,25 @@ impl Delivery {
     pub fn nothing_was_converted(&self) -> bool {
         self.transforms.iter().all(|t| t.preserves_samples())
     }
+
+    /// How many bits carry the music on the way out, or `None` when the
+    /// device takes floats. See [`bits_carried`].
+    pub fn bits_carried(&self) -> Option<u8> {
+        bits_carried(self.requested, self.opened)
+    }
+}
+
+/// How many bits carry the music when `source` goes out as `opened`, or
+/// `None` when the device takes floats.
+///
+/// Not the width of the word the output opened at. A 16 bit track laid out
+/// in a 32 bit word, for a DAC that takes nothing narrower, still carries 16,
+/// and calling it 24 or 32 shows a CD rip as something it is not, in the
+/// window and in the play history. When bits were dropped, what is left is
+/// the word.
+pub fn bits_carried(source: StreamFormat, opened: StreamFormat) -> Option<u8> {
+    let word = opened.sample_format;
+    word.is_integer().then(|| word.valid_bits().min(source.sample_format.valid_bits()))
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -286,6 +305,21 @@ mod tests {
         assert_eq!(d.opened.channels, 2);
         assert_eq!(d.transforms, vec![Transform::Widened { from_bits: 16, to_bits: 24 }]);
         assert!(d.nothing_was_converted());
+    }
+
+    #[test]
+    fn the_bits_carried_are_the_music_s_and_not_the_word_s() {
+        let at = |f| StreamFormat::new(f, 44_100, 2);
+        let widened = negotiate(cd(), &only_32_bit_words(), Policy::BitPerfect).unwrap();
+        assert_eq!(widened.bits_carried(), Some(16), "a CD in a 32 bit word is still 16 bits");
+        assert_eq!(bits_carried(at(SampleFormat::S16), at(SampleFormat::S32)), Some(16));
+        assert_eq!(
+            bits_carried(at(SampleFormat::S24In32), at(SampleFormat::S16)),
+            Some(16),
+            "when bits were dropped, what is left is the word"
+        );
+        assert_eq!(bits_carried(at(SampleFormat::S24In32), at(SampleFormat::S24In32)), Some(24));
+        assert_eq!(bits_carried(at(SampleFormat::S16), at(SampleFormat::F32)), None);
     }
 
     #[test]

@@ -43,6 +43,23 @@ fn rate_of(track: &Path) -> Option<u32> {
     String::from_utf8_lossy(&out.stdout).trim().lines().next()?.trim().parse().ok()
 }
 
+/// How many bits the file carries, according to the same witness.
+///
+/// `None` when ffprobe does not say, which lossy formats do not: they decode
+/// to floats and have no bit depth of their own.
+fn bits_of(track: &Path) -> Option<u8> {
+    let out = std::process::Command::new("ffprobe")
+        .args(["-v", "error", "-select_streams", "a:0", "-show_entries",
+               "stream=bits_per_raw_sample", "-of", "default=nw=1:nk=1"])
+        .arg(track)
+        .output()
+        .ok()?;
+    if !out.status.success() {
+        return None;
+    }
+    String::from_utf8_lossy(&out.stdout).trim().lines().next()?.trim().parse().ok()
+}
+
 /// What the kernel says the card is running, while it is running.
 fn hw_params(card: &str) -> String {
     let path = format!("/proc/asound/card{card}/pcm0p/sub0/hw_params");
@@ -139,6 +156,18 @@ fn the_card_opens_in_the_track_s_own_format() {
         None => eprintln!(
             "smoke: no ffprobe, so {rate} Hz and {format} are reported, not checked"
         ),
+    }
+
+    // The word on the wire can be wider than the track -- a DAC that only
+    // takes 32 bit words gets a CD rip widened -- and that is still
+    // bit-perfect. What the window says is the music's depth, not the word's.
+    if let Some(source_bits) = bits_of(&track).filter(|_| now.bit_perfect) {
+        assert!(
+            now.format.contains(&format!(" {source_bits} bits ")),
+            "a {source_bits} bit track, and the window says: {}",
+            now.format,
+        );
+        eprintln!("smoke: {source_bits} bits in the file, and the window says so");
     }
 
     chilpa.stop();
