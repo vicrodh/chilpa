@@ -359,9 +359,15 @@ struct TrackFrames<'a> {
     skipped: bool,
     /// Frames to throw away to land on the exact point asked for.
     discard: u64,
-    /// Where the last seek landed. The position the interface sees counts
-    /// from the file, so this is added to the delivered frames.
-    base: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    /// What to add to the frames delivered to get the position in the file:
+    /// where the last seek landed less what had been delivered by then. It
+    /// used to be where the seek landed alone, and the renderer counts from
+    /// the start of the track, so a seek to second 2 after one second had
+    /// gone out reported second 3.
+    base: std::sync::Arc<std::sync::atomic::AtomicI64>,
+    /// Frames the device has taken of this track, as the renderer reports
+    /// them.
+    delivered: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -381,11 +387,15 @@ impl FrameSource for TrackFrames<'_> {
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
                         self.discard = plan.discard;
-                        // The base is the point ASKED FOR, not where the
-                        // container landed: the discarded frames never come
-                        // out, so counting them separately would leave the
-                        // position short.
-                        self.base.store(frame, std::sync::atomic::Ordering::Relaxed);
+                        // The point ASKED FOR, not where the container
+                        // landed: the discarded frames never come out, so
+                        // counting them separately would leave the position
+                        // short.
+                        let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
+                        self.base.store(
+                            frame as i64 - delivered as i64,
+                            std::sync::atomic::Ordering::Relaxed,
+                        );
                     }
                     // A container that cannot seek goes on playing from
                     // where it was, instead of dropping the track.
@@ -566,12 +576,16 @@ where
                     skip: skip.clone(),
                     skipped: false,
                     discard: 0,
-                    base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                    base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
+                    delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                 };
                 let base = std::sync::Arc::clone(&frames.base);
+                let delivered = std::sync::Arc::clone(&frames.delivered);
                 let outcome =
                     chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
-                        on_progress(index, f + base.load(std::sync::atomic::Ordering::Relaxed))
+                        delivered.store(f, std::sync::atomic::Ordering::Relaxed);
+                        let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
+                        on_progress(index, at.max(0) as u64)
                     });
                 (outcome, frames.skipped)
             }
