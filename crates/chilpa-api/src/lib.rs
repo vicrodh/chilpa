@@ -9,7 +9,9 @@ pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::PluginInfo;
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
+mod browse;
 mod library;
+mod quality;
 mod queue;
 mod playlists;
 mod accounts;
@@ -18,7 +20,9 @@ mod plugins;
 mod search;
 mod folders;
 
+pub use browse::{AlbumDetail, FacetEntry, Facets, Filter, Reader, Snapshot, Totals, TrackOrder, TrackRow};
 pub use folders::audio_files_in;
+pub use quality::{Quality, Tier};
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -105,6 +109,9 @@ pub struct NowPlaying {
     pub total_seconds: f64,
     /// What the device was opened with, ready to show.
     pub format: String,
+    /// What the music is: the file's format, and the bits that carry the
+    /// signal as the engine reports them. Not the device's word width.
+    pub quality: Quality,
     pub bit_perfect: bool,
     /// Its place in the queue and how many tracks it has.
     pub index: usize,
@@ -1150,6 +1157,13 @@ impl Chilpa {
                     self.name_from_source(&path);
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
+                    // On DSD the rate that names it is the DSD rate, not the
+                    // DoP carrier the device was opened at.
+                    let rate = match dsd_multiple {
+                        Some(multiple) => multiple * 44_100,
+                        None => opened.sample_rate_hz,
+                    };
+                    self.now.quality = Quality::of_file(&self.now.path, bits, Some(rate));
                     self.load_lyrics(&path);
                     self.load_analysis(&path);
                     // The player counts over what it was given; the view
