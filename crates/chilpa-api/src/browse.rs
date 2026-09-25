@@ -79,6 +79,17 @@ impl Reader {
         self.lib.browse_ids(filter, order).unwrap_or_default()
     }
 
+    /// The files behind those ids, in order: what a list queues when one
+    /// of its rows is played. Read in chunks, so a snapshot of the whole
+    /// library resolves without one statement holding thousands of
+    /// parameters.
+    pub fn paths(&self, ids: &[i64]) -> Vec<String> {
+        ids.chunks(500)
+            .flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default())
+            .map(|t| t.external_id)
+            .collect()
+    }
+
     /// The four columns for this filter. Each column is narrowed only by
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.

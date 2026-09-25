@@ -5,5 +5,14 @@
 //! No file here decides anything; each property and each invokable is a
 //! call into the facade through [`crate::app`].
 
+pub mod album;
+pub mod albums;
+pub mod dev;
+pub mod facets;
 pub mod i18n;
+pub mod library;
+pub mod navigation;
+pub mod player;
+pub mod settings;
 pub mod theme;
+pub mod tracks;
