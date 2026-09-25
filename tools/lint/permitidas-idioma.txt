@@ -403,3 +403,6 @@ ver
 # Rust macro fragment specifiers.
 ident
 ty
+# The dialog crate and the desktop portal protocol.
+rfd
+xdg

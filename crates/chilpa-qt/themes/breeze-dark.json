@@ -8,7 +8,7 @@
     "surface.raised": "#31363B",
     "surface.panel": "#232629",
     "surface.pane": "#1B1E20",
-    "surface.player": "rgba(42,46,50,0.86)",
+    "surface.player": "#2A2E32",
     "surface.lcd": "rgba(252,252,252,0.05)",
     "text.primary": "#FCFCFC",
     "text.secondary": "#A1A9B1",
