@@ -163,6 +163,9 @@ msgstr ""
 msgid "DSD64 over DoP"
 msgstr ""
 
+msgid "DSDIFF compressed with DST"
+msgstr ""
+
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr ""
 
@@ -808,6 +811,9 @@ msgstr ""
 msgid "it does not start with the DSD chunk"
 msgstr ""
 
+msgid "it does not start with the FRM8 chunk"
+msgstr ""
+
 msgid "it failed {} times in a row; the last one: {}"
 msgstr ""
 
@@ -963,13 +969,28 @@ msgstr ""
 msgid "that source does not use OAuth"
 msgstr ""
 
+msgid "the CHNL chunk is missing"
+msgstr ""
+
+msgid "the DSD chunk is missing"
+msgstr ""
+
 msgid "the DST frames jump from {} to {}"
+msgstr ""
+
+msgid "the FRM8 chunk does not hold DSD"
+msgstr ""
+
+msgid "the FS chunk is missing"
 msgstr ""
 
 msgid "the JACK graph did not answer in time"
 msgstr ""
 
 msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
+msgstr ""
+
+msgid "the PROP chunk is not of sound"
 msgstr ""
 
 msgid "the PulseAudio protocol does not carry this format"

@@ -198,3 +198,69 @@ fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
     assert_eq!(positions.last(), Some(&352_800), "and ended at the end of the track");
     let _ = std::fs::remove_file(track);
 }
+
+/// A two channel DSDIFF of DSD64 silence, `seconds` long.
+fn dff(name: &str, seconds: u32) -> PathBuf {
+    fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
+        let mut out = id.to_vec();
+        out.extend_from_slice(&(payload.len() as u64).to_be_bytes());
+        out.extend_from_slice(payload);
+        if payload.len() % 2 == 1 {
+            out.push(0);
+        }
+        out
+    }
+    let mut prop = b"SND ".to_vec();
+    prop.extend(chunk(b"FS  ", &RATE.to_be_bytes()));
+    prop.extend(chunk(b"CHNL", b"\x00\x02SLFTSRGT"));
+    prop.extend(chunk(b"CMPR", b"DSD \x0enot compressed"));
+    let mut form = b"DSD ".to_vec();
+    form.extend(chunk(b"PROP", &prop));
+    form.extend(chunk(b"DSD ", &vec![0x69; (RATE / 8 * seconds * 2) as usize]));
+    let path = std::env::temp_dir().join(format!("chilpa-dsd-queue-{name}.dff"));
+    std::fs::write(&path, chunk(b"FRM8", &form)).unwrap();
+    path
+}
+
+#[test]
+fn a_dsdiff_file_plays_in_a_queue_like_a_dsf() {
+    let tracks = [dff("dsdiff", 1), dsf("after-dsdiff", 1)];
+    let player = Player::spawn(
+        Box::new(|_| {
+            Ok(DeviceCaps {
+                sample_rates: vec![176_400],
+                formats: vec![SampleFormat::S24In32],
+                channels: vec![2],
+                probed: true,
+            })
+        }),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    );
+    player.play_all(&tracks, "dac", true);
+    let mut started = Vec::new();
+    let limit = Instant::now() + Duration::from_secs(10);
+    let mut over = None;
+    while over.is_none() && Instant::now() < limit {
+        for event in player.poll() {
+            match event {
+                PlayerEvent::Started { index, dsd_multiple, total_frames, .. } => {
+                    started.push((index, dsd_multiple, total_frames))
+                }
+                PlayerEvent::Finished { .. } => over = Some(Ok(())),
+                PlayerEvent::Failed { message } => over = Some(Err(message)),
+                _ => {}
+            }
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(over, Some(Ok(())), "the queue played through");
+    assert_eq!(
+        started,
+        vec![(0, Some(64), Some(176_400)), (1, Some(64), Some(176_400))],
+        "the DSDIFF started as DSD64 with its length, and the DSF after it"
+    );
+    drop(player);
+    for t in tracks {
+        let _ = std::fs::remove_file(t);
+    }
+}

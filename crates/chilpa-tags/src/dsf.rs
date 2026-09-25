@@ -66,6 +66,12 @@ fn tag_at(file: &mut std::fs::File, at: u64) -> Option<lofty::tag::Tag> {
     file.seek(SeekFrom::Start(at)).ok()?;
     let mut bytes = Vec::with_capacity((end - at) as usize);
     file.read_to_end(&mut bytes).ok()?;
+    id3(bytes)
+}
+
+/// An ID3v2 tag on its own, as lofty reads one: dressed as an MPEG file with
+/// nothing after it, and told not to look for the audio.
+pub(crate) fn id3(bytes: Vec<u8>) -> Option<lofty::tag::Tag> {
     let options = ParseOptions::new().read_properties(false);
     let mut tagged =
         Probe::new(Cursor::new(bytes)).options(options).set_file_type(FileType::Mpeg).read().ok()?;

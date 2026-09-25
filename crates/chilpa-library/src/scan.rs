@@ -70,7 +70,7 @@ impl Containers for NoContainers {
 }
 
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "dff"];
 
 /// Scans a folder and its subfolders, leaving covers in `cache`.
 pub fn scan_root_with_cache(

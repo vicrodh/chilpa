@@ -19,6 +19,7 @@ use lofty::tag::Accessor;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+mod dff;
 mod dsf;
 
 #[derive(Debug)]
@@ -95,6 +96,9 @@ pub(crate) struct Opened {
 fn open(path: &Path) -> Result<Opened, TagError> {
     if dsf::is_dsf(path) {
         return dsf::open(path);
+    }
+    if dff::is_dff(path) {
+        return dff::open(path);
     }
     let mut file = Probe::open(path)
         .map_err(|e| TagError::Unreadable(e.to_string()))?

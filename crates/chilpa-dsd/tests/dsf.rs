@@ -18,7 +18,7 @@ fn write_dsf(path: &PathBuf, blocks: u32, bits_per_sample: u32, samples: u64) {
     f.write_all(b"DSD ").unwrap();
     f.write_all(&28u64.to_le_bytes()).unwrap();
     f.write_all(&(28u64 + 52 + 12 + data).to_le_bytes()).unwrap();
-    f.write_all(&0u64.to_le_bytes()).unwrap(); // sin tags
+    f.write_all(&0u64.to_le_bytes()).unwrap(); // no tags
     f.write_all(b"fmt ").unwrap();
     f.write_all(&52u64.to_le_bytes()).unwrap();
     f.write_all(&1u32.to_le_bytes()).unwrap(); // version

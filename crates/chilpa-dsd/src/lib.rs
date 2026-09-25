@@ -1,17 +1,19 @@
 //! DSD: read one bit per sample and hand it over untouched.
 //!
 //! DSD is not "decoded": the bits in the file are the bits the DAC has to
-//! receive. This crate opens the containers (DSF today, DFF and SACD later),
-//! normalizes the bit order inside the byte, and hands over planar blocks
-//! per channel, ready for the DoP packing in `chilpa-audio` or for a native
-//! output.
+//! receive. This crate opens the containers, DSF and DSDIFF (a SACD image is
+//! `chilpa-sacd`'s), normalizes the bit order inside the byte, and hands over
+//! planar blocks per channel, ready for the DoP packing in `chilpa-audio` or
+//! for a native output.
 //!
 //! The only thing touched is the bit order inside the byte, because DSF
 //! stores the earliest bit in the least significant position and the cable
 //! wants it the other way round. That inversion is exact and reversible.
 
+pub mod dff;
 pub mod dsf;
 
+pub use dff::DffReader;
 pub use dsf::DsfReader;
 
 /// What can go wrong reading DSD.

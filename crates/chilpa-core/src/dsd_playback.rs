@@ -51,9 +51,20 @@ impl std::fmt::Display for DsdPlayError {
     }
 }
 
-/// True if the file is DSD by its extension.
-pub(crate) fn is_dsf(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("dsf"))
+/// True if the file is DSD by its extension: DSF or DSDIFF.
+pub(crate) fn is_dsd_file(path: &Path) -> bool {
+    path.extension()
+        .and_then(|e| e.to_str())
+        .is_some_and(|e| e.eq_ignore_ascii_case("dsf") || e.eq_ignore_ascii_case("dff"))
+}
+
+/// Opens a DSD file, whichever of the two containers it is.
+pub(crate) fn open_dsd_file(path: &Path) -> Result<Box<dyn DsdSource>, chilpa_dsd::DsdError> {
+    let dsdiff = path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("dff"));
+    Ok(match dsdiff {
+        true => Box::new(chilpa_dsd::DffReader::open(path)?),
+        false => Box::new(chilpa_dsd::DsfReader::open(path)?),
+    })
 }
 
 /// What a DSD source asks the device for: 24 bit words at the carrier rate.
@@ -248,8 +259,8 @@ where
     F: FnOnce(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    let mut reader = chilpa_dsd::DsfReader::open(path).map_err(DsdPlayError::Read)?;
-    play_dsd(&mut reader, caps, stop, pause, open_sink, on_progress)
+    let mut reader = open_dsd_file(path).map_err(DsdPlayError::Read)?;
+    play_dsd(reader.as_mut(), caps, stop, pause, open_sink, on_progress)
 }
 
 #[cfg(test)]
