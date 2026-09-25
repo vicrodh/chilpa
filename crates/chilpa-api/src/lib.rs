@@ -1028,7 +1028,10 @@ impl Chilpa {
     ) -> Vec<String> {
         let tracks = audio_files_in(folder);
         if tracks.is_empty() {
-            self.now.error = format!("no hay audio en {}", folder.display());
+            self.now.error = chilpa_i18n::t_args(
+                "there is nothing Chilpa can play in {}",
+                &[&folder.display().to_string()],
+            );
             return Vec::new();
         }
         // The folder goes into the queue too: otherwise saving it or going

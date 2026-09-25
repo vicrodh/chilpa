@@ -1167,6 +1167,9 @@ msgstr ""
 msgid "there is not enough queue to mix"
 msgstr ""
 
+msgid "there is nothing Chilpa can play in {}"
+msgstr ""
+
 msgid "there is nothing under {}"
 msgstr ""
 
