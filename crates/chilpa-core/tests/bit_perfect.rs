@@ -269,12 +269,16 @@ fn the_switch_plays_16_bits_on_a_32_bit_dac_and_still_takes_the_output_alone() {
         std::thread::sleep(Duration::from_millis(5));
     }
     match outcome {
-        Some(PlayerEvent::Started { opened, .. }) => {
+        Some(PlayerEvent::Started { opened, bits, bit_perfect, .. }) => {
             assert_eq!(opened.sample_rate_hz, 44_100, "nothing was resampled");
             assert!(
                 opened.sample_format.is_integer() && opened.sample_format.valid_bits() > 16,
                 "it went out in the wider word the DAC takes: {opened:?}"
             );
+            // What the window shows and the history keeps. The word is wider;
+            // the music in it is still 16 bits.
+            assert_eq!(bits, Some(16), "a 16 bit track is reported as 16 bits");
+            assert!(!bit_perfect, "\"dac\" names no stack, so nothing vouches for the road");
         }
         other => panic!("bit-perfect on did not play a 16 bit file on this DAC: {other:?}"),
     }

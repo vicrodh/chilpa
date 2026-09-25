@@ -1105,6 +1105,7 @@ impl Chilpa {
                 PlayerEvent::Started {
                     path,
                     opened,
+                    bits,
                     bit_perfect,
                     total_frames,
                     tags,
@@ -1159,10 +1160,10 @@ impl Chilpa {
                         path: path.display().to_string(),
                         started_at: now_unix(),
                         sample_rate_hz: opened.sample_rate_hz,
-                        bit_depth: opened
-                            .sample_format
-                            .is_integer()
-                            .then(|| opened.sample_format.valid_bits()),
+                        // The bits that carry the music, not the word they
+                        // travel in: a CD rip widened for a DAC that only
+                        // takes 32 bit words was logged as 24.
+                        bit_depth: bits,
                         bit_perfect,
                         duration_ms: match (total_frames, opened.sample_rate_hz) {
                             (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
@@ -1185,7 +1186,7 @@ impl Chilpa {
                         None => format!(
                             "{} Hz · {} bits · {}",
                             opened.sample_rate_hz,
-                            opened.sample_format.valid_bits(),
+                            bits.unwrap_or(opened.sample_format.valid_bits()),
                             channels(opened.channels)
                         ),
                     };

@@ -23,6 +23,9 @@ pub enum PlayerEvent {
     Started {
         path: PathBuf,
         opened: StreamFormat,
+        /// How many bits carry the music, which is not always the width of
+        /// the word `opened` names: see `negotiate::bits_carried`.
+        bits: Option<u8>,
         bit_perfect: bool,
         total_frames: Option<u64>,
         /// What the file says about itself, when it could be read.
@@ -343,6 +346,7 @@ fn play(
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
+                bits: delivery.bits_carried(),
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames,
                 tags,
@@ -419,6 +423,7 @@ fn play_stream(
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
+                bits: delivery.bits_carried(),
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames: None,
                 tags: Some(tag.clone()),
@@ -518,10 +523,12 @@ fn play_cd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
-                        // A CD delivered as is is not converted on the way
-                        // out of Chilpa: if the output does not accept
-                        // 16/44.1 it is not opened at all. That is half the
-                        // answer. The other half is where it went, and it
+                        bits: chilpa_audio::negotiate::bits_carried(chilpa_cd::CDDA_FORMAT, format),
+                        // A CD is not converted on the way out of Chilpa: it
+                        // goes out as 16/44.1 or widened, which keeps every
+                        // sample, and if the output takes neither it is not
+                        // opened at all. That is half the answer. The other
+                        // half is where it went, and it
                         // used to be missing: through `default` this said
                         // bit-perfect while the samples went into a mixer.
                         bit_perfect: crate::path_is_exact(device, exclusive),
@@ -628,6 +635,7 @@ fn play_sacd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
+                        bits: chilpa_audio::negotiate::bits_carried(format, format),
                         // DSD over DoP carries the bits untouched inside the
                         // PCM frames, so nothing is converted here. Whether
                         // anything happens to them afterwards is the stack's
@@ -700,6 +708,7 @@ fn play_dsd(
                 let _ = events.send(PlayerEvent::Started {
                     path: owned.clone(),
                     opened: format,
+                    bits: chilpa_audio::negotiate::bits_carried(format, format),
                     // Same as the SACD path: the DoP carrier preserves the
                     // bits, and where they go afterwards is the stack's to
                     // say.
