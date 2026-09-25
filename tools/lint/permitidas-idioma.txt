@@ -1,5 +1,6 @@
 
 # abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
+aac
 acq
 aes
 airp

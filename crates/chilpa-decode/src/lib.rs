@@ -134,7 +134,7 @@ impl Decoded {
             .map(|b| b.min(32) as u8)
             .or_else(|| alac_bit_depth(params));
         // The file's bits win: 16 goes out as S16, 24 as S24In32.
-        let sample_format = match declared_bits.unwrap_or(16) {
+        let integers = match declared_bits.unwrap_or(16) {
             0..=16 => SampleFormat::S16,
             17..=24 => SampleFormat::S24In32,
             _ => SampleFormat::S32,
@@ -146,15 +146,26 @@ impl Decoded {
         let padding = params.padding.unwrap_or(0);
         let frames = params.n_frames;
         let mut format = format;
-        let mut pending = None;
-        let (sample_rate_hz, channels) = match declared {
-            (Some(rate), Some(channels)) => (rate, channels),
-            _ => {
-                let (rate, channels, block) =
-                    first_block(&mut *format, &mut *decoder, track_id, declared_bits)?;
-                pending = Some(block);
-                (rate, channels)
-            }
+        // One block is decoded up front and kept to hand over later. It says
+        // what the container may not -- an MP4 does not always declare rate
+        // or channels -- and it says what the decoder produces, which the
+        // container never does. A lossy codec declares no bit depth and
+        // decodes to floats, and the fallback above announced it as 16 bit
+        // integers: negotiation opened a 16 bit word with nothing to report,
+        // the packing scaled the floats into it, and the verdict called an
+        // MP3 bit-perfect.
+        let first = first_block(&mut *format, &mut *decoder, track_id, declared_bits);
+        let (sample_rate_hz, channels, pending) = match (declared, first) {
+            ((Some(rate), Some(channels)), Ok((_, _, block))) => (rate, channels, Some(block)),
+            (_, Ok((rate, channels, block))) => (rate, channels, Some(block)),
+            // Nothing decodable, but the container says what it would be: it
+            // opens and plays nothing, as it always did.
+            ((Some(rate), Some(channels)), Err(_)) => (rate, channels, None),
+            (_, Err(e)) => return Err(e),
+        };
+        let sample_format = match &pending {
+            Some(Block::Float(_)) => SampleFormat::F32,
+            _ => integers,
         };
         Ok(Self {
             format,

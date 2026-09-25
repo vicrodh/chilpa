@@ -249,6 +249,42 @@ fn a_24_bit_wav_reaches_a_dac_with_three_byte_words_with_every_sample_intact() {
     let _ = std::fs::remove_file(path);
 }
 
+#[test]
+fn a_lossy_track_plays_with_the_switch_on_and_is_not_called_bit_perfect() {
+    let ffmpeg = std::process::Command::new("ffmpeg").arg("-version").output();
+    if !ffmpeg.map(|o| o.status.success()).unwrap_or(false) {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let wav = temp_file("lossy-source");
+    write_wav(&wav, &samples(16), 16, 44_100, 2);
+    let aac = std::env::temp_dir().join("chilpa-bitperfect-lossy.m4a");
+    let encoded = std::process::Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-i"])
+        .arg(&wav)
+        .args(["-c:a", "aac"])
+        .arg(&aac)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    assert!(encoded, "ffmpeg could not write AAC");
+
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let played = play_file(&aac, &only_32_bit_words(), Policy::BitPerfect, &StopSignal::new(), |format| {
+        cap.stream = Some(format);
+        Ok(Handle(&mut cap))
+    })
+    .expect("a lossy track plays with the switch on");
+    assert!(!cap.bytes.is_empty(), "it played");
+    assert!(
+        !played.delivery.nothing_was_converted(),
+        "its floats were rounded into integers, and that is not bit-perfect: {:?}",
+        played.delivery
+    );
+    let _ = std::fs::remove_file(wav);
+    let _ = std::fs::remove_file(aac);
+}
+
 /// A device that takes whatever it is given, at the format it was opened
 /// with.
 struct Swallow(StreamFormat);
