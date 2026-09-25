@@ -337,6 +337,16 @@ pub struct LibraryTrack {
     pub analysis: String,
 }
 
+/// A folder of the library, as the folders page shows it.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct LibraryFolder {
+    pub path: String,
+    /// When it was last scanned, in unix seconds.
+    pub last_scan: Option<i64>,
+    /// False when it is not there now: an unmounted disk, a moved folder.
+    pub reachable: bool,
+}
+
 /// How the background analysis is going.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct AnalysisStatus {
@@ -658,6 +668,13 @@ impl Chilpa {
     /// for, and the last folder opened.
     pub fn settings(&self) -> chilpa_core::settings::Settings {
         chilpa_core::settings::load()
+    }
+
+    /// Chooses the output and the policy: remembers them, and moves what is
+    /// playing there, at the same place.
+    pub fn use_output(&mut self, output: &str, bit_perfect: bool) {
+        self.remember(output, bit_perfect);
+        self.move_output(output, bit_perfect);
     }
 
     /// Remembers the chosen output and policy.

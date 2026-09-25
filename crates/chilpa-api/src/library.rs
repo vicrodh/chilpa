@@ -129,6 +129,22 @@ impl Chilpa {
         lib.roots().unwrap_or_default().into_iter().map(|r| r.path).collect()
     }
 
+    /// The folders that make up the library, with when each was last
+    /// scanned and whether it can be reached now. A folder on a disk that is
+    /// not mounted is kept and marked, never pruned.
+    pub fn library_folders(&mut self) -> Vec<LibraryFolder> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.roots()
+            .unwrap_or_default()
+            .into_iter()
+            .map(|r| LibraryFolder {
+                reachable: r.reachable && r.path.is_dir(),
+                path: r.path.to_string_lossy().into_owned(),
+                last_scan: r.last_scan,
+            })
+            .collect()
+    }
+
     /// Checks the library and says what is wrong, in one line.
     ///
     /// Empty when there is nothing to say. It reads the whole file, so it is
