@@ -26,9 +26,12 @@ fn main() {
     #[cfg(target_os = "linux")]
     QGuiApplication::set_desktop_file_name(&QString::from("com.blitzfc.chilpa"));
 
+    // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
+    // the interface in its states, in either theme.
+    let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };
     let mut engine = QQmlApplicationEngine::new();
     if let Some(engine) = engine.as_mut() {
-        engine.load(&QUrl::from("qrc:/qt/qml/com/blitzfc/chilpa/qml/Main.qml"));
+        engine.load(&QUrl::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/qml/{root}")));
     }
     if let Some(app) = app.as_mut() {
         app.exec();

@@ -64,6 +64,8 @@ QtObject {
     readonly property int fieldPadding: 9
     readonly property int focusRing: 2
     readonly property int tooltipDelay: 600
+    // How long a screenshot waits for covers and fonts to arrive.
+    readonly property int shotDelay: 2500
 
     // Sidebar (02-layout.md 2).
     readonly property int sidebarWidth: 212
@@ -107,6 +109,9 @@ QtObject {
     readonly property int volumeTrack: 3
     readonly property int playerNoTimes: 480
     readonly property int playerNoVolume: 660
+    readonly property int qualityTooltipWidth: 320
+    readonly property int shadowElevatedY: 12
+    readonly property int shadowElevatedBlur: 32
 
     // Track rows (03-components.md TrackRow).
     readonly property int rowCompact: 24
@@ -130,6 +135,8 @@ QtObject {
     readonly property int colMore: 32
     readonly property int playingBarWidth: 2
     readonly property int playingBox: 12
+    // Enough to build every row of a list that grows instead of scrolling.
+    readonly property int fitContentBuffer: 100000
 
     // Album cards and grids (02-layout.md 4, 03-components.md AlbumCard).
     readonly property int cardMinWidth: 180
@@ -140,9 +147,15 @@ QtObject {
     readonly property int overlayCheck: 26
     readonly property int overlayPlay: 40
     readonly property int overlayButton: 30
+    // Covers are decoded at sizes rounded up to this step, in device pixels.
+    readonly property int artDecodeStep: 128
 
     // Headers of screens.
     readonly property int shelfHeader: 40
+    // How many records a home shelf reads: more than one row can show at
+    // any width, so a wider window never shows a gap.
+    readonly property int shelfLimit: 12
+    readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
     readonly property int heroGap: 28
     readonly property int barHeight: 44
@@ -157,4 +170,9 @@ QtObject {
     readonly property int panesHandle: 12
     readonly property int toolbar: 28
     readonly property int crumbHeight: 22
+    // How the four columns share the width: year, genre, artist, album.
+    readonly property var paneShares: [0.7, 1.0, 1.2, 1.3]
+    readonly property real paneShareTotal: 4.2
+    // The three one-pixel separators between them and the edge on each side.
+    readonly property int paneSeams: 5
 }

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Compiles the window's shaders into the .qsb packages Qt loads at run time:
+# one file carrying GLSL, HLSL and Metal, so the same package serves Linux,
+# Windows and macOS. Run it after editing a .frag; the .qsb is committed so a
+# build does not need Qt's shader tools.
+set -e
+root=$(git rev-parse --show-toplevel)
+qsb=$(command -v qsb || echo /usr/lib64/qt6/bin/qsb)
+for src in "$root"/crates/chilpa-qt/assets/shaders/*.frag; do
+    "$qsb" --glsl "100 es,120,150" --hlsl 50 --msl 12 -o "$src.qsb" "$src"
+    echo "shaders: $(basename "$src")"
+done
