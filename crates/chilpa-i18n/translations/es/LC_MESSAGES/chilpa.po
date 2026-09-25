@@ -933,6 +933,9 @@ msgstr "esa lista está vacía"
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
 
+msgid "the JACK graph did not answer in time"
+msgstr "el grafo de JACK no respondió a tiempo"
+
 msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
 msgstr "el grafo de JACK va a {} Hz y esta pista es de {} Hz; JACK no la puede tocar sin modificarla"
 

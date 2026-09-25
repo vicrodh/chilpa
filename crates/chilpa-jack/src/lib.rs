@@ -23,7 +23,9 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use jack::PortSpec as _;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, RecvTimeoutError, Sender};
 use std::sync::{Arc, Mutex};
+use std::time::Duration;
 
 /// The JACK graph.
 pub struct Jack;
@@ -35,11 +37,81 @@ const CLIENT: &str = "Chilpa";
 /// takes.
 ///
 /// Opening a client is the only way to find out anything about JACK: there
-/// is no file to read and no command that answers without one. It is closed
-/// immediately, and it is the one place here that connects without being
-/// asked to play.
+/// is no file to read and no command that answers without one. It is only
+/// ever called through [`ask`], which closes it where nobody waits, and it is
+/// the one place here that connects without being asked to play.
 fn hello() -> Option<(jack::Client, jack::ClientStatus)> {
     jack::Client::new(CLIENT, jack::ClientOptions::NO_START_SERVER).ok()
+}
+
+/// How long a question to the graph may take before it is given up on.
+///
+/// Two seconds, as the PipeWire stack gives `pactl`, and for the same reason:
+/// the stack picker asks while somebody is looking at the window.
+const PATIENCE: Duration = Duration::from_secs(2);
+
+/// Why the graph gave no answer.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Silence {
+    /// There is no graph to ask.
+    Absent,
+    /// There may be one, and it did not answer in time.
+    Late,
+}
+
+/// Runs `work` on a thread of its own and waits at most `patience` for what
+/// it sends back.
+///
+/// **The thread is never joined.** Whatever it does after it has answered,
+/// or instead of answering, nobody waits for, and that is the point. Under
+/// PipeWire's JACK library, closing a client sometimes never returns
+/// (`jack_client_close` waiting forever in `pw_thread_loop_stop`), and the
+/// `jack` crate holds one lock over every client's creation and destruction
+/// while it closes, so after one such close even opening a client waits
+/// forever. Both hung whoever had asked: the player's thread, in one run for
+/// six hours. Here a hang costs one idle thread.
+fn within<T: Send + 'static>(
+    patience: Duration,
+    work: impl FnOnce(Sender<T>) + Send + 'static,
+) -> Result<T, Silence> {
+    let (answer, answered) = mpsc::channel();
+    // A thread that cannot be started is a question that was not asked, and
+    // of the two answers "late" is the nearer.
+    std::thread::Builder::new()
+        .name("chilpa-jack".into())
+        .spawn(move || work(answer))
+        .map_err(|_| Silence::Late)?;
+    match answered.recv_timeout(patience) {
+        Ok(value) => Ok(value),
+        Err(RecvTimeoutError::Timeout) => Err(Silence::Late),
+        // It gave up without answering, which only a failed connection does.
+        Err(RecvTimeoutError::Disconnected) => Err(Silence::Absent),
+    }
+}
+
+/// Asks the graph one thing: connects, asks, answers, and only then closes,
+/// on a thread nobody is waiting on.
+fn ask<T: Send + 'static>(
+    question: impl FnOnce(&jack::Client) -> T + Send + 'static,
+) -> Result<T, Silence> {
+    within(PATIENCE, move |answer| {
+        if let Some((client, _)) = hello() {
+            let _ = answer.send(question(&client));
+            drop(client);
+        }
+    })
+}
+
+/// Leaves the graph without waiting to have left. See [`within`].
+fn let_go<C: Send + 'static>(client: C) {
+    // If no thread can be started the closure is dropped here, on the
+    // caller's thread. Wrapped, that leaks the client instead of closing it:
+    // one left in the graph until Chilpa exits is better than a caller that
+    // never comes back.
+    let client = std::mem::ManuallyDrop::new(client);
+    let _ = std::thread::Builder::new()
+        .name("chilpa-jack".into())
+        .spawn(move || drop(std::mem::ManuallyDrop::into_inner(client)));
 }
 
 /// What the graph accepts, which is one rate and nothing else.
@@ -51,9 +123,7 @@ fn hello() -> Option<(jack::Client, jack::ClientStatus)> {
 /// and the window says converted. Neither of those is a decision this crate
 /// has any business making on its own.
 pub fn capabilities() -> Option<chilpa_audio::negotiate::DeviceCaps> {
-    let (client, _) = hello()?;
-    let rate = client.sample_rate() as u32;
-    drop(client);
+    let rate = ask(|client| client.sample_rate() as u32).ok()?;
     Some(chilpa_audio::negotiate::DeviceCaps {
         sample_rates: vec![rate],
         // The graph deals in f32 and the conversion into it costs nothing;
@@ -76,16 +146,24 @@ impl OutputBackend for Jack {
     }
 
     fn info(&self) -> BackendInfo {
-        let Some((client, _)) = hello() else {
-            return BackendInfo::missing(
-                BackendKind::Jack,
-                chilpa_i18n::t(
-                    "no JACK graph is running; start one, or install pipewire-jack to have \
-                     PipeWire answer for it",
-                ),
-            );
+        let rate = match ask(|client| client.sample_rate()) {
+            Ok(rate) => rate,
+            Err(Silence::Absent) => {
+                return BackendInfo::missing(
+                    BackendKind::Jack,
+                    chilpa_i18n::t(
+                        "no JACK graph is running; start one, or install pipewire-jack to have \
+                         PipeWire answer for it",
+                    ),
+                )
+            }
+            Err(Silence::Late) => {
+                return BackendInfo::missing(
+                    BackendKind::Jack,
+                    chilpa_i18n::t("the JACK graph did not answer in time"),
+                )
+            }
         };
-        let rate = client.sample_rate();
         // Nothing is claimed about who is answering. On most machines it
         // is PipeWire's replacement library rather than jack2, and it would
         // be worth saying -- but the only signals available are the shapes
@@ -93,7 +171,6 @@ impl OutputBackend for Jack {
         // nothing. What actually matters is in the caveat, and that is read
         // from the graph itself: the rate it runs at.
         let provider = String::new();
-        drop(client);
         BackendInfo {
             kind: BackendKind::Jack,
             present: true,
@@ -119,17 +196,19 @@ impl OutputBackend for Jack {
     }
 
     fn outputs(&self) -> Vec<BackendOutput> {
-        let Some((client, _)) = hello() else { return Vec::new() };
         // The graph's physical inputs: the ports that are an actual way out
         // of the machine. Everything else is another program, and sending
         // music into one of those is not choosing an output.
-        let ports = client.ports(
-            None,
-            Some(jack::AudioIn::default().jack_port_type()),
-            jack::PortFlags::IS_INPUT | jack::PortFlags::IS_PHYSICAL,
-        );
-        let rate = client.sample_rate();
-        drop(client);
+        let Ok((ports, rate)) = ask(|client| {
+            let ports = client.ports(
+                None,
+                Some(jack::AudioIn::default().jack_port_type()),
+                jack::PortFlags::IS_INPUT | jack::PortFlags::IS_PHYSICAL,
+            );
+            (ports, client.sample_rate())
+        }) else {
+            return Vec::new();
+        };
 
         // Ports come one per channel ("...:playback_1"), and what somebody
         // picks is a device, not a channel. They are grouped back by the
@@ -245,7 +324,23 @@ impl jack::ProcessHandler for Handler {
 }
 
 impl JackSink {
+    /// Joins the graph, giving up after [`PATIENCE`].
+    ///
+    /// On a thread of its own like every question here: after a close that
+    /// never returned, opening a client waits forever on the `jack` crate's
+    /// lock, and this is called on the player's thread. A sink that is built
+    /// after the wait was given up on is dropped over there, and leaves.
     fn open(device: &str, stream: StreamFormat) -> Result<Self, SinkError> {
+        let device = device.to_string();
+        within(PATIENCE, move |sink| {
+            let _ = sink.send(JackSink::join(&device, stream));
+        })
+        .unwrap_or_else(|_| {
+            Err(SinkError::Backend(chilpa_i18n::t("the JACK graph did not answer in time")))
+        })
+    }
+
+    fn join(device: &str, stream: StreamFormat) -> Result<Self, SinkError> {
         let (client, _) = jack::Client::new(CLIENT, jack::ClientOptions::NO_START_SERVER)
             .map_err(|e| SinkError::Backend(e.to_string()))?;
         // The graph's rate is the graph's, not ours, and by here it has
@@ -319,10 +414,26 @@ impl AudioSink for JackSink {
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
-        // Leaving the graph is dropping the client, and it is not waited on:
-        // stopping never waits for a device.
-        self._active = None;
+        self.leave();
         Ok(())
+    }
+}
+
+impl JackSink {
+    /// Leaves the graph, and does not wait to have left: stopping never
+    /// waits for a device. The comment here used to say that while the
+    /// client was dropped on the player's thread, which is where closing it
+    /// can hang.
+    fn leave(&mut self) {
+        if let Some(active) = self._active.take() {
+            let_go(active);
+        }
+    }
+}
+
+impl Drop for JackSink {
+    fn drop(&mut self) {
+        self.leave();
     }
 }
 
@@ -359,6 +470,63 @@ fn to_f32(bytes: &[u8], format: SampleFormat) -> Vec<f32> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
+
+    /// Runs `f`, and fails instead of hanging if it has not come back within
+    /// `limit`. The bug here is a hang, and a test that hangs along with it
+    /// tells nobody anything.
+    fn comes_back_within<T: Send + 'static>(limit: Duration, f: impl FnOnce() -> T + Send + 'static) -> T {
+        let (done, finished) = mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = done.send(f());
+        });
+        finished.recv_timeout(limit).expect("it never came back: the caller would have hung here")
+    }
+
+    /// What closing a client under PipeWire's JACK library sometimes does.
+    fn forever() -> ! {
+        loop {
+            std::thread::park();
+        }
+    }
+
+    #[test]
+    fn an_answer_comes_back_even_when_closing_the_client_never_ends() {
+        let got = comes_back_within(Duration::from_secs(5), || {
+            within(Duration::from_secs(3), |answer: Sender<u32>| {
+                let _ = answer.send(48_000);
+                forever()
+            })
+        });
+        assert_eq!(got, Ok(48_000));
+    }
+
+    #[test]
+    fn a_graph_that_never_answers_costs_the_patience_and_no_more() {
+        let asked = Instant::now();
+        let got = comes_back_within(Duration::from_secs(5), || {
+            within(Duration::from_millis(200), |_: Sender<u32>| forever())
+        });
+        assert_eq!(got, Err(Silence::Late));
+        assert!(asked.elapsed() < Duration::from_secs(2), "{:?}", asked.elapsed());
+    }
+
+    #[test]
+    fn no_graph_is_said_at_once() {
+        let got = within(Duration::from_secs(5), |answer: Sender<u32>| drop(answer));
+        assert_eq!(got, Err(Silence::Absent));
+    }
+
+    #[test]
+    fn letting_go_of_a_client_does_not_wait_for_it_to_leave() {
+        struct Stuck;
+        impl Drop for Stuck {
+            fn drop(&mut self) {
+                forever()
+            }
+        }
+        comes_back_within(Duration::from_secs(5), || let_go(Stuck));
+    }
 
     #[test]
     fn this_stack_never_claims_to_be_exact() {

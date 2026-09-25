@@ -933,6 +933,9 @@ msgstr ""
 msgid "that source does not use OAuth"
 msgstr ""
 
+msgid "the JACK graph did not answer in time"
+msgstr ""
+
 msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
 msgstr ""
 
