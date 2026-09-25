@@ -186,6 +186,13 @@ impl AudioSink for AlsaSink {
         Ok(())
     }
 
+    /// Drops what the device holds and makes it ready for more, without
+    /// closing it.
+    fn flush(&mut self) -> Result<(), SinkError> {
+        self.pcm.drop().map_err(backend)?;
+        self.pcm.prepare().map_err(backend)
+    }
+
     /// Watches the device play out what it holds, instead of asking ALSA to
     /// drain: that blocks until it is done, and a device that stopped
     /// answering would hold the player there. Never longer than the buffer

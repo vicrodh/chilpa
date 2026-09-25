@@ -369,6 +369,8 @@ struct TrackFrames<'a> {
     skipped: bool,
     /// Frames to throw away to land on the exact point asked for.
     discard: u64,
+    /// Set by a seek that landed, until the renderer has heard of it.
+    moved: bool,
     /// What to add to the frames delivered to get the position in the file:
     /// where the last seek landed less what had been delivered by then. It
     /// used to be where the seek landed alone, and the renderer counts from
@@ -381,6 +383,10 @@ struct TrackFrames<'a> {
 }
 
 impl FrameSource for TrackFrames<'_> {
+    fn moved(&mut self) -> bool {
+        std::mem::take(&mut self.moved)
+    }
+
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
             if self.exhausted {
@@ -397,6 +403,7 @@ impl FrameSource for TrackFrames<'_> {
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
                         self.discard = plan.discard;
+                        self.moved = true;
                         // The point ASKED FOR, not where the container
                         // landed: the discarded frames never come out, so
                         // counting them separately would leave the position
@@ -545,6 +552,9 @@ where
     // device is its last part, and it is waited for before the device is
     // closed. Skipped or stopped, it is not.
     let mut ended_by_itself = false;
+    // Whether the track before was skipped: if the device carries on into
+    // the next one, what it still holds is the rest of the skipped track.
+    let mut skipped_before = false;
     // A stop, or a skip of what is still playing, ends the wait.
     let give_up = || stop.is_stopped() || skip.take();
 
@@ -573,6 +583,9 @@ where
             packer = DopPacker::new();
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
+        if skipped_before && transition.is_seamless() {
+            sink.flush().map_err(PlayError::Sink)?;
+        }
 
         on_track(index, path, &delivery);
         // Skipping a track ends the source just like a natural end, so it has
@@ -595,6 +608,7 @@ where
                     skip: skip.clone(),
                     skipped: false,
                     discard: 0,
+                    moved: false,
                     base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                 };
@@ -623,6 +637,7 @@ where
         };
         let finished_ok = outcome.may_advance_queue();
         ended_by_itself = finished_ok && !skipped;
+        skipped_before = skipped;
         consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
         results.push(TrackResult {
             path: path.clone(),

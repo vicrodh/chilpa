@@ -463,3 +463,48 @@ fn half_a_second_of_buffer_never_runs_dry() {
     assert!(samples > 50, "the card was not running long enough to say");
     assert!(worst < buffer, "the buffer ran dry: {worst} of {buffer} frames free");
 }
+
+#[test]
+#[ignore = "opens a real device and makes a real sound; run it on purpose"]
+fn a_seek_on_the_card_drops_what_it_held_and_carries_on() {
+    // CHILPA_SMOKE_DEVICE, CHILPA_SMOKE_TRACK (fifteen seconds or more) and
+    // CHILPA_SMOKE_CARD. A seek throws away what the card holds -- ALSA's
+    // drop and prepare, on a PCM that is playing -- and it has to go on
+    // playing from the point asked for, not stop or fail.
+    let Some((device, track, card)) = asked_for() else {
+        eprintln!("smoke: set CHILPA_SMOKE_DEVICE, CHILPA_SMOKE_TRACK and CHILPA_SMOKE_CARD to run this");
+        return;
+    };
+    free(&card);
+    other_library();
+    let status = format!("/proc/asound/card{card}/pcm0p/sub0/status");
+    let running = || std::fs::read_to_string(&status).unwrap_or_default().contains("RUNNING");
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_file(&track, &device, true);
+    let limit = Instant::now() + Duration::from_secs(5);
+    while !(running() && chilpa.poll().seconds > 1.0) && Instant::now() < limit {
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(running(), "the card never started");
+
+    chilpa.seek(10.0);
+    let asked = Instant::now();
+    let mut landed = None;
+    while asked.elapsed() < Duration::from_secs(3) {
+        let now = chilpa.poll().clone();
+        assert!(now.error.is_empty(), "the seek failed: {}", now.error);
+        if now.seconds >= 10.0 {
+            landed = Some(asked.elapsed());
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    let landed = landed.expect("the position never reached the point asked for");
+    std::thread::sleep(Duration::from_secs(1));
+    let now = chilpa.poll().clone();
+    eprintln!("smoke: at 10 s after {landed:?}; a second later at {:.2} s", now.seconds);
+    assert!(now.error.is_empty(), "{}", now.error);
+    assert!(running(), "the card stopped playing after the seek");
+    assert!(now.seconds > 10.5 && now.seconds < 12.0, "it went on from there: {:.2} s", now.seconds);
+    chilpa.stop();
+}

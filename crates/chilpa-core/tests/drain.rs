@@ -41,6 +41,7 @@ struct Held {
     pending: u64,
     played: u64,
     drains: usize,
+    flushes: usize,
 }
 
 /// A device with a buffer: what is written waits there, `drain` plays it,
@@ -66,6 +67,12 @@ impl AudioSink for Buffered {
         }
         Ok(())
     }
+    fn flush(&mut self) -> Result<(), SinkError> {
+        let mut held = self.1.borrow_mut();
+        held.flushes += 1;
+        held.pending = 0;
+        Ok(())
+    }
     fn close(&mut self) -> Result<(), SinkError> {
         self.1.borrow_mut().pending = 0;
         Ok(())
@@ -82,6 +89,14 @@ fn caps() -> DeviceCaps {
 }
 
 fn play(paths: Vec<PathBuf>, controls: &Controls) -> Held {
+    play_asking(paths, controls, &mut |_, _| {})
+}
+
+fn play_asking(
+    paths: Vec<PathBuf>,
+    controls: &Controls,
+    on_progress: &mut dyn FnMut(usize, chilpa_core::queue_playback::Progress),
+) -> Held {
     let held = Rc::new(RefCell::new(Held::default()));
     let device = Rc::clone(&held);
     play_queue_with(
@@ -91,11 +106,11 @@ fn play(paths: Vec<PathBuf>, controls: &Controls) -> Held {
         controls,
         |format| Ok(Buffered(format, Rc::clone(&device))),
         &mut |_, _, _| {},
-        &mut |_, _| {},
+        on_progress,
     )
     .expect("the queue plays");
     let held = held.borrow();
-    Held { pending: held.pending, played: held.played, drains: held.drains }
+    Held { pending: held.pending, played: held.played, drains: held.drains, flushes: held.flushes }
 }
 
 #[test]
@@ -118,3 +133,43 @@ fn a_skipped_track_is_not_waited_for() {
     let _ = std::fs::remove_file(first);
     let _ = std::fs::remove_file(second);
 }
+
+#[test]
+fn a_seek_throws_away_what_the_device_held_from_before() {
+    // Half a second of the music being left played before the part asked
+    // for.
+    let track = wav("seek-flush", 44_100);
+    let controls = Controls::new();
+    let asked = controls.seek.clone();
+    let mut sought = false;
+    let held = play_asking(vec![track.clone()], &controls, &mut |_, progress| {
+        if !sought && progress.delivered > 4_096 {
+            asked.request(std::time::Duration::from_millis(500));
+            sought = true;
+        }
+    });
+    assert!(sought);
+    assert_eq!(held.flushes, 1, "once, at the seek");
+    let _ = std::fs::remove_file(track);
+}
+
+#[test]
+fn a_skip_throws_away_the_rest_of_the_track_left() {
+    // Two tracks at one rate share the device, and the rest of the skipped
+    // one was still in it, ahead of the next.
+    let (first, second) = (wav("skip-flush-1", 44_100), wav("skip-flush-2", 44_100));
+    let controls = Controls::new();
+    let asked = controls.skip.clone();
+    let mut skipped = false;
+    let held = play_asking(vec![first.clone(), second.clone()], &controls, &mut |index, progress| {
+        if index == 0 && !skipped && progress.delivered > 4_096 {
+            asked.skip();
+            skipped = true;
+        }
+    });
+    assert!(skipped);
+    assert_eq!(held.flushes, 1, "once, between the two");
+    let _ = std::fs::remove_file(first);
+    let _ = std::fs::remove_file(second);
+}
+

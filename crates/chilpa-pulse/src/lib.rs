@@ -175,6 +175,10 @@ impl AudioSink for PulseSink {
         Ok(())
     }
 
+    fn flush(&mut self) -> Result<(), SinkError> {
+        self.simple.flush().map_err(|e| SinkError::Backend(e.to_string().unwrap_or_default()))
+    }
+
     /// Watches the server's latency run down instead of asking it to drain,
     /// which blocks until it is done: a stop has to be able to cut in. The
     /// server holds two seconds by default; never longer than three.
