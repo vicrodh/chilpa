@@ -156,6 +156,14 @@ fn a_fifty_thousand_track_library_does_not_crawl() {
     let (_, t) = how_long(|| lib.albums_sorted(AlbumSort::Artist, 100, 4_000).unwrap());
     within("grid on page 40", t, Duration::from_millis(80));
 
+    // The whole grid's snapshot, and a page of it read by id from deep in.
+    let (ids, t) = how_long(|| lib.album_ids(AlbumSort::Artist).unwrap());
+    assert_eq!(ids.len(), ALBUMS as usize);
+    within("snapshot of the grid", t, Duration::from_millis(200));
+    let (page, t) = how_long(|| lib.albums_by_ids(&ids[4_000..4_128]).unwrap());
+    assert_eq!(page.len(), 128);
+    within("128 albums by id from deep in", t, Duration::from_millis(15));
+
     // The artists.
     let (artists, t) = how_long(|| lib.artists(500, 0).unwrap());
     assert_eq!(artists.len(), 200, "two hundred artists");
