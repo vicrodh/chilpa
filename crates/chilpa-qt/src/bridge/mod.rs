@@ -844,3 +844,83 @@ pub(super) fn open_in_browser(url: &str) -> std::io::Result<()> {
         .spawn()
         .map(|_| ())
 }
+
+/// The path behind a file dialog's URL.
+///
+/// QML hands back `file:///home/me/Music/Album%20%5BFLAC%5D`, and what is on
+/// disk is `/home/me/Music/Album [FLAC]`. Stripping `file://` and stopping
+/// there -- which five call sites each did, separately -- leaves the percent
+/// escapes in the string, so every folder whose name has a space, a bracket,
+/// an accent or an apostrophe simply did not exist: `read_dir` failed and the
+/// window said there was no audio in it.
+///
+/// The escapes are undone here and nowhere else. Five copies of "take off the
+/// prefix" is how the second half of the job went missing from all five.
+pub(super) fn path_of(url: &str) -> String {
+    // Only a URL is escaped. A plain path is somebody's file name, and a `%`
+    // followed by two hex digits in it is part of that name: `100%20.flac`
+    // is a file, not `100 .flac`.
+    let Some(text) = url.strip_prefix("file://") else {
+        return url.to_string();
+    };
+    let bytes = text.as_bytes();
+    let mut out = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        // A `%` that is not followed by two hex digits is a `%` in the name,
+        // not an escape, and it stays.
+        if bytes[i] == b'%' && i + 2 < bytes.len() {
+            let hex = std::str::from_utf8(&bytes[i + 1..i + 3]).ok();
+            if let Some(byte) = hex.and_then(|h| u8::from_str_radix(h, 16).ok()) {
+                out.push(byte);
+                i += 3;
+                continue;
+            }
+        }
+        out.push(bytes[i]);
+        i += 1;
+    }
+    // A name that is not UTF-8 does not come through: `from_utf8_lossy` puts
+    // U+FFFD where its bytes were, and that path will not open. Every caller
+    // wants text, so keeping the bytes would mean changing all five.
+    String::from_utf8_lossy(&out).into_owned()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::path_of;
+
+    #[test]
+    fn a_dialog_url_becomes_the_path_that_is_on_disk() {
+        assert_eq!(path_of("file:///home/me/Music"), "/home/me/Music");
+        // The one that sent every bracketed album to "there is no audio in it".
+        assert_eq!(
+            path_of("file:///mnt/nas/A/(1991)%20Attack%20of%20the%20Killer%20B's%20%5BFLAC%2016-44%5D"),
+            "/mnt/nas/A/(1991) Attack of the Killer B's [FLAC 16-44]",
+        );
+        assert_eq!(
+            path_of("file:///m/Audiophile%20Collection%20Vol.3%20%5BDSF%5D%5BDSD128%5D"),
+            "/m/Audiophile Collection Vol.3 [DSF][DSD128]",
+        );
+    }
+
+    #[test]
+    fn accents_survive_the_trip() {
+        // Two bytes in UTF-8, so two escapes, and they have to come back as
+        // one character rather than two broken ones.
+        assert_eq!(path_of("file:///m/Metr%C3%B3nomo"), "/m/Metrónomo");
+        assert_eq!(path_of("file:///m/%E3%81%B7%E3%82%8A"), "/m/ぷり");
+    }
+
+    #[test]
+    fn a_plain_path_is_left_alone() {
+        // Not everything arrives as a URL: the autoplay argument is a path
+        // somebody typed, and a `%` in a file name is a `%`.
+        assert_eq!(path_of("/home/me/50%_off.flac"), "/home/me/50%_off.flac");
+        assert_eq!(path_of("/home/me/Music"), "/home/me/Music");
+        // A `%` followed by two hex digits is still part of a plain name.
+        // The case above passes by accident: `%_o` is not hex.
+        assert_eq!(path_of("/home/me/100%20.flac"), "/home/me/100%20.flac");
+        assert_eq!(path_of("file:///m/100%"), "/m/100%");
+    }
+}
