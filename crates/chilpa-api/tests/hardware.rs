@@ -15,8 +15,11 @@
 //! CHILPA_SMOKE_DEVICE=alsa:hw:1,0 \
 //! CHILPA_SMOKE_TRACK="/path/to/a 24-48 track.flac" \
 //! CHILPA_SMOKE_CARD=1 \
-//!   cargo test -p chilpa-core --test hardware -- --ignored --nocapture
+//!   cargo test -p chilpa-api --test hardware -- --ignored --nocapture --test-threads=1
 //! ```
+//!
+//! One thread, because both tests open the same card and the second one to
+//! ask for it would find it taken.
 //!
 //! With no variables set it says what it needed and passes, because a smoke
 //! that fails for not being asked to run teaches nobody anything.
