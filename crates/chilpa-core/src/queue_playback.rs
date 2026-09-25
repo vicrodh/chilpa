@@ -36,21 +36,31 @@ enum Source {
 /// took the queue on from there. It goes through the queue like any track
 /// now, always as bit-perfect, since converting DoP turns it into noise.
 fn open_track(path: &Path, caps: &DeviceCaps, policy: Policy) -> Result<(Source, Delivery), PlayError> {
+    let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
+    if let Some((image, number)) = crate::sacd_tracks::parse(path) {
+        let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
+        return dop_track(Box::new(reader), caps);
+    }
     if is_dsf(path) {
-        let reader = chilpa_dsd::DsfReader::open(path)
-            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-        let request = dop_request(reader.info());
-        let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(|_| {
-            PlayError::Sink(SinkError::Backend(chilpa_i18n::t_args(
-                "the device does not accept {} Hz, which is what this DSD over DoP asks for",
-                &[&request.sample_rate_hz.to_string()],
-            )))
-        })?;
-        return Ok((Source::Dop(Box::new(reader)), delivery));
+        let reader = chilpa_dsd::DsfReader::open(path).map_err(|e| unreadable(e.to_string()))?;
+        return dop_track(Box::new(reader), caps);
     }
     let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     Ok((Source::Pcm(decoded), delivery))
+}
+
+/// A DSD source, negotiated as bit-perfect: converting DoP turns it into
+/// noise, so the policy is not asked.
+fn dop_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
+    let request = dop_request(reader.info());
+    let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(|_| {
+        PlayError::Sink(SinkError::Backend(chilpa_i18n::t_args(
+            "the device does not accept {} Hz, which is what this DSD over DoP asks for",
+            &[&request.sample_rate_hz.to_string()],
+        )))
+    })?;
+    Ok((Source::Dop(reader), delivery))
 }
 
 /// What to do on reaching the end of the queue.

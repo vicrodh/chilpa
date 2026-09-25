@@ -96,6 +96,8 @@ impl Chilpa {
     pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
         let tracks: Vec<std::path::PathBuf> =
             paths.iter().map(std::path::PathBuf::from).collect();
+        // A disc image goes in as its tracks, one entry each.
+        let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {
             return Vec::new();
         }
@@ -150,6 +152,8 @@ impl Chilpa {
     pub fn enqueue(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
         let tracks: Vec<std::path::PathBuf> =
             paths.iter().map(std::path::PathBuf::from).collect();
+        // A disc image goes in as its tracks, one entry each.
+        let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {
             return Vec::new();
         }

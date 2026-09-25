@@ -124,7 +124,7 @@ pub struct NowPlaying {
 
 /// The extensions Chilpa knows how to open today.
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "iso"];
 
 /// A folder's audio files, in alphabetical order.
 ///
@@ -221,6 +221,9 @@ fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
 
 /// The title a queue shows: the tag's, or the file's name.
 fn title_of(path: &std::path::Path) -> String {
+    if let Some(title) = chilpa_core::sacd_tracks::title(path) {
+        return title;
+    }
     chilpa_tags::read(path)
         .ok()
         .and_then(|info| info.tags.title)
@@ -903,10 +906,12 @@ impl Chilpa {
     pub fn play_file(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) {
         // A lone file is a one track queue too: that way it goes down the
         // same path and inherits the tap, the repeat and the order.
-        self.queue = vec![path.display().to_string()];
-        self.removed = vec![false];
+        // A disc image goes in as its tracks, one entry each.
+        let tracks = chilpa_core::sacd_tracks::expand(&[path.to_path_buf()]);
+        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
+        self.removed = vec![false; self.queue.len()];
         self.spawn(0, device, bit_perfect);
-        self.now.path = path.display().to_string();
+        self.now.path = self.queue[0].clone();
     }
 
     /// The envelope of what just went out, as `points` values from 0 to 1.
@@ -1028,7 +1033,7 @@ impl Chilpa {
         device: &str,
         bit_perfect: bool,
     ) -> Vec<String> {
-        let tracks = audio_files_in(folder);
+        let tracks = chilpa_core::sacd_tracks::expand(&audio_files_in(folder));
         if tracks.is_empty() {
             self.now.error = chilpa_i18n::t_args(
                 "there is nothing Chilpa can play in {}",

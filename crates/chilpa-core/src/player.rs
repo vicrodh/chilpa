@@ -133,7 +133,9 @@ impl Player {
                             if let Some(at) = start_at {
                                 seek_thread.request(at);
                             }
-                            queue_thread.set(paths.clone());
+                            // A disc image goes in as its tracks, one entry
+                            // each, like any album.
+                            queue_thread.set(crate::sacd_tracks::expand(&paths));
                             let result = play(
                                 &queue_thread,
                                 &device,
@@ -321,9 +323,6 @@ fn play(
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, stop, pause, skip, open, events);
         }
-        if is_sacd(first) {
-            return play_sacd(first, device, exclusive, &caps, stop, pause, skip, open, events);
-        }
     }
     let results = crate::queue_playback::play_queue_with(
         queue,
@@ -335,6 +334,24 @@ fn play(
             // Tags and the cover are read as each track starts, not as it is
             // queued: a long queue must not read hundreds of files before the
             // first one plays.
+            // A track of a disc image is named by the disc, and its cover is
+            // the one beside the image.
+            if let Some((image, number)) = crate::sacd_tracks::parse(path) {
+                let about = crate::sacd_tracks::about(&image, number);
+                let _ = events.send(PlayerEvent::Started {
+                    path: path.to_path_buf(),
+                    opened: delivery.opened,
+                    bits: Some(1),
+                    bit_perfect: delivery.nothing_was_converted() && exact_path,
+                    total_frames: about.as_ref().map(|(_, frames)| *frames),
+                    tags: about.map(|(tags, _)| tags),
+                    artwork: chilpa_tags::artwork_for(&image, &crate::artwork_cache()),
+                    index,
+                    queue_len: total,
+                    dsd_multiple: Some(64),
+                });
+                return;
+            }
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
             let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
             // A DSD track counts in DoP frames, sixteen of its one-bit
@@ -452,16 +469,6 @@ fn play_stream(
     Ok(played.outcome)
 }
 
-/// True if the file is a SACD image.
-fn is_sacd(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.eq_ignore_ascii_case("iso"))
-        .unwrap_or(false)
-}
-
-/// Plays the tracks of a SACD image's stereo area, in order.
-#[allow(clippy::too_many_arguments)]
 /// A CD is asked for as `cdda:/dev/sr0`. The prefix is not decoration: a
 /// bare device node is indistinguishable from a file, and opening the drive
 /// by mistake startles anyone.
@@ -588,88 +595,6 @@ fn play_cd(
     Err(PlayError::Sink(SinkError::Backend(
         chilpa_i18n::t("CDs are not read outside Linux yet"),
     )))
-}
-
-fn play_sacd(
-    path: &Path,
-    device: &str,
-    exclusive: bool,
-    caps: &chilpa_audio::negotiate::DeviceCaps,
-    stop: &StopSignal,
-    pause: &chilpa_audio::sink::PauseSignal,
-    skip: &chilpa_audio::sink::SkipSignal,
-    open: &mut OpenSink,
-    events: &Sender<PlayerEvent>,
-) -> Result<Outcome, PlayError> {
-    let image = chilpa_sacd::open(path)
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-    let tracks = image.area.tracks.clone();
-    if tracks.is_empty() {
-        return Err(PlayError::Sink(SinkError::Backend(chilpa_i18n::t("the disc carries no tracks"))));
-    }
-    let total = tracks.len();
-    let mut last = Outcome::Finished { frames: 0 };
-
-    for (index, track) in tracks.iter().enumerate() {
-        if stop.is_stopped() {
-            return Ok(Outcome::Stopped { frames: last.frames() });
-        }
-        skip.take();
-        // Every track opens the image again: the reader keeps hold of it, so
-        // a track that fails does not take the rest of the disc with it.
-        let image = chilpa_sacd::open(path)
-            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-        let mut reader = chilpa_sacd::SacdTrackReader::open(image, track)
-            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-
-        let tag = chilpa_tags::Tags {
-            title: Some(chilpa_i18n::t_args("Track {}", &[&track.number.to_string()])),
-            album: path.file_stem().map(|s| s.to_string_lossy().to_string()),
-            ..chilpa_tags::Tags::default()
-        };
-        let events = events.clone();
-        let path = path.to_path_buf();
-        let duration = Some(u64::from(track.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16);
-
-        let played = crate::dsd_playback::play_dsd(
-            &mut reader,
-            caps,
-            stop,
-            pause,
-            |format| {
-                let sink = open(device, format, exclusive);
-                if sink.is_ok() {
-                    let _ = events.send(PlayerEvent::Started {
-                        path: path.clone(),
-                        opened: format,
-                        bits: chilpa_audio::negotiate::bits_carried(format, format),
-                        // DSD over DoP carries the bits untouched inside the
-                        // PCM frames, so nothing is converted here. Whether
-                        // anything happens to them afterwards is the stack's
-                        // answer, and asking it is what this used to skip.
-                        bit_perfect: crate::path_is_exact(device, exclusive),
-                        total_frames: duration,
-                        tags: Some(tag.clone()),
-                        artwork: None,
-                        index: index,
-                        queue_len: total,
-                        dsd_multiple: Some(64),
-                    });
-                }
-                sink
-            },
-            &mut |frames| {
-                let _ = events.send(PlayerEvent::Progress { frames });
-            },
-        )
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-
-        last = played.outcome;
-        if !last.may_advance_queue() {
-            break;
-        }
-    }
-    Ok(last)
 }
 
 #[cfg(test)]
