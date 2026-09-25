@@ -66,6 +66,8 @@ QtObject {
     readonly property int tooltipDelay: 600
     // How long a screenshot waits for covers and fonts to arrive.
     readonly property int shotDelay: 2500
+    // The longest a scripted scroll test runs.
+    readonly property int scrollTestSeconds: 15
 
     // Sidebar (02-layout.md 2).
     readonly property int sidebarWidth: 212

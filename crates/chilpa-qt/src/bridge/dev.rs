@@ -1,5 +1,8 @@
 //! Instruments for measuring the window, off unless asked for.
 //!
+//! `CHILPA_SCROLL=<pixels per second>` scrolls the screen's longest view at
+//! that speed from top to bottom, records the frames while it moves, and
+//! quits: the same scroll every run, so two runs can be compared.
 //! `CHILPA_FRAMES=1` records the time between presented frames and prints,
 //! on exit, the percentiles and how many frames missed one and two display
 //! periods: what the frontend's performance targets are stated in.
@@ -20,6 +23,7 @@ pub mod qobject {
         #[qml_element]
         #[qml_singleton]
         #[qproperty(bool, frames)]
+        #[qproperty(i32, scroll)]
         #[qproperty(QString, shot)]
         /// The screen to open at start, and which record: from "album:7".
         #[qproperty(QString, route)]
@@ -39,6 +43,7 @@ use std::time::Instant;
 
 pub struct DevRust {
     frames: bool,
+    scroll: i32,
     shot: QString,
     route: QString,
     route_id: i64,
@@ -52,7 +57,8 @@ impl Default for DevRust {
         let route = var("CHILPA_ROUTE");
         let (screen, id) = route.split_once(':').unwrap_or((&route, "0"));
         Self {
-            frames: !var("CHILPA_FRAMES").is_empty(),
+            frames: !var("CHILPA_FRAMES").is_empty() || !var("CHILPA_SCROLL").is_empty(),
+            scroll: var("CHILPA_SCROLL").parse().unwrap_or(0),
             shot: QString::from(&var("CHILPA_SHOT")),
             route: QString::from(screen),
             route_id: id.parse().unwrap_or(0),
