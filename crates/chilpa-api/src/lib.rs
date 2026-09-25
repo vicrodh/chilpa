@@ -16,6 +16,9 @@ mod accounts;
 mod approvals;
 mod plugins;
 mod search;
+mod folders;
+
+pub use folders::audio_files_in;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -120,32 +123,6 @@ pub struct NowPlaying {
     pub lyrics_source: String,
     /// The last problem, empty if there is none.
     pub error: String,
-}
-
-/// The extensions Chilpa knows how to open today.
-const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "dff", "iso"];
-
-/// A folder's audio files, in alphabetical order.
-///
-/// It does not descend into subfolders: that is the library's job, not a view's.
-pub fn audio_files_in(folder: &std::path::Path) -> Vec<std::path::PathBuf> {
-    let Ok(dir) = std::fs::read_dir(folder) else {
-        return Vec::new();
-    };
-    let mut files: Vec<_> = dir
-        .flatten()
-        .map(|e| e.path())
-        .filter(|p| {
-            p.is_file()
-                && p.extension()
-                    .and_then(|e| e.to_str())
-                    .map(|e| EXTENSIONS.contains(&e.to_lowercase().as_str()))
-                    .unwrap_or(false)
-        })
-        .collect();
-    files.sort();
-    files
 }
 
 /// The walk that keeps the tempo most even, starting at `from`.
@@ -1379,22 +1356,6 @@ mod tests {
         assert_eq!(channels(1), "mono");
         assert_eq!(channels(2), "stereo");
         assert_eq!(channels(6), "6 channels");
-    }
-
-    #[test]
-    fn a_folder_yields_audio_files_only_and_in_order() {
-        let mut dir = std::env::temp_dir();
-        dir.push("chilpa-api-folder");
-        let _ = std::fs::create_dir_all(&dir);
-        for name in ["b.flac", "a.wav", "notes.txt", "c.MP3"] {
-            std::fs::write(dir.join(name), b"x").unwrap();
-        }
-        let found: Vec<String> = audio_files_in(&dir)
-            .iter()
-            .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
-            .collect();
-        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3"], "without the .txt and in order");
-        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
