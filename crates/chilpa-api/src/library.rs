@@ -31,10 +31,11 @@ impl Chilpa {
         }
         // The interface's connection is let go: the scan opens its own, and
         // two connections to the same WAL database coexist without fighting.
-        self.scan = Some(chilpa_library::ScanJob::start(
+        self.scan = Some(chilpa_library::ScanJob::start_with(
             chilpa_library::Library::default_path(),
-            folder.to_path_buf(),
+            vec![folder.to_path_buf()],
             Some(chilpa_core::artwork_cache()),
+            chilpa_core::sacd_tracks::disc_images(),
         ));
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
     }
@@ -54,10 +55,11 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("there is no folder in the library yet");
             return;
         }
-        self.scan = Some(chilpa_library::ScanJob::start_all(
+        self.scan = Some(chilpa_library::ScanJob::start_with(
             chilpa_library::Library::default_path(),
             folders,
             Some(chilpa_core::artwork_cache()),
+            chilpa_core::sacd_tracks::disc_images(),
         ));
         self.scan_status = ScanStatus { running: true, ..ScanStatus::default() };
     }

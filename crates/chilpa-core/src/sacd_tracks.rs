@@ -42,6 +42,46 @@ pub fn expand(paths: &[PathBuf]) -> Vec<PathBuf> {
     out
 }
 
+/// Disc images as the library sees them: files that hold tracks.
+///
+/// The library does not know what is inside an image and may not depend on
+/// what does, so the core hands it this. Each track goes in under its own
+/// path, named by the disc, as DSD64 stereo -- the stereo area is what
+/// plays. DST tracks go in too: they are the disc's, and are refused when
+/// played until DST can be decoded.
+pub struct DiscImages;
+
+impl chilpa_library::scan::Containers for DiscImages {
+    fn may_hold(&self, path: &Path) -> bool {
+        is_image(path)
+    }
+
+    fn tracks(&self, path: &Path) -> Option<Vec<chilpa_library::scan::ContainedTrack>> {
+        let disc = chilpa_sacd::open(path).ok()?;
+        Some(
+            disc.area
+                .tracks
+                .iter()
+                .map(|track| chilpa_library::scan::ContainedTrack {
+                    path: path_of(path, track.number).display().to_string(),
+                    info: chilpa_tags::FileInfo {
+                        tags: tags(&disc.area, track, path),
+                        duration: std::time::Duration::from_secs_f64(track.duration_secs()),
+                        sample_rate_hz: Some(chilpa_sacd::DSD64_HZ),
+                        bit_depth: Some(1),
+                        channels: Some(2),
+                    },
+                })
+                .collect(),
+        )
+    }
+}
+
+/// The reader for disc images, for a scan that runs on its own thread.
+pub fn disc_images() -> std::sync::Arc<dyn chilpa_library::scan::Containers + Send + Sync> {
+    std::sync::Arc::new(DiscImages)
+}
+
 /// What the disc says about one of its tracks, as tags, and how long the
 /// track runs in DoP frames: sixteen of its one-bit samples each.
 pub(crate) fn about(image: &Path, number: u8) -> Option<(chilpa_tags::Tags, u64)> {

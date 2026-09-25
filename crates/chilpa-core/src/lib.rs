@@ -93,7 +93,8 @@ pub fn scan_into_library(
     lib: &chilpa_library::Library,
     root: &std::path::Path,
 ) -> rusqlite::Result<chilpa_library::ScanReport> {
-    chilpa_library::scan_root_with_cache(lib, root, Some(&artwork_cache()))
+    let cache = artwork_cache();
+    chilpa_library::scan::scan_root_with(lib, root, Some(&cache), &|_| {}, &sacd_tracks::DiscImages)
 }
 
 /// Where the covers pulled out of files are kept.

@@ -205,3 +205,64 @@ fn one_track_of_a_sacd_image_plays_on_its_own() {
     assert_eq!(started, vec![(0, Some("True Confessions".into()), Some(64))]);
     let _ = std::fs::remove_file(iso);
 }
+
+#[test]
+fn a_sacd_image_in_a_scanned_folder_goes_into_the_library_as_its_tracks() {
+    let dir = std::env::temp_dir().join("chilpa-sacd-library");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let iso = dir.join("Agents Of Fortune.iso");
+    std::fs::rename(image("library"), &iso).unwrap();
+
+    let lib = chilpa_library::Library::in_memory().unwrap();
+    let report = chilpa_library::scan::scan_root_with(
+        &lib,
+        &dir,
+        None,
+        &|_| {},
+        &chilpa_core::sacd_tracks::DiscImages,
+    )
+    .unwrap();
+    assert_eq!((report.seen, report.read), (2, 2), "the image's two tracks");
+    let found = lib.search("Summer", 10).unwrap();
+    assert_eq!(found.len(), 1);
+    assert_eq!(found[0].title, "This Ain't The Summer Of Love");
+    assert_eq!(found[0].album, "Agents Of Fortune");
+    assert_eq!(found[0].external_id, format!("sacd:{}#1", iso.display()), "a path the player can open");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+#[ignore = "reads a real library; run it on purpose"]
+fn the_sacd_images_under_a_real_folder_go_into_the_library() {
+    // CHILPA_SMOKE_SACD=/path/to/music cargo test -p chilpa-core --test sacd_queue -- --ignored --nocapture
+    let Some(root) = std::env::var_os("CHILPA_SMOKE_SACD").map(PathBuf::from) else {
+        eprintln!("smoke: set CHILPA_SMOKE_SACD to a folder to run this");
+        return;
+    };
+    let lib = chilpa_library::Library::in_memory().unwrap();
+    let report = chilpa_library::scan::scan_root_with(
+        &lib,
+        &root,
+        None,
+        &|_| {},
+        &chilpa_core::sacd_tracks::DiscImages,
+    )
+    .unwrap();
+    let rows: Vec<(String, String)> = lib
+        .connection()
+        .prepare("SELECT external_id, title FROM tracks WHERE external_id LIKE 'sacd:%' ORDER BY external_id")
+        .unwrap()
+        .query_map([], |r| Ok((r.get(0)?, r.get(1)?)))
+        .unwrap()
+        .map(Result::unwrap)
+        .collect();
+    let images: std::collections::BTreeSet<&str> =
+        rows.iter().map(|(path, _)| path.rsplit_once('#').unwrap().0).collect();
+    eprintln!("smoke: {} files read, {} tracks from {} images", report.read, rows.len(), images.len());
+    for (path, title) in rows.iter().filter(|(p, _)| p.ends_with("#1")) {
+        let name = path.rsplit('/').next().unwrap_or(path);
+        eprintln!("smoke:   {title} | {name}");
+    }
+    assert!(!rows.is_empty(), "no image under {} went in", root.display());
+}

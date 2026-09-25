@@ -34,6 +34,41 @@ pub struct ScanReport {
     pub unreachable: bool,
 }
 
+/// A track that lives inside another file, with a path of its own and what
+/// its container says about it.
+pub struct ContainedTrack {
+    pub path: String,
+    pub info: chilpa_tags::FileInfo,
+}
+
+/// Files that hold several tracks -- a disc image -- read by whoever knows
+/// how.
+///
+/// The library does not know what is inside a SACD image and may not depend
+/// on what does (ADR-001). The core, which assembles both, hands the reader
+/// in.
+pub trait Containers {
+    /// Whether a file may hold tracks, by its name. Nothing is opened.
+    fn may_hold(&self, path: &Path) -> bool;
+
+    /// The tracks a file holds, or `None` when it holds none: a DVD image
+    /// beside the music is neither an error nor audio.
+    fn tracks(&self, path: &Path) -> Option<Vec<ContainedTrack>>;
+}
+
+/// Every file is one track.
+pub struct NoContainers;
+
+impl Containers for NoContainers {
+    fn may_hold(&self, _: &Path) -> bool {
+        false
+    }
+
+    fn tracks(&self, _: &Path) -> Option<Vec<ContainedTrack>> {
+        None
+    }
+}
+
 const EXTENSIONS: &[&str] =
     &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf"];
 
@@ -43,12 +78,12 @@ pub fn scan_root_with_cache(
     root: &Path,
     cache: Option<&Path>,
 ) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, cache, &|_| {})
+    scan(lib, root, cache, &|_| {}, &NoContainers)
 }
 
 /// Scans a folder and its subfolders.
 pub fn scan_root(lib: &Library, root: &Path) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, None, &|_| {})
+    scan(lib, root, None, &|_| {}, &NoContainers)
 }
 
 /// The same, reporting how many files it has looked at.
@@ -58,12 +93,28 @@ pub fn scan_root_reporting(
     cache: Option<&Path>,
     on_progress: &dyn Fn(usize),
 ) -> rusqlite::Result<ScanReport> {
-    scan(lib, root, cache, on_progress)
+    scan(lib, root, cache, on_progress, &NoContainers)
+}
+
+/// The same, with files that hold several tracks read by `containers`.
+pub fn scan_root_with(
+    lib: &Library,
+    root: &Path,
+    cache: Option<&Path>,
+    on_progress: &dyn Fn(usize),
+    containers: &dyn Containers,
+) -> rusqlite::Result<ScanReport> {
+    scan(lib, root, cache, on_progress, containers)
 }
 
 /// How many audio files live under a folder. It does not touch the database.
 pub fn count_audio_files(root: &Path) -> usize {
-    walk(root).len()
+    walk(root, &NoContainers).len()
+}
+
+/// The same, counting a file that may hold tracks as one.
+pub fn count_files(root: &Path, containers: &dyn Containers) -> usize {
+    walk(root, containers).len()
 }
 
 fn scan(
@@ -71,6 +122,7 @@ fn scan(
     root: &Path,
     cache: Option<&Path>,
     on_progress: &dyn Fn(usize),
+    containers: &dyn Containers,
 ) -> rusqlite::Result<ScanReport> {
     let mut report = ScanReport { root: root.to_path_buf(), ..ScanReport::default() };
     let source = lib.source_id("local", "default")?;
@@ -84,8 +136,7 @@ fn scan(
     lib.set_root_reachable(root_id, true)?;
 
     let now = now_unix();
-    let files = walk(root);
-    report.seen = files.len();
+    let files = walk(root, containers);
 
     // Committing once per file costs more than writing the file's row. Every
     // statement outside a transaction is its own commit, and a file takes
@@ -120,6 +171,12 @@ fn scan(
             tx.commit()?;
             tx = lib.db.unchecked_transaction()?;
         }
+        if containers.may_hold(file) {
+            let found = Found { lib, source, root_id, now, cache };
+            found.container(file, containers, &mut report, &mut readable)?;
+            continue;
+        }
+        report.seen += 1;
         let Ok(meta) = std::fs::metadata(file) else {
             // A link that points nowhere, or a file gone since the listing.
             // It used to be skipped in silence and still counted as seen: a
@@ -224,6 +281,93 @@ fn scan(
     Ok(report)
 }
 
+/// What a scan needs to record a track, carried together.
+struct Found<'a> {
+    lib: &'a Library,
+    source: i64,
+    root_id: i64,
+    now: i64,
+    cache: Option<&'a Path>,
+}
+
+impl Found<'_> {
+    /// A file that holds tracks: each on its own row, keyed to the file.
+    ///
+    /// What was read from it last time is kept, unopened, when the file has
+    /// not changed: reading a disc image's tables is a few sectors that cost
+    /// about 0.4 s over a network share, and the rescan that finds nothing
+    /// changed is the one that runs at every startup.
+    fn container(
+        &self,
+        file: &Path,
+        containers: &dyn Containers,
+        report: &mut ScanReport,
+        readable: &mut HashSet<String>,
+    ) -> rusqlite::Result<()> {
+        let lib = self.lib;
+        let Ok(meta) = std::fs::metadata(file) else {
+            report.seen += 1;
+            report.unreadable += 1;
+            return Ok(());
+        };
+        let mtime = meta
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+            .map(|d| d.as_nanos() as i64)
+            .unwrap_or(0);
+        let size = meta.len() as i64;
+        let container = file.display().to_string();
+
+        let known: Vec<(String, i64, i64, Option<i64>)> = lib
+            .db
+            .prepare("SELECT path, mtime, size, track_id FROM scanned_files WHERE container = ?1")?
+            .query_map(params![container], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
+            .collect::<rusqlite::Result<_>>()?;
+        if !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some()) {
+            for (path, _, _, track) in &known {
+                lib.db.execute("UPDATE tracks SET present = 1 WHERE id = ?1", params![track])?;
+                readable.insert(path.clone());
+            }
+            report.seen += known.len();
+            report.unchanged += known.len();
+            return Ok(());
+        }
+
+        let Some(tracks) = containers.tracks(file) else { return Ok(()) };
+        let name = file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+        for track in &tracks {
+            report.seen += 1;
+            let track_id = save_track(
+                lib,
+                self.source,
+                &track.path,
+                Some(&track.info),
+                &name,
+                file,
+                self.now,
+                self.cache,
+            )?;
+            // No inode: every track of a container shares the file's, and a
+            // move is told by the inode, so they would be taken for each
+            // other. A container that moves comes back as new tracks.
+            lib.db.execute(
+                "INSERT INTO scanned_files
+                   (root_id, path, mtime, size, inode, track_id, scanned_at, container)
+                 VALUES (?1, ?2, ?3, ?4, NULL, ?5, ?6, ?7)
+                 ON CONFLICT(path) DO UPDATE SET
+                    mtime = excluded.mtime, size = excluded.size,
+                    track_id = excluded.track_id, scanned_at = excluded.scanned_at,
+                    container = excluded.container",
+                params![self.root_id, track.path, mtime, size, track_id, self.now, container],
+            )?;
+            readable.insert(track.path.clone());
+            report.read += 1;
+        }
+        Ok(())
+    }
+}
+
 /// A row of `scanned_files` whose file is not where it was.
 struct Moved {
     row_id: i64,
@@ -271,10 +415,26 @@ fn save_file(
     cache: Option<&Path>,
 ) -> rusqlite::Result<i64> {
     let info = chilpa_tags::read(path).ok();
-    let tags = info.as_ref().map(|i| i.tags.clone()).unwrap_or_default();
-    let title = tags.title.clone().unwrap_or_else(|| {
-        path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default()
-    });
+    let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+    save_track(lib, source, &path.display().to_string(), info.as_ref(), &name, path, now, cache)
+}
+
+/// A track into the library: its row, its album and its genres, and the
+/// album's cover out of `cover_from` when the album has none yet. `name` is
+/// the title when the tags carry none.
+#[allow(clippy::too_many_arguments)]
+fn save_track(
+    lib: &Library,
+    source: i64,
+    external_id: &str,
+    info: Option<&chilpa_tags::FileInfo>,
+    name: &str,
+    cover_from: &Path,
+    now: i64,
+    cache: Option<&Path>,
+) -> rusqlite::Result<i64> {
+    let tags = info.map(|i| i.tags.clone()).unwrap_or_default();
+    let title = tags.title.clone().unwrap_or_else(|| name.to_string());
     let artist = tags.artist_line();
     let album_id = match &tags.album {
         Some(album_title) => {
@@ -282,13 +442,13 @@ fn save_file(
             let id = album_id(lib, album_title, &album_artist, tags.year())?;
             // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
-                save_cover(lib, id, path, cache)?;
+                save_cover(lib, id, cover_from, cache)?;
             }
             Some(id)
         }
         None => None,
     };
-    let duration = info.as_ref().map(|i| i.duration.as_millis() as i64).unwrap_or(0);
+    let duration = info.map(|i| i.duration.as_millis() as i64).unwrap_or(0);
 
     lib.db.execute(
         "INSERT INTO tracks
@@ -304,16 +464,16 @@ fn save_file(
            isrc = excluded.isrc, recording_mbid = excluded.recording_mbid, present = 1",
         params![
             source,
-            path.display().to_string(),
+            external_id,
             title,
             artist,
             album_id,
             tags.track_number,
             tags.disc_number,
             duration,
-            info.as_ref().and_then(|i| i.sample_rate_hz),
-            info.as_ref().and_then(|i| i.bit_depth),
-            info.as_ref().and_then(|i| i.channels),
+            info.and_then(|i| i.sample_rate_hz),
+            info.and_then(|i| i.bit_depth),
+            info.and_then(|i| i.channels),
             tags.isrc,
             tags.musicbrainz_recording_id,
             now
@@ -321,7 +481,7 @@ fn save_file(
     )?;
     let track_id: i64 = lib.db.query_row(
         "SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2",
-        params![source, path.display().to_string()],
+        params![source, external_id],
         |r| r.get(0),
     )?;
     // Genres go in their own table: a file declares several, and joining
@@ -397,7 +557,7 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite
 }
 
 /// Every audio file under a folder.
-fn walk(root: &Path) -> Vec<PathBuf> {
+fn walk(root: &Path, containers: &dyn Containers) -> Vec<PathBuf> {
     let mut output = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
@@ -411,7 +571,7 @@ fn walk(root: &Path) -> Vec<PathBuf> {
             let path = entry.path();
             if path.is_dir() {
                 pending.push(path);
-            } else if is_audio(&path) {
+            } else if is_audio(&path) || containers.may_hold(&path) {
                 output.push(path);
             }
         }

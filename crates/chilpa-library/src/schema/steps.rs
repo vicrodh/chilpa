@@ -1005,3 +1005,11 @@ FROM tracks t LEFT JOIN albums a ON a.id = t.album_id;
 ANALYZE;
 "#;
 
+/// A row of `scanned_files` can be a track inside another file -- a SACD
+/// image holds a dozen of them -- and `container` names that file. A rescan
+/// finds a container's rows by it and keeps them when the file has not
+/// changed, without opening it. On every other row it is null.
+pub(super) const MIGRATION_V16: &str = r#"
+ALTER TABLE scanned_files ADD COLUMN container TEXT;
+CREATE INDEX scanned_files_container ON scanned_files(container) WHERE container IS NOT NULL;
+"#;
