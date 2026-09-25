@@ -36,10 +36,11 @@ pub enum Policy {
     /// Every sample reaches the device with the value it left the decoder
     /// with. If the device cannot take that, it fails.
     ///
-    /// Laying a sample out in a wider word is allowed, because a shift with
-    /// zeros below keeps every bit: it is the one transform
-    /// [`Transform::preserves_samples`] admits, and the gate and the verdict
-    /// have to agree on what the word means. They did not. This refused to
+    /// Laying a sample out in another integer word that holds its bits is
+    /// allowed -- 24 bits in three bytes instead of four, or 16 in 32 with
+    /// zeros below -- because that keeps every bit: widening is the one
+    /// transform [`Transform::preserves_samples`] admits, and the gate and
+    /// the verdict have to agree on what the word means. They did not. This refused to
     /// widen, so a DAC that only takes 32 bit words -- most USB DACs -- could
     /// not play a CD with the switch on, while the same DAC with the switch
     /// off was handed the same widened bytes and the verdict called them
@@ -139,24 +140,31 @@ pub fn negotiate(
         return Ok(Delivery { requested, opened: requested, transforms: Vec::new() });
     }
 
-    // Widening is exact: same rate, same channels, more bits. That is why it
-    // is tried before bit-perfect gives up and not after.
-    let widened = caps
+    // Another integer word that holds at least the same bits keeps every
+    // value: the same 24 bits in three bytes instead of four, or a sample
+    // laid out wider with zeros below. Same rate, same channels, the nearest
+    // word first -- and that is why this is tried before bit-perfect gives
+    // up and not after. Only more bits used to count, so a 24 bit track was
+    // refused by a DAC that takes 24 bits in three bytes.
+    //
+    // A float is never one of these. F32 is as wide as S32, and laying it
+    // into an integer word scales it.
+    let bits = requested.sample_format.valid_bits();
+    let exact = caps
         .formats
         .iter()
-        .filter(|f| f.is_integer() && f.valid_bits() > requested.sample_format.valid_bits())
+        .filter(|f| requested.sample_format.is_integer() && f.is_integer() && f.valid_bits() >= bits)
         .min_by_key(|f| f.valid_bits())
         .map(|f| StreamFormat { sample_format: *f, ..requested });
-    if let Some(opened) = widened {
+    if let Some(opened) = exact {
         if caps.accepts(&opened) {
-            return Ok(Delivery {
-                requested,
-                opened,
-                transforms: vec![Transform::Widened {
-                    from_bits: requested.sample_format.valid_bits(),
-                    to_bits: opened.sample_format.valid_bits(),
-                }],
-            });
+            let to_bits = opened.sample_format.valid_bits();
+            let transforms = if to_bits > bits {
+                vec![Transform::Widened { from_bits: bits, to_bits }]
+            } else {
+                Vec::new()
+            };
+            return Ok(Delivery { requested, opened, transforms });
         }
     }
 
@@ -320,6 +328,29 @@ mod tests {
         );
         assert_eq!(bits_carried(at(SampleFormat::S24In32), at(SampleFormat::S24In32)), Some(24));
         assert_eq!(bits_carried(at(SampleFormat::S16), at(SampleFormat::F32)), None);
+    }
+
+    #[test]
+    fn a_24_bit_track_reaches_a_dac_that_only_takes_three_byte_words_bit_perfect() {
+        // USB DACs with three byte subslots publish only S24_3LE. The same
+        // 24 bits in three bytes instead of four are the same samples: with
+        // the switch off this opened and the verdict said bit-perfect, and
+        // with it on it was refused.
+        let request = StreamFormat::new(SampleFormat::S24In32, 96_000, 2);
+        let only_packed = caps(&[96_000], &[SampleFormat::S16, SampleFormat::S24Packed]);
+        let d = negotiate(request, &only_packed, Policy::BitPerfect)
+            .expect("24 bits fit in three bytes without losing one");
+        assert_eq!(d.opened.sample_format, SampleFormat::S24Packed);
+        assert!(d.transforms.is_empty(), "no value changed: {:?}", d.transforms);
+        assert_eq!(d.bits_carried(), Some(24));
+    }
+
+    #[test]
+    fn a_float_is_never_passed_off_as_a_32_bit_integer() {
+        // Both are 32 bits wide, and only one of them is an integer.
+        let float = StreamFormat::new(SampleFormat::F32, 44_100, 2);
+        let r = negotiate(float, &caps(&[44_100], &[SampleFormat::S32]), Policy::BitPerfect);
+        assert!(r.is_err(), "a float laid into an integer word is scaled, not kept: {r:?}");
     }
 
     #[test]

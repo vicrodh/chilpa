@@ -12,6 +12,7 @@
 use chilpa_audio::dop::{carrier_rate, DopPacker};
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy};
+use chilpa_audio::pack::{pack, Samples};
 use chilpa_audio::render::{render_paused, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 use chilpa_dsd::{DsdError, DsdSource};
@@ -44,11 +45,12 @@ impl std::fmt::Display for DsdPlayError {
     }
 }
 
-/// Turns DSD blocks into DoP words ready for the cable.
+/// Turns DSD blocks into DoP words, in the word the output was opened at.
 struct DopFrames<'a> {
     source: &'a mut dyn DsdSource,
     packer: DopPacker,
     channels: u16,
+    to: SampleFormat,
 }
 
 impl FrameSource for DopFrames<'_> {
@@ -63,12 +65,16 @@ impl FrameSource for DopFrames<'_> {
         if words.is_empty() {
             return None;
         }
-        // The words already come left justified inside 32 bits: they go to
-        // the cable as they are, without touching a bit.
-        let mut bytes = Vec::with_capacity(words.len() * 4);
-        for word in words {
-            bytes.extend_from_slice(&word.to_le_bytes());
-        }
+        // The packer hands them over left justified in 32 bits, which is
+        // `S24In32`, and they are laid out in the word the output opened at
+        // by the same packing every PCM file goes through: unchanged in 24
+        // in 32 or in 32, three bytes for a DAC with three byte subslots.
+        // Writing four bytes whatever had been opened was right only while
+        // nothing but a 32 bit word could be opened.
+        let samples: Vec<i32> = words.iter().map(|w| w >> 8).collect();
+        let mut bytes = Vec::with_capacity(samples.len() * self.to.bytes());
+        pack(&Samples::Int { data: &samples, bits: 24 }, self.to, &mut bytes)
+            .expect("DoP only opens at a word that holds 24 bits");
         let _ = self.channels;
         Some(bytes)
     }
@@ -101,7 +107,11 @@ where
 
     let info = source.info().clone();
     let carrier_hz = carrier_rate(info.dsd_rate_hz);
-    let request = StreamFormat::new(SampleFormat::S32, carrier_hz, info.channels);
+    // DoP is 24 bits -- the marker and sixteen of DSD -- left justified in
+    // 32. Asking for `S32` claimed eight bits it does not carry, and a DAC
+    // that takes 24 bits in 32 but not 32, which CoreAudio and WASAPI can
+    // tell apart, refused it.
+    let request = StreamFormat::new(SampleFormat::S24In32, carrier_hz, info.channels);
 
     // Always bit-perfect: converting DoP turns it into noise, so there is no
     // policy to choose here.
@@ -113,7 +123,12 @@ where
     };
 
     let mut sink = open_sink(delivery.opened).map_err(DsdPlayError::Sink)?;
-    let mut frames = DopFrames { source, packer: DopPacker::new(), channels: info.channels };
+    let mut frames = DopFrames {
+        source,
+        packer: DopPacker::new(),
+        channels: info.channels,
+        to: delivery.opened.sample_format,
+    };
     let outcome = render_paused(&mut frames, &mut sink, stop, pause, on_progress);
     sink.close().map_err(DsdPlayError::Sink)?;
     Ok(DsdPlayed { delivery, outcome, carrier_hz })
@@ -215,6 +230,53 @@ mod tests {
         assert!(played.delivery.nothing_was_converted());
 
         // First word: marker 0x05 and the file's payload, justified.
+        let first = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
+        assert_eq!(first, ((0x05 << 16) | 0xABCD) << 8);
+    }
+
+    /// Plays the test source on a device that takes only `format`, and
+    /// hands back what reached it.
+    fn played_on(format: SampleFormat) -> (DsdPlayed, Capture) {
+        let mut cap = Capture::default();
+        let mut f = source();
+        let only = DeviceCaps {
+            sample_rates: vec![176_400],
+            formats: vec![format],
+            channels: vec![2],
+            probed: true,
+        };
+        let played = play_dsd(
+            &mut f,
+            &only,
+            &StopSignal::new(),
+            &PauseSignal::new(),
+            |format| {
+                cap.stream = Some(format);
+                Ok(Handle(&mut cap))
+            },
+            &mut |_| {},
+        )
+        .unwrap_or_else(|e| panic!("DoP did not reach a DAC that takes {format:?}: {e}"));
+        (played, cap)
+    }
+
+    #[test]
+    fn dop_reaches_a_dac_that_only_takes_three_byte_words() {
+        // DoP is 24 bits: the marker and sixteen of DSD. A DAC with three
+        // byte subslots takes exactly that, and asking for a 32 bit word
+        // meant it was refused.
+        let (played, cap) = played_on(SampleFormat::S24Packed);
+        assert!(played.delivery.nothing_was_converted());
+        assert_eq!(cap.bytes.len() % 3, 0, "three bytes a sample");
+        assert_eq!(&cap.bytes[..3], &[0xCD, 0xAB, 0x05], "marker 0x05 and the payload, in order");
+    }
+
+    #[test]
+    fn dop_reaches_a_dac_that_takes_24_bits_in_32_but_not_32() {
+        // CoreAudio and WASAPI tell 24-in-32 from 32, and a DAC can offer
+        // the first without the second. It is exactly the word DoP is.
+        let (played, cap) = played_on(SampleFormat::S24In32);
+        assert!(played.delivery.nothing_was_converted());
         let first = i32::from_le_bytes([cap.bytes[0], cap.bytes[1], cap.bytes[2], cap.bytes[3]]);
         assert_eq!(first, ((0x05 << 16) | 0xABCD) << 8);
     }

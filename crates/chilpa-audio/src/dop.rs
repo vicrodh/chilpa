@@ -37,8 +37,8 @@ impl DopPacker {
         m
     }
 
-    /// Packs planar DSD (2 bytes per channel per frame) into interleaved S32
-    /// samples, left-justified and ready for the wire.
+    /// Packs planar DSD (2 bytes per channel per frame) into interleaved
+    /// 24 bit DoP words, left-justified in 32: the `S24In32` layout.
     pub fn pack(&mut self, planar: &[&[u8]], out: &mut Vec<i32>) {
         let channels = planar.len();
         let frames = planar.iter().map(|c| c.len()).min().unwrap_or(0) / 2;

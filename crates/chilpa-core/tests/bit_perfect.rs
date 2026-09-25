@@ -220,6 +220,35 @@ fn a_16_bit_wav_reaches_a_dac_that_only_takes_32_bit_words_with_every_sample_int
     let _ = std::fs::remove_file(path);
 }
 
+#[test]
+fn a_24_bit_wav_reaches_a_dac_with_three_byte_words_with_every_sample_intact() {
+    let originals = samples(24);
+    let path = temp_file("24-in-3");
+    write_wav(&path, &originals, 24, 96_000, 2);
+    let only_packed = DeviceCaps {
+        sample_rates: vec![96_000],
+        formats: vec![SampleFormat::S16, SampleFormat::S24Packed],
+        channels: vec![2],
+        probed: true,
+    };
+
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let played = play_file(&path, &only_packed, Policy::BitPerfect, &StopSignal::new(), |format| {
+        cap.stream = Some(format);
+        Ok(Handle(&mut cap))
+    })
+    .expect("24 bits fit in three bytes without losing one");
+
+    assert!(played.delivery.nothing_was_converted());
+    let came_out: Vec<i32> = cap
+        .bytes
+        .chunks_exact(3)
+        .map(|c| i32::from_le_bytes([0, c[0], c[1], c[2]]) >> 8)
+        .collect();
+    assert_eq!(came_out, originals, "not one LSB of difference in three bytes");
+    let _ = std::fs::remove_file(path);
+}
+
 /// A device that takes whatever it is given, at the format it was opened
 /// with.
 struct Swallow(StreamFormat);
