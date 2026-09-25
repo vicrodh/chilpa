@@ -187,6 +187,9 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Device: {}"
+msgstr ""
+
 msgid "Devices & cast"
 msgstr ""
 
@@ -412,6 +415,9 @@ msgstr ""
 msgid "Rich rows"
 msgstr ""
 
+msgid "Route: {}"
+msgstr ""
+
 msgid "SACDMTOC was not found"
 msgstr ""
 
@@ -431,6 +437,9 @@ msgid "Search"
 msgstr ""
 
 msgid "Settings"
+msgstr ""
+
+msgid "Show the sidebar"
 msgstr ""
 
 msgid "Shuffle"
@@ -589,6 +598,9 @@ msgstr ""
 msgid "be a plugin of another kind: {}"
 msgstr ""
 
+msgid "bit-perfect only"
+msgstr ""
+
 msgid "bring catalogue: search for and fetch music"
 msgstr ""
 
@@ -605,6 +617,9 @@ msgid "calling \"{}\", which nobody has approved"
 msgstr ""
 
 msgid "cannot be done"
+msgstr ""
+
+msgid "conversion allowed"
 msgstr ""
 
 msgid "converted to {}"
