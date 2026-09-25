@@ -83,6 +83,14 @@ pub trait AudioSink {
         Ok(())
     }
 
+    /// Throws away what the device holds and has not played yet. After a
+    /// seek or a skip that is the music being left, and playing it out first
+    /// put half a second of it between the button and what was asked for.
+    /// By default nothing is held.
+    fn flush(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+
     /// Pauses or resumes at the device, when it knows how.
     ///
     /// By default it does nothing: whoever plays stops writing and that is
@@ -112,6 +120,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         (**self).drain(give_up)
+    }
+
+    fn flush(&mut self) -> Result<(), SinkError> {
+        (**self).flush()
     }
 }
 

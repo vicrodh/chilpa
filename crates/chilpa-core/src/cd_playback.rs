@@ -73,6 +73,8 @@ struct LaidOut<'r, 'd> {
     skipped: bool,
     /// Frames of the next block to drop, to land inside a sector.
     discard: usize,
+    /// Set by a seek, until the renderer has heard of it.
+    moved: bool,
     /// Position less frames delivered, and frames delivered, as the queue
     /// counts them for a file.
     base: Arc<AtomicI64>,
@@ -80,6 +82,10 @@ struct LaidOut<'r, 'd> {
 }
 
 impl FrameSource for LaidOut<'_, '_> {
+    fn moved(&mut self) -> bool {
+        std::mem::take(&mut self.moved)
+    }
+
     /// A sector that cannot be read ends the track here and is reported by
     /// the reader itself, beside the outcome.
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
@@ -92,6 +98,7 @@ impl FrameSource for LaidOut<'_, '_> {
             let per_sector = chilpa_cd::FRAMES_PER_SECTOR as u64;
             self.reader.seek_to_sector(u32::try_from(frame / per_sector).unwrap_or(u32::MAX));
             self.discard = (frame % per_sector) as usize;
+            self.moved = true;
             let delivered = self.delivered.load(Ordering::Relaxed);
             self.base.store(frame as i64 - delivered as i64, Ordering::Relaxed);
         }
@@ -146,11 +153,16 @@ where
     // Whether the last track ended by itself: then what is still in the
     // device is its end, and it is heard before the device is closed.
     let mut ended_by_itself = false;
+    // A skipped track's rest is still in the device, ahead of the next.
+    let mut skipped_before = false;
     for (index, track) in tracks.iter().enumerate() {
         if controls.stop.is_stopped() {
             last = Outcome::Stopped { frames: 0 };
             ended_by_itself = false;
             break;
+        }
+        if skipped_before {
+            sink.flush().map_err(CdPlayError::Sink)?;
         }
         on_track(index, &delivery);
         let base = Arc::new(AtomicI64::new(0));
@@ -164,6 +176,7 @@ where
                 seek: controls.seek.clone(),
                 skipped: false,
                 discard: 0,
+                moved: false,
                 base: Arc::clone(&base),
                 delivered: Arc::clone(&delivered),
             };
@@ -178,6 +191,7 @@ where
             on_read_error(index, problem.to_string());
         }
         ended_by_itself = matches!(outcome, Outcome::Finished { .. }) && !skipped;
+        skipped_before = skipped;
         last = outcome;
         if !last.may_advance_queue() {
             break;
@@ -221,11 +235,12 @@ mod tests {
         }
     }
 
-    /// Counts what it is handed and how often it was drained.
+    /// Counts what it is handed and how often it was drained or flushed.
     struct Counting {
         format: StreamFormat,
         frames: u64,
         drains: usize,
+        flushes: usize,
     }
 
     impl AudioSink for &mut Counting {
@@ -239,6 +254,10 @@ mod tests {
         }
         fn drain(&mut self, _: &dyn Fn() -> bool) -> Result<(), SinkError> {
             self.drains += 1;
+            Ok(())
+        }
+        fn flush(&mut self) -> Result<(), SinkError> {
+            self.flushes += 1;
             Ok(())
         }
         fn close(&mut self) -> Result<(), SinkError> {
@@ -287,7 +306,7 @@ mod tests {
     }
 
     fn counting() -> Counting {
-        Counting { format: CDDA_FORMAT, frames: 0, drains: 0 }
+        Counting { format: CDDA_FORMAT, frames: 0, drains: 0, flushes: 0 }
     }
 
     #[test]
@@ -302,6 +321,7 @@ mod tests {
         assert!(outcome.may_advance_queue());
         assert_eq!(sink.frames, 200 * 588, "both tracks' sectors, one after the other");
         assert_eq!(sink.drains, 1, "the end of the disc is waited for, and only the end");
+        assert_eq!(sink.flushes, 0, "and nothing is thrown away on the way");
     }
 
     #[test]
@@ -320,6 +340,7 @@ mod tests {
         assert_eq!(started, [0, 1]);
         assert!(first.last().is_some_and(|f| *f < 100 * 588), "the first track stopped short: {:?}", first.last());
         assert_eq!(sink.frames, first.last().unwrap() + 100 * 588, "and the second played whole");
+        assert_eq!(sink.flushes, 1, "what was left of the first did not play ahead of the second");
     }
 
     /// A disc whose every sample can be told apart from its neighbours.

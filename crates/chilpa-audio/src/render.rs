@@ -18,6 +18,13 @@ pub trait FrameSource {
     /// track ended naturally; `Err` = it could not be read on, and why, for
     /// the user.
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String>;
+
+    /// True, once, when the block just handed over comes from somewhere else
+    /// in the track: after a seek, what the device still holds is from
+    /// before, and it is thrown away rather than played first.
+    fn moved(&mut self) -> bool {
+        false
+    }
 }
 
 /// How a track ended.
@@ -121,6 +128,13 @@ where
             Ok(None) => return Outcome::Finished { frames },
             Err(reason) => return Outcome::Unreadable { frames, reason },
         };
+        // From somewhere else in the track: what the device holds is from
+        // before, and it goes.
+        if source.moved() {
+            if let Err(error) = sink.flush() {
+                return Outcome::Failed { frames, error };
+            }
+        }
         let mut offset = 0;
         let mut warned = false;
         while offset < block.len() {

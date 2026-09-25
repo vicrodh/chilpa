@@ -95,6 +95,8 @@ pub(crate) struct DopFrames<'a> {
     /// Bytes of each channel still to drop after a seek: the source lands
     /// on a block or a frame, before the sample asked for.
     discard: usize,
+    /// Set by a seek that landed, until the renderer has heard of it.
+    moved: bool,
     /// What to add to the DoP frames delivered to get the position in the
     /// track: where the last seek went less what had been delivered by then.
     pub(crate) base: std::sync::Arc<std::sync::atomic::AtomicI64>,
@@ -114,6 +116,7 @@ impl<'a> DopFrames<'a> {
             seek: None,
             skipped: false,
             discard: 0,
+            moved: false,
             base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
             delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
@@ -129,6 +132,10 @@ impl<'a> DopFrames<'a> {
 }
 
 impl FrameSource for DopFrames<'_> {
+    fn moved(&mut self) -> bool {
+        std::mem::take(&mut self.moved)
+    }
+
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         // The seek first: taken after a skip, one asked for together with it
         // would outlive this track and land on the next.
@@ -191,6 +198,7 @@ impl DopFrames<'_> {
         // dropped here; landing after it means the track has no more.
         let at = wanted.max(landed);
         self.discard = ((at - landed) / 8) as usize;
+        self.moved = true;
         let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
         self.base.store((at / 16) as i64 - delivered as i64, std::sync::atomic::Ordering::Relaxed);
         Ok(())

@@ -170,6 +170,10 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
         self.inner.drain(give_up)
     }
 
+    fn flush(&mut self) -> Result<(), SinkError> {
+        self.inner.flush()
+    }
+
     fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
         self.inner.set_paused(paused)
     }
