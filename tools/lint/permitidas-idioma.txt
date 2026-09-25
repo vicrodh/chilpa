@@ -387,3 +387,10 @@ exe
 dff
 dsdiff
 qrc
+bottombar
+lcd
+md
+nav
+qcolor
+sm
+xs

@@ -30,7 +30,7 @@ MEASURES = (
     r"(?:\w+\.)?(?:width|height|implicitWidth|implicitHeight|minimumWidth|minimumHeight|"
     r"maximumWidth|maximumHeight|preferredWidth|preferredHeight|spacing|rowSpacing|columnSpacing|"
     r"padding|leftPadding|rightPadding|topPadding|bottomPadding|horizontalPadding|verticalPadding|"
-    r"radius|topLeftRadius|topRightRadius|bottomLeftRadius|bottomRightRadius|pixelSize|weight|"
+    r"radius|topLeftRadius|topRightRadius|bottomLeftRadius|bottomRightRadius|pixelSize|pointSize|weight|"
     r"margins|leftMargin|rightMargin|topMargin|bottomMargin|horizontalCenterOffset|verticalCenterOffset|"
     r"cellWidth|cellHeight|duration|letterSpacing)"
 )
