@@ -82,6 +82,16 @@ fn owner_of(card: &str) -> Option<u32> {
     line.split(':').nth(1)?.trim().parse().ok()
 }
 
+/// Whether a process id the kernel names is one of this process's threads.
+///
+/// The kernel records the thread that opened the card -- the player's, here
+/// -- not the process. Comparing it with the process id never matched, and
+/// with the card free every run failed saying the card never opened while
+/// Chilpa was playing through it.
+fn is_this_process(pid: u32) -> bool {
+    Path::new(&format!("/proc/self/task/{pid}")).exists()
+}
+
 /// Fails before anything is opened if somebody else has the card.
 ///
 /// Opening it then would fail anyway, and what the kernel says about it
@@ -89,9 +99,8 @@ fn owner_of(card: &str) -> Option<u32> {
 /// never takes the card from under whoever is listening.
 fn free(card: &str) {
     if let Some(pid) = owner_of(card) {
-        assert_eq!(
-            pid,
-            std::process::id(),
+        assert!(
+            is_this_process(pid),
             "card {card} is in use by process {pid}; free it before running the smoke"
         );
     }
@@ -101,7 +110,7 @@ fn free(card: &str) {
 /// the one running it.
 fn ours(card: &str) -> Option<String> {
     let text = hw_params(card);
-    (text.contains("rate:") && owner_of(card) == Some(std::process::id())).then_some(text)
+    (text.contains("rate:") && owner_of(card).is_some_and(is_this_process)).then_some(text)
 }
 
 /// One field of it, as `rate` or `format`.
