@@ -11,8 +11,53 @@ Item {
 
     Connections {
         target: hooks.window
-        enabled: Dev.frames
+        enabled: Dev.frames && (Dev.scroll === 0 || sweep.running)
         function onFrameSwapped() { Dev.frame() }
+    }
+
+    // The view with the most content under the window: the one a scroll
+    // test is about.
+    function longest(item, best) {
+        if (item.contentHeight !== undefined && item.interactive && item.contentHeight > item.height
+                && (!best || item.contentHeight > best.contentHeight))
+            best = item
+        for (let i = 0; i < item.children.length; ++i)
+            best = longest(item.children[i], best)
+        return best
+    }
+
+    NumberAnimation {
+        id: sweep
+        property: "contentY"
+        onFinished: Qt.quit()
+    }
+
+    Timer {
+        running: Dev.scroll > 0
+        interval: Metrics.shotDelay
+        onTriggered: {
+            const view = hooks.longest(hooks.window.contentItem, null)
+            if (!view)
+                return Qt.quit()
+            const distance = Math.min(view.contentHeight - view.height, Dev.scroll * Metrics.scrollTestSeconds)
+            sweep.target = view
+            sweep.from = 0
+            sweep.to = distance
+            sweep.duration = distance * 1000 / Dev.scroll
+            sweep.start()
+        }
+    }
+
+    // A grab of the content leaves out the window's own color, so a shot
+    // gets a backdrop of its own. Only while shooting: the window's color is
+    // the clear color and costs nothing, a full-window rectangle is a fill
+    // on every frame.
+    Rectangle {
+        parent: hooks.window.contentItem
+        z: -1
+        anchors.fill: parent
+        visible: Dev.shot !== ""
+        color: Theme.color.surfaceWindow
     }
 
     Timer {
