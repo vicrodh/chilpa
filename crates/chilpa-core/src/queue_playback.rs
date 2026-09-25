@@ -592,8 +592,12 @@ where
             Source::Dop(reader) => {
                 let mut frames = DopFrames::new(reader.as_mut(), &mut packer, &delivery)
                     .controlled(skip.clone(), seek.clone());
+                let base = std::sync::Arc::clone(&frames.base);
+                let delivered = std::sync::Arc::clone(&frames.delivered);
                 let outcome = chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
-                    on_progress(index, f)
+                    delivered.store(f, std::sync::atomic::Ordering::Relaxed);
+                    let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
+                    on_progress(index, at.max(0) as u64)
                 });
                 (outcome, frames.skipped)
             }

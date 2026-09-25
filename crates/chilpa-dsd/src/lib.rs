@@ -82,6 +82,15 @@ pub trait DsdSource {
     /// the earliest bit in the most significant position. `None` when it is
     /// over.
     fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, DsdError>;
+
+    /// Moves to one-bit sample `sample` of each channel, or to a point before
+    /// it the container can land on, and says which sample that is. The
+    /// caller drops the difference. `Ok(None)` when this source cannot move:
+    /// it goes on from where it was.
+    fn seek(&mut self, sample: u64) -> Result<Option<u64>, DsdError> {
+        let _ = sample;
+        Ok(None)
+    }
 }
 
 /// Reverses the bit order of a byte.

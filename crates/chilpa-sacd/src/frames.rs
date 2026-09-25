@@ -37,6 +37,11 @@ pub struct SacdTrackReader {
     frames_left: u32,
     /// What a DST track needs on top; `None` for uncompressed DSD.
     dst: Option<Dst>,
+    /// Where the track starts, on the disc and in the area's timecode, and
+    /// how many frames it has: what a seek searches within.
+    start_lsn: u64,
+    start_frame: u32,
+    duration_frames: u32,
     info: DsdInfo,
 }
 
@@ -56,6 +61,9 @@ impl SacdTrackReader {
             synced: false,
             frames_left: track.duration_frames,
             dst,
+            start_lsn: u64::from(track.start_lsn),
+            start_frame: track.start_frame,
+            duration_frames: track.duration_frames,
             info: DsdInfo { dsd_rate_hz: crate::DSD64_HZ, channels: 2, samples },
         })
     }
@@ -89,9 +97,75 @@ impl SacdTrackReader {
     }
 }
 
+impl SacdTrackReader {
+    /// Moves to frame `offset` of the track, or to the first one after it
+    /// the disc has, and says which that is.
+    ///
+    /// DST is not the same size from one frame to the next, so a sector
+    /// cannot be worked out from the time: it is searched for, by the
+    /// timecodes the frames carry, which only ever go up.
+    fn seek_frame(&mut self, offset: u32) -> Result<u32, SacdError> {
+        let target = self.start_frame + offset.min(self.duration_frames);
+        let end = self.start_frame + self.duration_frames;
+        let mut buf = vec![0u8; SECTOR];
+        // The first sector from which the next frame to start is the one
+        // asked for or a later one.
+        let (mut low, mut high) = (self.start_lsn, self.end_lsn);
+        while low < high {
+            let middle = low + (high - low) / 2;
+            match self.first_start_from(middle, &mut buf)? {
+                Some((_, timecode)) if timecode < target => low = middle + 1,
+                _ => high = middle,
+            }
+        }
+        let found = self.first_start_from(low, &mut buf)?;
+        let landed = found.map_or(end, |(_, timecode)| timecode.clamp(target, end));
+        self.pending.clear();
+        self.frames_left = end - landed;
+        match self.dst.as_mut() {
+            // Several DST frames can start in one sector, the one asked for
+            // after others: reading from the sector before, the frames ahead
+            // of it are dropped by their timecode.
+            Some(dst) => {
+                dst.restart(landed)?;
+                self.lsn = low.saturating_sub(1).max(self.start_lsn);
+            }
+            // An uncompressed frame is longer than a sector, so no two start
+            // in one: the sector of the one asked for is where to read from,
+            // and the first start there is it.
+            None => {
+                self.lsn = found.map_or(self.end_lsn, |(lsn, _)| lsn);
+                self.synced = false;
+            }
+        }
+        Ok(landed - self.start_frame)
+    }
+
+    /// The first audio frame to start at or after sector `lsn`, looking no
+    /// further than a DST frame can span, and its timecode.
+    fn first_start_from(&mut self, lsn: u64, buf: &mut [u8]) -> Result<Option<(u64, u32)>, SacdError> {
+        for at in lsn..(lsn + 32).min(self.end_lsn) {
+            self.image.read_sector(at, buf)?;
+            let packets = sector::parse(buf, at)?;
+            let started = packets.packets.iter().find(|p| p.is_audio() && p.frame_start);
+            if let Some(timecode) = started.and_then(|p| p.timecode) {
+                return Ok(Some((at, timecode)));
+            }
+        }
+        Ok(None)
+    }
+}
+
 impl DsdSource for SacdTrackReader {
     fn info(&self) -> &DsdInfo {
         &self.info
+    }
+
+    fn seek(&mut self, sample: u64) -> Result<Option<u64>, chilpa_dsd::DsdError> {
+        let per_frame = u64::from(crate::DSD64_HZ / 75);
+        let offset = u32::try_from(sample / per_frame).unwrap_or(u32::MAX);
+        let landed = self.seek_frame(offset).map_err(|e| chilpa_dsd::DsdError::Corrupt(e.to_string()))?;
+        Ok(Some(u64::from(landed) * per_frame))
     }
 
     fn next_block(&mut self) -> Result<Option<Vec<Vec<u8>>>, chilpa_dsd::DsdError> {
@@ -158,6 +232,18 @@ impl Dst {
             end: track.start_frame.saturating_add(track.duration_frames),
             decoded: vec![0; STEREO_FRAME],
         })
+    }
+
+    /// Starts over at the frame with timecode `at`, as after a seek. The
+    /// decoder starts over too: nothing of the frames before carries over.
+    fn restart(&mut self, at: u32) -> Result<(), SacdError> {
+        self.decoder = DstDecoder::new(2, crate::DSD64_HZ as usize)
+            .map_err(|e| SacdError::Unsupported(e.to_string()))?;
+        self.open = None;
+        self.begun = false;
+        self.first = at;
+        self.next = at;
+        Ok(())
     }
 
     /// Takes one audio packet. A frame is decoded when its last packet is
