@@ -42,9 +42,12 @@ fn every_sacd_image_under_a_folder_opens() {
         let name = path.file_name().unwrap().to_string_lossy().to_string();
         match chilpa_sacd::open(&path) {
             Ok(image) => eprintln!(
-                "smoke: {:?}, {} tracks | {name}",
+                "smoke: {:?}, {} tracks | {} / {} / {} | {name}",
                 image.area.encoding,
-                image.area.tracks.len()
+                image.area.tracks.len(),
+                image.area.artist.as_deref().unwrap_or("-"),
+                image.area.album.as_deref().unwrap_or("-"),
+                image.area.tracks[0].title.as_deref().unwrap_or("-"),
             ),
             // Not every ISO is a SACD; a DVD beside the music is not a failure.
             Err(chilpa_sacd::SacdError::MalformedToc(why)) if why.contains("SACDMTOC") => {

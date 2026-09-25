@@ -6,6 +6,7 @@ aes
 airp
 blea
 bltn
+bom
 by
 catalogue
 cd
@@ -22,7 +23,9 @@ doy
 # doy: "day of year", del algoritmo de fecha civil en bridge.rs
 dprt
 # español también acepta. Sin esto, mirar las de dos letras es puro ruido.
+euc
 fourcc
+gbk
 gcm
 glob
 grup
@@ -30,7 +33,9 @@ hdmi
 hi
 # Inglés que el diccionario español también acepta
 is
+jis
 kcfstringencodingutf8
+kr
 len
 linux
 lnam
@@ -52,6 +57,7 @@ pos
 rel
 res
 # Rust y std
+rs
 si
 slay
 stm
