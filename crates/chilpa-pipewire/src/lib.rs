@@ -93,6 +93,15 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
         .stderr(std::process::Stdio::null())
         .spawn()
         .ok()?;
+    // Read while it runs. An answer longer than the pipe holds -- 64 KiB,
+    // a score of outputs in `pactl list sinks` -- waits to be read, and
+    // waiting for the program to end first waited until the patience ran
+    // out and the stack said it was missing.
+    let mut stdout = child.stdout.take()?;
+    let reader = std::thread::spawn(move || {
+        let mut text = String::new();
+        std::io::Read::read_to_string(&mut stdout, &mut text).ok().map(|_| text)
+    });
     let deadline = std::time::Instant::now() + PATIENCE;
     loop {
         match child.try_wait() {
@@ -109,8 +118,7 @@ fn run(program: &str, args: &[&str]) -> Option<String> {
             Err(_) => return None,
         }
     }
-    let output = child.wait_with_output().ok()?;
-    String::from_utf8(output.stdout).ok()
+    reader.join().ok()?
 }
 
 /// The rates PipeWire's graph may run at, out of its own settings.
@@ -297,6 +305,16 @@ impl OutputBackend for PipeWire {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_long_answer_comes_back_whole() {
+        // A machine with a score of outputs answers `pactl list sinks` with
+        // more than the 64 KiB a pipe holds. Waiting for the program to end
+        // before reading waited while it waited to be read, until the
+        // patience ran out and the stack said it was missing.
+        let said = run("sh", &["-c", "head -c 100000 /dev/zero | tr '\\0' x"]);
+        assert_eq!(said.map(|s| s.len()), Some(100_000));
+    }
 
     /// What `pw-metadata -n settings` printed on the machine this was found on.
     const SETTINGS: &str = "Found \"settings\" metadata 32
