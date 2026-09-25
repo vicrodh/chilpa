@@ -362,13 +362,10 @@ fn play(
             let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
             // A DSD track counts in DoP frames, sixteen of its one-bit
             // samples each, and is named by its multiple.
-            let dsd = crate::dsd_playback::is_dsf(path)
-                .then(|| chilpa_dsd::DsfReader::open(path).ok())
+            let dsd = crate::dsd_playback::is_dsd_file(path)
+                .then(|| crate::dsd_playback::open_dsd_file(path).ok())
                 .flatten()
-                .map(|reader| {
-                    use chilpa_dsd::DsdSource as _;
-                    reader.info().clone()
-                });
+                .map(|reader| reader.info().clone());
             let total_frames = match &dsd {
                 Some(info) => Some(info.samples / 16),
                 None => chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count()),

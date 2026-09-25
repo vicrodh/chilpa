@@ -163,6 +163,9 @@ msgstr "DSD128 por DoP"
 msgid "DSD64 over DoP"
 msgstr "DSD64 por DoP"
 
+msgid "DSDIFF compressed with DST"
+msgstr "DSDIFF comprimido con DST"
+
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
 
@@ -808,6 +811,9 @@ msgstr "no exporta \"{}\", que todo plugin tiene que exportar"
 msgid "it does not start with the DSD chunk"
 msgstr "no empieza con el chunk DSD"
 
+msgid "it does not start with the FRM8 chunk"
+msgstr "no empieza con el chunk FRM8"
+
 msgid "it failed {} times in a row; the last one: {}"
 msgstr "falló {} veces seguidas; la última: {}"
 
@@ -963,14 +969,29 @@ msgstr "esa lista está vacía"
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
 
+msgid "the CHNL chunk is missing"
+msgstr "falta el chunk CHNL"
+
+msgid "the DSD chunk is missing"
+msgstr "falta el chunk DSD"
+
 msgid "the DST frames jump from {} to {}"
 msgstr "los frames DST saltan de {} a {}"
+
+msgid "the FRM8 chunk does not hold DSD"
+msgstr "el chunk FRM8 no contiene DSD"
+
+msgid "the FS chunk is missing"
+msgstr "falta el chunk FS"
 
 msgid "the JACK graph did not answer in time"
 msgstr "el grafo de JACK no respondió a tiempo"
 
 msgid "the JACK graph runs at {} Hz and this track is {} Hz; JACK cannot play it untouched"
 msgstr "el grafo de JACK va a {} Hz y esta pista es de {} Hz; JACK no la puede tocar sin modificarla"
+
+msgid "the PROP chunk is not of sound"
+msgstr "el chunk PROP no es de sonido"
 
 msgid "the PulseAudio protocol does not carry this format"
 msgstr "el protocolo de PulseAudio no lleva este formato"

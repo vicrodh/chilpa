@@ -124,7 +124,7 @@ pub struct NowPlaying {
 
 /// The extensions Chilpa knows how to open today.
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "iso"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "dff", "iso"];
 
 /// A folder's audio files, in alphabetical order.
 ///

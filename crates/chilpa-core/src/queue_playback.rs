@@ -18,7 +18,7 @@ use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSign
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
 
-use crate::dsd_playback::{dop_request, is_dsf, DopFrames};
+use crate::dsd_playback::{dop_request, is_dsd_file, open_dsd_file, DopFrames};
 use crate::playback::PlayError;
 use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::DsdSource;
@@ -41,9 +41,9 @@ fn open_track(path: &Path, caps: &DeviceCaps, policy: Policy) -> Result<(Source,
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
         return dop_track(Box::new(reader), caps);
     }
-    if is_dsf(path) {
-        let reader = chilpa_dsd::DsfReader::open(path).map_err(|e| unreadable(e.to_string()))?;
-        return dop_track(Box::new(reader), caps);
+    if is_dsd_file(path) {
+        let reader = open_dsd_file(path).map_err(|e| unreadable(e.to_string()))?;
+        return dop_track(reader, caps);
     }
     let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
