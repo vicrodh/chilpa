@@ -161,10 +161,11 @@ impl AudioSink for PulseSink {
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
         // The simple API writes all of it or fails; there is no partial
         // write to report and no underrun to recover from, because the
-        // server is doing the buffering.
+        // server is doing the buffering. The answer is in frames, as the
+        // trait asks.
         self.simple
             .write(frames)
-            .map(|_| frames.len())
+            .map(|_| frames.len() / self.stream.frame_bytes())
             .map_err(|e| SinkError::Backend(e.to_string().unwrap_or_default()))
     }
 
@@ -306,6 +307,28 @@ mod tests {
                 "{v:#x} named {format:?}"
             );
         }
+    }
+
+    #[test]
+    fn a_write_answers_in_frames_and_not_in_bytes() {
+        // The renderer multiplies the answer by the frame size. Answered in
+        // bytes, every frame was counted four to eight times, and the
+        // position ran ahead of the music by as much.
+        let Some((id, _)) = server::sinks().into_iter().next() else {
+            eprintln!("no PulseAudio server: skipped");
+            return;
+        };
+        let format = StreamFormat::new(SampleFormat::S16, 44_100, 2);
+        let mut sink = match Pulse.open(&id, format, false) {
+            Ok(sink) => sink,
+            Err(e) => {
+                eprintln!("the server would not open {id}: skipped ({e:?})");
+                return;
+            }
+        };
+        // Ten milliseconds of silence, mixed in with whatever is playing.
+        let silence = vec![0u8; 441 * format.frame_bytes()];
+        assert_eq!(sink.write(&silence).unwrap(), 441);
     }
 
     #[test]
