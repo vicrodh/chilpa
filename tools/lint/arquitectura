@@ -86,7 +86,26 @@ SHELLS = {"chilpa-qt"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500
-MAX_LOC_UI_CRATE = 10_000
+
+# El shell se mide por lenguaje, no de corrido, y esa es la diferencia que
+# importa. Un solo número para los dos deja que un puente inflado se disfrace
+# de interfaz grande: crece el Rust, sube el total, y nadie distingue si lo que
+# creció fue la ventana o la lógica que se le escapó al núcleo. Separados, cada
+# número dice una cosa sola.
+#
+# El Rust del shell es el puente y nada más: modelos de Qt, propiedades,
+# despacho. El ADR-004 del frontend pide una docena de modelos y esos, por ser
+# tipos de Qt, no pueden vivir en otro lado. Por eso el tope deja lugar para
+# ellos. Lo que tiene que atrapar es lo otro: filtrar, ordenar, encolar o
+# resolver del lado del shell es lógica que pertenece al núcleo (ADR-001), y
+# eso se ve como crecimiento que no corresponde a un modelo nuevo.
+MAX_LOC_SHELL_RUST = 6_000
+
+# El QML tiene sus propios presupuestos por archivo, más estrictos que los de
+# aquí, verificados por su propio CI. Este número no los reemplaza: es el techo
+# del conjunto. Sale de sumar los presupuestos del ADR-0002 del frontend --
+# 11,670 si cada archivo llegara a su tope-- más lugar para la Gallery.
+MAX_LOC_SHELL_QML = 16_000
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 
@@ -157,7 +176,8 @@ def check_qt(errors):
 
 
 def check_loc(errors):
-    per_crate = {}
+    shell_rust = {}
+    shell_qml = {}
     for path in tracked_files():
         if path.suffix not in CODE_SUFFIXES or not path.exists():
             continue
@@ -165,12 +185,23 @@ def check_loc(errors):
         if loc > MAX_LOC_FILE:
             errors.append(f"{path.relative_to(ROOT)}: {loc} LOC, el máximo es {MAX_LOC_FILE} (ADR-001)")
         parts = path.relative_to(ROOT).parts
-        if len(parts) > 1 and parts[0] == "crates":
-            per_crate[parts[1]] = per_crate.get(parts[1], 0) + loc
+        if len(parts) > 1 and parts[0] == "crates" and parts[1] in SHELLS:
+            where = shell_qml if path.suffix == ".qml" else shell_rust
+            where[parts[1]] = where.get(parts[1], 0) + loc
     for crate in sorted(SHELLS):
-        loc = per_crate.get(crate, 0)
-        if loc > MAX_LOC_UI_CRATE:
-            errors.append(f"{crate}: {loc} LOC, el máximo de un crate de UI es {MAX_LOC_UI_CRATE} (ADR-001)")
+        rust = shell_rust.get(crate, 0)
+        if rust > MAX_LOC_SHELL_RUST:
+            errors.append(
+                f"{crate}: {rust} LOC de Rust, el máximo del puente es "
+                f"{MAX_LOC_SHELL_RUST} (ADR-001). Un puente que crece sin un "
+                f"modelo nuevo detrás es lógica que le pertenece al núcleo."
+            )
+        qml = shell_qml.get(crate, 0)
+        if qml > MAX_LOC_SHELL_QML:
+            errors.append(
+                f"{crate}: {qml} LOC de QML, el máximo de la interfaz es "
+                f"{MAX_LOC_SHELL_QML} (ADR-001)"
+            )
 
 
 def main():
