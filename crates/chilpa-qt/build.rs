@@ -39,7 +39,10 @@ fn main() {
     println!("cargo:rerun-if-changed=assets");
     println!("cargo:rerun-if-changed=src/bridge");
 
+    println!("cargo:rerun-if-changed=src/fonts.cpp");
+
     CxxQtBuilder::new()
+        .qt_module("Gui")
         .qt_module("Qml")
         .qt_module("Quick")
         .qt_module("QuickControls2")
@@ -49,6 +52,9 @@ fn main() {
             qml_files: &qml,
             qrc_files: &resources,
             ..Default::default()
+        })
+        .cc_builder(|cc| {
+            cc.file("src/fonts.cpp");
         })
         .build();
 }
