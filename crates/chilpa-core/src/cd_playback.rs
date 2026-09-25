@@ -67,10 +67,12 @@ struct LaidOut<'r, 'd> {
 }
 
 impl FrameSource for LaidOut<'_, '_> {
-    fn next_block(&mut self) -> Option<Vec<u8>> {
-        let block = self.reader.next_block()?;
+    /// A sector that cannot be read ends the track here and is reported by
+    /// the reader itself, beside the outcome.
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+        let Some(block) = self.reader.next_block()? else { return Ok(None) };
         if self.to == CDDA_FORMAT.sample_format {
-            return Some(block);
+            return Ok(Some(block));
         }
         let samples: Vec<i32> = block
             .chunks_exact(2)
@@ -81,7 +83,7 @@ impl FrameSource for LaidOut<'_, '_> {
         // integer one, and sixteen bits widened cannot be truncated.
         pack(&Samples::Int { data: &samples, bits: 16 }, self.to, &mut out)
             .expect("a CD is only ever widened");
-        Some(out)
+        Ok(Some(out))
     }
 }
 

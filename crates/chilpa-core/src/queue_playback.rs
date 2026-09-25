@@ -365,16 +365,16 @@ struct TrackFrames<'a> {
 }
 
 impl FrameSource for TrackFrames<'_> {
-    fn next_block(&mut self) -> Option<Vec<u8>> {
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
             if self.exhausted {
-                return None;
+                return Ok(None);
             }
             if self.skip.take() {
                 self.skipped = true;
                 self.exhausted = true;
                 self.finish_trim();
-                return None;
+                return Ok(None);
             }
             if let Some(target) = self.seek.take() {
                 let frame = chilpa_audio::seek::frames_at(target, self.opened.sample_rate_hz);
@@ -406,7 +406,8 @@ impl FrameSource for TrackFrames<'_> {
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
-                    pack(&samples, self.opened.sample_format, &mut bytes).ok()?;
+                    pack(&samples, self.opened.sample_format, &mut bytes)
+                        .map_err(|e| PlayError::Pack(e).to_string())?;
                     bytes
                 }
                 Ok(Some(Block::Float(data))) => {
@@ -421,19 +422,20 @@ impl FrameSource for TrackFrames<'_> {
                     }
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
-                    pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes).ok()?;
+                    pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes)
+                        .map_err(|e| PlayError::Pack(e).to_string())?;
                     bytes
                 }
                 Ok(None) => {
                     // What was held back was encoder padding.
                     self.exhausted = true;
                     self.finish_trim();
-                    return None;
+                    return Ok(None);
                 }
-                Err(_) => return None,
+                Err(e) => return Err(e.to_string()),
             };
             if !clipped.is_empty() {
-                return Some(clipped);
+                return Ok(Some(clipped));
             }
         }
     }

@@ -321,6 +321,7 @@ impl Core {
                     &[&frames.to_string(), &format!("{error:?}")],
                 ))
             }
+            Outcome::Unreadable { reason, .. } => Err(reason),
         }
     }
 }

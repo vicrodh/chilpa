@@ -107,7 +107,7 @@ impl<'a> DopFrames<'a> {
 }
 
 impl FrameSource for DopFrames<'_> {
-    fn next_block(&mut self) -> Option<Vec<u8>> {
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         // The seek first: taken after a skip, one asked for together with it
         // would outlive this track and land on the next.
         if let Some(seek) = &self.seek {
@@ -115,17 +115,18 @@ impl FrameSource for DopFrames<'_> {
         }
         if self.skip.as_ref().is_some_and(|s| s.take()) {
             self.skipped = true;
-            return None;
+            return Ok(None);
         }
         let channels = match self.source.next_block() {
             Ok(Some(c)) => c,
-            Ok(None) | Err(_) => return None,
+            Ok(None) => return Ok(None),
+            Err(e) => return Err(e.to_string()),
         };
         let refs: Vec<&[u8]> = channels.iter().map(|c| c.as_slice()).collect();
         let mut words = Vec::new();
         self.packer.pack(&refs, &mut words);
         if words.is_empty() {
-            return None;
+            return Ok(None);
         }
         // The packer hands them over left justified in 32 bits, which is
         // `S24In32`, and they are laid out in the word the output opened at
@@ -138,7 +139,7 @@ impl FrameSource for DopFrames<'_> {
         let mut bytes = Vec::with_capacity(samples.len() * self.to.bytes());
         pack(&Samples::Int { data: &samples, bits: 24 }, self.to, &mut bytes)
             .expect("DoP only opens at a word that holds 24 bits");
-        Some(bytes)
+        Ok(Some(bytes))
     }
 }
 

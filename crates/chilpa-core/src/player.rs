@@ -154,6 +154,7 @@ impl Player {
                     &[&frames.to_string(), &format!("{error:?}")],
                 ),
                                 },
+                                Ok(Outcome::Unreadable { reason, .. }) => PlayerEvent::Failed { message: reason },
                                 Err(e) => PlayerEvent::Failed { message: e.to_string() },
                             };
                             let _ = events_tx.send(event);

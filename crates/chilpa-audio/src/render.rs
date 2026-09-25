@@ -5,14 +5,19 @@
 //! unplugged DAC looked like "it is over" and the whole queue skipped
 //! through in silence. Here only [`Outcome::Finished`] lets the queue
 //! advance; everything else is told to the user.
+//!
+//! The source has its own way to fail. A file that could not be read on
+//! used to end its track as if it were over, and the queue went on to the
+//! next with the rest of that one missing and nobody told.
 
 use crate::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 
 /// Where the bytes going to the device come from.
 pub trait FrameSource {
-    /// The next block, already in the device's format. `None` = the track
-    /// ended naturally.
-    fn next_block(&mut self) -> Option<Vec<u8>>;
+    /// The next block, already in the device's format. `Ok(None)` = the
+    /// track ended naturally; `Err` = it could not be read on, and why, for
+    /// the user.
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String>;
 }
 
 /// How a track ended.
@@ -25,6 +30,9 @@ pub enum Outcome {
     Stopped { frames: u64 },
     /// The device failed. The queue does not advance and the user finds out.
     Failed { frames: u64, error: SinkError },
+    /// The source could not be read on: a damaged file, a disc image with a
+    /// bad sector. The same as a device failure for the queue.
+    Unreadable { frames: u64, reason: String },
 }
 
 impl Outcome {
@@ -34,7 +42,10 @@ impl Outcome {
 
     pub fn frames(&self) -> u64 {
         match self {
-            Outcome::Finished { frames } | Outcome::Stopped { frames } | Outcome::Failed { frames, .. } => *frames,
+            Outcome::Finished { frames }
+            | Outcome::Stopped { frames }
+            | Outcome::Failed { frames, .. }
+            | Outcome::Unreadable { frames, .. } => *frames,
         }
     }
 }
@@ -96,8 +107,10 @@ where
     let mut xruns = 0;
 
     while !stop.is_stopped() {
-        let Some(block) = source.next_block() else {
-            return Outcome::Finished { frames };
+        let block = match source.next_block() {
+            Ok(Some(block)) => block,
+            Ok(None) => return Outcome::Finished { frames },
+            Err(reason) => return Outcome::Unreadable { frames, reason },
         };
         let mut offset = 0;
         let mut warned = false;
@@ -151,7 +164,7 @@ mod tests {
 
         let pause = PauseSignal::new();
         pause.set(true);
-        let mut source = Blocks(vec![block(8)]);
+        let mut source = Blocks(vec![block(8)], None);
         let mut sink = FakeSink::new(100);
         let ready = Arc::new(AtomicBool::new(false));
 
@@ -176,7 +189,7 @@ mod tests {
         pause.set(true);
         let stop = StopSignal::new();
         stop.stop();
-        let mut source = Blocks(vec![block(8)]);
+        let mut source = Blocks(vec![block(8)], None);
         let mut sink = FakeSink::new(100);
         let out = render_paused(&mut source, &mut sink, &stop, &pause, &mut |_| {});
         assert_eq!(out, Outcome::Stopped { frames: 0 });
@@ -184,7 +197,7 @@ mod tests {
 
     #[test]
     fn progress_reports_the_frames_that_actually_went_out() {
-        let mut source = Blocks(vec![block(10), block(6)]);
+        let mut source = Blocks(vec![block(10), block(6)], None);
         let mut sink = FakeSink::new(4);
         let mut warnings = Vec::new();
         let out = render_with(&mut source, &mut sink, &StopSignal::new(), &mut |f| warnings.push(f));
@@ -193,14 +206,25 @@ mod tests {
         assert!(warnings.windows(2).all(|p| p[0] < p[1]), "progress only moves forward");
     }
 
-    struct Blocks(Vec<Vec<u8>>);
+    #[test]
+    fn a_source_that_breaks_is_not_a_track_that_ended() {
+        let mut source = Blocks(vec![block(10), block(6)], Some("sector 555 is invalid".into()));
+        let out = render(&mut source, &mut FakeSink::new(100), &StopSignal::new());
+        assert_eq!(out, Outcome::Unreadable { frames: 16, reason: "sector 555 is invalid".into() });
+        assert!(!out.may_advance_queue());
+    }
+
+    /// Blocks to hand over, and then either the end or, when set, a failure.
+    struct Blocks(Vec<Vec<u8>>, Option<String>);
 
     impl FrameSource for Blocks {
-        fn next_block(&mut self) -> Option<Vec<u8>> {
-            if self.0.is_empty() {
-                None
-            } else {
-                Some(self.0.remove(0))
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            if !self.0.is_empty() {
+                return Ok(Some(self.0.remove(0)));
+            }
+            match self.1.take() {
+                Some(reason) => Err(reason),
+                None => Ok(None),
             }
         }
     }
@@ -254,7 +278,7 @@ mod tests {
 
     #[test]
     fn a_finished_track_lets_the_queue_advance() {
-        let mut source = Blocks(vec![block(10), block(10)]);
+        let mut source = Blocks(vec![block(10), block(10)], None);
         let mut sink = FakeSink::new(100);
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 20 });
@@ -263,7 +287,7 @@ mod tests {
 
     #[test]
     fn partial_writes_are_retried_until_everything_is_delivered() {
-        let mut source = Blocks(vec![block(10)]);
+        let mut source = Blocks(vec![block(10)], None);
         let mut sink = FakeSink::new(3);
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 10 });
@@ -274,7 +298,7 @@ mod tests {
     #[test]
     fn a_lost_device_is_not_mistaken_for_end_of_track() {
         // The finding: in QBZ this advanced the whole queue without a word.
-        let mut source = Blocks(vec![block(10), block(10)]);
+        let mut source = Blocks(vec![block(10), block(10)], None);
         let mut sink = FakeSink::failing(100, 1, SinkError::DeviceLost);
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::DeviceLost });
@@ -283,7 +307,7 @@ mod tests {
 
     #[test]
     fn a_timeout_is_a_failure_too_and_does_not_wait_forever() {
-        let mut source = Blocks(vec![block(4)]);
+        let mut source = Blocks(vec![block(4)], None);
         let wait = Duration::from_millis(200);
         let mut sink = FakeSink::failing(100, 1, SinkError::Timeout(wait));
         let out = render(&mut source, &mut sink, &StopSignal::new());
@@ -292,7 +316,7 @@ mod tests {
 
     #[test]
     fn a_lone_xrun_is_absorbed_and_the_track_finishes() {
-        let mut source = Blocks(vec![block(6)]);
+        let mut source = Blocks(vec![block(6)], None);
         let mut sink = FakeSink::failing(100, 1, SinkError::Xrun);
         assert_eq!(render(&mut source, &mut sink, &StopSignal::new()), Outcome::Finished { frames: 6 });
     }
@@ -311,7 +335,7 @@ mod tests {
                 Ok(())
             }
         }
-        let mut source = Blocks(vec![block(4)]);
+        let mut source = Blocks(vec![block(4)], None);
         let out = render(&mut source, &mut AlwaysXrun, &StopSignal::new());
         assert_eq!(out, Outcome::Failed { frames: 0, error: SinkError::DeviceLost });
     }
@@ -322,7 +346,7 @@ mod tests {
         // between blocks and returns without asking the device anything.
         let stop = StopSignal::new();
         stop.stop();
-        let mut source = Blocks(vec![block(10)]);
+        let mut source = Blocks(vec![block(10)], None);
         let mut sink = FakeSink::new(1);
         assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 0 });
         assert_eq!(sink.writes, 0, "nothing was written to the device");
@@ -347,7 +371,7 @@ mod tests {
             }
         }
         let stop = StopSignal::new();
-        let mut source = Blocks(vec![block(20)]);
+        let mut source = Blocks(vec![block(20)], None);
         let mut sink = StopsOnTheThird(stop.clone(), 0);
         assert_eq!(render(&mut source, &mut sink, &stop), Outcome::Stopped { frames: 6 });
     }

@@ -207,6 +207,21 @@ fn one_track_of_a_sacd_image_plays_on_its_own() {
 }
 
 #[test]
+fn a_track_that_breaks_halfway_stops_the_queue_and_says_why() {
+    // A sector in the middle of the first track that no longer adds up. The
+    // reader said so, and DoP took it for the end of the track: the queue
+    // went on to the second as if the first had played whole.
+    let iso = image("broken");
+    let mut img = std::fs::read(&iso).unwrap();
+    sector(&mut img, AUDIO_START + 5)[0] = 0;
+    std::fs::write(&iso, img).unwrap();
+    let tracks = [1, 2].map(|n| PathBuf::from(format!("sacd:{}#{n}", iso.display())));
+    let failed = played(&tracks).expect_err("the queue stops at the broken track");
+    assert!(failed.contains(&(AUDIO_START + 5).to_string()), "the user is told where: {failed}");
+    let _ = std::fs::remove_file(iso);
+}
+
+#[test]
 fn a_sacd_image_in_a_scanned_folder_goes_into_the_library_as_its_tracks() {
     let dir = std::env::temp_dir().join("chilpa-sacd-library");
     let _ = std::fs::remove_dir_all(&dir);
