@@ -66,6 +66,13 @@ def main():
         cutter = subset.Subsetter(options)
         cutter.populate(unicodes=[points[n] for n in wanted[kind]])
         cutter.subset(font)
+        # Both webfonts are called "tabler-icons", and two files with one
+        # family name are merged by the font database: outline glyphs came
+        # out of the filled font. Each subset gets a family of its own.
+        family = f"Chilpa Icons {kind.capitalize()}"
+        for record in font["name"].names:
+            if record.nameID in (1, 4, 6, 16):
+                record.string = family.replace(" ", "") if record.nameID == 6 else family
         subset.save_font(font, str(OUT / f"tabler-{kind}.ttf"), options)
         suffix = "Filled" if kind == "filled" else ""
         for n in sorted(wanted[kind]):

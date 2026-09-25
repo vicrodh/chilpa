@@ -394,3 +394,9 @@ nav
 qcolor
 sm
 xs
+
+# Qt Quick API names: SizeVerCursor, SizeHorCursor, SizeBDiagCursor, Flickable.
+diag
+flickable
+hor
+ver
