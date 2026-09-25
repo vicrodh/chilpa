@@ -11,8 +11,11 @@ use chilpa_audio::negotiate::{DeviceCaps, Policy};
 use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_core::playback::play_file;
+use chilpa_core::player::{Player, PlayerEvent};
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
 
 /// A fake device that keeps everything written to it.
 #[derive(Default)]
@@ -171,5 +174,114 @@ fn with_a_device_that_cannot_do_it_we_fail_instead_of_resampling() {
     });
     assert!(r.is_err(), "nothing is resampled behind your back");
     assert!(cap.bytes.is_empty(), "nothing was written to the device");
+    let _ = std::fs::remove_file(path);
+}
+
+/// What a USB DAC that publishes only `S32_LE` looks like once measured.
+/// ALSA's one format is both of Chilpa's 32 bit words, so both are listed.
+fn only_32_bit_words() -> DeviceCaps {
+    DeviceCaps {
+        sample_rates: vec![44_100, 48_000],
+        formats: vec![SampleFormat::S24In32, SampleFormat::S32],
+        channels: vec![2],
+        probed: true,
+    }
+}
+
+#[test]
+fn a_16_bit_wav_reaches_a_dac_that_only_takes_32_bit_words_with_every_sample_intact() {
+    let originals = samples(16);
+    let path = temp_file("16-in-32");
+    write_wav(&path, &originals, 16, 44_100, 2);
+
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let played = play_file(
+        &path,
+        &only_32_bit_words(),
+        Policy::BitPerfect,
+        &StopSignal::new(),
+        |format| {
+            cap.stream = Some(format);
+            Ok(Handle(&mut cap))
+        },
+    )
+    .expect("16 bits fit in a wider word without losing one");
+
+    assert!(played.delivery.nothing_was_converted());
+    let words: Vec<i32> = cap
+        .bytes
+        .chunks_exact(4)
+        .map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+        .collect();
+    assert_eq!(words.len(), originals.len(), "one word per sample");
+    let came_out: Vec<i32> = words.iter().map(|w| w >> 16).collect();
+    assert_eq!(came_out, originals, "every sample sits on top of its word");
+    assert!(words.iter().all(|w| w & 0xffff == 0), "with nothing but zeros below it");
+    let _ = std::fs::remove_file(path);
+}
+
+/// A device that takes whatever it is given, at the format it was opened
+/// with.
+struct Swallow(StreamFormat);
+
+impl AudioSink for Swallow {
+    fn format(&self) -> StreamFormat {
+        self.0
+    }
+
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        Ok(frames.len() / self.0.frame_bytes())
+    }
+
+    fn close(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+}
+
+#[test]
+fn the_switch_plays_16_bits_on_a_32_bit_dac_and_still_takes_the_output_alone() {
+    // The switch reaches the device as two things: which samples may go out,
+    // and asking for the output exclusively. Letting widening through by
+    // handing the player a looser policy would have dropped the second one
+    // without a word, because the stream path read it off the policy.
+    let path = temp_file("switch");
+    write_wav(&path, &samples(16), 16, 44_100, 2);
+    let asked: Arc<Mutex<Vec<(StreamFormat, bool)>>> = Arc::default();
+    let seen = Arc::clone(&asked);
+    let player = Player::spawn(
+        Box::new(|_| Ok(only_32_bit_words())),
+        Box::new(move |_, format, exclusive| {
+            seen.lock().unwrap().push((format, exclusive));
+            Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)
+        }),
+    );
+
+    // An identifier that names no stack, so the verdict does not go looking
+    // for one on this machine.
+    player.play(&path, "dac", true);
+    let limit = Instant::now() + Duration::from_secs(5);
+    let mut outcome = None;
+    while outcome.is_none() && Instant::now() < limit {
+        outcome = player
+            .poll()
+            .into_iter()
+            .find(|e| matches!(e, PlayerEvent::Started { .. } | PlayerEvent::Failed { .. }));
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    match outcome {
+        Some(PlayerEvent::Started { opened, .. }) => {
+            assert_eq!(opened.sample_rate_hz, 44_100, "nothing was resampled");
+            assert!(
+                opened.sample_format.is_integer() && opened.sample_format.valid_bits() > 16,
+                "it went out in the wider word the DAC takes: {opened:?}"
+            );
+        }
+        other => panic!("bit-perfect on did not play a 16 bit file on this DAC: {other:?}"),
+    }
+    let asked = asked.lock().unwrap();
+    assert_eq!(asked.len(), 1, "the device was opened once: {asked:?}");
+    assert!(asked[0].1, "with the switch on the output is asked for alone");
+    drop(asked);
+    drop(player);
     let _ = std::fs::remove_file(path);
 }

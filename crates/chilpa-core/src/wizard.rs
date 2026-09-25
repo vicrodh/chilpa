@@ -203,6 +203,22 @@ mod tests {
     }
 
     #[test]
+    fn a_dac_that_only_takes_32_bit_words_is_told_it_plays_cds_untouched() {
+        // A USB DAC publishing only `S32_LE`. The wizard said every 16 bit
+        // format was converted, which is the diagnosis somebody reads about
+        // their own DAC, and it was wrong: 16 bits laid out in a wider word
+        // reach it with every value intact.
+        let d = diagnose(
+            "hw:1,0",
+            &caps(&[44_100, 48_000], &[SampleFormat::S24In32, SampleFormat::S32], true),
+        );
+        for name in ["CD", "DAT"] {
+            let row = d.rows.iter().find(|f| f.name == name).unwrap();
+            assert_eq!(row.verdict, Verdict::BitPerfect, "{name} on a 32 bit only DAC");
+        }
+    }
+
+    #[test]
     fn a_format_spelled_the_way_it_is_spoken() {
         let f = StreamFormat::new(SampleFormat::S24In32, 96_000, 2);
         assert_eq!(describe(f), "24 bit at 96000 Hz, stereo");

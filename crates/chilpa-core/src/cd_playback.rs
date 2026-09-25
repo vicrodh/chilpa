@@ -7,9 +7,10 @@
 //! The drive is opened once per track. If a sector cannot be read, the
 //! track is cut off there and it is said; it is never padded with silence.
 
-use chilpa_audio::format::StreamFormat;
+use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
-use chilpa_audio::render::{render_paused, Outcome};
+use chilpa_audio::pack::{pack, Samples};
+use chilpa_audio::render::{render_paused, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 use chilpa_cd::{CdDevice, CdError, Toc, Track, TrackReader, CDDA_FORMAT};
 
@@ -53,6 +54,37 @@ pub struct CdPlayed {
     pub read_error: Option<String>,
 }
 
+/// The disc's sectors in the word the output was opened with.
+///
+/// A sector is 16 bit pairs, and handing it as it is to an output opened at
+/// 32 bits reads two samples as one: half as many frames, each one noise,
+/// at twice the speed. A DAC that only takes 32 bit words gets each sample on
+/// top of the word with zeros below, which keeps its value, through the same
+/// packing every decoded file goes through.
+struct LaidOut<'r, 'd> {
+    reader: &'r mut TrackReader<'d>,
+    to: SampleFormat,
+}
+
+impl FrameSource for LaidOut<'_, '_> {
+    fn next_block(&mut self) -> Option<Vec<u8>> {
+        let block = self.reader.next_block()?;
+        if self.to == CDDA_FORMAT.sample_format {
+            return Some(block);
+        }
+        let samples: Vec<i32> = block
+            .chunks_exact(2)
+            .map(|c| i32::from(i16::from_le_bytes([c[0], c[1]])))
+            .collect();
+        let mut out = Vec::with_capacity(samples.len() * self.to.bytes());
+        // Bit-perfect only ever opens a CD at its own format or at a wider
+        // integer one, and sixteen bits widened cannot be truncated.
+        pack(&Samples::Int { data: &samples, bits: 16 }, self.to, &mut out)
+            .expect("a CD is only ever widened");
+        Some(out)
+    }
+}
+
 /// Plays a track off the disc.
 pub fn play_track<F, K>(
     drive: &mut dyn CdDevice,
@@ -71,7 +103,8 @@ where
         negotiate(CDDA_FORMAT, caps, Policy::BitPerfect).map_err(|_| CdPlayError::Unsupported)?;
     let mut sink = open_sink(delivery.opened).map_err(CdPlayError::Sink)?;
     let mut reader = TrackReader::new(drive, track);
-    let outcome = render_paused(&mut reader, &mut sink, stop, pause, on_progress);
+    let mut laid = LaidOut { reader: &mut reader, to: delivery.opened.sample_format };
+    let outcome = render_paused(&mut laid, &mut sink, stop, pause, on_progress);
     let read_error = reader.error.as_ref().map(|e| e.to_string());
     sink.close().map_err(CdPlayError::Sink)?;
     Ok(CdPlayed { delivery, outcome, read_error })
@@ -153,6 +186,96 @@ mod tests {
         assert!(played.outcome.may_advance_queue());
         assert!(played.read_error.is_none());
         assert_eq!(played.outcome.frames(), 100 * 588, "the track's 100 sectors");
+    }
+
+    /// A disc whose every sample can be told apart from its neighbours.
+    struct Patterned;
+
+    /// What sector `lsn` carries on the patterned disc.
+    fn sector(lsn: u32) -> Vec<u8> {
+        (0..SECTOR_BYTES).map(|i| (lsn as usize * 7 + i * 13) as u8).collect()
+    }
+
+    impl CdDevice for Patterned {
+        fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError> {
+            Ok((vec![TocEntry { number: 1, start_lsn: 0, is_audio: true, session: 1 }], 10))
+        }
+        fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
+            out.clear();
+            for s in 0..sectors {
+                out.extend_from_slice(&sector(lsn + s));
+            }
+            Ok(())
+        }
+    }
+
+    /// A device that keeps what it is handed, in the format it was opened
+    /// with rather than the one the test expects.
+    struct Recorder {
+        opened: Option<StreamFormat>,
+        bytes: Vec<u8>,
+    }
+
+    impl AudioSink for &mut Recorder {
+        fn format(&self) -> StreamFormat {
+            self.opened.expect("opened")
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            self.bytes.extend_from_slice(frames);
+            Ok(frames.len() / self.opened.expect("opened").frame_bytes())
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_cd_reaches_a_dac_that_only_takes_32_bit_words_with_every_sample_intact() {
+        // A USB DAC publishing only `S32_LE`. The disc's 16 bit samples have
+        // to arrive laid out in the wider word, not as 16 bit pairs written
+        // into a 32 bit stream, which would play at twice the speed as noise.
+        let only_32 = DeviceCaps {
+            sample_rates: vec![44_100],
+            formats: vec![SampleFormat::S24In32, SampleFormat::S32],
+            channels: vec![2],
+            probed: true,
+        };
+        let mut disc = Patterned;
+        let toc = read_toc(&mut disc).unwrap();
+        let track = *toc.track(1).unwrap();
+        let mut sink = Recorder { opened: None, bytes: Vec::new() };
+        let played = play_track(
+            &mut disc,
+            &track,
+            &only_32,
+            &StopSignal::new(),
+            &PauseSignal::new(),
+            |format| {
+                sink.opened = Some(format);
+                Ok(&mut sink)
+            },
+            &mut |_| {},
+        )
+        .expect("a CD plays on a DAC that takes wider words");
+
+        assert!(played.delivery.nothing_was_converted());
+        assert_eq!(played.outcome.frames(), 10 * 588, "the track's 10 sectors, no more, no fewer");
+        let original: Vec<i16> = (0..10)
+            .flat_map(sector)
+            .collect::<Vec<u8>>()
+            .chunks_exact(2)
+            .map(|c| i16::from_le_bytes([c[0], c[1]]))
+            .collect();
+        let words: Vec<i32> = sink
+            .bytes
+            .chunks_exact(4)
+            .map(|c| i32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+            .collect();
+        assert_eq!(words.len(), original.len(), "one word per sample");
+        for (i, (&word, &sample)) in words.iter().zip(&original).enumerate() {
+            assert_eq!(word >> 16, i32::from(sample), "sample {i} is on top of the word");
+            assert_eq!(word & 0xffff, 0, "sample {i} has nothing but zeros below it");
+        }
     }
 
     #[test]
