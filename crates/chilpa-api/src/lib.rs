@@ -263,6 +263,10 @@ struct InProgress {
     bit_depth: Option<u8>,
     bit_perfect: bool,
     duration_ms: u64,
+    /// Frames of it that went out, which is what was heard. The position is
+    /// not: it was logged as the time listened, and a seek to the last
+    /// second logged the whole track.
+    played_frames: u64,
 }
 
 /// A smart list, with whatever it yields today.
@@ -1177,6 +1181,7 @@ impl Chilpa {
                             (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
                             _ => 0,
                         },
+                        played_frames: 0,
                     });
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
@@ -1215,19 +1220,26 @@ impl Chilpa {
                     // changes with every song.
                     self.now.title = title;
                 }
-                PlayerEvent::Progress { frames } => {
+                PlayerEvent::Progress { frames, played } => {
                     self.now.frames = frames;
+                    if let Some(current) = self.in_progress.as_mut() {
+                        current.played_frames = played;
+                    }
                     if self.sample_rate > 0 {
                         self.now.seconds = frames as f64 / f64::from(self.sample_rate);
                     }
                     self.now.lyrics_line = self.line_at(self.now.seconds);
                 }
                 PlayerEvent::Finished { frames } => {
+                    // What the renderer counted: what went out, not where
+                    // the track was.
+                    self.set_played(frames);
                     self.now.frames = frames;
                     self.now.playing = false;
                     self.log_play(false);
                 }
                 PlayerEvent::Stopped { frames } => {
+                    self.set_played(frames);
                     self.now.frames = frames;
                     // A stop we asked for in order to start again is not the
                     // listener stopping. Saying `playing = false` here would
@@ -1264,9 +1276,15 @@ impl Chilpa {
     ///
     /// The log is append-only: the stats, the smart lists and the
     /// play count sync with a DAP all come out of here.
+    fn set_played(&mut self, frames: u64) {
+        if let Some(current) = self.in_progress.as_mut() {
+            current.played_frames = frames;
+        }
+    }
+
     fn log_play(&mut self, skipped: bool) {
         let Some(current) = self.in_progress.take() else { return };
-        let frames = self.now.frames;
+        let frames = current.played_frames;
         if current.sample_rate_hz == 0 || frames == 0 {
             return;
         }

@@ -317,6 +317,16 @@ impl Controls {
     }
 }
 
+/// Where a track is, and how much of it has gone out.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub struct Progress {
+    /// The position in the track, in frames: what the bar shows.
+    pub position: u64,
+    /// Frames the device has taken since the track started: what was
+    /// listened to. A seek moves the position and not this.
+    pub delivered: u64,
+}
+
 /// How a track in the queue ended.
 pub struct TrackResult {
     pub path: PathBuf,
@@ -505,7 +515,7 @@ where
 /// The same, reporting when each track starts and how many frames it has.
 ///
 /// `on_track` receives the index, the path and how the delivery turned out;
-/// `on_progress` the index and the frames delivered for that track.
+/// `on_progress` the index and where that track is.
 #[allow(clippy::too_many_arguments)]
 pub fn play_queue_with<F, K>(
     queue: &SharedQueue,
@@ -514,7 +524,7 @@ pub fn play_queue_with<F, K>(
     controls: &Controls,
     mut open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery),
-    on_progress: &mut dyn FnMut(usize, u64),
+    on_progress: &mut dyn FnMut(usize, Progress),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
@@ -585,7 +595,7 @@ where
                     chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
                         delivered.store(f, std::sync::atomic::Ordering::Relaxed);
                         let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
-                        on_progress(index, at.max(0) as u64)
+                        on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
                     });
                 (outcome, frames.skipped)
             }
@@ -597,7 +607,7 @@ where
                 let outcome = chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
                     delivered.store(f, std::sync::atomic::Ordering::Relaxed);
                     let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
-                    on_progress(index, at.max(0) as u64)
+                    on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
                 });
                 (outcome, frames.skipped)
             }

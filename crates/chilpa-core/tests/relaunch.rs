@@ -147,7 +147,7 @@ fn a_relaunch_takes_effect_while_something_is_playing() {
     // It is genuinely playing, not just opened.
     assert!(
         until(&player, Duration::from_secs(5), |e| {
-            matches!(e, PlayerEvent::Progress { frames } if *frames > 0)
+            matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 0)
         }),
         "samples went out",
     );
@@ -182,7 +182,7 @@ fn a_relaunch_can_start_the_track_somewhere_other_than_its_beginning() {
     player.play_all(&[track.clone()], "a", true);
     assert!(
         until(&player, Duration::from_secs(5), |e| {
-            matches!(e, PlayerEvent::Progress { frames } if *frames > 0)
+            matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 0)
         }),
         "it was playing",
     );
@@ -194,7 +194,7 @@ fn a_relaunch_can_start_the_track_somewhere_other_than_its_beginning() {
     // container lands on the frame it can and the discarded frames are
     // counted in, which is what keeps the number from running short.
     let kept_its_place = until(&player, Duration::from_secs(10), |e| {
-        matches!(e, PlayerEvent::Progress { frames } if *frames > 44_100 * 19)
+        matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 44_100 * 19)
     });
     assert!(kept_its_place, "it picked up where it was asked to, not at the beginning");
 }
@@ -213,7 +213,7 @@ fn a_seek_left_over_from_the_last_play_does_not_move_the_next_one() {
     player.play_all(&[track.clone()], "a", true);
     assert!(
         until(&player, Duration::from_secs(5), |e| {
-            matches!(e, PlayerEvent::Progress { frames } if *frames > 0)
+            matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 0)
         }),
         "it was playing",
     );
@@ -228,7 +228,7 @@ fn a_seek_left_over_from_the_last_play_does_not_move_the_next_one() {
     );
     // Whatever it reports, it is near the beginning and not near the end.
     let jumped = until(&player, Duration::from_secs(3), |e| {
-        matches!(e, PlayerEvent::Progress { frames } if *frames > 44_100 * 20)
+        matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 44_100 * 20)
     });
     assert!(!jumped, "a seek nobody served was carried into the next play");
 }
