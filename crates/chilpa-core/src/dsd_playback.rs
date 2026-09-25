@@ -14,7 +14,8 @@ use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy};
 use chilpa_audio::pack::{duplicate_mono, pack, Samples};
 use chilpa_audio::render::{render_paused, FrameSource, Outcome};
-use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
+use chilpa_audio::seek::SeekSignal;
+use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
 use chilpa_dsd::{DsdError, DsdSource};
 use std::path::Path;
 
@@ -50,18 +51,72 @@ impl std::fmt::Display for DsdPlayError {
     }
 }
 
+/// True if the file is DSD by its extension.
+pub(crate) fn is_dsf(path: &Path) -> bool {
+    path.extension().and_then(|e| e.to_str()).is_some_and(|e| e.eq_ignore_ascii_case("dsf"))
+}
+
+/// What a DSD source asks the device for: 24 bit words at the carrier rate.
+///
+/// DoP is 24 bits -- the marker and sixteen of DSD -- left justified in 32.
+/// Asking for `S32` claimed eight bits it does not carry, and a DAC that
+/// takes 24 bits in 32 but not 32, which CoreAudio and WASAPI can tell
+/// apart, refused it.
+pub(crate) fn dop_request(info: &chilpa_dsd::DsdInfo) -> StreamFormat {
+    StreamFormat::new(SampleFormat::S24In32, carrier_rate(info.dsd_rate_hz), info.channels)
+}
+
 /// Turns DSD blocks into DoP words, in the word the output was opened at.
-struct DopFrames<'a> {
+///
+/// The packer is lent, not owned: tracks that share an opening share its
+/// marker, so the 0x05 and 0xFA alternation runs on across a join instead
+/// of starting over, which some DACs take as the end of DSD.
+pub(crate) struct DopFrames<'a> {
     source: &'a mut dyn DsdSource,
-    packer: DopPacker,
-    channels: u16,
+    packer: &'a mut DopPacker,
     to: SampleFormat,
     /// A mono DSD track going out in both channels.
     spread: bool,
+    skip: Option<SkipSignal>,
+    seek: Option<SeekSignal>,
+    /// True if this track ended because somebody skipped it.
+    pub(crate) skipped: bool,
+}
+
+impl<'a> DopFrames<'a> {
+    pub(crate) fn new(source: &'a mut dyn DsdSource, packer: &'a mut DopPacker, delivery: &Delivery) -> Self {
+        DopFrames {
+            source,
+            packer,
+            to: delivery.opened.sample_format,
+            spread: delivery.duplicates_mono(),
+            skip: None,
+            seek: None,
+            skipped: false,
+        }
+    }
+
+    /// Listens to the queue's skip and seek. A skip ends the track. DoP does
+    /// not seek, so a seek asked for now is dropped: left pending, it would
+    /// land on whatever PCM track came next.
+    pub(crate) fn controlled(mut self, skip: SkipSignal, seek: SeekSignal) -> Self {
+        self.skip = Some(skip);
+        self.seek = Some(seek);
+        self
+    }
 }
 
 impl FrameSource for DopFrames<'_> {
     fn next_block(&mut self) -> Option<Vec<u8>> {
+        // The seek first: taken after a skip, one asked for together with it
+        // would outlive this track and land on the next.
+        if let Some(seek) = &self.seek {
+            let _ = seek.take();
+        }
+        if self.skip.as_ref().is_some_and(|s| s.take()) {
+            self.skipped = true;
+            return None;
+        }
         let channels = match self.source.next_block() {
             Ok(Some(c)) => c,
             Ok(None) | Err(_) => return None,
@@ -83,7 +138,6 @@ impl FrameSource for DopFrames<'_> {
         let mut bytes = Vec::with_capacity(samples.len() * self.to.bytes());
         pack(&Samples::Int { data: &samples, bits: 24 }, self.to, &mut bytes)
             .expect("DoP only opens at a word that holds 24 bits");
-        let _ = self.channels;
         Some(bytes)
     }
 }
@@ -115,11 +169,7 @@ where
 
     let info = source.info().clone();
     let carrier_hz = carrier_rate(info.dsd_rate_hz);
-    // DoP is 24 bits -- the marker and sixteen of DSD -- left justified in
-    // 32. Asking for `S32` claimed eight bits it does not carry, and a DAC
-    // that takes 24 bits in 32 but not 32, which CoreAudio and WASAPI can
-    // tell apart, refused it.
-    let request = StreamFormat::new(SampleFormat::S24In32, carrier_hz, info.channels);
+    let request = dop_request(&info);
 
     // Always bit-perfect: converting DoP turns it into noise, so there is no
     // policy to choose here.
@@ -134,13 +184,8 @@ where
     };
 
     let mut sink = open_sink(delivery.opened).map_err(DsdPlayError::Sink)?;
-    let mut frames = DopFrames {
-        source,
-        packer: DopPacker::new(),
-        channels: info.channels,
-        to: delivery.opened.sample_format,
-        spread: delivery.duplicates_mono(),
-    };
+    let mut packer = DopPacker::new();
+    let mut frames = DopFrames::new(source, &mut packer, &delivery);
     let outcome = render_paused(&mut frames, &mut sink, stop, pause, on_progress);
     sink.close().map_err(DsdPlayError::Sink)?;
     Ok(DsdPlayed { delivery, outcome, carrier_hz })

@@ -18,7 +18,40 @@ use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSign
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
 
+use crate::dsd_playback::{dop_request, is_dsf, DopFrames};
 use crate::playback::PlayError;
+use chilpa_audio::dop::DopPacker;
+use chilpa_dsd::DsdSource;
+
+/// What a track is read from: the decoder for PCM, a DSD source for DoP.
+enum Source {
+    Pcm(Decoded),
+    Dop(Box<dyn DsdSource>),
+}
+
+/// Opens a track by what it is, and negotiates what it asks for.
+///
+/// DSD used to be played outside the queue, on the first track only: a
+/// queue of DSF files played its first file and stopped, because nothing
+/// took the queue on from there. It goes through the queue like any track
+/// now, always as bit-perfect, since converting DoP turns it into noise.
+fn open_track(path: &Path, caps: &DeviceCaps, policy: Policy) -> Result<(Source, Delivery), PlayError> {
+    if is_dsf(path) {
+        let reader = chilpa_dsd::DsfReader::open(path)
+            .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+        let request = dop_request(reader.info());
+        let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(|_| {
+            PlayError::Sink(SinkError::Backend(chilpa_i18n::t_args(
+                "the device does not accept {} Hz, which is what this DSD over DoP asks for",
+                &[&request.sample_rate_hz.to_string()],
+            )))
+        })?;
+        return Ok((Source::Dop(Box::new(reader)), delivery));
+    }
+    let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
+    let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
+    Ok((Source::Pcm(decoded), delivery))
+}
 
 /// What to do on reaching the end of the queue.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -473,6 +506,9 @@ where
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
     let mut consecutive_silent = 0usize;
+    // The DoP marker of whatever is open. It carries on across tracks that
+    // share an opening and starts over with a new one.
+    let mut packer = DopPacker::new();
 
     // The length is read again on every lap: the queue can grow while it
     // plays.
@@ -481,9 +517,7 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
-        let mut decoded = Decoded::open(path).map_err(PlayError::Decode)?;
-        let delivery = negotiate(decoded.stream_format(), caps, policy)
-            .map_err(PlayError::Negotiation)?;
+        let (mut source, delivery) = open_track(path, caps, policy)?;
 
         let transition = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
@@ -495,37 +529,51 @@ where
             }
             let new = open_sink(delivery.opened).map_err(PlayError::Sink)?;
             opened = Some((delivery.opened, new));
+            packer = DopPacker::new();
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
 
-        let channels = decoded.stream_format().channels;
-        let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
-        let float_trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
-        let mut frames = TrackFrames {
-            decoded: &mut decoded,
-            opened: delivery.opened,
-            channels: usize::from(channels.max(1)),
-            spread: delivery.duplicates_mono(),
-            trimmer,
-            float_trimmer,
-            exhausted: false,
-            seek: seek.clone(),
-            skip: skip.clone(),
-            skipped: false,
-            discard: 0,
-            base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
-        };
-        let base = std::sync::Arc::clone(&frames.base);
         on_track(index, path, &delivery);
-        let outcome =
-            chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
-                on_progress(index, f + base.load(std::sync::atomic::Ordering::Relaxed))
-            });
-        let finished_ok = outcome.may_advance_queue();
-        consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
-        let skipped = frames.skipped;
+        let (outcome, skipped) = match &mut source {
+            Source::Pcm(decoded) => {
+                let channels = decoded.stream_format().channels;
+                let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
+                let float_trimmer =
+                    Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
+                let mut frames = TrackFrames {
+                    decoded,
+                    opened: delivery.opened,
+                    channels: usize::from(channels.max(1)),
+                    spread: delivery.duplicates_mono(),
+                    trimmer,
+                    float_trimmer,
+                    exhausted: false,
+                    seek: seek.clone(),
+                    skip: skip.clone(),
+                    skipped: false,
+                    discard: 0,
+                    base: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                };
+                let base = std::sync::Arc::clone(&frames.base);
+                let outcome =
+                    chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
+                        on_progress(index, f + base.load(std::sync::atomic::Ordering::Relaxed))
+                    });
+                (outcome, frames.skipped)
+            }
+            Source::Dop(reader) => {
+                let mut frames = DopFrames::new(reader.as_mut(), &mut packer, &delivery)
+                    .controlled(skip.clone(), seek.clone());
+                let outcome = chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
+                    on_progress(index, f)
+                });
+                (outcome, frames.skipped)
+            }
+        };
+        let finished_ok = outcome.may_advance_queue();
+        consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
         results.push(TrackResult {
             path: path.clone(),
             delivery,
