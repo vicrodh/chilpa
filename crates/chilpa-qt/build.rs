@@ -1,67 +1,52 @@
 use cxx_qt_build::{CxxQtBuilder, QmlModule};
+use std::path::{Path, PathBuf};
 
-/// The QML files compiled into the binary. The ones starting with `Layout`
-/// are window layouts, and the list the bridge offers the user comes from
-/// them: that way adding a layout is adding a file, and there is no second
-/// list that can fall behind.
-const QML: &[&str] = &[
-    "qml/Main.qml",
-    // The layouts.
-    "qml/LayoutClassic.qml",
-    "qml/LayoutCompact.qml",
-    // The pieces a layout can place wherever it likes.
-    "qml/OutputPanel.qml",
-    "qml/OutputSelect.qml",
-    "qml/StackSelect.qml",
-    "qml/ActionsPanel.qml",
-    "qml/TransportPanel.qml",
-    "qml/NowPlayingPanel.qml",
-    "qml/QueuePanel.qml",
-    "qml/LyricsPanel.qml",
-    "qml/VisualizerPanel.qml",
-    "qml/SearchBox.qml",
-    "qml/LayoutSelector.qml",
-    "qml/LanguageSelector.qml",
-    "qml/Library.qml",
-    "qml/ArtistGrid.qml",
-    "qml/StatsPanel.qml",
-    "qml/PlaylistsPanel.qml",
-    "qml/WizardPanel.qml",
-    "qml/PluginsPanel.qml",
-    "qml/SettingsPanel.qml",
-    "qml/TrackList.qml",
-    "qml/Results.qml",
-];
-
-/// Writes the list of layouts for the bridge to include.
-fn write_layouts() {
-    let names: Vec<String> = QML
-        .iter()
-        .filter_map(|f| f.strip_prefix("qml/Layout"))
-        .filter_map(|f| f.strip_suffix(".qml"))
-        .map(|n| format!("    \"{n}\",\n"))
-        .collect();
-    let out = std::path::Path::new(&std::env::var("OUT_DIR").unwrap()).join("layouts.rs");
-    std::fs::write(
-        out,
-        format!("pub const LAYOUTS: &[&str] = &[\n{}];\n", names.concat()),
-    )
-    .expect("the list of layouts is written");
+/// Every file under `dir` that `keep` accepts, relative to the crate and
+/// sorted, so the list is found on disk instead of written twice: adding a
+/// component is adding its file.
+fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut pending = vec![PathBuf::from(dir)];
+    pending.retain(|p| p.is_dir());
+    while let Some(next) = pending.pop() {
+        for entry in std::fs::read_dir(&next).expect("the directory is readable") {
+            let path = entry.expect("the entry is readable").path();
+            if path.is_dir() {
+                pending.push(path);
+            } else if keep(&path) {
+                out.push(path.to_string_lossy().replace('\\', "/"));
+            }
+        }
+    }
+    out.sort();
+    out
 }
 
 fn main() {
-    write_layouts();
+    let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
+    // A layer's `qmldir` declares its singletons, and the fonts are the
+    // icons. Both travel in the same resource tree as the QML.
+    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "ttf")));
+    // Only the files that declare a bridge: `mod.rs` just lists them.
+    let bridges = files("src/bridge", &|p| {
+        p.extension().is_some_and(|e| e == "rs")
+            && std::fs::read_to_string(p)
+                .is_ok_and(|s| s.lines().any(|l| l.trim_start().starts_with("#[cxx_qt::bridge]")))
+    });
+    println!("cargo:rerun-if-changed=qml");
+    println!("cargo:rerun-if-changed=assets");
+    println!("cargo:rerun-if-changed=src/bridge");
+
     CxxQtBuilder::new()
         .qt_module("Qml")
         .qt_module("Quick")
         .qt_module("QuickControls2")
         .qml_module(QmlModule {
             uri: "com.blitzfc.chilpa",
-            // The bridge's module lives in `bridge/mod.rs`: cxx-qt only looks at the
-            // file carrying `#[cxx_qt::bridge]`, and the `impl`s spread across its
-            // siblings are not needed.
-            rust_files: &["src/bridge/mod.rs"],
-            qml_files: QML,
+            rust_files: &bridges,
+            qml_files: &qml,
+            qrc_files: &resources,
             ..Default::default()
         })
         .build();
