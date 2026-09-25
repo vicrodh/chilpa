@@ -56,6 +56,9 @@ pub enum SacdError {
 }
 
 impl std::fmt::Display for SacdError {
+    /// The reasons are marked where they are made and looked up here. One
+    /// already put into words with what it carries is no msgid, and `t`
+    /// hands it back as it is.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             SacdError::Open(e) => write!(
@@ -64,15 +67,15 @@ impl std::fmt::Display for SacdError {
                 chilpa_i18n::t_args("the image could not be read: {}", &[&e.to_string()])
             ),
             SacdError::MalformedToc(s) => {
-                write!(f, "{}", chilpa_i18n::t_args("invalid table of contents: {}", &[s]))
+                write!(f, "{}", chilpa_i18n::t_args("invalid table of contents: {}", &[&chilpa_i18n::t(s)]))
             }
             SacdError::BadSector { lsn, why } => write!(
                 f,
                 "{}",
-                chilpa_i18n::t_args("sector {} is invalid: {}", &[&lsn.to_string(), why])
+                chilpa_i18n::t_args("sector {} is invalid: {}", &[&lsn.to_string(), &chilpa_i18n::t(why)])
             ),
             SacdError::Unsupported(s) => {
-                write!(f, "{}", chilpa_i18n::t_args("not supported: {}", &[s]))
+                write!(f, "{}", chilpa_i18n::t_args("not supported: {}", &[&chilpa_i18n::t(s)]))
             }
         }
     }

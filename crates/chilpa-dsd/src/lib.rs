@@ -25,16 +25,19 @@ pub enum DsdError {
 }
 
 impl std::fmt::Display for DsdError {
+    /// The reasons are marked where they are made and looked up here. One
+    /// already put into words with what it carries is no msgid, and `t`
+    /// hands it back as it is.
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DsdError::Open(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("could not open: {}", &[&e.to_string()]))
             }
             DsdError::Corrupt(s) => {
-                write!(f, "{}", chilpa_i18n::t_args("damaged DSD file: {}", &[s]))
+                write!(f, "{}", chilpa_i18n::t_args("damaged DSD file: {}", &[&chilpa_i18n::t(s)]))
             }
             DsdError::Unsupported(s) => {
-                write!(f, "{}", chilpa_i18n::t_args("DSD not supported: {}", &[s]))
+                write!(f, "{}", chilpa_i18n::t_args("DSD not supported: {}", &[&chilpa_i18n::t(s)]))
             }
         }
     }
