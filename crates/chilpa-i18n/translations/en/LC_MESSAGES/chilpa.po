@@ -73,6 +73,18 @@ msgstr ""
 msgid "Added this month"
 msgstr ""
 
+msgid "Album"
+msgstr ""
+
+msgid "Albums"
+msgstr ""
+
+msgid "All ({})"
+msgstr ""
+
+msgid "Artists"
+msgstr ""
+
 msgid "CD in {}"
 msgstr ""
 
@@ -101,6 +113,9 @@ msgid "DSDIFF compressed with DST"
 msgstr ""
 
 msgid "DSD{} · DoP at {} Hz · {}"
+msgstr ""
+
+msgid "Disc {}"
 msgstr ""
 
 msgid "Done. You can close this tab and go back to Chilpa."
@@ -136,6 +151,9 @@ msgstr ""
 msgid "High resolution"
 msgstr ""
 
+msgid "Home"
+msgstr ""
+
 msgid "I did not find a CD drive"
 msgstr ""
 
@@ -146,6 +164,12 @@ msgid "I do not know the list \"{}\""
 msgstr ""
 
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
+msgstr ""
+
+msgid "Info: Embedded tags"
+msgstr ""
+
+msgid "Library"
 msgstr ""
 
 msgid "Maximum 32/384"
@@ -176,6 +200,9 @@ msgid "SACDTRL1 is missing"
 msgstr ""
 
 msgid "SACDTRL2 is missing"
+msgstr ""
+
+msgid "Settings"
 msgstr ""
 
 msgid "Studio 24/48"
@@ -868,11 +895,21 @@ msgstr ""
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr ""
 
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} bit at {} Hz, {}"
 msgstr ""
 
 msgid "{} channel"
 msgid_plural "{} channels"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} disc"
+msgid_plural "{} discs"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -890,3 +927,8 @@ msgstr ""
 
 msgid "{} of {} formats come out untouched"
 msgstr ""
+
+msgid "{} song"
+msgid_plural "{} songs"
+msgstr[0] ""
+msgstr[1] ""

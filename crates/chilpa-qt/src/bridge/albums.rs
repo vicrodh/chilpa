@@ -189,7 +189,7 @@ impl qobject::AlbumGridModel {
         };
         let count = list.len() as i32;
         self.as_mut().rust_mut().list = list;
-        self.as_mut().relayout();
+        self.as_mut().split_rows();
         self.as_mut().set_albums(count);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
@@ -197,7 +197,7 @@ impl qobject::AlbumGridModel {
 
     /// Splits the albums into rows again. Only the row count depends on the
     /// width, so nothing is read again.
-    fn relayout(mut self: Pin<&mut Self>) {
+    fn split_rows(mut self: Pin<&mut Self>) {
         let rows = self.rust().row_total();
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
@@ -210,7 +210,7 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
-        self.as_mut().on_columns_changed(|m| m.relayout()).release();
-        self.as_mut().on_max_rows_changed(|m| m.relayout()).release();
+        self.as_mut().on_columns_changed(|m| m.split_rows()).release();
+        self.as_mut().on_max_rows_changed(|m| m.split_rows()).release();
     }
 }

@@ -73,6 +73,18 @@ msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentr
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
+msgid "Album"
+msgstr "Álbum"
+
+msgid "Albums"
+msgstr "Álbumes"
+
+msgid "All ({})"
+msgstr "Todo ({})"
+
+msgid "Artists"
+msgstr "Artistas"
+
 msgid "CD in {}"
 msgstr "CD en {}"
 
@@ -102,6 +114,9 @@ msgstr "DSDIFF comprimido con DST"
 
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
+
+msgid "Disc {}"
+msgstr "Disco {}"
 
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
@@ -136,6 +151,9 @@ msgstr "Alta 24/96"
 msgid "High resolution"
 msgstr "Alta resolución"
 
+msgid "Home"
+msgstr "Inicio"
+
 msgid "I did not find a CD drive"
 msgstr "no encontré una unidad de CD"
 
@@ -147,6 +165,12 @@ msgstr "no conozco la lista \"{}\""
 
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuando le pedí borrarla: puede que tu credencial siga guardada donde él la haya puesto"
+
+msgid "Info: Embedded tags"
+msgstr "Info: etiquetas del archivo"
+
+msgid "Library"
+msgstr "Biblioteca"
 
 msgid "Maximum 32/384"
 msgstr "Máximo 32/384"
@@ -177,6 +201,9 @@ msgstr "falta SACDTRL1"
 
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
+
+msgid "Settings"
+msgstr "Ajustes"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -868,6 +895,11 @@ msgstr "virtual"
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
 
+msgid "{} album"
+msgid_plural "{} albums"
+msgstr[0] "{} álbum"
+msgstr[1] "{} álbumes"
+
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"
 
@@ -875,6 +907,11 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canales"
+
+msgid "{} disc"
+msgid_plural "{} discs"
+msgstr[0] "{} disco"
+msgstr[1] "{} discos"
 
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
@@ -890,3 +927,8 @@ msgstr "{} de las pistas de la lista ya no están"
 
 msgid "{} of {} formats come out untouched"
 msgstr "{} de {} formatos salen tal cual"
+
+msgid "{} song"
+msgid_plural "{} songs"
+msgstr[0] "{} canción"
+msgstr[1] "{} canciones"
