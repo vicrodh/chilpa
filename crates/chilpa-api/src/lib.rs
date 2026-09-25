@@ -1112,6 +1112,7 @@ impl Chilpa {
                 PlayerEvent::Started {
                     path,
                     opened,
+                    channels: music_channels,
                     bits,
                     bit_perfect,
                     total_frames,
@@ -1181,6 +1182,8 @@ impl Chilpa {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
                         _ => 0.0,
                     };
+                    // The channels are the music's: a mono track that goes
+                    // out in both channels of a stereo DAC is still mono.
                     self.now.format = match dsd_multiple {
                         // On DSD what matters is the DSD rate; the DoP
                         // carrier is stated separately, because it is the
@@ -1190,7 +1193,7 @@ impl Chilpa {
                             &[
                                 &multiple.to_string(),
                                 &opened.sample_rate_hz.to_string(),
-                                &channels(opened.channels),
+                                &channels(music_channels),
                             ],
                         ),
                         None => match bits {
@@ -1198,12 +1201,12 @@ impl Chilpa {
                                 "{} Hz · {} bits · {}",
                                 opened.sample_rate_hz,
                                 bits,
-                                channels(opened.channels)
+                                channels(music_channels)
                             ),
                             // A lossy track has no bit depth, and the word it
                             // was rounded into is not one: "32 bits" on an
                             // MP3 reads as more than it is.
-                            None => format!("{} Hz · {}", opened.sample_rate_hz, channels(opened.channels)),
+                            None => format!("{} Hz · {}", opened.sample_rate_hz, channels(music_channels)),
                         },
                     };
                 }
