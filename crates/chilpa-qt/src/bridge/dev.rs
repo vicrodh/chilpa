@@ -27,6 +27,11 @@ pub mod qobject {
         #[qproperty(bool, frames)]
         #[qproperty(i32, scroll)]
         #[qproperty(QString, shot)]
+        /// When to take the shot, in milliseconds after start.
+        #[qproperty(i32, shot_at)]
+        /// The display's period, which QML reads from the screen: frames are
+        /// late against it, not against a median that moves with the load.
+        #[qproperty(f64, period)]
         /// The screen to open at start, and which record: from "album:7".
         #[qproperty(QString, route)]
         #[qproperty(i64, route_id)]
@@ -51,6 +56,8 @@ pub struct DevRust {
     frames: bool,
     scroll: i32,
     shot: QString,
+    shot_at: i32,
+    period: f64,
     route: QString,
     route_id: i64,
     add_folder: QString,
@@ -67,6 +74,8 @@ impl Default for DevRust {
             frames: !var("CHILPA_FRAMES").is_empty() || !var("CHILPA_SCROLL").is_empty(),
             scroll: var("CHILPA_SCROLL").parse().unwrap_or(0),
             shot: QString::from(&var("CHILPA_SHOT")),
+            shot_at: var("CHILPA_SHOT_AT").parse().unwrap_or(2500),
+            period: 0.0,
             route: QString::from(screen),
             route_id: id.parse().unwrap_or(0),
             add_folder: QString::from(&var("CHILPA_ADD_FOLDER")),
@@ -95,14 +104,15 @@ impl Drop for DevRust {
         let mut sorted = self.intervals.clone();
         sorted.sort_by(f64::total_cmp);
         let at = |p: f64| sorted[((sorted.len() - 1) as f64 * p).round() as usize];
-        // The display's period is taken from the median frame: with the
-        // window busy, most frames arrive on time.
-        let period = at(0.5);
+        // The display's period, as the screen states it; the median only when
+        // it does not.
+        let period = if self.period > 0.0 { self.period } else { at(0.5) };
         let late = |k: f64| sorted.iter().filter(|&&t| t > period * k).count();
         eprintln!(
-            "frames: {} intervals, p50 {:.2} ms, p99 {:.2} ms, max {:.2} ms; over 1.5 periods {}, over 2 periods {}",
+            "frames: {} intervals at a {:.2} ms period, p50 {:.2} ms, p99 {:.2} ms, max {:.2} ms; over 1.5 periods {}, over 2 periods {}",
             sorted.len(),
             period,
+            at(0.5),
             at(0.99),
             sorted[sorted.len() - 1],
             late(1.5),
