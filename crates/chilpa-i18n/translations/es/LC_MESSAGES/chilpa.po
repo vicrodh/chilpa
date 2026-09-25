@@ -187,6 +187,9 @@ msgstr "DSD{} · DoP a {} Hz · {}"
 msgid "Dark"
 msgstr "Oscuro"
 
+msgid "Device: {}"
+msgstr "Dispositivo: {}"
+
 msgid "Devices & cast"
 msgstr "Dispositivos y transmisión"
 
@@ -412,6 +415,9 @@ msgstr "Amplia"
 msgid "Rich rows"
 msgstr "Filas amplias"
 
+msgid "Route: {}"
+msgstr "Ruta: {}"
+
 msgid "SACDMTOC was not found"
 msgstr "no se encontró SACDMTOC"
 
@@ -432,6 +438,9 @@ msgstr "Buscar"
 
 msgid "Settings"
 msgstr "Ajustes"
+
+msgid "Show the sidebar"
+msgstr "Mostrar la barra lateral"
 
 msgid "Shuffle"
 msgstr "Aleatorio"
@@ -589,6 +598,9 @@ msgstr "pendiente de aprobación"
 msgid "be a plugin of another kind: {}"
 msgstr "ser un plugin de otro tipo: {}"
 
+msgid "bit-perfect only"
+msgstr "solo bit-perfect"
+
 msgid "bring catalogue: search for and fetch music"
 msgstr "aportar catálogo: buscar y traer música"
 
@@ -606,6 +618,9 @@ msgstr "llamar a \"{}\", que nadie ha aprobado"
 
 msgid "cannot be done"
 msgstr "no se puede"
+
+msgid "conversion allowed"
+msgstr "con conversión permitida"
 
 msgid "converted to {}"
 msgstr "convertido a {}"

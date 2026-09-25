@@ -39,12 +39,20 @@ Rectangle {
             font.pointSize: Type.meta
             color: Theme.color.textSecondary
         }
-        Text {
-            width: parent.width
-            text: I18n.trArgs("Output: {}", [Player.outputFormat], I18n.rev)
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
+        Repeater {
+            model: [
+                I18n.trArgs("Output: {}", [Player.outputFormat], I18n.rev),
+                I18n.trArgs("Device: {}", [Player.device], I18n.rev),
+                I18n.trArgs("Route: {}", [Player.route], I18n.rev)
+            ]
+            Text {
+                required property string modelData
+                width: parent.width
+                text: modelData
+                elide: Text.ElideRight
+                font.pointSize: Type.meta
+                color: Theme.color.textSecondary
+            }
         }
     }
 }

@@ -42,6 +42,10 @@ pub mod qobject {
         #[qproperty(i32, quality_tier)]
         /// What the device was opened with.
         #[qproperty(QString, output_format)]
+        /// The output, as the stack names it: "Fosi Audio ZH3".
+        #[qproperty(QString, device)]
+        /// The stack and the policy: "ALSA · bit-perfect only".
+        #[qproperty(QString, route)]
         /// Only what the engine states; never inferred here.
         #[qproperty(bool, bit_perfect)]
         #[qproperty(bool, shuffle)]
@@ -99,6 +103,8 @@ pub struct PlayerRust {
     quality_long: QString,
     quality_tier: i32,
     output_format: QString,
+    device: QString,
+    route: QString,
     bit_perfect: bool,
     shuffle: bool,
     repeat: i32,
@@ -165,6 +171,21 @@ impl qobject::Player {
             self.as_mut().set_quality_long(QString::from(&now.quality.long()));
             self.as_mut().set_quality_tier(now.quality.tier.rank());
             self.as_mut().set_output_format(QString::from(&now.format));
+            let (device, route) = app::with(|api| {
+                let (output, bit_perfect) = api.chosen_output();
+                let stack = api.stack_of(&output);
+                let device = api
+                    .stack_outputs(&stack)
+                    .into_iter()
+                    .find(|o| o.id == output)
+                    .map(|o| o.label)
+                    .unwrap_or(output);
+                let label = api.stacks().into_iter().find(|s| s.key == stack).map(|s| s.label).unwrap_or(stack);
+                let policy = if bit_perfect { api.t("bit-perfect only") } else { api.t("conversion allowed") };
+                (device, format!("{label} · {policy}"))
+            });
+            self.as_mut().set_device(QString::from(&device));
+            self.as_mut().set_route(QString::from(&route));
             self.as_mut().set_duration(now.total_seconds);
             self.as_mut().set_path(QString::from(&now.path));
         }
