@@ -110,6 +110,10 @@ impl FileBackend {
 }
 
 impl crate::backend::OutputBackend for FileBackend {
+    fn kind(&self) -> crate::backend::BackendKind {
+        crate::backend::BackendKind::File
+    }
+
     fn info(&self) -> crate::backend::BackendInfo {
         crate::backend::BackendInfo {
             kind: crate::backend::BackendKind::File,

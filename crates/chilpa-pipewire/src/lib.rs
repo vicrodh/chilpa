@@ -123,6 +123,10 @@ fn server() -> String {
 }
 
 impl OutputBackend for PipeWire {
+    fn kind(&self) -> BackendKind {
+        BackendKind::PipeWire
+    }
+
     fn info(&self) -> BackendInfo {
         // What this stack needs is a server that answers and a PCM that
         // reaches it. Asking for what it actually needs, rather than looking

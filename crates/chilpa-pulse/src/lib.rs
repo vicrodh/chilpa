@@ -57,6 +57,10 @@ fn behind(server: &str) -> String {
 }
 
 impl OutputBackend for Pulse {
+    fn kind(&self) -> BackendKind {
+        BackendKind::Pulse
+    }
+
     fn info(&self) -> BackendInfo {
         let Some(name) = crate::server::name() else {
             return BackendInfo::missing(

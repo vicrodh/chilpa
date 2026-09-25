@@ -239,6 +239,13 @@ pub struct Knob {
 
 /// A stack Chilpa can hand samples to.
 pub trait OutputBackend: Send + Sync {
+    /// Which stack it is: a constant, and all anybody needs to tell stacks
+    /// apart. `info` is not that. Finding out whether a server is there can
+    /// mean connecting to it, and looking a stack up by asking every one for
+    /// its `info` opened and closed a JACK client on the way to the file
+    /// stack, on whatever thread was looking -- the player's, once, forever.
+    fn kind(&self) -> BackendKind;
+
     /// What it is, without opening anything.
     fn info(&self) -> BackendInfo;
 
