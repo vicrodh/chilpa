@@ -31,11 +31,17 @@ pub struct Pulse;
 /// Every one of them is a plain integer layout, which is what a bit-perfect
 /// path needs. The protocol will accept them and then resample anyway, and
 /// that is what `Fidelity::Never` is for.
+///
+/// **`S24In32` is `S32le` and not `S24_32le`.** Chilpa packs 24 bits left
+/// justified, the low byte zero, which is a 32 bit sample. The protocol's
+/// `S24_32le` is the value in the low 24 bits: named that, every 24 bit
+/// track reached the server with its top byte dropped, which is noise. The
+/// same mistake was made and fixed in the ALSA backend.
 fn spec_format(f: SampleFormat) -> Option<Format> {
     Some(match f {
         SampleFormat::S16 => Format::S16le,
         SampleFormat::S24Packed => Format::S24le,
-        SampleFormat::S24In32 => Format::S24_32le,
+        SampleFormat::S24In32 => Format::S32le,
         SampleFormat::S32 => Format::S32le,
         SampleFormat::F32 => Format::F32le,
     })
@@ -264,6 +270,42 @@ mod tests {
         // PulseAudio answering for itself adds nothing.
         assert_eq!(behind("pulseaudio"), "");
         assert_eq!(behind(""), "");
+    }
+
+    /// What the server reads out of one little-endian four byte word, as
+    /// `pulse/sample.h` defines the four byte formats, as a fraction of full
+    /// scale.
+    fn server_hears(format: Format, word: [u8; 4]) -> f64 {
+        let w = i32::from_le_bytes(word);
+        match format {
+            Format::S32le => f64::from(w) / f64::from(1u32 << 31),
+            // "Signed 24 bit integer PCM in LSB of 32 bit words".
+            Format::S24_32le => f64::from((w << 8) >> 8) / f64::from(1u32 << 23),
+            other => panic!("{other:?} is not a four byte format"),
+        }
+    }
+
+    #[test]
+    fn a_24_bit_sample_reaches_the_server_as_the_same_sample() {
+        // Every 24 bit file asks for S24In32, which Chilpa packs left
+        // justified. Named S24_32LE, which is low justified, the server read
+        // each sample with its top byte gone and the rest shifted up: noise.
+        for v in [1, -1, 0x12_3456, -0x12_3456, 0x7F_FFFF, -0x80_0000] {
+            let mut bytes = Vec::new();
+            chilpa_audio::pack::pack(
+                &chilpa_audio::pack::Samples::Int { data: &[v], bits: 24 },
+                SampleFormat::S24In32,
+                &mut bytes,
+            )
+            .unwrap();
+            let format = spec_format(SampleFormat::S24In32).unwrap();
+            let word: [u8; 4] = bytes.as_slice().try_into().expect("four bytes a sample");
+            assert_eq!(
+                server_hears(format, word),
+                f64::from(v) / f64::from(1u32 << 23),
+                "{v:#x} named {format:?}"
+            );
+        }
     }
 
     #[test]
