@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
 
@@ -12,6 +13,8 @@ Item {
     property AlbumGridModel model
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
+    // Room below the last row, for what floats over the grid.
+    property int bottomInset: 0
 
     readonly property int columns: width <= 0 ? 0
         : Math.max(Metrics.gridMinColumns, Math.floor((width + Metrics.gridGap) / Metrics.cardMinWidth))
@@ -31,7 +34,9 @@ Item {
         spacing: Metrics.gridGap
         reuseItems: true
         cacheBuffer: grid.rowHeight * 2 // derived: two rows ready on each side
+        bottomMargin: grid.bottomInset
         boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
         delegate: Item {
             id: row

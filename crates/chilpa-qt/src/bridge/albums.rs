@@ -8,6 +8,10 @@
 //!
 //! `columns` comes from the view's width. While it is zero nothing is laid
 //! out, instead of one column that reflows a frame later.
+//!
+//! A shelf ("recentlyPlayed", "recentlyAdded") is read whole. The whole
+//! library ("all") is a snapshot of ids taken on the worker and read a page
+//! of 128 albums at a time by id, as the track list does.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -31,8 +35,11 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "recentlyPlayed" or "recentlyAdded".
+        /// "recentlyPlayed", "recentlyAdded" or "all".
         #[qproperty(QString, kind)]
+        /// For "all": "artist", "title", "year", "added", "played" or
+        /// "last_played".
+        #[qproperty(QString, order)]
         #[qproperty(i32, limit)]
         #[qproperty(i32, columns)]
         /// Zero lays out every row; a shelf asks for one.
@@ -84,31 +91,98 @@ pub mod qobject {
     impl cxx_qt::Initialize for AlbumGridModel {}
 }
 
-use crate::app;
-use chilpa_api::Album;
+use crate::{app, worker};
+use chilpa_api::{Album, AlbumSort};
+use std::cell::RefCell;
+use std::collections::{HashMap, VecDeque};
+use std::rc::Rc;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::pin::Pin;
 
 const USER_ROLE: i32 = 256;
+const PAGE: usize = 128;
+const PAGES_KEPT: usize = 24;
+
+#[derive(Default)]
+struct Pages {
+    map: HashMap<usize, Rc<Vec<Album>>>,
+    order: VecDeque<usize>,
+}
+
+enum Albums {
+    Loaded(Vec<Album>),
+    Snapshot { ids: Vec<i64>, pages: RefCell<Pages> },
+}
+
+impl Default for Albums {
+    fn default() -> Self {
+        Albums::Loaded(Vec::new())
+    }
+}
+
+impl Albums {
+    fn len(&self) -> usize {
+        match self {
+            Albums::Loaded(v) => v.len(),
+            Albums::Snapshot { ids, .. } => ids.len(),
+        }
+    }
+
+    /// Runs `f` with the album at `index`, reading its page if it is not
+    /// cached. By id: any page costs what the first one costs.
+    fn with<R>(&self, index: usize, f: impl FnOnce(&Album) -> R) -> Option<R> {
+        match self {
+            Albums::Loaded(v) => v.get(index).map(f),
+            Albums::Snapshot { ids, pages } => {
+                if index >= ids.len() {
+                    return None;
+                }
+                let page = index / PAGE;
+                let rows = {
+                    let mut cache = pages.borrow_mut();
+                    match cache.map.get(&page) {
+                        Some(r) => r.clone(),
+                        None => {
+                            let end = ((page + 1) * PAGE).min(ids.len());
+                            let read = Rc::new(app::with(|api| api.albums_by_ids(&ids[page * PAGE..end])));
+                            cache.map.insert(page, read.clone());
+                            cache.order.push_back(page);
+                            if cache.order.len() > PAGES_KEPT {
+                                if let Some(old) = cache.order.pop_front() {
+                                    cache.map.remove(&old);
+                                }
+                            }
+                            read
+                        }
+                    }
+                };
+                rows.get(index % PAGE).map(f)
+            }
+        }
+    }
+}
 
 #[derive(Default)]
 pub struct AlbumGridRust {
     kind: QString,
+    order: QString,
     limit: i32,
     columns: i32,
     max_rows: i32,
     albums: i32,
     rev: i32,
     content_rev: i32,
-    list: Vec<Album>,
+    list: Albums,
     rows: usize,
     pending: bool,
+    /// Tags the worker's answers, so one for an old order is dropped.
+    generation: u64,
 }
 
 impl AlbumGridRust {
-    fn get(&self, index: i32) -> Option<&Album> {
-        self.list.get(usize::try_from(index).ok()?)
+    fn get<R>(&self, index: i32, f: impl FnOnce(&Album) -> R) -> Option<R> {
+        self.list.with(usize::try_from(index).ok()?, f)
     }
 
     fn row_total(&self) -> usize {
@@ -126,26 +200,31 @@ impl AlbumGridRust {
 
 impl qobject::AlbumGridModel {
     pub fn title(&self, index: i32, _rev: i32) -> QString {
-        self.rust().get(index).map(|a| QString::from(&a.title)).unwrap_or_default()
+        self.rust().get(index, |a| QString::from(&a.title)).unwrap_or_default()
     }
 
     pub fn subtitle(&self, index: i32, _rev: i32) -> QString {
-        self.rust().get(index).map(|a| QString::from(&a.artist)).unwrap_or_default()
+        self.rust().get(index, |a| QString::from(&a.artist)).unwrap_or_default()
     }
 
     pub fn art(&self, index: i32, _rev: i32) -> QUrl {
-        match self.rust().get(index) {
-            Some(a) if !a.artwork_path.is_empty() => QUrl::from_local_file(&QString::from(&a.artwork_path)),
-            _ => QUrl::default(),
-        }
+        self.rust()
+            .get(index, |a| {
+                if a.artwork_path.is_empty() {
+                    QUrl::default()
+                } else {
+                    QUrl::from_local_file(&QString::from(&a.artwork_path))
+                }
+            })
+            .unwrap_or_default()
     }
 
     pub fn album_id(&self, index: i32, _rev: i32) -> i64 {
-        self.rust().get(index).map(|a| a.id).unwrap_or(0)
+        self.rust().get(index, |a| a.id).unwrap_or(0)
     }
 
     pub fn play(&self, index: i32) {
-        let Some(id) = self.rust().get(index).map(|a| a.id) else { return };
+        let Some(id) = self.rust().get(index, |a| a.id) else { return };
         app::with(|api| {
             let paths: Vec<String> = api.album_track_rows(id).into_iter().map(|t| t.path).collect();
             api.play_from(&paths, 0);
@@ -188,8 +267,31 @@ impl qobject::AlbumGridModel {
         let list = match self.rust().kind.to_string().as_str() {
             "recentlyPlayed" => app::with(|api| api.recently_played_albums(limit)),
             "recentlyAdded" => app::with(|api| api.recently_added_albums(limit)),
+            "all" => {
+                // Sorting the whole library does not fit in a frame: the
+                // worker takes the snapshot and the rows follow.
+                let generation = self.rust().generation + 1;
+                self.as_mut().rust_mut().generation = generation;
+                let order = AlbumSort::from_name(&self.rust().order.to_string());
+                let thread = self.qt_thread();
+                worker::submit(move |reader| {
+                    let ids = reader.album_ids(order);
+                    let _ = thread.queue(move |model| model.arrive(generation, ids));
+                });
+                return;
+            }
             _ => Vec::new(),
         };
+        self.show(Albums::Loaded(list));
+    }
+
+    fn arrive(self: Pin<&mut Self>, generation: u64, ids: Vec<i64>) {
+        if generation == self.rust().generation {
+            self.show(Albums::Snapshot { ids, pages: RefCell::default() });
+        }
+    }
+
+    fn show(mut self: Pin<&mut Self>, list: Albums) {
         let count = list.len() as i32;
         self.as_mut().rust_mut().list = list;
         self.as_mut().split_rows();
@@ -212,6 +314,7 @@ impl qobject::AlbumGridModel {
 impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
+        self.as_mut().on_order_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut().on_columns_changed(|m| m.split_rows()).release();

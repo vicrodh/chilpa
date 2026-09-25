@@ -11,6 +11,7 @@ Loader {
         case "home": return home
         case "library": return library
         case "album": return album
+        case "albums": return albums
         case "settings": return settings
         case "folders": return folders
         default: return pending
@@ -20,6 +21,7 @@ Loader {
     Component { id: home; HomeScreen {} }
     Component { id: library; LibraryScreen {} }
     Component { id: album; AlbumScreen {} }
+    Component { id: albums; AlbumsScreen {} }
     Component { id: settings; SettingsScreen {} }
     Component { id: folders; FoldersScreen {} }
     Component { id: pending; PendingScreen {} }

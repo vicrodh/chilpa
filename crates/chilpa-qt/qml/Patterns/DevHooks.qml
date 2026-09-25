@@ -60,12 +60,19 @@ Item {
         color: Theme.color.surfaceWindow
     }
 
+    Binding {
+        target: Dev
+        property: "period"
+        value: hooks.window.screen ? 1000 / hooks.window.screen.refreshRate : 0
+    }
+
     Timer {
         running: Dev.shot !== ""
-        interval: Metrics.shotDelay
+        interval: Dev.shotAt
         onTriggered: hooks.window.contentItem.grabToImage(function(result) {
             result.saveToFile(Dev.shot)
-            Qt.quit()
+            if (!sweep.running)
+                Qt.quit()
         })
     }
 
