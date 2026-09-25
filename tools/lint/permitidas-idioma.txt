@@ -34,6 +34,7 @@ kcfstringencodingutf8
 len
 linux
 lnam
+mpeg
 ne
 # Nombres de crates y algoritmos que el diccionario no conoce.
 nsrt
@@ -46,6 +47,7 @@ outp
 # Palabras que el diccionario marca como españolas y no lo son:
 pfta
 pl
+png
 pos
 rel
 res
