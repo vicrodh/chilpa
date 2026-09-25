@@ -12,3 +12,6 @@ chilpa-audio.workspace = true
 # The JACK client library. On most machines today it is PipeWire's
 # replacement rather than jack2, and `info` says which.
 jack = "0.13"
+# atexit: the process waits for its own clients to leave the graph before
+# the JACK library tears itself down.
+libc = "0.2"

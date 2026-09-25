@@ -382,3 +382,5 @@ analyse
 analysed
 normalised
 normalise
+atexit
+exe

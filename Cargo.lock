@@ -517,6 +517,7 @@ dependencies = [
  "chilpa-audio",
  "chilpa-i18n",
  "jack",
+ "libc",
 ]
 
 [[package]]
