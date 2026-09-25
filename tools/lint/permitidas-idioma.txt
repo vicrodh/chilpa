@@ -354,3 +354,18 @@ writeln
 xrun
 xruns
 yoe
+
+
+# Grafías británicas. El repo escribe en inglés británico y en_US las
+# rechaza, así que sin esto un nombre de prueba con una de ellas se reporta
+# como idioma desconocido. En prosa nunca se notó porque este candado solo
+# pide explicación por las que aparecen en identificadores.
+recognises
+recognise
+behaviour
+labelled
+licence
+analyse
+analysed
+normalised
+normalise

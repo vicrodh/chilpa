@@ -31,10 +31,29 @@ const RATES: &[u32] = &[
     44_100, 48_000, 88_200, 96_000, 176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
 ];
 
+/// Chilpa's formats as ALSA names them.
+///
+/// **`S24In32` is `S32_LE` and not `S24_LE`, and the difference is where the
+/// bits sit.** Chilpa packs 24 bit samples left justified -- `v << 8`, the
+/// valid bits in the high bytes and the low byte zero -- which on the wire is
+/// a 32 bit word whose bottom eight bits are silence. ALSA's `S24_LE` is the
+/// other convention: the value in the low 24 bits with the top byte as
+/// padding.
+///
+/// Naming the wrong one did two things. A DAC that publishes only `S32_LE`
+/// -- which is most USB DACs, and the one this was found on -- refused every
+/// 24 bit track outright, saying it did not accept the format. And on a
+/// device that does take `S24_LE` it would have been worse than a refusal:
+/// left justified samples handed over as low justified are every value
+/// multiplied by 256, which is not a conversion, it is noise.
+///
+/// A device that offers `S24_LE` and no `S32_LE` is a gap and is left as one.
+/// It would need the packing to right justify, and inventing that here
+/// without a device to try it on is how the other half of this got wrong.
 const FORMATS: &[(SampleFormat, Format)] = &[
     (SampleFormat::S16, Format::s16()),
     (SampleFormat::S24Packed, Format::S243LE),
-    (SampleFormat::S24In32, Format::S24LE),
+    (SampleFormat::S24In32, Format::s32()),
     (SampleFormat::S32, Format::s32()),
     (SampleFormat::F32, Format::float()),
 ];

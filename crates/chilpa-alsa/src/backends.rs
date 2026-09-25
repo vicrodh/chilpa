@@ -155,7 +155,16 @@ impl OutputBackend for System {
             // names the sound server, which is the useful part: somebody
             // picking "System" should see that they picked PipeWire.
             provider: what_default_is(),
-            fidelity: Fidelity::Depends,
+            // Never, and not `Depends`. `Depends` means "exact when the
+            // output is asked for alone", and this stack cannot ask: it
+            // opens whatever `default` resolves to and ignores the exclusive
+            // flag entirely, because there is nothing in `default` to take
+            // exclusively. Saying `Depends` made the verdict read
+            // bit-perfect with the switch on while the samples went into
+            // PipeWire's mixer -- the same lie this project already had to
+            // fix once over PulseAudio, from the same cause: a stack that
+            // says what it wishes were true instead of what it does.
+            fidelity: Fidelity::Never,
             caveat: chilpa_i18n::t(
                 "This is wherever the machine is already sending sound, so what happens to the \
                  samples is whatever that is set up to do -- usually mixing them with everything \
@@ -174,10 +183,22 @@ impl OutputBackend for System {
         }]
     }
 
-    /// Measured by opening it, which is the only thing that can promise
-    /// bit-perfect.
-    fn caps(&self, id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
-        crate::probe(id)
+    /// Whatever is behind `default` takes what it is handed and makes it
+    /// fit, so there is nothing here that would refuse a format.
+    ///
+    /// **It must not be probed.** `probe` opens the device through the guard
+    /// that only lets `hw:` through, and this stack's one output is called
+    /// `default`, so probing it did not measure anything -- it returned the
+    /// guard's error. Playing measures before it opens, so the stack whose
+    /// whole job is to always work could not play a single track: the failure
+    /// came out of the measurement, before anything was opened, as
+    /// "default is not a direct device".
+    ///
+    /// Opening it to measure would be wrong even if it worked, for the reason
+    /// the PipeWire stack gives: a listing that opens devices takes one away
+    /// from whoever is using it.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        Ok(chilpa_audio::capture::capabilities())
     }
 
     /// The card's own mixer, when it has one.
@@ -208,6 +229,10 @@ impl OutputBackend for System {
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
         -> Result<Box<dyn AudioSink + Send>, SinkError> {
+        // `open_pcm` and not `open`: this stack names `default` on purpose,
+        // and the guard that refuses everything but `hw:` is there to stop
+        // the card stack from falling back to something that converts, not
+        // to stop this one from naming what it means.
         Ok(Box::new(AlsaSink::open_pcm(id, format)?))
     }
 }
@@ -242,11 +267,35 @@ mod tests {
     fn the_system_backend_never_claims_to_be_exact() {
         // It is the one that always works, and that is the whole of what it
         // promises. Saying more would be the lie the wizard exists to undo.
+        //
+        // `Never` and not merely "not Exact". This asserted `!= Exact` and
+        // passed while the stack said `Depends`, which reads as exact the
+        // moment the output is asked for alone -- and the switch asks for it
+        // alone on every track. The verdict came out bit-perfect over
+        // PipeWire's mixer with the test green, because the test checked the
+        // label and the label was not what the verdict was built from.
         let info = System.info();
         assert!(info.present);
-        assert_ne!(info.fidelity, Fidelity::Exact);
+        assert_eq!(
+            info.fidelity,
+            Fidelity::Never,
+            "this stack cannot ask for an output alone: `open` has no use for the flag",
+        );
         assert!(!info.caveat.is_empty(), "a path that is not exact says why");
         assert!(!System.outputs()[0].bit_perfect);
+    }
+
+    #[test]
+    fn the_system_backend_measures_without_opening_anything() {
+        // Its one output is called `default`, and `probe` goes through the
+        // guard that only opens `hw:`. Measuring it therefore did not
+        // measure: it handed back the guard's refusal. Playing measures
+        // before it opens, so the stack whose whole job is to always work
+        // could not play one track, and the error a person saw was
+        // "default is not a direct device".
+        let caps = System.caps("default").expect("measuring must not fail");
+        assert!(!caps.sample_rates.is_empty());
+        assert!(!caps.formats.is_empty());
     }
 
     #[test]

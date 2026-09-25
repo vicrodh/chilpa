@@ -526,6 +526,9 @@ msgstr "Esta salida no tiene control de volumen propio. Chilpa no se lo va a inv
 msgid "This plugin wants:"
 msgstr "Este plugin quiere:"
 
+msgid "Through"
+msgstr "Por"
+
 msgid "Time listened"
 msgstr "Tiempo escuchado"
 
