@@ -12,7 +12,7 @@
 use chilpa_audio::dop::{carrier_rate, DopPacker};
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, NegotiationError, Policy};
-use chilpa_audio::pack::{pack, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, Samples};
 use chilpa_audio::render::{render_paused, FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, StopSignal};
 use chilpa_dsd::{DsdError, DsdSource};
@@ -23,6 +23,8 @@ pub enum DsdPlayError {
     Read(DsdError),
     /// The device cannot handle the carrier rate.
     Unsupported { carrier_hz: u32 },
+    /// The device takes none of the channel counts the track could go out in.
+    Channels { requested: u16, offered: Vec<u16> },
     Sink(SinkError),
 }
 
@@ -38,6 +40,9 @@ impl std::fmt::Display for DsdPlayError {
                     &[&carrier_hz.to_string()],
                 )
             ),
+            DsdPlayError::Channels { requested, offered } => {
+                write!(f, "{}", crate::playback::channels_refused(*requested, offered))
+            }
             DsdPlayError::Sink(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&format!("{e:?}")]))
             }
@@ -51,6 +56,8 @@ struct DopFrames<'a> {
     packer: DopPacker,
     channels: u16,
     to: SampleFormat,
+    /// A mono DSD track going out in both channels.
+    spread: bool,
 }
 
 impl FrameSource for DopFrames<'_> {
@@ -72,6 +79,7 @@ impl FrameSource for DopFrames<'_> {
         // Writing four bytes whatever had been opened was right only while
         // nothing but a 32 bit word could be opened.
         let samples: Vec<i32> = words.iter().map(|w| w >> 8).collect();
+        let samples = if self.spread { duplicate_mono(&samples) } else { samples };
         let mut bytes = Vec::with_capacity(samples.len() * self.to.bytes());
         pack(&Samples::Int { data: &samples, bits: 24 }, self.to, &mut bytes)
             .expect("DoP only opens at a word that holds 24 bits");
@@ -120,6 +128,9 @@ where
         Err(NegotiationError::Unsupported { .. }) | Err(NegotiationError::CapsNotProbed) => {
             return Err(DsdPlayError::Unsupported { carrier_hz })
         }
+        Err(NegotiationError::Channels { requested, offered }) => {
+            return Err(DsdPlayError::Channels { requested, offered })
+        }
     };
 
     let mut sink = open_sink(delivery.opened).map_err(DsdPlayError::Sink)?;
@@ -128,6 +139,7 @@ where
         packer: DopPacker::new(),
         channels: info.channels,
         to: delivery.opened.sample_format,
+        spread: delivery.duplicates_mono(),
     };
     let outcome = render_paused(&mut frames, &mut sink, stop, pause, on_progress);
     sink.close().map_err(DsdPlayError::Sink)?;

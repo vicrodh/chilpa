@@ -40,6 +40,12 @@ pub fn pack(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Resul
     }
 }
 
+/// A mono block laid out for a stereo device: each sample twice, unchanged.
+/// Negotiation records it as `Transform::Duplicated`.
+pub fn duplicate_mono<T: Copy>(samples: &[T]) -> Vec<T> {
+    samples.iter().flat_map(|&s| [s, s]).collect()
+}
+
 fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
     if to == SampleFormat::F32 {
         // The device only takes floats: convert, and the caller already knows

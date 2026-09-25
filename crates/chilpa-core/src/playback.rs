@@ -6,7 +6,7 @@
 
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::negotiate::{negotiate, Delivery, NegotiationError, Policy};
-use chilpa_audio::pack::{pack, PackError, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, PackError, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_decode::{Block, DecodeError, Decoded};
@@ -43,6 +43,9 @@ impl std::fmt::Display for PlayError {
                     ],
                 )
             ),
+            PlayError::Negotiation(NegotiationError::Channels { requested, offered }) => {
+                write!(f, "{}", channels_refused(*requested, offered))
+            }
             PlayError::Pack(PackError::WouldTruncate { from_bits, to_bits }) => write!(
                 f,
                 "{}",
@@ -58,11 +61,24 @@ impl std::fmt::Display for PlayError {
     }
 }
 
+/// What is said when the device takes none of the channel counts a track
+/// could go out in. The format and the rate are not the problem then, and
+/// the message used to name only those.
+pub(crate) fn channels_refused(requested: u16, offered: &[u16]) -> String {
+    let offered: Vec<String> = offered.iter().map(u16::to_string).collect();
+    chilpa_i18n::t_args(
+        "the device takes {} channels and this track has {}",
+        &[&offered.join(", "), &requested.to_string()],
+    )
+}
+
 /// Bridge between the decoder and the device: every block is packed in the
 /// format the output was opened with.
 struct Frames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
+    /// A mono track going out in both channels.
+    spread: bool,
     /// The first packing error, to report it instead of swallowing it.
     error: Option<PackError>,
 }
@@ -73,6 +89,11 @@ impl FrameSource for Frames<'_> {
             let block = match self.decoded.next_block() {
                 Ok(Some(b)) => b,
                 Ok(None) | Err(_) => return None,
+            };
+            let block = match block {
+                Block::Int { data, bits } if self.spread => Block::Int { data: duplicate_mono(&data), bits },
+                Block::Float(data) if self.spread => Block::Float(duplicate_mono(&data)),
+                block => block,
             };
             let samples = match &block {
                 Block::Int { data, bits } => Samples::Int { data, bits: *bits },
@@ -127,7 +148,12 @@ where
         negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     on_delivery(&delivery);
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
-    let mut frames = Frames { decoded: &mut decoded, opened: delivery.opened, error: None };
+    let mut frames = Frames {
+        decoded: &mut decoded,
+        opened: delivery.opened,
+        spread: delivery.duplicates_mono(),
+        error: None,
+    };
     let outcome =
         chilpa_audio::render::render_paused(&mut frames, &mut sink, stop, pause, on_progress);
     if let Some(e) = frames.error {
@@ -174,7 +200,12 @@ where
     let delivery =
         negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     let mut sink = open_sink(delivery.opened).map_err(PlayError::Sink)?;
-    let mut frames = Frames { decoded: &mut decoded, opened: delivery.opened, error: None };
+    let mut frames = Frames {
+        decoded: &mut decoded,
+        opened: delivery.opened,
+        spread: delivery.duplicates_mono(),
+        error: None,
+    };
     let outcome = chilpa_audio::render::render_with(&mut frames, &mut sink, stop, on_progress);
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));

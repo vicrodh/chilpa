@@ -11,7 +11,7 @@
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
-use chilpa_audio::pack::{pack, Samples};
+use chilpa_audio::pack::{duplicate_mono, pack, Samples};
 use chilpa_audio::render::{FrameSource, Outcome};
 use chilpa_audio::seek::SeekSignal;
 use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSignal};
@@ -293,6 +293,12 @@ impl TrackResult {
 struct TrackFrames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
+    /// The track's own channels. Trimming and seeking count its frames, and
+    /// a mono track that opened in stereo has half the samples per frame
+    /// the device has.
+    channels: usize,
+    /// A mono track going out in both channels.
+    spread: bool,
     trimmer: Trimmer<i32>,
     /// The same trim for a track that decodes to floats. Only one of the
     /// two is ever fed; the floats used to go around the trim entirely, so
@@ -345,7 +351,7 @@ impl FrameSource for TrackFrames<'_> {
             }
             let clipped = match self.decoded.next_block() {
                 Ok(Some(Block::Int { data, bits })) => {
-                    let channels = self.opened.channels.max(1) as usize;
+                    let channels = self.channels;
                     let data = self.drop_discard(data, channels);
                     if data.is_empty() {
                         continue;
@@ -354,13 +360,14 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
+                    let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
                     pack(&samples, self.opened.sample_format, &mut bytes).ok()?;
                     bytes
                 }
                 Ok(Some(Block::Float(data))) => {
-                    let channels = self.opened.channels.max(1) as usize;
+                    let channels = self.channels;
                     let data = self.drop_discard(data, channels);
                     if data.is_empty() {
                         continue;
@@ -369,6 +376,7 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
+                    let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes).ok()?;
                     bytes
@@ -490,19 +498,14 @@ where
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
 
-        let trimmer = Trimmer::new(
-            decoded.encoder_delay(),
-            decoded.encoder_padding(),
-            delivery.opened.channels,
-        );
-        let float_trimmer = Trimmer::new(
-            decoded.encoder_delay(),
-            decoded.encoder_padding(),
-            delivery.opened.channels,
-        );
+        let channels = decoded.stream_format().channels;
+        let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
+        let float_trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
         let mut frames = TrackFrames {
             decoded: &mut decoded,
             opened: delivery.opened,
+            channels: usize::from(channels.max(1)),
+            spread: delivery.duplicates_mono(),
             trimmer,
             float_trimmer,
             exhausted: false,
