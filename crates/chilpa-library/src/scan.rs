@@ -11,6 +11,7 @@
 
 use crate::store::Library;
 use rusqlite::params;
+use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -26,6 +27,9 @@ pub struct ScanReport {
     pub unchanged: usize,
     /// The ones that are gone and were marked missing.
     pub missing: usize,
+    /// Audio files found that could not be read: a link that points
+    /// nowhere, a file that vanished between the listing and the read.
+    pub unreadable: usize,
     /// True when the root could not be read; then nothing was touched.
     pub unreachable: bool,
 }
@@ -102,6 +106,9 @@ fn scan(
     // recorded as scanned, so the next scan reads them again.
     const BATCH: usize = 200;
     let mut tx = lib.db.unchecked_transaction()?;
+    // What could be read. Only these are present at the end: a path that is
+    // listed but cannot be opened is not a track anybody can play.
+    let mut readable: HashSet<String> = HashSet::with_capacity(files.len());
 
     for (examined, file) in files.iter().enumerate() {
         // Reported every 25 files: one by one floods the channel without the
@@ -113,7 +120,15 @@ fn scan(
             tx.commit()?;
             tx = lib.db.unchecked_transaction()?;
         }
-        let Ok(meta) = std::fs::metadata(file) else { continue };
+        let Ok(meta) = std::fs::metadata(file) else {
+            // A link that points nowhere, or a file gone since the listing.
+            // It used to be skipped in silence and still counted as seen: a
+            // folder with 20,298 links into a layout that no longer existed
+            // reported 20,405 files and recorded 107.
+            report.unreadable += 1;
+            continue;
+        };
+        readable.insert(file.display().to_string());
         // In nanoseconds, not seconds: two different versions of a file
         // written within the same second would look identical, and the scan
         // would skip the change.
@@ -193,9 +208,9 @@ fn scan(
     tx.commit()?;
     on_progress(files.len());
 
-    // What was there and is not: marked missing, never deleted.
-    let seen: Vec<String> = files.iter().map(|p| p.display().to_string()).collect();
-    report.missing = mark_missing(lib, root_id, &seen)?;
+    // What was there and is not, or is there and cannot be read: marked
+    // missing, never deleted.
+    report.missing = mark_missing(lib, root_id, &readable)?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     // A scan is the only thing that changes the size of the library, so it is
@@ -358,7 +373,7 @@ fn album_id(lib: &Library, title: &str, artist: &str, year: Option<u32>) -> rusq
 }
 
 /// Marks the root's files that did not turn up as missing.
-fn mark_missing(lib: &Library, root_id: i64, seen: &[String]) -> rusqlite::Result<usize> {
+fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
         .prepare("SELECT path, track_id FROM scanned_files WHERE root_id = ?1")?;
@@ -367,7 +382,9 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &[String]) -> rusqlite::Resul
         .collect::<rusqlite::Result<_>>()?;
     let mut missing = 0;
     for (path, track) in rows {
-        if seen.iter().any(|v| v == &path) {
+        // A set and not a list: every row was compared against every file,
+        // which on a rescan of a large library is its size squared.
+        if seen.contains(&path) {
             continue;
         }
         if let Some(id) = track {

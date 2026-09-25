@@ -377,6 +377,8 @@ pub struct ScanSummary {
     pub read: usize,
     pub unchanged: usize,
     pub missing: usize,
+    /// Found and not readable: links that point nowhere, mostly.
+    pub unreadable: usize,
     pub unreachable: bool,
 }
 
