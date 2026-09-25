@@ -293,7 +293,11 @@ impl TrackResult {
 struct TrackFrames<'a> {
     decoded: &'a mut Decoded,
     opened: StreamFormat,
-    trimmer: Trimmer,
+    trimmer: Trimmer<i32>,
+    /// The same trim for a track that decodes to floats. Only one of the
+    /// two is ever fed; the floats used to go around the trim entirely, so
+    /// every MP3 kept the frames its encoder added at both ends.
+    float_trimmer: Trimmer<f32>,
     exhausted: bool,
     /// Where seeks are asked for. They are handled between blocks, never mid
     /// write.
@@ -320,7 +324,7 @@ impl FrameSource for TrackFrames<'_> {
             if self.skip.take() {
                 self.skipped = true;
                 self.exhausted = true;
-                self.trimmer.finish();
+                self.finish_trim();
                 return None;
             }
             if let Some(target) = self.seek.take() {
@@ -356,14 +360,23 @@ impl FrameSource for TrackFrames<'_> {
                     bytes
                 }
                 Ok(Some(Block::Float(data))) => {
+                    let channels = self.opened.channels.max(1) as usize;
+                    let data = self.drop_discard(data, channels);
+                    if data.is_empty() {
+                        continue;
+                    }
+                    let frames = self.float_trimmer.push(&data);
+                    if frames.is_empty() {
+                        continue;
+                    }
                     let mut bytes = Vec::new();
-                    pack(&Samples::Float(&data), self.opened.sample_format, &mut bytes).ok()?;
+                    pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes).ok()?;
                     bytes
                 }
                 Ok(None) => {
                     // What was held back was encoder padding.
                     self.exhausted = true;
-                    self.trimmer.finish();
+                    self.finish_trim();
                     return None;
                 }
                 Err(_) => return None,
@@ -378,7 +391,13 @@ impl FrameSource for TrackFrames<'_> {
 impl TrackFrames<'_> {
     /// Throws away the leftover frames of a seek, which can span several
     /// blocks.
-    fn drop_discard(&mut self, data: Vec<i32>, channels: usize) -> Vec<i32> {
+    /// The track is over: what either trim held back was padding.
+    fn finish_trim(&mut self) {
+        self.trimmer.finish();
+        self.float_trimmer.finish();
+    }
+
+    fn drop_discard<T: Clone>(&mut self, data: Vec<T>, channels: usize) -> Vec<T> {
         if self.discard == 0 {
             return data;
         }
@@ -476,10 +495,16 @@ where
             decoded.encoder_padding(),
             delivery.opened.channels,
         );
+        let float_trimmer = Trimmer::new(
+            decoded.encoder_delay(),
+            decoded.encoder_padding(),
+            delivery.opened.channels,
+        );
         let mut frames = TrackFrames {
             decoded: &mut decoded,
             opened: delivery.opened,
             trimmer,
+            float_trimmer,
             exhausted: false,
             seek: seek.clone(),
             skip: skip.clone(),

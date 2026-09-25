@@ -44,17 +44,20 @@ pub fn transition(current: StreamFormat, next: StreamFormat) -> Transition {
 /// Trimming the end needs to know how many frames the track has; if the
 /// container does not say, the last `padding` frames are held back until it
 /// is known whether they were the last (`finish`).
+///
+/// Over integers or floats: the frames are counted, not read, and a lossy
+/// track -- the kind that has encoder padding at all -- decodes to floats.
 #[derive(Debug)]
-pub struct Trimmer {
+pub struct Trimmer<T = i32> {
     delay: u64,
     padding: usize,
     channels: usize,
     consumed: u64,
     /// Frames held back until it is known whether they are the end.
-    queue: Vec<i32>,
+    queue: Vec<T>,
 }
 
-impl Trimmer {
+impl<T: Copy> Trimmer<T> {
     /// `delay` and `padding` in frames, as the container declares them.
     pub fn new(delay: u64, padding: u32, channels: u16) -> Self {
         Self {
@@ -72,7 +75,7 @@ impl Trimmer {
     }
 
     /// Runs a block through the trim. What comes back is music.
-    pub fn push(&mut self, block: &[i32]) -> Vec<i32> {
+    pub fn push(&mut self, block: &[T]) -> Vec<T> {
         let mut data = std::mem::take(&mut self.queue);
         data.extend_from_slice(block);
 
@@ -95,7 +98,7 @@ impl Trimmer {
     }
 
     /// The track is over: what was held back was padding and is dropped.
-    pub fn finish(&mut self) -> Vec<i32> {
+    pub fn finish(&mut self) -> Vec<T> {
         self.queue.clear();
         Vec::new()
     }

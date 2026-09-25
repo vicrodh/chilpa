@@ -140,3 +140,65 @@ fn if_the_format_changes_the_device_reopens_and_nothing_is_lost() {
     let _ = std::fs::remove_file(a);
     let _ = std::fs::remove_file(b);
 }
+
+/// Encodes `wav` to MP3 with LAME, which writes how many frames at each end
+/// are not music into the file's first frame. `None` without `lame`.
+fn mp3_of(wav: &PathBuf, name: &str) -> Option<PathBuf> {
+    let mut out = std::env::temp_dir();
+    out.push(format!("chilpa-gapless-{name}.mp3"));
+    let encoded = std::process::Command::new("lame")
+        .args(["--quiet", "-b", "192"])
+        .arg(wav)
+        .arg(&out)
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false);
+    encoded.then_some(out)
+}
+
+/// Counts frames in whatever format the device was opened at.
+struct Counting {
+    format: StreamFormat,
+    frames: Rc<RefCell<u64>>,
+}
+
+impl AudioSink for Counting {
+    fn format(&self) -> StreamFormat {
+        self.format
+    }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        let n = frames.len() / self.format.frame_bytes();
+        *self.frames.borrow_mut() += n as u64;
+        Ok(n)
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+}
+
+#[test]
+fn an_mp3_comes_out_without_its_encoder_delay_or_padding() {
+    // Left in, the frames the encoder added click at every join of a
+    // gapless album. The integer path trimmed them; an MP3 decodes to
+    // floats, and the float path went around the trim.
+    let wav = ramp("lame", 0, 44_100);
+    let Some(mp3) = mp3_of(&wav, "lame") else {
+        eprintln!("lame is not installed; skipped");
+        return;
+    };
+    let frames = Rc::new(RefCell::new(0u64));
+    let counted = Rc::clone(&frames);
+    play_queue_with(
+        &SharedQueue::new(vec![mp3.clone(), mp3.clone()]),
+        &caps(&[44_100]),
+        Policy::AllowAnything,
+        &Controls::new(),
+        move |format| Ok(Counting { format, frames: Rc::clone(&counted) }),
+        &mut |_, _, _| {},
+        &mut |_, _| {},
+    )
+    .expect("the queue runs");
+    assert_eq!(*frames.borrow(), 2 * 44_100, "two tracks of 44,100 frames, joined, and nothing else");
+    let _ = std::fs::remove_file(wav);
+    let _ = std::fs::remove_file(mp3);
+}
