@@ -4,6 +4,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "DSD{} · DoP at {} Hz · {}"
+msgstr "DSD{} · DoP a {} Hz · {}"
+
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
@@ -1133,6 +1136,9 @@ msgstr "no se encontró el área estéreo (TWOCHTOC)"
 
 msgid "the tags could not be read: {}"
 msgstr "no se pudieron leer los tags: {}"
+
+msgid "the token_url is not https"
+msgstr "el token_url no es https"
 
 msgid "the track is DST compressed and there is no decoder yet"
 msgstr "la pista viene comprimida con DST y todavía no hay decodificador"

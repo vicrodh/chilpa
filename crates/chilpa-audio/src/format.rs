@@ -80,7 +80,7 @@ mod tests {
     fn the_format_knows_its_bytes_and_its_useful_bits() {
         assert_eq!(SampleFormat::S24Packed.bytes(), 3);
         assert_eq!(SampleFormat::S24In32.bytes(), 4);
-        assert_eq!(SampleFormat::S24In32.valid_bits(), 24, "van 24 bits en 32");
+        assert_eq!(SampleFormat::S24In32.valid_bits(), 24, "24 bits travel in 32");
     }
 
     #[test]

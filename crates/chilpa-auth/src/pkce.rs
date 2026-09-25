@@ -90,7 +90,7 @@ mod tests {
     #[test]
     fn nothing_in_the_url_carries_padding_that_would_need_escaping() {
         let p = Pkce::new();
-        assert!(!p.challenge().contains('='), "base64url sin relleno");
+        assert!(!p.challenge().contains('='), "base64url without padding");
         assert!(!p.verifier().contains('+') && !p.verifier().contains('/'));
     }
 }

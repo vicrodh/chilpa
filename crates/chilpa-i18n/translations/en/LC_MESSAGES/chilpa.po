@@ -4,6 +4,9 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
+msgid "DSD{} · DoP at {} Hz · {}"
+msgstr ""
+
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
@@ -1132,6 +1135,9 @@ msgid "the stereo area (TWOCHTOC) was not found"
 msgstr ""
 
 msgid "the tags could not be read: {}"
+msgstr ""
+
+msgid "the token_url is not https"
 msgstr ""
 
 msgid "the track is DST compressed and there is no decoder yet"

@@ -152,7 +152,7 @@ mod tests {
 
         fn read_audio(&mut self, lsn: u32, sectors: u32, out: &mut Vec<u8>) -> Result<(), CdError> {
             if self.fail_at == Some(lsn) {
-                return Err(CdError::Read { lsn, why: "error de C2".into() });
+                return Err(CdError::Read { lsn, why: "C2 error".into() });
             }
             out.clear();
             for s in 0..sectors {

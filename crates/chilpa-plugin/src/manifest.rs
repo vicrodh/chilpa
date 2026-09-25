@@ -558,7 +558,7 @@ mod tests {
 
     #[test]
     fn a_manifest_that_is_not_json_is_refused_with_its_reason() {
-        let e = Manifest::parse("this is not json").expect_err("no es json");
+        let e = Manifest::parse("this is not json").expect_err("it is not json");
         assert!(matches!(e, ManifestError::Unreadable(_)));
         let e = Manifest::parse(r#"{"id": "com.a.b"}"#).expect_err("it is missing fields");
         assert!(matches!(e, ManifestError::Unreadable(_)), "{e}");

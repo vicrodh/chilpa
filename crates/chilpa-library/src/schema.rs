@@ -391,7 +391,7 @@ mod tests {
         let tables: i64 = db
             .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
             .unwrap();
-        assert!(tables >= 8, "hay {tables} tables");
+        assert!(tables >= 8, "{tables} tables");
     }
 
     #[test]

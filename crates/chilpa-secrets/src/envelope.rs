@@ -48,7 +48,7 @@ impl<'a> Sealed<'a> {
     }
 
     pub fn build(backend_marker: u8, nonce: &[u8], ciphertext: &[u8]) -> Vec<u8> {
-        assert_eq!(nonce.len(), NONCE_LEN, "el nonce son 12 bytes");
+        assert_eq!(nonce.len(), NONCE_LEN, "the nonce is 12 bytes");
         let mut out = Vec::with_capacity(HEADER_LEN + ciphertext.len());
         out.push(ENVELOPE_VERSION);
         out.push(backend_marker);
