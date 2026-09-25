@@ -4,12 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "DSD{} · DoP at {} Hz · {}"
-msgstr ""
-
-msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
-msgstr ""
-
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
@@ -167,6 +161,9 @@ msgid "DSD128 over DoP"
 msgstr ""
 
 msgid "DSD64 over DoP"
+msgstr ""
+
+msgid "DSD{} · DoP at {} Hz · {}"
 msgstr ""
 
 msgid "Delete"
@@ -353,6 +350,9 @@ msgid "PipeWire has no output called \"{}\" any more"
 msgstr ""
 
 msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr ""
+
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr ""
 
 msgid "Play"
@@ -1057,6 +1057,9 @@ msgid "the image could not be read: {}"
 msgstr ""
 
 msgid "the image is shorter than its master table"
+msgstr ""
+
+msgid "the image reads as both a 2048 and a 2064-byte dump"
 msgstr ""
 
 msgid "the library could not be checked: {}"

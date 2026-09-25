@@ -4,12 +4,6 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-msgid "DSD{} · DoP at {} Hz · {}"
-msgstr "DSD{} · DoP a {} Hz · {}"
-
-msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
-msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearía; agrégala a default.clock.allowed-rates, o elige la tarjeta directo"
-
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
@@ -168,6 +162,9 @@ msgstr "DSD128 por DoP"
 
 msgid "DSD64 over DoP"
 msgstr "DSD64 por DoP"
+
+msgid "DSD{} · DoP at {} Hz · {}"
+msgstr "DSD{} · DoP a {} Hz · {}"
 
 msgid "Delete"
 msgstr "Borrar"
@@ -354,6 +351,9 @@ msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
 
 msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
 msgstr "PipeWire deja pasar las muestras sin tocarlas solo cuando entrega la salida a un programa a la vez. Chilpa se lo pide siempre que bit-perfect esté encendido. Apagado, el grafo mezcla esto con todo lo demás y remuestrea el resultado a la frecuencia a la que esté corriendo."
+
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
+msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearía; agrégala a default.clock.allowed-rates, o elige la tarjeta directo"
 
 msgid "Play"
 msgstr "Reproducir"
@@ -1058,6 +1058,9 @@ msgstr "no se pudo leer la imagen: {}"
 
 msgid "the image is shorter than its master table"
 msgstr "la imagen es más corta que su tabla maestra"
+
+msgid "the image reads as both a 2048 and a 2064-byte dump"
+msgstr "la imagen se lee igual como volcado de sectores de 2048 y de 2064 bytes"
 
 msgid "the library could not be checked: {}"
 msgstr "no se pudo revisar la biblioteca: {}"

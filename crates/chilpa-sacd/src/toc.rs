@@ -36,10 +36,38 @@ pub struct SacdArea {
     pub audio_end_lsn: u32,
 }
 
+/// How the image stores its sectors.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Layout {
+    /// The 2048 bytes that carry data, one sector after another.
+    Logical,
+    /// The whole 2064-byte physical sector: a 12-byte header, the 2048
+    /// bytes, and a 4-byte trailer. Some rippers keep it, and every image
+    /// made that way used to be taken for something that is not a SACD.
+    Physical,
+}
+
+impl Layout {
+    fn stride(self) -> u64 {
+        match self {
+            Layout::Logical => SECTOR as u64,
+            Layout::Physical => 2064,
+        }
+    }
+
+    fn offset(self) -> u64 {
+        match self {
+            Layout::Logical => 0,
+            Layout::Physical => 12,
+        }
+    }
+}
+
 /// The open image, with its stereo area already read.
 pub struct SacdImage {
     pub(crate) file: BufReader<File>,
     pub(crate) sectors: u64,
+    layout: Layout,
     pub area: SacdArea,
 }
 
@@ -48,22 +76,55 @@ impl SacdImage {
         if lsn >= self.sectors {
             return Err(SacdError::BadSector { lsn, why: chilpa_i18n::mark("outside the image").into() });
         }
-        self.file.seek(SeekFrom::Start(lsn * SECTOR as u64))?;
+        self.file.seek(SeekFrom::Start(lsn * self.layout.stride() + self.layout.offset()))?;
         self.file.read_exact(into)?;
         Ok(())
     }
 }
 
+/// Which layout the image was dumped in, from where the master table's
+/// signature sits. `None` when it sits nowhere: then it is not a SACD, and
+/// the search for the master table says so.
+fn layout_of(file: &mut File, bytes: u64) -> Result<Option<Layout>, SacdError> {
+    let mut found = None;
+    for layout in [Layout::Logical, Layout::Physical] {
+        for lsn in MASTER_TOC_LSN {
+            let at = lsn * layout.stride() + layout.offset();
+            if at + 8 > bytes {
+                continue;
+            }
+            let mut signature = [0u8; 8];
+            file.seek(SeekFrom::Start(at))?;
+            file.read_exact(&mut signature)?;
+            if &signature == b"SACDMTOC" {
+                // A file that reads as both is one nobody can say which it
+                // is, and guessing would read the wrong bytes as audio.
+                if found.is_some_and(|other| other != layout) {
+                    return Err(SacdError::MalformedToc(
+                        chilpa_i18n::mark("the image reads as both a 2048 and a 2064-byte dump").into(),
+                    ));
+                }
+                found = Some(layout);
+                break;
+            }
+        }
+    }
+    Ok(found)
+}
+
 /// Opens a SACD image and reads its stereo area.
 pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
-    let file = File::open(path)?;
-    let sectors = file.metadata()?.len() / SECTOR as u64;
+    let mut file = File::open(path)?;
+    let bytes = file.metadata()?.len();
+    let layout = layout_of(&mut file, bytes)?.unwrap_or(Layout::Logical);
+    let sectors = bytes / layout.stride();
     if sectors <= MASTER_TOC_LSN[0] {
         return Err(SacdError::MalformedToc(chilpa_i18n::mark("the image is shorter than its master table").into()));
     }
     let mut image = SacdImage {
         file: BufReader::new(file),
         sectors,
+        layout,
         area: SacdArea {
             tracks: Vec::new(),
             encoding: Encoding::Dsd3In14,
