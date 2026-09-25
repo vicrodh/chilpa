@@ -1,0 +1,84 @@
+// hot-path: one per subfolder, recycled while a folder with thousands scrolls.
+import QtQuick
+import com.blitzfc.chilpa
+import "../Theme"
+import "../Primitives"
+
+// A subfolder: a cover from one of its records (or a folder glyph), its
+// name, how many tracks it holds, and the way in.
+Item {
+    id: row
+
+    required property int index
+    required property string name
+    required property int count
+    required property url art
+
+    signal open()
+
+    height: Metrics.folderEntry
+
+    Rectangle {
+        anchors.fill: parent
+        radius: Metrics.radiusControl
+        color: hover.hovered ? Theme.color.stateHover : !(row.index % 2) ? "transparent" : Theme.color.stateStripe
+    }
+
+    Item {
+        id: lead
+        x: Metrics.gap6
+        anchors.verticalCenter: parent.verticalCenter
+        width: Metrics.folderArt
+        height: Metrics.folderArt
+
+        ArtTile {
+            anchors.fill: parent
+            visible: row.art.toString() !== ""
+            radius: Metrics.radiusArtSmall
+            source: row.art
+            tint: row.index
+        }
+        Icon {
+            anchors.centerIn: parent
+            visible: row.art.toString() === ""
+            glyph: Icons.folder
+            size: Metrics.iconNav
+        }
+    }
+
+    Text {
+        anchors.left: lead.right
+        anchors.leftMargin: Metrics.gap12
+        anchors.right: meta.left
+        anchors.rightMargin: Metrics.gap12
+        anchors.verticalCenter: parent.verticalCenter
+        text: row.name
+        elide: Text.ElideMiddle
+        font.pointSize: Type.body
+        color: Theme.color.textPrimary
+    }
+
+    Text {
+        id: meta
+        anchors.right: chevron.left
+        anchors.rightMargin: Metrics.gap8
+        anchors.verticalCenter: parent.verticalCenter
+        visible: row.count > 0
+        text: I18n.trCount("{} track", "{} tracks", row.count, I18n.rev)
+        font.pointSize: Type.small
+        color: Theme.color.textTertiary
+    }
+
+    Icon {
+        id: chevron
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap8
+        anchors.verticalCenter: parent.verticalCenter
+        glyph: Icons.chevronRight
+        size: Metrics.iconSm
+        color: Theme.color.textTertiary
+    }
+
+    HoverHandler { id: hover }
+    TapHandler { onTapped: row.open() }
+}

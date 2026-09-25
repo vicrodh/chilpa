@@ -421,6 +421,11 @@ impl qobject::TrackListModel {
                 let tracks = app::with(|api| api.most_played_rows(limit));
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)
             }
+            "folder" => {
+                let tracks = super::folder_view::tracks();
+                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
+                (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(ms))
+            }
             "queue" => {
                 let tracks = app::with(|api| api.queue_rows());
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();

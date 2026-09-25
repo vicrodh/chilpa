@@ -14,6 +14,9 @@ pub enum Screen {
     Albums,
     Album,
     Settings,
+    /// Settings > Library > Library folders.
+    LibraryFolders,
+    /// The library by folder, or a folder opened from the disk.
     Folders,
 }
 
@@ -26,29 +29,39 @@ impl Screen {
             Screen::Albums => "albums",
             Screen::Album => "album",
             Screen::Settings => "settings",
+            Screen::LibraryFolders => "libraryFolders",
             Screen::Folders => "folders",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Settings, Screen::Folders]
+        [
+            Screen::Home,
+            Screen::Library,
+            Screen::Artists,
+            Screen::Albums,
+            Screen::Album,
+            Screen::Settings,
+            Screen::LibraryFolders,
+            Screen::Folders,
+        ]
             .into_iter()
             .find(|s| s.name() == name)
     }
 }
 
 /// Where a tab is: a screen and, for a record, which one; for Settings,
-/// which section.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// which section; for Folders, which folder.
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Route {
     pub screen: Screen,
     pub id: i64,
-    pub section: &'static str,
+    pub key: String,
 }
 
 impl Route {
     pub fn of(screen: Screen) -> Route {
-        Route { screen, id: 0, section: "" }
+        Route { screen, id: 0, key: String::new() }
     }
 }
 
@@ -79,7 +92,7 @@ impl Default for Tabs {
 
 impl Tabs {
     pub fn routes(&self) -> Vec<Route> {
-        self.tabs.iter().map(|t| t.route).collect()
+        self.tabs.iter().map(|t| t.route.clone()).collect()
     }
 
     pub fn active(&self) -> usize {
@@ -87,7 +100,7 @@ impl Tabs {
     }
 
     pub fn current(&self) -> Route {
-        self.tabs[self.active].route
+        self.tabs[self.active].route.clone()
     }
 
     pub fn can_back(&self) -> bool {
@@ -105,24 +118,24 @@ impl Tabs {
         if tab.route == to {
             return;
         }
-        tab.back.push(tab.route);
+        let was = std::mem::replace(&mut tab.route, to);
+        tab.back.push(was);
         tab.forward.clear();
-        tab.route = to;
     }
 
     pub fn back(&mut self) {
         let tab = &mut self.tabs[self.active];
         if let Some(to) = tab.back.pop() {
-            tab.forward.push(tab.route);
-            tab.route = to;
+            let was = std::mem::replace(&mut tab.route, to);
+            tab.forward.push(was);
         }
     }
 
     pub fn forward(&mut self) {
         let tab = &mut self.tabs[self.active];
         if let Some(to) = tab.forward.pop() {
-            tab.back.push(tab.route);
-            tab.route = to;
+            let was = std::mem::replace(&mut tab.route, to);
+            tab.back.push(was);
         }
     }
 
@@ -157,7 +170,7 @@ mod tests {
     use super::*;
 
     fn album(id: i64) -> Route {
-        Route { screen: Screen::Album, id, section: "" }
+        Route { screen: Screen::Album, id, key: String::new() }
     }
 
     #[test]

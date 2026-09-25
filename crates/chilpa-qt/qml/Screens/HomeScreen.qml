@@ -67,7 +67,7 @@ Flickable {
             kind: "primary"
             glyph: Icons.folderPlus
             text: I18n.tr("Add a folder", I18n.rev)
-            onClicked: Navigation.go("folders", 0)
+            onClicked: Navigation.go("libraryFolders", 0)
         }
 
         SectionHeader {

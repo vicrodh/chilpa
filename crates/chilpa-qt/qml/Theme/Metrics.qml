@@ -202,6 +202,8 @@ QtObject {
     readonly property int folderRow: 48
     readonly property int folderDateWidth: 130
     readonly property int folderStatusWidth: 70
+    readonly property int folderEntry: 44
+    readonly property int folderArt: 34
     // How the four columns share the width: year, genre, artist, album.
     readonly property var paneShares: [0.7, 1.0, 1.2, 1.3]
     readonly property real paneShareTotal: 4.2

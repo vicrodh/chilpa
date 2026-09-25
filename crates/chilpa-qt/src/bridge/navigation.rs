@@ -30,7 +30,15 @@ pub mod qobject {
         #[qproperty(bool, can_forward)]
         /// The Settings section on screen, when the screen is Settings.
         #[qproperty(QString, section)]
+        /// The route's text: the folder, for Folders; the section, for
+        /// Settings.
+        #[qproperty(QString, route_key)]
         type Navigation = super::NavigationRust;
+
+        /// Opens a folder in the Folders screen, inside the active tab. An
+        /// empty path is the top: the library's folders.
+        #[qinvokable]
+        fn open_folder(self: Pin<&mut Navigation>, path: &QString);
 
         /// Opens a Settings section inside the active tab.
         #[qinvokable]
@@ -77,22 +85,27 @@ pub struct NavigationRust {
     can_back: bool,
     can_forward: bool,
     section: QString,
+    route_key: QString,
     tabs: Tabs,
 }
 
 fn route(screen: &QString, id: i64) -> Option<Route> {
-    Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id, section: "" })
+    Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id, key: String::new() })
 }
 
 /// A tab's title and icon.
-fn label(r: Route) -> (String, &'static str) {
+fn label(r: &Route) -> (String, &'static str) {
     match r.screen {
         Screen::Home => (app::t("Home"), "home"),
         Screen::Library => (app::t("Library"), "columns3"),
         Screen::Artists => (app::t("Artists"), "microphone2"),
         Screen::Albums => (app::t("Albums"), "disc"),
         Screen::Settings => (app::t("Settings"), "settings"),
-        Screen::Folders => (app::t("Library folders"), "folder"),
+        Screen::LibraryFolders => (app::t("Library folders"), "folder"),
+        Screen::Folders => match std::path::Path::new(&r.key).file_name() {
+            Some(name) => (name.to_string_lossy().into_owned(), "folder"),
+            None => (app::t("Folders"), "folder"),
+        },
         Screen::Album => {
             let title = app::with(|api| api.album(r.id).map(|a| a.title)).unwrap_or_default();
             (title, "disc")
@@ -117,7 +130,13 @@ impl qobject::Navigation {
 
     pub fn open_section(mut self: Pin<&mut Self>, id: &QString) {
         let section = crate::settings_schema::section(&id.to_string()).id;
-        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, section });
+        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, key: section.to_string() });
+        self.publish();
+    }
+
+    pub fn open_folder(mut self: Pin<&mut Self>, path: &QString) {
+        let key = path.to_string().trim_end_matches('/').to_string();
+        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Folders, id: 0, key });
         self.publish();
     }
 
@@ -147,7 +166,7 @@ impl qobject::Navigation {
         let tabs = self.rust().tabs.clone();
         let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
         for r in tabs.routes() {
-            let (title, icon) = label(r);
+            let (title, icon) = label(&r);
             titles.append(QString::from(&title));
             icons.append(QString::from(icon));
         }
@@ -158,7 +177,9 @@ impl qobject::Navigation {
         self.as_mut().set_can_back(tabs.can_back());
         self.as_mut().set_can_forward(tabs.can_forward());
         self.as_mut().set_route_id(now.id);
-        self.as_mut().set_section(QString::from(now.section));
+        let section = if now.screen == Screen::Settings { now.key.as_str() } else { "" };
+        self.as_mut().set_section(QString::from(section));
+        self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
     }
 }
