@@ -38,6 +38,10 @@ pub mod qobject {
         #[qinvokable]
         fn add(self: Pin<&mut LibraryFolders>, path: &QString);
 
+        /// Opens the system's folder picker and adds what is chosen.
+        #[qinvokable]
+        fn browse(self: Pin<&mut LibraryFolders>);
+
         /// Scans one folder again.
         #[qinvokable]
         fn rescan(self: Pin<&mut LibraryFolders>, path: &QString);
@@ -93,6 +97,20 @@ impl qobject::LibraryFolders {
             return;
         }
         self.scan(Some(folder));
+    }
+
+    pub fn browse(self: Pin<&mut Self>) {
+        // The picker is the desktop's, and it blocks until it is answered, so
+        // it runs on a thread of its own and hands the folder back queued.
+        let title = app::t("Add a folder to the library");
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).pick_folder());
+            if let Some(folder) = picked {
+                let path = folder.path().to_string_lossy().into_owned();
+                let _ = thread.queue(move |folders| folders.add(&QString::from(&path)));
+            }
+        });
     }
 
     pub fn rescan(self: Pin<&mut Self>, path: &QString) {
