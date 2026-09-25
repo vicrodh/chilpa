@@ -69,6 +69,41 @@ fn hw_params(card: &str) -> String {
     std::fs::read_to_string(path).unwrap_or_else(|_| "unreadable".to_string())
 }
 
+/// Which process has the card open, from the kernel's own status file.
+///
+/// `hw_params` says what the card is running, not who is running it. Read
+/// while another program has the card -- a sound server playing somebody's
+/// music -- it describes that program's stream, and this smoke passed on one
+/// while Chilpa could not open the card at all.
+fn owner_of(card: &str) -> Option<u32> {
+    let path = format!("/proc/asound/card{card}/pcm0p/sub0/status");
+    let text = std::fs::read_to_string(path).ok()?;
+    let line = text.lines().find(|l| l.trim_start().starts_with("owner_pid"))?;
+    line.split(':').nth(1)?.trim().parse().ok()
+}
+
+/// Fails before anything is opened if somebody else has the card.
+///
+/// Opening it then would fail anyway, and what the kernel says about it
+/// would be the other program's stream. Stopping here also means the smoke
+/// never takes the card from under whoever is listening.
+fn free(card: &str) {
+    if let Some(pid) = owner_of(card) {
+        assert_eq!(
+            pid,
+            std::process::id(),
+            "card {card} is in use by process {pid}; free it before running the smoke"
+        );
+    }
+}
+
+/// What the kernel says the card is running, and only if this process is
+/// the one running it.
+fn ours(card: &str) -> Option<String> {
+    let text = hw_params(card);
+    (text.contains("rate:") && owner_of(card) == Some(std::process::id())).then_some(text)
+}
+
 /// One field of it, as `rate` or `format`.
 fn field(text: &str, name: &str) -> Option<String> {
     text.lines()
@@ -105,6 +140,7 @@ fn the_card_opens_in_the_track_s_own_format() {
         return;
     };
     assert!(track.exists(), "{} is not there", track.display());
+    free(&card);
     other_library();
 
     let mut chilpa = chilpa_api::Chilpa::new();
@@ -119,9 +155,10 @@ fn the_card_opens_in_the_track_s_own_format() {
     let mut opened = String::new();
     let limit = Instant::now() + Duration::from_secs(10);
     while Instant::now() < limit {
-        let kernel = hw_params(&card);
-        if opened.is_empty() && kernel.contains("rate:") {
-            opened = kernel;
+        if opened.is_empty() {
+            if let Some(kernel) = ours(&card) {
+                opened = kernel;
+            }
         }
         let now = chilpa.poll();
         if !opened.is_empty() && !now.format.is_empty() {
@@ -187,6 +224,7 @@ fn what_the_window_would_claim_matches_what_the_kernel_did() {
         eprintln!("smoke: set the three variables to run this");
         return;
     };
+    free(&card);
     other_library();
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.play_file(&track, &device, true);
@@ -194,9 +232,10 @@ fn what_the_window_would_claim_matches_what_the_kernel_did() {
     let limit = Instant::now() + Duration::from_secs(10);
     let mut opened = String::new();
     while Instant::now() < limit {
-        let kernel = hw_params(&card);
-        if opened.is_empty() && kernel.contains("rate:") {
-            opened = kernel;
+        if opened.is_empty() {
+            if let Some(kernel) = ours(&card) {
+                opened = kernel;
+            }
         }
         let now = chilpa.poll();
         if !opened.is_empty() && !now.format.is_empty() {
