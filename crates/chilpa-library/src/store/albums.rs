@@ -214,6 +214,53 @@ impl Library {
         rows.collect()
     }
 
+    /// Every album with something present, in that order: the snapshot a
+    /// grid of the whole library scrolls over, as with the tracks. Ids only,
+    /// so ten thousand albums are one query and 80 KB.
+    pub fn album_ids(&self, order: AlbumSort) -> rusqlite::Result<Vec<i64>> {
+        let sql = format!(
+            "SELECT a.id FROM albums a
+             JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
+             ORDER BY {}",
+            order.order_by()
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let rows = stmt.query_map([], |r| r.get(0))?;
+        rows.collect()
+    }
+
+    /// Those albums with their play counts, in the order given. By primary
+    /// key: a page anywhere in the snapshot costs what the first one costs.
+    pub fn albums_by_ids(&self, ids: &[i64]) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let marks = vec!["?"; ids.len()].join(",");
+        let sql = format!(
+            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, r.present_tracks, r.plays
+             FROM albums a JOIN album_rollup r ON r.album_id = a.id
+             WHERE a.id IN ({marks})"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let found: std::collections::HashMap<i64, (StoredAlbum, usize)> = stmt
+            .query_map(rusqlite::params_from_iter(ids.iter()), |r| {
+                Ok((
+                    StoredAlbum {
+                        id: r.get(0)?,
+                        title: r.get(1)?,
+                        album_artist: r.get(2)?,
+                        year: r.get(3)?,
+                        artwork_path: r.get(4)?,
+                        track_count: r.get::<_, i64>(5)? as usize,
+                    },
+                    r.get::<_, i64>(6)? as usize,
+                ))
+            })?
+            .map(|row| row.map(|(a, n)| (a.id, (a, n))))
+            .collect::<rusqlite::Result<_>>()?;
+        Ok(ids.iter().filter_map(|id| found.get(id).cloned()).collect())
+    }
+
     /// The library's artists, by name.
     ///
     /// An artist with no present tracks does not show up: the view shows what
@@ -392,6 +439,25 @@ mod tests {
             ["Cosmo", "Bayou", "Aqualung", "Zeta"],
             "what played is first, and what never played comes after it, by title"
         );
+    }
+
+    #[test]
+    fn the_snapshot_of_the_grid_is_the_grids_order() {
+        let lib = sample_library();
+        for order in AlbumSort::all() {
+            let ids = lib.album_ids(order).unwrap();
+            let paged: Vec<i64> = lib.albums_sorted(order, 50, 0).unwrap().into_iter().map(|(a, _)| a.id).collect();
+            assert_eq!(ids, paged, "{}", order.name());
+        }
+    }
+
+    #[test]
+    fn albums_come_back_in_the_order_they_were_asked_for() {
+        let lib = sample_library();
+        let rows: Vec<(i64, usize)> =
+            lib.albums_by_ids(&[3, 1]).unwrap().into_iter().map(|(a, n)| (a.id, n)).collect();
+        assert_eq!(rows, [(3, 2), (1, 1)], "with their plays");
+        assert!(lib.albums_by_ids(&[]).unwrap().is_empty());
     }
 
     #[test]
