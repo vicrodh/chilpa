@@ -410,7 +410,8 @@ impl AudioSink for JackSink {
             return Ok(0);
         }
         waiting.extend(samples);
-        Ok(frames.len())
+        // In frames, as the trait asks: the renderer multiplies by the size.
+        Ok(frames.len() / self.stream.frame_bytes())
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
@@ -549,6 +550,29 @@ mod tests {
             let far_off = StreamFormat::new(SampleFormat::S16, 1, 2);
             assert!(Jack.open("nothing", far_off, false).is_err());
         }
+    }
+
+    #[test]
+    fn a_write_answers_in_frames_and_not_in_bytes() {
+        // The renderer multiplies the answer by the frame size. Answered in
+        // bytes, every frame was counted four to eight times, and the
+        // position ran ahead of the music by as much.
+        let (Some(output), Ok(caps)) = (Jack.outputs().into_iter().next(), Jack.caps("")) else {
+            eprintln!("no JACK graph: skipped");
+            return;
+        };
+        let format = StreamFormat::new(caps.formats[0], caps.sample_rates[0], 2);
+        let mut sink = match Jack.open(&output.id, format, false) {
+            Ok(sink) => sink,
+            Err(e) => {
+                eprintln!("the graph would not take {}: skipped ({e:?})", output.id);
+                return;
+            }
+        };
+        // Silence, mixed in with whatever else the graph is playing.
+        let silence = vec![0u8; 64 * format.frame_bytes()];
+        assert_eq!(sink.write(&silence).unwrap(), 64);
+        let _ = sink.close();
     }
 
     #[test]

@@ -530,7 +530,8 @@ impl AudioSink for CoreAudioSink {
             return Ok(0);
         }
         waiting.extend(frames.iter().copied());
-        Ok(frames.len())
+        // In frames, as the trait asks: the renderer multiplies by the size.
+        Ok(frames.len() / self.stream.frame_bytes())
     }
 
     fn close(&mut self) -> Result<(), SinkError> {
