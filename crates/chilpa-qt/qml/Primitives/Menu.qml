@@ -46,9 +46,11 @@ Popup {
                 required property var modelData
                 width: column.width
                 entry: modelData
+                // Closed before it says what was chosen: what it says can
+                // rebuild the view the menu lives in.
                 onClicked: {
-                    menu.chosen(index)
                     menu.close()
+                    menu.chosen(index)
                 }
             }
         }
