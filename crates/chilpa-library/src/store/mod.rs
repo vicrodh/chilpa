@@ -5,12 +5,14 @@
 //! What stays here is the connection, sources and roots, genres and search.
 
 pub mod albums;
+pub mod browse;
 pub mod features;
 pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
+pub use browse::{BrowseTrack, FacetEntry, Filter, Snapshot, Totals, TrackOrder};
 pub use playlists::{PlaylistEntry, StoredPlaylist};
 pub use plays::{Stats, TrackStat};
 

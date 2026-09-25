@@ -314,3 +314,66 @@ fn the_features_of_one_page_come_out_in_a_single_query() {
     assert_eq!(map.len(), 200);
     within("features for two hundred tracks", t, Duration::from_millis(50));
 }
+
+/// The Library screen: four facets in cascade and the tracks they leave.
+///
+/// Two kinds of query, with two kinds of ceiling. What the window's thread
+/// runs -- a facet on a click, the rows scrolling into view -- has to fit in
+/// a frame, and its ceilings are ten times what this machine measures. The
+/// snapshot of a whole order and the unfiltered genre column cannot fit in
+/// a frame at this size; the window runs them on a worker, and their
+/// ceilings only catch a query that turns quadratic.
+///
+/// Measured here, release build, fifty thousand tracks:
+///
+/// | what | thread | measured |
+/// | --- | --- | --- |
+/// | years, artists (over `album_rollup`) | window | 3.5 ms |
+/// | a facet under a year or a genre | window | 1-2 ms |
+/// | 256 rows by id, anywhere in the snapshot | window | 1.2 ms |
+/// | the snapshot of an order | worker | 88-101 ms |
+/// | genres, unfiltered | worker | 105 ms |
+///
+/// The years and the artists took 44 and 59 ms when they walked every
+/// track; the rows at 40,000 took 70 to 140 ms with `LIMIT ... OFFSET`.
+#[test]
+fn browsing_fifty_thousand_tracks_fits_in_a_frame() {
+    use chilpa_library::{Filter, TrackOrder};
+    let lib = large_library();
+    // Ten genres, one per track, so the genre column narrows something.
+    lib.connection()
+        .execute_batch(
+            "INSERT INTO genres (id, name) VALUES (1,'G1'),(2,'G2'),(3,'G3'),(4,'G4'),(5,'G5'),
+                                                 (6,'G6'),(7,'G7'),(8,'G8'),(9,'G9'),(10,'G10');
+             INSERT INTO track_genres (track_id, genre_id) SELECT id, (id % 10) + 1 FROM tracks;
+             ANALYZE;",
+        )
+        .unwrap();
+    let all = Filter::default();
+    let (years, t) = how_long(|| lib.facet_years().unwrap());
+    assert_eq!(years.len(), 60);
+    within("years", t, Duration::from_millis(35));
+    let (_, t) = how_long(|| lib.facet_genres(None).unwrap());
+    within("genres", t, Duration::from_millis(1000));
+    let (_, t) = how_long(|| lib.facet_genres(Some(1990)).unwrap());
+    within("genres of a year", t, Duration::from_millis(20));
+    let (_, t) = how_long(|| lib.facet_artists(None, None).unwrap());
+    within("artists", t, Duration::from_millis(35));
+    let (_, t) = how_long(|| lib.facet_artists(Some(1990), Some("G3")).unwrap());
+    within("artists of a year and a genre", t, Duration::from_millis(20));
+    let one = Filter { artist: Some("Artist 007".into()), ..Filter::default() };
+    let (_, t) = how_long(|| lib.facet_albums(&one).unwrap());
+    within("albums of an artist", t, Duration::from_millis(20));
+    for order in [TrackOrder::Artist, TrackOrder::Title, TrackOrder::Plays, TrackOrder::Added] {
+        let (snapshot, t) = how_long(|| lib.browse_ids(&all, order).unwrap());
+        assert_eq!(snapshot.totals.tracks, TRACKS as usize);
+        within(&format!("snapshot by {order:?}"), t, Duration::from_millis(1000));
+        let far: Vec<i64> = snapshot.ids[40_000..40_256].to_vec();
+        let (page, t) = how_long(|| lib.tracks_by_ids(&far).unwrap());
+        assert_eq!(page.len(), 256);
+        within(&format!("rows 40,000 to 40,256 by {order:?}"), t, Duration::from_millis(15));
+    }
+    let genre = Filter { genre: Some("G3".into()), ..Filter::default() };
+    let (_, t) = how_long(|| lib.browse_ids(&genre, TrackOrder::Artist).unwrap());
+    within("snapshot of a genre", t, Duration::from_millis(800));
+}
