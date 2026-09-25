@@ -8,7 +8,8 @@
 //! periods: what the frontend's performance targets are stated in.
 //! `CHILPA_SHOT=<file.png>` saves the window once it has settled and quits,
 //! so a screen can be looked at without a display. `CHILPA_ROUTE` opens a
-//! screen at start ("album:7"), for the same reason.
+//! screen at start ("album:7"), for the same reason, and
+//! `CHILPA_PLAY_ALBUM=<id>` starts a record playing once the window is up.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -34,9 +35,12 @@ pub mod qobject {
         #[qinvokable]
         fn frame(self: Pin<&mut Dev>);
     }
+
+    impl cxx_qt::Threading for Dev {}
+    impl cxx_qt::Initialize for Dev {}
 }
 
-use cxx_qt::CxxQtType as _;
+use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
 use std::time::Instant;
@@ -100,5 +104,23 @@ impl Drop for DevRust {
             late(1.5),
             late(2.0)
         );
+    }
+}
+
+impl cxx_qt::Initialize for qobject::Dev {
+    fn initialize(self: Pin<&mut Self>) {
+        let Some(id) = std::env::var("CHILPA_PLAY_ALBUM").ok().and_then(|v| v.parse::<i64>().ok()) else {
+            return;
+        };
+        let thread = self.qt_thread();
+        std::thread::spawn(move || {
+            std::thread::sleep(std::time::Duration::from_millis(1500));
+            let _ = thread.queue(move |_| {
+                crate::app::with(|api| {
+                    let paths: Vec<String> = api.album_track_rows(id).into_iter().map(|t| t.path).collect();
+                    api.play_from(&paths, 0);
+                });
+            });
+        });
     }
 }
