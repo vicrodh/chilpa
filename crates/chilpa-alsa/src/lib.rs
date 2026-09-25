@@ -174,8 +174,40 @@ impl AudioSink for AlsaSink {
     fn close(&mut self) -> Result<(), SinkError> {
         // No `drain`: releasing the device does not wait for it to empty,
         // because an endpoint that stopped answering would hang the stop
-        // (the stop() deadlock in QBZ).
+        // (the stop() deadlock in QBZ). Waiting for the last of a track is
+        // `drain` below, which the player asks for at a natural end.
         self.pcm.drop().map_err(backend)?;
+        Ok(())
+    }
+
+    /// Watches the device play out what it holds, instead of asking ALSA to
+    /// drain: that blocks until it is done, and a device that stopped
+    /// answering would hold the player there. Never longer than the buffer
+    /// plus a second.
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        // A PCM below its start threshold holds what it was handed and does
+        // not play it: a track shorter than the buffer never started.
+        if self.pcm.state() == State::Prepared {
+            let _ = self.pcm.start();
+        }
+        let rate = u64::from(self.stream.sample_rate_hz.max(1));
+        let held = self.pcm.hw_params_current().and_then(|p| p.get_buffer_size()).unwrap_or(0).max(0) as u64;
+        let limit = std::time::Instant::now()
+            + std::time::Duration::from_millis(held * 1000 / rate)
+            + std::time::Duration::from_secs(1);
+        // It ran out, which is where it stops once all of it has played.
+        while self.pcm.state() == State::Running && std::time::Instant::now() < limit {
+            if give_up() {
+                return Ok(());
+            }
+            match self.pcm.delay() {
+                Ok(left) if left > 0 => {
+                    let left_ms = left as u64 * 1000 / rate;
+                    std::thread::sleep(std::time::Duration::from_millis(left_ms.clamp(1, 10)));
+                }
+                _ => break,
+            }
+        }
         Ok(())
     }
 }

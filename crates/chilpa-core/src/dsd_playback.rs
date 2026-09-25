@@ -242,6 +242,11 @@ where
     let mut packer = DopPacker::new();
     let mut frames = DopFrames::new(source, &mut packer, &delivery);
     let outcome = render_paused(&mut frames, &mut sink, stop, pause, on_progress);
+    // What is still in the device is the last of the track: heard, unless
+    // somebody stopped.
+    if matches!(outcome, Outcome::Finished { .. }) {
+        sink.drain(&|| stop.is_stopped()).map_err(DsdPlayError::Sink)?;
+    }
     sink.close().map_err(DsdPlayError::Sink)?;
     Ok(DsdPlayed { delivery, outcome, carrier_hz })
 }

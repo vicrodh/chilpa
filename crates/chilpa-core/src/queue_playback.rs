@@ -541,6 +541,12 @@ where
     // The DoP marker of whatever is open. It carries on across tracks that
     // share an opening and starts over with a new one.
     let mut packer = DopPacker::new();
+    // Whether the track before ended by itself: then what is still in the
+    // device is its last part, and it is waited for before the device is
+    // closed. Skipped or stopped, it is not.
+    let mut ended_by_itself = false;
+    // A stop, or a skip of what is still playing, ends the wait.
+    let give_up = || stop.is_stopped() || skip.take();
 
     // The length is read again on every lap: the queue can grow while it
     // plays.
@@ -557,6 +563,9 @@ where
         };
         if !transition.is_seamless() || opened.is_none() {
             if let Some((_, mut old)) = opened.take() {
+                if ended_by_itself {
+                    old.drain(&give_up).map_err(PlayError::Sink)?;
+                }
                 old.close().map_err(PlayError::Sink)?;
             }
             let new = open_sink(delivery.opened).map_err(PlayError::Sink)?;
@@ -613,6 +622,7 @@ where
             }
         };
         let finished_ok = outcome.may_advance_queue();
+        ended_by_itself = finished_ok && !skipped;
         consecutive_silent = if outcome.frames() == 0 { consecutive_silent + 1 } else { 0 };
         results.push(TrackResult {
             path: path.clone(),
@@ -634,6 +644,9 @@ where
     }
 
     if let Some((_, mut sink)) = opened.take() {
+        if ended_by_itself {
+            sink.drain(&give_up).map_err(PlayError::Sink)?;
+        }
         sink.close().map_err(PlayError::Sink)?;
     }
     Ok(results)
