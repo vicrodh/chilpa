@@ -40,6 +40,10 @@ pub mod qobject {
         #[qinvokable]
         fn open_folder(self: Pin<&mut Navigation>, path: &QString);
 
+        /// Opens an artist's page inside the active tab.
+        #[qinvokable]
+        fn open_artist(self: Pin<&mut Navigation>, name: &QString);
+
         /// Opens a Settings section inside the active tab.
         #[qinvokable]
         fn open_section(self: Pin<&mut Navigation>, id: &QString);
@@ -102,6 +106,7 @@ fn label(r: &Route) -> (String, &'static str) {
         Screen::Albums => (app::t("Albums"), "disc"),
         Screen::Settings => (app::t("Settings"), "settings"),
         Screen::LibraryFolders => (app::t("Library folders"), "folder"),
+        Screen::Artist => (r.key.clone(), "user"),
         Screen::Folders => match std::path::Path::new(&r.key).file_name() {
             Some(name) => (name.to_string_lossy().into_owned(), "folder"),
             None => (app::t("Folders"), "folder"),
@@ -132,6 +137,14 @@ impl qobject::Navigation {
         let section = crate::settings_schema::section(&id.to_string()).id;
         self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, key: section.to_string() });
         self.publish();
+    }
+
+    pub fn open_artist(mut self: Pin<&mut Self>, name: &QString) {
+        let key = name.to_string();
+        if !key.is_empty() {
+            self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Artist, id: 0, key });
+            self.publish();
+        }
     }
 
     pub fn open_folder(mut self: Pin<&mut Self>, path: &QString) {

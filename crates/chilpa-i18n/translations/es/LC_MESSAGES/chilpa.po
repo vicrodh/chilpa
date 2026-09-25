@@ -1239,6 +1239,11 @@ msgid_plural "{} albums"
 msgstr[0] "{} álbum"
 msgstr[1] "{} álbumes"
 
+msgid "{} artist"
+msgid_plural "{} artists"
+msgstr[0] "{} artista"
+msgstr[1] "{} artistas"
+
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"
 
@@ -1279,6 +1284,11 @@ msgstr "{} de {} formatos salen tal cual"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} leídos, {} sin cambios, {} faltantes"
+
+msgid "{} record"
+msgid_plural "{} records"
+msgstr[0] "{} disco"
+msgstr[1] "{} discos"
 
 msgid "{} song"
 msgid_plural "{} songs"

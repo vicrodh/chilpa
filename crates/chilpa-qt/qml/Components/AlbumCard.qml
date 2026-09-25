@@ -12,6 +12,9 @@ Item {
     property string subtitle
     property url art
     property int tint: 0
+    // An artist: a round portrait and the text centered under it
+    // (design/03 ArtistCard).
+    property bool round: false
 
     signal open()
     signal play()
@@ -22,13 +25,14 @@ Item {
         id: cover
         width: card.width
         height: card.width
+        radius: card.round ? width / 2 : Metrics.radiusCard // derived: a circle
         source: card.art
         tint: card.tint
     }
 
     Loader {
         anchors.fill: cover
-        active: hover.hovered
+        active: hover.hovered && !card.round
         sourceComponent: AlbumCardOverlay {
             onPlay: card.play()
         }
@@ -42,6 +46,7 @@ Item {
         Text {
             width: parent.width
             text: card.title
+            horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
             elide: Text.ElideRight
             font.pointSize: Type.body
             font.weight: Type.medium
@@ -50,6 +55,7 @@ Item {
         Text {
             width: parent.width
             text: card.subtitle
+            horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
             elide: Text.ElideRight
             font.pointSize: Type.meta
             color: Theme.color.textSecondary

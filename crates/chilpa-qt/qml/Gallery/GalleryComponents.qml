@@ -41,6 +41,7 @@ GallerySection {
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
         AlbumCardOverlay { width: Metrics.cardMinWidth; height: width }
         AlbumHero { width: parent.width; detail: detail }
+        ArtistHero { width: parent.width; name: "Mora Vale"; meta: "8 records" }
         Row {
             height: Metrics.panesHeight
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }

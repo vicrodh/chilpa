@@ -13,6 +13,7 @@ pub enum Screen {
     Artists,
     Albums,
     Album,
+    Artist,
     Settings,
     /// Settings > Library > Library folders.
     LibraryFolders,
@@ -28,6 +29,7 @@ impl Screen {
             Screen::Artists => "artists",
             Screen::Albums => "albums",
             Screen::Album => "album",
+            Screen::Artist => "artist",
             Screen::Settings => "settings",
             Screen::LibraryFolders => "libraryFolders",
             Screen::Folders => "folders",
@@ -41,6 +43,7 @@ impl Screen {
             Screen::Artists,
             Screen::Albums,
             Screen::Album,
+            Screen::Artist,
             Screen::Settings,
             Screen::LibraryFolders,
             Screen::Folders,

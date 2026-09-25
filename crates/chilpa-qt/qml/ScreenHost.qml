@@ -12,6 +12,8 @@ Loader {
         case "library": return library
         case "album": return album
         case "albums": return albums
+        case "artists": return artists
+        case "artist": return artist
         case "settings": return settings
         case "libraryFolders": return libraryFolders
         case "folders": return folders
@@ -23,6 +25,8 @@ Loader {
     Component { id: library; LibraryScreen {} }
     Component { id: album; AlbumScreen {} }
     Component { id: albums; AlbumsScreen {} }
+    Component { id: artists; ArtistsScreen {} }
+    Component { id: artist; ArtistScreen {} }
     Component { id: settings; SettingsScreen {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
