@@ -70,50 +70,8 @@ msgstr "flotante de 32"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentro corren a esa -- este va a {} Hz. Una pista grabada a cualquier otra se remuestrea antes de que Chilpa tenga voz, y ningún ajuste aquí lo cambia. JACK es para enrutar audio entre programas; para entregarle un archivo a un DAC sin tocarlo, elige la tarjeta directo."
 
-msgid "Add a folder"
-msgstr "Agregar una carpeta"
-
 msgid "Added this month"
 msgstr "Agregadas este mes"
-
-msgid "Album"
-msgstr "Álbum"
-
-msgid "Albums"
-msgstr "Álbumes"
-
-msgid "Analyse the library"
-msgstr "Analizar la biblioteca"
-
-msgid "Analysis"
-msgstr "Análisis"
-
-msgid "Appearance"
-msgstr "Apariencia"
-
-msgid "Approve"
-msgstr "Aprobar"
-
-msgid "Approve what is new"
-msgstr "Aprobar lo nuevo"
-
-msgid "Artists"
-msgstr "Artistas"
-
-msgid "Audio stack"
-msgstr "Stack de audio"
-
-msgid "Bit-perfect"
-msgstr "Bit-perfect"
-
-msgid "By artist"
-msgstr "Por artista"
-
-msgid "By title"
-msgstr "Por título"
-
-msgid "By year"
-msgstr "Por año"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -124,35 +82,11 @@ msgstr "todavía no se leen CD fuera de Linux"
 msgid "Calm"
 msgstr "Tranquilo"
 
-msgid "Check"
-msgstr "Revisar"
-
-msgid "Checking reads the whole file and reports what it finds. Rebuilding remakes the play counts and the search index from the tracks and the play log, which it does not touch: nothing is lost by running it."
-msgstr "Revisar lee el archivo entero y reporta lo que encuentre. Reconstruir rehace las cuentas de escuchas y el índice de búsqueda a partir de las pistas y del log, que no se tocan: no se pierde nada por correrlo."
-
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
 
-msgid "Classic"
-msgstr "Clásico"
-
-msgid "Clear queue"
-msgstr "Vaciar cola"
-
-msgid "Close"
-msgstr "Cerrar"
-
-msgid "Compact"
-msgstr "Compacto"
-
-msgid "Connect account"
-msgstr "Conectar cuenta"
-
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
-
-msgid "Ctrl + arrows"
-msgstr "Ctrl + flechas"
 
 msgid "DSD not supported: {}"
 msgstr "DSD no soportado: {}"
@@ -169,23 +103,8 @@ msgstr "DSDIFF comprimido con DST"
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
 
-msgid "Delete"
-msgstr "Borrar"
-
-msgid "Deliver the samples untouched"
-msgstr "Entregar las muestras sin tocarlas"
-
-msgid "Disconnect"
-msgstr "Desconectar"
-
-msgid "Distinct tracks"
-msgstr "Pistas distintas"
-
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
-
-msgid "Everything"
-msgstr "Todo"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
@@ -196,29 +115,11 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "File"
 msgstr "Archivo"
 
-msgid "Folders"
-msgstr "Carpetas"
-
 msgid "For a long while"
 msgstr "Para un rato largo"
 
-msgid "Forget"
-msgstr "Olvidar"
-
-msgid "Formats"
-msgstr "Formatos"
-
 msgid "From this week"
 msgstr "De esta semana"
-
-msgid "Genres"
-msgstr "Géneros"
-
-msgid "Goniometer"
-msgstr "Goniómetro"
-
-msgid "Health"
-msgstr "Salud"
 
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
@@ -247,107 +148,14 @@ msgstr "no conozco la lista \"{}\""
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuando le pedí borrarla: puede que tu credencial siga guardada donde él la haya puesto"
 
-msgid "It asks for no permission at all, but whether it runs is still yours to decide."
-msgstr "No pide ningún permiso, pero igual decides tú si corre."
-
-msgid "It now also asks for:"
-msgstr "Ahora pide además:"
-
-msgid "Language"
-msgstr "Idioma"
-
-msgid "Last played"
-msgstr "Lo último que sonó"
-
-msgid "Layout"
-msgstr "Acomodo"
-
-msgid "Left and right"
-msgstr "Izquierda y derecha"
-
-msgid "Library"
-msgstr "Biblioteca"
-
-msgid "Look again"
-msgstr "Volver a buscar"
-
-msgid "Look for plugins"
-msgstr "Buscar plugins"
-
 msgid "Maximum 32/384"
 msgstr "Máximo 32/384"
-
-msgid "Measure the output"
-msgstr "Medir la salida"
-
-msgid "Most played"
-msgstr "Más escuchadas"
-
-msgid "Mute"
-msgstr "Silenciar"
 
 msgid "My library"
 msgstr "Mi biblioteca"
 
 msgid "Never played"
 msgstr "Nunca escuchadas"
-
-msgid "Next"
-msgstr "Siguiente"
-
-msgid "No answer from"
-msgstr "No contestaron"
-
-msgid "No folder scanned yet"
-msgstr "Todavía no se ha escaneado ninguna carpeta"
-
-msgid "No lyrics for this track"
-msgstr "Sin letra para esta pista"
-
-msgid "No plugins installed"
-msgstr "No hay plugins instalados"
-
-msgid "No saved playlists yet"
-msgstr "Todavía no hay listas guardadas"
-
-msgid "Nothing playing"
-msgstr "Nada sonando"
-
-msgid "Open"
-msgstr "Abrir"
-
-msgid "Open a folder"
-msgstr "Abrir una carpeta"
-
-msgid "Open a playlist"
-msgstr "Abrir una lista"
-
-msgid "Open a stream"
-msgstr "Abrir un stream"
-
-msgid "Open an audio file"
-msgstr "Abrir un archivo de audio"
-
-msgid "Open file"
-msgstr "Abrir archivo"
-
-msgid "Open folder"
-msgstr "Abrir carpeta"
-
-msgid "Open playlist"
-msgstr "Abrir lista"
-
-msgid "Open stream"
-msgstr "Abrir stream"
-
-msgid "Output"
-msgstr "Salida"
-
-msgid "Output wizard"
-msgstr "Asistente de salida"
-
-msgid "Pause"
-msgstr "Pausa"
 
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
@@ -361,69 +169,6 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Play"
 msgstr "Reproducir"
 
-msgid "Play CD"
-msgstr "Reproducir CD"
-
-msgid "Playback"
-msgstr "Reproducción"
-
-msgid "Playlist name"
-msgstr "Nombre de la lista"
-
-msgid "Playlists"
-msgstr "Listas"
-
-msgid "Plays"
-msgstr "Escuchas"
-
-msgid "Press measure to see what your output can do"
-msgstr "Dale a medir para ver qué puede tu salida"
-
-msgid "Previous"
-msgstr "Anterior"
-
-msgid "Queue"
-msgstr "Encolar"
-
-msgid "Rates"
-msgstr "Frecuencias"
-
-msgid "Reactivate"
-msgstr "Reactivar"
-
-msgid "Reads a minute of each track and works out its tempo, its key and its loudness. It is what fills the tempo lists and AutoMix."
-msgstr "Lee un minuto de cada pista y le saca el tempo, la tonalidad y la sonoridad. Es lo que llena las listas de tempo y el AutoMix."
-
-msgid "Rebuild the counts"
-msgstr "Reconstruir las cuentas"
-
-msgid "Recently added"
-msgstr "Agregados"
-
-msgid "Recently played"
-msgstr "Escuchados hace poco"
-
-msgid "Reconnect"
-msgstr "Reconectar"
-
-msgid "Repeat: off"
-msgstr "Repetir: no"
-
-msgid "Repeat: queue"
-msgstr "Repetir: cola"
-
-msgid "Repeat: track"
-msgstr "Repetir: pista"
-
-msgid "Rescan"
-msgstr "Volver a escanear"
-
-msgid "Resume"
-msgstr "Reanudar"
-
-msgid "SACD images"
-msgstr "Imágenes de SACD"
-
 msgid "SACDMTOC was not found"
 msgstr "no se encontró SACDMTOC"
 
@@ -432,57 +177,6 @@ msgstr "falta SACDTRL1"
 
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
-
-msgid "Save queue"
-msgstr "Guardar cola"
-
-msgid "Save the queue"
-msgstr "Guardar la cola"
-
-msgid "Saved"
-msgstr "Guardadas"
-
-msgid "Scan a folder into the library"
-msgstr "Escanear una carpeta a la biblioteca"
-
-msgid "Scan into the library"
-msgstr "Escanear a la biblioteca"
-
-msgid "Search"
-msgstr "Buscar"
-
-msgid "Settings"
-msgstr "Ajustes"
-
-msgid "Shortcuts"
-msgstr "Atajos"
-
-msgid "Shuffle"
-msgstr "Aleatorio"
-
-msgid "Since"
-msgstr "Desde"
-
-msgid "Skips"
-msgstr "Saltos"
-
-msgid "Smart"
-msgstr "Inteligentes"
-
-msgid "Space"
-msgstr "Espacio"
-
-msgid "Spectrum"
-msgstr "Espectro"
-
-msgid "Statistics"
-msgstr "Estadísticas"
-
-msgid "Stop"
-msgstr "Parar"
-
-msgid "Stop the analysis"
-msgstr "Detener el análisis"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -499,29 +193,11 @@ msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el re
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
-msgid "The counts and the search index were rebuilt."
-msgstr "Se reconstruyeron las cuentas y el índice de búsqueda."
-
-msgid "The device the music comes out of. \"BP\" marks the ones Chilpa writes to directly, with nothing in between; look again after plugging one in."
-msgstr "El aparato por el que sale la música. \"BP\" marca los que Chilpa escribe directo, sin nada en medio; vuelve a buscar después de conectar uno."
-
-msgid "The library has a problem: {}"
-msgstr "La biblioteca tiene un problema: {}"
-
-msgid "The library is empty"
-msgstr "La biblioteca está vacía"
-
-msgid "The library is healthy."
-msgstr "La biblioteca está sana."
-
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
 
 msgid "The service's answer is missing."
 msgstr "Falta la respuesta del servicio."
-
-msgid "This is the device's own control ({}). Chilpa never scales the samples: that is what bit-perfect means."
-msgstr "Este es el control del propio dispositivo ({}). Chilpa nunca escala las muestras: eso es lo que quiere decir bit-perfect."
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
@@ -529,44 +205,11 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
 
-msgid "This output has no volume control of its own. Chilpa will not make one up by scaling the samples, because that is the end of bit-perfect: use the knob on the device."
-msgstr "Esta salida no tiene control de volumen propio. Chilpa no se lo va a inventar escalando las muestras, porque ahí se acabó el bit-perfect: usa la perilla del dispositivo."
-
-msgid "This plugin wants:"
-msgstr "Este plugin quiere:"
-
-msgid "Through"
-msgstr "Por"
-
-msgid "Time listened"
-msgstr "Tiempo escuchado"
-
 msgid "To move to"
 msgstr "Para moverse"
 
 msgid "Track {}"
 msgstr "Pista {}"
-
-msgid "Unmute"
-msgstr "Quitar silencio"
-
-msgid "Up and down"
-msgstr "Arriba y abajo"
-
-msgid "Visualizer"
-msgstr "Visualizador"
-
-msgid "Volume"
-msgstr "Volumen"
-
-msgid "Volume: {}%"
-msgstr "Volumen: {}%"
-
-msgid "Wave"
-msgstr "Onda"
-
-msgid "What the samples go through before they are sound. It decides which outputs exist and whether they can be exact."
-msgstr "Por dónde pasan las muestras antes de ser sonido. Decide qué salidas existen y si pueden ser exactas."
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"
@@ -583,17 +226,8 @@ msgstr "Windows no reporta ningún aparato de reproducción"
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
 
-msgid "With this on, a track the device cannot take in its own format does not play, and says so. With it off, Chilpa converts and says that too."
-msgstr "Con esto encendido, una pista que el dispositivo no acepta en su propio formato no suena, y se dice. Apagado, Chilpa convierte y también lo dice."
-
-msgid "Withdraw permission"
-msgstr "Quitar permiso"
-
 msgid "Write to a file"
 msgstr "Escribir a un archivo"
-
-msgid "Your browser is open to grant permission. Waiting here."
-msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"
@@ -637,9 +271,6 @@ msgstr "ya hay un escaneo corriendo"
 msgid "a stream cannot be rewound"
 msgstr "un stream no se puede rebobinar"
 
-msgid "account connected"
-msgstr "cuenta conectada"
-
 msgid "add a command you trigger"
 msgstr "agregar un comando que tú disparas"
 
@@ -654,9 +285,6 @@ msgstr "un manifiesto HLS, que Chilpa todavía no sabe leer"
 
 msgid "an analysis is already running"
 msgstr "ya hay un análisis corriendo"
-
-msgid "analysing..."
-msgstr "analizando..."
 
 msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
 msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga bit-perfect para compartirlo"
@@ -688,17 +316,8 @@ msgstr "llamar a \"{}\", que nadie ha aprobado"
 msgid "cannot be done"
 msgstr "no se puede"
 
-msgid "close whatever is open"
-msgstr "cerrar lo que esté abierto"
-
-msgid "converted"
-msgstr "convertido"
-
 msgid "converted to {}"
 msgstr "convertido a {}"
-
-msgid "could not open the browser: {}"
-msgstr "no se pudo abrir el navegador: {}"
 
 msgid "could not open the stream: {}"
 msgstr "no se pudo abrir el stream: {}"
@@ -838,31 +457,17 @@ msgstr "guardar sus propias cosas en disco"
 msgid "microphone"
 msgstr "micrófono"
 
-msgid "mixed by tempo: {} track"
-msgid_plural "mixed by tempo: {} tracks"
-msgstr[0] "mezcla por tempo: {} pista"
-msgstr[1] "mezcla por tempo: {} pistas"
-
 msgid "mono"
 msgstr "mono"
 
-msgid "mute"
-msgstr "silenciar"
-
 msgid "network"
 msgstr "red"
-
-msgid "next and previous track"
-msgstr "pista siguiente y anterior"
 
 msgid "no JACK graph is running"
 msgstr "no hay ningún grafo de JACK corriendo"
 
 msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
 msgstr "no hay ningún grafo de JACK corriendo; arranca uno, o instala pipewire-jack para que PipeWire conteste por él"
-
-msgid "no cover"
-msgstr "sin portada"
 
 msgid "no pulse"
 msgstr "sin pulso"
@@ -882,23 +487,8 @@ msgstr "no soportado: {}"
 msgid "now at {}"
 msgstr "ahora en {}"
 
-msgid "open a file"
-msgstr "abrir un archivo"
-
 msgid "outside the image"
 msgstr "fuera de la imagen"
-
-msgid "pause and resume"
-msgstr "pausa y reanuda"
-
-msgid "phase"
-msgstr "fase"
-
-msgid "playlist \"{}\" saved"
-msgstr "lista \"{}\" guardada"
-
-msgid "playlist saved to {}"
-msgstr "lista guardada en {}"
 
 msgid "put a panel of its own in the window"
 msgstr "poner un panel suyo en la ventana"
@@ -911,15 +501,6 @@ msgstr "salir a internet, solo a {}"
 
 msgid "read your library, without being able to change it"
 msgstr "leer tu biblioteca, sin poder cambiarla"
-
-msgid "remove"
-msgstr "quitar"
-
-msgid "scanning..."
-msgstr "escaneando..."
-
-msgid "search"
-msgstr "buscar"
 
 msgid "sector {} could not be read: {}"
 msgstr "no se pudo leer el sector {}: {}"
@@ -945,9 +526,6 @@ msgstr "tropezando"
 msgid "tags"
 msgstr "tags"
 
-msgid "ten seconds forward and back"
-msgstr "diez segundos adelante y atrás"
-
 msgid "that album has no playable tracks"
 msgstr "ese álbum no tiene pistas disponibles"
 
@@ -956,9 +534,6 @@ msgstr "eso no parece una dirección de stream"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "ese dominio no está en los que el plugin declaró"
-
-msgid "that folder could not be read; nothing was touched"
-msgstr "no se pudo leer esa carpeta; no se tocó nada"
 
 msgid "that id does not work as a folder"
 msgstr "ese id no sirve de carpeta"
@@ -1007,9 +582,6 @@ msgstr "la cuenta se conectó pero no se pudo guardar: {}"
 
 msgid "the account did not connect: {}"
 msgstr "no se conectó la cuenta: {}"
-
-msgid "the account expired"
-msgstr "la cuenta caducó"
 
 msgid "the analysis stopped: {}"
 msgstr "el análisis se detuvo: {}"
@@ -1170,9 +742,6 @@ msgstr "no se pudo abrir la siguiente parte de la pista: {}"
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
 
-msgid "the output's volume"
-msgstr "el volumen de la salida"
-
 msgid "the plugin sandbox could not be started"
 msgstr "no se pudo arrancar el sandbox de plugins"
 
@@ -1272,9 +841,6 @@ msgstr "este dispositivo no entrega bit-perfect en ningún formato común"
 msgid "this library is version {} and this Chilpa understands up to {}; update Chilpa instead of opening it with an old one"
 msgstr "esta biblioteca es de la versión {} y este Chilpa entiende hasta la {}; actualiza Chilpa en vez de abrirla con uno viejo"
 
-msgid "this list"
-msgstr "esta lista"
-
 msgid "this output cannot be muted"
 msgstr "esta salida no se puede silenciar"
 
@@ -1302,19 +868,6 @@ msgstr "virtual"
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
 
-msgid "{} album"
-msgid_plural "{} albums"
-msgstr[0] "{} álbum"
-msgstr[1] "{} álbumes"
-
-msgid "{} analysed, {} with no pulse, {} unread"
-msgstr "{} analizadas, {} sin pulso, {} sin leer"
-
-msgid "{} artist"
-msgid_plural "{} artists"
-msgstr[0] "{} artista"
-msgstr[1] "{} artistas"
-
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"
 
@@ -1322,9 +875,6 @@ msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canales"
-
-msgid "{} files: {} read, {} unchanged, {} missing"
-msgstr "{} archivos: {} leídos, {} sin cambios, {} ausentes"
 
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
@@ -1338,36 +888,5 @@ msgstr "{} no es un dispositivo directo; solo se abre hw: (nada de plughw ni def
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"
 
-msgid "{} of {}"
-msgstr "{} de {}"
-
 msgid "{} of {} formats come out untouched"
 msgstr "{} de {} formatos salen tal cual"
-
-msgid "{} of {} plugins loaded"
-msgstr "{} de {} plugins cargados"
-
-msgid "{} play"
-msgid_plural "{} plays"
-msgstr[0] "{} escucha"
-msgstr[1] "{} escuchas"
-
-msgid "{} playlist"
-msgid_plural "{} playlists"
-msgstr[0] "{} lista"
-msgstr[1] "{} listas"
-
-msgid "{} plugin"
-msgid_plural "{} plugins"
-msgstr[0] "{} plugin"
-msgstr[1] "{} plugins"
-
-msgid "{} plugin running"
-msgid_plural "{} plugins running"
-msgstr[0] "{} plugin corriendo"
-msgstr[1] "{} plugins corriendo"
-
-msgid "{} track"
-msgid_plural "{} tracks"
-msgstr[0] "{} pista"
-msgstr[1] "{} pistas"

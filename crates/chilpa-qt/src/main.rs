@@ -1,12 +1,13 @@
 //! The desktop shell.
 //!
-//! Today it is a visual smoke test: choose an output, open a file and watch
-//! the position advance with the bit-perfect verdict. The Widgets versus
-//! Quick decision is still open, so this window is disposable; what is not
-//! are the facade and the bridge, which already have ADR-001's shape.
+//! Rust owns the state and QML draws it (ADR-001). The QML tree under `qml/`
+//! is layered -- Theme, Primitives, Components, Patterns, Screens, then the
+//! window -- and `tools/lint` checks the layering, the per-file budgets and
+//! that no color or measure is written outside the theme.
 //!
 //! This crate is the ONLY one that may hold Qt types.
 
+mod app;
 mod bridge;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};

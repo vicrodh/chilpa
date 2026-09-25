@@ -386,3 +386,4 @@ atexit
 exe
 dff
 dsdiff
+qrc

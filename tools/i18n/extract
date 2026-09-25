@@ -33,8 +33,8 @@ CALL = r"(?:\.|::)"
 
 # Singular calls: one msgid.
 ONE = [
-    re.compile(r"\bChilpa\.translate\(\s*" + LIT, re.DOTALL),
-    re.compile(r"\bChilpa\.translateArgs\(\s*" + LIT, re.DOTALL),
+    re.compile(r"\bI18n\.tr\(\s*" + LIT, re.DOTALL),
+    re.compile(r"\bI18n\.trArgs\(\s*" + LIT, re.DOTALL),
     re.compile(CALL + r"t\(\s*" + LIT, re.DOTALL),
     re.compile(CALL + r"t_args\(\s*" + LIT, re.DOTALL),
     re.compile(CALL + r"mark\(\s*" + LIT, re.DOTALL),
@@ -42,8 +42,8 @@ ONE = [
 
 # Plural calls: singular and plural together.
 TWO = [
-    re.compile(r"\bChilpa\.translateN\(\s*" + LIT + SEP + LIT, re.DOTALL),
-    re.compile(r"\bChilpa\.translateCount\(\s*" + LIT + SEP + LIT, re.DOTALL),
+    re.compile(r"\bI18n\.trN\(\s*" + LIT + SEP + LIT, re.DOTALL),
+    re.compile(r"\bI18n\.trCount\(\s*" + LIT + SEP + LIT, re.DOTALL),
     re.compile(CALL + r"tn\(\s*" + LIT + SEP + LIT, re.DOTALL),
     re.compile(CALL + r"tf\(\s*" + LIT + SEP + LIT, re.DOTALL),
 ]
@@ -52,14 +52,6 @@ TWO = [
 def found():
     """Every msgid in the code, as {msgid: plural or None}, in order."""
     out = {}
-    # A layout's name is its file name, and the selector shows it, so every
-    # `LayoutX.qml` that ships contributes `X`. It is read from the files for
-    # the same reason `build.rs` does: adding a layout is adding a file, and
-    # a second list would fall behind.
-    for f in sorted(ROOT.glob("crates/chilpa-qt/qml/Layout*.qml")):
-        name = f.stem.removeprefix("Layout")
-        if name and name != "Selector":
-            out[name] = None
     files = sorted(ROOT.glob("crates/**/*.rs")) + sorted(ROOT.glob("crates/**/*.qml"))
     for f in files:
         if "/target/" in str(f):
@@ -180,7 +172,7 @@ def main():
     if bare:
         problems.append(f"{len(bare)} QML strings the user reads do not go through the catalog:")
         problems += [f"  {b}" for b in bare[:10]]
-        problems.append("  Wrap them in Chilpa.translate(msgid, Chilpa.trRev), or, if they")
+        problems.append("  Wrap them in I18n.tr(msgid, I18n.rev), or, if they")
         problems.append("  read the same in every language, list them in")
         problems.append("  tools/i18n/not-translated.txt.")
     if problems:

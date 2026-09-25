@@ -282,7 +282,7 @@ def main():
     # una dependencia, que es justo lo que un contribuidor necesita leer.
     archivos = (
         sorted(ROOT.glob("crates/*/**/*.rs"))
-        + sorted(ROOT.glob("crates/*/qml/*.qml"))
+        + sorted(ROOT.glob("crates/*/qml/**/*.qml"))
         + sorted(ROOT.glob("crates/*/Cargo.toml"))
         + [ROOT / "Cargo.toml"]
     )
