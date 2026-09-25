@@ -148,6 +148,9 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Clear filters"
 msgstr "Quitar filtros"
 
+msgid "Clear the queue"
+msgstr "Vaciar la cola"
+
 msgid "Close"
 msgstr "Cerrar"
 
@@ -286,6 +289,12 @@ msgstr "Claro"
 msgid "Look"
 msgstr "Aspecto"
 
+msgid "Lyrics"
+msgstr "Letra"
+
+msgid "Lyrics show here while a track plays."
+msgstr "La letra aparece aquí mientras suena una pista."
+
 msgid "Maintenance"
 msgstr "Mantenimiento"
 
@@ -325,8 +334,14 @@ msgstr "Nueva pestaña"
 msgid "Next"
 msgstr "Siguiente"
 
+msgid "No lyrics for this track."
+msgstr "Esta pista no tiene letra."
+
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
+
+msgid "Nothing queued."
+msgstr "No hay nada en la cola."
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
@@ -373,6 +388,9 @@ msgstr "Procesado en la salida"
 msgid "Quality"
 msgstr "Calidad"
 
+msgid "Queue"
+msgstr "Cola"
+
 msgid "Quit"
 msgstr "Salir"
 
@@ -393,6 +411,9 @@ msgstr "Escuchados recientemente"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove from the queue"
+msgstr "Quitar de la cola"
 
 msgid "Repair"
 msgstr "Reparar"
@@ -1205,6 +1226,11 @@ msgstr "falta {}"
 
 msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
 msgstr "{} no es un dispositivo directo; solo se abre hw: (nada de plughw ni default)"
+
+msgid "{} next"
+msgid_plural "{} next"
+msgstr[0] "{} después"
+msgstr[1] "{} después"
 
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"

@@ -28,7 +28,7 @@ Window {
         id: host
         x: window.contentLeft - Metrics.spaceWindow
         y: Metrics.tabBarHeight
-        width: window.width - x
+        width: (right.visible ? right.x - Metrics.spaceWindow : window.width) - x
         height: window.height - y
         clip: true
     }
@@ -36,6 +36,15 @@ Window {
     TabBar {
         x: window.contentLeft
         width: window.width - window.contentLeft - Metrics.spaceWindow
+    }
+
+    RightPanel {
+        id: right
+        visible: SettingsModel.queueOpen || SettingsModel.lyricsOpen
+        x: window.width - width - Metrics.spaceWindow
+        y: Metrics.tabBarHeight
+        width: Metrics.rightPanel
+        height: window.height - y - Metrics.spaceWindow
     }
 
     PlayerBar {

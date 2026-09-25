@@ -20,6 +20,7 @@ QtObject {
     readonly property real small: 11.5 * pointsPerPixel
     readonly property real label: 11 * pointsPerPixel
     readonly property real micro: 10.5 * pointsPerPixel
+    readonly property real lyric: 18 * pointsPerPixel
 
     // Weights. The design's 650 falls between DemiBold and Bold; the font
     // database picks the nearest face the system has.

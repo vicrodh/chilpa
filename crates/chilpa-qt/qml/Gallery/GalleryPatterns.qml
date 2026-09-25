@@ -7,6 +7,12 @@ GallerySection {
     title: "Patterns"
 
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
+    RightPanel { width: Metrics.rightPanel; height: Metrics.queueDefault + Metrics.queueMin }
+    Row {
+        spacing: Metrics.gridGap
+        QueuePanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+        LyricsPanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+    }
     Column {
         width: section.width - Metrics.sidebarWidth - Metrics.gridGap
         spacing: Metrics.gap12
