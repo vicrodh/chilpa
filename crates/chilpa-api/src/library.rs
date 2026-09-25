@@ -205,6 +205,7 @@ impl Chilpa {
                             read: r.read,
                             unchanged: r.unchanged,
                             missing: r.missing,
+                            unreadable: r.unreadable,
                             unreachable: r.unreachable,
                         },
                     };
@@ -229,6 +230,7 @@ impl Chilpa {
                 read: r.read,
                 unchanged: r.unchanged,
                 missing: r.missing,
+                unreadable: r.unreadable,
                 unreachable: r.unreachable,
             },
             Err(e) => {

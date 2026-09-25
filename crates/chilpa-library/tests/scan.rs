@@ -142,6 +142,32 @@ fn a_deleted_file_is_marked_missing_and_keeps_its_history() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+#[cfg(unix)]
+#[test]
+fn a_link_that_points_nowhere_is_reported_and_is_not_left_present() {
+    // A music folder held 20,298 links into a layout that no longer
+    // existed. The scan counted every one as seen, recorded none, and said
+    // nothing; and a link that broke after it was recorded stayed present.
+    let Some(dir) = album("broken-link", 1) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let real = dir.join("disc 1").join("01-track.flac");
+    std::os::unix::fs::symlink(&real, dir.join("link.flac")).unwrap();
+    let lib = Library::in_memory().unwrap();
+    let first = scan_root(&lib, &dir).unwrap();
+    assert_eq!(first.read, 2, "the file and the link to it");
+
+    // The file goes somewhere the scan does not look, and the link breaks.
+    std::fs::rename(&real, dir.join("moved-away.bin")).unwrap();
+    let again = scan_root(&lib, &dir).unwrap();
+    assert_eq!(again.unreadable, 1, "the broken link is reported");
+    assert_eq!(lib.track_count(false).unwrap(), 0, "and neither of the two is left present");
+    assert_eq!(lib.track_count(true).unwrap(), 2, "though both rows survive");
+
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 #[test]
 fn search_finds_by_title_artist_and_album() {
     let Some(dir) = album("search", 2) else {
