@@ -80,7 +80,7 @@ impl Chilpa {
     pub fn play(mut self: Pin<&mut Self>, path: &QString) {
         let path = path.to_string();
         // QML hands a file dialog's path over as a URL.
-        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let path = super::path_of(&path);
         let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().set_error(QString::from(""));
         self.as_mut().set_track(QString::from(&path));
@@ -112,7 +112,7 @@ impl Chilpa {
     /// Queues a whole folder and sets it going.
     pub fn play_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let path = folder.to_string();
-        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let path = super::path_of(&path);
         let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().remember_folder(&format!("{path}/."));
         let tracks = self
@@ -149,7 +149,7 @@ impl Chilpa {
 
     pub fn save_queue(mut self: Pin<&mut Self>, path: &QString) {
         let path = path.to_string();
-        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let path = super::path_of(&path);
         let ok = self.as_mut().rust_mut().api.save_queue(std::path::Path::new(&path));
         if ok {
             let saved = self.api.t_args("playlist saved to {}", &[&path]);

@@ -14,7 +14,7 @@ impl Chilpa {
 
     pub fn scan_folder(mut self: Pin<&mut Self>, folder: &QString) {
         let path = folder.to_string();
-        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let path = super::path_of(&path);
         // The scan runs on its own thread: a large library would leave the
         // window frozen if it happened here.
         self.as_mut().remember_folder(&format!("{path}/."));
@@ -347,7 +347,7 @@ impl Chilpa {
 
     pub fn play_playlist(mut self: Pin<&mut Self>, path: &QString) {
         let path = path.to_string();
-        let path = path.strip_prefix("file://").unwrap_or(&path).to_string();
+        let path = super::path_of(&path);
         let (device, bit_perfect) = self.as_mut().chosen();
         self.as_mut().remember_folder(&path);
         let titles = self.as_mut().rust_mut().api.play_playlist(
