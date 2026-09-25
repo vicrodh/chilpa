@@ -610,6 +610,6 @@ mod tests {
             Some("api.example.com".into())
         );
         assert_eq!(domain_of(b"{}"), None, "with no url there is no domain");
-        assert_eq!(domain_of(b"no es json"), None);
+        assert_eq!(domain_of(b"not json"), None);
     }
 }

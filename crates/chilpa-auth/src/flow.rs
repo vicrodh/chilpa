@@ -179,7 +179,7 @@ fn post(
     post_with: Post<'_>,
 ) -> Result<Tokens, AuthError> {
     if !secure(url) {
-        return Err(AuthError::Unreadable("el token_url no es https".into()));
+        return Err(AuthError::Unreadable(chilpa_i18n::t("the token_url is not https").into()));
     }
     let (status, text) = post_with(url, body).map_err(AuthError::Network)?;
     let text = text.as_str();

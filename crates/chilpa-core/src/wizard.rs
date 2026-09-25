@@ -195,8 +195,8 @@ mod tests {
             .collect();
         assert!(exact.contains(&"CD"));
         assert!(exact.contains(&"High 24/192"));
-        assert!(exact.contains(&"DSD64 over DoP"), "DoP va a 176.4 kHz");
-        assert!(exact.contains(&"DSD128 over DoP"), "y DSD128 a 352.8");
+        assert!(exact.contains(&"DSD64 over DoP"), "DSD64 over DoP runs at 176.4 kHz");
+        assert!(exact.contains(&"DSD128 over DoP"), "and DSD128 at 352.8 kHz");
         // 384 kHz is not on the device's list.
         let max = d.rows.iter().find(|f| f.name == "Maximum 32/384").unwrap();
         assert_ne!(max.verdict, Verdict::BitPerfect);

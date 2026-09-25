@@ -238,14 +238,14 @@ mod tests {
     fn the_same_sine_on_both_channels_measures_three_units_more() {
         let one = integrated(&sine(1.0, 48_000, 5, 2, true), 48_000, 2).unwrap();
         let two = integrated(&sine(1.0, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((two - one - 3.01).abs() < 0.1, "de {one:.2} a {two:.2}");
+        assert!((two - one - 3.01).abs() < 0.1, "from {one:.2} to {two:.2}");
     }
 
     #[test]
     fn twice_the_amplitude_is_six_units_more() {
         let low = integrated(&sine(0.25, 48_000, 5, 2, false), 48_000, 2).unwrap();
         let high = integrated(&sine(0.5, 48_000, 5, 2, false), 48_000, 2).unwrap();
-        assert!((high - low - 6.02).abs() < 0.1, "de {low:.2} a {high:.2}");
+        assert!((high - low - 6.02).abs() < 0.1, "from {low:.2} to {high:.2}");
     }
 
     #[test]

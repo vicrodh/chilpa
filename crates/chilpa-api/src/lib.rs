@@ -1178,10 +1178,13 @@ impl Chilpa {
                         // On DSD what matters is the DSD rate; the DoP
                         // carrier is stated separately, because it is the
                         // format the device was opened with.
-                        Some(multiple) => format!(
-                            "DSD{multiple} · DoP a {} Hz · {}",
-                            opened.sample_rate_hz,
-                            channels(opened.channels)
+                        Some(multiple) => chilpa_i18n::t_args(
+                            "DSD{} · DoP at {} Hz · {}",
+                            &[
+                                &multiple.to_string(),
+                                &opened.sample_rate_hz.to_string(),
+                                &channels(opened.channels),
+                            ],
                         ),
                         None => format!(
                             "{} Hz · {} bits · {}",
