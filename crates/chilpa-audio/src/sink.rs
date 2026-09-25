@@ -71,6 +71,18 @@ pub trait AudioSink {
     /// the device to answer.
     fn close(&mut self) -> Result<(), SinkError>;
 
+    /// Waits until what was written has been played, at a natural end, so
+    /// the last of a track is heard before the device is closed: a DAC held
+    /// two seconds of it, and closing threw them away.
+    ///
+    /// It returns as soon as `give_up` says so -- a stop, a skip -- and never
+    /// waits much longer than what the device can hold. By default there is
+    /// nothing held, and it returns at once.
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        let _ = give_up;
+        Ok(())
+    }
+
     /// Pauses or resumes at the device, when it knows how.
     ///
     /// By default it does nothing: whoever plays stops writing and that is
@@ -96,6 +108,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn close(&mut self) -> Result<(), SinkError> {
         (**self).close()
+    }
+
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        (**self).drain(give_up)
     }
 }
 

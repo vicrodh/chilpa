@@ -534,6 +534,22 @@ impl AudioSink for CoreAudioSink {
         Ok(frames.len() / self.stream.frame_bytes())
     }
 
+    /// Waits for the device to take what is queued: a quarter of a second
+    /// at most, and a second more before giving up on one that stopped.
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        let limit = std::time::Instant::now() + std::time::Duration::from_millis(1_250);
+        while std::time::Instant::now() < limit && !give_up() {
+            if self.shared.lost.load(Ordering::Relaxed) {
+                return Err(SinkError::DeviceLost);
+            }
+            if self.shared.waiting.lock().map_err(|_| SinkError::Closed)?.is_empty() {
+                break;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(5));
+        }
+        Ok(())
+    }
+
     fn close(&mut self) -> Result<(), SinkError> {
         if self.proc_id.0.is_null() {
             return Ok(());

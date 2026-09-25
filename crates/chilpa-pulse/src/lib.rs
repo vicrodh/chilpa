@@ -174,6 +174,20 @@ impl AudioSink for PulseSink {
         // and stopping never waits for a device.
         Ok(())
     }
+
+    /// Watches the server's latency run down instead of asking it to drain,
+    /// which blocks until it is done: a stop has to be able to cut in. The
+    /// server holds two seconds by default; never longer than three.
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(3);
+        while std::time::Instant::now() < limit && !give_up() {
+            match self.simple.get_latency() {
+                Ok(left) if left.0 > 5_000 => std::thread::sleep(std::time::Duration::from_millis(10)),
+                _ => break,
+            }
+        }
+        Ok(())
+    }
 }
 
 /// Asking the server what it has, through `pactl`.

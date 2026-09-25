@@ -328,3 +328,88 @@ fn through_a_sound_server_asked_alone_the_card_runs_at_the_track_s_rate() {
     assert_eq!(rate, source_rate, "the server resampled with the output asked for alone");
     chilpa.stop();
 }
+
+/// Two seconds of 16 bit stereo silence at `rate`.
+fn silence(path: &Path, rate: u32) {
+    use std::io::Write;
+    let frames = rate * 2;
+    let data = frames * 4;
+    let mut f = std::fs::File::create(path).unwrap();
+    f.write_all(b"RIFF").unwrap();
+    f.write_all(&(36 + data).to_le_bytes()).unwrap();
+    f.write_all(b"WAVEfmt ").unwrap();
+    f.write_all(&16u32.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&2u16.to_le_bytes()).unwrap();
+    f.write_all(&rate.to_le_bytes()).unwrap();
+    f.write_all(&(rate * 4).to_le_bytes()).unwrap();
+    f.write_all(&4u16.to_le_bytes()).unwrap();
+    f.write_all(&16u16.to_le_bytes()).unwrap();
+    f.write_all(b"data").unwrap();
+    f.write_all(&data.to_le_bytes()).unwrap();
+    f.write_all(&vec![0u8; data as usize]).unwrap();
+}
+
+#[test]
+#[ignore = "opens a real device; run it on purpose"]
+fn a_queue_that_changes_rate_reopens_the_card_at_each_one() {
+    // CHILPA_SMOKE_DEVICE=alsa:hw:1,0 CHILPA_SMOKE_CARD=1, with the card free.
+    // Going from 48 to 96 kHz between two tracks is where a card that was
+    // not closed properly shows: it stays at the first rate, or the second
+    // track fails to open it. Silence, so nobody hears it.
+    let Ok(device) = std::env::var("CHILPA_SMOKE_DEVICE") else {
+        eprintln!("smoke: set CHILPA_SMOKE_DEVICE and CHILPA_SMOKE_CARD to run this");
+        return;
+    };
+    let card = std::env::var("CHILPA_SMOKE_CARD").unwrap_or_else(|_| "1".to_string());
+    free(&card);
+    other_library();
+    let dir = std::env::temp_dir().join("chilpa-hardware-rates");
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    silence(&dir.join("01-48k.wav"), 48_000);
+    silence(&dir.join("02-96k.wav"), 96_000);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_folder(&dir, &device, true);
+    let mut rates: Vec<u32> = Vec::new();
+    // When the card went to each rate: the first track lasts two seconds,
+    // and what is still in the card when it ends has to be heard.
+    let mut since: Vec<Instant> = Vec::new();
+    let limit = Instant::now() + Duration::from_secs(15);
+    while Instant::now() < limit {
+        if let Some(rate) = ours(&card)
+            .and_then(|k| field(&k, "rate"))
+            .and_then(|r| r.split_whitespace().next().and_then(|r| r.parse().ok()))
+        {
+            if rates.last() != Some(&rate) {
+                rates.push(rate);
+                since.push(Instant::now());
+                eprintln!("smoke: opened\n{}", hw_params(&card));
+            }
+        }
+        let now = chilpa.poll().clone();
+        assert!(now.error.is_empty(), "the queue failed: {}", now.error);
+        if rates.contains(&96_000) && now.index >= 1 {
+            break;
+        }
+        std::thread::sleep(Duration::from_millis(10));
+    }
+    eprintln!("smoke: the card ran at {rates:?}");
+    assert_eq!(rates, vec![48_000, 96_000], "one opening per rate, in order");
+    let first = since[1] - since[0];
+    eprintln!("smoke: the first track held the card {first:?}");
+    assert!(
+        first >= Duration::from_millis(1_900),
+        "a two second track held the card {first:?}: its end was thrown away"
+    );
+
+    chilpa.stop();
+    let limit = Instant::now() + Duration::from_secs(3);
+    while owner_of(&card).is_some() && Instant::now() < limit {
+        let _ = chilpa.poll();
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    assert!(owner_of(&card).is_none(), "the card was let go after stopping");
+    let _ = std::fs::remove_dir_all(dir);
+}

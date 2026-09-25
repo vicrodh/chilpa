@@ -108,6 +108,11 @@ where
     let mut laid = LaidOut { reader: &mut reader, to: delivery.opened.sample_format };
     let outcome = render_paused(&mut laid, &mut sink, stop, pause, on_progress);
     let read_error = reader.error.as_ref().map(|e| e.to_string());
+    // What is still in the device is the last of the track: heard, unless
+    // somebody stopped.
+    if matches!(outcome, Outcome::Finished { .. }) {
+        sink.drain(&|| stop.is_stopped()).map_err(CdPlayError::Sink)?;
+    }
     sink.close().map_err(CdPlayError::Sink)?;
     Ok(CdPlayed { delivery, outcome, read_error })
 }

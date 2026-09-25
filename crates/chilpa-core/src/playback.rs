@@ -172,6 +172,11 @@ where
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));
     }
+    // What is still in the device is the last of the track: heard, unless
+    // somebody stopped.
+    if matches!(outcome, Outcome::Finished { .. }) {
+        sink.drain(&|| stop.is_stopped()).map_err(PlayError::Sink)?;
+    }
     sink.close().map_err(PlayError::Sink)?;
     Ok(Played { delivery, outcome, total_frames: None })
 }
@@ -222,6 +227,11 @@ where
     let outcome = chilpa_audio::render::render_with(&mut frames, &mut sink, stop, on_progress);
     if let Some(e) = frames.error {
         return Err(PlayError::Pack(e));
+    }
+    // What is still in the device is the last of the track: heard, unless
+    // somebody stopped.
+    if matches!(outcome, Outcome::Finished { .. }) {
+        sink.drain(&|| stop.is_stopped()).map_err(PlayError::Sink)?;
     }
     sink.close().map_err(PlayError::Sink)?;
     Ok(Played { delivery, outcome, total_frames })
