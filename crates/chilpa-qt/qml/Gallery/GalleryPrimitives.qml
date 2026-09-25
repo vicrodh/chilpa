@@ -37,6 +37,8 @@ GallerySection {
 
     Row {
         spacing: Metrics.gap8
+        ResizeHandle { height: Metrics.sidebarCollapsed }
+        ResizeHandle { vertical: false; width: Metrics.sidebarCollapsed }
         Toggle { checked: true }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }

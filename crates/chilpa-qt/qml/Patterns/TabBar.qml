@@ -27,6 +27,12 @@ Item {
         spacing: Metrics.gap4
 
         IconButton {
+            visible: SettingsModel.sidebarMode === "closed"
+            tip: I18n.tr("Show the sidebar", I18n.rev)
+            glyph: Icons.layoutSidebarLeftExpand
+            onClicked: SettingsModel.sidebarMode = "open"
+        }
+        IconButton {
             tip: I18n.tr("Back", I18n.rev)
             glyph: Icons.chevronLeft
             tone: "primary"

@@ -9,10 +9,7 @@ import "Patterns"
 Window {
     id: window
 
-    readonly property string sidebarMode: SettingsModel.sidebarMode
-    readonly property int sidebarWidth: sidebarMode === "closed" ? 0
-        : sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
-        : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
+    readonly property int sidebarWidth: sidebar.shown
     readonly property int contentLeft: sidebarWidth > 0 ? Metrics.spaceWindow * 2 + sidebarWidth : Metrics.spaceWindow // derived: a margin on each side of the sidebar
 
     width: Metrics.windowWidth
@@ -24,13 +21,6 @@ Window {
     color: Theme.color.surfaceWindow
     title: "Chilpa"
 
-    Sidebar {
-        visible: window.sidebarWidth > 0
-        x: Metrics.spaceWindow
-        y: Metrics.spaceWindow
-        width: window.sidebarWidth
-        height: window.height - Metrics.spaceWindow * 2 // derived: a margin above and below
-    }
 
     // The screen scrolls under nothing but the player: it is cut at the
     // tab bar, which stays on top of it.
@@ -52,6 +42,13 @@ Window {
         width: Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.playerBottom
+    }
+
+    // Above the content and the tab bar, so its grip is never covered.
+    SidebarFrame {
+        id: sidebar
+        anchors.fill: parent
+        window: window
     }
 
     Tooltip {}
