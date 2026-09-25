@@ -1002,6 +1002,9 @@ msgstr "el dispositivo falló tras {} frames: {}"
 msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
 msgstr "el dispositivo abrió {} Hz y {} canales, no {} Hz y {}"
 
+msgid "the device takes {} channels and this track has {}"
+msgstr "el dispositivo acepta {} canales y esta pista tiene {}"
+
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr "no se midió el dispositivo; sin eso no se promete bit-perfect"
 

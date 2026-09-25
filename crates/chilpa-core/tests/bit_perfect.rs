@@ -285,6 +285,33 @@ fn a_lossy_track_plays_with_the_switch_on_and_is_not_called_bit_perfect() {
     let _ = std::fs::remove_file(aac);
 }
 
+#[test]
+fn a_mono_wav_reaches_a_stereo_only_dac_with_each_sample_in_both_channels() {
+    let originals: Vec<i32> = samples(16).into_iter().step_by(2).collect();
+    let path = temp_file("mono");
+    write_wav(&path, &originals, 16, 44_100, 1);
+    let stereo_only = caps(SampleFormat::S16, 44_100);
+
+    let mut cap = Capture { stream: None, bytes: Vec::new() };
+    let played = play_file(&path, &stereo_only, Policy::BitPerfect, &StopSignal::new(), |format| {
+        cap.stream = Some(format);
+        Ok(Handle(&mut cap))
+    })
+    .expect("a mono track plays on a stereo DAC");
+
+    assert!(played.delivery.nothing_was_converted());
+    let words: Vec<i32> = cap
+        .bytes
+        .chunks_exact(2)
+        .map(|c| i32::from(i16::from_le_bytes([c[0], c[1]])))
+        .collect();
+    let left: Vec<i32> = words.iter().step_by(2).copied().collect();
+    let right: Vec<i32> = words.iter().skip(1).step_by(2).copied().collect();
+    assert_eq!(left, originals, "every sample, in the left channel");
+    assert_eq!(right, originals, "and the same one in the right");
+    let _ = std::fs::remove_file(path);
+}
+
 /// A device that takes whatever it is given, at the format it was opened
 /// with.
 struct Swallow(StreamFormat);

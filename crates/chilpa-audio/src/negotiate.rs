@@ -68,6 +68,9 @@ pub enum Transform {
     /// into integers of this width. It never had integer samples, so there
     /// was nothing exact to keep; it is said because it is not bit-perfect.
     Quantized { to_bits: u8 },
+    /// A mono track sent to both channels of a device that takes two. Each
+    /// sample goes out twice and unchanged, which is why it keeps the verdict.
+    Duplicated,
     /// It was mixed with other applications.
     Mixed,
     /// Software volume was applied to it.
@@ -76,9 +79,10 @@ pub enum Transform {
 
 impl Transform {
     /// True when the sample reaching the DAC is the same one that left the
-    /// decoder. Widening keeps the value; nothing else does.
+    /// decoder. Widening keeps the value, and so does sending a mono sample
+    /// to both channels; nothing else does.
     pub fn preserves_samples(self) -> bool {
-        matches!(self, Transform::Widened { .. })
+        matches!(self, Transform::Widened { .. } | Transform::Duplicated)
     }
 }
 
@@ -105,6 +109,12 @@ impl Delivery {
     /// reports a verdict has to put the two together.
     pub fn nothing_was_converted(&self) -> bool {
         self.transforms.iter().all(|t| t.preserves_samples())
+    }
+
+    /// True when a mono track opened in stereo, and every block has to be
+    /// laid out in both channels before it is packed.
+    pub fn duplicates_mono(&self) -> bool {
+        self.transforms.contains(&Transform::Duplicated)
     }
 
     /// How many bits carry the music on the way out, or `None` when the
@@ -134,6 +144,9 @@ pub enum NegotiationError {
     Unsupported { requested: StreamFormat, policy: Policy },
     /// The caps were not measured; bit-perfect cannot be promised.
     CapsNotProbed,
+    /// The device takes none of the channel counts this track could go out
+    /// in: six into two is a downmix, and there is none.
+    Channels { requested: u16, offered: Vec<u16> },
 }
 
 /// Decides what format to open at. Returns what opens and what it cost.
@@ -145,13 +158,37 @@ pub fn negotiate(
     if policy == Policy::BitPerfect && !caps.probed {
         return Err(NegotiationError::CapsNotProbed);
     }
-    if caps.accepts(&requested) {
+
+    // The channels first, so every other question is asked at the count
+    // that will actually open. A mono track on a device that takes two goes
+    // out in both, each sample unchanged. Anything else the device does not
+    // list would need a downmix, and there is none: the fallback used to
+    // hand back the track's own count anyway, and the open failed with a
+    // message about something else.
+    let (channels, spread) = if caps.channels.contains(&requested.channels) {
+        (requested.channels, false)
+    } else if requested.channels == 1 && caps.channels.contains(&2) {
+        (2, true)
+    } else {
+        return Err(NegotiationError::Channels {
+            requested: requested.channels,
+            offered: caps.channels.clone(),
+        });
+    };
+    let wanted = StreamFormat { channels, ..requested };
+    let done = |opened: StreamFormat, mut transforms: Vec<Transform>| {
+        if spread {
+            transforms.insert(0, Transform::Duplicated);
+        }
+        Ok(Delivery { requested, opened, transforms })
+    };
+    if caps.accepts(&wanted) {
         // A float handed over as a float is still not bit-perfect: the device
         // rounds it into whatever its DAC takes, and that is a rounding
         // nobody here can see.
         let transforms =
             if requested.sample_format.is_integer() { Vec::new() } else { vec![Transform::Floated] };
-        return Ok(Delivery { requested, opened: requested, transforms });
+        return done(wanted, transforms);
     }
 
     // Another integer word that holds at least the same bits keeps every
@@ -169,7 +206,7 @@ pub fn negotiate(
         .iter()
         .filter(|f| requested.sample_format.is_integer() && f.is_integer() && f.valid_bits() >= bits)
         .min_by_key(|f| f.valid_bits())
-        .map(|f| StreamFormat { sample_format: *f, ..requested });
+        .map(|f| StreamFormat { sample_format: *f, ..wanted });
     if let Some(opened) = exact {
         if caps.accepts(&opened) {
             let to_bits = opened.sample_format.valid_bits();
@@ -178,7 +215,7 @@ pub fn negotiate(
             } else {
                 Vec::new()
             };
-            return Ok(Delivery { requested, opened, transforms });
+            return done(opened, transforms);
         }
     }
 
@@ -194,11 +231,11 @@ pub fn negotiate(
             .iter()
             .filter(|f| f.is_integer())
             .max_by_key(|f| f.valid_bits())
-            .map(|f| StreamFormat { sample_format: *f, ..requested });
+            .map(|f| StreamFormat { sample_format: *f, ..wanted });
         if let Some(opened) = widest {
             if caps.accepts(&opened) {
                 let to_bits = opened.sample_format.valid_bits();
-                return Ok(Delivery { requested, opened, transforms: vec![Transform::Quantized { to_bits }] });
+                return done(opened, vec![Transform::Quantized { to_bits }]);
             }
         }
     }
@@ -228,7 +265,7 @@ pub fn negotiate(
         .iter()
         .min_by_key(|r| r.abs_diff(requested.sample_rate_hz))
         .ok_or(NegotiationError::Unsupported { requested, policy })?;
-    let opened = StreamFormat::new(format, rate, requested.channels);
+    let opened = StreamFormat::new(format, rate, channels);
     let mut transforms = Vec::new();
     if rate != requested.sample_rate_hz {
         transforms.push(Transform::Resampled { from_hz: requested.sample_rate_hz, to_hz: rate });
@@ -242,7 +279,7 @@ pub fn negotiate(
     } else if format.valid_bits() < requests {
         transforms.push(Transform::Narrowed { from_bits: requests, to_bits: format.valid_bits() });
     }
-    Ok(Delivery { requested, opened, transforms })
+    done(opened, transforms)
 }
 
 #[cfg(test)]
@@ -417,6 +454,38 @@ mod tests {
     fn a_lossy_track_is_not_resampled_with_the_switch_on() {
         let r = negotiate(lossy(), &caps(&[48_000], &[SampleFormat::S32]), Policy::BitPerfect);
         assert!(r.is_err(), "{r:?}");
+    }
+
+    fn stereo_only() -> DeviceCaps {
+        caps(&[44_100], &[SampleFormat::S16, SampleFormat::S32])
+    }
+
+    #[test]
+    fn a_mono_track_reaches_a_stereo_only_dac_in_both_channels() {
+        // The Fosi publishes two channels and nothing else. A mono track was
+        // refused with the switch on, and with it off the fallback handed
+        // back one channel the device does not take, so the open failed.
+        let mono = StreamFormat::new(SampleFormat::S16, 44_100, 1);
+        let d = negotiate(mono, &stereo_only(), Policy::BitPerfect)
+            .expect("the same samples in both channels keep every value");
+        assert_eq!(d.opened, StreamFormat::new(SampleFormat::S16, 44_100, 2));
+        assert_eq!(d.transforms, vec![Transform::Duplicated]);
+        assert!(d.nothing_was_converted());
+    }
+
+    #[test]
+    fn no_policy_opens_a_channel_count_the_device_does_not_list() {
+        // Six channels into two is a downmix, and there is none. Handing back
+        // a delivery the device refuses at open time only moves the failure
+        // somewhere it says less.
+        let surround = StreamFormat::new(SampleFormat::S16, 44_100, 6);
+        for policy in [Policy::BitPerfect, Policy::AllowAnything] {
+            let r = negotiate(surround, &stereo_only(), policy);
+            assert!(
+                matches!(r, Err(NegotiationError::Channels { requested: 6, .. })),
+                "{policy:?}: {r:?}"
+            );
+        }
     }
 
     #[test]

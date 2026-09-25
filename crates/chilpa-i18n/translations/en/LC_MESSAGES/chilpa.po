@@ -1002,6 +1002,9 @@ msgstr ""
 msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
 msgstr ""
 
+msgid "the device takes {} channels and this track has {}"
+msgstr ""
+
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr ""
 

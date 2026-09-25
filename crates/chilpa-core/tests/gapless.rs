@@ -202,3 +202,36 @@ fn an_mp3_comes_out_without_its_encoder_delay_or_padding() {
     let _ = std::fs::remove_file(wav);
     let _ = std::fs::remove_file(mp3);
 }
+
+#[test]
+fn a_mono_track_in_the_queue_comes_out_whole_in_both_channels() {
+    // The queue counts frames to trim and to seek; after a mono track opens
+    // in stereo, counting with the device's two channels would halve it.
+    let mut path = std::env::temp_dir();
+    path.push("chilpa-gapless-mono.wav");
+    let frames = 5_000u32;
+    let data = frames * 2;
+    let mut f = std::fs::File::create(&path).unwrap();
+    f.write_all(b"RIFF").unwrap();
+    f.write_all(&(36 + data).to_le_bytes()).unwrap();
+    f.write_all(b"WAVEfmt ").unwrap();
+    f.write_all(&16u32.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&1u16.to_le_bytes()).unwrap();
+    f.write_all(&44_100u32.to_le_bytes()).unwrap();
+    f.write_all(&88_200u32.to_le_bytes()).unwrap();
+    f.write_all(&2u16.to_le_bytes()).unwrap();
+    f.write_all(&16u16.to_le_bytes()).unwrap();
+    f.write_all(b"data").unwrap();
+    f.write_all(&data.to_le_bytes()).unwrap();
+    for i in 0..frames {
+        f.write_all(&((i % 30_000) as i16).to_le_bytes()).unwrap();
+    }
+    drop(f);
+
+    let (samples, _) = play(&[path.clone()], &caps(&[44_100]));
+    let expected: Vec<i16> = (0..frames).flat_map(|i| [(i % 30_000) as i16; 2]).collect();
+    assert_eq!(samples.len(), expected.len(), "every frame, once, in two channels");
+    assert_eq!(samples, expected);
+    let _ = std::fs::remove_file(path);
+}
