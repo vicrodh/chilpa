@@ -4,6 +4,11 @@ set -e
 root=$(git rev-parse --show-toplevel)
 "$root/tools/lint/no-platform-names"
 "$root/tools/lint/arquitectura"
+# The frontend's layers, budgets, tokens and rows (frontend ADR-0002).
+"$root/tools/lint/qml-budget"
+"$root/tools/lint/qml-literals"
+"$root/tools/lint/qml-imports"
+"$root/tools/lint/qml-hotpath"
 "$root/tools/lint/idioma"
 "$root/tools/lint/licencias"
 "$root/tools/i18n/extract" --check
