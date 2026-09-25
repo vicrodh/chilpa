@@ -15,6 +15,9 @@ pub struct SacdTrack {
     pub number: u8,
     pub start_lsn: u32,
     pub length_lsn: u32,
+    /// The area's timecode of the track's first frame, in frames of 1/75 of
+    /// a second.
+    pub start_frame: u32,
     /// Duration in frames of 1/75 of a second.
     pub duration_frames: u32,
     pub encoding: Encoding,
@@ -318,6 +321,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
     for i in 0..track_count {
         let start_lsn = be32(trl1, 8 + i * 4);
         let length_lsn = be32(trl1, SECOND_ARRAY + i * 4);
+        let start_frame = timecode_frames(trl2, 8 + i * 4);
         let duration_frames = timecode_frames(trl2, SECOND_ARRAY + i * 4);
         if trl2[8 + i * 4 + 1] >= 60
             || trl2[8 + i * 4 + 2] >= 75
@@ -343,6 +347,7 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
             number: (i + 1) as u8,
             start_lsn,
             length_lsn,
+            start_frame,
             duration_frames,
             encoding,
             title,

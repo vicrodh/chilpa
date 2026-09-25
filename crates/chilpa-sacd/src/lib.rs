@@ -16,7 +16,7 @@ pub mod toc;
 pub use frames::SacdTrackReader;
 pub use toc::{open, SacdArea, SacdTrack};
 
-/// Un sector de SACD.
+/// A SACD sector.
 pub const SECTOR: usize = 2048;
 /// Sectors per second of playback.
 pub const SECTORS_PER_SEC: u32 = 350;
@@ -34,7 +34,7 @@ pub enum Encoding {
     Dsd3In14,
     /// Uncompressed DSD, 3 bytes in 16.
     Dsd3In16,
-    /// DST compressed. Cannot be played yet.
+    /// DST compressed, lossless.
     Dst,
 }
 

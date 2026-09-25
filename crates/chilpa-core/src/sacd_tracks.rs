@@ -47,8 +47,7 @@ pub fn expand(paths: &[PathBuf]) -> Vec<PathBuf> {
 /// The library does not know what is inside an image and may not depend on
 /// what does, so the core hands it this. Each track goes in under its own
 /// path, named by the disc, as DSD64 stereo -- the stereo area is what
-/// plays. DST tracks go in too: they are the disc's, and are refused when
-/// played until DST can be decoded.
+/// plays, DST compressed or not.
 pub struct DiscImages;
 
 impl chilpa_library::scan::Containers for DiscImages {

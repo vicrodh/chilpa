@@ -595,11 +595,35 @@ msgstr "Te abrí el navegador para dar permiso. Aquí te espero."
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"
 
+msgid "a DST frame decoded to {} bytes and not 9408"
+msgstr "un frame DST se decodificó en {} bytes y no en 9408"
+
+msgid "a DST frame does not decode: {}"
+msgstr "un frame DST no se pudo decodificar: {}"
+
+msgid "a DST frame ends before all its packets came"
+msgstr "un frame DST termina antes de que llegaran todos sus paquetes"
+
+msgid "a DST frame has no timecode"
+msgstr "un frame DST no tiene código de tiempo"
+
+msgid "a DST frame is larger than 64 KiB"
+msgstr "un frame DST mide más de 64 KiB"
+
+msgid "a DST frame says it spans no packets"
+msgstr "un frame DST dice que no ocupa ningún paquete"
+
+msgid "a DST packet belongs to no frame"
+msgstr "un paquete DST no pertenece a ningún frame"
+
 msgid "a Mac's outputs take integer samples, not floating point"
 msgstr "las salidas de una Mac toman muestras enteras, no de punto flotante"
 
 msgid "a direct URL"
 msgstr "una URL directa"
+
+msgid "a frame of the stereo area is not stereo"
+msgstr "un frame del área estéreo no es estéreo"
 
 msgid "a list needs a name"
 msgstr "una lista necesita un nombre"
@@ -939,6 +963,9 @@ msgstr "esa lista está vacía"
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
 
+msgid "the DST frames jump from {} to {}"
+msgstr "los frames DST saltan de {} a {}"
+
 msgid "the JACK graph did not answer in time"
 msgstr "el grafo de JACK no respondió a tiempo"
 
@@ -1041,6 +1068,9 @@ msgstr "no se pudo olvidar la carpeta: {}"
 msgid "the folder for \"{}\" could not be deleted"
 msgstr "no se pudo borrar la carpeta de \"{}\""
 
+msgid "the frame-info records do not match the frames that start"
+msgstr "los registros de frame-info no coinciden con los frames que empiezan"
+
 msgid "the frame-info table is cut off"
 msgstr "la tabla de frame-info está cortada"
 
@@ -1137,8 +1167,8 @@ msgstr "la petición no es JSON: {}"
 msgid "the scan failed: {}"
 msgstr "el escaneo falló: {}"
 
-msgid "the sector is DST compressed"
-msgstr "el sector viene comprimido con DST"
+msgid "the sector is not encoded the way its area says"
+msgstr "el sector no está codificado como dice su área"
 
 msgid "the server answering is {}, not PipeWire"
 msgstr "el servidor que contesta es {}, no PipeWire"
@@ -1154,9 +1184,6 @@ msgstr "no se pudieron leer los tags: {}"
 
 msgid "the token_url is not https"
 msgstr "el token_url no es https"
-
-msgid "the track is DST compressed and there is no decoder yet"
-msgstr "la pista viene comprimida con DST y todavía no hay decodificador"
 
 msgid "the version"
 msgstr "la versión"
