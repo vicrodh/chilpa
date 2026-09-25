@@ -129,7 +129,7 @@ fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
     assert_eq!(reader.info().dsd_rate_hz, 2_822_400, "DSD64");
     assert_eq!(reader.info().channels, 2);
 
-    let block = reader.next_block().unwrap().expect("hay audio");
+    let block = reader.next_block().unwrap().expect("there is audio");
     assert_eq!(block.len(), 2);
     assert_eq!(block[0].len(), 9408 / 2, "half a frame per channel");
     // The left one carries the sample and the right one its complement.
@@ -159,4 +159,41 @@ fn an_image_that_is_not_a_sacd_is_refused() {
     let path = img.write("empty");
     assert!(matches!(open(&path), Err(SacdError::MalformedToc(_))));
     let _ = std::fs::remove_file(path);
+}
+
+/// The same image dumped with its physical sectors whole: 2064 bytes each, a
+/// 12-byte header and a 4-byte trailer around the 2048 that carry data. The
+/// header and trailer are not zeros, so a reader that ignores them reads
+/// garbage rather than silence.
+fn physical(img: &TestImage) -> TestImage {
+    let mut out = Vec::with_capacity(SECTORS * 2064);
+    for (lsn, sector) in img.0.chunks(SECTOR).enumerate() {
+        out.extend_from_slice(&(lsn as u32).to_be_bytes());
+        out.extend_from_slice(&[0xAA; 8]);
+        out.extend_from_slice(sector);
+        out.extend_from_slice(&[0x55; 4]);
+    }
+    TestImage(out)
+}
+
+#[test]
+fn an_image_of_2064_byte_sectors_plays_the_same_dsd() {
+    // 11 of the 39 SACD images in one collection were dumped this way, and
+    // every one was taken for something that is not a SACD.
+    let logical = build(false);
+    let physical_path = physical(&logical).write("physical");
+    let logical_path = logical.write("logical-twin");
+
+    let img = open(&physical_path).expect("a dump of 2064-byte sectors is a SACD image");
+    assert_eq!(img.area.tracks.len(), 2);
+    let track = img.area.tracks[0].clone();
+    let from_physical = SacdTrackReader::open(img, &track).unwrap().next_block().unwrap();
+
+    let img = open(&logical_path).unwrap();
+    let track = img.area.tracks[0].clone();
+    let from_logical = SacdTrackReader::open(img, &track).unwrap().next_block().unwrap();
+
+    assert_eq!(from_physical, from_logical, "the same DSD, byte for byte");
+    let _ = std::fs::remove_file(physical_path);
+    let _ = std::fs::remove_file(logical_path);
 }
