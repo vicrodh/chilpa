@@ -1167,6 +1167,9 @@ msgstr "no hay cola que guardar"
 msgid "there is not enough queue to mix"
 msgstr "hace falta más cola para mezclar"
 
+msgid "there is nothing Chilpa can play in {}"
+msgstr "no hay nada que Chilpa pueda reproducir en {}"
+
 msgid "there is nothing under {}"
 msgstr "no hay nada de {}"
 
