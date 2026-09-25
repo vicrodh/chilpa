@@ -35,9 +35,11 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "recentlyPlayed", "recentlyAdded", "all", or "library": the
-        /// records the Library screen's filter leaves.
+        /// "recentlyPlayed", "recentlyAdded", "all", "library" (the records
+        /// the Library screen's filter leaves), "artist" (one artist's
+        /// records, by `key`) or "artists" (every artist, as round cards).
         #[qproperty(QString, kind)]
+        #[qproperty(QString, key)]
         /// For "all": "artist", "title", "year", "added", "played" or
         /// "last_played".
         #[qproperty(QString, order)]
@@ -168,6 +170,7 @@ impl Albums {
 #[derive(Default)]
 pub struct AlbumGridRust {
     kind: QString,
+    key: QString,
     order: QString,
     limit: i32,
     columns: i32,
@@ -282,6 +285,22 @@ impl qobject::AlbumGridModel {
                 });
                 return;
             }
+            "artist" => {
+                let name = self.rust().key.to_string();
+                app::with(|api| api.artist_albums(&name))
+            }
+            "artists" => {
+                // An artist is drawn as a card too: its name where a record's
+                // title goes, how many records it has under it.
+                let generation = self.rust().generation + 1;
+                self.as_mut().rust_mut().generation = generation;
+                let thread = self.qt_thread();
+                worker::submit(move |reader| {
+                    let artists = reader.artists();
+                    let _ = thread.queue(move |model| model.arrive_artists(generation, artists));
+                });
+                return;
+            }
             "library" => {
                 // The album column already holds the records the filter
                 // leaves, in shelf order: its ids are the grid's snapshot.
@@ -292,6 +311,28 @@ impl qobject::AlbumGridModel {
             _ => Vec::new(),
         };
         self.show(Albums::Loaded(list));
+    }
+
+    fn arrive_artists(self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::Artist>) {
+        if generation != self.rust().generation {
+            return;
+        }
+        let cards = artists
+            .into_iter()
+            .map(|a| {
+                let n = a.album_count.to_string();
+                Album {
+                    id: 0,
+                    artist: app::with(|api| api.tf("{} record", "{} records", a.album_count as i64, &[&n])),
+                    title: a.name,
+                    year: None,
+                    track_count: a.track_count,
+                    artwork_path: a.artwork_path,
+                    play_count: 0,
+                }
+            })
+            .collect();
+        self.show(Albums::Loaded(cards));
     }
 
     fn arrive(self: Pin<&mut Self>, generation: u64, ids: Vec<i64>) {
@@ -323,6 +364,7 @@ impl qobject::AlbumGridModel {
 impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
+        self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();

@@ -40,6 +40,9 @@ pub mod qobject {
         /// "album", "mostPlayed" or "library".
         #[qproperty(QString, kind)]
         #[qproperty(i64, album_id)]
+        /// The artist, for "artist" (every track) and "artistTop" (the most
+        /// played ten).
+        #[qproperty(QString, key)]
         /// How many rows "mostPlayed" brings.
         #[qproperty(i32, limit)]
         /// Bound to `Library.rev`: the library's filter moved.
@@ -112,7 +115,7 @@ pub mod qobject {
 }
 
 use crate::{app, browse, format, worker};
-use chilpa_api::TrackRow;
+use chilpa_api::{TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
 use std::cell::RefCell;
@@ -159,6 +162,7 @@ impl Default for Rows {
 pub struct TrackListRust {
     kind: QString,
     album_id: i64,
+    key: QString,
     limit: i32,
     filter_rev: i32,
     playing_path: QString,
@@ -450,6 +454,18 @@ impl qobject::TrackListModel {
                 let tracks = app::with(|api| api.most_played_rows(limit));
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)
             }
+            "artist" | "artistTop" => {
+                let name = self.rust().key.to_string();
+                let top = kind == "artistTop";
+                let (order, count) = if top { (TrackOrder::Plays, 10) } else { (TrackOrder::Artist, 100_000) };
+                let mut tracks = app::with(|api| api.artist_tracks(&name, order, count));
+                // What never played is not "most played".
+                if top {
+                    tracks.retain(|t| t.plays > 0);
+                }
+                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
+                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), (!top).then_some(ms))
+            }
             "folder" => {
                 let tracks = super::folder_view::tracks();
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
@@ -491,6 +507,7 @@ impl cxx_qt::Initialize for qobject::TrackListModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_album_id_changed(|m| m.schedule()).release();
+        self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_filter_rev_changed(|m| m.schedule()).release();
         self.as_mut()

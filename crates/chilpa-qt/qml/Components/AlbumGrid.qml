@@ -13,6 +13,8 @@ Item {
     property AlbumGridModel model
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
+    // Artists: round portraits, the name centered (design/03 ArtistCard).
+    property bool round: false
     // Room below the last row, for what floats over the grid.
     property int bottomInset: 0
 
@@ -21,7 +23,7 @@ Item {
     readonly property real cardWidth: columns > 0 ? (width - (columns - 1) * Metrics.gridGap) / columns : 0
     readonly property real rowHeight: cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
-    signal open(int albumId)
+    signal open(int albumId, string title)
 
     implicitHeight: view.contentHeight
 
@@ -64,7 +66,8 @@ Item {
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
                     tint: at
-                    onOpen: grid.open(grid.model.albumId(at, rev))
+                    round: grid.round
+                    onOpen: grid.open(grid.model.albumId(at, rev), title)
                     onPlay: grid.model.play(at)
                 }
             }

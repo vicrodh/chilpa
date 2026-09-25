@@ -49,7 +49,11 @@ Item {
             text: hero.detail.artist
             font.pointSize: Type.body
             font.weight: Type.medium
+            font.underline: artistHover.hovered
             color: Theme.color.accent
+
+            HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
+            TapHandler { onTapped: Navigation.openArtist(hero.detail.artist) }
         }
         Text {
             width: parent.width
