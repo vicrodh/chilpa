@@ -67,12 +67,18 @@ fn sinks() -> Vec<Sink> {
 }
 
 /// Runs `pactl` and gives back what it said, or nothing.
+fn ask(args: &[&str]) -> Option<String> {
+    run("pactl", args)
+}
+
+/// Runs a PipeWire or PulseAudio tool and gives back what it said, or
+/// nothing.
 ///
 /// It is killed when it runs past `PATIENCE`. A child that is waited on
 /// forever is the difference between a window that is slow and a window that
 /// is stuck.
-fn ask(args: &[&str]) -> Option<String> {
-    let mut child = std::process::Command::new("pactl")
+fn run(program: &str, args: &[&str]) -> Option<String> {
+    let mut child = std::process::Command::new(program)
         .args(args)
         // In C, because the field names are what gets read and `pactl`
         // translates them into whatever the desktop speaks. Without this,
@@ -105,6 +111,67 @@ fn ask(args: &[&str]) -> Option<String> {
     }
     let output = child.wait_with_output().ok()?;
     String::from_utf8(output.stdout).ok()
+}
+
+/// The rates PipeWire's graph may run at, out of its own settings.
+///
+/// A stream asked for alone passes through untouched only if the graph can
+/// run at the stream's rate, and the graph switches only to the rates in
+/// `clock.allowed-rates` -- and to none when `clock.force-rate` is set. Any
+/// other rate is resampled, exclusive or not. `None` when the settings could
+/// not be read.
+fn graph_rates() -> Option<Vec<u32>> {
+    rates_in(&run("pw-metadata", &["-n", "settings"])?)
+}
+
+/// The rates in `pw-metadata`'s account of the settings.
+fn rates_in(settings: &str) -> Option<Vec<u32>> {
+    let value = |key: &str| {
+        settings.lines().find_map(|line| {
+            let after = line.split_once(&format!("key:'{key}'"))?.1;
+            let value = after.split_once("value:'")?.1;
+            value.split_once('\'').map(|(v, _)| v.to_string())
+        })
+    };
+    let forced = value("clock.force-rate").and_then(|v| v.trim().parse::<u32>().ok());
+    if let Some(rate) = forced.filter(|r| *r > 0) {
+        return Some(vec![rate]);
+    }
+    let allowed: Vec<u32> = value("clock.allowed-rates")
+        .unwrap_or_default()
+        .split(|c: char| c == ',' || c == '[' || c == ']' || c.is_whitespace())
+        .filter_map(|r| r.parse().ok())
+        .collect();
+    if !allowed.is_empty() {
+        return Some(allowed);
+    }
+    value("clock.rate").and_then(|v| v.trim().parse().ok()).map(|r| vec![r])
+}
+
+/// Whether a stream at `rate`, asked for alone, reaches the device untouched,
+/// and if not, what to tell somebody.
+///
+/// `EXCLUSIVE=1` keeps other programs off the node; it does not stop the
+/// graph resampling a rate it cannot switch to. So a 176.4 kHz track -- or
+/// DSD64 over DoP, which travels at 176.4 kHz and turns into noise when
+/// resampled -- went through a graph allowed only up to 96 and 192, and the
+/// verdict said bit-perfect because the output had been asked for alone.
+fn untouched_at(rate: u32, rates: Option<&[u32]>) -> Result<(), String> {
+    match rates {
+        Some(rates) if rates.contains(&rate) => Ok(()),
+        Some(rates) => {
+            let rates: Vec<String> = rates.iter().map(u32::to_string).collect();
+            Err(chilpa_i18n::t_args(
+                "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to \
+                 default.clock.allowed-rates, or choose the card itself",
+                &[&rates.join(", "), &rate.to_string()],
+            ))
+        }
+        None => Err(chilpa_i18n::t(
+            "the rates PipeWire's graph may run at could not be read, so nothing can be \
+             promised untouched",
+        )),
+    }
 }
 
 /// Whoever is answering the protocol, out of `pactl info`.
@@ -203,6 +270,9 @@ impl OutputBackend for PipeWire {
                 &[id],
             )));
         }
+        if exclusive {
+            untouched_at(format.sample_rate_hz, graph_rates().as_deref()).map_err(SinkError::Backend)?;
+        }
         let pcm = if exclusive {
             format!("pipewire:NODE={id},EXCLUSIVE=1")
         } else {
@@ -227,6 +297,34 @@ impl OutputBackend for PipeWire {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// What `pw-metadata -n settings` printed on the machine this was found on.
+    const SETTINGS: &str = "Found \"settings\" metadata 32
+update: id:0 key:'log.level' value:'2' type:''
+update: id:0 key:'clock.rate' value:'48000' type:''
+update: id:0 key:'clock.allowed-rates' value:'[ 44100, 48000, 88200, 96000, 192000 ]' type:''
+update: id:0 key:'clock.quantum' value:'1024' type:''
+update: id:0 key:'clock.force-rate' value:'0' type:''
+";
+
+    #[test]
+    fn the_graph_s_rates_are_read_from_its_settings() {
+        assert_eq!(rates_in(SETTINGS), Some(vec![44_100, 48_000, 88_200, 96_000, 192_000]));
+        let forced = SETTINGS.replace("clock.force-rate' value:'0'", "clock.force-rate' value:'96000'");
+        assert_eq!(rates_in(&forced), Some(vec![96_000]), "a forced rate is the only one");
+        let none = SETTINGS.replace("[ 44100, 48000, 88200, 96000, 192000 ]", "[ ]");
+        assert_eq!(rates_in(&none), Some(vec![48_000]), "with no list, the one it runs at");
+    }
+
+    #[test]
+    fn a_rate_the_graph_cannot_switch_to_is_not_promised_untouched() {
+        let rates = rates_in(SETTINGS).unwrap();
+        assert!(untouched_at(44_100, Some(&rates)).is_ok());
+        assert!(untouched_at(192_000, Some(&rates)).is_ok());
+        let dop = untouched_at(176_400, Some(&rates)).expect_err("DSD64 over DoP would be resampled");
+        assert!(dop.contains("176400"), "{dop}");
+        assert!(untouched_at(44_100, None).is_err(), "nothing is promised from settings nobody read");
+    }
 
     #[test]
     fn asking_never_hangs_and_never_panics() {

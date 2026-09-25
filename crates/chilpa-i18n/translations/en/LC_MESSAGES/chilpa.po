@@ -7,6 +7,9 @@ msgstr ""
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr ""
 
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
+msgstr ""
+
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
@@ -1105,6 +1108,9 @@ msgid "the plugin sandbox could not be started"
 msgstr ""
 
 msgid "the plugin sandbox is not started"
+msgstr ""
+
+msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
 msgstr ""
 
 msgid "the reply could not be built"
