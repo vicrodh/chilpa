@@ -9,7 +9,8 @@
 //! `CHILPA_SHOT=<file.png>` saves the window once it has settled and quits,
 //! so a screen can be looked at without a display. `CHILPA_ROUTE` opens a
 //! screen at start ("album:7"), for the same reason, and
-//! `CHILPA_PLAY_ALBUM=<id>` starts a record playing once the window is up.
+//! `CHILPA_PLAY_ALBUM=<id>` starts a record playing once the window is up,
+//! and `CHILPA_ADD_FOLDER=<path>` adds a folder to the library and scans it.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -29,6 +30,7 @@ pub mod qobject {
         /// The screen to open at start, and which record: from "album:7".
         #[qproperty(QString, route)]
         #[qproperty(i64, route_id)]
+        #[qproperty(QString, add_folder)]
         type Dev = super::DevRust;
 
         /// Called on every presented frame while `frames` is on.
@@ -51,6 +53,7 @@ pub struct DevRust {
     shot: QString,
     route: QString,
     route_id: i64,
+    add_folder: QString,
     last: Option<Instant>,
     intervals: Vec<f64>,
 }
@@ -66,6 +69,7 @@ impl Default for DevRust {
             shot: QString::from(&var("CHILPA_SHOT")),
             route: QString::from(screen),
             route_id: id.parse().unwrap_or(0),
+            add_folder: QString::from(&var("CHILPA_ADD_FOLDER")),
             last: None,
             intervals: Vec::new(),
         }

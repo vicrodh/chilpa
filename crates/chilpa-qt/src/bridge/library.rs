@@ -21,6 +21,9 @@ pub mod qobject {
         #[qml_singleton]
         /// Bumped when new columns and a new snapshot are in.
         #[qproperty(i32, rev)]
+        /// Bumped when the library itself changed: a scan ended, a folder
+        /// was forgotten. Every screen that shows the library binds to it.
+        #[qproperty(i32, content_rev)]
         /// True while the worker is answering.
         #[qproperty(bool, busy)]
         /// "22 albums · 177 songs".
@@ -56,6 +59,7 @@ use std::rc::Rc;
 #[derive(Default)]
 pub struct LibraryRust {
     rev: i32,
+    content_rev: i32,
     busy: bool,
     summary: QString,
     year: QString,
@@ -123,6 +127,13 @@ impl qobject::Library {
         self.refresh();
     }
 
+    /// The library changed under the screens: read it again and tell them.
+    pub fn content_changed(mut self: Pin<&mut Self>) {
+        let next = self.content_rev().wrapping_add(1);
+        self.as_mut().set_content_rev(next);
+        self.refresh();
+    }
+
     /// Asks the worker for the columns and the snapshot of this filter.
     fn refresh(mut self: Pin<&mut Self>) {
         let generation = self.rust().generation + 1;
@@ -163,6 +174,7 @@ impl qobject::Library {
 
 impl cxx_qt::Initialize for qobject::Library {
     fn initialize(self: Pin<&mut Self>) {
+        crate::registry::register_library(self.qt_thread());
         self.refresh();
     }
 }

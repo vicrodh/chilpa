@@ -7,6 +7,8 @@ pub mod qobject {
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qstringlist.h");
+        type QStringList = cxx_qt_lib::QStringList;
     }
 
     #[auto_cxx_name]
@@ -19,15 +21,20 @@ pub mod qobject {
         /// "open", "collapsed" or "closed".
         #[qproperty(QString, sidebar_mode)]
         #[qproperty(i32, sidebar_width)]
+        /// The Settings sections: ids, labels and the names of their glyphs.
+        #[qproperty(QStringList, sections)]
+        #[qproperty(QStringList, section_labels)]
+        #[qproperty(QStringList, section_icons)]
         type SettingsModel = super::SettingsRust;
     }
 
+    impl cxx_qt::Threading for SettingsModel {}
     impl cxx_qt::Initialize for SettingsModel {}
 }
 
 use crate::app;
-use cxx_qt::CxxQtType as _;
-use cxx_qt_lib::QString;
+use cxx_qt::{CxxQtType as _, Threading as _};
+use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
 
 const DENSITY: &str = "appearance.density";
@@ -39,6 +46,17 @@ pub struct SettingsRust {
     density: QString,
     sidebar_mode: QString,
     sidebar_width: i32,
+    sections: QStringList,
+    section_labels: QStringList,
+    section_icons: QStringList,
+}
+
+fn strings(items: impl Iterator<Item = String>) -> QStringList {
+    let mut l = QList::<QString>::default();
+    for i in items {
+        l.append(QString::from(&i));
+    }
+    QStringList::from(&l)
 }
 
 fn remember(key: &'static str, value: String) {
@@ -47,11 +65,16 @@ fn remember(key: &'static str, value: String) {
 
 impl cxx_qt::Initialize for qobject::SettingsModel {
     fn initialize(mut self: Pin<&mut Self>) {
+        crate::registry::register_settings(self.qt_thread());
         let (density, mode, width) = app::with(|api| {
             (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH))
         });
         {
             let mut this = self.as_mut().rust_mut();
+            let all = crate::settings_schema::SECTIONS;
+            this.sections = strings(all.iter().map(|s| s.id.to_string()));
+            this.section_labels = strings(all.iter().map(|s| app::t(s.label)));
+            this.section_icons = strings(all.iter().map(|s| s.icon.to_string()));
             this.density = QString::from(density.as_deref().unwrap_or("compact"));
             this.sidebar_mode = QString::from(mode.as_deref().unwrap_or("open"));
             // Zero means the default width, which the theme knows.

@@ -12,6 +12,9 @@ mod bridge;
 mod browse;
 mod format;
 mod navigation;
+mod paths;
+mod registry;
+mod settings_schema;
 mod theme;
 mod worker;
 

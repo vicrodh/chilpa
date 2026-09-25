@@ -77,6 +77,29 @@ Item {
             onActivated: (index) => SettingsModel.density = index === 1 ? "rich" : "compact"
         }
 
+        IconButton {
+            id: more
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Menu", I18n.rev)
+            glyph: Icons.menu2
+            onClicked: mainMenu.open()
+
+            Menu {
+                id: mainMenu
+                y: more.height + Metrics.gap4
+                x: more.width - width
+                entries: [
+                    { text: I18n.tr("Settings", I18n.rev), hint: "Ctrl+," },
+                    { text: I18n.tr("Library folders", I18n.rev) },
+                    { separator: true },
+                    { text: I18n.tr("Quit", I18n.rev), hint: "Ctrl+Q" }
+                ]
+                onChosen: (index) => index === 0 ? Navigation.openSection("")
+                    : index === 1 ? Navigation.go("folders", 0)
+                    : Qt.quit()
+            }
+        }
+
         Rectangle {
             visible: Qt.platform.os !== "osx"
             anchors.verticalCenter: parent.verticalCenter

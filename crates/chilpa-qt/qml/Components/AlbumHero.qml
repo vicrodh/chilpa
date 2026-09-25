@@ -66,6 +66,7 @@ Item {
             PillButton {
                 kind: "primary"
                 glyph: Icons.playerPlayFilled
+                filled: true
                 text: I18n.tr("Play", I18n.rev)
                 onClicked: hero.play()
             }

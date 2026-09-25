@@ -72,5 +72,7 @@ Item {
     Component.onCompleted: {
         if (Dev.route !== "")
             Navigation.go(Dev.route, Dev.routeId)
+        if (Dev.addFolder !== "")
+            LibraryFolders.add(Dev.addFolder)
     }
 }

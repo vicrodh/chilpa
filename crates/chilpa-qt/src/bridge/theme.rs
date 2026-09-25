@@ -60,11 +60,14 @@ pub mod qobject {
         #[cxx_name = "systemDarkChanged"]
         fn system_dark_changed(self: Pin<&mut ThemeModel>);
     }
+
+    impl cxx_qt::Threading for ThemeModel {}
+    impl cxx_qt::Initialize for ThemeModel {}
 }
 
 use crate::app;
 use crate::theme::{parse_color, Rgba, Theme};
-use cxx_qt::CxxQtType as _;
+use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QColor, QString};
 use std::pin::Pin;
 
@@ -166,5 +169,11 @@ impl qobject::ThemeModel {
     fn bump(mut self: Pin<&mut Self>) {
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
+    }
+}
+
+impl cxx_qt::Initialize for qobject::ThemeModel {
+    fn initialize(self: Pin<&mut Self>) {
+        crate::registry::register_theme(self.qt_thread());
     }
 }

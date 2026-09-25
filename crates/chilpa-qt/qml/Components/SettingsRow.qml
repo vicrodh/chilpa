@@ -1,0 +1,127 @@
+import QtQuick
+import com.blitzfc.chilpa
+import "../Theme"
+import "../Primitives"
+
+// One row of Settings (design/03 SettingsRow): a group's title, a setting
+// with its control on the right, or a line of a report under one. The
+// control comes from the setting's kind in the schema; no setting has QML
+// of its own (frontend ADR-0010).
+Item {
+    id: row
+
+    required property int rowKind
+    required property string key
+    required property string title
+    required property string description
+    required property string control
+    required property string action
+    required property string value
+    required property var options
+    required property var optionValues
+    required property var marks
+
+    property SettingsPage page
+
+    // A group's title, or a line of a report under a setting.
+    readonly property bool group: rowKind === 0
+    readonly property bool line: rowKind === 2
+
+    implicitHeight: group ? Metrics.settingsGroup
+        : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
+
+    Text {
+        visible: row.group
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.gap6
+        text: row.title.toUpperCase()
+        font.pointSize: Type.label
+        font.weight: Type.semibold
+        font.letterSpacing: Type.labelTracking
+        color: Theme.color.textTertiary
+    }
+
+    Column {
+        id: texts
+        visible: !row.group
+        anchors.left: parent.left
+        anchors.leftMargin: row.line ? Metrics.gap16 : 0
+        anchors.right: controls.left
+        anchors.rightMargin: Metrics.gap16
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Metrics.gap2
+
+        Text {
+            width: parent.width
+            text: row.title
+            wrapMode: Text.Wrap
+            font.pointSize: row.line ? Type.row : Type.bodyLarge
+            font.weight: row.line ? Type.regular : Type.medium
+            color: Theme.color.textPrimary
+        }
+        Text {
+            width: parent.width
+            visible: row.description !== ""
+            text: row.description
+            wrapMode: Text.Wrap
+            font.pointSize: Type.meta
+            color: Theme.color.textSecondary
+        }
+    }
+
+    // Only the row's own control is built.
+    Loader {
+        id: controls
+        visible: !row.group
+        anchors.right: parent.right
+        anchors.verticalCenter: parent.verticalCenter
+        sourceComponent: row.line ? verdict
+            : row.control === "toggle" ? toggle
+            : row.control === "select" || row.control === "device" ? select
+            : row.control === "segmented" ? segmented
+            : row.control === "button" || row.control === "link" ? button
+            : null
+    }
+
+    Component {
+        id: toggle
+        Toggle {
+            checked: row.value === "true"
+            onToggled: (on) => row.page.set(row.key, on ? "true" : "false")
+        }
+    }
+    Component {
+        id: select
+        SelectField {
+            options: row.options
+            values: row.optionValues
+            marks: row.marks
+            value: row.value
+            onPicked: (value) => row.page.set(row.key, value)
+        }
+    }
+    Component {
+        id: segmented
+        SegmentedControl {
+            options: row.options.map((text) => ({ text: text }))
+            current: row.optionValues.indexOf(row.value)
+            onActivated: (index) => row.page.set(row.key, row.optionValues[index])
+        }
+    }
+    Component {
+        id: button
+        PillButton {
+            text: row.action
+            glyph: row.control === "link" ? Icons.chevronRight : ""
+            onClicked: row.page.press(row.key)
+        }
+    }
+    Component {
+        id: verdict
+        Text {
+            text: row.value
+            font.pointSize: Type.row
+            color: row.value === "bit-perfect" ? Theme.color.accent : Theme.color.textSecondary
+        }
+    }
+}

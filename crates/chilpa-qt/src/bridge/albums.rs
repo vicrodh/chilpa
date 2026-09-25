@@ -39,6 +39,8 @@ pub mod qobject {
         #[qproperty(i32, max_rows)]
         #[qproperty(i32, albums)]
         #[qproperty(i32, rev)]
+        /// Bound to `Library.contentRev`: the library changed.
+        #[qproperty(i32, content_rev)]
         type AlbumGridModel = super::AlbumGridRust;
 
         #[qinvokable]
@@ -98,6 +100,7 @@ pub struct AlbumGridRust {
     max_rows: i32,
     albums: i32,
     rev: i32,
+    content_rev: i32,
     list: Vec<Album>,
     rows: usize,
     pending: bool,
@@ -210,6 +213,7 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
+        self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut().on_columns_changed(|m| m.split_rows()).release();
         self.as_mut().on_max_rows_changed(|m| m.split_rows()).release();
     }

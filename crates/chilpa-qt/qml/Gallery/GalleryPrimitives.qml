@@ -24,7 +24,7 @@ GallerySection {
 
     Row {
         spacing: Metrics.gap8
-        PillButton { kind: "primary"; glyph: Icons.playerPlayFilled; text: "Play" }
+        PillButton { kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; text: "Play" }
         PillButton { glyph: Icons.arrowsShuffle; text: "Shuffle" }
     }
 
@@ -34,6 +34,29 @@ GallerySection {
     }
 
     SearchField { width: Metrics.sidebarWidth; placeholder: "Search"; shortcut: "Ctrl K" }
+
+    Row {
+        spacing: Metrics.gap8
+        Toggle { checked: true }
+        Toggle {}
+        SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
+    }
+
+    Rectangle {
+        width: Metrics.menuWidth
+        height: entries.implicitHeight
+        radius: Metrics.radiusMenu
+        color: Theme.color.surfaceRaised
+        Edge {}
+        Column {
+            id: entries
+            width: parent.width
+            MenuEntry { width: parent.width; entry: ({ text: "Settings", hint: "Ctrl+," }) }
+            MenuEntry { width: parent.width; entry: ({ separator: true }) }
+            MenuEntry { width: parent.width; entry: ({ text: "USB DAC", detail: "hw:1,0", checked: true, mark: "BP" }) }
+        }
+        Menu { entries: [{ text: "A menu, closed" }] }
+    }
 
     Rectangle {
         width: Metrics.sidebarWidth

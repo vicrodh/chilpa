@@ -62,6 +62,15 @@ QtObject {
     readonly property int segmentHeight: 24
     readonly property int fieldHeight: 28
     readonly property int fieldPadding: 9
+    readonly property int fieldHeightLarge: 32
+    readonly property int selectWidth: 260
+    readonly property int menuWidth: 236
+    readonly property int menuItem: 30
+    readonly property int menuItemTall: 44
+    readonly property int toggleWidth: 38
+    readonly property int toggleHeight: 22
+    readonly property int toggleKnob: 16
+    readonly property int toggleInset: 3
     readonly property int focusRing: 2
     readonly property int tooltipDelay: 600
     // How long a screenshot waits for covers and fonts to arrive.
@@ -172,6 +181,15 @@ QtObject {
     readonly property int panesHandle: 12
     readonly property int toolbar: 28
     readonly property int crumbHeight: 22
+
+    // Settings (design/03 SettingsRow, design/06 Settings).
+    readonly property int settingsNav: 188
+    readonly property int settingsRow: 54
+    readonly property int settingsGroup: 44
+    readonly property int settingsMaxWidth: 880
+    readonly property int folderRow: 48
+    readonly property int folderDateWidth: 130
+    readonly property int folderStatusWidth: 70
     // How the four columns share the width: year, genre, artist, album.
     readonly property var paneShares: [0.7, 1.0, 1.2, 1.3]
     readonly property real paneShareTotal: 4.2

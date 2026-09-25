@@ -28,7 +28,13 @@ pub mod qobject {
         #[qproperty(i64, route_id)]
         #[qproperty(bool, can_back)]
         #[qproperty(bool, can_forward)]
+        /// The Settings section on screen, when the screen is Settings.
+        #[qproperty(QString, section)]
         type Navigation = super::NavigationRust;
+
+        /// Opens a Settings section inside the active tab.
+        #[qinvokable]
+        fn open_section(self: Pin<&mut Navigation>, id: &QString);
 
         /// Goes somewhere inside the active tab.
         #[qinvokable]
@@ -51,12 +57,13 @@ pub mod qobject {
         fn close(self: Pin<&mut Navigation>, index: i32);
     }
 
+    impl cxx_qt::Threading for Navigation {}
     impl cxx_qt::Initialize for Navigation {}
 }
 
 use crate::app;
 use crate::navigation::{Route, Screen, Tabs};
-use cxx_qt::CxxQtType as _;
+use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
 
@@ -69,11 +76,12 @@ pub struct NavigationRust {
     route_id: i64,
     can_back: bool,
     can_forward: bool,
+    section: QString,
     tabs: Tabs,
 }
 
 fn route(screen: &QString, id: i64) -> Option<Route> {
-    Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id })
+    Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id, section: "" })
 }
 
 /// A tab's title and icon.
@@ -84,6 +92,7 @@ fn label(r: Route) -> (String, &'static str) {
         Screen::Artists => (app::t("Artists"), "microphone2"),
         Screen::Albums => (app::t("Albums"), "disc"),
         Screen::Settings => (app::t("Settings"), "settings"),
+        Screen::Folders => (app::t("Library folders"), "folder"),
         Screen::Album => {
             let title = app::with(|api| api.album(r.id).map(|a| a.title)).unwrap_or_default();
             (title, "disc")
@@ -104,6 +113,12 @@ impl qobject::Navigation {
             self.as_mut().rust_mut().tabs.open(to);
             self.publish();
         }
+    }
+
+    pub fn open_section(mut self: Pin<&mut Self>, id: &QString) {
+        let section = crate::settings_schema::section(&id.to_string()).id;
+        self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, section });
+        self.publish();
     }
 
     pub fn back(mut self: Pin<&mut Self>) {
@@ -143,12 +158,14 @@ impl qobject::Navigation {
         self.as_mut().set_can_back(tabs.can_back());
         self.as_mut().set_can_forward(tabs.can_forward());
         self.as_mut().set_route_id(now.id);
+        self.as_mut().set_section(QString::from(now.section));
         self.as_mut().set_screen(QString::from(now.screen.name()));
     }
 }
 
 impl cxx_qt::Initialize for qobject::Navigation {
     fn initialize(self: Pin<&mut Self>) {
+        crate::registry::register_navigation(self.qt_thread());
         self.publish();
     }
 }

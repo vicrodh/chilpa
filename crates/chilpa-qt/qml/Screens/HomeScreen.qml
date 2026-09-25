@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Components"
 
 // Home (design/06): what played last, what came in last, and the most
@@ -18,6 +19,7 @@ Flickable {
     AlbumGridModel {
         id: played
         kind: "recentlyPlayed"
+        contentRev: Library.contentRev
         limit: Metrics.shelfLimit
         maxRows: 1
         columns: playedGrid.columns
@@ -25,6 +27,7 @@ Flickable {
     AlbumGridModel {
         id: added
         kind: "recentlyAdded"
+        contentRev: Library.contentRev
         limit: Metrics.shelfLimit
         maxRows: 1
         columns: addedGrid.columns
@@ -32,6 +35,7 @@ Flickable {
     TrackListModel {
         id: most
         kind: "mostPlayed"
+        filterRev: Library.contentRev
         limit: Metrics.mostPlayedLimit
         playingPath: Player.path
     }
@@ -57,6 +61,13 @@ Flickable {
             text: I18n.tr("Nothing here yet: add a folder to the library and its records show up here.", I18n.rev)
             font.pointSize: Type.body
             color: Theme.color.textSecondary
+        }
+        PillButton {
+            visible: played.albums === 0 && added.albums === 0
+            kind: "primary"
+            glyph: Icons.folderPlus
+            text: I18n.tr("Add a folder", I18n.rev)
+            onClicked: Navigation.go("folders", 0)
         }
 
         SectionHeader {

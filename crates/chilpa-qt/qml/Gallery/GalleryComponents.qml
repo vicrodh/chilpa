@@ -73,5 +73,13 @@ GallerySection {
             }
         }
         AlbumCard { width: Metrics.cardMinWidth; title: "Low Orbit"; subtitle: "Mora Vale"; tint: 2 }
+        SettingsPage { id: audio; section: "appearance" }
+        Repeater {
+            model: audio
+            SettingsRow { width: section.width; page: audio }
+        }
+        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
+        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
+        ScanProgress { width: section.width }
     }
 }
