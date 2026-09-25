@@ -299,7 +299,7 @@ impl Core {
         let opened = played.delivery.opened;
         let quality = chilpa_models::AudioQuality {
             codec: format!("{:?}", opened.sample_format).to_lowercase(),
-            bit_depth: opened.sample_format.is_integer().then(|| opened.sample_format.valid_bits()),
+            bit_depth: played.delivery.bits_carried(),
             sample_rate_hz: opened.sample_rate_hz,
             channels: opened.channels as u8,
         };
@@ -307,7 +307,11 @@ impl Core {
             Outcome::Finished { frames } | Outcome::Stopped { frames } => Ok(PlayedSummary {
                 frames,
                 quality,
-                bit_perfect: played.delivery.nothing_was_converted(),
+                // Both halves, as the player says it. The delivery knows what
+                // Chilpa did and nothing about the road after it, so on its
+                // own this called a JACK graph or a shared server exact.
+                bit_perfect: played.delivery.nothing_was_converted()
+                    && path_is_exact(device, bit_perfect),
             }),
             Outcome::Failed { frames, error } => {
                 Err(chilpa_i18n::t_args(
