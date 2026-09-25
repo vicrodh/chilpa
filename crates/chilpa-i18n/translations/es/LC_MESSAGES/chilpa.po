@@ -1020,9 +1020,6 @@ msgstr "el control de volumen del dispositivo ya no está"
 msgid "the disc carries no audio tracks"
 msgstr "el disco no trae pistas de audio"
 
-msgid "the disc carries no tracks"
-msgstr "el disco no trae pistas"
-
 msgid "the drive does not answer: {}"
 msgstr "la unidad no responde: {}"
 
@@ -1055,6 +1052,9 @@ msgstr "el host no pudo atender"
 
 msgid "the image could not be read: {}"
 msgstr "no se pudo leer la imagen: {}"
+
+msgid "the image has no track {}"
+msgstr "la imagen no tiene pista {}"
 
 msgid "the image is shorter than its master table"
 msgstr "la imagen es más corta que su tabla maestra"

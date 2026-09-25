@@ -33,6 +33,7 @@ hdmi
 hi
 # Inglés que el diccionario español también acepta
 is
+iso
 jis
 kcfstringencodingutf8
 kr

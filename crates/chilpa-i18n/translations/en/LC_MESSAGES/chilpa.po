@@ -1020,9 +1020,6 @@ msgstr ""
 msgid "the disc carries no audio tracks"
 msgstr ""
 
-msgid "the disc carries no tracks"
-msgstr ""
-
 msgid "the drive does not answer: {}"
 msgstr ""
 
@@ -1054,6 +1051,9 @@ msgid "the host could not serve it"
 msgstr ""
 
 msgid "the image could not be read: {}"
+msgstr ""
+
+msgid "the image has no track {}"
 msgstr ""
 
 msgid "the image is shorter than its master table"
