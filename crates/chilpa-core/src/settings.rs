@@ -30,6 +30,10 @@ pub struct Settings {
     /// whatever the environment asks for, which is right until someone
     /// chooses otherwise.
     pub language: String,
+    /// The window's own preferences, by their dotted key:
+    /// `appearance.theme`, `ui.sidebar.width`. The engine reads none of
+    /// them; they are kept in the same file so there is one place to look.
+    pub window: BTreeMap<String, String>,
 }
 
 /// The visualizer someone who has chosen none starts with.
@@ -48,6 +52,7 @@ impl Default for Settings {
             album_sort: String::new(),
             visualizer: DEFAULT_VISUALIZER.to_string(),
             language: String::new(),
+            window: BTreeMap::new(),
         }
     }
 }
@@ -117,6 +122,8 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     if let Some(v) = pairs.get("language") {
         s.language = v.clone();
     }
+    // The engine's keys are plain words; a dotted key is the window's.
+    s.window = pairs.into_iter().filter(|(k, _)| k.contains('.')).collect();
     s
 }
 
@@ -142,7 +149,7 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
     if let Some(dir) = file.parent() {
         std::fs::create_dir_all(dir)?;
     }
-    let text = format!(
+    let mut text = format!(
         "# Chilpa's preferences. Editing this by hand is fine.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\nlanguage = {}\n",
         settings.output,
         settings.bit_perfect,
@@ -152,6 +159,9 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         settings.visualizer,
         settings.language
     );
+    for (key, value) in &settings.window {
+        text.push_str(&format!("{key} = {value}\n"));
+    }
     std::fs::write(file, text)
 }
 
@@ -207,6 +217,10 @@ mod tests {
             album_sort: "played".into(),
             visualizer: "spectrum".into(),
             language: "es".into(),
+            window: [("appearance.theme", "dark"), ("ui.sidebar.width", "240")]
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.to_string()))
+                .collect(),
         };
         save_to(&file, &s).unwrap();
         assert_eq!(load_from(&file), s);
@@ -240,6 +254,18 @@ mod tests {
         let file = temporary("no-layout");
         std::fs::write(&file, "layout =\n").unwrap();
         assert_eq!(load_from(&file).layout, DEFAULT_LAYOUT);
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn the_window_keeps_its_preferences_without_touching_the_engines() {
+        let file = temporary("window");
+        std::fs::write(&file, "output = hw:1,0\nappearance.density = rich\n").unwrap();
+        let s = load_from(&file);
+        assert_eq!(s.window.get("appearance.density").map(String::as_str), Some("rich"));
+        assert!(!s.window.contains_key("output"), "a plain key is the engine's");
+        save_to(&file, &s).unwrap();
+        assert_eq!(load_from(&file), s, "and it survives a save");
         let _ = std::fs::remove_file(file);
     }
 
