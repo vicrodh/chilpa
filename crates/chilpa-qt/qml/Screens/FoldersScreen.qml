@@ -1,6 +1,5 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import QtQuick.Dialogs
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
@@ -67,7 +66,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             glyph: Icons.folder
             text: I18n.tr("Browse…", I18n.rev)
-            onClicked: dialog.open()
+            onClicked: LibraryFolders.browse()
         }
         PillButton {
             id: confirm
@@ -105,12 +104,6 @@ Item {
             onRescan: LibraryFolders.rescan(path)
             onForget: LibraryFolders.forget(path)
         }
-    }
-
-    FolderDialog {
-        id: dialog
-        title: I18n.tr("Add a folder to the library", I18n.rev)
-        onAccepted: LibraryFolders.add(selectedFolder.toString())
     }
 
     function addTyped() {
