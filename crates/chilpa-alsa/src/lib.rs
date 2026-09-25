@@ -120,6 +120,12 @@ impl AlsaSink {
             // Exact, not nearest: this is where resampling used to sneak in.
             params.set_rate(stream.sample_rate_hz, ValueOr::Nearest).map_err(backend)?;
             params.set_channels(u32::from(stream.channels)).map_err(backend)?;
+            // Half a second of buffer, as mpd keeps. Left to itself ALSA gave
+            // a USB DAC two seconds, and everything that waits on what the
+            // buffer holds waited that long: a skip, a seek, the clock, the
+            // title of the next track. A device that cannot keep this little
+            // gets the nearest it can; this is not worth refusing one over.
+            let _ = params.set_buffer_time_near(500_000, ValueOr::Nearest);
             pcm.hw_params(&params).map_err(backend)?;
             let rate = params.get_rate().map_err(backend)?;
             let channels = params.get_channels().map_err(backend)? as u16;
