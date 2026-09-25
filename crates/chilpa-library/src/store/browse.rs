@@ -284,6 +284,24 @@ impl Library {
         Ok(ids.iter().filter_map(|id| found.get(id).cloned()).collect())
     }
 
+    /// The rows of those files, aligned with them: `None` for a file the
+    /// library does not have. What a queue shows, where anything can be
+    /// queued, library or not. In chunks, so a long queue never builds one
+    /// statement with thousands of parameters.
+    pub fn tracks_by_paths(&self, paths: &[String]) -> rusqlite::Result<Vec<Option<BrowseTrack>>> {
+        let mut found = std::collections::HashMap::new();
+        for chunk in paths.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let sql = format!("{ROW} {FROM} WHERE t.external_id IN ({marks})");
+            let mut stmt = self.db.prepare(&sql)?;
+            for row in stmt.query_map(params_from_iter(chunk.iter()), row)? {
+                let t = row?;
+                found.insert(t.external_id.clone(), t);
+            }
+        }
+        Ok(paths.iter().map(|p| found.get(p).cloned()).collect())
+    }
+
     /// All the tracks a small filter leaves, in one go: one record, one
     /// shelf of a home screen. For the whole library, the snapshot.
     pub fn browse_tracks(&self, f: &Filter, order: TrackOrder, limit: usize) -> rusqlite::Result<Vec<BrowseTrack>> {
@@ -404,6 +422,14 @@ mod tests {
         let order: Vec<(Option<u16>, Option<u16>)> = rows.iter().map(|t| (t.disc_number, t.track_number)).collect();
         assert_eq!(order, [(Some(1), Some(1)), (Some(1), Some(2)), (Some(2), Some(1))]);
         assert_eq!((rows[0].bit_depth, rows[0].sample_rate_hz), (Some(24), Some(192_000)));
+    }
+
+    #[test]
+    fn a_queue_reads_its_files_and_leaves_a_hole_for_the_unknown() {
+        let lib = shelf();
+        let rows = lib.tracks_by_paths(&["/20.flac".into(), "/nowhere.flac".into(), "/10.flac".into()]).unwrap();
+        let ids: Vec<Option<i64>> = rows.iter().map(|r| r.as_ref().map(|t| t.id)).collect();
+        assert_eq!(ids, [Some(20), None, Some(10)]);
     }
 
     #[test]

@@ -142,6 +142,39 @@ impl Chilpa {
         lib.albums_by_ids(ids).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
+    /// The queue from what plays on, as rows: what plays first, then what
+    /// comes next. A file the library does not have gets a row from its
+    /// name, so anything queued shows.
+    pub fn queue_rows(&mut self) -> Vec<TrackRow> {
+        let from = self.now.index.min(self.queue.len());
+        let paths: Vec<String> = self.queue[from..].to_vec();
+        let removed: Vec<bool> = (from..self.queue.len()).map(|i| self.removed.get(i).copied().unwrap_or(false)).collect();
+        let Some(lib) = self.library() else { return Vec::new() };
+        let known = lib.tracks_by_paths(&paths).unwrap_or_else(|_| vec![None; paths.len()]);
+        paths
+            .into_iter()
+            .zip(known)
+            .zip(removed)
+            .filter(|(_, gone)| !gone)
+            .map(|((path, row), _)| match row {
+                Some(t) => row_of(t),
+                None => TrackRow {
+                    title: crate::title_of(std::path::Path::new(&path)),
+                    quality: Quality::of_file(&path, None, None),
+                    id: 0,
+                    path,
+                    artist: String::new(),
+                    album: String::new(),
+                    album_id: 0,
+                    disc: 0,
+                    number: 0,
+                    duration_ms: 0,
+                    plays: 0,
+                },
+            })
+            .collect()
+    }
+
     /// A record's tracks, in disc order.
     pub fn album_track_rows(&mut self, album_id: i64) -> Vec<TrackRow> {
         let Some(lib) = self.library() else { return Vec::new() };
