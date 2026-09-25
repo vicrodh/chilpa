@@ -1095,6 +1095,9 @@ msgstr "el host no pudo atender"
 msgid "the image could not be read: {}"
 msgstr "no se pudo leer la imagen: {}"
 
+msgid "the image ends {} frames before the track does"
+msgstr "la imagen termina {} frames antes que la pista"
+
 msgid "the image has no track {}"
 msgstr "la imagen no tiene pista {}"
 

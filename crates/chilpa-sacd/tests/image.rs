@@ -576,3 +576,17 @@ fn an_uncompressed_track_seeks_to_the_sector_its_frame_starts_in() {
     assert_eq!((block[0][0], block[1][0]), (expected, !expected), "the first byte of the fourth sector");
     let _ = std::fs::remove_file(path);
 }
+
+#[test]
+fn an_image_cut_short_says_so_instead_of_ending_the_track() {
+    // The first track of `build` says it lasts a second, 75 frames, and its
+    // ten sectors hold two: an image whose copy stopped early.
+    let (mut first, path) = reader(&build(false), "cut-short", 1);
+    assert!(first.next_block().unwrap().is_some());
+    assert!(first.next_block().unwrap().is_some());
+    match first.next_block() {
+        Err(chilpa_dsd::DsdError::Corrupt(why)) => assert!(why.contains("73"), "{why}"),
+        other => panic!("the missing 73 frames went unsaid: {other:?}"),
+    }
+    let _ = std::fs::remove_file(path);
+}

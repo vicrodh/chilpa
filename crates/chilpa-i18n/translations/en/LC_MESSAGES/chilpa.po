@@ -1095,6 +1095,9 @@ msgstr ""
 msgid "the image could not be read: {}"
 msgstr ""
 
+msgid "the image ends {} frames before the track does"
+msgstr ""
+
 msgid "the image has no track {}"
 msgstr ""
 

@@ -75,8 +75,9 @@ fn image(name: &str) -> PathBuf {
         let t2 = sector(&mut img, AREA + 2);
         t2[..8].copy_from_slice(b"SACDTRL2");
         t2[12..16].copy_from_slice(&[0, 1, 0, 0]);
-        t2[SECOND..SECOND + 4].copy_from_slice(&[0, 1, 0, 0]);
-        t2[SECOND + 4..SECOND + 8].copy_from_slice(&[0, 1, 0, 0]);
+        // Two frames each: what ten sectors of 2,042 bytes of audio hold.
+        t2[SECOND..SECOND + 4].copy_from_slice(&[0, 0, 2, 0]);
+        t2[SECOND + 4..SECOND + 8].copy_from_slice(&[0, 0, 2, 0]);
     }
     {
         let b = sector(&mut img, AREA + 3);

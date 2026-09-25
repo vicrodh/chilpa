@@ -174,9 +174,13 @@ impl DsdSource for SacdTrackReader {
         }
         self.fill().map_err(|e| chilpa_dsd::DsdError::Corrupt(e.to_string()))?;
         if self.pending.len() < STEREO_FRAME {
-            // What is left does not make a frame: it is the end of the track.
+            // The sectors ran out and the disc says there is more: an image
+            // cut short, which used to end the track there as if it were over.
             self.pending.clear();
-            return Ok(None);
+            return Err(chilpa_dsd::DsdError::Corrupt(chilpa_i18n::t_args(
+                "the image ends {} frames before the track does",
+                &[&self.frames_left.to_string()],
+            )));
         }
         let frame: Vec<u8> = self.pending.drain(..STEREO_FRAME).collect();
         self.frames_left -= 1;
