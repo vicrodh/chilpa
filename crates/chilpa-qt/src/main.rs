@@ -9,6 +9,7 @@
 
 mod app;
 mod bridge;
+mod theme;
 
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 // Only Linux has a desktop file to be named after, and only there is the

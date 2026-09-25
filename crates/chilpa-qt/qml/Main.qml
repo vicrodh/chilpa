@@ -8,5 +8,6 @@ Window {
     minimumWidth: Metrics.windowMinWidth
     minimumHeight: Metrics.windowMinHeight
     visible: true
+    color: Theme.color.surfaceWindow
     title: "Chilpa"
 }

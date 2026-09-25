@@ -1,1 +1,5 @@
+singleton Theme 1.0 Theme.qml
 singleton Metrics 1.0 Metrics.qml
+singleton Type 1.0 Type.qml
+singleton Motion 1.0 Motion.qml
+singleton Icons 1.0 Icons.qml

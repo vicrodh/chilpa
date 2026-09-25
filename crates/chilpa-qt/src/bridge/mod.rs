@@ -6,3 +6,4 @@
 //! call into the facade through [`crate::app`].
 
 pub mod i18n;
+pub mod theme;

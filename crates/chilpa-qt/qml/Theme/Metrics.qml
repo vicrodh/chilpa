@@ -1,12 +1,160 @@
 pragma Singleton
 import QtQuick
 
-// Every measure the window uses, in logical pixels (design/01-tokens.md and
-// design/02-layout.md). Nothing outside Theme/ writes a size by hand.
+// Every measure the window uses, in logical pixels (design/01-tokens.md,
+// 02-layout.md and 03-components.md). Nothing outside Theme/ writes a size by
+// hand; the QML literal check fails if it does.
 QtObject {
-    // The reference window, and the smallest one the layout is drawn for.
+    // The window.
     readonly property int windowWidth: 1280
     readonly property int windowHeight: 800
     readonly property int windowMinWidth: 960
     readonly property int windowMinHeight: 600
+    // The strip along the edges where dragging resizes a frameless window.
+    readonly property int windowGrip: 6
+
+    // Spacing.
+    readonly property int spaceWindow: 10
+    readonly property int contentX: 28
+    readonly property int contentTop: 14
+    readonly property int contentBottom: 120
+    readonly property int gridGap: 20
+    readonly property int section: 30
+    readonly property int hitMin: 24
+    readonly property int gap2: 2
+    readonly property int gap4: 4
+    readonly property int gap6: 6
+    readonly property int gap8: 8
+    readonly property int gap10: 10
+    readonly property int gap12: 12
+    readonly property int gap14: 14
+    readonly property int gap16: 16
+    readonly property int gap22: 22
+
+    // Radii.
+    readonly property int radiusPanel: 12
+    readonly property int radiusPlayer: 14
+    readonly property int radiusMenu: 10
+    readonly property int radiusLcd: 9
+    readonly property int radiusCard: 8
+    readonly property int radiusControl: 7
+    readonly property int radiusItem: 6
+    readonly property int radiusArtSmall: 5
+    readonly property int radiusRow: 4
+
+    // Icons: glyph sizes.
+    readonly property int iconXs: 11
+    readonly property int iconSm: 13
+    readonly property int iconMd: 15
+    readonly property int iconNav: 17
+    readonly property int iconSkip: 19
+    readonly property int iconPlay: 28
+
+    // Controls.
+    readonly property int button24: 24
+    readonly property int button26: 26
+    readonly property int button28: 28
+    readonly property int button30: 30
+    readonly property int button40: 40
+    readonly property int pillHeight: 30
+    readonly property int pillPadding: 14
+    readonly property int segmentWidth: 30
+    readonly property int segmentHeight: 24
+    readonly property int fieldHeight: 28
+    readonly property int fieldPadding: 9
+    readonly property int focusRing: 2
+    readonly property int tooltipDelay: 600
+
+    // Sidebar (02-layout.md 2).
+    readonly property int sidebarWidth: 212
+    readonly property int sidebarCollapsed: 56
+    readonly property int sidebarSnapCollapsed: 150
+    readonly property int sidebarSnapClosed: 28
+    readonly property real sidebarMaxShare: 0.40
+    readonly property int sidebarPadV: 12
+    readonly property int sidebarPadH: 10
+    readonly property int sidebarGap: 14
+    readonly property int navItemHeight: 30
+    readonly property int navItemPadding: 9
+    readonly property int navSubIndent: 31
+    readonly property int playlistRowHeight: 28
+    readonly property int resizeHandle: 9
+    readonly property int notchLong: 30
+    readonly property int notchShort: 3
+
+    // Tab bar (02-layout.md 3).
+    readonly property int tabBarHeight: 52
+    readonly property int tabBarTop: 10
+    readonly property int tabHeight: 30
+    readonly property int tabMaxWidth: 180
+    readonly property int tabPadLeft: 11
+    readonly property int tabPadRight: 5
+    readonly property int tabClose: 18
+    readonly property int windowControl: 24
+    readonly property int dividerHeight: 18
+
+    // Player bar (02-layout.md 7).
+    readonly property int playerHeight: 62
+    readonly property int playerBottom: 14
+    readonly property int playerMaxWidth: 980
+    readonly property int playerInset: 16
+    readonly property int playerPadLeft: 14
+    readonly property int playerPadRight: 12
+    readonly property int lcdHeight: 46
+    readonly property int lcdArt: 38
+    readonly property int progress: 2
+    readonly property int volumeWidth: 64
+    readonly property int volumeTrack: 3
+    readonly property int playerNoTimes: 480
+    readonly property int playerNoVolume: 660
+
+    // Track rows (03-components.md TrackRow).
+    readonly property int rowCompact: 24
+    readonly property int rowRich: 56
+    readonly property int rowHeader: 24
+    readonly property int rowGroup: 34
+    readonly property int rowPadCompact: 10
+    readonly property int rowPadRich: 8
+    readonly property int colGrip: 18
+    readonly property int colIndexCompact: 26
+    readonly property int colIndexRich: 32
+    readonly property int colArt: 52
+    readonly property int artRow: 40
+    readonly property int colQualityCompact: 96
+    readonly property int colQualityRich: 118
+    readonly property int colPlaysCompact: 60
+    readonly property int colPlaysRich: 92
+    readonly property int colFavorite: 32
+    readonly property int colTimeCompact: 44
+    readonly property int colTimeRich: 48
+    readonly property int colMore: 32
+    readonly property int playingBarWidth: 2
+    readonly property int playingBox: 12
+
+    // Album cards and grids (02-layout.md 4, 03-components.md AlbumCard).
+    readonly property int cardMinWidth: 180
+    readonly property int gridMinColumns: 3
+    readonly property int cardTextGap: 8
+    readonly property int cardTextHeight: 40
+    readonly property int overlayPad: 8
+    readonly property int overlayCheck: 26
+    readonly property int overlayPlay: 40
+    readonly property int overlayButton: 30
+
+    // Headers of screens.
+    readonly property int shelfHeader: 40
+    readonly property int heroArt: 220
+    readonly property int heroGap: 28
+    readonly property int barHeight: 44
+
+    // Library (02-layout.md 9).
+    readonly property int breadcrumb: 32
+    readonly property int panesHeight: 212
+    readonly property int panesMin: 102
+    readonly property int panesMax: 420
+    readonly property int paneHeader: 28
+    readonly property int paneRow: 22
+    readonly property int panesHandle: 12
+    readonly property int toolbar: 28
+    readonly property int crumbHeight: 22
 }

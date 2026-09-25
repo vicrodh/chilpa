@@ -1,0 +1,41 @@
+{
+  "id": "breeze-light",
+  "name": "Breeze Light",
+  "base": "light",
+  "color": {
+    "surface.window": "#FCFCFC",
+    "surface.sidebar": "rgba(239,240,241,0.96)",
+    "surface.raised": "#FFFFFF",
+    "surface.panel": "#F4F5F6",
+    "surface.pane": "#FCFCFC",
+    "surface.player": "rgba(252,252,252,0.86)",
+    "surface.lcd": "rgba(35,38,41,0.04)",
+    "text.primary": "#232629",
+    "text.secondary": "#707D8A",
+    "text.tertiary": "#9AA3AB",
+    "text.onAccent": "#FFFFFF",
+    "stroke.hairline": "rgba(35,38,41,0.10)",
+    "stroke.frame": "rgba(35,38,41,0.16)",
+    "state.hover": "rgba(35,38,41,0.045)",
+    "state.selected": "rgba(35,38,41,0.075)",
+    "state.stripe": "rgba(35,38,41,0.025)",
+    "fill.field": "rgba(35,38,41,0.055)",
+    "row.playing": "rgba(35,38,41,0.04)",
+    "row.selected": "derive:accent@0.10",
+    "accent": "#A3161F",
+    "accent.hover": "derive:accent+L0.06",
+    "accent.pressed": "derive:accent-L0.08",
+    "status.positive": "#27AE60",
+    "status.warning": "#F67400",
+    "status.negative": "#DA4453",
+    "overlay.scrim": "rgba(20,22,24,0.34)",
+    "overlay.button": "rgba(255,255,255,0.94)",
+    "overlay.ink": "#232629",
+    "art.placeholder": ["#E3E5E7", "#D6D9DC", "#ECEEEF", "#CDD1D5", "#E0E2E4", "#C4C9CD"]
+  },
+  "shadow": {
+    "elevated": [[0, 12, 32, "rgba(35,38,41,0.12)"], [0, 1, 3, "rgba(35,38,41,0.08)"]],
+    "subtle": [[0, 1, 2, "rgba(0,0,0,0.04)"]]
+  },
+  "ambient": { "scrimSubtle": 0.88, "scrimFull": 0.70, "playerMix": 0.12 }
+}
