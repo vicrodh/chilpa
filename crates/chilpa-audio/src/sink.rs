@@ -32,6 +32,25 @@ pub enum SinkError {
     Backend(String),
 }
 
+/// What the user reads. The variant names reached the window as they
+/// were -- "DeviceLost", "Backend(\"...\")" -- through `{:?}`.
+impl std::fmt::Display for SinkError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let said = match self {
+            SinkError::DeviceLost => chilpa_i18n::t("the device is gone: unplugged, turned off or taken by another program"),
+            SinkError::Xrun => chilpa_i18n::t("the device ran out of samples"),
+            SinkError::Timeout(waited) => chilpa_i18n::t_args(
+                "the device did not answer in {} ms",
+                &[&waited.as_millis().to_string()],
+            ),
+            SinkError::Closed => chilpa_i18n::t("the device was already closed"),
+            // Already a sentence, from whoever failed.
+            SinkError::Backend(message) => message.clone(),
+        };
+        write!(f, "{said}")
+    }
+}
+
 impl SinkError {
     /// True when it is worth writing more.
     pub fn is_recoverable(&self) -> bool {

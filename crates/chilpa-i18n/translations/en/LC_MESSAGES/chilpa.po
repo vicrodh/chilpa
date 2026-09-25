@@ -1020,6 +1020,9 @@ msgstr ""
 msgid "the device could not be opened: {}"
 msgstr ""
 
+msgid "the device did not answer in {} ms"
+msgstr ""
+
 msgid "the device does not accept {} Hz, which is what this DSD over DoP asks for"
 msgstr ""
 
@@ -1032,10 +1035,19 @@ msgstr ""
 msgid "the device failed after {} frames: {}"
 msgstr ""
 
+msgid "the device is gone: unplugged, turned off or taken by another program"
+msgstr ""
+
 msgid "the device opened {} Hz and {} channels, not {} Hz and {}"
 msgstr ""
 
+msgid "the device ran out of samples"
+msgstr ""
+
 msgid "the device takes {} channels and this track has {}"
+msgstr ""
+
+msgid "the device was already closed"
 msgstr ""
 
 msgid "the device was not measured; without that bit-perfect is not promised"
