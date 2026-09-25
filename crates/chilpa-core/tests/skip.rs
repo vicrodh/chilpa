@@ -95,6 +95,42 @@ fn a_seek_asked_for_before_the_start_begins_at_that_point() {
 }
 
 #[test]
+fn a_seek_halfway_through_reports_the_position_it_moved_to() {
+    // The position is what was delivered plus where the last seek landed,
+    // and "delivered" counted from the start of the track: a seek to second
+    // 2 after one second had gone out reported second 3.
+    let length = 44_100 * 3;
+    let path = ramp("halfway", length);
+    let seek = SeekSignal::new();
+    let asked = seek.clone();
+    let cap = Capture::default();
+    let mut positions = Vec::new();
+    let mut sought = false;
+
+    play_queue_with(
+        &SharedQueue::new(vec![path.clone()]),
+        &caps(),
+        Policy::BitPerfect,
+        &Controls { seek: seek.clone(), ..Controls::new() },
+        |_| Ok(cap.clone()),
+        &mut |_, _, _| {},
+        &mut |_, frames| {
+            positions.push(frames);
+            if !sought && frames >= 44_100 {
+                asked.request(Duration::from_secs(2));
+                sought = true;
+            }
+        },
+    )
+    .unwrap();
+
+    assert!(sought, "the track played past its first second");
+    let furthest = positions.iter().copied().max().unwrap_or(0);
+    assert!(furthest <= u64::from(length), "a position of {furthest} in a track of {length} frames");
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
 fn seeking_past_the_end_finishes_the_track_without_crashing() {
     let path = ramp("past", 44_100);
     let seek = SeekSignal::new();
