@@ -202,7 +202,8 @@ impl std::fmt::Display for ManifestError {
                 )
             ),
             ManifestError::Empty(field) => {
-                write!(f, "{}", chilpa_i18n::t_args("{} is missing", &[field]))
+                // The field is marked where the error is made.
+                write!(f, "{}", chilpa_i18n::t_args("{} is missing", &[&chilpa_i18n::t(field)]))
             }
             ManifestError::ApiIncompatible { wants, have } => write!(
                 f,
