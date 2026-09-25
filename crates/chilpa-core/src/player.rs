@@ -23,6 +23,9 @@ pub enum PlayerEvent {
     Started {
         path: PathBuf,
         opened: StreamFormat,
+        /// The music's own channels. A mono track goes out in both channels
+        /// of a stereo device, and `opened` then says two.
+        channels: u16,
         /// How many bits carry the music, which is not always the width of
         /// the word `opened` names: see `negotiate::bits_carried`.
         bits: Option<u8>,
@@ -342,6 +345,7 @@ fn play(
                 let _ = events.send(PlayerEvent::Started {
                     path: path.to_path_buf(),
                     opened: delivery.opened,
+                    channels: delivery.requested.channels,
                     bits: Some(1),
                     bit_perfect: delivery.nothing_was_converted() && exact_path,
                     total_frames: about.as_ref().map(|(_, frames)| *frames),
@@ -371,6 +375,7 @@ fn play(
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
+                channels: delivery.requested.channels,
                 bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames,
@@ -448,6 +453,7 @@ fn play_stream(
             let _ = events.send(PlayerEvent::Started {
                 path: path.clone(),
                 opened: delivery.opened,
+                channels: delivery.requested.channels,
                 bits: delivery.bits_carried(),
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames: None,
@@ -538,6 +544,7 @@ fn play_cd(
                     let _ = events.send(PlayerEvent::Started {
                         path: path.clone(),
                         opened: format,
+                        channels: chilpa_cd::CDDA_FORMAT.channels,
                         bits: chilpa_audio::negotiate::bits_carried(chilpa_cd::CDDA_FORMAT, format),
                         // A CD is not converted on the way out of Chilpa: it
                         // goes out as 16/44.1 or widened, which keeps every

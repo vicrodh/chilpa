@@ -313,6 +313,37 @@ fn a_mono_wav_reaches_a_stereo_only_dac_with_each_sample_in_both_channels() {
 }
 
 #[test]
+fn a_mono_track_is_announced_as_mono_though_it_goes_out_in_both_channels() {
+    // The window described the format the device was opened at, so a mono
+    // track on a stereo DAC read "stereo".
+    let originals: Vec<i32> = samples(16).into_iter().step_by(2).collect();
+    let path = temp_file("mono-announced");
+    write_wav(&path, &originals, 16, 44_100, 1);
+    let player = Player::spawn(
+        Box::new(|_| Ok(caps(SampleFormat::S16, 44_100))),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    );
+    player.play(&path, "dac", true);
+    let limit = Instant::now() + Duration::from_secs(5);
+    let mut outcome = None;
+    while outcome.is_none() && Instant::now() < limit {
+        outcome = player
+            .poll()
+            .into_iter()
+            .find(|e| matches!(e, PlayerEvent::Started { .. } | PlayerEvent::Failed { .. }));
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    match outcome {
+        Some(PlayerEvent::Started { opened, channels, .. }) => {
+            assert_eq!(opened.channels, 2, "it goes out in both channels of a stereo DAC");
+            assert_eq!(channels, 1, "and the music in them is mono");
+        }
+        other => panic!("a mono WAV did not start on a stereo DAC: {other:?}"),
+    }
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
 fn with_the_switch_off_a_rate_the_device_lacks_never_plays_at_the_wrong_speed() {
     // A 44.1 kHz track on a device that runs only at 48: a laptop codec, or
     // a JACK graph. Opening at 48 and handing over the 44.1 samples as they
