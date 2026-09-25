@@ -314,8 +314,6 @@ fn play(
     let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
     let total = paths.len();
 
-    // DSD does not go through the PCM decoder: it goes over DoP, and
-    // today it plays one track at a time.
     if let Some(first) = paths.first() {
         if is_url(first) {
             return play_stream(first, device, &caps, policy, stop, pause, open, events);
@@ -325,9 +323,6 @@ fn play(
         }
         if is_sacd(first) {
             return play_sacd(first, device, exclusive, &caps, stop, pause, skip, open, events);
-        }
-        if is_dsd(first) {
-            return play_dsd(first, device, exclusive, &caps, stop, pause, open, events);
         }
     }
     let results = crate::queue_playback::play_queue_with(
@@ -342,18 +337,30 @@ fn play(
             // first one plays.
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
             let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
-            let total_frames = chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count());
+            // A DSD track counts in DoP frames, sixteen of its one-bit
+            // samples each, and is named by its multiple.
+            let dsd = crate::dsd_playback::is_dsf(path)
+                .then(|| chilpa_dsd::DsfReader::open(path).ok())
+                .flatten()
+                .map(|reader| {
+                    use chilpa_dsd::DsdSource as _;
+                    reader.info().clone()
+                });
+            let total_frames = match &dsd {
+                Some(info) => Some(info.samples / 16),
+                None => chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count()),
+            };
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
                 opened: delivery.opened,
-                bits: delivery.bits_carried(),
+                bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames,
                 tags,
                 artwork,
                 index: index,
                 queue_len: total,
-                dsd_multiple: None,
+                dsd_multiple: dsd.as_ref().map(|info| info.multiple()),
             });
         },
         &mut |_, frames| {
@@ -663,73 +670,6 @@ fn play_sacd(
         }
     }
     Ok(last)
-}
-
-/// True if the file is DSD by its extension.
-fn is_dsd(path: &Path) -> bool {
-    path.extension()
-        .and_then(|e| e.to_str())
-        .map(|e| e.eq_ignore_ascii_case("dsf"))
-        .unwrap_or(false)
-}
-
-/// Plays a DSD file and reports the same things the PCM path does.
-#[allow(clippy::too_many_arguments)]
-fn play_dsd(
-    path: &Path,
-    device: &str,
-    exclusive: bool,
-    caps: &chilpa_audio::negotiate::DeviceCaps,
-    stop: &StopSignal,
-    pause: &chilpa_audio::sink::PauseSignal,
-    open: &mut OpenSink,
-    events: &Sender<PlayerEvent>,
-) -> Result<Outcome, PlayError> {
-    let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
-    let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
-    use chilpa_dsd::DsdSource as _;
-    let info = chilpa_dsd::DsfReader::open(path)
-        .map(|r| r.info().clone())
-        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-
-    let owned = path.to_path_buf();
-    let events = events.clone();
-    let multiple = info.multiple();
-    let total_frames = Some(info.samples / 16);
-
-    let played = crate::dsd_playback::play_dsf(
-        path,
-        caps,
-        stop,
-        pause,
-        |format| {
-            let sink = open(device, format, exclusive);
-            if let Ok(_) = &sink {
-                let _ = events.send(PlayerEvent::Started {
-                    path: owned.clone(),
-                    opened: format,
-                    bits: chilpa_audio::negotiate::bits_carried(format, format),
-                    // Same as the SACD path: the DoP carrier preserves the
-                    // bits, and where they go afterwards is the stack's to
-                    // say.
-                    bit_perfect: crate::path_is_exact(device, exclusive),
-                    total_frames,
-                    tags: tags.clone(),
-                    artwork: artwork.clone(),
-                    index: 0,
-                    queue_len: 1,
-                    dsd_multiple: Some(multiple),
-                });
-            }
-            sink
-        },
-        &mut |frames| {
-            let _ = events.send(PlayerEvent::Progress { frames });
-        },
-    )
-    .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
-
-    Ok(played.outcome)
 }
 
 #[cfg(test)]
