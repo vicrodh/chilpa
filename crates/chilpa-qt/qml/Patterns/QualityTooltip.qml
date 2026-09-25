@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Components"
 
 // What plays and how it goes out (frontend ADR-0012): the tier, whether the
@@ -11,7 +12,8 @@ Rectangle {
     height: lines.implicitHeight + Metrics.gap12 * 2 // derived: padding above and below
     radius: Metrics.radiusMenu
     color: Theme.color.surfaceRaised
-    border.color: Theme.color.strokeHairline
+
+    Edge {}
 
     Column {
         id: lines
