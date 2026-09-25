@@ -223,6 +223,9 @@ msgstr "Máximo 32/384"
 msgid "Minimize"
 msgstr "Minimizar"
 
+msgid "Most played"
+msgstr "Lo más escuchado"
+
 msgid "My library"
 msgstr "Mi biblioteca"
 
@@ -234,6 +237,9 @@ msgstr "Nueva pestaña"
 
 msgid "Next"
 msgstr "Siguiente"
+
+msgid "Nothing here yet: add a folder to the library and its records show up here."
+msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
 
 msgid "Output: {}"
 msgstr "Salida: {}"
@@ -264,6 +270,12 @@ msgstr "Procesado en la salida"
 
 msgid "Quality"
 msgstr "Calidad"
+
+msgid "Recently added"
+msgstr "Agregados recientemente"
+
+msgid "Recently played"
+msgstr "Escuchados recientemente"
 
 msgid "Repeat"
 msgstr "Repetir"
@@ -318,6 +330,9 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
+
+msgid "This screen is not built yet."
+msgstr "Esta pantalla todavía no está hecha."
 
 msgid "Time"
 msgstr "Duración"
