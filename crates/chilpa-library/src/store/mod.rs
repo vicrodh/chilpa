@@ -34,6 +34,24 @@ pub struct StoredTrack {
 }
 
 
+/// The genres a tag states, one each. Taggers write several in one field
+/// separated by ";" or "|" as often as in several fields, and "Rock; Blues"
+/// filed as one genre is neither Rock nor Blues when filtering. "/" is left
+/// alone: "R&B/Soul" names one genre as often as two. Case-insensitive
+/// repeats are dropped, keeping the first spelling.
+pub(crate) fn split_genres(genres: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for field in genres {
+        for part in field.split([';', '|', '\0']) {
+            let part = part.trim();
+            if !part.is_empty() && !out.iter().any(|g| g.eq_ignore_ascii_case(part)) {
+                out.push(part.to_string());
+            }
+        }
+    }
+    out
+}
+
 /// A folder that is part of the library.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredRoot {
@@ -103,7 +121,11 @@ impl Library {
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
         schema::update_statistics_if_stale(&db)?;
-        Ok(Self { db })
+        let lib = Self { db };
+        // Genres an earlier scan stored joined are split once, here: files
+        // that did not change are never read again to do it.
+        lib.split_stored_genres()?;
+        Ok(lib)
     }
 
     /// An in-memory library, for tests.
@@ -192,17 +214,51 @@ impl Library {
             let mut link = tx.prepare(
                 "INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)",
             )?;
-            for name in genres {
-                let name = name.trim();
-                if name.is_empty() {
-                    continue;
-                }
+            for name in split_genres(genres) {
+                let name = name.as_str();
                 insert.execute(params![name])?;
                 let id: i64 = find.query_row(params![name], |r| r.get(0))?;
                 link.execute(params![track_id, id])?;
             }
         }
         tx.finish()
+    }
+
+    /// Splits the genres an earlier scan stored whole ("Rock; Blues",
+    /// "Grunge|Metal") into one genre each, and moves their tracks onto them.
+    /// A rescan does not do it, since it only rereads files that changed, so
+    /// it runs once when the library opens and finds any. Returns how many
+    /// were split.
+    pub fn split_stored_genres(&self) -> rusqlite::Result<usize> {
+        let joined: Vec<(i64, String)> = {
+            let mut stmt =
+                self.db.prepare("SELECT id, name FROM genres WHERE name LIKE '%;%' OR name LIKE '%|%'")?;
+            let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
+            rows.collect::<rusqlite::Result<_>>()?
+        };
+        if joined.is_empty() {
+            return Ok(0);
+        }
+        let tx = self.own_transaction()?;
+        {
+            let mut insert = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
+            let mut find = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
+            let mut relink = tx.prepare(
+                "INSERT OR IGNORE INTO track_genres (track_id, genre_id)
+                 SELECT track_id, ?2 FROM track_genres WHERE genre_id = ?1",
+            )?;
+            for (id, name) in &joined {
+                for part in split_genres(std::slice::from_ref(name)) {
+                    insert.execute(params![part])?;
+                    let part_id: i64 = find.query_row(params![part], |r| r.get(0))?;
+                    relink.execute(params![id, part_id])?;
+                }
+                tx.execute("DELETE FROM track_genres WHERE genre_id = ?1", params![id])?;
+                tx.execute("DELETE FROM genres WHERE id = ?1", params![id])?;
+            }
+        }
+        tx.finish()?;
+        Ok(joined.len())
     }
 
     /// The library's genres, with how many present tracks each has.
@@ -560,6 +616,32 @@ pub(crate) mod fixtures {
             .collect()
     }
 
+}
+
+#[cfg(test)]
+mod genre_tests {
+    use super::*;
+
+    #[test]
+    fn a_joined_genre_field_is_several_genres() {
+        let g = split_genres(&["Alternative Metal; Alternative Rock".into(), "Grunge|Heavy Metal|grunge".into()]);
+        assert_eq!(g, ["Alternative Metal", "Alternative Rock", "Grunge", "Heavy Metal"]);
+        assert_eq!(split_genres(&["R&B/Soul".into()]), ["R&B/Soul"], "a slash is left alone");
+    }
+
+    #[test]
+    fn genres_stored_joined_are_split_once_with_their_tracks() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute("INSERT INTO tracks (id, source_id, external_id, title, added_at) VALUES (1, ?1, '/a.flac', 'A', 1)", params![source])
+            .unwrap();
+        lib.db.execute("INSERT INTO genres (id, name) VALUES (9, 'Rock; Blues')", []).unwrap();
+        lib.db.execute("INSERT INTO track_genres (track_id, genre_id) VALUES (1, 9)", []).unwrap();
+        assert_eq!(lib.split_stored_genres().unwrap(), 1);
+        assert_eq!(lib.track_genres(1).unwrap(), ["Blues", "Rock"]);
+        assert_eq!(lib.split_stored_genres().unwrap(), 0, "once");
+    }
 }
 
 #[cfg(test)]

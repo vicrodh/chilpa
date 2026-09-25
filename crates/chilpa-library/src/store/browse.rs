@@ -178,7 +178,9 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         args.push(Box::new(genre.clone()));
     }
     if let Some(artist) = &f.artist {
-        sql.push_str(" AND a.album_artist = ?");
+        // The same artist tagged "Alice in Chains" on one record and "Alice
+        // In Chains" on another is one artist, as the column shows it.
+        sql.push_str(" AND a.album_artist = ? COLLATE NOCASE");
         args.push(Box::new(artist.clone()));
     }
     if let Some(album) = f.album {
@@ -224,16 +226,22 @@ impl Library {
     pub fn facet_artists(&self, year: Option<i32>, genre: Option<&str>) -> rusqlite::Result<Vec<FacetEntry>> {
         if genre.is_none() {
             let (sql, args): (String, Vec<Box<dyn ToSql>>) = match year {
-                Some(y) => (format!("SELECT a.album_artist, count(*) {ALBUMS} AND a.year = ? GROUP BY 1 ORDER BY 1 COLLATE NOCASE"), vec![Box::new(y)]),
-                None => (format!("SELECT a.album_artist, count(*) {ALBUMS} GROUP BY 1 ORDER BY 1 COLLATE NOCASE"), Vec::new()),
+                Some(y) => (
+                    format!("SELECT min(a.album_artist), count(*) {ALBUMS} AND a.year = ? GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"),
+                    vec![Box::new(y)],
+                ),
+                None => (
+                    format!("SELECT min(a.album_artist), count(*) {ALBUMS} GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"),
+                    Vec::new(),
+                ),
             };
             return self.named_facet(&sql, args);
         }
         let f = Filter { year, genre: genre.map(str::to_string), ..Filter::default() };
         let (filter, args) = clause(&f);
         let sql = format!(
-            "SELECT a.album_artist, count(DISTINCT a.id) {FROM} {filter}
-             GROUP BY a.album_artist ORDER BY a.album_artist COLLATE NOCASE"
+            "SELECT min(a.album_artist), count(DISTINCT a.id) {FROM} {filter}
+             GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
         );
         self.named_facet(&sql, args)
     }
@@ -464,6 +472,23 @@ mod tests {
         assert_eq!(labels(lib.facet_artists(None, Some("Alternative")).unwrap()), ["Mora Vale"]);
         let f = Filter { artist: Some("Mora Vale".into()), ..Filter::default() };
         assert_eq!(labels(lib.facet_albums(&f).unwrap()), ["Northbound", "Low Orbit"], "by year");
+    }
+
+    #[test]
+    fn one_artist_in_two_spellings_is_one_entry_and_one_filter() {
+        let lib = shelf();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist, year) VALUES (4, 'Late', 'MORA VALE', 2020)", []).unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db
+            .execute(
+                "INSERT INTO tracks (id, source_id, external_id, title, album_id, duration_ms, added_at) VALUES (40, ?1, '/40.flac', 'T', 4, 1000, 1)",
+                params![source],
+            )
+            .unwrap();
+        let artists = lib.facet_artists(None, None).unwrap();
+        assert_eq!(artists.iter().filter(|a| a.label.eq_ignore_ascii_case("mora vale")).count(), 1);
+        let f = Filter { artist: Some("mora vale".into()), ..Filter::default() };
+        assert_eq!(lib.facet_albums(&f).unwrap().len(), 3, "both spellings' records");
     }
 
     #[test]
