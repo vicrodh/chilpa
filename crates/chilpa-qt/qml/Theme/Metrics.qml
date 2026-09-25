@@ -94,6 +94,8 @@ QtObject {
     readonly property int resizeHandle: 9
     readonly property int notchLong: 30
     readonly property int notchShort: 3
+    readonly property real notchSoft: 0.35
+    readonly property real notchStrong: 0.6
 
     // Tab bar (02-layout.md 3).
     readonly property int tabBarHeight: 52

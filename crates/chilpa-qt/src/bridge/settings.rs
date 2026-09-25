@@ -26,6 +26,11 @@ pub mod qobject {
         #[qproperty(QStringList, section_labels)]
         #[qproperty(QStringList, section_icons)]
         type SettingsModel = super::SettingsRust;
+
+        /// Settles the sidebar where a drag released it: open at that width,
+        /// collapsed or closed.
+        #[qinvokable]
+        fn place_sidebar(self: Pin<&mut SettingsModel>, width: f64, window_width: f64);
     }
 
     impl cxx_qt::Threading for SettingsModel {}
@@ -57,6 +62,16 @@ fn strings(items: impl Iterator<Item = String>) -> QStringList {
         l.append(QString::from(&i));
     }
     QStringList::from(&l)
+}
+
+impl qobject::SettingsModel {
+    pub fn place_sidebar(mut self: Pin<&mut Self>, width: f64, window_width: f64) {
+        let (mode, settled) = crate::sidebar::settle(width, window_width);
+        if settled > 0 {
+            self.as_mut().set_sidebar_width(settled);
+        }
+        self.as_mut().set_sidebar_mode(QString::from(mode));
+    }
 }
 
 fn remember(key: &'static str, value: String) {

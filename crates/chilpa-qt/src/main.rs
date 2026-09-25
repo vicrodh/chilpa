@@ -15,6 +15,7 @@ mod navigation;
 mod paths;
 mod registry;
 mod settings_schema;
+mod sidebar;
 mod theme;
 mod worker;
 
