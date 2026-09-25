@@ -996,6 +996,9 @@ msgstr ""
 msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
 msgstr ""
 
+msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
+msgstr ""
+
 msgid "the device failed after {} frames: {}"
 msgstr ""
 

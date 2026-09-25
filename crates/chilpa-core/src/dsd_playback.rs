@@ -125,9 +125,9 @@ where
     // policy to choose here.
     let delivery = match negotiate(request, caps, Policy::BitPerfect) {
         Ok(d) => d,
-        Err(NegotiationError::Unsupported { .. }) | Err(NegotiationError::CapsNotProbed) => {
-            return Err(DsdPlayError::Unsupported { carrier_hz })
-        }
+        Err(NegotiationError::Unsupported { .. })
+        | Err(NegotiationError::CapsNotProbed)
+        | Err(NegotiationError::Rate { .. }) => return Err(DsdPlayError::Unsupported { carrier_hz }),
         Err(NegotiationError::Channels { requested, offered }) => {
             return Err(DsdPlayError::Channels { requested, offered })
         }

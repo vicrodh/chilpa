@@ -996,6 +996,9 @@ msgstr "el dispositivo no acepta {} Hz, que es lo que pide este DSD por DoP"
 msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
 msgstr "el dispositivo no acepta {} a {} Hz y la política no deja convertir"
 
+msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
+msgstr "el dispositivo no reproduce {} Hz (reproduce {}), y Chilpa no convierte frecuencias"
+
 msgid "the device failed after {} frames: {}"
 msgstr "el dispositivo falló tras {} frames: {}"
 
