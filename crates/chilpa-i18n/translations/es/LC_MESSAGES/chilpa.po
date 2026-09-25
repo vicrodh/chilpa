@@ -7,6 +7,9 @@ msgstr ""
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
 
+msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
+msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearía; agrégala a default.clock.allowed-rates, o elige la tarjeta directo"
+
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
@@ -1106,6 +1109,9 @@ msgstr "no se pudo arrancar el sandbox de plugins"
 
 msgid "the plugin sandbox is not started"
 msgstr "el sandbox de plugins no está arrancado"
+
+msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
+msgstr "no se pudieron leer las frecuencias a las que puede correr el grafo de PipeWire, así que no se puede prometer nada sin tocar"
 
 msgid "the reply could not be built"
 msgstr "no se pudo armar la respuesta"
