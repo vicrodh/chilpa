@@ -13,6 +13,8 @@ pub mod qobject {
         type QString = cxx_qt_lib::QString;
         include!("cxx-qt-lib/qurl.h");
         type QUrl = cxx_qt_lib::QUrl;
+        include!("cxx-qt-lib/qstringlist.h");
+        type QStringList = cxx_qt_lib::QStringList;
     }
 
     #[auto_cxx_name]
@@ -52,7 +54,22 @@ pub mod qobject {
         /// 0 off, 1 the whole queue, 2 the track.
         #[qproperty(i32, repeat)]
         #[qproperty(QString, error)]
+        /// Bumped when the queue changed: another track, more or fewer queued.
+        #[qproperty(i32, queue_rev)]
+        /// The lyrics of what plays, one line per entry, and the line being
+        /// sung (-1 when they carry no timings or none has come yet).
+        #[qproperty(QStringList, lyrics)]
+        #[qproperty(i32, lyrics_line)]
+        #[qproperty(bool, lyrics_synced)]
         type Player = super::PlayerRust;
+
+        /// Empties the queue and stops.
+        #[qinvokable]
+        fn clear_queue(self: Pin<&mut Player>);
+
+        /// Removes a queued track, counted from the one that plays.
+        #[qinvokable]
+        fn remove_queued(self: Pin<&mut Player>, row: i32);
 
         /// Pauses or resumes.
         #[qinvokable]
@@ -81,7 +98,7 @@ pub mod qobject {
 
 use crate::{app, format};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QString, QUrl};
+use cxx_qt_lib::{QList, QString, QStringList, QUrl};
 use std::pin::Pin;
 
 const TICK: std::time::Duration = std::time::Duration::from_millis(250);
@@ -109,11 +126,37 @@ pub struct PlayerRust {
     shuffle: bool,
     repeat: i32,
     error: QString,
+    queue_rev: i32,
+    lyrics: QStringList,
+    lyrics_line: i32,
+    lyrics_synced: bool,
     /// The file the text properties were last set for.
     shown: String,
+    /// Where the queue was at the last tick: which track and how many.
+    queue_at: (usize, usize),
 }
 
 impl qobject::Player {
+    pub fn clear_queue(mut self: Pin<&mut Self>) {
+        app::with(|api| api.clear_queue());
+        self.as_mut().bump_queue();
+    }
+
+    pub fn remove_queued(mut self: Pin<&mut Self>, row: i32) {
+        let removed = app::with(|api| {
+            let at = api.now_playing().index + row.max(0) as usize;
+            api.remove_from_queue(at)
+        });
+        if removed {
+            self.as_mut().bump_queue();
+        }
+    }
+
+    fn bump_queue(mut self: Pin<&mut Self>) {
+        let next = self.queue_rev().wrapping_add(1);
+        self.as_mut().set_queue_rev(next);
+    }
+
     pub fn toggle(mut self: Pin<&mut Self>) {
         let paused = !self.rust().paused;
         app::with(|api| api.set_paused(paused));
@@ -188,6 +231,19 @@ impl qobject::Player {
             self.as_mut().set_route(QString::from(&route));
             self.as_mut().set_duration(now.total_seconds);
             self.as_mut().set_path(QString::from(&now.path));
+            let mut lines = QList::<QString>::default();
+            for line in &now.lyrics {
+                lines.append(QString::from(line));
+            }
+            self.as_mut().set_lyrics(QStringList::from(&lines));
+            self.as_mut().set_lyrics_synced(now.lyrics_synced);
+        }
+        if now.lyrics_line != self.rust().lyrics_line {
+            self.as_mut().set_lyrics_line(now.lyrics_line);
+        }
+        if (now.index, now.queue_len) != self.rust().queue_at {
+            self.as_mut().rust_mut().queue_at = (now.index, now.queue_len);
+            self.as_mut().bump_queue();
         }
         if now.bit_perfect != self.rust().bit_perfect {
             self.as_mut().set_bit_perfect(now.bit_perfect);

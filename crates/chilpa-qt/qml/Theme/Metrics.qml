@@ -184,6 +184,16 @@ QtObject {
     readonly property int toolbar: 28
     readonly property int crumbHeight: 22
 
+    // The right panel (design/02 5).
+    readonly property int rightPanel: 300
+    readonly property int panelHeader: 40
+    readonly property int queueDefault: 380
+    readonly property int queueMin: 250
+    readonly property int lyricsMin: 110
+    readonly property int queueRow: 46
+    readonly property int queueNowRow: 48
+    readonly property int queueArt: 36
+
     // Settings (design/03 SettingsRow, design/06 Settings).
     readonly property int settingsNav: 188
     readonly property int settingsRow: 54

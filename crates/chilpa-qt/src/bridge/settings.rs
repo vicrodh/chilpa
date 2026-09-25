@@ -21,6 +21,11 @@ pub mod qobject {
         /// "open", "collapsed" or "closed".
         #[qproperty(QString, sidebar_mode)]
         #[qproperty(i32, sidebar_width)]
+        /// The right panel: the queue and the lyrics, each open or not, and
+        /// the queue's share of the panel when both are.
+        #[qproperty(bool, queue_open)]
+        #[qproperty(bool, lyrics_open)]
+        #[qproperty(i32, queue_height)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -45,12 +50,18 @@ use std::pin::Pin;
 const DENSITY: &str = "appearance.density";
 const SIDEBAR_MODE: &str = "ui.sidebar.mode";
 const SIDEBAR_WIDTH: &str = "ui.sidebar.width";
+const QUEUE_MODE: &str = "ui.queue.mode";
+const LYRICS_OPEN: &str = "ui.lyrics.open";
+const QUEUE_HEIGHT: &str = "ui.rightPanel.queueHeight";
 
 #[derive(Default)]
 pub struct SettingsRust {
     density: QString,
     sidebar_mode: QString,
     sidebar_width: i32,
+    queue_open: bool,
+    lyrics_open: bool,
+    queue_height: i32,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -84,6 +95,9 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (density, mode, width) = app::with(|api| {
             (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH))
         });
+        let (queue, lyrics, queue_height) = app::with(|api| {
+            (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_HEIGHT))
+        });
         {
             let mut this = self.as_mut().rust_mut();
             let all = crate::settings_schema::SECTIONS;
@@ -94,6 +108,9 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.sidebar_mode = QString::from(mode.as_deref().unwrap_or("open"));
             // Zero means the default width, which the theme knows.
             this.sidebar_width = width.and_then(|w| w.parse().ok()).unwrap_or(0);
+            this.queue_open = queue.as_deref() == Some("side");
+            this.lyrics_open = lyrics.as_deref() == Some("true");
+            this.queue_height = queue_height.and_then(|h| h.parse().ok()).unwrap_or(0);
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut()
@@ -101,6 +118,13 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             .release();
         self.as_mut()
             .on_sidebar_width_changed(|m| remember(SIDEBAR_WIDTH, m.sidebar_width().to_string()))
+            .release();
+        self.as_mut()
+            .on_queue_open_changed(|m| remember(QUEUE_MODE, if *m.queue_open() { "side" } else { "off" }.to_string()))
+            .release();
+        self.as_mut().on_lyrics_open_changed(|m| remember(LYRICS_OPEN, m.lyrics_open().to_string())).release();
+        self.as_mut()
+            .on_queue_height_changed(|m| remember(QUEUE_HEIGHT, m.queue_height().to_string()))
             .release();
     }
 }

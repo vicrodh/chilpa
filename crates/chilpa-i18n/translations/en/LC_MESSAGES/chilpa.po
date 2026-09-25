@@ -148,6 +148,9 @@ msgstr ""
 msgid "Clear filters"
 msgstr ""
 
+msgid "Clear the queue"
+msgstr ""
+
 msgid "Close"
 msgstr ""
 
@@ -286,6 +289,12 @@ msgstr ""
 msgid "Look"
 msgstr ""
 
+msgid "Lyrics"
+msgstr ""
+
+msgid "Lyrics show here while a track plays."
+msgstr ""
+
 msgid "Maintenance"
 msgstr ""
 
@@ -325,7 +334,13 @@ msgstr ""
 msgid "Next"
 msgstr ""
 
+msgid "No lyrics for this track."
+msgstr ""
+
 msgid "Nothing here yet: add a folder to the library and its records show up here."
+msgstr ""
+
+msgid "Nothing queued."
 msgstr ""
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
@@ -373,6 +388,9 @@ msgstr ""
 msgid "Quality"
 msgstr ""
 
+msgid "Queue"
+msgstr ""
+
 msgid "Quit"
 msgstr ""
 
@@ -392,6 +410,9 @@ msgid "Recently played"
 msgstr ""
 
 msgid "Remove from the library"
+msgstr ""
+
+msgid "Remove from the queue"
 msgstr ""
 
 msgid "Repair"
@@ -1205,6 +1226,11 @@ msgstr ""
 
 msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
 msgstr ""
+
+msgid "{} next"
+msgid_plural "{} next"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} of the list's tracks are gone"
 msgstr ""

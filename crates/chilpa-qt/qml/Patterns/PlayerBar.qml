@@ -90,11 +90,32 @@ Item {
         }
     }
 
+    Row {
+        id: actions
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.playerPadRight
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Metrics.gap4
+
+        IconButton {
+            tip: I18n.tr("Lyrics", I18n.rev)
+            glyph: Icons.quote
+            checked: SettingsModel.lyricsOpen
+            onClicked: SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen
+        }
+        IconButton {
+            tip: I18n.tr("Queue", I18n.rev)
+            glyph: Icons.listDetails
+            checked: SettingsModel.queueOpen
+            onClicked: SettingsModel.queueOpen = !SettingsModel.queueOpen
+        }
+    }
+
     PlayerLcd {
         anchors.left: transport.right
         anchors.leftMargin: Metrics.gap16
-        anchors.right: parent.right
-        anchors.rightMargin: Metrics.playerPadRight
+        anchors.right: actions.left
+        anchors.rightMargin: Metrics.gap16
         anchors.verticalCenter: parent.verticalCenter
         showTimes: bar.width >= Metrics.playerNoTimes
     }

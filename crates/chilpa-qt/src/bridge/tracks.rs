@@ -1,8 +1,8 @@
 //! The rows of every track list in the window (frontend ADR-0006).
 //!
 //! One model for every list, configured by `kind`: a record ("album"), the
-//! most played ("mostPlayed"), or what the Library screen's filter leaves
-//! ("library"). A record with several discs carries its disc headers as
+//! most played ("mostPlayed"), the queue from what plays on ("queue"), or
+//! what the Library screen's filter leaves ("library"). A record with several discs carries its disc headers as
 //! rows of their own, not as separate lists.
 //!
 //! A small list is read whole. The library is a snapshot of ids, and its
@@ -420,6 +420,11 @@ impl qobject::TrackListModel {
             "mostPlayed" => {
                 let tracks = app::with(|api| api.most_played_rows(limit));
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)
+            }
+            "queue" => {
+                let tracks = app::with(|api| api.queue_rows());
+                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
+                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
             }
             "library" => {
                 let snapshot = browse::read(|s| s.snapshot.clone());

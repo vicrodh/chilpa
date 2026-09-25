@@ -73,6 +73,9 @@ GallerySection {
             }
         }
         AlbumCard { width: Metrics.cardMinWidth; title: "Low Orbit"; subtitle: "Mora Vale"; tint: 2 }
+        PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 next" }
+        QueueRow { width: Metrics.rightPanel; index: 0; title: "Faded Lines"; artist: "Mora Vale"; duration: "4:04"; playing: true }
+        QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false }
         SettingsPage { id: audio; section: "appearance" }
         Repeater {
             model: audio
