@@ -21,10 +21,29 @@ use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 #[cfg(target_os = "linux")]
 use cxx_qt_lib::QString;
 
+unsafe extern "C" {
+    /// Registers a font from the resources as the application's default.
+    /// See `fonts.cpp`.
+    fn chilpa_use_font(resource: *const std::ffi::c_char) -> bool;
+}
+
+/// Where Inter lives in the resources.
+const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/assets/fonts/Inter.ttf";
+
 fn main() {
     let mut app = QGuiApplication::new();
     #[cfg(target_os = "linux")]
     QGuiApplication::set_desktop_file_name(&QString::from("com.blitzfc.chilpa"));
+
+    // Inter unless the system's font was chosen: the design needs real
+    // weights, and plenty of desktops set a font with one face that Qt does
+    // not embolden.
+    let font = app::with(|api| api.preference("appearance.font"));
+    // SAFETY: the pointer is a NUL-terminated literal that outlives the call,
+    // and the application object exists.
+    if font.as_deref() != Some("system") && !unsafe { chilpa_use_font(INTER.as_ptr()) } {
+        eprintln!("chilpa: the bundled font could not be loaded; using the system's");
+    }
 
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
