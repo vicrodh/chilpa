@@ -43,6 +43,18 @@ fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     }
 }
 
+fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Album {
+    Album {
+        id: a.id,
+        title: a.title,
+        artist: a.album_artist,
+        year: a.year,
+        track_count: a.track_count,
+        artwork_path: a.artwork_path.unwrap_or_default(),
+        play_count: listens,
+    }
+}
+
 /// The four facet columns, each narrowed by the ones to its left.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Facets {
@@ -90,6 +102,11 @@ impl Reader {
             .collect()
     }
 
+    /// Every album with something present, in that order.
+    pub fn album_ids(&self, order: chilpa_library::AlbumSort) -> Vec<i64> {
+        self.lib.album_ids(order).unwrap_or_default()
+    }
+
     /// The four columns for this filter. Each column is narrowed only by
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
@@ -117,6 +134,12 @@ impl Chilpa {
     pub fn track_rows(&mut self, ids: &[i64]) -> Vec<TrackRow> {
         let Some(lib) = self.library() else { return Vec::new() };
         lib.tracks_by_ids(ids).unwrap_or_default().into_iter().map(row_of).collect()
+    }
+
+    /// Those albums, in the order given. By primary key.
+    pub fn albums_by_ids(&mut self, ids: &[i64]) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.albums_by_ids(ids).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
     /// A record's tracks, in disc order.
@@ -151,19 +174,7 @@ impl Chilpa {
 
     fn albums_by(&mut self, order: chilpa_library::AlbumSort, limit: usize) -> Vec<Album> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_filtered(order, None, limit, 0)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(a, listens)| Album {
-                id: a.id,
-                title: a.title,
-                artist: a.album_artist,
-                year: a.year,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-                play_count: listens,
-            })
-            .collect()
+        lib.albums_filtered(order, None, limit, 0).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
     /// A record with what its header states.
