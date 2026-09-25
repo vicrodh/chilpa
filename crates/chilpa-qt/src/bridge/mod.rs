@@ -275,6 +275,14 @@ pub mod chilpa_bridge {
 
         /// Shows that stack's outputs. The window calls it when somebody
         /// picks a stack; the bridge calls it when it reads them.
+        ///
+        /// `qinvokable` and not only `cxx_name`: without it the method
+        /// reaches C++ and never reaches QML, so `Chilpa.chooseStack(...)`
+        /// raised "is not a function" and picking a stack did nothing at all.
+        /// It is the one entry here that QML calls as a method rather than
+        /// assigning to as a property, which is why it was the only one that
+        /// needed it and the only one that was missing it.
+        #[qinvokable]
         #[cxx_name = "chooseStack"]
         fn choose_stack(self: Pin<&mut Chilpa>, key: &QString);
 

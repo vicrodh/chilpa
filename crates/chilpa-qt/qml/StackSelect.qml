@@ -35,7 +35,7 @@ ComboBox {
 
     displayText: box.fields(box.model[box.currentIndex])[1]
 
-    onActivated: {
+    onActivated: (index) => {
         const row = box.fields(box.model[index])
         // One that is not here cannot be chosen: it would leave the window
         // showing a stack with no outputs and no way back.
