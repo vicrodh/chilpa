@@ -20,6 +20,10 @@ pub struct Alsa;
 pub struct System;
 
 impl OutputBackend for Alsa {
+    fn kind(&self) -> BackendKind {
+        BackendKind::Alsa
+    }
+
     fn info(&self) -> BackendInfo {
         // What this backend needs is a card. Not a daemon, not a library
         // that might be a stand-in for another: a card, and they are listed
@@ -146,6 +150,10 @@ fn whoever(description: &str) -> String {
 }
 
 impl OutputBackend for System {
+    fn kind(&self) -> BackendKind {
+        BackendKind::System
+    }
+
     fn info(&self) -> BackendInfo {
         BackendInfo {
             kind: BackendKind::System,

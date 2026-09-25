@@ -36,6 +36,10 @@ use chilpa_audio::sink::{AudioSink, SinkError};
 pub struct Wasapi;
 
 impl OutputBackend for Wasapi {
+    fn kind(&self) -> BackendKind {
+        BackendKind::Wasapi
+    }
+
     fn info(&self) -> BackendInfo {
         match read::any_output() {
             Ok(true) => BackendInfo {

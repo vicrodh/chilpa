@@ -79,6 +79,10 @@ fn declared(device: ffi::AudioObjectID) -> String {
 }
 
 impl OutputBackend for CoreAudio {
+    fn kind(&self) -> BackendKind {
+        BackendKind::CoreAudio
+    }
+
     fn info(&self) -> BackendInfo {
         // What this stack needs is a device that can send sound out. A Mac
         // with none is a Mac with the audio stack turned off, which is worth

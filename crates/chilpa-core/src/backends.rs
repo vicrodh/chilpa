@@ -48,7 +48,12 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
 
 /// The one with that kind, if this build has it.
 pub fn of(kind: BackendKind) -> Option<Box<dyn OutputBackend>> {
-    all().into_iter().find(|b| b.info().kind == kind)
+    among(all(), kind)
+}
+
+/// The one with that kind out of `stacks`.
+fn among(stacks: Vec<Box<dyn OutputBackend>>, kind: BackendKind) -> Option<Box<dyn OutputBackend>> {
+    stacks.into_iter().find(|b| b.kind() == kind)
 }
 
 /// What each stack says about itself.
@@ -113,6 +118,52 @@ pub fn first_choice() -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// A stack that fails the test if it is asked anything but which one it
+    /// is.
+    struct Nosy(BackendKind);
+
+    impl OutputBackend for Nosy {
+        fn kind(&self) -> BackendKind {
+            self.0
+        }
+        fn info(&self) -> BackendInfo {
+            panic!("{:?} was asked for its info just to be told apart", self.0)
+        }
+        fn outputs(&self) -> Vec<BackendOutput> {
+            panic!("{:?} was asked for its outputs", self.0)
+        }
+        fn caps(&self, _: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, chilpa_audio::sink::SinkError> {
+            panic!("{:?} was measured", self.0)
+        }
+        fn open(
+            &self,
+            _: &str,
+            _: chilpa_audio::format::StreamFormat,
+            _: bool,
+        ) -> Result<Box<dyn chilpa_audio::sink::AudioSink + Send>, chilpa_audio::sink::SinkError> {
+            panic!("{:?} was opened", self.0)
+        }
+    }
+
+    #[test]
+    fn finding_a_stack_asks_the_ones_before_it_nothing() {
+        // JACK sits before the file stack. Asking it for its info meant
+        // opening a client, and closing one can hang forever under
+        // PipeWire's JACK library -- which is how playing to a file left the
+        // player thread stuck for six hours.
+        let stacks: Vec<Box<dyn OutputBackend>> =
+            vec![Box::new(Nosy(BackendKind::Jack)), Box::new(Nosy(BackendKind::File))];
+        let found = among(stacks, BackendKind::File).expect("it is in the list");
+        assert_eq!(found.kind(), BackendKind::File);
+    }
+
+    #[test]
+    fn every_stack_is_the_kind_it_says_it_is() {
+        for stack in all() {
+            assert_eq!(stack.kind(), stack.info().kind);
+        }
+    }
 
     #[test]
     fn every_stack_that_is_here_answers_for_itself() {

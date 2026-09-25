@@ -71,6 +71,10 @@ pub fn capabilities() -> Option<chilpa_audio::negotiate::DeviceCaps> {
 }
 
 impl OutputBackend for Jack {
+    fn kind(&self) -> BackendKind {
+        BackendKind::Jack
+    }
+
     fn info(&self) -> BackendInfo {
         let Some((client, _)) = hello() else {
             return BackendInfo::missing(

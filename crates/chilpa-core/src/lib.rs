@@ -72,10 +72,7 @@ pub fn outputs() -> Vec<Output> {
     backends::all()
         .iter()
         .filter(|stack| stack.info().present)
-        .flat_map(|stack| {
-            let kind = stack.info().kind;
-            backends::outputs_of(kind)
-        })
+        .flat_map(|stack| backends::outputs_of(stack.kind()))
         .map(|o| Output {
             id: o.id,
             label: o.label,
