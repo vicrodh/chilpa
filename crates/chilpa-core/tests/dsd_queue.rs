@@ -166,3 +166,35 @@ fn the_dop_marker_alternates_across_the_join_between_tracks() {
         let _ = std::fs::remove_file(t);
     }
 }
+
+#[test]
+fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
+    // DoP used to drop every seek: the track went on from where it was.
+    let track = dsf("seek", 2);
+    let seek = chilpa_audio::seek::SeekSignal::new();
+    seek.request(Duration::from_secs(1));
+    let caps = DeviceCaps {
+        sample_rates: vec![176_400],
+        formats: vec![SampleFormat::S24In32],
+        channels: vec![2],
+        probed: true,
+    };
+    let mut positions = Vec::new();
+    let results = play_queue_with(
+        &SharedQueue::new(vec![track.clone()]),
+        &caps,
+        Policy::BitPerfect,
+        &Controls { seek, ..Controls::new() },
+        |format| Ok(Swallow(format)),
+        &mut |_, _, _| {},
+        &mut |_, frames| positions.push(frames),
+    )
+    .expect("the queue runs");
+
+    // A DoP frame carries sixteen one-bit samples of each channel: a second
+    // of DSD64 is 176,400 of them, and only the second second went out.
+    assert_eq!(results[0].frames(), 176_400, "exactly the second half, block alignment included");
+    assert!(positions.first().is_some_and(|p| *p >= 176_400), "it started at {:?}", positions.first());
+    assert_eq!(positions.last(), Some(&352_800), "and ended at the end of the track");
+    let _ = std::fs::remove_file(track);
+}

@@ -140,6 +140,10 @@ impl DsdSource for DsfReader {
         self.remaining_per_channel -= valid as u64;
         Ok(Some(channels))
     }
+
+    fn seek(&mut self, sample: u64) -> Result<Option<u64>, DsdError> {
+        self.seek_to_sample(sample).map(Some)
+    }
 }
 
 fn read_id(f: &mut impl Read) -> Result<[u8; 4], DsdError> {

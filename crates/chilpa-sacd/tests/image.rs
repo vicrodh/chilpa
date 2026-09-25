@@ -510,3 +510,69 @@ fn a_track_ends_where_the_disc_says_and_not_where_its_sectors_do() {
     assert_eq!(frames, 1, "one frame, though its ten sectors hold two");
     let _ = std::fs::remove_file(path);
 }
+
+/// Opens track `number` of an image written as `name`.
+fn reader(img: &TestImage, name: &str, number: usize) -> (SacdTrackReader, PathBuf) {
+    let path = img.write(name);
+    let disc = open(&path).unwrap();
+    let track = disc.area.tracks[number - 1].clone();
+    (SacdTrackReader::open(disc, &track).unwrap(), path)
+}
+
+/// One-bit samples of a channel in a frame.
+const PER_FRAME: u64 = 2_822_400 / 75;
+
+#[test]
+fn a_dst_track_seeks_by_the_timecode_of_its_frames() {
+    let img = dst_image(&four_frames(), 2);
+    let (mut second, path) = reader(&img, "dst-seek", 2);
+    assert_eq!(second.seek(PER_FRAME + 5).unwrap(), Some(PER_FRAME), "to the frame the sample is in");
+    assert_eq!(second.next_block().unwrap().unwrap()[0][0], 0x13);
+    assert_eq!(second.seek(0).unwrap(), Some(0), "and back");
+    assert_eq!(second.next_block().unwrap().unwrap()[0][0], 0x12);
+    assert_eq!(second.next_block().unwrap().unwrap()[0][0], 0x13);
+    assert!(second.next_block().unwrap().is_none(), "two frames, as before the seek");
+    let _ = std::fs::remove_file(path);
+
+    let (mut first, path) = reader(&img, "dst-seek-first", 1);
+    assert_eq!(first.seek(PER_FRAME).unwrap(), Some(PER_FRAME));
+    assert_eq!(first.next_block().unwrap().unwrap()[0][0], 0x11);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_dst_seek_to_the_start_skips_the_last_frame_of_the_track_before() {
+    // The second track's sectors begin where the first track's last frame
+    // starts, so the search lands among frames that are not the track's.
+    let img = dst_image(&four_frames(), 1);
+    let (mut second, path) = reader(&img, "dst-seek-shared", 2);
+    assert_eq!(second.next_block().unwrap().unwrap()[0][0], 0x12);
+    assert_eq!(second.seek(0).unwrap(), Some(0));
+    assert_eq!(second.next_block().unwrap().unwrap()[0][0], 0x12);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_seek_past_the_end_of_a_track_ends_it() {
+    let img = dst_image(&four_frames(), 2);
+    let (mut first, path) = reader(&img, "dst-seek-past", 1);
+    assert_eq!(first.seek(10 * PER_FRAME).unwrap(), Some(2 * PER_FRAME), "its two frames and no more");
+    assert!(first.next_block().unwrap().is_none());
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn an_uncompressed_track_seeks_to_the_sector_its_frame_starts_in() {
+    // In the image `build` writes, a frame starts in every sector and the
+    // timecode is the sector's place in the area, so frame 3 of the first
+    // track starts in its fourth sector.
+    let img = build(false);
+    let (mut first, path) = reader(&img, "dsd-seek", 1);
+    assert_eq!(first.seek(3 * PER_FRAME).unwrap(), Some(3 * PER_FRAME));
+    let block = first.next_block().unwrap().expect("there is audio after it");
+    let header_len = 1 + 2 + 3;
+    let len = SECTOR - header_len;
+    let expected = ((3 * len) / 2 % 251) as u8;
+    assert_eq!((block[0][0], block[1][0]), (expected, !expected), "the first byte of the fourth sector");
+    let _ = std::fs::remove_file(path);
+}

@@ -96,14 +96,50 @@ fn a_real_track_hashes_the_way_qbz_s_reader_did() {
         let disc = chilpa_sacd::open(Path::new(image)).unwrap();
         let mut reader = chilpa_sacd::SacdTrackReader::open(disc, &track).unwrap();
         use chilpa_dsd::DsdSource as _;
-        let (mut total, mut hashes) = (0u64, [0xcbf2_9ce4_8422_2325u64; 2]);
+        let middle = u64::from(track.duration_frames / 2);
+        let (mut total, mut hashes, mut second_half) = (0u64, [FNV; 2], [FNV; 2]);
+        let (mut first_frame, mut last_frame) = (None, [FNV; 2]);
         while let Some(block) = reader.next_block().unwrap() {
-            for (hash, channel) in hashes.iter_mut().zip(&block) {
-                *hash = fnv1a(*hash, channel);
+            let frame = total / 4704;
+            for (c, channel) in block.iter().enumerate() {
+                hashes[c] = fnv1a(hashes[c], channel);
+                if frame >= middle {
+                    second_half[c] = fnv1a(second_half[c], channel);
+                }
+                last_frame[c] = fnv1a(FNV, channel);
             }
+            first_frame.get_or_insert([fnv1a(FNV, &block[0]), fnv1a(FNV, &block[1])]);
             total += block[0].len() as u64;
         }
         println!("track {:>3}: {total} bytes/channel fnv1a64={:016x}/{:016x}", track.number, hashes[0], hashes[1]);
         assert_eq!(total, expected, "track {}: as long as the disc says, no more and no less", track.number);
+
+        // Seeking, when one track is asked for: DST frames are not the same
+        // size, so the sector of a frame is searched for by timecode.
+        if number.is_some() {
+            let disc = chilpa_sacd::open(Path::new(image)).unwrap();
+            let mut moved = chilpa_sacd::SacdTrackReader::open(disc, &track).unwrap();
+            assert_eq!(moved.seek(middle * PER_FRAME).unwrap(), Some(middle * PER_FRAME));
+            let mut after = [FNV; 2];
+            while let Some(block) = moved.next_block().unwrap() {
+                for (c, channel) in block.iter().enumerate() {
+                    after[c] = fnv1a(after[c], channel);
+                }
+            }
+            assert_eq!(after, second_half, "from the middle, the same as the second half read through");
+            let last = u64::from(track.duration_frames - 1);
+            assert_eq!(moved.seek(last * PER_FRAME).unwrap(), Some(last * PER_FRAME));
+            let block = moved.next_block().unwrap().expect("the last frame");
+            assert_eq!([fnv1a(FNV, &block[0]), fnv1a(FNV, &block[1])], last_frame, "the last frame");
+            assert!(moved.next_block().unwrap().is_none(), "and nothing after it");
+            assert_eq!(moved.seek(0).unwrap(), Some(0));
+            let block = moved.next_block().unwrap().expect("the first frame");
+            assert_eq!(Some([fnv1a(FNV, &block[0]), fnv1a(FNV, &block[1])]), first_frame, "and back to the first");
+            println!("           seeks to the middle, the last frame and the start agree");
+        }
     }
 }
+
+const FNV: u64 = 0xcbf2_9ce4_8422_2325;
+/// One-bit samples of a channel in a frame.
+const PER_FRAME: u64 = 2_822_400 / 75;

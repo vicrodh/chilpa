@@ -81,6 +81,15 @@ pub(crate) struct DopFrames<'a> {
     seek: Option<SeekSignal>,
     /// True if this track ended because somebody skipped it.
     pub(crate) skipped: bool,
+    /// Bytes of each channel still to drop after a seek: the source lands
+    /// on a block or a frame, before the sample asked for.
+    discard: usize,
+    /// What to add to the DoP frames delivered to get the position in the
+    /// track: where the last seek went less what had been delivered by then.
+    pub(crate) base: std::sync::Arc<std::sync::atomic::AtomicI64>,
+    /// DoP frames the device has taken of this track, as the renderer
+    /// reports them.
+    pub(crate) delivered: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
 
 impl<'a> DopFrames<'a> {
@@ -93,12 +102,14 @@ impl<'a> DopFrames<'a> {
             skip: None,
             seek: None,
             skipped: false,
+            discard: 0,
+            base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
+            delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
     }
 
-    /// Listens to the queue's skip and seek. A skip ends the track. DoP does
-    /// not seek, so a seek asked for now is dropped: left pending, it would
-    /// land on whatever PCM track came next.
+    /// Listens to the queue's skip and seek. A skip ends the track; a seek
+    /// moves the source, when it can move.
     pub(crate) fn controlled(mut self, skip: SkipSignal, seek: SeekSignal) -> Self {
         self.skip = Some(skip);
         self.seek = Some(seek);
@@ -110,18 +121,29 @@ impl FrameSource for DopFrames<'_> {
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         // The seek first: taken after a skip, one asked for together with it
         // would outlive this track and land on the next.
-        if let Some(seek) = &self.seek {
-            let _ = seek.take();
-        }
+        let asked = self.seek.as_ref().and_then(|s| s.take());
         if self.skip.as_ref().is_some_and(|s| s.take()) {
             self.skipped = true;
             return Ok(None);
         }
-        let channels = match self.source.next_block() {
+        if let Some(target) = asked {
+            self.seek_to(target)?;
+        }
+        let mut channels = match self.source.next_block() {
             Ok(Some(c)) => c,
             Ok(None) => return Ok(None),
             Err(e) => return Err(e.to_string()),
         };
+        if self.discard > 0 {
+            let cut = self.discard.min(channels[0].len());
+            for channel in &mut channels {
+                channel.drain(..cut.min(channel.len()));
+            }
+            self.discard -= cut;
+            if channels[0].is_empty() {
+                return self.next_block();
+            }
+        }
         let refs: Vec<&[u8]> = channels.iter().map(|c| c.as_slice()).collect();
         let mut words = Vec::new();
         self.packer.pack(&refs, &mut words);
@@ -140,6 +162,27 @@ impl FrameSource for DopFrames<'_> {
         pack(&Samples::Int { data: &samples, bits: 24 }, self.to, &mut bytes)
             .expect("DoP only opens at a word that holds 24 bits");
         Ok(Some(bytes))
+    }
+}
+
+impl DopFrames<'_> {
+    /// Moves the source to `target`, to the DoP frame: sixteen samples of
+    /// each channel, the most one word carries, so the marker and the
+    /// channels stay in step.
+    fn seek_to(&mut self, target: std::time::Duration) -> Result<(), String> {
+        let rate = self.source.info().dsd_rate_hz;
+        let wanted = chilpa_audio::seek::frames_at(target, rate) / 16 * 16;
+        let Some(landed) = self.source.seek(wanted).map_err(|e| e.to_string())? else {
+            // It cannot move, and goes on from where it was.
+            return Ok(());
+        };
+        // Landing before the sample asked for is the rule, and the rest is
+        // dropped here; landing after it means the track has no more.
+        let at = wanted.max(landed);
+        self.discard = ((at - landed) / 8) as usize;
+        let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
+        self.base.store((at / 16) as i64 - delivered as i64, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
     }
 }
 
