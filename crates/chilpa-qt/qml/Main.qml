@@ -32,17 +32,20 @@ Window {
         height: window.height - Metrics.spaceWindow * 2 // derived: a margin above and below
     }
 
-    TabBar {
-        x: window.contentLeft
-        width: window.width - window.contentLeft - Metrics.spaceWindow
-    }
-
+    // The screen scrolls under nothing but the player: it is cut at the
+    // tab bar, which stays on top of it.
     ScreenHost {
         id: host
         x: window.contentLeft - Metrics.spaceWindow
         y: Metrics.tabBarHeight
         width: window.width - x
         height: window.height - y
+        clip: true
+    }
+
+    TabBar {
+        x: window.contentLeft
+        width: window.width - window.contentLeft - Metrics.spaceWindow
     }
 
     PlayerBar {
@@ -61,4 +64,8 @@ Window {
     DevHooks {
         window: window
     }
+
+    // Nothing starts with the keyboard: the search field only takes it when
+    // it is clicked or asked for.
+    Component.onCompleted: contentItem.forceActiveFocus()
 }

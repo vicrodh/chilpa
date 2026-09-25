@@ -34,7 +34,8 @@ Rectangle {
                 height: Metrics.segmentHeight
                 radius: Metrics.radiusItem
                 color: active ? Theme.color.surfaceRaised : "transparent"
-                border.color: active ? Theme.color.strokeHairline : "transparent"
+
+                Edge { visible: segment.active }
 
                 Icon {
                     anchors.centerIn: parent

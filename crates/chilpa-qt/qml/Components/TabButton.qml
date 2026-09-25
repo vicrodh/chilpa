@@ -19,7 +19,8 @@ Rectangle {
     implicitHeight: Metrics.tabHeight
     radius: Metrics.radiusCard
     color: active ? Theme.color.surfaceRaised : area.containsMouse ? Theme.color.stateHover : "transparent"
-    border.color: active ? Theme.color.strokeHairline : "transparent"
+
+    Edge { visible: tab.active }
 
     MouseArea {
         id: area

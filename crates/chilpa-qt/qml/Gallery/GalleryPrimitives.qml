@@ -35,6 +35,14 @@ GallerySection {
 
     SearchField { width: Metrics.sidebarWidth; placeholder: "Search"; shortcut: "Ctrl K" }
 
+    Rectangle {
+        width: Metrics.sidebarWidth
+        height: Metrics.fieldHeight
+        radius: Metrics.radiusPanel
+        color: Theme.color.surfaceSidebar
+        Edge {}
+    }
+
     Row {
         spacing: Metrics.gap8
         ArtTile { width: Metrics.heroArt / 2; height: width; tint: 0 } // derived: half a hero cover

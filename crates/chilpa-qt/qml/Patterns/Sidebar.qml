@@ -13,7 +13,8 @@ Rectangle {
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar
-    border.color: Theme.color.strokeHairline
+
+    Edge {}
 
     Column {
         anchors.fill: parent

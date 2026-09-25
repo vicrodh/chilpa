@@ -26,7 +26,8 @@ Item {
         anchors.fill: parent
         radius: Metrics.radiusPlayer
         color: Theme.color.surfacePlayer
-        border.color: Theme.color.strokeHairline
+
+        Edge {}
     }
 
     Row {

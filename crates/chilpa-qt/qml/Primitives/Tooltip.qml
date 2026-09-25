@@ -15,7 +15,8 @@ Rectangle {
     y: Math.min(at.y + Metrics.gap6, parent.height - height - Metrics.spaceWindow)
     radius: Metrics.radiusMenu
     color: Theme.color.surfaceRaised
-    border.color: Theme.color.strokeHairline
+
+    Edge {}
 
     Text {
         id: label

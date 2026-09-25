@@ -6,7 +6,8 @@ import "../Theme"
 // color while it loads (design/03 ArtTile).
 //
 // The corners come from one shader pass over the image's own texture: no
-// layer, no mask, no offscreen render per cover. The decode size is rounded
+// layer, no mask, no offscreen render per cover. The hairline is an outline
+// on top, which batches with every other outline on screen. The decode size is rounded
 // up to a step of 128 device pixels, so resizing the window does not decode
 // every cover again at every pixel of the drag, and two tiles of nearly the
 // same size share one decode.
@@ -45,7 +46,10 @@ Item {
         property variant source: image
         property size dims: Qt.size(width, height)
         property real radius: root.radius
-        property color edge: Theme.color.strokeHairline
         fragmentShader: "../../assets/shaders/rounded.frag.qsb"
     }
+
+    // Over the cover and over the placeholder alike, as the design's inset
+    // hairline.
+    Edge { radius: root.radius }
 }
