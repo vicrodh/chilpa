@@ -122,6 +122,19 @@ impl Drop for DevRust {
             late(1.5),
             late(2.0)
         );
+        // Where the late ones fell, since the first frame counted: one at
+        // the start of a run and one in the middle are different problems.
+        let mut elapsed = 0.0;
+        let mut when = Vec::new();
+        for (i, t) in self.intervals.iter().enumerate() {
+            elapsed += t;
+            if *t > period * 2.0 && when.len() < 8 {
+                when.push(format!("#{i} {t:.0} ms at {:.2} s", elapsed / 1000.0));
+            }
+        }
+        if !when.is_empty() {
+            eprintln!("late frames: {}", when.join(", "));
+        }
     }
 }
 
