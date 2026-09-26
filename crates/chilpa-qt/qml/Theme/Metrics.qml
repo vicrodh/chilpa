@@ -77,6 +77,10 @@ QtObject {
     readonly property int toggleInset: 3
     readonly property int focusRing: 2
     readonly property int tooltipDelay: 600
+    readonly property int toastMinWidth: 280
+    readonly property int toastMaxWidth: 560
+    readonly property int toastBottom: 88
+    readonly property int toastWithSelectionBottom: 140
     // Above every popup of the overlay.
     readonly property int tooltipLayer: 1000
     // How long a screenshot waits for covers and fonts to arrive.
