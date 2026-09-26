@@ -27,6 +27,8 @@ pub enum Control {
     Secret,
     /// Colors to pick one from.
     Swatches,
+    /// A background job: its progress and a button to start or cancel it.
+    Progress,
 }
 
 impl Control {
@@ -40,6 +42,7 @@ impl Control {
             Control::Link => "link",
             Control::Secret => "secret",
             Control::Swatches => "swatches",
+            Control::Progress => "progress",
         }
     }
 }
@@ -272,6 +275,16 @@ pub const SECTIONS: &[Section] = &[
                     Chilpa::mark("Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."),
                     Control::Button,
                     Chilpa::mark("Repair"),
+                )],
+            },
+            Group {
+                title: Chilpa::mark("Analysis"),
+                settings: &[action(
+                    "library.analysis",
+                    Chilpa::mark("Analyze the library"),
+                    Chilpa::mark("Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."),
+                    Control::Progress,
+                    Chilpa::mark("Analyze"),
                 )],
             },
         ],

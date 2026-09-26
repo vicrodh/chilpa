@@ -136,6 +136,18 @@ msgstr "Toda la música"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
+msgid "Analysis"
+msgstr "Análisis"
+
+msgid "Analyze"
+msgstr "Analizar"
+
+msgid "Analyze the library"
+msgstr "Analizar la biblioteca"
+
+msgid "Analyzing {} of {} tracks"
+msgstr "Analizando {} de {} pistas"
+
 msgid "Appearance"
 msgstr "Apariencia"
 
@@ -249,6 +261,9 @@ msgstr "Conectado como {}"
 
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
+
+msgid "Counting tracks…"
+msgstr "Contando pistas…"
 
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
@@ -654,6 +669,9 @@ msgstr "Leyendo {} de {} archivos"
 
 msgid "Reads every folder again. What did not change is not read twice."
 msgstr "Vuelve a leer todas las carpetas. Lo que no cambió no se lee dos veces."
+
+msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
+msgstr "Lee el tempo, la tonalidad y la sonoridad en segundo plano. AutoMix aparece cuando suficientes pistas tienen tempo."
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
@@ -1571,6 +1589,9 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} álbum"
 msgstr[1] "{} álbumes"
+
+msgid "{} analyzed, {} without pulse, {} unreadable"
+msgstr "{} analizadas, {} sin pulso, {} ilegibles"
 
 msgid "{} artist"
 msgid_plural "{} artists"

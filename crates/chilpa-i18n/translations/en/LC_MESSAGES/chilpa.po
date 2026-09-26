@@ -136,6 +136,18 @@ msgstr ""
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
+msgid "Analysis"
+msgstr ""
+
+msgid "Analyze"
+msgstr ""
+
+msgid "Analyze the library"
+msgstr ""
+
+msgid "Analyzing {} of {} tracks"
+msgstr ""
+
 msgid "Appearance"
 msgstr ""
 
@@ -248,6 +260,9 @@ msgid "Connected as {}"
 msgstr ""
 
 msgid "CoreAudio reports no device that can play"
+msgstr ""
+
+msgid "Counting tracks…"
 msgstr ""
 
 msgid "DAC passthrough"
@@ -653,6 +668,9 @@ msgid "Reading {} of {} files"
 msgstr ""
 
 msgid "Reads every folder again. What did not change is not read twice."
+msgstr ""
+
+msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
 msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
@@ -1571,6 +1589,9 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} analyzed, {} without pulse, {} unreadable"
+msgstr ""
 
 msgid "{} artist"
 msgid_plural "{} artists"
