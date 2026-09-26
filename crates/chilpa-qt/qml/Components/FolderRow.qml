@@ -13,6 +13,9 @@ Item {
     required property var lastScan
     required property bool reachable
 
+    readonly property bool scanning: LibraryFolders.scanning
+        && (LibraryFolders.scanningPath === "" || LibraryFolders.scanningPath === path)
+
     signal rescan()
     signal forget()
 
@@ -49,10 +52,11 @@ Item {
         anchors.rightMargin: Metrics.gap16
         anchors.verticalCenter: parent.verticalCenter
         width: Metrics.folderDateWidth
-        text: row.lastScan ? Qt.formatDateTime(row.lastScan, "yyyy-MM-dd hh:mm") : "—"
+        text: row.scanning ? I18n.tr("Scanning…", I18n.rev)
+            : row.lastScan ? Qt.formatDateTime(row.lastScan, "yyyy-MM-dd hh:mm") : "—"
         font.pointSize: Type.row
         font.features: { "tnum": 1 }
-        color: Theme.color.textSecondary
+        color: row.scanning ? Theme.color.accent : Theme.color.textSecondary
     }
 
     Text {

@@ -29,6 +29,15 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("a scan is already running");
             return;
         }
+        // The folder is written down before its scan starts, so the list of
+        // folders shows it at once, as being scanned. It used to appear only
+        // when the scan ended, and until then adding it looked like it had
+        // failed.
+        if let Some(lib) = self.library() {
+            if let Ok(source) = lib.source_id("local", "default") {
+                let _ = lib.root_id(source, folder);
+            }
+        }
         // The interface's connection is let go: the scan opens its own, and
         // two connections to the same WAL database coexist without fighting.
         self.scan = Some(chilpa_library::ScanJob::start_with(
