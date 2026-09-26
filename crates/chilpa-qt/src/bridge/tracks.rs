@@ -53,6 +53,8 @@ pub mod qobject {
         #[qproperty(i32, count)]
         /// "58 songs · 4 h 18 min".
         #[qproperty(QString, summary)]
+        /// How many tracks are selected.
+        #[qproperty(i32, selected_count)]
         type TrackListModel = super::TrackListRust;
 
         /// Plays the list from that row: the list becomes what plays next.
@@ -77,6 +79,11 @@ pub mod qobject {
         /// the row is part of it.
         #[qinvokable]
         fn queue(self: Pin<&mut TrackListModel>, row: i32);
+
+        /// Plays the list from the row, or only the selection when the row
+        /// is part of one.
+        #[qinvokable]
+        fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
 
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
@@ -184,6 +191,7 @@ pub struct TrackListRust {
     playing_path: QString,
     count: i32,
     summary: QString,
+    selected_count: i32,
     rows: Rows,
     playing: String,
     /// A record numbers its rows by track number; any other list, by
@@ -445,12 +453,33 @@ impl qobject::TrackListModel {
     }
 
     pub fn queue(self: Pin<&mut Self>, row: i32) {
-        let Some(track) = self.rust().track(row.max(0) as usize) else { return };
-        let this = self.rust();
-        if !this.selected.contains(&track.id) || this.selected.len() < 2 {
-            enqueue(&[track.path]);
+        if !self.in_selection(row) {
+            if let Some(track) = self.rust().track(row.max(0) as usize) {
+                enqueue(&[track.path]);
+            }
             return;
         }
+        self.with_selection(enqueue);
+    }
+
+    pub fn play_chosen(self: Pin<&mut Self>, row: i32) {
+        if !self.in_selection(row) {
+            self.play(row);
+            return;
+        }
+        self.with_selection(|paths| app::with(|api| api.play_from(paths, 0)));
+    }
+
+    /// Whether the row is one of several selected.
+    fn in_selection(&self, row: i32) -> bool {
+        let this = self.rust();
+        this.selected.len() > 1 && this.track_id(row.max(0) as usize).is_some_and(|id| this.selected.contains(&id))
+    }
+
+    /// The selected files, in list order -- which the selection does not
+    /// keep -- handed to `then` on the window's thread.
+    fn with_selection(&self, then: fn(&[String])) {
+        let this = self.rust();
         match &this.rows {
             Rows::Loaded(_) => {
                 let paths: Vec<String> = this
@@ -459,15 +488,14 @@ impl qobject::TrackListModel {
                     .filter(|t| this.selected.contains(&t.id))
                     .map(|t| t.path.clone())
                     .collect();
-                enqueue(&paths);
+                then(&paths);
             }
             Rows::Snapshot { ids, .. } => {
-                // In list order, which the selection does not keep.
                 let chosen: Vec<i64> = ids.ids.iter().copied().filter(|id| this.selected.contains(id)).collect();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
                     let paths = reader.paths(&chosen);
-                    let _ = thread.queue(move |_| enqueue(&paths));
+                    let _ = thread.queue(move |_| then(&paths));
                 });
             }
         }
@@ -513,6 +541,10 @@ impl qobject::TrackListModel {
     /// One role changed on some rows. The view only rereads the rows it has
     /// built, so naming the whole range costs what is on screen.
     fn changed(mut self: Pin<&mut Self>, role: i32) {
+        if role == ROLE_SELECTED {
+            let count = self.rust().selected.len() as i32;
+            self.as_mut().set_selected_count(count);
+        }
         let last = self.rust().len() as i32 - 1;
         if last < 0 {
             return;
