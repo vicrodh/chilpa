@@ -9,9 +9,22 @@ pub(crate) const RESERVE: &str = "audio.reserve";
 /// Whether PipeWire's graph follows each track's rate.
 pub(crate) const FORCE_RATE: &str = "audio.forceRate";
 
-/// The card's stack and the one through `plughw`, as identifiers name them.
+/// The card's stack and the ones through `plughw` and ALSA's PCM layer, as
+/// identifiers name them.
 const CARD: &str = "alsa";
 const PLUG: &str = "alsaplug";
+const PCM: &str = "alsapcm";
+
+/// The card and device a card output names, whichever plugin it goes
+/// through: `alsa:hw:1,0`, `alsaplug:plughw:1,0`, `alsapcm:sysdefault:CARD=1`.
+fn card_and_device(output_id: &str) -> Option<(u32, u32)> {
+    let (_, name) = output_id.split_once(':')?;
+    if let Some(card) = name.strip_prefix("sysdefault:CARD=") {
+        return Some((card.parse().ok()?, 0));
+    }
+    let (card, device) = name.strip_prefix("hw:").or_else(|| name.strip_prefix("plughw:"))?.split_once(',')?;
+    Some((card.parse().ok()?, device.parse().ok()?))
+}
 
 fn word(fidelity: chilpa_core::backends::Fidelity) -> &'static str {
     match fidelity {
@@ -136,7 +149,7 @@ impl crate::Chilpa {
     pub fn stacks(&self) -> Vec<OutputStack> {
         chilpa_core::backends::described()
             .into_iter()
-            .filter(|s| s.kind != chilpa_core::backends::StackKind::AlsaPlug)
+            .filter(|s| !matches!(s.kind, chilpa_core::backends::StackKind::AlsaPlug | chilpa_core::backends::StackKind::AlsaPcm))
             .map(|s| OutputStack {
                 key: s.kind.key().to_string(),
                 label: s.label(),
@@ -170,7 +183,7 @@ impl crate::Chilpa {
     /// offers them: the card through `plughw` is the card.
     pub fn stack_of(&self, output_id: &str) -> String {
         match own_stack(output_id) {
-            PLUG => CARD.to_string(),
+            PLUG | PCM => CARD.to_string(),
             key => key.to_string(),
         }
     }
@@ -226,25 +239,39 @@ impl crate::Chilpa {
         self.move_output(&output, bit_perfect);
     }
 
-    /// "hw" or "plughw" when the chosen output is a card; empty otherwise.
+    /// "hw", "plughw" or "pcm" when the chosen output is a card; empty
+    /// otherwise.
     pub fn alsa_plugin(&self) -> &'static str {
         match own_stack(&self.chosen_output().0) {
             CARD => "hw",
             PLUG => "plughw",
+            PCM => "pcm",
             _ => "",
         }
     }
 
-    /// Moves the chosen card to the plugin that converts, or back to the
-    /// card alone, under the same policy.
-    pub fn set_alsa_plugin(&mut self, plughw: bool) {
+    /// The plugins the chosen card can be reached through. `pcm` names a
+    /// card's first device only, so another device -- an HDMI port of the
+    /// board -- has the other two.
+    pub fn alsa_plugins(&self) -> &'static [&'static str] {
+        match card_and_device(&self.chosen_output().0) {
+            Some((_, 0)) => &["hw", "plughw", "pcm"],
+            Some(_) => &["hw", "plughw"],
+            None => &[],
+        }
+    }
+
+    /// Moves the chosen card to another plugin, under the same policy.
+    pub fn set_alsa_plugin(&mut self, plugin: &str) {
         let (output, _) = self.chosen_output();
-        let moved = match (own_stack(&output), plughw) {
-            (CARD, true) => output.strip_prefix("alsa:hw:").map(|c| format!("{PLUG}:plughw:{c}")),
-            (PLUG, false) => output.strip_prefix("alsaplug:plughw:").map(|c| format!("{CARD}:hw:{c}")),
-            _ => None,
+        let Some((card, device)) = card_and_device(&output).filter(|_| own_stack(&output) != "") else { return };
+        let moved = match plugin {
+            "hw" => format!("{CARD}:hw:{card},{device}"),
+            "plughw" => format!("{PLUG}:plughw:{card},{device}"),
+            "pcm" if device == 0 => format!("{PCM}:sysdefault:CARD={card}"),
+            _ => return,
         };
-        if let Some(moved) = moved {
+        if moved != output {
             self.use_output_as_chosen(&moved);
         }
     }
@@ -260,5 +287,19 @@ impl crate::Chilpa {
                 bit_perfect: o.bit_perfect,
             })
             .collect()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn every_plugin_names_the_same_card() {
+        assert_eq!(card_and_device("alsa:hw:1,0"), Some((1, 0)));
+        assert_eq!(card_and_device("alsaplug:plughw:0,3"), Some((0, 3)));
+        assert_eq!(card_and_device("alsapcm:sysdefault:CARD=1"), Some((1, 0)));
+        assert_eq!(card_and_device("pipewire:alsa_output.usb"), None);
+        assert_eq!(card_and_device("system:default"), None);
     }
 }

@@ -256,13 +256,20 @@ impl SettingsPageRust {
                 row.control = if card { row.control } else { "" };
             }
             "audio.alsaPlugin" => {
-                row.value = app::with(|api| api.alsa_plugin()).to_string();
+                let (plugin, plugins) = app::with(|api| (api.alsa_plugin(), api.alsa_plugins()));
+                row.value = plugin.to_string();
                 // Only a card has a plugin to choose.
                 if row.value.is_empty() {
                     row.control = "";
                 }
-                row.values = vec!["hw".to_string(), "plughw".to_string()];
-                row.options = vec![app::t("hw: the card alone"), app::t("plughw: converts what it refuses")];
+                for p in plugins {
+                    row.values.push(p.to_string());
+                    row.options.push(match *p {
+                        "hw" => app::t("hw: the card alone"),
+                        "plughw" => app::t("plughw: converts what it refuses"),
+                        _ => app::t("pcm: shared, as ALSA sets it up"),
+                    });
+                }
             }
             "audio.wizard" => {
                 if let Some(report) = &self.report {
@@ -392,7 +399,7 @@ impl qobject::SettingsPage {
                 });
             }
             "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
-            "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(value == "plughw")),
+            "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(&value)),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
             "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),

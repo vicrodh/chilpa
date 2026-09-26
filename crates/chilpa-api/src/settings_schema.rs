@@ -104,7 +104,7 @@ pub const SECTIONS: &[Section] = &[
                     setting(
                         "audio.alsaPlugin",
                         Chilpa::mark("ALSA plugin"),
-                        Chilpa::mark("hw plays the samples untouched or refuses them. plughw converts what the card refuses, so it is never bit-perfect."),
+                        Chilpa::mark("hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."),
                         Control::Select,
                     ),
                     setting(

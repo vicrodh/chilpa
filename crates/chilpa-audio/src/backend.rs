@@ -39,6 +39,8 @@ pub enum BackendKind {
     Alsa,
     /// The card through ALSA's `plughw`, which converts what it refuses.
     AlsaPlug,
+    /// The card through ALSA's PCM layer, `sysdefault`: shared and converted.
+    AlsaPcm,
     /// The PipeWire graph.
     PipeWire,
     /// The PulseAudio protocol, whoever is answering it.
@@ -61,6 +63,7 @@ impl BackendKind {
         BackendKind::System,
         BackendKind::Alsa,
         BackendKind::AlsaPlug,
+        BackendKind::AlsaPcm,
         BackendKind::PipeWire,
         BackendKind::Pulse,
         BackendKind::Jack,
@@ -76,6 +79,7 @@ impl BackendKind {
             BackendKind::System => "system",
             BackendKind::Alsa => "alsa",
             BackendKind::AlsaPlug => "alsaplug",
+            BackendKind::AlsaPcm => "alsapcm",
             BackendKind::PipeWire => "pipewire",
             BackendKind::Pulse => "pulse",
             BackendKind::Jack => "jack",
@@ -103,6 +107,7 @@ impl BackendKind {
             BackendKind::System => chilpa_i18n::t("System"),
             BackendKind::Alsa => "ALSA".to_string(),
             BackendKind::AlsaPlug => "ALSA (plughw)".to_string(),
+            BackendKind::AlsaPcm => "ALSA (pcm)".to_string(),
             BackendKind::PipeWire => "PipeWire".to_string(),
             BackendKind::Pulse => "PulseAudio".to_string(),
             BackendKind::Jack => "JACK".to_string(),

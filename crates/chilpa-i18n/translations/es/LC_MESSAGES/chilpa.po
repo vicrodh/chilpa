@@ -1012,8 +1012,8 @@ msgstr "diadema"
 msgid "how the account connects does not work: {}"
 msgstr "cómo conecta la cuenta no sirve: {}"
 
-msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses, so it is never bit-perfect."
-msgstr "hw toca las muestras intactas o las rechaza. plughw convierte lo que la tarjeta rechaza, así que nunca es bit-perfect."
+msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."
+msgstr "hw toca las muestras intactas o las rechaza. plughw convierte lo que la tarjeta rechaza. pcm es la tarjeta como la configura ALSA, compartida con otros programas. Solo hw puede ser bit-perfect."
 
 msgid "hw: the card alone"
 msgstr "hw: la tarjeta sola"
@@ -1134,6 +1134,12 @@ msgstr "ahora en {}"
 
 msgid "outside the image"
 msgstr "fuera de la imagen"
+
+msgid "pcm is the card as ALSA's own configuration sets it up: usually mixed with dmix, so other programs can play at the same time, and converted to whatever rate the mix runs at. It shares the card, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "pcm es la tarjeta como la configura ALSA: casi siempre mezclada con dmix, para que otros programas toquen al mismo tiempo, y convertida a la frecuencia a la que corre la mezcla. Comparte la tarjeta, y por lo mismo no puede prometer que las muestras lleguen como salieron."
+
+msgid "pcm: shared, as ALSA sets it up"
+msgstr "pcm: compartida, como la configura ALSA"
 
 msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
 msgstr "plughw convierte lo que la tarjeta no acepta —la frecuencia, el formato de muestra, los canales— sin avisar. Toca lo que la tarjeta sola rechazaría, y por lo mismo no puede prometer que las muestras lleguen como salieron."
