@@ -16,6 +16,7 @@ pub mod i18n;
 pub mod library;
 pub mod navigation;
 pub mod player;
+pub mod search;
 pub mod settings;
 pub mod settings_page;
 pub mod theme;

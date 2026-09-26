@@ -13,6 +13,7 @@ QtObject {
     readonly property real titleSmall: 36 * pointsPerPixel
     readonly property real section: 19 * pointsPerPixel
     readonly property real heroTitle: 18 * pointsPerPixel
+    readonly property real bestResult: 15 * pointsPerPixel
     readonly property real body: 13 * pointsPerPixel
     readonly property real bodyLarge: 13.5 * pointsPerPixel
     readonly property real row: 12.5 * pointsPerPixel

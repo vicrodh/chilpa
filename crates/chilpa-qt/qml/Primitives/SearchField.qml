@@ -9,8 +9,20 @@ Rectangle {
     property alias text: input.text
     property string placeholder
     property string shortcut
+    readonly property alias editing: input.activeFocus
 
     signal accepted()
+    // Up and Down, for a list of results to follow; Esc.
+    signal stepped(int by)
+    signal escaped()
+
+    function focusInput() {
+        input.forceActiveFocus()
+        input.selectAll()
+    }
+    function release() {
+        input.focus = false
+    }
 
     implicitHeight: Metrics.fieldHeight
     radius: Metrics.radiusControl
@@ -40,6 +52,9 @@ Rectangle {
         color: Theme.color.textPrimary
         selectionColor: Theme.color.rowSelected
         onAccepted: root.accepted()
+        Keys.onUpPressed: root.stepped(-1)
+        Keys.onDownPressed: root.stepped(1)
+        Keys.onEscapePressed: root.escaped()
 
         Text {
             anchors.fill: parent
