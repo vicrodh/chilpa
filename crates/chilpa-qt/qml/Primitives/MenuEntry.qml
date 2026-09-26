@@ -3,6 +3,8 @@ import "../Theme"
 
 // One line of a Menu: a check, the text with its detail below, a mark and
 // a hint on the right; a separator; or a note, a heading nothing happens on.
+// It asks for the width its text needs; if the menu cannot give it, the text
+// is cut, never spilled, and the whole of it shows in a tooltip.
 Item {
     id: line
 
@@ -12,8 +14,11 @@ Item {
 
     readonly property bool separator: entry.separator === true
     readonly property bool note: entry.note === true
+    readonly property bool cut: title.truncated || detail.truncated
 
-    implicitWidth: row.implicitWidth + Metrics.gap10 * 2 // derived: padding on both sides
+    implicitWidth: separator ? 0
+        : Metrics.gap10 * 2 + check.width + Metrics.gap8 + Math.max(title.implicitWidth, detail.implicitWidth) // derived: padding, the check and the text
+          + (tail.width > 0 ? tail.width + Metrics.gap16 : 0)
     implicitHeight: separator ? Metrics.gap8 + 1 : entry.detail ? Metrics.menuItemTall : Metrics.menuItem
 
     Rectangle {
@@ -32,34 +37,52 @@ Item {
         color: hover.hovered && !line.note ? Theme.color.stateHover : "transparent"
     }
 
-    Row {
-        id: row
+    Icon {
+        id: check
         visible: !line.separator
         x: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
+        glyph: line.entry.checked ? Icons.check : ""
+        size: Metrics.iconMd
+        color: Theme.color.accent
+    }
+
+    Column {
+        visible: !line.separator
+        anchors.left: check.right
+        anchors.leftMargin: Metrics.gap8
+        anchors.right: tail.left
+        anchors.rightMargin: tail.width > 0 ? Metrics.gap16 : 0
+        anchors.verticalCenter: parent.verticalCenter
+
+        Text {
+            id: title
+            width: parent.width
+            text: line.entry.text || ""
+            elide: Text.ElideRight
+            font.pointSize: line.note ? Type.small : Type.body
+            font.weight: line.note ? Type.semibold : Type.regular
+            color: line.note ? Theme.color.textTertiary : Theme.color.textPrimary
+        }
+        Text {
+            id: detail
+            width: parent.width
+            visible: !!line.entry.detail
+            text: line.entry.detail || ""
+            elide: Text.ElideRight
+            font.pointSize: Type.small
+            color: Theme.color.textSecondary
+        }
+    }
+
+    Row {
+        id: tail
+        visible: !line.separator
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap10
+        anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap8
 
-        Icon {
-            anchors.verticalCenter: parent.verticalCenter
-            glyph: line.entry.checked ? Icons.check : ""
-            size: Metrics.iconMd
-            color: Theme.color.accent
-        }
-        Column {
-            anchors.verticalCenter: parent.verticalCenter
-            Text {
-                text: line.entry.text || ""
-                font.pointSize: line.note ? Type.small : Type.body
-                font.weight: line.note ? Type.semibold : Type.regular
-                color: line.note ? Theme.color.textTertiary : Theme.color.textPrimary
-            }
-            Text {
-                visible: !!line.entry.detail
-                text: line.entry.detail || ""
-                font.pointSize: Type.small
-                color: Theme.color.textSecondary
-            }
-        }
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: !!line.entry.mark
@@ -71,13 +94,18 @@ Item {
         Text {
             anchors.verticalCenter: parent.verticalCenter
             visible: !!line.entry.hint
-            leftPadding: Metrics.gap16
             text: line.entry.hint || ""
             font.pointSize: Type.label
             color: Theme.color.textTertiary
         }
     }
 
-    HoverHandler { id: hover; enabled: !line.separator }
+    HoverHandler {
+        id: hover
+        enabled: !line.separator
+        onHoveredChanged: hovered && line.cut
+            ? TipState.show([line.entry.text, line.entry.detail].filter(t => !!t).join(" — "), line)
+            : TipState.hide(line)
+    }
     TapHandler { enabled: !line.separator && !line.note; onTapped: line.clicked() }
 }

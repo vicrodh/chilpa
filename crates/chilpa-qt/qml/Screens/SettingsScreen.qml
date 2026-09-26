@@ -55,7 +55,9 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left: nav.right
         anchors.leftMargin: Metrics.heroGap
-        width: Math.min(Metrics.settingsMaxWidth, page.width - x - Metrics.contentX)
+        // To the right edge, whatever the window's width: every row's control
+        // sits on the right, its label and description on the left.
+        width: page.width - x - Metrics.contentX
         clip: true
         model: rows
         bottomMargin: Metrics.contentBottom

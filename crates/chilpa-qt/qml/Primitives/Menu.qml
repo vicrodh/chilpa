@@ -14,8 +14,24 @@ Popup {
 
     signal chosen(int index)
 
+    // As wide as its widest entry, between the design's width and a limit;
+    // past the limit an entry is cut and says the rest in a tooltip. Kept
+    // inside the window.
+    property real widest: 0
+
+    function measure() {
+        let w = 0
+        for (let i = 0; i < entriesRepeater.count; ++i) {
+            const item = entriesRepeater.itemAt(i)
+            if (item)
+                w = Math.max(w, item.implicitWidth)
+        }
+        widest = w
+    }
+
     padding: Metrics.gap4
-    implicitWidth: Math.max(Metrics.menuWidth, column.implicitWidth + padding * 2) // derived: padding on both sides
+    margins: Metrics.gap10
+    implicitWidth: Math.min(Metrics.menuMaxWidth, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides
 
     background: Item {
         RectangularShadow {
@@ -39,7 +55,10 @@ Popup {
         id: column
 
         Repeater {
+            id: entriesRepeater
             model: menu.entries
+            onItemAdded: menu.measure()
+            onItemRemoved: menu.measure()
 
             MenuEntry {
                 required property int index

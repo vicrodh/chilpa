@@ -67,6 +67,7 @@ QtObject {
     readonly property int fieldHeightLarge: 32
     readonly property int selectWidth: 260
     readonly property int menuWidth: 236
+    readonly property int menuMaxWidth: 420
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
     readonly property int toggleWidth: 38
@@ -75,6 +76,8 @@ QtObject {
     readonly property int toggleInset: 3
     readonly property int focusRing: 2
     readonly property int tooltipDelay: 600
+    // Above every popup of the overlay.
+    readonly property int tooltipLayer: 1000
     // How long a screenshot waits for covers and fonts to arrive.
     readonly property int shotDelay: 2500
     // The longest a scripted scroll test runs.
