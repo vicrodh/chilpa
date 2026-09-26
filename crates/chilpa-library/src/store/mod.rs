@@ -7,12 +7,14 @@
 pub mod albums;
 pub mod browse;
 pub mod features;
+pub mod find;
 pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
 pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
+pub use find::Found;
 pub use playlists::{PlaylistEntry, StoredPlaylist};
 pub use plays::{Stats, TrackStat};
 
@@ -540,7 +542,7 @@ const CONSIDERED: usize = 5_000;
 /// `None` when there is nothing to search for: whitespace, or punctuation
 /// that tokenizes to nothing. An empty FTS5 query is a syntax error, and
 /// answering "nothing found" is the truth anyway.
-fn fts_query(text: &str) -> Option<String> {
+pub(crate) fn fts_query(text: &str) -> Option<String> {
     let tokens: Vec<String> = text
         .split(|c: char| !c.is_alphanumeric())
         .filter(|t| !t.is_empty())
