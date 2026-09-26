@@ -72,6 +72,20 @@ fn wait_at_least(chilpa: &mut chilpa_api::Chilpa, index: usize) -> bool {
     false
 }
 
+fn queue_names(chilpa: &chilpa_api::Chilpa) -> Vec<String> {
+    chilpa
+        .queue_order()
+        .into_iter()
+        .map(|index| {
+            std::path::Path::new(&chilpa.queue_paths()[index])
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect()
+}
+
 #[test]
 fn going_back_does_not_trim_the_queue() {
     let dir = folder("back");
@@ -248,6 +262,27 @@ fn play_later_is_a_named_group_after_play_next() {
     assert_eq!(chilpa.queue_order(), before, "folding is only presentation");
     assert!(chilpa.remove_queue_group(key));
     assert!(chilpa.queue_order().iter().all(|index| !later.contains(&chilpa.queue_paths()[*index])));
+
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn queued_rows_can_be_moved_without_moving_the_playing_track() {
+    let dir = folder("move");
+    other_library(&dir);
+    let paths: Vec<String> = ["01.wav", "02.wav", "03.wav", "04.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 441_000).display().to_string())
+        .collect();
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    chilpa.set_paused(true);
+
+    assert!(chilpa.move_queued(&[2, 3], 1));
+    assert_eq!(queue_names(&chilpa), ["01.wav", "03.wav", "04.wav", "02.wav"]);
+    assert!(!chilpa.move_queued(&[0], 3), "the playing row stays put");
+    assert_eq!(queue_names(&chilpa), ["01.wav", "03.wav", "04.wav", "02.wav"]);
 
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);

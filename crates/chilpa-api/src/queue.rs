@@ -364,6 +364,46 @@ impl Chilpa {
         self.queue_groups.iter().find(|group| group.tracks.contains(&index))
     }
 
+    /// Moves rows in the visible, upcoming queue. `to` is a row boundary in
+    /// that same view before the selected rows are lifted. The playing row
+    /// cannot move; array positions stay fixed and only traversal changes.
+    pub fn move_queued(&mut self, rows: &[usize], to: usize) -> bool {
+        let Some(player) = &self.player else { return false };
+        let visible = self.queue_order();
+        if rows.is_empty() || to > visible.len() {
+            return false;
+        }
+        let mut selected_rows = rows.to_vec();
+        selected_rows.sort_unstable();
+        selected_rows.dedup();
+        if selected_rows.iter().any(|&row| row == 0 || row >= visible.len()) {
+            return false;
+        }
+        let selected: Vec<usize> = selected_rows.iter().map(|&row| visible[row]).collect();
+        let mut moved: Vec<usize> = visible.iter().copied().filter(|index| !selected.contains(index)).collect();
+        let destination = to
+            .saturating_sub(selected_rows.iter().filter(|&&row| row < to).count())
+            .min(moved.len());
+        moved.splice(destination..destination, selected.iter().copied());
+        if moved.first() != visible.first() {
+            return false;
+        }
+
+        let own = self.queue.len().saturating_sub(self.base);
+        let mut order = player.order();
+        if order.len() != own {
+            order = (0..own).collect();
+        }
+        let live: std::collections::HashSet<usize> = visible.iter().copied().collect();
+        let mut replacements = moved.into_iter().map(|index| index - self.base);
+        for entry in &mut order {
+            if live.contains(&(*entry + self.base)) {
+                *entry = replacements.next().expect("one replacement for every visible queue row");
+            }
+        }
+        player.set_order(order, own)
+    }
+
     /// Folding is presentation state only; it never changes traversal.
     pub fn collapse_queue_group(&mut self, key: u64, collapsed: bool) -> bool {
         let Some(group) = self.queue_groups.iter_mut().find(|group| group.key == key) else { return false };
