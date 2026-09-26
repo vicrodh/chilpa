@@ -259,6 +259,12 @@ impl Player {
         self.controls.normalize.set(on);
     }
 
+    /// Whether the output is asked for alone with bit-perfect off too, from
+    /// the next time it opens.
+    pub fn set_exclusive(&self, on: bool) {
+        self.controls.exclusive.set(on);
+    }
+
     pub fn repeat(&self) -> crate::queue_playback::Repeat {
         self.controls.repeat.get()
     }
@@ -342,9 +348,9 @@ fn play(
 ) -> Result<Outcome, PlayError> {
     // Asking for the output alone is what the bit-perfect switch means at
     // the device, and it is also what decides whether a server can pass
-    // samples through. The two are the same question, so they are the same
-    // flag.
-    let exclusive = bit_perfect;
+    // samples through. Bit-perfect always asks; with it off, asking is the
+    // exclusive switch's: nothing else mixed in while Chilpa may convert.
+    let exclusive = bit_perfect || controls.exclusive.get();
     // What the samples meet after Chilpa hands them over. The delivery
     // cannot see that far, and a verdict that ignores it says bit-perfect
     // over a resampler.
@@ -358,7 +364,7 @@ fn play(
 
     if let Some(first) = paths.first() {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, stop, pause, open, events);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events);
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, events);
@@ -453,12 +459,12 @@ fn play_stream(
     device: &str,
     caps: &chilpa_audio::negotiate::DeviceCaps,
     policy: Policy,
+    exclusive: bool,
     stop: &StopSignal,
     pause: &chilpa_audio::sink::PauseSignal,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    let exclusive = policy == Policy::BitPerfect;
     let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
     let address = parts.first().cloned().unwrap_or_default();
@@ -753,6 +759,29 @@ mod tests {
         p.play(&file, "fake", true);
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 2_000 })));
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn the_exclusive_switch_asks_for_the_output_alone_without_bit_perfect() {
+        let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
+        let seen = Arc::clone(&asked);
+        let p = Player::spawn(
+            Box::new(|_| {
+                Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })
+            }),
+            Box::new(move |_, stream, exclusive| {
+                seen.lock().unwrap().push(exclusive);
+                Ok(Box::new(NullSink { stream, written: Arc::new(AtomicU64::new(0)) }) as Box<dyn AudioSink + Send>)
+            }),
+        );
+        let file = wav("exclusive", 1_000);
+        p.play(&file, "fake", false);
+        wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        p.set_exclusive(true);
+        p.play(&file, "fake", false);
+        wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        assert_eq!(*asked.lock().unwrap(), vec![false, true], "shared first, alone once asked");
         let _ = std::fs::remove_file(file);
     }
 

@@ -228,9 +228,9 @@ impl OutputBackend for PipeWire {
             fidelity: Fidelity::Depends,
             caveat: chilpa_i18n::t(
                 "PipeWire passes the samples through untouched only when it hands the output over \
-                 to one program at a time. Chilpa asks for that whenever bit-perfect is on. With \
-                 it off the graph mixes this with everything else and resamples the result to \
-                 whatever rate it is running at.",
+                 to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive \
+                 mode is on. With both off the graph mixes this with everything else and resamples \
+                 the result to whatever rate it is running at.",
             ),
         }
     }
@@ -294,7 +294,7 @@ impl OutputBackend for PipeWire {
             // directory'", and nobody can act on that. What somebody can act
             // on is knowing another program is holding the output.
             Err(e) if exclusive => Err(SinkError::Backend(chilpa_i18n::t_args(
-                "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})",
+                "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})",
                 &[id, &e.to_string()],
             ))),
             Err(e) => Err(e),

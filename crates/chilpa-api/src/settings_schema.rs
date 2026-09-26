@@ -113,6 +113,12 @@ pub const SECTIONS: &[Section] = &[
                         Chilpa::mark("Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."),
                         Control::Toggle,
                     ),
+                    setting(
+                        "audio.exclusive",
+                        Chilpa::mark("Exclusive mode"),
+                        Chilpa::mark("The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."),
+                        Control::Toggle,
+                    ),
                 ],
             },
             Group {

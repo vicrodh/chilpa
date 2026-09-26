@@ -225,6 +225,22 @@ impl SettingsPageRust {
                 row.value = output.to_string();
             }
             "audio.bitperfect" => row.value = bit_perfect.to_string(),
+            "audio.exclusive" => {
+                // Only a stack that shares can be asked not to; a card is
+                // always alone, and bit-perfect always asks.
+                let (fidelity, chosen) = app::with(|api| (api.fidelity_of(output), api.exclusive()));
+                let fixed = match fidelity {
+                    "exact" => Some((true, app::t("This output is always Chilpa's alone."))),
+                    "depends" if bit_perfect => Some((true, app::t("Bit-perfect already asks for it."))),
+                    "depends" => None,
+                    _ => Some((false, app::t("Not through this stack: it mixes by design."))),
+                };
+                row.value = fixed.as_ref().map_or(chosen, |(on, _)| *on).to_string();
+                if let Some((_, why)) = fixed {
+                    row.control = "fixed";
+                    row.description = format!("{} {why}", row.description);
+                }
+            }
             "audio.alsaPlugin" => {
                 row.value = app::with(|api| api.alsa_plugin()).to_string();
                 // Only a card has a plugin to choose.
@@ -363,6 +379,7 @@ impl qobject::SettingsPage {
             }
             "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
             "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(value == "plughw")),
+            "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.bitperfect" => {
                 app::with(|api| api.set_bit_perfect(value == "true"));
                 // The player bar's options show it too.

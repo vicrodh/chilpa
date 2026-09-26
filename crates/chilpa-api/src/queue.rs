@@ -8,6 +8,7 @@ use super::*;
 /// Where the playback switches are kept.
 const GAPLESS: &str = "playback.gapless";
 const NORMALIZE: &str = "playback.normalize";
+const EXCLUSIVE: &str = "audio.exclusive";
 
 impl Chilpa {
     /// Sets the queue already in `self.queue` going, from that position.
@@ -63,7 +64,7 @@ impl Chilpa {
         // what played before does not carry over.
         self.mix = false;
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
-        let (gapless, normalize) = (self.gapless(), self.normalize() && !bit_perfect);
+        let (gapless, normalize, exclusive) = (self.gapless(), self.normalize() && !bit_perfect, self.exclusive());
         let tap = self.tap.clone();
         let player = self
             .player
@@ -71,6 +72,7 @@ impl Chilpa {
         player.set_repeat(repeat);
         player.set_gapless(gapless);
         player.set_normalize(normalize);
+        player.set_exclusive(exclusive);
         if shuffle {
             player.shuffle(tracks.len());
         } else {
@@ -336,6 +338,24 @@ impl Chilpa {
         self.remember_preference(NORMALIZE, &on.to_string());
         let (_, bit_perfect) = self.chosen_output();
         self.apply_playback_options(bit_perfect);
+    }
+
+    /// Whether the output is asked for alone with bit-perfect off too.
+    pub fn exclusive(&self) -> bool {
+        self.preference(EXCLUSIVE).as_deref() == Some("true")
+    }
+
+    /// Asking for the output alone or not happens when it opens, so what is
+    /// playing is opened again where it is.
+    pub fn set_exclusive(&mut self, on: bool) {
+        self.remember_preference(EXCLUSIVE, &on.to_string());
+        if let Some(p) = &self.player {
+            p.set_exclusive(on);
+        }
+        let (output, bit_perfect) = self.chosen_output();
+        if !bit_perfect {
+            self.move_output(&output, bit_perfect);
+        }
     }
 
     /// Hands the player the switches as they stand, for that policy.
