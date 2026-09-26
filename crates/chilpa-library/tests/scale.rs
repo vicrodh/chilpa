@@ -394,3 +394,15 @@ fn browsing_fifty_thousand_tracks_fits_in_a_frame() {
     let (_, t) = how_long(|| lib.browse_ids(&genre, TrackOrder::Artist).unwrap());
     within("snapshot of a genre", t, Duration::from_millis(800));
 }
+
+#[test]
+fn a_keystroke_of_search_answers_before_the_next_one() {
+    let lib = large_library();
+    // One letter matches every track; the rest narrow it down. It runs off
+    // the window's thread, so the ceiling is a typing pace, not a frame.
+    for text in ["t", "art", "artist 007", "disco 4999", "track 3 of 12"] {
+        let (found, t) = how_long(|| lib.find(text, 12).unwrap());
+        assert!(!found.tracks.is_empty() || !found.albums.is_empty(), "{text} found nothing");
+        within(&format!("search \"{text}\""), t, Duration::from_millis(50));
+    }
+}

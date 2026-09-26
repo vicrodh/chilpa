@@ -64,6 +64,23 @@ pub struct Facets {
     pub albums: Vec<FacetEntry>,
 }
 
+/// What a search found, best first.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Found {
+    pub artists: Vec<crate::Artist>,
+    pub albums: Vec<Album>,
+    pub tracks: Vec<TrackRow>,
+}
+
+fn artist_of(a: chilpa_library::StoredArtist) -> crate::Artist {
+    crate::Artist {
+        name: a.name,
+        album_count: a.album_count,
+        track_count: a.track_count,
+        artwork_path: a.artwork_path.unwrap_or_default(),
+    }
+}
+
 /// A folder as the Folders screen shows it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FolderView {
@@ -141,17 +158,18 @@ impl Reader {
     /// Every artist with something present, by name, with their records,
     /// tracks and a cover of theirs.
     pub fn artists(&self) -> Vec<crate::Artist> {
-        self.lib
-            .artists(1_000_000, 0)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|a| crate::Artist {
-                name: a.name,
-                album_count: a.album_count,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-            })
-            .collect()
+        self.lib.artists(1_000_000, 0).unwrap_or_default().into_iter().map(artist_of).collect()
+    }
+
+    /// What the search box finds for `text`: artists, records and songs, up
+    /// to `limit` of each, best first.
+    pub fn find(&self, text: &str, limit: usize) -> Found {
+        let found = self.lib.find(text, limit).unwrap_or_default();
+        Found {
+            artists: found.artists.into_iter().map(artist_of).collect(),
+            albums: self.lib.albums_by_ids(&found.albums).unwrap_or_default().into_iter().map(album_of).collect(),
+            tracks: self.lib.tracks_by_ids(&found.tracks).unwrap_or_default().into_iter().map(row_of).collect(),
+        }
     }
 
     /// Every album with something present, in that order.

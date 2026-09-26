@@ -1,0 +1,172 @@
+//! What the search box finds as someone types: the artists and the records
+//! whose names hold every word typed, and the songs the search index ranks
+//! best.
+//!
+//! Artists and records are matched with `LIKE` over the albums, not over the
+//! tracks: there are a tenth as many, so a keystroke walks thousands of rows
+//! and not a hundred thousand. Songs go through the full-text index, which
+//! folds accents and ranks by how well each one matches.
+
+use crate::store::albums::StoredArtist;
+use crate::store::{fts_query, Library};
+use rusqlite::types::ToSql;
+use rusqlite::params_from_iter;
+
+/// The songs ranked, out of the first this many the index matches. Ranking
+/// every match of a one-letter prefix would cost what the search saves: at
+/// fifty thousand tracks, 13 ms for five thousand against about 7 for one.
+const CONSIDERED: usize = 1_000;
+
+/// What a search found, best first.
+#[derive(Clone, Debug, Default)]
+pub struct Found {
+    pub artists: Vec<StoredArtist>,
+    pub albums: Vec<i64>,
+    pub tracks: Vec<i64>,
+}
+
+/// The words typed, each as a `LIKE` pattern that finds it anywhere.
+fn patterns(text: &str) -> Vec<String> {
+    text.split(|c: char| !c.is_alphanumeric())
+        .filter(|w| !w.is_empty())
+        .map(|w| format!("%{}%", w.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")))
+        .collect()
+}
+
+impl Library {
+    /// Up to `limit` of each kind that matches every word of `text`.
+    pub fn find(&self, text: &str, limit: usize) -> rusqlite::Result<Found> {
+        let words = patterns(text);
+        let Some(query) = fts_query(text) else { return Ok(Found::default()) };
+        // A name that starts with what was typed goes before one that only
+        // holds it somewhere.
+        let first = format!("{}%", words[0].trim_start_matches('%'));
+
+        let mut args: Vec<Box<dyn ToSql>> = Vec::new();
+        let mut artist_clause = String::new();
+        for w in &words {
+            artist_clause.push_str(" AND a.album_artist LIKE ? ESCAPE '\\'");
+            args.push(Box::new(w.clone()));
+        }
+        args.push(Box::new(first.clone()));
+        args.push(Box::new(limit as i64));
+        let sql = format!(
+            "SELECT a.album_artist, count(a.id), sum(r.present_tracks), max(a.artwork_path)
+             FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
+             WHERE a.album_artist <> '' {artist_clause}
+             GROUP BY a.album_artist COLLATE NOCASE
+             ORDER BY max(a.album_artist LIKE ? ESCAPE '\\') DESC, count(a.id) DESC,
+                      a.album_artist COLLATE NOCASE
+             LIMIT ?"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let artists = stmt
+            .query_map(params_from_iter(args.iter()), |r| {
+                Ok(StoredArtist {
+                    name: r.get(0)?,
+                    album_count: r.get::<_, i64>(1)? as usize,
+                    track_count: r.get::<_, i64>(2)? as usize,
+                    artwork_path: r.get(3)?,
+                })
+            })?
+            .collect::<rusqlite::Result<Vec<_>>>()?;
+
+        let mut args: Vec<Box<dyn ToSql>> = Vec::new();
+        let mut album_clause = String::new();
+        for w in &words {
+            album_clause.push_str(" AND (a.title LIKE ? ESCAPE '\\' OR a.album_artist LIKE ? ESCAPE '\\')");
+            args.push(Box::new(w.clone()));
+            args.push(Box::new(w.clone()));
+        }
+        args.push(Box::new(first));
+        args.push(Box::new(limit as i64));
+        let sql = format!(
+            "SELECT a.id
+             FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
+             WHERE 1 {album_clause}
+             ORDER BY a.title LIKE ? ESCAPE '\\' DESC, a.album_artist COLLATE NOCASE, a.year DESC
+             LIMIT ?"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let albums = stmt
+            .query_map(params_from_iter(args.iter()), |r| r.get(0))?
+            .collect::<rusqlite::Result<Vec<i64>>>()?;
+
+        let mut stmt = self.db.prepare(
+            "SELECT s.rowid
+             FROM (SELECT rowid, rank FROM track_search WHERE track_search MATCH ?1 LIMIT ?3) s
+             JOIN tracks t ON t.id = s.rowid AND t.present = 1 AND t.album_id IS NOT NULL
+             ORDER BY s.rank
+             LIMIT ?2",
+        )?;
+        let tracks = stmt
+            .query_map(rusqlite::params![query, limit as i64, CONSIDERED as i64], |r| r.get(0))?
+            .collect::<rusqlite::Result<Vec<i64>>>()?;
+
+        Ok(Found { artists, albums, tracks })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rusqlite::params;
+
+    fn shelf() -> Library {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for (id, title, artist, year) in [
+            (1, "Low Orbit", "Mora Vale", 2019),
+            (2, "Salt & Static", "Mora Vale", 2016),
+            (3, "Moraine", "Nils Okafor", 2021),
+            (4, "100% Pure", "Halden", 2020),
+        ] {
+            lib.db
+                .execute(
+                    "INSERT INTO albums (id, title, album_artist, year) VALUES (?1, ?2, ?3, ?4)",
+                    params![id, title, artist, year],
+                )
+                .unwrap();
+        }
+        for (id, album, title, artist) in [
+            (10, 1, "Faded Lines", "Mora Vale"),
+            (20, 2, "Quiet Letters", "Mora Vale"),
+            (30, 3, "Glacier", "Nils Okafor"),
+            (40, 4, "Pure", "Halden"),
+        ] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id, duration_ms, added_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1000, ?1)",
+                    params![id, source, format!("/{id}.flac"), title, artist, album],
+                )
+                .unwrap();
+        }
+        lib
+    }
+
+    #[test]
+    fn every_word_has_to_match() {
+        let lib = shelf();
+        let found = lib.find("mora vale", 10).unwrap();
+        let names: Vec<&str> = found.artists.iter().map(|a| a.name.as_str()).collect();
+        assert_eq!(names, ["Mora Vale"]);
+        assert_eq!(found.artists[0].album_count, 2);
+        assert_eq!(found.albums, [1, 2], "Moraine holds \"mora\" but not \"vale\"");
+    }
+
+    #[test]
+    fn a_name_that_starts_with_the_word_goes_first() {
+        let lib = shelf();
+        let found = lib.find("mora", 10).unwrap();
+        assert_eq!(found.albums[0], 3, "Moraine starts with it; the others only by their artist");
+        assert_eq!(found.tracks.len(), 3, "the artist's two songs, and one by its record's title");
+    }
+
+    #[test]
+    fn a_percent_sign_is_a_character_and_not_a_wildcard() {
+        let lib = shelf();
+        assert!(lib.find("%", 10).unwrap().albums.is_empty(), "nothing to search for");
+        assert_eq!(lib.find("100", 10).unwrap().albums, [4]);
+    }
+}
