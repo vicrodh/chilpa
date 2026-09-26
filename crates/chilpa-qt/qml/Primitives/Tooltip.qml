@@ -1,9 +1,15 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import "../Theme"
 
-// Draws TipState's tooltip under the item that asked, inside the window.
+// Draws TipState's tooltip under the item that asked, inside the window --
+// in the layer popups are drawn in and above them, so an entry of an open
+// menu can have one too.
 Rectangle {
     id: tip
+
+    parent: Overlay.overlay
+    z: Metrics.tooltipLayer
 
     readonly property Item target: TipState.target
     readonly property point at: target ? target.mapToItem(parent, 0, target.height) : Qt.point(0, 0)
