@@ -19,8 +19,9 @@ Menu {
         // Several selected: the menu is for all of them, and has nowhere
         // one of them goes to (design/04 9).
         const many = model.selectedCount > 1
-        // A queued track (design/04 9, "Ítem de queue"): stop-after and
-        // clear-after wait for the player to have them.
+        // A queued track (design/04 9, "Ítem de queue"). Stop-after waits
+        // for the player to have it; clear-after can be built from removing
+        // along the queue's order and is not built yet.
         const queued = [
             { text: I18n.tr("Play now", I18n.rev), act: "play" },
             { text: I18n.tr("Remove from queue", I18n.rev), act: "dequeue" },

@@ -5,7 +5,8 @@ import "../Primitives"
 
 // The foot of the side queue (design/03 QueueFooter): empty it, or keep it
 // as a playlist. The timer the design puts on the right comes when the
-// player has one; a button that did nothing would be worse than none.
+// facade and the player have one; a button that did nothing would be worse
+// than none.
 Item {
     id: foot
 
