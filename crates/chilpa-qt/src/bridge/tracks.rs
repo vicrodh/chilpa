@@ -140,7 +140,7 @@ pub mod qobject {
 use crate::{app, browse, format, registry, worker};
 use chilpa_api::{TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
+use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::pin::Pin;
@@ -149,7 +149,7 @@ use std::rc::Rc;
 /// The roles, in order from `Qt::UserRole`.
 const ROLES: &[&str] = &[
     "rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier",
-    "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId",
+    "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art",
 ];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
@@ -285,6 +285,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
                 0 => QVariant::from(&1i32),
                 11 => QVariant::from(&QString::from(*label)),
                 12 => QVariant::from(&QString::from(*meta)),
+                15 => QVariant::from(&QUrl::default()),
                 _ => QVariant::default(),
             };
         }
@@ -309,6 +310,14 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         10 => QVariant::from(&list.selected.contains(&track.id)),
         13 => QVariant::from(&track.id),
         14 => QVariant::from(&track.album_id),
+        15 => {
+            let url = if track.artwork_path.is_empty() {
+                QUrl::default()
+            } else {
+                QUrl::from_local_file(&QString::from(&track.artwork_path))
+            };
+            QVariant::from(&url)
+        }
         _ => QVariant::default(),
     }
 }

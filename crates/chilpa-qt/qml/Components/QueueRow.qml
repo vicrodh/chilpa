@@ -15,6 +15,7 @@ Item {
     required property string artist
     required property string duration
     required property bool playing
+    required property url art
 
     signal play()
     signal remove()
@@ -34,6 +35,7 @@ Item {
         width: Metrics.queueArt
         height: Metrics.queueArt
         radius: Metrics.radiusArtSmall
+        source: row.art
         tint: row.index
     }
 

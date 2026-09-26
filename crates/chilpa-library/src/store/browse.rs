@@ -82,6 +82,8 @@ pub struct BrowseTrack {
     pub sample_rate_hz: Option<u32>,
     pub bit_depth: Option<u8>,
     pub plays: usize,
+    /// Its record's cover.
+    pub artwork_path: Option<String>,
 }
 
 /// One entry of a facet column: what it is called, how many albums it
@@ -134,7 +136,7 @@ pub struct Snapshot {
 
 const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, t.disc_number,
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
-            COALESCE(r.plays, 0) AS plays";
+            COALESCE(r.plays, 0) AS plays, a.artwork_path";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -150,6 +152,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         sample_rate_hz: r.get::<_, Option<i64>>(9)?.map(|n| n as u32),
         bit_depth: r.get::<_, Option<i64>>(10)?.map(|n| n as u8),
         plays: r.get::<_, i64>(11)? as usize,
+        artwork_path: r.get(12)?,
     })
 }
 

@@ -25,6 +25,8 @@ pub struct TrackRow {
     pub duration_ms: u64,
     pub plays: usize,
     pub quality: Quality,
+    /// Its record's cover, empty if there is none.
+    pub artwork_path: String,
 }
 
 fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
@@ -40,6 +42,7 @@ fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
         number: t.track_number.unwrap_or(0),
         duration_ms: t.duration_ms,
         plays: t.plays,
+        artwork_path: t.artwork_path.unwrap_or_default(),
     }
 }
 
@@ -114,6 +117,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
         number: 0,
         duration_ms: 0,
         plays: 0,
+        artwork_path: String::new(),
     }
 }
 
