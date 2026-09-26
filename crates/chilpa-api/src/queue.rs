@@ -111,6 +111,11 @@ impl Chilpa {
         self.queue.iter().map(|r| title_of(std::path::Path::new(r))).collect()
     }
 
+    /// The queue's files, whole and in the order they were queued.
+    pub fn queue_paths(&self) -> &[String] {
+        &self.queue
+    }
+
     /// Which positions of the queue were removed.
     pub fn queue_removed(&self) -> &[bool] {
         &self.removed
@@ -168,6 +173,61 @@ impl Chilpa {
         }
         self.now.queue_len = self.queue.len();
         tracks.iter().map(|p| title_of(p)).collect()
+    }
+
+    /// Puts tracks right after the one playing, without cutting it off. If
+    /// nothing is playing, they start.
+    ///
+    /// The player's queue never moves a position -- the track it is on is
+    /// known by its place -- so they go at the end, and the order it walks
+    /// the queue in puts them next: the same order shuffle and the mix use,
+    /// read again each time a track ends. With shuffle on they go next in
+    /// the shuffled order.
+    pub fn play_next(&mut self, paths: &[String], device: &str, bit_perfect: bool) {
+        let tracks: Vec<std::path::PathBuf> = paths.iter().map(std::path::PathBuf::from).collect();
+        let tracks = chilpa_core::sacd_tracks::expand(&tracks);
+        if tracks.is_empty() {
+            return;
+        }
+        let playing = self.now.playing && self.player.is_some();
+        let Some(p) = self.player.as_ref().filter(|_| playing) else {
+            self.play_tracks(paths, device, bit_perfect);
+            return;
+        };
+        let before = p.queue_len();
+        self.queue.extend(tracks.iter().map(|t| t.display().to_string()));
+        self.removed.resize(self.queue.len(), false);
+        p.enqueue(&tracks);
+        let len = before + tracks.len();
+        let mut order = p.order();
+        if order.len() != before {
+            order = (0..before).collect();
+        }
+        // The player counts from where it started; the view, from the start
+        // of the queue.
+        let current = self.now.index.saturating_sub(self.base);
+        let at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
+        order.splice(at..at, before..len);
+        p.set_order(order, len);
+        self.now.queue_len = self.queue.len();
+    }
+
+    /// The queue from the playing track on, as positions of the whole queue,
+    /// in the order they will play and without the ones taken out: what the
+    /// queue panel lists, row by row.
+    pub fn queue_order(&self) -> Vec<usize> {
+        let len = self.queue.len();
+        let from = self.now.index.min(len);
+        let order = self.player.as_ref().map(|p| p.order()).unwrap_or_default();
+        let own = len.saturating_sub(self.base);
+        let ahead: Vec<usize> = if own > 0 && order.len() == own {
+            let current = from.saturating_sub(self.base);
+            let at = order.iter().position(|&i| i == current).unwrap_or(0);
+            order[at..].iter().map(|i| i + self.base).collect()
+        } else {
+            (from..len).collect()
+        };
+        ahead.into_iter().filter(|&i| !self.removed.get(i).copied().unwrap_or(false)).collect()
     }
 
     /// Queues a whole album.

@@ -132,3 +132,37 @@ fn enqueuing_with_nothing_playing_starts_the_queue() {
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn play_next_puts_the_tracks_right_after_the_one_playing() {
+    let dir = folder("next");
+    other_library(&dir);
+    // Long enough to still be on the first while this runs, and paused.
+    let queued: Vec<String> =
+        ["01.wav", "02.wav", "03.wav"].iter().map(|n| wave(&dir, n, 441_000).display().to_string()).collect();
+    let extra: Vec<String> = ["x1.wav", "x2.wav"].iter().map(|n| wave(&dir, n, 4_410).display().to_string()).collect();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&queued, OUTPUT, true);
+    chilpa.set_paused(true);
+    assert!(wait_at_least(&mut chilpa, 0));
+    let playing = chilpa.now_playing().index;
+    chilpa.play_next(&extra, OUTPUT, true);
+
+    let names: Vec<String> = chilpa
+        .queue_order()
+        .into_iter()
+        .map(|i| std::path::Path::new(&chilpa.queue_paths()[i]).file_name().unwrap().to_string_lossy().to_string())
+        .collect();
+    let mut expected = vec![format!("0{}.wav", playing + 1), "x1.wav".into(), "x2.wav".into()];
+    expected.extend((playing + 2..=3).map(|n| format!("0{n}.wav")));
+    assert_eq!(names, expected, "the two go right after the one playing, the rest after them");
+
+    // Taking one out takes it out of the order too.
+    let x1 = chilpa.queue_order()[1];
+    assert!(chilpa.remove_from_queue(x1));
+    assert!(!chilpa.queue_order().contains(&x1));
+
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}

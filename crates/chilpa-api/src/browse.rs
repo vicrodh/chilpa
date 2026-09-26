@@ -270,17 +270,14 @@ impl Chilpa {
     /// comes next. A file the library does not have gets a row from its
     /// name, so anything queued shows.
     pub fn queue_rows(&mut self) -> Vec<TrackRow> {
-        let from = self.now.index.min(self.queue.len());
-        let paths: Vec<String> = self.queue[from..].to_vec();
-        let removed: Vec<bool> = (from..self.queue.len()).map(|i| self.removed.get(i).copied().unwrap_or(false)).collect();
+        // In the order they will play, which shuffle and "play next" change.
+        let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
         let Some(lib) = self.library() else { return Vec::new() };
         let known = lib.tracks_by_paths(&paths).unwrap_or_else(|_| vec![None; paths.len()]);
         paths
             .into_iter()
             .zip(known)
-            .zip(removed)
-            .filter(|(_, gone)| !gone)
-            .map(|((path, row), _)| match row {
+            .map(|(path, row)| match row {
                 Some(t) => row_of(t),
                 None => file_row(&path),
             })
