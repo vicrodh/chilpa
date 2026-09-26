@@ -142,6 +142,9 @@ msgstr ""
 msgid "Audio stack"
 msgstr ""
 
+msgid "AutoMix"
+msgstr ""
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr ""
 
@@ -149,6 +152,9 @@ msgid "Back"
 msgstr ""
 
 msgid "Back 10 seconds"
+msgstr ""
+
+msgid "Between tracks"
 msgstr ""
 
 msgid "Bit perfect"
@@ -280,6 +286,12 @@ msgstr ""
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
+msgid "Every track at one loudness, by its ReplayGain."
+msgstr ""
+
+msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
+msgstr ""
+
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr ""
 
@@ -320,6 +332,9 @@ msgid "Forward 10 seconds"
 msgstr ""
 
 msgid "From this week"
+msgstr ""
+
+msgid "Gapless"
 msgstr ""
 
 msgid "Genre"
@@ -457,7 +472,13 @@ msgstr ""
 msgid "No playlists yet."
 msgstr ""
 
+msgid "Normalization"
+msgstr ""
+
 msgid "Not in the library: this is the folder as it is on disk."
+msgstr ""
+
+msgid "Not with bit-perfect on: it changes the samples."
 msgstr ""
 
 msgid "Nothing found for “{}”"
@@ -470,6 +491,12 @@ msgid "Nothing queued."
 msgstr ""
 
 msgid "On the sidebar's destinations."
+msgstr ""
+
+msgid "One track straight into the next."
+msgstr ""
+
+msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr ""
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
@@ -524,6 +551,9 @@ msgid "Play the CD"
 msgstr ""
 
 msgid "Playback"
+msgstr ""
+
+msgid "Playback options"
 msgstr ""
 
 msgid "Player bar"
@@ -683,6 +713,9 @@ msgid "The account did not connect. You can close this tab."
 msgstr ""
 
 msgid "The first follows the theme: crimson in light, red in dark."
+msgstr ""
+
+msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr ""
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."

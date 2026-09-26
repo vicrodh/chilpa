@@ -122,15 +122,34 @@ pub const SECTIONS: &[Section] = &[
         id: "playback",
         label: Chilpa::mark("Playback"),
         icon: "music",
-        groups: &[Group {
-            title: Chilpa::mark("Player bar"),
-            settings: &[setting(
-                "playback.extra",
-                Chilpa::mark("Extra controls"),
-                Chilpa::mark("Buttons to go back or forward ten seconds."),
-                Control::Toggle,
-            )],
-        }],
+        groups: &[
+            Group {
+                title: Chilpa::mark("Between tracks"),
+                settings: &[
+                    setting(
+                        "playback.gapless",
+                        Chilpa::mark("Gapless"),
+                        Chilpa::mark("One track straight into the next. Off, the device plays out and opens again."),
+                        Control::Toggle,
+                    ),
+                    setting(
+                        "playback.normalize",
+                        Chilpa::mark("Normalization"),
+                        Chilpa::mark("Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."),
+                        Control::Toggle,
+                    ),
+                ],
+            },
+            Group {
+                title: Chilpa::mark("Player bar"),
+                settings: &[setting(
+                    "playback.extra",
+                    Chilpa::mark("Extra controls"),
+                    Chilpa::mark("Buttons to go back or forward ten seconds."),
+                    Control::Toggle,
+                )],
+            },
+        ],
     },
     Section {
         id: "appearance",

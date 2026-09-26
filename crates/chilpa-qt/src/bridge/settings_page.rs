@@ -233,6 +233,8 @@ impl SettingsPageRust {
                 row.value = app::with(|api| api.preference("appearance.accent")).unwrap_or_default();
             }
             "playback.extra" => row.value = pref_on("playback.extra", false),
+            "playback.gapless" => row.value = app::with(|api| api.gapless()).to_string(),
+            "playback.normalize" => row.value = app::with(|api| api.normalize()).to_string(),
             "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
             "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
             "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
@@ -360,6 +362,14 @@ impl qobject::SettingsPage {
             }
             "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
             "appearance.accent" => registry::theme(move |theme| theme.choose_accent(&QString::from(&value))),
+            "playback.gapless" => {
+                app::with(|api| api.set_gapless(value == "true"));
+                registry::player(|p| p.read_switches());
+            }
+            "playback.normalize" => {
+                app::with(|api| api.set_normalize(value == "true"));
+                registry::player(|p| p.read_switches());
+            }
             "playback.extra" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_extra_controls(value == "true"));

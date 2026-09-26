@@ -95,6 +95,8 @@ GallerySection {
         FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
+        OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
+        OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Not with bit-perfect on."; available: false }
         PlaylistMenu {}
         PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; active: true }
         PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8 }
