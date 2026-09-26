@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
+        #[qproperty(i64, album_id)]
         #[qproperty(QUrl, art)]
         /// The file playing; lists compare it to mark their row.
         #[qproperty(QString, path)]
@@ -159,6 +160,7 @@ pub struct PlayerRust {
     title: QString,
     artist: QString,
     album: QString,
+    album_id: i64,
     art: QUrl,
     path: QString,
     playing: bool,
@@ -326,6 +328,7 @@ impl qobject::Player {
             self.as_mut().set_title(QString::from(&now.title));
             self.as_mut().set_artist(QString::from(&now.artist));
             self.as_mut().set_album(QString::from(&now.album));
+            self.as_mut().set_album_id(now.album_id);
             let art = if now.artwork_path.is_empty() {
                 QUrl::default()
             } else {

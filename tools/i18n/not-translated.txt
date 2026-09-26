@@ -12,3 +12,5 @@ http://...
 BP
 # The product name, the same in every language.
 Chilpa
+# A typographic separator, with no language-specific reading.
+—

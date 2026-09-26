@@ -76,13 +76,64 @@ Rectangle {
             }
         }
 
-        Text {
+        Item {
+            id: context
             width: parent.width
-            horizontalAlignment: Text.AlignHCenter
-            text: Player.album === "" ? Player.artist : Player.artist + " — " + Player.album
-            elide: Text.ElideRight
-            font.pointSize: Type.small
-            color: Theme.color.textSecondary
+            height: Math.max(artist.implicitHeight, album.implicitHeight)
+
+            Row {
+                anchors.centerIn: parent
+                spacing: Metrics.gap6
+
+                Text {
+                    id: artist
+                    width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
+                    text: Player.artist
+                    elide: Text.ElideRight
+                    font.pointSize: Type.small
+                    font.underline: artistHover.hovered
+                    color: Theme.color.accent
+
+                    HoverHandler {
+                        id: artistHover
+                        enabled: Player.artist !== ""
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    TapHandler {
+                        enabled: Player.artist !== ""
+                        onTapped: Navigation.openArtist(Player.artist)
+                    }
+                }
+
+                Text {
+                    id: separator
+                    visible: Player.artist !== "" && Player.album !== ""
+                    text: "—"
+                    font.pointSize: Type.small
+                    color: Theme.color.textSecondary
+                }
+
+                Text {
+                    id: album
+                    visible: Player.album !== ""
+                    width: Player.artist === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
+                    text: Player.album
+                    elide: Text.ElideRight
+                    font.pointSize: Type.small
+                    font.underline: albumHover.hovered
+                    color: Player.albumId > 0 ? Theme.color.accent : Theme.color.textSecondary
+
+                    HoverHandler {
+                        id: albumHover
+                        enabled: Player.albumId > 0
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    TapHandler {
+                        enabled: Player.albumId > 0
+                        onTapped: Navigation.go("album", Player.albumId)
+                    }
+                }
+            }
         }
     }
 
