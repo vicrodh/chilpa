@@ -67,6 +67,15 @@ pub struct Facets {
     pub albums: Vec<FacetEntry>,
 }
 
+/// Narrows the choices shown by one facet header without changing the
+/// library filter itself. The caller already lowercases and trims the query.
+pub fn filter_facets(mut entries: Vec<FacetEntry>, query: &str) -> Vec<FacetEntry> {
+    if !query.is_empty() {
+        entries.retain(|entry| entry.label.to_lowercase().contains(query));
+    }
+    entries
+}
+
 /// What a search found, best first.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Found {
@@ -442,5 +451,21 @@ impl Chilpa {
         let (device, bit_perfect) = self.chosen_output();
         self.replace_queue(paths.to_vec());
         self.spawn(start, &device, bit_perfect);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn entry(label: &str) -> FacetEntry {
+        FacetEntry { key: label.into(), label: label.into(), albums: 0, year: None }
+    }
+
+    #[test]
+    fn facet_queries_ignore_case_and_match_substrings() {
+        let labels = vec![entry("Massive Attack"), entry("Björk")];
+        assert_eq!(filter_facets(labels.clone(), "attack"), vec![labels[0].clone()]);
+        assert_eq!(filter_facets(labels, "björk").len(), 1);
     }
 }
