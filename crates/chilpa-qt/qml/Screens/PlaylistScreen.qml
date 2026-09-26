@@ -45,6 +45,13 @@ Flickable {
             onQueue: tracks.queueAll()
         }
 
+        Text {
+            visible: tracks.count > 1
+            text: I18n.tr("Select a track and use Alt ↑↓, or its menu, to move it.", I18n.rev)
+            font.pointSize: Type.meta
+            color: Theme.color.textTertiary
+        }
+
         TrackList {
             width: parent.width
             height: implicitHeight
@@ -52,5 +59,15 @@ Flickable {
             fitContent: true
             model: tracks
         }
+    }
+
+    // The playlist's own order is changed a place at a time.
+    Shortcut {
+        sequence: "Alt+Up"
+        onActivated: tracks.moveInPlaylist(tracks.selectedRow(), -1)
+    }
+    Shortcut {
+        sequence: "Alt+Down"
+        onActivated: tracks.moveInPlaylist(tracks.selectedRow(), 1)
     }
 }

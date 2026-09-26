@@ -403,6 +403,12 @@ msgstr ""
 msgid "Most played"
 msgstr ""
 
+msgid "Move down"
+msgstr ""
+
+msgid "Move up"
+msgstr ""
+
 msgid "My library"
 msgstr ""
 
@@ -596,6 +602,9 @@ msgid "Scrobble"
 msgstr ""
 
 msgid "Search"
+msgstr ""
+
+msgid "Select a track and use Alt ↑↓, or its menu, to move it."
 msgstr ""
 
 msgid "Send listens"

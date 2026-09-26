@@ -99,6 +99,14 @@ pub mod qobject {
         #[qinvokable]
         fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
 
+        /// On a playlist's page: moves the row one place up (-1) or down (1).
+        #[qinvokable]
+        fn move_in_playlist(self: Pin<&mut TrackListModel>, row: i32, by: i32);
+
+        /// The row of the one track selected, or -1.
+        #[qinvokable]
+        fn selected_row(self: &TrackListModel) -> i32;
+
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
         /// page the artist.
@@ -213,6 +221,8 @@ pub struct TrackListRust {
     by_track_number: bool,
     selected: HashSet<i64>,
     anchor: Option<usize>,
+    /// Which list the rows are: kind, id and key.
+    loaded: Option<(String, i64, String)>,
     pending: bool,
 }
 
@@ -542,6 +552,28 @@ impl qobject::TrackListModel {
         }
     }
 
+    pub fn move_in_playlist(self: Pin<&mut Self>, row: i32, by: i32) {
+        if self.rust().kind.to_string() != "playlist" || row < 0 {
+            return;
+        }
+        let to = row + by;
+        if to < 0 || to >= self.rust().len() as i32 {
+            return;
+        }
+        let playlist = self.rust().album_id;
+        if app::with(|api| api.move_in_playlist(playlist, row as usize, to as usize)) {
+            registry::playlists(|lists| lists.changed());
+        }
+    }
+
+    pub fn selected_row(&self) -> i32 {
+        let this = self.rust();
+        if this.selected.len() != 1 {
+            return -1;
+        }
+        (0..this.len()).find(|&r| this.track_id(r).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |r| r as i32)
+    }
+
     /// Whether the row is one of several selected.
     fn in_selection(&self, row: i32) -> bool {
         let this = self.rust();
@@ -687,16 +719,31 @@ impl qobject::TrackListModel {
             }
             _ => (Rows::default(), None),
         };
+        // The same list read again -- a track moved in a playlist, the filter
+        // narrowed -- keeps what is selected and still there; another list
+        // starts with nothing selected.
+        let identity = (kind.clone(), id, self.rust().key.to_string());
+        let same = self.rust().loaded.as_ref() == Some(&identity);
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         {
             let mut this = self.as_mut().rust_mut();
             this.rows = rows;
             this.by_track_number = kind == "album";
-            this.selected.clear();
-            this.anchor = None;
+            if same {
+                let there: HashSet<i64> = this.loaded_tracks().iter().map(|t| t.id).collect();
+                if matches!(this.rows, Rows::Loaded(_)) {
+                    this.selected.retain(|id| there.contains(id));
+                }
+            } else {
+                this.selected.clear();
+                this.anchor = None;
+            }
+            this.loaded = Some(identity);
         }
         unsafe { self.as_mut().end_reset_model() };
+        let chosen = self.rust().selected.len() as i32;
+        self.as_mut().set_selected_count(chosen);
         let tracks = match &self.rust().rows {
             Rows::Loaded(_) => self.rust().loaded_tracks().len(),
             Rows::Snapshot { ids, .. } => ids.ids.len(),
