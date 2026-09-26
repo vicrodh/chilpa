@@ -91,8 +91,7 @@ Rectangle {
                     text: Player.artist
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    font.underline: artistHover.hovered
-                    color: Theme.color.accent
+                    color: artistHover.hovered ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: artistHover
@@ -120,8 +119,7 @@ Rectangle {
                     text: Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    font.underline: albumHover.hovered
-                    color: Player.albumId > 0 ? Theme.color.accent : Theme.color.textSecondary
+                    color: albumHover.hovered && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: albumHover
