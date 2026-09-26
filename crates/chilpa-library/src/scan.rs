@@ -439,7 +439,11 @@ fn save_track(
     let artist = tags.artist_line();
     let album_id = match &tags.album {
         Some(album_title) => {
-            let id = match &tags.album_artist {
+            // An empty tag names nobody: it is no album artist, and keying a
+            // record by it credited the record to nobody and joined every
+            // record of that title that had one.
+            let named = tags.album_artist.as_deref().map(str::trim).filter(|a| !a.is_empty());
+            let id = match named {
                 Some(album_artist) => album_id(lib, album_title, album_artist, tags.year())?,
                 // Without an album artist the files do not say whose record
                 // this is, and keying it by the track's artist turned a
