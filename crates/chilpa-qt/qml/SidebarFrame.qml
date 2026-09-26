@@ -4,9 +4,10 @@ import "Theme"
 import "Primitives"
 import "Patterns"
 
-// The floating sidebar and the grip on its right edge (design/02 2). While
-// the grip is dragged the width follows the pointer; on release Rust decides
-// where it lands: open at that width, collapsed or closed.
+// The floating sidebar and the grip on its right edge (design/02 2, ADR-0011).
+// While the grip is dragged the sidebar already shows where it would land,
+// as Rust decides it: free between its default and 40 % of the window, and
+// to the left, collapsed and then closed. Release leaves it there.
 Item {
     id: frame
 
@@ -16,14 +17,19 @@ Item {
     property real dragged: -1
     property real grabbed: 0
 
-    readonly property string mode: SettingsModel.sidebarMode
-    readonly property int settled: mode === "closed" ? 0
-        : mode === "collapsed" ? Metrics.sidebarCollapsed
+    readonly property bool dragging: dragged >= 0
+    // The mode while dragging is where the drag would land.
+    readonly property string mode: dragging ? SettingsModel.sidebarModeAt(dragged, window.width) : SettingsModel.sidebarMode
+    readonly property int openWidth: dragging ? SettingsModel.sidebarWidthAt(dragged, window.width)
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
-    readonly property int shown: dragged >= 0 ? Math.max(0, Math.round(dragged)) : settled
+    readonly property int shown: mode === "closed" ? 0 : mode === "collapsed" ? Metrics.sidebarCollapsed : openWidth
+    readonly property int settled: SettingsModel.sidebarMode === "closed" ? 0
+        : SettingsModel.sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
+        : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
 
     Sidebar {
         visible: frame.shown > 0
+        collapsed: frame.mode === "collapsed"
         x: Metrics.spaceWindow
         y: Metrics.spaceWindow
         width: frame.shown
@@ -31,7 +37,7 @@ Item {
     }
 
     ResizeHandle {
-        visible: frame.mode !== "closed"
+        visible: frame.dragging || SettingsModel.sidebarMode !== "closed"
         x: Metrics.spaceWindow + frame.shown - width / 2 // derived: centered on the edge
         y: Metrics.spaceWindow
         height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
