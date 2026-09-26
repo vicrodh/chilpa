@@ -46,8 +46,12 @@ pub fn asking() -> bool {
     ASKING.load(Ordering::Relaxed)
 }
 
-/// The card an ALSA name ends at: `hw:1,0` and `plughw:1,0` are card 1.
+/// The card an ALSA name ends at: `hw:1,0`, `plughw:1,0` and
+/// `sysdefault:CARD=1` are card 1.
 pub fn card_of(device: &str) -> Option<u32> {
+    if let Some(card) = device.strip_prefix("sysdefault:CARD=") {
+        return card.parse().ok();
+    }
     let rest = device.strip_prefix("hw:").or_else(|| device.strip_prefix("plughw:"))?;
     rest.split(',').next()?.parse().ok()
 }
@@ -127,6 +131,7 @@ mod tests {
     fn a_card_is_read_out_of_either_name() {
         assert_eq!(card_of("hw:1,0"), Some(1));
         assert_eq!(card_of("plughw:12,3"), Some(12));
+        assert_eq!(card_of("sysdefault:CARD=1"), Some(1));
         assert_eq!(card_of("default"), None);
         assert_eq!(card_of("hw:CARD=ZH3,DEV=0"), None, "only numbered cards are asked for");
     }

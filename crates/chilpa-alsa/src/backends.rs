@@ -26,6 +26,15 @@ pub struct Alsa;
 /// without saying.
 pub struct AlsaPlug;
 
+/// The card through ALSA's own PCM layer: `sysdefault:CARD=N`.
+///
+/// What ALSA's configuration makes of the card -- on most cards a plug over
+/// dmix -- so other programs that speak ALSA can play at the same time, and
+/// what the card will not take is converted. The card itself, where `System`
+/// is wherever the machine sends sound. It is QBZ's "pcm" plugin, and like
+/// plughw it promises nothing about the samples.
+pub struct AlsaPcm;
+
 /// Whatever the system is using.
 pub struct System;
 
@@ -177,6 +186,64 @@ impl OutputBackend for AlsaPlug {
         -> Result<Box<dyn AudioSink + Send>, SinkError> {
         // Named on purpose: the guard that only lets `hw:` through is what
         // keeps the card stack from falling back to this one.
+        Ok(Box::new(AlsaSink::open_pcm(id, format)?))
+    }
+}
+
+impl OutputBackend for AlsaPcm {
+    fn kind(&self) -> BackendKind {
+        BackendKind::AlsaPcm
+    }
+
+    fn info(&self) -> BackendInfo {
+        let mut info = BackendInfo { kind: BackendKind::AlsaPcm, ..Alsa.info() };
+        if info.present {
+            info.fidelity = Fidelity::Never;
+            info.caveat = chilpa_i18n::t(
+                "pcm is the card as ALSA's own configuration sets it up: usually mixed with dmix, so \
+                 other programs can play at the same time, and converted to whatever rate the mix \
+                 runs at. It shares the card, and for the same reason it cannot promise the samples \
+                 arrive as they left.",
+            );
+        }
+        info
+    }
+
+    /// One per card: `sysdefault` names a card's first device, which is
+    /// where a DAC plays.
+    fn outputs(&self) -> Vec<BackendOutput> {
+        Alsa.outputs()
+            .into_iter()
+            .filter_map(|o| {
+                let card = o.id.strip_prefix("hw:")?.strip_suffix(",0")?.to_string();
+                Some(BackendOutput { id: format!("sysdefault:CARD={card}"), bit_perfect: false, ..o })
+            })
+            .collect()
+    }
+
+    fn generation(&self) -> String {
+        Alsa.generation()
+    }
+
+    /// Anything: ALSA's configuration makes it fit.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        Ok(chilpa_audio::capture::capabilities())
+    }
+
+    fn volume(&self, id: &str) -> Option<Knob> {
+        card_knob(id)
+    }
+
+    fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
+        crate::Volume::of(id).ok_or_else(no_knob)?.set(percent)
+    }
+
+    fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
+        crate::Volume::of(id).ok_or_else(no_knob)?.mute(muted)
+    }
+
+    fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
+        -> Result<Box<dyn AudioSink + Send>, SinkError> {
         Ok(Box::new(AlsaSink::open_pcm(id, format)?))
     }
 }
@@ -368,6 +435,20 @@ mod tests {
         if info.present {
             assert_eq!(info.fidelity, Fidelity::Never);
             assert!(!info.caveat.is_empty(), "a path that is not exact says why");
+        }
+    }
+
+    #[test]
+    fn pcm_names_each_card_once_and_promises_nothing() {
+        let firsts = Alsa.outputs().iter().filter(|o| o.id.ends_with(",0")).count();
+        let pcm = AlsaPcm.outputs();
+        assert_eq!(pcm.len(), firsts);
+        for o in &pcm {
+            assert!(o.id.starts_with("sysdefault:CARD="), "{}", o.id);
+            assert!(!o.bit_perfect);
+        }
+        if AlsaPcm.info().present {
+            assert_eq!(AlsaPcm.info().fidelity, Fidelity::Never);
         }
     }
 
