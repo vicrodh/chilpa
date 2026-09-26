@@ -38,9 +38,13 @@ impl Library {
     pub fn find(&self, text: &str, limit: usize) -> rusqlite::Result<Found> {
         let words = patterns(text);
         let Some(query) = fts_query(text) else { return Ok(Found::default()) };
-        // A name that starts with what was typed goes before one that only
-        // holds it somewhere.
-        let first = format!("{}%", words[0].trim_start_matches('%'));
+        // A name with a word that starts with what was typed goes before one
+        // that only holds it inside a word: "01" is Artist 010 before
+        // Artist 001. One point per word typed that starts a word.
+        let starts: Vec<String> = words.iter().map(|w| format!("% {}", w.trim_start_matches('%'))).collect();
+        let score = |column: &str| {
+            vec![format!("((' ' || {column}) LIKE ? ESCAPE '\\')"); starts.len()].join(" + ")
+        };
 
         let mut args: Vec<Box<dyn ToSql>> = Vec::new();
         let mut artist_clause = String::new();
@@ -48,16 +52,16 @@ impl Library {
             artist_clause.push_str(" AND a.album_artist LIKE ? ESCAPE '\\'");
             args.push(Box::new(w.clone()));
         }
-        args.push(Box::new(first.clone()));
+        args.extend(starts.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>));
         args.push(Box::new(limit as i64));
         let sql = format!(
             "SELECT a.album_artist, count(a.id), sum(r.present_tracks), max(a.artwork_path)
              FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> '' {artist_clause}
              GROUP BY a.album_artist COLLATE NOCASE
-             ORDER BY max(a.album_artist LIKE ? ESCAPE '\\') DESC, count(a.id) DESC,
-                      a.album_artist COLLATE NOCASE
-             LIMIT ?"
+             ORDER BY max({}) DESC, count(a.id) DESC, a.album_artist COLLATE NOCASE
+             LIMIT ?",
+            score("a.album_artist")
         );
         let mut stmt = self.db.prepare(&sql)?;
         let artists = stmt
@@ -78,14 +82,17 @@ impl Library {
             args.push(Box::new(w.clone()));
             args.push(Box::new(w.clone()));
         }
-        args.push(Box::new(first));
+        args.extend(starts.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>));
+        args.extend(starts.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>));
         args.push(Box::new(limit as i64));
         let sql = format!(
             "SELECT a.id
              FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE 1 {album_clause}
-             ORDER BY a.title LIKE ? ESCAPE '\\' DESC, a.album_artist COLLATE NOCASE, a.year DESC
-             LIMIT ?"
+             ORDER BY {} DESC, {} DESC, a.album_artist COLLATE NOCASE, a.year DESC
+             LIMIT ?",
+            score("a.title"),
+            score("a.album_artist")
         );
         let mut stmt = self.db.prepare(&sql)?;
         let albums = stmt
@@ -161,6 +168,13 @@ mod tests {
         let found = lib.find("mora", 10).unwrap();
         assert_eq!(found.albums[0], 3, "Moraine starts with it; the others only by their artist");
         assert_eq!(found.tracks.len(), 3, "the artist's two songs, and one by its record's title");
+    }
+
+    #[test]
+    fn a_word_that_starts_with_it_beats_one_that_holds_it() {
+        let lib = shelf();
+        let found = lib.find("or", 10).unwrap();
+        assert_eq!(found.albums[0], 1, "Low Orbit has a word starting with it; Moraine only holds it");
     }
 
     #[test]
