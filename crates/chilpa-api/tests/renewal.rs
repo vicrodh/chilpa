@@ -155,6 +155,7 @@ fn an_expired_access_is_renewed_by_chilpa_and_the_plugin_never_sees_a_token() {
         "where it sends you is approved too: {pending:?}"
     );
     assert_eq!(chilpa.plugins()[0].account_host, "127.0.0.1");
+    assert_eq!(chilpa.plugins()[0].account_kind, "oauth");
     assert_eq!(chilpa.approve_plugin("com.test.account"), 1);
 
     // The account is connected down the real path: Chilpa gives the URL,

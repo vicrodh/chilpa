@@ -87,6 +87,7 @@ Item {
             : row.control === "external" ? external
             : row.control === "swatches" ? swatches
             : row.control === "progress" ? progress
+            : row.control === "status" ? status
             : null
     }
 
@@ -189,6 +190,17 @@ Item {
                 text: row.action
                 onClicked: row.page.press(row.key)
             }
+        }
+    }
+    Component {
+        id: status
+        StatusField {
+            state: row.action
+            link: row.value
+            openText: I18n.tr("Open account page", I18n.rev)
+            options: row.options
+            values: row.optionValues
+            onPicked: (value) => row.page.set(row.key, value)
         }
     }
     Component {

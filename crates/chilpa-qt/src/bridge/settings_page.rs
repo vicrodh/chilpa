@@ -102,10 +102,10 @@ const USER_ROLE: i32 = 256;
 #[derive(Default)]
 struct Row {
     kind: i32,
-    key: &'static str,
+    key: String,
     title: String,
     description: String,
-    control: &'static str,
+    control: String,
     action: String,
     value: String,
     options: Vec<String>,
@@ -121,7 +121,10 @@ pub struct SettingsPageRust {
     /// The last diagnosis of the output, shown under its button.
     report: Option<chilpa_api::WizardReport>,
     /// What the last maintenance press said.
-    said: Option<(&'static str, String)>,
+    said: Option<(String, String)>,
+    /// The OAuth page currently offered for a plugin. It lives here only
+    /// long enough for QML to open it and while the callback is pending.
+    plugin_link: Option<(String, String)>,
 }
 
 fn list(items: &[String]) -> QVariant {
@@ -169,12 +172,30 @@ impl SettingsPageRust {
         for group in section.groups {
             rows.push(Row { kind: 0, title: app::t(group.title), ..Row::default() });
             for s in group.settings {
+                if s.key == "sources.plugins" {
+                    let plugins = app::with(|api| api.plugins());
+                    if plugins.is_empty() {
+                        rows.push(Row {
+                            kind: 1,
+                            key: s.key.into(),
+                            title: app::t(s.title),
+                            description: app::t(s.description),
+                            control: "none".into(),
+                            ..Row::default()
+                        });
+                    } else {
+                        for plugin in plugins {
+                            rows.extend(self.source_rows(plugin));
+                        }
+                    }
+                    continue;
+                }
                 let mut row = Row {
                     kind: 1,
-                    key: s.key,
+                    key: s.key.into(),
                     title: app::t(s.title),
                     description: if s.description.is_empty() { String::new() } else { app::t(s.description) },
-                    control: s.control.name(),
+                    control: s.control.name().into(),
                     action: if s.action.is_empty() { String::new() } else { app::t(s.action) },
                     ..Row::default()
                 };
@@ -203,7 +224,7 @@ impl SettingsPageRust {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&self, row: &mut Row, output: &str, bit_perfect: bool) {
-        match row.key {
+        match row.key.as_str() {
             "audio.backend" => {
                 let (stacks, current) = app::with(|api| (api.stacks(), api.stack_of(output)));
                 for s in stacks.iter().filter(|s| s.present) {
@@ -237,7 +258,7 @@ impl SettingsPageRust {
                 };
                 row.value = fixed.as_ref().map_or(chosen, |(on, _)| *on).to_string();
                 if let Some((_, why)) = fixed {
-                    row.control = "fixed";
+                    row.control = "fixed".into();
                     row.description = format!("{} {why}", row.description);
                 }
             }
@@ -245,7 +266,13 @@ impl SettingsPageRust {
                 let (shown, on, alone) =
                     app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), bit_perfect || api.exclusive()));
                 row.value = (on && alone).to_string();
-                row.control = if !shown { "" } else if alone { row.control } else { "fixed" };
+                row.control = if !shown {
+                    String::new()
+                } else if alone {
+                    row.control.clone()
+                } else {
+                    "fixed".into()
+                };
                 if shown && !alone {
                     row.description = format!("{} {}", row.description, app::t("Only with bit-perfect or exclusive mode on."));
                 }
@@ -254,14 +281,14 @@ impl SettingsPageRust {
             "audio.reserve" => {
                 let (card, on) = app::with(|api| (!api.alsa_plugin().is_empty(), api.reserving()));
                 row.value = on.to_string();
-                row.control = if card { row.control } else { "" };
+                row.control = if card { row.control.clone() } else { String::new() };
             }
             "audio.alsaPlugin" => {
                 let (plugin, plugins) = app::with(|api| (api.alsa_plugin(), api.alsa_plugins()));
                 row.value = plugin.to_string();
                 // Only a card has a plugin to choose.
                 if row.value.is_empty() {
-                    row.control = "";
+                    row.control.clear();
                 }
                 for p in plugins {
                     row.values.push(p.to_string());
@@ -301,7 +328,7 @@ impl SettingsPageRust {
                     // opens, and can be opened again from here. "external"
                     // is no control of the schema's: only this state has it.
                     row.description = app::t("Allow Chilpa on Last.fm; this updates by itself.");
-                    row.control = "external";
+                    row.control = "external".into();
                     row.action = app::t("Open Last.fm");
                     row.value = status.link.clone();
                 } else {
@@ -353,10 +380,90 @@ impl SettingsPageRust {
             }
         }
         if let Some((key, said)) = &self.said {
-            if *key == row.key {
+            if key == &row.key {
                 row.description = said.clone();
             }
         }
+    }
+    /// One status row, plus the token field when that is how the plugin
+    /// connects. The available actions are derived from the state so the
+    /// menu cannot offer an operation that does not make sense now.
+    fn source_rows(&self, plugin: chilpa_api::PluginInfo) -> Vec<Row> {
+        let key = format!("sources.plugin/{}", plugin.id);
+        let mut details = Vec::new();
+        if !plugin.problem.is_empty() {
+            details.push(plugin.problem.clone());
+        }
+        if !plugin.pending.is_empty() {
+            let asks = plugin.pending.join(", ");
+            details.push(app::with(|api| api.t_args("Requests: {}", &[&asks])));
+            if plugin.wants_more {
+                details.push(app::t("This update asks for additional access."));
+            }
+        } else if plugin.connected {
+            details.push(app::t("Account connected."));
+        } else if plugin.account_expired {
+            details.push(app::t("The account expired; connect it again."));
+        } else if !plugin.account_kind.is_empty() {
+            details.push(app::t("Account not connected."));
+        }
+        let mut row = Row {
+            kind: 1,
+            key,
+            title: plugin.name.clone(),
+            description: details.join(" "),
+            control: "status".into(),
+            action: app::t(&plugin.state),
+            ..Row::default()
+        };
+        if let Some((said_key, said)) = &self.said {
+            if said_key == &row.key {
+                row.description = said.clone();
+            }
+        }
+        if !plugin.pending.is_empty() {
+            row.values.push("approve".into());
+            row.options.push(if plugin.wants_more {
+                app::t("Approve new access")
+            } else {
+                app::t("Approve")
+            });
+        } else {
+            if plugin.state == "quarantined" {
+                row.values.push("reactivate".into());
+                row.options.push(app::t("Reactivate"));
+            }
+            if plugin.connected {
+                row.values.push("disconnect".into());
+                row.options.push(app::t("Disconnect account"));
+            } else if plugin.account_kind == "oauth" {
+                row.values.push("connect".into());
+                let host = if plugin.account_host.is_empty() { app::t("the source") } else { plugin.account_host.clone() };
+                row.options.push(app::with(|api| api.t_args("Connect on {}", &[&host])));
+            }
+            row.values.push("revoke".into());
+            row.options.push(app::t("Withdraw approval"));
+        }
+        row.values.push("uninstall".into());
+        row.options.push(app::t("Uninstall"));
+        if let Some((id, url)) = &self.plugin_link {
+            if id == &plugin.id {
+                row.value = url.clone();
+            }
+        }
+        let mut rows = vec![row];
+        if plugin.pending.is_empty() && plugin.account_kind == "token" && !plugin.connected {
+            rows.push(Row {
+                kind: 1,
+                key: format!("sources.token/{}", plugin.id),
+                title: app::with(|api| api.t_args("Connect {}", &[&plugin.name])),
+                description: app::t("Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."),
+                control: "secret".into(),
+                action: app::t("Connect"),
+                ..Row::default()
+            });
+        }
+        rows
     }
 }
 
@@ -367,7 +474,7 @@ fn account(row: &mut Row, status: &chilpa_api::ScrobbleStatus) {
         row.description = app::t("Checking the account…");
     } else if !status.user.is_empty() {
         row.title = app::with(|api| api.t_args("Connected as {}", &[&status.user]));
-        row.control = "button";
+        row.control = "button".into();
         row.action = app::t("Disconnect");
         row.description = if status.pending > 0 {
             let n = status.pending.to_string();
@@ -389,10 +496,10 @@ impl qobject::SettingsPage {
         let text = |s: &str| QVariant::from(&QString::from(s));
         match role - USER_ROLE {
             0 => QVariant::from(&row.kind),
-            1 => text(row.key),
+            1 => text(&row.key),
             2 => text(&row.title),
             3 => text(&row.description),
-            4 => text(row.control),
+            4 => text(&row.control),
             5 => text(&row.action),
             6 => text(&row.value),
             7 => list(&row.options),
@@ -416,6 +523,44 @@ impl qobject::SettingsPage {
 
     pub fn set(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let (key, value) = (key.to_string(), value.to_string());
+        if let Some(id) = key.strip_prefix("sources.token/") {
+            if !app::with(|api| api.connect_plugin(id, &value)) {
+                let said = app::with(|api| api.now_playing().error.clone());
+                self.as_mut().rust_mut().said = Some((format!("sources.plugin/{id}"), said));
+            }
+            self.reload();
+            return;
+        }
+        if let Some(id) = key.strip_prefix("sources.plugin/") {
+            match value.as_str() {
+                "approve" => {
+                    app::with(|api| api.approve_plugin(id));
+                }
+                "connect" => match app::with(|api| api.connect_account(id)) {
+                    Ok(url) => {
+                        self.as_mut().rust_mut().plugin_link = Some((id.to_string(), url));
+                        self.as_mut().reload();
+                        self.watch_plugin_connection();
+                        return;
+                    }
+                    Err(error) => self.as_mut().rust_mut().said = Some((key.clone(), error)),
+                },
+                "disconnect" => app::with(|api| api.disconnect_plugin(id)),
+                "reactivate" => app::with(|api| api.reactivate_plugin(id)),
+                "revoke" => {
+                    app::with(|api| api.revoke_plugin(id));
+                }
+                "uninstall" => {
+                    if !app::with(|api| api.uninstall_plugin(id)) {
+                        let said = app::with(|api| api.now_playing().error.clone());
+                        self.as_mut().rust_mut().said = Some((key.clone(), said));
+                    }
+                }
+                _ => return,
+            }
+            self.reload();
+            return;
+        }
         match key.as_str() {
             "audio.backend" => {
                 // A stack is chosen through its first output: an output is what
@@ -554,7 +699,7 @@ impl qobject::SettingsPage {
                 } else {
                     app::with(|api| api.now_playing().error.clone())
                 };
-                self.as_mut().rust_mut().said = Some(("library.repair", said));
+                self.as_mut().rust_mut().said = Some(("library.repair".into(), said));
             }
             "library.analysis" => {
                 let running = app::with(|api| api.analysis_status().running);
@@ -598,6 +743,37 @@ impl qobject::SettingsPage {
         });
     }
 
+    /// Waits for the OAuth loopback without keeping the Settings page or the
+    /// GUI thread busy. The regular player tick also advances it, but doing
+    /// so here makes account setup independent of whether a player exists.
+    fn watch_plugin_connection(self: Pin<&mut Self>) {
+        let thread = self.qt_thread();
+        let done = Arc::new(AtomicBool::new(false));
+        std::thread::spawn(move || {
+            for _ in 0..1_200 {
+                std::thread::sleep(Duration::from_millis(250));
+                if done.load(Ordering::Relaxed) {
+                    return;
+                }
+                let finished = Arc::clone(&done);
+                let queued = thread.queue(move |mut page| {
+                    let connecting = app::with(|api| {
+                        api.poll();
+                        api.connecting()
+                    });
+                    if !connecting {
+                        page.as_mut().rust_mut().plugin_link = None;
+                        page.reload();
+                        finished.store(true, Ordering::Relaxed);
+                    }
+                });
+                if queued.is_err() {
+                    return;
+                }
+            }
+        });
+    }
+
     /// Reads the rows again. The same number of rows is the same page with
     /// new values: they change in place, and the control that caused it --
     /// an open menu, a toggle mid-animation -- is not destroyed under the
@@ -607,6 +783,7 @@ impl qobject::SettingsPage {
         let mut next = SettingsPageRust { section: self.rust().section.clone(), ..SettingsPageRust::default() };
         next.report = self.as_mut().rust_mut().report.take();
         next.said = self.as_mut().rust_mut().said.take();
+        next.plugin_link = self.as_mut().rust_mut().plugin_link.take();
         next.build();
         if next.rows.len() == before && before > 0 {
             {
@@ -615,6 +792,7 @@ impl qobject::SettingsPage {
                 this.pending = next.pending;
                 this.report = next.report.take();
                 this.said = next.said.take();
+                this.plugin_link = next.plugin_link.take();
             }
             let parent = QModelIndex::default();
             let (top, bottom) = (self.index(0, 0, &parent), self.index(before as i32 - 1, 0, &parent));
@@ -628,6 +806,7 @@ impl qobject::SettingsPage {
                 this.pending = next.pending;
                 this.report = next.report.take();
                 this.said = next.said.take();
+                this.plugin_link = next.plugin_link.take();
             }
             unsafe { self.as_mut().end_reset_model() };
         }

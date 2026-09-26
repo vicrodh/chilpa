@@ -29,6 +29,8 @@ pub enum Control {
     Swatches,
     /// A background job: its progress and a button to start or cancel it.
     Progress,
+    /// A state pill whose menu contains the actions valid in that state.
+    Status,
 }
 
 impl Control {
@@ -43,6 +45,7 @@ impl Control {
             Control::Secret => "secret",
             Control::Swatches => "swatches",
             Control::Progress => "progress",
+            Control::Status => "status",
         }
     }
 }
@@ -289,7 +292,23 @@ pub const SECTIONS: &[Section] = &[
             },
         ],
     },
-    Section { id: "sources", label: Chilpa::mark("Sources"), icon: "server", groups: &[] },
+    Section {
+        id: "sources",
+        label: Chilpa::mark("Sources"),
+        icon: "server",
+        groups: &[Group {
+            title: Chilpa::mark("Installed plugins"),
+            // This sentinel expands to one row per installed plugin in the
+            // frontend model.  The schema still owns the section and its
+            // control; only the number of rows is necessarily dynamic.
+            settings: &[setting(
+                "sources.plugins",
+                Chilpa::mark("No source plugins installed"),
+                Chilpa::mark("Put a plugin folder in Chilpa's plugins directory and reopen the app."),
+                Control::Status,
+            )],
+        }],
+    },
     Section {
         id: "integrations",
         label: Chilpa::mark("Integrations"),
