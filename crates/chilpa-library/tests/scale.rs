@@ -370,13 +370,13 @@ fn browsing_fifty_thousand_tracks_fits_in_a_frame() {
     let (years, t) = how_long(|| lib.facet_years().unwrap());
     assert_eq!(years.len(), 60);
     within("years", t, Duration::from_millis(35));
-    let (_, t) = how_long(|| lib.facet_genres(None).unwrap());
+    let (_, t) = how_long(|| lib.facet_genres(&Filter::default()).unwrap());
     within("genres", t, Duration::from_millis(1000));
-    let (_, t) = how_long(|| lib.facet_genres(Some(1990)).unwrap());
+    let (_, t) = how_long(|| lib.facet_genres(&Filter { year: Some(1990), ..Filter::default() }).unwrap());
     within("genres of a year", t, Duration::from_millis(20));
-    let (_, t) = how_long(|| lib.facet_artists(None, None).unwrap());
+    let (_, t) = how_long(|| lib.facet_artists(&Filter::default()).unwrap());
     within("artists", t, Duration::from_millis(35));
-    let (_, t) = how_long(|| lib.facet_artists(Some(1990), Some("G3")).unwrap());
+    let (_, t) = how_long(|| lib.facet_artists(&Filter { year: Some(1990), genre: Some("G3".into()), ..Filter::default() }).unwrap());
     within("artists of a year and a genre", t, Duration::from_millis(20));
     let one = Filter { artist: Some("Artist 007".into()), ..Filter::default() };
     let (_, t) = how_long(|| lib.facet_albums(&one).unwrap());

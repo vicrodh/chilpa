@@ -29,12 +29,13 @@ Item {
             onClicked: bar.tracks.playAll(true)
         }
         IconButton {
+            id: queueButton
             anchors.verticalCenter: parent.verticalCenter
-            tip: I18n.tr("Add to the queue", I18n.rev)
+            tip: I18n.tr("Queue options", I18n.rev)
             glyph: Icons.playlistAdd
             round: true
             size: Metrics.pillHeight
-            onClicked: bar.tracks.queueAll()
+            onClicked: queueMenu.show(queueButton.x, queueButton.y + queueButton.height + Metrics.gap4)
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
@@ -43,6 +44,12 @@ Item {
             font.pointSize: Type.meta
             color: Theme.color.textSecondary
         }
+    }
+
+    QueueMenu {
+        id: queueMenu
+        model: bar.tracks
+        laterLabel: I18n.tr("Library selection", I18n.rev)
     }
 
     SegmentedControl {

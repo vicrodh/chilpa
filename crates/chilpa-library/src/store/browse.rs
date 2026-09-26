@@ -29,9 +29,54 @@ pub struct Filter {
     /// The album artist: what the record says about itself.
     pub artist: Option<String>,
     pub album: Option<i64>,
+    /// Multi-selection from Library Explorer. Singular fields remain for
+    /// callers that open one artist or album directly.
+    pub years: Vec<i32>,
+    pub genres: Vec<String>,
+    pub artists: Vec<String>,
+    pub albums: Vec<i64>,
+    /// Source keys are `provider:instance`; exclusions keep empty as "all".
+    pub excluded_sources: Vec<String>,
+    pub qualities: Vec<String>,
+    pub formats: Vec<String>,
     /// Who made the record or plays on one of its tracks: an artist's page,
     /// where a compilation they are on counts as theirs too.
     pub performer: Option<String>,
+}
+
+impl Filter {
+    /// Applies a Library Explorer column and invalidates every choice to its right.
+    pub fn choose(&mut self, at: usize, keys: &[String]) {
+        match at {
+            0 => { self.year = None; self.years = keys.iter().filter_map(|key| key.parse().ok()).collect(); }
+            1 => { self.genre = None; self.genres = keys.to_vec(); }
+            2 => { self.artist = None; self.artists = keys.to_vec(); }
+            _ => { self.album = None; self.albums = keys.iter().filter_map(|key| key.parse().ok()).collect(); }
+        }
+        if at < 1 { self.genre = None; self.genres.clear(); }
+        if at < 2 { self.artist = None; self.artists.clear(); }
+        if at < 3 { self.album = None; self.albums.clear(); }
+    }
+
+    pub fn toggle_extra(&mut self, kind: &str, key: &str) {
+        let values = match kind {
+            "source" => &mut self.excluded_sources,
+            "quality" => &mut self.qualities,
+            "format" => &mut self.formats,
+            _ => return,
+        };
+        if let Some(at) = values.iter().position(|value| value == key) { values.remove(at); } else { values.push(key.into()); }
+    }
+
+    pub fn reset_extra(&mut self) {
+        self.excluded_sources.clear();
+        self.qualities.clear();
+        self.formats.clear();
+    }
+
+    pub fn extra_filtered(&self) -> bool {
+        !(self.excluded_sources.is_empty() && self.qualities.is_empty() && self.formats.is_empty())
+    }
 }
 
 /// How the tracks are ordered.
@@ -134,6 +179,8 @@ pub struct Totals {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Snapshot {
     pub ids: Vec<i64>,
+    /// Records in the order their first track appears in `ids`.
+    pub album_ids: Vec<i64>,
     pub totals: Totals,
 }
 
@@ -172,26 +219,61 @@ const FROM: &str = "FROM tracks t
 fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut sql = String::from("WHERE t.present = 1");
     let mut args: Vec<Box<dyn ToSql>> = Vec::new();
-    if let Some(year) = f.year {
-        sql.push_str(" AND a.year = ?");
-        args.push(Box::new(year));
+    let marks = |n: usize| vec!["?"; n].join(",");
+    let mut years = f.years.clone();
+    if let Some(year) = f.year.filter(|year| !years.contains(year)) { years.push(year); }
+    if !years.is_empty() {
+        sql.push_str(&format!(" AND a.year IN ({})", marks(years.len())));
+        args.extend(years.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
-    if let Some(genre) = &f.genre {
-        sql.push_str(
-            " AND EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id
-                          WHERE tg.track_id = t.id AND g.name = ?)",
-        );
-        args.push(Box::new(genre.clone()));
+    let mut genres = f.genres.clone();
+    if let Some(genre) = f.genre.as_ref().filter(|genre| !genres.contains(genre)) { genres.push(genre.clone()); }
+    if !genres.is_empty() {
+        sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id AND g.name IN ({}))", marks(genres.len())));
+        args.extend(genres.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
-    if let Some(artist) = &f.artist {
-        // The same artist tagged "Alice in Chains" on one record and "Alice
-        // In Chains" on another is one artist, as the column shows it.
-        sql.push_str(" AND a.album_artist = ? COLLATE NOCASE");
-        args.push(Box::new(artist.clone()));
+    let mut artists = f.artists.clone();
+    if let Some(artist) = f.artist.as_ref().filter(|artist| !artists.iter().any(|v| v.eq_ignore_ascii_case(artist))) { artists.push(artist.clone()); }
+    if !artists.is_empty() {
+        sql.push_str(&format!(" AND a.album_artist COLLATE NOCASE IN ({})", marks(artists.len())));
+        args.extend(artists.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
-    if let Some(album) = f.album {
-        sql.push_str(" AND a.id = ?");
-        args.push(Box::new(album));
+    let mut albums = f.albums.clone();
+    if let Some(album) = f.album.filter(|album| !albums.contains(album)) { albums.push(album); }
+    if !albums.is_empty() {
+        sql.push_str(&format!(" AND a.id IN ({})", marks(albums.len())));
+        args.extend(albums.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
+    }
+    if !f.excluded_sources.is_empty() {
+        sql.push_str(&format!(" AND t.source_id NOT IN (SELECT id FROM sources WHERE provider || ':' || instance IN ({}))", marks(f.excluded_sources.len())));
+        args.extend(f.excluded_sources.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
+    }
+    let ext = |name: &str| format!("lower(t.external_id) LIKE '%.{name}'");
+    let format_clause = |name: &str| match name {
+        "flac" => Some(ext("flac")),
+        "alac" => Some(format!("({} OR {}) AND t.bit_depth IS NOT NULL", ext("m4a"), ext("mp4"))),
+        "aac" => Some(format!("({} OR {} OR {}) AND t.bit_depth IS NULL", ext("aac"), ext("m4a"), ext("mp4"))),
+        "mp3" => Some(ext("mp3")), "ogg" => Some(format!("({} OR {})", ext("ogg"), ext("oga"))),
+        "opus" => Some(ext("opus")), "wav" => Some(ext("wav")),
+        "aiff" => Some(format!("({} OR {})", ext("aif"), ext("aiff"))),
+        "wavpack" => Some(ext("wv")), "ape" => Some(ext("ape")),
+        "dsd" => Some(format!("({} OR {} OR {} OR {} OR t.sample_rate_hz >= 2822400)", ext("dsf"), ext("dff"), ext("dsd"), ext("iso"))),
+        _ => None,
+    };
+    let lossy = format!("({} OR {} OR {} OR {} OR {} OR (({} OR {}) AND t.bit_depth IS NULL))", ext("mp3"), ext("aac"), ext("ogg"), ext("oga"), ext("opus"), ext("m4a"), ext("mp4"));
+    let dsd = format!("({} OR {} OR {} OR {} OR t.sample_rate_hz >= 2822400)", ext("dsf"), ext("dff"), ext("dsd"), ext("iso"));
+    if !f.qualities.is_empty() {
+        let tiers: Vec<String> = f.qualities.iter().filter_map(|tier| match tier.as_str() {
+            "lossy" => Some(lossy.clone()),
+            "lossless" => Some(format!("NOT {lossy} AND NOT {dsd} AND (t.bit_depth IS NOT NULL OR t.sample_rate_hz IS NOT NULL) AND COALESCE(t.bit_depth, 0) < 24 AND COALESCE(t.sample_rate_hz, 0) <= 48000")),
+            "hires" => Some(format!("NOT {lossy} AND NOT {dsd} AND (t.bit_depth >= 24 OR t.sample_rate_hz > 48000)")),
+            "dsd" => Some(dsd.clone()), _ => None,
+        }).collect();
+        if !tiers.is_empty() { sql.push_str(&format!(" AND ({})", tiers.join(" OR "))); }
+    }
+    if !f.formats.is_empty() {
+        let formats: Vec<String> = f.formats.iter().filter_map(|name| format_clause(name)).collect();
+        if !formats.is_empty() { sql.push_str(&format!(" AND ({})", formats.join(" OR "))); }
     }
     if let Some(name) = &f.performer {
         sql.push_str(" AND (a.album_artist = ? COLLATE NOCASE OR t.artist = ? COLLATE NOCASE)");
@@ -202,6 +284,25 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
 }
 
 impl Library {
+    /// Sources that currently contribute tracks to Library Explorer.
+    pub fn facet_sources(&self) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut stmt = self.db.prepare(
+            "SELECT s.provider, s.instance, count(*) FROM tracks t JOIN sources s ON s.id = t.source_id
+             WHERE t.present = 1 GROUP BY s.id ORDER BY s.provider COLLATE NOCASE, s.instance COLLATE NOCASE",
+        )?;
+        let rows = stmt.query_map([], |r| {
+            let provider: String = r.get(0)?;
+            let instance: String = r.get(1)?;
+            Ok(FacetEntry {
+                key: format!("{provider}:{instance}"),
+                label: if instance == "default" { provider } else { instance },
+                albums: r.get::<_, i64>(2)? as usize,
+                year: None,
+            })
+        })?;
+        rows.collect()
+    }
+
     /// The years, newest first, with how many albums each holds. The first
     /// column has nothing to its left, so it always offers every year.
     pub fn facet_years(&self) -> rusqlite::Result<Vec<FacetEntry>> {
@@ -222,8 +323,15 @@ impl Library {
     }
 
     /// The genres the chosen year leaves, by name.
-    pub fn facet_genres(&self, year: Option<i32>) -> rusqlite::Result<Vec<FacetEntry>> {
-        let (filter, args) = clause(&Filter { year, ..Filter::default() });
+    pub fn facet_genres(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut left = f.clone();
+        left.genre = None;
+        left.genres.clear();
+        left.artist = None;
+        left.artists.clear();
+        left.album = None;
+        left.albums.clear();
+        let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT g.name, count(DISTINCT a.id) {FROM}
              JOIN track_genres tg ON tg.track_id = t.id
@@ -234,22 +342,13 @@ impl Library {
     }
 
     /// The album artists the year and the genre leave.
-    pub fn facet_artists(&self, year: Option<i32>, genre: Option<&str>) -> rusqlite::Result<Vec<FacetEntry>> {
-        if genre.is_none() {
-            let (sql, args): (String, Vec<Box<dyn ToSql>>) = match year {
-                Some(y) => (
-                    format!("SELECT min(a.album_artist), count(*) {ALBUMS} AND a.year = ? GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"),
-                    vec![Box::new(y)],
-                ),
-                None => (
-                    format!("SELECT min(a.album_artist), count(*) {ALBUMS} GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"),
-                    Vec::new(),
-                ),
-            };
-            return self.named_facet(&sql, args);
-        }
-        let f = Filter { year, genre: genre.map(str::to_string), ..Filter::default() };
-        let (filter, args) = clause(&f);
+    pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut left = f.clone();
+        left.artist = None;
+        left.artists.clear();
+        left.album = None;
+        left.albums.clear();
+        let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT min(a.album_artist), count(DISTINCT a.id) {FROM} {filter}
              GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
@@ -259,10 +358,10 @@ impl Library {
 
     /// The albums the other three leave, in shelf order, with their year.
     pub fn facet_albums(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
-        let (filter, args) = clause(&Filter { album: None, ..f.clone() });
+        let (filter, args) = clause(&Filter { album: None, albums: Vec::new(), ..f.clone() });
         let sql = format!(
             "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
-             GROUP BY a.id ORDER BY a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE"
+             GROUP BY a.id ORDER BY a.title COLLATE NOCASE, a.album_artist COLLATE NOCASE, a.year"
         );
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(params_from_iter(args.iter()), |r| {
@@ -301,7 +400,11 @@ impl Library {
         let mut albums = std::collections::HashSet::new();
         while let Some(r) = rows.next()? {
             out.ids.push(r.get(0)?);
-            albums.insert(r.get::<_, Option<i64>>(1)?);
+            if let Some(album) = r.get::<_, Option<i64>>(1)? {
+                if albums.insert(album) {
+                    out.album_ids.push(album);
+                }
+            }
             out.totals.duration_ms += r.get::<_, i64>(2)? as u64;
         }
         out.totals.tracks = out.ids.len();
@@ -478,11 +581,24 @@ mod tests {
     fn each_column_offers_only_what_the_ones_to_its_left_leave() {
         let lib = shelf();
         assert_eq!(labels(lib.facet_years().unwrap()), ["2021", "2019", "2018"], "newest first");
-        assert_eq!(labels(lib.facet_genres(None).unwrap()), ["Alternative", "Latin"]);
-        assert_eq!(labels(lib.facet_genres(Some(2021)).unwrap()), ["Latin"]);
-        assert_eq!(labels(lib.facet_artists(None, Some("Alternative")).unwrap()), ["Mora Vale"]);
+        assert_eq!(labels(lib.facet_genres(&Filter::default()).unwrap()), ["Alternative", "Latin"]);
+        assert_eq!(labels(lib.facet_genres(&Filter { years: vec![2021], ..Filter::default() }).unwrap()), ["Latin"]);
+        assert_eq!(labels(lib.facet_artists(&Filter { genres: vec!["Alternative".into()], ..Filter::default() }).unwrap()), ["Mora Vale"]);
         let f = Filter { artist: Some("Mora Vale".into()), ..Filter::default() };
-        assert_eq!(labels(lib.facet_albums(&f).unwrap()), ["Northbound", "Low Orbit"], "by year");
+        assert_eq!(labels(lib.facet_albums(&f).unwrap()), ["Low Orbit", "Northbound"], "by name");
+    }
+
+    #[test]
+    fn multi_selection_and_quality_filters_reach_the_snapshot() {
+        let lib = shelf();
+        let years = Filter { years: vec![2018, 2021], ..Filter::default() };
+        assert_eq!(lib.browse_ids(&years, TrackOrder::Artist).unwrap().totals.tracks, 2);
+        let hires = Filter { qualities: vec!["hires".into()], ..Filter::default() };
+        assert_eq!(lib.browse_ids(&hires, TrackOrder::Artist).unwrap().totals.tracks, 3);
+        let format_filter = Filter { formats: vec!["flac".into()], ..Filter::default() };
+        assert_eq!(lib.browse_ids(&format_filter, TrackOrder::Artist).unwrap().totals.tracks, 5);
+        let sources = lib.facet_sources().unwrap();
+        assert_eq!((sources[0].key.as_str(), sources[0].albums), ("local:default", 5));
     }
 
     #[test]
@@ -496,7 +612,7 @@ mod tests {
                 params![source],
             )
             .unwrap();
-        let artists = lib.facet_artists(None, None).unwrap();
+        let artists = lib.facet_artists(&Filter::default()).unwrap();
         assert_eq!(artists.iter().filter(|a| a.label.eq_ignore_ascii_case("mora vale")).count(), 1);
         let f = Filter { artist: Some("mora vale".into()), ..Filter::default() };
         assert_eq!(lib.facet_albums(&f).unwrap().len(), 3, "both spellings' records");
@@ -505,7 +621,7 @@ mod tests {
     #[test]
     fn a_facet_counts_albums_not_tracks() {
         let lib = shelf();
-        let genres = lib.facet_genres(None).unwrap();
+        let genres = lib.facet_genres(&Filter::default()).unwrap();
         assert_eq!(genres[0].albums, 2, "Alternative is two records, four tracks");
     }
 
@@ -515,9 +631,11 @@ mod tests {
         let all = lib.browse_ids(&Filter::default(), TrackOrder::Artist).unwrap();
         assert_eq!(all.totals, Totals { tracks: 5, albums: 3, duration_ms: 5000 });
         assert_eq!(all.ids.len(), 5);
+        assert_eq!(all.album_ids, [3, 1, 2], "albums follow their first track in snapshot order");
         let one = lib.browse_ids(&Filter { album: Some(1), ..Filter::default() }, TrackOrder::Disc).unwrap();
         assert_eq!((one.totals.tracks, one.totals.albums), (3, 1));
         assert_eq!(one.ids, [10, 12, 11], "disc 1 first, then disc 2");
+        assert_eq!(one.album_ids, [1]);
     }
 
     #[test]

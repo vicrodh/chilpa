@@ -13,6 +13,7 @@ GallerySection {
     Row {
         spacing: Metrics.gridGap
         QueuePanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+        SourcesPopover {}
         LyricsPanel { width: Metrics.rightPanel; height: Metrics.queueMin }
     }
     Column {

@@ -1,17 +1,13 @@
-//! The Library screen's filter, and the worker that answers it.
-//!
-//! Choosing in a column clears the columns to its right, then asks the
-//! worker for the four columns and the snapshot of the tracks. Results come
-//! back tagged with the generation that asked for them, so an answer to a
-//! filter that has since changed is dropped instead of flashing on screen.
-//! The filter lives on across navigation: leaving the screen and coming
-//! back finds it as it was.
+//! Library filtering and its worker. Column choices invalidate their right;
+//! generation tags discard stale answers. State survives navigation.
 
 #[cxx_qt::bridge]
 pub mod qobject {
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qstringlist.h");
+        type QStringList = cxx_qt_lib::QStringList;
     }
 
     #[auto_cxx_name]
@@ -19,20 +15,18 @@ pub mod qobject {
         #[qobject]
         #[qml_element]
         #[qml_singleton]
-        /// Bumped when new columns and a new snapshot are in.
         #[qproperty(i32, rev)]
-        /// Bumped when the library itself changed: a scan ended, a folder
-        /// was forgotten. Every screen that shows the library binds to it.
         #[qproperty(i32, content_rev)]
-        /// True while the worker is answering.
         #[qproperty(bool, busy)]
-        /// "22 albums · 177 songs".
         #[qproperty(QString, summary)]
-        /// What each column has chosen, for the breadcrumb. Empty is "All".
         #[qproperty(QString, year)]
         #[qproperty(QString, genre)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
+        #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
+        #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
+        #[qproperty(QStringList, qualities)] #[qproperty(QStringList, formats)]
+        #[qproperty(bool, extra_filtered)]
         /// How the tracks are ordered: "artist", "album", "year", "added",
         /// "title", "plays" or "duration".
         #[qproperty(QString, order, READ = order, WRITE = choose_order, NOTIFY = order_changed)]
@@ -57,6 +51,9 @@ pub mod qobject {
         /// Clears every column.
         #[qinvokable]
         fn clear(self: Pin<&mut Library>);
+
+        #[qinvokable] fn toggle_filter(self: Pin<&mut Library>, kind: &QString, key: &QString);
+        #[qinvokable] fn reset_extra(self: Pin<&mut Library>);
     }
 
     impl cxx_qt::Threading for Library {}
@@ -66,7 +63,7 @@ pub mod qobject {
 use crate::{app, browse, worker};
 use chilpa_api::{Facets, Filter, Snapshot, TrackOrder};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::QString;
+use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
 use std::rc::Rc;
 
@@ -80,6 +77,9 @@ pub struct LibraryRust {
     genre: QString,
     artist: QString,
     album: QString,
+    source_keys: QStringList, source_labels: QStringList, source_counts: QStringList,
+    excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
+    extra_filtered: bool,
     order: QString,
     album_order: QString,
     generation: u64,
@@ -102,32 +102,26 @@ fn order_of(name: &str) -> TrackOrder {
 
 const ORDER: [&str; 4] = ["year", "genre", "artist", "album"];
 
+fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
+    let mut list = QList::<QString>::default();
+    for item in items { list.append(QString::from(&item)); }
+    QStringList::from(&list)
+}
+
 impl qobject::Library {
     pub fn choose(mut self: Pin<&mut Self>, column: &QString, key: &QString, label: &QString) {
         let column = column.to_string();
         let Some(at) = ORDER.iter().position(|c| *c == column) else { return };
         let key = key.to_string();
-        browse::write(|s| {
-            let f = &mut s.filter;
-            match at {
-                0 => f.year = key.parse().ok(),
-                1 => f.genre = (!key.is_empty()).then(|| key.clone()),
-                2 => f.artist = (!key.is_empty()).then(|| key.clone()),
-                _ => f.album = key.parse().ok(),
-            }
-            // What is to the right was chosen among what this column left;
-            // with a new choice here it may not exist any more.
-            if at < 1 {
-                f.genre = None;
-            }
-            if at < 2 {
-                f.artist = None;
-            }
-            if at < 3 {
-                f.album = None;
-            }
-        });
-        let shown = if key.is_empty() { QString::default() } else { label.clone() };
+        let keys: Vec<String> = (!key.is_empty()).then_some(key).into_iter().collect();
+        let labels = if keys.is_empty() { Vec::new() } else { vec![label.to_string()] };
+        self.as_mut().choose_keys(keys, labels, at);
+    }
+
+    /// Applies one column's Excel-style selection and clears its right side.
+    pub fn choose_keys(mut self: Pin<&mut Self>, keys: Vec<String>, labels: Vec<String>, at: usize) {
+        browse::write(|state| state.filter.choose(at, &keys));
+        let shown = QString::from(&labels.join(", "));
         let empty = QString::default;
         match at {
             0 => {
@@ -155,6 +149,33 @@ impl qobject::Library {
         for set in [Self::set_year, Self::set_genre, Self::set_artist, Self::set_album] {
             set(self.as_mut(), QString::default());
         }
+        self.as_mut().set_excluded_sources(QStringList::default());
+        self.as_mut().set_qualities(QStringList::default());
+        self.as_mut().set_formats(QStringList::default());
+        self.as_mut().set_extra_filtered(false);
+        self.refresh();
+    }
+
+    pub fn toggle_filter(mut self: Pin<&mut Self>, kind: &QString, key: &QString) {
+        let (kind, key) = (kind.to_string(), key.to_string());
+        browse::write(|state| state.filter.toggle_extra(&kind, &key));
+        let (sources, qualities, formats) = browse::read(|state| (
+            state.filter.excluded_sources.clone(), state.filter.qualities.clone(), state.filter.formats.clone()
+        ));
+        let active = !(sources.is_empty() && qualities.is_empty() && formats.is_empty());
+        self.as_mut().set_excluded_sources(strings(sources));
+        self.as_mut().set_qualities(strings(qualities));
+        self.as_mut().set_formats(strings(formats));
+        self.as_mut().set_extra_filtered(active);
+        self.refresh();
+    }
+
+    pub fn reset_extra(mut self: Pin<&mut Self>) {
+        browse::write(|state| state.filter.reset_extra());
+        self.as_mut().set_excluded_sources(QStringList::default());
+        self.as_mut().set_qualities(QStringList::default());
+        self.as_mut().set_formats(QStringList::default());
+        self.as_mut().set_extra_filtered(false);
         self.refresh();
     }
 
@@ -200,6 +221,9 @@ impl qobject::Library {
             return;
         }
         let totals = snapshot.totals;
+        self.as_mut().set_source_keys(strings(facets.sources.iter().map(|entry| entry.key.clone())));
+        self.as_mut().set_source_labels(strings(facets.sources.iter().map(|entry| entry.label.clone())));
+        self.as_mut().set_source_counts(strings(facets.sources.iter().map(|entry| entry.albums.to_string())));
         browse::write(|s| {
             s.facets = Rc::new(facets);
             s.snapshot = Rc::new(snapshot);

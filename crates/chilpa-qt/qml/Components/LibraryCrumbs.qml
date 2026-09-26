@@ -8,7 +8,7 @@ import "../Primitives"
 Item {
     id: crumbs
 
-    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.artist !== "" || Library.album !== ""
+    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.artist !== "" || Library.album !== "" || Library.extraFiltered
 
     Row {
         anchors.verticalCenter: parent.verticalCenter
@@ -22,7 +22,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("All music", I18n.rev)
                 font.pointSize: Type.body
-                color: Theme.color.textPrimary
+                font.weight: crumbs.filtered ? Type.regular : Type.medium
+                color: crumbs.filtered ? Theme.color.textSecondary : Theme.color.textPrimary
                 TapHandler { onTapped: Library.clear() }
             }
         }
@@ -46,13 +47,4 @@ Item {
         }
     }
 
-    Text {
-        anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        visible: crumbs.filtered
-        text: I18n.tr("Clear filters", I18n.rev)
-        font.pointSize: Type.body
-        color: Theme.color.accent
-        TapHandler { onTapped: Library.clear() }
-    }
 }

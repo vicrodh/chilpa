@@ -326,10 +326,9 @@ impl qobject::AlbumGridModel {
                 return;
             }
             "library" => {
-                // The album column already holds the records the filter
-                // leaves, in shelf order: its ids are the grid's snapshot.
-                let ids: Vec<i64> =
-                    crate::browse::read(|s| s.facets.albums.iter().filter_map(|a| a.key.parse().ok()).collect());
+                // Unlike the facet, this includes the album choice itself
+                // and follows the result's requested order.
+                let ids = crate::browse::read(|s| s.snapshot.album_ids.clone());
                 return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
             }
             "folder" => {
