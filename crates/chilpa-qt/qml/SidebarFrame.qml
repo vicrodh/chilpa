@@ -41,11 +41,8 @@ Item {
         x: Metrics.spaceWindow + frame.shown - width / 2 // derived: centered on the edge
         y: Metrics.spaceWindow
         height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
-        onMoved: (delta) => {
-            if (frame.dragged < 0)
-                frame.grabbed = frame.settled
-            frame.dragged = frame.grabbed + delta
-        }
+        onStarted: frame.grabbed = frame.settled
+        onMoved: (delta) => frame.dragged = frame.grabbed + delta
         onReleased: {
             if (frame.dragged >= 0)
                 SettingsModel.placeSidebar(frame.dragged, frame.window.width)

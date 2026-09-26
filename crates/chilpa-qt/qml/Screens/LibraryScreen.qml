@@ -12,6 +12,8 @@ Item {
 
     // The columns' height while their grip is dragged, or -1.
     property real dragged: -1
+    // The columns' height when the grip was pressed.
+    property real grabbed: 0
     readonly property real panesHeight: !SettingsModel.panesOpen ? 0
         : dragged >= 0 ? dragged
         : SettingsModel.panesHeight > 0 ? SettingsModel.panesHeight : Metrics.panesHeight
@@ -105,10 +107,8 @@ Item {
         anchors.top: panes.bottom
         anchors.horizontalCenter: panes.horizontalCenter
         width: head.width
-        onMoved: (delta) => {
-            const from = page.dragged >= 0 ? page.dragged : page.panesHeight
-            page.dragged = Math.max(Metrics.panesMin, Math.min(Metrics.panesMax, from + delta))
-        }
+        onStarted: page.grabbed = page.panesHeight
+        onMoved: (delta) => page.dragged = Math.max(Metrics.panesMin, Math.min(Metrics.panesMax, page.grabbed + delta))
         onReleased: {
             if (page.dragged >= 0)
                 SettingsModel.panesHeight = Math.round(page.dragged)

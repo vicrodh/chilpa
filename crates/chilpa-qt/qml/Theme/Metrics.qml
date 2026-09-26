@@ -223,7 +223,8 @@ QtObject {
     // The right panel (design/02 5).
     readonly property int rightPanel: 300
     readonly property int panelHeader: 40
-    readonly property int queueDefault: 380
+    // A share kept as a whole number, in thousandths.
+    readonly property int shareUnits: 1000
     readonly property int queueMin: 250
     readonly property int lyricsMin: 110
     readonly property int queueRow: 46

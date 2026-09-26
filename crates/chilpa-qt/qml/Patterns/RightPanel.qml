@@ -4,18 +4,27 @@ import "../Theme"
 import "../Primitives"
 
 // The right panel (design/02 5, frontend ADR-0011): the queue and the
-// lyrics share one card. With both open a divider splits them, and the
-// queue's share is remembered; each keeps its minimum.
+// lyrics share one card. With both open a divider splits them anywhere
+// between their minimums, and the queue's share is remembered.
 Rectangle {
     id: card
 
     readonly property bool both: SettingsModel.queueOpen && SettingsModel.lyricsOpen
+    // While the divider is dragged: the queue's height, and what it was when
+    // the drag started.
     property real dragged: -1
-    readonly property real queueShare: dragged >= 0 ? dragged
-        : SettingsModel.queueHeight > 0 ? SettingsModel.queueHeight : Metrics.queueDefault
+    property real grabbed: 0
+    // Half and half until the divider is moved; a share and not a height,
+    // so the split keeps its proportion when the window changes size.
+    readonly property real share: SettingsModel.queueShare > 0 ? SettingsModel.queueShare / Metrics.shareUnits : 0.5
     readonly property real queueHeight: !SettingsModel.queueOpen ? 0
         : !SettingsModel.lyricsOpen ? height
-        : Math.max(Metrics.queueMin, Math.min(queueShare, height - Metrics.lyricsMin))
+        : clamp(dragged >= 0 ? dragged : height * share)
+
+    // Anywhere between the two minimums (design/04 7).
+    function clamp(h) {
+        return Math.max(Metrics.queueMin, Math.min(h, height - Metrics.lyricsMin))
+    }
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar
@@ -35,10 +44,11 @@ Rectangle {
         vertical: false
         width: parent.width
         y: card.queueHeight - height / 2 // derived: centered on the seam
-        onMoved: (delta) => card.dragged = Math.max(Metrics.queueMin, Math.min(card.height - Metrics.lyricsMin, (card.dragged >= 0 ? card.dragged : card.queueHeight) + delta))
+        onStarted: card.grabbed = card.queueHeight
+        onMoved: (delta) => card.dragged = card.clamp(card.grabbed + delta)
         onReleased: {
             if (card.dragged >= 0)
-                SettingsModel.queueHeight = Math.round(card.dragged)
+                SettingsModel.queueShare = Math.max(1, Math.round(card.dragged / card.height * Metrics.shareUnits))
             card.dragged = -1
         }
     }
