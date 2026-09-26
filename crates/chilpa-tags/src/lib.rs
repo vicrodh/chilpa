@@ -59,6 +59,23 @@ pub struct Tags {
     pub musicbrainz_recording_id: Option<String>,
     /// How many covers it carries inside.
     pub pictures: usize,
+    /// The track's ReplayGain (`REPLAYGAIN_TRACK_GAIN`), in hundredths of a
+    /// dB: what brings it to the reference loudness. Whole numbers, so tags
+    /// stay comparable with `==`.
+    pub replaygain_track_gain: Option<i32>,
+    /// The track's peak (`REPLAYGAIN_TRACK_PEAK`), in millionths of full
+    /// scale.
+    pub replaygain_track_peak: Option<u32>,
+}
+
+impl Tags {
+    /// The ReplayGain in dB and the peak as a fraction of full scale.
+    pub fn replaygain(&self) -> (Option<f32>, Option<f32>) {
+        (
+            self.replaygain_track_gain.map(|g| g as f32 / 100.0),
+            self.replaygain_track_peak.map(|p| p as f32 / 1_000_000.0),
+        )
+    }
 }
 
 impl Tags {
@@ -172,8 +189,24 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
             .get_string(ItemKey::MusicBrainzRecordingId)
             .map(str::to_string),
         pictures: tag.picture_count() as usize,
+        replaygain_track_gain: tag
+            .get_string(ItemKey::ReplayGainTrackGain)
+            .and_then(number)
+            .map(|db| (db * 100.0).round() as i32),
+        replaygain_track_peak: tag
+            .get_string(ItemKey::ReplayGainTrackPeak)
+            .and_then(number)
+            .filter(|p| *p >= 0.0)
+            .map(|p| (p * 1_000_000.0).round() as u32),
     };
     Ok(info)
+}
+
+/// A ReplayGain value as tags write it: "-7.23 dB", "+1.5 dB", "0.987654".
+fn number(text: &str) -> Option<f32> {
+    let text = text.trim();
+    let text = text.strip_suffix("dB").or_else(|| text.strip_suffix("db")).unwrap_or(text).trim();
+    text.trim_start_matches('+').parse().ok().filter(|v: &f32| v.is_finite())
 }
 
 /// Writes the embedded cover out to a file, so the interface can show it.
@@ -318,6 +351,15 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn replaygain_reads_as_tags_write_it() {
+        assert_eq!(number("-7.23 dB"), Some(-7.23));
+        assert_eq!(number("+1.5 dB"), Some(1.5));
+        assert_eq!(number(" 0.987654 "), Some(0.987654));
+        assert_eq!(number("loud"), None);
+        assert_eq!(number("inf"), None);
+    }
 
     #[test]
     fn the_year_comes_from_the_date_without_truncating_it() {
