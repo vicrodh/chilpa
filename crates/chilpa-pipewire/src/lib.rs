@@ -170,36 +170,48 @@ fn force_rate(rate: u32) {
 /// goes back when the stream closes, and while it lets go of the device in
 /// a long pause.
 struct AtRate {
-    inner: chilpa_alsa::AlsaSink,
+    // Option so Drop can close the PCM before giving the graph clock back.
+    // Rust otherwise runs this type's Drop body before dropping its fields.
+    inner: Option<chilpa_alsa::AlsaSink>,
     rate: u32,
     before: u32,
     holding: bool,
 }
 
+impl AtRate {
+    fn inner(&self) -> &chilpa_alsa::AlsaSink {
+        self.inner.as_ref().expect("the sink exists until drop")
+    }
+
+    fn inner_mut(&mut self) -> &mut chilpa_alsa::AlsaSink {
+        self.inner.as_mut().expect("the sink exists until drop")
+    }
+}
+
 impl AudioSink for AtRate {
     fn format(&self) -> StreamFormat {
-        self.inner.format()
+        self.inner().format()
     }
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        self.inner.write(frames)
+        self.inner_mut().write(frames)
     }
     fn close(&mut self) -> Result<(), SinkError> {
-        self.inner.close()
+        self.inner_mut().close()
     }
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
-        self.inner.drain(give_up)
+        self.inner_mut().drain(give_up)
     }
     fn held(&self) -> u64 {
-        self.inner.held()
+        self.inner().held()
     }
     fn flush(&mut self) -> Result<(), SinkError> {
-        self.inner.flush()
+        self.inner_mut().flush()
     }
     fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
-        self.inner.set_paused(paused)
+        self.inner_mut().set_paused(paused)
     }
     fn suspend(&mut self) -> Result<(), SinkError> {
-        self.inner.suspend()?;
+        self.inner_mut().suspend()?;
         force_rate(self.before);
         self.holding = false;
         Ok(())
@@ -207,12 +219,16 @@ impl AudioSink for AtRate {
     fn wake(&mut self) -> Result<(), SinkError> {
         force_rate(self.rate);
         self.holding = true;
-        self.inner.wake()
+        self.inner_mut().wake()
     }
 }
 
 impl Drop for AtRate {
     fn drop(&mut self) {
+        // The card must no longer be running on this graph before its forced
+        // rate is removed.  Resetting first leaves a live 176.4 kHz PCM on a
+        // graph that is already free to switch back to 48 kHz.
+        drop(self.inner.take());
         if self.holding {
             force_rate(self.before);
         }
@@ -391,7 +407,7 @@ impl OutputBackend for PipeWire {
         }
         match opened {
             Ok(inner) => Ok(match before {
-                Some(before) => Box::new(AtRate { inner, rate, before, holding: true }),
+                Some(before) => Box::new(AtRate { inner: Some(inner), rate, before, holding: true }),
                 None => Box::new(inner),
             }),
             // The sink is still listed and it would not open, which on an
