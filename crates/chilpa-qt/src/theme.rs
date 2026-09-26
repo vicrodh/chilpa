@@ -128,6 +128,9 @@ impl Theme {
                 return Some(accent);
             }
         }
+        // The theme's own accent, whatever replaced it: what "follow the
+        // theme" looks like among the accents to choose from.
+        let token = if token == "accent.base" { "accent" } else { token };
         // A rule that points at itself, directly or not, is a broken file.
         if depth > 4 {
             return None;
@@ -278,5 +281,14 @@ mod tests {
         let broken = r##"{"id":"x","color":{"accent":"#FFFFFF","art.placeholder":["#000"]}}"##;
         let err = Theme::parse(broken).unwrap_err();
         assert!(err.contains("surface.window"), "{err}");
+    }
+
+    #[test]
+    fn the_theme_s_own_accent_is_still_there_under_a_chosen_one() {
+        let mut theme = Theme::built_in("breeze-light");
+        let own = theme.color("accent");
+        theme.set_accent(parse_color("#3DAEE9"));
+        assert_ne!(theme.color("accent"), own);
+        assert_eq!(theme.color("accent.base"), own);
     }
 }

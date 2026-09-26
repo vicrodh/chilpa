@@ -82,6 +82,7 @@ Item {
             : row.control === "button" || row.control === "link" ? button
             : row.control === "secret" ? secret
             : row.control === "external" ? external
+            : row.control === "swatches" ? swatches
             : null
     }
 
@@ -147,6 +148,15 @@ Item {
             glyph: Icons.arrowUpRight
             onClicked: Qt.openUrlExternally(row.value)
             Component.onCompleted: Qt.openUrlExternally(row.value)
+        }
+    }
+    Component {
+        id: swatches
+        Swatches {
+            colors: row.options
+            values: row.optionValues
+            value: row.value
+            onPicked: (value) => row.page.set(row.key, value)
         }
     }
     Component {
