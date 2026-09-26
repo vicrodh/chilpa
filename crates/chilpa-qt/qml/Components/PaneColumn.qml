@@ -19,22 +19,80 @@ Rectangle {
         id: facets
         column: pane.column
         rev: Library.rev
-        query: head.text
+        query: input.text
     }
 
-    SearchField {
+    Rectangle {
         id: head
         width: parent.width
         height: Metrics.paneHeader
-        placeholder: pane.title
-        shortcut: facets.total.toString()
-        radius: 0
+        color: Theme.color.surfacePane
+
+        Icon {
+            id: lens
+            anchors.left: parent.left
+            anchors.leftMargin: Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            glyph: Icons.search
+            size: Metrics.iconXs
+            color: input.activeFocus ? Theme.color.accent : Theme.color.textTertiary
+        }
+
+        TextInput {
+            id: input
+            anchors.left: lens.right
+            anchors.leftMargin: Metrics.gap6
+            anchors.right: tail.left
+            anchors.rightMargin: Metrics.gap6
+            anchors.verticalCenter: parent.verticalCenter
+            clip: true
+            font.pointSize: Type.label
+            color: Theme.color.textPrimary
+            selectionColor: Theme.color.rowSelected
+
+            Text {
+                anchors.fill: parent
+                visible: input.text === ""
+                text: pane.title
+                font: input.font
+                color: Theme.color.textSecondary
+                elide: Text.ElideRight
+            }
+        }
+
+        Item {
+            id: tail
+            anchors.right: parent.right
+            anchors.rightMargin: Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            width: input.text === "" ? count.implicitWidth : Metrics.iconSm
+            height: parent.height
+
+            Text {
+                id: count
+                anchors.centerIn: parent
+                visible: input.text === ""
+                text: facets.total
+                font.pointSize: Type.micro
+                color: Theme.color.textTertiary
+            }
+            Icon {
+                anchors.centerIn: parent
+                visible: input.text !== ""
+                glyph: Icons.x
+                size: Metrics.iconXs
+                color: clear.hovered ? Theme.color.textPrimary : Theme.color.textTertiary
+
+                HoverHandler { id: clear }
+                TapHandler { onTapped: input.text = "" }
+            }
+        }
 
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
-            height: 1
-            color: Theme.color.strokeHairline
+            height: input.activeFocus ? Metrics.focusRing : 1
+            color: input.activeFocus ? Theme.color.accent : Theme.color.strokeHairline
         }
     }
 
