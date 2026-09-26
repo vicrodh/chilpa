@@ -426,3 +426,8 @@ scrobbler
 scrobbling
 # ALSA's plugin that converts what a card refuses.
 plughw
+# The session bus and its names, the D-Bus crate and ALSA's busy error.
+dbus
+freedesktop
+stdintf
+ebusy

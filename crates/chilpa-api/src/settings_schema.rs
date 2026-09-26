@@ -108,6 +108,12 @@ pub const SECTIONS: &[Section] = &[
                         Control::Select,
                     ),
                     setting(
+                        "audio.reserve",
+                        Chilpa::mark("Take the card from the sound server"),
+                        Chilpa::mark("Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."),
+                        Control::Toggle,
+                    ),
+                    setting(
                         "audio.bitperfect",
                         Chilpa::mark("Bit-perfect"),
                         Chilpa::mark("Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."),

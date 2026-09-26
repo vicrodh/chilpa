@@ -148,6 +148,9 @@ msgstr ""
 msgid "Artists"
 msgstr ""
 
+msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
+msgstr ""
+
 msgid "Audio"
 msgstr ""
 
@@ -749,6 +752,9 @@ msgid "System"
 msgstr ""
 
 msgid "Tabs"
+msgstr ""
+
+msgid "Take the card from the sound server"
 msgstr ""
 
 msgid "That answer does not belong to this window."
@@ -1418,6 +1424,9 @@ msgid "the server answering is {}, not PipeWire"
 msgstr ""
 
 msgid "the server sent no audio: {}"
+msgstr ""
+
+msgid "the sound server would not let go of card {}"
 msgstr ""
 
 msgid "the stereo area (TWOCHTOC) was not found"

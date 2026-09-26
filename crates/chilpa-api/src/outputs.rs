@@ -3,6 +3,9 @@
 
 use crate::{Output, OutputStack, WizardReport, WizardRow};
 
+/// Whether cards are asked of the sound server before they are opened.
+pub(crate) const RESERVE: &str = "audio.reserve";
+
 /// The card's stack and the one through `plughw`, as identifiers name them.
 const CARD: &str = "alsa";
 const PLUG: &str = "alsaplug";
@@ -191,6 +194,18 @@ impl crate::Chilpa {
         chilpa_core::backends::StackKind::from_key(own_stack(output_id))
             .and_then(chilpa_core::backends::of)
             .map_or("never", |s| word(s.info().fidelity))
+    }
+
+    /// Whether a card is asked of the sound server that holds it before it
+    /// is opened, and given back when Chilpa closes it or lets go of it in a
+    /// long pause.
+    pub fn reserving(&self) -> bool {
+        self.preference(RESERVE).as_deref() == Some("true")
+    }
+
+    pub fn set_reserving(&mut self, on: bool) {
+        self.remember_preference(RESERVE, &on.to_string());
+        chilpa_core::backends::set_reserving(on);
     }
 
     /// "hw" or "plughw" when the chosen output is a card; empty otherwise.

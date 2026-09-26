@@ -241,6 +241,11 @@ impl SettingsPageRust {
                     row.description = format!("{} {why}", row.description);
                 }
             }
+            "audio.reserve" => {
+                let (card, on) = app::with(|api| (!api.alsa_plugin().is_empty(), api.reserving()));
+                row.value = on.to_string();
+                row.control = if card { row.control } else { "" };
+            }
             "audio.alsaPlugin" => {
                 row.value = app::with(|api| api.alsa_plugin()).to_string();
                 // Only a card has a plugin to choose.
@@ -380,6 +385,7 @@ impl qobject::SettingsPage {
             "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
             "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(value == "plughw")),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
+            "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
             "audio.bitperfect" => {
                 app::with(|api| api.set_bit_perfect(value == "true"));
                 // The player bar's options show it too.
