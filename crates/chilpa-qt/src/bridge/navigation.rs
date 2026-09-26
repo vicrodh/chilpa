@@ -146,7 +146,7 @@ impl qobject::Navigation {
     }
 
     pub fn open_section(mut self: Pin<&mut Self>, id: &QString) {
-        let section = crate::settings_schema::section(&id.to_string()).id;
+        let section = chilpa_api::settings_schema::section(&id.to_string()).id;
         self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Settings, id: 0, key: section.to_string() });
         self.publish();
     }

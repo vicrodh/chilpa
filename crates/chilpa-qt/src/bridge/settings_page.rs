@@ -82,7 +82,7 @@ pub mod qobject {
     impl cxx_qt::Threading for SettingsPage {}
 }
 
-use crate::settings_schema;
+use chilpa_api::settings_schema;
 use crate::{app, registry};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
