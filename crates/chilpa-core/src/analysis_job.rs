@@ -23,6 +23,8 @@ use std::thread::JoinHandle;
 /// What this analyser is called in the database. It is the one from
 /// `chilpa-analysis`, repeated here so the facade need not know that crate.
 pub const ANALYZER: &str = chilpa_analysis::NAME;
+/// The analyzer's version: what it wrote before this one is analysed again.
+pub const VERSION: i64 = chilpa_analysis::VERSION;
 
 /// How much audio is looked at per track.
 const SECONDS_EXAMINED: u64 = 60;

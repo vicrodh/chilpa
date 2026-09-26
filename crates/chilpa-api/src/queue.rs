@@ -366,6 +366,15 @@ impl Chilpa {
         }
     }
 
+    /// Whether AutoMix has anything to order by: tracks whose tempo the
+    /// analysis has read. Without them it can do nothing, so it is not
+    /// offered.
+    pub fn automix_available(&mut self) -> bool {
+        use chilpa_core::analysis_job::{ANALYZER, VERSION};
+        // Three, because a mix of fewer is not one (`automix`).
+        self.library().and_then(|lib| lib.analyzed_count(ANALYZER, VERSION).ok()).is_some_and(|n| n >= 3)
+    }
+
     /// Whether the queue is walked in the mix's order.
     pub fn automix_on(&self) -> bool {
         self.mix
