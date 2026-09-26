@@ -108,8 +108,9 @@ Rectangle {
         ScrollBar.vertical: ScrollBar {}
 
         delegate: PaneRow {
+            required property int index
             width: ListView.view.width
-            onChosen: (key, label) => Library.choose(pane.column, key, label)
+            onChosen: (modifiers) => facets.choose(index, modifiers)
         }
     }
 }

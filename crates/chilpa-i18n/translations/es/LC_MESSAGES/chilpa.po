@@ -112,9 +112,6 @@ msgstr "Agregar a playlist…"
 msgid "Add to queue"
 msgstr "Agregar a la cola"
 
-msgid "Add to the queue"
-msgstr "Agregar a la cola"
-
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
@@ -235,9 +232,6 @@ msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 msgid "Clear"
 msgstr "Vaciar"
 
-msgid "Clear filters"
-msgstr "Quitar filtros"
-
 msgid "Clear the selection"
 msgstr "Quitar la selección"
 
@@ -340,6 +334,9 @@ msgstr "Desconectar"
 msgid "Disconnect account"
 msgstr "Desconectar la cuenta"
 
+msgid "Done"
+msgstr "Listo"
+
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 
@@ -394,6 +391,9 @@ msgstr "Fuente"
 msgid "For a long while"
 msgstr "Para un rato largo"
 
+msgid "Format"
+msgstr "Formato"
+
 msgid "Forward"
 msgstr "Adelante"
 
@@ -420,6 +420,9 @@ msgstr "Cuadrícula"
 
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
+
+msgid "Hi-Res"
+msgstr "Alta resolución"
 
 msgid "Hi-Res Lossless"
 msgstr "Alta resolución sin pérdida"
@@ -484,11 +487,17 @@ msgstr "Biblioteca"
 msgid "Library folders"
 msgstr "Carpetas de la biblioteca"
 
+msgid "Library selection"
+msgstr "Selección de la biblioteca"
+
 msgid "Light"
 msgstr "Claro"
 
 msgid "List"
 msgstr "Lista"
+
+msgid "Local library"
+msgstr "Biblioteca local"
 
 msgid "Look"
 msgstr "Aspecto"
@@ -661,6 +670,9 @@ msgstr "Reproducir"
 msgid "Play folder"
 msgstr "Reproducir carpeta"
 
+msgid "Play later"
+msgstr "Reproducir más tarde"
+
 msgid "Play next"
 msgstr "Reproducir después"
 
@@ -702,6 +714,9 @@ msgstr "Calidad"
 
 msgid "Queue"
 msgstr "Cola"
+
+msgid "Queue options"
+msgstr "Opciones de cola"
 
 msgid "Queue · {}"
 msgstr "Cola · {}"
@@ -771,6 +786,9 @@ msgstr "Solicita: {}"
 
 msgid "Rescan"
 msgstr "Volver a escanear"
+
+msgid "Reset"
+msgstr "Restablecer"
 
 msgid "Restore tabs"
 msgstr "Restaurar pestañas"
@@ -846,6 +864,9 @@ msgstr "Fuente"
 
 msgid "Sources"
 msgstr "Fuentes"
+
+msgid "Sources and quality"
+msgstr "Fuentes y calidad"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"

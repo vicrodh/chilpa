@@ -112,9 +112,6 @@ msgstr ""
 msgid "Add to queue"
 msgstr ""
 
-msgid "Add to the queue"
-msgstr ""
-
 msgid "Added this month"
 msgstr ""
 
@@ -235,9 +232,6 @@ msgstr ""
 msgid "Clear"
 msgstr ""
 
-msgid "Clear filters"
-msgstr ""
-
 msgid "Clear the selection"
 msgstr ""
 
@@ -340,6 +334,9 @@ msgstr ""
 msgid "Disconnect account"
 msgstr ""
 
+msgid "Done"
+msgstr ""
+
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr ""
 
@@ -394,6 +391,9 @@ msgstr ""
 msgid "For a long while"
 msgstr ""
 
+msgid "Format"
+msgstr ""
+
 msgid "Forward"
 msgstr ""
 
@@ -419,6 +419,9 @@ msgid "Grid"
 msgstr ""
 
 msgid "Hardware volume"
+msgstr ""
+
+msgid "Hi-Res"
 msgstr ""
 
 msgid "Hi-Res Lossless"
@@ -484,10 +487,16 @@ msgstr ""
 msgid "Library folders"
 msgstr ""
 
+msgid "Library selection"
+msgstr ""
+
 msgid "Light"
 msgstr ""
 
 msgid "List"
+msgstr ""
+
+msgid "Local library"
 msgstr ""
 
 msgid "Look"
@@ -661,6 +670,9 @@ msgstr ""
 msgid "Play folder"
 msgstr ""
 
+msgid "Play later"
+msgstr ""
+
 msgid "Play next"
 msgstr ""
 
@@ -701,6 +713,9 @@ msgid "Quality"
 msgstr ""
 
 msgid "Queue"
+msgstr ""
+
+msgid "Queue options"
 msgstr ""
 
 msgid "Queue · {}"
@@ -770,6 +785,9 @@ msgid "Requests: {}"
 msgstr ""
 
 msgid "Rescan"
+msgstr ""
+
+msgid "Reset"
 msgstr ""
 
 msgid "Restore tabs"
@@ -845,6 +863,9 @@ msgid "Source"
 msgstr ""
 
 msgid "Sources"
+msgstr ""
+
+msgid "Sources and quality"
 msgstr ""
 
 msgid "Studio 24/48"

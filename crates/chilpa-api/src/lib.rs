@@ -29,7 +29,8 @@ mod volume;
 pub use volume::VolumeView;
 
 pub use browse::{
-    filter_facets, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals,
+    filter_facets, select_facets, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader,
+    Snapshot, Totals,
     TrackOrder, TrackRow,
 };
 pub use covers::cover_derivative;

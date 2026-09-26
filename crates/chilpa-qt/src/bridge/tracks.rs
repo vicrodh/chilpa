@@ -1,19 +1,6 @@
-//! The rows of every track list in the window (frontend ADR-0006).
-//!
-//! One model for every list, configured by `kind`: a record ("album"), the
-//! most played ("mostPlayed"), the queue from what plays on ("queue"), or
-//! what the Library screen's filter leaves ("library"). A record with several discs carries its disc headers as
-//! rows of their own, not as separate lists.
-//!
-//! A small list is read whole. The library is a snapshot of ids, and its
-//! rows are read by id a page at a time as they scroll into view, with a
-//! bounded cache: page 400 costs what page 1 costs, and a hundred thousand
-//! tracks never sit in memory as rows.
-//!
-//! Inputs (`kind`, `albumId`, `filterRev`) can arrive one after the other
-//! while a screen is built; they are merged into one reload per turn of the
-//! event loop. The playing track and the selection change rows in place,
-//! with `dataChanged` on one role, never with a reset.
+//! Every track list (frontend ADR-0006). Small lists are loaded whole; the
+//! library pages an id snapshot through a bounded cache. Inputs coalesce into
+//! one reload, while playing and selection update roles in place.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -37,75 +24,34 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "album", "mostPlayed" or "library".
         #[qproperty(QString, kind)]
         #[qproperty(i64, album_id)]
-        /// The artist, for "artist" (every track) and "artistTop" (the most
-        /// played ten).
         #[qproperty(QString, key)]
-        /// How many rows "mostPlayed" brings.
         #[qproperty(i32, limit)]
-        /// Bound to `Library.rev`: the library's filter moved.
         #[qproperty(i32, filter_rev)]
-        /// Bound to `Player.path`: which row is playing.
         #[qproperty(QString, playing_path)]
-        /// Tracks, headers excluded.
         #[qproperty(i32, count)]
-        /// "58 songs · 4 h 18 min".
         #[qproperty(QString, summary)]
-        /// How many tracks are selected.
         #[qproperty(i32, selected_count)]
         type TrackListModel = super::TrackListRust;
 
-        /// Plays the list from that row: the list becomes what plays next.
-        #[qinvokable]
-        fn play(self: Pin<&mut TrackListModel>, row: i32);
-
-        /// Plays the whole list from the top, shuffled or not.
-        #[qinvokable]
-        fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
-
-        /// Adds the whole list to the end of the queue.
-        #[qinvokable]
-        fn queue_all(self: Pin<&mut TrackListModel>);
+        #[qinvokable] fn play(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable] fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
+        #[qinvokable] fn queue_all(self: Pin<&mut TrackListModel>);
+        #[qinvokable] fn play_next_all(self: Pin<&mut TrackListModel>);
+        #[qinvokable] fn play_later_all(self: Pin<&mut TrackListModel>, label: &QString);
 
         /// Selects a row. `modifiers`: 1 toggles it (Ctrl or Cmd), 2 extends
         /// from the anchor (Shift), 4 leaves the selection alone when the
         /// row is already in it (a menu opening on it).
-        #[qinvokable]
-        fn select(self: Pin<&mut TrackListModel>, row: i32, modifiers: i32);
-
-        /// Adds the row to the end of the queue, or the whole selection when
-        /// the row is part of it.
-        #[qinvokable]
-        fn queue(self: Pin<&mut TrackListModel>, row: i32);
-
-        /// Plays the list from the row, or only the selection when the row
-        /// is part of one.
-        #[qinvokable]
-        fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
-
-        /// Puts the row, or the selection it is part of, right after what is
-        /// playing.
-        #[qinvokable]
-        fn play_next(self: Pin<&mut TrackListModel>, row: i32);
-
-        /// Adds the row, or the selection it is part of, to a playlist;
-        /// zero makes a new one and opens it.
-        #[qinvokable]
-        fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
-
-        /// On a playlist's page: takes the row out of it.
-        #[qinvokable]
-        fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
-
-        /// On a playlist's page: moves the row one place up (-1) or down (1).
-        #[qinvokable]
-        fn move_in_playlist(self: Pin<&mut TrackListModel>, row: i32, by: i32);
-
-        /// The row of the one track selected, or -1.
-        #[qinvokable]
-        fn selected_row(self: &TrackListModel) -> i32;
+        #[qinvokable] fn select(self: Pin<&mut TrackListModel>, row: i32, modifiers: i32);
+        #[qinvokable] fn queue(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable] fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable] fn play_next(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable] fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
+        #[qinvokable] fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable] fn move_in_playlist(self: Pin<&mut TrackListModel>, row: i32, by: i32);
+        #[qinvokable] fn selected_row(self: &TrackListModel) -> i32;
 
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
@@ -113,12 +59,8 @@ pub mod qobject {
         #[qinvokable]
         fn can_go(self: &TrackListModel, row: i32, target: &QString) -> bool;
 
-        /// Opens the row's record, artist or folder.
-        #[qinvokable]
-        fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
-
-        #[qinvokable]
-        fn clear_selection(self: Pin<&mut TrackListModel>);
+        #[qinvokable] fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
+        #[qinvokable] fn clear_selection(self: Pin<&mut TrackListModel>);
     }
 
     unsafe extern "RustQt" {
@@ -430,18 +372,26 @@ impl qobject::TrackListModel {
         }
     }
 
-    pub fn queue_all(self: Pin<&mut Self>) {
+    pub fn queue_all(self: Pin<&mut Self>) { self.with_all_paths(enqueue); }
+    pub fn play_next_all(self: Pin<&mut Self>) { self.with_all_paths(next); }
+
+    pub fn play_later_all(self: Pin<&mut Self>, label: &QString) {
+        let label = label.to_string();
+        self.with_all_paths(move |paths| app::with(|api| { api.play_later_here(paths, &label); }));
+    }
+
+    fn with_all_paths(&self, then: impl FnOnce(&[String]) + Send + 'static) {
         match &self.rust().rows {
             Rows::Loaded(_) => {
                 let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
-                enqueue(&paths);
+                then(&paths);
             }
             Rows::Snapshot { ids, .. } => {
                 let ids = ids.ids.clone();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
                     let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| enqueue(&paths));
+                    let _ = thread.queue(move |_| then(&paths));
                 });
             }
         }

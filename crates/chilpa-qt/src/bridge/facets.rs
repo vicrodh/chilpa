@@ -1,7 +1,4 @@
-//! One column of the Library screen: its entries, with "All" first.
-//!
-//! It holds nothing of its own: on every move of `Library.rev` it rereads
-//! its column from the shared state, which the worker filled.
+//! A Library facet, with "All" first, reread from shared state on `rev`.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -34,6 +31,9 @@ pub mod qobject {
         /// Entries, "All" excluded: the number in the column's header.
         #[qproperty(i32, total)]
         type FacetModel = super::FacetRust;
+
+        /// Plain, Ctrl/Cmd-toggle or Shift-range selection.
+        #[qinvokable] fn choose(self: Pin<&mut FacetModel>, row: i32, modifiers: i32);
     }
 
     unsafe extern "RustQt" {
@@ -89,8 +89,8 @@ pub struct FacetRust {
     query: QString,
     total: i32,
     entries: Vec<FacetEntry>,
-    /// The key chosen in this column; empty is "All".
-    chosen: String,
+    /// The keys chosen in this column; empty is "All".
+    chosen: Vec<String>, anchor: Option<usize>,
     all_label: String,
 }
 
@@ -118,7 +118,7 @@ impl qobject::FacetModel {
                 ("artist", _) => text(&e.albums.to_string()),
                 _ => text(""),
             },
-            3 => QVariant::from(&(e.key == this.chosen)),
+            3 => QVariant::from(&this.chosen.contains(&e.key)),
             4 => QVariant::from(&false),
             _ => QVariant::default(),
         }
@@ -143,15 +143,14 @@ impl qobject::FacetModel {
             let f = &s.filter;
             let pick = |list: &Vec<FacetEntry>| list.clone();
             match column.as_str() {
-                "year" => (pick(&s.facets.years), f.year.map(|y| y.to_string())),
-                "genre" => (pick(&s.facets.genres), f.genre.clone()),
-                "artist" => (pick(&s.facets.artists), f.artist.clone()),
-                "album" => (pick(&s.facets.albums), f.album.map(|a| a.to_string())),
-                _ => (Vec::new(), None),
+                "year" => (pick(&s.facets.years), f.years.iter().map(ToString::to_string).collect()),
+                "genre" => (pick(&s.facets.genres), f.genres.clone()),
+                "artist" => (pick(&s.facets.artists), f.artists.clone()),
+                "album" => (pick(&s.facets.albums), f.albums.iter().map(ToString::to_string).collect()),
+                _ => (Vec::new(), Vec::new()),
             }
         });
         let entries = chilpa_api::filter_facets(entries, &query);
-        let chosen = chosen.unwrap_or_default();
         let n = entries.len().to_string();
         let all = app::with(|api| api.t_args("All ({})", &[&n]));
         if entries == self.rust().entries {
@@ -179,10 +178,23 @@ impl qobject::FacetModel {
             this.entries = entries;
             this.chosen = chosen;
             this.all_label = all;
+            this.anchor = None;
         }
         unsafe { self.as_mut().end_reset_model() };
         let total = self.rust().entries.len() as i32;
         self.as_mut().set_total(total);
+    }
+
+    pub fn choose(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
+        let row = row.max(0) as usize;
+        let (chosen, anchor) = chilpa_api::select_facets(&self.rust().entries, &self.rust().chosen, self.rust().anchor, row, modifiers);
+        self.as_mut().rust_mut().chosen = chosen;
+        self.as_mut().rust_mut().anchor = anchor;
+        let column = self.rust().column.to_string();
+        let keys = self.rust().chosen.clone();
+        let labels = self.rust().entries.iter().filter(|e| keys.contains(&e.key)).map(|e| e.label.clone()).collect();
+        let at = ["year", "genre", "artist", "album"].iter().position(|name| *name == column).unwrap_or(0);
+        crate::registry::library(move |library| library.choose_keys(keys, labels, at));
     }
 }
 

@@ -12,7 +12,7 @@ Item {
     required property bool selected
     required property bool all
 
-    signal chosen(string key, string label)
+    signal chosen(int modifiers)
 
     height: Metrics.paneRow
 
@@ -49,5 +49,11 @@ Item {
     }
 
     HoverHandler { id: hover }
-    TapHandler { onTapped: row.chosen(row.key, row.label) }
+    TapHandler {
+        id: tap
+        onTapped: {
+            const held = tap.point.modifiers
+            row.chosen((held & (Qt.ControlModifier | Qt.MetaModifier) ? 1 : 0) | (held & Qt.ShiftModifier ? 2 : 0))
+        }
+    }
 }

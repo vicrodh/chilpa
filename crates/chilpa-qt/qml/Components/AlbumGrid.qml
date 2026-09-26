@@ -20,9 +20,12 @@ Item {
     // The artist whose page holds the grid: its menu does not lead there.
     property string artistPage
 
-    readonly property int columns: width <= 0 ? 0
-        : Math.max(Metrics.gridMinColumns, Math.floor((width + Metrics.gridGap) / Metrics.cardMinWidth))
-    readonly property real cardWidth: columns > 0 ? (width - (columns - 1) * Metrics.gridGap) / columns : 0
+    // A selected cover paints outside its card. Keep that ring inside the
+    // scrollable plane on every edge instead of clipping boundary cards.
+    readonly property real layoutWidth: Math.max(0, width - Metrics.cardRing * 2) // derived: a ring on both sides
+    readonly property int columns: layoutWidth <= 0 ? 0
+        : Math.max(Metrics.gridMinColumns, Math.floor((layoutWidth + Metrics.gridGap) / Metrics.cardMinWidth))
+    readonly property real cardWidth: columns > 0 ? (layoutWidth - (columns - 1) * Metrics.gridGap) / columns : 0
     readonly property real rowHeight: cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
     signal open(int albumId, string title)
@@ -55,7 +58,8 @@ Item {
         spacing: Metrics.gridGap
         reuseItems: true
         cacheBuffer: grid.rowHeight * 2 // derived: two rows ready on each side
-        bottomMargin: grid.bottomInset
+        topMargin: Metrics.cardRing
+        bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
@@ -78,7 +82,7 @@ Item {
                     readonly property int at: row.first + index
                     readonly property int rev: grid.model ? grid.model.rev : 0
 
-                    x: index * (grid.cardWidth + Metrics.gridGap)
+                    x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
                     width: grid.cardWidth
                     visible: index < row.span
                     albumId: visible ? grid.model.albumId(at, rev) : 0
@@ -105,7 +109,8 @@ Item {
                 id: quick
 
                 y: grid.rowHeight + Metrics.gridGap
-                width: grid.width
+                x: Metrics.cardRing
+                width: grid.layoutWidth
                 active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
                 sourceComponent: AlbumQuickView {
                     albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)

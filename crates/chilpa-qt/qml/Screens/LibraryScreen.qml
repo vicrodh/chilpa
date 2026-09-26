@@ -3,6 +3,7 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "../Patterns"
 
 // Library (design/02 9, design/06): the four filter columns in cascade and
 // what they leave, as tracks or as records. A fixed layout with no scroll of
@@ -57,6 +58,21 @@ Item {
                 text: Library.summary
                 font.pointSize: Type.meta
                 color: Theme.color.textSecondary
+            }
+            IconButton {
+                id: sourceButton
+                anchors.verticalCenter: parent.verticalCenter
+                tip: I18n.tr("Sources and quality", I18n.rev)
+                glyph: Icons.adjustmentsHorizontal
+                round: true
+                checked: Library.extraFiltered || sources.opened
+                onClicked: sources.opened ? sources.close() : sources.open()
+
+                SourcesPopover {
+                    id: sources
+                    x: sourceButton.width - width
+                    y: sourceButton.height + Metrics.gap6
+                }
             }
             SortButton {
                 value: Library.order

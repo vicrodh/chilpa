@@ -61,6 +61,7 @@ fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Album {
 /// The four facet columns, each narrowed by the ones to its left.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Facets {
+    pub sources: Vec<FacetEntry>,
     pub years: Vec<FacetEntry>,
     pub genres: Vec<FacetEntry>,
     pub artists: Vec<FacetEntry>,
@@ -74,6 +75,33 @@ pub fn filter_facets(mut entries: Vec<FacetEntry>, query: &str) -> Vec<FacetEntr
         entries.retain(|entry| entry.label.to_lowercase().contains(query));
     }
     entries
+}
+
+/// Excel-style selection for a facet: plain replaces, Ctrl/Cmd toggles and
+/// Shift spans from the anchor; Ctrl+Shift adds that span.
+pub fn select_facets(
+    entries: &[FacetEntry],
+    current: &[String],
+    anchor: Option<usize>,
+    row: usize,
+    modifiers: i32,
+) -> (Vec<String>, Option<usize>) {
+    if row == 0 || row > entries.len() { return (Vec::new(), None); }
+    let at = row - 1;
+    let (ctrl, shift) = (modifiers & 1 != 0, modifiers & 2 != 0);
+    let mut chosen = current.to_vec();
+    if shift {
+        let from = anchor.unwrap_or(at);
+        let keys = entries[from.min(at)..=from.max(at)].iter().map(|entry| entry.key.clone());
+        if ctrl { for key in keys { if !chosen.contains(&key) { chosen.push(key); } } } else { chosen = keys.collect(); }
+        (chosen, anchor)
+    } else {
+        let key = entries[at].key.clone();
+        if ctrl {
+            if let Some(i) = chosen.iter().position(|value| *value == key) { chosen.remove(i); } else { chosen.push(key); }
+        } else { chosen = vec![key]; }
+        (chosen, Some(at))
+    }
 }
 
 /// What a search found, best first.
@@ -308,11 +336,11 @@ impl Reader {
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
     pub fn facets(&self, f: &Filter) -> Facets {
-        let genre = f.genre.as_deref();
         Facets {
+            sources: self.lib.facet_sources().unwrap_or_default(),
             years: self.lib.facet_years().unwrap_or_default(),
-            genres: self.lib.facet_genres(f.year).unwrap_or_default(),
-            artists: self.lib.facet_artists(f.year, genre).unwrap_or_default(),
+            genres: self.lib.facet_genres(f).unwrap_or_default(),
+            artists: self.lib.facet_artists(f).unwrap_or_default(),
             albums: self.lib.facet_albums(f).unwrap_or_default(),
         }
     }
@@ -506,6 +534,17 @@ mod tests {
         let labels = vec![entry("Massive Attack"), entry("Björk")];
         assert_eq!(filter_facets(labels.clone(), "attack"), vec![labels[0].clone()]);
         assert_eq!(filter_facets(labels, "björk").len(), 1);
+    }
+
+    #[test]
+    fn facet_selection_replaces_toggles_and_spans_from_its_anchor() {
+        let entries = [entry("A"), entry("B"), entry("C"), entry("D")];
+        let (one, anchor) = select_facets(&entries, &[], None, 2, 0);
+        assert_eq!((one.as_slice(), anchor), (&["B".into()][..], Some(1)));
+        let (span, anchor) = select_facets(&entries, &one, anchor, 4, 2);
+        assert_eq!(span, ["B", "C", "D"]);
+        let (more, _) = select_facets(&entries, &span, anchor, 1, 1);
+        assert_eq!(more, ["B", "C", "D", "A"]);
     }
 
     #[test]
