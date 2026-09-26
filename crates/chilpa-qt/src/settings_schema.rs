@@ -198,6 +198,24 @@ pub const SECTIONS: &[Section] = &[
                     Control::Toggle,
                 ),
             ],
+        },
+        Group {
+            title: "Last.fm",
+            settings: &[
+                action(
+                    "lastfm.account",
+                    Chilpa::mark("Account"),
+                    Chilpa::mark("Last.fm opens in the browser to allow Chilpa."),
+                    Control::Button,
+                    Chilpa::mark("Connect"),
+                ),
+                setting(
+                    "lastfm.enabled",
+                    Chilpa::mark("Scrobble"),
+                    Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."),
+                    Control::Toggle,
+                ),
+            ],
         }],
     },
     Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[] },

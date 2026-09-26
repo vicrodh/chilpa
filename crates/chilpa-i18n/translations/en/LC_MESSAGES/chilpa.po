@@ -118,6 +118,9 @@ msgstr ""
 msgid "All music"
 msgstr ""
 
+msgid "Allow Chilpa on Last.fm; this updates by itself."
+msgstr ""
+
 msgid "Appearance"
 msgstr ""
 
@@ -166,7 +169,7 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
-msgid "Checking the token…"
+msgid "Checking the account…"
 msgstr ""
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
@@ -352,6 +355,9 @@ msgstr ""
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr ""
 
+msgid "Last.fm opens in the browser to allow Chilpa."
+msgstr ""
+
 msgid "Library"
 msgstr ""
 
@@ -359,15 +365,6 @@ msgid "Library folders"
 msgstr ""
 
 msgid "Light"
-msgstr ""
-
-msgid "ListenBrainz could not be reached; try again"
-msgstr ""
-
-msgid "ListenBrainz did not accept that token"
-msgstr ""
-
-msgid "ListenBrainz no longer accepts the token; connect again"
 msgstr ""
 
 msgid "Look"
@@ -446,6 +443,9 @@ msgid "Nothing queued."
 msgstr ""
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
+msgstr ""
+
+msgid "Open Last.fm"
 msgstr ""
 
 msgid "Open a folder"
@@ -592,6 +592,9 @@ msgstr ""
 msgid "Scanning…"
 msgstr ""
 
+msgid "Scrobble"
+msgstr ""
+
 msgid "Search"
 msgstr ""
 
@@ -635,6 +638,9 @@ msgid "The PulseAudio protocol mixes every program together and resamples the re
 msgstr ""
 
 msgid "The account did not connect. You can close this tab."
+msgstr ""
+
+msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr ""
 
 msgid "The service sent no code."
@@ -1066,6 +1072,9 @@ msgstr ""
 msgid "the account connected but could not be saved: {}"
 msgstr ""
 
+msgid "the account could not be kept for next time"
+msgstr ""
+
 msgid "the account did not connect: {}"
 msgstr ""
 
@@ -1273,9 +1282,6 @@ msgstr ""
 msgid "the tags could not be read: {}"
 msgstr ""
 
-msgid "the token could not be kept for next time"
-msgstr ""
-
 msgid "the token_url is not https"
 msgstr ""
 
@@ -1375,6 +1381,12 @@ msgid_plural "{} channels"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} could not be reached; try again"
+msgstr ""
+
+msgid "{} did not accept the account"
+msgstr ""
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] ""
@@ -1404,6 +1416,9 @@ msgid_plural "{} next"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} no longer accepts the account; connect again"
+msgstr ""
+
 msgid "{} of the list's tracks are gone"
 msgstr ""
 
@@ -1427,3 +1442,6 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} was not allowed in time; connect again"
+msgstr ""

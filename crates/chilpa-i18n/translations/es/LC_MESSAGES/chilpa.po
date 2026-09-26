@@ -118,6 +118,9 @@ msgstr "Todo ({})"
 msgid "All music"
 msgstr "Toda la música"
 
+msgid "Allow Chilpa on Last.fm; this updates by itself."
+msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
+
 msgid "Appearance"
 msgstr "Apariencia"
 
@@ -166,8 +169,8 @@ msgstr "Tranquilo"
 msgid "Cancel"
 msgstr "Cancelar"
 
-msgid "Checking the token…"
-msgstr "Revisando el token…"
+msgid "Checking the account…"
+msgstr "Revisando la cuenta…"
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
@@ -352,6 +355,9 @@ msgstr "Integraciones"
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
 
+msgid "Last.fm opens in the browser to allow Chilpa."
+msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
+
 msgid "Library"
 msgstr "Biblioteca"
 
@@ -360,15 +366,6 @@ msgstr "Carpetas de la biblioteca"
 
 msgid "Light"
 msgstr "Claro"
-
-msgid "ListenBrainz could not be reached; try again"
-msgstr "No se pudo contactar a ListenBrainz; intenta de nuevo"
-
-msgid "ListenBrainz did not accept that token"
-msgstr "ListenBrainz no aceptó ese token"
-
-msgid "ListenBrainz no longer accepts the token; connect again"
-msgstr "ListenBrainz ya no acepta el token; vuelve a conectar"
 
 msgid "Look"
 msgstr "Aspecto"
@@ -447,6 +444,9 @@ msgstr "No hay nada en la cola."
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
+
+msgid "Open Last.fm"
+msgstr "Abrir Last.fm"
 
 msgid "Open a folder"
 msgstr "Abrir una carpeta"
@@ -592,6 +592,9 @@ msgstr "Escanear todas las carpetas de nuevo"
 msgid "Scanning…"
 msgstr "Escaneando…"
 
+msgid "Scrobble"
+msgstr "Registrar escuchas"
+
 msgid "Search"
 msgstr "Buscar"
 
@@ -636,6 +639,9 @@ msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el re
 
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
+
+msgid "The same rule as ListenBrainz: half of a track, or four minutes."
+msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
 
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
@@ -1066,6 +1072,9 @@ msgstr "la URL tiene que ser http o https"
 msgid "the account connected but could not be saved: {}"
 msgstr "la cuenta se conectó pero no se pudo guardar: {}"
 
+msgid "the account could not be kept for next time"
+msgstr "no se pudo guardar la cuenta para la próxima vez"
+
 msgid "the account did not connect: {}"
 msgstr "no se conectó la cuenta: {}"
 
@@ -1273,9 +1282,6 @@ msgstr "no se encontró el área estéreo (TWOCHTOC)"
 msgid "the tags could not be read: {}"
 msgstr "no se pudieron leer los tags: {}"
 
-msgid "the token could not be kept for next time"
-msgstr "no se pudo guardar el token para la próxima vez"
-
 msgid "the token_url is not https"
 msgstr "el token_url no es https"
 
@@ -1375,6 +1381,12 @@ msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canales"
 
+msgid "{} could not be reached; try again"
+msgstr "No se pudo contactar a {}; intenta de nuevo"
+
+msgid "{} did not accept the account"
+msgstr "{} no aceptó la cuenta"
+
 msgid "{} disc"
 msgid_plural "{} discs"
 msgstr[0] "{} disco"
@@ -1404,6 +1416,9 @@ msgid_plural "{} next"
 msgstr[0] "{} después"
 msgstr[1] "{} después"
 
+msgid "{} no longer accepts the account; connect again"
+msgstr "{} ya no acepta la cuenta; vuelve a conectar"
+
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"
 
@@ -1427,3 +1442,6 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} pista"
 msgstr[1] "{} pistas"
+
+msgid "{} was not allowed in time; connect again"
+msgstr "No se permitió a tiempo en {}; vuelve a conectar"
