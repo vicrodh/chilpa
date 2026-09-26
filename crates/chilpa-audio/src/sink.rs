@@ -107,9 +107,33 @@ pub trait AudioSink {
     fn set_paused(&mut self, _paused: bool) -> Result<(), SinkError> {
         Ok(())
     }
+
+    /// Lets the device go, for another program to use, keeping what is
+    /// needed to take it again. What it held is thrown away. The player asks
+    /// for it after a pause of a few seconds: a DAC held while nothing plays
+    /// is a DAC nobody else can use. By default there is nothing to let go.
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
+
+    /// Takes the device again after `suspend`, at the same format and as
+    /// strictly as the first time. An error means it could not be had back
+    /// -- someone else holds it now -- and is never a reason to open
+    /// another one.
+    fn wake(&mut self) -> Result<(), SinkError> {
+        Ok(())
+    }
 }
 
 impl AudioSink for Box<dyn AudioSink + Send> {
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        (**self).suspend()
+    }
+
+    fn wake(&mut self) -> Result<(), SinkError> {
+        (**self).wake()
+    }
+
     fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
         (**self).set_paused(paused)
     }
@@ -141,9 +165,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
 /// The flag that pauses from another thread.
 ///
-/// Pausing neither releases the device nor loses the place: the delivery
-/// loop stops writing and waits, also watching the stop signal so it does
-/// not sleep through a stop asked for while paused.
+/// Pausing does not lose the place: the delivery loop stops writing and
+/// waits, also watching the stop signal so it does not sleep through a stop
+/// asked for while paused. A pause that lasts lets the device go (see
+/// `AudioSink::suspend`) and takes it back on resume, from what was heard.
 #[derive(Clone, Debug, Default)]
 pub struct PauseSignal(Arc<AtomicBool>);
 

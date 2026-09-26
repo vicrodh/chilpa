@@ -90,8 +90,14 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
 }
 
 /// An ALSA device opened at one exact format.
+///
+/// The PCM is let go during a long pause (`suspend`) and opened again the
+/// same way on resume (`wake`), so the device, its name and how it was
+/// opened are kept.
 pub struct AlsaSink {
-    pcm: PCM,
+    pcm: Option<PCM>,
+    device: String,
+    named: bool,
     stream: StreamFormat,
 }
 
@@ -112,6 +118,11 @@ impl AlsaSink {
     }
 
     fn opening(device: &str, stream: StreamFormat, named: bool) -> Result<Self, SinkError> {
+        let pcm = Self::pcm_at(device, stream, named)?;
+        Ok(Self { pcm: Some(pcm), device: device.to_string(), named, stream })
+    }
+
+    fn pcm_at(device: &str, stream: StreamFormat, named: bool) -> Result<PCM, SinkError> {
         let pcm = if named { open_named(device)? } else { open(device)? };
         {
             let params = HwParams::any(&pcm).map_err(backend)?;
@@ -141,7 +152,12 @@ impl AlsaSink {
                 )));
             }
         }
-        Ok(Self { pcm, stream })
+        Ok(pcm)
+    }
+
+    /// The open PCM, or the error for a device let go.
+    fn pcm(&self) -> Result<&PCM, SinkError> {
+        self.pcm.as_ref().ok_or(SinkError::Closed)
     }
 }
 
@@ -151,17 +167,18 @@ impl AudioSink for AlsaSink {
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        let io = self.pcm.io_bytes();
+        let pcm = self.pcm()?;
+        let io = pcm.io_bytes();
         match io.writei(frames) {
             Ok(written) => Ok(written),
             Err(e) => match e.errno() {
                 // The device ran dry: prepare it and carry on.
                 EPIPE => {
-                    self.pcm.prepare().map_err(backend)?;
+                    pcm.prepare().map_err(backend)?;
                     Err(SinkError::Xrun)
                 }
                 ENODEV | ENXIO => Err(SinkError::DeviceLost),
-                _ if self.pcm.state() == State::Disconnected => Err(SinkError::DeviceLost),
+                _ if pcm.state() == State::Disconnected => Err(SinkError::DeviceLost),
                 _ => Err(SinkError::Backend(e.to_string())),
             },
         }
@@ -171,8 +188,9 @@ impl AudioSink for AlsaSink {
         // On hardware that can pause, the stream stays ready and there is no
         // xrun on resume. Hardware that cannot runs dry and recovers through
         // the ordinary xrun path, which is handled above.
-        if self.pcm.hw_params_current().map(|p| p.can_pause()).unwrap_or(false) {
-            self.pcm.pause(paused).map_err(backend)?;
+        let Some(pcm) = &self.pcm else { return Ok(()) };
+        if pcm.hw_params_current().map(|p| p.can_pause()).unwrap_or(false) {
+            pcm.pause(paused).map_err(backend)?;
         }
         Ok(())
     }
@@ -182,19 +200,41 @@ impl AudioSink for AlsaSink {
         // because an endpoint that stopped answering would hang the stop
         // (the stop() deadlock in QBZ). Waiting for the last of a track is
         // `drain` below, which the player asks for at a natural end.
-        self.pcm.drop().map_err(backend)?;
+        if let Some(pcm) = &self.pcm {
+            pcm.drop().map_err(backend)?;
+        }
+        Ok(())
+    }
+
+    /// Closes the PCM for real -- `drop` only stops it; the device is let go
+    /// when the PCM itself goes -- and keeps how to open it again.
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        if let Some(pcm) = self.pcm.take() {
+            let _ = pcm.drop();
+        }
+        Ok(())
+    }
+
+    /// Opens the same device at the same format, with the same exact check
+    /// as the first time: resuming never settles for less.
+    fn wake(&mut self) -> Result<(), SinkError> {
+        if self.pcm.is_none() {
+            self.pcm = Some(Self::pcm_at(&self.device, self.stream, self.named)?);
+        }
         Ok(())
     }
 
     fn held(&self) -> u64 {
-        self.pcm.delay().map(|frames| frames.max(0) as u64).unwrap_or(0)
+        let Some(pcm) = &self.pcm else { return 0 };
+        pcm.delay().map(|frames| frames.max(0) as u64).unwrap_or(0)
     }
 
     /// Drops what the device holds and makes it ready for more, without
     /// closing it.
     fn flush(&mut self) -> Result<(), SinkError> {
-        self.pcm.drop().map_err(backend)?;
-        self.pcm.prepare().map_err(backend)
+        let Some(pcm) = &self.pcm else { return Ok(()) };
+        pcm.drop().map_err(backend)?;
+        pcm.prepare().map_err(backend)
     }
 
     /// Watches the device play out what it holds, instead of asking ALSA to
@@ -202,22 +242,23 @@ impl AudioSink for AlsaSink {
     /// answering would hold the player there. Never longer than the buffer
     /// plus a second.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        let Some(pcm) = &self.pcm else { return Ok(()) };
         // A PCM below its start threshold holds what it was handed and does
         // not play it: a track shorter than the buffer never started.
-        if self.pcm.state() == State::Prepared {
-            let _ = self.pcm.start();
+        if pcm.state() == State::Prepared {
+            let _ = pcm.start();
         }
         let rate = u64::from(self.stream.sample_rate_hz.max(1));
-        let held = self.pcm.hw_params_current().and_then(|p| p.get_buffer_size()).unwrap_or(0).max(0) as u64;
+        let held = pcm.hw_params_current().and_then(|p| p.get_buffer_size()).unwrap_or(0).max(0) as u64;
         let limit = std::time::Instant::now()
             + std::time::Duration::from_millis(held * 1000 / rate)
             + std::time::Duration::from_secs(1);
         // It ran out, which is where it stops once all of it has played.
-        while self.pcm.state() == State::Running && std::time::Instant::now() < limit {
+        while pcm.state() == State::Running && std::time::Instant::now() < limit {
             if give_up() {
                 return Ok(());
             }
-            match self.pcm.delay() {
+            match pcm.delay() {
                 Ok(left) if left > 0 => {
                     let left_ms = left as u64 * 1000 / rate;
                     std::thread::sleep(std::time::Duration::from_millis(left_ms.clamp(1, 10)));
