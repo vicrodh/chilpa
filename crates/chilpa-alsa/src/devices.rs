@@ -193,7 +193,7 @@ pub fn list() -> Vec<Device> {
                 card: card_name.clone(),
                 name,
                 bus,
-                declared: declared(card, device, bus),
+                declared: declared(card, device, bus, line),
                 siblings,
             });
         }
@@ -242,12 +242,33 @@ fn card_devices(card: u32) -> Vec<(u32, String)> {
 }
 
 /// What a device says it can do, from whichever file its driver writes.
-fn declared(card: u32, device: u32, bus: Bus) -> Declared {
-    match bus {
+fn declared(card: u32, device: u32, bus: Bus, slot: &str) -> Declared {
+    // A codec describes its whole card: every device of it shares one read.
+    let key = (slot.to_string(), card, if bus == Bus::Usb { device } else { u32::MAX });
+    if let Some(known) = DECLARED.lock().ok().and_then(|d| d.as_ref()?.get(&key).cloned()) {
+        return known;
+    }
+    let read = match bus {
         Bus::Usb => from_usb_stream(card, device),
         _ => from_hda_codec(card),
+    };
+    if let Ok(mut known) = DECLARED.lock() {
+        known.get_or_insert_with(std::collections::HashMap::new).insert(key, read.clone());
     }
+    read
 }
+
+/// What each device declared, by the card's line in `/proc/asound/cards`,
+/// its number and the device's.
+///
+/// Read once for as long as the same card sits in the same slot. An HDA
+/// codec's file is not a file: the kernel asks the codec over its bus, 36 to
+/// 52 ms per read on this machine, and the list read it for every device of
+/// the card every time it was asked for -- five times for one Settings page,
+/// a second and a half before it drew. A card that is replaced has another
+/// line, so what the old one declared is not reused.
+static DECLARED: std::sync::Mutex<Option<std::collections::HashMap<(String, u32, u32), Declared>>> =
+    std::sync::Mutex::new(None);
 
 /// A USB device's format table, from `/proc/asound/cardN/streamM`.
 ///

@@ -47,6 +47,14 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
     stacks
 }
 
+/// Reads, on a thread of its own, what is slow to read about the outputs
+/// and does not change while they stay: an HDA card's codec answers over its
+/// bus, 80 ms the first time. The first Settings page then finds it read.
+pub fn warm_up() {
+    #[cfg(target_os = "linux")]
+    std::thread::spawn(|| drop(chilpa_alsa::devices::list()));
+}
+
 /// Whether a card is asked of the sound server before it is opened: the
 /// Linux desktop's reservation protocol, so PipeWire or PulseAudio let go
 /// of it. There is no such protocol, and nothing to ask, elsewhere.
