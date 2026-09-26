@@ -29,6 +29,9 @@ pub struct Filter {
     /// The album artist: what the record says about itself.
     pub artist: Option<String>,
     pub album: Option<i64>,
+    /// Who made the record or plays on one of its tracks: an artist's page,
+    /// where a compilation they are on counts as theirs too.
+    pub performer: Option<String>,
 }
 
 /// How the tracks are ordered.
@@ -189,6 +192,11 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     if let Some(album) = f.album {
         sql.push_str(" AND a.id = ?");
         args.push(Box::new(album));
+    }
+    if let Some(name) = &f.performer {
+        sql.push_str(" AND (a.album_artist = ? COLLATE NOCASE OR t.artist = ? COLLATE NOCASE)");
+        args.push(Box::new(name.clone()));
+        args.push(Box::new(name.clone()));
     }
     (sql, args)
 }

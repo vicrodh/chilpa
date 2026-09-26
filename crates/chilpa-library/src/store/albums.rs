@@ -4,6 +4,7 @@
 //! aggregated the whole library again, and that was the audit's high
 //! finding.
 
+use crate::album_folder::VARIOUS_ARTISTS;
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{row_to_track, StoredTrack};
@@ -163,6 +164,34 @@ impl Library {
         self.albums_filtered(order, None, limit, offset)
     }
 
+    /// The records by someone else that an artist plays on -- the
+    /// compilations they are on -- newest first, with their play counts.
+    pub fn albums_appearing(&self, artist: &str) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
+        let mut stmt = self.db.prepare(
+            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, r.present_tracks, r.plays
+             FROM albums a
+             JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
+             WHERE a.album_artist <> ?1 COLLATE NOCASE
+               AND EXISTS (SELECT 1 FROM tracks t
+                           WHERE t.album_id = a.id AND t.present = 1 AND t.artist = ?1 COLLATE NOCASE)
+             ORDER BY a.year DESC, a.title COLLATE NOCASE",
+        )?;
+        let rows = stmt.query_map(params![artist], |r| {
+            Ok((
+                StoredAlbum {
+                    id: r.get(0)?,
+                    title: r.get(1)?,
+                    album_artist: r.get(2)?,
+                    year: r.get(3)?,
+                    artwork_path: r.get(4)?,
+                    track_count: r.get::<_, i64>(5)? as usize,
+                },
+                r.get::<_, i64>(6)? as usize,
+            ))
+        })?;
+        rows.collect()
+    }
+
     /// The same, but only one artist's when one is asked for.
     pub fn albums_filtered(
         &self,
@@ -270,19 +299,30 @@ impl Library {
         // from the rollup, so this walks five thousand rows where it used to
         // walk fifty thousand. Same answer, and the join it removes was the
         // whole cost.
+        //
+        // The one exception is a compilation: whoever plays on it is an
+        // artist of the library too, with the record counted as theirs and
+        // their own tracks on it. Those are read per track, but only for the
+        // records credited to "Various Artists".
         let mut stmt = self.db.prepare(
-            "SELECT a.album_artist,
-                    count(a.id),
-                    sum(r.present_tracks),
-                    max(a.artwork_path)
-             FROM albums a
-             JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
-             WHERE a.album_artist <> ''
-             GROUP BY a.album_artist COLLATE NOCASE
-             ORDER BY a.album_artist COLLATE NOCASE
+            "SELECT name, count(DISTINCT album), sum(tracks), max(art)
+             FROM (
+                 SELECT a.album_artist AS name, a.id AS album, r.present_tracks AS tracks,
+                        a.artwork_path AS art
+                 FROM albums a
+                 JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
+                 WHERE a.album_artist <> ''
+                 UNION ALL
+                 SELECT t.artist, a.id, 1, a.artwork_path
+                 FROM albums a
+                 JOIN tracks t ON t.album_id = a.id AND t.present = 1
+                 WHERE a.album_artist = ?3 AND t.artist <> '' AND t.artist <> ?3
+             )
+             GROUP BY name COLLATE NOCASE
+             ORDER BY name COLLATE NOCASE
              LIMIT ?1 OFFSET ?2",
         )?;
-        let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64, VARIOUS_ARTISTS], |r| {
             Ok(StoredArtist {
                 name: r.get(0)?,
                 album_count: r.get::<_, i64>(1)? as usize,
@@ -570,4 +610,58 @@ mod tests {
         assert_eq!(lib.album_play_count(2).unwrap(), 3);
     }
 
+}
+
+#[cfg(test)]
+mod compilation_tests {
+    use crate::store::Library;
+    use rusqlite::params;
+
+    /// A record of their own by Aimer, and a compilation Aimer and YUI are on.
+    fn shelf() -> Library {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for (id, title, artist, year) in [(1, "Sun Dance", "Aimer", 2019), (2, "OP&ED", "Various Artists", 2024)] {
+            lib.db
+                .execute(
+                    "INSERT INTO albums (id, title, album_artist, year) VALUES (?1, ?2, ?3, ?4)",
+                    params![id, title, artist, year],
+                )
+                .unwrap();
+        }
+        for (id, album, artist) in [(10, 1, "Aimer"), (20, 2, "Aimer"), (21, 2, "YUI"), (22, 2, "YUI")] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id, duration_ms, added_at)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1000, ?1)",
+                    params![id, source, format!("/{id}.flac"), format!("T{id}"), artist, album],
+                )
+                .unwrap();
+        }
+        lib
+    }
+
+    #[test]
+    fn whoever_plays_on_a_compilation_is_an_artist_with_it_counted() {
+        let lib = shelf();
+        let artists: Vec<(String, usize, usize)> =
+            lib.artists(10, 0).unwrap().into_iter().map(|a| (a.name, a.album_count, a.track_count)).collect();
+        assert_eq!(
+            artists,
+            [
+                ("Aimer".to_string(), 2, 2),
+                ("Various Artists".to_string(), 1, 3),
+                ("YUI".to_string(), 1, 2)
+            ],
+            "Aimer: their record and the compilation, one track on each"
+        );
+    }
+
+    #[test]
+    fn an_artist_appears_on_the_compilations_they_play_on() {
+        let lib = shelf();
+        let on: Vec<i64> = lib.albums_appearing("aimer").unwrap().into_iter().map(|(a, _)| a.id).collect();
+        assert_eq!(on, [2], "not their own record");
+        assert!(lib.albums_appearing("Various Artists").unwrap().is_empty());
+    }
 }
