@@ -19,6 +19,7 @@ chevron-right
 chevron-up
 circle
 circle-check
+clear-all
 columns-3
 device-desktop
 device-mobile

@@ -158,7 +158,9 @@ impl Chilpa {
         found
     }
 
-    /// Saves the queue as a list under that name.
+    /// Saves the queue as a list under that name: what plays now and what
+    /// comes next, in the order it will play (design/04 7). What already
+    /// played stays out.
     ///
     /// It returns the list's id. Whatever is not in the library is saved
     /// anyway, by its path: the list holds even with the scan still pending.
@@ -172,7 +174,7 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("there is no queue to save");
             return None;
         }
-        let paths = self.queue.clone();
+        let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
         let entries: Vec<chilpa_library::PlaylistEntry> = paths

@@ -4,9 +4,12 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-// A track in the side queue (design/03 QueueRow): cover, title and artist,
-// time. The one that plays is marked; a double click plays from here, and
-// the x on hover takes a track out.
+// A track in the side queue (design/03 QueueRow): the grid
+// 12 | 36 | 1fr | auto | 20 -- grip, cover, title and artist, time and the
+// item's menu. The grip's column is kept and its glyph is not drawn until
+// the queue can be reordered by dragging. The one that plays is 48 high,
+// in accent, with the playing bars where the time goes. A double click
+// plays from here; the menu, or a right click, has the rest.
 Item {
     id: row
 
@@ -18,7 +21,7 @@ Item {
     required property url art
 
     signal play()
-    signal remove()
+    signal menu(real x, real y)
 
     height: playing ? Metrics.queueNowRow : Metrics.queueRow
 
@@ -30,7 +33,7 @@ Item {
 
     ArtTile {
         id: cover
-        x: Metrics.gap4
+        x: Metrics.gap4 + Metrics.queueGrip
         anchors.verticalCenter: parent.verticalCenter
         width: Metrics.queueArt
         height: Metrics.queueArt
@@ -42,7 +45,7 @@ Item {
     Column {
         anchors.left: cover.right
         anchors.leftMargin: Metrics.gap10
-        anchors.right: tail.left
+        anchors.right: time.left
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
 
@@ -63,38 +66,41 @@ Item {
         }
     }
 
-    Item {
-        id: tail
-        anchors.right: parent.right
+    Text {
+        id: time
+        anchors.right: more.left
         anchors.rightMargin: Metrics.gap6
         anchors.verticalCenter: parent.verticalCenter
-        width: Metrics.button24 + Metrics.gap8
-        height: Metrics.button24
+        visible: !row.playing
+        text: row.duration
+        font.pointSize: Type.small
+        font.features: { "tnum": 1 }
+        color: Theme.color.textTertiary
+    }
 
-        Text {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            visible: !row.playing && !hover.hovered
-            text: row.duration
-            font.pointSize: Type.small
-            font.features: { "tnum": 1 }
-            color: Theme.color.textTertiary
-        }
-        PlayingIndicator {
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            visible: row.playing
-        }
-        IconButton {
-            anchors.right: parent.right
-            visible: hover.hovered && !row.playing
-            tip: I18n.tr("Remove from the queue", I18n.rev)
-            glyph: Icons.x
-            size: Metrics.button24
-            onClicked: row.remove()
-        }
+    PlayingIndicator {
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap10
+        anchors.verticalCenter: parent.verticalCenter
+        visible: row.playing
+    }
+
+    IconButton {
+        id: more
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.gap4
+        anchors.verticalCenter: parent.verticalCenter
+        visible: !row.playing
+        size: Metrics.queueMore
+        glyph: Icons.dotsVertical
+        tip: I18n.tr("More", I18n.rev)
+        onClicked: row.menu(x, y + height)
     }
 
     HoverHandler { id: hover }
     TapHandler { onDoubleTapped: row.play() }
+    TapHandler {
+        acceptedButtons: Qt.RightButton
+        onTapped: (point) => row.menu(point.position.x, point.position.y)
+    }
 }

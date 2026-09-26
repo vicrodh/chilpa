@@ -211,11 +211,11 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
+msgid "Clear"
+msgstr "Vaciar"
+
 msgid "Clear filters"
 msgstr "Quitar filtros"
-
-msgid "Clear the queue"
-msgstr "Vaciar la cola"
 
 msgid "Clear the selection"
 msgstr "Quitar la selección"
@@ -526,6 +526,9 @@ msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus dis
 msgid "Nothing queued."
 msgstr "No hay nada en la cola."
 
+msgid "Now playing"
+msgstr "Sonando"
+
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."
 
@@ -592,6 +595,9 @@ msgstr "Reproducir carpeta"
 msgid "Play next"
 msgstr "Reproducir después"
 
+msgid "Play now"
+msgstr "Reproducir ahora"
+
 msgid "Play the CD"
 msgstr "Reproducir el CD"
 
@@ -625,6 +631,9 @@ msgstr "Calidad"
 msgid "Queue"
 msgstr "Cola"
 
+msgid "Queue · {}"
+msgstr "Cola · {}"
+
 msgid "Quick view"
 msgstr "Vista rápida"
 
@@ -655,11 +664,11 @@ msgstr "Quitar de favoritos"
 msgid "Remove from playlist"
 msgstr "Quitar de la playlist"
 
+msgid "Remove from queue"
+msgstr "Quitar de la cola"
+
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
-
-msgid "Remove from the queue"
-msgstr "Quitar de la cola"
 
 msgid "Rename"
 msgstr "Renombrar"
@@ -702,6 +711,9 @@ msgstr "falta SACDTRL2"
 
 msgid "Samples reach the device untouched. Off, normalization can be used."
 msgstr "Las muestras llegan intactas al dispositivo. Apagado, se puede usar la normalización."
+
+msgid "Save as playlist"
+msgstr "Guardar como playlist"
 
 msgid "Scan again"
 msgstr "Escanear de nuevo"
@@ -834,6 +846,9 @@ msgstr "Pista {}"
 
 msgid "Tracks"
 msgstr "Pistas"
+
+msgid "Up next"
+msgstr "A continuación"
 
 msgid "Updates"
 msgstr "Actualizaciones"
@@ -1578,11 +1593,6 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} escucha pendiente de enviar"
 msgstr[1] "{} escuchas pendientes de enviar"
-
-msgid "{} next"
-msgid_plural "{} next"
-msgstr[0] "{} después"
-msgstr[1] "{} después"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} ya no acepta la cuenta; vuelve a conectar"

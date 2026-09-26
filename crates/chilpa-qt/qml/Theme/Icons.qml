@@ -27,6 +27,7 @@ QtObject {
     readonly property string chevronUp: "\uea62"
     readonly property string circle: "\uea6b"
     readonly property string circleCheck: "\uea67"
+    readonly property string clearAll: "\uee41"
     readonly property string columns3: "\uf6d6"
     readonly property string deviceDesktop: "\uea89"
     readonly property string deviceMobile: "\uea8a"

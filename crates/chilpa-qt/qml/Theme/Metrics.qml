@@ -230,6 +230,10 @@ QtObject {
     readonly property int queueRow: 46
     readonly property int queueNowRow: 48
     readonly property int queueArt: 36
+    readonly property int queueGrip: 12
+    readonly property int queueMore: 20
+    // "Now playing" and "Up next" over their rows.
+    readonly property int queueSection: 26
 
     // Settings (design/03 SettingsRow, design/06 Settings).
     readonly property int settingsNav: 188

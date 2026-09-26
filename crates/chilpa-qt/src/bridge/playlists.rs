@@ -41,6 +41,10 @@ pub mod qobject {
         #[qinvokable]
         fn queue(self: Pin<&mut Playlists>, id: i64);
 
+        /// Keeps what plays now and what comes next as a new playlist.
+        #[qinvokable]
+        fn save_queue(self: Pin<&mut Playlists>, name: &QString) -> i64;
+
         /// A playlist's name, for a tab or a header.
         #[qinvokable]
         fn name(self: &Playlists, id: i64, rev: i32) -> QString;
@@ -122,6 +126,14 @@ impl qobject::Playlists {
     pub fn queue(self: Pin<&mut Self>, id: i64) {
         let paths = paths_of(id);
         app::with(|api| api.enqueue_here(&paths));
+    }
+
+    pub fn save_queue(self: Pin<&mut Self>, name: &QString) -> i64 {
+        let id = app::with(|api| api.save_queue_as(&name.to_string())).unwrap_or(0);
+        if id != 0 {
+            self.changed();
+        }
+        id
     }
 
     pub fn name(&self, id: i64, _rev: i32) -> QString {
