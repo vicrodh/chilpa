@@ -29,6 +29,8 @@ pub mod qobject {
         #[qproperty(QString, column)]
         /// Bound to `Library.rev`.
         #[qproperty(i32, rev)]
+        /// Text typed in this column's header.
+        #[qproperty(QString, query)]
         /// Entries, "All" excluded: the number in the column's header.
         #[qproperty(i32, total)]
         type FacetModel = super::FacetRust;
@@ -84,6 +86,7 @@ const USER_ROLE: i32 = 256;
 pub struct FacetRust {
     column: QString,
     rev: i32,
+    query: QString,
     total: i32,
     entries: Vec<FacetEntry>,
     /// The key chosen in this column; empty is "All".
@@ -135,6 +138,7 @@ impl qobject::FacetModel {
 
     fn reload(mut self: Pin<&mut Self>) {
         let column = self.rust().column.to_string();
+        let query = self.rust().query.to_string().trim().to_lowercase();
         let (entries, chosen) = browse::read(|s| {
             let f = &s.filter;
             let pick = |list: &Vec<FacetEntry>| list.clone();
@@ -146,21 +150,28 @@ impl qobject::FacetModel {
                 _ => (Vec::new(), None),
             }
         });
+        let entries = chilpa_api::filter_facets(entries, &query);
         let chosen = chosen.unwrap_or_default();
+        let n = entries.len().to_string();
+        let all = app::with(|api| api.t_args("All ({})", &[&n]));
         if entries == self.rust().entries {
             // The same entries: only the choice moved, and the column keeps
             // its scroll position.
-            self.as_mut().rust_mut().chosen = chosen;
+            {
+                let mut this = self.as_mut().rust_mut();
+                this.chosen = chosen;
+                this.all_label = all;
+            }
+            self.as_mut().set_total(entries.len() as i32);
             let parent = QModelIndex::default();
             let last = self.rust().entries.len() as i32;
             let (top, bottom) = (self.index(0, 0, &parent), self.index(last, 0, &parent));
             let mut roles = QVector::<i32>::default();
+            roles.append(USER_ROLE + 1);
             roles.append(USER_ROLE + 3);
             self.as_mut().data_changed(&top, &bottom, &roles);
             return;
         }
-        let n = entries.len().to_string();
-        let all = app::with(|api| api.t_args("All ({})", &[&n]));
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         {
@@ -179,5 +190,6 @@ impl cxx_qt::Initialize for qobject::FacetModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().on_rev_changed(|m| m.reload()).release();
         self.as_mut().on_column_changed(|m| m.reload()).release();
+        self.as_mut().on_query_changed(|m| m.reload()).release();
     }
 }

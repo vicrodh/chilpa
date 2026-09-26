@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 
 // One of the Library screen's four filter columns (design/03 PaneColumn):
 // a header with its count, "All (n)" first, then the entries.
@@ -18,30 +19,17 @@ Rectangle {
         id: facets
         column: pane.column
         rev: Library.rev
+        query: head.text
     }
 
-    Item {
+    SearchField {
         id: head
         width: parent.width
         height: Metrics.paneHeader
+        placeholder: pane.title
+        shortcut: facets.total.toString()
+        radius: 0
 
-        Text {
-            anchors.left: parent.left
-            anchors.leftMargin: Metrics.gap12
-            anchors.verticalCenter: parent.verticalCenter
-            text: pane.title
-            font.pointSize: Type.label
-            font.weight: Type.semibold
-            color: Theme.color.textSecondary
-        }
-        Text {
-            anchors.right: parent.right
-            anchors.rightMargin: Metrics.gap12
-            anchors.verticalCenter: parent.verticalCenter
-            text: facets.total
-            font.pointSize: Type.label
-            color: Theme.color.textTertiary
-        }
         Rectangle {
             anchors.bottom: parent.bottom
             width: parent.width
