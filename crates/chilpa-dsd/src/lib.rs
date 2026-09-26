@@ -10,9 +10,12 @@
 //! stores the earliest bit in the least significant position and the cable
 //! wants it the other way round. That inversion is exact and reversible.
 
+mod convert;
 pub mod dff;
+mod dsd2pcm;
 pub mod dsf;
 
+pub use convert::{DsdPcmConverter, DEFAULT_GAIN_DB, OUTPUT_RATE};
 pub use dff::DffReader;
 pub use dsf::DsfReader;
 
