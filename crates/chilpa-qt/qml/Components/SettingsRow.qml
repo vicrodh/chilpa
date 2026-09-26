@@ -86,6 +86,7 @@ Item {
             : row.control === "secret" ? secret
             : row.control === "external" ? external
             : row.control === "swatches" ? swatches
+            : row.control === "progress" ? progress
             : null
     }
 
@@ -161,6 +162,33 @@ Item {
             values: row.optionValues
             value: row.value
             onPicked: (value) => row.page.set(row.key, value)
+        }
+    }
+    Component {
+        id: progress
+        Row {
+            spacing: Metrics.gap12
+
+            Rectangle {
+                visible: row.value !== ""
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.settingsNav
+                height: Metrics.progress
+                radius: height
+                color: Theme.color.strokeHairline
+
+                Rectangle {
+                    width: parent.width * Math.max(0, Math.min(1, Number(row.value)))
+                    height: parent.height
+                    radius: parent.radius
+                    color: Theme.color.accent
+                }
+            }
+            PillButton {
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.action
+                onClicked: row.page.press(row.key)
+            }
         }
     }
     Component {

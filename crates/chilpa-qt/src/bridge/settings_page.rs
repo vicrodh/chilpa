@@ -314,6 +314,33 @@ impl SettingsPageRust {
                 let shown = n.to_string();
                 row.description = app::with(|api| api.tf("{} folder", "{} folders", n as i64, &[&shown]));
             }
+            "library.analysis" => {
+                let status = app::with(|api| api.analysis_status().clone());
+                row.action = if status.running { app::t("Cancel") } else { app::t("Analyze") };
+                if status.running {
+                    if status.total == 0 {
+                        row.description = app::t("Counting tracks…");
+                    } else {
+                        let (done, total) = (status.done.to_string(), status.total.to_string());
+                        let progress = app::with(|api| api.t_args("Analyzing {} of {} tracks", &[&done, &total]));
+                        row.description = if status.last.is_empty() {
+                            progress
+                        } else {
+                            format!("{progress} · {}", status.last)
+                        };
+                        row.value = (status.done as f64 / status.total as f64).to_string();
+                    }
+                } else if status.analyzed + status.without_pulse + status.failed > 0 {
+                    let (analyzed, quiet, failed) = (
+                        status.analyzed.to_string(),
+                        status.without_pulse.to_string(),
+                        status.failed.to_string(),
+                    );
+                    row.description = app::with(|api| {
+                        api.t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed])
+                    });
+                }
+            }
             key => {
                 for (value, label) in fixed(key) {
                     row.values.push(value.to_string());
@@ -529,9 +556,46 @@ impl qobject::SettingsPage {
                 };
                 self.as_mut().rust_mut().said = Some(("library.repair", said));
             }
+            "library.analysis" => {
+                let running = app::with(|api| api.analysis_status().running);
+                if running {
+                    app::with(|api| api.cancel_analysis());
+                } else {
+                    app::with(|api| api.start_analysis());
+                    self.as_mut().watch_analysis();
+                }
+                self.as_mut().reload();
+                return;
+            }
             _ => return,
         }
         self.reload();
+    }
+
+    /// Follows the analysis without blocking Settings. The worker owns the
+    /// files; this only drains its progress four times a second and refreshes
+    /// the player switches when AutoMix may have become available.
+    fn watch_analysis(self: Pin<&mut Self>) {
+        let thread = self.qt_thread();
+        let done = Arc::new(AtomicBool::new(false));
+        std::thread::spawn(move || loop {
+            std::thread::sleep(Duration::from_millis(250));
+            let finished = Arc::clone(&done);
+            let queued = thread.queue(move |page| {
+                let running = app::with(|api| api.analysis_status().running);
+                page.reload();
+                if !running {
+                    registry::player(|player| player.read_switches());
+                    finished.store(true, Ordering::Relaxed);
+                }
+            });
+            if queued.is_err() {
+                break;
+            }
+            if done.load(Ordering::Relaxed) {
+                break;
+            }
+        });
     }
 
     /// Reads the rows again. The same number of rows is the same page with
