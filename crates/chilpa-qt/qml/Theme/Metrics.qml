@@ -133,6 +133,8 @@ QtObject {
     readonly property int seekHit: 14
     readonly property int volumeWidth: 64
     readonly property int volumeTrack: 3
+    readonly property int volumePopupWidth: 52
+    readonly property int volumeVerticalLength: 92
     readonly property int playerNoTimes: 480
     // What the wheel moves the volume by.
     readonly property int volumeStep: 5
