@@ -262,6 +262,11 @@ impl Player {
         self.controls.order.set(order, len)
     }
 
+    /// The traversal order in use; empty when it is the queue's own.
+    pub fn order(&self) -> Vec<usize> {
+        self.controls.order.get()
+    }
+
     /// Goes back to the order things were queued in.
     pub fn clear_order(&self) {
         self.controls.order.clear();
