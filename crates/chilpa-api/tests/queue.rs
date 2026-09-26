@@ -211,3 +211,44 @@ fn the_sleep_timer_stops_a_paused_capture_queue() {
     assert_eq!(chilpa.sleep_timer_remaining(), None, "the timer is one-shot");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn play_later_is_a_named_group_after_play_next() {
+    let dir = folder("later");
+    other_library(&dir);
+    let make = |names: &[&str], frames| {
+        names.iter().map(|name| wave(&dir, name, frames).display().to_string()).collect::<Vec<_>>()
+    };
+    let original = make(&["01.wav", "02.wav", "03.wav"], 441_000);
+    let next = make(&["n1.wav", "n2.wav"], 4_410);
+    let later = make(&["l1.wav", "l2.wav"], 4_410);
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&original, OUTPUT, true);
+    chilpa.set_paused(true);
+    chilpa.play_next(&next, OUTPUT, true);
+    let key = chilpa.play_later(&later, "Another album", OUTPUT, true).expect("the group was made");
+
+    let names: Vec<String> = chilpa
+        .queue_order()
+        .into_iter()
+        .map(|index| {
+            std::path::Path::new(&chilpa.queue_paths()[index])
+                .file_name()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect();
+    assert_eq!(names, ["01.wav", "n1.wav", "n2.wav", "l1.wav", "l2.wav", "02.wav", "03.wav"]);
+    assert_eq!(chilpa.queue_groups()[0].label, "Another album");
+
+    let before = chilpa.queue_order();
+    assert!(chilpa.collapse_queue_group(key, true));
+    assert_eq!(chilpa.queue_order(), before, "folding is only presentation");
+    assert!(chilpa.remove_queue_group(key));
+    assert!(chilpa.queue_order().iter().all(|index| !later.contains(&chilpa.queue_paths()[*index])));
+
+    chilpa.stop();
+    let _ = std::fs::remove_dir_all(dir);
+}

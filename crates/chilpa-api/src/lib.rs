@@ -364,6 +364,24 @@ pub struct LibraryFolder {
     pub reachable: bool,
 }
 
+/// A named batch added with "Play later". Its positions stay stable because
+/// removing queue entries marks them instead of shifting the array.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct QueueGroup {
+    pub key: u64,
+    pub label: String,
+    pub tracks: Vec<usize>,
+    pub collapsed: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+enum QueuePlacement {
+    #[default]
+    Original,
+    Next,
+    Later,
+}
+
 /// How the background analysis is going.
 #[derive(Clone, PartialEq, Debug, Default)]
 pub struct AnalysisStatus {
@@ -424,6 +442,9 @@ pub struct Chilpa {
     artist: String,
     /// Which positions of `queue` were removed, so the view greys them out.
     removed: Vec<bool>,
+    queue_placement: Vec<QueuePlacement>,
+    queue_groups: Vec<QueueGroup>,
+    next_queue_group: u64,
     /// A position in the whole queue after which playback ends.
     stop_after: Option<usize>,
     /// A wall-clock deadline that asks the player to stop from `poll`.
@@ -508,6 +529,9 @@ impl Chilpa {
             album_sort: AlbumSort::from_name(&saved.album_sort),
             artist: String::new(),
             removed: Vec::new(),
+            queue_placement: Vec::new(),
+            queue_groups: Vec::new(),
+            next_queue_group: 1,
             stop_after: None,
             sleep_until: None,
             lyrics: None,
