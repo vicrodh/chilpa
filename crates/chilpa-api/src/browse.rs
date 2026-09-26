@@ -200,6 +200,12 @@ impl Reader {
         self.lib.album_ids(order).unwrap_or_default()
     }
 
+    /// The same, keeping the records whose title or artist holds every word
+    /// of `text`.
+    pub fn album_ids_matching(&self, order: chilpa_library::AlbumSort, text: &str) -> Vec<i64> {
+        self.lib.album_ids_matching(order, text).unwrap_or_default()
+    }
+
     /// A folder: the library's roots for an empty path, what the library
     /// has under a folder inside it, or what the disk has in one outside it.
     pub fn folder(&self, dir: &str) -> FolderView {

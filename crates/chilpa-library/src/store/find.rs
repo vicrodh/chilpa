@@ -26,7 +26,7 @@ pub struct Found {
 }
 
 /// The words typed, each as a `LIKE` pattern that finds it anywhere.
-fn patterns(text: &str) -> Vec<String> {
+pub(crate) fn patterns(text: &str) -> Vec<String> {
     text.split(|c: char| !c.is_alphanumeric())
         .filter(|w| !w.is_empty())
         .map(|w| format!("%{}%", w.replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_")))
