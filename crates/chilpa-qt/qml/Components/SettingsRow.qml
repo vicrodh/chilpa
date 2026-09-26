@@ -80,6 +80,7 @@ Item {
             : row.control === "select" || row.control === "device" ? select
             : row.control === "segmented" ? segmented
             : row.control === "button" || row.control === "link" ? button
+            : row.control === "secret" ? secret
             : null
     }
 
@@ -114,6 +115,26 @@ Item {
             text: row.action
             glyph: row.control === "link" ? Icons.chevronRight : ""
             onClicked: row.page.press(row.key)
+        }
+    }
+    Component {
+        id: secret
+        Row {
+            spacing: Metrics.gap8
+            TextField {
+                id: field
+                anchors.verticalCenter: parent.verticalCenter
+                secret: true
+                placeholder: I18n.tr("Token", I18n.rev)
+                onAccepted: if (text.trim() !== "") send.clicked()
+            }
+            PillButton {
+                id: send
+                anchors.verticalCenter: parent.verticalCenter
+                text: row.action
+                enabled: field.text.trim() !== ""
+                onClicked: row.page.set(row.key, field.text)
+            }
         }
     }
     Component {

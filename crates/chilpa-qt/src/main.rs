@@ -49,6 +49,9 @@ fn main() {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 
+    // Listens go to ListenBrainz from now on, if an account is connected.
+    app::with(|api| api.start_scrobbling());
+
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };

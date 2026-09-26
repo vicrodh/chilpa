@@ -19,12 +19,15 @@ mod approvals;
 mod plugins;
 mod search;
 mod folders;
+mod listenbrainz;
+mod scrobble;
 
 pub use browse::{
     AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackOrder, TrackRow,
 };
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
+pub use scrobble::ListenBrainzStatus;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -253,6 +256,11 @@ struct InProgress {
     /// not: it was logged as the time listened, and a seek to the last
     /// second logged the whole track.
     played_frames: u64,
+    /// What ListenBrainz is sent once enough of it has been heard; none for
+    /// what the file's tags cannot name.
+    listen: Option<listenbrainz::Listen>,
+    /// It was already sent: a seek back past the mark does not send it twice.
+    scrobbled: bool,
 }
 
 /// A smart list, with whatever it yields today.
@@ -391,6 +399,8 @@ pub struct Chilpa {
     library: Option<chilpa_library::Library>,
     /// What is needed to log the play when it ends.
     in_progress: Option<InProgress>,
+    /// Sends listens to ListenBrainz; started by the window, never by a test.
+    scrobbler: Option<scrobble::Scrobbler>,
     /// The current queue's paths, whole and in the order they were queued.
     /// Going back does not trim it.
     queue: Vec<String>,
@@ -472,6 +482,7 @@ impl Chilpa {
             core: chilpa_core::Core::new(),
             library: None,
             in_progress: None,
+            scrobbler: None,
             queue: Vec::new(),
             base: 0,
             shuffle: false,
@@ -1197,20 +1208,25 @@ impl Chilpa {
                     // track that starts is the proof the one before it
                     // finished.
                     self.log_play(false);
+                    let started_at = now_unix();
+                    let duration_ms = match (total_frames, opened.sample_rate_hz) {
+                        (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
+                        _ => 0,
+                    };
+                    let listen = self.announce(tags.as_ref(), duration_ms, started_at);
                     self.in_progress = Some(InProgress {
                         path: path.display().to_string(),
-                        started_at: now_unix(),
+                        started_at,
                         sample_rate_hz: opened.sample_rate_hz,
                         // The bits that carry the music, not the word they
                         // travel in: a CD rip widened for a DAC that only
                         // takes 32 bit words was logged as 24.
                         bit_depth: bits,
                         bit_perfect,
-                        duration_ms: match (total_frames, opened.sample_rate_hz) {
-                            (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
-                            _ => 0,
-                        },
+                        duration_ms,
                         played_frames: 0,
+                        listen,
+                        scrobbled: false,
                     });
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
@@ -1251,9 +1267,7 @@ impl Chilpa {
                 }
                 PlayerEvent::Progress { frames, played } => {
                     self.now.frames = frames;
-                    if let Some(current) = self.in_progress.as_mut() {
-                        current.played_frames = played;
-                    }
+                    self.set_played(played);
                     if self.sample_rate > 0 {
                         self.now.seconds = frames as f64 / f64::from(self.sample_rate);
                     }
@@ -1309,6 +1323,7 @@ impl Chilpa {
         if let Some(current) = self.in_progress.as_mut() {
             current.played_frames = frames;
         }
+        self.scrobble_if_heard();
     }
 
     fn log_play(&mut self, skipped: bool) {

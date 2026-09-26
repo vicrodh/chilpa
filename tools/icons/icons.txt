@@ -8,6 +8,7 @@ arrow-up-right
 arrows-shuffle
 arrows-sort
 books
+broadcast
 browser-plus
 calendar
 cast

@@ -42,6 +42,7 @@ GallerySection {
         Toggle { checked: true }
         Chip { text: "All"; active: true }
         Chip { text: "Songs" }
+        TextField { placeholder: "Token"; secret: true }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
     }

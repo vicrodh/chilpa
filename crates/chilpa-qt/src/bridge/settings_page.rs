@@ -79,13 +79,17 @@ pub mod qobject {
     }
 
     impl cxx_qt::Initialize for SettingsPage {}
+    impl cxx_qt::Threading for SettingsPage {}
 }
 
 use crate::settings_schema;
 use crate::{app, registry};
-use cxx_qt::CxxQtType as _;
+use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
 use std::pin::Pin;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::Duration;
 
 const ROLES: &[&str] = &[
     "rowKind", "key", "title", "description", "control", "action", "value", "options", "optionValues",
@@ -209,6 +213,27 @@ impl SettingsPageRust {
                     row.description = report.summary.clone();
                 }
             }
+            "listenbrainz.account" => {
+                let lb = app::with(|api| api.listenbrainz());
+                if lb.checking {
+                    row.description = app::t("Checking the token…");
+                } else if !lb.user.is_empty() {
+                    // Connected: the row becomes who it is and a way out.
+                    row.title = app::with(|api| api.t_args("Connected as {}", &[&lb.user]));
+                    row.control = "button";
+                    row.action = app::t("Disconnect");
+                    row.description = if lb.pending > 0 {
+                        let n = lb.pending.to_string();
+                        app::with(|api| api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", lb.pending as i64, &[&n]))
+                    } else {
+                        String::new()
+                    };
+                }
+                if !lb.error.is_empty() {
+                    row.description = lb.error;
+                }
+            }
+            "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
             "library.folders" => {
                 let n = app::with(|api| api.library_folders().len());
                 let shown = n.to_string();
@@ -264,7 +289,7 @@ impl qobject::SettingsPage {
         self.rust().rows.len() as i32
     }
 
-    pub fn set(self: Pin<&mut Self>, key: &QString, value: &QString) {
+    pub fn set(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let (key, value) = (key.to_string(), value.to_string());
         match key.as_str() {
             "audio.backend" => {
@@ -294,9 +319,42 @@ impl qobject::SettingsPage {
                 registry::settings(move |s| s.set_density(QString::from(&value)));
             }
             "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
+            "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
+            "listenbrainz.account" => {
+                app::with(|api| api.connect_listenbrainz(&value));
+                self.as_mut().reload();
+                self.watch_listenbrainz();
+                return;
+            }
             _ => return,
         }
         self.reload();
+    }
+
+    /// Reads the page again once ListenBrainz has answered: the token is
+    /// checked on the scrobbler's thread, and the row says so until then.
+    fn watch_listenbrainz(self: Pin<&mut Self>) {
+        let thread = self.qt_thread();
+        let done = Arc::new(AtomicBool::new(false));
+        std::thread::spawn(move || {
+            // Thirty seconds: longer than the request itself may take.
+            for _ in 0..120 {
+                std::thread::sleep(Duration::from_millis(250));
+                if done.load(Ordering::Relaxed) {
+                    return;
+                }
+                let seen = Arc::clone(&done);
+                let queued = thread.queue(move |page| {
+                    if !app::with(|api| api.listenbrainz().checking) {
+                        seen.store(true, Ordering::Relaxed);
+                        page.reload();
+                    }
+                });
+                if queued.is_err() {
+                    return;
+                }
+            }
+        });
     }
 
     pub fn press(mut self: Pin<&mut Self>, key: &QString) {
@@ -311,6 +369,12 @@ impl qobject::SettingsPage {
             "library.folders" => {
                 registry::navigation(|nav| nav.go(&QString::from("libraryFolders"), 0));
                 return;
+            }
+            // Pressed only once connected, where it is the way out.
+            "listenbrainz.account" => {
+                app::with(|api| api.disconnect_listenbrainz());
+                // The scrobbler forgets on its thread; give it a moment.
+                self.as_mut().watch_listenbrainz();
             }
             "library.rescan" => {
                 registry::folders(|folders| folders.rescan_all());
