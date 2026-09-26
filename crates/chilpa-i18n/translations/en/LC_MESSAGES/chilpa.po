@@ -85,6 +85,12 @@ msgstr ""
 msgid "Account"
 msgstr ""
 
+msgid "Account connected."
+msgstr ""
+
+msgid "Account not connected."
+msgstr ""
+
 msgid "Active"
 msgstr ""
 
@@ -152,6 +158,12 @@ msgid "Appearance"
 msgstr ""
 
 msgid "Appears on"
+msgstr ""
+
+msgid "Approve"
+msgstr ""
+
+msgid "Approve new access"
 msgstr ""
 
 msgid "Artist"
@@ -256,6 +268,12 @@ msgstr ""
 msgid "Connect"
 msgstr ""
 
+msgid "Connect on {}"
+msgstr ""
+
+msgid "Connect {}"
+msgstr ""
+
 msgid "Connected as {}"
 msgstr ""
 
@@ -317,6 +335,9 @@ msgid "Disc {}"
 msgstr ""
 
 msgid "Disconnect"
+msgstr ""
+
+msgid "Disconnect account"
 msgstr ""
 
 msgid "Done. You can close this tab and go back to Chilpa."
@@ -430,6 +451,9 @@ msgstr ""
 msgid "Info: Embedded tags"
 msgstr ""
 
+msgid "Installed plugins"
+msgstr ""
+
 msgid "Integrations"
 msgstr ""
 
@@ -529,6 +553,9 @@ msgstr ""
 msgid "No playlists yet."
 msgstr ""
 
+msgid "No source plugins installed"
+msgstr ""
+
 msgid "Normalization"
 msgstr ""
 
@@ -577,6 +604,9 @@ msgstr ""
 msgid "Open a folder…"
 msgstr ""
 
+msgid "Open account page"
+msgstr ""
+
 msgid "Open album"
 msgstr ""
 
@@ -593,6 +623,9 @@ msgid "Output device"
 msgstr ""
 
 msgid "Output: {}"
+msgstr ""
+
+msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr ""
 
 msgid "Paste the user token from listenbrainz.org/settings."
@@ -649,6 +682,9 @@ msgstr ""
 msgid "Processed on the way out"
 msgstr ""
 
+msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
+msgstr ""
+
 msgid "Quality"
 msgstr ""
 
@@ -662,6 +698,9 @@ msgid "Quick view"
 msgstr ""
 
 msgid "Quit"
+msgstr ""
+
+msgid "Reactivate"
 msgstr ""
 
 msgid "Reading {} of {} files"
@@ -710,6 +749,9 @@ msgid "Repaired. Nothing was lost."
 msgstr ""
 
 msgid "Repeat"
+msgstr ""
+
+msgid "Requests: {}"
 msgstr ""
 
 msgid "Rescan"
@@ -814,6 +856,9 @@ msgstr ""
 msgid "The account did not connect. You can close this tab."
 msgstr ""
 
+msgid "The account expired; connect it again."
+msgstr ""
+
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
@@ -856,6 +901,9 @@ msgstr ""
 msgid "This section is not built yet."
 msgstr ""
 
+msgid "This update asks for additional access."
+msgstr ""
+
 msgid "Time"
 msgstr ""
 
@@ -878,6 +926,9 @@ msgid "Track {}"
 msgstr ""
 
 msgid "Tracks"
+msgstr ""
+
+msgid "Uninstall"
 msgstr ""
 
 msgid "Unmute"
@@ -908,6 +959,9 @@ msgid "Windows reports no playback device"
 msgstr ""
 
 msgid "Windows would not say what \"{}\" accepts ({})"
+msgstr ""
+
+msgid "Withdraw approval"
 msgstr ""
 
 msgid "Write to a file"
@@ -1496,6 +1550,9 @@ msgid "the server sent no audio: {}"
 msgstr ""
 
 msgid "the sound server would not let go of card {}"
+msgstr ""
+
+msgid "the source"
 msgstr ""
 
 msgid "the stereo area (TWOCHTOC) was not found"

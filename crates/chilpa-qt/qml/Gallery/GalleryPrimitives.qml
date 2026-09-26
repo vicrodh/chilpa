@@ -47,6 +47,7 @@ GallerySection {
         LevelSlider { value: 60 }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
+        StatusField { state: "fine"; options: ["Disconnect", "Uninstall"]; values: ["disconnect", "uninstall"] }
     }
 
     Rectangle {

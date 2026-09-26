@@ -85,6 +85,12 @@ msgstr "Acento"
 msgid "Account"
 msgstr "Cuenta"
 
+msgid "Account connected."
+msgstr "Cuenta conectada."
+
+msgid "Account not connected."
+msgstr "Cuenta sin conectar."
+
 msgid "Active"
 msgstr "Activa"
 
@@ -153,6 +159,12 @@ msgstr "Apariencia"
 
 msgid "Appears on"
 msgstr "Aparece en"
+
+msgid "Approve"
+msgstr "Aprobar"
+
+msgid "Approve new access"
+msgstr "Aprobar el nuevo acceso"
 
 msgid "Artist"
 msgstr "Artista"
@@ -256,6 +268,12 @@ msgstr "Filas compactas como una hoja de cálculo, o filas amplias con la portad
 msgid "Connect"
 msgstr "Conectar"
 
+msgid "Connect on {}"
+msgstr "Conectar en {}"
+
+msgid "Connect {}"
+msgstr "Conectar {}"
+
 msgid "Connected as {}"
 msgstr "Conectado como {}"
 
@@ -318,6 +336,9 @@ msgstr "Disco {}"
 
 msgid "Disconnect"
 msgstr "Desconectar"
+
+msgid "Disconnect account"
+msgstr "Desconectar la cuenta"
 
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
@@ -430,6 +451,9 @@ msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuand
 msgid "Info: Embedded tags"
 msgstr "Info: etiquetas del archivo"
 
+msgid "Installed plugins"
+msgstr "Plugins instalados"
+
 msgid "Integrations"
 msgstr "Integraciones"
 
@@ -529,6 +553,9 @@ msgstr "Esta pista no tiene letra."
 msgid "No playlists yet."
 msgstr "Todavía no hay playlists."
 
+msgid "No source plugins installed"
+msgstr "No hay plugins de fuentes instalados"
+
 msgid "Normalization"
 msgstr "Normalización"
 
@@ -577,6 +604,9 @@ msgstr "Abrir una carpeta"
 msgid "Open a folder…"
 msgstr "Abrir una carpeta…"
 
+msgid "Open account page"
+msgstr "Abrir la página de la cuenta"
+
 msgid "Open album"
 msgstr "Abrir álbum"
 
@@ -594,6 +624,9 @@ msgstr "Dispositivo de salida"
 
 msgid "Output: {}"
 msgstr "Salida: {}"
+
+msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
+msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
 
 msgid "Paste the user token from listenbrainz.org/settings."
 msgstr "Pega el token de usuario de listenbrainz.org/settings."
@@ -649,6 +682,9 @@ msgstr "Anterior"
 msgid "Processed on the way out"
 msgstr "Procesado en la salida"
 
+msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
+msgstr "Pon la carpeta de un plugin en el directorio de plugins de Chilpa y vuelve a abrir la aplicación."
+
 msgid "Quality"
 msgstr "Calidad"
 
@@ -663,6 +699,9 @@ msgstr "Vista rápida"
 
 msgid "Quit"
 msgstr "Salir"
+
+msgid "Reactivate"
+msgstr "Reactivar"
 
 msgid "Reading {} of {} files"
 msgstr "Leyendo {} de {} archivos"
@@ -711,6 +750,9 @@ msgstr "Reparada. No se perdió nada."
 
 msgid "Repeat"
 msgstr "Repetir"
+
+msgid "Requests: {}"
+msgstr "Solicita: {}"
 
 msgid "Rescan"
 msgstr "Volver a escanear"
@@ -814,6 +856,9 @@ msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el re
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
+msgid "The account expired; connect it again."
+msgstr "La cuenta expiró; vuelve a conectarla."
+
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
@@ -856,6 +901,9 @@ msgstr "Esta pantalla todavía no está hecha."
 msgid "This section is not built yet."
 msgstr "Esta sección todavía no está hecha."
 
+msgid "This update asks for additional access."
+msgstr "Esta actualización solicita acceso adicional."
+
 msgid "Time"
 msgstr "Duración"
 
@@ -879,6 +927,9 @@ msgstr "Pista {}"
 
 msgid "Tracks"
 msgstr "Pistas"
+
+msgid "Uninstall"
+msgstr "Desinstalar"
 
 msgid "Unmute"
 msgstr "Quitar silencio"
@@ -909,6 +960,9 @@ msgstr "Windows no reporta ningún aparato de reproducción"
 
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
+
+msgid "Withdraw approval"
+msgstr "Retirar la aprobación"
 
 msgid "Write to a file"
 msgstr "Escribir a un archivo"
@@ -1497,6 +1551,9 @@ msgstr "el servidor no mandó audio: {}"
 
 msgid "the sound server would not let go of card {}"
 msgstr "el servidor de sonido no quiso soltar la tarjeta {}"
+
+msgid "the source"
+msgstr "la fuente"
 
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr "no se encontró el área estéreo (TWOCHTOC)"

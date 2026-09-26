@@ -260,6 +260,10 @@ pub struct PluginInfo {
     /// Where the user is sent to grant permission, empty if it does not use
     /// OAuth or needs no account.
     pub account_host: String,
+    /// "token", "oauth" or empty when the plugin needs no Chilpa-managed
+    /// account.  The frontend needs the distinction because one flow asks
+    /// for text and the other opens the browser.
+    pub account_kind: String,
 }
 
 /// A half finished account connection: the user has been sent to the
@@ -394,6 +398,16 @@ impl Plugins {
                         .and_then(|m| m.auth.as_ref())
                         .map(|a| a.host())
                         .unwrap_or_default(),
+                    account_kind: i
+                        .manifest
+                        .as_ref()
+                        .and_then(|m| m.auth.as_ref())
+                        .map(|a| match a {
+                            Auth::Token => "token",
+                            Auth::OAuth2 { .. } => "oauth",
+                        })
+                        .unwrap_or_default()
+                        .into(),
                 }
             })
             .collect()

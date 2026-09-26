@@ -12,6 +12,7 @@ fn install(dir: &Path, id: &str) {
         format!(
             r#"{{"id": "{id}", "name": "One", "version": "0.1.0", "api_version": 1,
                  "kind": "source",
+                 "auth": {{"type":"token"}},
                  "capabilities": [{{"type":"network","domains":["api.example.com"]}}]}}"#
         ),
     )
@@ -37,6 +38,7 @@ fn a_credential_is_stored_sealed_and_never_reaches_the_plugin() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.load_plugins();
+    assert_eq!(chilpa.plugins()[0].account_kind, "token");
     chilpa.approve_plugin("com.test.one");
     assert!(!chilpa.plugins()[0].connected, "there is no account yet");
 
