@@ -118,7 +118,20 @@ pub const SECTIONS: &[Section] = &[
             },
         ],
     },
-    Section { id: "playback", label: Chilpa::mark("Playback"), icon: "music", groups: &[] },
+    Section {
+        id: "playback",
+        label: Chilpa::mark("Playback"),
+        icon: "music",
+        groups: &[Group {
+            title: Chilpa::mark("Player bar"),
+            settings: &[setting(
+                "playback.extra",
+                Chilpa::mark("Extra controls"),
+                Chilpa::mark("Buttons to go back or forward ten seconds."),
+                Control::Toggle,
+            )],
+        }],
+    },
     Section {
         id: "appearance",
         label: Chilpa::mark("Appearance"),
@@ -148,7 +161,28 @@ pub const SECTIONS: &[Section] = &[
             ],
         }],
     },
-    Section { id: "navigation", label: Chilpa::mark("Navigation"), icon: "list", groups: &[] },
+    Section {
+        id: "navigation",
+        label: Chilpa::mark("Navigation"),
+        icon: "list",
+        groups: &[Group {
+            title: Chilpa::mark("Tabs"),
+            settings: &[
+                setting(
+                    "navigation.newtab",
+                    Chilpa::mark("Middle click opens a new tab"),
+                    Chilpa::mark("On the sidebar's destinations."),
+                    Control::Toggle,
+                ),
+                setting(
+                    "navigation.restoreTabs",
+                    Chilpa::mark("Restore tabs"),
+                    Chilpa::mark("Chilpa opens with the tabs it had when it closed."),
+                    Control::Toggle,
+                ),
+            ],
+        }],
+    },
     Section {
         id: "library",
         label: Chilpa::mark("Library"),

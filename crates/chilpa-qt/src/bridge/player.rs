@@ -85,6 +85,10 @@ pub mod qobject {
         #[qinvokable]
         fn seek(self: Pin<&mut Player>, seconds: f64);
 
+        /// Moves the position by that many seconds, within the track.
+        #[qinvokable]
+        fn nudge(self: Pin<&mut Player>, seconds: f64);
+
         #[qinvokable]
         fn toggle_shuffle(self: Pin<&mut Player>);
 
@@ -179,6 +183,14 @@ impl qobject::Player {
     pub fn seek(mut self: Pin<&mut Self>, seconds: f64) {
         app::with(|api| api.seek(seconds));
         self.as_mut().set_position(seconds);
+    }
+
+    pub fn nudge(self: Pin<&mut Self>, seconds: f64) {
+        let (at, end) = (*self.position(), *self.duration());
+        if end <= 0.0 {
+            return;
+        }
+        self.seek((at + seconds).clamp(0.0, end));
     }
 
     pub fn toggle_shuffle(mut self: Pin<&mut Self>) {

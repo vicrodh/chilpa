@@ -74,7 +74,7 @@ pub mod qobject {
 }
 
 use crate::app;
-use crate::navigation::{Route, Screen, Tabs};
+use chilpa_api::navigation::{Route, Screen, Tabs};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QList, QString, QStringList};
 use std::pin::Pin;
@@ -91,6 +91,14 @@ pub struct NavigationRust {
     section: QString,
     route_key: QString,
     tabs: Tabs,
+}
+
+/// Where the open tabs are kept between runs.
+const TABS_KEY: &str = "ui.tabs";
+
+/// Whether the tabs are kept and brought back (Settings > Navigation).
+fn restoring() -> bool {
+    app::with(|api| api.preference("navigation.restoreTabs")).as_deref() != Some("false")
 }
 
 fn route(screen: &QString, id: i64) -> Option<Route> {
@@ -211,12 +219,24 @@ impl qobject::Navigation {
         self.as_mut().set_section(QString::from(section));
         self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
+        if restoring() {
+            // The preferences file is one line per key, so the lines are
+            // written as "\n".
+            let saved = tabs.save().replace('\n', "\\n");
+            app::with(|api| api.remember_preference(TABS_KEY, &saved));
+        }
     }
 }
 
 impl cxx_qt::Initialize for qobject::Navigation {
-    fn initialize(self: Pin<&mut Self>) {
+    fn initialize(mut self: Pin<&mut Self>) {
         crate::registry::register_navigation(self.qt_thread());
+        // The tabs of the last run, unless that was turned off.
+        if restoring() {
+            if let Some(saved) = app::with(|api| api.preference(TABS_KEY)) {
+                self.as_mut().rust_mut().tabs = Tabs::restore(&saved.replace("\\n", "\n"));
+            }
+        }
         self.publish();
     }
 }

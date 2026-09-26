@@ -11,11 +11,9 @@ mod app;
 mod bridge;
 mod browse;
 mod format;
-mod navigation;
 mod paths;
 mod registry;
 mod settings_schema;
-mod sidebar;
 mod theme;
 mod worker;
 

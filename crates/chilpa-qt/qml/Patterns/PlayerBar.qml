@@ -55,6 +55,13 @@ Item {
         }
         IconButton {
             anchors.verticalCenter: parent.verticalCenter
+            visible: SettingsModel.extraControls
+            tip: I18n.tr("Back 10 seconds", I18n.rev)
+            glyph: Icons.rewindBackward10
+            onClicked: Player.nudge(-10)
+        }
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("Previous", I18n.rev)
             glyph: Icons.playerSkipBackFilled
             filled: true
@@ -80,6 +87,13 @@ Item {
             iconSize: Metrics.iconSkip
             tone: "primary"
             onClicked: Player.next()
+        }
+        IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: SettingsModel.extraControls
+            tip: I18n.tr("Forward 10 seconds", I18n.rev)
+            glyph: Icons.rewindForward10
+            onClicked: Player.nudge(10)
         }
         IconButton {
             anchors.verticalCenter: parent.verticalCenter

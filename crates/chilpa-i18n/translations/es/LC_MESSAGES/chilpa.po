@@ -148,6 +148,9 @@ msgstr "BP marca una salida que recibe las muestras intactas."
 msgid "Back"
 msgstr "Atrás"
 
+msgid "Back 10 seconds"
+msgstr "Atrás 10 segundos"
+
 msgid "Bit perfect"
 msgstr "Bit perfect"
 
@@ -159,6 +162,9 @@ msgstr "Busca una carpeta de música o escribe su ruta completa."
 
 msgid "Browse…"
 msgstr "Buscar…"
+
+msgid "Buttons to go back or forward ten seconds."
+msgstr "Botones para regresar o adelantar diez segundos."
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -177,6 +183,9 @@ msgstr "Revisando la cuenta…"
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
+
+msgid "Chilpa opens with the tabs it had when it closed."
+msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
 msgid "Clear filters"
 msgstr "Quitar filtros"
@@ -280,6 +289,9 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "Expand sidebar"
 msgstr "Expandir barra lateral"
 
+msgid "Extra controls"
+msgstr "Controles extra"
+
 msgid "File"
 msgstr "Archivo"
 
@@ -303,6 +315,9 @@ msgstr "Para un rato largo"
 
 msgid "Forward"
 msgstr "Adelante"
+
+msgid "Forward 10 seconds"
+msgstr "Adelante 10 segundos"
 
 msgid "From this week"
 msgstr "De esta semana"
@@ -397,6 +412,9 @@ msgstr "Máximo 32/384"
 msgid "Menu"
 msgstr "Menú"
 
+msgid "Middle click opens a new tab"
+msgstr "El clic medio abre una pestaña nueva"
+
 msgid "Minimize"
 msgstr "Minimizar"
 
@@ -451,6 +469,9 @@ msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus dis
 msgid "Nothing queued."
 msgstr "No hay nada en la cola."
 
+msgid "On the sidebar's destinations."
+msgstr "En los destinos del sidebar."
+
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
 
@@ -504,6 +525,9 @@ msgstr "Reproducir el CD"
 
 msgid "Playback"
 msgstr "Reproducción"
+
+msgid "Player bar"
+msgstr "Barra del reproductor"
 
 msgid "Playlist"
 msgstr "Playlist"
@@ -574,6 +598,9 @@ msgstr "Repetir"
 msgid "Rescan"
 msgstr "Volver a escanear"
 
+msgid "Restore tabs"
+msgstr "Restaurar pestañas"
+
 msgid "Rich"
 msgstr "Amplia"
 
@@ -642,6 +669,9 @@ msgstr "Estudio 24/48"
 
 msgid "System"
 msgstr "Sistema"
+
+msgid "Tabs"
+msgstr "Pestañas"
 
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."

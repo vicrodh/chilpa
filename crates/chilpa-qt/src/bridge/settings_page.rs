@@ -145,6 +145,11 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
     }
 }
 
+/// A toggle's value from its preference, "true" or "false".
+fn pref_on(key: &str, default: bool) -> String {
+    app::with(|api| api.preference(key)).map_or(default, |v| v == "true").to_string()
+}
+
 /// The accents offered (design/05): the theme's own, then four.
 const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 
@@ -227,6 +232,9 @@ impl SettingsPageRust {
                 row.options = row.values.clone();
                 row.value = app::with(|api| api.preference("appearance.accent")).unwrap_or_default();
             }
+            "playback.extra" => row.value = pref_on("playback.extra", false),
+            "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
+            "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
             "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
             "lastfm.account" => {
                 let status = app::with(|api| api.lastfm());
@@ -352,6 +360,15 @@ impl qobject::SettingsPage {
             }
             "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
             "appearance.accent" => registry::theme(move |theme| theme.choose_accent(&QString::from(&value))),
+            "playback.extra" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_extra_controls(value == "true"));
+            }
+            "navigation.newtab" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_middle_click_tabs(value == "true"));
+            }
+            "navigation.restoreTabs" => app::with(|api| api.remember_preference(&key, &value)),
             "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
             "lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
             "listenbrainz.account" => {

@@ -69,6 +69,19 @@ impl Route {
     pub fn of(screen: Screen) -> Route {
         Route { screen, id: 0, key: String::new() }
     }
+
+    /// One line: screen, id and key, by tabs. A key never holds a tab or a
+    /// line break -- it is a name, a path or a section.
+    fn line(&self) -> String {
+        format!("{}\t{}\t{}", self.screen.name(), self.id, self.key)
+    }
+
+    fn from_line(line: &str) -> Option<Route> {
+        let mut parts = line.splitn(3, '\t');
+        let screen = Screen::from_name(parts.next()?)?;
+        let id = parts.next()?.parse().ok()?;
+        Some(Route { screen, id, key: parts.next().unwrap_or_default().to_string() })
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -157,6 +170,26 @@ impl Tabs {
         }
     }
 
+    /// The open tabs, to be kept: the active one's index on the first line,
+    /// then each tab's place, one a line. Histories are not kept.
+    pub fn save(&self) -> String {
+        let mut out = vec![self.active.to_string()];
+        out.extend(self.tabs.iter().map(|t| t.route.line()));
+        out.join("\n")
+    }
+
+    /// Tabs as `save` wrote them; the default when nothing usable is there.
+    pub fn restore(saved: &str) -> Tabs {
+        let mut lines = saved.lines();
+        let active = lines.next().and_then(|l| l.parse::<usize>().ok()).unwrap_or(0);
+        let tabs: Vec<Tab> = lines.filter_map(Route::from_line).map(Tab::at).collect();
+        if tabs.is_empty() {
+            return Tabs::default();
+        }
+        let active = active.min(tabs.len() - 1);
+        Tabs { tabs, active }
+    }
+
     /// Forgets a place that no longer exists -- a deleted playlist -- from
     /// every tab and every history. A tab that was on it goes back to where
     /// it came from, or Home.
@@ -190,6 +223,18 @@ mod tests {
 
     fn album(id: i64) -> Route {
         Route { screen: Screen::Album, id, key: String::new() }
+    }
+
+    #[test]
+    fn tabs_kept_come_back_as_they_were() {
+        let mut t = Tabs::default();
+        t.go(album(7));
+        t.open(Route { screen: Screen::Artist, id: 0, key: "Mora Vale".into() });
+        let back = Tabs::restore(&t.save());
+        assert_eq!(back.routes(), t.routes());
+        assert_eq!(back.active(), 1);
+        assert_eq!(Tabs::restore("").routes(), [Route::of(Screen::Home)], "nothing kept, Home");
+        assert_eq!(Tabs::restore("9\nnowhere\t0\t").routes(), [Route::of(Screen::Home)], "nothing usable, Home");
     }
 
     #[test]

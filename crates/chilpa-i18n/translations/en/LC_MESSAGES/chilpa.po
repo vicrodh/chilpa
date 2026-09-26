@@ -148,6 +148,9 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
+msgid "Back 10 seconds"
+msgstr ""
+
 msgid "Bit perfect"
 msgstr ""
 
@@ -158,6 +161,9 @@ msgid "Browse for a music folder, or type its full path."
 msgstr ""
 
 msgid "Browse…"
+msgstr ""
+
+msgid "Buttons to go back or forward ten seconds."
 msgstr ""
 
 msgid "CD in {}"
@@ -176,6 +182,9 @@ msgid "Checking the account…"
 msgstr ""
 
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
+msgstr ""
+
+msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
 msgid "Clear filters"
@@ -280,6 +289,9 @@ msgstr ""
 msgid "Expand sidebar"
 msgstr ""
 
+msgid "Extra controls"
+msgstr ""
+
 msgid "File"
 msgstr ""
 
@@ -302,6 +314,9 @@ msgid "For a long while"
 msgstr ""
 
 msgid "Forward"
+msgstr ""
+
+msgid "Forward 10 seconds"
 msgstr ""
 
 msgid "From this week"
@@ -397,6 +412,9 @@ msgstr ""
 msgid "Menu"
 msgstr ""
 
+msgid "Middle click opens a new tab"
+msgstr ""
+
 msgid "Minimize"
 msgstr ""
 
@@ -451,6 +469,9 @@ msgstr ""
 msgid "Nothing queued."
 msgstr ""
 
+msgid "On the sidebar's destinations."
+msgstr ""
+
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr ""
 
@@ -503,6 +524,9 @@ msgid "Play the CD"
 msgstr ""
 
 msgid "Playback"
+msgstr ""
+
+msgid "Player bar"
 msgstr ""
 
 msgid "Playlist"
@@ -574,6 +598,9 @@ msgstr ""
 msgid "Rescan"
 msgstr ""
 
+msgid "Restore tabs"
+msgstr ""
+
 msgid "Rich"
 msgstr ""
 
@@ -641,6 +668,9 @@ msgid "Studio 24/48"
 msgstr ""
 
 msgid "System"
+msgstr ""
+
+msgid "Tabs"
 msgstr ""
 
 msgid "That answer does not belong to this window."

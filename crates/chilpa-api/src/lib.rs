@@ -10,6 +10,8 @@ pub use plugins::PluginInfo;
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod browse;
+pub mod navigation;
+pub mod sidebar;
 mod covers;
 mod library;
 mod quality;
