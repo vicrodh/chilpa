@@ -413,6 +413,8 @@ pub struct Chilpa {
     base: usize,
     shuffle: bool,
     repeat: Repeat,
+    /// The queue is walked in the mix's order.
+    mix: bool,
     album_sort: AlbumSort,
     /// The artist the grid is filtered to, empty if there is no filter.
     artist: String,
@@ -490,6 +492,7 @@ impl Chilpa {
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,
+            mix: false,
             album_sort: AlbumSort::from_name(&saved.album_sort),
             artist: String::new(),
             removed: Vec::new(),
@@ -690,6 +693,8 @@ impl Chilpa {
     /// playing there, at the same place.
     pub fn use_output(&mut self, output: &str, bit_perfect: bool) {
         self.remember(output, bit_perfect);
+        // Normalizing is not applied under bit-perfect; the switch follows.
+        self.apply_playback_options(bit_perfect);
         self.move_output(output, bit_perfect);
     }
 
