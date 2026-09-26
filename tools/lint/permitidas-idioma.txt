@@ -424,3 +424,5 @@ scrobble
 scrobbled
 scrobbler
 scrobbling
+# ALSA's plugin that converts what a card refuses.
+plughw

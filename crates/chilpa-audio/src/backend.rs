@@ -37,6 +37,8 @@ pub enum BackendKind {
     System,
     /// The card, addressed directly. Nothing between the samples and it.
     Alsa,
+    /// The card through ALSA's `plughw`, which converts what it refuses.
+    AlsaPlug,
     /// The PipeWire graph.
     PipeWire,
     /// The PulseAudio protocol, whoever is answering it.
@@ -58,6 +60,7 @@ impl BackendKind {
     pub const ALL: &'static [BackendKind] = &[
         BackendKind::System,
         BackendKind::Alsa,
+        BackendKind::AlsaPlug,
         BackendKind::PipeWire,
         BackendKind::Pulse,
         BackendKind::Jack,
@@ -72,6 +75,7 @@ impl BackendKind {
         match self {
             BackendKind::System => "system",
             BackendKind::Alsa => "alsa",
+            BackendKind::AlsaPlug => "alsaplug",
             BackendKind::PipeWire => "pipewire",
             BackendKind::Pulse => "pulse",
             BackendKind::Jack => "jack",
@@ -98,6 +102,7 @@ impl BackendKind {
         match self {
             BackendKind::System => chilpa_i18n::t("System"),
             BackendKind::Alsa => "ALSA".to_string(),
+            BackendKind::AlsaPlug => "ALSA (plughw)".to_string(),
             BackendKind::PipeWire => "PipeWire".to_string(),
             BackendKind::Pulse => "PulseAudio".to_string(),
             BackendKind::Jack => "JACK".to_string(),

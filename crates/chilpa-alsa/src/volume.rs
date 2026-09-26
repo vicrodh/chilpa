@@ -47,7 +47,7 @@ pub struct Volume {
 
 /// The card a device belongs to: `hw:0,0` is device 0 of card `hw:0`.
 fn card_of(device: &str) -> Option<String> {
-    let rest = device.strip_prefix("hw:")?;
+    let rest = device.strip_prefix("hw:").or_else(|| device.strip_prefix("plughw:"))?;
     let card = rest.split(',').next()?;
     (!card.is_empty()).then(|| format!("hw:{card}"))
 }
@@ -190,11 +190,12 @@ mod tests {
     }
 
     #[test]
-    fn what_is_not_a_direct_device_has_no_card_here() {
-        // Chilpa only ever opens `hw:`, so anything else is a caller's
-        // mistake and not a card with a volume.
+    fn what_names_no_card_has_no_card_here() {
+        // `hw:` and `plughw:` end at the same card, and its mixer is the
+        // volume of both. Anything else is a caller's mistake and not a
+        // card with a volume.
+        assert_eq!(card_of("plughw:1,0").as_deref(), Some("hw:1"));
         assert_eq!(card_of("default"), None);
-        assert_eq!(card_of("plughw:0,0"), None);
         assert_eq!(card_of("hw:"), None);
         assert_eq!(card_of("capture"), None);
     }
