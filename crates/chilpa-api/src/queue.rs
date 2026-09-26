@@ -5,6 +5,10 @@
 
 use super::*;
 
+/// Where the playback switches are kept.
+const GAPLESS: &str = "playback.gapless";
+const NORMALIZE: &str = "playback.normalize";
+
 impl Chilpa {
     /// Sets the queue already in `self.queue` going, from that position.
     ///
@@ -55,12 +59,18 @@ impl Chilpa {
         }
         self.base = from;
         self.removed = vec![false; self.queue.len()];
+        // The player starts in the queue's own order or shuffled: a mix of
+        // what played before does not carry over.
+        self.mix = false;
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
+        let (gapless, normalize) = (self.gapless(), self.normalize() && !bit_perfect);
         let tap = self.tap.clone();
         let player = self
             .player
             .get_or_insert_with(move || chilpa_core::spawn_player_with(tap));
         player.set_repeat(repeat);
+        player.set_gapless(gapless);
+        player.set_normalize(normalize);
         if shuffle {
             player.shuffle(tracks.len());
         } else {
@@ -289,6 +299,56 @@ impl Chilpa {
         with_tempo
     }
 
+    /// Whether one track runs straight into the next (on unless turned off).
+    pub fn gapless(&self) -> bool {
+        self.preference(GAPLESS).as_deref() != Some("false")
+    }
+
+    pub fn set_gapless(&mut self, on: bool) {
+        self.remember_preference(GAPLESS, &on.to_string());
+        if let Some(p) = &self.player {
+            p.set_gapless(on);
+        }
+    }
+
+    /// Whether tracks are brought to one loudness by their ReplayGain. It is
+    /// only applied with bit-perfect off: it changes the samples.
+    pub fn normalize(&self) -> bool {
+        self.preference(NORMALIZE).as_deref() == Some("true")
+    }
+
+    pub fn set_normalize(&mut self, on: bool) {
+        self.remember_preference(NORMALIZE, &on.to_string());
+        let (_, bit_perfect) = self.chosen_output();
+        self.apply_playback_options(bit_perfect);
+    }
+
+    /// Hands the player the switches as they stand, for that policy.
+    pub(crate) fn apply_playback_options(&mut self, bit_perfect: bool) {
+        if let Some(p) = &self.player {
+            p.set_gapless(self.gapless());
+            p.set_normalize(self.normalize() && !bit_perfect);
+        }
+    }
+
+    /// Whether the queue is walked in the mix's order.
+    pub fn automix_on(&self) -> bool {
+        self.mix
+    }
+
+    /// Mixes the queue by tempo, or -- off -- walks it in the order it was
+    /// queued again. Whatever reordered it, off puts it back.
+    pub fn set_automix(&mut self, on: bool) {
+        if on {
+            self.mix = self.automix() > 0;
+        } else {
+            self.mix = false;
+            if let Some(p) = &self.player {
+                p.clear_order();
+            }
+        }
+    }
+
     /// Whether the queue plays shuffled.
     pub fn shuffle(&self) -> bool {
         self.shuffle
@@ -298,6 +358,8 @@ impl Chilpa {
     /// the playing track ends: shuffling does not cut the audio.
     pub fn set_shuffle(&mut self, shuffle: bool) {
         self.shuffle = shuffle;
+        // Shuffling and the mix are two orders: one replaces the other.
+        self.mix = false;
         let remaining = self.queue.len().saturating_sub(self.base);
         if let Some(p) = &self.player {
             if shuffle {
