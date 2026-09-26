@@ -6,6 +6,7 @@
 #include <QtGui/QFont>
 #include <QtGui/QFontDatabase>
 #include <QtGui/QGuiApplication>
+#include <QtCore/QStandardPaths>
 
 extern "C" bool chilpa_use_font(const char *resource)
 {
@@ -19,4 +20,14 @@ extern "C" bool chilpa_use_font(const char *resource)
     font.setFamilies({families.first()});
     QGuiApplication::setFont(font);
     return true;
+}
+
+// Whether the system has a desktop entry by that name. Naming the window
+// after one that is not installed -- a build run from the tree -- only gets
+// a refusal from the desktop portal on every start; the platform knows where
+// entries live, so this asks it instead of guessing the folders.
+extern "C" bool chilpa_has_desktop_entry(const char *name)
+{
+    const QString file = QString::fromUtf8(name) + QStringLiteral(".desktop");
+    return !QStandardPaths::locate(QStandardPaths::ApplicationsLocation, file).isEmpty();
 }
