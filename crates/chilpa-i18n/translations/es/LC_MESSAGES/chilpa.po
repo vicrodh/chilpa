@@ -649,6 +649,9 @@ msgstr "falta SACDTRL1"
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
 
+msgid "Samples reach the device untouched. Off, normalization can be used."
+msgstr "Las muestras llegan intactas al dispositivo. Apagado, se puede usar la normalización."
+
 msgid "Scan again"
 msgstr "Escanear de nuevo"
 

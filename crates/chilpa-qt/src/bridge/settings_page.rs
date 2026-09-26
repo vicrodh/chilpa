@@ -348,10 +348,14 @@ impl qobject::SettingsPage {
                 let (_, bit_perfect) = api.chosen_output();
                 api.use_output(&value, bit_perfect);
             }),
-            "audio.bitperfect" => app::with(|api| {
-                let (output, _) = api.chosen_output();
-                api.use_output(&output, value == "true");
-            }),
+            "audio.bitperfect" => {
+                app::with(|api| {
+                    let (output, _) = api.chosen_output();
+                    api.use_output(&output, value == "true");
+                });
+                // The player bar's options show it too.
+                registry::player(|p| p.read_switches());
+            }
             "appearance.theme" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::theme(move |theme| theme.choose_mode(QString::from(&value)));

@@ -649,6 +649,9 @@ msgstr ""
 msgid "SACDTRL2 is missing"
 msgstr ""
 
+msgid "Samples reach the device untouched. Off, normalization can be used."
+msgstr ""
+
 msgid "Scan again"
 msgstr ""
 

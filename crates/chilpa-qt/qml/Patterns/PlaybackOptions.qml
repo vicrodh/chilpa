@@ -6,10 +6,10 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// How the queue plays, from the player bar: gapless, one loudness for every
-// track, and the mix by tempo. The same switches Settings > Playback has.
+// How the queue plays, from the player bar: bit-perfect, gapless, one
+// loudness for every track, and the mix by tempo -- the switches Settings has.
 // Normalizing changes the samples, so with bit-perfect on it is not applied
-// and says so.
+// and says so; bit-perfect is here to turn it off without going there.
 Popup {
     id: options
 
@@ -38,6 +38,15 @@ Popup {
 
     contentItem: Column {
         spacing: Metrics.gap4
+
+        // First: it is what the others that change samples wait on.
+        OptionRow {
+            width: parent.width
+            title: I18n.tr("Bit-perfect", I18n.rev)
+            detail: I18n.tr("Samples reach the device untouched. Off, normalization can be used.", I18n.rev)
+            checked: Player.bitPerfectMode
+            onToggled: (on) => Player.chooseBitPerfect(on)
+        }
 
         OptionRow {
             width: parent.width
