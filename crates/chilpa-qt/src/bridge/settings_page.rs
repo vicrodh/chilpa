@@ -145,6 +145,9 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
     }
 }
 
+/// The accents offered (design/05): the theme's own, then four.
+const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
+
 const DEFAULTS: &[(&str, &str)] =
     &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter")];
 
@@ -216,6 +219,13 @@ impl SettingsPageRust {
             "listenbrainz.account" => {
                 let status = app::with(|api| api.listenbrainz());
                 account(row, &status);
+            }
+            "appearance.accent" => {
+                // The theme's own first -- drawn by the window, which knows
+                // which theme is on -- then the design's four.
+                row.values = ACCENTS.iter().map(|a| a.to_string()).collect();
+                row.options = row.values.clone();
+                row.value = app::with(|api| api.preference("appearance.accent")).unwrap_or_default();
             }
             "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
             "lastfm.account" => {
@@ -341,6 +351,7 @@ impl qobject::SettingsPage {
                 registry::settings(move |s| s.set_density(QString::from(&value)));
             }
             "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
+            "appearance.accent" => registry::theme(move |theme| theme.choose_accent(&QString::from(&value))),
             "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
             "lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
             "listenbrainz.account" => {

@@ -43,6 +43,7 @@ GallerySection {
         Chip { text: "All"; active: true }
         Chip { text: "Songs" }
         TextField { placeholder: "Token"; secret: true }
+        Swatches { colors: ["", Theme.color.accentHover, Theme.color.textSecondary]; values: ["a", "b", "c"]; value: "b" }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
     }

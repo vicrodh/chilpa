@@ -32,6 +32,8 @@ QtObject {
         readonly property color rowPlaying: ThemeModel.color("row.playing", theme.rev)
         readonly property color rowSelected: ThemeModel.color("row.selected", theme.rev)
         readonly property color accent: ThemeModel.color("accent", theme.rev)
+        // The theme's own, under whatever accent was chosen.
+        readonly property color accentBase: ThemeModel.color("accent.base", theme.rev)
         readonly property color accentHover: ThemeModel.color("accent.hover", theme.rev)
         readonly property color accentPressed: ThemeModel.color("accent.pressed", theme.rev)
         readonly property color statusPositive: ThemeModel.color("status.positive", theme.rev)

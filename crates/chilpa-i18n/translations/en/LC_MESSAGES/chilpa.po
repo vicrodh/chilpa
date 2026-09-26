@@ -73,6 +73,9 @@ msgstr ""
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr ""
 
+msgid "Accent"
+msgstr ""
+
 msgid "Account"
 msgstr ""
 
@@ -647,6 +650,9 @@ msgid "The PulseAudio protocol mixes every program together and resamples the re
 msgstr ""
 
 msgid "The account did not connect. You can close this tab."
+msgstr ""
+
+msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."

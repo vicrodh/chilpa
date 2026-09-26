@@ -22,6 +22,8 @@ pub enum Control {
     /// A field whose text is hidden as it is typed, and a button that sends
     /// it: a token.
     Secret,
+    /// Colors to pick one from.
+    Swatches,
 }
 
 impl Control {
@@ -34,6 +36,7 @@ impl Control {
             Control::Button => "button",
             Control::Link => "link",
             Control::Secret => "secret",
+            Control::Swatches => "swatches",
         }
     }
 }
@@ -124,6 +127,12 @@ pub const SECTIONS: &[Section] = &[
             title: Chilpa::mark("Look"),
             settings: &[
                 setting("appearance.theme", Chilpa::mark("Theme"), "", Control::Segmented),
+                setting(
+                    "appearance.accent",
+                    Chilpa::mark("Accent"),
+                    Chilpa::mark("The first follows the theme: crimson in light, red in dark."),
+                    Control::Swatches,
+                ),
                 setting(
                     "appearance.density",
                     Chilpa::mark("Track lists"),

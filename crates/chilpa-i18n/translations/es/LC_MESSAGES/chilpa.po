@@ -73,6 +73,9 @@ msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentr
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
+msgid "Accent"
+msgstr "Acento"
+
 msgid "Account"
 msgstr "Cuenta"
 
@@ -648,6 +651,9 @@ msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el re
 
 msgid "The account did not connect. You can close this tab."
 msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
+
+msgid "The first follows the theme: crimson in light, red in dark."
+msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
