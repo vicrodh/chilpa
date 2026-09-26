@@ -31,6 +31,10 @@ pub mod qobject {
         #[qproperty(bool, panes_open)]
         #[qproperty(i32, panes_height)]
         #[qproperty(QString, library_view)]
+        /// The player bar's −10 s and +10 s.
+        #[qproperty(bool, extra_controls)]
+        /// A middle click on a destination opens it in a new tab.
+        #[qproperty(bool, middle_click_tabs)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -71,6 +75,8 @@ const QUEUE_HEIGHT: &str = "ui.rightPanel.queueHeight";
 const PANES_OPEN: &str = "ui.library.panesOpen";
 const PANES_HEIGHT: &str = "ui.library.panesHeight";
 const LIBRARY_VIEW: &str = "ui.library.view";
+const EXTRA_CONTROLS: &str = "playback.extra";
+const MIDDLE_CLICK_TABS: &str = "navigation.newtab";
 
 #[derive(Default)]
 pub struct SettingsRust {
@@ -83,6 +89,8 @@ pub struct SettingsRust {
     panes_open: bool,
     panes_height: i32,
     library_view: QString,
+    extra_controls: bool,
+    middle_click_tabs: bool,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -98,15 +106,15 @@ fn strings(items: impl Iterator<Item = String>) -> QStringList {
 
 impl qobject::SettingsModel {
     pub fn sidebar_mode_at(&self, width: f64, window_width: f64) -> QString {
-        QString::from(crate::sidebar::settle(width, window_width).0)
+        QString::from(chilpa_api::sidebar::settle(width, window_width).0)
     }
 
     pub fn sidebar_width_at(&self, width: f64, window_width: f64) -> i32 {
-        crate::sidebar::settle(width, window_width).1
+        chilpa_api::sidebar::settle(width, window_width).1
     }
 
     pub fn place_sidebar(mut self: Pin<&mut Self>, width: f64, window_width: f64) {
-        let (mode, settled) = crate::sidebar::settle(width, window_width);
+        let (mode, settled) = chilpa_api::sidebar::settle(width, window_width);
         if settled > 0 {
             self.as_mut().set_sidebar_width(settled);
         }
@@ -130,6 +138,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (panes, panes_height, view) = app::with(|api| {
             (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW))
         });
+        let (extra, middle) = app::with(|api| (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS)));
         {
             let mut this = self.as_mut().rust_mut();
             let all = crate::settings_schema::SECTIONS;
@@ -146,6 +155,8 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.panes_open = panes.as_deref() != Some("false");
             this.panes_height = panes_height.and_then(|h| h.parse().ok()).unwrap_or(0);
             this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
+            this.extra_controls = extra.as_deref() == Some("true");
+            this.middle_click_tabs = middle.as_deref() != Some("false");
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut()
@@ -167,6 +178,12 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             .release();
         self.as_mut()
             .on_library_view_changed(|m| remember(LIBRARY_VIEW, m.library_view().to_string()))
+            .release();
+        self.as_mut()
+            .on_extra_controls_changed(|m| remember(EXTRA_CONTROLS, m.extra_controls().to_string()))
+            .release();
+        self.as_mut()
+            .on_middle_click_tabs_changed(|m| remember(MIDDLE_CLICK_TABS, m.middle_click_tabs().to_string()))
             .release();
     }
 }

@@ -77,7 +77,7 @@ Rectangle {
                     collapsed: side.collapsed
                     active: Navigation.screen === modelData.screen
                     onClicked: Navigation.go(modelData.screen, 0)
-                    onMiddleClicked: Navigation.open(modelData.screen, 0)
+                    onMiddleClicked: SettingsModel.middleClickTabs ? Navigation.open(modelData.screen, 0) : Navigation.go(modelData.screen, 0)
                 }
             }
         }

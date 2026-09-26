@@ -395,6 +395,8 @@ qcolor
 qstring
 # std::ptr::copy_nonoverlapping, for the path handed to the covers provider.
 nonoverlapping
+# str::splitn, splitting into at most n parts.
+splitn
 # Red, green, blue: the image crate's pixel format names.
 rgb
 sm
