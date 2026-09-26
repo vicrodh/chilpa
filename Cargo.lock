@@ -407,6 +407,7 @@ dependencies = [
  "alsa",
  "chilpa-audio",
  "chilpa-i18n",
+ "dbus",
 ]
 
 [[package]]
