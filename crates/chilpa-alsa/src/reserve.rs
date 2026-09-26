@@ -16,12 +16,17 @@
 //! again a moment later; if nothing picks it up, it goes back by itself.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
+use std::thread::JoinHandle;
 use std::time::Duration;
 
 use dbus::blocking::stdintf::org_freedesktop_dbus::RequestNameReply;
-use dbus::blocking::Connection;
+use dbus::blocking::SyncConnection;
+use dbus::channel::MatchingReceiver;
+use dbus::message::MatchRule;
+use dbus_crossroads::Crossroads;
 
 static ASKING: AtomicBool = AtomicBool::new(false);
 
@@ -68,8 +73,18 @@ pub fn hold(device: &str) -> Result<Option<Reservation>, chilpa_audio::sink::Sin
 
 /// A card held for Chilpa. Dropping it gives the card back.
 pub struct Reservation {
-    bus: Connection,
+    bus: Arc<SyncConnection>,
     name: String,
+    _server: Server,
+}
+
+struct Server {
+    stop: Arc<AtomicBool>,
+    worker: Option<JoinHandle<()>>,
+}
+
+struct ReservationInfo {
+    device: String,
 }
 
 impl Reservation {
@@ -80,23 +95,39 @@ impl Reservation {
         if let Some((_, parked)) = PARKED.lock().ok().and_then(|mut p| p.as_mut()?.remove(&card)) {
             return Ok(Some(parked));
         }
-        let Ok(bus) = Connection::new_session() else { return Ok(None) };
+        let Ok(bus) = SyncConnection::new_session() else { return Ok(None) };
         let name = format!("org.freedesktop.ReserveDevice1.Audio{card}");
         let refused = || chilpa_i18n::t_args("the sound server would not let go of card {}", &[&card.to_string()]);
-        if bus.request_name(name.as_str(), false, false, true).map_err(|e| e.to_string())? != RequestNameReply::PrimaryOwner {
+        // Be ready to answer on the reservation object before acquiring its
+        // well-known name.  WirePlumber asks the new owner immediately; a
+        // name that appears before its object exists is treated as a broken
+        // participant and is not watched for a later hand-back.
+        let bus = Arc::new(bus);
+        let stop = Arc::new(AtomicBool::new(false));
+        let server = Server { worker: Some(serve(&bus, &stop, card)), stop };
+        // Queue before asking the current owner to release.  That ordering is
+        // the protocol's hand-off: D-Bus promotes us atomically when the
+        // server lets go.  A do-not-queue request followed by
+        // `replace_existing` has a small but real race in which WirePlumber
+        // reacquires the name first and we then steal it without a second
+        // RequestRelease.  WirePlumber consequently believes it still owns
+        // the card and does not try again when Chilpa stops.
+        let first = bus.request_name(name.as_str(), false, false, false).map_err(|e| e.to_string())?;
+        if !matches!(first, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) {
             let path = format!("/org/freedesktop/ReserveDevice1/Audio{card}");
             let owner = bus.with_proxy(name.as_str(), path, PATIENCE);
             let (released,): (bool,) = owner
                 .method_call("org.freedesktop.ReserveDevice1", "RequestRelease", (PRIORITY,))
                 .map_err(|e| e.to_string())?;
-            if !released
-                || bus.request_name(name.as_str(), false, true, true).map_err(|e| e.to_string())?
-                    != RequestNameReply::PrimaryOwner
-            {
+            let second = bus.request_name(name.as_str(), false, false, false).map_err(|e| e.to_string())?;
+            if !released || !matches!(second, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) {
+                // Also removes a queued request, so a refused hand-off does
+                // not surprise the owner later.
+                let _ = bus.release_name(name.as_str());
                 return Err(refused());
             }
         }
-        Ok(Some(Self { bus, name }))
+        Ok(Some(Self { bus, name, _server: server }))
     }
 
     /// Keeps it for the opening that follows a measurement. If none comes,
@@ -123,9 +154,62 @@ impl Drop for Reservation {
     }
 }
 
+impl Drop for Server {
+    fn drop(&mut self) {
+        self.stop.store(true, Ordering::Relaxed);
+        if let Some(worker) = self.worker.take() {
+            let _ = worker.join();
+        }
+    }
+}
+
+/// Publishes the other half of a reservation: not only the well-known bus
+/// name, but the object the protocol says its owner implements.  In
+/// particular WirePlumber watches this object before queuing to take the
+/// card back.  Returning false to another release request is deliberate:
+/// the PCM and this reservation must be relinquished together by the sink,
+/// never one while the other is still open.
+fn serve(bus: &Arc<SyncConnection>, stop: &Arc<AtomicBool>, card: u32) -> JoinHandle<()> {
+    let mut crossroads = Crossroads::new();
+    let reservation = crossroads.register("org.freedesktop.ReserveDevice1", |interface| {
+        interface.method(
+            "RequestRelease",
+            ("priority",),
+            ("result",),
+            |_, _: &mut ReservationInfo, (_priority,): (i32,)| Ok((false,)),
+        );
+        interface.property::<i32, _>("Priority").get(|_, _| Ok(PRIORITY));
+        interface.property::<String, _>("ApplicationName").get(|_, _| Ok("Chilpa".to_string()));
+        interface
+            .property::<String, _>("ApplicationDeviceName")
+            .get(|_, info| Ok(info.device.clone()));
+    });
+    let path = format!("/org/freedesktop/ReserveDevice1/Audio{card}");
+    crossroads.insert(path, &[reservation], ReservationInfo { device: format!("ALSA card {card}") });
+    let crossroads = Mutex::new(crossroads);
+    bus.start_receive(
+        MatchRule::new_method_call(),
+        Box::new(move |message, connection| {
+            if let Ok(mut crossroads) = crossroads.lock() {
+                let _ = crossroads.handle_message(message, connection);
+            }
+            true
+        }),
+    );
+
+    let bus = Arc::clone(bus);
+    let stop = Arc::clone(stop);
+    std::thread::spawn(move || {
+        while !stop.load(Ordering::Relaxed) {
+            let _ = bus.process(Duration::from_millis(100));
+        }
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use dbus::blocking::Connection;
 
     #[test]
     fn a_card_is_read_out_of_either_name() {
@@ -151,6 +235,9 @@ mod tests {
         let before = owner(&name);
         let held = Reservation::take(card).expect("the server lets go").expect("a session bus");
         assert_eq!(owner(&name), Some(held.bus.unique_name().to_string()), "Chilpa has the card");
+        // The former owner immediately asks the newly published object for
+        // the priority.  Let that handshake finish before simulating stop.
+        std::thread::sleep(Duration::from_millis(100));
         drop(held);
         let deadline = std::time::Instant::now() + Duration::from_secs(5);
         while before.is_some() && owner(&name).is_none() {
