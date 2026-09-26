@@ -239,6 +239,11 @@ impl Chilpa {
         lib.append_to_playlist(playlist_id, &entries).unwrap_or(0)
     }
 
+    /// Moves a track of a list from one position to another.
+    pub fn move_in_playlist(&mut self, playlist_id: i64, from: usize, to: usize) -> bool {
+        self.library().is_some_and(|lib| lib.move_in_playlist(playlist_id, from, to).unwrap_or(false))
+    }
+
     /// Takes the track at that position out of a list.
     pub fn remove_from_playlist(&mut self, playlist_id: i64, position: usize) -> bool {
         self.library().is_some_and(|lib| lib.remove_from_playlist(playlist_id, position).unwrap_or(false))
