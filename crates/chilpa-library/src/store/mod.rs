@@ -11,6 +11,7 @@ pub mod find;
 pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
+pub mod regroup;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
 pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
@@ -127,6 +128,8 @@ impl Library {
         // Genres an earlier scan stored joined are split once, here: files
         // that did not change are never read again to do it.
         lib.split_stored_genres()?;
+        // And records an earlier scan split by artist, the same way.
+        lib.regroup_split_albums()?;
         Ok(lib)
     }
 

@@ -1013,3 +1013,25 @@ pub(super) const MIGRATION_V16: &str = r#"
 ALTER TABLE scanned_files ADD COLUMN container TEXT;
 CREATE INDEX scanned_files_container ON scanned_files(container) WHERE container IS NOT NULL;
 "#;
+
+/// From 16 to 17: a record whose files do not say who made it is grouped by
+/// its folder.
+///
+/// Without an album artist tag the scan used the track's own artist, so a
+/// compilation -- an anime OP/ED collection, every song by someone else --
+/// became one record per artist: twenty-eight cards for one CD. `folder` is
+/// what such a record is known by instead: the folder its files sit in, or
+/// the parent of a "CD1"/"Disc 2" folder. It stays empty for a record whose
+/// files name their album artist, which is still known by that.
+///
+/// The identity index takes the folder in, so two compilations with the same
+/// title in two folders -- both "Various Artists" -- are two records. The
+/// records an earlier scan already split are joined when the library opens,
+/// not here: finding the folder of a record means reading its tracks' paths
+/// the way the scan does, and that is Rust, not SQL.
+pub(super) const MIGRATION_V17: &str = r#"
+ALTER TABLE albums ADD COLUMN folder TEXT NOT NULL DEFAULT '';
+DROP INDEX albums_identity;
+CREATE UNIQUE INDEX albums_identity
+    ON albums(title, album_artist, ifnull(mbid, ''), folder);
+"#;

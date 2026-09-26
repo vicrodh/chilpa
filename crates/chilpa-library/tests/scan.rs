@@ -516,3 +516,59 @@ fn a_file_that_holds_nothing_is_not_audio() {
     assert_eq!((report.seen, report.read, report.unreadable), (1, 1, 0));
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// A tagged file on disk: title, artist, album and, if given, album artist.
+fn tagged_file(target: &std::path::Path, title: &str, artist: &str, album: &str, album_artist: Option<&str>) -> bool {
+    let _ = std::fs::create_dir_all(target.parent().unwrap());
+    let mut cmd = Command::new("ffmpeg");
+    cmd.args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "flac"])
+        .args(["-metadata", &format!("title={title}")])
+        .args(["-metadata", &format!("artist={artist}")])
+        .args(["-metadata", &format!("album={album}")]);
+    if let Some(name) = album_artist {
+        cmd.args(["-metadata", &format!("album_artist={name}")]);
+    }
+    cmd.arg(target).output().map(|o| o.status.success()).unwrap_or(false)
+}
+
+#[test]
+fn a_compilation_without_an_album_artist_is_one_record() {
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let dir = std::env::temp_dir().join("chilpa-scan-compilation");
+    let _ = std::fs::remove_dir_all(&dir);
+    // Every song by someone else, over two discs, and no album artist: the
+    // scan made one record per artist of this.
+    let compilation = dir.join("OP&ED Collection");
+    assert!(tagged_file(&compilation.join("CD1/01.flac"), "Asterisk", "ORANGE RANGE", "OP&ED Collection", None));
+    assert!(tagged_file(&compilation.join("CD1/02.flac"), "Life", "YUI", "OP&ED Collection", None));
+    assert!(tagged_file(&compilation.join("CD2/01.flac"), "Ref:rain", "Aimer", "OP&ED Collection", None));
+    // One artist and no album artist: a record by that artist.
+    let single = dir.join("Solo");
+    assert!(tagged_file(&single.join("01.flac"), "One", "Mora Vale", "Solo", None));
+    assert!(tagged_file(&single.join("02.flac"), "Two", "Mora Vale", "Solo", None));
+    // An album artist named: that is who it is by, whatever the tracks say.
+    let tagged = dir.join("Tagged");
+    assert!(tagged_file(&tagged.join("01.flac"), "A", "Band feat. Guest", "Tagged", Some("Band")));
+    assert!(tagged_file(&tagged.join("02.flac"), "B", "Band", "Tagged", Some("Band")));
+
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let mut albums: Vec<(String, String, usize)> =
+        lib.albums(10, 0).unwrap().into_iter().map(|a| (a.title, a.album_artist, a.track_count)).collect();
+    albums.sort();
+    assert_eq!(
+        albums,
+        [
+            ("OP&ED Collection".to_string(), "Various Artists".to_string(), 3),
+            ("Solo".to_string(), "Mora Vale".to_string(), 2),
+            ("Tagged".to_string(), "Band".to_string(), 2),
+        ]
+    );
+    // A rescan that rereads nothing leaves it as it is.
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(lib.albums(10, 0).unwrap().len(), 3);
+    let _ = std::fs::remove_dir_all(dir);
+}
