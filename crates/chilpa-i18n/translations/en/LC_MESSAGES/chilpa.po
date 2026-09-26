@@ -112,6 +112,9 @@ msgstr ""
 msgid "Appearance"
 msgstr ""
 
+msgid "Appears on"
+msgstr ""
+
 msgid "Artist"
 msgstr ""
 

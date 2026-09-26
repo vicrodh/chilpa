@@ -6,7 +6,8 @@ import "../Primitives"
 import "../Components"
 
 // An artist (design/06 Artist): the portrait and what the library has of
-// them, their most played tracks, and their records, newest first.
+// them, their most played tracks, their records, newest first, and the
+// compilations they are on.
 Flickable {
     id: page
 
@@ -23,6 +24,13 @@ Flickable {
         key: page.name
         contentRev: Library.contentRev
         columns: grid.columns
+    }
+    AlbumGridModel {
+        id: guest
+        kind: "appearsOn"
+        key: page.name
+        contentRev: Library.contentRev
+        columns: guestGrid.columns
     }
     TrackListModel {
         id: every
@@ -48,8 +56,9 @@ Flickable {
         ArtistHero {
             width: parent.width
             name: page.name
-            art: records.art(0, records.rev)
-            meta: records.albums > 0 ? I18n.trCount("{} record", "{} records", records.albums, I18n.rev) + " · " + every.summary : ""
+            art: records.albums > 0 ? records.art(0, records.rev) : guest.art(0, guest.rev)
+            meta: records.albums > 0 ? I18n.trCount("{} record", "{} records", records.albums, I18n.rev) + " · " + every.summary
+                : every.summary
             onPlay: every.playAll(false)
             onShuffle: every.playAll(true)
         }
@@ -65,13 +74,25 @@ Flickable {
             model: top
         }
 
-        SectionHeader { width: parent.width; title: I18n.tr("Records", I18n.rev) }
+        SectionHeader { width: parent.width; visible: records.albums > 0; title: I18n.tr("Records", I18n.rev) }
         AlbumGrid {
             id: grid
             width: parent.width
             height: implicitHeight
+            visible: records.albums > 0
             fitContent: true
             model: records
+            onOpen: (albumId) => Navigation.go("album", albumId)
+        }
+
+        SectionHeader { width: parent.width; visible: guest.albums > 0; title: I18n.tr("Appears on", I18n.rev) }
+        AlbumGrid {
+            id: guestGrid
+            width: parent.width
+            height: implicitHeight
+            visible: guest.albums > 0
+            fitContent: true
+            model: guest
             onOpen: (albumId) => Navigation.go("album", albumId)
         }
     }

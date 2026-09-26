@@ -37,7 +37,8 @@ pub mod qobject {
         #[qml_element]
         /// "recentlyPlayed", "recentlyAdded", "all", "library" (the records
         /// the Library screen's filter leaves), "artist" (one artist's
-        /// records, by `key`) or "artists" (every artist, as round cards).
+        /// records, by `key`), "appearsOn" (the compilations they are on)
+        /// or "artists" (every artist, as round cards).
         #[qproperty(QString, kind)]
         #[qproperty(QString, key)]
         /// For "all": "artist", "title", "year", "added", "played" or
@@ -293,6 +294,10 @@ impl qobject::AlbumGridModel {
             "artist" => {
                 let name = self.rust().key.to_string();
                 app::with(|api| api.artist_albums(&name))
+            }
+            "appearsOn" => {
+                let name = self.rust().key.to_string();
+                app::with(|api| api.artist_appearances(&name))
             }
             "artists" => {
                 // An artist is drawn as a card too: its name where a record's
