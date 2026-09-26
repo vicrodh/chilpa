@@ -66,10 +66,17 @@ Window {
     }
 
     SelectionBar {
+        id: selection
         z: 4
         visible: AlbumActions.selectedCount > 0
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.selectionBottom
+    }
+
+    Toast {
+        z: 5
+        x: host.x + (host.width - width) / 2 // derived: centered over the content
+        y: window.height - height - (selection.visible ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
     }
 
     // Above the content and the tab bar, so its grip is never covered.

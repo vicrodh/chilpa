@@ -27,5 +27,6 @@ GallerySection {
         SearchBox { width: Metrics.screenSearch; active: false }
         PlaybackOptions {}
         SelectionBar {}
+        Toast { visible: true; message: "Playback failed" }
     }
 }
