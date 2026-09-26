@@ -7,9 +7,11 @@ import "../Components"
 
 // The side queue (design/03, frontend ADR-0008, wireframe 17): its head
 // with how much is queued, "Now playing" and "Up next" over their rows, and
-// a foot that clears it or keeps it as a playlist. Docking it below, the
-// full queue, "Play later" groups, the timer and dragging to reorder are
-// not in the player yet, so they have no buttons here.
+// a foot that clears it or keeps it as a playlist. "Play later" groups,
+// the timer and stop-after need the facade and the player first; dragging
+// to reorder needs a facade move over Player::set_order. Docking it below
+// and the full queue need nothing below the window and are simply not built
+// yet. None of them has a button here until it works.
 Item {
     id: panel
 
