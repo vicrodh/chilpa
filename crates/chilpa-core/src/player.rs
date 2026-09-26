@@ -210,6 +210,7 @@ impl Player {
         // pause, play next, queue more -- comes after it, and the thread,
         // taking the order later, would have undone it. A disc image goes
         // in as its tracks, one entry each, like any album.
+        self.controls.stop_after.clear();
         self.queue.set(crate::sacd_tracks::expand(paths));
         self.controls.pause.set(paused);
         let _ = self.orders.send(Order::Play {
@@ -243,6 +244,11 @@ impl Player {
     /// Changes repeat. It takes effect when the playing track ends.
     pub fn set_repeat(&self, repeat: crate::queue_playback::Repeat) {
         self.controls.repeat.set(repeat);
+    }
+
+    /// Stops after this position in the player's queue, or clears the mark.
+    pub fn set_stop_after(&self, index: Option<usize>) {
+        self.controls.stop_after.set(index);
     }
 
     /// Gapless on or off, from the next track on.
@@ -810,6 +816,24 @@ mod tests {
             .collect();
         assert_eq!(startups, vec![(0, 2), (1, 2)], "both tracks, in order");
         assert_eq!(written.load(Ordering::Relaxed), 3_000, "every frame went out");
+        let _ = std::fs::remove_file(a);
+        let _ = std::fs::remove_file(b);
+    }
+
+    #[test]
+    fn stop_after_ends_the_queue_at_the_marked_track() {
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
+        let a = wav("stop-after-a", 2_000);
+        let b = wav("stop-after-b", 3_000);
+        p.play_all_from_paused(&[a.clone(), b.clone()], "fake", true, None, true);
+        p.set_stop_after(Some(0));
+        p.set_paused(false);
+
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        let startups = events.iter().filter(|e| matches!(e, PlayerEvent::Started { .. })).count();
+        assert_eq!(startups, 1, "the second track never starts");
+        assert_eq!(written.load(Ordering::Relaxed), 2_000, "the marked track finishes cleanly");
         let _ = std::fs::remove_file(a);
         let _ = std::fs::remove_file(b);
     }

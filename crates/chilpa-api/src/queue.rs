@@ -117,6 +117,7 @@ impl Chilpa {
         if tracks.is_empty() {
             return Vec::new();
         }
+        self.set_stop_after(None);
         self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
@@ -160,10 +161,45 @@ impl Chilpa {
     /// Stops and empties the queue.
     pub fn clear_queue(&mut self) {
         self.stop();
+        self.set_stop_after(None);
+        self.sleep_until = None;
         self.queue.clear();
         self.removed.clear();
         self.base = 0;
         self.now.queue_len = 0;
+    }
+
+    /// Marks a position in the whole queue as the last one to play. The
+    /// current track is valid; history and removed rows are not.
+    pub fn set_stop_after(&mut self, index: Option<usize>) -> bool {
+        let valid = index.is_none_or(|at| {
+            at >= self.now.index
+                && at < self.queue.len()
+                && !self.removed.get(at).copied().unwrap_or(false)
+                && at >= self.base
+        });
+        if !valid {
+            return false;
+        }
+        self.stop_after = index;
+        if let Some(player) = &self.player {
+            player.set_stop_after(index.map(|at| at - self.base));
+        }
+        true
+    }
+
+    pub fn stop_after(&self) -> Option<usize> {
+        self.stop_after
+    }
+
+    /// Stops after the duration elapses. `None` turns the timer off. The
+    /// deadline is checked by `poll`, which every frontend already drives.
+    pub fn set_sleep_timer(&mut self, after: Option<std::time::Duration>) {
+        self.sleep_until = after.and_then(|duration| std::time::Instant::now().checked_add(duration));
+    }
+
+    pub fn sleep_timer_remaining(&self) -> Option<std::time::Duration> {
+        self.sleep_until.map(|deadline| deadline.saturating_duration_since(std::time::Instant::now()))
     }
 
     /// Adds tracks to the end of the queue. If nothing is playing, it starts.

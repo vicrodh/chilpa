@@ -166,3 +166,48 @@ fn play_next_puts_the_tracks_right_after_the_one_playing() {
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn stop_after_finishes_the_marked_track_on_capture_and_stops() {
+    let dir = folder("stop-after");
+    other_library(&dir);
+    let paths: Vec<String> = ["01.wav", "02.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 441_000).display().to_string())
+        .collect();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&paths, OUTPUT, true);
+    chilpa.set_paused(true);
+    assert!(chilpa.set_stop_after(Some(0)));
+    chilpa.set_paused(false);
+
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while chilpa.poll().playing && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(!chilpa.now_playing().playing, "the mark stopped playback");
+    assert_eq!(chilpa.now_playing().index, 0, "the second track never started");
+    assert_eq!(chilpa.stop_after(), None, "the mark was consumed");
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn the_sleep_timer_stops_a_paused_capture_queue() {
+    let dir = folder("timer");
+    other_library(&dir);
+    let path = wave(&dir, "01.wav", 441_000).display().to_string();
+
+    let mut chilpa = chilpa_api::Chilpa::new();
+    chilpa.play_tracks(&[path], OUTPUT, true);
+    chilpa.set_paused(true);
+    chilpa.set_sleep_timer(Some(std::time::Duration::from_millis(30)));
+
+    let limit = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    while chilpa.poll().playing && std::time::Instant::now() < limit {
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+    assert!(!chilpa.now_playing().playing, "the timer stopped playback");
+    assert_eq!(chilpa.sleep_timer_remaining(), None, "the timer is one-shot");
+    let _ = std::fs::remove_dir_all(dir);
+}
