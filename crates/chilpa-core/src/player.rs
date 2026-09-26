@@ -55,8 +55,8 @@ pub enum PlayerEvent {
 }
 
 enum Order {
+    /// Plays the shared queue, which the sender has already set.
     Play {
-        paths: Vec<PathBuf>,
         device: String,
         bit_perfect: bool,
         /// Where the first track starts, when it is not at the beginning.
@@ -70,9 +70,6 @@ enum Order {
         /// play it belongs to, because the thread arms it after the previous
         /// one has already returned.
         start_at: Option<std::time::Duration>,
-        /// Whether it starts paused: the same track moved to another output
-        /// while paused stays paused there.
-        paused: bool,
     },
     Stop,
     Quit,
@@ -115,7 +112,6 @@ impl Player {
         let queue = crate::queue_playback::SharedQueue::default();
         let queue_thread = queue.clone();
         let stop_thread = controls.stop.clone();
-        let pause_thread = controls.pause.clone();
         let skip_thread = controls.skip.clone();
         let seek_thread = controls.seek.clone();
 
@@ -126,13 +122,12 @@ impl Player {
                     match order {
                         Order::Quit => break,
                         Order::Stop => {}
-                        Order::Play { paths, device, bit_perfect, start_at, paused } => {
+                        Order::Play { device, bit_perfect, start_at } => {
                             // Every track starts with the flag clear: an old
-                            // stop order does not kill the next one. Paused
-                            // only when it was asked to: a pause set before
-                            // the order arrived belonged to the play before.
+                            // stop order does not kill the next one. The
+                            // pause is not touched here: it was set when the
+                            // order was sent (`play_all_from_paused`).
                             stop_thread.reset();
-                            pause_thread.set(paused);
                             skip_thread.take();
                             // Whatever seek was left pending belonged to the
                             // play that just ended, and serving it to the new
@@ -142,9 +137,6 @@ impl Player {
                             if let Some(at) = start_at {
                                 seek_thread.request(at);
                             }
-                            // A disc image goes in as its tracks, one entry
-                            // each, like any album.
-                            queue_thread.set(crate::sacd_tracks::expand(&paths));
                             let result = play(
                                 &queue_thread,
                                 &device,
@@ -213,12 +205,17 @@ impl Player {
         start_at: Option<std::time::Duration>,
         paused: bool,
     ) {
+        // The queue and the pause are set as the order is sent, not as the
+        // thread takes it: what the caller does right after this call --
+        // pause, play next, queue more -- comes after it, and the thread,
+        // taking the order later, would have undone it. A disc image goes
+        // in as its tracks, one entry each, like any album.
+        self.queue.set(crate::sacd_tracks::expand(paths));
+        self.controls.pause.set(paused);
         let _ = self.orders.send(Order::Play {
-            paths: paths.to_vec(),
             device: device.to_string(),
             bit_perfect,
             start_at,
-            paused,
         });
     }
 
