@@ -139,7 +139,7 @@ fn a_relaunch_takes_effect_while_something_is_playing() {
     let log: Log = Arc::default();
     let player = player_with(Arc::clone(&log));
 
-    player.play_all(&[track.clone()], "a", true);
+    player.play_all(&[track.clone()], "a");
     assert!(
         until(&player, Duration::from_secs(5), |e| matches!(e, PlayerEvent::Started { .. })),
         "it started on the first device",
@@ -155,7 +155,7 @@ fn a_relaunch_takes_effect_while_something_is_playing() {
     // The bug this pins: without the stop, this order sits in the channel
     // until the 30 second track is over.
     player.stop();
-    player.play_all_from(&[track], "b", true, None);
+    player.play_all_from(&[track], "b", None);
     let moved = until(&player, Duration::from_secs(5), |e| {
         matches!(e, PlayerEvent::Started { .. })
     });
@@ -179,7 +179,7 @@ fn a_relaunch_can_start_the_track_somewhere_other_than_its_beginning() {
     let log: Log = Arc::default();
     let player = player_with(Arc::clone(&log));
 
-    player.play_all(&[track.clone()], "a", true);
+    player.play_all(&[track.clone()], "a");
     assert!(
         until(&player, Duration::from_secs(5), |e| {
             matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 0)
@@ -188,7 +188,7 @@ fn a_relaunch_can_start_the_track_somewhere_other_than_its_beginning() {
     );
 
     player.stop();
-    player.play_all_from(&[track], "b", true, Some(Duration::from_secs(20)));
+    player.play_all_from(&[track], "b", Some(Duration::from_secs(20)));
     // The position counts from the point asked for, so the first progress of
     // the new play is already past it. Nineteen and not twenty: the
     // container lands on the frame it can and the discarded frames are
@@ -210,7 +210,7 @@ fn a_seek_left_over_from_the_last_play_does_not_move_the_next_one() {
     let log: Log = Arc::default();
     let player = player_with(Arc::clone(&log));
 
-    player.play_all(&[track.clone()], "a", true);
+    player.play_all(&[track.clone()], "a");
     assert!(
         until(&player, Duration::from_secs(5), |e| {
             matches!(e, PlayerEvent::Progress { frames, .. } if *frames > 0)
@@ -221,7 +221,7 @@ fn a_seek_left_over_from_the_last_play_does_not_move_the_next_one() {
     // Asked for and never served, because the stop arrives first.
     player.seek(Duration::from_secs(25));
     player.stop();
-    player.play_all_from(&[track], "b", true, None);
+    player.play_all_from(&[track], "b", None);
     assert!(
         until(&player, Duration::from_secs(5), |e| matches!(e, PlayerEvent::Started { .. })),
         "the new play started",

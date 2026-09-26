@@ -8,7 +8,7 @@
 //! the next one through. A device failure stops the queue right there, which
 //! is exactly what QBZ did not do: it skipped everything in silence.
 
-use chilpa_audio::format::StreamFormat;
+use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::gapless::{transition, Transition, Trimmer};
 use chilpa_audio::negotiate::{negotiate, DeviceCaps, Delivery, Policy};
 use chilpa_audio::pack::{duplicate_mono, pack, Samples};
@@ -21,12 +21,13 @@ use std::path::{Path, PathBuf};
 use crate::dsd_playback::{dop_request, is_dsd_file, open_dsd_file, DopFrames};
 use crate::playback::PlayError;
 use chilpa_audio::dop::DopPacker;
-use chilpa_dsd::DsdSource;
+use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
-/// What a track is read from: the decoder for PCM, a DSD source for DoP.
+/// What a track is read from after its route has been resolved.
 enum Source {
     Pcm(Decoded),
     Dop(Box<dyn DsdSource>),
+    DsdPcm(DsdPcmConverter),
 }
 
 /// Opens a track by what it is, and negotiates what it asks for.
@@ -34,33 +35,51 @@ enum Source {
 /// DSD used to be played outside the queue, on the first track only: a
 /// queue of DSF files played its first file and stopped, because nothing
 /// took the queue on from there. It goes through the queue like any track
-/// now, always as bit-perfect, since converting DoP turns it into noise.
-fn open_track(path: &Path, caps: &DeviceCaps, policy: Policy) -> Result<(Source, Delivery), PlayError> {
+/// now, as DoP only on an eligible direct route and as PCM everywhere else.
+fn open_track(
+    path: &Path,
+    caps: &DeviceCaps,
+    policy: Policy,
+    dsd_passthrough: bool,
+) -> Result<(Source, Delivery), PlayError> {
     let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
-        return dop_track(Box::new(reader), caps);
+        return dsd_track(Box::new(reader), caps, dsd_passthrough);
     }
     if is_dsd_file(path) {
         let reader = open_dsd_file(path).map_err(|e| unreadable(e.to_string()))?;
-        return dop_track(reader, caps);
+        return dsd_track(reader, caps, dsd_passthrough);
     }
     let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     Ok((Source::Pcm(decoded), delivery))
 }
 
-/// A DSD source, negotiated as bit-perfect: converting DoP turns it into
-/// noise, so the policy is not asked.
-fn dop_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
-    let request = dop_request(reader.info());
-    let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(|_| {
-        PlayError::Sink(SinkError::Backend(chilpa_i18n::t_args(
-            "the device does not accept {} Hz, which is what this DSD over DoP asks for",
-            &[&request.sample_rate_hz.to_string()],
-        )))
-    })?;
-    Ok((Source::Dop(reader), delivery))
+/// Sends DSD untouched only to a direct route that accepts its DoP carrier.
+/// Every other path receives ordinary PCM, which a sound server may safely
+/// mix, resample and scale.
+fn dsd_track(
+    reader: Box<dyn DsdSource>,
+    caps: &DeviceCaps,
+    dsd_passthrough: bool,
+) -> Result<(Source, Delivery), PlayError> {
+    if dsd_passthrough {
+        let request = dop_request(reader.info());
+        if let Ok(delivery) = negotiate(request, caps, Policy::BitPerfect) {
+            return Ok((Source::Dop(reader), delivery));
+        }
+    }
+    pcm_track(reader, caps)
+}
+
+fn pcm_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
+    let converter = DsdPcmConverter::new(reader, DEFAULT_GAIN_DB)
+        .map_err(|e| PlayError::Sink(SinkError::Backend(e.to_string())))?;
+    let request = StreamFormat::new(SampleFormat::F32, converter.output_rate(), converter.channels());
+    let mut delivery = negotiate(request, caps, Policy::AllowAnything).map_err(PlayError::Negotiation)?;
+    delivery.transforms.insert(0, chilpa_audio::negotiate::Transform::DsdToPcm);
+    Ok((Source::DsdPcm(converter), delivery))
 }
 
 /// What to do on reaching the end of the queue.
@@ -351,13 +370,16 @@ pub struct Controls {
     /// Tracks brought to one loudness by their ReplayGain. It changes the
     /// samples, and a track it touches is not delivered bit-perfect.
     pub normalize: Switch,
-    /// The output asked for alone even with bit-perfect off: nothing else
-    /// mixed in, while Chilpa may still convert. Read when the output opens.
+    /// The output asked for alone: nothing else is mixed in, while Chilpa may
+    /// still convert. Read when the output opens.
     pub exclusive: Switch,
     /// What the samples are multiplied by, from the player bar's volume:
     /// read on every block, so a change is heard as soon as what the device
-    /// holds plays out. Never under the bit-perfect policy.
+    /// holds plays out. Never applied to raw DoP.
     pub volume: Level,
+    /// Raw DoP is only eligible on the physical ALSA device route. All other
+    /// routes convert DSD to PCM before opening their sink.
+    pub dsd_passthrough: Switch,
 }
 
 /// A factor shared with whoever drives the queue, read every block.
@@ -423,6 +445,7 @@ impl Default for Controls {
             normalize: Switch::new(false),
             exclusive: Switch::new(false),
             volume: Level::new(1.0),
+            dsd_passthrough: Switch::new(false),
         }
     }
 }
@@ -645,6 +668,40 @@ impl TrackFrames<'_> {
     }
 }
 
+/// Converted DSD laid out in the format negotiated for the PCM route.
+struct DsdPcmFrames<'a> {
+    converter: &'a mut DsdPcmConverter,
+    opened: StreamFormat,
+    skip: SkipSignal,
+    seek: SeekSignal,
+    skipped: bool,
+    gain: f32,
+    volume: Option<Level>,
+}
+
+impl FrameSource for DsdPcmFrames<'_> {
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+        if self.skip.take() {
+            self.skipped = true;
+            return Ok(None);
+        }
+        // Conversion is streaming today. A seek that cannot be served must
+        // not leak into the next track; this source continues where it was.
+        let _ = self.seek.take();
+        let Some(mut samples) = self.converter.next_block().map_err(|e| e.to_string())? else {
+            return Ok(None);
+        };
+        let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
+        if gain != 1.0 {
+            samples.iter_mut().for_each(|sample| *sample *= gain);
+        }
+        let mut bytes = Vec::new();
+        pack(&Samples::Float(&samples), self.opened.sample_format, &mut bytes)
+            .map_err(|error| PlayError::Pack(error).to_string())?;
+        Ok(Some(bytes))
+    }
+}
+
 /// Plays the tracks in order.
 ///
 /// `open_sink` opens the device with the format it is handed. It is called
@@ -691,7 +748,7 @@ where
     K: AudioSink,
 {
     // `exclusive` was read when the output was chosen, before the queue.
-    let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, exclusive: _, volume } = controls;
+    let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, volume, .. } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());
@@ -719,7 +776,7 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
-        let (mut source, mut delivery) = open_track(path, caps, policy)?;
+        let (mut source, mut delivery) = open_track(path, caps, policy, controls.dsd_passthrough.get())?;
 
         let transition = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
@@ -750,7 +807,7 @@ where
         let gain = match &source {
             // Never under the bit-perfect policy, whatever the switch says:
             // that policy is the promise that no sample is changed.
-            Source::Pcm(_) if normalize.get() && policy != Policy::BitPerfect => {
+            Source::Pcm(_) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
                 let tags = chilpa_tags::read(path).map(|i| i.tags).unwrap_or_default();
                 let (gain_db, peak) = tags.replaygain();
                 normalization_gain(gain_db, peak)
@@ -759,7 +816,7 @@ where
         };
         // The volume, the same way and under the same promise.
         let volume = match &source {
-            Source::Pcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
+            Source::Pcm(_) | Source::DsdPcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
             _ => None,
         };
         if gain != 1.0 || volume.as_ref().is_some_and(|v| v.get() != 1.0) {
@@ -813,6 +870,27 @@ where
                     let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
                     on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
                 });
+                (outcome, frames.skipped)
+            }
+            Source::DsdPcm(converter) => {
+                let mut frames = DsdPcmFrames {
+                    converter,
+                    opened: delivery.opened,
+                    skip: skip.clone(),
+                    seek: seek.clone(),
+                    skipped: false,
+                    gain,
+                    volume,
+                };
+                let outcome = chilpa_audio::render::render_paused(
+                    &mut frames,
+                    sink,
+                    stop,
+                    pause,
+                    &mut |position| {
+                        on_progress(index, Progress { position, delivered: position })
+                    },
+                );
                 (outcome, frames.skipped)
             }
         };

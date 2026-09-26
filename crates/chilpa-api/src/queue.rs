@@ -161,8 +161,8 @@ impl Chilpa {
     ///
     /// Everything that plays a list goes through here: that way repeat,
     /// shuffle and the position count are applied in one place.
-    pub(crate) fn spawn(&mut self, from: usize, device: &str, bit_perfect: bool) {
-        self.spawn_from(from, device, bit_perfect, None, Relaunch::Track);
+    pub(crate) fn spawn(&mut self, from: usize, device: &str, _bit_perfect: bool) {
+        self.spawn_from(from, device, false, None, Relaunch::Track);
     }
 
     /// The same, with the first track starting somewhere other than its
@@ -184,7 +184,7 @@ impl Chilpa {
         &mut self,
         from: usize,
         device: &str,
-        bit_perfect: bool,
+        _bit_perfect: bool,
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
@@ -210,7 +210,7 @@ impl Chilpa {
         // what played before does not carry over.
         self.mix = false;
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
-        let (gapless, normalize, exclusive) = (self.gapless(), self.normalize() && !bit_perfect, self.exclusive());
+        let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
         let volume = self.software_gain();
         let tap = self.tap.clone();
         let player = self
@@ -238,7 +238,7 @@ impl Chilpa {
         };
         // Moved while paused, it stays paused where it went.
         let paused = why == Relaunch::Output && self.now.paused;
-        player.play_all_from_paused(&tracks, device, bit_perfect, start_at, paused);
+        player.play_all_from_paused(&tracks, device, start_at, paused);
     }
 
     /// Moves what is playing to another output, keeping its place.
@@ -658,19 +658,17 @@ impl Chilpa {
         }
     }
 
-    /// Whether tracks are brought to one loudness by their ReplayGain. It is
-    /// only applied with bit-perfect off: it changes the samples.
+    /// Whether tracks are brought to one loudness by their ReplayGain.
     pub fn normalize(&self) -> bool {
         self.preference(NORMALIZE).as_deref() == Some("true")
     }
 
     pub fn set_normalize(&mut self, on: bool) {
         self.remember_preference(NORMALIZE, &on.to_string());
-        let (_, bit_perfect) = self.chosen_output();
-        self.apply_playback_options(bit_perfect);
+        self.apply_playback_options(false);
     }
 
-    /// Whether the output is asked for alone with bit-perfect off too.
+    /// Whether the output is asked for alone.
     pub fn exclusive(&self) -> bool {
         self.preference(EXCLUSIVE).as_deref() == Some("true")
     }
@@ -682,17 +680,15 @@ impl Chilpa {
         if let Some(p) = &self.player {
             p.set_exclusive(on);
         }
-        let (output, bit_perfect) = self.chosen_output();
-        if !bit_perfect {
-            self.move_output(&output, bit_perfect);
-        }
+        let (output, _) = self.chosen_output();
+        self.move_output(&output, false);
     }
 
-    /// Hands the player the switches as they stand, for that policy.
-    pub(crate) fn apply_playback_options(&mut self, bit_perfect: bool) {
+    /// Hands the player the switches as they stand.
+    pub(crate) fn apply_playback_options(&mut self, _legacy_bit_perfect: bool) {
         if let Some(p) = &self.player {
             p.set_gapless(self.gapless());
-            p.set_normalize(self.normalize() && !bit_perfect);
+            p.set_normalize(self.normalize());
         }
         self.apply_volume();
     }

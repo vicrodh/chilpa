@@ -120,12 +120,6 @@ pub const SECTIONS: &[Section] = &[
                         Control::Toggle,
                     ),
                     setting(
-                        "audio.bitperfect",
-                        Chilpa::mark("Bit-perfect"),
-                        Chilpa::mark("Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."),
-                        Control::Toggle,
-                    ),
-                    setting(
                         "audio.forceRate",
                         Chilpa::mark("DAC passthrough"),
                         Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."),
@@ -134,7 +128,7 @@ pub const SECTIONS: &[Section] = &[
                     setting(
                         "audio.exclusive",
                         Chilpa::mark("Exclusive mode"),
-                        Chilpa::mark("The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."),
+                        Chilpa::mark("The output plays only Chilpa. Other programs wait until it lets go."),
                         Control::Toggle,
                     ),
                 ],
@@ -168,7 +162,7 @@ pub const SECTIONS: &[Section] = &[
                     setting(
                         "playback.normalize",
                         Chilpa::mark("Normalization"),
-                        Chilpa::mark("Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."),
+                        Chilpa::mark("Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."),
                         Control::Toggle,
                     ),
                     setting(
@@ -367,7 +361,7 @@ pub const SECTIONS: &[Section] = &[
             settings: &[setting(
                 "advanced.hwVolume",
                 Chilpa::mark("Hardware volume"),
-                Chilpa::mark("The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."),
+                Chilpa::mark("The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."),
                 Control::Toggle,
             )],
         }],

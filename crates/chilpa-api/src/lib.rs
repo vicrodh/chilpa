@@ -726,26 +726,24 @@ impl Chilpa {
 
 
 
-    /// What Chilpa remembers: the last output, whether bit-perfect is asked
-    /// for, and the last folder opened.
+    /// What Chilpa remembers: the last output and the last folder opened.
     pub fn settings(&self) -> chilpa_core::settings::Settings {
         chilpa_core::settings::load()
     }
 
-    /// Chooses the output and the policy: remembers them, and moves what is
-    /// playing there, at the same place.
-    pub fn use_output(&mut self, output: &str, bit_perfect: bool) {
-        self.remember(output, bit_perfect);
-        // Normalizing is not applied under bit-perfect; the switch follows.
-        self.apply_playback_options(bit_perfect);
-        self.move_output(output, bit_perfect);
+    /// Chooses the output, remembers it and moves what is playing there at
+    /// the same place. The retired boolean is ignored for source compatibility.
+    pub fn use_output(&mut self, output: &str, _legacy_bit_perfect: bool) {
+        self.remember(output, false);
+        self.apply_playback_options(false);
+        self.move_output(output, false);
     }
 
-    /// Remembers the chosen output and policy.
-    pub fn remember(&mut self, output: &str, bit_perfect: bool) {
+    /// Remembers the chosen output. The retired boolean is ignored for source
+    /// compatibility with callers that have not migrated yet.
+    pub fn remember(&mut self, output: &str, _legacy_bit_perfect: bool) {
         let mut s = chilpa_core::settings::load();
         s.output = output.to_string();
-        s.bit_perfect = bit_perfect;
         // If it cannot be saved, the session carries on: it is a
         // preference, not a part of the player.
         let _ = chilpa_core::settings::save(&s);

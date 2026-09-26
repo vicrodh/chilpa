@@ -168,7 +168,7 @@ impl SettingsPageRust {
     fn build(&mut self) {
         let section = settings_schema::section(&self.section.to_string());
         let mut rows = Vec::new();
-        let (output, bit_perfect) = app::with(|api| api.chosen_output());
+        let (output, _) = app::with(|api| api.chosen_output());
         for group in section.groups {
             rows.push(Row { kind: 0, title: app::t(group.title), ..Row::default() });
             for s in group.settings {
@@ -199,7 +199,7 @@ impl SettingsPageRust {
                     action: if s.action.is_empty() { String::new() } else { app::t(s.action) },
                     ..Row::default()
                 };
-                self.fill(&mut row, &output, bit_perfect);
+                self.fill(&mut row, &output);
                 // A row that does not apply to what is chosen is left out.
                 if row.control.is_empty() {
                     continue;
@@ -223,7 +223,7 @@ impl SettingsPageRust {
     }
 
     /// The value, the options and anything the row says about its state.
-    fn fill(&self, row: &mut Row, output: &str, bit_perfect: bool) {
+    fn fill(&self, row: &mut Row, output: &str) {
         match row.key.as_str() {
             "audio.backend" => {
                 let (stacks, current) = app::with(|api| (api.stacks(), api.stack_of(output)));
@@ -245,14 +245,12 @@ impl SettingsPageRust {
                 }
                 row.value = output.to_string();
             }
-            "audio.bitperfect" => row.value = bit_perfect.to_string(),
             "audio.exclusive" => {
                 // Only a stack that shares can be asked not to; a card is
-                // always alone, and bit-perfect always asks.
+                // always alone.
                 let (fidelity, chosen) = app::with(|api| (api.fidelity_of(output), api.exclusive()));
                 let fixed = match fidelity {
                     "exact" => Some((true, app::t("This output is always Chilpa's alone."))),
-                    "depends" if bit_perfect => Some((true, app::t("Bit-perfect already asks for it."))),
                     "depends" => None,
                     _ => Some((false, app::t("Not through this stack: it mixes by design."))),
                 };
@@ -264,7 +262,7 @@ impl SettingsPageRust {
             }
             "audio.forceRate" => {
                 let (shown, on, alone) =
-                    app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), bit_perfect || api.exclusive()));
+                    app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), api.exclusive()));
                 row.value = (on && alone).to_string();
                 row.control = if !shown {
                     String::new()
@@ -274,7 +272,7 @@ impl SettingsPageRust {
                     "fixed".into()
                 };
                 if shown && !alone {
-                    row.description = format!("{} {}", row.description, app::t("Only with bit-perfect or exclusive mode on."));
+                    row.description = format!("{} {}", row.description, app::t("Only with exclusive mode on."));
                 }
             }
             "advanced.hwVolume" => row.value = app::with(|api| api.hardware_volume()).to_string(),
@@ -581,7 +579,6 @@ impl qobject::SettingsPage {
                 registry::player(|p| p.read_switches());
             }
             "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
-            "audio.bitperfect" => app::with(|api| api.set_bit_perfect(value == "true")),
             "appearance.theme" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::theme(move |theme| theme.choose_mode(QString::from(&value)));

@@ -16,8 +16,6 @@ use std::path::PathBuf;
 pub struct Settings {
     /// The identifier of the last output used.
     pub output: String,
-    /// Whether bit-perfect is asked for.
-    pub bit_perfect: bool,
     /// The last folder opened, so as not to start at home every time.
     pub last_folder: String,
     /// The window layout, by name.
@@ -46,7 +44,6 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             output: String::new(),
-            bit_perfect: true,
             last_folder: String::new(),
             layout: DEFAULT_LAYOUT.to_string(),
             album_sort: String::new(),
@@ -99,9 +96,6 @@ pub fn load_from(file: &std::path::Path) -> Settings {
     if let Some(v) = pairs.get("output") {
         s.output = carried_over(v);
     }
-    if let Some(v) = pairs.get("bit_perfect") {
-        s.bit_perfect = v != "false";
-    }
     if let Some(v) = pairs.get("last_folder") {
         s.last_folder = v.clone();
     }
@@ -150,9 +144,8 @@ pub fn save_to(file: &std::path::Path, settings: &Settings) -> std::io::Result<(
         std::fs::create_dir_all(dir)?;
     }
     let mut text = format!(
-        "# Chilpa's preferences. Editing this by hand is fine.\noutput = {}\nbit_perfect = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\nlanguage = {}\n",
+        "# Chilpa's preferences. Editing this by hand is fine.\noutput = {}\nlast_folder = {}\nlayout = {}\nalbum_sort = {}\nvisualizer = {}\nlanguage = {}\n",
         settings.output,
-        settings.bit_perfect,
         settings.last_folder,
         settings.layout,
         settings.album_sort,
@@ -203,7 +196,6 @@ mod tests {
     fn with_no_file_the_defaults_are_used() {
         let s = load_from(&temporary("missing"));
         assert_eq!(s, Settings::default());
-        assert!(s.bit_perfect, "bit-perfect comes switched on");
     }
 
     #[test]
@@ -211,7 +203,6 @@ mod tests {
         let file = temporary("round-trip");
         let s = Settings {
             output: "alsa:hw:1,0".into(),
-            bit_perfect: false,
             last_folder: "/music/albums".into(),
             layout: "Column".into(),
             album_sort: "played".into(),
@@ -245,7 +236,6 @@ mod tests {
         std::fs::write(&file, "this is not\na valid file }{\noutput = hw:0,0\n").unwrap();
         let s = load_from(&file);
         assert_eq!(s.output, "alsa:hw:0,0", "what does parse is salvaged");
-        assert!(s.bit_perfect, "the rest takes its default value");
         let _ = std::fs::remove_file(file);
     }
 
@@ -275,7 +265,7 @@ mod tests {
         std::fs::write(&file, "# a comment\n  output   =   hw:2,0  \nbit_perfect = false\n").unwrap();
         let s = load_from(&file);
         assert_eq!(s.output, "alsa:hw:2,0");
-        assert!(!s.bit_perfect);
+        assert!(!s.window.contains_key("bit_perfect"), "the retired setting is ignored");
         let _ = std::fs::remove_file(file);
     }
 }

@@ -199,15 +199,6 @@ msgstr ""
 msgid "Bit perfect"
 msgstr ""
 
-msgid "Bit-perfect"
-msgstr ""
-
-msgid "Bit-perfect already asks for it."
-msgstr ""
-
-msgid "Bit-perfect does not scale the samples. Turn on hardware volume in Settings › Advanced to move the device's own."
-msgstr ""
-
 msgid "Browse for a music folder, or type its full path."
 msgstr ""
 
@@ -331,6 +322,9 @@ msgstr ""
 msgid "Diagnosis"
 msgstr ""
 
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
+msgstr ""
+
 msgid "Disc {}"
 msgstr ""
 
@@ -349,10 +343,10 @@ msgstr ""
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
-msgid "Every track at one loudness, by its ReplayGain."
+msgid "Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."
 msgstr ""
 
-msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
+msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
@@ -577,9 +571,6 @@ msgstr ""
 msgid "Not through this stack: it mixes by design."
 msgstr ""
 
-msgid "Not with bit-perfect on: it changes the samples."
-msgstr ""
-
 msgid "Nothing found for “{}”"
 msgstr ""
 
@@ -601,10 +592,7 @@ msgstr ""
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr ""
 
-msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
-msgstr ""
-
-msgid "Only with bit-perfect or exclusive mode on."
+msgid "Only with exclusive mode on."
 msgstr ""
 
 msgid "Open Last.fm"
@@ -790,9 +778,6 @@ msgstr ""
 msgid "SACDTRL2 is missing"
 msgstr ""
 
-msgid "Samples reach the device untouched. Off, normalization can be used."
-msgstr ""
-
 msgid "Save as playlist"
 msgstr ""
 
@@ -874,10 +859,10 @@ msgstr ""
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
-msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
+msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr ""
 
-msgid "The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."
+msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
 msgstr ""
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
@@ -895,13 +880,13 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
+msgstr ""
+
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr ""
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
-msgstr ""
-
-msgid "This output has no volume of its own, and bit-perfect does not scale the samples."
 msgstr ""
 
 msgid "This output is always Chilpa's alone."
@@ -1054,9 +1039,6 @@ msgstr ""
 msgid "be a plugin of another kind: {}"
 msgstr ""
 
-msgid "bit-perfect only"
-msgstr ""
-
 msgid "bring catalogue: search for and fetch music"
 msgstr ""
 
@@ -1073,9 +1055,6 @@ msgid "calling \"{}\", which nobody has approved"
 msgstr ""
 
 msgid "cannot be done"
-msgstr ""
-
-msgid "conversion allowed"
 msgstr ""
 
 msgid "converted to {}"
@@ -1102,10 +1081,16 @@ msgstr ""
 msgid "digital"
 msgstr ""
 
+msgid "direct"
+msgstr ""
+
 msgid "display"
 msgstr ""
 
 msgid "encrypted and tied to this machine (there is no system keyring)"
+msgstr ""
+
+msgid "exclusive"
 msgstr ""
 
 msgid "file"
@@ -1289,6 +1274,9 @@ msgid "sector {} is invalid: {}"
 msgstr ""
 
 msgid "send you to grant permission at {}"
+msgstr ""
+
+msgid "shared"
 msgstr ""
 
 msgid "shared at {}"
