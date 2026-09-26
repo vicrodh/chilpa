@@ -84,7 +84,7 @@ Item {
         anchors.fill: view
         anchors.rightMargin: list.fitContent ? 0 : Metrics.gap10
         hoverEnabled: true
-        acceptedButtons: Qt.LeftButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
 
         function rowAt(y) {
             return view.indexAt(Metrics.gap2, y + view.contentY)
@@ -99,13 +99,23 @@ Item {
             const row = rowAt(mouse.y)
             if (row < 0)
                 return
+            if (mouse.button === Qt.RightButton) {
+                list.model.select(row, 4)
+                actions.show(row, mouse.x, view.y + mouse.y)
+                return
+            }
             const toggle = (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
             list.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
         }
         onDoubleClicked: (mouse) => {
             const row = rowAt(mouse.y)
-            if (row >= 0)
+            if (row >= 0 && mouse.button === Qt.LeftButton)
                 list.model.play(row)
         }
+    }
+
+    TrackMenu {
+        id: actions
+        model: list.model
     }
 }

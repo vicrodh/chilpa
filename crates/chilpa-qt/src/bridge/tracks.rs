@@ -68,9 +68,25 @@ pub mod qobject {
         fn queue_all(self: Pin<&mut TrackListModel>);
 
         /// Selects a row. `modifiers`: 1 toggles it (Ctrl or Cmd), 2 extends
-        /// from the anchor (Shift).
+        /// from the anchor (Shift), 4 leaves the selection alone when the
+        /// row is already in it (a menu opening on it).
         #[qinvokable]
         fn select(self: Pin<&mut TrackListModel>, row: i32, modifiers: i32);
+
+        /// Adds the row to the end of the queue, or the whole selection when
+        /// the row is part of it.
+        #[qinvokable]
+        fn queue(self: Pin<&mut TrackListModel>, row: i32);
+
+        /// Whether the row has an "album", an "artist" or a "folder" to go
+        /// to. A record's page does not offer the record, nor an artist's
+        /// page the artist.
+        #[qinvokable]
+        fn can_go(self: &TrackListModel, row: i32, target: &QString) -> bool;
+
+        /// Opens the row's record, artist or folder.
+        #[qinvokable]
+        fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
 
         #[qinvokable]
         fn clear_selection(self: Pin<&mut TrackListModel>);
@@ -114,7 +130,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for TrackListModel {}
 }
 
-use crate::{app, browse, format, worker};
+use crate::{app, browse, format, registry, worker};
 use chilpa_api::{TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
@@ -236,6 +252,14 @@ impl TrackListRust {
         }
     }
 
+    fn track(&self, row: usize) -> Option<TrackRow> {
+        match self.at(row)? {
+            At::Track(page, i) => Some(page[i].clone()),
+            At::Loaded(t) => Some(t.clone()),
+            At::Header(..) => None,
+        }
+    }
+
     fn track_id(&self, row: usize) -> Option<i64> {
         match self.at(row)? {
             At::Track(page, i) => Some(page[i].id),
@@ -305,6 +329,14 @@ fn with_discs(rows: Vec<TrackRow>) -> Vec<Entry> {
         out.push(Entry::Track(t.clone()));
     }
     out
+}
+
+/// Adds files to the end of the queue, on the output in use.
+fn enqueue(paths: &[String]) {
+    app::with(|api| {
+        let (device, bit_perfect) = api.chosen_output();
+        api.enqueue(paths, &device, bit_perfect);
+    });
 }
 
 fn summary(tracks: usize, ms: u64) -> String {
@@ -389,6 +421,9 @@ impl qobject::TrackListModel {
         let row = row.max(0) as usize;
         let Some(id) = self.rust().track_id(row) else { return };
         let anchor = self.rust().anchor;
+        if modifiers & 4 != 0 && self.rust().selected.contains(&id) {
+            return;
+        }
         if modifiers & 2 != 0 && anchor.is_some() {
             let from = anchor.unwrap_or(row);
             let (lo, hi) = (from.min(row), from.max(row));
@@ -407,6 +442,66 @@ impl qobject::TrackListModel {
             this.anchor = Some(row);
         }
         self.changed(ROLE_SELECTED);
+    }
+
+    pub fn queue(self: Pin<&mut Self>, row: i32) {
+        let Some(track) = self.rust().track(row.max(0) as usize) else { return };
+        let this = self.rust();
+        if !this.selected.contains(&track.id) || this.selected.len() < 2 {
+            enqueue(&[track.path]);
+            return;
+        }
+        match &this.rows {
+            Rows::Loaded(_) => {
+                let paths: Vec<String> = this
+                    .loaded_tracks()
+                    .iter()
+                    .filter(|t| this.selected.contains(&t.id))
+                    .map(|t| t.path.clone())
+                    .collect();
+                enqueue(&paths);
+            }
+            Rows::Snapshot { ids, .. } => {
+                // In list order, which the selection does not keep.
+                let chosen: Vec<i64> = ids.ids.iter().copied().filter(|id| this.selected.contains(id)).collect();
+                let thread = self.qt_thread();
+                worker::submit(move |reader| {
+                    let paths = reader.paths(&chosen);
+                    let _ = thread.queue(move |_| enqueue(&paths));
+                });
+            }
+        }
+    }
+
+    pub fn can_go(&self, row: i32, target: &QString) -> bool {
+        let Some(track) = self.rust().track(row.max(0) as usize) else { return false };
+        let kind = self.rust().kind.to_string();
+        match target.to_string().as_str() {
+            "album" => track.album_id > 0 && kind != "album",
+            "artist" => {
+                let own = matches!(kind.as_str(), "artist" | "artistTop")
+                    && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
+                !track.artist.is_empty() && !own
+            }
+            "folder" => kind != "folder",
+            _ => false,
+        }
+    }
+
+    pub fn go(self: Pin<&mut Self>, row: i32, target: &QString) {
+        let Some(track) = self.rust().track(row.max(0) as usize) else { return };
+        let target = target.to_string();
+        registry::navigation(move |mut nav| match target.as_str() {
+            "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
+            "artist" => nav.as_mut().open_artist(&QString::from(&track.artist)),
+            "folder" => {
+                let dir = std::path::Path::new(&track.path).parent().map(|d| d.display().to_string());
+                if let Some(dir) = dir {
+                    nav.as_mut().open_folder(&QString::from(&dir));
+                }
+            }
+            _ => {}
+        });
     }
 
     pub fn clear_selection(mut self: Pin<&mut Self>) {
