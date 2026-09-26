@@ -19,6 +19,9 @@ pub enum Control {
     Button,
     /// Opens a page of its own.
     Link,
+    /// A field whose text is hidden as it is typed, and a button that sends
+    /// it: a token.
+    Secret,
 }
 
 impl Control {
@@ -30,6 +33,7 @@ impl Control {
             Control::Segmented => "segmented",
             Control::Button => "button",
             Control::Link => "link",
+            Control::Secret => "secret",
         }
     }
 }
@@ -173,6 +177,29 @@ pub const SECTIONS: &[Section] = &[
         ],
     },
     Section { id: "sources", label: Chilpa::mark("Sources"), icon: "server", groups: &[] },
+    Section {
+        id: "integrations",
+        label: Chilpa::mark("Integrations"),
+        icon: "broadcast",
+        groups: &[Group {
+            title: "ListenBrainz",
+            settings: &[
+                action(
+                    "listenbrainz.account",
+                    Chilpa::mark("Account"),
+                    Chilpa::mark("Paste the user token from listenbrainz.org/settings."),
+                    Control::Secret,
+                    Chilpa::mark("Connect"),
+                ),
+                setting(
+                    "listenbrainz.enabled",
+                    Chilpa::mark("Send listens"),
+                    Chilpa::mark("A track counts once half of it has played, or four minutes. Listens made offline are sent later."),
+                    Control::Toggle,
+                ),
+            ],
+        }],
+    },
     Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[] },
     Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[] },
     Section { id: "advanced", label: Chilpa::mark("Advanced"), icon: "settings", groups: &[] },

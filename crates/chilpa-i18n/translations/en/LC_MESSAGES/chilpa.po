@@ -70,6 +70,12 @@ msgstr ""
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr ""
 
+msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
+msgstr ""
+
+msgid "Account"
+msgstr ""
+
 msgid "Active"
 msgstr ""
 
@@ -154,6 +160,9 @@ msgstr ""
 msgid "Calm"
 msgstr ""
 
+msgid "Checking the token…"
+msgstr ""
+
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr ""
 
@@ -179,6 +188,12 @@ msgid "Compact rows"
 msgstr ""
 
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
+msgstr ""
+
+msgid "Connect"
+msgstr ""
+
+msgid "Connected as {}"
 msgstr ""
 
 msgid "CoreAudio reports no device that can play"
@@ -221,6 +236,9 @@ msgid "Diagnosis"
 msgstr ""
 
 msgid "Disc {}"
+msgstr ""
+
+msgid "Disconnect"
 msgstr ""
 
 msgid "Done. You can close this tab and go back to Chilpa."
@@ -304,6 +322,9 @@ msgstr ""
 msgid "Info: Embedded tags"
 msgstr ""
 
+msgid "Integrations"
+msgstr ""
+
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr ""
 
@@ -314,6 +335,15 @@ msgid "Library folders"
 msgstr ""
 
 msgid "Light"
+msgstr ""
+
+msgid "ListenBrainz could not be reached; try again"
+msgstr ""
+
+msgid "ListenBrainz did not accept that token"
+msgstr ""
+
+msgid "ListenBrainz no longer accepts the token; connect again"
 msgstr ""
 
 msgid "Look"
@@ -404,6 +434,9 @@ msgid "Output device"
 msgstr ""
 
 msgid "Output: {}"
+msgstr ""
+
+msgid "Paste the user token from listenbrainz.org/settings."
 msgstr ""
 
 msgid "Pause"
@@ -517,6 +550,9 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
+msgid "Send listens"
+msgstr ""
+
 msgid "Settings"
 msgstr ""
 
@@ -584,6 +620,9 @@ msgid "Title"
 msgstr ""
 
 msgid "To move to"
+msgstr ""
+
+msgid "Token"
 msgstr ""
 
 msgid "Top result"
@@ -1189,6 +1228,9 @@ msgstr ""
 msgid "the tags could not be read: {}"
 msgstr ""
 
+msgid "the token could not be kept for next time"
+msgstr ""
+
 msgid "the token_url is not https"
 msgstr ""
 
@@ -1306,6 +1348,11 @@ msgstr ""
 
 msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
 msgstr ""
+
+msgid "{} listen waiting to be sent"
+msgid_plural "{} listens waiting to be sent"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} next"
 msgid_plural "{} next"

@@ -81,6 +81,8 @@ Item {
             Navigation.openFolder(Dev.routeKey)
         else if (Dev.route === "artist")
             Navigation.openArtist(Dev.routeKey)
+        else if (Dev.route === "settings")
+            Navigation.openSection(Dev.routeKey)
         else if (Dev.route !== "")
             Navigation.go(Dev.route, Dev.routeId)
         if (Dev.addFolder !== "")
