@@ -9,9 +9,14 @@ Item {
 
     required property Window window
 
+    // A screenshot reads the frame back and encodes it on the window's
+    // thread: 120 ms that were counted as one late frame of the scroll.
+    // Frames stop being counted once one is taken.
+    property bool shot: false
+
     Connections {
         target: hooks.window
-        enabled: Dev.frames && (Dev.scroll === 0 || sweep.running)
+        enabled: Dev.frames && (Dev.scroll === 0 || sweep.running) && !hooks.shot
         function onFrameSwapped() { Dev.frame() }
     }
 
@@ -69,11 +74,14 @@ Item {
     Timer {
         running: Dev.shot !== ""
         interval: Dev.shotAt
-        onTriggered: hooks.window.contentItem.grabToImage(function(result) {
-            result.saveToFile(Dev.shot)
-            if (!sweep.running)
-                Qt.quit()
-        })
+        onTriggered: {
+            hooks.shot = true
+            hooks.window.contentItem.grabToImage(function(result) {
+                result.saveToFile(Dev.shot)
+                if (!sweep.running)
+                    Qt.quit()
+            })
+        }
     }
 
     Component.onCompleted: {
