@@ -17,6 +17,8 @@ Item {
     property bool round: false
     // Room below the last row, for what floats over the grid.
     property int bottomInset: 0
+    // The artist whose page holds the grid: its menu does not lead there.
+    property string artistPage
 
     readonly property int columns: width <= 0 ? 0
         : Math.max(Metrics.gridMinColumns, Math.floor((width + Metrics.gridGap) / Metrics.cardMinWidth))
@@ -24,6 +26,21 @@ Item {
     readonly property real rowHeight: cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
     signal open(int albumId, string title)
+
+    // A click selects while anything is selected or with a modifier held;
+    // otherwise it opens the page or the quick view, as Settings says.
+    function clicked(at, albumId, title, modifiers) {
+        if (!grid.round && (modifiers !== 0 || AlbumActions.selectedCount > 0))
+            grid.model.select(at, modifiers === 0 ? 1 : modifiers)
+        else if (!grid.round && SettingsModel.quickViewClick)
+            toggleQuick(at)
+        else
+            grid.open(albumId, title)
+    }
+
+    function toggleQuick(at) {
+        grid.model.expanded = grid.model.expanded === at ? -1 : at
+    }
 
     implicitHeight: view.contentHeight
 
@@ -47,7 +64,7 @@ Item {
             required property int span
 
             width: grid.width
-            height: grid.rowHeight
+            height: grid.rowHeight + (quick.active ? Metrics.gridGap + quick.height : 0)
 
             Repeater {
                 // A fixed count: a recycled row keeps its cards and only
@@ -62,15 +79,46 @@ Item {
                     x: index * (grid.cardWidth + Metrics.gridGap)
                     width: grid.cardWidth
                     visible: index < row.span
+                    albumId: visible ? grid.model.albumId(at, rev) : 0
                     title: visible ? grid.model.title(at, rev) : ""
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
                     tint: at
                     round: grid.round
-                    onOpen: grid.open(grid.model.albumId(at, rev), title)
-                    onPlay: grid.model.play(at)
+                    selected: !grid.round && AlbumActions.selected(albumId, AlbumActions.rev)
+                    selecting: !grid.round && AlbumActions.selectedCount > 0
+                    expanded: grid.model.expanded === at
+                    onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers)
+                    onQuick: grid.toggleQuick(at)
+                    onMenu: (x, y) => {
+                        if (grid.round)
+                            return
+                        const p = mapToItem(grid, x, y)
+                        albumMenu.show(albumId, subtitle, at, p.x, p.y)
+                    }
+                }
+            }
+
+            Loader {
+                id: quick
+
+                y: grid.rowHeight + Metrics.gridGap
+                width: grid.width
+                active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
+                sourceComponent: AlbumQuickView {
+                    albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)
+                    notchX: (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 // derived: the card's center
+                    onClose: grid.model.expanded = -1
                 }
             }
         }
+    }
+
+    AlbumMenu {
+        id: albumMenu
+
+        canExpand: true
+        artistPage: grid.artistPage
+        onQuick: (at) => grid.toggleQuick(at)
     }
 }

@@ -6,6 +6,7 @@
 //! call into the facade through [`crate::app`].
 
 pub mod album;
+pub mod album_actions;
 pub mod albums;
 pub mod dev;
 pub mod facets;

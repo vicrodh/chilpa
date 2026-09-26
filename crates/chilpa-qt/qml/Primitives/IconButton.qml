@@ -13,7 +13,8 @@ Item {
     property bool checked: false
     // A circle on a filled background, for window controls and overlays.
     property bool round: false
-    // "secondary", "primary", "accent", or "solid": the icon on the accent.
+    // "secondary", "primary", "accent", "solid" (the icon on the accent)
+    // or "overlay" (on a cover: light, the accent when checked).
     property string tone: "secondary"
 
     signal clicked()
@@ -25,6 +26,7 @@ Item {
         anchors.fill: parent
         radius: root.round ? width / 2 : root.size <= Metrics.button26 ? Metrics.radiusItem : Metrics.radiusControl // derived: a circle
         color: root.tone === "solid" ? (area.containsMouse ? Theme.color.accentHover : Theme.color.accent)
+             : root.tone === "overlay" ? Theme.color.overlayButton
              : root.checked ? Theme.color.stateSelected
              : area.containsMouse ? Theme.color.stateHover
              : root.round ? Theme.color.fillField : "transparent"
@@ -37,6 +39,7 @@ Item {
         size: root.iconSize
         color: !root.enabled ? Theme.color.textTertiary
              : root.tone === "solid" ? Theme.color.textOnAccent
+             : root.tone === "overlay" ? (root.checked ? Theme.color.accent : Theme.color.overlayInk)
              : root.checked || root.tone === "accent" ? Theme.color.accent
              : root.tone === "primary" ? Theme.color.textPrimary : Theme.color.textSecondary
     }

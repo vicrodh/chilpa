@@ -39,7 +39,13 @@ GallerySection {
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
-        AlbumCardOverlay { width: Metrics.cardMinWidth; height: width }
+        Row {
+            spacing: Metrics.gridGap
+            AlbumCardOverlay { width: Metrics.cardMinWidth; height: width; albumId: added.albumId(0, added.rev); selected: true }
+            AlbumCard { width: Metrics.cardMinWidth; title: "Selected"; subtitle: "While selecting"; tint: 3; selected: true; selecting: true }
+            AlbumCard { width: Metrics.cardMinWidth; title: "Quick view open"; subtitle: "Mora Vale"; tint: 4; expanded: true }
+        }
+        AlbumQuickView { width: parent.width; albumId: added.albumId(0, added.rev); notchX: Metrics.cardMinWidth / 2 } // derived: under the first card
         AlbumHero { width: parent.width; detail: detail }
         PageHero { width: parent.width; label: "Artist"; round: true; name: "Mora Vale"; meta: "8 records" }
         PageHero { width: parent.width; label: "Playlist"; name: "Road Trip 2026"; meta: "19 songs"; covers: ["", "", "", ""]; canQueue: true }
@@ -99,6 +105,7 @@ GallerySection {
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Not with bit-perfect on."; available: false }
         PlaylistMenu {}
+        AlbumMenu {}
         PlaylistPicker {}
         PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; active: true }
         PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8 }

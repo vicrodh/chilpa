@@ -141,6 +141,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
         }
         "appearance.density" => vec![("compact", app::t("Compact")), ("rich", app::t("Rich"))],
         "appearance.font" => vec![("inter", "Inter".to_string()), ("system", app::t("System"))],
+        "navigation.albumClick" => vec![("page", app::t("Album page")), ("quick", app::t("Quick view"))],
         _ => Vec::new(),
     }
 }
@@ -153,8 +154,12 @@ fn pref_on(key: &str, default: bool) -> String {
 /// The accents offered (design/05): the theme's own, then four.
 const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 
-const DEFAULTS: &[(&str, &str)] =
-    &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter")];
+const DEFAULTS: &[(&str, &str)] = &[
+    ("appearance.theme", "system"),
+    ("appearance.density", "compact"),
+    ("appearance.font", "inter"),
+    ("navigation.albumClick", "page"),
+];
 
 impl SettingsPageRust {
     fn build(&mut self) {
@@ -376,6 +381,10 @@ impl qobject::SettingsPage {
                 registry::settings(move |s| s.set_middle_click_tabs(value == "true"));
             }
             "navigation.restoreTabs" => app::with(|api| api.remember_preference(&key, &value)),
+            "navigation.albumClick" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_quick_view_click(value == "quick"));
+            }
             "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
             "lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
             "listenbrainz.account" => {

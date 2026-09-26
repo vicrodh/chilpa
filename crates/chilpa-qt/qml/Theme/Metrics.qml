@@ -168,6 +168,17 @@ QtObject {
     readonly property int overlayCheck: 26
     readonly property int overlayPlay: 40
     readonly property int overlayButton: 30
+    readonly property int overlayIcon: 16
+    readonly property int overlayCheckIcon: 21
+    readonly property int cardRing: 2
+    // The quick view under a row (03-components.md AlbumQuickView).
+    readonly property int quickArt: 184
+    readonly property int quickPad: 22
+    readonly property int quickPadBottom: 18
+    readonly property int quickGap: 28
+    readonly property int quickNotch: 12
+    readonly property int selectionBarHeight: 44
+    readonly property int selectionBottom: 88
     // Covers are decoded at sizes rounded up to this step, in device pixels.
     readonly property int artDecodeStep: 128
 

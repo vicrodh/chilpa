@@ -56,6 +56,8 @@ pub mod qobject {
         /// For "artists" and "all": only what holds every word of it -- the
         /// name, or the record's title or artist.
         #[qproperty(QString, filter)]
+        /// The card whose quick view is open, or -1: one per grid.
+        #[qproperty(i32, expanded)]
         type AlbumGridModel = super::AlbumGridRust;
 
         #[qinvokable]
@@ -67,9 +69,10 @@ pub mod qobject {
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
 
-        /// Plays a record from its first track.
+        /// Selects on a click: 1 (Ctrl) flips one record, 2 (Shift) takes
+        /// the records from the last one clicked (ADR-0007).
         #[qinvokable]
-        fn play(self: &AlbumGridModel, index: i32);
+        fn select(self: Pin<&mut AlbumGridModel>, index: i32, modifiers: i32);
     }
 
     unsafe extern "RustQt" {
@@ -99,7 +102,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for AlbumGridModel {}
 }
 
-use crate::{app, worker};
+use crate::{app, registry, worker};
 use chilpa_api::{Album, AlbumSort};
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
@@ -183,6 +186,8 @@ pub struct AlbumGridRust {
     rev: i32,
     content_rev: i32,
     filter: QString,
+    expanded: i32,
+    anchor: Option<i32>,
     /// Every artist, for "artists", kept so the filter needs no query.
     artists: Vec<chilpa_api::Artist>,
     list: Albums,
@@ -235,12 +240,18 @@ impl qobject::AlbumGridModel {
         self.rust().get(index, |a| a.id).unwrap_or(0)
     }
 
-    pub fn play(&self, index: i32) {
-        let Some(id) = self.rust().get(index, |a| a.id) else { return };
-        app::with(|api| {
-            let paths: Vec<String> = api.album_track_rows(id).into_iter().map(|t| t.path).collect();
-            api.play_from(&paths, 0);
-        });
+    pub fn select(mut self: Pin<&mut Self>, index: i32, modifiers: i32) {
+        let from = match self.rust().anchor {
+            Some(a) if modifiers & 2 != 0 => a,
+            _ => index,
+        };
+        let ids: Vec<i64> =
+            (from.min(index)..=from.max(index)).filter_map(|i| self.rust().get(i, |a| a.id)).collect();
+        if modifiers & 2 == 0 {
+            self.as_mut().rust_mut().anchor = Some(index);
+        }
+        let toggle = modifiers & 2 == 0;
+        registry::album_actions(move |actions| actions.select(ids, toggle));
     }
 
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
@@ -370,6 +381,8 @@ impl qobject::AlbumGridModel {
     fn show(mut self: Pin<&mut Self>, list: Albums) {
         let count = list.len() as i32;
         self.as_mut().rust_mut().list = list;
+        self.as_mut().rust_mut().anchor = None;
+        self.as_mut().set_expanded(-1);
         self.as_mut().split_rows();
         self.as_mut().set_albums(count);
         let next = self.rev().wrapping_add(1);
@@ -389,6 +402,7 @@ impl qobject::AlbumGridModel {
 
 impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
+        self.as_mut().set_expanded(-1);
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();
