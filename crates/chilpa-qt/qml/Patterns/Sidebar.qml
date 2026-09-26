@@ -9,7 +9,8 @@ import "../Components"
 Rectangle {
     id: side
 
-    readonly property bool collapsed: SettingsModel.sidebarMode === "collapsed"
+    // Its column of icons. The frame says so while a drag shows it.
+    property bool collapsed: SettingsModel.sidebarMode === "collapsed"
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar

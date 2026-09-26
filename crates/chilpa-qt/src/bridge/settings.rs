@@ -41,6 +41,16 @@ pub mod qobject {
         /// collapsed or closed.
         #[qinvokable]
         fn place_sidebar(self: Pin<&mut SettingsModel>, width: f64, window_width: f64);
+
+        /// Where a drag at `width` would land, for the sidebar to show while
+        /// it is dragged: "open", "collapsed" or "closed".
+        #[qinvokable]
+        fn sidebar_mode_at(self: &SettingsModel, width: f64, window_width: f64) -> QString;
+
+        /// The width open at `width` would have: `width`, kept between the
+        /// minimum and 40 % of the window.
+        #[qinvokable]
+        fn sidebar_width_at(self: &SettingsModel, width: f64, window_width: f64) -> i32;
     }
 
     impl cxx_qt::Threading for SettingsModel {}
@@ -87,6 +97,14 @@ fn strings(items: impl Iterator<Item = String>) -> QStringList {
 }
 
 impl qobject::SettingsModel {
+    pub fn sidebar_mode_at(&self, width: f64, window_width: f64) -> QString {
+        QString::from(crate::sidebar::settle(width, window_width).0)
+    }
+
+    pub fn sidebar_width_at(&self, width: f64, window_width: f64) -> i32 {
+        crate::sidebar::settle(width, window_width).1
+    }
+
     pub fn place_sidebar(mut self: Pin<&mut Self>, width: f64, window_width: f64) {
         let (mode, settled) = crate::sidebar::settle(width, window_width);
         if settled > 0 {

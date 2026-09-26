@@ -3,8 +3,9 @@
 //!
 //! Between 212 px and 40 % of the window the width is free. Dragged to the
 //! left it snaps: under 150 px it collapses to its column of icons, under
-//! 28 px it closes. The drag itself follows the pointer without animation;
-//! only where it lands is decided here.
+//! 28 px it closes. The snap is live: while the pointer moves the sidebar
+//! already shows where it would land, so it is never 100 px wide, and on
+//! release it stays there. Nothing animates.
 
 pub const OPEN_MIN: f64 = 212.0;
 pub const MAX_SHARE: f64 = 0.40;
