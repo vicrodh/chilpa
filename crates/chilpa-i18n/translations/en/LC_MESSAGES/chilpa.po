@@ -247,6 +247,9 @@ msgstr ""
 msgid "CoreAudio reports no device that can play"
 msgstr ""
 
+msgid "DAC passthrough"
+msgstr ""
+
 msgid "DSD not supported: {}"
 msgstr ""
 
@@ -535,6 +538,9 @@ msgstr ""
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr ""
 
+msgid "Only with bit-perfect or exclusive mode on."
+msgstr ""
+
 msgid "Open Last.fm"
 msgstr ""
 
@@ -719,6 +725,9 @@ msgid "Select a track and use Alt ↑↓, or its menu, to move it."
 msgstr ""
 
 msgid "Send listens"
+msgstr ""
+
+msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr ""
 
 msgid "Settings"

@@ -6,6 +6,9 @@ use crate::{Output, OutputStack, WizardReport, WizardRow};
 /// Whether cards are asked of the sound server before they are opened.
 pub(crate) const RESERVE: &str = "audio.reserve";
 
+/// Whether PipeWire's graph follows each track's rate.
+pub(crate) const FORCE_RATE: &str = "audio.forceRate";
+
 /// The card's stack and the one through `plughw`, as identifiers name them.
 const CARD: &str = "alsa";
 const PLUG: &str = "alsaplug";
@@ -206,6 +209,21 @@ impl crate::Chilpa {
     pub fn set_reserving(&mut self, on: bool) {
         self.remember_preference(RESERVE, &on.to_string());
         chilpa_core::backends::set_reserving(on);
+    }
+
+    /// Whether PipeWire's graph is set to each track's rate while Chilpa
+    /// has the output alone, and set back when it stops.
+    pub fn forcing_rate(&self) -> bool {
+        self.preference(FORCE_RATE).as_deref() == Some("true")
+    }
+
+    /// The rate is set when the output opens, so what is playing is opened
+    /// again where it is.
+    pub fn set_forcing_rate(&mut self, on: bool) {
+        self.remember_preference(FORCE_RATE, &on.to_string());
+        chilpa_core::backends::set_forcing_rate(on);
+        let (output, bit_perfect) = self.chosen_output();
+        self.move_output(&output, bit_perfect);
     }
 
     /// "hw" or "plughw" when the chosen output is a card; empty otherwise.

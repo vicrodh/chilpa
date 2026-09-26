@@ -247,6 +247,9 @@ msgstr "Conectado como {}"
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
+msgid "DAC passthrough"
+msgstr "Paso directo al DAC"
+
 msgid "DSD not supported: {}"
 msgstr "DSD no soportado: {}"
 
@@ -535,6 +538,9 @@ msgstr "Una pista entra justo después de la otra. Apagado, el dispositivo termi
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
 
+msgid "Only with bit-perfect or exclusive mode on."
+msgstr "Solo con bit-perfect o el modo exclusivo encendidos."
+
 msgid "Open Last.fm"
 msgstr "Abrir Last.fm"
 
@@ -720,6 +726,9 @@ msgstr "Selecciona una pista y usa Alt ↑↓, o su menú, para moverla."
 
 msgid "Send listens"
 msgstr "Enviar escuchas"
+
+msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
+msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
 
 msgid "Settings"
 msgstr "Ajustes"

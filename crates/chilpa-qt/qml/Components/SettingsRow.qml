@@ -27,6 +27,9 @@ Item {
     readonly property bool group: rowKind === 0
     readonly property bool line: rowKind === 2
 
+    // "fixed": what the output allows, shown and not changeable; the whole
+    // row dims and the description says why (design/03 SettingsRow).
+    opacity: control === "fixed" ? Metrics.disabledOpacity : 1
     implicitHeight: group ? Metrics.settingsGroup
         : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
 
@@ -89,7 +92,6 @@ Item {
     Component {
         id: toggle
         Toggle {
-            // "fixed": what the output allows, shown and not changeable.
             enabled: row.control === "toggle"
             checked: row.value === "true"
             onToggled: (on) => row.page.set(row.key, on ? "true" : "false")

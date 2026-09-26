@@ -57,6 +57,15 @@ pub fn set_reserving(on: bool) {
     let _ = on;
 }
 
+/// Whether PipeWire's graph is set to each track's rate while Chilpa has a
+/// sink alone. PipeWire is Linux's; there is no graph to set elsewhere.
+pub fn set_forcing_rate(on: bool) {
+    #[cfg(target_os = "linux")]
+    chilpa_pipewire::set_forcing_rate(on);
+    #[cfg(not(target_os = "linux"))]
+    let _ = on;
+}
+
 /// The one with that kind, if this build has it.
 pub fn of(kind: BackendKind) -> Option<Box<dyn OutputBackend>> {
     among(all(), kind)
