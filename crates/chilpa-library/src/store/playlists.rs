@@ -141,6 +141,48 @@ impl Library {
         rows.collect()
     }
 
+    /// Adds to the end of a playlist what it does not already carry.
+    /// Returns how many went in.
+    pub fn append_to_playlist(&self, playlist_id: i64, entries: &[PlaylistEntry]) -> rusqlite::Result<usize> {
+        let mut all = self.playlist_entries(playlist_id)?;
+        let before = all.len();
+        for e in entries {
+            if !all.iter().any(|x| x.external_id == e.external_id) {
+                all.push(e.clone());
+            }
+        }
+        let added = all.len() - before;
+        if added > 0 {
+            self.set_playlist_entries(playlist_id, &all)?;
+        }
+        Ok(added)
+    }
+
+    /// Takes out what is at that position; what comes after moves up.
+    pub fn remove_from_playlist(&self, playlist_id: i64, position: usize) -> rusqlite::Result<bool> {
+        let mut all = self.playlist_entries(playlist_id)?;
+        if position >= all.len() {
+            return Ok(false);
+        }
+        all.remove(position);
+        self.set_playlist_entries(playlist_id, &all)?;
+        Ok(true)
+    }
+
+    /// The covers of the first records a playlist holds, one per record, up
+    /// to `n`: what its mosaic shows.
+    pub fn playlist_covers(&self, playlist_id: i64, n: usize) -> rusqlite::Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "SELECT a.artwork_path FROM playlist_tracks pt
+             JOIN tracks t ON t.id = pt.track_id
+             JOIN albums a ON a.id = t.album_id
+             WHERE pt.playlist_id = ?1 AND a.artwork_path IS NOT NULL
+             GROUP BY a.id ORDER BY min(pt.position) LIMIT ?2",
+        )?;
+        let rows = stmt.query_map(params![playlist_id, n as i64], |r| r.get(0))?;
+        rows.collect()
+    }
+
     /// Renames a playlist.
     pub fn rename_playlist(&self, playlist_id: i64, name: &str) -> rusqlite::Result<()> {
         self.db.execute(
@@ -187,6 +229,20 @@ mod tests {
         assert_eq!(lists[0].track_count, 3);
         assert_eq!(lists[0].provider, "local");
         assert!(lists[0].external_id.is_empty(), "a list from here has no external id");
+    }
+
+    #[test]
+    fn adding_skips_what_is_there_and_removing_closes_the_gap() {
+        let lib = sample_library();
+        let source = lib.source_id("local", "default").unwrap();
+        let id = lib.create_playlist(source, "Mix", "").unwrap();
+        let a = PlaylistEntry { track_id: Some(1), external_id: "/Bayou.flac".into() };
+        let b = PlaylistEntry { track_id: Some(2), external_id: "/Aqualung.flac".into() };
+        assert_eq!(lib.append_to_playlist(id, &[a.clone(), b.clone()]).unwrap(), 2);
+        assert_eq!(lib.append_to_playlist(id, &[b.clone()]).unwrap(), 0, "already in it");
+        assert!(lib.remove_from_playlist(id, 0).unwrap());
+        assert_eq!(lib.playlist_entries(id).unwrap(), [b]);
+        assert!(!lib.remove_from_playlist(id, 5).unwrap(), "nothing there");
     }
 
     #[test]
