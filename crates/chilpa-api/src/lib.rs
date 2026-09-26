@@ -111,6 +111,8 @@ pub struct NowPlaying {
     pub title: String,
     pub artist: String,
     pub album: String,
+    /// The local library album, or zero when this track has no local context.
+    pub album_id: i64,
     /// The cover already on disk, ready to show. Empty if there is none.
     pub artwork_path: String,
     pub playing: bool,
@@ -619,6 +621,18 @@ impl Chilpa {
         self.now.analysis = describe_analysis(bpm, tone.as_deref(), loudness);
     }
 
+    /// Finds the stable album route for the playing file. A source URL or an
+    /// unscanned file has no local record page and deliberately returns zero.
+    fn load_album_context(&mut self) {
+        let path = self.now.path.clone();
+        self.now.album_id = self
+            .library()
+            .and_then(|library| library.tracks_by_paths(&[path]).ok())
+            .and_then(|mut rows| rows.pop().flatten())
+            .and_then(|track| track.album_id)
+            .unwrap_or_default();
+    }
+
     /// Looks up the lyrics of what is starting to play.
     ///
     /// It is read once per track, not on every tick: it is a few kilobytes, but
@@ -1107,6 +1121,7 @@ impl Chilpa {
                     // the search. Without this the window would show the raw
                     // URL, which is all the decoder knows about it.
                     self.name_from_source(&path);
+                    self.load_album_context();
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     // On DSD the rate that names it is the DSD rate, not the
