@@ -44,8 +44,13 @@ pub fn send(request_json: &[u8], credential: Option<&str>) -> Vec<u8> {
         return error(&chilpa_i18n::t("the URL has to be http or https"));
     }
 
+    // A status the other side answers with is part of the reply, not a
+    // failure of the request: a 401 says the token is dead, a 429 says when
+    // to come back, and the body says why. ureq turns them into errors unless
+    // told not to, and that hid all of it behind "http status: 401".
     let agent = ureq::Agent::config_builder()
         .timeout_global(Some(TIMEOUT))
+        .http_status_as_error(false)
         .build()
         .new_agent();
 
@@ -172,6 +177,31 @@ mod tests {
                 "\"{url}\" should not be attempted: {r}"
             );
         }
+    }
+
+    #[test]
+    fn a_status_that_is_not_200_comes_back_with_its_body_and_headers() {
+        use std::io::{Read, Write};
+        let server = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let port = server.local_addr().unwrap().port();
+        let answer = std::thread::spawn(move || {
+            let (mut peer, _) = server.accept().unwrap();
+            let mut asked = [0u8; 1024];
+            let _ = peer.read(&mut asked);
+            let body = r#"{"error":"token expired"}"#;
+            let reply = format!(
+                "HTTP/1.1 401 Unauthorized\r\nContent-Type: application/json\r\nX-RateLimit-Reset-In: 7\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{body}",
+                body.len()
+            );
+            peer.write_all(reply.as_bytes()).unwrap();
+        });
+        let request = format!(r#"{{"url":"http://127.0.0.1:{port}/x"}}"#);
+        let r = as_json(&send(request.as_bytes(), None));
+        answer.join().unwrap();
+        assert!(r.get("error").is_none(), "a 401 is an answer, not a failure: {r}");
+        assert_eq!(r["status"], 401);
+        assert_eq!(r["body"], r#"{"error":"token expired"}"#);
+        assert_eq!(r["headers"]["x-ratelimit-reset-in"], "7");
     }
 
     #[test]
