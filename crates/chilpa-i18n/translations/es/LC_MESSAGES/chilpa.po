@@ -463,6 +463,9 @@ msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se ap
 msgid "Its page, or its quick view under the row."
 msgstr "Su página, o su vista rápida bajo la fila."
 
+msgid "Keep the queue between sessions"
+msgstr "Conservar la cola entre sesiones"
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
 
@@ -738,6 +741,9 @@ msgstr "Quitar de la biblioteca"
 
 msgid "Rename"
 msgstr "Renombrar"
+
+msgid "Reopens the upcoming queue paused, at the place where you left it."
+msgstr "Vuelve a abrir la cola pendiente en pausa, donde la dejaste."
 
 msgid "Repair"
 msgstr "Reparar"

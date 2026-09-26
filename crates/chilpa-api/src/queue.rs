@@ -9,8 +9,154 @@ use super::*;
 const GAPLESS: &str = "playback.gapless";
 const NORMALIZE: &str = "playback.normalize";
 const EXCLUSIVE: &str = "audio.exclusive";
+const KEEP_QUEUE: &str = "playback.keepQueue";
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SavedQueue {
+    entries: Vec<SavedEntry>,
+    seconds: f64,
+}
+
+#[derive(serde::Serialize, serde::Deserialize)]
+struct SavedEntry {
+    path: String,
+    placement: String,
+    group: Option<SavedGroup>,
+}
+
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
+struct SavedGroup {
+    key: u64,
+    label: String,
+    collapsed: bool,
+}
+
+fn queue_session_path() -> std::path::PathBuf {
+    chilpa_dirs::data().join("queue.json")
+}
 
 impl Chilpa {
+    pub(crate) fn replace_queue(&mut self, queue: Vec<String>) {
+        self.set_stop_after(None);
+        self.queue = queue;
+        self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
+        self.queue_groups.clear();
+        self.removed = vec![false; self.queue.len()];
+        self.restored_at = None;
+    }
+
+    /// Queue persistence is on unless explicitly disabled in Settings.
+    pub fn keep_queue(&self) -> bool {
+        self.preference(KEEP_QUEUE).as_deref() != Some("false")
+    }
+
+    pub fn set_keep_queue(&mut self, on: bool) {
+        self.remember_preference(KEEP_QUEUE, &on.to_string());
+        if on {
+            self.persist_queue_session();
+        } else {
+            let _ = std::fs::remove_file(queue_session_path());
+        }
+    }
+
+    /// Keeps the upcoming queue in the order it will play. History and
+    /// removed entries are intentionally omitted; reopening resumes from
+    /// the first saved row, at the current track's saved position.
+    pub(crate) fn persist_queue_session(&self) {
+        if !self.keep_queue() {
+            return;
+        }
+        let file = queue_session_path();
+        let order = self.queue_order();
+        if order.is_empty() {
+            let _ = std::fs::remove_file(file);
+            return;
+        }
+        let entries = order
+            .into_iter()
+            .map(|index| SavedEntry {
+                path: self.queue[index].clone(),
+                placement: match self.queue_placement.get(index).copied().unwrap_or_default() {
+                    QueuePlacement::Original => "original",
+                    QueuePlacement::Next => "next",
+                    QueuePlacement::Later => "later",
+                }
+                .into(),
+                group: self.queue_group_at(index).map(|group| SavedGroup {
+                    key: group.key,
+                    label: group.label.clone(),
+                    collapsed: group.collapsed,
+                }),
+            })
+            .collect();
+        let saved = SavedQueue { entries, seconds: self.now.seconds.max(0.0) };
+        let Ok(bytes) = serde_json::to_vec_pretty(&saved) else { return };
+        let Some(dir) = file.parent() else { return };
+        if std::fs::create_dir_all(dir).is_err() {
+            return;
+        }
+        let temporary = file.with_extension("json.tmp");
+        if std::fs::write(&temporary, bytes).is_ok() {
+            if std::fs::rename(&temporary, &file).is_err() {
+                // Windows does not replace an existing destination. The
+                // temporary is already complete, so make room and retry.
+                let _ = std::fs::remove_file(&file);
+                let _ = std::fs::rename(temporary, file);
+            }
+        }
+    }
+
+    pub(crate) fn restore_queue_session(&mut self) {
+        if !self.keep_queue() {
+            return;
+        }
+        let Ok(bytes) = std::fs::read(queue_session_path()) else { return };
+        let Ok(saved) = serde_json::from_slice::<SavedQueue>(&bytes) else { return };
+        if saved.entries.is_empty() || saved.entries.len() > 100_000 {
+            return;
+        }
+        self.queue = saved.entries.iter().map(|entry| entry.path.clone()).collect();
+        if self.queue.iter().any(|path| path.is_empty()) {
+            self.queue.clear();
+            return;
+        }
+        self.queue_placement = saved
+            .entries
+            .iter()
+            .map(|entry| match entry.placement.as_str() {
+                "next" => QueuePlacement::Next,
+                "later" => QueuePlacement::Later,
+                _ => QueuePlacement::Original,
+            })
+            .collect();
+        self.removed = vec![false; self.queue.len()];
+        let mut groups = std::collections::BTreeMap::<u64, QueueGroup>::new();
+        for (index, entry) in saved.entries.iter().enumerate() {
+            if let Some(group) = &entry.group {
+                let restored = groups.entry(group.key).or_insert_with(|| QueueGroup {
+                    key: group.key,
+                    label: group.label.clone(),
+                    tracks: Vec::new(),
+                    collapsed: group.collapsed,
+                });
+                restored.tracks.push(index);
+            }
+        }
+        self.queue_groups = groups.into_values().collect();
+        self.next_queue_group = self.queue_groups.iter().map(|group| group.key).max().unwrap_or(0).wrapping_add(1).max(1);
+        self.now = NowPlaying {
+            path: self.queue[0].clone(),
+            title: title_of(std::path::Path::new(&self.queue[0])),
+            playing: true,
+            paused: true,
+            seconds: saved.seconds.max(0.0),
+            index: 0,
+            queue_len: self.queue.len(),
+            ..NowPlaying::default()
+        };
+        self.restored_at = Some(saved.seconds.max(0.0));
+    }
+
     /// Sets the queue already in `self.queue` going, from that position.
     ///
     /// Everything that plays a list goes through here: that way repeat,
@@ -117,10 +263,7 @@ impl Chilpa {
         if tracks.is_empty() {
             return Vec::new();
         }
-        self.set_stop_after(None);
-        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
-        self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
-        self.queue_groups.clear();
+        self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
     }
@@ -681,7 +824,7 @@ impl Chilpa {
         }
         let tracks: Vec<std::path::PathBuf> =
             available.iter().map(|t| std::path::PathBuf::from(&t.path)).collect();
-        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
+        self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         available.into_iter().map(|t| t.title).collect()
     }

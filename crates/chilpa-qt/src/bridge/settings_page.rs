@@ -318,6 +318,7 @@ impl SettingsPageRust {
             "playback.extra" => row.value = pref_on("playback.extra", false),
             "playback.gapless" => row.value = app::with(|api| api.gapless()).to_string(),
             "playback.normalize" => row.value = app::with(|api| api.normalize()).to_string(),
+            "playback.keepQueue" => row.value = app::with(|api| api.keep_queue()).to_string(),
             "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
             "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
             "integrations.listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
@@ -599,6 +600,7 @@ impl qobject::SettingsPage {
                 app::with(|api| api.set_normalize(value == "true"));
                 registry::player(|p| p.read_switches());
             }
+            "playback.keepQueue" => app::with(|api| api.set_keep_queue(value == "true")),
             "playback.extra" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_extra_controls(value == "true"));
@@ -660,7 +662,6 @@ impl qobject::SettingsPage {
             }
         });
     }
-
     pub fn press(mut self: Pin<&mut Self>, key: &QString) {
         match key.to_string().as_str() {
             "audio.wizard" => {
