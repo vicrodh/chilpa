@@ -89,6 +89,22 @@ Window {
 
     Tooltip {}
 
+    // Browser-style side buttons follow the active tab's own history. This
+    // transparent layer accepts only those two buttons; wheel, primary and
+    // secondary input continue to the control under the pointer.
+    MouseArea {
+        anchors.fill: parent
+        z: Metrics.tooltipLayer
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onPressed: (mouse) => {
+            if (mouse.button === Qt.BackButton)
+                Navigation.back()
+            else if (mouse.button === Qt.ForwardButton)
+                Navigation.forward()
+        }
+        onWheel: (wheel) => wheel.accepted = false
+    }
+
     WindowGrips {
         anchors.fill: parent
         window: window
