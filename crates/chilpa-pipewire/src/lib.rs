@@ -23,7 +23,18 @@
 use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, OutputBackend};
 use chilpa_audio::format::StreamFormat;
 use chilpa_audio::sink::{AudioSink, SinkError};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
+
+static FORCING: AtomicBool = AtomicBool::new(false);
+
+/// Whether the graph is set to each track's rate while Chilpa has a sink
+/// alone, instead of refusing a rate the graph does not allow: the DAC then
+/// receives what the file holds. Off, the settings of the machine are left
+/// as they are.
+pub fn set_forcing_rate(on: bool) {
+    FORCING.store(on, Ordering::Relaxed);
+}
 
 /// How long a question to the server may take before it is given up on.
 ///
@@ -132,15 +143,85 @@ fn graph_rates() -> Option<Vec<u32>> {
     rates_in(&run("pw-metadata", &["-n", "settings"])?)
 }
 
+/// One key out of `pw-metadata`'s account of the settings.
+fn setting(settings: &str, key: &str) -> Option<String> {
+    settings.lines().find_map(|line| {
+        let after = line.split_once(&format!("key:'{key}'"))?.1;
+        let value = after.split_once("value:'")?.1;
+        value.split_once('\'').map(|(v, _)| v.to_string())
+    })
+}
+
+/// `clock.force-rate` as the graph has it now; 0 is not forced.
+fn forced_rate() -> u32 {
+    run("pw-metadata", &["-n", "settings"])
+        .and_then(|s| setting(&s, "clock.force-rate"))
+        .and_then(|v| v.trim().parse().ok())
+        .unwrap_or(0)
+}
+
+/// Sets `clock.force-rate`. Whether it took is read back by the rate check
+/// that follows, not assumed.
+fn force_rate(rate: u32) {
+    let _ = run("pw-metadata", &["-n", "settings", "0", "clock.force-rate", &rate.to_string()]);
+}
+
+/// A sink with the graph held at its rate. The rate that was set before
+/// goes back when the stream closes, and while it lets go of the device in
+/// a long pause.
+struct AtRate {
+    inner: chilpa_alsa::AlsaSink,
+    rate: u32,
+    before: u32,
+    holding: bool,
+}
+
+impl AudioSink for AtRate {
+    fn format(&self) -> StreamFormat {
+        self.inner.format()
+    }
+    fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+        self.inner.write(frames)
+    }
+    fn close(&mut self) -> Result<(), SinkError> {
+        self.inner.close()
+    }
+    fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
+        self.inner.drain(give_up)
+    }
+    fn held(&self) -> u64 {
+        self.inner.held()
+    }
+    fn flush(&mut self) -> Result<(), SinkError> {
+        self.inner.flush()
+    }
+    fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
+        self.inner.set_paused(paused)
+    }
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        self.inner.suspend()?;
+        force_rate(self.before);
+        self.holding = false;
+        Ok(())
+    }
+    fn wake(&mut self) -> Result<(), SinkError> {
+        force_rate(self.rate);
+        self.holding = true;
+        self.inner.wake()
+    }
+}
+
+impl Drop for AtRate {
+    fn drop(&mut self) {
+        if self.holding {
+            force_rate(self.before);
+        }
+    }
+}
+
 /// The rates in `pw-metadata`'s account of the settings.
 fn rates_in(settings: &str) -> Option<Vec<u32>> {
-    let value = |key: &str| {
-        settings.lines().find_map(|line| {
-            let after = line.split_once(&format!("key:'{key}'"))?.1;
-            let value = after.split_once("value:'")?.1;
-            value.split_once('\'').map(|(v, _)| v.to_string())
-        })
-    };
+    let value = |key: &str| setting(settings, key);
     let forced = value("clock.force-rate").and_then(|v| v.trim().parse::<u32>().ok());
     if let Some(rate) = forced.filter(|r| *r > 0) {
         return Some(vec![rate]);
@@ -278,16 +359,41 @@ impl OutputBackend for PipeWire {
                 &[id],
             )));
         }
+        // Held at the track's rate, when asked to: set before the check, so
+        // the check reads what the graph really took.
+        let rate = format.sample_rate_hz;
+        let before = if exclusive && FORCING.load(Ordering::Relaxed) {
+            let before = forced_rate();
+            force_rate(rate);
+            Some(before)
+        } else {
+            None
+        };
+        let give_back = || {
+            if let Some(before) = before {
+                force_rate(before);
+            }
+        };
         if exclusive {
-            untouched_at(format.sample_rate_hz, graph_rates().as_deref()).map_err(SinkError::Backend)?;
+            if let Err(e) = untouched_at(rate, graph_rates().as_deref()) {
+                give_back();
+                return Err(SinkError::Backend(e));
+            }
         }
         let pcm = if exclusive {
             format!("pipewire:NODE={id},EXCLUSIVE=1")
         } else {
             format!("pipewire:NODE={id}")
         };
-        match chilpa_alsa::AlsaSink::open_pcm(&pcm, format) {
-            Ok(sink) => Ok(Box::new(sink)),
+        let opened = chilpa_alsa::AlsaSink::open_pcm(&pcm, format);
+        if opened.is_err() {
+            give_back();
+        }
+        match opened {
+            Ok(inner) => Ok(match before {
+                Some(before) => Box::new(AtRate { inner, rate, before, holding: true }),
+                None => Box::new(inner),
+            }),
             // The sink is still listed and it would not open, which on an
             // exclusive ask means somebody else has it. ALSA says that as
             // "snd_pcm_hw_params failed with error 'No such file or
@@ -305,6 +411,17 @@ impl OutputBackend for PipeWire {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "changes the running graph's clock.force-rate and sets it back; plays nothing"]
+    fn the_forced_rate_is_set_and_given_back() {
+        let before = forced_rate();
+        force_rate(176_400);
+        assert_eq!(forced_rate(), 176_400);
+        assert_eq!(graph_rates(), Some(vec![176_400]), "the check reads the forced rate");
+        force_rate(before);
+        assert_eq!(forced_rate(), before, "what was there goes back");
+    }
 
     #[test]
     fn a_long_answer_comes_back_whole() {

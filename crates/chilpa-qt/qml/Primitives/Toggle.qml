@@ -13,7 +13,6 @@ Rectangle {
     implicitHeight: Metrics.toggleHeight
     radius: height / 2 // derived: a pill
     color: checked ? Theme.color.accent : Theme.color.stateSelected
-    opacity: enabled ? 1 : Metrics.disabledOpacity
 
     Behavior on color { ColorAnimation { duration: Motion.base } }
 

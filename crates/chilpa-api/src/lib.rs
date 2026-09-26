@@ -485,7 +485,9 @@ impl Chilpa {
         } else {
             &saved.language
         });
-        chilpa_core::backends::set_reserving(saved.window.get(outputs::RESERVE).is_some_and(|v| v == "true"));
+        let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
+        chilpa_core::backends::set_reserving(on(outputs::RESERVE));
+        chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
         Self {
             core: chilpa_core::Core::new(),
             library: None,

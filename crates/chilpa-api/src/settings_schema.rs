@@ -120,6 +120,12 @@ pub const SECTIONS: &[Section] = &[
                         Control::Toggle,
                     ),
                     setting(
+                        "audio.forceRate",
+                        Chilpa::mark("DAC passthrough"),
+                        Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."),
+                        Control::Toggle,
+                    ),
+                    setting(
                         "audio.exclusive",
                         Chilpa::mark("Exclusive mode"),
                         Chilpa::mark("The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."),

@@ -241,6 +241,15 @@ impl SettingsPageRust {
                     row.description = format!("{} {why}", row.description);
                 }
             }
+            "audio.forceRate" => {
+                let (shown, on, alone) =
+                    app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), bit_perfect || api.exclusive()));
+                row.value = (on && alone).to_string();
+                row.control = if !shown { "" } else if alone { row.control } else { "fixed" };
+                if shown && !alone {
+                    row.description = format!("{} {}", row.description, app::t("Only with bit-perfect or exclusive mode on."));
+                }
+            }
             "audio.reserve" => {
                 let (card, on) = app::with(|api| (!api.alsa_plugin().is_empty(), api.reserving()));
                 row.value = on.to_string();
@@ -386,6 +395,7 @@ impl qobject::SettingsPage {
             "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(value == "plughw")),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
+            "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
             "audio.bitperfect" => {
                 app::with(|api| api.set_bit_perfect(value == "true"));
                 // The player bar's options show it too.
