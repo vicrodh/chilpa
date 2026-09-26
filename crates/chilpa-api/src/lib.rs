@@ -691,6 +691,18 @@ impl Chilpa {
 
     /// Chooses the output and the policy: remembers them, and moves what is
     /// playing there, at the same place.
+    /// Moves to another output under the policy already chosen.
+    pub fn use_output_as_chosen(&mut self, output: &str) {
+        let (_, bit_perfect) = self.chosen_output();
+        self.use_output(output, bit_perfect);
+    }
+
+    /// Turns bit-perfect on or off on the output already chosen.
+    pub fn set_bit_perfect(&mut self, on: bool) {
+        let (output, _) = self.chosen_output();
+        self.use_output(&output, on);
+    }
+
     pub fn use_output(&mut self, output: &str, bit_perfect: bool) {
         self.remember(output, bit_perfect);
         // Normalizing is not applied under bit-perfect; the switch follows.

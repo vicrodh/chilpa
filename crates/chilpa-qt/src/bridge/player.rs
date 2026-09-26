@@ -178,10 +178,7 @@ pub struct PlayerRust {
 
 impl qobject::Player {
     pub fn choose_bit_perfect(mut self: Pin<&mut Self>, on: bool) {
-        app::with(|api| {
-            let (output, _) = api.chosen_output();
-            api.use_output(&output, on);
-        });
+        app::with(|api| api.set_bit_perfect(on));
         self.as_mut().read_switches();
     }
 

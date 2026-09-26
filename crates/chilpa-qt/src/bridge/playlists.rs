@@ -121,10 +121,7 @@ impl qobject::Playlists {
 
     pub fn queue(self: Pin<&mut Self>, id: i64) {
         let paths = paths_of(id);
-        app::with(|api| {
-            let (device, bit_perfect) = api.chosen_output();
-            api.enqueue(&paths, &device, bit_perfect);
-        });
+        app::with(|api| api.enqueue_here(&paths));
     }
 
     pub fn name(&self, id: i64, _rev: i32) -> QString {

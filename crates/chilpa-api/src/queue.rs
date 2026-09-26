@@ -185,6 +185,19 @@ impl Chilpa {
         tracks.iter().map(|p| title_of(p)).collect()
     }
 
+    /// `enqueue` on the output chosen in Settings, which is the one the
+    /// window always means.
+    pub fn enqueue_here(&mut self, paths: &[String]) {
+        let (device, bit_perfect) = self.chosen_output();
+        self.enqueue(paths, &device, bit_perfect);
+    }
+
+    /// `play_next` on the output chosen in Settings.
+    pub fn play_next_here(&mut self, paths: &[String]) {
+        let (device, bit_perfect) = self.chosen_output();
+        self.play_next(paths, &device, bit_perfect);
+    }
+
     /// Puts tracks right after the one playing, without cutting it off. If
     /// nothing is playing, they start.
     ///
