@@ -26,6 +26,8 @@ Menu {
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
             { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
             { text: I18n.tr("Remove from playlist", I18n.rev), act: "unlist" },
+            { text: I18n.tr("Move up", I18n.rev), act: "up", hint: "Alt ↑" },
+            { text: I18n.tr("Move down", I18n.rev), act: "down", hint: "Alt ↓" },
             { separator: true },
             { text: I18n.tr("Go to album", I18n.rev), act: "album" },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist" },
@@ -33,6 +35,8 @@ Menu {
         ]
         const shown = all.filter(e => e.note ? many
             : e.act === "unlist" ? model.kind === "playlist" && !many
+            : e.act === "up" ? model.kind === "playlist" && !many && row > 0
+            : e.act === "down" ? model.kind === "playlist" && !many && row < model.count - 1
             : !e.act || ["play", "next", "queue", "pick"].includes(e.act) || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
@@ -56,6 +60,8 @@ Menu {
             picker.show(row, x, y)
         else if (act === "unlist")
             model.removeFromPlaylist(row)
+        else if (act === "up" || act === "down")
+            model.moveInPlaylist(row, act === "up" ? -1 : 1)
         else
             model.go(row, act)
     }
