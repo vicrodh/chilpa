@@ -17,20 +17,6 @@ Rectangle {
 
     Edge {}
 
-    SearchModel { id: search }
-
-    Shortcut {
-        sequence: "Ctrl+K"
-        onActivated: {
-            if (side.collapsed) {
-                flyout.ownInput = true
-                flyout.open()
-            } else {
-                field.focusInput()
-            }
-        }
-    }
-
     Column {
         anchors.fill: parent
         anchors.topMargin: Metrics.sidebarPadV
@@ -42,33 +28,16 @@ Rectangle {
             width: parent.width
             spacing: Metrics.gap6
 
-            SearchField {
-                id: field
+            // Beside the sidebar, whatever its width (design/02 8).
+            SearchBox {
+                id: searchBox
                 visible: !side.collapsed
                 width: parent.width - toggle.width - parent.spacing
-                placeholder: I18n.tr("Search", I18n.rev)
-                shortcut: Qt.platform.os === "osx" ? "⌘K" : "Ctrl K"
-                onTextChanged: {
-                    search.text = text
-                    text !== "" ? flyout.open() : flyout.close()
-                }
-                onEditingChanged: if (editing && text !== "") flyout.open()
-                onStepped: (by) => flyout.step(by)
-                onAccepted: flyout.chooseCurrent()
-                onEscaped: {
-                    flyout.close()
-                    release()
-                }
-
-                // Beside the sidebar, whatever its width (design/02 8).
-                SearchFlyout {
-                    id: flyout
-                    search: search
-                    x: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
-                    y: Metrics.searchTop - Metrics.spaceWindow - Metrics.sidebarPadV // derived: from the field to the window's top
-                    room: side.height
-                    onClosed: if (!side.collapsed) field.release()
-                }
+                active: SettingsModel.sidebarMode !== "closed"
+                compact: side.collapsed
+                flyoutX: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
+                flyoutY: Metrics.searchTop - Metrics.spaceWindow - Metrics.sidebarPadV // derived: from the field to the window's top
+                room: side.height
             }
 
             IconButton {
@@ -85,10 +54,7 @@ Rectangle {
             x: (parent.width - width) / 2 // derived: centered
             tip: I18n.tr("Search", I18n.rev)
             glyph: Icons.search
-            onClicked: {
-                flyout.ownInput = true
-                flyout.open()
-            }
+            onClicked: searchBox.focusSearch()
         }
 
         Column {
