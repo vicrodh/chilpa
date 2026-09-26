@@ -4,8 +4,11 @@
 //! draws it. No setting has QML of its own: `SettingsRow` picks the control
 //! from this table, and the settings page model fills in the values. A
 //! section with no groups is one not built yet, and the page says so.
+//!
+//! It lives in the facade and not in the window's crate: it is what Chilpa
+//! can be set to, which is the same whatever draws it.
 
-use chilpa_api::Chilpa;
+use crate::Chilpa;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Control {

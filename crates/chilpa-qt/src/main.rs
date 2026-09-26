@@ -13,7 +13,6 @@ mod browse;
 mod format;
 mod paths;
 mod registry;
-mod settings_schema;
 mod theme;
 mod worker;
 
