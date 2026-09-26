@@ -193,6 +193,10 @@ QtObject {
 
     // The search flyout (design/02 8, design/03 SearchFlyout).
     readonly property int searchFlyout: 440
+    // The player's options (the player bar's switches).
+    readonly property int playbackOptionsWidth: 320
+    readonly property int optionRow: 44
+    readonly property real disabledOpacity: 0.45
     readonly property int searchTop: 14
     readonly property int searchHeader: 26
     readonly property int searchRow: 46

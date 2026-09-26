@@ -112,6 +112,20 @@ Item {
         spacing: Metrics.gap4
 
         IconButton {
+            id: optionsButton
+            tip: I18n.tr("Playback options", I18n.rev)
+            glyph: Icons.adjustmentsHorizontal
+            // Lit when something differs from how it came.
+            checked: options.opened || !Player.gapless || (Player.normalize && Player.normalizeApplies) || Player.automix
+            onClicked: options.opened ? options.close() : options.open()
+
+            PlaybackOptions {
+                id: options
+                x: optionsButton.width - width
+                y: -height - Metrics.gap10
+            }
+        }
+        IconButton {
             tip: I18n.tr("Lyrics", I18n.rev)
             glyph: Icons.quote
             checked: SettingsModel.lyricsOpen

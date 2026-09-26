@@ -25,5 +25,6 @@ GallerySection {
         SearchModel { id: sample; text: "mora" }
         SearchFlyout { search: sample }
         SearchBox { width: Metrics.screenSearch; active: false }
+        PlaybackOptions {}
     }
 }

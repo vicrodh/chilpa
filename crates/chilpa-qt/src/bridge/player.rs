@@ -53,6 +53,15 @@ pub mod qobject {
         #[qproperty(bool, shuffle)]
         /// 0 off, 1 the whole queue, 2 the track.
         #[qproperty(i32, repeat)]
+        /// The playback switches: one track into the next, one loudness,
+        /// the queue in tempo order. Normalizing is only applied with
+        /// bit-perfect off, which `normalize_applies` says.
+        #[qproperty(bool, gapless)]
+        #[qproperty(bool, normalize)]
+        #[qproperty(bool, normalize_applies)]
+        #[qproperty(bool, automix)]
+        /// Why the mix did not start, when it did not.
+        #[qproperty(QString, automix_note)]
         #[qproperty(QString, error)]
         /// Bumped when the queue changed: another track, more or fewer queued.
         #[qproperty(i32, queue_rev)]
@@ -66,6 +75,17 @@ pub mod qobject {
         /// Empties the queue and stops.
         #[qinvokable]
         fn clear_queue(self: Pin<&mut Player>);
+
+        #[qinvokable]
+        fn choose_gapless(self: Pin<&mut Player>, on: bool);
+        #[qinvokable]
+        fn choose_normalize(self: Pin<&mut Player>, on: bool);
+        #[qinvokable]
+        fn choose_automix(self: Pin<&mut Player>, on: bool);
+
+        /// Reads the switches again: Settings changed one.
+        #[qinvokable]
+        fn read_switches(self: Pin<&mut Player>);
 
         /// Removes a queued track, counted from the one that plays.
         #[qinvokable]
@@ -109,6 +129,11 @@ const TICK: std::time::Duration = std::time::Duration::from_millis(250);
 
 #[derive(Default)]
 pub struct PlayerRust {
+    gapless: bool,
+    normalize: bool,
+    normalize_applies: bool,
+    automix: bool,
+    automix_note: QString,
     title: QString,
     artist: QString,
     album: QString,
@@ -141,6 +166,38 @@ pub struct PlayerRust {
 }
 
 impl qobject::Player {
+    pub fn choose_gapless(mut self: Pin<&mut Self>, on: bool) {
+        app::with(|api| api.set_gapless(on));
+        self.as_mut().read_switches();
+    }
+
+    pub fn choose_normalize(mut self: Pin<&mut Self>, on: bool) {
+        app::with(|api| api.set_normalize(on));
+        self.as_mut().read_switches();
+    }
+
+    pub fn choose_automix(mut self: Pin<&mut Self>, on: bool) {
+        let note = app::with(|api| {
+            api.set_automix(on);
+            if on && !api.automix_on() { api.now_playing().error.clone() } else { String::new() }
+        });
+        self.as_mut().set_automix_note(QString::from(&note));
+        self.as_mut().read_switches();
+        // The queue's order changed; the panel lists it in the new one.
+        self.as_mut().bump_queue();
+    }
+
+    pub fn read_switches(mut self: Pin<&mut Self>) {
+        let (gapless, normalize, applies, mix) = app::with(|api| {
+            let (_, bit_perfect) = api.chosen_output();
+            (api.gapless(), api.normalize(), !bit_perfect, api.automix_on())
+        });
+        self.as_mut().set_gapless(gapless);
+        self.as_mut().set_normalize(normalize);
+        self.as_mut().set_normalize_applies(applies);
+        self.as_mut().set_automix(mix);
+    }
+
     pub fn clear_queue(mut self: Pin<&mut Self>) {
         app::with(|api| api.clear_queue());
         self.as_mut().bump_queue();
@@ -197,6 +254,8 @@ impl qobject::Player {
         let on = !self.rust().shuffle;
         app::with(|api| api.set_shuffle(on));
         self.as_mut().set_shuffle(on);
+        // Shuffling replaces the mix.
+        self.as_mut().set_automix(false);
     }
 
     pub fn cycle_repeat(mut self: Pin<&mut Self>) {
@@ -215,6 +274,9 @@ impl qobject::Player {
         let now = app::with(|api| api.poll().clone());
         if now.path != self.rust().shown {
             self.as_mut().rust_mut().shown = now.path.clone();
+            // A new queue drops the mix; the switch follows.
+            let mix = app::with(|api| api.automix_on());
+            self.as_mut().set_automix(mix);
             self.as_mut().set_title(QString::from(&now.title));
             self.as_mut().set_artist(QString::from(&now.artist));
             self.as_mut().set_album(QString::from(&now.album));
@@ -290,6 +352,8 @@ impl cxx_qt::Initialize for qobject::Player {
         let (shuffle, repeat) = app::with(|api| (api.shuffle(), api.repeat()));
         self.as_mut().set_shuffle(shuffle);
         self.as_mut().set_repeat(repeat as i32);
+        self.as_mut().read_switches();
+        crate::registry::register_player(self.qt_thread());
         let thread = self.qt_thread();
         std::thread::Builder::new()
             .name("chilpa-tick".into())

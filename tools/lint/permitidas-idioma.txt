@@ -417,6 +417,8 @@ xdg
 flyout
 # Sending what was listened to, to a listening history service.
 lastfm
+# The loudness tags players write, REPLAYGAIN_TRACK_GAIN and its peak.
+replaygain
 listenbrainz
 scrobble
 scrobbled

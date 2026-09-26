@@ -142,6 +142,9 @@ msgstr "Audio"
 msgid "Audio stack"
 msgstr "Pila de audio"
 
+msgid "AutoMix"
+msgstr "AutoMix"
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr "BP marca una salida que recibe las muestras intactas."
 
@@ -150,6 +153,9 @@ msgstr "Atrás"
 
 msgid "Back 10 seconds"
 msgstr "Atrás 10 segundos"
+
+msgid "Between tracks"
+msgstr "Entre pistas"
 
 msgid "Bit perfect"
 msgstr "Bit perfect"
@@ -280,6 +286,12 @@ msgstr "Duración"
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 
+msgid "Every track at one loudness, by its ReplayGain."
+msgstr "Todas las pistas al mismo volumen, según su ReplayGain."
+
+msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
+msgstr "Todas las pistas al mismo volumen, según su ReplayGain. No se aplica con bit-perfect encendido: cambia las muestras."
+
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
 
@@ -321,6 +333,9 @@ msgstr "Adelante 10 segundos"
 
 msgid "From this week"
 msgstr "De esta semana"
+
+msgid "Gapless"
+msgstr "Gapless"
 
 msgid "Genre"
 msgstr "Género"
@@ -457,8 +472,14 @@ msgstr "Esta pista no tiene letra."
 msgid "No playlists yet."
 msgstr "Todavía no hay playlists."
 
+msgid "Normalization"
+msgstr "Normalización"
+
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
+
+msgid "Not with bit-perfect on: it changes the samples."
+msgstr "No con bit-perfect encendido: cambia las muestras."
 
 msgid "Nothing found for “{}”"
 msgstr "Sin resultados para “{}”"
@@ -471,6 +492,12 @@ msgstr "No hay nada en la cola."
 
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."
+
+msgid "One track straight into the next."
+msgstr "Una pista entra justo después de la otra."
+
+msgid "One track straight into the next. Off, the device plays out and opens again."
+msgstr "Una pista entra justo después de la otra. Apagado, el dispositivo termina lo que tiene y se vuelve a abrir."
 
 msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
 msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
@@ -525,6 +552,9 @@ msgstr "Reproducir el CD"
 
 msgid "Playback"
 msgstr "Reproducción"
+
+msgid "Playback options"
+msgstr "Opciones de reproducción"
 
 msgid "Player bar"
 msgstr "Barra del reproductor"
@@ -684,6 +714,9 @@ msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
+
+msgid "The queue in the order its tempo flows best. Off, back to its own."
+msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
