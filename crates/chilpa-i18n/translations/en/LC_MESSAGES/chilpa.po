@@ -136,6 +136,9 @@ msgstr ""
 msgid "All ({})"
 msgstr ""
 
+msgid "All folders"
+msgstr ""
+
 msgid "All music"
 msgstr ""
 
@@ -376,6 +379,9 @@ msgstr ""
 msgid "Filter artists"
 msgstr ""
 
+msgid "Filter folders"
+msgstr ""
+
 msgid "Filter playlists"
 msgstr ""
 
@@ -407,6 +413,9 @@ msgid "Go to album"
 msgstr ""
 
 msgid "Go to artist"
+msgstr ""
+
+msgid "Grid"
 msgstr ""
 
 msgid "Hardware volume"
@@ -476,6 +485,9 @@ msgid "Library folders"
 msgstr ""
 
 msgid "Light"
+msgstr ""
+
+msgid "List"
 msgstr ""
 
 msgid "Look"
@@ -884,6 +896,9 @@ msgid "Theme"
 msgstr ""
 
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
+msgstr ""
+
+msgid "This folder is empty."
 msgstr ""
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."

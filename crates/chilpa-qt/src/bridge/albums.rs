@@ -38,7 +38,8 @@ pub mod qobject {
         /// "recentlyPlayed", "recentlyAdded", "all", "library" (the records
         /// the Library screen's filter leaves), "artist" (one artist's
         /// records, by `key`), "appearsOn" (the compilations they are on)
-        /// or "artists" (every artist, as round cards).
+        /// "folder" (the records directly in its current directory) or
+        /// "artists" (every artist, as round cards).
         #[qproperty(QString, kind)]
         #[qproperty(QString, key)]
         /// For "all": "artist", "title", "year", "added", "played" or
@@ -329,6 +330,10 @@ impl qobject::AlbumGridModel {
                 // leaves, in shelf order: its ids are the grid's snapshot.
                 let ids: Vec<i64> =
                     crate::browse::read(|s| s.facets.albums.iter().filter_map(|a| a.key.parse().ok()).collect());
+                return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
+            }
+            "folder" => {
+                let ids = crate::bridge::folder_view::album_ids();
                 return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
             }
             _ => Vec::new(),

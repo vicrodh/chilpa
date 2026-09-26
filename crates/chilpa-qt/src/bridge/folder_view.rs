@@ -1,11 +1,5 @@
-//! A folder, as the Folders screen shows it: its subfolders as rows, and
-//! its own tracks handed to the track list.
-//!
-//! The folder is read on the worker -- the top of a large library groups
-//! every track, and a folder outside the library is read from a disk that
-//! may be across a network -- and comes back tagged, so an answer for a
-//! folder already left behind is dropped. The tracks go into a shared slot
-//! that a `TrackListModel` of kind "folder" reads when `rev` moves.
+//! The Folders screen's subfolders and tracks, read on the worker and tagged
+//! so a late answer for a folder already left behind is dropped.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -27,29 +21,20 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// The folder; empty is the top, the library's own folders.
         #[qproperty(QString, path)]
-        /// Bumped when a folder has been read.
+        #[qproperty(QString, query)]
+        #[qproperty(bool, content)]
         #[qproperty(i32, rev)]
         #[qproperty(bool, loading)]
-        /// False for a folder outside the library, read as it is on disk.
         #[qproperty(bool, in_library)]
         #[qproperty(i32, folders)]
         #[qproperty(i32, tracks)]
-        /// True when the machine has a CD drive.
         #[qproperty(bool, has_cd)]
         type FolderModel = super::FolderModelRust;
-
-        /// Plays everything under the folder, in order.
         #[qinvokable]
         fn play_all(self: Pin<&mut FolderModel>);
-
-        /// Opens the system's folder picker and shows what is chosen, from
-        /// the disk, without adding it to the library.
         #[qinvokable]
         fn pick(self: Pin<&mut FolderModel>);
-
-        /// Plays the CD in the drive.
         #[qinvokable]
         fn play_cd(self: Pin<&mut FolderModel>);
     }
@@ -101,9 +86,17 @@ pub fn tracks() -> Rc<Vec<TrackRow>> {
     TRACKS.with(|t| t.borrow().clone())
 }
 
+/// The records in the current folder, once and in first-track order.
+pub fn album_ids() -> Vec<i64> {
+    let mut seen = std::collections::HashSet::new();
+    tracks().iter().filter_map(|track| (track.album_id > 0 && seen.insert(track.album_id)).then_some(track.album_id)).collect()
+}
+
 #[derive(Default)]
 pub struct FolderModelRust {
     path: QString,
+    query: QString,
+    content: bool,
     rev: i32,
     loading: bool,
     in_library: bool,
@@ -174,9 +167,7 @@ impl qobject::FolderModel {
         });
     }
 
-    /// Loads once this turn of the event loop is over: the path QML binds
-    /// arrives after the object is built, and reading the top first only to
-    /// drop it would be a query of the whole library for nothing.
+    /// Defers until every QML binding for this turn has arrived.
     fn schedule(mut self: Pin<&mut Self>) {
         if self.rust().pending {
             return;
@@ -191,9 +182,10 @@ impl qobject::FolderModel {
         self.as_mut().rust_mut().generation = generation;
         self.as_mut().set_loading(true);
         let dir = self.rust().path.to_string();
+        let query = self.rust().query.to_string();
         let thread = self.qt_thread();
         worker::submit(move |reader| {
-            let view = reader.folder(&dir);
+            let view = if query.trim().is_empty() { reader.folder(&dir) } else { reader.folder_matches(&query) };
             let _ = thread.queue(move |model| model.arrive(generation, view));
         });
     }
@@ -203,7 +195,9 @@ impl qobject::FolderModel {
             return;
         }
         let (folders, tracks) = (view.folders.len() as i32, view.tracks.len() as i32);
-        TRACKS.with(|t| *t.borrow_mut() = Rc::new(view.tracks));
+        if self.rust().content {
+            TRACKS.with(|t| *t.borrow_mut() = Rc::new(view.tracks));
+        }
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         self.as_mut().rust_mut().items = view.folders;
@@ -222,6 +216,7 @@ impl cxx_qt::Initialize for qobject::FolderModel {
         let has_cd = app::with(|api| !api.cd_drives().is_empty());
         self.as_mut().set_has_cd(has_cd);
         self.as_mut().on_path_changed(|m| m.schedule()).release();
+        self.as_mut().on_query_changed(|m| m.schedule()).release();
         self.schedule();
     }
 }

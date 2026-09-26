@@ -254,6 +254,45 @@ impl Reader {
         crate::folders::disk_folder(std::path::Path::new(dir))
     }
 
+    /// Library folders whose path contains every word in `text`. Search is
+    /// flat on purpose: it jumps into a large tree without opening every
+    /// branch and issuing one query per directory.
+    pub fn folder_matches(&self, text: &str) -> FolderView {
+        let words: Vec<String> = text.to_lowercase().split_whitespace().map(String::from).collect();
+        if words.is_empty() {
+            return self.folder("");
+        }
+        let mut paths = std::collections::BTreeSet::new();
+        for root in self.lib.roots().unwrap_or_default() {
+            let root = root.path;
+            paths.insert(root.clone());
+            for track in self.lib.folder_paths(&root.to_string_lossy()).unwrap_or_default() {
+                let mut parent = std::path::Path::new(&track).parent();
+                while let Some(dir) = parent.filter(|dir| dir.starts_with(&root)) {
+                    paths.insert(dir.to_path_buf());
+                    if dir == root {
+                        break;
+                    }
+                    parent = dir.parent();
+                }
+            }
+        }
+        let folders = paths
+            .into_iter()
+            .filter_map(|path| {
+                let shown = path.to_string_lossy().into_owned();
+                let lower = shown.to_lowercase();
+                words.iter().all(|word| lower.contains(word)).then_some(FolderItem {
+                    name: shown.clone(),
+                    path: shown,
+                    tracks: 0,
+                    artwork_path: String::new(),
+                })
+            })
+            .collect();
+        FolderView { folders, tracks: Vec::new(), in_library: true }
+    }
+
     /// Every playable file under a folder, in order: the library's for one
     /// inside it, the disk's for one outside.
     pub fn folder_files(&self, dir: &str) -> Vec<String> {
@@ -467,5 +506,22 @@ mod tests {
         let labels = vec![entry("Massive Attack"), entry("Björk")];
         assert_eq!(filter_facets(labels.clone(), "attack"), vec![labels[0].clone()]);
         assert_eq!(filter_facets(labels, "björk").len(), 1);
+    }
+
+    #[test]
+    fn folder_search_returns_matching_directories_in_one_flat_result() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.root_id(source, std::path::Path::new("/music")).unwrap();
+        lib.connection()
+            .execute(
+                "INSERT INTO tracks (source_id, external_id, title, added_at) \
+                 VALUES (?1, '/music/Rock/Album/song.flac', 'Song', 1)",
+                [source],
+            )
+            .unwrap();
+        let found = Reader { lib }.folder_matches("rock");
+        let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
+        assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }
 }

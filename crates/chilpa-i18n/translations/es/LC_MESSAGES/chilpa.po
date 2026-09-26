@@ -136,6 +136,9 @@ msgstr "Todo"
 msgid "All ({})"
 msgstr "Todo ({})"
 
+msgid "All folders"
+msgstr "Todas las carpetas"
+
 msgid "All music"
 msgstr "Toda la música"
 
@@ -376,6 +379,9 @@ msgstr "Filtrar discos"
 msgid "Filter artists"
 msgstr "Filtrar artistas"
 
+msgid "Filter folders"
+msgstr "Filtrar carpetas"
+
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
 
@@ -408,6 +414,9 @@ msgstr "Ir al disco"
 
 msgid "Go to artist"
 msgstr "Ir al artista"
+
+msgid "Grid"
+msgstr "Cuadrícula"
 
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
@@ -477,6 +486,9 @@ msgstr "Carpetas de la biblioteca"
 
 msgid "Light"
 msgstr "Claro"
+
+msgid "List"
+msgstr "Lista"
 
 msgid "Look"
 msgstr "Aspecto"
@@ -885,6 +897,9 @@ msgstr "Tema"
 
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC o amplificador."
+
+msgid "This folder is empty."
+msgstr "Esta carpeta está vacía."
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
