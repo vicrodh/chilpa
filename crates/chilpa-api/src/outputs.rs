@@ -7,6 +7,14 @@ use crate::{Output, OutputStack, WizardReport, WizardRow};
 const CARD: &str = "alsa";
 const PLUG: &str = "alsaplug";
 
+fn word(fidelity: chilpa_core::backends::Fidelity) -> &'static str {
+    match fidelity {
+        chilpa_core::backends::Fidelity::Exact => "exact",
+        chilpa_core::backends::Fidelity::Depends => "depends",
+        chilpa_core::backends::Fidelity::Never => "never",
+    }
+}
+
 /// The stack an output identifier names, exactly.
 fn own_stack(output_id: &str) -> &str {
     output_id.split_once(':').map_or("", |(key, _)| key)
@@ -128,12 +136,7 @@ impl crate::Chilpa {
                 label: s.label(),
                 present: s.present,
                 missing: s.missing,
-                fidelity: match s.fidelity {
-                    chilpa_core::backends::Fidelity::Exact => "exact",
-                    chilpa_core::backends::Fidelity::Depends => "depends",
-                    chilpa_core::backends::Fidelity::Never => "never",
-                }
-                .to_string(),
+                fidelity: word(s.fidelity).to_string(),
                 caveat: s.caveat,
             })
             .collect()
@@ -180,6 +183,14 @@ impl crate::Chilpa {
             .and_then(chilpa_core::backends::of)
             .map(|s| s.info().label());
         (device.unwrap_or_else(|| output_id.to_string()), stack.unwrap_or_else(|| key.to_string()))
+    }
+
+    /// What the output's stack promises: "exact", "depends" or "never".
+    /// One nobody knows promises nothing.
+    pub fn fidelity_of(&self, output_id: &str) -> &'static str {
+        chilpa_core::backends::StackKind::from_key(own_stack(output_id))
+            .and_then(chilpa_core::backends::of)
+            .map_or("never", |s| word(s.info().fidelity))
     }
 
     /// "hw" or "plughw" when the chosen output is a card; empty otherwise.

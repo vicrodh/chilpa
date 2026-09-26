@@ -54,7 +54,7 @@ impl OutputBackend for Wasapi {
                 caveat: chilpa_i18n::t(
                     "Exact here means the device is Chilpa's alone while a track plays: nothing \
                      else on the machine can use it, not even a notification. Turn bit-perfect \
-                     off to share it and let Windows mix and resample.",
+                     and exclusive mode off to share it and let Windows mix and resample.",
                 ),
             },
             Ok(false) => BackendInfo::missing(

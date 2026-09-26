@@ -106,8 +106,8 @@ impl OutputBackend for CoreAudio {
             caveat: chilpa_i18n::t(
                 "Exact here means the device is Chilpa's alone while a track plays, and set to \
                  that track's rate. Nothing else on the Mac can use it meanwhile, and the rate \
-                 changes between tracks. Turn bit-perfect off to share it and let the Mac \
-                 convert.",
+                 changes between tracks. Turn bit-perfect and exclusive mode off to share it and \
+                 let the Mac convert.",
             ),
         }
     }

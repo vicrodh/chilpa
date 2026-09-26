@@ -31,11 +31,11 @@ msgstr "\"{}\" abrió como {} en su lugar; apaga bit-perfect para dejar que la M
 msgid "\"{}\" refused the {} format ({})"
 msgstr "\"{}\" rechazó el formato {} ({})"
 
-msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to share it"
-msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva ({}); apaga bit-perfect para compartirlo"
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and exclusive mode off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva ({}); apaga bit-perfect y el modo exclusivo para compartirlo"
 
-msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it"
-msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga bit-perfect para compartirlo"
+msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga bit-perfect y el modo exclusivo para compartirlo"
 
 msgid "\"{}\" would not open ({})"
 msgstr "no se pudo abrir \"{}\" ({})"
@@ -175,6 +175,9 @@ msgstr "Bit perfect"
 msgid "Bit-perfect"
 msgstr "Bit-perfect"
 
+msgid "Bit-perfect already asks for it."
+msgstr "Bit-perfect ya lo pide."
+
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
 
@@ -307,11 +310,14 @@ msgstr "Todas las pistas al mismo volumen, según su ReplayGain."
 msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
 msgstr "Todas las pistas al mismo volumen, según su ReplayGain. No se aplica con bit-perfect encendido: cambia las muestras."
 
-msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
-msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
+msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
+msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que la Mac convierta."
 
-msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
-msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect para compartirlo y dejar que Windows mezcle y reconvierta."
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
+msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que Windows mezcle y reconvierta."
+
+msgid "Exclusive mode"
+msgstr "Modo exclusivo"
 
 msgid "Expand sidebar"
 msgstr "Expandir barra lateral"
@@ -499,6 +505,9 @@ msgstr "Normalización"
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
+msgid "Not through this stack: it mixes by design."
+msgstr "No con esta pila: mezcla por diseño."
+
 msgid "Not with bit-perfect on: it changes the samples."
 msgstr "No con bit-perfect encendido: cambia las muestras."
 
@@ -559,8 +568,8 @@ msgstr "Pausa"
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
 
-msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
-msgstr "PipeWire deja pasar las muestras sin tocarlas solo cuando entrega la salida a un programa a la vez. Chilpa se lo pide siempre que bit-perfect esté encendido. Apagado, el grafo mezcla esto con todo lo demás y remuestrea el resultado a la frecuencia a la que esté corriendo."
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive mode is on. With both off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgstr "PipeWire deja pasar las muestras intactas solo cuando le da la salida a un programa a la vez. Chilpa lo pide siempre que bit-perfect o el modo exclusivo están encendidos. Con los dos apagados, el grafo mezcla esto con todo lo demás y remuestrea el resultado a la frecuencia a la que esté corriendo."
 
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearía; agrégala a default.clock.allowed-rates, o elige la tarjeta directo"
@@ -754,6 +763,9 @@ msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
+msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
+msgstr "La salida toca solo Chilpa, también con bit-perfect apagado. Los demás programas esperan a que la suelte."
+
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
 
@@ -774,6 +786,9 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
+
+msgid "This output is always Chilpa's alone."
+msgstr "Esta salida siempre es solo de Chilpa."
 
 msgid "This screen is not built yet."
 msgstr "Esta pantalla todavía no está hecha."
@@ -892,8 +907,8 @@ msgstr "ya hay un análisis corriendo"
 msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
 msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga bit-perfect para compartirlo"
 
-msgid "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})"
-msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect para compartirlo ({})"
+msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
+msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect y el modo exclusivo para compartirla ({})"
 
 msgid "awaiting approval"
 msgstr "pendiente de aprobación"

@@ -355,15 +355,15 @@ impl CoreAudioSink {
             let mine = std::process::id() as i32;
             set(device, &global(kAudioDevicePropertyHogMode), &mine).map_err(|s| {
                 SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to \
-                     share it",
+                    "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and \
+                     exclusive mode off to share it",
                     &[name, &s.to_string()],
                 ))
             })?;
             // And read back, because asking is not having.
             if read::hogged_by(device) != mine {
                 return Err(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it",
+                    "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it",
                     &[name],
                 )));
             }

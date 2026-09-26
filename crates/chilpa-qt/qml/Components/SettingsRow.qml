@@ -76,7 +76,7 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         sourceComponent: row.line ? verdict
-            : row.control === "toggle" ? toggle
+            : row.control === "toggle" || row.control === "fixed" ? toggle
             : row.control === "select" || row.control === "device" ? select
             : row.control === "segmented" ? segmented
             : row.control === "button" || row.control === "link" ? button
@@ -89,6 +89,8 @@ Item {
     Component {
         id: toggle
         Toggle {
+            // "fixed": what the output allows, shown and not changeable.
+            enabled: row.control === "toggle"
             checked: row.value === "true"
             onToggled: (on) => row.page.set(row.key, on ? "true" : "false")
         }

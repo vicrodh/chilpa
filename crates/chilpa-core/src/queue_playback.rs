@@ -315,6 +315,9 @@ pub struct Controls {
     /// Tracks brought to one loudness by their ReplayGain. It changes the
     /// samples, and a track it touches is not delivered bit-perfect.
     pub normalize: Switch,
+    /// The output asked for alone even with bit-perfect off: nothing else
+    /// mixed in, while Chilpa may still convert. Read when the output opens.
+    pub exclusive: Switch,
 }
 
 /// An on/off shared with whoever drives the queue, read each track.
@@ -359,6 +362,7 @@ impl Default for Controls {
             order: Order::default(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
+            exclusive: Switch::new(false),
         }
     }
 }
@@ -622,7 +626,8 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize } = controls;
+    // `exclusive` was read when the output was chosen, before the queue.
+    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize, exclusive: _ } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());

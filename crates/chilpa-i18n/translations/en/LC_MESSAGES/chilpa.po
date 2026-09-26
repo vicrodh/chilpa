@@ -31,10 +31,10 @@ msgstr ""
 msgid "\"{}\" refused the {} format ({})"
 msgstr ""
 
-msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect off to share it"
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and exclusive mode off to share it"
 msgstr ""
 
-msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect off to share it"
+msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it"
 msgstr ""
 
 msgid "\"{}\" would not open ({})"
@@ -175,6 +175,9 @@ msgstr ""
 msgid "Bit-perfect"
 msgstr ""
 
+msgid "Bit-perfect already asks for it."
+msgstr ""
+
 msgid "Browse for a music folder, or type its full path."
 msgstr ""
 
@@ -307,10 +310,13 @@ msgstr ""
 msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
 msgstr ""
 
-msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
+msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
 msgstr ""
 
-msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect off to share it and let Windows mix and resample."
+msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
+msgstr ""
+
+msgid "Exclusive mode"
 msgstr ""
 
 msgid "Expand sidebar"
@@ -499,6 +505,9 @@ msgstr ""
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
+msgid "Not through this stack: it mixes by design."
+msgstr ""
+
 msgid "Not with bit-perfect on: it changes the samples."
 msgstr ""
 
@@ -559,7 +568,7 @@ msgstr ""
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr ""
 
-msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect is on. With it off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
+msgid "PipeWire passes the samples through untouched only when it hands the output over to one program at a time. Chilpa asks for that whenever bit-perfect or exclusive mode is on. With both off the graph mixes this with everything else and resamples the result to whatever rate it is running at."
 msgstr ""
 
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
@@ -754,6 +763,9 @@ msgstr ""
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
+msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
+msgstr ""
+
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr ""
 
@@ -773,6 +785,9 @@ msgid "This is wherever the machine is already sending sound, so what happens to
 msgstr ""
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr ""
+
+msgid "This output is always Chilpa's alone."
 msgstr ""
 
 msgid "This screen is not built yet."
@@ -892,7 +907,7 @@ msgstr ""
 msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
 msgstr ""
 
-msgid "another program is using \"{}\"; close it, or turn bit-perfect off to share it ({})"
+msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr ""
 
 msgid "awaiting approval"
