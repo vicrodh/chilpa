@@ -4,9 +4,10 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// The strip above the content (design/02 3): history, tabs, density and,
-// outside macOS, the window's own controls. Its empty space moves the
-// window, and a double click maximizes it.
+// The strip above the content (design/02 3): with the sidebar closed, a way
+// to show it and its search; history, tabs, density and, outside macOS, the
+// window's own controls. Its empty space moves the window, and a double
+// click maximizes it.
 Item {
     id: bar
 
@@ -31,6 +32,14 @@ Item {
             tip: I18n.tr("Show the sidebar", I18n.rev)
             glyph: Icons.layoutSidebarLeftExpand
             onClicked: SettingsModel.sidebarMode = "open"
+        }
+        // With the sidebar closed, its search lives here, results below it.
+        SearchBox {
+            visible: SettingsModel.sidebarMode === "closed"
+            width: Metrics.screenSearch
+            active: visible
+            flyoutY: height + Metrics.gap10
+            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
         }
         IconButton {
             tip: I18n.tr("Back", I18n.rev)
