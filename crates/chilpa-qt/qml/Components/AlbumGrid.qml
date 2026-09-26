@@ -49,6 +49,8 @@ Item {
 
         anchors.fill: parent
         interactive: !grid.fitContent
+        // Scrolled rows stay inside the grid, not over what sits above it.
+        clip: !grid.fitContent
         model: grid.model
         spacing: Metrics.gridGap
         reuseItems: true
