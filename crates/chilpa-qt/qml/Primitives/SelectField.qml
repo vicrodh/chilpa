@@ -27,7 +27,9 @@ Rectangle {
         anchors.right: chevron.left
         anchors.rightMargin: Metrics.gap6
         anchors.verticalCenter: parent.verticalCenter
-        text: field.current >= 0 ? field.options[field.current] : ""
+        // `values` and `options` can arrive one after the other when the row
+        // changes in place; for that moment the index may be past `options`.
+        text: field.options[field.current] ?? ""
         elide: Text.ElideRight
         font.pointSize: Type.body
         color: Theme.color.textPrimary

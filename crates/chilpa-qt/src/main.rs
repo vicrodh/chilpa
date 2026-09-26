@@ -29,6 +29,9 @@ unsafe extern "C" {
     /// Registers a font from the resources as the application's default.
     /// See `fonts.cpp`.
     fn chilpa_use_font(resource: *const std::ffi::c_char) -> bool;
+    /// Whether a desktop entry by that name is installed. See `fonts.cpp`.
+    #[cfg(target_os = "linux")]
+    fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
     /// Hands the engine the covers' image provider. See `covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
 }
@@ -60,13 +63,21 @@ pub unsafe extern "C" fn chilpa_cover(
     true
 }
 
+/// The desktop entry the window is named after, where there is one.
+#[cfg(target_os = "linux")]
+const DESKTOP_ENTRY: &std::ffi::CStr = c"com.blitzfc.chilpa";
+
 /// Where Inter lives in the resources.
 const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/assets/fonts/Inter.ttf";
 
 fn main() {
     let mut app = QGuiApplication::new();
+    // Named after its desktop entry only when one is installed: a build run
+    // from the tree has none, and the portal refused it on every start.
     #[cfg(target_os = "linux")]
-    QGuiApplication::set_desktop_file_name(&QString::from("com.blitzfc.chilpa"));
+    if unsafe { chilpa_has_desktop_entry(DESKTOP_ENTRY.as_ptr()) } {
+        QGuiApplication::set_desktop_file_name(&QString::from(DESKTOP_ENTRY.to_str().unwrap_or_default()));
+    }
 
     // Inter unless the system's font was chosen: the design needs real
     // weights, and plenty of desktops set a font with one face that Qt does
