@@ -88,6 +88,9 @@ msgstr "Agregar una carpeta"
 msgid "Add a folder to the library"
 msgstr "Agregar una carpeta a la biblioteca"
 
+msgid "Add to playlist…"
+msgstr "Agregar a playlist…"
+
 msgid "Add to queue"
 msgstr "Agregar a la cola"
 
@@ -160,6 +163,9 @@ msgstr "todavía no se leen CD fuera de Linux"
 msgid "Calm"
 msgstr "Tranquilo"
 
+msgid "Cancel"
+msgstr "Cancelar"
+
 msgid "Checking the token…"
 msgstr "Revisando el token…"
 
@@ -220,6 +226,15 @@ msgstr "Oscuro"
 msgid "Date added"
 msgstr "Fecha de alta"
 
+msgid "Delete"
+msgstr "Borrar"
+
+msgid "Delete “{}”?"
+msgstr "¿Borrar “{}”?"
+
+msgid "Delete…"
+msgstr "Borrar…"
+
 msgid "Device: {}"
 msgstr "Dispositivo: {}"
 
@@ -247,6 +262,9 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 msgid "Duration"
 msgstr "Duración"
 
+msgid "Empty. Add tracks from any list with a right click."
+msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
+
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect para compartirlo y dejar que la Mac convierta."
 
@@ -261,6 +279,9 @@ msgstr "Archivo"
 
 msgid "Filter artists"
 msgstr "Filtrar artistas"
+
+msgid "Filter playlists"
+msgstr "Filtrar playlists"
 
 msgid "Folders"
 msgstr "Carpetas"
@@ -391,6 +412,9 @@ msgstr "Navegación"
 msgid "Never played"
 msgstr "Nunca escuchadas"
 
+msgid "New playlist"
+msgstr "Nueva playlist"
+
 msgid "New tab"
 msgstr "Nueva pestaña"
 
@@ -402,6 +426,9 @@ msgstr "Todavía no hay carpetas en la biblioteca."
 
 msgid "No lyrics for this track."
 msgstr "Esta pista no tiene letra."
+
+msgid "No playlists yet."
+msgstr "Todavía no hay playlists."
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
@@ -466,6 +493,12 @@ msgstr "Reproducir el CD"
 msgid "Playback"
 msgstr "Reproducción"
 
+msgid "Playlist"
+msgstr "Playlist"
+
+msgid "Playlists"
+msgstr "Playlists"
+
 msgid "Plays"
 msgstr "Reproducciones"
 
@@ -502,11 +535,17 @@ msgstr "Escuchados recientemente"
 msgid "Records"
 msgstr "Discos"
 
+msgid "Remove from playlist"
+msgstr "Quitar de la playlist"
+
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
 
 msgid "Remove from the queue"
 msgstr "Quitar de la cola"
+
+msgid "Rename"
+msgstr "Renombrar"
 
 msgid "Repair"
 msgstr "Reparar"

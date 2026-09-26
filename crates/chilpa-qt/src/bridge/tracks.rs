@@ -90,6 +90,15 @@ pub mod qobject {
         #[qinvokable]
         fn play_next(self: Pin<&mut TrackListModel>, row: i32);
 
+        /// Adds the row, or the selection it is part of, to a playlist;
+        /// zero makes a new one and opens it.
+        #[qinvokable]
+        fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
+
+        /// On a playlist's page: takes the row out of it.
+        #[qinvokable]
+        fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
+
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
         /// page the artist.
@@ -502,6 +511,37 @@ impl qobject::TrackListModel {
         self.with_selection(next);
     }
 
+    pub fn add_to_playlist(self: Pin<&mut Self>, row: i32, playlist: i64) {
+        let add = move |paths: &[String]| {
+            let paths = paths.to_vec();
+            registry::playlists(move |mut lists| {
+                let id = if playlist == 0 { lists.as_mut().create() } else { playlist };
+                if id != 0 {
+                    app::with(|api| api.add_to_playlist(id, &paths));
+                    lists.changed();
+                }
+            });
+        };
+        if !self.in_selection(row) {
+            if let Some(track) = self.rust().track(row.max(0) as usize) {
+                add(&[track.path]);
+            }
+            return;
+        }
+        self.with_selection(add);
+    }
+
+    pub fn remove_from_playlist(mut self: Pin<&mut Self>, row: i32) {
+        let playlist = self.rust().album_id;
+        if self.rust().kind.to_string() != "playlist" || row < 0 {
+            return;
+        }
+        if app::with(|api| api.remove_from_playlist(playlist, row as usize)) {
+            self.as_mut().rust_mut().selected.clear();
+            registry::playlists(|lists| lists.changed());
+        }
+    }
+
     /// Whether the row is one of several selected.
     fn in_selection(&self, row: i32) -> bool {
         let this = self.rust();
@@ -510,7 +550,7 @@ impl qobject::TrackListModel {
 
     /// The selected files, in list order -- which the selection does not
     /// keep -- handed to `then` on the window's thread.
-    fn with_selection(&self, then: fn(&[String])) {
+    fn with_selection(&self, then: impl FnOnce(&[String]) + Send + 'static) {
         let this = self.rust();
         match &this.rows {
             Rows::Loaded(_) => {
@@ -629,6 +669,11 @@ impl qobject::TrackListModel {
                 let tracks = super::folder_view::tracks();
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(ms))
+            }
+            "playlist" => {
+                let tracks = app::with(|api| api.playlist_rows(id));
+                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
+                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
             }
             "queue" => {
                 let tracks = app::with(|api| api.queue_rows());

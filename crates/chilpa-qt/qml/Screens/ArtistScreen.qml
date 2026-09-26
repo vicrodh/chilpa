@@ -53,8 +53,10 @@ Flickable {
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         spacing: Metrics.gap16
 
-        ArtistHero {
+        PageHero {
             width: parent.width
+            label: I18n.tr("Artist", I18n.rev)
+            round: true
             name: page.name
             art: records.albums > 0 ? records.art(0, records.rev) : guest.art(0, guest.rev)
             meta: records.albums > 0 ? I18n.trCount("{} record", "{} records", records.albums, I18n.rev) + " · " + every.summary

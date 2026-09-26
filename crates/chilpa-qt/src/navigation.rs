@@ -19,6 +19,7 @@ pub enum Screen {
     LibraryFolders,
     /// The library by folder, or a folder opened from the disk.
     Folders,
+    Playlist,
 }
 
 impl Screen {
@@ -33,6 +34,7 @@ impl Screen {
             Screen::Settings => "settings",
             Screen::LibraryFolders => "libraryFolders",
             Screen::Folders => "folders",
+            Screen::Playlist => "playlist",
         }
     }
 
@@ -47,6 +49,7 @@ impl Screen {
             Screen::Settings,
             Screen::LibraryFolders,
             Screen::Folders,
+            Screen::Playlist,
         ]
             .into_iter()
             .find(|s| s.name() == name)
@@ -154,6 +157,19 @@ impl Tabs {
         }
     }
 
+    /// Forgets a place that no longer exists -- a deleted playlist -- from
+    /// every tab and every history. A tab that was on it goes back to where
+    /// it came from, or Home.
+    pub fn forget(&mut self, gone: &Route) {
+        for tab in &mut self.tabs {
+            tab.back.retain(|r| r != gone);
+            tab.forward.retain(|r| r != gone);
+            if tab.route == *gone {
+                tab.route = tab.back.pop().unwrap_or_else(|| Route::of(Screen::Home));
+            }
+        }
+    }
+
     /// Closes a tab. The last one stays open; closing the active one
     /// activates the one to its left.
     pub fn close(&mut self, index: usize) {
@@ -174,6 +190,20 @@ mod tests {
 
     fn album(id: i64) -> Route {
         Route { screen: Screen::Album, id, key: String::new() }
+    }
+
+    #[test]
+    fn a_place_that_is_gone_leaves_every_tab_and_history() {
+        let mut t = Tabs::default();
+        let gone = Route { screen: Screen::Playlist, id: 3, key: String::new() };
+        t.go(Route::of(Screen::Library));
+        t.go(gone.clone());
+        t.open(gone.clone());
+        t.forget(&gone);
+        assert_eq!(t.routes(), [Route::of(Screen::Library), Route::of(Screen::Home)]);
+        t.activate(0);
+        assert!(t.can_back(), "Home is still behind Library");
+        assert!(!t.can_forward());
     }
 
     #[test]

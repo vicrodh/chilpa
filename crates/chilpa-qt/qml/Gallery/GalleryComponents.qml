@@ -41,7 +41,8 @@ GallerySection {
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
         AlbumCardOverlay { width: Metrics.cardMinWidth; height: width }
         AlbumHero { width: parent.width; detail: detail }
-        ArtistHero { width: parent.width; name: "Mora Vale"; meta: "8 records" }
+        PageHero { width: parent.width; label: "Artist"; round: true; name: "Mora Vale"; meta: "8 records" }
+        PageHero { width: parent.width; label: "Playlist"; name: "Road Trip 2026"; meta: "19 songs"; covers: ["", "", "", ""]; canQueue: true }
         Row {
             height: Metrics.panesHeight
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }
@@ -94,6 +95,9 @@ GallerySection {
         FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
+        PlaylistMenu {}
+        PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; active: true }
+        PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8 }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
         SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
     }

@@ -17,6 +17,7 @@ Loader {
         case "settings": return settings
         case "libraryFolders": return libraryFolders
         case "folders": return folders
+        case "playlist": return playlist
         default: return pending
         }
     }
@@ -30,5 +31,6 @@ Loader {
     Component { id: settings; SettingsScreen {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
+    Component { id: playlist; PlaylistScreen {} }
     Component { id: pending; PendingScreen {} }
 }

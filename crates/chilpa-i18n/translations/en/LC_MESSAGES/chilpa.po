@@ -88,6 +88,9 @@ msgstr ""
 msgid "Add a folder to the library"
 msgstr ""
 
+msgid "Add to playlist…"
+msgstr ""
+
 msgid "Add to queue"
 msgstr ""
 
@@ -160,6 +163,9 @@ msgstr ""
 msgid "Calm"
 msgstr ""
 
+msgid "Cancel"
+msgstr ""
+
 msgid "Checking the token…"
 msgstr ""
 
@@ -220,6 +226,15 @@ msgstr ""
 msgid "Date added"
 msgstr ""
 
+msgid "Delete"
+msgstr ""
+
+msgid "Delete “{}”?"
+msgstr ""
+
+msgid "Delete…"
+msgstr ""
+
 msgid "Device: {}"
 msgstr ""
 
@@ -247,6 +262,9 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
+msgid "Empty. Add tracks from any list with a right click."
+msgstr ""
+
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect off to share it and let the Mac convert."
 msgstr ""
 
@@ -260,6 +278,9 @@ msgid "File"
 msgstr ""
 
 msgid "Filter artists"
+msgstr ""
+
+msgid "Filter playlists"
 msgstr ""
 
 msgid "Folders"
@@ -391,6 +412,9 @@ msgstr ""
 msgid "Never played"
 msgstr ""
 
+msgid "New playlist"
+msgstr ""
+
 msgid "New tab"
 msgstr ""
 
@@ -401,6 +425,9 @@ msgid "No folders in the library yet."
 msgstr ""
 
 msgid "No lyrics for this track."
+msgstr ""
+
+msgid "No playlists yet."
 msgstr ""
 
 msgid "Not in the library: this is the folder as it is on disk."
@@ -466,6 +493,12 @@ msgstr ""
 msgid "Playback"
 msgstr ""
 
+msgid "Playlist"
+msgstr ""
+
+msgid "Playlists"
+msgstr ""
+
 msgid "Plays"
 msgstr ""
 
@@ -502,10 +535,16 @@ msgstr ""
 msgid "Records"
 msgstr ""
 
+msgid "Remove from playlist"
+msgstr ""
+
 msgid "Remove from the library"
 msgstr ""
 
 msgid "Remove from the queue"
+msgstr ""
+
+msgid "Rename"
 msgstr ""
 
 msgid "Repair"
