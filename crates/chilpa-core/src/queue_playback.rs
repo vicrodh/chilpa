@@ -103,6 +103,40 @@ impl RepeatMode {
     }
 }
 
+/// A queue position after which playback stops. `usize::MAX` means none.
+/// It is consumed when reached, so repeating or starting another order does
+/// not inherit an old stop point.
+#[derive(Clone)]
+pub struct StopAfter(std::sync::Arc<std::sync::atomic::AtomicUsize>);
+
+impl Default for StopAfter {
+    fn default() -> Self {
+        Self(std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(Self::NONE)))
+    }
+}
+
+impl StopAfter {
+    const NONE: usize = usize::MAX;
+
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn set(&self, index: Option<usize>) {
+        self.0.store(index.unwrap_or(Self::NONE), std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn take_at(&self, index: usize) -> bool {
+        self.0
+            .compare_exchange(index, Self::NONE, std::sync::atomic::Ordering::Relaxed, std::sync::atomic::Ordering::Relaxed)
+            .is_ok()
+    }
+
+    pub fn clear(&self) {
+        self.set(None);
+    }
+}
+
 /// The list of tracks, shared with whoever drives the queue.
 ///
 /// Things can be added while it plays: queueing something should not cut
@@ -309,6 +343,8 @@ pub struct Controls {
     pub skip: SkipSignal,
     pub repeat: RepeatMode,
     pub order: Order,
+    /// Stops cleanly after this queue position finishes.
+    pub stop_after: StopAfter,
     /// One track straight into the next, with the device kept open. Off,
     /// the device plays out and is opened again between tracks.
     pub gapless: Switch,
@@ -382,6 +418,7 @@ impl Default for Controls {
             skip: SkipSignal::default(),
             repeat: RepeatMode::default(),
             order: Order::default(),
+            stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
             exclusive: Switch::new(false),
@@ -654,7 +691,7 @@ where
     K: AudioSink,
 {
     // `exclusive` was read when the output was chosen, before the queue.
-    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize, exclusive: _, volume } = controls;
+    let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, exclusive: _, volume } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());
@@ -790,6 +827,9 @@ where
             transition: transition,
         });
         if !finished_ok || consecutive_silent > queue.len() {
+            break;
+        }
+        if stop_after.take_at(index) {
             break;
         }
         let mode = repeat.get();

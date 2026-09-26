@@ -424,6 +424,10 @@ pub struct Chilpa {
     artist: String,
     /// Which positions of `queue` were removed, so the view greys them out.
     removed: Vec<bool>,
+    /// A position in the whole queue after which playback ends.
+    stop_after: Option<usize>,
+    /// A wall-clock deadline that asks the player to stop from `poll`.
+    sleep_until: Option<std::time::Instant>,
     /// The lyrics of what is playing, so they are not reread on every tick.
     lyrics: Option<chilpa_lyrics::Lyrics>,
     /// The plugin sandbox, built the first time it is asked for. It is
@@ -504,6 +508,8 @@ impl Chilpa {
             album_sort: AlbumSort::from_name(&saved.album_sort),
             artist: String::new(),
             removed: Vec::new(),
+            stop_after: None,
+            sleep_until: None,
             lyrics: None,
             plugins: None,
             tap: chilpa_core::tap::Tap::new(),
@@ -1010,6 +1016,10 @@ impl Chilpa {
     /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
+        if self.sleep_until.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
+            self.sleep_until = None;
+            self.stop();
+        }
         self.advance_search();
         self.advance_connect();
         self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
@@ -1149,6 +1159,8 @@ impl Chilpa {
                     self.set_played(frames);
                     self.now.frames = frames;
                     self.now.playing = false;
+                    self.stop_after = None;
+                    self.sleep_until = None;
                     self.log_play(false);
                 }
                 PlayerEvent::Stopped { frames } => {
@@ -1168,6 +1180,8 @@ impl Chilpa {
                         Some(Relaunch::Output) => {}
                         None => {
                             self.now.playing = false;
+                            self.stop_after = None;
+                            self.sleep_until = None;
                             // Stopping mid track counts as a skip.
                             self.log_play(true);
                         }
@@ -1175,6 +1189,8 @@ impl Chilpa {
                 }
                 PlayerEvent::Failed { message } => {
                     self.now.playing = false;
+                    self.stop_after = None;
+                    self.sleep_until = None;
                     self.now.error = message;
                     // A device failure is not a listen, but whatever did
                     // play is logged, marked as interrupted.
