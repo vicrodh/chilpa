@@ -485,6 +485,7 @@ impl Chilpa {
         } else {
             &saved.language
         });
+        chilpa_core::backends::set_reserving(saved.window.get(outputs::RESERVE).is_some_and(|v| v == "true"));
         Self {
             core: chilpa_core::Core::new(),
             library: None,

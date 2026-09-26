@@ -148,6 +148,9 @@ msgstr "Artista"
 msgid "Artists"
 msgstr "Artistas"
 
+msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
+msgstr "Le pide a PipeWire o a PulseAudio que suelte la tarjeta mientras Chilpa toca en ella, y se la regresa cuando Chilpa se detiene o se pausa un buen rato."
+
 msgid "Audio"
 msgstr "Audio"
 
@@ -750,6 +753,9 @@ msgstr "Sistema"
 
 msgid "Tabs"
 msgstr "Pestañas"
+
+msgid "Take the card from the sound server"
+msgstr "Tomar la tarjeta del servidor de sonido"
 
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
@@ -1419,6 +1425,9 @@ msgstr "el servidor que contesta es {}, no PipeWire"
 
 msgid "the server sent no audio: {}"
 msgstr "el servidor no mandó audio: {}"
+
+msgid "the sound server would not let go of card {}"
+msgstr "el servidor de sonido no quiso soltar la tarjeta {}"
 
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr "no se encontró el área estéreo (TWOCHTOC)"

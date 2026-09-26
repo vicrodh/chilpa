@@ -7,6 +7,9 @@ rust-version.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 alsa = "0.12"
+# Asking the sound server for a card (org.freedesktop.ReserveDevice1). The
+# same crate the keyring already builds, so nothing new is compiled.
+dbus = "0.9"
 
 [dependencies]
 # Why a device could not be opened is read by the user.

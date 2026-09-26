@@ -47,6 +47,16 @@ pub fn all() -> Vec<Box<dyn OutputBackend>> {
     stacks
 }
 
+/// Whether a card is asked of the sound server before it is opened: the
+/// Linux desktop's reservation protocol, so PipeWire or PulseAudio let go
+/// of it. There is no such protocol, and nothing to ask, elsewhere.
+pub fn set_reserving(on: bool) {
+    #[cfg(target_os = "linux")]
+    chilpa_alsa::reserve::set_asking(on);
+    #[cfg(not(target_os = "linux"))]
+    let _ = on;
+}
+
 /// The one with that kind, if this build has it.
 pub fn of(kind: BackendKind) -> Option<Box<dyn OutputBackend>> {
     among(all(), kind)

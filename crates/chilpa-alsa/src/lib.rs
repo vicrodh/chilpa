@@ -7,6 +7,7 @@
 
 pub mod backends;
 pub mod devices;
+pub mod reserve;
 pub mod volume;
 
 pub use backends::{Alsa, AlsaPlug, System};
@@ -25,6 +26,7 @@ const EPIPE: i32 = 32;
 const ENODEV: i32 = 19;
 const ENXIO: i32 = 6;
 const ENOENT: i32 = 2;
+const EBUSY: i32 = 16;
 
 /// The rates tried when measuring a device.
 const RATES: &[u32] = &[
@@ -68,7 +70,8 @@ fn alsa_format(f: SampleFormat) -> Format {
 /// promise bit-perfect. Guessing rates and turning resampling off, the way
 /// the QBZ wizard did, is worse than not knowing.
 pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
-    let pcm = open(device)?;
+    let reservation = reserve::hold(device)?;
+    let pcm = open_patiently(device, false, reservation.is_some())?;
     let params = HwParams::any(&pcm).map_err(backend)?;
     let mut caps = DeviceCaps { probed: true, ..DeviceCaps::default() };
     for &rate in RATES {
@@ -86,6 +89,13 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
             caps.channels.push(ch as u16);
         }
     }
+    // The opening comes next: the card waits for it instead of going back
+    // to the server in between.
+    drop(params);
+    drop(pcm);
+    if let (Some(held), Some(card)) = (reservation, reserve::card_of(device)) {
+        held.park(card);
+    }
     Ok(caps)
 }
 
@@ -95,7 +105,10 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
 /// same way on resume (`wake`), so the device, its name and how it was
 /// opened are kept.
 pub struct AlsaSink {
+    // Before the reservation: fields drop in order, and the card is closed
+    // before the server is told it can have it back.
     pcm: Option<PCM>,
+    reservation: Option<reserve::Reservation>,
     device: String,
     named: bool,
     stream: StreamFormat,
@@ -118,12 +131,13 @@ impl AlsaSink {
     }
 
     fn opening(device: &str, stream: StreamFormat, named: bool) -> Result<Self, SinkError> {
-        let pcm = Self::pcm_at(device, stream, named)?;
-        Ok(Self { pcm: Some(pcm), device: device.to_string(), named, stream })
+        let reservation = reserve::hold(device)?;
+        let pcm = Self::pcm_at(device, stream, named, reservation.is_some())?;
+        Ok(Self { pcm: Some(pcm), reservation, device: device.to_string(), named, stream })
     }
 
-    fn pcm_at(device: &str, stream: StreamFormat, named: bool) -> Result<PCM, SinkError> {
-        let pcm = if named { open_named(device)? } else { open(device)? };
+    fn pcm_at(device: &str, stream: StreamFormat, named: bool, reserved: bool) -> Result<PCM, SinkError> {
+        let pcm = open_patiently(device, named, reserved)?;
         {
             let params = HwParams::any(&pcm).map_err(backend)?;
             params.set_access(Access::RWInterleaved).map_err(backend)?;
@@ -212,6 +226,8 @@ impl AudioSink for AlsaSink {
         if let Some(pcm) = self.pcm.take() {
             let _ = pcm.drop();
         }
+        // The card goes back to the server for the pause.
+        self.reservation = None;
         Ok(())
     }
 
@@ -219,7 +235,8 @@ impl AudioSink for AlsaSink {
     /// as the first time: resuming never settles for less.
     fn wake(&mut self) -> Result<(), SinkError> {
         if self.pcm.is_none() {
-            self.pcm = Some(Self::pcm_at(&self.device, self.stream, self.named)?);
+            self.reservation = reserve::hold(&self.device)?;
+            self.pcm = Some(Self::pcm_at(&self.device, self.stream, self.named, self.reservation.is_some())?);
         }
         Ok(())
     }
@@ -278,6 +295,28 @@ fn open(device: &str) -> Result<PCM, SinkError> {
         )));
     }
     open_named(device)
+}
+
+/// Opens it, and -- when the card was just asked for -- waits a moment for
+/// the server to finish closing it: letting go of the name and of the
+/// device are not one step on its side.
+fn open_patiently(device: &str, named: bool, reserved: bool) -> Result<PCM, SinkError> {
+    let mut tries = if reserved { 40 } else { 1 };
+    loop {
+        tries -= 1;
+        let opened = if named { open_named(device) } else { open(device) };
+        match opened {
+            Err(SinkError::Backend(_)) if tries > 0 && busy(device) => {
+                std::thread::sleep(std::time::Duration::from_millis(50));
+            }
+            other => return other,
+        }
+    }
+}
+
+/// Whether the device is held by somebody else right now.
+fn busy(device: &str) -> bool {
+    PCM::new(device, Direction::Playback, true).err().is_some_and(|e| e.errno() == EBUSY)
 }
 
 /// Opens whatever PCM it is given, direct or not.
