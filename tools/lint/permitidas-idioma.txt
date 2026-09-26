@@ -410,6 +410,7 @@ xdg
 # A popup that floats beside what opened it.
 flyout
 # Sending what was listened to, to a listening history service.
+lastfm
 listenbrainz
 scrobble
 scrobbled

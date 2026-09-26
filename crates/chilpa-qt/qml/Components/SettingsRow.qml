@@ -81,6 +81,7 @@ Item {
             : row.control === "segmented" ? segmented
             : row.control === "button" || row.control === "link" ? button
             : row.control === "secret" ? secret
+            : row.control === "external" ? external
             : null
     }
 
@@ -135,6 +136,17 @@ Item {
                 enabled: field.text.trim() !== ""
                 onClicked: row.page.set(row.key, field.text)
             }
+        }
+    }
+    // Opens the page in the browser, once when it appears -- the person
+    // just asked to connect -- and again on a click.
+    Component {
+        id: external
+        PillButton {
+            text: row.action
+            glyph: Icons.arrowUpRight
+            onClicked: Qt.openUrlExternally(row.value)
+            Component.onCompleted: Qt.openUrlExternally(row.value)
         }
     }
     Component {

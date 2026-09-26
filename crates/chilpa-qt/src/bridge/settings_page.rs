@@ -88,7 +88,7 @@ use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 const ROLES: &[&str] = &[
@@ -214,26 +214,25 @@ impl SettingsPageRust {
                 }
             }
             "listenbrainz.account" => {
-                let lb = app::with(|api| api.listenbrainz());
-                if lb.checking {
-                    row.description = app::t("Checking the token…");
-                } else if !lb.user.is_empty() {
-                    // Connected: the row becomes who it is and a way out.
-                    row.title = app::with(|api| api.t_args("Connected as {}", &[&lb.user]));
-                    row.control = "button";
-                    row.action = app::t("Disconnect");
-                    row.description = if lb.pending > 0 {
-                        let n = lb.pending.to_string();
-                        app::with(|api| api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", lb.pending as i64, &[&n]))
-                    } else {
-                        String::new()
-                    };
-                }
-                if !lb.error.is_empty() {
-                    row.description = lb.error;
-                }
+                let status = app::with(|api| api.listenbrainz());
+                account(row, &status);
             }
             "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
+            "lastfm.account" => {
+                let status = app::with(|api| api.lastfm());
+                if status.checking && !status.link.is_empty() {
+                    // Waiting for the person to allow it on the site: the page
+                    // opens, and can be opened again from here. "external"
+                    // is no control of the schema's: only this state has it.
+                    row.description = app::t("Allow Chilpa on Last.fm; this updates by itself.");
+                    row.control = "external";
+                    row.action = app::t("Open Last.fm");
+                    row.value = status.link.clone();
+                } else {
+                    account(row, &status);
+                }
+            }
+            "lastfm.enabled" => row.value = app::with(|api| api.lastfm().enabled).to_string(),
             "library.folders" => {
                 let n = app::with(|api| api.library_folders().len());
                 let shown = n.to_string();
@@ -255,6 +254,29 @@ impl SettingsPageRust {
                 row.description = said.clone();
             }
         }
+    }
+}
+
+/// An account's row: checking it, or who it is with a way out and how many
+/// listens wait, or what went wrong.
+fn account(row: &mut Row, status: &chilpa_api::ScrobbleStatus) {
+    if status.checking {
+        row.description = app::t("Checking the account…");
+    } else if !status.user.is_empty() {
+        row.title = app::with(|api| api.t_args("Connected as {}", &[&status.user]));
+        row.control = "button";
+        row.action = app::t("Disconnect");
+        row.description = if status.pending > 0 {
+            let n = status.pending.to_string();
+            app::with(|api| {
+                api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", status.pending as i64, &[&n])
+            })
+        } else {
+            String::new()
+        };
+    }
+    if !status.error.is_empty() {
+        row.description = status.error.clone();
     }
 }
 
@@ -320,10 +342,11 @@ impl qobject::SettingsPage {
             }
             "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
             "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
+            "lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
             "listenbrainz.account" => {
                 app::with(|api| api.connect_listenbrainz(&value));
                 self.as_mut().reload();
-                self.watch_listenbrainz();
+                self.watch_accounts();
                 return;
             }
             _ => return,
@@ -331,23 +354,29 @@ impl qobject::SettingsPage {
         self.reload();
     }
 
-    /// Reads the page again once ListenBrainz has answered: the token is
-    /// checked on the scrobbler's thread, and the row says so until then.
-    fn watch_listenbrainz(self: Pin<&mut Self>) {
+    /// Reads the page again as the accounts being connected move -- the
+    /// page to allow one appears, the answer comes -- and stops when neither
+    /// is being connected. Five minutes at most: as long as Last.fm is
+    /// waited for.
+    fn watch_accounts(self: Pin<&mut Self>) {
         let thread = self.qt_thread();
         let done = Arc::new(AtomicBool::new(false));
+        let seen = Arc::new(Mutex::new(None));
         std::thread::spawn(move || {
-            // Thirty seconds: longer than the request itself may take.
-            for _ in 0..120 {
+            for _ in 0..1_200 {
                 std::thread::sleep(Duration::from_millis(250));
                 if done.load(Ordering::Relaxed) {
                     return;
                 }
-                let seen = Arc::clone(&done);
+                let (done, seen) = (Arc::clone(&done), Arc::clone(&seen));
                 let queued = thread.queue(move |page| {
-                    if !app::with(|api| api.listenbrainz().checking) {
-                        seen.store(true, Ordering::Relaxed);
+                    let now = app::with(|api| (api.listenbrainz(), api.lastfm()));
+                    let changed = seen.lock().map(|mut last| last.replace(now.clone()) != Some(now.clone())).unwrap_or(true);
+                    if changed {
                         page.reload();
+                    }
+                    if !now.0.checking && !now.1.checking {
+                        done.store(true, Ordering::Relaxed);
                     }
                 });
                 if queued.is_err() {
@@ -373,8 +402,17 @@ impl qobject::SettingsPage {
             // Pressed only once connected, where it is the way out.
             "listenbrainz.account" => {
                 app::with(|api| api.disconnect_listenbrainz());
-                // The scrobbler forgets on its thread; give it a moment.
-                self.as_mut().watch_listenbrainz();
+                // The scrobbler forgets on its thread; the page follows.
+                self.as_mut().watch_accounts();
+            }
+            // Connect, or -- connected -- disconnect.
+            "lastfm.account" => {
+                if app::with(|api| api.lastfm().user.is_empty()) {
+                    app::with(|api| api.connect_lastfm());
+                } else {
+                    app::with(|api| api.disconnect_lastfm());
+                }
+                self.as_mut().watch_accounts();
             }
             "library.rescan" => {
                 registry::folders(|folders| folders.rescan_all());
