@@ -93,6 +93,10 @@ pub mod qobject {
         #[qinvokable]
         fn read_switches(self: Pin<&mut Player>);
 
+        /// A time as the player shows it: "3:07".
+        #[qinvokable]
+        fn clock(self: &Player, seconds: f64) -> QString;
+
         /// Removes a queued track, counted from the one that plays.
         #[qinvokable]
         fn remove_queued(self: Pin<&mut Player>, row: i32);
@@ -200,6 +204,10 @@ impl qobject::Player {
         self.as_mut().read_switches();
         // The queue's order changed; the panel lists it in the new one.
         self.as_mut().bump_queue();
+    }
+
+    pub fn clock(&self, seconds: f64) -> QString {
+        QString::from(&format::clock((seconds.max(0.0) * 1000.0) as u64))
     }
 
     pub fn read_switches(mut self: Pin<&mut Self>) {

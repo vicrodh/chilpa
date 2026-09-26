@@ -5,7 +5,7 @@ import "../Primitives"
 import "../Components"
 
 // The player's "LCD": cover, times, title with its quality, who and from
-// what, and the progress along its lower edge. A click on the edge seeks.
+// what, and the progress along its lower edge, which seeks.
 Rectangle {
     id: lcd
 
@@ -92,27 +92,15 @@ Rectangle {
         visible: quality.hovered && Player.playing
     }
 
-    Rectangle {
+    SeekBar {
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: lcd.radius
         anchors.rightMargin: lcd.radius
-        height: Metrics.progress
-        color: Theme.color.strokeHairline
-
-        Rectangle {
-            width: Player.duration > 0 ? parent.width * Math.min(1, Player.position / Player.duration) : 0
-            height: parent.height
-            color: Theme.color.textSecondary
-        }
-
-        MouseArea {
-            anchors.fill: parent
-            anchors.topMargin: -Metrics.gap6
-            anchors.bottomMargin: -Metrics.gap4
-            enabled: Player.duration > 0
-            onClicked: (mouse) => Player.seek(Player.duration * mouse.x / width)
-        }
+        position: Player.position
+        duration: Player.duration
+        bubbleText: Player.clock(hoverSeconds)
+        onSeek: (seconds) => Player.seek(seconds)
     }
 }

@@ -123,6 +123,9 @@ QtObject {
     readonly property int lcdHeight: 46
     readonly property int lcdArt: 38
     readonly property int progress: 2
+    readonly property int progressHover: 4
+    readonly property int seekKnob: 10
+    readonly property int seekHit: 14
     readonly property int volumeWidth: 64
     readonly property int volumeTrack: 3
     readonly property int playerNoTimes: 480
