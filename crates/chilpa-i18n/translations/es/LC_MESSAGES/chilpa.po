@@ -292,6 +292,9 @@ msgstr "DSDIFF comprimido con DST"
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
 
+msgid "DSD{} · PCM at {} Hz · {}"
+msgstr "DSD{} · PCM a {} Hz · {}"
+
 msgid "Dark"
 msgstr "Oscuro"
 

@@ -292,6 +292,9 @@ msgstr ""
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr ""
 
+msgid "DSD{} · PCM at {} Hz · {}"
+msgstr ""
+
 msgid "Dark"
 msgstr ""
 
