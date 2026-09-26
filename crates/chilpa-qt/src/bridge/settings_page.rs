@@ -269,7 +269,7 @@ impl SettingsPageRust {
                     row.description = report.summary.clone();
                 }
             }
-            "listenbrainz.account" => {
+            "integrations.listenbrainz.account" => {
                 let status = app::with(|api| api.listenbrainz());
                 account(row, &status);
             }
@@ -285,8 +285,8 @@ impl SettingsPageRust {
             "playback.normalize" => row.value = app::with(|api| api.normalize()).to_string(),
             "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
             "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
-            "listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
-            "lastfm.account" => {
+            "integrations.listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
+            "integrations.lastfm.account" => {
                 let status = app::with(|api| api.lastfm());
                 if status.checking && !status.link.is_empty() {
                     // Waiting for the person to allow it on the site: the page
@@ -300,7 +300,7 @@ impl SettingsPageRust {
                     account(row, &status);
                 }
             }
-            "lastfm.enabled" => row.value = app::with(|api| api.lastfm().enabled).to_string(),
+            "integrations.lastfm.enabled" => row.value = app::with(|api| api.lastfm().enabled).to_string(),
             "library.folders" => {
                 let n = app::with(|api| api.library_folders().len());
                 let shown = n.to_string();
@@ -432,9 +432,9 @@ impl qobject::SettingsPage {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_quick_view_click(value == "quick"));
             }
-            "listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
-            "lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
-            "listenbrainz.account" => {
+            "integrations.listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
+            "integrations.lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
+            "integrations.listenbrainz.account" => {
                 app::with(|api| api.connect_listenbrainz(&value));
                 self.as_mut().reload();
                 self.watch_accounts();
@@ -491,13 +491,13 @@ impl qobject::SettingsPage {
                 return;
             }
             // Pressed only once connected, where it is the way out.
-            "listenbrainz.account" => {
+            "integrations.listenbrainz.account" => {
                 app::with(|api| api.disconnect_listenbrainz());
                 // The scrobbler forgets on its thread; the page follows.
                 self.as_mut().watch_accounts();
             }
             // Connect, or -- connected -- disconnect.
-            "lastfm.account" => {
+            "integrations.lastfm.account" => {
                 if app::with(|api| api.lastfm().user.is_empty()) {
                     app::with(|api| api.connect_lastfm());
                 } else {

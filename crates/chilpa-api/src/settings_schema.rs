@@ -285,14 +285,14 @@ pub const SECTIONS: &[Section] = &[
             title: "ListenBrainz",
             settings: &[
                 action(
-                    "listenbrainz.account",
+                    "integrations.listenbrainz.account",
                     Chilpa::mark("Account"),
                     Chilpa::mark("Paste the user token from listenbrainz.org/settings."),
                     Control::Secret,
                     Chilpa::mark("Connect"),
                 ),
                 setting(
-                    "listenbrainz.enabled",
+                    "integrations.listenbrainz.enabled",
                     Chilpa::mark("Send listens"),
                     Chilpa::mark("A track counts once half of it has played, or four minutes. Listens made offline are sent later."),
                     Control::Toggle,
@@ -303,14 +303,14 @@ pub const SECTIONS: &[Section] = &[
             title: "Last.fm",
             settings: &[
                 action(
-                    "lastfm.account",
+                    "integrations.lastfm.account",
                     Chilpa::mark("Account"),
                     Chilpa::mark("Last.fm opens in the browser to allow Chilpa."),
                     Control::Button,
                     Chilpa::mark("Connect"),
                 ),
                 setting(
-                    "lastfm.enabled",
+                    "integrations.lastfm.enabled",
                     Chilpa::mark("Scrobble"),
                     Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."),
                     Control::Toggle,
@@ -353,7 +353,8 @@ mod tests {
     #[test]
     fn a_button_says_what_it_does() {
         for set in SECTIONS.iter().flat_map(|s| s.groups).flat_map(|g| g.settings) {
-            let pressable = matches!(set.control, Control::Button | Control::Link);
+            // A secret is a field and the button that sends it.
+            let pressable = matches!(set.control, Control::Button | Control::Link | Control::Secret);
             assert_eq!(pressable, !set.action.is_empty(), "{}", set.key);
         }
     }
