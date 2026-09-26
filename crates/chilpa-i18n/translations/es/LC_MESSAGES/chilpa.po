@@ -457,6 +457,9 @@ msgstr "Reproducir"
 msgid "Play folder"
 msgstr "Reproducir carpeta"
 
+msgid "Play next"
+msgstr "Reproducir después"
+
 msgid "Play the CD"
 msgstr "Reproducir el CD"
 
