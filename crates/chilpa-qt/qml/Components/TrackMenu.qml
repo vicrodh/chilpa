@@ -3,9 +3,10 @@ import com.blitzfc.chilpa
 import "../Primitives"
 import "../Theme"
 
-// What a track row offers on a right click: play it, queue it -- or the
-// whole selection when it is part of one -- and go to its record, its
-// artist or its folder. Only what the row has somewhere to go is listed.
+// What a track row offers on a right click: play it, play it next or queue
+// it -- or the whole selection when it is part of one -- and go to its
+// record, its artist or its folder. Only what the row has somewhere to go is
+// listed.
 Menu {
     id: menu
 
@@ -21,6 +22,7 @@ Menu {
         const all = [
             { text: I18n.trCount("{} track", "{} tracks", model.selectedCount, I18n.rev), note: true },
             { text: I18n.tr("Play", I18n.rev), act: "play" },
+            { text: I18n.tr("Play next", I18n.rev), act: "next" },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
             { separator: true },
             { text: I18n.tr("Go to album", I18n.rev), act: "album" },
@@ -28,7 +30,7 @@ Menu {
             { text: I18n.tr("Show in folder", I18n.rev), act: "folder" }
         ]
         const shown = all.filter(e => e.note ? many
-            : !e.act || e.act === "play" || e.act === "queue" || (!many && model.canGo(row, e.act)))
+            : !e.act || e.act === "play" || e.act === "next" || e.act === "queue" || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
             shown.pop()
@@ -43,6 +45,8 @@ Menu {
         const act = actions[index].act
         if (act === "play")
             model.playChosen(row)
+        else if (act === "next")
+            model.playNext(row)
         else if (act === "queue")
             model.queue(row)
         else

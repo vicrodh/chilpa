@@ -143,9 +143,11 @@ impl qobject::Player {
     }
 
     pub fn remove_queued(mut self: Pin<&mut Self>, row: i32) {
-        let removed = app::with(|api| {
-            let at = api.now_playing().index + row.max(0) as usize;
-            api.remove_from_queue(at)
+        // The panel's rows are the queue in the order it will play, without
+        // what was taken out: its row is not a distance from the playing one.
+        let removed = app::with(|api| match api.queue_order().get(row.max(0) as usize) {
+            Some(&at) => api.remove_from_queue(at),
+            None => false,
         });
         if removed {
             self.as_mut().bump_queue();

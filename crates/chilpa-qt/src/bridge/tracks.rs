@@ -85,6 +85,11 @@ pub mod qobject {
         #[qinvokable]
         fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
 
+        /// Puts the row, or the selection it is part of, right after what is
+        /// playing.
+        #[qinvokable]
+        fn play_next(self: Pin<&mut TrackListModel>, row: i32);
+
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
         /// page the artist.
@@ -356,6 +361,14 @@ fn enqueue(paths: &[String]) {
     });
 }
 
+/// Puts files right after what is playing, on the output in use.
+fn next(paths: &[String]) {
+    app::with(|api| {
+        let (device, bit_perfect) = api.chosen_output();
+        api.play_next(paths, &device, bit_perfect);
+    });
+}
+
 fn summary(tracks: usize, ms: u64) -> String {
     let n = tracks.to_string();
     let songs = app::with(|api| api.tf("{} song", "{} songs", tracks as i64, &[&n]));
@@ -477,6 +490,16 @@ impl qobject::TrackListModel {
             return;
         }
         self.with_selection(|paths| app::with(|api| api.play_from(paths, 0)));
+    }
+
+    pub fn play_next(self: Pin<&mut Self>, row: i32) {
+        if !self.in_selection(row) {
+            if let Some(track) = self.rust().track(row.max(0) as usize) {
+                next(&[track.path]);
+            }
+            return;
+        }
+        self.with_selection(next);
     }
 
     /// Whether the row is one of several selected.

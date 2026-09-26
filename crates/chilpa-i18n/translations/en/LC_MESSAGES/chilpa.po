@@ -457,6 +457,9 @@ msgstr ""
 msgid "Play folder"
 msgstr ""
 
+msgid "Play next"
+msgstr ""
+
 msgid "Play the CD"
 msgstr ""
 
