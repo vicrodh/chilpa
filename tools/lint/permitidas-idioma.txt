@@ -431,3 +431,9 @@ dbus
 freedesktop
 stdintf
 ebusy
+# Rust and DSP vocabulary: rustfmt directives, FIFO buffers, the sinc
+# function, and std::f32::consts::FRAC_1_SQRT_2.
+rustfmt
+fifo
+sinc
+frac
