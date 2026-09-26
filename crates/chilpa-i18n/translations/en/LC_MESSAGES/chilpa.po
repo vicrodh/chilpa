@@ -76,6 +76,9 @@ msgstr ""
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr ""
 
+msgid "ALSA plugin"
+msgstr ""
+
 msgid "Accent"
 msgstr ""
 
@@ -979,6 +982,12 @@ msgstr ""
 msgid "how the account connects does not work: {}"
 msgstr ""
 
+msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses, so it is never bit-perfect."
+msgstr ""
+
+msgid "hw: the card alone"
+msgstr ""
+
 msgid "impossible packet counts"
 msgstr ""
 
@@ -1094,6 +1103,12 @@ msgid "now at {}"
 msgstr ""
 
 msgid "outside the image"
+msgstr ""
+
+msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
+msgstr ""
+
+msgid "plughw: converts what it refuses"
 msgstr ""
 
 msgid "put a panel of its own in the window"

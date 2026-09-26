@@ -76,6 +76,9 @@ msgstr "Un clic en un disco abre"
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
+msgid "ALSA plugin"
+msgstr "Plugin de ALSA"
+
 msgid "Accent"
 msgstr "Acento"
 
@@ -979,6 +982,12 @@ msgstr "diadema"
 msgid "how the account connects does not work: {}"
 msgstr "cómo conecta la cuenta no sirve: {}"
 
+msgid "hw plays the samples untouched or refuses them. plughw converts what the card refuses, so it is never bit-perfect."
+msgstr "hw toca las muestras intactas o las rechaza. plughw convierte lo que la tarjeta rechaza, así que nunca es bit-perfect."
+
+msgid "hw: the card alone"
+msgstr "hw: la tarjeta sola"
+
 msgid "impossible packet counts"
 msgstr "cuentas de paquetes imposibles"
 
@@ -1095,6 +1104,12 @@ msgstr "ahora en {}"
 
 msgid "outside the image"
 msgstr "fuera de la imagen"
+
+msgid "plughw converts whatever the card does not take -- the rate, the sample format, the channels -- without saying so. It plays what the card alone would refuse, and for the same reason it cannot promise the samples arrive as they left."
+msgstr "plughw convierte lo que la tarjeta no acepta —la frecuencia, el formato de muestra, los canales— sin avisar. Toca lo que la tarjeta sola rechazaría, y por lo mismo no puede prometer que las muestras lleguen como salieron."
+
+msgid "plughw: converts what it refuses"
+msgstr "plughw: convierte lo que rechaza"
 
 msgid "put a panel of its own in the window"
 msgstr "poner un panel suyo en la ventana"

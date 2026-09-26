@@ -99,6 +99,12 @@ pub const SECTIONS: &[Section] = &[
                         Control::Device,
                     ),
                     setting(
+                        "audio.alsaPlugin",
+                        Chilpa::mark("ALSA plugin"),
+                        Chilpa::mark("hw plays the samples untouched or refuses them. plughw converts what the card refuses, so it is never bit-perfect."),
+                        Control::Select,
+                    ),
+                    setting(
                         "audio.bitperfect",
                         Chilpa::mark("Bit-perfect"),
                         Chilpa::mark("Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."),

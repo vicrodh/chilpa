@@ -179,6 +179,10 @@ impl SettingsPageRust {
                     ..Row::default()
                 };
                 self.fill(&mut row, &output, bit_perfect);
+                // A row that does not apply to what is chosen is left out.
+                if row.control.is_empty() {
+                    continue;
+                }
                 rows.push(row);
                 if s.key == "audio.wizard" {
                     for line in self.report.iter().flat_map(|r| &r.rows) {
@@ -212,7 +216,7 @@ impl SettingsPageRust {
                 row.value = current;
             }
             "audio.device" => {
-                let outputs = app::with(|api| api.stack_outputs(&api.stack_of(output)));
+                let outputs = app::with(|api| api.outputs_beside(output));
                 for o in outputs {
                     row.values.push(o.id);
                     row.options.push(o.label);
@@ -221,6 +225,15 @@ impl SettingsPageRust {
                 row.value = output.to_string();
             }
             "audio.bitperfect" => row.value = bit_perfect.to_string(),
+            "audio.alsaPlugin" => {
+                row.value = app::with(|api| api.alsa_plugin()).to_string();
+                // Only a card has a plugin to choose.
+                if row.value.is_empty() {
+                    row.control = "";
+                }
+                row.values = vec!["hw".to_string(), "plughw".to_string()];
+                row.options = vec![app::t("hw: the card alone"), app::t("plughw: converts what it refuses")];
+            }
             "audio.wizard" => {
                 if let Some(report) = &self.report {
                     row.description = report.summary.clone();
@@ -349,6 +362,7 @@ impl qobject::SettingsPage {
                 });
             }
             "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
+            "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(value == "plughw")),
             "audio.bitperfect" => {
                 app::with(|api| api.set_bit_perfect(value == "true"));
                 // The player bar's options show it too.

@@ -1,12 +1,12 @@
-//! The two stacks ALSA itself answers for: the card, and whatever the
-//! system has decided.
+//! The stacks ALSA itself answers for: the card, the card through the
+//! plugin that converts, and whatever the system has decided.
 //!
 //! They share every line of code that touches the hardware and differ in
-//! exactly one thing, which is the whole point of having both: one names a
-//! card and the other names `default`, and `default` is wherever the machine
-//! is currently sending sound. On a desktop that is usually a sound server,
-//! so the samples pass through a mixer on their way out. It always works and
-//! it promises nothing.
+//! what they name: `hw:` is the card and nothing else, `plughw:` is the card
+//! with ALSA converting whatever it will not take, and `default` is wherever
+//! the machine is currently sending sound. On a desktop that is usually a
+//! sound server, so the samples pass through a mixer on their way out. It
+//! always works and it promises nothing.
 
 use crate::{devices, AlsaSink};
 use chilpa_audio::backend::{BackendInfo, BackendKind, BackendOutput, Fidelity, Knob, OutputBackend};
@@ -16,8 +16,30 @@ use chilpa_audio::sink::{AudioSink, SinkError};
 /// The card, addressed directly.
 pub struct Alsa;
 
+/// The card through ALSA's `plughw` plugin.
+///
+/// The same card as [`Alsa`], with the plugin that converts what the card
+/// will not take: a rate, a sample format, a channel count. That is what it
+/// is for -- a DAC that only takes 32 bit words plays a 16 bit file with
+/// nobody packing it -- and it is also why it can promise nothing: what it
+/// does to the samples depends on what the card refuses, and it does it
+/// without saying.
+pub struct AlsaPlug;
+
 /// Whatever the system is using.
 pub struct System;
+
+/// The card's own mixer, when it has one. The same for every stack here:
+/// they all end at a card.
+fn card_knob(id: &str) -> Option<Knob> {
+    let control = crate::Volume::of(id)?;
+    let level = control.read().ok()?;
+    Some(Knob { percent: level.percent, muted: level.muted, can_mute: control.can_mute(), name: control.element().to_string() })
+}
+
+fn no_knob() -> String {
+    chilpa_i18n::t("this output has no volume control of its own")
+}
 
 impl OutputBackend for Alsa {
     fn kind(&self) -> BackendKind {
@@ -85,35 +107,77 @@ impl OutputBackend for Alsa {
         crate::probe(id)
     }
 
-    /// The card's own mixer, when it has one.
     fn volume(&self, id: &str) -> Option<Knob> {
-        let control = crate::Volume::of(id)?;
-        let level = control.read().ok()?;
-        Some(Knob {
-            percent: level.percent,
-            muted: level.muted,
-            can_mute: control.can_mute(),
-            name: control.element().to_string(),
-        })
+        card_knob(id)
     }
 
     fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
-        match crate::Volume::of(id) {
-            Some(control) => control.set(percent),
-            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-        }
+        crate::Volume::of(id).ok_or_else(no_knob)?.set(percent)
     }
 
     fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
-        match crate::Volume::of(id) {
-            Some(control) => control.mute(muted),
-            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-        }
+        crate::Volume::of(id).ok_or_else(no_knob)?.mute(muted)
     }
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
         -> Result<Box<dyn AudioSink + Send>, SinkError> {
         Ok(Box::new(AlsaSink::open(id, format)?))
+    }
+}
+
+impl OutputBackend for AlsaPlug {
+    fn kind(&self) -> BackendKind {
+        BackendKind::AlsaPlug
+    }
+
+    fn info(&self) -> BackendInfo {
+        // Here when the cards are, missing for the same reason they are.
+        let mut info = BackendInfo { kind: BackendKind::AlsaPlug, ..Alsa.info() };
+        if info.present {
+            info.fidelity = Fidelity::Never;
+            info.caveat = chilpa_i18n::t(
+                "plughw converts whatever the card does not take -- the rate, the sample format, \
+                 the channels -- without saying so. It plays what the card alone would refuse, and \
+                 for the same reason it cannot promise the samples arrive as they left.",
+            );
+        }
+        info
+    }
+
+    fn outputs(&self) -> Vec<BackendOutput> {
+        Alsa.outputs()
+            .into_iter()
+            .map(|o| BackendOutput { id: format!("plug{}", o.id), bit_perfect: false, ..o })
+            .collect()
+    }
+
+    fn generation(&self) -> String {
+        Alsa.generation()
+    }
+
+    /// Anything, because making it fit is the plugin's whole job. Measuring
+    /// the card would list exactly what it exists to get around.
+    fn caps(&self, _id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
+        Ok(chilpa_audio::capture::capabilities())
+    }
+
+    fn volume(&self, id: &str) -> Option<Knob> {
+        card_knob(id)
+    }
+
+    fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
+        crate::Volume::of(id).ok_or_else(no_knob)?.set(percent)
+    }
+
+    fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
+        crate::Volume::of(id).ok_or_else(no_knob)?.mute(muted)
+    }
+
+    fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
+        -> Result<Box<dyn AudioSink + Send>, SinkError> {
+        // Named on purpose: the guard that only lets `hw:` through is what
+        // keeps the card stack from falling back to this one.
+        Ok(Box::new(AlsaSink::open_pcm(id, format)?))
     }
 }
 
@@ -209,30 +273,16 @@ impl OutputBackend for System {
         Ok(chilpa_audio::capture::capabilities())
     }
 
-    /// The card's own mixer, when it has one.
     fn volume(&self, id: &str) -> Option<Knob> {
-        let control = crate::Volume::of(id)?;
-        let level = control.read().ok()?;
-        Some(Knob {
-            percent: level.percent,
-            muted: level.muted,
-            can_mute: control.can_mute(),
-            name: control.element().to_string(),
-        })
+        card_knob(id)
     }
 
     fn set_volume(&self, id: &str, percent: u8) -> Result<(), String> {
-        match crate::Volume::of(id) {
-            Some(control) => control.set(percent),
-            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-        }
+        crate::Volume::of(id).ok_or_else(no_knob)?.set(percent)
     }
 
     fn set_muted(&self, id: &str, muted: bool) -> Result<(), String> {
-        match crate::Volume::of(id) {
-            Some(control) => control.mute(muted),
-            None => Err(chilpa_i18n::t("this output has no volume control of its own")),
-        }
+        crate::Volume::of(id).ok_or_else(no_knob)?.mute(muted)
     }
 
     fn open(&self, id: &str, format: StreamFormat, _exclusive: bool)
@@ -304,6 +354,21 @@ mod tests {
         let caps = System.caps("default").expect("measuring must not fail");
         assert!(!caps.sample_rates.is_empty());
         assert!(!caps.formats.is_empty());
+    }
+
+    #[test]
+    fn the_plugin_names_the_same_cards_and_promises_nothing() {
+        let (cards, plugged) = (Alsa.outputs(), AlsaPlug.outputs());
+        assert_eq!(cards.len(), plugged.len());
+        for (card, plug) in cards.iter().zip(&plugged) {
+            assert_eq!(plug.id, format!("plug{}", card.id));
+            assert!(!plug.bit_perfect);
+        }
+        let info = AlsaPlug.info();
+        if info.present {
+            assert_eq!(info.fidelity, Fidelity::Never);
+            assert!(!info.caveat.is_empty(), "a path that is not exact says why");
+        }
     }
 
     #[test]

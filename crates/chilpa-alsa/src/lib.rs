@@ -9,7 +9,7 @@ pub mod backends;
 pub mod devices;
 pub mod volume;
 
-pub use backends::{Alsa, System};
+pub use backends::{Alsa, AlsaPlug, System};
 pub use devices::{list, Device};
 pub use volume::{Level, Volume};
 

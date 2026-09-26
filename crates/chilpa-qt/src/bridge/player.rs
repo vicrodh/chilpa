@@ -314,14 +314,7 @@ impl qobject::Player {
             self.as_mut().set_output_format(QString::from(&now.format));
             let (device, route) = app::with(|api| {
                 let (output, bit_perfect) = api.chosen_output();
-                let stack = api.stack_of(&output);
-                let device = api
-                    .stack_outputs(&stack)
-                    .into_iter()
-                    .find(|o| o.id == output)
-                    .map(|o| o.label)
-                    .unwrap_or(output);
-                let label = api.stacks().into_iter().find(|s| s.key == stack).map(|s| s.label).unwrap_or(stack);
+                let (device, label) = api.output_names(&output);
                 let policy = if bit_perfect { api.t("bit-perfect only") } else { api.t("conversion allowed") };
                 (device, format!("{label} · {policy}"))
             });
