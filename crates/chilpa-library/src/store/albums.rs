@@ -164,6 +164,26 @@ impl Library {
         self.albums_filtered(order, None, limit, offset)
     }
 
+    /// The records marked as favorites.
+    pub fn favorite_albums(&self) -> rusqlite::Result<std::collections::HashSet<i64>> {
+        let mut stmt = self.db.prepare("SELECT album_id FROM album_favorites")?;
+        let rows = stmt.query_map([], |r| r.get(0))?;
+        rows.collect()
+    }
+
+    /// Marks a record as a favorite, or takes the mark away.
+    pub fn set_album_favorite(&self, album_id: i64, on: bool) -> rusqlite::Result<()> {
+        if on {
+            self.db.execute(
+                "INSERT OR IGNORE INTO album_favorites (album_id, added_at) VALUES (?1, ?2)",
+                params![album_id, crate::store::now_unix()],
+            )?;
+        } else {
+            self.db.execute("DELETE FROM album_favorites WHERE album_id = ?1", params![album_id])?;
+        }
+        Ok(())
+    }
+
     /// The records by someone else that an artist plays on -- the
     /// compilations they are on -- newest first, with their play counts.
     pub fn albums_appearing(&self, artist: &str) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
@@ -685,6 +705,20 @@ mod compilation_tests {
         assert_eq!(lib.album_ids_matching(super::AlbumSort::Title, "various").unwrap(), [2]);
         assert_eq!(lib.album_ids_matching(super::AlbumSort::Title, "").unwrap().len(), 2, "nothing typed, everything");
         assert!(lib.album_ids_matching(super::AlbumSort::Title, "sun various").unwrap().is_empty(), "every word");
+    }
+
+    #[test]
+    fn a_favorite_is_kept_and_goes_with_its_record() {
+        let lib = shelf();
+        lib.set_album_favorite(1, true).unwrap();
+        lib.set_album_favorite(1, true).unwrap();
+        assert_eq!(lib.favorite_albums().unwrap(), [1].into_iter().collect());
+        lib.set_album_favorite(1, false).unwrap();
+        assert!(lib.favorite_albums().unwrap().is_empty());
+        lib.set_album_favorite(2, true).unwrap();
+        lib.db.execute("DELETE FROM tracks WHERE album_id = 2", []).unwrap();
+        lib.db.execute("DELETE FROM albums WHERE id = 2", []).unwrap();
+        assert!(lib.favorite_albums().unwrap().is_empty(), "gone with the record");
     }
 
     #[test]
