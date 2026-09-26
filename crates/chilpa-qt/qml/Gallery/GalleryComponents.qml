@@ -99,6 +99,7 @@ GallerySection {
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Not with bit-perfect on."; available: false }
         PlaylistMenu {}
+        PlaylistPicker {}
         PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; active: true }
         PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8 }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
