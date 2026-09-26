@@ -28,6 +28,8 @@ pub mod qobject {
         #[qproperty(i32, rev)]
         #[qproperty(i32, count)]
         #[qproperty(bool, scanning)]
+        /// The folder being scanned; empty while every folder is.
+        #[qproperty(QString, scanning_path)]
         /// From 0 to 1 while a scan runs.
         #[qproperty(f64, progress)]
         /// How far the scan is, or what the last one found.
@@ -84,6 +86,7 @@ pub struct FoldersRust {
     rev: i32,
     count: i32,
     scanning: bool,
+    scanning_path: QString,
     progress: f64,
     status: QString,
     /// Cleared by the poll that sees the scan end, which stops its thread.
@@ -143,8 +146,11 @@ impl qobject::LibraryFolders {
             self.as_mut().set_status(QString::from(&why));
             return;
         }
+        self.as_mut().set_scanning_path(QString::from(folder.as_deref().unwrap_or("")));
         self.as_mut().set_scanning(true);
         self.as_mut().set_progress(0.0);
+        // A folder just added is in the list from now, marked as scanning.
+        self.as_mut().refresh();
         let active = Arc::new(AtomicBool::new(true));
         self.as_mut().rust_mut().polling = Some(active.clone());
         let thread = self.qt_thread();
@@ -163,7 +169,13 @@ impl qobject::LibraryFolders {
         if state.running {
             let progress = if state.total > 0 { state.done as f64 / state.total as f64 } else { 0.0 };
             let (done, total) = (state.done.to_string(), state.total.to_string());
-            let line = app::with(|api| api.t_args("Reading {} of {} files", &[&done, &total]));
+            // Until the folder has been walked there is no total, and
+            // "0 of 0" reads as a scan that found nothing.
+            let line = if state.total == 0 {
+                app::t("Looking for files…")
+            } else {
+                app::with(|api| api.t_args("Reading {} of {} files", &[&done, &total]))
+            };
             self.as_mut().set_progress(progress);
             self.as_mut().set_status(QString::from(&line));
             return;

@@ -316,6 +316,9 @@ msgstr ""
 msgid "Look"
 msgstr ""
 
+msgid "Looking for files…"
+msgstr ""
+
 msgid "Lyrics"
 msgstr ""
 
@@ -503,6 +506,9 @@ msgid "Scan again"
 msgstr ""
 
 msgid "Scan every folder again"
+msgstr ""
+
+msgid "Scanning…"
 msgstr ""
 
 msgid "Search"

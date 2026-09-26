@@ -316,6 +316,9 @@ msgstr "Claro"
 msgid "Look"
 msgstr "Aspecto"
 
+msgid "Looking for files…"
+msgstr "Buscando archivos…"
+
 msgid "Lyrics"
 msgstr "Letra"
 
@@ -504,6 +507,9 @@ msgstr "Escanear de nuevo"
 
 msgid "Scan every folder again"
 msgstr "Escanear todas las carpetas de nuevo"
+
+msgid "Scanning…"
+msgstr "Escaneando…"
 
 msgid "Search"
 msgstr "Buscar"
