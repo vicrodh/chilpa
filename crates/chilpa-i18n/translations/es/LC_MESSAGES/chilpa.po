@@ -70,6 +70,9 @@ msgstr "flotante de 32"
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentro corren a esa -- este va a {} Hz. Una pista grabada a cualquier otra se remuestrea antes de que Chilpa tenga voz, y ningún ajuste aquí lo cambia. JACK es para enrutar audio entre programas; para entregarle un archivo a un DAC sin tocarlo, elige la tarjeta directo."
 
+msgid "A click on a record opens"
+msgstr "Un clic en un disco abre"
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
 
@@ -91,6 +94,9 @@ msgstr "Agregar una carpeta"
 msgid "Add a folder to the library"
 msgstr "Agregar una carpeta a la biblioteca"
 
+msgid "Add to favorites"
+msgstr "Agregar a favoritos"
+
 msgid "Add to playlist…"
 msgstr "Agregar a playlist…"
 
@@ -108,6 +114,9 @@ msgstr "Avanzado"
 
 msgid "Album"
 msgstr "Álbum"
+
+msgid "Album page"
+msgstr "Página del álbum"
 
 msgid "Albums"
 msgstr "Álbumes"
@@ -198,6 +207,9 @@ msgstr "Quitar filtros"
 
 msgid "Clear the queue"
 msgstr "Vaciar la cola"
+
+msgid "Clear the selection"
+msgstr "Quitar la selección"
 
 msgid "Close"
 msgstr "Cerrar"
@@ -388,6 +400,9 @@ msgstr "Integraciones"
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
 
+msgid "Its page, or its quick view under the row."
+msgstr "Su página, o su vista rápida bajo la fila."
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
 
@@ -435,6 +450,9 @@ msgstr "Minimizar"
 
 msgid "Missing"
 msgstr "No está"
+
+msgid "More"
+msgstr "Más"
 
 msgid "Most played"
 msgstr "Lo más escuchado"
@@ -511,6 +529,12 @@ msgstr "Abrir una carpeta"
 msgid "Open a folder…"
 msgstr "Abrir una carpeta…"
 
+msgid "Open album"
+msgstr "Abrir álbum"
+
+msgid "Open in new tab"
+msgstr "Abrir en otra pestaña"
+
 msgid "Opens the device and says which formats reach it untouched."
 msgstr "Abre el dispositivo y dice qué formatos le llegan intactos."
 
@@ -580,6 +604,9 @@ msgstr "Calidad"
 msgid "Queue"
 msgstr "Cola"
 
+msgid "Quick view"
+msgstr "Vista rápida"
+
 msgid "Quit"
 msgstr "Salir"
 
@@ -600,6 +627,9 @@ msgstr "Escuchados recientemente"
 
 msgid "Records"
 msgstr "Discos"
+
+msgid "Remove from favorites"
+msgstr "Quitar de favoritos"
 
 msgid "Remove from playlist"
 msgstr "Quitar de la playlist"
@@ -666,6 +696,9 @@ msgstr "Registrar escuchas"
 
 msgid "Search"
 msgstr "Buscar"
+
+msgid "Select"
+msgstr "Seleccionar"
 
 msgid "Select a track and use Alt ↑↓, or its menu, to move it."
 msgstr "Selecciona una pista y usa Alt ↑↓, o su menú, para moverla."

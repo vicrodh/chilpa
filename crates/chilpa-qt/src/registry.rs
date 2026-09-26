@@ -7,7 +7,7 @@
 //! the current call is over. No object holds a pointer to another, and
 //! nothing runs inside another object's method.
 
-use crate::bridge::{folders, library, navigation, player, playlists, settings, theme};
+use crate::bridge::{album_actions, folders, library, navigation, player, playlists, settings, theme};
 use cxx_qt::CxxQtThread;
 use std::cell::RefCell;
 
@@ -18,6 +18,7 @@ thread_local! {
     static FOLDERS: RefCell<Option<CxxQtThread<folders::qobject::LibraryFolders>>> = const { RefCell::new(None) };
     static NAVIGATION: RefCell<Option<CxxQtThread<navigation::qobject::Navigation>>> = const { RefCell::new(None) };
     static PLAYLISTS: RefCell<Option<CxxQtThread<playlists::qobject::Playlists>>> = const { RefCell::new(None) };
+    static ALBUM_ACTIONS: RefCell<Option<CxxQtThread<album_actions::qobject::AlbumActions>>> = const { RefCell::new(None) };
     static PLAYER: RefCell<Option<CxxQtThread<player::qobject::Player>>> = const { RefCell::new(None) };
 }
 
@@ -46,3 +47,4 @@ handle!(register_folders, folders, FOLDERS, folders::qobject::LibraryFolders);
 handle!(register_navigation, navigation, NAVIGATION, navigation::qobject::Navigation);
 handle!(register_playlists, playlists, PLAYLISTS, playlists::qobject::Playlists);
 handle!(register_player, player, PLAYER, player::qobject::Player);
+handle!(register_album_actions, album_actions, ALBUM_ACTIONS, album_actions::qobject::AlbumActions);

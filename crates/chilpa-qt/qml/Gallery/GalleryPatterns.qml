@@ -26,5 +26,6 @@ GallerySection {
         SearchFlyout { search: sample }
         SearchBox { width: Metrics.screenSearch; active: false }
         PlaybackOptions {}
+        SelectionBar {}
     }
 }

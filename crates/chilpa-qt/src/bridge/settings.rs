@@ -35,6 +35,8 @@ pub mod qobject {
         #[qproperty(bool, extra_controls)]
         /// A middle click on a destination opens it in a new tab.
         #[qproperty(bool, middle_click_tabs)]
+        /// A click on a record opens its quick view, not its page.
+        #[qproperty(bool, quick_view_click)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -91,6 +93,7 @@ pub struct SettingsRust {
     library_view: QString,
     extra_controls: bool,
     middle_click_tabs: bool,
+    quick_view_click: bool,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -138,7 +141,9 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (panes, panes_height, view) = app::with(|api| {
             (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW))
         });
-        let (extra, middle) = app::with(|api| (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS)));
+        let (extra, middle, click) = app::with(|api| {
+            (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS), api.preference("navigation.albumClick"))
+        });
         {
             let mut this = self.as_mut().rust_mut();
             let all = crate::settings_schema::SECTIONS;
@@ -157,6 +162,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
             this.extra_controls = extra.as_deref() == Some("true");
             this.middle_click_tabs = middle.as_deref() != Some("false");
+            this.quick_view_click = click.as_deref() == Some("quick");
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut()

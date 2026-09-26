@@ -53,6 +53,12 @@ Window {
         y: window.height - height - Metrics.playerBottom
     }
 
+    SelectionBar {
+        visible: AlbumActions.selectedCount > 0
+        x: host.x + (host.width - width) / 2 // derived: centered over the content
+        y: window.height - height - Metrics.selectionBottom
+    }
+
     // Above the content and the tab bar, so its grip is never covered.
     SidebarFrame {
         id: sidebar

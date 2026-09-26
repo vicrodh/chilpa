@@ -70,6 +70,9 @@ msgstr ""
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr ""
 
+msgid "A click on a record opens"
+msgstr ""
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr ""
 
@@ -91,6 +94,9 @@ msgstr ""
 msgid "Add a folder to the library"
 msgstr ""
 
+msgid "Add to favorites"
+msgstr ""
+
 msgid "Add to playlist…"
 msgstr ""
 
@@ -107,6 +113,9 @@ msgid "Advanced"
 msgstr ""
 
 msgid "Album"
+msgstr ""
+
+msgid "Album page"
 msgstr ""
 
 msgid "Albums"
@@ -197,6 +206,9 @@ msgid "Clear filters"
 msgstr ""
 
 msgid "Clear the queue"
+msgstr ""
+
+msgid "Clear the selection"
 msgstr ""
 
 msgid "Close"
@@ -388,6 +400,9 @@ msgstr ""
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr ""
 
+msgid "Its page, or its quick view under the row."
+msgstr ""
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr ""
 
@@ -434,6 +449,9 @@ msgid "Minimize"
 msgstr ""
 
 msgid "Missing"
+msgstr ""
+
+msgid "More"
 msgstr ""
 
 msgid "Most played"
@@ -511,6 +529,12 @@ msgstr ""
 msgid "Open a folder…"
 msgstr ""
 
+msgid "Open album"
+msgstr ""
+
+msgid "Open in new tab"
+msgstr ""
+
 msgid "Opens the device and says which formats reach it untouched."
 msgstr ""
 
@@ -580,6 +604,9 @@ msgstr ""
 msgid "Queue"
 msgstr ""
 
+msgid "Quick view"
+msgstr ""
+
 msgid "Quit"
 msgstr ""
 
@@ -599,6 +626,9 @@ msgid "Recently played"
 msgstr ""
 
 msgid "Records"
+msgstr ""
+
+msgid "Remove from favorites"
 msgstr ""
 
 msgid "Remove from playlist"
@@ -665,6 +695,9 @@ msgid "Scrobble"
 msgstr ""
 
 msgid "Search"
+msgstr ""
+
+msgid "Select"
 msgstr ""
 
 msgid "Select a track and use Alt ↑↓, or its menu, to move it."

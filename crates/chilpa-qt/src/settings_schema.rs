@@ -184,23 +184,34 @@ pub const SECTIONS: &[Section] = &[
         id: "navigation",
         label: Chilpa::mark("Navigation"),
         icon: "list",
-        groups: &[Group {
-            title: Chilpa::mark("Tabs"),
-            settings: &[
-                setting(
-                    "navigation.newtab",
-                    Chilpa::mark("Middle click opens a new tab"),
-                    Chilpa::mark("On the sidebar's destinations."),
-                    Control::Toggle,
-                ),
-                setting(
-                    "navigation.restoreTabs",
-                    Chilpa::mark("Restore tabs"),
-                    Chilpa::mark("Chilpa opens with the tabs it had when it closed."),
-                    Control::Toggle,
-                ),
-            ],
-        }],
+        groups: &[
+            Group {
+                title: Chilpa::mark("Tabs"),
+                settings: &[
+                    setting(
+                        "navigation.newtab",
+                        Chilpa::mark("Middle click opens a new tab"),
+                        Chilpa::mark("On the sidebar's destinations."),
+                        Control::Toggle,
+                    ),
+                    setting(
+                        "navigation.restoreTabs",
+                        Chilpa::mark("Restore tabs"),
+                        Chilpa::mark("Chilpa opens with the tabs it had when it closed."),
+                        Control::Toggle,
+                    ),
+                ],
+            },
+            Group {
+                title: Chilpa::mark("Records"),
+                settings: &[setting(
+                    "navigation.albumClick",
+                    Chilpa::mark("A click on a record opens"),
+                    Chilpa::mark("Its page, or its quick view under the row."),
+                    Control::Segmented,
+                )],
+            },
+        ],
     },
     Section {
         id: "library",

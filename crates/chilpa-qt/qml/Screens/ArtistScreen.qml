@@ -84,6 +84,7 @@ Flickable {
             visible: records.albums > 0
             fitContent: true
             model: records
+            artistPage: records.key
             onOpen: (albumId) => Navigation.go("album", albumId)
         }
 
