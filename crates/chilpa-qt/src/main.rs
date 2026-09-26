@@ -29,6 +29,35 @@ unsafe extern "C" {
     /// Registers a font from the resources as the application's default.
     /// See `fonts.cpp`.
     fn chilpa_use_font(resource: *const std::ffi::c_char) -> bool;
+    /// Hands the engine the covers' image provider. See `covers.cpp`.
+    fn chilpa_install_covers(engine: *mut std::ffi::c_void);
+}
+
+/// Makes or finds a cover's derivative and writes its path, NUL-terminated,
+/// into `out`. Called by `covers.cpp` from its own pool, never the window's
+/// thread.
+///
+/// # Safety
+///
+/// `path` is a NUL-terminated string and `out` has room for `capacity` bytes.
+#[no_mangle]
+pub unsafe extern "C" fn chilpa_cover(
+    path: *const std::ffi::c_char,
+    size: u32,
+    out: *mut std::ffi::c_char,
+    capacity: std::ffi::c_ulong,
+) -> bool {
+    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
+    let Some(made) = chilpa_api::cover_derivative(std::path::Path::new(path), size) else { return false };
+    let bytes = made.to_string_lossy().into_owned().into_bytes();
+    if bytes.len() + 1 > capacity as usize {
+        return false;
+    }
+    unsafe {
+        std::ptr::copy_nonoverlapping(bytes.as_ptr(), out.cast::<u8>(), bytes.len());
+        *out.add(bytes.len()) = 0;
+    }
+    true
 }
 
 /// Where Inter lives in the resources.
@@ -56,7 +85,10 @@ fn main() {
     // the interface in its states, in either theme.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };
     let mut engine = QQmlApplicationEngine::new();
-    if let Some(engine) = engine.as_mut() {
+    if let Some(mut engine) = engine.as_mut() {
+        // SAFETY: the engine is alive and a QQmlEngine; the provider it is
+        // given is its own from then on.
+        unsafe { chilpa_install_covers(engine.as_mut().get_unchecked_mut() as *mut QQmlApplicationEngine as *mut std::ffi::c_void) };
         engine.load(&QUrl::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/qml/{root}")));
     }
     if let Some(app) = app.as_mut() {
