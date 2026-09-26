@@ -82,6 +82,9 @@ msgstr ""
 msgid "Add a folder to the library"
 msgstr ""
 
+msgid "Add to queue"
+msgstr ""
+
 msgid "Add to the queue"
 msgstr ""
 
@@ -248,6 +251,12 @@ msgid "From this week"
 msgstr ""
 
 msgid "Genre"
+msgstr ""
+
+msgid "Go to album"
+msgstr ""
+
+msgid "Go to artist"
 msgstr ""
 
 msgid "Hide the columns"
@@ -491,6 +500,9 @@ msgid "Search"
 msgstr ""
 
 msgid "Settings"
+msgstr ""
+
+msgid "Show in folder"
 msgstr ""
 
 msgid "Show the columns"
