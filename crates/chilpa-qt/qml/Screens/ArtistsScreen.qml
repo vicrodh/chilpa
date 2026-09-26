@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Components"
 
 // Artists (design/06): everyone in the library, as round portraits in the
@@ -13,6 +14,7 @@ Item {
         kind: "artists"
         contentRev: Library.contentRev
         columns: grid.columns
+        filter: find.text
     }
 
     Item {
@@ -30,7 +32,17 @@ Item {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
+        SearchField {
+            id: find
+            anchors.right: count.left
+            anchors.rightMargin: Metrics.gap12
+            anchors.verticalCenter: parent.verticalCenter
+            width: Metrics.screenSearch
+            placeholder: I18n.tr("Filter artists", I18n.rev)
+            onEscaped: text = ""
+        }
         Text {
+            id: count
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             text: I18n.trCount("{} artist", "{} artists", everyone.albums, I18n.rev)
