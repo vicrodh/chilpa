@@ -258,6 +258,27 @@ impl Library {
         rows.collect()
     }
 
+    /// The same, keeping only the records whose title or artist holds every
+    /// word of `text`: the Albums screen's filter.
+    pub fn album_ids_matching(&self, order: AlbumSort, text: &str) -> rusqlite::Result<Vec<i64>> {
+        let words = crate::store::find::patterns(text);
+        if words.is_empty() {
+            return self.album_ids(order);
+        }
+        let clause = " AND (a.title LIKE ? ESCAPE '\\' OR a.album_artist LIKE ? ESCAPE '\\')".repeat(words.len());
+        let sql = format!(
+            "SELECT a.id FROM albums a
+             JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
+             WHERE 1 {clause}
+             ORDER BY {}",
+            order.order_by()
+        );
+        let args: Vec<&String> = words.iter().flat_map(|w| [w, w]).collect();
+        let mut stmt = self.db.prepare(&sql)?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(args), |r| r.get(0))?;
+        rows.collect()
+    }
+
     /// Those albums with their play counts, in the order given. By primary
     /// key: a page anywhere in the snapshot costs what the first one costs.
     pub fn albums_by_ids(&self, ids: &[i64]) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
@@ -655,6 +676,15 @@ mod compilation_tests {
             ],
             "Aimer: their record and the compilation, one track on each"
         );
+    }
+
+    #[test]
+    fn the_albums_filter_looks_at_the_title_and_the_artist() {
+        let lib = shelf();
+        assert_eq!(lib.album_ids_matching(super::AlbumSort::Title, "sun").unwrap(), [1]);
+        assert_eq!(lib.album_ids_matching(super::AlbumSort::Title, "various").unwrap(), [2]);
+        assert_eq!(lib.album_ids_matching(super::AlbumSort::Title, "").unwrap().len(), 2, "nothing typed, everything");
+        assert!(lib.album_ids_matching(super::AlbumSort::Title, "sun various").unwrap().is_empty(), "every word");
     }
 
     #[test]
