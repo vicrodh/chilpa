@@ -64,7 +64,9 @@ Popup {
             available: Player.normalizeApplies
             onToggled: (on) => Player.chooseNormalize(on)
         }
+        // Offered only when the library has tracks whose tempo was read.
         OptionRow {
+            visible: Player.automixAvailable
             width: parent.width
             title: I18n.tr("AutoMix", I18n.rev)
             detail: Player.automixNote !== "" ? Player.automixNote

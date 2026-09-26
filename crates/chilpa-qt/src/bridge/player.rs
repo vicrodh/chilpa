@@ -63,6 +63,8 @@ pub mod qobject {
         #[qproperty(bool, normalize)]
         #[qproperty(bool, normalize_applies)]
         #[qproperty(bool, automix)]
+        /// Whether there is anything analysed for AutoMix to order by.
+        #[qproperty(bool, automix_available)]
         /// Why the mix did not start, when it did not.
         #[qproperty(QString, automix_note)]
         #[qproperty(QString, error)]
@@ -144,6 +146,7 @@ pub struct PlayerRust {
     normalize: bool,
     normalize_applies: bool,
     automix: bool,
+    automix_available: bool,
     automix_note: QString,
     title: QString,
     artist: QString,
@@ -208,10 +211,11 @@ impl qobject::Player {
     }
 
     pub fn read_switches(mut self: Pin<&mut Self>) {
-        let (strict, gapless, normalize, mix) = app::with(|api| {
+        let (strict, gapless, normalize, mix, mixable) = app::with(|api| {
             let (_, bit_perfect) = api.chosen_output();
-            (bit_perfect, api.gapless(), api.normalize(), api.automix_on())
+            (bit_perfect, api.gapless(), api.normalize(), api.automix_on(), api.automix_available())
         });
+        self.as_mut().set_automix_available(mixable);
         self.as_mut().set_bit_perfect_mode(strict);
         let applies = !strict;
         self.as_mut().set_gapless(gapless);
