@@ -5,8 +5,8 @@ import "../Primitives"
 
 // The player bar's volume (design/02 7): the speaker, which mutes, and the
 // slider. It moves the device's own knob or scales the samples, as the
-// player decides; under bit-perfect with no knob to move it is locked,
-// dimmed, and the speaker's tooltip says why.
+// player decides; a direct route with no knob to move is locked, dimmed,
+// and the speaker's tooltip says why.
 Row {
     id: control
 

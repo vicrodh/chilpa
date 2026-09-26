@@ -424,12 +424,13 @@ impl Chilpa {
         })
     }
 
-    /// The output that is remembered, or the first one there is, and whether
-    /// bit-perfect is asked for.
+    /// The output that is remembered, or the first one there is. The boolean
+    /// is retained at this facade boundary until its callers migrate; it is
+    /// always false because bit-perfect is a result, not a requested mode.
     pub fn chosen_output(&self) -> (String, bool) {
         let s = chilpa_core::settings::load();
         let output = if s.output.is_empty() { self.device_or_first() } else { s.output };
-        (output, s.bit_perfect)
+        (output, false)
     }
 
     /// Plays those files as the queue, starting at `start`. What comes before

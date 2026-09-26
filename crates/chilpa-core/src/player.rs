@@ -58,7 +58,6 @@ enum Order {
     /// Plays the shared queue, which the sender has already set.
     Play {
         device: String,
-        bit_perfect: bool,
         /// Where the first track starts, when it is not at the beginning.
         ///
         /// It travels with the order instead of being asked for separately
@@ -122,7 +121,7 @@ impl Player {
                     match order {
                         Order::Quit => break,
                         Order::Stop => {}
-                        Order::Play { device, bit_perfect, start_at } => {
+                        Order::Play { device, start_at } => {
                             // Every track starts with the flag clear: an old
                             // stop order does not kill the next one. The
                             // pause is not touched here: it was set when the
@@ -140,7 +139,6 @@ impl Player {
                             let result = play(
                                 &queue_thread,
                                 &device,
-                                bit_perfect,
                                 &controls_thread,
                                 &mut probe,
                                 &mut open,
@@ -169,13 +167,13 @@ impl Player {
     }
 
     /// Asks to play a file. Returns immediately.
-    pub fn play(&self, path: &Path, device: &str, bit_perfect: bool) {
-        self.play_all(&[path.to_path_buf()], device, bit_perfect);
+    pub fn play(&self, path: &Path, device: &str) {
+        self.play_all(&[path.to_path_buf()], device);
     }
 
     /// Asks to play several tracks in order, one after another.
-    pub fn play_all(&self, paths: &[PathBuf], device: &str, bit_perfect: bool) {
-        self.play_all_from(paths, device, bit_perfect, None);
+    pub fn play_all(&self, paths: &[PathBuf], device: &str) {
+        self.play_all_from(paths, device, None);
     }
 
     /// The same, with the first track starting somewhere other than its
@@ -189,10 +187,9 @@ impl Player {
         &self,
         paths: &[PathBuf],
         device: &str,
-        bit_perfect: bool,
         start_at: Option<std::time::Duration>,
     ) {
-        self.play_all_from_paused(paths, device, bit_perfect, start_at, false);
+        self.play_all_from_paused(paths, device, start_at, false);
     }
 
     /// The same, starting paused when `paused` says so: moving a paused
@@ -201,7 +198,6 @@ impl Player {
         &self,
         paths: &[PathBuf],
         device: &str,
-        bit_perfect: bool,
         start_at: Option<std::time::Duration>,
         paused: bool,
     ) {
@@ -215,7 +211,6 @@ impl Player {
         self.controls.pause.set(paused);
         let _ = self.orders.send(Order::Play {
             device: device.to_string(),
-            bit_perfect,
             start_at,
         });
     }
@@ -256,14 +251,13 @@ impl Player {
         self.controls.gapless.set(on);
     }
 
-    /// Normalizing by ReplayGain on or off, from the next track on. Under
-    /// the bit-perfect policy it is never applied, whatever this says.
+    /// Normalizing by ReplayGain on or off, from the next track on.
     pub fn set_normalize(&self, on: bool) {
         self.controls.normalize.set(on);
     }
 
     /// What the samples are multiplied by, heard as soon as what the device
-    /// holds plays out. Ignored under the bit-perfect policy and for DSD.
+    /// holds plays out. Raw DoP is never scaled.
     pub fn set_volume(&self, factor: f32) {
         self.controls.volume.set(factor);
     }
@@ -272,8 +266,7 @@ impl Player {
         self.controls.volume.get()
     }
 
-    /// Whether the output is asked for alone with bit-perfect off too, from
-    /// the next time it opens.
+    /// Whether the output is asked for alone, from the next time it opens.
     pub fn set_exclusive(&self, on: bool) {
         self.controls.exclusive.set(on);
     }
@@ -353,17 +346,12 @@ impl Drop for Player {
 fn play(
     queue: &crate::queue_playback::SharedQueue,
     device: &str,
-    bit_perfect: bool,
     controls: &crate::queue_playback::Controls,
     probe: &mut ProbeDevice,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
 ) -> Result<Outcome, PlayError> {
-    // Asking for the output alone is what the bit-perfect switch means at
-    // the device, and it is also what decides whether a server can pass
-    // samples through. Bit-perfect always asks; with it off, asking is the
-    // exclusive switch's: nothing else mixed in while Chilpa may convert.
-    let exclusive = bit_perfect || controls.exclusive.get();
+    let exclusive = controls.exclusive.get();
     // What the samples meet after Chilpa hands them over. The delivery
     // cannot see that far, and a verdict that ignores it says bit-perfect
     // over a resampler.
@@ -372,7 +360,13 @@ fn play(
     let paths = queue.to_vec();
     let paths = paths.as_slice();
     let caps = probe(device).map_err(PlayError::Sink)?;
-    let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
+    // Fidelity is reported from the route and the transformations that
+    // actually happened. It is not a promise that may prevent playback.
+    let policy = Policy::AllowAnything;
+    controls.dsd_passthrough.set(
+        crate::backends::resolve(device)
+            .is_some_and(|(stack, _)| stack.kind() == chilpa_audio::backend::BackendKind::Alsa),
+    );
     let total = paths.len();
 
     if let Some(first) = paths.first() {
@@ -414,14 +408,18 @@ fn play(
             }
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
             let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
-            // A DSD track counts in DoP frames, sixteen of its one-bit
-            // samples each, and is named by its multiple.
+            // A DSD track is named by its source rate. Its frame count follows
+            // what actually opened: DoP carries sixteen bits per PCM frame;
+            // converted DSD counts ordinary PCM frames.
             let dsd = crate::dsd_playback::is_dsd_file(path)
                 .then(|| crate::dsd_playback::open_dsd_file(path).ok())
                 .flatten()
                 .map(|reader| reader.info().clone());
             let total_frames = match &dsd {
-                Some(info) => Some(info.samples / 16),
+                Some(info) => Some(
+                    info.samples.saturating_mul(u64::from(delivery.opened.sample_rate_hz))
+                        / u64::from(info.dsd_rate_hz),
+                ),
                 None => chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count()),
             };
             let _ = events.send(PlayerEvent::Started {
@@ -736,7 +734,7 @@ mod tests {
         let file = wav("basic", 5_000);
 
         let started = Instant::now();
-        p.play(&file, "fake", true);
+        p.play(&file, "fake");
         assert!(started.elapsed() < Duration::from_millis(100), "play() returns immediately");
 
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
@@ -753,7 +751,7 @@ mod tests {
         let p = player(Arc::clone(&written));
         let file = wav("moved-paused", 5_000);
         p.set_paused(true);
-        p.play_all_from_paused(&[file.clone()], "fake", true, None, true);
+        p.play_all_from_paused(&[file.clone()], "fake", None, true);
         std::thread::sleep(Duration::from_millis(300));
         assert!(p.is_paused(), "the pause went with the track");
         assert_eq!(written.load(Ordering::Relaxed), 0, "nothing played while paused");
@@ -769,14 +767,14 @@ mod tests {
         let p = player(Arc::clone(&written));
         let file = wav("fresh-play", 2_000);
         p.set_paused(true);
-        p.play(&file, "fake", true);
+        p.play(&file, "fake");
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 2_000 })));
         let _ = std::fs::remove_file(file);
     }
 
     #[test]
-    fn the_exclusive_switch_asks_for_the_output_alone_without_bit_perfect() {
+    fn the_exclusive_switch_asks_for_the_output_alone() {
         let asked = Arc::new(std::sync::Mutex::new(Vec::new()));
         let seen = Arc::clone(&asked);
         let p = Player::spawn(
@@ -789,10 +787,10 @@ mod tests {
             }),
         );
         let file = wav("exclusive", 1_000);
-        p.play(&file, "fake", false);
+        p.play(&file, "fake");
         wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         p.set_exclusive(true);
-        p.play(&file, "fake", false);
+        p.play(&file, "fake");
         wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert_eq!(*asked.lock().unwrap(), vec![false, true], "shared first, alone once asked");
         let _ = std::fs::remove_file(file);
@@ -804,7 +802,7 @@ mod tests {
         let p = player(Arc::clone(&written));
         let a = wav("cola-a", 1_000);
         let b = wav("cola-b", 2_000);
-        p.play_all(&[a.clone(), b.clone()], "fake", true);
+        p.play_all(&[a.clone(), b.clone()], "fake");
 
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         let startups: Vec<(usize, usize)> = events
@@ -826,7 +824,7 @@ mod tests {
         let p = player(Arc::clone(&written));
         let a = wav("stop-after-a", 2_000);
         let b = wav("stop-after-b", 3_000);
-        p.play_all_from_paused(&[a.clone(), b.clone()], "fake", true, None, true);
+        p.play_all_from_paused(&[a.clone(), b.clone()], "fake", None, true);
         p.set_stop_after(Some(0));
         p.set_paused(false);
 
@@ -845,7 +843,7 @@ mod tests {
         // Long tracks: without skipping, the test would take a while to reach the end.
         let a = wav("skip-a", 400_000);
         let b = wav("skip-b", 1_000);
-        p.play_all(&[a.clone(), b.clone()], "fake", true);
+        p.play_all(&[a.clone(), b.clone()], "fake");
 
         // As soon as the first one starts, a skip is asked for. The events
         // are gathered from both waits: each one consumes what it picked up.
@@ -872,12 +870,12 @@ mod tests {
     #[test]
     fn a_missing_file_is_reported_and_the_player_stays_alive() {
         let p = player(Arc::new(AtomicU64::new(0)));
-        p.play(Path::new("/does/not/exist.flac"), "fake", true);
+        p.play(Path::new("/does/not/exist.flac"), "fake");
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Failed { .. })));
 
         let file = wav("after-failing", 1_000);
-        p.play(&file, "fake", true);
+        p.play(&file, "fake");
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. })), "it still accepts orders");
         let _ = std::fs::remove_file(file);

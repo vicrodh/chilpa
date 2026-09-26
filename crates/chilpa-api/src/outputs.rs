@@ -46,12 +46,6 @@ impl crate::Chilpa {
         self.use_output(output, bit_perfect);
     }
 
-    /// Turns bit-perfect on or off on the output already chosen.
-    pub fn set_bit_perfect(&mut self, on: bool) {
-        let (output, _) = self.chosen_output();
-        self.use_output(&output, on);
-    }
-
     /// An output's diagnosis: which formats come out untouched.
     ///
     /// It measures the device for real. It configures nothing: QBZ's wizard

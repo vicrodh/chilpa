@@ -199,15 +199,6 @@ msgstr "Entre pistas"
 msgid "Bit perfect"
 msgstr "Bit perfect"
 
-msgid "Bit-perfect"
-msgstr "Bit-perfect"
-
-msgid "Bit-perfect already asks for it."
-msgstr "Bit-perfect ya lo pide."
-
-msgid "Bit-perfect does not scale the samples. Turn on hardware volume in Settings › Advanced to move the device's own."
-msgstr "Bit-perfect no escala las muestras. Enciende el volumen de hardware en Ajustes › Avanzado para mover el del aparato."
-
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
 
@@ -331,6 +322,9 @@ msgstr "Diagnosticar la salida"
 msgid "Diagnosis"
 msgstr "Diagnóstico"
 
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
+msgstr "ALSA directo no escala las muestras. Usa el DAC o amplificador, o activa el volumen de hardware en Settings › Advanced."
+
 msgid "Disc {}"
 msgstr "Disco {}"
 
@@ -349,11 +343,11 @@ msgstr "Duración"
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 
-msgid "Every track at one loudness, by its ReplayGain."
-msgstr "Todas las pistas al mismo volumen, según su ReplayGain."
+msgid "Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."
+msgstr "Cada pista al mismo volumen, según su ReplayGain. Una pista cuya ganancia cambie se muestra como procesada."
 
-msgid "Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."
-msgstr "Todas las pistas al mismo volumen, según su ReplayGain. No se aplica con bit-perfect encendido: cambia las muestras."
+msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
+msgstr "Cada pista al mismo volumen, según su ReplayGain. Las pistas modificadas se muestran como procesadas."
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que la Mac convierta."
@@ -577,9 +571,6 @@ msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 msgid "Not through this stack: it mixes by design."
 msgstr "No con esta pila: mezcla por diseño."
 
-msgid "Not with bit-perfect on: it changes the samples."
-msgstr "No con bit-perfect encendido: cambia las muestras."
-
 msgid "Nothing found for “{}”"
 msgstr "Sin resultados para “{}”"
 
@@ -601,11 +592,8 @@ msgstr "Una pista entra justo después de la otra."
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr "Una pista entra justo después de la otra. Apagado, el dispositivo termina lo que tiene y se vuelve a abrir."
 
-msgid "Only what reaches the device untouched plays. A format it cannot take stops with the reason instead of being converted."
-msgstr "Solo suena lo que llega intacto al dispositivo. Un formato que no acepta se detiene con el motivo en lugar de convertirse."
-
-msgid "Only with bit-perfect or exclusive mode on."
-msgstr "Solo con bit-perfect o el modo exclusivo encendidos."
+msgid "Only with exclusive mode on."
+msgstr "Sólo con el modo exclusivo activo."
 
 msgid "Open Last.fm"
 msgstr "Abrir Last.fm"
@@ -790,9 +778,6 @@ msgstr "falta SACDTRL1"
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
 
-msgid "Samples reach the device untouched. Off, normalization can be used."
-msgstr "Las muestras llegan intactas al dispositivo. Apagado, se puede usar la normalización."
-
 msgid "Save as playlist"
 msgstr "Guardar como playlist"
 
@@ -874,11 +859,11 @@ msgstr "La cuenta expiró; vuelve a conectarla."
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
-msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
-msgstr "La salida toca solo Chilpa, también con bit-perfect apagado. Los demás programas esperan a que la suelte."
+msgid "The output plays only Chilpa. Other programs wait until it lets go."
+msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."
 
-msgid "The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."
-msgstr "La barra de reproducción mueve el volumen propio de la salida en lugar de escalar las muestras, así que también funciona con bit-perfect. Necesita una salida con volumen propio."
+msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
+msgstr "La barra del reproductor mueve el volumen propio de la salida en vez de escalar las muestras. Necesita una salida con volumen propio."
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
@@ -895,14 +880,14 @@ msgstr "Falta la respuesta del servicio."
 msgid "Theme"
 msgstr "Tema"
 
+msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
+msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC o amplificador."
+
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
-
-msgid "This output has no volume of its own, and bit-perfect does not scale the samples."
-msgstr "Esta salida no tiene volumen propio, y bit-perfect no escala las muestras."
 
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
@@ -1054,9 +1039,6 @@ msgstr "pendiente de aprobación"
 msgid "be a plugin of another kind: {}"
 msgstr "ser un plugin de otro tipo: {}"
 
-msgid "bit-perfect only"
-msgstr "solo bit-perfect"
-
 msgid "bring catalogue: search for and fetch music"
 msgstr "aportar catálogo: buscar y traer música"
 
@@ -1074,9 +1056,6 @@ msgstr "llamar a \"{}\", que nadie ha aprobado"
 
 msgid "cannot be done"
 msgstr "no se puede"
-
-msgid "conversion allowed"
-msgstr "con conversión permitida"
 
 msgid "converted to {}"
 msgstr "convertido a {}"
@@ -1102,11 +1081,17 @@ msgstr "dispositivo: {}"
 msgid "digital"
 msgstr "digital"
 
+msgid "direct"
+msgstr "directo"
+
 msgid "display"
 msgstr "pantalla"
 
 msgid "encrypted and tied to this machine (there is no system keyring)"
 msgstr "cifrado y atado a este equipo (no hay llavero del sistema)"
+
+msgid "exclusive"
+msgstr "exclusivo"
 
 msgid "file"
 msgstr "archivo"
@@ -1290,6 +1275,9 @@ msgstr "sector {} inválido: {}"
 
 msgid "send you to grant permission at {}"
 msgstr "mandarte a dar permiso en {}"
+
+msgid "shared"
+msgstr "compartido"
 
 msgid "shared at {}"
 msgstr "compartido a {}"

@@ -323,7 +323,7 @@ fn a_mono_track_is_announced_as_mono_though_it_goes_out_in_both_channels() {
         Box::new(|_| Ok(caps(SampleFormat::S16, 44_100))),
         Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
     );
-    player.play(&path, "dac", true);
+    player.play(&path, "dac");
     let limit = Instant::now() + Duration::from_secs(5);
     let mut outcome = None;
     while outcome.is_none() && Instant::now() < limit {
@@ -407,11 +407,7 @@ impl AudioSink for Swallow {
 }
 
 #[test]
-fn the_switch_plays_16_bits_on_a_32_bit_dac_and_still_takes_the_output_alone() {
-    // The switch reaches the device as two things: which samples may go out,
-    // and asking for the output exclusively. Letting widening through by
-    // handing the player a looser policy would have dropped the second one
-    // without a word, because the stream path read it off the policy.
+fn exclusive_playback_widens_16_bits_without_losing_the_result() {
     let path = temp_file("switch");
     write_wav(&path, &samples(16), 16, 44_100, 2);
     let asked: Arc<Mutex<Vec<(StreamFormat, bool)>>> = Arc::default();
@@ -426,7 +422,8 @@ fn the_switch_plays_16_bits_on_a_32_bit_dac_and_still_takes_the_output_alone() {
 
     // An identifier that names no stack, so the verdict does not go looking
     // for one on this machine.
-    player.play(&path, "dac", true);
+    player.set_exclusive(true);
+    player.play(&path, "dac");
     let limit = Instant::now() + Duration::from_secs(5);
     let mut outcome = None;
     while outcome.is_none() && Instant::now() < limit {
@@ -448,11 +445,11 @@ fn the_switch_plays_16_bits_on_a_32_bit_dac_and_still_takes_the_output_alone() {
             assert_eq!(bits, Some(16), "a 16 bit track is reported as 16 bits");
             assert!(!bit_perfect, "\"dac\" names no stack, so nothing vouches for the road");
         }
-        other => panic!("bit-perfect on did not play a 16 bit file on this DAC: {other:?}"),
+        other => panic!("the 16 bit file did not play on this DAC: {other:?}"),
     }
     let asked = asked.lock().unwrap();
     assert_eq!(asked.len(), 1, "the device was opened once: {asked:?}");
-    assert!(asked[0].1, "with the switch on the output is asked for alone");
+    assert!(asked[0].1, "exclusive playback asks for the output alone");
     drop(asked);
     drop(player);
     let _ = std::fs::remove_file(path);

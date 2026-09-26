@@ -46,7 +46,7 @@ pub mod qobject {
         #[qproperty(QString, output_format)]
         /// The output, as the stack names it: "Fosi Audio ZH3".
         #[qproperty(QString, device)]
-        /// The stack and the policy: "ALSA · bit-perfect only".
+        /// The stack and route: "ALSA · direct".
         #[qproperty(QString, route)]
         /// Only what the engine states; never inferred here.
         #[qproperty(bool, bit_perfect)]
@@ -54,11 +54,7 @@ pub mod qobject {
         /// 0 off, 1 the whole queue, 2 the track.
         #[qproperty(i32, repeat)]
         /// The playback switches: one track into the next, one loudness,
-        /// the queue in tempo order. Normalizing is only applied with
-        /// bit-perfect off, which `normalize_applies` says.
-        /// The bit-perfect policy, as chosen: nothing reaches the device
-        /// changed. Not `bit_perfect`, which says whether what plays is.
-        #[qproperty(bool, bit_perfect_mode)]
+        /// the queue in tempo order.
         #[qproperty(bool, gapless)]
         #[qproperty(bool, normalize)]
         #[qproperty(bool, normalize_applies)]
@@ -88,9 +84,6 @@ pub mod qobject {
         #[qinvokable]
         fn clear_queue(self: Pin<&mut Player>);
 
-        /// Turns the bit-perfect policy on or off, on the output in use.
-        #[qinvokable]
-        fn choose_bit_perfect(self: Pin<&mut Player>, on: bool);
         #[qinvokable]
         fn choose_gapless(self: Pin<&mut Player>, on: bool);
         #[qinvokable]
@@ -152,7 +145,6 @@ const TICK: std::time::Duration = std::time::Duration::from_millis(250);
 
 #[derive(Default)]
 pub struct PlayerRust {
-    bit_perfect_mode: bool,
     gapless: bool,
     normalize: bool,
     normalize_applies: bool,
@@ -196,11 +188,6 @@ pub struct PlayerRust {
 }
 
 impl qobject::Player {
-    pub fn choose_bit_perfect(mut self: Pin<&mut Self>, on: bool) {
-        app::with(|api| api.set_bit_perfect(on));
-        self.as_mut().read_switches();
-    }
-
     pub fn choose_gapless(mut self: Pin<&mut Self>, on: bool) {
         app::with(|api| api.set_gapless(on));
         self.as_mut().read_switches();
@@ -246,18 +233,15 @@ impl qobject::Player {
     }
 
     pub fn read_switches(mut self: Pin<&mut Self>) {
-        let (strict, gapless, normalize, mix, mixable) = app::with(|api| {
-            let (_, bit_perfect) = api.chosen_output();
-            (bit_perfect, api.gapless(), api.normalize(), api.automix_on(), api.automix_available())
+        let (gapless, normalize, mix, mixable) = app::with(|api| {
+            (api.gapless(), api.normalize(), api.automix_on(), api.automix_available())
         });
         self.as_mut().set_automix_available(mixable);
         self.as_mut().rust_mut().shown.clear();
         self.as_mut().read_volume();
-        self.as_mut().set_bit_perfect_mode(strict);
-        let applies = !strict;
         self.as_mut().set_gapless(gapless);
         self.as_mut().set_normalize(normalize);
-        self.as_mut().set_normalize_applies(applies);
+        self.as_mut().set_normalize_applies(true);
         self.as_mut().set_automix(mix);
     }
     pub fn clear_queue(mut self: Pin<&mut Self>) {
@@ -353,10 +337,14 @@ impl qobject::Player {
             self.as_mut().set_quality_tier(now.quality.tier.rank());
             self.as_mut().set_output_format(QString::from(&now.format));
             let (device, route) = app::with(|api| {
-                let (output, bit_perfect) = api.chosen_output();
+                let (output, _) = api.chosen_output();
                 let (device, label) = api.output_names(&output);
-                let policy = if bit_perfect { api.t("bit-perfect only") } else { api.t("conversion allowed") };
-                (device, format!("{label} · {policy}"))
+                let route = match (api.fidelity_of(&output), api.exclusive()) {
+                    ("exact", _) => api.t("direct"),
+                    ("depends", true) => api.t("exclusive"),
+                    _ => api.t("shared"),
+                };
+                (device, format!("{label} · {route}"))
             });
             self.as_mut().set_device(QString::from(&device));
             self.as_mut().set_route(QString::from(&route));

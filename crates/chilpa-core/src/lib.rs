@@ -287,15 +287,15 @@ impl Core {
     /// before, which is why it existed only on Linux and why every other
     /// platform had a stub that refused. It now works wherever a stack does,
     /// which is the point of having stacks.
-    pub fn play_local(&mut self, path: &std::path::Path, device: &str, bit_perfect: bool) -> Result<PlayedSummary, String> {
+    pub fn play_local(&mut self, path: &std::path::Path, device: &str, _legacy_bit_perfect: bool) -> Result<PlayedSummary, String> {
         use chilpa_audio::negotiate::Policy;
         use chilpa_audio::render::Outcome;
         use chilpa_audio::sink::StopSignal;
 
         let caps = measure(device).map_err(|e| e.to_string())?;
-        let policy = if bit_perfect { Policy::BitPerfect } else { Policy::AllowAnything };
+        let policy = Policy::AllowAnything;
         let played = playback::play_file(path, &caps, policy, &StopSignal::new(), |format| {
-            open_output(device, format, bit_perfect)
+            open_output(device, format, false)
         })
         .map_err(|e| e.to_string())?;
         let opened = played.delivery.opened;
@@ -313,7 +313,7 @@ impl Core {
                 // Chilpa did and nothing about the road after it, so on its
                 // own this called a JACK graph or a shared server exact.
                 bit_perfect: played.delivery.nothing_was_converted()
-                    && path_is_exact(device, bit_perfect),
+                    && path_is_exact(device, false),
             }),
             Outcome::Failed { frames, error } => {
                 Err(chilpa_i18n::t_args(

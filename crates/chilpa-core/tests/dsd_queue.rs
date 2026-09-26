@@ -5,7 +5,7 @@
 //! queue never moved on: a DSD album stopped after its first track.
 
 use chilpa_audio::format::{SampleFormat, StreamFormat};
-use chilpa_audio::negotiate::DeviceCaps;
+use chilpa_audio::negotiate::{DeviceCaps, Transform};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use chilpa_audio::negotiate::Policy;
 use chilpa_core::player::{Player, PlayerEvent};
@@ -87,7 +87,7 @@ fn a_dsd_album_plays_past_its_first_track() {
         }),
     );
 
-    player.play_all(&tracks, "dac", true);
+    player.play_all(&tracks, "alsa:hw:0,0");
     let mut started = Vec::new();
     let limit = Instant::now() + Duration::from_secs(10);
     let mut over = false;
@@ -146,11 +146,13 @@ fn the_dop_marker_alternates_across_the_join_between_tracks() {
         probed: true,
     };
     let mut kept = Some(kept);
+    let controls = Controls::new();
+    controls.dsd_passthrough.set(true);
     play_queue_with(
         &SharedQueue::new(tracks.clone()),
         &caps,
         Policy::BitPerfect,
-        &Controls::new(),
+        &controls,
         |_| Ok(kept.take().expect("opened once")),
         &mut |_, _, _| {},
         &mut |_, _| {},
@@ -168,6 +170,35 @@ fn the_dop_marker_alternates_across_the_join_between_tracks() {
 }
 
 #[test]
+fn a_shared_route_converts_dsd_to_pcm() {
+    let track = dsf_of("converted", u64::from(RATE) / 10);
+    let caps = DeviceCaps {
+        sample_rates: vec![88_200, 176_400],
+        formats: vec![SampleFormat::S24In32],
+        channels: vec![2],
+        probed: true,
+    };
+    let mut delivery = None;
+    let results = play_queue_with(
+        &SharedQueue::new(vec![track.clone()]),
+        &caps,
+        Policy::AllowAnything,
+        &Controls::new(),
+        |format| Ok(Swallow(format)),
+        &mut |_, _, opened| delivery = Some(opened.clone()),
+        &mut |_, _| {},
+    )
+    .expect("the queue runs");
+
+    let delivery = delivery.expect("the converted track started");
+    assert_eq!(delivery.opened.sample_rate_hz, 88_200);
+    assert!(delivery.transforms.contains(&Transform::DsdToPcm));
+    assert!(!delivery.nothing_was_converted());
+    assert_eq!(results[0].frames(), 8_820, "a tenth of a second of PCM");
+    let _ = std::fs::remove_file(track);
+}
+
+#[test]
 fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
     // DoP used to drop every seek: the track went on from where it was.
     let track = dsf("seek", 2);
@@ -180,11 +211,13 @@ fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
         probed: true,
     };
     let mut positions = Vec::new();
+    let controls = Controls { seek, ..Controls::new() };
+    controls.dsd_passthrough.set(true);
     let results = play_queue_with(
         &SharedQueue::new(vec![track.clone()]),
         &caps,
         Policy::BitPerfect,
-        &Controls { seek, ..Controls::new() },
+        &controls,
         |format| Ok(Swallow(format)),
         &mut |_, _, _| {},
         &mut |_, progress| positions.push(progress.position),
@@ -236,7 +269,7 @@ fn a_dsdiff_file_plays_in_a_queue_like_a_dsf() {
         }),
         Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
     );
-    player.play_all(&tracks, "dac", true);
+    player.play_all(&tracks, "alsa:hw:0,0");
     let mut started = Vec::new();
     let limit = Instant::now() + Duration::from_secs(10);
     let mut over = None;

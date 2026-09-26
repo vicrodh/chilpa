@@ -1,12 +1,8 @@
 //! The player bar's volume (design/02 7, design/04).
 //!
-//! Two ways to turn it, and the difference is the whole point. The
-//! device's own knob -- a card's mixer, a Mac's or Windows' endpoint -- is
-//! used when Settings asks for it (`advanced.hwVolume`) and the output has
-//! one: the samples arrive as they left, so it works under bit-perfect.
-//! Otherwise the samples are scaled, which is a conversion: done and said
-//! with bit-perfect off, and not offered under it -- the slider is locked
-//! and says why, instead of moving a volume that would break the promise.
+//! Shared and converting routes scale samples and report a processed result.
+//! A direct ALSA route cannot scale without ceasing to be direct, so it uses
+//! a selected hardware mixer or leaves the player slider fixed.
 
 use crate::Chilpa;
 
@@ -29,7 +25,7 @@ pub struct VolumeView {
 impl Chilpa {
     /// Where the volume is, and whether and how it can be moved.
     pub fn player_volume(&mut self) -> VolumeView {
-        let (output, bit_perfect) = self.chosen_output();
+        let (output, _) = self.chosen_output();
         if self.hardware_volume() {
             let knob = chilpa_core::volume_of(&output);
             if knob.available {
@@ -37,11 +33,11 @@ impl Chilpa {
             }
         }
         let (percent, muted) = (self.software_percent(), self.preference(MUTED).as_deref() == Some("true"));
-        if bit_perfect {
+        if self.stack_of(&output) == "alsa" && output.starts_with("alsa:") {
             let why = if self.hardware_volume() {
-                chilpa_i18n::t("This output has no volume of its own, and bit-perfect does not scale the samples.")
+                chilpa_i18n::t("This direct output has no hardware volume control. Use the DAC or amplifier.")
             } else {
-                chilpa_i18n::t("Bit-perfect does not scale the samples. Turn on hardware volume in Settings › Advanced to move the device's own.")
+                chilpa_i18n::t("Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced.")
             };
             return VolumeView { percent: 100, muted: false, locked: true, why, ..VolumeView::default() };
         }
@@ -90,8 +86,8 @@ impl Chilpa {
         self.apply_volume();
     }
 
-    /// What the samples are multiplied by. One -- untouched -- when the
-    /// device's knob does the work or bit-perfect is on.
+    /// What the samples are multiplied by. One when the device's knob does
+    /// the work or the route is direct.
     pub(crate) fn software_gain(&mut self) -> f32 {
         let view = self.player_volume();
         if view.hardware || view.locked {

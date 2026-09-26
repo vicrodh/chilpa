@@ -45,7 +45,7 @@ fn started_bit_perfect(chilpa: &mut chilpa_api::Chilpa) -> bool {
 }
 
 #[test]
-fn the_volume_is_locked_under_bit_perfect_and_honest_without_it() {
+fn shared_volume_scales_samples_and_only_direct_alsa_locks_it() {
     let dir = std::env::temp_dir().join("chilpa-volume-test");
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
@@ -55,16 +55,16 @@ fn the_volume_is_locked_under_bit_perfect_and_honest_without_it() {
 
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.remember(OUTPUT, true);
-    let view = chilpa.player_volume();
-    assert!(view.locked, "bit-perfect does not scale the samples");
-    assert!(!view.why.is_empty(), "and says why");
-    chilpa.set_player_volume(40);
-    assert_eq!(chilpa.player_volume().percent, 100, "a locked volume does not move");
-
-    chilpa.remember(OUTPUT, false);
     chilpa.set_player_volume(40);
     let view = chilpa.player_volume();
     assert_eq!((view.percent, view.locked, view.hardware), (40, false, false));
+
+    chilpa.remember("alsa:hw:999,0", false);
+    let direct = chilpa.player_volume();
+    assert!(direct.locked, "direct ALSA does not scale samples");
+    assert!(!direct.why.is_empty(), "and says why");
+
+    chilpa.remember(OUTPUT, false);
 
     chilpa.play_tracks(&[tone.clone()], OUTPUT, false);
     assert!(!started_bit_perfect(&mut chilpa), "scaled samples are not bit-perfect");
