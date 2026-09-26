@@ -8,6 +8,7 @@ GallerySection {
     title: "Patterns"
 
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
+    SidebarPlaylists { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     RightPanel { width: Metrics.rightPanel; height: Metrics.queueDefault + Metrics.queueMin }
     Row {
         spacing: Metrics.gridGap

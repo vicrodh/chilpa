@@ -115,5 +115,12 @@ Rectangle {
                 }
             }
         }
+
+        // Whatever height is left, down to the sidebar's bottom padding.
+        SidebarPlaylists {
+            visible: !side.collapsed
+            width: parent.width
+            height: Math.max(0, parent.height - y - Metrics.sidebarPadV) // derived: the rest of the column
+        }
     }
 }

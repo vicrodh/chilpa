@@ -392,6 +392,7 @@ lcd
 md
 nav
 qcolor
+qstring
 sm
 xs
 

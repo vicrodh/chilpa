@@ -115,6 +115,10 @@ fn label(r: &Route) -> (String, &'static str) {
             let title = app::with(|api| api.album(r.id).map(|a| a.title)).unwrap_or_default();
             (title, "disc")
         }
+        Screen::Playlist => {
+            let name = app::with(|api| api.playlist(r.id).map(|p| p.name)).unwrap_or_default();
+            (name, "playlist")
+        }
     }
 }
 
@@ -171,6 +175,19 @@ impl qobject::Navigation {
     pub fn close(mut self: Pin<&mut Self>, index: i32) {
         self.as_mut().rust_mut().tabs.close(index.max(0) as usize);
         self.publish();
+    }
+
+    /// Reads the tabs' titles again: something they name was renamed.
+    pub fn refresh_labels(self: Pin<&mut Self>) {
+        self.publish();
+    }
+
+    /// Forgets a place that was deleted, from every tab and history.
+    pub fn left_behind(mut self: Pin<&mut Self>, screen: &str, id: i64) {
+        if let Some(screen) = Screen::from_name(screen) {
+            self.as_mut().rust_mut().tabs.forget(&Route { screen, id, key: String::new() });
+            self.publish();
+        }
     }
 
     /// Sets every property from the tabs. The screen goes last: it is what

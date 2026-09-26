@@ -12,6 +12,11 @@ Rectangle {
 
     signal accepted()
 
+    function focusInput() {
+        input.forceActiveFocus()
+        input.selectAll()
+    }
+
     implicitWidth: Metrics.selectWidth
     implicitHeight: Metrics.fieldHeight
     radius: Metrics.radiusControl

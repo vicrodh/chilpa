@@ -172,7 +172,8 @@ QtObject {
     readonly property int shelfLimit: 12
     readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
-    readonly property int artistHero: 168
+    readonly property int pageHero: 168
+    readonly property int playlistFilter: 26
     readonly property int heroGap: 28
     readonly property int barHeight: 44
 

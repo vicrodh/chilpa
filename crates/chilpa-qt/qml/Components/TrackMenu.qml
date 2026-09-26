@@ -3,10 +3,10 @@ import com.blitzfc.chilpa
 import "../Primitives"
 import "../Theme"
 
-// What a track row offers on a right click: play it, play it next or queue
-// it -- or the whole selection when it is part of one -- and go to its
-// record, its artist or its folder. Only what the row has somewhere to go is
-// listed.
+// What a track row offers on a right click: play it, play it next, queue it
+// or add it to a playlist -- or the whole selection when it is part of one --
+// and go to its record, its artist or its folder; on a playlist's page, take
+// it out. Only what the row has somewhere to go is listed.
 Menu {
     id: menu
 
@@ -24,13 +24,16 @@ Menu {
             { text: I18n.tr("Play", I18n.rev), act: "play" },
             { text: I18n.tr("Play next", I18n.rev), act: "next" },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
+            { text: I18n.tr("Remove from playlist", I18n.rev), act: "unlist" },
             { separator: true },
             { text: I18n.tr("Go to album", I18n.rev), act: "album" },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist" },
             { text: I18n.tr("Show in folder", I18n.rev), act: "folder" }
         ]
         const shown = all.filter(e => e.note ? many
-            : !e.act || e.act === "play" || e.act === "next" || e.act === "queue" || (!many && model.canGo(row, e.act)))
+            : e.act === "unlist" ? model.kind === "playlist" && !many
+            : !e.act || ["play", "next", "queue", "pick"].includes(e.act) || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
             shown.pop()
@@ -49,7 +52,38 @@ Menu {
             model.playNext(row)
         else if (act === "queue")
             model.queue(row)
+        else if (act === "pick")
+            picker.show(row, x, y)
+        else if (act === "unlist")
+            model.removeFromPlaylist(row)
         else
             model.go(row, act)
+    }
+
+    // Which playlist: a new one, or one of ours.
+    Menu {
+        id: picker
+
+        // Beside the track menu, not inside it: that one is closed by then.
+        parent: menu.parent
+        property int row: -1
+        property var ids: []
+
+        function show(at, left, top) {
+            row = at
+            ids = Playlists.ids(Playlists.rev)
+            const names = Playlists.names(Playlists.rev)
+            const lists = names.map(n => ({ text: n }))
+            entries = [{ text: I18n.tr("New playlist", I18n.rev) }].concat(lists.length > 0 ? [{ separator: true }] : [], lists)
+            x = left
+            y = top
+            open()
+        }
+
+        onChosen: (index) => {
+            // The first is a new one; after the separator, ours in order.
+            const id = index === 0 ? 0 : Number(ids[index - 2])
+            menu.model.addToPlaylist(row, id)
+        }
     }
 }
