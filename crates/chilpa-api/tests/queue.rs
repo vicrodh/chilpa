@@ -287,3 +287,41 @@ fn queued_rows_can_be_moved_without_moving_the_playing_track() {
     chilpa.stop();
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn the_upcoming_queue_and_its_groups_survive_a_session() {
+    let dir = folder("persist");
+    other_library(&dir);
+    let original: Vec<String> = ["01.wav", "02.wav", "03.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 441_000).display().to_string())
+        .collect();
+    let later: Vec<String> = ["l1.wav", "l2.wav"]
+        .iter()
+        .map(|name| wave(&dir, name, 4_410).display().to_string())
+        .collect();
+
+    {
+        let mut chilpa = chilpa_api::Chilpa::new();
+        chilpa.play_tracks(&original, OUTPUT, true);
+        chilpa.set_paused(true);
+        let key = chilpa.play_later(&later, "Saved album", OUTPUT, true).unwrap();
+        assert!(chilpa.collapse_queue_group(key, true));
+    }
+
+    {
+        let mut restored = chilpa_api::Chilpa::new();
+        assert!(restored.now_playing().playing && restored.now_playing().paused);
+        restored.poll();
+        assert!(restored.now_playing().paused, "polling does not turn a restored queue into a phantom playing one");
+        assert_eq!(queue_names(&restored), ["01.wav", "l1.wav", "l2.wav", "02.wav", "03.wav"]);
+        assert_eq!(restored.queue_groups()[0].label, "Saved album");
+        assert!(restored.queue_groups()[0].collapsed);
+        restored.set_paused(false);
+        assert!(restored.now_playing().playing && !restored.now_playing().paused, "resume starts the restored queue");
+        restored.clear_queue();
+    }
+    let empty = chilpa_api::Chilpa::new();
+    assert!(empty.queue_paths().is_empty(), "clearing also clears the saved session");
+    let _ = std::fs::remove_dir_all(dir);
+}

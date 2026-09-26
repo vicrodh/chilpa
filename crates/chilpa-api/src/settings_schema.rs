@@ -171,6 +171,12 @@ pub const SECTIONS: &[Section] = &[
                         Chilpa::mark("Every track at one loudness, by its ReplayGain. Not applied with bit-perfect on: it changes the samples."),
                         Control::Toggle,
                     ),
+                    setting(
+                        "playback.keepQueue",
+                        Chilpa::mark("Keep the queue between sessions"),
+                        Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."),
+                        Control::Toggle,
+                    ),
                 ],
             },
             Group {

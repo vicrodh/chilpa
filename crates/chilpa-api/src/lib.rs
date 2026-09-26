@@ -445,6 +445,9 @@ pub struct Chilpa {
     queue_placement: Vec<QueuePlacement>,
     queue_groups: Vec<QueueGroup>,
     next_queue_group: u64,
+    /// Position within the first restored track. A restored queue is shown
+    /// paused and only opens an output when the listener resumes it.
+    restored_at: Option<f64>,
     /// A position in the whole queue after which playback ends.
     stop_after: Option<usize>,
     /// A wall-clock deadline that asks the player to stop from `poll`.
@@ -516,7 +519,7 @@ impl Chilpa {
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
         chilpa_core::backends::warm_up();
-        Self {
+        let mut chilpa = Self {
             core: chilpa_core::Core::new(),
             library: None,
             in_progress: None,
@@ -532,6 +535,7 @@ impl Chilpa {
             queue_placement: Vec::new(),
             queue_groups: Vec::new(),
             next_queue_group: 1,
+            restored_at: None,
             stop_after: None,
             sleep_until: None,
             lyrics: None,
@@ -548,7 +552,9 @@ impl Chilpa {
             sample_rate: 0,
             relaunching: None,
             outputs_generation: String::new(),
-        }
+        };
+        chilpa.restore_queue_session();
+        chilpa
     }
 
     /// Whether the machine's outputs changed since this was last asked.
@@ -701,8 +707,7 @@ impl Chilpa {
         } else {
             drive.to_string()
         };
-        self.queue = vec![format!("cdda:{unit}")];
-        self.removed = vec![false];
+        self.replace_queue(vec![format!("cdda:{unit}")]);
         self.spawn(0, device, bit_perfect);
         true
     }
@@ -714,7 +719,7 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("that does not look like a stream address");
             return;
         }
-        self.queue = vec![url.clone()];
+        self.replace_queue(vec![url.clone()]);
         self.spawn(0, device, bit_perfect);
     }
 
@@ -845,8 +850,7 @@ impl Chilpa {
         // same path and inherits the tap, the repeat and the order.
         // A disc image goes in as its tracks, one entry each.
         let tracks = chilpa_core::sacd_tracks::expand(&[path.to_path_buf()]);
-        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
-        self.removed = vec![false; self.queue.len()];
+        self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         self.now.path = self.queue[0].clone();
     }
@@ -980,13 +984,26 @@ impl Chilpa {
         }
         // The folder goes into the queue too: otherwise saving it or going
         // back would have nothing to read from.
-        self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
+        self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
     }
 
     /// Pauses or resumes what is playing.
     pub fn set_paused(&mut self, paused: bool) {
+        if !paused && self.player.is_none() && !self.queue.is_empty() {
+            if let Some(seconds) = self.restored_at.take() {
+                let (device, bit_perfect) = self.chosen_output();
+                self.spawn_from(
+                    0,
+                    &device,
+                    bit_perfect,
+                    Some(std::time::Duration::from_secs_f64(seconds.max(0.0))),
+                    Relaunch::Track,
+                );
+                return;
+            }
+        }
         if let Some(p) = &self.player {
             p.set_paused(paused);
             self.now.paused = paused;
@@ -1046,7 +1063,9 @@ impl Chilpa {
         }
         self.advance_search();
         self.advance_connect();
-        self.now.paused = self.player.as_ref().is_some_and(|p| p.is_paused());
+        if let Some(player) = &self.player {
+            self.now.paused = player.is_paused();
+        }
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
             match event {
@@ -1287,6 +1306,12 @@ impl Chilpa {
                 Event::Failed { message: "the player is not behaving yet".into() }
             }
         }
+    }
+}
+
+impl Drop for Chilpa {
+    fn drop(&mut self) {
+        self.persist_queue_session();
     }
 }
 

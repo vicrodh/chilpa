@@ -439,7 +439,7 @@ impl Chilpa {
             return;
         }
         let (device, bit_perfect) = self.chosen_output();
-        self.queue = paths.to_vec();
+        self.replace_queue(paths.to_vec());
         self.spawn(start, &device, bit_perfect);
     }
 }

@@ -463,6 +463,9 @@ msgstr ""
 msgid "Its page, or its quick view under the row."
 msgstr ""
 
+msgid "Keep the queue between sessions"
+msgstr ""
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr ""
 
@@ -737,6 +740,9 @@ msgid "Remove from the library"
 msgstr ""
 
 msgid "Rename"
+msgstr ""
+
+msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr ""
 
 msgid "Repair"
