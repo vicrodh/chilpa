@@ -10,6 +10,7 @@ pub use plugins::PluginInfo;
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod browse;
+mod covers;
 mod library;
 mod quality;
 mod queue;
@@ -24,6 +25,7 @@ mod scrobble;
 pub use browse::{
     AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackOrder, TrackRow,
 };
+pub use covers::cover_derivative;
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
 pub use scrobble::ScrobbleStatus;

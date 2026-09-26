@@ -393,6 +393,10 @@ md
 nav
 qcolor
 qstring
+# std::ptr::copy_nonoverlapping, for the path handed to the covers provider.
+nonoverlapping
+# Red, green, blue: the image crate's pixel format names.
+rgb
 sm
 xs
 
