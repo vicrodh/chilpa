@@ -176,6 +176,25 @@ impl Reader {
         }
     }
 
+    /// Our own lists, newest first, for the sidebar. A source's lists are
+    /// the facade's to ask for: they need its plugins.
+    pub fn local_playlists(&self) -> Vec<crate::Playlist> {
+        self.lib
+            .playlists()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|p| p.provider == "local")
+            .map(|p| crate::Playlist {
+                id: p.id,
+                name: p.name,
+                provider: p.provider,
+                track_count: p.track_count,
+                source: String::new(),
+                external_id: String::new(),
+            })
+            .collect()
+    }
+
     /// Every album with something present, in that order.
     pub fn album_ids(&self, order: chilpa_library::AlbumSort) -> Vec<i64> {
         self.lib.album_ids(order).unwrap_or_default()
@@ -280,6 +299,23 @@ impl Chilpa {
             .map(|(path, row)| match row {
                 Some(t) => row_of(t),
                 None => file_row(&path),
+            })
+            .collect()
+    }
+
+    /// A list's tracks, in its order. What the library does not have gets a
+    /// row from its name, so a list survives a missing file.
+    pub fn playlist_rows(&mut self, playlist_id: i64) -> Vec<TrackRow> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        let entries = lib.playlist_entries(playlist_id).unwrap_or_default();
+        let ids: Vec<i64> = entries.iter().filter_map(|e| e.track_id).collect();
+        let known: std::collections::HashMap<i64, TrackRow> =
+            lib.tracks_by_ids(&ids).unwrap_or_default().into_iter().map(|t| (t.id, row_of(t))).collect();
+        entries
+            .into_iter()
+            .map(|e| match e.track_id.and_then(|id| known.get(&id)) {
+                Some(row) => row.clone(),
+                None => file_row(&e.external_id),
             })
             .collect()
     }

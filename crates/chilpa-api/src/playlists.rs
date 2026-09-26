@@ -212,6 +212,75 @@ impl Chilpa {
         self.play_tracks(&paths, device, bit_perfect)
     }
 
+    /// Makes an empty list under that name. Returns its id.
+    pub fn create_playlist(&mut self, name: &str) -> Option<i64> {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            self.now.error = chilpa_i18n::t("a list needs a name");
+            return None;
+        }
+        let lib = self.library()?;
+        let source = lib.source_id("local", "default").ok()?;
+        lib.create_playlist(source, &name, "").ok()
+    }
+
+    /// Adds files to the end of a list, leaving out what it already
+    /// carries. Returns how many went in.
+    pub fn add_to_playlist(&mut self, playlist_id: i64, paths: &[String]) -> usize {
+        let Some(lib) = self.library() else { return 0 };
+        let Ok(source) = lib.source_id("local", "default") else { return 0 };
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths
+            .iter()
+            .map(|r| chilpa_library::PlaylistEntry {
+                track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(),
+                external_id: r.clone(),
+            })
+            .collect();
+        lib.append_to_playlist(playlist_id, &entries).unwrap_or(0)
+    }
+
+    /// Takes the track at that position out of a list.
+    pub fn remove_from_playlist(&mut self, playlist_id: i64, position: usize) -> bool {
+        self.library().is_some_and(|lib| lib.remove_from_playlist(playlist_id, position).unwrap_or(false))
+    }
+
+    /// Our own lists, newest first, without asking any source for theirs.
+    pub fn local_playlists(&mut self) -> Vec<Playlist> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.playlists()
+            .unwrap_or_default()
+            .into_iter()
+            .filter(|p| p.provider == "local")
+            .map(|p| Playlist {
+                id: p.id,
+                name: p.name,
+                provider: p.provider,
+                track_count: p.track_count,
+                source: String::new(),
+                external_id: String::new(),
+            })
+            .collect()
+    }
+
+    /// One of our lists, by its id. From the library alone: asking the
+    /// sources for theirs to find one of ours would be a network round.
+    pub fn playlist(&mut self, playlist_id: i64) -> Option<Playlist> {
+        let p = self.library()?.playlists().ok()?.into_iter().find(|p| p.id == playlist_id)?;
+        Some(Playlist {
+            id: p.id,
+            name: p.name,
+            provider: p.provider,
+            track_count: p.track_count,
+            source: String::new(),
+            external_id: String::new(),
+        })
+    }
+
+    /// The covers of a list's first records, up to four: its mosaic.
+    pub fn playlist_covers(&mut self, playlist_id: i64) -> Vec<String> {
+        self.library().map(|lib| lib.playlist_covers(playlist_id, 4).unwrap_or_default()).unwrap_or_default()
+    }
+
     /// Deletes a list. The tracks are not touched.
     pub fn delete_playlist(&mut self, playlist_id: i64) {
         if let Some(lib) = self.library() {
