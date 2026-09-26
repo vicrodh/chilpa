@@ -338,21 +338,14 @@ impl qobject::SettingsPage {
                 // A stack is chosen through its first output: an output is what
                 // gets remembered, and it already names its stack.
                 app::with(|api| {
-                    let (_, bit_perfect) = api.chosen_output();
                     if let Some(first) = api.stack_outputs(&value).into_iter().next() {
-                        api.use_output(&first.id, bit_perfect);
+                        api.use_output_as_chosen(&first.id);
                     }
                 });
             }
-            "audio.device" => app::with(|api| {
-                let (_, bit_perfect) = api.chosen_output();
-                api.use_output(&value, bit_perfect);
-            }),
+            "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
             "audio.bitperfect" => {
-                app::with(|api| {
-                    let (output, _) = api.chosen_output();
-                    api.use_output(&output, value == "true");
-                });
+                app::with(|api| api.set_bit_perfect(value == "true"));
                 // The player bar's options show it too.
                 registry::player(|p| p.read_switches());
             }

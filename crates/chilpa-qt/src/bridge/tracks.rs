@@ -374,18 +374,12 @@ fn with_discs(rows: Vec<TrackRow>) -> Vec<Entry> {
 
 /// Adds files to the end of the queue, on the output in use.
 fn enqueue(paths: &[String]) {
-    app::with(|api| {
-        let (device, bit_perfect) = api.chosen_output();
-        api.enqueue(paths, &device, bit_perfect);
-    });
+    app::with(|api| api.enqueue_here(paths));
 }
 
 /// Puts files right after what is playing, on the output in use.
 fn next(paths: &[String]) {
-    app::with(|api| {
-        let (device, bit_perfect) = api.chosen_output();
-        api.play_next(paths, &device, bit_perfect);
-    });
+    app::with(|api| api.play_next_here(paths));
 }
 
 fn summary(tracks: usize, ms: u64) -> String {
@@ -440,22 +434,14 @@ impl qobject::TrackListModel {
         match &self.rust().rows {
             Rows::Loaded(_) => {
                 let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
-                app::with(|api| {
-                    let (device, bit_perfect) = api.chosen_output();
-                    api.enqueue(&paths, &device, bit_perfect);
-                });
+                enqueue(&paths);
             }
             Rows::Snapshot { ids, .. } => {
                 let ids = ids.ids.clone();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
                     let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| {
-                        app::with(|api| {
-                            let (device, bit_perfect) = api.chosen_output();
-                            api.enqueue(&paths, &device, bit_perfect);
-                        })
-                    });
+                    let _ = thread.queue(move |_| enqueue(&paths));
                 });
             }
         }
