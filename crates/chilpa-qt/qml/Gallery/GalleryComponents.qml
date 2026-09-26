@@ -95,6 +95,7 @@ GallerySection {
         FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
+        SeekBar { width: Metrics.searchFlyout; position: Metrics.searchFlyout / 4; duration: Metrics.searchFlyout; bubbleText: "1:10" } // derived: a quarter of the way
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Not with bit-perfect on."; available: false }
         PlaylistMenu {}
