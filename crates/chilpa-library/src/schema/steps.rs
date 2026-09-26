@@ -1035,3 +1035,15 @@ DROP INDEX albums_identity;
 CREATE UNIQUE INDEX albums_identity
     ON albums(title, album_artist, ifnull(mbid, ''), folder);
 "#;
+
+/// From 17 to 18: records can be favorites.
+///
+/// A table of its own and not a column on `albums`: a favorite is the
+/// listener's mark, not a fact about the record, and it goes away with the
+/// record it marks. Tracks and artists can have tables like it later.
+pub(super) const MIGRATION_V18: &str = r#"
+CREATE TABLE album_favorites (
+    album_id INTEGER PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+    added_at INTEGER NOT NULL
+);
+"#;

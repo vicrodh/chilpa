@@ -336,6 +336,23 @@ impl Chilpa {
             .collect()
     }
 
+    /// The records marked as favorites.
+    pub fn favorite_albums(&mut self) -> std::collections::HashSet<i64> {
+        self.library().and_then(|lib| lib.favorite_albums().ok()).unwrap_or_default()
+    }
+
+    pub fn set_album_favorite(&mut self, album_id: i64, on: bool) {
+        if let Some(lib) = self.library() {
+            let _ = lib.set_album_favorite(album_id, on);
+        }
+    }
+
+    /// Every file of those records, one record after another, each in disc
+    /// order.
+    pub fn album_paths(&mut self, ids: &[i64]) -> Vec<String> {
+        ids.iter().flat_map(|id| self.album_track_rows(*id)).map(|t| t.path).collect()
+    }
+
     /// The records by others an artist plays on: the compilations.
     pub fn artist_appearances(&mut self, name: &str) -> Vec<Album> {
         let Some(lib) = self.library() else { return Vec::new() };
