@@ -7,9 +7,10 @@
 //!
 //! Nothing here keeps state or retries. What to do with a failure -- keep
 //! the listen for later, stop until the token is replaced, drop it -- is the
-//! scrobbler's decision, and `Failure` says which one applies.
+//! queue's decision, and `Failure` says which one applies.
 
-use serde::{Deserialize, Serialize};
+use super::queue::Service;
+use super::{Failure, Kind, Listen};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
 
@@ -17,67 +18,30 @@ const API: &str = "https://api.listenbrainz.org/1";
 
 /// Listens sent in one import. ListenBrainz takes up to a thousand; a
 /// hundred keeps a request small enough that a slow link still finishes it.
-pub(crate) const BATCH: usize = 100;
+const BATCH: usize = 100;
 
 /// How long to wait before trying again when the other side does not say.
 const LATER_SECONDS: u64 = 60;
 
-/// A track that was listened to, or is playing.
-#[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Listen {
-    pub artist: String,
-    pub track: String,
-    #[serde(default)]
-    pub release: String,
-    #[serde(default)]
-    pub duration_ms: u64,
-    #[serde(default)]
-    pub track_number: Option<u16>,
-    #[serde(default)]
-    pub recording_mbid: String,
-    #[serde(default)]
-    pub isrc: String,
-    /// When it started, in unix seconds: the moment a listen is filed under.
-    #[serde(default)]
-    pub listened_at: i64,
-}
+/// ListenBrainz as the scrobbler drives it: a pasted token is the account.
+pub(super) const SERVICE: Service =
+    Service { label: "ListenBrainz", batch: BATCH, begin: None, check, submit };
 
-/// Why a request did not go through.
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Failure {
-    /// The token is not valid (401). Nothing goes until it is replaced.
-    Token,
-    /// Try again in that many seconds: no network, the server failing, or
-    /// its rate limit.
-    Later(u64),
-    /// ListenBrainz refused what was sent (400). Sending it again changes
-    /// nothing.
-    Refused(String),
-}
-
-/// What kind of submission a request is.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Kind {
-    /// What is playing now: shown on the profile, never counted.
-    PlayingNow,
-    /// One listen, as it happens.
-    Single,
-    /// Several listens kept while they could not be sent.
-    Import,
-}
-
-impl Kind {
-    fn name(self) -> &'static str {
-        match self {
-            Kind::PlayingNow => "playing_now",
-            Kind::Single => "single",
-            Kind::Import => "import",
-        }
+fn kind_name(kind: Kind) -> &'static str {
+    match kind {
+        Kind::PlayingNow => "playing_now",
+        Kind::Single => "single",
+        Kind::Import => "import",
     }
 }
 
+/// A pasted token: its user, and the token itself to send with.
+fn check(token: &str) -> Result<(String, String), Failure> {
+    validate(token).map(|user| (user, token.to_string()))
+}
+
 /// Checks a token. Answers with the user name it belongs to.
-pub(crate) fn validate(token: &str) -> Result<String, Failure> {
+fn validate(token: &str) -> Result<String, Failure> {
     let (status, _, body) = request("GET", &format!("{API}/validate-token"), token, "")?;
     let reply: Value = serde_json::from_str(&body).unwrap_or_default();
     let valid = reply.get("valid").and_then(Value::as_bool).unwrap_or(false);
@@ -90,7 +54,7 @@ pub(crate) fn validate(token: &str) -> Result<String, Failure> {
 
 /// Sends listens: one for `PlayingNow` and `Single`, up to `BATCH` for an
 /// `Import`.
-pub(crate) fn submit(token: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> {
+fn submit(token: &str, kind: Kind, listens: &[Listen]) -> Result<(), Failure> {
     let body = payload(kind, listens).to_string();
     let (status, headers, reply) = request("POST", &format!("{API}/submit-listens"), token, &body)?;
     if status == 200 {
@@ -138,7 +102,7 @@ fn payload(kind: Kind, listens: &[Listen]) -> Value {
             Value::Object(item)
         })
         .collect();
-    json!({ "listen_type": kind.name(), "payload": items })
+    json!({ "listen_type": kind_name(kind), "payload": items })
 }
 
 /// What a status that is not 200 means.
