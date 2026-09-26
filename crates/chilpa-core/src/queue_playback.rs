@@ -380,11 +380,23 @@ struct TrackFrames<'a> {
     /// Frames the device has taken of this track, as the renderer reports
     /// them.
     delivered: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    /// Where to go back to after a long pause let the device go, in frames
+    /// of the track: what was heard.
+    rewind_to: Option<u64>,
 }
 
 impl FrameSource for TrackFrames<'_> {
     fn moved(&mut self) -> bool {
         std::mem::take(&mut self.moved)
+    }
+
+    /// What was heard is the renderer's last count plus where the last seek
+    /// landed; going back there is a seek like any other.
+    fn rewind(&mut self) -> bool {
+        let heard = self.delivered.load(std::sync::atomic::Ordering::Relaxed) as i64
+            + self.base.load(std::sync::atomic::Ordering::Relaxed);
+        self.rewind_to = Some(heard.max(0) as u64);
+        true
     }
 
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
@@ -398,8 +410,11 @@ impl FrameSource for TrackFrames<'_> {
                 self.finish_trim();
                 return Ok(None);
             }
-            if let Some(target) = self.seek.take() {
-                let frame = chilpa_audio::seek::frames_at(target, self.opened.sample_rate_hz);
+            let asked = self
+                .rewind_to
+                .take()
+                .or_else(|| self.seek.take().map(|t| chilpa_audio::seek::frames_at(t, self.opened.sample_rate_hz)));
+            if let Some(frame) = asked {
                 match self.decoded.seek_to_frame(frame) {
                     Ok(plan) => {
                         self.discard = plan.discard;
@@ -611,6 +626,7 @@ where
                     moved: false,
                     base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+                    rewind_to: None,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);

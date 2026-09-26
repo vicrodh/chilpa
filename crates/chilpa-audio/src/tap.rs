@@ -181,6 +181,14 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
     fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
         self.inner.set_paused(paused)
     }
+
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        self.inner.suspend()
+    }
+
+    fn wake(&mut self) -> Result<(), SinkError> {
+        self.inner.wake()
+    }
 }
 
 /// A packed sample, taken to -1.0..1.0.

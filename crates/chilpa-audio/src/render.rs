@@ -25,7 +25,21 @@ pub trait FrameSource {
     fn moved(&mut self) -> bool {
         false
     }
+
+    /// Goes back to what was heard -- the frames reported to `on_progress`
+    /// last -- so the next block starts there. It is asked for when a long
+    /// pause lets the device go and what it held is lost: without it, the
+    /// music resumes a moment further on than where it stopped. By default
+    /// it cannot, and that moment is skipped.
+    fn rewind(&mut self) -> bool {
+        false
+    }
 }
+
+/// How long a pause keeps the device before letting it go. A quick pause
+/// and resume does not reopen it; a pause somebody walks away from does not
+/// keep a DAC from everything else.
+pub const RELEASE_AFTER: std::time::Duration = std::time::Duration::from_secs(2);
 
 /// How a track ended.
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -123,6 +137,11 @@ where
     let mut full_since: Option<std::time::Instant> = None;
     // Frames handed over and then thrown away at a seek: never heard.
     let mut thrown_away: u64 = 0;
+    // Since when it is paused, and whether the device was let go. Across
+    // blocks: letting it go goes back to what was heard, and the next block
+    // is read while still paused.
+    let mut paused_since: Option<std::time::Instant> = None;
+    let mut released = false;
 
     while !stop.is_stopped() {
         let block = match source.next_block() {
@@ -150,12 +169,36 @@ where
                     warned = true;
                 }
                 full_since = None;
+                let since = *paused_since.get_or_insert_with(std::time::Instant::now);
+                if !released && since.elapsed() >= RELEASE_AFTER {
+                    // What was heard is where the music resumes: say it,
+                    // go back to it, and let what the device held go with
+                    // the device.
+                    let held = sink.held();
+                    on_progress(frames.saturating_sub(thrown_away + held));
+                    thrown_away += held;
+                    if source.rewind() {
+                        offset = block.len();
+                    }
+                    let _ = sink.suspend();
+                    released = true;
+                }
                 std::thread::sleep(std::time::Duration::from_millis(20));
                 continue;
+            }
+            paused_since = None;
+            if released {
+                released = false;
+                if let Err(error) = sink.wake() {
+                    return Outcome::Failed { frames, error };
+                }
             }
             if warned {
                 let _ = sink.set_paused(false);
                 warned = false;
+            }
+            if offset >= block.len() {
+                break;
             }
             match sink.write(&block[offset..]) {
                 // Full: nothing was taken, and the rest of the block is
@@ -221,6 +264,139 @@ mod tests {
             assert!(ready.load(Ordering::Acquire), "it did not write before the pause was lifted");
             assert_eq!(out, Outcome::Finished { frames: 8 });
         });
+    }
+
+    /// A source whose frames carry their own number, that can go back to a
+    /// frame; and a device that holds the last `hold` frames written, lets
+    /// go and takes back, and remembers what it was sent.
+    struct Numbered {
+        next: u16,
+        end: u16,
+        heard: std::sync::Arc<std::sync::atomic::AtomicU64>,
+    }
+
+    impl FrameSource for Numbered {
+        fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+            if self.next >= self.end {
+                return Ok(None);
+            }
+            let to = (self.next + 10).min(self.end);
+            let block = (self.next..to).flat_map(|n| [n.to_le_bytes(), [0, 0]].concat()).collect();
+            self.next = to;
+            Ok(Some(block))
+        }
+
+        fn rewind(&mut self) -> bool {
+            self.next = self.heard.load(std::sync::atomic::Ordering::Relaxed) as u16;
+            true
+        }
+    }
+
+    struct Letting {
+        hold: u64,
+        sent: Vec<u16>,
+        suspended: bool,
+        suspends: u32,
+        wakes: u32,
+        wake_fails: bool,
+        pause_after_first: Option<PauseSignal>,
+    }
+
+    impl AudioSink for Letting {
+        fn format(&self) -> StreamFormat {
+            StreamFormat::new(SampleFormat::S16, 44_100, 2)
+        }
+
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            assert!(!self.suspended, "written to a device that was let go");
+            self.sent.extend(frames.chunks(4).map(|f| u16::from_le_bytes([f[0], f[1]])));
+            if let Some(pause) = self.pause_after_first.take() {
+                pause.set(true);
+            }
+            Ok(frames.len() / 4)
+        }
+
+        fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+
+        fn held(&self) -> u64 {
+            if self.suspended { 0 } else { self.hold.min(self.sent.len() as u64) }
+        }
+
+        fn suspend(&mut self) -> Result<(), SinkError> {
+            self.suspended = true;
+            self.suspends += 1;
+            Ok(())
+        }
+
+        fn wake(&mut self) -> Result<(), SinkError> {
+            self.wakes += 1;
+            if self.wake_fails {
+                return Err(SinkError::DeviceLost);
+            }
+            self.suspended = false;
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn a_long_pause_lets_the_device_go_and_resumes_from_what_was_heard() {
+        let pause = PauseSignal::new();
+        let heard = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let mut source = Numbered { next: 0, end: 30, heard: std::sync::Arc::clone(&heard) };
+        let mut sink = Letting {
+            hold: 4,
+            sent: Vec::new(),
+            suspended: false,
+            suspends: 0,
+            wakes: 0,
+            wake_fails: false,
+            pause_after_first: Some(pause.clone()),
+        };
+        let out = std::thread::scope(|s| {
+            let resume = pause.clone();
+            s.spawn(move || {
+                std::thread::sleep(RELEASE_AFTER + Duration::from_millis(300));
+                resume.set(false);
+            });
+            render_paused(&mut source, &mut sink, &StopSignal::new(), &pause, &mut |f| {
+                heard.store(f, std::sync::atomic::Ordering::Relaxed)
+            })
+        });
+        assert_eq!((sink.suspends, sink.wakes), (1, 1), "let go once, taken back once");
+        // Ten went out and the device held four when it was let go: six were
+        // heard, and the music goes on from frame 6, not from 10.
+        assert_eq!(&sink.sent[..10], (0..10).collect::<Vec<_>>().as_slice());
+        assert_eq!(&sink.sent[10..], (6..30).collect::<Vec<_>>().as_slice());
+        assert_eq!(out, Outcome::Finished { frames: 34 });
+    }
+
+    #[test]
+    fn a_device_that_cannot_be_had_back_fails_the_track() {
+        let pause = PauseSignal::new();
+        let heard = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0));
+        let mut source = Numbered { next: 0, end: 30, heard: std::sync::Arc::clone(&heard) };
+        let mut sink = Letting {
+            hold: 4,
+            sent: Vec::new(),
+            suspended: false,
+            suspends: 0,
+            wakes: 0,
+            wake_fails: true,
+            pause_after_first: Some(pause.clone()),
+        };
+        let out = std::thread::scope(|s| {
+            let resume = pause.clone();
+            s.spawn(move || {
+                std::thread::sleep(RELEASE_AFTER + Duration::from_millis(300));
+                resume.set(false);
+            });
+            render_paused(&mut source, &mut sink, &StopSignal::new(), &pause, &mut |f| {
+                heard.store(f, std::sync::atomic::Ordering::Relaxed)
+            })
+        });
+        assert!(matches!(out, Outcome::Failed { error: SinkError::DeviceLost, .. }), "{out:?}");
     }
 
     #[test]
