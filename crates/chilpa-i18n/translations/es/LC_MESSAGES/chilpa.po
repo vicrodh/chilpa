@@ -181,6 +181,9 @@ msgstr "Bit-perfect"
 msgid "Bit-perfect already asks for it."
 msgstr "Bit-perfect ya lo pide."
 
+msgid "Bit-perfect does not scale the samples. Turn on hardware volume in Settings › Advanced to move the device's own."
+msgstr "Bit-perfect no escala las muestras. Enciende el volumen de hardware en Ajustes › Avanzado para mover el del aparato."
+
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
 
@@ -373,6 +376,9 @@ msgstr "Ir al disco"
 msgid "Go to artist"
 msgstr "Ir al artista"
 
+msgid "Hardware volume"
+msgstr "Volumen de hardware"
+
 msgid "Hide the columns"
 msgstr "Ocultar las columnas"
 
@@ -477,6 +483,9 @@ msgstr "Bajar"
 
 msgid "Move up"
 msgstr "Subir"
+
+msgid "Mute"
+msgstr "Silenciar"
 
 msgid "My library"
 msgstr "Mi biblioteca"
@@ -793,6 +802,9 @@ msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
 msgstr "La salida toca solo Chilpa, también con bit-perfect apagado. Los demás programas esperan a que la suelte."
 
+msgid "The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."
+msgstr "La barra de reproducción mueve el volumen propio de la salida en lugar de escalar las muestras, así que también funciona con bit-perfect. Necesita una salida con volumen propio."
+
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
 
@@ -813,6 +825,9 @@ msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les 
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
+
+msgid "This output has no volume of its own, and bit-perfect does not scale the samples."
+msgstr "Esta salida no tiene volumen propio, y bit-perfect no escala las muestras."
 
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
@@ -847,11 +862,17 @@ msgstr "Pista {}"
 msgid "Tracks"
 msgstr "Pistas"
 
+msgid "Unmute"
+msgstr "Quitar silencio"
+
 msgid "Up next"
 msgstr "A continuación"
 
 msgid "Updates"
 msgstr "Actualizaciones"
+
+msgid "Volume {}%"
+msgstr "Volumen {}%"
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"

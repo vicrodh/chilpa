@@ -65,6 +65,7 @@ impl Chilpa {
         self.mix = false;
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize() && !bit_perfect, self.exclusive());
+        let volume = self.software_gain();
         let tap = self.tap.clone();
         let player = self
             .player
@@ -73,6 +74,7 @@ impl Chilpa {
         player.set_gapless(gapless);
         player.set_normalize(normalize);
         player.set_exclusive(exclusive);
+        player.set_volume(volume);
         if shuffle {
             player.shuffle(tracks.len());
         } else {
@@ -364,6 +366,7 @@ impl Chilpa {
             p.set_gapless(self.gapless());
             p.set_normalize(self.normalize() && !bit_perfect);
         }
+        self.apply_volume();
     }
 
     /// Whether AutoMix has anything to order by: tracks whose tempo the

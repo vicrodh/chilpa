@@ -256,6 +256,16 @@ impl Player {
         self.controls.normalize.set(on);
     }
 
+    /// What the samples are multiplied by, heard as soon as what the device
+    /// holds plays out. Ignored under the bit-perfect policy and for DSD.
+    pub fn set_volume(&self, factor: f32) {
+        self.controls.volume.set(factor);
+    }
+
+    pub fn volume(&self) -> f32 {
+        self.controls.volume.get()
+    }
+
     /// Whether the output is asked for alone with bit-perfect off too, from
     /// the next time it opens.
     pub fn set_exclusive(&self, on: bool) {

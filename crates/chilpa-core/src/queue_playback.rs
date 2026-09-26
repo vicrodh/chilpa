@@ -318,6 +318,28 @@ pub struct Controls {
     /// The output asked for alone even with bit-perfect off: nothing else
     /// mixed in, while Chilpa may still convert. Read when the output opens.
     pub exclusive: Switch,
+    /// What the samples are multiplied by, from the player bar's volume:
+    /// read on every block, so a change is heard as soon as what the device
+    /// holds plays out. Never under the bit-perfect policy.
+    pub volume: Level,
+}
+
+/// A factor shared with whoever drives the queue, read every block.
+#[derive(Clone, Debug)]
+pub struct Level(std::sync::Arc<std::sync::atomic::AtomicU32>);
+
+impl Level {
+    pub fn new(factor: f32) -> Self {
+        Self(std::sync::Arc::new(std::sync::atomic::AtomicU32::new(factor.to_bits())))
+    }
+
+    pub fn set(&self, factor: f32) {
+        self.0.store(factor.to_bits(), std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn get(&self) -> f32 {
+        f32::from_bits(self.0.load(std::sync::atomic::Ordering::Relaxed))
+    }
 }
 
 /// An on/off shared with whoever drives the queue, read each track.
@@ -363,6 +385,7 @@ impl Default for Controls {
             gapless: Switch::new(true),
             normalize: Switch::new(false),
             exclusive: Switch::new(false),
+            volume: Level::new(1.0),
         }
     }
 }
@@ -441,6 +464,8 @@ struct TrackFrames<'a> {
     rewind_to: Option<u64>,
     /// What every sample is multiplied by: 1.0 unless normalizing.
     gain: f32,
+    /// The player bar's volume, when it may touch the samples at all.
+    volume: Option<Level>,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -503,8 +528,9 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
-                    if self.gain != 1.0 {
-                        scale_int(&mut frames, bits, self.gain);
+                    let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
+                    if gain != 1.0 {
+                        scale_int(&mut frames, bits, gain);
                     }
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
@@ -523,8 +549,9 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
-                    if self.gain != 1.0 {
-                        frames.iter_mut().for_each(|v| *v *= self.gain);
+                    let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
+                    if gain != 1.0 {
+                        frames.iter_mut().for_each(|v| *v *= gain);
                     }
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
@@ -627,7 +654,7 @@ where
     K: AudioSink,
 {
     // `exclusive` was read when the output was chosen, before the queue.
-    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize, exclusive: _ } = controls;
+    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize, exclusive: _, volume } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());
@@ -693,7 +720,12 @@ where
             }
             _ => 1.0,
         };
-        if gain != 1.0 {
+        // The volume, the same way and under the same promise.
+        let volume = match &source {
+            Source::Pcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
+            _ => None,
+        };
+        if gain != 1.0 || volume.as_ref().is_some_and(|v| v.get() != 1.0) {
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
         on_track(index, path, &delivery);
@@ -722,6 +754,7 @@ where
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                     rewind_to: None,
                     gain,
+                    volume,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);

@@ -320,7 +320,20 @@ pub const SECTIONS: &[Section] = &[
     },
     Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[] },
     Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[] },
-    Section { id: "advanced", label: Chilpa::mark("Advanced"), icon: "settings", groups: &[] },
+    Section {
+        id: "advanced",
+        label: Chilpa::mark("Advanced"),
+        icon: "settings",
+        groups: &[Group {
+            title: Chilpa::mark("Playback"),
+            settings: &[setting(
+                "advanced.hwVolume",
+                Chilpa::mark("Hardware volume"),
+                Chilpa::mark("The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."),
+                Control::Toggle,
+            )],
+        }],
+    },
 ];
 
 pub fn section(id: &str) -> &'static Section {

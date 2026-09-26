@@ -250,6 +250,7 @@ impl SettingsPageRust {
                     row.description = format!("{} {}", row.description, app::t("Only with bit-perfect or exclusive mode on."));
                 }
             }
+            "advanced.hwVolume" => row.value = app::with(|api| api.hardware_volume()).to_string(),
             "audio.reserve" => {
                 let (card, on) = app::with(|api| (!api.alsa_plugin().is_empty(), api.reserving()));
                 row.value = on.to_string();
@@ -402,12 +403,12 @@ impl qobject::SettingsPage {
             "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(&value)),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
-            "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
-            "audio.bitperfect" => {
-                app::with(|api| api.set_bit_perfect(value == "true"));
-                // The player bar's options show it too.
+            "advanced.hwVolume" => {
+                app::with(|api| api.set_hardware_volume(value == "true"));
                 registry::player(|p| p.read_switches());
             }
+            "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
+            "audio.bitperfect" => app::with(|api| api.set_bit_perfect(value == "true")),
             "appearance.theme" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::theme(move |theme| theme.choose_mode(QString::from(&value)));
@@ -448,6 +449,10 @@ impl qobject::SettingsPage {
                 return;
             }
             _ => return,
+        }
+        // Another output or policy can have a volume of its own or not.
+        if key.starts_with("audio.") {
+            registry::player(|p| p.read_switches());
         }
         self.reload();
     }
