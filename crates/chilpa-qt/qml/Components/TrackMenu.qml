@@ -57,7 +57,7 @@ Menu {
         else if (act === "queue")
             model.queue(row)
         else if (act === "pick")
-            picker.show(row, x, y)
+            picker.show(x, y)
         else if (act === "unlist")
             model.removeFromPlaylist(row)
         else if (act === "up" || act === "down")
@@ -66,30 +66,11 @@ Menu {
             model.go(row, act)
     }
 
-    // Which playlist: a new one, or one of ours.
-    Menu {
+    PlaylistPicker {
         id: picker
 
         // Beside the track menu, not inside it: that one is closed by then.
         parent: menu.parent
-        property int row: -1
-        property var ids: []
-
-        function show(at, left, top) {
-            row = at
-            ids = Playlists.ids(Playlists.rev)
-            const names = Playlists.names(Playlists.rev)
-            const lists = names.map(n => ({ text: n }))
-            entries = [{ text: I18n.tr("New playlist", I18n.rev) }].concat(lists.length > 0 ? [{ separator: true }] : [], lists)
-            x = left
-            y = top
-            open()
-        }
-
-        onChosen: (index) => {
-            // The first is a new one; after the separator, ours in order.
-            const id = index === 0 ? 0 : Number(ids[index - 2])
-            menu.model.addToPlaylist(row, id)
-        }
+        onPicked: (playlist) => menu.model.addToPlaylist(menu.row, playlist)
     }
 }
