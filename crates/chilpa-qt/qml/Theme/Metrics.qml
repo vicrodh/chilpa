@@ -195,6 +195,8 @@ QtObject {
     readonly property int searchArt: 36
     readonly property int searchBest: 68
     readonly property int searchAvatar: 52
+    // The filter field of a screen that searches itself (design/04 11).
+    readonly property int screenSearch: 200
 
     // The right panel (design/02 5).
     readonly property int rightPanel: 300

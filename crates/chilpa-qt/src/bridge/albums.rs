@@ -52,6 +52,8 @@ pub mod qobject {
         /// Bound to `Library.contentRev`: the library changed. A grid of
         /// kind "library" binds it to `Library.rev`: the filter moved.
         #[qproperty(i32, content_rev)]
+        /// For "artists": only the names that hold every word of it.
+        #[qproperty(QString, filter)]
         type AlbumGridModel = super::AlbumGridRust;
 
         #[qinvokable]
@@ -178,6 +180,9 @@ pub struct AlbumGridRust {
     albums: i32,
     rev: i32,
     content_rev: i32,
+    filter: QString,
+    /// Every artist, for "artists", kept so the filter needs no query.
+    artists: Vec<chilpa_api::Artist>,
     list: Albums,
     rows: usize,
     pending: bool,
@@ -313,12 +318,26 @@ impl qobject::AlbumGridModel {
         self.show(Albums::Loaded(list));
     }
 
-    fn arrive_artists(self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::Artist>) {
+    fn arrive_artists(mut self: Pin<&mut Self>, generation: u64, artists: Vec<chilpa_api::Artist>) {
         if generation != self.rust().generation {
             return;
         }
-        let cards = artists
-            .into_iter()
+        self.as_mut().rust_mut().artists = artists;
+        self.show_artists();
+    }
+
+    /// The artists the filter leaves, as cards.
+    fn show_artists(self: Pin<&mut Self>) {
+        let words: Vec<String> = self.rust().filter.to_string().to_lowercase().split_whitespace().map(String::from).collect();
+        let cards = self
+            .rust()
+            .artists
+            .iter()
+            .filter(|a| {
+                let name = a.name.to_lowercase();
+                words.iter().all(|w| name.contains(w.as_str()))
+            })
+            .cloned()
             .map(|a| {
                 let n = a.album_count.to_string();
                 Album {
@@ -368,6 +387,13 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         self.as_mut().on_order_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
+        self.as_mut()
+            .on_filter_changed(|m| {
+                if m.kind().to_string() == "artists" {
+                    m.show_artists();
+                }
+            })
+            .release();
         self.as_mut().on_columns_changed(|m| m.split_rows()).release();
         self.as_mut().on_max_rows_changed(|m| m.split_rows()).release();
     }
