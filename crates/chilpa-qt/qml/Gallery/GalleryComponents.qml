@@ -89,7 +89,8 @@ GallerySection {
         FolderHead { width: section.width; folder: top }
         FolderCrumbs { width: section.width; path: "/music/Mora Vale/Low Orbit" }
         FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; count: 11; art: "" }
-        PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 next" }
+        PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
+        QueueFooter { width: Metrics.rightPanel }
         QueueRow { width: Metrics.rightPanel; index: 0; title: "Faded Lines"; artist: "Mora Vale"; duration: "4:04"; playing: true; art: "" }
         QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false; art: "" }
         SettingsPage { id: audio; section: "appearance" }

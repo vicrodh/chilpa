@@ -211,10 +211,10 @@ msgstr ""
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
-msgid "Clear filters"
+msgid "Clear"
 msgstr ""
 
-msgid "Clear the queue"
+msgid "Clear filters"
 msgstr ""
 
 msgid "Clear the selection"
@@ -526,6 +526,9 @@ msgstr ""
 msgid "Nothing queued."
 msgstr ""
 
+msgid "Now playing"
+msgstr ""
+
 msgid "On the sidebar's destinations."
 msgstr ""
 
@@ -592,6 +595,9 @@ msgstr ""
 msgid "Play next"
 msgstr ""
 
+msgid "Play now"
+msgstr ""
+
 msgid "Play the CD"
 msgstr ""
 
@@ -625,6 +631,9 @@ msgstr ""
 msgid "Queue"
 msgstr ""
 
+msgid "Queue · {}"
+msgstr ""
+
 msgid "Quick view"
 msgstr ""
 
@@ -655,10 +664,10 @@ msgstr ""
 msgid "Remove from playlist"
 msgstr ""
 
-msgid "Remove from the library"
+msgid "Remove from queue"
 msgstr ""
 
-msgid "Remove from the queue"
+msgid "Remove from the library"
 msgstr ""
 
 msgid "Rename"
@@ -701,6 +710,9 @@ msgid "SACDTRL2 is missing"
 msgstr ""
 
 msgid "Samples reach the device untouched. Off, normalization can be used."
+msgstr ""
+
+msgid "Save as playlist"
 msgstr ""
 
 msgid "Scan again"
@@ -833,6 +845,9 @@ msgid "Track {}"
 msgstr ""
 
 msgid "Tracks"
+msgstr ""
+
+msgid "Up next"
 msgstr ""
 
 msgid "Updates"
@@ -1576,11 +1591,6 @@ msgstr ""
 
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
-msgstr[0] ""
-msgstr[1] ""
-
-msgid "{} next"
-msgid_plural "{} next"
 msgstr[0] ""
 msgstr[1] ""
 

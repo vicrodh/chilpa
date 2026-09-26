@@ -19,7 +19,18 @@ Menu {
         // Several selected: the menu is for all of them, and has nowhere
         // one of them goes to (design/04 9).
         const many = model.selectedCount > 1
-        const all = [
+        // A queued track (design/04 9, "Ítem de queue"): stop-after and
+        // clear-after wait for the player to have them.
+        const queued = [
+            { text: I18n.tr("Play now", I18n.rev), act: "play" },
+            { text: I18n.tr("Remove from queue", I18n.rev), act: "dequeue" },
+            { separator: true },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
+            { separator: true },
+            { text: I18n.tr("Go to album", I18n.rev), act: "album" },
+            { text: I18n.tr("Go to artist", I18n.rev), act: "artist" }
+        ]
+        const all = model.kind === "queue" ? queued : [
             { text: I18n.trCount("{} track", "{} tracks", model.selectedCount, I18n.rev), note: true },
             { text: I18n.tr("Play", I18n.rev), act: "play" },
             { text: I18n.tr("Play next", I18n.rev), act: "next" },
@@ -37,7 +48,7 @@ Menu {
             : e.act === "unlist" ? model.kind === "playlist" && !many
             : e.act === "up" ? model.kind === "playlist" && !many && row > 0
             : e.act === "down" ? model.kind === "playlist" && !many && row < model.count - 1
-            : !e.act || ["play", "next", "queue", "pick"].includes(e.act) || (!many && model.canGo(row, e.act)))
+            : !e.act || ["play", "next", "queue", "pick", "dequeue"].includes(e.act) || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
             shown.pop()
@@ -58,6 +69,8 @@ Menu {
             model.queue(row)
         else if (act === "pick")
             picker.show(x, y)
+        else if (act === "dequeue")
+            Player.removeQueued(row)
         else if (act === "unlist")
             model.removeFromPlaylist(row)
         else if (act === "up" || act === "down")
