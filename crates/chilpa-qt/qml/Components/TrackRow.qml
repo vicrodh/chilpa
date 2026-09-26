@@ -23,10 +23,10 @@ Item {
     required property bool selected
     required property string headerLabel
     required property string headerMeta
+    required property url art
 
     property TrackColumns cols
     property bool hovered: false
-    property url art
 
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich

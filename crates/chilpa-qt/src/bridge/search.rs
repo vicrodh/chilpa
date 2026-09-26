@@ -165,6 +165,7 @@ impl qobject::SearchModel {
             (2, Hit::Track(t)) => text(&format!("{} — {}", t.artist, t.album)),
             (3, Hit::Top(a) | Hit::Artist(a)) => art(&a.artwork_path),
             (3, Hit::Album(a)) => art(&a.artwork_path),
+            (3, Hit::Track(t)) => art(&t.artwork_path),
             (4, Hit::Track(t)) => text(&format::clock(t.duration_ms)),
             // A role a row does not have is still of its type: QML binds it
             // to a string or a url, and an empty variant reads "undefined".
