@@ -88,7 +88,7 @@ GallerySection {
         FolderModel { id: top; path: "" }
         FolderHead { width: section.width; folder: top }
         FolderCrumbs { width: section.width; path: "/music/Mora Vale/Low Orbit" }
-        FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; count: 11; art: "" }
+        FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueFooter { width: Metrics.rightPanel }
         VolumeControl {}

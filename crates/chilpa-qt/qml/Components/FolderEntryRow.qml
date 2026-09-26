@@ -11,6 +11,7 @@ Item {
 
     required property int index
     required property string name
+    required property string path
     required property int count
     required property url art
 
