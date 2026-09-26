@@ -297,10 +297,17 @@ impl Chilpa {
             .collect()
     }
 
-    /// An artist's tracks, in that order, as many as asked for.
+    /// The records by others an artist plays on: the compilations.
+    pub fn artist_appearances(&mut self, name: &str) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.albums_appearing(name).unwrap_or_default().into_iter().map(album_of).collect()
+    }
+
+    /// An artist's tracks, in that order, as many as asked for: on their own
+    /// records and on the compilations they are on.
     pub fn artist_tracks(&mut self, name: &str, order: TrackOrder, limit: usize) -> Vec<TrackRow> {
         let Some(lib) = self.library() else { return Vec::new() };
-        let f = Filter { artist: Some(name.to_string()), ..Filter::default() };
+        let f = Filter { performer: Some(name.to_string()), ..Filter::default() };
         lib.browse_tracks(&f, order, limit).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
