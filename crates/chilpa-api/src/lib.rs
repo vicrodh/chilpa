@@ -19,7 +19,6 @@ mod approvals;
 mod plugins;
 mod search;
 mod folders;
-mod listenbrainz;
 mod scrobble;
 
 pub use browse::{
@@ -27,7 +26,7 @@ pub use browse::{
 };
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
-pub use scrobble::ListenBrainzStatus;
+pub use scrobble::ScrobbleStatus;
 
 use chilpa_models::{AudioQuality, SourceId, TrackRef};
 use std::path::PathBuf;
@@ -258,7 +257,7 @@ struct InProgress {
     played_frames: u64,
     /// What ListenBrainz is sent once enough of it has been heard; none for
     /// what the file's tags cannot name.
-    listen: Option<listenbrainz::Listen>,
+    listen: Option<scrobble::Listen>,
     /// It was already sent: a seek back past the mark does not send it twice.
     scrobbled: bool,
 }
