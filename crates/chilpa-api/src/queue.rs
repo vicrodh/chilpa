@@ -119,6 +119,8 @@ impl Chilpa {
         }
         self.set_stop_after(None);
         self.queue = tracks.iter().map(|p| p.display().to_string()).collect();
+        self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
+        self.queue_groups.clear();
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
     }
@@ -165,6 +167,8 @@ impl Chilpa {
         self.sleep_until = None;
         self.queue.clear();
         self.removed.clear();
+        self.queue_placement.clear();
+        self.queue_groups.clear();
         self.base = 0;
         self.now.queue_len = 0;
     }
@@ -219,6 +223,7 @@ impl Chilpa {
             return self.play_tracks(paths, device, bit_perfect);
         }
         self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
+        self.queue_placement.resize(self.queue.len(), QueuePlacement::Original);
         self.removed.resize(self.queue.len(), false);
         if let Some(p) = &self.player {
             p.enqueue(&tracks);
@@ -261,6 +266,7 @@ impl Chilpa {
         };
         let before = p.queue_len();
         self.queue.extend(tracks.iter().map(|t| t.display().to_string()));
+        self.queue_placement.resize(self.queue.len(), QueuePlacement::Next);
         self.removed.resize(self.queue.len(), false);
         p.enqueue(&tracks);
         let len = before + tracks.len();
@@ -271,10 +277,113 @@ impl Chilpa {
         // The player counts from where it started; the view, from the start
         // of the queue.
         let current = self.now.index.saturating_sub(self.base);
-        let at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
+        let mut at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
+        while at < order.len()
+            && self.queue_placement.get(self.base + order[at]) == Some(&QueuePlacement::Next)
+        {
+            at += 1;
+        }
         order.splice(at..at, before..len);
         p.set_order(order, len);
         self.now.queue_len = self.queue.len();
+    }
+
+    /// Adds a named batch after everything explicitly queued next, without
+    /// interrupting the track that is playing. Later groups keep the order
+    /// in which they were added.
+    pub fn play_later(&mut self, paths: &[String], label: &str, device: &str, bit_perfect: bool) -> Option<u64> {
+        let tracks: Vec<std::path::PathBuf> = paths.iter().map(std::path::PathBuf::from).collect();
+        let tracks = chilpa_core::sacd_tracks::expand(&tracks);
+        if tracks.is_empty() {
+            return None;
+        }
+        let playing = self.now.playing && self.player.is_some();
+        let Some(player) = self.player.as_ref().filter(|_| playing) else {
+            if self.play_tracks(paths, device, bit_perfect).is_empty() {
+                return None;
+            }
+            self.queue_placement.fill(QueuePlacement::Later);
+            let key = self.next_queue_group;
+            self.next_queue_group = self.next_queue_group.wrapping_add(1).max(1);
+            self.queue_groups.push(QueueGroup {
+                key,
+                label: label.to_string(),
+                tracks: (0..self.queue.len()).collect(),
+                collapsed: false,
+            });
+            return Some(key);
+        };
+
+        let first = self.queue.len();
+        let before = player.queue_len();
+        self.queue.extend(tracks.iter().map(|track| track.display().to_string()));
+        self.queue_placement.resize(self.queue.len(), QueuePlacement::Later);
+        self.removed.resize(self.queue.len(), false);
+        player.enqueue(&tracks);
+
+        let len = before + tracks.len();
+        let mut order = player.order();
+        if order.len() != before {
+            order = (0..before).collect();
+        }
+        let current = self.now.index.saturating_sub(self.base);
+        let mut at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
+        while at < order.len()
+            && matches!(
+                self.queue_placement.get(self.base + order[at]),
+                Some(QueuePlacement::Next | QueuePlacement::Later)
+            )
+        {
+            at += 1;
+        }
+        order.splice(at..at, before..len);
+        player.set_order(order, len);
+
+        let key = self.next_queue_group;
+        self.next_queue_group = self.next_queue_group.wrapping_add(1).max(1);
+        self.queue_groups.push(QueueGroup {
+            key,
+            label: label.to_string(),
+            tracks: (first..self.queue.len()).collect(),
+            collapsed: false,
+        });
+        self.now.queue_len = self.queue.len();
+        Some(key)
+    }
+
+    pub fn play_later_here(&mut self, paths: &[String], label: &str) -> Option<u64> {
+        let (device, bit_perfect) = self.chosen_output();
+        self.play_later(paths, label, &device, bit_perfect)
+    }
+
+    pub fn queue_groups(&self) -> &[QueueGroup] {
+        &self.queue_groups
+    }
+
+    pub fn queue_group_at(&self, index: usize) -> Option<&QueueGroup> {
+        self.queue_groups.iter().find(|group| group.tracks.contains(&index))
+    }
+
+    /// Folding is presentation state only; it never changes traversal.
+    pub fn collapse_queue_group(&mut self, key: u64, collapsed: bool) -> bool {
+        let Some(group) = self.queue_groups.iter_mut().find(|group| group.key == key) else { return false };
+        group.collapsed = collapsed;
+        true
+    }
+
+    pub fn remove_queue_group(&mut self, key: u64) -> bool {
+        let Some(at) = self.queue_groups.iter().position(|group| group.key == key) else { return false };
+        let tracks = self.queue_groups[at].tracks.clone();
+        if tracks.iter().any(|&track| {
+            track <= self.now.index || self.removed.get(track).copied().unwrap_or(true)
+        }) {
+            return false;
+        }
+        if !tracks.into_iter().all(|track| self.remove_from_queue(track)) {
+            return false;
+        }
+        self.queue_groups.remove(at);
+        true
     }
 
     /// The queue from the playing track on, as positions of the whole queue,
