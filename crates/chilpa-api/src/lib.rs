@@ -1094,6 +1094,7 @@ impl Chilpa {
                     index,
                     queue_len,
                     dsd_multiple,
+                    dsd_passthrough,
                 } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
@@ -1171,11 +1172,11 @@ impl Chilpa {
                     };
                     // The channels are the music's: a mono track that goes
                     // out in both channels of a stereo DAC is still mono.
-                    self.now.format = match dsd_multiple {
+                    self.now.format = match (dsd_multiple, dsd_passthrough) {
                         // On DSD what matters is the DSD rate; the DoP
                         // carrier is stated separately, because it is the
                         // format the device was opened with.
-                        Some(multiple) => chilpa_i18n::t_args(
+                        (Some(multiple), true) => chilpa_i18n::t_args(
                             "DSD{} · DoP at {} Hz · {}",
                             &[
                                 &multiple.to_string(),
@@ -1183,7 +1184,15 @@ impl Chilpa {
                                 &channels(music_channels),
                             ],
                         ),
-                        None => match bits {
+                        (Some(multiple), false) => chilpa_i18n::t_args(
+                            "DSD{} · PCM at {} Hz · {}",
+                            &[
+                                &multiple.to_string(),
+                                &opened.sample_rate_hz.to_string(),
+                                &channels(music_channels),
+                            ],
+                        ),
+                        (None, _) => match bits {
                             Some(bits) => format!(
                                 "{} Hz · {} bits · {}",
                                 opened.sample_rate_hz,

@@ -94,7 +94,9 @@ fn a_dsd_album_plays_past_its_first_track() {
     while !over && Instant::now() < limit {
         for event in player.poll() {
             match event {
-                PlayerEvent::Started { index, dsd_multiple, .. } => started.push((index, dsd_multiple)),
+                PlayerEvent::Started { index, dsd_multiple, dsd_passthrough, .. } => {
+                    started.push((index, dsd_multiple, dsd_passthrough))
+                }
                 PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. } => over = true,
                 _ => {}
             }
@@ -103,7 +105,7 @@ fn a_dsd_album_plays_past_its_first_track() {
     }
     assert_eq!(
         started,
-        vec![(0, Some(64)), (1, Some(64)), (2, Some(64))],
+        vec![(0, Some(64), true), (1, Some(64), true), (2, Some(64), true)],
         "every track of the album started, in order, as DSD64"
     );
     assert_eq!(*opens.lock().unwrap(), 1, "three tracks at one carrier rate share one opening");
@@ -195,6 +197,42 @@ fn a_shared_route_converts_dsd_to_pcm() {
     assert!(delivery.transforms.contains(&Transform::DsdToPcm));
     assert!(!delivery.nothing_was_converted());
     assert_eq!(results[0].frames(), 8_820, "a tenth of a second of PCM");
+    let _ = std::fs::remove_file(track);
+}
+
+#[test]
+fn a_shared_player_announces_pcm_instead_of_dop() {
+    let track = dsf_of("shared-announcement", u64::from(RATE) / 10);
+    let player = Player::spawn(
+        Box::new(|_| {
+            Ok(DeviceCaps {
+                sample_rates: vec![88_200],
+                formats: vec![SampleFormat::S24In32],
+                channels: vec![2],
+                probed: true,
+            })
+        }),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    );
+    player.play(&track, "default");
+    let limit = Instant::now() + Duration::from_secs(5);
+    let mut started = None;
+    while started.is_none() && Instant::now() < limit {
+        started = player
+            .poll()
+            .into_iter()
+            .find(|event| matches!(event, PlayerEvent::Started { .. } | PlayerEvent::Failed { .. }));
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    match started {
+        Some(PlayerEvent::Started { opened, dsd_multiple, dsd_passthrough, bit_perfect, .. }) => {
+            assert_eq!(opened.sample_rate_hz, 88_200);
+            assert_eq!(dsd_multiple, Some(64));
+            assert!(!dsd_passthrough, "the shared route carries converted PCM");
+            assert!(!bit_perfect, "DSD-to-PCM is a conversion");
+        }
+        other => panic!("shared DSD did not start as PCM: {other:?}"),
+    }
     let _ = std::fs::remove_file(track);
 }
 

@@ -40,6 +40,8 @@ pub enum PlayerEvent {
         queue_len: usize,
         /// For DSD: the multiple that names it (64, 128...). `None` on PCM.
         dsd_multiple: Option<u32>,
+        /// True only when that DSD is leaving as DoP, not converted PCM.
+        dsd_passthrough: bool,
     },
     /// Where the track is, in frames, and how many frames of it have gone
     /// out: after a seek the two differ, and the second is what was heard.
@@ -403,6 +405,9 @@ fn play(
                     index,
                     queue_len: total,
                     dsd_multiple: Some(64),
+                    dsd_passthrough: !delivery
+                        .transforms
+                        .contains(&chilpa_audio::negotiate::Transform::DsdToPcm),
                 });
                 return;
             }
@@ -434,6 +439,8 @@ fn play(
                 index: index,
                 queue_len: total,
                 dsd_multiple: dsd.as_ref().map(|info| info.multiple()),
+                dsd_passthrough: dsd.is_some()
+                    && !delivery.transforms.contains(&chilpa_audio::negotiate::Transform::DsdToPcm),
             });
         },
         &mut |_, progress| {
@@ -512,6 +519,7 @@ fn play_stream(
                 index: 0,
                 queue_len: 1,
                 dsd_multiple: None,
+                dsd_passthrough: false,
             });
         },
         &mut |frames| {
@@ -597,6 +605,7 @@ fn play_cd(
                 index,
                 queue_len: total,
                 dsd_multiple: None,
+                dsd_passthrough: false,
             });
         },
         &mut |_, progress| {
