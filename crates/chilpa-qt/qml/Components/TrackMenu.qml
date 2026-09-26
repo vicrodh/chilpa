@@ -15,7 +15,11 @@ Menu {
 
     function show(at, left, top) {
         row = at
+        // Several selected: the menu is for all of them, and has nowhere
+        // one of them goes to (design/04 9).
+        const many = model.selectedCount > 1
         const all = [
+            { text: I18n.trCount("{} track", "{} tracks", model.selectedCount, I18n.rev), note: true },
             { text: I18n.tr("Play", I18n.rev), act: "play" },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
             { separator: true },
@@ -23,7 +27,8 @@ Menu {
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist" },
             { text: I18n.tr("Show in folder", I18n.rev), act: "folder" }
         ]
-        const shown = all.filter(e => !e.act || e.act === "play" || e.act === "queue" || model.canGo(row, e.act))
+        const shown = all.filter(e => e.note ? many
+            : !e.act || e.act === "play" || e.act === "queue" || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
             shown.pop()
@@ -37,7 +42,7 @@ Menu {
     onChosen: (index) => {
         const act = actions[index].act
         if (act === "play")
-            model.play(row)
+            model.playChosen(row)
         else if (act === "queue")
             model.queue(row)
         else

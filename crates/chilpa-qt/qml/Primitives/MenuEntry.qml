@@ -2,7 +2,7 @@ import QtQuick
 import "../Theme"
 
 // One line of a Menu: a check, the text with its detail below, a mark and
-// a hint on the right; or a separator.
+// a hint on the right; a separator; or a note, a heading nothing happens on.
 Item {
     id: line
 
@@ -11,6 +11,7 @@ Item {
     signal clicked()
 
     readonly property bool separator: entry.separator === true
+    readonly property bool note: entry.note === true
 
     implicitWidth: row.implicitWidth + Metrics.gap10 * 2 // derived: padding on both sides
     implicitHeight: separator ? Metrics.gap8 + 1 : entry.detail ? Metrics.menuItemTall : Metrics.menuItem
@@ -28,7 +29,7 @@ Item {
         visible: !line.separator
         anchors.fill: parent
         radius: Metrics.radiusItem
-        color: hover.hovered ? Theme.color.stateHover : "transparent"
+        color: hover.hovered && !line.note ? Theme.color.stateHover : "transparent"
     }
 
     Row {
@@ -46,7 +47,12 @@ Item {
         }
         Column {
             anchors.verticalCenter: parent.verticalCenter
-            Text { text: line.entry.text || ""; font.pointSize: Type.body; color: Theme.color.textPrimary }
+            Text {
+                text: line.entry.text || ""
+                font.pointSize: line.note ? Type.small : Type.body
+                font.weight: line.note ? Type.semibold : Type.regular
+                color: line.note ? Theme.color.textTertiary : Theme.color.textPrimary
+            }
             Text {
                 visible: !!line.entry.detail
                 text: line.entry.detail || ""
@@ -73,5 +79,5 @@ Item {
     }
 
     HoverHandler { id: hover; enabled: !line.separator }
-    TapHandler { enabled: !line.separator; onTapped: line.clicked() }
+    TapHandler { enabled: !line.separator && !line.note; onTapped: line.clicked() }
 }
