@@ -169,6 +169,18 @@ impl Library {
         Ok(true)
     }
 
+    /// Moves the track at `from` to `to`; what is between shifts by one.
+    pub fn move_in_playlist(&self, playlist_id: i64, from: usize, to: usize) -> rusqlite::Result<bool> {
+        let mut all = self.playlist_entries(playlist_id)?;
+        if from >= all.len() || to >= all.len() || from == to {
+            return Ok(false);
+        }
+        let entry = all.remove(from);
+        all.insert(to, entry);
+        self.set_playlist_entries(playlist_id, &all)?;
+        Ok(true)
+    }
+
     /// The covers of the first records a playlist holds, one per record, up
     /// to `n`: what its mosaic shows.
     pub fn playlist_covers(&self, playlist_id: i64, n: usize) -> rusqlite::Result<Vec<String>> {
@@ -243,6 +255,20 @@ mod tests {
         assert!(lib.remove_from_playlist(id, 0).unwrap());
         assert_eq!(lib.playlist_entries(id).unwrap(), [b]);
         assert!(!lib.remove_from_playlist(id, 5).unwrap(), "nothing there");
+    }
+
+    #[test]
+    fn a_track_moves_and_the_rest_make_room() {
+        let lib = sample_library();
+        let source = lib.source_id("local", "default").unwrap();
+        let id = lib.create_playlist(source, "Mix", "").unwrap();
+        let entries: Vec<PlaylistEntry> =
+            ["/a.flac", "/b.flac", "/c.flac"].iter().map(|p| PlaylistEntry { track_id: None, external_id: p.to_string() }).collect();
+        lib.set_playlist_entries(id, &entries).unwrap();
+        assert!(lib.move_in_playlist(id, 2, 0).unwrap());
+        let order: Vec<String> = lib.playlist_entries(id).unwrap().into_iter().map(|e| e.external_id).collect();
+        assert_eq!(order, ["/c.flac", "/a.flac", "/b.flac"]);
+        assert!(!lib.move_in_playlist(id, 0, 3).unwrap(), "past the end");
     }
 
     #[test]
