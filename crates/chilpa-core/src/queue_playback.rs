@@ -301,7 +301,7 @@ fn is_permutation(order: &[usize], len: usize) -> bool {
 /// They travel together because they are always used together, and because
 /// all of them are checked between blocks or between tracks: none of them
 /// blocks waiting on the device.
-#[derive(Clone, Default)]
+#[derive(Clone)]
 pub struct Controls {
     pub stop: StopSignal,
     pub pause: PauseSignal,
@@ -309,6 +309,58 @@ pub struct Controls {
     pub skip: SkipSignal,
     pub repeat: RepeatMode,
     pub order: Order,
+    /// One track straight into the next, with the device kept open. Off,
+    /// the device plays out and is opened again between tracks.
+    pub gapless: Switch,
+    /// Tracks brought to one loudness by their ReplayGain. It changes the
+    /// samples, and a track it touches is not delivered bit-perfect.
+    pub normalize: Switch,
+}
+
+/// An on/off shared with whoever drives the queue, read each track.
+#[derive(Clone, Debug)]
+pub struct Switch(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+impl Switch {
+    pub fn new(on: bool) -> Self {
+        Self(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(on)))
+    }
+
+    pub fn set(&self, on: bool) {
+        self.0.store(on, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn get(&self) -> bool {
+        self.0.load(std::sync::atomic::Ordering::Relaxed)
+    }
+}
+
+/// What a track's ReplayGain asks for, as a factor: its gain in dB, never
+/// more than 6 dB up, and never so much that its known peak goes past
+/// -1 dBFS. Unity when the file does not say.
+pub fn normalization_gain(gain_db: Option<f32>, peak: Option<f32>) -> f32 {
+    let Some(db) = gain_db else { return 1.0 };
+    let mut factor = 10f32.powf(db.min(6.0) / 20.0);
+    if let Some(peak) = peak.filter(|p| *p > 0.0) {
+        // -1 dBFS.
+        factor = factor.min(0.891_25 / peak);
+    }
+    factor
+}
+
+impl Default for Controls {
+    fn default() -> Self {
+        Self {
+            stop: StopSignal::default(),
+            pause: PauseSignal::default(),
+            seek: SeekSignal::default(),
+            skip: SkipSignal::default(),
+            repeat: RepeatMode::default(),
+            order: Order::default(),
+            gapless: Switch::new(true),
+            normalize: Switch::new(false),
+        }
+    }
 }
 
 impl Controls {
@@ -383,6 +435,8 @@ struct TrackFrames<'a> {
     /// Where to go back to after a long pause let the device go, in frames
     /// of the track: what was heard.
     rewind_to: Option<u64>,
+    /// What every sample is multiplied by: 1.0 unless normalizing.
+    gain: f32,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -441,9 +495,12 @@ impl FrameSource for TrackFrames<'_> {
                     if data.is_empty() {
                         continue;
                     }
-                    let frames = self.trimmer.push(&data);
+                    let mut frames = self.trimmer.push(&data);
                     if frames.is_empty() {
                         continue;
+                    }
+                    if self.gain != 1.0 {
+                        scale_int(&mut frames, bits, self.gain);
                     }
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
@@ -458,9 +515,12 @@ impl FrameSource for TrackFrames<'_> {
                     if data.is_empty() {
                         continue;
                     }
-                    let frames = self.float_trimmer.push(&data);
+                    let mut frames = self.float_trimmer.push(&data);
                     if frames.is_empty() {
                         continue;
+                    }
+                    if self.gain != 1.0 {
+                        frames.iter_mut().for_each(|v| *v *= self.gain);
                     }
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
@@ -480,6 +540,16 @@ impl FrameSource for TrackFrames<'_> {
                 return Ok(Some(clipped));
             }
         }
+    }
+}
+
+/// Integer samples of `bits` multiplied by `gain`, rounded and kept within
+/// what `bits` can hold.
+fn scale_int(samples: &mut [i32], bits: u8, gain: f32) {
+    let top = (1i64 << (bits.clamp(2, 32) - 1)) - 1;
+    let gain = f64::from(gain);
+    for v in samples.iter_mut() {
+        *v = ((f64::from(*v) * gain).round() as i64).clamp(-top - 1, top) as i32;
     }
 }
 
@@ -552,7 +622,7 @@ where
     F: FnMut(StreamFormat) -> Result<K, SinkError>,
     K: AudioSink,
 {
-    let Controls { stop, pause, seek, skip, repeat, order } = controls;
+    let Controls { stop, pause, seek, skip, repeat, order, gapless, normalize } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
     let mut index = order.first(queue.len());
@@ -580,13 +650,16 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
-        let (mut source, delivery) = open_track(path, caps, policy)?;
+        let (mut source, mut delivery) = open_track(path, caps, policy)?;
 
         let transition = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
             None => Transition::Seamless,
         };
-        if !transition.is_seamless() || opened.is_none() {
+        // Without gapless, one track does not run into the next: the device
+        // plays out what it holds and is opened again.
+        let keep_open = transition.is_seamless() && gapless.get();
+        if !keep_open || opened.is_none() {
             if let Some((_, mut old)) = opened.take() {
                 if ended_by_itself {
                     old.drain(&give_up).map_err(PlayError::Sink)?;
@@ -598,10 +671,26 @@ where
             packer = DopPacker::new();
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
-        if skipped_before && transition.is_seamless() {
+        if skipped_before && keep_open {
             sink.flush().map_err(PlayError::Sink)?;
         }
 
+        // Normalizing is asked for per track, from what its tags say; a gain
+        // that changes anything is said in the delivery, so the verdict is
+        // not bit-perfect for that track.
+        let gain = match &source {
+            // Never under the bit-perfect policy, whatever the switch says:
+            // that policy is the promise that no sample is changed.
+            Source::Pcm(_) if normalize.get() && policy != Policy::BitPerfect => {
+                let tags = chilpa_tags::read(path).map(|i| i.tags).unwrap_or_default();
+                let (gain_db, peak) = tags.replaygain();
+                normalization_gain(gain_db, peak)
+            }
+            _ => 1.0,
+        };
+        if gain != 1.0 {
+            delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
+        }
         on_track(index, path, &delivery);
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
@@ -627,6 +716,7 @@ where
                     base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                     rewind_to: None,
+                    gain,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
@@ -779,5 +869,29 @@ mod tests {
         assert!(o.set(vec![1, 0], 2));
         o.clear();
         assert_eq!(o.first(2), 0);
+    }
+}
+
+#[cfg(test)]
+mod gain_tests {
+    use super::*;
+
+    #[test]
+    fn replaygain_is_followed_but_never_past_six_db_up_or_the_peak() {
+        assert_eq!(normalization_gain(None, None), 1.0, "nothing said, nothing changed");
+        assert!((normalization_gain(Some(-6.0), None) - 0.501).abs() < 0.001);
+        assert!((normalization_gain(Some(12.0), None) - 1.995).abs() < 0.001, "+6 dB at most");
+        // +6 dB on a track that already peaks at 0.8 would clip: -1 dBFS.
+        assert!((normalization_gain(Some(6.0), Some(0.8)) - 0.891_25 / 0.8).abs() < 0.001);
+    }
+
+    #[test]
+    fn scaled_samples_stay_within_their_bits() {
+        let mut s = vec![16_000, -16_000, 32_767, -32_768];
+        scale_int(&mut s, 16, 2.0);
+        assert_eq!(s, [32_000, -32_000, 32_767, -32_768], "clamped, not wrapped");
+        let mut s = vec![1_000];
+        scale_int(&mut s, 16, 0.5);
+        assert_eq!(s, [500]);
     }
 }

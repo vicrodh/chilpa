@@ -229,6 +229,17 @@ impl Player {
         self.controls.repeat.set(repeat);
     }
 
+    /// Gapless on or off, from the next track on.
+    pub fn set_gapless(&self, on: bool) {
+        self.controls.gapless.set(on);
+    }
+
+    /// Normalizing by ReplayGain on or off, from the next track on. Under
+    /// the bit-perfect policy it is never applied, whatever this says.
+    pub fn set_normalize(&self, on: bool) {
+        self.controls.normalize.set(on);
+    }
+
     pub fn repeat(&self) -> crate::queue_playback::Repeat {
         self.controls.repeat.get()
     }
