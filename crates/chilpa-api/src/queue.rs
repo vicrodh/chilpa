@@ -86,7 +86,9 @@ impl Chilpa {
         } else {
             NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() }
         };
-        player.play_all_from(&tracks, device, bit_perfect, start_at);
+        // Moved while paused, it stays paused where it went.
+        let paused = why == Relaunch::Output && self.now.paused;
+        player.play_all_from_paused(&tracks, device, bit_perfect, start_at, paused);
     }
 
     /// Moves what is playing to another output, keeping its place.

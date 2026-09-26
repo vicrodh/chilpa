@@ -70,6 +70,9 @@ enum Order {
         /// play it belongs to, because the thread arms it after the previous
         /// one has already returned.
         start_at: Option<std::time::Duration>,
+        /// Whether it starts paused: the same track moved to another output
+        /// while paused stays paused there.
+        paused: bool,
     },
     Stop,
     Quit,
@@ -123,11 +126,13 @@ impl Player {
                     match order {
                         Order::Quit => break,
                         Order::Stop => {}
-                        Order::Play { paths, device, bit_perfect, start_at } => {
+                        Order::Play { paths, device, bit_perfect, start_at, paused } => {
                             // Every track starts with the flag clear: an old
-                            // stop order does not kill the next one.
+                            // stop order does not kill the next one. Paused
+                            // only when it was asked to: a pause set before
+                            // the order arrived belonged to the play before.
                             stop_thread.reset();
-                            pause_thread.set(false);
+                            pause_thread.set(paused);
                             skip_thread.take();
                             // Whatever seek was left pending belonged to the
                             // play that just ended, and serving it to the new
@@ -195,11 +200,25 @@ impl Player {
         bit_perfect: bool,
         start_at: Option<std::time::Duration>,
     ) {
+        self.play_all_from_paused(paths, device, bit_perfect, start_at, false);
+    }
+
+    /// The same, starting paused when `paused` says so: moving a paused
+    /// track to another output must not start it.
+    pub fn play_all_from_paused(
+        &self,
+        paths: &[PathBuf],
+        device: &str,
+        bit_perfect: bool,
+        start_at: Option<std::time::Duration>,
+        paused: bool,
+    ) {
         let _ = self.orders.send(Order::Play {
             paths: paths.to_vec(),
             device: device.to_string(),
             bit_perfect,
             start_at,
+            paused,
         });
     }
 
@@ -706,6 +725,34 @@ mod tests {
         assert!(events.iter().any(|e| matches!(e, PlayerEvent::Progress { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 5_000 })));
         assert_eq!(written.load(Ordering::Relaxed), 5_000);
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn a_track_moved_while_paused_stays_paused_there() {
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
+        let file = wav("moved-paused", 5_000);
+        p.set_paused(true);
+        p.play_all_from_paused(&[file.clone()], "fake", true, None, true);
+        std::thread::sleep(Duration::from_millis(300));
+        assert!(p.is_paused(), "the pause went with the track");
+        assert_eq!(written.load(Ordering::Relaxed), 0, "nothing played while paused");
+        p.set_paused(false);
+        wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        assert_eq!(written.load(Ordering::Relaxed), 5_000);
+        let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn a_new_play_does_not_inherit_an_old_pause() {
+        let written = Arc::new(AtomicU64::new(0));
+        let p = player(Arc::clone(&written));
+        let file = wav("fresh-play", 2_000);
+        p.set_paused(true);
+        p.play(&file, "fake", true);
+        let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
+        assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 2_000 })));
         let _ = std::fs::remove_file(file);
     }
 
