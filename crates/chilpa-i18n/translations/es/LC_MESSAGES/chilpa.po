@@ -112,6 +112,9 @@ msgstr "Toda la música"
 msgid "Appearance"
 msgstr "Apariencia"
 
+msgid "Appears on"
+msgstr "Aparece en"
+
 msgid "Artist"
 msgstr "Artista"
 
