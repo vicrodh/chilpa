@@ -277,6 +277,9 @@ msgstr "Expandir barra lateral"
 msgid "File"
 msgstr "Archivo"
 
+msgid "Filter albums"
+msgstr "Filtrar discos"
+
 msgid "Filter artists"
 msgstr "Filtrar artistas"
 

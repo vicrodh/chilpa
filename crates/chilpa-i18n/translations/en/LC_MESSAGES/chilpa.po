@@ -277,6 +277,9 @@ msgstr ""
 msgid "File"
 msgstr ""
 
+msgid "Filter albums"
+msgstr ""
+
 msgid "Filter artists"
 msgstr ""
 

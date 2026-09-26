@@ -36,6 +36,9 @@ pub mod qobject {
         /// How the tracks are ordered: "artist", "album", "year", "added",
         /// "title", "plays" or "duration".
         #[qproperty(QString, order, READ = order, WRITE = choose_order, NOTIFY = order_changed)]
+        /// How the Albums screen orders its records, remembered: "artist",
+        /// "title", "year", "added", "played" or "last_played".
+        #[qproperty(QString, album_order)]
         type Library = super::LibraryRust;
 
         #[cxx_name = "order"]
@@ -78,6 +81,7 @@ pub struct LibraryRust {
     artist: QString,
     album: QString,
     order: QString,
+    album_order: QString,
     generation: u64,
 }
 
@@ -221,6 +225,14 @@ impl cxx_qt::Initialize for qobject::Library {
         let name = app::with(|api| api.preference(ORDER_KEY)).unwrap_or_else(|| "artist".to_string());
         browse::write(|s| s.order = order_of(&name));
         self.as_mut().rust_mut().order = QString::from(&name);
+        let albums = app::with(|api| api.album_sort().name().to_string());
+        self.as_mut().rust_mut().album_order = QString::from(&albums);
+        self.as_mut()
+            .on_album_order_changed(|m| {
+                let order = chilpa_api::AlbumSort::from_name(&m.album_order().to_string());
+                app::with(|api| api.set_album_sort(order));
+            })
+            .release();
         self.refresh();
     }
 }

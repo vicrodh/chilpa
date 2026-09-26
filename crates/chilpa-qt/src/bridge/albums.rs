@@ -53,7 +53,8 @@ pub mod qobject {
         /// Bound to `Library.contentRev`: the library changed. A grid of
         /// kind "library" binds it to `Library.rev`: the filter moved.
         #[qproperty(i32, content_rev)]
-        /// For "artists": only the names that hold every word of it.
+        /// For "artists" and "all": only what holds every word of it -- the
+        /// name, or the record's title or artist.
         #[qproperty(QString, filter)]
         type AlbumGridModel = super::AlbumGridRust;
 
@@ -284,9 +285,10 @@ impl qobject::AlbumGridModel {
                 let generation = self.rust().generation + 1;
                 self.as_mut().rust_mut().generation = generation;
                 let order = AlbumSort::from_name(&self.rust().order.to_string());
+                let text = self.rust().filter.to_string();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let ids = reader.album_ids(order);
+                    let ids = reader.album_ids_matching(order, &text);
                     let _ = thread.queue(move |model| model.arrive(generation, ids));
                 });
                 return;
@@ -393,10 +395,10 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut()
-            .on_filter_changed(|m| {
-                if m.kind().to_string() == "artists" {
-                    m.show_artists();
-                }
+            .on_filter_changed(|m| match m.kind().to_string().as_str() {
+                "artists" => m.show_artists(),
+                "all" => m.schedule(),
+                _ => {}
             })
             .release();
         self.as_mut().on_columns_changed(|m| m.split_rows()).release();

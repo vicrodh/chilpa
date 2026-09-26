@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Components"
 
 // Albums (design/06): every record in the library, in one grid. The grid
@@ -12,7 +13,8 @@ Item {
     AlbumGridModel {
         id: all
         kind: "all"
-        order: "artist"
+        order: Library.albumOrder
+        filter: find.text
         contentRev: Library.contentRev
         columns: grid.columns
     }
@@ -32,12 +34,37 @@ Item {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
-        Text {
+        Row {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            text: I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
+            spacing: Metrics.gap12
+
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
+                font.pointSize: Type.meta
+                color: Theme.color.textSecondary
+            }
+            SearchField {
+                id: find
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.screenSearch
+                placeholder: I18n.tr("Filter albums", I18n.rev)
+                onEscaped: text = ""
+            }
+            SortButton {
+                anchors.verticalCenter: parent.verticalCenter
+                value: Library.albumOrder
+                options: [
+                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                    { value: "title", text: I18n.tr("Title", I18n.rev) },
+                    { value: "year", text: I18n.tr("Year", I18n.rev) },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev) },
+                    { value: "played", text: I18n.tr("Most played", I18n.rev) },
+                    { value: "last_played", text: I18n.tr("Recently played", I18n.rev) }
+                ]
+                onPicked: (value) => Library.albumOrder = value
+            }
         }
     }
 
