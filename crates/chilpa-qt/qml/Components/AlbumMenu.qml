@@ -20,18 +20,19 @@ Menu {
 
     signal quick(int at)
 
-    function show(id, name, index, left, top) {
+    function show(id, albumTitle, name, index, left, top) {
         albumId = id
         artist = name
         at = index
         const one = !(AlbumActions.selected(id, AlbumActions.rev) && AlbumActions.selectedCount > 1)
+        title = one ? albumTitle : ""
         const favorite = AlbumActions.favorite(id, AlbumActions.rev)
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
-            { text: I18n.tr("Play", I18n.rev), act: "play" },
+            { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
             { text: I18n.tr("Play next", I18n.rev), act: "next" },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
-            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
             { separator: true, when: one },
             { text: I18n.tr("Open album", I18n.rev), act: "open", when: one },
             { text: I18n.tr("Open in new tab", I18n.rev), act: "tab", when: one },
@@ -62,6 +63,7 @@ Menu {
         case "unfavorite": AlbumActions.setFavorite(albumId, false); break
         }
     }
+    onSubmenu: (index, top) => picker.show(menu.x + menu.width - Metrics.gap4, top)
 
     PlaylistPicker {
         id: picker

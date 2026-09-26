@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import com.blitzfc.chilpa
 import "Theme"
 import "Primitives"
@@ -21,12 +22,11 @@ Window {
     color: Theme.color.surfaceWindow
     title: "Chilpa"
 
-
     // The screen scrolls under nothing but the player: it is cut at the
     // tab bar, which stays on top of it.
     ScreenHost {
         id: host
-        x: window.contentLeft - Metrics.spaceWindow
+        x: window.contentLeft
         y: Metrics.tabBarHeight
         width: (right.visible ? right.x - Metrics.spaceWindow : window.width) - x
         height: window.height - y
@@ -40,6 +40,7 @@ Window {
 
     RightPanel {
         id: right
+        z: 2
         visible: SettingsModel.queueOpen || SettingsModel.lyricsOpen
         x: window.width - width - Metrics.spaceWindow
         y: Metrics.tabBarHeight
@@ -47,13 +48,25 @@ Window {
         height: window.height - y - Metrics.spaceWindow
     }
 
+    RectangularShadow {
+        anchors.fill: right
+        visible: right.visible
+        radius: right.radius
+        offset.y: Metrics.shadowSubtleY
+        blur: Metrics.shadowSubtleBlur
+        color: Theme.color.shadowSubtle
+        z: 1
+    }
+
     PlayerBar {
+        z: 3
         width: Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.playerBottom
     }
 
     SelectionBar {
+        z: 4
         visible: AlbumActions.selectedCount > 0
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.selectionBottom
@@ -62,6 +75,7 @@ Window {
     // Above the content and the tab bar, so its grip is never covered.
     SidebarFrame {
         id: sidebar
+        z: 2
         anchors.fill: parent
         window: window
     }

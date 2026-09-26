@@ -96,7 +96,7 @@ Item {
                         if (grid.round)
                             return
                         const p = mapToItem(grid, x, y)
-                        albumMenu.show(albumId, subtitle, at, p.x, p.y)
+                        albumMenu.show(albumId, title, subtitle, at, p.x, p.y)
                     }
                 }
             }

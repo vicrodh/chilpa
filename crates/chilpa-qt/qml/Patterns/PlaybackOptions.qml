@@ -26,6 +26,13 @@ Popup {
             blur: Metrics.shadowElevatedBlur
             color: Theme.color.shadowElevated
         }
+        RectangularShadow {
+            anchors.fill: panel
+            radius: panel.radius
+            offset.y: Metrics.shadowKeyY
+            blur: Metrics.shadowKeyBlur
+            color: Theme.color.shadowElevatedKey
+        }
         Rectangle {
             id: panel
             anchors.fill: parent

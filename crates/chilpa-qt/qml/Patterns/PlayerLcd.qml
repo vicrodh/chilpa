@@ -10,6 +10,7 @@ Rectangle {
     id: lcd
 
     property bool showTimes: true
+    readonly property bool qualityHovered: quality.hovered
 
     height: Metrics.lcdHeight
     radius: Metrics.radiusLcd
@@ -83,13 +84,6 @@ Rectangle {
             font.pointSize: Type.small
             color: Theme.color.textSecondary
         }
-    }
-
-    QualityTooltip {
-        anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.top
-        anchors.bottomMargin: Metrics.gap22
-        visible: quality.hovered && Player.playing
     }
 
     SeekBar {

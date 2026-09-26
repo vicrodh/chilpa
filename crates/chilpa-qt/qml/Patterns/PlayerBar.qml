@@ -29,6 +29,13 @@ Item {
         blur: Metrics.shadowElevatedBlur
         color: Theme.color.shadowElevated
     }
+    RectangularShadow {
+        anchors.fill: panel
+        radius: panel.radius
+        offset.y: Metrics.shadowKeyY
+        blur: Metrics.shadowKeyBlur
+        color: Theme.color.shadowElevatedKey
+    }
 
     Rectangle {
         id: panel
@@ -144,11 +151,20 @@ Item {
     }
 
     PlayerLcd {
+        id: lcd
         anchors.left: transport.right
         anchors.leftMargin: Metrics.gap16
         anchors.right: actions.left
         anchors.rightMargin: Metrics.gap16
         anchors.verticalCenter: parent.verticalCenter
         showTimes: bar.width >= Metrics.playerNoTimes
+    }
+
+    QualityTooltip {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.bottom: parent.top
+        anchors.bottomMargin: Metrics.gap10
+        visible: lcd.qualityHovered && Player.playing
+        z: Metrics.tooltipLayer
     }
 }

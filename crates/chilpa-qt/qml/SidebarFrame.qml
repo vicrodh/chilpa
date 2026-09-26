@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import com.blitzfc.chilpa
 import "Theme"
 import "Primitives"
@@ -26,6 +27,18 @@ Item {
     readonly property int settled: SettingsModel.sidebarMode === "closed" ? 0
         : SettingsModel.sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
+
+    RectangularShadow {
+        visible: frame.shown > 0
+        x: Metrics.spaceWindow
+        y: Metrics.spaceWindow
+        width: frame.shown
+        height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
+        radius: Metrics.radiusPanel
+        offset.y: Metrics.shadowSubtleY
+        blur: Metrics.shadowSubtleBlur
+        color: Theme.color.shadowSubtle
+    }
 
     Sidebar {
         visible: frame.shown > 0

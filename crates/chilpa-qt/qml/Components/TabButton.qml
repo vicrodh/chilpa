@@ -1,11 +1,12 @@
 import QtQuick
+import QtQuick.Effects
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
 // A tab: icon, title and its own close button (design/02 3). A middle click
 // closes it too.
-Rectangle {
+Item {
     id: tab
 
     property string title
@@ -17,10 +18,23 @@ Rectangle {
 
     implicitWidth: Math.min(Metrics.tabMaxWidth, row.implicitWidth + Metrics.tabPadLeft + Metrics.tabPadRight)
     implicitHeight: Metrics.tabHeight
-    radius: Metrics.radiusCard
-    color: active ? Theme.color.surfaceRaised : area.containsMouse ? Theme.color.stateHover : "transparent"
+    RectangularShadow {
+        anchors.fill: panel
+        visible: tab.active
+        radius: panel.radius
+        offset.y: Metrics.shadowSubtleY
+        blur: Metrics.shadowSubtleBlur
+        color: Theme.color.shadowTabActive
+    }
 
-    Edge { visible: tab.active }
+    Rectangle {
+        id: panel
+        anchors.fill: parent
+        radius: Metrics.radiusCard
+        color: tab.active ? Theme.color.surfaceRaised : area.containsMouse ? Theme.color.stateHover : "transparent"
+
+        Edge { visible: tab.active }
+    }
 
     MouseArea {
         id: area

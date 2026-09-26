@@ -4,15 +4,17 @@ import QtQuick.Effects
 import "../Theme"
 
 // A menu of entries (design/03 Menu). Each entry is
-// { text, detail, checked, mark, hint, separator }: a separator draws a
-// line and nothing else; `mark` is a short badge ("BP") in the accent.
+// { text, detail, checked, mark, hint, separator, submenu }: a separator
+// draws a line and nothing else; `mark` is a short badge ("BP") in the accent.
 // Chosen by click; closed by a click outside or Esc.
 Popup {
     id: menu
 
     property var entries: []
+    property string title
 
     signal chosen(int index)
+    signal submenu(int index, real top)
 
     // As wide as its widest entry, between the design's width and a limit;
     // past the limit an entry is cut and says the rest in a tooltip. Kept
@@ -26,7 +28,7 @@ Popup {
             if (item)
                 w = Math.max(w, item.implicitWidth)
         }
-        widest = w
+        widest = Math.max(w, titleLabel.implicitWidth + Metrics.gap16)
     }
 
     padding: Metrics.gap4
@@ -41,6 +43,13 @@ Popup {
             blur: Metrics.shadowElevatedBlur
             color: Theme.color.shadowElevated
         }
+        RectangularShadow {
+            anchors.fill: panel
+            radius: panel.radius
+            offset.y: Metrics.shadowKeyY
+            blur: Metrics.shadowKeyBlur
+            color: Theme.color.shadowElevatedKey
+        }
         Rectangle {
             id: panel
             anchors.fill: parent
@@ -53,6 +62,22 @@ Popup {
 
     contentItem: Column {
         id: column
+
+        Text {
+            id: titleLabel
+            visible: menu.title !== ""
+            width: column.width
+            height: visible ? Metrics.menuItem : 0
+            leftPadding: Metrics.gap10
+            rightPadding: Metrics.gap10
+            verticalAlignment: Text.AlignVCenter
+            text: menu.title
+            elide: Text.ElideRight
+            font.pointSize: Type.small
+            font.weight: Type.semibold
+            color: Theme.color.textTertiary
+            onImplicitWidthChanged: menu.measure()
+        }
 
         Repeater {
             id: entriesRepeater
@@ -68,6 +93,10 @@ Popup {
                 // Closed before it says what was chosen: what it says can
                 // rebuild the view the menu lives in.
                 onClicked: {
+                    if (modelData.submenu) {
+                        menu.submenu(index, menu.y + y)
+                        return
+                    }
                     menu.close()
                     menu.chosen(index)
                 }

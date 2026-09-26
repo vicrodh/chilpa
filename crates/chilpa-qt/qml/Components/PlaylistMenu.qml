@@ -18,6 +18,7 @@ Menu {
     function show(id, title, left, top) {
         playlistId = id
         name = title
+        menu.title = title
         confirming = false
         x = left
         y = top
@@ -29,7 +30,7 @@ Menu {
         { text: I18n.tr("Delete", I18n.rev) },
         { text: I18n.tr("Cancel", I18n.rev) }
     ] : [
-        { text: I18n.tr("Play", I18n.rev) },
+        { text: I18n.tr("Play now", I18n.rev), glyph: Icons.playerPlayFilled, filled: true },
         { text: I18n.tr("Shuffle", I18n.rev) },
         { text: I18n.tr("Add to queue", I18n.rev) },
         { separator: true },

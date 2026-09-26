@@ -42,9 +42,11 @@ Item {
         visible: !line.separator
         x: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
-        glyph: line.entry.checked ? Icons.check : ""
-        size: Metrics.iconMd
-        color: Theme.color.accent
+        width: Metrics.menuIconColumn
+        glyph: line.entry.checked ? Icons.check : line.entry.glyph || ""
+        filled: line.entry.filled === true
+        size: Metrics.iconNav
+        color: line.entry.checked ? Theme.color.accent : Theme.color.textSecondary
     }
 
     Column {
@@ -96,6 +98,13 @@ Item {
             visible: !!line.entry.hint
             text: line.entry.hint || ""
             font.pointSize: Type.label
+            color: Theme.color.textTertiary
+        }
+        Icon {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: line.entry.submenu === true
+            glyph: Icons.chevronRight
+            size: Metrics.iconSm
             color: Theme.color.textTertiary
         }
     }
