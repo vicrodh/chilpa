@@ -84,7 +84,7 @@ Menu {
     PlaylistPicker {
         id: picker
 
-        // Beside the track menu, not inside it: that one is closed by then.
+        // Beside the track menu, not inside it: together they read as a submenu.
         parent: menu.parent
         onPicked: (playlist) => menu.model.addToPlaylist(menu.row, playlist)
     }
