@@ -86,8 +86,13 @@ fn main() {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 
-    // Listens go to ListenBrainz from now on, if an account is connected.
-    app::with(|api| api.start_scrobbling());
+    // Sources have to exist before anything in the window asks for searches,
+    // playlists or account state. Loading an empty folder is the normal case.
+    app::with(|api| {
+        api.load_plugins();
+        // Listens go to ListenBrainz from now on, if an account is connected.
+        api.start_scrobbling();
+    });
 
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
