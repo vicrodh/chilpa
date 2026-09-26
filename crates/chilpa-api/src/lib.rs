@@ -25,6 +25,8 @@ mod search;
 mod folders;
 mod scrobble;
 mod outputs;
+mod volume;
+pub use volume::VolumeView;
 
 pub use browse::{
     AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackOrder, TrackRow,
@@ -1180,6 +1182,10 @@ impl Chilpa {
                 }
             }
         }
+        // A new track's verdict cannot see the volume moved after it. The
+        // level the player holds, not the settings: this runs every tick.
+        let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
+        self.mark_scaled(gain);
         &self.now
     }
 

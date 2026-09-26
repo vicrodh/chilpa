@@ -67,6 +67,13 @@ pub mod qobject {
         #[qproperty(bool, automix_available)]
         /// Why the mix did not start, when it did not.
         #[qproperty(QString, automix_note)]
+        /// The player bar's volume: where it is, whether it moves the
+        /// device's own knob, and -- when it cannot be moved -- why.
+        #[qproperty(i32, volume)]
+        #[qproperty(bool, muted)]
+        #[qproperty(bool, volume_hardware)]
+        #[qproperty(bool, volume_locked)]
+        #[qproperty(QString, volume_note)]
         #[qproperty(QString, error)]
         /// Bumped when the queue changed: another track, more or fewer queued.
         #[qproperty(i32, queue_rev)]
@@ -90,6 +97,10 @@ pub mod qobject {
         fn choose_normalize(self: Pin<&mut Player>, on: bool);
         #[qinvokable]
         fn choose_automix(self: Pin<&mut Player>, on: bool);
+        #[qinvokable]
+        fn choose_volume(self: Pin<&mut Player>, percent: i32);
+        #[qinvokable]
+        fn choose_muted(self: Pin<&mut Player>, on: bool);
 
         /// Reads the switches again: Settings changed one.
         #[qinvokable]
@@ -148,6 +159,11 @@ pub struct PlayerRust {
     automix: bool,
     automix_available: bool,
     automix_note: QString,
+    volume: i32,
+    muted: bool,
+    volume_hardware: bool,
+    volume_locked: bool,
+    volume_note: QString,
     title: QString,
     artist: QString,
     album: QString,
@@ -210,12 +226,32 @@ impl qobject::Player {
         QString::from(&format::clock((seconds.max(0.0) * 1000.0) as u64))
     }
 
+    pub fn choose_volume(self: Pin<&mut Self>, percent: i32) {
+        app::with(|api| api.set_player_volume(percent.clamp(0, 100) as u8));
+        self.read_volume();
+    }
+
+    pub fn choose_muted(self: Pin<&mut Self>, on: bool) {
+        app::with(|api| api.set_player_muted(on));
+        self.read_volume();
+    }
+
+    fn read_volume(mut self: Pin<&mut Self>) {
+        let v = app::with(|api| api.player_volume());
+        self.as_mut().set_volume(i32::from(v.percent));
+        self.as_mut().set_muted(v.muted);
+        self.as_mut().set_volume_hardware(v.hardware);
+        self.as_mut().set_volume_locked(v.locked);
+        self.as_mut().set_volume_note(QString::from(&v.why));
+    }
+
     pub fn read_switches(mut self: Pin<&mut Self>) {
         let (strict, gapless, normalize, mix, mixable) = app::with(|api| {
             let (_, bit_perfect) = api.chosen_output();
             (bit_perfect, api.gapless(), api.normalize(), api.automix_on(), api.automix_available())
         });
         self.as_mut().set_automix_available(mixable);
+        self.as_mut().read_volume();
         self.as_mut().set_bit_perfect_mode(strict);
         let applies = !strict;
         self.as_mut().set_gapless(gapless);

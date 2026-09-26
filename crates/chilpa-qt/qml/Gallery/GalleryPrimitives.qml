@@ -44,6 +44,7 @@ GallerySection {
         Chip { text: "Songs" }
         TextField { placeholder: "Token"; secret: true }
         Swatches { colors: ["", Theme.color.accentHover, Theme.color.textSecondary]; values: ["a", "b", "c"]; value: "b" }
+        LevelSlider { value: 60 }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
     }

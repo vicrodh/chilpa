@@ -111,6 +111,10 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap4
 
+        VolumeControl {
+            anchors.verticalCenter: parent.verticalCenter
+            visible: bar.width >= Metrics.playerNoVolume
+        }
         IconButton {
             id: optionsButton
             tip: I18n.tr("Playback options", I18n.rev)

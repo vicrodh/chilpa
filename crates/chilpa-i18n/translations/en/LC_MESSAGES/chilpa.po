@@ -181,6 +181,9 @@ msgstr ""
 msgid "Bit-perfect already asks for it."
 msgstr ""
 
+msgid "Bit-perfect does not scale the samples. Turn on hardware volume in Settings › Advanced to move the device's own."
+msgstr ""
+
 msgid "Browse for a music folder, or type its full path."
 msgstr ""
 
@@ -373,6 +376,9 @@ msgstr ""
 msgid "Go to artist"
 msgstr ""
 
+msgid "Hardware volume"
+msgstr ""
+
 msgid "Hide the columns"
 msgstr ""
 
@@ -476,6 +482,9 @@ msgid "Move down"
 msgstr ""
 
 msgid "Move up"
+msgstr ""
+
+msgid "Mute"
 msgstr ""
 
 msgid "My library"
@@ -793,6 +802,9 @@ msgstr ""
 msgid "The output plays only Chilpa, with bit-perfect off too. Other programs wait until it lets go."
 msgstr ""
 
+msgid "The player bar moves the output's own volume instead of scaling the samples, so it also works with bit-perfect on. It needs an output with a volume of its own."
+msgstr ""
+
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr ""
 
@@ -812,6 +824,9 @@ msgid "This is wherever the machine is already sending sound, so what happens to
 msgstr ""
 
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
+msgstr ""
+
+msgid "This output has no volume of its own, and bit-perfect does not scale the samples."
 msgstr ""
 
 msgid "This output is always Chilpa's alone."
@@ -847,10 +862,16 @@ msgstr ""
 msgid "Tracks"
 msgstr ""
 
+msgid "Unmute"
+msgstr ""
+
 msgid "Up next"
 msgstr ""
 
 msgid "Updates"
+msgstr ""
+
+msgid "Volume {}%"
 msgstr ""
 
 msgid "What you play most"
