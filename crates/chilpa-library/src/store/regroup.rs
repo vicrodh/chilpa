@@ -13,7 +13,7 @@
 
 use crate::album_folder::{album_folder, VARIOUS_ARTISTS};
 use crate::store::Library;
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -101,6 +101,78 @@ impl Library {
     }
 }
 
+impl Library {
+    /// Credits the records an earlier scan keyed by an album artist tag that
+    /// was there and empty. Returns how many records there are after.
+    ///
+    /// The scan took the empty tag for an album artist, so each such record
+    /// was keyed by its title alone: credited to nobody, and records with the
+    /// same title and an empty tag became one. Each folder of such a record
+    /// becomes a record of its own, credited as the scan now credits a record
+    /// without an album artist: its tracks' artist while they agree, and
+    /// "Various Artists" once they do not.
+    pub fn credit_unnamed_albums(&self) -> rusqlite::Result<usize> {
+        let rows: Vec<(i64, i64, String, String)> = {
+            let mut stmt = self.db.prepare(
+                "SELECT a.id, t.id, t.external_id, t.artist
+                 FROM albums a JOIN tracks t ON t.album_id = a.id
+                 WHERE a.album_artist = ''",
+            )?;
+            let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?;
+            rows.collect::<rusqlite::Result<_>>()?
+        };
+        if rows.is_empty() {
+            return Ok(0);
+        }
+        // By record, then by folder: the tracks and their artists.
+        let mut records: BTreeMap<i64, BTreeMap<String, (Vec<i64>, BTreeSet<String>)>> = BTreeMap::new();
+        for (album, track, path, artist) in rows {
+            let part = records.entry(album).or_default().entry(album_folder(Path::new(&path))).or_default();
+            part.0.push(track);
+            part.1.insert(artist);
+        }
+        let mut made = 0;
+        let tx = self.own_transaction()?;
+        for (album, folders) in records {
+            for (folder, (tracks, artists)) in folders {
+                let artist = match artists.len() {
+                    1 => artists.into_iter().next().unwrap_or_default(),
+                    _ => VARIOUS_ARTISTS.to_string(),
+                };
+                // The record this folder is, if the scan already made it;
+                // otherwise a new one with what the old one knew.
+                let existing: Option<i64> = tx
+                    .query_row(
+                        "SELECT b.id FROM albums b, albums a
+                         WHERE a.id = ?1 AND b.title = a.title AND b.album_artist = ?2 AND b.folder = ?3",
+                        params![album, artist, folder],
+                        |r| r.get(0),
+                    )
+                    .optional()?;
+                let target = match existing {
+                    Some(id) => id,
+                    None => {
+                        tx.execute(
+                            "INSERT INTO albums (title, album_artist, mbid, year, artwork_path, folder)
+                             SELECT title, ?2, mbid, year, artwork_path, ?3 FROM albums WHERE id = ?1",
+                            params![album, artist, folder],
+                        )?;
+                        tx.last_insert_rowid()
+                    }
+                };
+                for track in tracks {
+                    tx.execute("UPDATE tracks SET album_id = ?1 WHERE id = ?2", params![target, track])?;
+                }
+                made += 1;
+            }
+            tx.execute("DELETE FROM albums WHERE id = ?1", params![album])?;
+        }
+        tx.finish()?;
+        self.rebuild_rollups()?;
+        Ok(made)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::store::Library;
@@ -162,6 +234,35 @@ mod tests {
         track(&lib, 10, 1, "/m/Split/01.flac", "Band A feat. C");
         track(&lib, 11, 2, "/m/Split/02.flac", "Band B");
         assert_eq!(lib.regroup_split_albums().unwrap(), 0);
+    }
+
+    #[test]
+    fn a_record_credited_to_an_empty_tag_gets_its_artist_and_its_folders_apart() {
+        let lib = Library::in_memory().unwrap();
+        // Two records with the same title and an empty album artist tag,
+        // joined into one by the old key.
+        album(&lib, 1, "Gold", "");
+        track(&lib, 10, 1, "/m/The Cranberries/(2008) Gold/Disc 1/01.flac", "The Cranberries");
+        track(&lib, 11, 1, "/m/The Cranberries/(2008) Gold/Disc 2/01.flac", "The Cranberries");
+        track(&lib, 12, 1, "/m/ABBA/Gold/01.flac", "ABBA");
+        assert_eq!(lib.credit_unnamed_albums().unwrap(), 2);
+        let mut records: Vec<(String, String, i64)> = lib
+            .db
+            .prepare("SELECT a.album_artist, a.folder, count(t.id) FROM albums a JOIN tracks t ON t.album_id = a.id GROUP BY a.id ORDER BY 1")
+            .unwrap()
+            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
+            .unwrap()
+            .collect::<rusqlite::Result<_>>()
+            .unwrap();
+        records.sort();
+        assert_eq!(
+            records,
+            vec![
+                ("ABBA".to_string(), "/m/ABBA/Gold".to_string(), 1),
+                ("The Cranberries".to_string(), "/m/The Cranberries/(2008) Gold".to_string(), 2),
+            ]
+        );
+        assert_eq!(lib.credit_unnamed_albums().unwrap(), 0, "once");
     }
 
     #[test]

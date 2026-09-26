@@ -128,8 +128,10 @@ impl Library {
         // Genres an earlier scan stored joined are split once, here: files
         // that did not change are never read again to do it.
         lib.split_stored_genres()?;
-        // And records an earlier scan split by artist, the same way.
+        // And records an earlier scan split by artist, or credited to an
+        // empty album artist tag, the same way.
         lib.regroup_split_albums()?;
+        lib.credit_unnamed_albums()?;
         Ok(lib)
     }
 
