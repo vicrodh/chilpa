@@ -5,6 +5,10 @@ import "../Theme"
 // the middle, the resize cursor, and the distance dragged as it moves. The
 // owner decides where the panel lands on release; nothing animates while
 // the pointer moves.
+//
+// `moved` carries the distance from where the press started, not from the
+// last move: the owner keeps its size at `started` and adds the distance to
+// that. Adding it to the size already moved counts every step again.
 Item {
     id: handle
 
@@ -12,6 +16,7 @@ Item {
     // down (a split).
     property bool vertical: true
 
+    signal started()
     signal moved(real delta)
     signal released()
 
@@ -42,7 +47,10 @@ Item {
             return handle.vertical ? p.x : p.y
         }
 
-        onPressed: (mouse) => start = along(mouse)
+        onPressed: (mouse) => {
+            start = along(mouse)
+            handle.started()
+        }
         onPositionChanged: (mouse) => {
             if (pressed)
                 handle.moved(along(mouse) - start)

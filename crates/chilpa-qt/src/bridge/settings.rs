@@ -22,10 +22,11 @@ pub mod qobject {
         #[qproperty(QString, sidebar_mode)]
         #[qproperty(i32, sidebar_width)]
         /// The right panel: the queue and the lyrics, each open or not, and
-        /// the queue's share of the panel when both are.
+        /// the queue's share of the panel when both are, in thousandths; zero
+        /// is half.
         #[qproperty(bool, queue_open)]
         #[qproperty(bool, lyrics_open)]
-        #[qproperty(i32, queue_height)]
+        #[qproperty(i32, queue_share)]
         /// The Library screen: its filter columns shown or not, their
         /// height, and "tracks" or "grid".
         #[qproperty(bool, panes_open)]
@@ -73,7 +74,7 @@ const SIDEBAR_MODE: &str = "ui.sidebar.mode";
 const SIDEBAR_WIDTH: &str = "ui.sidebar.width";
 const QUEUE_MODE: &str = "ui.queue.mode";
 const LYRICS_OPEN: &str = "ui.lyrics.open";
-const QUEUE_HEIGHT: &str = "ui.rightPanel.queueHeight";
+const QUEUE_SHARE: &str = "ui.rightPanel.queueShare";
 const PANES_OPEN: &str = "ui.library.panesOpen";
 const PANES_HEIGHT: &str = "ui.library.panesHeight";
 const LIBRARY_VIEW: &str = "ui.library.view";
@@ -87,7 +88,7 @@ pub struct SettingsRust {
     sidebar_width: i32,
     queue_open: bool,
     lyrics_open: bool,
-    queue_height: i32,
+    queue_share: i32,
     panes_open: bool,
     panes_height: i32,
     library_view: QString,
@@ -135,8 +136,8 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (density, mode, width) = app::with(|api| {
             (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH))
         });
-        let (queue, lyrics, queue_height) = app::with(|api| {
-            (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_HEIGHT))
+        let (queue, lyrics, queue_share) = app::with(|api| {
+            (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_SHARE))
         });
         let (panes, panes_height, view) = app::with(|api| {
             (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW))
@@ -156,7 +157,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.sidebar_width = width.and_then(|w| w.parse().ok()).unwrap_or(0);
             this.queue_open = queue.as_deref() == Some("side");
             this.lyrics_open = lyrics.as_deref() == Some("true");
-            this.queue_height = queue_height.and_then(|h| h.parse().ok()).unwrap_or(0);
+            this.queue_share = queue_share.and_then(|h| h.parse().ok()).unwrap_or(0);
             this.panes_open = panes.as_deref() != Some("false");
             this.panes_height = panes_height.and_then(|h| h.parse().ok()).unwrap_or(0);
             this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
@@ -176,7 +177,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             .release();
         self.as_mut().on_lyrics_open_changed(|m| remember(LYRICS_OPEN, m.lyrics_open().to_string())).release();
         self.as_mut()
-            .on_queue_height_changed(|m| remember(QUEUE_HEIGHT, m.queue_height().to_string()))
+            .on_queue_share_changed(|m| remember(QUEUE_SHARE, m.queue_share().to_string()))
             .release();
         self.as_mut().on_panes_open_changed(|m| remember(PANES_OPEN, m.panes_open().to_string())).release();
         self.as_mut()
