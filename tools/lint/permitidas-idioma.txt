@@ -406,3 +406,5 @@ ty
 # The dialog crate and the desktop portal protocol.
 rfd
 xdg
+# A popup that floats beside what opened it.
+flyout

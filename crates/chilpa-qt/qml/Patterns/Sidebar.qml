@@ -16,6 +16,20 @@ Rectangle {
 
     Edge {}
 
+    SearchModel { id: search }
+
+    Shortcut {
+        sequence: "Ctrl+K"
+        onActivated: {
+            if (side.collapsed) {
+                flyout.ownInput = true
+                flyout.open()
+            } else {
+                field.focusInput()
+            }
+        }
+    }
+
     Column {
         anchors.fill: parent
         anchors.topMargin: Metrics.sidebarPadV
@@ -28,10 +42,32 @@ Rectangle {
             spacing: Metrics.gap6
 
             SearchField {
+                id: field
                 visible: !side.collapsed
                 width: parent.width - toggle.width - parent.spacing
                 placeholder: I18n.tr("Search", I18n.rev)
                 shortcut: Qt.platform.os === "osx" ? "⌘K" : "Ctrl K"
+                onTextChanged: {
+                    search.text = text
+                    text !== "" ? flyout.open() : flyout.close()
+                }
+                onEditingChanged: if (editing && text !== "") flyout.open()
+                onStepped: (by) => flyout.step(by)
+                onAccepted: flyout.chooseCurrent()
+                onEscaped: {
+                    flyout.close()
+                    release()
+                }
+
+                // Beside the sidebar, whatever its width (design/02 8).
+                SearchFlyout {
+                    id: flyout
+                    search: search
+                    x: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
+                    y: Metrics.searchTop - Metrics.spaceWindow - Metrics.sidebarPadV // derived: from the field to the window's top
+                    room: side.height
+                    onClosed: if (!side.collapsed) field.release()
+                }
             }
 
             IconButton {
@@ -40,6 +76,17 @@ Rectangle {
                 tip: side.collapsed ? I18n.tr("Expand sidebar", I18n.rev) : I18n.tr("Collapse sidebar", I18n.rev)
                 glyph: side.collapsed ? Icons.layoutSidebarLeftExpand : Icons.layoutSidebarLeftCollapse
                 onClicked: SettingsModel.sidebarMode = side.collapsed ? "open" : "collapsed"
+            }
+        }
+
+        IconButton {
+            visible: side.collapsed
+            x: (parent.width - width) / 2 // derived: centered
+            tip: I18n.tr("Search", I18n.rev)
+            glyph: Icons.search
+            onClicked: {
+                flyout.ownInput = true
+                flyout.open()
             }
         }
 

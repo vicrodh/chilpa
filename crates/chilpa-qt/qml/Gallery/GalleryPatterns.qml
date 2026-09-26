@@ -1,4 +1,5 @@
 import QtQuick
+import com.blitzfc.chilpa
 import "../Theme"
 import "../Patterns"
 
@@ -20,5 +21,7 @@ GallerySection {
         PlayerBar { width: Math.min(parent.width, Metrics.playerMaxWidth) }
         PlayerLcd { width: parent.width / 2 } // derived: half the section
         QualityTooltip {}
+        SearchModel { id: sample; text: "mora" }
+        SearchFlyout { search: sample }
     }
 }

@@ -40,6 +40,8 @@ GallerySection {
         ResizeHandle { height: Metrics.sidebarCollapsed }
         ResizeHandle { vertical: false; width: Metrics.sidebarCollapsed }
         Toggle { checked: true }
+        Chip { text: "All"; active: true }
+        Chip { text: "Songs" }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
     }

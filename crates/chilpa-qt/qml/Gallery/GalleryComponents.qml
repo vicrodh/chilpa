@@ -93,5 +93,7 @@ GallerySection {
         FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
+        SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
+        SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
     }
 }

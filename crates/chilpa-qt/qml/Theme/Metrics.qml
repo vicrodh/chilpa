@@ -55,7 +55,9 @@ QtObject {
     readonly property int button26: 26
     readonly property int button28: 28
     readonly property int button30: 30
+    readonly property int button32: 32
     readonly property int button40: 40
+    readonly property int chipHeight: 24
     readonly property int pillHeight: 30
     readonly property int pillPadding: 14
     readonly property int segmentWidth: 30
@@ -184,6 +186,15 @@ QtObject {
     readonly property int panesHandle: 12
     readonly property int toolbar: 28
     readonly property int crumbHeight: 22
+
+    // The search flyout (design/02 8, design/03 SearchFlyout).
+    readonly property int searchFlyout: 440
+    readonly property int searchTop: 14
+    readonly property int searchHeader: 26
+    readonly property int searchRow: 46
+    readonly property int searchArt: 36
+    readonly property int searchBest: 68
+    readonly property int searchAvatar: 52
 
     // The right panel (design/02 5).
     readonly property int rightPanel: 300

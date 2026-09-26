@@ -100,6 +100,9 @@ msgstr ""
 msgid "Albums"
 msgstr ""
 
+msgid "All"
+msgstr ""
+
 msgid "All ({})"
 msgstr ""
 
@@ -364,6 +367,9 @@ msgstr ""
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
+msgid "Nothing found for “{}”"
+msgstr ""
+
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr ""
 
@@ -514,6 +520,9 @@ msgstr ""
 msgid "Shuffle"
 msgstr ""
 
+msgid "Songs"
+msgstr ""
+
 msgid "Source: {}"
 msgstr ""
 
@@ -563,6 +572,9 @@ msgid "Title"
 msgstr ""
 
 msgid "To move to"
+msgstr ""
+
+msgid "Top result"
 msgstr ""
 
 msgid "Track lists"

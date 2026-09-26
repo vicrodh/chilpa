@@ -100,6 +100,9 @@ msgstr "Álbum"
 msgid "Albums"
 msgstr "Álbumes"
 
+msgid "All"
+msgstr "Todo"
+
 msgid "All ({})"
 msgstr "Todo ({})"
 
@@ -364,6 +367,9 @@ msgstr "Esta pista no tiene letra."
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
+msgid "Nothing found for “{}”"
+msgstr "Sin resultados para “{}”"
+
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
 
@@ -514,6 +520,9 @@ msgstr "Mostrar la barra lateral"
 msgid "Shuffle"
 msgstr "Aleatorio"
 
+msgid "Songs"
+msgstr "Canciones"
+
 msgid "Source: {}"
 msgstr "Fuente: {}"
 
@@ -564,6 +573,9 @@ msgstr "Título"
 
 msgid "To move to"
 msgstr "Para moverse"
+
+msgid "Top result"
+msgstr "Mejor resultado"
 
 msgid "Track lists"
 msgstr "Listas de pistas"
