@@ -316,7 +316,7 @@ msgstr ""
 msgid "Delete…"
 msgstr ""
 
-msgid "Device: {}"
+msgid "Device"
 msgstr ""
 
 msgid "Devices & cast"
@@ -415,6 +415,9 @@ msgstr ""
 msgid "Hardware volume"
 msgstr ""
 
+msgid "Hi-Res Lossless"
+msgstr ""
+
 msgid "Hide the columns"
 msgstr ""
 
@@ -482,6 +485,12 @@ msgid "Look"
 msgstr ""
 
 msgid "Looking for files…"
+msgstr ""
+
+msgid "Lossless"
+msgstr ""
+
+msgid "Lossy"
 msgstr ""
 
 msgid "Lyrics"
@@ -625,9 +634,6 @@ msgstr ""
 msgid "Output device"
 msgstr ""
 
-msgid "Output: {}"
-msgstr ""
-
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr ""
 
@@ -682,7 +688,7 @@ msgstr ""
 msgid "Previous"
 msgstr ""
 
-msgid "Processed on the way out"
+msgid "Processed"
 msgstr ""
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
@@ -772,7 +778,7 @@ msgstr ""
 msgid "Rich rows"
 msgstr ""
 
-msgid "Route: {}"
+msgid "Route"
 msgstr ""
 
 msgid "SACDMTOC was not found"
@@ -835,7 +841,7 @@ msgstr ""
 msgid "Songs"
 msgstr ""
 
-msgid "Source: {}"
+msgid "Source"
 msgstr ""
 
 msgid "Sources"
@@ -935,6 +941,9 @@ msgid "Tracks"
 msgstr ""
 
 msgid "Uninstall"
+msgstr ""
+
+msgid "Unknown quality"
 msgstr ""
 
 msgid "Unmute"

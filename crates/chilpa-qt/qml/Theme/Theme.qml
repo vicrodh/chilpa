@@ -47,6 +47,8 @@ QtObject {
         readonly property color shadowElevated: ThemeModel.shadowColor("elevated", 0, theme.rev)
         readonly property color shadowElevatedKey: ThemeModel.shadowColor("elevated", 1, theme.rev)
         readonly property color shadowSubtle: ThemeModel.shadowColor("subtle", 0, theme.rev)
+        readonly property color shadowSegment: ThemeModel.shadowColor("segment", 0, theme.rev)
+        readonly property color shadowTabActive: ThemeModel.shadowColor("tabActive", 0, theme.rev)
     }
 
     // The color a cover shows while it loads, varied by position so a grid

@@ -31,6 +31,7 @@ Window {
     }
 
     Flickable {
+        id: view
         anchors.fill: parent
         anchors.topMargin: Metrics.tabBarHeight
         contentHeight: sections.height + Metrics.contentBottom
@@ -45,13 +46,57 @@ Window {
 
             GalleryPrimitives { width: parent.width }
             GalleryComponents { width: parent.width }
-            GalleryPatterns { width: parent.width }
+            GalleryPatterns { id: patterns; width: parent.width }
         }
     }
 
     Tooltip {}
 
+    Rectangle {
+        anchors.fill: parent
+        visible: Dev.route === "quality"
+        z: Metrics.tooltipLayer
+        color: Theme.color.surfaceWindow
+
+        Column {
+            anchors.centerIn: parent
+            spacing: Metrics.gap10
+
+            QualityTooltip { anchors.horizontalCenter: parent.horizontalCenter }
+            PlayerBar { width: Math.min(window.width - Metrics.contentX * 2, Metrics.playerMaxWidth) } // derived: inset on each side
+        }
+    }
+
+    Rectangle {
+        anchors.fill: parent
+        visible: Dev.route === "menu"
+        z: Metrics.tooltipLayer
+        color: Theme.color.surfaceWindow
+    }
+
+    Menu {
+        id: designMenu
+        x: (window.width - width) / 2 // derived: centered in the gallery
+        y: (window.height - height) / 2 // derived: centered in the gallery
+        title: "A 25 años"
+        entries: [
+            { text: "Play now", glyph: Icons.playerPlayFilled, filled: true },
+            { text: "Play next" },
+            { text: "Add to queue" },
+            { text: "Add to playlist…", submenu: true },
+            { separator: true },
+            { text: "Open album" }
+        ]
+    }
+
     DevHooks {
         window: window
+    }
+
+    Component.onCompleted: {
+        if (Dev.route === "patterns")
+            Qt.callLater(() => view.contentY = patterns.y + Dev.routeId)
+        else if (Dev.route === "menu")
+            Qt.callLater(designMenu.open)
     }
 }

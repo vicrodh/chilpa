@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import "../Theme"
 
 // Exclusive options in a field (design/03 SegmentedControl). `options` is
@@ -24,7 +25,7 @@ Rectangle {
         Repeater {
             model: root.options
 
-            Rectangle {
+            Item {
                 id: segment
                 required property int index
                 required property var modelData
@@ -32,10 +33,23 @@ Rectangle {
 
                 width: segment.modelData.text ? label.implicitWidth + Metrics.gap12 * 2 : Metrics.segmentWidth // derived: padding on both sides
                 height: Metrics.segmentHeight
-                radius: Metrics.radiusItem
-                color: active ? Theme.color.surfaceRaised : "transparent"
+                RectangularShadow {
+                    anchors.fill: segmentPanel
+                    visible: segment.active
+                    radius: segmentPanel.radius
+                    offset.y: Metrics.shadowSubtleY
+                    blur: Metrics.shadowSubtleBlur
+                    color: Theme.color.shadowSegment
+                }
 
-                Edge { visible: segment.active }
+                Rectangle {
+                    id: segmentPanel
+                    anchors.fill: parent
+                    radius: Metrics.radiusItem
+                    color: segment.active ? Theme.color.surfaceRaised : "transparent"
+
+                    Edge { visible: segment.active }
+                }
 
                 Text {
                     id: label

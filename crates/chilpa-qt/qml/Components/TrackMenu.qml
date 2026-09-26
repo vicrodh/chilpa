@@ -23,20 +23,20 @@ Menu {
         // for the player to have it; clear-after can be built from removing
         // along the queue's order and is not built yet.
         const queued = [
-            { text: I18n.tr("Play now", I18n.rev), act: "play" },
+            { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
             { text: I18n.tr("Remove from queue", I18n.rev), act: "dequeue" },
             { separator: true },
-            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
             { separator: true },
             { text: I18n.tr("Go to album", I18n.rev), act: "album" },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist" }
         ]
         const all = model.kind === "queue" ? queued : [
             { text: I18n.trCount("{} track", "{} tracks", model.selectedCount, I18n.rev), note: true },
-            { text: I18n.tr("Play", I18n.rev), act: "play" },
+            { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
             { text: I18n.tr("Play next", I18n.rev), act: "next" },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
-            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick" },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
             { text: I18n.tr("Remove from playlist", I18n.rev), act: "unlist" },
             { text: I18n.tr("Move up", I18n.rev), act: "up", hint: "Alt ↑" },
             { text: I18n.tr("Move down", I18n.rev), act: "down", hint: "Alt ↓" },
@@ -79,6 +79,7 @@ Menu {
         else
             model.go(row, act)
     }
+    onSubmenu: (index, top) => picker.show(menu.x + menu.width - Metrics.gap4, top)
 
     PlaylistPicker {
         id: picker

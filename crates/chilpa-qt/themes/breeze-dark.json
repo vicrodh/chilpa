@@ -35,7 +35,9 @@
   },
   "shadow": {
     "elevated": [[0, 12, 32, "rgba(0,0,0,0.50)"], [0, 1, 3, "rgba(0,0,0,0.30)"]],
-    "subtle": [[0, 1, 2, "rgba(0,0,0,0.04)"]]
+    "subtle": [[0, 1, 2, "rgba(0,0,0,0.04)"]],
+    "segment": [[0, 1, 2, "rgba(0,0,0,0.08)"]],
+    "tabActive": [[0, 1, 2, "rgba(0,0,0,0.05)"]]
   },
   "ambient": { "scrimSubtle": 0.88, "scrimFull": 0.70, "playerMix": 0.12 }
 }

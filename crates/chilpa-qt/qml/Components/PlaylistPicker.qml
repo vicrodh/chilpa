@@ -2,8 +2,7 @@ import QtQuick
 import com.blitzfc.chilpa
 import "../Primitives"
 
-// Which playlist something goes to: a new one, or one of ours. It opens
-// where the menu that asked was, which is closed by then.
+// Which playlist something goes to: a submenu with a new one, or one of ours.
 Menu {
     id: picker
 

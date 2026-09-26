@@ -251,6 +251,7 @@ impl qobject::Player {
             (bit_perfect, api.gapless(), api.normalize(), api.automix_on(), api.automix_available())
         });
         self.as_mut().set_automix_available(mixable);
+        self.as_mut().rust_mut().shown.clear();
         self.as_mut().read_volume();
         self.as_mut().set_bit_perfect_mode(strict);
         let applies = !strict;
@@ -259,7 +260,6 @@ impl qobject::Player {
         self.as_mut().set_normalize_applies(applies);
         self.as_mut().set_automix(mix);
     }
-
     pub fn clear_queue(mut self: Pin<&mut Self>) {
         app::with(|api| api.clear_queue());
         self.as_mut().bump_queue();

@@ -67,7 +67,8 @@ QtObject {
     readonly property int fieldHeightLarge: 32
     readonly property int selectWidth: 260
     readonly property int menuWidth: 236
-    readonly property int menuMaxWidth: 420
+    readonly property int menuMaxWidth: 310
+    readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
     readonly property int toggleWidth: 38
@@ -133,8 +134,13 @@ QtObject {
     readonly property int volumeStep: 5
     readonly property int playerNoVolume: 660
     readonly property int qualityTooltipWidth: 320
+    readonly property int qualityTooltipLabel: 68
     readonly property int shadowElevatedY: 12
     readonly property int shadowElevatedBlur: 32
+    readonly property int shadowKeyY: 1
+    readonly property int shadowKeyBlur: 3
+    readonly property int shadowSubtleY: 1
+    readonly property int shadowSubtleBlur: 2
 
     // Track rows (03-components.md TrackRow).
     readonly property int rowCompact: 24
