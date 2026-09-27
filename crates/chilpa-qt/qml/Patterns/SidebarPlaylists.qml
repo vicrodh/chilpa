@@ -11,11 +11,41 @@ import "../Components"
 Item {
     id: section
 
-    PlaylistListModel {
-        id: lists
-        rev: Playlists.rev
-        filter: filter.text
+    PlaylistPicker { id: createPicker }
+
+    property var rows: []
+    property var expanded: ({})
+    function reload() {
+        const catalog = JSON.parse(Playlists.catalogJson(filter.text))
+        const result = []
+        for (const folder of catalog.folders) {
+            const children = catalog.playlists.filter(p => p.folder_id === folder.id)
+            if (filter.text !== "" || children.length > 0) {
+                result.push({rowKind: 1, playlistId: 0, name: folder.name,
+                    tracks: folder.playlist_count, source: "", sourceName: "",
+                    local: true, artwork: "", folderId: folder.id,
+                    visibleInSidebar: true, cover1: "", cover2: "", cover3: "",
+                    cover4: "", folderColor: folder.color,
+                    expanded: filter.text !== "" || !!expanded[folder.id]})
+                if (filter.text !== "" || expanded[folder.id])
+                    for (const playlist of children) result.push(playlistRow(playlist))
+            }
+        }
+        for (const playlist of catalog.playlists)
+            if (playlist.folder_id === null) result.push(playlistRow(playlist))
+        rows = result
     }
+    function playlistRow(p) {
+        return {rowKind: 0, playlistId: p.id, name: p.name, tracks: p.track_count,
+            source: p.source, sourceName: p.provider, local: p.mixed,
+            artwork: p.artwork_path, folderId: p.folder_id || 0,
+            visibleInSidebar: p.visible_sidebar, cover1: p.covers[0] || "",
+            cover2: p.covers[1] || "", cover3: p.covers[2] || "",
+            cover4: p.covers[3] || "", folderColor: "", expanded: false}
+    }
+    function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
+    Component.onCompleted: reload()
+    Connections { target: Playlists; function onRevChanged() { section.reload() } }
 
     Item {
         id: head
@@ -31,11 +61,19 @@ Item {
             color: Theme.color.textTertiary
         }
         IconButton {
+            id: addButton
             anchors.right: parent.right
             size: Metrics.button24
             glyph: Icons.plus
             tip: I18n.tr("New playlist", I18n.rev)
-            onClicked: Playlists.create()
+            onClicked: createPicker.beginCreate()
+        }
+        IconButton {
+            anchors.right: addButton.left
+            size: Metrics.button24
+            glyph: Icons.dots
+            tip: I18n.tr("Manage playlists", I18n.rev)
+            onClicked: Navigation.go("playlistManager", 0)
         }
     }
 
@@ -46,6 +84,7 @@ Item {
         width: parent.width
         height: Metrics.playlistFilter
         placeholder: I18n.tr("Filter playlists", I18n.rev)
+        onTextChanged: section.reload()
         Keys.onEscapePressed: text = ""
     }
 
@@ -57,25 +96,87 @@ Item {
         width: parent.width
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        model: lists
+        model: section.rows
         ScrollBar.vertical: ScrollBar {}
 
-        delegate: PlaylistRow {
-            id: row
+        delegate: Loader {
+            id: host
+            required property int index
+            required property int rowKind
+            required property int playlistId
+            required property string name
+            required property int tracks
+            required property string source
+            required property string sourceName
+            required property bool local
+            required property string artwork
+            required property int folderId
+            required property bool visibleInSidebar
+            required property url cover1
+            required property url cover2
+            required property url cover3
+            required property url cover4
+            required property string folderColor
+            required property bool expanded
+
             width: ListView.view.width
-            active: Navigation.screen === "playlist" && Navigation.routeId === playlistId
-            onOpened: Navigation.go("playlist", playlistId)
-            onMenu: (left, top) => {
-                const at = row.mapToItem(section, left, top)
-                actions.row = row
-                actions.show(playlistId, name, at.x, at.y)
+            height: Metrics.playlistRowHeight
+            sourceComponent: rowKind === 1 ? folderDelegate : playlistDelegate
+
+            Component {
+                id: folderDelegate
+                PlaylistFolderRow {
+                    width: host.width
+                    index: host.index
+                    folderId: host.folderId
+                    name: host.name
+                    tracks: host.tracks
+                    folderColor: host.folderColor
+                    expanded: host.expanded
+                    onToggled: section.toggleFolder(folderId)
+                }
             }
-            onRenamed: (text) => Playlists.rename(playlistId, text)
+            Component {
+                id: playlistDelegate
+                PlaylistRow {
+                    id: row
+                    width: host.width
+                    index: host.index
+                    playlistId: host.playlistId
+                    name: host.name
+                    tracks: host.tracks
+                    source: host.source
+                    sourceName: host.sourceName
+                    local: host.local
+                    artwork: host.artwork
+                    folderId: host.folderId
+                    visibleInSidebar: host.visibleInSidebar
+                    cover1: host.cover1
+                    cover2: host.cover2
+                    cover3: host.cover3
+                    cover4: host.cover4
+                    active: Navigation.screen === "playlist" && Navigation.routeId === playlistId
+                    onOpened: Playlists.open(playlistId)
+                    onMenu: (left, top) => {
+                        if (!local) {
+                            Playlists.open(playlistId)
+                            return
+                        }
+                        const at = row.mapToItem(section, left, top)
+                        actions.row = row
+                        actions.show(playlistId, name, at.x, at.y)
+                    }
+                    onRenamed: (text) => {
+                        if (local)
+                            Playlists.rename(playlistId, text)
+                    }
+                }
+            }
         }
     }
 
     Text {
-        visible: lists.count === 0 && filter.text === ""
+        visible: section.rows.length === 0 && filter.text === ""
         anchors.top: filter.bottom
         anchors.topMargin: Metrics.gap10
         x: Metrics.navItemPadding

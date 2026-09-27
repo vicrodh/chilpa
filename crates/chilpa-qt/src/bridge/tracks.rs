@@ -27,6 +27,11 @@ pub mod qobject {
         #[qproperty(QString, kind)]
         #[qproperty(i64, album_id)]
         #[qproperty(QString, key)]
+        /// Playlist presentation order: custom, title, artist, album,
+        /// duration or plays.
+        #[qproperty(QString, order)]
+        #[qproperty(bool, ascending)]
+        #[qproperty(bool, playlist_editable)]
         #[qproperty(i32, limit)]
         #[qproperty(i32, filter_rev)]
         #[qproperty(QString, playing_path)]
@@ -35,23 +40,50 @@ pub mod qobject {
         #[qproperty(i32, selected_count)]
         type TrackListModel = super::TrackListRust;
 
-        #[qinvokable] fn play(self: Pin<&mut TrackListModel>, row: i32);
-        #[qinvokable] fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
-        #[qinvokable] fn queue_all(self: Pin<&mut TrackListModel>);
-        #[qinvokable] fn play_next_all(self: Pin<&mut TrackListModel>);
-        #[qinvokable] fn play_later_all(self: Pin<&mut TrackListModel>, label: &QString);
+        #[qinvokable]
+        fn play(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
+        #[qinvokable]
+        fn queue_all(self: Pin<&mut TrackListModel>);
+        #[qinvokable]
+        fn play_next_all(self: Pin<&mut TrackListModel>);
+        #[qinvokable]
+        fn play_later_all(self: Pin<&mut TrackListModel>, label: &QString);
 
         /// Selects a row. `modifiers`: 1 toggles it (Ctrl or Cmd), 2 extends
         /// from the anchor (Shift), 4 leaves the selection alone when the
         /// row is already in it (a menu opening on it).
-        #[qinvokable] fn select(self: Pin<&mut TrackListModel>, row: i32, modifiers: i32);
-        #[qinvokable] fn queue(self: Pin<&mut TrackListModel>, row: i32);
-        #[qinvokable] fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
-        #[qinvokable] fn play_next(self: Pin<&mut TrackListModel>, row: i32);
-        #[qinvokable] fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
-        #[qinvokable] fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
-        #[qinvokable] fn move_in_playlist(self: Pin<&mut TrackListModel>, row: i32, by: i32);
-        #[qinvokable] fn selected_row(self: &TrackListModel) -> i32;
+        #[qinvokable]
+        fn select(self: Pin<&mut TrackListModel>, row: i32, modifiers: i32);
+        #[qinvokable]
+        fn queue(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn play_chosen(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn play_next(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn play_later(self: Pin<&mut TrackListModel>, row: i32, label: &QString);
+        #[qinvokable]
+        fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
+        #[qinvokable]
+        fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn remove_chosen(self: Pin<&mut TrackListModel>, row: i32);
+        #[qinvokable]
+        fn favorite_chosen(self: Pin<&mut TrackListModel>, row: i32, favorite: bool);
+        #[qinvokable]
+        fn move_in_playlist(self: Pin<&mut TrackListModel>, row: i32, by: i32);
+        #[qinvokable]
+        fn move_in_playlist_to(self: Pin<&mut TrackListModel>, from: i32, to: i32);
+        #[qinvokable]
+        fn selected_row(self: &TrackListModel) -> i32;
+        #[qinvokable]
+        fn selected_any_row(self: &TrackListModel) -> i32;
+        #[qinvokable]
+        fn selected_track_ids(self: &TrackListModel) -> Vec<i64>;
+        #[qinvokable]
+        fn chosen_track_ids(self: &TrackListModel, row: i32) -> Vec<i64>;
 
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
@@ -59,8 +91,10 @@ pub mod qobject {
         #[qinvokable]
         fn can_go(self: &TrackListModel, row: i32, target: &QString) -> bool;
 
-        #[qinvokable] fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
-        #[qinvokable] fn clear_selection(self: Pin<&mut TrackListModel>);
+        #[qinvokable]
+        fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
+        #[qinvokable]
+        fn clear_selection(self: Pin<&mut TrackListModel>);
     }
 
     unsafe extern "RustQt" {
@@ -73,12 +107,7 @@ pub mod qobject {
         #[inherit]
         #[qsignal]
         #[cxx_name = "dataChanged"]
-        fn data_changed(
-            self: Pin<&mut TrackListModel>,
-            top_left: &QModelIndex,
-            bottom_right: &QModelIndex,
-            roles: &QVector_i32,
-        );
+        fn data_changed(self: Pin<&mut TrackListModel>, top_left: &QModelIndex, bottom_right: &QModelIndex, roles: &QVector_i32);
         #[inherit]
         fn index(self: &TrackListModel, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
@@ -111,10 +140,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &[
-    "rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier",
-    "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art",
-];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -150,6 +176,9 @@ pub struct TrackListRust {
     kind: QString,
     album_id: i64,
     key: QString,
+    order: QString,
+    ascending: bool,
+    playlist_editable: bool,
     limit: i32,
     filter_rev: i32,
     playing_path: QString,
@@ -218,10 +247,7 @@ impl TrackListRust {
     /// Every track's file and id, in list order, when they are loaded.
     fn loaded_tracks(&self) -> Vec<&TrackRow> {
         match &self.rows {
-            Rows::Loaded(v) => v
-                .iter()
-                .filter_map(|e| if let Entry::Track(t) = e { Some(t) } else { None })
-                .collect(),
+            Rows::Loaded(v) => v.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t) } else { None }).collect(),
             Rows::Snapshot { .. } => Vec::new(),
         }
     }
@@ -244,7 +270,9 @@ impl TrackListRust {
 }
 
 fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
-    let Some(at) = list.at(row) else { return QVariant::default() };
+    let Some(at) = list.at(row) else {
+        return QVariant::default();
+    };
     let track = match &at {
         At::Header(label, meta) => {
             return match role - USER_ROLE {
@@ -277,11 +305,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         13 => QVariant::from(&track.id),
         14 => QVariant::from(&track.album_id),
         15 => {
-            let url = if track.artwork_path.is_empty() {
-                QUrl::default()
-            } else {
-                QUrl::from_local_file(&QString::from(&track.artwork_path))
-            };
+            let url = if track.artwork_path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&track.artwork_path)) };
             QVariant::from(&url)
         }
         _ => QVariant::default(),
@@ -304,10 +328,7 @@ fn with_discs(rows: Vec<TrackRow>) -> Vec<Entry> {
             current = Some(disc);
             let songs = rows[i..].iter().take_while(|r| r.disc.max(1) == disc).count();
             let n = songs.to_string();
-            out.push(Entry::Header {
-                label: app::with(|api| api.t_args("Disc {}", &[&disc.to_string()])),
-                meta: app::with(|api| api.tf("{} song", "{} songs", songs as i64, &[&n])),
-            });
+            out.push(Entry::Header { label: app::with(|api| api.t_args("Disc {}", &[&disc.to_string()])), meta: app::with(|api| api.tf("{} song", "{} songs", songs as i64, &[&n])) });
         }
         out.push(Entry::Track(t.clone()));
     }
@@ -352,10 +373,7 @@ impl qobject::TrackListModel {
         match &self.rust().rows {
             Rows::Loaded(entries) => {
                 // A header row plays the first track under it.
-                let start = entries[..row.min(entries.len())]
-                    .iter()
-                    .filter(|e| matches!(e, Entry::Track(_)))
-                    .count();
+                let start = entries[..row.min(entries.len())].iter().filter(|e| matches!(e, Entry::Track(_))).count();
                 let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
                 app::with(|api| api.play_from(&paths, start));
             }
@@ -372,12 +390,20 @@ impl qobject::TrackListModel {
         }
     }
 
-    pub fn queue_all(self: Pin<&mut Self>) { self.with_all_paths(enqueue); }
-    pub fn play_next_all(self: Pin<&mut Self>) { self.with_all_paths(next); }
+    pub fn queue_all(self: Pin<&mut Self>) {
+        self.with_all_paths(enqueue);
+    }
+    pub fn play_next_all(self: Pin<&mut Self>) {
+        self.with_all_paths(next);
+    }
 
     pub fn play_later_all(self: Pin<&mut Self>, label: &QString) {
         let label = label.to_string();
-        self.with_all_paths(move |paths| app::with(|api| { api.play_later_here(paths, &label); }));
+        self.with_all_paths(move |paths| {
+            app::with(|api| {
+                api.play_later_here(paths, &label);
+            })
+        });
     }
 
     fn with_all_paths(&self, then: impl FnOnce(&[String]) + Send + 'static) {
@@ -404,7 +430,9 @@ impl qobject::TrackListModel {
 
     pub fn select(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
         let row = row.max(0) as usize;
-        let Some(id) = self.rust().track_id(row) else { return };
+        let Some(id) = self.rust().track_id(row) else {
+            return;
+        };
         let anchor = self.rust().anchor;
         if modifiers & 4 != 0 && self.rust().selected.contains(&id) {
             return;
@@ -457,6 +485,20 @@ impl qobject::TrackListModel {
         self.with_selection(next);
     }
 
+    pub fn play_later(self: Pin<&mut Self>, row: i32, label: &QString) {
+        let label = label.to_string();
+        let later = move |paths: &[String]| {
+            app::with(|api| api.play_later_here(paths, &label));
+        };
+        if !self.in_selection(row) {
+            if let Some(track) = self.rust().track(row.max(0) as usize) {
+                later(&[track.path]);
+            }
+            return;
+        }
+        self.with_selection(later);
+    }
+
     pub fn add_to_playlist(self: Pin<&mut Self>, row: i32, playlist: i64) {
         let add = move |paths: &[String]| {
             let paths = paths.to_vec();
@@ -488,6 +530,23 @@ impl qobject::TrackListModel {
         }
     }
 
+    pub fn remove_chosen(mut self: Pin<&mut Self>, row: i32) {
+        let playlist = self.rust().album_id;
+        if self.rust().kind.to_string() != "playlist" || row < 0 {
+            return;
+        }
+        let ids = self.chosen_track_ids(row);
+        if app::with(|api| api.remove_tracks_from_playlist(playlist, &ids)) > 0 {
+            self.as_mut().rust_mut().selected.clear();
+            registry::playlists(|lists| lists.changed());
+        }
+    }
+
+    pub fn favorite_chosen(self: Pin<&mut Self>, row: i32, favorite: bool) {
+        let ids = self.chosen_track_ids(row);
+        app::with(|api| api.set_tracks_favorite(&ids, favorite));
+    }
+
     pub fn move_in_playlist(self: Pin<&mut Self>, row: i32, by: i32) {
         if self.rust().kind.to_string() != "playlist" || row < 0 {
             return;
@@ -502,6 +561,16 @@ impl qobject::TrackListModel {
         }
     }
 
+    pub fn move_in_playlist_to(self: Pin<&mut Self>, from: i32, to: i32) {
+        if self.rust().kind.to_string() != "playlist" || self.rust().order.to_string() != "custom" || from < 0 || to < 0 || from == to {
+            return;
+        }
+        let playlist = self.rust().album_id;
+        if app::with(|api| api.move_in_playlist(playlist, from as usize, to as usize)) {
+            registry::playlists(|lists| lists.changed());
+        }
+    }
+
     pub fn selected_row(&self) -> i32 {
         let this = self.rust();
         if this.selected.len() != 1 {
@@ -510,10 +579,29 @@ impl qobject::TrackListModel {
         (0..this.len()).find(|&r| this.track_id(r).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |r| r as i32)
     }
 
+    pub fn selected_any_row(&self) -> i32 {
+        let this = self.rust();
+        (0..this.len()).find(|&row| this.track_id(row).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |row| row as i32)
+    }
+
+    pub fn selected_track_ids(&self) -> Vec<i64> {
+        let this = self.rust();
+        (0..this.len()).filter_map(|row| this.track_id(row)).filter(|id| this.selected.contains(id)).collect()
+    }
+
     /// Whether the row is one of several selected.
     fn in_selection(&self, row: i32) -> bool {
         let this = self.rust();
         this.selected.len() > 1 && this.track_id(row.max(0) as usize).is_some_and(|id| this.selected.contains(&id))
+    }
+
+    pub fn chosen_track_ids(&self, row: i32) -> Vec<i64> {
+        let this = self.rust();
+        if self.in_selection(row) {
+            (0..this.len()).filter_map(|at| this.track_id(at)).filter(|id| this.selected.contains(id)).collect()
+        } else {
+            this.track_id(row.max(0) as usize).into_iter().collect()
+        }
     }
 
     /// The selected files, in list order -- which the selection does not
@@ -522,12 +610,7 @@ impl qobject::TrackListModel {
         let this = self.rust();
         match &this.rows {
             Rows::Loaded(_) => {
-                let paths: Vec<String> = this
-                    .loaded_tracks()
-                    .iter()
-                    .filter(|t| this.selected.contains(&t.id))
-                    .map(|t| t.path.clone())
-                    .collect();
+                let paths: Vec<String> = this.loaded_tracks().iter().filter(|t| this.selected.contains(&t.id)).map(|t| t.path.clone()).collect();
                 then(&paths);
             }
             Rows::Snapshot { ids, .. } => {
@@ -542,13 +625,14 @@ impl qobject::TrackListModel {
     }
 
     pub fn can_go(&self, row: i32, target: &QString) -> bool {
-        let Some(track) = self.rust().track(row.max(0) as usize) else { return false };
+        let Some(track) = self.rust().track(row.max(0) as usize) else {
+            return false;
+        };
         let kind = self.rust().kind.to_string();
         match target.to_string().as_str() {
             "album" => track.album_id > 0 && kind != "album",
             "artist" => {
-                let own = matches!(kind.as_str(), "artist" | "artistTop")
-                    && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
+                let own = matches!(kind.as_str(), "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
                 !track.artist.is_empty() && !own
             }
             "folder" => kind != "folder",
@@ -557,7 +641,9 @@ impl qobject::TrackListModel {
     }
 
     pub fn go(self: Pin<&mut Self>, row: i32, target: &QString) {
-        let Some(track) = self.rust().track(row.max(0) as usize) else { return };
+        let Some(track) = self.rust().track(row.max(0) as usize) else {
+            return;
+        };
         let target = target.to_string();
         registry::navigation(move |mut nav| match target.as_str() {
             "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
@@ -639,7 +725,9 @@ impl qobject::TrackListModel {
                 (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(ms))
             }
             "playlist" => {
-                let tracks = app::with(|api| api.playlist_rows(id));
+                let order = self.rust().order.to_string();
+                let ascending = self.rust().ascending;
+                let tracks = app::with(|api| api.playlist_rows_sorted(id, &order, ascending));
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
             }
@@ -695,6 +783,8 @@ impl cxx_qt::Initialize for qobject::TrackListModel {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_album_id_changed(|m| m.schedule()).release();
         self.as_mut().on_key_changed(|m| m.schedule()).release();
+        self.as_mut().on_order_changed(|m| m.schedule()).release();
+        self.as_mut().on_ascending_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_filter_rev_changed(|m| m.schedule()).release();
         self.as_mut()

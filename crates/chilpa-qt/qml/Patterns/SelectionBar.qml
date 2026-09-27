@@ -80,6 +80,7 @@ Item {
             glyph: Icons.playlistAdd
             tip: I18n.tr("Add to playlist…", I18n.rev)
             onClicked: {
+                picker.trackIds = AlbumActions.trackIds(0)
                 picker.show(add.x + row.x, 0)
                 picker.y = -picker.height - Metrics.gap8
             }
@@ -99,7 +100,6 @@ Item {
 
     PlaylistPicker {
         id: picker
-        onPicked: (playlist) => AlbumActions.addToPlaylist(0, playlist)
     }
 
     Shortcut {

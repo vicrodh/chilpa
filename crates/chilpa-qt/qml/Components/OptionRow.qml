@@ -8,6 +8,7 @@ import "../Primitives"
 Item {
     id: row
 
+    required property int index
     property string title
     property string detail
     property bool checked: false
@@ -16,6 +17,8 @@ Item {
     signal toggled(bool on)
 
     implicitHeight: Math.max(Metrics.optionRow, texts.implicitHeight + Metrics.gap10)
+
+    ListRowSurface { anchors.fill: parent; index: row.index; radius: Metrics.radiusRow }
 
     Column {
         id: texts

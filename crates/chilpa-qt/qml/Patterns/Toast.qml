@@ -10,6 +10,7 @@ Item {
     id: toast
 
     property string message
+    property bool warning: false
 
     width: Math.min(Metrics.toastMaxWidth, Math.max(Metrics.toastMinWidth, label.implicitWidth + Metrics.gap16 * 2)) // derived: padding on both sides
     height: label.implicitHeight + Metrics.gap16
@@ -37,7 +38,7 @@ Item {
             width: Metrics.gap4
             height: parent.height
             radius: parent.radius
-            color: Theme.color.statusNegative
+            color: toast.warning ? Theme.color.statusWarning : Theme.color.statusNegative
         }
 
         Edge {}
@@ -68,8 +69,10 @@ Item {
             if (Player.error === "")
                 return
             toast.message = Player.error
+            toast.warning = false
             toast.visible = true
             hideTimer.restart()
         }
     }
+
 }

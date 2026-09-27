@@ -106,6 +106,9 @@ msgstr "Agregar una carpeta a la biblioteca"
 msgid "Add to favorites"
 msgstr "Agregar a favoritos"
 
+msgid "Add to playlist"
+msgstr "Agregar a playlist"
+
 msgid "Add to playlist…"
 msgstr "Agregar a playlist…"
 
@@ -142,6 +145,11 @@ msgstr "Toda la música"
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
+msgid "Already contains {} track"
+msgid_plural "Already contains {} tracks"
+msgstr[0] "Ya contiene {} pista"
+msgstr[1] "Ya contiene {} pistas"
+
 msgid "Analysis"
 msgstr "Análisis"
 
@@ -171,6 +179,9 @@ msgstr "Artista"
 
 msgid "Artists"
 msgstr "Artistas"
+
+msgid "Ascending"
+msgstr "Ascendente"
 
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Le pide a PipeWire o a PulseAudio que suelte la tarjeta mientras Chilpa toca en ella, y se la regresa cuando Chilpa se detiene o se pausa un buen rato."
@@ -229,11 +240,20 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
+msgid "Choose"
+msgstr "Elegir"
+
+msgid "Choose playlist artwork"
+msgstr "Elegir imagen de la playlist"
+
 msgid "Clear"
 msgstr "Vaciar"
 
 msgid "Clear the selection"
 msgstr "Quitar la selección"
+
+msgid "Click tracks to select them; Shift selects a range."
+msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
 
 msgid "Close"
 msgstr "Cerrar"
@@ -265,11 +285,34 @@ msgstr "Conectar {}"
 msgid "Connected as {}"
 msgstr "Conectado como {}"
 
+msgid "Contains {} similar version"
+msgid_plural "Contains {} similar versions"
+msgstr[0] "Contiene {} versión similar"
+msgstr[1] "Contiene {} versiones similares"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
 msgid "Counting tracks…"
 msgstr "Contando pistas…"
+
+msgid "Cover collage"
+msgstr "Collage de portadas"
+
+msgid "Create"
+msgstr "Crear"
+
+msgid "Create and add"
+msgstr "Crear y agregar"
+
+msgid "Create new playlist"
+msgstr "Crear playlist"
+
+msgid "Custom"
+msgstr "Personalizado"
+
+msgid "Custom image"
+msgstr "Imagen personalizada"
 
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
@@ -301,11 +344,20 @@ msgstr "Fecha de alta"
 msgid "Delete"
 msgstr "Borrar"
 
+msgid "Delete playlist"
+msgstr "Eliminar playlist"
+
 msgid "Delete “{}”?"
 msgstr "¿Borrar “{}”?"
 
 msgid "Delete…"
 msgstr "Borrar…"
+
+msgid "Descending"
+msgstr "Descendente"
+
+msgid "Description"
+msgstr "Descripción"
 
 msgid "Device"
 msgstr "Dispositivo"
@@ -340,8 +392,23 @@ msgstr "Listo"
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 
+msgid "Drag or use ↑↓ to keep a custom order."
+msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
+
 msgid "Duration"
 msgstr "Duración"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Edit folder"
+msgstr "Editar folder"
+
+msgid "Edit playlist"
+msgstr "Editar playlist"
+
+msgid "Empty folders"
+msgstr "Folders vacíos"
 
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
@@ -381,6 +448,15 @@ msgstr "Filtrar carpetas"
 
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
+
+msgid "Finish selecting"
+msgstr "Terminar selección"
+
+msgid "Folder colors in the sidebar"
+msgstr "Colores de folders en el sidebar"
+
+msgid "Folder name"
+msgstr "Nombre del folder"
 
 msgid "Folders"
 msgstr "Carpetas"
@@ -426,6 +502,9 @@ msgstr "Alta resolución"
 
 msgid "Hi-Res Lossless"
 msgstr "Alta resolución sin pérdida"
+
+msgid "Hide from sidebar"
+msgstr "Ocultar del sidebar"
 
 msgid "Hide the columns"
 msgstr "Ocultar las columnas"
@@ -523,6 +602,9 @@ msgstr "Mantenimiento"
 msgid "Manage"
 msgstr "Administrar"
 
+msgid "Manage playlists"
+msgstr "Administrar playlists"
+
 msgid "Maximize"
 msgstr "Maximizar"
 
@@ -544,11 +626,17 @@ msgstr "No está"
 msgid "More"
 msgstr "Más"
 
+msgid "More actions"
+msgstr "Más acciones"
+
 msgid "Most played"
 msgstr "Lo más escuchado"
 
 msgid "Move down"
 msgstr "Bajar"
+
+msgid "Move to root"
+msgstr "Mover a la raíz"
 
 msgid "Move up"
 msgstr "Subir"
@@ -559,11 +647,17 @@ msgstr "Silenciar"
 msgid "My library"
 msgstr "Mi biblioteca"
 
+msgid "Name"
+msgstr "Nombre"
+
 msgid "Navigation"
 msgstr "Navegación"
 
 msgid "Never played"
 msgstr "Nunca escuchadas"
+
+msgid "New folder"
+msgstr "Nuevo folder"
 
 msgid "New playlist"
 msgstr "Nueva playlist"
@@ -607,6 +701,9 @@ msgstr "No hay nada en la cola."
 msgid "Now playing"
 msgstr "Sonando"
 
+msgid "Number of tracks"
+msgstr "Cantidad de pistas"
+
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."
 
@@ -618,6 +715,9 @@ msgstr "Una pista entra justo después de la otra. Apagado, el dispositivo termi
 
 msgid "Only with exclusive mode on."
 msgstr "Sólo con el modo exclusivo activo."
+
+msgid "Open"
+msgstr "Abrir"
 
 msgid "Open Last.fm"
 msgstr "Abrir Last.fm"
@@ -667,6 +767,9 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Play"
 msgstr "Reproducir"
 
+msgid "Play count"
+msgstr "Reproducciones"
+
 msgid "Play folder"
 msgstr "Reproducir carpeta"
 
@@ -694,6 +797,18 @@ msgstr "Barra del reproductor"
 msgid "Playlist"
 msgstr "Playlist"
 
+msgid "Playlist artwork in the sidebar"
+msgstr "Imagen de playlist en el sidebar"
+
+msgid "Playlist icon"
+msgstr "Icono de playlist"
+
+msgid "Playlist manager"
+msgstr "Administrador de playlists"
+
+msgid "Playlist name"
+msgstr "Nombre de la playlist"
+
 msgid "Playlists"
 msgstr "Playlists"
 
@@ -714,6 +829,9 @@ msgstr "Calidad"
 
 msgid "Queue"
 msgstr "Cola"
+
+msgid "Queue and playlist actions"
+msgstr "Acciones de cola y playlist"
 
 msgid "Queue options"
 msgstr "Opciones de cola"
@@ -741,6 +859,9 @@ msgstr "Lee el tempo, la tonalidad y la sonoridad en segundo plano. AutoMix apar
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
+
+msgid "Recent"
+msgstr "Recientes"
 
 msgid "Recently added"
 msgstr "Agregados recientemente"
@@ -811,6 +932,9 @@ msgstr "falta SACDTRL1"
 msgid "SACDTRL2 is missing"
 msgstr "falta SACDTRL2"
 
+msgid "Save"
+msgstr "Guardar"
+
 msgid "Save as playlist"
 msgstr "Guardar como playlist"
 
@@ -829,11 +953,17 @@ msgstr "Registrar escuchas"
 msgid "Search"
 msgstr "Buscar"
 
+msgid "Search playlists"
+msgstr "Buscar playlists"
+
+msgid "Search playlists and folders"
+msgstr "Buscar playlists y folders"
+
 msgid "Select"
 msgstr "Seleccionar"
 
-msgid "Select a track and use Alt ↑↓, or its menu, to move it."
-msgstr "Selecciona una pista y usa Alt ↑↓, o su menú, para moverla."
+msgid "Select tracks"
+msgstr "Seleccionar pistas"
 
 msgid "Send listens"
 msgstr "Enviar escuchas"
@@ -844,8 +974,14 @@ msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa 
 msgid "Settings"
 msgstr "Ajustes"
 
+msgid "Show each playlist folder in its chosen color."
+msgstr "Muestra cada folder de playlists con el color elegido."
+
 msgid "Show in folder"
 msgstr "Mostrar en la carpeta"
+
+msgid "Show in sidebar"
+msgstr "Mostrar en el sidebar"
 
 msgid "Show the columns"
 msgstr "Mostrar las columnas"
@@ -877,11 +1013,17 @@ msgstr "Sistema"
 msgid "Tabs"
 msgstr "Pestañas"
 
+msgid "Tags, separated by commas"
+msgstr "Tags, separados por comas"
+
 msgid "Take the card from the sound server"
 msgstr "Tomar la tarjeta del servidor de sonido"
 
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
+
+msgid "That source does not allow tracks from here in this playlist."
+msgstr "Ese source no permite pistas de aquí en esta playlist."
 
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el resultado a una sola frecuencia, así que una pista nunca llega al aparato como salió del archivo. No hay ningún ajuste aquí que cambie eso. Es el que funciona en todos lados; para que las muestras lleguen sin tocarse, elige la tarjeta directo o PipeWire."
@@ -937,6 +1079,9 @@ msgstr "Esta pantalla todavía no está hecha."
 msgid "This section is not built yet."
 msgstr "Esta sección todavía no está hecha."
 
+msgid "This source owns the order."
+msgstr "Este source controla el orden."
+
 msgid "This update asks for additional access."
 msgstr "Esta actualización solicita acceso adicional."
 
@@ -978,6 +1123,9 @@ msgstr "A continuación"
 
 msgid "Updates"
 msgstr "Actualizaciones"
+
+msgid "Use the playlist icon or a cover collage."
+msgstr "Usa el icono de playlist o un collage de portadas."
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"
@@ -1744,6 +1892,11 @@ msgstr "{} de las pistas de la lista ya no están"
 msgid "{} of {} formats come out untouched"
 msgstr "{} de {} formatos salen tal cual"
 
+msgid "{} playlist"
+msgid_plural "{} playlists"
+msgstr[0] "{} playlist"
+msgstr[1] "{} playlists"
+
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} leídos, {} sin cambios, {} faltantes"
 
@@ -1751,6 +1904,16 @@ msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] "{} disco"
 msgstr[1] "{} discos"
+
+msgid "{} selected track"
+msgid_plural "{} selected tracks"
+msgstr[0] "{} pista seleccionada"
+msgstr[1] "{} pistas seleccionadas"
+
+msgid "{} similar version is also there"
+msgid_plural "{} similar versions are also there"
+msgstr[0] "También hay {} versión similar"
+msgstr[1] "También hay {} versiones similares"
 
 msgid "{} song"
 msgid_plural "{} songs"
@@ -1761,6 +1924,16 @@ msgid "{} track"
 msgid_plural "{} tracks"
 msgstr[0] "{} pista"
 msgstr[1] "{} pistas"
+
+msgid "{} track added"
+msgid_plural "{} tracks added"
+msgstr[0] "Se agregó {} pista"
+msgstr[1] "Se agregaron {} pistas"
+
+msgid "{} was already there"
+msgid_plural "{} were already there"
+msgstr[0] "{} ya estaba ahí"
+msgstr[1] "{} ya estaban ahí"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "No se permitió a tiempo en {}; vuelve a conectar"

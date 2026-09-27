@@ -38,6 +38,9 @@ pub mod qobject {
         #[qproperty(bool, middle_click_tabs)]
         /// A click on a record opens its quick view, not its page.
         #[qproperty(bool, quick_view_click)]
+        /// Sidebar playlist and folder artwork preferences.
+        #[qproperty(bool, playlist_collage)]
+        #[qproperty(bool, folder_colors)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -80,6 +83,8 @@ const PANES_HEIGHT: &str = "ui.library.panesHeight";
 const LIBRARY_VIEW: &str = "ui.library.view";
 const EXTRA_CONTROLS: &str = "playback.extra";
 const MIDDLE_CLICK_TABS: &str = "navigation.newtab";
+const PLAYLIST_ARTWORK: &str = "navigation.playlistArtwork";
+const FOLDER_COLORS: &str = "navigation.folderColors";
 
 #[derive(Default)]
 pub struct SettingsRust {
@@ -95,6 +100,8 @@ pub struct SettingsRust {
     extra_controls: bool,
     middle_click_tabs: bool,
     quick_view_click: bool,
+    playlist_collage: bool,
+    folder_colors: bool,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -133,18 +140,10 @@ fn remember(key: &'static str, value: String) {
 impl cxx_qt::Initialize for qobject::SettingsModel {
     fn initialize(mut self: Pin<&mut Self>) {
         crate::registry::register_settings(self.qt_thread());
-        let (density, mode, width) = app::with(|api| {
-            (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH))
-        });
-        let (queue, lyrics, queue_share) = app::with(|api| {
-            (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_SHARE))
-        });
-        let (panes, panes_height, view) = app::with(|api| {
-            (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW))
-        });
-        let (extra, middle, click) = app::with(|api| {
-            (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS), api.preference("navigation.albumClick"))
-        });
+        let (density, mode, width) = app::with(|api| (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH)));
+        let (queue, lyrics, queue_share) = app::with(|api| (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_SHARE)));
+        let (panes, panes_height, view) = app::with(|api| (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW)));
+        let (extra, middle, click, playlist_artwork, folder_colors) = app::with(|api| (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS), api.preference("navigation.albumClick"), api.preference(PLAYLIST_ARTWORK), api.preference(FOLDER_COLORS)));
         {
             let mut this = self.as_mut().rust_mut();
             let all = chilpa_api::settings_schema::SECTIONS;
@@ -164,33 +163,21 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.extra_controls = extra.as_deref() == Some("true");
             this.middle_click_tabs = middle.as_deref() != Some("false");
             this.quick_view_click = click.as_deref() == Some("quick");
+            this.playlist_collage = playlist_artwork.as_deref() == Some("collage");
+            this.folder_colors = folder_colors.as_deref() != Some("false");
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
-        self.as_mut()
-            .on_sidebar_mode_changed(|m| remember(SIDEBAR_MODE, m.sidebar_mode().to_string()))
-            .release();
-        self.as_mut()
-            .on_sidebar_width_changed(|m| remember(SIDEBAR_WIDTH, m.sidebar_width().to_string()))
-            .release();
-        self.as_mut()
-            .on_queue_open_changed(|m| remember(QUEUE_MODE, if *m.queue_open() { "side" } else { "off" }.to_string()))
-            .release();
+        self.as_mut().on_sidebar_mode_changed(|m| remember(SIDEBAR_MODE, m.sidebar_mode().to_string())).release();
+        self.as_mut().on_sidebar_width_changed(|m| remember(SIDEBAR_WIDTH, m.sidebar_width().to_string())).release();
+        self.as_mut().on_queue_open_changed(|m| remember(QUEUE_MODE, if *m.queue_open() { "side" } else { "off" }.to_string())).release();
         self.as_mut().on_lyrics_open_changed(|m| remember(LYRICS_OPEN, m.lyrics_open().to_string())).release();
-        self.as_mut()
-            .on_queue_share_changed(|m| remember(QUEUE_SHARE, m.queue_share().to_string()))
-            .release();
+        self.as_mut().on_queue_share_changed(|m| remember(QUEUE_SHARE, m.queue_share().to_string())).release();
         self.as_mut().on_panes_open_changed(|m| remember(PANES_OPEN, m.panes_open().to_string())).release();
-        self.as_mut()
-            .on_panes_height_changed(|m| remember(PANES_HEIGHT, m.panes_height().to_string()))
-            .release();
-        self.as_mut()
-            .on_library_view_changed(|m| remember(LIBRARY_VIEW, m.library_view().to_string()))
-            .release();
-        self.as_mut()
-            .on_extra_controls_changed(|m| remember(EXTRA_CONTROLS, m.extra_controls().to_string()))
-            .release();
-        self.as_mut()
-            .on_middle_click_tabs_changed(|m| remember(MIDDLE_CLICK_TABS, m.middle_click_tabs().to_string()))
-            .release();
+        self.as_mut().on_panes_height_changed(|m| remember(PANES_HEIGHT, m.panes_height().to_string())).release();
+        self.as_mut().on_library_view_changed(|m| remember(LIBRARY_VIEW, m.library_view().to_string())).release();
+        self.as_mut().on_extra_controls_changed(|m| remember(EXTRA_CONTROLS, m.extra_controls().to_string())).release();
+        self.as_mut().on_middle_click_tabs_changed(|m| remember(MIDDLE_CLICK_TABS, m.middle_click_tabs().to_string())).release();
+        self.as_mut().on_playlist_collage_changed(|m| remember(PLAYLIST_ARTWORK, if *m.playlist_collage() { "collage" } else { "icon" }.to_string())).release();
+        self.as_mut().on_folder_colors_changed(|m| remember(FOLDER_COLORS, m.folder_colors().to_string())).release();
     }
 }

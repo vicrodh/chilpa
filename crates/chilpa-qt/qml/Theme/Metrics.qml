@@ -205,6 +205,7 @@ QtObject {
     readonly property int heroArt: 220
     readonly property int pageHero: 168
     readonly property int playlistFilter: 26
+    readonly property int playlistIndent: 22
     readonly property int heroGap: 28
     readonly property int barHeight: 44
 
@@ -235,6 +236,23 @@ QtObject {
     readonly property int screenSearch: 200
     readonly property int sourcesPopoverWidth: 340
     readonly property int sourceFilterRow: 44
+    readonly property int playlistModalWidth: 520
+    readonly property int playlistModalHeight: 600
+    readonly property int playlistPickerRow: 58
+    readonly property int playlistManagerSearch: 250
+    readonly property int playlistManagerCardWidth: 176
+    readonly property int playlistManagerCard: 210
+    readonly property int playlistManagerListRow: 58
+    readonly property int playlistManagerArt: 112
+    readonly property int playlistManagerFolderIcon: 60
+    readonly property int playlistManagerTextY: 134
+    readonly property int playlistManagerBack: 110
+    readonly property int playlistFolderDialog: 360
+    readonly property int colorSwatch: 28
+    readonly property int colorSwatchRadius: 14
+    readonly property int playlistCollageTile: 8
+    readonly property int contentHorizontalMargins: 56
+    readonly property int selectionHorizontalPadding: 32
 
     // The right panel (design/02 5).
     readonly property int rightPanel: 300

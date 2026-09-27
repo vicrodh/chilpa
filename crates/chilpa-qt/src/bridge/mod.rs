@@ -17,7 +17,6 @@ pub mod i18n;
 pub mod library;
 pub mod navigation;
 pub mod player;
-pub mod playlist_list;
 pub mod playlists;
 pub mod search;
 pub mod settings;

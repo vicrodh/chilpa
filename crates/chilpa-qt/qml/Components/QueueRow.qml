@@ -25,10 +25,12 @@ Item {
 
     height: playing ? Metrics.queueNowRow : Metrics.queueRow
 
-    Rectangle {
+    ListRowSurface {
         anchors.fill: parent
+        index: row.index
         radius: Metrics.radiusCard
-        color: row.playing ? Theme.color.rowPlaying : hover.hovered ? Theme.color.stateHover : "transparent"
+        hovered: hover.hovered
+        emphasized: row.playing
     }
 
     ArtTile {

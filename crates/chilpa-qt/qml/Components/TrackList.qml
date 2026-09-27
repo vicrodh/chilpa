@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 
 // The one track list (frontend ADR-0006): configured by properties, never
 // forked. Rows are recycled; hover and clicks are resolved here, once for
@@ -24,6 +25,10 @@ Item {
     // Titles that reorder the list, and the order in use.
     property bool sortable: false
     property string order
+    // Playlist-only affordances. Multi-select is opt-in; custom order is the
+    // only order that may be dragged or moved with arrows.
+    property bool selectionMode: false
+    property bool reorderable: false
 
     signal sortRequested(string order)
 
@@ -81,6 +86,10 @@ Item {
     MouseArea {
         id: pointer
 
+        property int pressedRow: -1
+        property real pressedY: 0
+        property bool dragging: false
+
         anchors.fill: view
         anchors.rightMargin: list.fitContent ? 0 : Metrics.gap10
         hoverEnabled: true
@@ -93,7 +102,27 @@ Item {
             view.hovered = containsMouse ? rowAt(mouseY) : -1
         }
 
-        onPositionChanged: track()
+        onPressed: (mouse) => {
+            if (mouse.button === Qt.LeftButton && list.reorderable) {
+                pressedRow = rowAt(mouse.y)
+                pressedY = mouse.y
+                dragging = false
+            }
+        }
+        onPositionChanged: (mouse) => {
+            track()
+            if (pressedRow >= 0 && Math.abs(mouse.y - pressedY) > Qt.styleHints.startDragDistance)
+                dragging = true
+        }
+        onReleased: (mouse) => {
+            if (dragging && pressedRow >= 0) {
+                const target = rowAt(mouse.y)
+                if (target >= 0)
+                    list.model.moveInPlaylistTo(pressedRow, target)
+            }
+            pressedRow = -1
+            dragging = false
+        }
         onContainsMouseChanged: track()
         onClicked: (mouse) => {
             const row = rowAt(mouse.y)
@@ -104,7 +133,7 @@ Item {
                 actions.show(row, mouse.x, view.y + mouse.y)
                 return
             }
-            const toggle = (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
+            const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
             list.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
         }
         onDoubleClicked: (mouse) => {
@@ -117,5 +146,29 @@ Item {
     TrackMenu {
         id: actions
         model: list.model
+    }
+
+    Row {
+        visible: list.reorderable && view.hovered >= 0
+        x: list.width - width - Metrics.gap10
+        y: {
+            const item = view.itemAtIndex(view.hovered)
+            return head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
+        }
+        spacing: Metrics.gap2
+        z: 2
+
+        IconButton {
+            size: Metrics.button24
+            glyph: Icons.chevronUp
+            tip: I18n.tr("Move up", I18n.rev)
+            onClicked: list.model.moveInPlaylist(view.hovered, -1)
+        }
+        IconButton {
+            size: Metrics.button24
+            glyph: Icons.chevronDown
+            tip: I18n.tr("Move down", I18n.rev)
+            onClicked: list.model.moveInPlaylist(view.hovered, 1)
+        }
     }
 }

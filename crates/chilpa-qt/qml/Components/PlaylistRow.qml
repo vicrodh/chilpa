@@ -13,6 +13,16 @@ Item {
     required property int playlistId
     required property string name
     required property int tracks
+    required property string source
+    required property string sourceName
+    required property bool local
+    required property string artwork
+    required property int folderId
+    required property bool visibleInSidebar
+    required property url cover1
+    required property url cover2
+    required property url cover3
+    required property url cover4
     property bool active: false
     property bool editing: false
 
@@ -22,19 +32,47 @@ Item {
 
     implicitHeight: Metrics.playlistRowHeight
 
-    Rectangle {
+    ListRowSurface {
         anchors.fill: parent
+        index: row.index
         radius: Metrics.radiusControl
-        color: row.active ? Theme.color.stateSelected : hover.hovered ? Theme.color.stateHover : "transparent"
+        selected: row.active
+        hovered: hover.hovered
     }
 
     Icon {
         id: icon
-        x: Metrics.navItemPadding
+        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0)
         anchors.verticalCenter: parent.verticalCenter
-        glyph: Icons.playlist
+        visible: !covers.active
+        glyph: row.local ? Icons.playlist : Icons.server
         size: Metrics.iconMd
         color: Theme.color.textSecondary
+    }
+
+    Loader {
+        id: covers
+        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0)
+        anchors.verticalCenter: parent.verticalCenter
+        width: Metrics.iconMd
+        height: Metrics.iconMd
+        active: SettingsModel.playlistCollage && row.cover1.toString() !== ""
+
+        sourceComponent: Grid {
+            columns: 2
+            Repeater {
+                model: [row.cover1, row.cover2, row.cover3, row.cover4]
+                ArtTile {
+                    required property var modelData
+                    required property int index
+                    width: Metrics.playlistCollageTile
+                    height: width
+                    radius: 0
+                    source: modelData
+                    tint: index
+                }
+            }
+        }
     }
 
     Text {
@@ -79,6 +117,6 @@ Item {
         enabled: !row.editing
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (point, button) => button === Qt.RightButton ? row.menu(point.position.x, point.position.y) : row.opened()
-        onDoubleTapped: row.editing = true
+        onDoubleTapped: if (row.local) row.editing = true
     }
 }

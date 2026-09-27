@@ -17,10 +17,16 @@ Item {
     property bool round: false
     property string meta
     property bool canQueue: false
+    property bool canPlay: true
+    property string queueGlyph: Icons.playlistAdd
+    property string queueTip: I18n.tr("Add to queue", I18n.rev)
+    property bool canSelect: false
+    property bool selecting: false
 
     signal play()
     signal shuffle()
     signal queue()
+    signal selectToggle()
 
     readonly property bool mosaic: covers.length > 1
 
@@ -88,6 +94,7 @@ Item {
         Row {
             spacing: Metrics.gap8
             PillButton {
+                visible: hero.canPlay
                 kind: "primary"
                 glyph: Icons.playerPlayFilled
                 filled: true
@@ -95,6 +102,7 @@ Item {
                 onClicked: hero.play()
             }
             PillButton {
+                visible: hero.canPlay
                 glyph: Icons.arrowsShuffle
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
@@ -103,9 +111,19 @@ Item {
                 visible: hero.canQueue
                 anchors.verticalCenter: parent.verticalCenter
                 round: true
-                glyph: Icons.playlistAdd
-                tip: I18n.tr("Add to queue", I18n.rev)
+                glyph: hero.queueGlyph
+                tip: hero.queueTip
                 onClicked: hero.queue()
+            }
+            IconButton {
+                visible: hero.canSelect
+                anchors.verticalCenter: parent.verticalCenter
+                round: true
+                tone: hero.selecting ? "accent" : "normal"
+                glyph: Icons.check
+                tip: hero.selecting ? I18n.tr("Finish selecting", I18n.rev)
+                                    : I18n.tr("Select tracks", I18n.rev)
+                onClicked: hero.selectToggle()
             }
         }
     }

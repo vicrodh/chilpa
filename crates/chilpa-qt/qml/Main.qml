@@ -79,6 +79,7 @@ Window {
         y: window.height - height - (selection.visible ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
     }
 
+
     // Above the content and the tab bar, so its grip is never covered.
     SidebarFrame {
         id: sidebar

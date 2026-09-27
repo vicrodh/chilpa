@@ -127,6 +127,7 @@ fn label(r: &Route) -> (String, &'static str) {
             let name = app::with(|api| api.playlist(r.id).map(|p| p.name)).unwrap_or_default();
             (name, "playlist")
         }
+        Screen::PlaylistManager => (app::t("Playlist manager"), "playlist"),
     }
 }
 

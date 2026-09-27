@@ -54,12 +54,7 @@ pub mod qobject {
         #[inherit]
         #[qsignal]
         #[cxx_name = "dataChanged"]
-        fn data_changed(
-            self: Pin<&mut SettingsPage>,
-            top_left: &QModelIndex,
-            bottom_right: &QModelIndex,
-            roles: &QVector_i32,
-        );
+        fn data_changed(self: Pin<&mut SettingsPage>, top_left: &QModelIndex, bottom_right: &QModelIndex, roles: &QVector_i32);
         #[inherit]
         fn index(self: &SettingsPage, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
@@ -82,8 +77,8 @@ pub mod qobject {
     impl cxx_qt::Threading for SettingsPage {}
 }
 
-use chilpa_api::settings_schema;
 use crate::{app, registry};
+use chilpa_api::settings_schema;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
 use std::pin::Pin;
@@ -91,10 +86,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-const ROLES: &[&str] = &[
-    "rowKind", "key", "title", "description", "control", "action", "value", "options", "optionValues",
-    "marks",
-];
+const ROLES: &[&str] = &["rowKind", "key", "title", "description", "control", "action", "value", "options", "optionValues", "marks"];
 const USER_ROLE: i32 = 256;
 
 /// What a row shows: a group title (0), a setting (1) or a line of a
@@ -145,6 +137,9 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
         "appearance.density" => vec![("compact", app::t("Compact")), ("rich", app::t("Rich"))],
         "appearance.font" => vec![("inter", "Inter".to_string()), ("system", app::t("System"))],
         "navigation.albumClick" => vec![("page", app::t("Album page")), ("quick", app::t("Quick view"))],
+        "navigation.playlistArtwork" => {
+            vec![("icon", app::t("Playlist icon")), ("collage", app::t("Cover collage"))]
+        }
         _ => Vec::new(),
     }
 }
@@ -157,12 +152,7 @@ fn pref_on(key: &str, default: bool) -> String {
 /// The accents offered (design/05): the theme's own, then four.
 const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 
-const DEFAULTS: &[(&str, &str)] = &[
-    ("appearance.theme", "system"),
-    ("appearance.density", "compact"),
-    ("appearance.font", "inter"),
-    ("navigation.albumClick", "page"),
-];
+const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon")];
 
 impl SettingsPageRust {
     fn build(&mut self) {
@@ -175,14 +165,7 @@ impl SettingsPageRust {
                 if s.key == "sources.plugins" {
                     let plugins = app::with(|api| api.plugins());
                     if plugins.is_empty() {
-                        rows.push(Row {
-                            kind: 1,
-                            key: s.key.into(),
-                            title: app::t(s.title),
-                            description: app::t(s.description),
-                            control: "none".into(),
-                            ..Row::default()
-                        });
+                        rows.push(Row { kind: 1, key: s.key.into(), title: app::t(s.title), description: app::t(s.description), control: "none".into(), ..Row::default() });
                     } else {
                         for plugin in plugins {
                             rows.extend(self.source_rows(plugin));
@@ -190,15 +173,7 @@ impl SettingsPageRust {
                     }
                     continue;
                 }
-                let mut row = Row {
-                    kind: 1,
-                    key: s.key.into(),
-                    title: app::t(s.title),
-                    description: if s.description.is_empty() { String::new() } else { app::t(s.description) },
-                    control: s.control.name().into(),
-                    action: if s.action.is_empty() { String::new() } else { app::t(s.action) },
-                    ..Row::default()
-                };
+                let mut row = Row { kind: 1, key: s.key.into(), title: app::t(s.title), description: if s.description.is_empty() { String::new() } else { app::t(s.description) }, control: s.control.name().into(), action: if s.action.is_empty() { String::new() } else { app::t(s.action) }, ..Row::default() };
                 self.fill(&mut row, &output);
                 // A row that does not apply to what is chosen is left out.
                 if row.control.is_empty() {
@@ -207,13 +182,7 @@ impl SettingsPageRust {
                 rows.push(row);
                 if s.key == "audio.wizard" {
                     for line in self.report.iter().flat_map(|r| &r.rows) {
-                        rows.push(Row {
-                            kind: 2,
-                            title: line.name.clone(),
-                            description: line.format.clone(),
-                            value: line.verdict.clone(),
-                            ..Row::default()
-                        });
+                        rows.push(Row { kind: 2, title: line.name.clone(), description: line.format.clone(), value: line.verdict.clone(), ..Row::default() });
                     }
                 }
             }
@@ -261,8 +230,7 @@ impl SettingsPageRust {
                 }
             }
             "audio.forceRate" => {
-                let (shown, on, alone) =
-                    app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), api.exclusive()));
+                let (shown, on, alone) = app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), api.exclusive()));
                 row.value = (on && alone).to_string();
                 row.control = if !shown {
                     String::new()
@@ -319,6 +287,7 @@ impl SettingsPageRust {
             "playback.keepQueue" => row.value = app::with(|api| api.keep_queue()).to_string(),
             "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
             "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
+            "navigation.folderColors" => row.value = pref_on("navigation.folderColors", true),
             "integrations.listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
             "integrations.lastfm.account" => {
                 let status = app::with(|api| api.lastfm());
@@ -349,22 +318,12 @@ impl SettingsPageRust {
                     } else {
                         let (done, total) = (status.done.to_string(), status.total.to_string());
                         let progress = app::with(|api| api.t_args("Analyzing {} of {} tracks", &[&done, &total]));
-                        row.description = if status.last.is_empty() {
-                            progress
-                        } else {
-                            format!("{progress} · {}", status.last)
-                        };
+                        row.description = if status.last.is_empty() { progress } else { format!("{progress} · {}", status.last) };
                         row.value = (status.done as f64 / status.total as f64).to_string();
                     }
                 } else if status.analyzed + status.without_pulse + status.failed > 0 {
-                    let (analyzed, quiet, failed) = (
-                        status.analyzed.to_string(),
-                        status.without_pulse.to_string(),
-                        status.failed.to_string(),
-                    );
-                    row.description = app::with(|api| {
-                        api.t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed])
-                    });
+                    let (analyzed, quiet, failed) = (status.analyzed.to_string(), status.without_pulse.to_string(), status.failed.to_string());
+                    row.description = app::with(|api| api.t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed]));
                 }
             }
             key => {
@@ -406,15 +365,7 @@ impl SettingsPageRust {
         } else if !plugin.account_kind.is_empty() {
             details.push(app::t("Account not connected."));
         }
-        let mut row = Row {
-            kind: 1,
-            key,
-            title: plugin.name.clone(),
-            description: details.join(" "),
-            control: "status".into(),
-            action: app::t(&plugin.state),
-            ..Row::default()
-        };
+        let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: app::t(&plugin.state), ..Row::default() };
         if let Some((said_key, said)) = &self.said {
             if said_key == &row.key {
                 row.description = said.clone();
@@ -422,11 +373,7 @@ impl SettingsPageRust {
         }
         if !plugin.pending.is_empty() {
             row.values.push("approve".into());
-            row.options.push(if plugin.wants_more {
-                app::t("Approve new access")
-            } else {
-                app::t("Approve")
-            });
+            row.options.push(if plugin.wants_more { app::t("Approve new access") } else { app::t("Approve") });
         } else {
             if plugin.state == "quarantined" {
                 row.values.push("reactivate".into());
@@ -452,15 +399,7 @@ impl SettingsPageRust {
         }
         let mut rows = vec![row];
         if plugin.pending.is_empty() && plugin.account_kind == "token" && !plugin.connected {
-            rows.push(Row {
-                kind: 1,
-                key: format!("sources.token/{}", plugin.id),
-                title: app::with(|api| api.t_args("Connect {}", &[&plugin.name])),
-                description: app::t("Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."),
-                control: "secret".into(),
-                action: app::t("Connect"),
-                ..Row::default()
-            });
+            rows.push(Row { kind: 1, key: format!("sources.token/{}", plugin.id), title: app::with(|api| api.t_args("Connect {}", &[&plugin.name])), description: app::t("Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."), control: "secret".into(), action: app::t("Connect"), ..Row::default() });
         }
         rows
     }
@@ -477,9 +416,7 @@ fn account(row: &mut Row, status: &chilpa_api::ScrobbleStatus) {
         row.action = app::t("Disconnect");
         row.description = if status.pending > 0 {
             let n = status.pending.to_string();
-            app::with(|api| {
-                api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", status.pending as i64, &[&n])
-            })
+            app::with(|api| api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", status.pending as i64, &[&n]))
         } else {
             String::new()
         };
@@ -491,7 +428,9 @@ fn account(row: &mut Row, status: &chilpa_api::ScrobbleStatus) {
 
 impl qobject::SettingsPage {
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
-        let Some(row) = self.rust().rows.get(index.row().max(0) as usize) else { return QVariant::default() };
+        let Some(row) = self.rust().rows.get(index.row().max(0) as usize) else {
+            return QVariant::default();
+        };
         let text = |s: &str| QVariant::from(&QString::from(s));
         match role - USER_ROLE {
             0 => QVariant::from(&row.kind),
@@ -611,6 +550,14 @@ impl qobject::SettingsPage {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_quick_view_click(value == "quick"));
             }
+            "navigation.playlistArtwork" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_playlist_collage(value == "collage"));
+            }
+            "navigation.folderColors" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_folder_colors(value == "true"));
+            }
             "integrations.listenbrainz.enabled" => app::with(|api| api.enable_listenbrainz(value == "true")),
             "integrations.lastfm.enabled" => app::with(|api| api.enable_lastfm(value == "true")),
             "integrations.listenbrainz.account" => {
@@ -692,11 +639,7 @@ impl qobject::SettingsPage {
                 return;
             }
             "library.repair" => {
-                let said = if app::with(|api| api.repair_library()) {
-                    app::t("Repaired. Nothing was lost.")
-                } else {
-                    app::with(|api| api.now_playing().error.clone())
-                };
+                let said = if app::with(|api| api.repair_library()) { app::t("Repaired. Nothing was lost.") } else { app::with(|api| api.now_playing().error.clone()) };
                 self.as_mut().rust_mut().said = Some(("library.repair".into(), said));
             }
             "library.analysis" => {

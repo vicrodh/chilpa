@@ -38,6 +38,8 @@ pub mod qobject {
         /// Zero makes a new playlist.
         #[qinvokable]
         fn add_to_playlist(self: &AlbumActions, id: i64, playlist: i64);
+        #[qinvokable]
+        fn track_ids(self: &AlbumActions, id: i64) -> Vec<i64>;
     }
 
     impl cxx_qt::Threading for AlbumActions {}
@@ -143,6 +145,10 @@ impl qobject::AlbumActions {
                 lists.changed();
             }
         });
+    }
+
+    pub fn track_ids(&self, id: i64) -> Vec<i64> {
+        self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect()
     }
 
     fn bump(mut self: Pin<&mut Self>) {
