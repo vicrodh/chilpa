@@ -9,7 +9,6 @@ mod browse;
 mod format;
 mod paths;
 mod registry;
-mod theme;
 mod worker;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 // Only Linux has a desktop file to be named after, and only there is the

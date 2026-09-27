@@ -66,7 +66,7 @@ pub mod qobject {
 }
 
 use crate::app;
-use crate::theme::{parse_color, Rgba, Theme};
+use chilpa_api::theme::{parse_color, Rgba, Theme};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QColor, QString};
 use std::pin::Pin;
