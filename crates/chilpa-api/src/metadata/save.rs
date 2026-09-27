@@ -425,11 +425,16 @@ impl Chilpa {
         let mut album_id = self.metadata.album_id;
         let mut told = None;
         if let (Some(edit), Some(lib)) = (edit, self.library()) {
-            for (home, of) in &written.homes {
-                let _ = lib.note_home(home, of, now);
-            }
             match lib.apply_edit(&edit) {
-                Ok(edited) => album_id = edited.album_id,
+                Ok(edited) => {
+                    album_id = edited.album_id;
+                    // Only once the library says what the sidecars say: a
+                    // sidecar written down as seen is one the next scan
+                    // skips, and it would never catch the library up.
+                    for (home, of) in &written.homes {
+                        let _ = lib.note_home(home, of, now);
+                    }
+                }
                 Err(e) => told = Some(chilpa_i18n::t_args("what was saved could not be written down in the library: {}; rescan to see it", &[&e.to_string()])),
             }
         }
