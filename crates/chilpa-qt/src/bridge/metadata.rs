@@ -53,6 +53,7 @@ pub mod qobject {
     }
 
     impl cxx_qt::Threading for MetadataEditor {}
+    impl cxx_qt::Initialize for MetadataEditor {}
 }
 
 use crate::{app, registry};
@@ -154,5 +155,11 @@ impl qobject::MetadataEditor {
                 }
             });
         }
+    }
+}
+
+impl cxx_qt::Initialize for qobject::MetadataEditor {
+    fn initialize(self: Pin<&mut Self>) {
+        registry::register_metadata(self.qt_thread());
     }
 }

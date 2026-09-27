@@ -298,4 +298,14 @@ QtObject {
     readonly property real paneShareTotal: 4.2
     // The three one-pixel separators between them and the edge on each side.
     readonly property int paneSeams: 5
+
+    // The metadata editor.
+    readonly property int metadataLabel: 190
+    readonly property int metadataSide: 380
+    readonly property int metadataCover: 132
+    readonly property int metadataCandidate: 88
+    readonly property int metadataNumber: 48
+    readonly property int metadataRow: 36
+    readonly property int metadataHit: 48
+    readonly property int confirmWidth: 440
 }

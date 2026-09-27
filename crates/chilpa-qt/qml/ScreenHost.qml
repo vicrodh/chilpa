@@ -19,6 +19,7 @@ Loader {
         case "folders": return folders
         case "playlist": return playlist
         case "playlistManager": return playlistManager
+        case "metadata": return metadata
         default: return pending
         }
     }
@@ -34,5 +35,6 @@ Loader {
     Component { id: folders; FoldersScreen {} }
     Component { id: playlist; PlaylistScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
+    Component { id: metadata; MetadataScreen {} }
     Component { id: pending; PendingScreen {} }
 }

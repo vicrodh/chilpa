@@ -73,6 +73,9 @@ msgstr ""
 msgid "A click on a record opens"
 msgstr ""
 
+msgid "A sidecar sets this, not the file"
+msgstr ""
+
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr ""
 
@@ -127,6 +130,12 @@ msgstr ""
 msgid "Album actions"
 msgstr ""
 
+msgid "Album artist"
+msgstr ""
+
+msgid "Album artists"
+msgstr ""
+
 msgid "Album header"
 msgstr ""
 
@@ -156,6 +165,9 @@ msgid_plural "Already contains {} tracks"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "Also write the other tag layers"
+msgstr ""
+
 msgid "Analysis"
 msgstr ""
 
@@ -172,6 +184,9 @@ msgid "Appearance"
 msgstr ""
 
 msgid "Appears on"
+msgstr ""
+
+msgid "Apply to the form"
 msgstr ""
 
 msgid "Approve"
@@ -237,6 +252,9 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+msgid "Catalog number"
+msgstr ""
+
 msgid "Checking the account…"
 msgstr ""
 
@@ -250,6 +268,9 @@ msgid "Choose"
 msgstr ""
 
 msgid "Choose a cover"
+msgstr ""
+
+msgid "Choose a file…"
 msgstr ""
 
 msgid "Choose playlist artwork"
@@ -285,6 +306,12 @@ msgstr ""
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
 msgstr ""
 
+msgid "Compilation"
+msgstr ""
+
+msgid "Composers"
+msgstr ""
+
 msgid "Connect"
 msgstr ""
 
@@ -306,6 +333,9 @@ msgid "CoreAudio reports no device that can play"
 msgstr ""
 
 msgid "Counting tracks…"
+msgstr ""
+
+msgid "Cover"
 msgstr ""
 
 msgid "Cover collage"
@@ -353,6 +383,9 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Date"
+msgstr ""
+
 msgid "Date added"
 msgstr ""
 
@@ -392,7 +425,19 @@ msgstr ""
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
 msgstr ""
 
+msgid "Disc"
+msgstr ""
+
 msgid "Disc {}"
+msgstr ""
+
+msgid "Discard"
+msgstr ""
+
+msgid "Discard the changes?"
+msgstr ""
+
+msgid "Discogs release"
 msgstr ""
 
 msgid "Disconnect"
@@ -413,10 +458,19 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
+msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
 msgid "Edit folder"
+msgstr ""
+
+msgid "Edit metadata"
+msgstr ""
+
+msgid "Edit metadata…"
 msgstr ""
 
 msgid "Edit playlist"
@@ -452,7 +506,13 @@ msgstr ""
 msgid "Extra controls"
 msgstr ""
 
+msgid "Fetching the cover…"
+msgstr ""
+
 msgid "File"
+msgstr ""
+
+msgid "Files"
 msgstr ""
 
 msgid "Filter albums"
@@ -465,6 +525,9 @@ msgid "Filter folders"
 msgstr ""
 
 msgid "Filter playlists"
+msgstr ""
+
+msgid "Find covers"
 msgstr ""
 
 msgid "Finish selecting"
@@ -513,6 +576,9 @@ msgid "Gapless"
 msgstr ""
 
 msgid "Genre"
+msgstr ""
+
+msgid "Genres"
 msgstr ""
 
 msgid "Go to album"
@@ -584,6 +650,9 @@ msgstr ""
 msgid "Its page, or its quick view under the row."
 msgstr ""
 
+msgid "Keep the current one"
+msgstr ""
+
 msgid "Keep the queue between sessions"
 msgstr ""
 
@@ -605,6 +674,9 @@ msgstr ""
 msgid "List"
 msgstr ""
 
+msgid "Loading the release…"
+msgstr ""
+
 msgid "Local library"
 msgstr ""
 
@@ -612,6 +684,9 @@ msgid "Look"
 msgstr ""
 
 msgid "Look records up in"
+msgstr ""
+
+msgid "Look up"
 msgstr ""
 
 msgid "Looking for files…"
@@ -659,6 +734,9 @@ msgstr ""
 msgid "Missing"
 msgstr ""
 
+msgid "Mixed"
+msgstr ""
+
 msgid "More"
 msgstr ""
 
@@ -675,6 +753,24 @@ msgid "Move to root"
 msgstr ""
 
 msgid "Move up"
+msgstr ""
+
+msgid "MusicBrainz album artists"
+msgstr ""
+
+msgid "MusicBrainz artists"
+msgstr ""
+
+msgid "MusicBrainz recording"
+msgstr ""
+
+msgid "MusicBrainz release"
+msgstr ""
+
+msgid "MusicBrainz release group"
+msgstr ""
+
+msgid "MusicBrainz track"
 msgstr ""
 
 msgid "Mute"
@@ -701,7 +797,13 @@ msgstr ""
 msgid "New tab"
 msgstr ""
 
+msgid "New, saved with the next save"
+msgstr ""
+
 msgid "Next"
+msgstr ""
+
+msgid "No cover"
 msgstr ""
 
 msgid "No folders in the library yet."
@@ -726,6 +828,9 @@ msgid "Not through this stack: it mixes by design."
 msgstr ""
 
 msgid "Nothing found for “{}”"
+msgstr ""
+
+msgid "Nothing has been saved. Closing the editor loses what was changed."
 msgstr ""
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
@@ -776,6 +881,12 @@ msgstr ""
 msgid "Open in new tab"
 msgstr ""
 
+msgid "Open it again"
+msgstr ""
+
+msgid "Open its page"
+msgstr ""
+
 msgid "Opens the device and says which formats reach it untouched."
 msgstr ""
 
@@ -792,6 +903,9 @@ msgid "Paste the user token from listenbrainz.org/settings."
 msgstr ""
 
 msgid "Pause"
+msgstr ""
+
+msgid "Performers"
 msgstr ""
 
 msgid "PipeWire has no output called \"{}\" any more"
@@ -896,6 +1010,9 @@ msgstr ""
 msgid "Reactivate"
 msgstr ""
 
+msgid "Reading the files…"
+msgstr ""
+
 msgid "Reading {} of {} files"
 msgstr ""
 
@@ -915,6 +1032,9 @@ msgid "Recently added"
 msgstr ""
 
 msgid "Recently played"
+msgstr ""
+
+msgid "Record"
 msgstr ""
 
 msgid "Records"
@@ -962,6 +1082,9 @@ msgstr ""
 msgid "Restore tabs"
 msgstr ""
 
+msgid "Revert"
+msgstr ""
+
 msgid "Rich"
 msgstr ""
 
@@ -986,6 +1109,15 @@ msgstr ""
 msgid "Save as playlist"
 msgstr ""
 
+msgid "Save to"
+msgstr ""
+
+msgid "Saving…"
+msgstr ""
+
+msgid "Saving… {} of {} files"
+msgstr ""
+
 msgid "Scan again"
 msgstr ""
 
@@ -1005,6 +1137,9 @@ msgid "Search playlists"
 msgstr ""
 
 msgid "Search playlists and folders"
+msgstr ""
+
+msgid "Searching…"
 msgstr ""
 
 msgid "Select"
@@ -1040,6 +1175,9 @@ msgstr ""
 msgid "Shuffle"
 msgstr ""
 
+msgid "Sidecar"
+msgstr ""
+
 msgid "Songs"
 msgstr ""
 
@@ -1062,6 +1200,9 @@ msgid "Tabs"
 msgstr ""
 
 msgid "Tags, separated by commas"
+msgstr ""
+
+msgid "Tags: {}"
 msgstr ""
 
 msgid "Take the card from the sound server"
@@ -1092,6 +1233,12 @@ msgid "The player bar moves the output's own volume instead of scaling the sampl
 msgstr ""
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
+msgstr ""
+
+msgid "The record is not open in the editor."
+msgstr ""
+
+msgid "The record's cover"
 msgstr ""
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
@@ -1148,10 +1295,16 @@ msgstr ""
 msgid "Top result"
 msgstr ""
 
+msgid "Track"
+msgstr ""
+
 msgid "Track lists"
 msgstr ""
 
 msgid "Track {}"
+msgstr ""
+
+msgid "Track: {}"
 msgstr ""
 
 msgid "Tracks"
@@ -1200,6 +1353,12 @@ msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr ""
 
 msgid "Withdraw approval"
+msgstr ""
+
+msgid "Write into the audio files?"
+msgstr ""
+
+msgid "Write into the files"
 msgstr ""
 
 msgid "Write to a file"
@@ -1356,6 +1515,9 @@ msgid "fine"
 msgstr ""
 
 msgid "format not supported: {}"
+msgstr ""
+
+msgid "from a file"
 msgstr ""
 
 msgid "handle your account itself, outside Chilpa: it says it keeps your credential in the system keyring, under its own name. Chilpa does not see it, cannot delete it and cannot check any of this"
@@ -2056,6 +2218,11 @@ msgstr ""
 
 msgid "{} disc"
 msgid_plural "{} discs"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} file whose tags disagree"
+msgid_plural "{} files whose tags disagree"
 msgstr[0] ""
 msgstr[1] ""
 

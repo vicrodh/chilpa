@@ -47,6 +47,7 @@ Window {
             GalleryPrimitives { width: parent.width }
             GalleryComponents { width: parent.width }
             GalleryPatterns { id: patterns; width: parent.width }
+            GalleryMetadata { width: parent.width }
         }
     }
 

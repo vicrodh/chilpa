@@ -38,6 +38,7 @@ Menu {
             { text: I18n.tr("Open in new tab", I18n.rev), act: "tab", when: one },
             { text: I18n.tr("Quick view", I18n.rev), act: "quick", when: one && canExpand },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist", when: one && artist !== "" && artist !== artistPage },
+            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one },
             { separator: true, when: one },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one }
@@ -59,6 +60,7 @@ Menu {
         case "tab": Navigation.open("album", albumId); break
         case "quick": menu.quick(at); break
         case "artist": Navigation.openArtist(artist); break
+        case "metadata": Navigation.go("metadata", albumId); break
         case "favorite": AlbumActions.setFavorite(albumId, true); break
         case "unfavorite": AlbumActions.setFavorite(albumId, false); break
         }

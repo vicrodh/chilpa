@@ -21,6 +21,8 @@ pub enum Screen {
     Folders,
     Playlist,
     PlaylistManager,
+    /// The metadata editor, on one record.
+    Metadata,
 }
 
 impl Screen {
@@ -37,11 +39,12 @@ impl Screen {
             Screen::Folders => "folders",
             Screen::Playlist => "playlist",
             Screen::PlaylistManager => "playlistManager",
+            Screen::Metadata => "metadata",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata].into_iter().find(|s| s.name() == name)
     }
 }
 

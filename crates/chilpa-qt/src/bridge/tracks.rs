@@ -619,6 +619,7 @@ impl qobject::TrackListModel {
                 !track.artist.is_empty() && !own
             }
             "folder" => kind != "folder",
+            "metadata" => track.album_id > 0,
             _ => false,
         }
     }
@@ -628,8 +629,20 @@ impl qobject::TrackListModel {
             return;
         };
         let target = target.to_string();
+        if target == "metadata" {
+            // The editor opens on this track before its screen shows.
+            let (album, id) = (track.album_id, track.id);
+            registry::metadata(move |editor| {
+                // A record already open here keeps what was typed into it.
+                let here = app::with(|api| api.metadata_view().state != "closed" && api.metadata_view().album_id == album);
+                if !here {
+                    editor.open_album(album, id);
+                }
+            });
+        }
         registry::navigation(move |mut nav| match target.as_str() {
             "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
+            "metadata" => nav.as_mut().go(&QString::from("metadata"), track.album_id),
             "artist" => nav.as_mut().open_artist(&QString::from(&track.artist)),
             "folder" => {
                 let dir = std::path::Path::new(&track.path).parent().map(|d| d.display().to_string());
