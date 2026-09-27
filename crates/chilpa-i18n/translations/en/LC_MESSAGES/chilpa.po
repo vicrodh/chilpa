@@ -249,6 +249,9 @@ msgstr ""
 msgid "Choose"
 msgstr ""
 
+msgid "Choose a cover"
+msgstr ""
+
 msgid "Choose playlist artwork"
 msgstr ""
 
@@ -417,6 +420,9 @@ msgid "Edit folder"
 msgstr ""
 
 msgid "Edit playlist"
+msgstr ""
+
+msgid "Embedded tags only"
 msgstr ""
 
 msgid "Empty folders"
@@ -605,6 +611,9 @@ msgstr ""
 msgid "Look"
 msgstr ""
 
+msgid "Look records up in"
+msgstr ""
+
 msgid "Looking for files…"
 msgstr ""
 
@@ -636,6 +645,9 @@ msgid "Maximum 32/384"
 msgstr ""
 
 msgid "Menu"
+msgstr ""
+
+msgid "Metadata"
 msgstr ""
 
 msgid "Middle click opens a new tab"
@@ -1167,6 +1179,9 @@ msgid "Volume {}%"
 msgstr ""
 
 msgid "What you play most"
+msgstr ""
+
+msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
 msgstr ""
 
 msgid "Where the samples go: straight to the device, or through a sound server."

@@ -249,6 +249,9 @@ msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 msgid "Choose"
 msgstr "Elegir"
 
+msgid "Choose a cover"
+msgstr "Elige una carátula"
+
 msgid "Choose playlist artwork"
 msgstr "Elegir imagen de la playlist"
 
@@ -418,6 +421,9 @@ msgstr "Editar folder"
 
 msgid "Edit playlist"
 msgstr "Editar playlist"
+
+msgid "Embedded tags only"
+msgstr "Solo tags incrustados"
 
 msgid "Empty folders"
 msgstr "Folders vacíos"
@@ -605,6 +611,9 @@ msgstr "Biblioteca local"
 msgid "Look"
 msgstr "Aspecto"
 
+msgid "Look records up in"
+msgstr "Buscar discos en"
+
 msgid "Looking for files…"
 msgstr "Buscando archivos…"
 
@@ -637,6 +646,9 @@ msgstr "Máximo 32/384"
 
 msgid "Menu"
 msgstr "Menú"
+
+msgid "Metadata"
+msgstr "Metadatos"
 
 msgid "Middle click opens a new tab"
 msgstr "El clic medio abre una pestaña nueva"
@@ -1168,6 +1180,9 @@ msgstr "Volumen {}%"
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"
+
+msgid "Where the metadata editor searches first. \"Embedded tags only\" never goes out to the network."
+msgstr "Dónde busca primero el editor de metadatos. \"Solo tags incrustados\" nunca sale a la red."
 
 msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr "Por dónde van las muestras: directo al dispositivo o a través de un servidor de sonido."
