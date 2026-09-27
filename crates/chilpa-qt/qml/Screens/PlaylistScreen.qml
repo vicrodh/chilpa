@@ -4,6 +4,7 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "../Patterns"
 
 // A playlist (design/06 Playlist): a mosaic of its first records, its name
 // and length, play, shuffle or queue it, and its tracks in its order. A
