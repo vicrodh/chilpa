@@ -44,6 +44,7 @@ Rectangle {
 
     MouseArea {
         id: area
+        cursorShape: Qt.PointingHandCursor
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton

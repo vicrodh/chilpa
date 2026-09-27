@@ -43,6 +43,7 @@ Rectangle {
                 color: Theme.color.textOnAccent
             }
             MouseArea {
+                cursorShape: Qt.PointingHandCursor
                 anchors.fill: parent
                 hoverEnabled: true
                 onClicked: overlay.select()
@@ -93,6 +94,7 @@ Rectangle {
 
         MouseArea {
             id: button
+            cursorShape: Qt.PointingHandCursor
             anchors.fill: parent
             hoverEnabled: true
             onClicked: AlbumActions.play(overlay.albumId, false)

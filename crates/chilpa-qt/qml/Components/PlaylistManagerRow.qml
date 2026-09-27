@@ -138,6 +138,7 @@ Rectangle {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onDoubleTapped: row.manager.open(row.index) }
 
     Menu {

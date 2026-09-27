@@ -43,6 +43,7 @@ Item {
     }
     MouseArea {
         id: area
+        cursorShape: root.interactive ? Qt.PointingHandCursor : Qt.ArrowCursor
         anchors.fill: parent
         enabled: root.interactive
         hoverEnabled: true

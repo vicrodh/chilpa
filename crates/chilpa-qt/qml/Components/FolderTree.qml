@@ -62,6 +62,7 @@ Rectangle {
             color: Theme.color.textPrimary
         }
         HoverHandler { id: rootHover }
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         TapHandler { onTapped: Navigation.openFolder("") }
     }
 
@@ -131,6 +132,7 @@ Rectangle {
                         color: Theme.color.textPrimary
                     }
                     HoverHandler { id: resultHover }
+                    HoverHandler { cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: Navigation.openFolder(path) }
                 }
             }

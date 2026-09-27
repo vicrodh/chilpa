@@ -110,6 +110,7 @@ Item {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler {
         id: tap
         acceptedButtons: Qt.LeftButton | Qt.RightButton

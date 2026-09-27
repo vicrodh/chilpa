@@ -114,5 +114,6 @@ Item {
     }
 
     HoverHandler { id: hover; enabled: !hit.header }
+    HoverHandler { enabled: !hit.header; cursorShape: Qt.PointingHandCursor }
     TapHandler { enabled: !hit.header; onTapped: hit.activated() }
 }

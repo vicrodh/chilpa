@@ -13,10 +13,12 @@ Item {
 
     implicitHeight: Metrics.tabBarHeight
 
+    // no cursor: the bar's empty space moves the window
     DragHandler {
         target: null
         onActiveChanged: if (active) bar.Window.window.startSystemMove()
     }
+    // no cursor: the bar's empty space moves the window
     TapHandler {
         onDoubleTapped: bar.Window.window.visibility === Window.Maximized ? bar.Window.window.showNormal() : bar.Window.window.showMaximized()
     }

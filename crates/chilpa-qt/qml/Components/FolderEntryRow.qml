@@ -81,5 +81,6 @@ Item {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: row.open() }
 }

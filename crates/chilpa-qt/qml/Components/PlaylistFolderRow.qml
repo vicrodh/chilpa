@@ -70,5 +70,6 @@ Item {
         color: Theme.color.textTertiary
     }
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: row.toggled() }
 }

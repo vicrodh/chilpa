@@ -45,6 +45,7 @@ Item {
         color: linkHover.hovered ? Theme.color.textPrimary : Theme.color.textSecondary
 
         HoverHandler { id: linkHover }
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         TapHandler { onTapped: head.linkClicked() }
     }
 }

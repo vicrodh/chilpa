@@ -32,6 +32,7 @@ ListRowSurface {
     hovered: pointer.hovered
 
     HoverHandler { id: pointer }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: root.choose() }
 
     // The chosen row's mark, as a spreadsheet's.

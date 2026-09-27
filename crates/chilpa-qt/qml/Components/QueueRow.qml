@@ -100,6 +100,7 @@ Item {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onDoubleTapped: row.play() }
     TapHandler {
         acceptedButtons: Qt.RightButton

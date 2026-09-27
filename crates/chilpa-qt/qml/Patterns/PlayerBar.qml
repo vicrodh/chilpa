@@ -33,6 +33,7 @@ Item {
 
     // The bar floats over the content: the pointer, a click in its empty
     // space and the wheel stay here instead of reaching the list beneath.
+    // no cursor: keeps the pointer and the wheel off the list beneath
     MouseArea {
         id: area
         anchors.fill: parent

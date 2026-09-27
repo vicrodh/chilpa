@@ -91,6 +91,7 @@ Rectangle {
             color: Theme.color.textTertiary
 
             MouseArea {
+                cursorShape: Qt.PointingHandCursor
                 anchors.fill: parent
                 onClicked: input.text = ""
             }
