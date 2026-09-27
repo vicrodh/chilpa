@@ -34,6 +34,8 @@ pub mod qobject {
         #[qproperty(QString, library_view)]
         /// The player bar's −10 s and +10 s.
         #[qproperty(bool, extra_controls)]
+        /// The player bar steps away after a while without the mouse moving.
+        #[qproperty(bool, hide_player)]
         /// A middle click on a destination opens it in a new tab.
         #[qproperty(bool, middle_click_tabs)]
         /// A click on a record opens its quick view, not its page.
@@ -100,6 +102,7 @@ pub struct SettingsRust {
     panes_height: i32,
     library_view: QString,
     extra_controls: bool,
+    hide_player: bool,
     middle_click_tabs: bool,
     quick_view_click: bool,
     playlist_collage: bool,
@@ -164,6 +167,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.panes_height = panes_height.and_then(|h| h.parse().ok()).unwrap_or(0);
             this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
             this.extra_controls = extra.as_deref() == Some("true");
+            this.hide_player = app::with(|api| api.preference("playback.autoHide")).as_deref() == Some("true");
             this.middle_click_tabs = middle.as_deref() != Some("false");
             this.quick_view_click = click.as_deref() == Some("quick");
             this.playlist_collage = playlist_artwork.as_deref() == Some("collage");

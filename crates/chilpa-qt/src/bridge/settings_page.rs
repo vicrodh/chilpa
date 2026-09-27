@@ -283,7 +283,7 @@ impl SettingsPageRust {
                 row.options = row.values.clone();
                 row.value = app::with(|api| api.preference("appearance.accent")).unwrap_or_default();
             }
-            "playback.extra" => row.value = pref_on("playback.extra", false),
+            "playback.extra" | "playback.autoHide" => row.value = pref_on(&row.key, false),
             "playback.gapless" => row.value = app::with(|api| api.gapless()).to_string(),
             "playback.normalize" => row.value = app::with(|api| api.normalize()).to_string(),
             "playback.keepQueue" => row.value = app::with(|api| api.keep_queue()).to_string(),
@@ -546,6 +546,10 @@ impl qobject::SettingsPage {
             "playback.extra" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_extra_controls(value == "true"));
+            }
+            "playback.autoHide" => {
+                app::with(|api| api.remember_preference(&key, &value));
+                registry::settings(move |s| s.set_hide_player(value == "true"));
             }
             "navigation.newtab" => {
                 app::with(|api| api.remember_preference(&key, &value));

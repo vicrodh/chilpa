@@ -608,6 +608,9 @@ msgstr ""
 msgid "Hide the columns"
 msgstr ""
 
+msgid "Hide when idle"
+msgstr ""
+
 msgid "High 24/176.4"
 msgstr ""
 
@@ -1233,6 +1236,9 @@ msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr ""
 
 msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
+msgstr ""
+
+msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr ""
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."

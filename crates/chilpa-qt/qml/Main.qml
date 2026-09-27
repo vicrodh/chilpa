@@ -68,12 +68,21 @@ Window {
     }
 
     PlayerBar {
+        id: player
         z: 3
         panelAside: window.panelAside
         onShowPanel: window.panelAside = false
         width: Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
         x: host.x + (host.width - width) / 2 // derived: centered over the content
-        y: window.height - height - Metrics.playerBottom
+        y: idle.away ? window.height : window.height - height - Metrics.playerBottom
+        Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
+    }
+
+    PlayerIdle {
+        id: idle
+        anchors.fill: parent
+        z: Metrics.tooltipLayer
+        holding: player.pointed
     }
 
     SelectionBar {

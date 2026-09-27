@@ -113,7 +113,13 @@ pub const SECTIONS: &[Section] = &[
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },
-            Group { title: Chilpa::mark("Player bar"), settings: &[setting("playback.extra", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds."), Control::Toggle)] },
+            Group {
+                title: Chilpa::mark("Player bar"),
+                settings: &[
+                    setting("playback.extra", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds."), Control::Toggle),
+                    setting("playback.autoHide", Chilpa::mark("Hide when idle"), Chilpa::mark("The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."), Control::Toggle),
+                ],
+            },
         ],
     },
     Section {

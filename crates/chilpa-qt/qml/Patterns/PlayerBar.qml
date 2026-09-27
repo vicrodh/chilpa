@@ -28,9 +28,13 @@ Item {
 
     implicitHeight: Metrics.playerHeight
 
+    // The pointer is over the bar: it does not step away from under it.
+    readonly property bool pointed: area.containsMouse
+
     // The bar floats over the content: the pointer, a click in its empty
     // space and the wheel stay here instead of reaching the list beneath.
     MouseArea {
+        id: area
         anchors.fill: parent
         hoverEnabled: true
         acceptedButtons: Qt.AllButtons

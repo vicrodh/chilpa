@@ -608,6 +608,9 @@ msgstr "Ocultar del sidebar"
 msgid "Hide the columns"
 msgstr "Ocultar las columnas"
 
+msgid "Hide when idle"
+msgstr "Ocultar si no hay actividad"
+
 msgid "High 24/176.4"
 msgstr "Alta 24/176.4"
 
@@ -1234,6 +1237,9 @@ msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que
 
 msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
 msgstr "La barra del reproductor mueve el volumen propio de la salida en vez de escalar las muestras. Necesita una salida con volumen propio."
+
+msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr "La barra del reproductor se aparta tras diez segundos sin mover el mouse, y cualquier movimiento la trae de vuelta."
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
