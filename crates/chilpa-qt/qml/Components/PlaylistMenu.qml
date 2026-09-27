@@ -32,7 +32,7 @@ Menu {
     ] : [
         { text: I18n.tr("Play now", I18n.rev), glyph: Icons.playerPlayFilled, filled: true },
         { text: I18n.tr("Shuffle", I18n.rev) },
-        { text: I18n.tr("Add to queue", I18n.rev) },
+        { text: I18n.tr("Add to queue", I18n.rev), glyph: Lucide.listEnd, family: Lucide.font },
         { separator: true },
         { text: I18n.tr("Rename", I18n.rev) },
         { text: I18n.tr("Delete…", I18n.rev) }

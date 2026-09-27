@@ -5,12 +5,13 @@ import "../Theme"
 Text {
     property string glyph
     property bool filled: false
+    property string iconFamily
     property int size: Metrics.iconNav
 
     width: size
     height: size
     text: glyph
-    font.family: filled ? Icons.filled : Icons.outline
+    font.family: iconFamily !== "" ? iconFamily : filled ? Icons.filled : Icons.outline
     font.pixelSize: size
     color: Theme.color.textSecondary
     horizontalAlignment: Text.AlignHCenter

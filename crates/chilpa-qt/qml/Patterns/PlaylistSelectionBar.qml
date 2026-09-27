@@ -50,17 +50,20 @@ Item {
             onClicked: bar.model.favoriteChosen(bar.model.selectedAnyRow(), true)
         }
         IconButton {
-            glyph: Icons.listDetails
+            glyph: Lucide.listEnd
+            iconFamily: Lucide.font
             tip: I18n.tr("Add to queue", I18n.rev)
             onClicked: bar.model.queue(bar.model.selectedAnyRow())
         }
         IconButton {
-            glyph: Icons.playerTrackNext
+            glyph: Lucide.listStart
+            iconFamily: Lucide.font
             tip: I18n.tr("Play next", I18n.rev)
             onClicked: bar.model.playNext(bar.model.selectedAnyRow())
         }
         IconButton {
-            glyph: Icons.alarm
+            glyph: Lucide.listPlus
+            iconFamily: Lucide.font
             tip: I18n.tr("Play later", I18n.rev)
             onClicked: bar.model.playLater(bar.model.selectedAnyRow(), bar.playlistName)
         }

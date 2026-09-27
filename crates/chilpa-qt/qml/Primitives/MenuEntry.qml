@@ -45,6 +45,7 @@ Item {
         width: Metrics.menuIconColumn
         glyph: line.entry.checked ? Icons.check : line.entry.glyph || ""
         filled: line.entry.filled === true
+        iconFamily: line.entry.family || ""
         size: Metrics.iconNav
         color: line.entry.checked ? Theme.color.accent : Theme.color.textSecondary
     }

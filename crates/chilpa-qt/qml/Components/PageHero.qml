@@ -19,6 +19,7 @@ Item {
     property bool canQueue: false
     property bool canPlay: true
     property string queueGlyph: Icons.playlistAdd
+    property string queueIconFamily
     property string queueTip: I18n.tr("Add to queue", I18n.rev)
     property bool canSelect: false
     property bool selecting: false
@@ -113,6 +114,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 round: true
                 glyph: hero.queueGlyph
+                iconFamily: hero.queueIconFamily
                 tip: hero.queueTip
                 onClicked: {
                     const at = queueButton.mapToItem(hero, 0,

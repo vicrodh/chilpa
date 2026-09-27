@@ -28,9 +28,9 @@ Menu {
 
     function showAt(left, top) {
         entries = [
-            { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
-            { text: I18n.tr("Play next", I18n.rev), act: "next" },
-            { text: I18n.tr("Play later", I18n.rev), act: "later" }
+            { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
+            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
+            { text: I18n.tr("Play later", I18n.rev), act: "later", glyph: Lucide.listPlus, family: Lucide.font }
         ].concat(canRemove ? [
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
