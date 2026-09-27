@@ -164,7 +164,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.middle_click_tabs = middle.as_deref() != Some("false");
             this.quick_view_click = click.as_deref() == Some("quick");
             this.playlist_collage = playlist_artwork.as_deref() == Some("collage");
-            this.folder_colors = folder_colors.as_deref() != Some("false");
+            this.folder_colors = folder_colors.as_deref() == Some("true");
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut().on_sidebar_mode_changed(|m| remember(SIDEBAR_MODE, m.sidebar_mode().to_string())).release();

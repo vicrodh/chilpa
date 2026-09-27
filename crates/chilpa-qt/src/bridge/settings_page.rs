@@ -287,7 +287,7 @@ impl SettingsPageRust {
             "playback.keepQueue" => row.value = app::with(|api| api.keep_queue()).to_string(),
             "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
             "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
-            "navigation.folderColors" => row.value = pref_on("navigation.folderColors", true),
+            "navigation.folderColors" => row.value = pref_on("navigation.folderColors", false),
             "integrations.listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
             "integrations.lastfm.account" => {
                 let status = app::with(|api| api.lastfm());
