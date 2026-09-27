@@ -85,13 +85,14 @@ fn a_sources_lists_show_up_and_open_into_the_results() {
     assert_eq!(mix.source, "com.test.lists", "it says which source it came from");
     assert_eq!(mix.provider, "Test source", "and its name, for the panel");
     assert_eq!(mix.external_id, "p1", "with the id to ask for it again");
-    assert_eq!(mix.id, 0, "it has no row in the library, because it is not kept");
-    assert_eq!(mix.track_count, 2);
+    assert!(mix.id > 0, "source playlists keep a stable cached row");
+    assert_eq!(mix.track_count, 0, "tracks are cached when the playlist is opened");
 
     // Opening it puts its tracks in the results. It does not play: a
     // source's track is resolved one at a time, and the queue holds
     // resolved addresses.
     assert_eq!(chilpa.open_source_playlist("com.test.lists", "p1"), 2);
+    assert_eq!(chilpa.playlist(mix.id).unwrap().track_count, 2, "opening refreshed the cache");
     let hits = chilpa.found().to_vec();
     assert_eq!(hits.len(), 2, "{hits:?}");
     assert_eq!(hits[0].title, "First of the list");

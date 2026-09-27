@@ -1047,3 +1047,53 @@ CREATE TABLE album_favorites (
     added_at INTEGER NOT NULL
 );
 "#;
+
+/// From 18 to 19: playlists carry their ownership and organisation.
+///
+/// A local playlist may mix sources, so an entry's external id is not an
+/// identity on its own.  The source beside it makes the reference stable.
+/// Source-owned playlists keep the same shape but their writer enforces that
+/// every entry belongs to the playlist's own source.
+pub(super) const MIGRATION_V19: &str = r#"
+CREATE TABLE playlist_folders (
+    id         INTEGER PRIMARY KEY,
+    name       TEXT NOT NULL,
+    color      TEXT NOT NULL DEFAULT 'accent',
+    position   INTEGER NOT NULL DEFAULT 0,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+
+ALTER TABLE playlists ADD COLUMN folder_id INTEGER REFERENCES playlist_folders(id) ON DELETE SET NULL;
+ALTER TABLE playlists ADD COLUMN play_count INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE playlists ADD COLUMN custom_position INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE playlists ADD COLUMN visible_sidebar INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE playlists ADD COLUMN writable INTEGER NOT NULL DEFAULT 0;
+
+UPDATE playlists SET custom_position = id;
+UPDATE playlists
+   SET writable = 1
+ WHERE source_id IN (SELECT id FROM sources WHERE provider = 'local');
+
+CREATE TABLE playlist_tags (
+    playlist_id INTEGER NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+    tag         TEXT NOT NULL COLLATE NOCASE,
+    PRIMARY KEY (playlist_id, tag)
+);
+
+CREATE TABLE track_favorites (
+    track_id INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    added_at INTEGER NOT NULL
+);
+
+ALTER TABLE playlist_tracks ADD COLUMN source_id INTEGER REFERENCES sources(id);
+UPDATE playlist_tracks
+   SET source_id = COALESCE(
+       (SELECT t.source_id FROM tracks t WHERE t.id = playlist_tracks.track_id),
+       (SELECT p.source_id FROM playlists p WHERE p.id = playlist_tracks.playlist_id)
+   );
+
+CREATE INDEX playlist_folder_position ON playlists(folder_id, custom_position);
+CREATE INDEX playlist_tracks_source ON playlist_tracks(source_id, external_id);
+CREATE INDEX playlist_tags_name ON playlist_tags(tag);
+"#;

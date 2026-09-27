@@ -47,15 +47,7 @@ fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
 }
 
 fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Album {
-    Album {
-        id: a.id,
-        title: a.title,
-        artist: a.album_artist,
-        year: a.year,
-        track_count: a.track_count,
-        artwork_path: a.artwork_path.unwrap_or_default(),
-        play_count: listens,
-    }
+    Album { id: a.id, title: a.title, artist: a.album_artist, year: a.year, track_count: a.track_count, artwork_path: a.artwork_path.unwrap_or_default(), play_count: listens }
 }
 
 /// The four facet columns, each narrowed by the ones to its left.
@@ -79,27 +71,37 @@ pub fn filter_facets(mut entries: Vec<FacetEntry>, query: &str) -> Vec<FacetEntr
 
 /// Excel-style selection for a facet: plain replaces, Ctrl/Cmd toggles and
 /// Shift spans from the anchor; Ctrl+Shift adds that span.
-pub fn select_facets(
-    entries: &[FacetEntry],
-    current: &[String],
-    anchor: Option<usize>,
-    row: usize,
-    modifiers: i32,
-) -> (Vec<String>, Option<usize>) {
-    if row == 0 || row > entries.len() { return (Vec::new(), None); }
+pub fn select_facets(entries: &[FacetEntry], current: &[String], anchor: Option<usize>, row: usize, modifiers: i32) -> (Vec<String>, Option<usize>) {
+    if row == 0 || row > entries.len() {
+        return (Vec::new(), None);
+    }
     let at = row - 1;
     let (ctrl, shift) = (modifiers & 1 != 0, modifiers & 2 != 0);
     let mut chosen = current.to_vec();
     if shift {
         let from = anchor.unwrap_or(at);
         let keys = entries[from.min(at)..=from.max(at)].iter().map(|entry| entry.key.clone());
-        if ctrl { for key in keys { if !chosen.contains(&key) { chosen.push(key); } } } else { chosen = keys.collect(); }
+        if ctrl {
+            for key in keys {
+                if !chosen.contains(&key) {
+                    chosen.push(key);
+                }
+            }
+        } else {
+            chosen = keys.collect();
+        }
         (chosen, anchor)
     } else {
         let key = entries[at].key.clone();
         if ctrl {
-            if let Some(i) = chosen.iter().position(|value| *value == key) { chosen.remove(i); } else { chosen.push(key); }
-        } else { chosen = vec![key]; }
+            if let Some(i) = chosen.iter().position(|value| *value == key) {
+                chosen.remove(i);
+            } else {
+                chosen.push(key);
+            }
+        } else {
+            chosen = vec![key];
+        }
         (chosen, Some(at))
     }
 }
@@ -113,12 +115,7 @@ pub struct Found {
 }
 
 fn artist_of(a: chilpa_library::StoredArtist) -> crate::Artist {
-    crate::Artist {
-        name: a.name,
-        album_count: a.album_count,
-        track_count: a.track_count,
-        artwork_path: a.artwork_path.unwrap_or_default(),
-    }
+    crate::Artist { name: a.name, album_count: a.album_count, track_count: a.track_count, artwork_path: a.artwork_path.unwrap_or_default() }
 }
 
 /// A folder as the Folders screen shows it.
@@ -142,20 +139,7 @@ pub struct FolderItem {
 /// A row for a file the library does not have: its name, and what its
 /// extension says.
 pub(crate) fn file_row(path: &str) -> TrackRow {
-    TrackRow {
-        title: crate::title_of(std::path::Path::new(path)),
-        quality: Quality::of_file(path, None, None),
-        id: 0,
-        path: path.to_string(),
-        artist: String::new(),
-        album: String::new(),
-        album_id: 0,
-        disc: 0,
-        number: 0,
-        duration_ms: 0,
-        plays: 0,
-        artwork_path: String::new(),
-    }
+    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new() }
 }
 
 /// A record as its page shows it.
@@ -190,10 +174,7 @@ impl Reader {
     /// library resolves without one statement holding thousands of
     /// parameters.
     pub fn paths(&self, ids: &[i64]) -> Vec<String> {
-        ids.chunks(500)
-            .flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default())
-            .map(|t| t.external_id)
-            .collect()
+        ids.chunks(500).flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default()).map(|t| t.external_id).collect()
     }
 
     /// Every artist with something present, by name, with their records,
@@ -206,30 +187,30 @@ impl Reader {
     /// to `limit` of each, best first.
     pub fn find(&self, text: &str, limit: usize) -> Found {
         let found = self.lib.find(text, limit).unwrap_or_default();
-        Found {
-            artists: found.artists.into_iter().map(artist_of).collect(),
-            albums: self.lib.albums_by_ids(&found.albums).unwrap_or_default().into_iter().map(album_of).collect(),
-            tracks: self.lib.tracks_by_ids(&found.tracks).unwrap_or_default().into_iter().map(row_of).collect(),
-        }
+        Found { artists: found.artists.into_iter().map(artist_of).collect(), albums: self.lib.albums_by_ids(&found.albums).unwrap_or_default().into_iter().map(album_of).collect(), tracks: self.lib.tracks_by_ids(&found.tracks).unwrap_or_default().into_iter().map(row_of).collect() }
     }
 
     /// Our own lists, newest first, for the sidebar. A source's lists are
     /// the facade's to ask for: they need its plugins.
     pub fn local_playlists(&self) -> Vec<crate::Playlist> {
-        self.lib
-            .playlists()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|p| p.provider == "local")
-            .map(|p| crate::Playlist {
-                id: p.id,
-                name: p.name,
-                provider: p.provider,
-                track_count: p.track_count,
-                source: String::new(),
-                external_id: String::new(),
-            })
-            .collect()
+        self.lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider == "local").map(crate::playlists::playlist_of).collect()
+    }
+
+    /// Every cached playlist. This does not call a source from the reader.
+    pub fn playlists(&self) -> Vec<crate::Playlist> {
+        let mut playlists: Vec<crate::Playlist> = self.lib.playlists().unwrap_or_default().into_iter().map(crate::playlists::playlist_of).collect();
+        for playlist in &mut playlists {
+            playlist.covers = self.lib.playlist_covers(playlist.id, 4).unwrap_or_default();
+        }
+        playlists
+    }
+
+    pub fn playlist_folders(&self) -> Vec<crate::PlaylistFolder> {
+        self.lib.playlist_folders().unwrap_or_default().into_iter().map(|folder| crate::PlaylistFolder { id: folder.id, name: folder.name, color: folder.color, position: folder.position, playlist_count: folder.playlist_count }).collect()
+    }
+
+    pub fn playlist_manager(&self, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<crate::PlaylistManagerEntry> {
+        crate::playlists::playlist_manager_entries(self.playlists(), self.playlist_folders(), query, filter, sort, ascending, folder_id)
     }
 
     /// Every album with something present, in that order.
@@ -252,12 +233,7 @@ impl Reader {
                 .iter()
                 .map(|r| {
                     let path = r.path.to_string_lossy().into_owned();
-                    FolderItem {
-                        name: path.clone(),
-                        tracks: self.lib.folder_track_count(&path).unwrap_or(0),
-                        artwork_path: String::new(),
-                        path,
-                    }
+                    FolderItem { name: path.clone(), tracks: self.lib.folder_track_count(&path).unwrap_or(0), artwork_path: String::new(), path }
                 })
                 .collect();
             return FolderView { folders, tracks: Vec::new(), in_library: true };
@@ -265,19 +241,7 @@ impl Reader {
         let inside = roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path));
         if inside {
             let (folders, tracks) = self.lib.folder_children(dir).unwrap_or_default();
-            return FolderView {
-                folders: folders
-                    .into_iter()
-                    .map(|f| FolderItem {
-                        name: f.name,
-                        path: f.path,
-                        tracks: f.tracks,
-                        artwork_path: f.artwork_path.unwrap_or_default(),
-                    })
-                    .collect(),
-                tracks: tracks.into_iter().map(row_of).collect(),
-                in_library: true,
-            };
+            return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true };
         }
         crate::folders::disk_folder(std::path::Path::new(dir))
     }
@@ -310,12 +274,7 @@ impl Reader {
             .filter_map(|path| {
                 let shown = path.to_string_lossy().into_owned();
                 let lower = shown.to_lowercase();
-                words.iter().all(|word| lower.contains(word)).then_some(FolderItem {
-                    name: shown.clone(),
-                    path: shown,
-                    tracks: 0,
-                    artwork_path: String::new(),
-                })
+                words.iter().all(|word| lower.contains(word)).then_some(FolderItem { name: shown.clone(), path: shown, tracks: 0, artwork_path: String::new() })
             })
             .collect();
         FolderView { folders, tracks: Vec::new(), in_library: true }
@@ -336,13 +295,7 @@ impl Reader {
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
     pub fn facets(&self, f: &Filter) -> Facets {
-        Facets {
-            sources: self.lib.facet_sources().unwrap_or_default(),
-            years: self.lib.facet_years().unwrap_or_default(),
-            genres: self.lib.facet_genres(f).unwrap_or_default(),
-            artists: self.lib.facet_artists(f).unwrap_or_default(),
-            albums: self.lib.facet_albums(f).unwrap_or_default(),
-        }
+        Facets { sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(), genres: self.lib.facet_genres(f).unwrap_or_default(), artists: self.lib.facet_artists(f).unwrap_or_default(), albums: self.lib.facet_albums(f).unwrap_or_default() }
     }
 }
 
@@ -357,13 +310,17 @@ impl Chilpa {
     /// The rows of those ids, in that order. By primary key: the same cost
     /// anywhere in a snapshot.
     pub fn track_rows(&mut self, ids: &[i64]) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         lib.tracks_by_ids(ids).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
     /// Those albums, in the order given. By primary key.
     pub fn albums_by_ids(&mut self, ids: &[i64]) -> Vec<Album> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         lib.albums_by_ids(ids).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
@@ -373,7 +330,9 @@ impl Chilpa {
     pub fn queue_rows(&mut self) -> Vec<TrackRow> {
         // In the order they will play, which shuffle and "play next" change.
         let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         let known = lib.tracks_by_paths(&paths).unwrap_or_else(|_| vec![None; paths.len()]);
         paths
             .into_iter()
@@ -388,11 +347,12 @@ impl Chilpa {
     /// A list's tracks, in its order. What the library does not have gets a
     /// row from its name, so a list survives a missing file.
     pub fn playlist_rows(&mut self, playlist_id: i64) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         let entries = lib.playlist_entries(playlist_id).unwrap_or_default();
         let ids: Vec<i64> = entries.iter().filter_map(|e| e.track_id).collect();
-        let known: std::collections::HashMap<i64, TrackRow> =
-            lib.tracks_by_ids(&ids).unwrap_or_default().into_iter().map(|t| (t.id, row_of(t))).collect();
+        let known: std::collections::HashMap<i64, TrackRow> = lib.tracks_by_ids(&ids).unwrap_or_default().into_iter().map(|t| (t.id, row_of(t))).collect();
         entries
             .into_iter()
             .map(|e| match e.track_id.and_then(|id| known.get(&id)) {
@@ -402,14 +362,30 @@ impl Chilpa {
             .collect()
     }
 
+    /// One playlist in the requested presentation order. `custom` is its
+    /// persisted order and is the only order that may be edited.
+    pub fn playlist_rows_sorted(&mut self, playlist_id: i64, order: &str, ascending: bool) -> Vec<TrackRow> {
+        let mut rows = self.playlist_rows(playlist_id);
+        match order {
+            "title" => rows.sort_by_key(|row| row.title.to_lowercase()),
+            "artist" => rows.sort_by_key(|row| (row.artist.to_lowercase(), row.title.to_lowercase())),
+            "album" => rows.sort_by_key(|row| (row.album.to_lowercase(), row.number, row.title.to_lowercase())),
+            "duration" => rows.sort_by_key(|row| row.duration_ms),
+            "plays" => rows.sort_by_key(|row| (std::cmp::Reverse(row.plays), row.title.to_lowercase())),
+            _ => {}
+        }
+        if !ascending && order != "custom" {
+            rows.reverse();
+        }
+        rows
+    }
+
     /// An artist's records, newest first.
     pub fn artist_albums(&mut self, name: &str) -> Vec<Album> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0)
-            .unwrap_or_default()
-            .into_iter()
-            .map(album_of)
-            .collect()
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
     /// The records marked as favorites.
@@ -431,34 +407,37 @@ impl Chilpa {
 
     /// The records by others an artist plays on: the compilations.
     pub fn artist_appearances(&mut self, name: &str) -> Vec<Album> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         lib.albums_appearing(name).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
     /// An artist's tracks, in that order, as many as asked for: on their own
     /// records and on the compilations they are on.
     pub fn artist_tracks(&mut self, name: &str, order: TrackOrder, limit: usize) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         let f = Filter { performer: Some(name.to_string()), ..Filter::default() };
         lib.browse_tracks(&f, order, limit).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
     /// A record's tracks, in disc order.
     pub fn album_track_rows(&mut self, album_id: i64) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         let f = Filter { album: Some(album_id), ..Filter::default() };
         lib.browse_tracks(&f, TrackOrder::Disc, 10_000).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
     /// The most played tracks. What never played is not "most played".
     pub fn most_played_rows(&mut self, limit: usize) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.browse_tracks(&Filter::default(), TrackOrder::Plays, limit)
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|t| t.plays > 0)
-            .map(row_of)
-            .collect()
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        lib.browse_tracks(&Filter::default(), TrackOrder::Plays, limit).unwrap_or_default().into_iter().filter(|t| t.plays > 0).map(row_of).collect()
     }
 
     /// The records played last. One nobody has played is not among them.
@@ -474,7 +453,9 @@ impl Chilpa {
     }
 
     fn albums_by(&mut self, order: chilpa_library::AlbumSort, limit: usize) -> Vec<Album> {
-        let Some(lib) = self.library() else { return Vec::new() };
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
         lib.albums_filtered(order, None, limit, 0).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
@@ -485,19 +466,8 @@ impl Chilpa {
         let genre = self.library()?.album_genre(album_id).ok().flatten().unwrap_or_default();
         let mut discs: Vec<u16> = rows.iter().map(|r| r.disc.max(1)).collect();
         discs.dedup();
-        let best = rows
-            .iter()
-            .map(|r| &r.quality)
-            .max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz))
-            .cloned()
-            .unwrap_or_default();
-        Some(AlbumDetail {
-            duration_ms: rows.iter().map(|r| r.duration_ms).sum(),
-            discs: discs.len().max(1),
-            quality: best,
-            genre,
-            album,
-        })
+        let best = rows.iter().map(|r| &r.quality).max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).cloned().unwrap_or_default();
+        Some(AlbumDetail { duration_ms: rows.iter().map(|r| r.duration_ms).sum(), discs: discs.len().max(1), quality: best, genre, album })
     }
 
     /// The output that is remembered, or the first one there is. The boolean

@@ -6,22 +6,115 @@
 use super::*;
 use chilpa_plugin::messages;
 
+pub(crate) fn playlist_of(p: chilpa_library::StoredPlaylist) -> Playlist {
+    let local = p.provider == "local";
+    Playlist {
+        id: p.id,
+        source_id: p.source_id,
+        name: p.name,
+        description: p.description,
+        artwork_path: p.artwork_path.unwrap_or_default(),
+        covers: Vec::new(),
+        tags: p.tags,
+        provider: if p.source_label.is_empty() { p.provider.clone() } else { p.source_label },
+        instance: p.instance,
+        track_count: p.track_count,
+        play_count: p.play_count,
+        folder_id: p.folder_id,
+        custom_position: p.custom_position,
+        visible_sidebar: p.visible_sidebar,
+        updated_at: p.updated_at,
+        // Source writes are closed until the plugin API exposes the declared
+        // capability and operation. Read-only is the safe default.
+        writable: p.writable,
+        mixed: local,
+        source: if local { String::new() } else { p.provider },
+        external_id: p.external_id,
+    }
+}
+
+/// Applies the playlist manager's search, scope and ordering in Rust so every
+/// frontend presents the same rows.
+pub fn playlist_manager_entries(mut playlists: Vec<Playlist>, mut folders: Vec<PlaylistFolder>, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
+    let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
+    let matches = |text: String| words.iter().all(|word| text.contains(word));
+    folders.retain(|folder| folder_id.is_none() && matches(folder.name.to_lowercase()) && (filter != "empty" || folder.playlist_count == 0));
+    playlists.retain(|playlist| {
+        let in_folder = !words.is_empty() || playlist.folder_id == folder_id;
+        let text = format!("{} {} {} {}", playlist.name, playlist.description, playlist.provider, playlist.tags.join(" ")).to_lowercase();
+        in_folder && matches(text)
+    });
+    match sort {
+        "recent" => playlists.sort_by_key(|playlist| std::cmp::Reverse(playlist.updated_at)),
+        "tracks" => playlists.sort_by_key(|playlist| (std::cmp::Reverse(playlist.track_count), playlist.name.to_lowercase())),
+        "plays" => playlists.sort_by_key(|playlist| (std::cmp::Reverse(playlist.play_count), playlist.name.to_lowercase())),
+        "custom" => playlists.sort_by_key(|playlist| playlist.custom_position),
+        _ => playlists.sort_by_key(|playlist| playlist.name.to_lowercase()),
+    }
+    if sort == "custom" {
+        folders.sort_by_key(|folder| folder.position);
+    } else {
+        folders.sort_by_key(|folder| folder.name.to_lowercase());
+    }
+    if !ascending {
+        playlists.reverse();
+        folders.reverse();
+    }
+    let mut rows = Vec::new();
+    if filter != "playlists" {
+        rows.extend(folders.into_iter().map(|folder| PlaylistManagerEntry {
+            kind: PlaylistManagerKind::Folder,
+            id: folder.id,
+            name: folder.name,
+            detail: String::new(),
+            source: String::new(),
+            source_name: String::new(),
+            artwork_path: String::new(),
+            covers: Vec::new(),
+            color: folder.color,
+            track_count: folder.playlist_count,
+            play_count: 0,
+            folder_id: None,
+            local: true,
+            visible_sidebar: true,
+        }));
+    }
+    if !matches!(filter, "folders" | "empty") {
+        rows.extend(playlists.into_iter().map(|playlist| PlaylistManagerEntry {
+            kind: PlaylistManagerKind::Playlist,
+            id: playlist.id,
+            name: playlist.name,
+            detail: playlist.description,
+            source: playlist.source,
+            source_name: playlist.provider,
+            artwork_path: playlist.artwork_path,
+            covers: playlist.covers,
+            color: String::new(),
+            track_count: playlist.track_count,
+            play_count: playlist.play_count,
+            folder_id: playlist.folder_id,
+            local: playlist.mixed,
+            visible_sidebar: playlist.visible_sidebar,
+        }));
+    }
+    rows
+}
+
 impl Chilpa {
+    /// A manager projection ready for thin frontends.
+    pub fn managed_playlists(&mut self, query: &str, filter: &str, sort: &str, ascending: bool, folder_id: Option<i64>) -> Vec<PlaylistManagerEntry> {
+        let playlists = self.playlists();
+        let folders = self.playlist_folders();
+        playlist_manager_entries(playlists, folders, query, filter, sort, ascending, folder_id)
+    }
+
     /// Starts a genre playing, shuffled.
     pub fn play_genre(&mut self, genre: &str, device: &str, bit_perfect: bool) -> Vec<String> {
-        let list = chilpa_library::SmartList::new(
-            genre,
-            vec![chilpa_library::Rule::GenreIs(genre.to_string())],
-            chilpa_library::SmartOrder::Random,
-            300,
-        );
-        let Some(lib) = self.library() else { return Vec::new() };
-        let paths: Vec<String> = lib
-            .smart_tracks(&list)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| t.external_id)
-            .collect();
+        let list = chilpa_library::SmartList::new(genre, vec![chilpa_library::Rule::GenreIs(genre.to_string())], chilpa_library::SmartOrder::Random, 300);
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        let paths: Vec<String> = lib.smart_tracks(&list).unwrap_or_default().into_iter().map(|t| t.external_id).collect();
         if paths.is_empty() {
             self.now.error = chilpa_i18n::t_args("there is nothing under {}", &[genre]);
             return Vec::new();
@@ -30,28 +123,17 @@ impl Chilpa {
     }
 
     /// Starts a smart list playing, by its name.
-    pub fn play_smart_list(
-        &mut self,
-        name: &str,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
-        let Some(list) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name)
-        else {
-            self.now.error =
-                chilpa_i18n::t_args("I do not know the list \"{}\"", &[&chilpa_i18n::t(name)]);
+    pub fn play_smart_list(&mut self, name: &str, device: &str, bit_perfect: bool) -> Vec<String> {
+        let Some(list) = chilpa_library::smart_builtins().into_iter().find(|l| l.name == name) else {
+            self.now.error = chilpa_i18n::t_args("I do not know the list \"{}\"", &[&chilpa_i18n::t(name)]);
             return Vec::new();
         };
-        let Some(lib) = self.library() else { return Vec::new() };
-        let paths: Vec<String> = lib
-            .smart_tracks(&list)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|t| t.external_id)
-            .collect();
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        let paths: Vec<String> = lib.smart_tracks(&list).unwrap_or_default().into_iter().map(|t| t.external_id).collect();
         if paths.is_empty() {
-            self.now.error =
-                chilpa_i18n::t_args("\"{}\" brings nothing today", &[&chilpa_i18n::t(name)]);
+            self.now.error = chilpa_i18n::t_args("\"{}\" brings nothing today", &[&chilpa_i18n::t(name)]);
             return Vec::new();
         }
         self.play_tracks(&paths, device, bit_perfect)
@@ -59,53 +141,40 @@ impl Chilpa {
 
     /// The saved lists, the ones from here and whatever a source brings.
     ///
-    /// A source's lists are asked for here and not kept: they live on the
-    /// source, and a copy in the library would be a second truth that goes
-    /// stale without anyone noticing. A source that does not answer is left
-    /// out and says nothing: its lists missing is not worth breaking the
-    /// panel over.
+    /// A source's lists refresh their cached metadata. A source that does not
+    /// answer leaves the last cache intact: absence never means deletion.
     pub fn playlists(&mut self) -> Vec<Playlist> {
-        let mut all: Vec<Playlist> = match self.library() {
-            Some(lib) => lib
-                .playlists()
-                .unwrap_or_default()
-                .into_iter()
-                .map(|p| Playlist {
-                    id: p.id,
-                    name: p.name,
-                    provider: p.provider,
-                    track_count: p.track_count,
-                    source: String::new(),
-                    external_id: String::new(),
-                })
-                .collect(),
-            None => Vec::new(),
-        };
         for (id, name) in self.sources() {
-            all.extend(self.source_playlists(&id, &name));
+            self.refresh_source_playlists(&id, &name);
         }
-        all
-    }
-
-    /// What one source says its lists are. Empty when it cannot answer.
-    fn source_playlists(&mut self, id: &str, name: &str) -> Vec<Playlist> {
-        let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
-        let Ok(bytes) = self.call_plugin_short(id, messages::op::PLAYLISTS, &request) else {
+        let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let Ok(reply) = messages::read::<messages::Results>(&bytes) else { return Vec::new() };
-        reply
-            .playlists
-            .into_iter()
-            .map(|p| Playlist {
-                id: 0,
-                name: p.name,
-                provider: name.to_string(),
-                track_count: p.track_count,
-                source: id.to_string(),
-                external_id: p.external_id,
-            })
-            .collect()
+        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().map(playlist_of).collect();
+        for playlist in &mut playlists {
+            playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
+        }
+        playlists
+    }
+
+    /// Refreshes what one source says its lists are. A failed refresh changes
+    /// nothing in the cache.
+    fn refresh_source_playlists(&mut self, id: &str, name: &str) {
+        let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
+        let Ok(bytes) = self.call_plugin_short(id, messages::op::PLAYLISTS, &request) else {
+            return;
+        };
+        let Ok(reply) = messages::read::<messages::Results>(&bytes) else {
+            return;
+        };
+        let Some(lib) = self.library() else { return };
+        let Ok(source_id) = lib.source_id(id, "default") else {
+            return;
+        };
+        let _ = lib.set_source_label(source_id, name);
+        for playlist in reply.playlists {
+            let _ = lib.sync_source_playlist(source_id, &playlist.external_id, &playlist.name, &playlist.description, playlist.artwork_url.as_deref());
+        }
     }
 
     /// Opens a source's list: its tracks become the results.
@@ -118,8 +187,7 @@ impl Chilpa {
     ///
     /// Returns how many tracks came back.
     pub fn open_source_playlist(&mut self, source: &str, external_id: &str) -> usize {
-        let names: std::collections::HashMap<String, String> =
-            self.sources().into_iter().collect();
+        let names: std::collections::HashMap<String, String> = self.sources().into_iter().collect();
         let name = names.get(source).cloned().unwrap_or_else(|| source.to_string());
         let request = messages::write(&messages::Resolve::new(external_id));
         let bytes = match self.call_plugin_short(source, messages::op::PLAYLIST_TRACKS, &request) {
@@ -136,16 +204,34 @@ impl Chilpa {
                 return 0;
             }
         };
-        let plays = self
-            .plugins
-            .as_ref()
-            .and_then(|p| p.lock().ok())
-            .is_none_or(|p| p.delivers_audio(source));
-        let hits: Vec<search::Hit> = reply
-            .tracks
-            .into_iter()
-            .map(|t| search::Hit::remote(t, source, &name, plays))
-            .collect();
+        if let Some(lib) = self.library() {
+            if let Ok(source_id) = lib.source_id(source, "default") {
+                let playlist_id = lib.playlists().unwrap_or_default().into_iter().find(|playlist| playlist.source_id == source_id && playlist.external_id == external_id).map(|playlist| playlist.id).or_else(|| lib.create_playlist(source_id, external_id, external_id).ok());
+                if let Some(playlist_id) = playlist_id {
+                    let tracks: Vec<chilpa_library::PlaylistTrackMetadata> = reply
+                        .tracks
+                        .iter()
+                        .map(|track| chilpa_library::PlaylistTrackMetadata {
+                            external_id: track.external_id.clone(),
+                            title: track.title.clone(),
+                            artist: track.artist.clone(),
+                            album: track.album.clone(),
+                            duration_ms: track.duration_ms,
+                            sample_rate_hz: track.quality.sample_rate_hz,
+                            bit_depth: track.quality.bit_depth.map(u16::from),
+                            channels: track.quality.channels,
+                            codec: track.quality.codec.clone(),
+                            isrc: track.isrc.clone(),
+                            recording_mbid: track.musicbrainz_recording_id.clone(),
+                            artwork_path: track.artwork_url.clone(),
+                        })
+                        .collect();
+                    let _ = lib.sync_source_playlist_tracks(source_id, playlist_id, &tracks);
+                }
+            }
+        }
+        let plays = self.plugins.as_ref().and_then(|p| p.lock().ok()).is_none_or(|p| p.delivers_audio(source));
+        let hits: Vec<search::Hit> = reply.tracks.into_iter().map(|t| search::Hit::remote(t, source, &name, plays)).collect();
         let found = hits.len();
         self.search.text = String::new();
         self.search.replies = Vec::new();
@@ -177,40 +263,23 @@ impl Chilpa {
         let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
-        let entries: Vec<chilpa_library::PlaylistEntry> = paths
-            .iter()
-            .map(|r| chilpa_library::PlaylistEntry {
-                track_id: lib
-                    .track_by_path(source, std::path::Path::new(r))
-                    .ok()
-                    .flatten(),
-                external_id: r.clone(),
-            })
-            .collect();
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| chilpa_library::PlaylistEntry { track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(), source_id: Some(source), external_id: r.clone() }).collect();
         let id = lib.create_playlist(source, &name, "").ok()?;
         lib.set_playlist_entries(id, &entries).ok()?;
         Some(id)
     }
 
     /// Starts a saved list playing.
-    pub fn play_saved_playlist(
-        &mut self,
-        playlist_id: i64,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        let paths: Vec<String> = lib
-            .playlist_entries(playlist_id)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|e| e.external_id)
-            .filter(|r| !r.is_empty())
-            .collect();
+    pub fn play_saved_playlist(&mut self, playlist_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        let paths: Vec<String> = lib.playlist_entries(playlist_id).unwrap_or_default().into_iter().map(|e| e.external_id).filter(|r| !r.is_empty()).collect();
         if paths.is_empty() {
             self.now.error = chilpa_i18n::t("that list is empty");
             return Vec::new();
         }
+        let _ = lib.record_playlist_play(playlist_id);
         self.play_tracks(&paths, device, bit_perfect)
     }
 
@@ -226,61 +295,124 @@ impl Chilpa {
         lib.create_playlist(source, &name, "").ok()
     }
 
+    /// Makes a local playlist with its complete editable metadata.
+    pub fn create_playlist_with(&mut self, name: &str, description: &str, artwork_path: Option<&str>, tags: &[String], folder_id: Option<i64>) -> Option<i64> {
+        let name = name.trim();
+        if name.is_empty() {
+            self.now.error = chilpa_i18n::t("a list needs a name");
+            return None;
+        }
+        let lib = self.library()?;
+        let source = lib.source_id("local", "default").ok()?;
+        lib.create_playlist_with(source, &chilpa_library::PlaylistEdit { name: name.to_string(), description: description.trim().to_string(), artwork_path: artwork_path.filter(|path| !path.is_empty()).map(str::to_string), tags: tags.to_vec(), folder_id }).ok()
+    }
+
     /// Adds files to the end of a list, leaving out what it already
     /// carries. Returns how many went in.
     pub fn add_to_playlist(&mut self, playlist_id: i64, paths: &[String]) -> usize {
         let Some(lib) = self.library() else { return 0 };
-        let Ok(source) = lib.source_id("local", "default") else { return 0 };
-        let entries: Vec<chilpa_library::PlaylistEntry> = paths
-            .iter()
-            .map(|r| chilpa_library::PlaylistEntry {
-                track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(),
-                external_id: r.clone(),
-            })
-            .collect();
+        let Ok(source) = lib.source_id("local", "default") else {
+            return 0;
+        };
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| chilpa_library::PlaylistEntry { track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(), source_id: Some(source), external_id: r.clone() }).collect();
         lib.append_to_playlist(playlist_id, &entries).unwrap_or(0)
+    }
+
+    /// Picker targets for a library selection, including exact and fuzzy
+    /// presence counts. Fuzzy presence only warns; it never blocks adding.
+    pub fn playlist_targets(&mut self, track_ids: &[i64], query: &str) -> Vec<PlaylistTarget> {
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        let entries = lib.playlist_entries_for_tracks(track_ids).unwrap_or_default();
+        let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
+        lib.playlists()
+            .unwrap_or_default()
+            .into_iter()
+            .map(playlist_of)
+            .filter(|playlist| {
+                let name = playlist.name.to_lowercase();
+                words.iter().all(|word| name.contains(word))
+            })
+            .map(|playlist| {
+                let membership = lib.playlist_membership(playlist.id, &entries).unwrap_or_default();
+                let accepts = playlist.writable && (playlist.mixed || entries.iter().all(|entry| entry.source_id == Some(playlist.source_id)));
+                PlaylistTarget { playlist, exact: membership.exact, similar: membership.similar, accepts }
+            })
+            .collect()
+    }
+
+    pub fn add_track_ids_to_playlist(&mut self, playlist_id: i64, track_ids: &[i64]) -> PlaylistAddResult {
+        let Some(lib) = self.library() else {
+            return PlaylistAddResult::default();
+        };
+        let Some(target) = lib.playlists().ok().and_then(|lists| lists.into_iter().find(|playlist| playlist.id == playlist_id)) else {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        };
+        let playlist = playlist_of(target);
+        let entries = lib.playlist_entries_for_tracks(track_ids).unwrap_or_default();
+        let accepts = playlist.writable && (playlist.mixed || entries.iter().all(|entry| entry.source_id == Some(playlist.source_id)));
+        if !accepts {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        }
+        let membership = lib.playlist_membership(playlist_id, &entries).unwrap_or_default();
+        let added = lib.append_to_playlist(playlist_id, &entries).unwrap_or(0);
+        PlaylistAddResult { added, exact: membership.exact, similar: membership.similar, rejected: false }
+    }
+
+    pub fn remove_tracks_from_playlist(&mut self, playlist_id: i64, track_ids: &[i64]) -> usize {
+        if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
+            return 0;
+        }
+        self.library().and_then(|lib| lib.remove_tracks_from_playlist(playlist_id, track_ids).ok()).unwrap_or(0)
+    }
+
+    pub fn set_tracks_favorite(&mut self, track_ids: &[i64], favorite: bool) -> bool {
+        self.library().is_some_and(|lib| lib.set_track_favorites(track_ids, favorite).is_ok())
     }
 
     /// Moves a track of a list from one position to another.
     pub fn move_in_playlist(&mut self, playlist_id: i64, from: usize, to: usize) -> bool {
+        if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
+            return false;
+        }
         self.library().is_some_and(|lib| lib.move_in_playlist(playlist_id, from, to).unwrap_or(false))
     }
 
     /// Takes the track at that position out of a list.
     pub fn remove_from_playlist(&mut self, playlist_id: i64, position: usize) -> bool {
+        if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
+            return false;
+        }
         self.library().is_some_and(|lib| lib.remove_from_playlist(playlist_id, position).unwrap_or(false))
     }
 
     /// Our own lists, newest first, without asking any source for theirs.
     pub fn local_playlists(&mut self) -> Vec<Playlist> {
-        let Some(lib) = self.library() else { return Vec::new() };
-        lib.playlists()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|p| p.provider == "local")
-            .map(|p| Playlist {
-                id: p.id,
-                name: p.name,
-                provider: p.provider,
-                track_count: p.track_count,
-                source: String::new(),
-                external_id: String::new(),
-            })
-            .collect()
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider == "local").map(playlist_of).collect()
+    }
+
+    /// Every cached playlist, without touching a source. Used by the manager
+    /// and the picker after the facade's refresh path has run.
+    pub fn cached_playlists(&mut self) -> Vec<Playlist> {
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().map(playlist_of).collect();
+        for playlist in &mut playlists {
+            playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
+        }
+        playlists
     }
 
     /// One of our lists, by its id. From the library alone: asking the
     /// sources for theirs to find one of ours would be a network round.
     pub fn playlist(&mut self, playlist_id: i64) -> Option<Playlist> {
         let p = self.library()?.playlists().ok()?.into_iter().find(|p| p.id == playlist_id)?;
-        Some(Playlist {
-            id: p.id,
-            name: p.name,
-            provider: p.provider,
-            track_count: p.track_count,
-            source: String::new(),
-            external_id: String::new(),
-        })
+        Some(playlist_of(p))
     }
 
     /// The covers of a list's first records, up to four: its mosaic.
@@ -304,6 +436,57 @@ impl Chilpa {
         }
         if let Some(lib) = self.library() {
             let _ = lib.rename_playlist(playlist_id, &name);
+        }
+    }
+
+    /// Changes a local playlist's metadata. Source-owned metadata belongs to
+    /// its source and is therefore left alone.
+    pub fn update_playlist(&mut self, playlist_id: i64, name: &str, description: &str, artwork_path: Option<&str>, tags: &[String], folder_id: Option<i64>) -> bool {
+        let Some(playlist) = self.playlist(playlist_id) else {
+            return false;
+        };
+        if !playlist.mixed || name.trim().is_empty() {
+            return false;
+        }
+        self.library()
+            .is_some_and(|lib| lib.update_playlist(playlist_id, &chilpa_library::PlaylistEdit { name: name.trim().to_string(), description: description.trim().to_string(), artwork_path: artwork_path.filter(|path| !path.is_empty()).map(str::to_string), tags: tags.to_vec(), folder_id }).is_ok())
+    }
+
+    pub fn playlist_folders(&mut self) -> Vec<PlaylistFolder> {
+        self.library().and_then(|lib| lib.playlist_folders().ok()).unwrap_or_default().into_iter().map(|folder| PlaylistFolder { id: folder.id, name: folder.name, color: folder.color, position: folder.position, playlist_count: folder.playlist_count }).collect()
+    }
+
+    pub fn create_playlist_folder(&mut self, name: &str, color: &str) -> Option<i64> {
+        let name = name.trim();
+        if name.is_empty() {
+            return None;
+        }
+        self.library()?.create_playlist_folder(name, color).ok()
+    }
+
+    pub fn update_playlist_folder(&mut self, id: i64, name: &str, color: &str) -> bool {
+        !name.trim().is_empty() && self.library().is_some_and(|lib| lib.update_playlist_folder(id, name.trim(), color).is_ok())
+    }
+
+    pub fn delete_playlist_folder(&mut self, id: i64) -> bool {
+        self.library().is_some_and(|lib| lib.delete_playlist_folder(id).is_ok())
+    }
+
+    pub fn move_playlist_to_folder(&mut self, id: i64, folder: Option<i64>) -> bool {
+        self.library().is_some_and(|lib| lib.move_playlist_to_folder(id, folder).is_ok())
+    }
+
+    pub fn set_playlist_visible(&mut self, id: i64, visible: bool) -> bool {
+        self.library().is_some_and(|lib| lib.set_playlist_visible(id, visible).is_ok())
+    }
+
+    pub fn set_playlist_custom_order(&mut self, ids: &[i64]) -> bool {
+        self.library().is_some_and(|lib| lib.set_playlist_custom_order(ids).is_ok())
+    }
+
+    pub fn count_playlist_play(&mut self, id: i64) {
+        if let Some(lib) = self.library() {
+            let _ = lib.record_playlist_play(id);
         }
     }
 }

@@ -20,6 +20,7 @@ pub enum Screen {
     /// The library by folder, or a folder opened from the disk.
     Folders,
     Playlist,
+    PlaylistManager,
 }
 
 impl Screen {
@@ -35,24 +36,12 @@ impl Screen {
             Screen::LibraryFolders => "libraryFolders",
             Screen::Folders => "folders",
             Screen::Playlist => "playlist",
+            Screen::PlaylistManager => "playlistManager",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [
-            Screen::Home,
-            Screen::Library,
-            Screen::Artists,
-            Screen::Albums,
-            Screen::Album,
-            Screen::Artist,
-            Screen::Settings,
-            Screen::LibraryFolders,
-            Screen::Folders,
-            Screen::Playlist,
-        ]
-            .into_iter()
-            .find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager].into_iter().find(|s| s.name() == name)
     }
 }
 
