@@ -12,6 +12,10 @@ Window {
 
     readonly property int sidebarWidth: sidebar.shown
     readonly property int contentLeft: sidebarWidth > 0 ? Metrics.spaceWindow * 2 + sidebarWidth : Metrics.spaceWindow // derived: a margin on each side of the sidebar
+    // The metadata editor wants the width: the queue and the lyrics step
+    // aside while it is open and come back as they were when it closes,
+    // unless one of them is opened in the meantime.
+    property bool panelAside: false
 
     width: Metrics.windowWidth
     height: Metrics.windowHeight
@@ -41,7 +45,7 @@ Window {
     RightPanel {
         id: right
         z: 2
-        visible: SettingsModel.queueOpen || SettingsModel.lyricsOpen
+        visible: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
         x: window.width - width - Metrics.spaceWindow
         y: Metrics.tabBarHeight
         width: Metrics.rightPanel
@@ -58,8 +62,15 @@ Window {
         z: 1
     }
 
+    Connections {
+        target: Navigation
+        function onScreenChanged() { window.panelAside = Navigation.screen === "metadata" }
+    }
+
     PlayerBar {
         z: 3
+        panelAside: window.panelAside
+        onShowPanel: window.panelAside = false
         width: Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - Metrics.playerBottom
@@ -123,5 +134,8 @@ Window {
 
     // Nothing starts with the keyboard: the search field only takes it when
     // it is clicked or asked for.
-    Component.onCompleted: contentItem.forceActiveFocus()
+    Component.onCompleted: {
+        contentItem.forceActiveFocus()
+        panelAside = Navigation.screen === "metadata"
+    }
 }
