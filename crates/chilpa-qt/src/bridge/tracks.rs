@@ -633,9 +633,13 @@ impl qobject::TrackListModel {
             // The editor opens on this track before its screen shows.
             let (album, id) = (track.album_id, track.id);
             registry::metadata(move |editor| {
-                // A record already open here keeps what was typed into it.
-                let here = app::with(|api| api.metadata_view().state != "closed" && api.metadata_view().album_id == album);
-                if !here {
+                // A record already open keeps what was typed into it; the
+                // screen asks before another's changes are lost.
+                let kept = app::with(|api| {
+                    let view = api.metadata_view();
+                    view.state != "closed" && (view.album_id == album || view.dirty)
+                });
+                if !kept {
                     editor.open_album(album, id);
                 }
             });

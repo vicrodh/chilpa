@@ -97,7 +97,11 @@ Column {
                 kind: "primary"
                 text: I18n.tr("Apply to the form", I18n.rev)
                 enabled: root.doc.state === "ready"
-                onClicked: MetadataEditor.apply()
+                onClicked: {
+                    // The field being typed in lets go, and shows what the release gave.
+                    root.forceActiveFocus()
+                    MetadataEditor.apply()
+                }
             }
             PillButton {
                 kind: "ghost"

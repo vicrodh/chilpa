@@ -87,6 +87,9 @@ Item {
             placeholder: root.field.mixed ? I18n.tr("Mixed", I18n.rev) : ""
             border.color: root.invalid !== "" ? Theme.color.statusNegative : Theme.color.accent
             border.width: editing ? Metrics.focusRing : (root.invalid !== "" ? 1 : 0)
+            // Every key reaches the form: a Save or a Close pressed while a
+            // field still has the keyboard sees what is in it.
+            onTextEdited: root.edited(root.name, text)
             onEditingFinished: {
                 if (text !== (root.field.value || ""))
                     root.edited(root.name, text)

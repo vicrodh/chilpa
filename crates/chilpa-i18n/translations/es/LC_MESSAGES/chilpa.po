@@ -434,6 +434,9 @@ msgstr "Disco {}"
 msgid "Discard"
 msgstr "Descartar"
 
+msgid "Discard the changes to the other record?"
+msgstr "¿Descartar los cambios del otro disco?"
+
 msgid "Discard the changes?"
 msgstr "¿Descartar los cambios?"
 
@@ -2320,3 +2323,6 @@ msgstr "No se permitió a tiempo en {}; vuelve a conectar"
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr "{} se escribió y no dice lo que debería en \"{}\"; no se reemplazó nada"
+
+msgid "“{}” has changes that were not saved. Opening this record loses them."
+msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
