@@ -1,9 +1,11 @@
 import QtQuick
 import "../Theme"
 
-// Shared visual contract for list rows. Cards and grids set listMode false.
+// Shared visual contract for music-entity list rows. Grids set listMode false.
 Rectangle {
-    required property int index
+    // Keep this separate from a view delegate's implicit `index`.  A reusable
+    // surface must never make its parent delegate impossible to instantiate.
+    property int rowIndex: 0
     property bool listMode: true
     property bool hovered: false
     property bool selected: false
@@ -13,5 +15,5 @@ Rectangle {
     color: selected ? Theme.color.rowSelected
          : emphasized ? Theme.color.rowPlaying
          : hovered ? Theme.color.stateHover
-         : listMode && index % 2 === 1 ? Theme.color.stateStripe : restColor
+         : listMode && rowIndex % 2 === 1 ? Theme.color.stateStripe : restColor
 }

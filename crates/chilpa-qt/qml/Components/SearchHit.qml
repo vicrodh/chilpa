@@ -38,14 +38,11 @@ Item {
         color: Theme.color.textTertiary
     }
 
-    ListRowSurface {
+    Rectangle {
         visible: !hit.header
         anchors.fill: parent
-        index: hit.index
-        listMode: !hit.best
         radius: Metrics.radiusCard
-        hovered: hover.hovered || hit.current
-        restColor: hit.best ? Theme.color.fillField : "transparent"
+        color: hover.hovered || hit.current ? Theme.color.stateHover : hit.best ? Theme.color.fillField : "transparent"
     }
 
     ArtTile {

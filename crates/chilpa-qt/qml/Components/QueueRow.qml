@@ -27,7 +27,7 @@ Item {
 
     ListRowSurface {
         anchors.fill: parent
-        index: row.index
+        rowIndex: row.index
         radius: Metrics.radiusCard
         hovered: hover.hovered
         emphasized: row.playing

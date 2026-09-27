@@ -5,18 +5,13 @@ import "../Theme"
 import "../Primitives"
 
 // Metadata editor for a local playlist.
-Popup {
+Modal {
     id: dialog
 
     property int playlistId: 0
     property int folderId: 0
 
-    parent: Overlay.overlay
-    anchors.centerIn: parent
     width: Metrics.playlistModalWidth
-    modal: true
-    padding: Metrics.gap20
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     function show(id) {
         playlistId = id
@@ -29,12 +24,6 @@ Popup {
         Qt.callLater(nameField.focusInput)
     }
 
-    background: Rectangle {
-        radius: Metrics.radiusPanel
-        color: Theme.color.surfaceRaised
-        border.width: 1
-        border.color: Theme.color.strokeHairline
-    }
     contentItem: Column {
         spacing: Metrics.gap12
         Text { text: I18n.tr("Edit playlist", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }

@@ -26,7 +26,8 @@ Item {
 
     ListRowSurface {
         anchors.fill: parent
-        index: row.index
+        rowIndex: row.index
+        listMode: false
         radius: Metrics.radiusControl
         hovered: hover.hovered
     }

@@ -25,7 +25,7 @@ Item {
 
     signal play()
     signal shuffle()
-    signal queue()
+    signal queue(real left, real top)
     signal selectToggle()
 
     readonly property bool mosaic: covers.length > 1
@@ -108,19 +108,24 @@ Item {
                 onClicked: hero.shuffle()
             }
             IconButton {
+                id: queueButton
                 visible: hero.canQueue
                 anchors.verticalCenter: parent.verticalCenter
                 round: true
                 glyph: hero.queueGlyph
                 tip: hero.queueTip
-                onClicked: hero.queue()
+                onClicked: {
+                    const at = queueButton.mapToItem(hero, 0,
+                                                     queueButton.height + Metrics.gap4)
+                    hero.queue(at.x, at.y)
+                }
             }
             IconButton {
                 visible: hero.canSelect
                 anchors.verticalCenter: parent.verticalCenter
                 round: true
                 tone: hero.selecting ? "accent" : "normal"
-                glyph: Icons.check
+                glyph: Icons.checkbox
                 tip: hero.selecting ? I18n.tr("Finish selecting", I18n.rev)
                                     : I18n.tr("Select tracks", I18n.rev)
                 onClicked: hero.selectToggle()

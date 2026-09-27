@@ -4,18 +4,11 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-Popup {
+Modal {
     id: dialog
 
-    parent: Overlay.overlay
-    x: Math.round((parent.width - width) / 2)
-    y: Math.round((parent.height - height) / 2)
     width: Metrics.playlistModalWidth
     height: Metrics.playlistModalHeight
-    modal: true
-    focus: true
-    padding: Metrics.gap20
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     property bool creating: false; property var trackIds: []; property var rows: []
     property string notice: ""; property bool warning: false
@@ -32,15 +25,7 @@ Popup {
     function beginCreate() { show([]) }
     function reload() { rows = JSON.parse(Playlists.pickerJson(trackIds, search.text)) }
 
-    background: Rectangle {
-        radius: Metrics.radiusPanel
-        color: Theme.color.surfaceRaised
-        border.width: 1
-        border.color: Theme.color.strokeHairline
-    }
-
-    Column {
-        anchors.fill: parent
+    contentItem: Column {
         spacing: Metrics.gap12
 
         Row {
@@ -114,6 +99,7 @@ Popup {
 
                 width: ListView.view.width
                 height: Metrics.playlistPickerRow
+                rowIndex: index
                 radius: Metrics.radiusControl
                 hovered: hover.hovered
                 opacity: accepts ? 1 : Metrics.disabledOpacity
