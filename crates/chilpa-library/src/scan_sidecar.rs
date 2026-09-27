@@ -4,7 +4,7 @@
 //! network share each question is a round trip, and a record has a dozen
 //! files and one sidecar.
 
-use crate::sidecar::{in_force, load, Home, Sidecar};
+use crate::sidecar::{in_force, load, Home, Sidecar, SidecarError};
 use crate::store::Library;
 use chilpa_tags::{FileInfo, Tags};
 use rusqlite::{params, OptionalExtension};
@@ -19,6 +19,10 @@ pub(crate) struct Seen {
     pub stale: bool,
     /// There is one and it cannot be read.
     pub unreadable: bool,
+    /// It could not be read this time -- the disk, the network -- which
+    /// says nothing about what it holds. Nothing is written down about it,
+    /// so the next scan asks again.
+    failed: bool,
     /// Every name the home's sidecar may go by.
     names: Vec<PathBuf>,
     /// The one in force, with its date in nanoseconds and its size.
@@ -54,11 +58,14 @@ fn look(lib: &Library, home: &Home, external_id: &str) -> Seen {
         Some((path, mtime, size)) => recorded.len() != 1 || recorded[0] != (path.display().to_string(), *mtime, *size),
         None => !recorded.is_empty(),
     };
-    let (sidecar, unreadable) = match load(home, external_id) {
-        Ok(sidecar) => (sidecar, false),
-        Err(_) => (None, true),
+    let (sidecar, unreadable, failed) = match load(home, external_id) {
+        Ok(sidecar) => (sidecar, false, false),
+        Err(SidecarError::Io(_)) => (None, true, true),
+        Err(_) => (None, true, false),
     };
-    Seen { sidecar, stale, unreadable, names, file }
+    // A sidecar that could not be read this time does not send its files to
+    // be read again without it: what the library has from them stays.
+    Seen { sidecar, stale: stale && !failed, unreadable, failed, names, file }
 }
 
 impl Seen {
@@ -84,6 +91,9 @@ impl Seen {
     }
 
     fn record(&self, lib: &Library, now: i64) -> rusqlite::Result<()> {
+        if self.failed {
+            return Ok(());
+        }
         for name in &self.names {
             lib.db.execute("DELETE FROM sidecars WHERE path = ?1", params![name.display().to_string()])?;
         }
