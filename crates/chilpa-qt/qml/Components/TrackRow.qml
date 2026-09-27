@@ -27,6 +27,8 @@ Item {
 
     property TrackColumns cols
     property bool hovered: false
+    // Its artist is under the pointer: a click on it opens the artist.
+    property bool artistHovered: false
     property bool selectionMode: false
 
     readonly property bool header: rowKind === 1
@@ -122,7 +124,8 @@ Item {
                 text: row.artist
                 elide: Text.ElideRight
                 font.pointSize: Type.meta
-                color: Theme.color.textSecondary
+                font.underline: row.artistHovered
+                color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
             }
         }
 
@@ -134,6 +137,7 @@ Item {
             text: row.artist
             elide: Text.ElideRight
             font.pointSize: Type.row
+            font.underline: row.artistHovered
             color: row.playing ? Theme.color.accent : Theme.color.textPrimary
         }
 
