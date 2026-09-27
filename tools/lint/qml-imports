@@ -54,6 +54,7 @@ def main():
         src = path.read_text()
         code = code_only(src)
         name = rel(path)
+        imported_layers = set()
         for target in IMPORT.findall(src):
             where = (path.parent / target).resolve()
             try:
@@ -62,6 +63,7 @@ def main():
                 errors.append(f"{name}: imports {target}, outside the QML tree")
                 continue
             to = inner.parts[0] if inner.parts else "Main"
+            imported_layers.add(to)
             if to == GALLERY or to not in ORDER:
                 errors.append(f"{name}: imports {target}, which is not a layer")
             elif ORDER[to] >= rank(layer) or (layer == GALLERY and to == "Screens"):
@@ -77,6 +79,8 @@ def main():
                 gallery_uses.add(used)
             to = types[used][0]
             line = code[: m.start()].count("\n") + 1
+            if to != layer and to not in imported_layers:
+                errors.append(f"{name}:{line}: uses {used} from {to} without importing that layer")
             if layer == "Screens" and to == "Screens":
                 errors.append(f"{name}:{line}: a screen uses the screen {used}; compose it from the layers below")
             elif to == GALLERY:
