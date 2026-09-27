@@ -144,6 +144,20 @@ fn candidate(http: &dyn Http, session: u64, turn: u64, at: usize, preview: &str,
     Some(Candidate { preview: path, title, detail, url })
 }
 
+/// Every candidate's preview at once, in the order asked. Each is a request
+/// to a host with no pace of its own, and one after the other a search of
+/// eleven took the time of all eleven: the archive answers slowly.
+fn candidates(http: &dyn Http, session: u64, turn: u64, wanted: Vec<(String, String, String, String)>) -> Vec<Candidate> {
+    std::thread::scope(|scope| {
+        let running: Vec<_> = wanted
+            .into_iter()
+            .enumerate()
+            .map(|(at, (preview, url, title, detail))| scope.spawn(move || candidate(http, session, turn, at, &preview, url, title, detail)))
+            .collect();
+        running.into_iter().filter_map(|asked| asked.join().ok().flatten()).collect()
+    })
+}
+
 /// The covers a search finds.
 pub(crate) fn find(
     http: &dyn Http,
@@ -154,8 +168,7 @@ pub(crate) fn find(
     artist: &str,
     catalog_number: &str,
 ) -> Result<Vec<Candidate>, Failure> {
-    let mut found: Vec<Candidate> = Vec::new();
-    match provider {
+    let mut found = match provider {
         Provider::MusicBrainz => {
             let hits = musicbrainz::search(&Net::musicbrainz(http), title, artist, catalog_number)?;
             let mut wanted: Vec<(String, String, String)> = Vec::new();
@@ -170,24 +183,26 @@ pub(crate) fn find(
                     wanted.push((url, hit.title.clone(), hit.date.clone()));
                 }
             }
-            for (at, (preview, title, detail)) in wanted.into_iter().enumerate() {
+            let wanted = wanted.into_iter().map(|(preview, title, detail)| {
                 let url = cover_art::original_of(&preview);
-                found.extend(candidate(http, session, turn, at, &preview, url, title, detail));
-            }
+                (preview, url, title, detail)
+            });
+            candidates(http, session, turn, wanted.collect())
         }
         Provider::Discogs => {
             let covers = discogs::images(&Net::proxy(http), artist, title, catalog_number)?;
-            for (at, cover) in covers.into_iter().enumerate() {
+            // The preview comes straight from where the image is. The cover
+            // itself goes through the proxy.
+            let wanted = covers.into_iter().map(|cover| {
                 let detail = match cover.year.as_str() {
                     "" => format!("{} × {}", cover.width, cover.height),
                     year => format!("{} × {} · {year}", cover.width, cover.height),
                 };
-                // The preview comes straight from where the image is. The
-                // cover itself goes through the proxy.
-                found.extend(candidate(http, session, turn, at, &cover.url, cover.url.clone(), cover.release, detail));
-            }
+                (cover.url.clone(), cover.url, cover.release, detail)
+            });
+            candidates(http, session, turn, wanted.collect())
         }
-    }
+    };
     found.truncate(MOST + 1);
     Ok(found)
 }
@@ -316,6 +331,38 @@ pub(crate) mod testing {
 mod tests {
     use super::testing::picture;
     use super::*;
+
+    /// A network that answers by address: a search with three releases,
+    /// and a preview for every cover but the second release's.
+    struct ByAddress;
+
+    const RELEASES: [&str; 3] =
+        ["11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222", "33333333-3333-4333-8333-333333333333"];
+
+    impl Http for ByAddress {
+        fn get(&self, url: &str, _: &str, _: Duration, _: usize) -> Result<chilpa_meta::Reply, String> {
+            let (status, body) = if url.contains("/ws/2/release?") {
+                let releases: Vec<String> = RELEASES.iter().map(|id| format!(r#"{{"id":"{id}","title":"{id}"}}"#)).collect();
+                (200, format!(r#"{{"releases":[{}]}}"#, releases.join(",")).into_bytes())
+            } else if url.contains(RELEASES[1]) {
+                (404, Vec::new())
+            } else {
+                (200, picture(8, image::ImageFormat::Png))
+            };
+            Ok(chilpa_meta::Reply { status, headers: Default::default(), body })
+        }
+    }
+
+    #[test]
+    fn covers_found_at_once_keep_their_order_and_a_missing_one_is_left_out() {
+        let found = find(&ByAddress, u64::MAX, 1, Provider::MusicBrainz, "A record", "Someone", "").unwrap();
+        let titles: Vec<&str> = found.iter().map(|c| c.title.as_str()).collect();
+        assert_eq!(titles, [RELEASES[0], RELEASES[2]]);
+        assert!(found.iter().all(|c| c.url.ends_with("/front")), "the cover kept is the original, not the preview");
+        for candidate in &found {
+            let _ = std::fs::remove_file(&candidate.preview);
+        }
+    }
 
     #[test]
     fn a_cover_says_what_it_is() {
