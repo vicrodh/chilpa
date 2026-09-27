@@ -247,8 +247,6 @@ QtObject {
     readonly property int searchAvatar: 52
     // The filter field of a screen that searches itself (design/04 11).
     readonly property int screenSearch: 200
-    // The search at the top of every screen.
-    readonly property int topSearch: 320
     readonly property int sourcesPopoverWidth: 340
     readonly property int sourceFilterRow: 44
     readonly property int playlistModalWidth: 520
