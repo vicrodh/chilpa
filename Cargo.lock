@@ -547,6 +547,7 @@ dependencies = [
  "chilpa-models",
  "chilpa-tags",
  "rusqlite",
+ "serde_json",
 ]
 
 [[package]]

@@ -13,3 +13,6 @@ chilpa-i18n.workspace = true
 chilpa-models.workspace = true
 chilpa-tags.workspace = true
 rusqlite = "0.40"
+# A sidecar is JSON, read and written by hand so a key this version does not
+# know is kept as it came.
+serde_json = "1"
