@@ -141,6 +141,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
         "navigation.playlistArtwork" => {
             vec![("icon", app::t("Playlist icon")), ("collage", app::t("Cover collage"))]
         }
+        "library.metaSrc" => vec![("musicbrainz", "MusicBrainz".to_string()), ("discogs", "Discogs".to_string()), ("embedded", app::t("Embedded tags only"))],
         _ => Vec::new(),
     }
 }
@@ -153,7 +154,7 @@ fn pref_on(key: &str, default: bool) -> String {
 /// The accents offered (design/05): the theme's own, then four.
 const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 
-const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon")];
+const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
 
 impl SettingsPageRust {
     fn build(&mut self) {
@@ -527,7 +528,7 @@ impl qobject::SettingsPage {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_density(QString::from(&value)));
             }
-            "appearance.font" => app::with(|api| api.remember_preference(&key, &value)),
+            "appearance.font" | "library.metaSrc" => app::with(|api| api.remember_preference(&key, &value)),
             "appearance.albumHeader" => {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_album_header(QString::from(&value)));
