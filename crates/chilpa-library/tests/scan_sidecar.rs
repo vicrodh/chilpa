@@ -347,3 +347,39 @@ fn a_scan_after_an_edit_changes_nothing() {
     assert_eq!((rows(&lib), albums(&lib)), edited, "the scan and the edit say the same");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[cfg(unix)]
+#[test]
+fn a_sidecar_that_cannot_be_read_this_time_is_asked_again_next_time() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let Some(dir) = record("transient") else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let (home, _) = home_of(&dir);
+    store(&home, &overriding(), 1).unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let with = rows(&lib);
+
+    // Changed, and then out of reach for one scan: what the library has from
+    // it stays, and nothing is written down about it.
+    store(&home, &overriding(), 2).unwrap();
+    std::fs::set_permissions(home.sidecar(), std::fs::Permissions::from_mode(0o000)).unwrap();
+    if std::fs::read(home.sidecar()).is_ok() {
+        // Running as a user no permission stops.
+        eprintln!("the sidecar is readable anyway: skipped");
+        let _ = std::fs::remove_dir_all(dir);
+        return;
+    }
+    let report = scan_root(&lib, &dir).unwrap();
+    assert_eq!(report.read, 0, "the files are not read again without their sidecar");
+    assert_eq!(rows(&lib), with);
+
+    std::fs::set_permissions(home.sidecar(), std::fs::Permissions::from_mode(0o644)).unwrap();
+    let report = scan_root(&lib, &dir).unwrap();
+    assert_eq!(report.read, 2, "the next scan asks again");
+    assert_eq!(rows(&lib), with);
+    let _ = std::fs::remove_dir_all(dir);
+}

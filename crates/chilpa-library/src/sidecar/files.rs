@@ -189,11 +189,14 @@ impl StagedHome {
 /// they go. `cover` is the image's bytes as they are and "jpg" or "png".
 ///
 /// A sidecar with nothing in it is not written: landing removes the one
-/// that was there, and its cover.
+/// that was there, and its cover. Unless it stood in for one of QBZ's: then
+/// it is written empty, or QBZ's would be in force again and lay back what
+/// was just written into the files.
 pub fn stage(home: &Home, mut sidecar: Sidecar, cover: Option<(&[u8], &str)>, now: i64) -> Result<StagedHome, SidecarError> {
     if sidecar.version > VERSION {
         return Err(SidecarError::Newer(sidecar.version));
     }
+    let over_qbz = sidecar.imported;
     sidecar.version = VERSION;
     sidecar.updated_at = now;
     sidecar.imported = false;
@@ -218,7 +221,7 @@ pub fn stage(home: &Home, mut sidecar: Sidecar, cover: Option<(&[u8], &str)>, no
         }
     }
     let cover_at = sidecar.album.cover.value().map(|name| home.beside(name));
-    let pending = if sidecar.is_empty() {
+    let pending = if sidecar.is_empty() && !over_qbz {
         gone.push(home.sidecar());
         None
     } else {
@@ -375,6 +378,27 @@ mod tests {
         assert!(!read.imported);
         assert_eq!(read.album.title, Override::Value("From Chilpa".to_string()));
         assert_eq!(std::fs::read(dir.join(".qbz.json")).unwrap(), theirs, "theirs is as it was");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn emptying_what_stood_in_for_qbz_keeps_qbz_out() {
+        let dir = folder("masked");
+        let file = dir.join("01.flac").to_string_lossy().into_owned();
+        let home = Home::of(&file, None);
+        let theirs = br#"{"version":1,"updatedAt":1,"album":{"albumTitle":"From QBZ","albumArtist":null,"year":null,"genre":null,"catalogNumber":null},"tracks":[]}"#;
+        std::fs::write(dir.join(".qbz.json"), theirs).unwrap();
+
+        // What a save into the files does: everything QBZ laid over the
+        // files is now in them, and the sidecar says nothing.
+        let mut read = load(&home, &file).unwrap().unwrap();
+        read.album.title = Override::Absent;
+        assert!(read.is_empty());
+        store(&home, &read, 2).unwrap();
+        assert_eq!(in_force(&home, &file), Some(home.sidecar()), "an empty one of ours, not theirs");
+        let again = load(&home, &file).unwrap().unwrap();
+        assert!(again.is_empty());
+        assert_eq!(std::fs::read(dir.join(".qbz.json")).unwrap(), theirs);
         let _ = std::fs::remove_dir_all(dir);
     }
 

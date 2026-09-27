@@ -102,6 +102,25 @@ pub fn import(bytes: &[u8]) -> Result<Sidecar, SidecarError> {
         // is not read.
     }
 
+    // Two files QBZ knew by different paths that go by one name here --
+    // CD1/01.flac and CD2/01.flac -- cannot be told apart: neither is
+    // given anything, rather than both being given the last one's.
+    let mut seen: std::collections::HashMap<String, &str> = std::collections::HashMap::new();
+    let mut ambiguous: Vec<String> = Vec::new();
+    for list in ["tracks", "extendedTracks"] {
+        for entry in root[list].as_array().into_iter().flatten() {
+            let Some(path) = entry["filePath"].as_str() else { continue };
+            let key = key_of(path);
+            match seen.get(&key) {
+                Some(other) if *other != path => ambiguous.push(key),
+                Some(_) => {}
+                None => {
+                    seen.insert(key, path);
+                }
+            }
+        }
+    }
+
     for entry in root["tracks"].as_array().into_iter().flatten() {
         let Some(path) = entry["filePath"].as_str() else { continue };
         if from_a_cue(entry) {
@@ -126,6 +145,7 @@ pub fn import(bytes: &[u8]) -> Result<Sidecar, SidecarError> {
         track.musicbrainz_track_id = texted(&entry["musicbrainzTrackId"]);
         track.musicbrainz_artist_ids = listed(&entry["musicbrainzArtistIds"]);
     }
+    out.tracks.retain(|key, _| !ambiguous.contains(key));
     Ok(out)
 }
 
@@ -211,6 +231,18 @@ mod tests {
         assert_eq!(track.artist_credit, Override::Value("Alpha feat. Beta".to_string()));
         assert_eq!(track.composers, Override::Absent, "an empty list is what the file had, not something cleared");
         assert_eq!(track.performers, Override::Value(vec!["Player (guitar)".to_string()]));
+    }
+
+    #[test]
+    fn two_discs_with_one_file_name_give_neither_track_anything() {
+        let json = r#"{"version":1,"updatedAt":1,"album":{"albumTitle":"Box","albumArtist":"","year":0,"genre":"","catalogNumber":""},
+            "tracks":[{"filePath":"/m/Box/CD1/01.flac","title":"One","discNumber":1,"trackNumber":1},
+                      {"filePath":"/m/Box/CD2/01.flac","title":"Other","discNumber":2,"trackNumber":1},
+                      {"filePath":"/m/Box/CD2/02.flac","title":"Two","discNumber":2,"trackNumber":2}]}"#;
+        let s = import(json.as_bytes()).unwrap();
+        assert!(!s.tracks.contains_key("01.flac"), "which of the two it was cannot be told");
+        assert_eq!(s.tracks["02.flac"].title, Override::Value("Two".to_string()));
+        assert_eq!(s.album.title, Override::Value("Box".to_string()));
     }
 
     #[test]
