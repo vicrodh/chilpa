@@ -16,6 +16,7 @@ chilpa-lyrics.workspace = true
 chilpa-plugin.workspace = true
 chilpa-secrets.workspace = true
 chilpa-auth.workspace = true
+chilpa-meta.workspace = true
 chilpa-i18n.workspace = true
 # Approvals are kept as JSON, readable by hand on purpose.
 serde = { version = "1", features = ["derive"] }

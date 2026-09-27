@@ -326,6 +326,9 @@ msgstr "Imagen personalizada"
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
 
+msgid "DSD files keep their changes in a sidecar"
+msgstr "los archivos DSD guardan sus cambios en un sidecar"
+
 msgid "DSD not supported: {}"
 msgstr "DSD no soportado: {}"
 
@@ -1217,6 +1220,9 @@ msgstr "un paquete DST no pertenece a ningún frame"
 msgid "a Mac's outputs take integer samples, not floating point"
 msgstr "las salidas de una Mac toman muestras enteras, no de punto flotante"
 
+msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
+msgstr "una fecha es un año, un año y un mes, o un día completo: 1984, 1984-09, 1984-09-03"
+
 msgid "a direct URL"
 msgstr "una URL directa"
 
@@ -1226,11 +1232,26 @@ msgstr "un frame del área estéreo no es estéreo"
 msgid "a list needs a name"
 msgstr "una lista necesita un nombre"
 
+msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
+msgstr "este sidecar lo escribió un Chilpa más nuevo; actualiza Chilpa para cambiarlo"
+
+msgid "a number from 1 to 9999, or nothing"
+msgstr "un número del 1 al 9999, o nada"
+
 msgid "a scan is already running"
 msgstr "ya hay un escaneo corriendo"
 
+msgid "a scan is running; save when it is done"
+msgstr "hay un escaneo corriendo; guarda cuando termine"
+
 msgid "a stream cannot be rewound"
 msgstr "un stream no se puede rebobinar"
+
+msgid "a track has no artist"
+msgstr "una pista no tiene artista"
+
+msgid "a track has no title"
+msgstr "una pista no tiene título"
 
 msgid "add a command you trigger"
 msgstr "agregar un comando que tú disparas"
@@ -1391,6 +1412,12 @@ msgstr "pide el runtime {}, que todavía no existe"
 msgid "it blew up inside: {}"
 msgstr "tronó adentro: {}"
 
+msgid "it cannot be written to"
+msgstr "no se puede escribir en él"
+
+msgid "it cannot take tags"
+msgstr "no acepta tags"
+
 msgid "it delivers {}"
 msgstr "entrega {}"
 
@@ -1409,11 +1436,17 @@ msgstr "no empieza con el chunk FRM8"
 msgid "it failed {} times in a row; the last one: {}"
 msgstr "falló {} veces seguidas; la última: {}"
 
+msgid "it is a DSD file"
+msgstr "es un archivo DSD"
+
 msgid "it is not 2048 bytes"
 msgstr "no mide 2048 bytes"
 
 msgid "it is not installed"
 msgstr "no está instalado"
+
+msgid "it is not where it was"
+msgstr "ya no está donde estaba"
 
 msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
 msgstr "dice manejar su propia cuenta, pero eso solo puede hacerlo un plugin de proceso aparte: en WASM no hay sockets ni disco suyo"
@@ -1426,6 +1459,12 @@ msgstr "guardar una credencial tuya"
 
 msgid "keep things of its own on disk"
 msgstr "guardar sus propias cosas en disco"
+
+msgid "looking records up is turned off in Settings"
+msgstr "buscar discos está apagado en Ajustes"
+
+msgid "metadata is being saved; scan when it is done"
+msgstr "se están guardando metadatos; escanea cuando termine"
 
 msgid "microphone"
 msgstr "micrófono"
@@ -1442,6 +1481,9 @@ msgstr "no hay ningún grafo de JACK corriendo"
 msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
 msgstr "no hay ningún grafo de JACK corriendo; arranca uno, o instala pipewire-jack para que PipeWire conteste por él"
 
+msgid "no covers were found"
+msgstr "no se encontraron carátulas"
+
 msgid "no pulse"
 msgstr "sin pulso"
 
@@ -1454,11 +1496,26 @@ msgstr "no hay ninguna tarjeta de sonido listada en /proc/asound"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "ningún servidor de sonido contestó; instala pipewire y pipewire-pulse"
 
+msgid "none of that record's files are here now"
+msgstr "ninguno de los archivos de ese disco está aquí ahorita"
+
 msgid "not supported: {}"
 msgstr "no soportado: {}"
 
+msgid "nothing was found"
+msgstr "no se encontró nada"
+
 msgid "now at {}"
 msgstr "ahora en {}"
+
+msgid "one or more files are not where they were"
+msgstr "uno o más archivos ya no están donde estaban"
+
+msgid "one or more files cannot be written to"
+msgstr "en uno o más archivos no se puede escribir"
+
+msgid "one or more files cannot take tags"
+msgstr "uno o más archivos no aceptan tags"
 
 msgid "outside the image"
 msgstr "fuera de la imagen"
@@ -1508,6 +1565,9 @@ msgstr "estéreo"
 msgid "stop using the account it had"
 msgstr "dejar de usar la cuenta que tenía"
 
+msgid "stop what is playing before writing to its file, or save to a sidecar"
+msgstr "detén lo que está sonando antes de escribir en su archivo, o guarda en un sidecar"
+
 msgid "stumbling"
 msgstr "tropezando"
 
@@ -1517,14 +1577,35 @@ msgstr "tags"
 msgid "that album has no playable tracks"
 msgstr "ese álbum no tiene pistas disponibles"
 
+msgid "that cover could not be fetched"
+msgstr "esa carátula no se pudo bajar"
+
 msgid "that does not look like a stream address"
 msgstr "eso no parece una dirección de stream"
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr "ese dominio no está en los que el plugin declaró"
 
+msgid "that file is not an image"
+msgstr "ese archivo no es una imagen"
+
 msgid "that id does not work as a folder"
 msgstr "ese id no sirve de carpeta"
+
+msgid "that is longer than {} characters"
+msgstr "eso mide más de {} caracteres"
+
+msgid "that is more than {} values"
+msgstr "eso son más de {} valores"
+
+msgid "that is not a Discogs release number"
+msgstr "eso no es un número de release de Discogs"
+
+msgid "that is not a MusicBrainz id"
+msgstr "eso no es un id de MusicBrainz"
+
+msgid "that is not something {} can be asked for"
+msgstr "eso no es algo que se le pueda pedir a {}"
 
 msgid "that list is empty"
 msgstr "esa lista está vacía"
@@ -1592,8 +1673,26 @@ msgstr "el área no declara pistas"
 msgid "the audio area falls outside the image"
 msgstr "el área de audio cae fuera de la imagen"
 
+msgid "the changes were saved"
+msgstr "los cambios se guardaron"
+
 msgid "the client_id came in empty"
 msgstr "el client_id viene vacío"
+
+msgid "the cover could not be kept: {}"
+msgstr "la carátula no se pudo guardar: {}"
+
+msgid "the cover could not be read: {}"
+msgstr "la carátula no se pudo leer: {}"
+
+msgid "the cover has to be a JPEG or a PNG"
+msgstr "la carátula tiene que ser JPEG o PNG"
+
+msgid "the cover has to be an image of up to 25 MiB"
+msgstr "la carátula tiene que ser una imagen de hasta 25 MiB"
+
+msgid "the cover is larger than 12,000 pixels on a side"
+msgstr "la carátula mide más de 12,000 pixeles por lado"
 
 msgid "the credential could not be saved: {}"
 msgstr "no se pudo guardar la credencial: {}"
@@ -1651,6 +1750,9 @@ msgstr "la unidad no responde: {}"
 
 msgid "the drive is missing"
 msgstr "falta la unidad"
+
+msgid "the editor could not be started"
+msgstr "el editor no pudo arrancar"
 
 msgid "the file carries no tracks"
 msgstr "el archivo no trae pistas"
@@ -1745,6 +1847,12 @@ msgstr "el sandbox de plugins no está arrancado"
 msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
 msgstr "no se pudieron leer las frecuencias a las que puede correr el grafo de PipeWire, así que no se puede prometer nada sin tocar"
 
+msgid "the record has no artist"
+msgstr "el disco no tiene artista"
+
+msgid "the record has no title"
+msgstr "el disco no tiene título"
+
 msgid "the reply could not be built"
 msgstr "no se pudo armar la respuesta"
 
@@ -1775,6 +1883,9 @@ msgstr "el servidor que contesta es {}, no PipeWire"
 msgid "the server sent no audio: {}"
 msgstr "el servidor no mandó audio: {}"
 
+msgid "the sidecar could not be written: {}"
+msgstr "el sidecar no se pudo escribir: {}"
+
 msgid "the sound server would not let go of card {}"
 msgstr "el servidor de sonido no quiso soltar la tarjeta {}"
 
@@ -1790,6 +1901,9 @@ msgstr "no se pudieron leer los tags: {}"
 msgid "the token_url is not https"
 msgstr "el token_url no es https"
 
+msgid "the track's number is its place inside the disc image"
+msgstr "el número de la pista es su lugar dentro de la imagen de disco"
+
 msgid "the version"
 msgstr "la versión"
 
@@ -1801,6 +1915,9 @@ msgstr "se acabó la espera"
 
 msgid "there is no audio output on this platform yet"
 msgstr "todavía no hay salida de audio en esta plataforma"
+
+msgid "there is no connection to {}"
+msgstr "no hay conexión con {}"
 
 msgid "there is no disc in the drive"
 msgstr "no hay disco en la unidad"
@@ -1825,6 +1942,9 @@ msgstr "hace falta más cola para mezclar"
 
 msgid "there is nothing Chilpa can play in {}"
 msgstr "no hay nada que Chilpa pueda reproducir en {}"
+
+msgid "there is nothing to save"
+msgstr "no hay nada que guardar"
 
 msgid "there is nothing under {}"
 msgstr "no hay nada de {}"
@@ -1859,11 +1979,20 @@ msgstr "por {}"
 msgid "track {}: {}"
 msgstr "pista {}: {}"
 
+msgid "tracks inside a disc image keep their changes in a sidecar"
+msgstr "las pistas que viven dentro de una imagen de disco guardan sus cambios en un sidecar"
+
+msgid "type a title, an artist or a catalog number to search"
+msgstr "escribe un título, un artista o un número de catálogo para buscar"
+
 msgid "up to {} bits"
 msgstr "hasta {} bits"
 
 msgid "virtual"
 msgstr "virtual"
+
+msgid "what was saved could not be written down in the library: {}; rescan to see it"
+msgstr "lo que se guardó no se pudo anotar en la biblioteca: {}; vuelve a escanear para verlo"
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
@@ -1876,6 +2005,9 @@ msgstr[1] "{} álbumes"
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analizadas, {} sin pulso, {} ilegibles"
 
+msgid "{} answered something Chilpa did not expect: {}"
+msgstr "{} contestó algo que Chilpa no esperaba: {}"
+
 msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] "{} artista"
@@ -1884,13 +2016,25 @@ msgstr[1] "{} artistas"
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"
 
+msgid "{} came out with different audio; nothing was replaced"
+msgstr "{} salió con otro audio; no se reemplazó nada"
+
 msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] "{} canal"
 msgstr[1] "{} canales"
 
+msgid "{} could not be copied: {}"
+msgstr "{} no se pudo copiar: {}"
+
 msgid "{} could not be reached; try again"
 msgstr "No se pudo contactar a {}; intenta de nuevo"
+
+msgid "{} could not be replaced: {}"
+msgstr "{} no se pudo reemplazar: {}"
+
+msgid "{} could not be written: {}"
+msgstr "{} no se pudo escribir: {}"
 
 msgid "{} did not accept the account"
 msgstr "{} no aceptó la cuenta"
@@ -1905,14 +2049,26 @@ msgid_plural "{} folders"
 msgstr[0] "{} carpeta"
 msgstr[1] "{} carpetas"
 
+msgid "{} has no place for \"{}\""
+msgstr "{} no tiene dónde guardar \"{}\""
+
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
+
+msgid "{} is busy; try again in {} seconds"
+msgstr "{} está ocupado; intenta otra vez en {} segundos"
 
 msgid "{} is missing"
 msgstr "falta {}"
 
 msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
 msgstr "{} no es un dispositivo directo; solo se abre hw: (nada de plughw ni default)"
+
+msgid "{} is not a sidecar Chilpa can read; move it away or fix it"
+msgstr "{} no es un sidecar que Chilpa pueda leer; quítalo de ahí o arréglalo"
+
+msgid "{} is not available yet: {}"
+msgstr "{} todavía no está disponible: {}"
 
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
@@ -1925,8 +2081,14 @@ msgstr "{} ya no acepta la cuenta; vuelve a conectar"
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"
 
+msgid "{} of {} files were changed before it failed: {}"
+msgstr "{} de {} archivos se cambiaron antes de que fallara: {}"
+
 msgid "{} of {} formats come out untouched"
 msgstr "{} de {} formatos salen tal cual"
+
+msgid "{} of {} tracks match this release"
+msgstr "{} de {} pistas coinciden con este release"
 
 msgid "{} playlist"
 msgid_plural "{} playlists"
@@ -1973,3 +2135,6 @@ msgstr[1] "{} ya estaban ahí"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "No se permitió a tiempo en {}; vuelve a conectar"
+
+msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
+msgstr "{} se escribió y no dice lo que debería en \"{}\"; no se reemplazó nada"

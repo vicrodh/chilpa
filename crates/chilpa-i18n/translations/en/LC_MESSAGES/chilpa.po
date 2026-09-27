@@ -326,6 +326,9 @@ msgstr ""
 msgid "DAC passthrough"
 msgstr ""
 
+msgid "DSD files keep their changes in a sidecar"
+msgstr ""
+
 msgid "DSD not supported: {}"
 msgstr ""
 
@@ -1217,6 +1220,9 @@ msgstr ""
 msgid "a Mac's outputs take integer samples, not floating point"
 msgstr ""
 
+msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
+msgstr ""
+
 msgid "a direct URL"
 msgstr ""
 
@@ -1226,10 +1232,25 @@ msgstr ""
 msgid "a list needs a name"
 msgstr ""
 
+msgid "a newer Chilpa wrote this sidecar; update Chilpa to change it"
+msgstr ""
+
+msgid "a number from 1 to 9999, or nothing"
+msgstr ""
+
 msgid "a scan is already running"
 msgstr ""
 
+msgid "a scan is running; save when it is done"
+msgstr ""
+
 msgid "a stream cannot be rewound"
+msgstr ""
+
+msgid "a track has no artist"
+msgstr ""
+
+msgid "a track has no title"
 msgstr ""
 
 msgid "add a command you trigger"
@@ -1391,6 +1412,12 @@ msgstr ""
 msgid "it blew up inside: {}"
 msgstr ""
 
+msgid "it cannot be written to"
+msgstr ""
+
+msgid "it cannot take tags"
+msgstr ""
+
 msgid "it delivers {}"
 msgstr ""
 
@@ -1409,10 +1436,16 @@ msgstr ""
 msgid "it failed {} times in a row; the last one: {}"
 msgstr ""
 
+msgid "it is a DSD file"
+msgstr ""
+
 msgid "it is not 2048 bytes"
 msgstr ""
 
 msgid "it is not installed"
+msgstr ""
+
+msgid "it is not where it was"
 msgstr ""
 
 msgid "it says it handles its own account, but only a separate process plugin can do that: in WASM there are no sockets and no disk of its own"
@@ -1425,6 +1458,12 @@ msgid "keep a credential of yours"
 msgstr ""
 
 msgid "keep things of its own on disk"
+msgstr ""
+
+msgid "looking records up is turned off in Settings"
+msgstr ""
+
+msgid "metadata is being saved; scan when it is done"
 msgstr ""
 
 msgid "microphone"
@@ -1442,6 +1481,9 @@ msgstr ""
 msgid "no JACK graph is running; start one, or install pipewire-jack to have PipeWire answer for it"
 msgstr ""
 
+msgid "no covers were found"
+msgstr ""
+
 msgid "no pulse"
 msgstr ""
 
@@ -1454,10 +1496,25 @@ msgstr ""
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr ""
 
+msgid "none of that record's files are here now"
+msgstr ""
+
 msgid "not supported: {}"
 msgstr ""
 
+msgid "nothing was found"
+msgstr ""
+
 msgid "now at {}"
+msgstr ""
+
+msgid "one or more files are not where they were"
+msgstr ""
+
+msgid "one or more files cannot be written to"
+msgstr ""
+
+msgid "one or more files cannot take tags"
 msgstr ""
 
 msgid "outside the image"
@@ -1508,6 +1565,9 @@ msgstr ""
 msgid "stop using the account it had"
 msgstr ""
 
+msgid "stop what is playing before writing to its file, or save to a sidecar"
+msgstr ""
+
 msgid "stumbling"
 msgstr ""
 
@@ -1517,13 +1577,34 @@ msgstr ""
 msgid "that album has no playable tracks"
 msgstr ""
 
+msgid "that cover could not be fetched"
+msgstr ""
+
 msgid "that does not look like a stream address"
 msgstr ""
 
 msgid "that domain is not among the ones the plugin declared"
 msgstr ""
 
+msgid "that file is not an image"
+msgstr ""
+
 msgid "that id does not work as a folder"
+msgstr ""
+
+msgid "that is longer than {} characters"
+msgstr ""
+
+msgid "that is more than {} values"
+msgstr ""
+
+msgid "that is not a Discogs release number"
+msgstr ""
+
+msgid "that is not a MusicBrainz id"
+msgstr ""
+
+msgid "that is not something {} can be asked for"
 msgstr ""
 
 msgid "that list is empty"
@@ -1592,7 +1673,25 @@ msgstr ""
 msgid "the audio area falls outside the image"
 msgstr ""
 
+msgid "the changes were saved"
+msgstr ""
+
 msgid "the client_id came in empty"
+msgstr ""
+
+msgid "the cover could not be kept: {}"
+msgstr ""
+
+msgid "the cover could not be read: {}"
+msgstr ""
+
+msgid "the cover has to be a JPEG or a PNG"
+msgstr ""
+
+msgid "the cover has to be an image of up to 25 MiB"
+msgstr ""
+
+msgid "the cover is larger than 12,000 pixels on a side"
 msgstr ""
 
 msgid "the credential could not be saved: {}"
@@ -1650,6 +1749,9 @@ msgid "the drive does not answer: {}"
 msgstr ""
 
 msgid "the drive is missing"
+msgstr ""
+
+msgid "the editor could not be started"
 msgstr ""
 
 msgid "the file carries no tracks"
@@ -1745,6 +1847,12 @@ msgstr ""
 msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
 msgstr ""
 
+msgid "the record has no artist"
+msgstr ""
+
+msgid "the record has no title"
+msgstr ""
+
 msgid "the reply could not be built"
 msgstr ""
 
@@ -1775,6 +1883,9 @@ msgstr ""
 msgid "the server sent no audio: {}"
 msgstr ""
 
+msgid "the sidecar could not be written: {}"
+msgstr ""
+
 msgid "the sound server would not let go of card {}"
 msgstr ""
 
@@ -1790,6 +1901,9 @@ msgstr ""
 msgid "the token_url is not https"
 msgstr ""
 
+msgid "the track's number is its place inside the disc image"
+msgstr ""
+
 msgid "the version"
 msgstr ""
 
@@ -1800,6 +1914,9 @@ msgid "the wait ran out"
 msgstr ""
 
 msgid "there is no audio output on this platform yet"
+msgstr ""
+
+msgid "there is no connection to {}"
 msgstr ""
 
 msgid "there is no disc in the drive"
@@ -1824,6 +1941,9 @@ msgid "there is not enough queue to mix"
 msgstr ""
 
 msgid "there is nothing Chilpa can play in {}"
+msgstr ""
+
+msgid "there is nothing to save"
 msgstr ""
 
 msgid "there is nothing under {}"
@@ -1859,10 +1979,19 @@ msgstr ""
 msgid "track {}: {}"
 msgstr ""
 
+msgid "tracks inside a disc image keep their changes in a sidecar"
+msgstr ""
+
+msgid "type a title, an artist or a catalog number to search"
+msgstr ""
+
 msgid "up to {} bits"
 msgstr ""
 
 msgid "virtual"
+msgstr ""
+
+msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr ""
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
@@ -1876,6 +2005,9 @@ msgstr[1] ""
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr ""
 
+msgid "{} answered something Chilpa did not expect: {}"
+msgstr ""
+
 msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] ""
@@ -1884,12 +2016,24 @@ msgstr[1] ""
 msgid "{} bit at {} Hz, {}"
 msgstr ""
 
+msgid "{} came out with different audio; nothing was replaced"
+msgstr ""
+
 msgid "{} channel"
 msgid_plural "{} channels"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} could not be copied: {}"
+msgstr ""
+
 msgid "{} could not be reached; try again"
+msgstr ""
+
+msgid "{} could not be replaced: {}"
+msgstr ""
+
+msgid "{} could not be written: {}"
 msgstr ""
 
 msgid "{} did not accept the account"
@@ -1905,13 +2049,25 @@ msgid_plural "{} folders"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} has no place for \"{}\""
+msgstr ""
+
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
+msgstr ""
+
+msgid "{} is busy; try again in {} seconds"
 msgstr ""
 
 msgid "{} is missing"
 msgstr ""
 
 msgid "{} is not a direct device; only hw: is opened (no plughw and no default)"
+msgstr ""
+
+msgid "{} is not a sidecar Chilpa can read; move it away or fix it"
+msgstr ""
+
+msgid "{} is not available yet: {}"
 msgstr ""
 
 msgid "{} listen waiting to be sent"
@@ -1925,7 +2081,13 @@ msgstr ""
 msgid "{} of the list's tracks are gone"
 msgstr ""
 
+msgid "{} of {} files were changed before it failed: {}"
+msgstr ""
+
 msgid "{} of {} formats come out untouched"
+msgstr ""
+
+msgid "{} of {} tracks match this release"
 msgstr ""
 
 msgid "{} playlist"
@@ -1972,4 +2134,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 msgid "{} was not allowed in time; connect again"
+msgstr ""
+
+msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr ""

@@ -428,6 +428,7 @@ dependencies = [
  "chilpa-i18n",
  "chilpa-library",
  "chilpa-lyrics",
+ "chilpa-meta",
  "chilpa-models",
  "chilpa-plugin",
  "chilpa-secrets",
