@@ -16,7 +16,7 @@ Item {
 
     height: Metrics.folderAlbumRow
 
-    ListRowSurface { anchors.fill: parent; index: row.index; radius: Metrics.radiusControl; hovered: hover.hovered }
+    ListRowSurface { anchors.fill: parent; rowIndex: row.index; radius: Metrics.radiusControl; hovered: hover.hovered }
     ArtTile { id: cover; x: Metrics.gap6; anchors.verticalCenter: parent.verticalCenter; width: Metrics.folderArt; height: Metrics.folderArt; radius: Metrics.radiusArtSmall; source: row.art }
     Column {
         anchors.left: cover.right

@@ -47,8 +47,8 @@ Rectangle {
 
     ListRowSurface {
         anchors.fill: parent
-        index: row.index
-        listMode: !row.grid
+        rowIndex: row.index
+        listMode: !row.grid && !row.folder
         hovered: hover.hovered
         restColor: row.grid ? Theme.color.surfacePanel : "transparent"
         radius: row.radius
@@ -129,6 +129,7 @@ Rectangle {
             onClicked: row.manager.moveCustom(row.index, 1)
         }
         IconButton {
+            id: moreButton
             size: Metrics.button24
             glyph: Icons.dotsVertical
             tip: I18n.tr("More actions", I18n.rev)
@@ -166,6 +167,10 @@ Rectangle {
             }
             actions = base.filter(e => e.when === undefined || e.when)
             entries = actions
+            const at = moreButton.mapToItem(row, moreButton.width - Metrics.menuWidth,
+                                             moreButton.height + Metrics.gap4)
+            x = at.x
+            y = at.y
             open()
         }
 

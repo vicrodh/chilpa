@@ -19,11 +19,10 @@ Item {
 
     height: Metrics.folderEntry
 
-    ListRowSurface {
+    Rectangle {
         anchors.fill: parent
-        index: row.index
         radius: Metrics.radiusControl
-        hovered: hover.hovered
+        color: hover.hovered ? Theme.color.stateHover : "transparent"
     }
 
     Item {

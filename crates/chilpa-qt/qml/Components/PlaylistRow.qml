@@ -34,7 +34,7 @@ Item {
 
     ListRowSurface {
         anchors.fill: parent
-        index: row.index
+        rowIndex: row.index
         radius: Metrics.radiusControl
         selected: row.active
         hovered: hover.hovered

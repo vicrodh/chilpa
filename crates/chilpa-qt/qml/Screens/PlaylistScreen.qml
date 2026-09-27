@@ -57,7 +57,10 @@ Flickable {
             selecting: page.selectionMode
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
-            onQueue: playlistActions.show(width - Metrics.menuWidth, height)
+            onQueue: (left, top) => {
+                const at = hero.mapToItem(page, left, top)
+                playlistActions.show(at.x, at.y)
+            }
             onSelectToggle: {
                 page.selectionMode = !page.selectionMode
                 tracks.clearSelection()

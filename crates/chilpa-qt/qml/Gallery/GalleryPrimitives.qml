@@ -26,6 +26,18 @@ GallerySection {
         spacing: Metrics.gap8
         PillButton { kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; text: "Play" }
         PillButton { glyph: Icons.arrowsShuffle; text: "Shuffle" }
+        PillButton { text: "Open modal"; onClicked: sampleModal.open() }
+    }
+
+    Modal {
+        id: sampleModal
+        width: Metrics.playlistFolderDialog
+        contentItem: Column {
+            spacing: Metrics.gap12
+            Text { text: "Modal"; font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
+            Text { text: "Shared padding and surface"; color: Theme.color.textSecondary }
+            PillButton { kind: "primary"; text: "Close"; onClicked: sampleModal.close() }
+        }
     }
 
     SegmentedControl {
@@ -37,8 +49,8 @@ GallerySection {
 
     Column {
         width: Metrics.playlistManagerCardWidth
-        ListRowSurface { width: parent.width; height: Metrics.rowCompact; index: 0 }
-        ListRowSurface { width: parent.width; height: Metrics.rowCompact; index: 1 }
+        ListRowSurface { width: parent.width; height: Metrics.rowCompact; rowIndex: 0 }
+        ListRowSurface { width: parent.width; height: Metrics.rowCompact; rowIndex: 1 }
     }
 
     Row {

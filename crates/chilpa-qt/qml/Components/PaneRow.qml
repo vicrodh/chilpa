@@ -1,13 +1,11 @@
 // hot-path: one per entry of a filter column, recycled while it scrolls.
 import QtQuick
 import "../Theme"
-import "../Primitives"
 
 // An entry of a Library filter column: its label, and its count or year.
 Item {
     id: row
 
-    required property int index
     required property string key
     required property string label
     required property string meta
@@ -18,14 +16,12 @@ Item {
 
     height: Metrics.paneRow
 
-    ListRowSurface {
+    Rectangle {
         anchors.fill: parent
         anchors.leftMargin: Metrics.gap4
         anchors.rightMargin: Metrics.gap4
-        index: row.index
         radius: Metrics.radiusRow
-        selected: row.selected
-        hovered: hover.hovered
+        color: row.selected ? Theme.color.stateSelected : hover.hovered ? Theme.color.stateHover : "transparent"
     }
 
     Text {

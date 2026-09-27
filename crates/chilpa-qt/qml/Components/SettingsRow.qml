@@ -10,7 +10,6 @@ import "../Primitives"
 Item {
     id: row
 
-    required property int index
     required property int rowKind
     required property string key
     required property string title
@@ -33,8 +32,6 @@ Item {
     opacity: control === "fixed" ? Metrics.disabledOpacity : 1
     implicitHeight: group ? Metrics.settingsGroup
         : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
-
-    ListRowSurface { anchors.fill: parent; visible: !row.group; index: row.index; radius: Metrics.radiusRow }
 
     Text {
         visible: row.group

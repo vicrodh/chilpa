@@ -62,7 +62,7 @@ GallerySection {
         Row {
             height: Metrics.panesHeight
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }
-            PaneRow { width: Metrics.sidebarWidth; index: 1; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
+            PaneRow { width: Metrics.sidebarWidth; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
         }
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
@@ -117,13 +117,13 @@ GallerySection {
             model: audio
             SettingsRow { width: section.width; page: audio }
         }
-        FolderRow { width: section.width; index: 0; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
-        FolderRow { width: section.width; index: 1; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
+        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
+        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
         SeekBar { width: Metrics.searchFlyout; position: Metrics.searchFlyout / 4; duration: Metrics.searchFlyout; bubbleText: "1:10" } // derived: a quarter of the way
-        OptionRow { width: Metrics.playbackOptionsWidth; index: 0; title: "Gapless"; detail: "One track straight into the next."; checked: true }
-        OptionRow { width: Metrics.playbackOptionsWidth; index: 1; title: "Normalization"; detail: "Changed tracks are reported as processed." }
+        OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
+        OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Changed tracks are reported as processed." }
         PlaylistMenu {}
         AlbumMenu {}
         PlaylistPicker {}

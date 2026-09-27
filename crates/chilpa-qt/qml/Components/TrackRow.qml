@@ -36,7 +36,7 @@ Item {
 
     ListRowSurface {
         anchors.fill: parent
-        index: row.index
+        rowIndex: row.index
         radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
         visible: !row.header
         hovered: row.hovered

@@ -224,15 +224,11 @@ Item {
         }
     }
 
-    Popup {
+    Modal {
         id: folderDialog
         property int folderId: 0
         property string colorName: "accent"
-        parent: Overlay.overlay
-        anchors.centerIn: parent
         width: Metrics.playlistFolderDialog
-        modal: true
-        padding: Metrics.gap20
 
         function show(id, name, color) {
             folderId = id
@@ -241,7 +237,6 @@ Item {
             open()
             Qt.callLater(folderName.focusInput)
         }
-        background: Rectangle { radius: Metrics.radiusPanel; color: Theme.color.surfaceRaised; border.width: 1; border.color: Theme.color.strokeHairline }
         contentItem: Column {
             spacing: Metrics.gap12
             Text { text: folderDialog.folderId > 0 ? I18n.tr("Edit folder", I18n.rev) : I18n.tr("New folder", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
