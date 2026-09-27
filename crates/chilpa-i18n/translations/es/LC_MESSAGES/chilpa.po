@@ -309,6 +309,9 @@ msgstr "Filas compactas como una hoja de cálculo, o filas amplias con la portad
 msgid "Compilation"
 msgstr "Compilación"
 
+msgid "Compilation (various artists)"
+msgstr "Compilación (varios artistas)"
+
 msgid "Composers"
 msgstr "Compositores"
 
@@ -334,9 +337,6 @@ msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
 msgid "Counting tracks…"
 msgstr "Contando pistas…"
-
-msgid "Cover"
-msgstr "Carátula"
 
 msgid "Cover collage"
 msgstr "Collage de portadas"
@@ -980,6 +980,9 @@ msgstr "Anterior"
 msgid "Processed"
 msgstr "Procesado"
 
+msgid "Provider identifiers"
+msgstr "Identificadores de proveedores"
+
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Pon la carpeta de un plugin en el directorio de plugins de Chilpa y vuelve a abrir la aplicación."
 
@@ -1036,9 +1039,6 @@ msgstr "Agregados recientemente"
 
 msgid "Recently played"
 msgstr "Escuchados recientemente"
-
-msgid "Record"
-msgstr "Disco"
 
 msgid "Records"
 msgstr "Discos"
@@ -1301,14 +1301,14 @@ msgstr "Mejor resultado"
 msgid "Track"
 msgstr "Pista"
 
+msgid "Track details · {}"
+msgstr "Detalles de la pista · {}"
+
 msgid "Track lists"
 msgstr "Listas de pistas"
 
 msgid "Track {}"
 msgstr "Pista {}"
-
-msgid "Track: {}"
-msgstr "Pista: {}"
 
 msgid "Tracks"
 msgstr "Pistas"

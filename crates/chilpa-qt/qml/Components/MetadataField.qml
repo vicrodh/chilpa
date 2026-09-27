@@ -3,27 +3,32 @@ import com.blitzfc.chilpa
 import "../Primitives"
 import "../Theme"
 
-// One field of the metadata editor: its name, what it holds, and what the
-// facade says about it -- the tracks disagree ("mixed"), it was changed, a
-// sidecar lays it over the file, or it cannot be saved as it is. `field` is
-// one entry of the editor's view; the value goes back through `edited`.
+// One field of the metadata editor: its name above what it holds, and what
+// the facade says about it -- the tracks disagree ("mixed"), it was changed,
+// a sidecar lays it over the file, or it cannot be saved as it is. As a
+// `cell` it is one cell of the tracks' spreadsheet: no name, no frame until
+// it has the keyboard. `field` is one entry of the editor's view; the value
+// goes back through `edited`.
 Item {
     id: root
 
     property var field: ({})
     // A track's "title" is its own; a record's is the record's.
     property bool ofTrack: false
-    // Without the name on the left, as a cell of a row.
-    property bool bare: false
+    property bool cell: false
 
     signal edited(string name, string value)
 
     readonly property string name: field.name || ""
     readonly property bool toggle: name === "compilation"
     readonly property string invalid: field.invalid || ""
+    readonly property bool labelled: !cell && !toggle
+    // It has the keyboard.
+    readonly property bool editing: input.editing
 
-    implicitWidth: Metrics.selectWidth + Metrics.metadataLabel
-    implicitHeight: box.height + (invalid !== "" && !bare ? note.height : 0)
+    implicitWidth: Metrics.selectWidth
+    implicitHeight: cell ? Metrics.metadataRow
+        : (labelled ? caption.height + Metrics.gap2 : 0) + Metrics.fieldHeight + (invalid !== "" ? note.height + Metrics.gap2 : 0)
 
     function label(n) {
         switch (n) {
@@ -59,75 +64,83 @@ Item {
     onFieldChanged: refresh()
     Component.onCompleted: refresh()
 
-    Item {
-        id: box
+    Text {
+        id: caption
+        visible: root.labelled
+        width: parent.width - (layer.visible ? layer.width + Metrics.gap4 : 0)
+        text: root.label(root.name)
+        elide: Text.ElideRight
+        font.pointSize: Type.small
+        font.weight: root.field.dirty ? Type.semibold : Type.regular
+        color: root.field.dirty ? Theme.color.textPrimary : Theme.color.textSecondary
+    }
+
+    Icon {
+        id: layer
+        visible: root.field.overridden === true && !root.cell
+        anchors.right: parent.right
+        glyph: Icons.stack2
+        size: Metrics.iconXs
+        color: Theme.color.textTertiary
+
+        HoverHandler {
+            onHoveredChanged: hovered ? TipState.show(I18n.tr("A sidecar sets this, not the file", I18n.rev), layer) : TipState.hide(layer)
+        }
+    }
+
+    TextField {
+        id: input
+        visible: !root.toggle
+        y: root.labelled ? caption.height + Metrics.gap2 : 0
         width: parent.width
+        height: root.cell ? Metrics.metadataRow : Metrics.fieldHeight
+        flat: root.cell
+        enabled: root.field.editable !== false
+        opacity: enabled ? 1 : Metrics.disabledOpacity
+        placeholder: root.field.mixed ? I18n.tr("Mixed", I18n.rev) : ""
+        border.color: root.invalid !== "" ? Theme.color.statusNegative : Theme.color.accent
+        border.width: editing ? (root.cell ? 1 : Metrics.focusRing) : (root.invalid !== "" ? 1 : 0)
+        // Every key reaches the form: a Save or a Close pressed while a
+        // field still has the keyboard sees what is in it.
+        onTextEdited: root.edited(root.name, text)
+        onEditingFinished: {
+            if (text !== (root.field.value || ""))
+                root.edited(root.name, text)
+        }
+    }
+
+    Row {
+        visible: root.toggle
         height: Metrics.fieldHeight
-
-        Text {
-            id: caption
-            visible: !root.bare
-            width: Metrics.metadataLabel - Metrics.gap12
-            anchors.verticalCenter: parent.verticalCenter
-            text: root.label(root.name)
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-            font.weight: root.field.dirty ? Type.semibold : Type.regular
-            color: root.field.dirty ? Theme.color.textPrimary : Theme.color.textSecondary
-        }
-
-        TextField {
-            id: input
-            visible: !root.toggle
-            x: root.bare ? 0 : Metrics.metadataLabel
-            width: parent.width - x - (layer.visible ? layer.width + Metrics.gap6 : 0)
-            height: parent.height
-            enabled: root.field.editable !== false
-            opacity: enabled ? 1 : Metrics.disabledOpacity
-            placeholder: root.field.mixed ? I18n.tr("Mixed", I18n.rev) : ""
-            border.color: root.invalid !== "" ? Theme.color.statusNegative : Theme.color.accent
-            border.width: editing ? Metrics.focusRing : (root.invalid !== "" ? 1 : 0)
-            // Every key reaches the form: a Save or a Close pressed while a
-            // field still has the keyboard sees what is in it.
-            onTextEdited: root.edited(root.name, text)
-            onEditingFinished: {
-                if (text !== (root.field.value || ""))
-                    root.edited(root.name, text)
-            }
-        }
-
+        spacing: Metrics.gap8
         Toggle {
-            visible: root.toggle
-            x: Metrics.metadataLabel
             anchors.verticalCenter: parent.verticalCenter
             checked: root.field.value === "true"
             onToggled: (on) => root.edited(root.name, on ? "true" : "false")
         }
-
-        Icon {
-            id: layer
-            visible: root.field.overridden === true
-            anchors.right: parent.right
+        Text {
             anchors.verticalCenter: parent.verticalCenter
-            glyph: Icons.stack2
-            size: Metrics.iconSm
-            color: Theme.color.textTertiary
-
-            HoverHandler {
-                onHoveredChanged: hovered ? TipState.show(I18n.tr("A sidecar sets this, not the file", I18n.rev), layer) : TipState.hide(layer)
-            }
+            text: I18n.tr("Compilation (various artists)", I18n.rev)
+            font.pointSize: Type.meta
+            font.weight: root.field.dirty ? Type.semibold : Type.regular
+            color: root.field.dirty ? Theme.color.textPrimary : Theme.color.textSecondary
         }
     }
 
     Text {
         id: note
-        visible: root.invalid !== "" && !root.bare
-        x: Metrics.metadataLabel
-        y: box.height + Metrics.gap2
-        width: parent.width - x
+        visible: root.invalid !== "" && !root.cell
+        y: input.y + input.height + Metrics.gap2
+        width: parent.width
         text: root.invalid
         wrapMode: Text.WordWrap
         font.pointSize: Type.small
         color: Theme.color.statusNegative
+    }
+
+    // A cell has no room under it: why it cannot be saved shows on hover.
+    HoverHandler {
+        enabled: root.cell && root.invalid !== ""
+        onHoveredChanged: hovered ? TipState.show(root.invalid, input) : TipState.hide(input)
     }
 }

@@ -1,13 +1,15 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
 
 // Looking the record up: MusicBrainz or Discogs, with the title, artist and
-// catalog number the form holds; the releases found; one loaded, how many
-// of the record's tracks it matches, and applying it to the form. What a
-// release does not say is left as it was. `doc` is the editor's view.
+// catalog number the form holds; the releases found, a few rows at a time;
+// one loaded, how many of the record's tracks it matches, and applying it to
+// the form. What a release does not say is left as it was. `doc` is the
+// editor's view.
 Column {
     id: root
 
@@ -26,35 +28,38 @@ Column {
         function onOpenChanged() { root.chosen = -1 }
     }
 
-    Text {
-        text: I18n.tr("Look up", I18n.rev)
-        font.pointSize: Type.section
-        font.weight: Type.bold
-        color: Theme.color.textPrimary
-    }
     Row {
+        width: parent.width
         spacing: Metrics.gap8
         SegmentedControl {
+            id: provider
             options: [{ text: "MusicBrainz" }, { text: "Discogs" }]
             current: root.lookup.provider === "discogs" ? 1 : 0
             onActivated: (index) => MetadataEditor.setProvider(index === 1 ? "discogs" : "musicbrainz")
         }
         PillButton {
             glyph: Icons.search
-            text: root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Search", I18n.rev)
+            text: root.lookup.searching ? I18n.tr("Searching…", I18n.rev) : I18n.tr("Look up", I18n.rev)
             enabled: !root.busy && root.doc.state === "ready"
             onClicked: {
                 root.chosen = -1
+                root.forceActiveFocus()
                 MetadataEditor.search()
             }
         }
     }
 
-    Repeater {
+    ListView {
+        width: parent.width
+        height: Math.min(count, Metrics.metadataHitsShown) * Metrics.metadataHit
+        visible: count > 0
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {}
         model: root.hits.length
-        ReleaseHitRow {
+        delegate: ReleaseHitRow {
             required property int index
-            width: root.width
+            width: ListView.view.width
             rowIndex: index
             hit: root.hits[index]
             chosen: index === root.chosen
@@ -74,20 +79,14 @@ Column {
 
     Column {
         visible: root.release !== null && root.lookup.loading !== true
-        width: root.width
+        width: parent.width
         spacing: Metrics.gap6
 
         Text {
             width: parent.width
-            text: root.release ? root.release.title + " — " + root.release.date : ""
+            text: root.release ? root.release.title + " — " + root.release.date + " · "
+                + I18n.trArgs("{} of {} tracks match this release", [root.lookup.matched, (root.doc.tracks || []).length], I18n.rev) : ""
             elide: Text.ElideRight
-            font.pointSize: Type.body
-            font.weight: Type.semibold
-            color: Theme.color.textPrimary
-        }
-        Text {
-            width: parent.width
-            text: root.release ? I18n.trArgs("{} of {} tracks match this release", [root.lookup.matched, (root.doc.tracks || []).length], I18n.rev) : ""
             font.pointSize: Type.meta
             color: root.lookup.matched > 0 ? Theme.color.textSecondary : Theme.color.statusWarning
         }

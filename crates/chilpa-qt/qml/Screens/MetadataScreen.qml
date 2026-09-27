@@ -6,10 +6,12 @@ import "../Primitives"
 import "../Components"
 import "../Patterns"
 
-// The metadata editor on one record (the route's id). The form lives in
-// the facade; this screen shows what `MetadataEditor.document` says and
-// hands every change back. Writing into the files is asked first; closing
-// with changes, too. A save that lands takes the person to the record.
+// The metadata editor on one record (the route's id), laid out as QBZ's:
+// the tracks as a spreadsheet and the record's column beside them, under a
+// header that stays. The form lives in the facade; this screen shows what
+// `MetadataEditor.document` says and hands every change back. Writing into
+// the files is asked first; closing with changes, too. A save that lands
+// takes the person to the record.
 Item {
     id: page
 
@@ -98,32 +100,30 @@ Item {
         }
     }
 
-    Flickable {
+    // Two panes side by side, each scrolling on its own; the page does not.
+    // They end where the player bar begins.
+    Item {
         id: body
         x: Metrics.contentX
         anchors.top: reopen.bottom
-        anchors.topMargin: Metrics.section
+        anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.playerHeight + Metrics.playerBottom * 2 // derived: clear of the player bar
         width: page.contentWidth
         visible: page.doc.state === "ready" || page.doc.state === "saving"
         enabled: page.doc.state === "ready"
-        clip: true
-        contentHeight: Math.max(fields.height, side.height) + Metrics.contentBottom
-        boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
 
-        MetadataFields {
-            id: fields
-            width: body.width - Metrics.metadataSide - Metrics.gridGap
+        MetadataTracks {
+            id: tracks
+            width: Math.min(Math.floor((body.width - Metrics.gap12) * 8 / 12), body.width - Metrics.gap12 - Metrics.metadataColumnMin) // derived: QBZ's 8 of 12, leaving the record's column its least
+            height: body.height
             doc: page.doc
         }
-        Column {
-            id: side
-            x: fields.width + Metrics.gridGap
-            width: Metrics.metadataSide
-            spacing: Metrics.section
-            MetadataArtwork { width: parent.width; doc: page.doc }
-            MetadataLookup { width: parent.width; doc: page.doc }
+        MetadataAlbum {
+            x: tracks.width + Metrics.gap12
+            width: body.width - x
+            height: body.height
+            doc: page.doc
         }
     }
 
