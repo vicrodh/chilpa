@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Patterns"
 
 GallerySection {
