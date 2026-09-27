@@ -80,8 +80,7 @@ Window {
 
     PlayerIdle {
         id: idle
-        anchors.fill: parent
-        z: Metrics.tooltipLayer
+        target: window.contentItem
         holding: player.pointed
     }
 
@@ -110,21 +109,15 @@ Window {
 
     Tooltip {}
 
-    // Browser-style side buttons follow the active tab's own history. This
-    // transparent layer accepts only those two buttons; wheel, primary and
-    // secondary input continue to the control under the pointer.
-    // no cursor: only the mouse's side buttons, over everything
-    MouseArea {
-        anchors.fill: parent
-        z: Metrics.tooltipLayer
+    // Browser-style side buttons follow the active tab's own history. On the
+    // window's root, beneath everything: no control takes those two buttons,
+    // so they arrive here, and nothing laid over the window hides the
+    // cursors or the hover of what is under it.
+    // no cursor: only the mouse's side buttons
+    TapHandler {
+        parent: window.contentItem
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
-        onPressed: (mouse) => {
-            if (mouse.button === Qt.BackButton)
-                Navigation.back()
-            else if (mouse.button === Qt.ForwardButton)
-                Navigation.forward()
-        }
-        onWheel: (wheel) => wheel.accepted = false
+        onTapped: (point, button) => button === Qt.BackButton ? Navigation.back() : Navigation.forward()
     }
 
     WindowGrips {
