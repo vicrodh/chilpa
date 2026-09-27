@@ -11,6 +11,21 @@ import "../Components"
 Item {
     id: bar
 
+    // The queue and the lyrics are set aside by the screen (the metadata
+    // editor). Their buttons then bring the panel back as it was, rather than
+    // closing what is not showing.
+    property bool panelAside: false
+    signal showPanel()
+
+    // Brings the set-aside panel back with `which` open.
+    function reveal(which) {
+        if (which === "queue")
+            SettingsModel.queueOpen = true
+        else
+            SettingsModel.lyricsOpen = true
+        showPanel()
+    }
+
     implicitHeight: Metrics.playerHeight
 
     // The bar floats over the content: the pointer, a click in its empty
@@ -143,14 +158,14 @@ Item {
         IconButton {
             tip: I18n.tr("Lyrics", I18n.rev)
             glyph: Icons.quote
-            checked: SettingsModel.lyricsOpen
-            onClicked: SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen
+            checked: SettingsModel.lyricsOpen && !bar.panelAside
+            onClicked: bar.panelAside ? bar.reveal("lyrics") : SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen
         }
         IconButton {
             tip: I18n.tr("Queue", I18n.rev)
             glyph: Icons.listDetails
-            checked: SettingsModel.queueOpen
-            onClicked: SettingsModel.queueOpen = !SettingsModel.queueOpen
+            checked: SettingsModel.queueOpen && !bar.panelAside
+            onClicked: bar.panelAside ? bar.reveal("queue") : SettingsModel.queueOpen = !SettingsModel.queueOpen
         }
     }
 
