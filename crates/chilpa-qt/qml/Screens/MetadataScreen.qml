@@ -20,7 +20,12 @@ Item {
     function ensure() {
         if (Navigation.screen !== "metadata" || Navigation.routeId <= 0)
             return
-        if (doc.state === "closed" || doc.album_id !== Navigation.routeId)
+        if (doc.state !== "closed" && doc.album_id === Navigation.routeId)
+            return
+        // One record is open at a time: another with changes asks first.
+        if (doc.state === "ready" && doc.dirty)
+            switchRecord.open()
+        else
             MetadataEditor.openAlbum(Navigation.routeId, 0)
     }
     Component.onCompleted: ensure()
@@ -41,12 +46,14 @@ Item {
     }
 
     function askSave() {
+        page.forceActiveFocus()
         if (doc.save && doc.save.mode === "files")
             writeFiles.open()
         else
             MetadataEditor.save()
     }
     function askClose() {
+        page.forceActiveFocus()
         if (doc.dirty)
             discard.open()
         else
@@ -126,6 +133,15 @@ Item {
         message: I18n.tr("Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone.", I18n.rev)
         confirmText: I18n.tr("Write into the files", I18n.rev)
         onConfirmed: MetadataEditor.save()
+    }
+    ConfirmDialog {
+        id: switchRecord
+        title: I18n.tr("Discard the changes to the other record?", I18n.rev)
+        message: I18n.trArgs("“{}” has changes that were not saved. Opening this record loses them.", [(page.doc.album || []).length > 0 ? page.doc.album[0].value : ""], I18n.rev)
+        confirmText: I18n.tr("Discard", I18n.rev)
+        destructive: true
+        onConfirmed: MetadataEditor.openAlbum(Navigation.routeId, 0)
+        onDismissed: Navigation.go("metadata", page.doc.album_id)
     }
     ConfirmDialog {
         id: discard

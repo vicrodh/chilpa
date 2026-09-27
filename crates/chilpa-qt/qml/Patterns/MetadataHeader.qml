@@ -62,7 +62,11 @@ Item {
             kind: "ghost"
             text: I18n.tr("Revert", I18n.rev)
             enabled: root.doc.dirty === true && root.doc.state === "ready"
-            onClicked: MetadataEditor.revert()
+            onClicked: {
+                // The field being typed in lets go, and shows what the form holds.
+                root.forceActiveFocus()
+                MetadataEditor.revert()
+            }
         }
         PillButton { text: I18n.tr("Close", I18n.rev); enabled: root.doc.state !== "saving"; onClicked: root.closeAsked() }
         PillButton {

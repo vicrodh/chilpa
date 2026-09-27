@@ -17,6 +17,12 @@ Modal {
     property bool destructive: false
 
     signal confirmed()
+    // Cancel, Esc or a click outside: every way out that is not confirming.
+    signal dismissed()
+
+    property bool answered: false
+    onOpened: answered = false
+    onClosed: if (!answered) dismissed()
 
     width: Metrics.confirmWidth
 
@@ -47,6 +53,7 @@ Modal {
                 kind: dialog.destructive ? "secondary" : "primary"
                 text: dialog.confirmText
                 onClicked: {
+                    dialog.answered = true
                     dialog.close()
                     dialog.confirmed()
                 }

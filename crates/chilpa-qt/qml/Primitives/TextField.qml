@@ -16,6 +16,8 @@ Rectangle {
     signal accepted()
     // Enter, or the focus leaving the field.
     signal editingFinished()
+    // Every change the person types, not the ones set from outside.
+    signal textEdited()
 
     function focusInput() {
         input.forceActiveFocus()
@@ -42,6 +44,7 @@ Rectangle {
         selectionColor: Theme.color.rowSelected
         onAccepted: root.accepted()
         onEditingFinished: root.editingFinished()
+        onTextEdited: root.textEdited()
         // A long value set from outside shows its start, not its end.
         onTextChanged: if (!activeFocus) cursorPosition = 0
         onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
