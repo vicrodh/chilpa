@@ -157,6 +157,15 @@ Item {
             Text { text: row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
         }
 
+        Rating {
+            x: row.cols.ratingX
+            anchors.verticalCenter: parent.verticalCenter
+            visible: row.cols.rating > 0
+            interactive: false
+            // Persistence follows with the rating model; this already gives
+            // the row its final five-star interaction and geometry.
+        }
+
         Text {
             x: row.cols.playsX
             width: row.cols.plays - Metrics.gap12

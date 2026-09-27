@@ -16,6 +16,7 @@ Item {
     property bool showAlbum: true
     property bool showArt: true
     property bool showPlays: false
+    property bool showRating: true
     property bool header: true
     // Grow with the rows instead of scrolling: a list inside a page that
     // scrolls as a whole.
@@ -44,6 +45,7 @@ Item {
         showAlbum: list.showAlbum
         showArt: list.showArt
         showPlays: list.showPlays
+        showRating: list.showRating
     }
 
     TrackHeader {

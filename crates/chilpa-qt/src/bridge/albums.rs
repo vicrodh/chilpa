@@ -37,7 +37,8 @@ pub mod qobject {
         #[qml_element]
         /// "recentlyPlayed", "recentlyAdded", "all", "library" (the records
         /// the Library screen's filter leaves), "artist" (one artist's
-        /// records, by `key`), "appearsOn" (the compilations they are on)
+        /// records, by `key`), "sameArtist" and "related" (an album id),
+        /// "appearsOn" (the compilations they are on)
         /// "folder" (the records directly in its current directory) or
         /// "artists" (every artist, as round cards).
         #[qproperty(QString, kind)]
@@ -319,6 +320,11 @@ impl qobject::AlbumGridModel {
                 let name = self.rust().key.to_string();
                 app::with(|api| api.artist_appearances(&name))
             }
+            "sameArtist" => {
+                let id = self.rust().key.to_string().parse().unwrap_or_default();
+                app::with(|api| api.same_artist_albums(id, limit))
+            }
+            "related" => app::with(|api| api.related_albums(self.rust().key.to_string().parse().unwrap_or_default(), limit)),
             "artists" => {
                 // An artist is drawn as a card too: its name where a record's
                 // title goes, how many records it has under it.

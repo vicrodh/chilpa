@@ -428,6 +428,24 @@ impl Chilpa {
         lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
+    /// Eight records by the same artist, excluding this one and in a stable
+    /// shuffled order so the shelf is not merely the discography order.
+    pub fn same_artist_albums(&mut self, album_id: i64, limit: usize) -> Vec<Album> {
+        let Some(album) = self.album(album_id) else { return Vec::new() };
+        let mut albums = self.artist_albums(&album.artist);
+        albums.retain(|candidate| candidate.id != album_id);
+        albums.sort_by_key(|candidate| candidate.id.wrapping_mul(1_103_515_245).wrapping_add(album_id) & 0x7fff_ffff);
+        albums.truncate(limit);
+        albums
+    }
+
+    /// Metadata-near records from the same source. Tempo and rhythmic
+    /// similarity can extend the library rank once analysis exposes them.
+    pub fn related_albums(&mut self, album_id: i64, limit: usize) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        lib.related_albums(album_id, limit).unwrap_or_default().into_iter().map(album_of).collect()
+    }
+
     /// The records marked as favorites.
     pub fn favorite_albums(&mut self) -> std::collections::HashSet<i64> {
         self.library().and_then(|lib| lib.favorite_albums().ok()).unwrap_or_default()

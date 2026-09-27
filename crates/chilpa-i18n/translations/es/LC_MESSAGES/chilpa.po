@@ -124,6 +124,9 @@ msgstr "Avanzado"
 msgid "Album"
 msgstr "Álbum"
 
+msgid "Album actions"
+msgstr "Acciones del álbum"
+
 msgid "Album page"
 msgstr "Página del álbum"
 
@@ -475,6 +478,12 @@ msgstr "Adelante"
 
 msgid "Forward 10 seconds"
 msgstr "Adelante 10 segundos"
+
+msgid "From same artist"
+msgstr "Del mismo artista"
+
+msgid "From this source"
+msgstr "De esta fuente"
 
 msgid "From this week"
 msgstr "De esta semana"
@@ -850,6 +859,9 @@ msgstr "Vista rápida"
 
 msgid "Quit"
 msgstr "Salir"
+
+msgid "Rating"
+msgstr "Calificación"
 
 msgid "Reactivate"
 msgstr "Reactivar"

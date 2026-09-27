@@ -20,6 +20,7 @@ Item {
         { x: cols.artistX, w: cols.artistW, right: false, text: I18n.tr("Artist", I18n.rev), sort: "artist" },
         { x: cols.albumX, w: cols.albumW, right: false, text: I18n.tr("Album", I18n.rev), sort: "album" },
         { x: cols.qualityX, w: cols.quality, right: false, text: I18n.tr("Quality", I18n.rev), sort: "" },
+        { x: cols.ratingX, w: cols.rating, right: false, text: I18n.tr("Rating", I18n.rev), sort: "" },
         { x: cols.playsX, w: cols.plays, right: true, text: I18n.tr("Plays", I18n.rev), sort: "plays" },
         { x: cols.timeX, w: cols.time, right: true, text: I18n.tr("Time", I18n.rev), sort: "duration" }
     ]

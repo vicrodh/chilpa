@@ -9,9 +9,15 @@ Item {
     id: hero
 
     property AlbumDetailModel detail
+    property bool selecting: false
+    property bool favorite: false
 
     signal play()
     signal shuffle()
+    signal selectToggle()
+    signal favoriteToggle()
+    signal context(real left, real top)
+    signal artwork()
 
     implicitHeight: Metrics.heroArt
 
@@ -21,6 +27,8 @@ Item {
         height: Metrics.heroArt
         source: hero.detail.art
     }
+    HoverHandler { id: coverHover; parent: cover; cursorShape: Qt.PointingHandCursor }
+    TapHandler { parent: cover; onTapped: hero.artwork() }
 
     Column {
         anchors.left: cover.right
@@ -49,8 +57,7 @@ Item {
             text: hero.detail.artist
             font.pointSize: Type.body
             font.weight: Type.medium
-            font.underline: artistHover.hovered
-            color: Theme.color.accent
+            color: artistHover.hovered ? Theme.color.accentHover : Theme.color.textPrimary
 
             HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: Navigation.openArtist(hero.detail.artist) }
@@ -65,6 +72,8 @@ Item {
 
         Item { width: 1; height: Metrics.gap8 }
 
+        Rating {}
+
         Row {
             spacing: Metrics.gap8
             PillButton {
@@ -78,6 +87,34 @@ Item {
                 glyph: Icons.arrowsShuffle
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
+            }
+            IconButton {
+                round: true
+                glyph: hero.favorite ? Icons.heartFilled : Icons.heart
+                filled: hero.favorite
+                tone: hero.favorite ? "accent" : "secondary"
+                tip: hero.favorite ? I18n.tr("Remove from favorites", I18n.rev)
+                                   : I18n.tr("Add to favorites", I18n.rev)
+                onClicked: hero.favoriteToggle()
+            }
+            IconButton {
+                round: true
+                glyph: Icons.checkbox
+                tone: hero.selecting ? "accent" : "secondary"
+                tip: hero.selecting ? I18n.tr("Finish selecting", I18n.rev)
+                                    : I18n.tr("Select tracks", I18n.rev)
+                onClicked: hero.selectToggle()
+            }
+            IconButton {
+                id: contextButton
+                round: true
+                glyph: Icons.dots
+                tip: I18n.tr("Album actions", I18n.rev)
+                onClicked: {
+                    const at = contextButton.mapToItem(hero, contextButton.width - Metrics.menuWidth,
+                                                       contextButton.height + Metrics.gap4)
+                    hero.context(at.x, at.y)
+                }
             }
         }
     }

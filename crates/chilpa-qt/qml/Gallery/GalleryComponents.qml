@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 import "../Components"
 
 GallerySection {
@@ -49,6 +50,7 @@ GallerySection {
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
+        AlbumCarousel { width: parent.width; title: "From same artist"; model: added }
         Row {
             spacing: Metrics.gridGap
             AlbumCardOverlay { width: Metrics.cardMinWidth; height: width; albumId: added.albumId(0, added.rev); year: "2026"; selected: true }
@@ -57,6 +59,8 @@ GallerySection {
         }
         AlbumQuickView { width: parent.width; albumId: added.albumId(0, added.rev); notchX: Metrics.cardMinWidth / 2 } // derived: under the first card
         AlbumHero { width: parent.width; detail: detail }
+        ArtworkModal { id: artworkModal }
+        PillButton { text: "Open artwork"; onClicked: artworkModal.show(detail.art) }
         PageHero { width: parent.width; label: "Artist"; round: true; name: "Mora Vale"; meta: "8 records" }
         PageHero { width: parent.width; label: "Playlist"; name: "Road Trip 2026"; meta: "19 songs"; covers: ["", "", "", ""]; canQueue: true }
         Row {
