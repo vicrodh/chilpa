@@ -25,6 +25,7 @@ pub use chilpa_audio::{spectrum, tap};
 /// A request made on a plugin's behalf. The caller supplies the credential,
 /// never the plugin (ADR-007).
 pub use chilpa_stream::send_request;
+pub use chilpa_stream::{fetch, Fetch, FetchError, Fetched};
 
 use chilpa_models::SourceId;
 

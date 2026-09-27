@@ -1574,6 +1574,9 @@ msgstr "no se pudo guardar la cuenta para la próxima vez"
 msgid "the account did not connect: {}"
 msgstr "no se conectó la cuenta: {}"
 
+msgid "the address has to be https"
+msgstr "la dirección tiene que ser https"
+
 msgid "the analysis stopped: {}"
 msgstr "el análisis se detuvo: {}"
 

@@ -1574,6 +1574,9 @@ msgstr ""
 msgid "the account did not connect: {}"
 msgstr ""
 
+msgid "the address has to be https"
+msgstr ""
+
 msgid "the analysis stopped: {}"
 msgstr ""
 

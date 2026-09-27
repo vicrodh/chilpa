@@ -11,9 +11,11 @@
 
 pub mod icy;
 pub mod request;
+pub mod fetch;
 
 pub use icy::IcyReader;
 pub use request::send as send_request;
+pub use fetch::{fetch, Fetch, FetchError, Fetched};
 
 use std::io::{self, Read, Seek, SeekFrom};
 use std::sync::{Arc, Mutex};
