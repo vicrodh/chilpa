@@ -1,9 +1,9 @@
 //! Last.fm: an account allowed on its own site, and scrobbles.
 //!
 //! Every request to Last.fm is signed with the application's secret, which
-//! cannot ship inside a program anyone can read. The requests go through a
-//! proxy that adds the key and the signature and hands the reply back as it
-//! came. During development it is QBZ's; Chilpa's own comes later.
+//! cannot ship inside a program anyone can read. The requests go through
+//! Chilpa's proxy, a Cloudflare Worker at api.chilpa.app, which adds the key
+//! and the signature and hands the reply back as it came.
 //!
 //! Connecting is three steps: a request token and the page where the person
 //! allows Chilpa; the person allows it; the token is traded for a session
@@ -14,7 +14,9 @@ use super::queue::Service;
 use super::{Failure, Kind, Listen};
 use serde_json::{json, Map, Value};
 
-const PROXY: &str = "https://qbz-api-proxy.blitzkriegfc.workers.dev/lastfm";
+/// Released builds carry this address, so it never changes; the worker
+/// behind it can.
+const PROXY: &str = "https://api.chilpa.app/lastfm";
 
 /// Scrobbles in one request: Last.fm's own limit.
 const BATCH: usize = 50;
@@ -164,7 +166,7 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "goes out to the proxy and Last.fm; the development proxy only lets QBZ in for now"]
+    #[ignore = "goes out to the proxy and Last.fm"]
     fn the_proxy_hands_out_a_request_token_and_the_page_to_allow_it() {
         let (token, link) = begin().expect("the proxy answered");
         assert!(!token.is_empty());
