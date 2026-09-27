@@ -9,6 +9,7 @@
 pub mod album_folder;
 pub mod playlist;
 pub mod scan;
+mod scan_sidecar;
 pub mod scan_job;
 pub mod schema;
 pub mod sidecar;

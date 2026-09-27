@@ -1097,3 +1097,21 @@ CREATE INDEX playlist_folder_position ON playlists(folder_id, custom_position);
 CREATE INDEX playlist_tracks_source ON playlist_tracks(source_id, external_id);
 CREATE INDEX playlist_tags_name ON playlist_tags(tag);
 "#;
+
+/// From 19 to 20: what the scan saw of each sidecar.
+///
+/// A sidecar changes what a file's row says without changing the file, so
+/// "the file is the same as last time" stops being enough to skip it. The
+/// scan keeps here the date and size of the sidecar in force for each
+/// folder, and rereads that folder's files when they differ.
+///
+/// The path is the sidecar's own, or that of the `.qbz.json` standing in
+/// for it. The date is in nanoseconds, like `scanned_files`.
+pub(super) const MIGRATION_V20: &str = r#"
+CREATE TABLE sidecars (
+    path    TEXT PRIMARY KEY,
+    mtime   INTEGER NOT NULL,
+    size    INTEGER NOT NULL,
+    seen_at INTEGER NOT NULL
+);
+"#;

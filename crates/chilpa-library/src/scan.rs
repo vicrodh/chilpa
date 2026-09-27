@@ -11,6 +11,8 @@
 
 use crate::album_folder::{album_folder, VARIOUS_ARTISTS};
 use crate::store::Library;
+use crate::scan_sidecar::{overlaid, Homes, Seen};
+use crate::sidecar::Home;
 use rusqlite::{params, OptionalExtension};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
@@ -31,6 +33,9 @@ pub struct ScanReport {
     /// Audio files found that could not be read: a link that points
     /// nowhere, a file that vanished between the listing and the read.
     pub unreadable: usize,
+    /// Sidecars that are there and cannot be read. Their folders were
+    /// scanned as if they had none.
+    pub sidecars_unreadable: usize,
     /// True when the root could not be read; then nothing was touched.
     pub unreachable: bool,
 }
@@ -161,6 +166,7 @@ fn scan(
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
     let mut readable: HashSet<String> = HashSet::with_capacity(files.len());
+    let mut homes = Homes::new();
 
     for (examined, file) in files.iter().enumerate() {
         // Reported every 25 files: one by one floods the channel without the
@@ -174,7 +180,7 @@ fn scan(
         }
         if containers.may_hold(file) {
             let found = Found { lib, source, root_id, now, cache };
-            found.container(file, containers, &mut report, &mut readable)?;
+            found.container(file, containers, &mut report, &mut readable, &mut homes)?;
             continue;
         }
         report.seen += 1;
@@ -198,6 +204,8 @@ fn scan(
             .unwrap_or(0);
         let size = meta.len() as i64;
         let path = file.display().to_string();
+        let home = Home::of(&path, None);
+        let stale = homes.of(lib, &home, &path).stale;
 
         let known: Option<(i64, i64, Option<i64>)> = lib
             .db
@@ -209,7 +217,9 @@ fn scan(
             .ok();
 
         if let Some((m, s, track)) = &known {
-            if *m == mtime && *s == size && track.is_some() {
+            // A sidecar that changed makes its folder's files worth reading
+            // again, though none of them did.
+            if *m == mtime && *s == size && track.is_some() && !stale {
                 // Same as last time: neither read nor rewritten.
                 report.unchanged += 1;
                 lib.db.execute(
@@ -251,7 +261,7 @@ fn scan(
             }
         }
 
-        let track_id = save_file(lib, source, file, now, cache)?;
+        let track_id = save_file(lib, source, file, now, cache, &home, homes.of(lib, &home, &path))?;
         lib.db.execute(
             "INSERT INTO scanned_files (root_id, path, mtime, size, inode, track_id, scanned_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
@@ -268,6 +278,7 @@ fn scan(
 
     // What was there and is not, or is there and cannot be read: marked
     // missing, never deleted.
+    report.sidecars_unreadable = homes.record(lib, now)?;
     report.missing = mark_missing(lib, root_id, &readable)?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
@@ -304,6 +315,7 @@ impl Found<'_> {
         containers: &dyn Containers,
         report: &mut ScanReport,
         readable: &mut HashSet<String>,
+        homes: &mut Homes,
     ) -> rusqlite::Result<()> {
         let lib = self.lib;
         let Ok(meta) = std::fs::metadata(file) else {
@@ -319,13 +331,15 @@ impl Found<'_> {
             .unwrap_or(0);
         let size = meta.len() as i64;
         let container = file.display().to_string();
+        let home = Home::of("", Some(&container));
+        let stale = homes.of(lib, &home, &container).stale;
 
         let known: Vec<(String, i64, i64, Option<i64>)> = lib
             .db
             .prepare("SELECT path, mtime, size, track_id FROM scanned_files WHERE container = ?1")?
             .query_map(params![container], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
             .collect::<rusqlite::Result<_>>()?;
-        if !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some()) {
+        if !stale && !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some()) {
             for (path, _, _, track) in &known {
                 lib.db.execute("UPDATE tracks SET present = 1 WHERE id = ?1", params![track])?;
                 readable.insert(path.clone());
@@ -339,16 +353,19 @@ impl Found<'_> {
         let name = file.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
         for track in &tracks {
             report.seen += 1;
+            let seen = homes.of(lib, &home, &container);
+            let info = overlaid(Some(track.info.clone()), seen, &home.key(&track.path));
             let track_id = save_track(
                 lib,
                 self.source,
                 &track.path,
-                Some(&track.info),
+                info.as_ref(),
                 &name,
                 file,
                 self.now,
                 self.cache,
             )?;
+            seen.cover_onto(lib, &home, track_id)?;
             // No inode: every track of a container shares the file's, and a
             // move is told by the inode, so they would be taken for each
             // other. A container that moves comes back as new tracks.
@@ -414,10 +431,15 @@ fn save_file(
     path: &Path,
     now: i64,
     cache: Option<&Path>,
+    home: &Home,
+    seen: &Seen,
 ) -> rusqlite::Result<i64> {
-    let info = chilpa_tags::read(path).ok();
+    let external_id = path.display().to_string();
+    let info = overlaid(chilpa_tags::read(path).ok(), seen, &home.key(&external_id));
     let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
-    save_track(lib, source, &path.display().to_string(), info.as_ref(), &name, path, now, cache)
+    let track_id = save_track(lib, source, &external_id, info.as_ref(), &name, path, now, cache)?;
+    seen.cover_onto(lib, home, track_id)?;
+    Ok(track_id)
 }
 
 /// A track into the library: its row, its album and its genres, and the
