@@ -24,6 +24,7 @@ ListRowSurface {
     hovered: pointer.hovered
 
     HoverHandler { id: pointer }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: root.choose() }
 
     Column {

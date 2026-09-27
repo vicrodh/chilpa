@@ -32,6 +32,7 @@ Rectangle {
             size: Metrics.iconSm
             color: Theme.color.textSecondary
 
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: crumb.removed() }
         }
     }

@@ -41,6 +41,7 @@ Row {
                 radius: width / 2 // derived: a circle
                 color: swatch.modelData === "" ? Theme.color.accentBase : swatch.modelData
             }
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: swatches.picked(swatches.values[swatch.index]) }
         }
     }

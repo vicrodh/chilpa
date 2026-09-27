@@ -26,6 +26,7 @@ Flow {
         text: I18n.tr("Folders", I18n.rev)
         font.pointSize: Type.meta
         color: Theme.color.accent
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         TapHandler { onTapped: crumbs.opened("") }
     }
 
@@ -42,6 +43,7 @@ Flow {
                 text: modelData.name
                 font.pointSize: Type.meta
                 color: index === crumbs.steps.length - 1 ? Theme.color.textPrimary : Theme.color.textSecondary
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: crumbs.opened(modelData.path) }
             }
         }

@@ -140,6 +140,7 @@ Modal {
                     }
                 }
                 HoverHandler { id: hover }
+                HoverHandler { enabled: accepts; cursorShape: Qt.PointingHandCursor }
                 TapHandler {
                     enabled: accepts
                     onTapped: {

@@ -254,6 +254,7 @@ Item {
                         color: modelData === "positive" ? Theme.color.statusPositive : modelData === "warning" ? Theme.color.statusWarning : modelData === "negative" ? Theme.color.statusNegative : Theme.color.accent
                         border.width: folderDialog.colorName === modelData ? Metrics.focusRing : 0
                         border.color: Theme.color.textPrimary
+                        HoverHandler { cursorShape: Qt.PointingHandCursor }
                         TapHandler { onTapped: folderDialog.colorName = parent.modelData }
                     }
                 }

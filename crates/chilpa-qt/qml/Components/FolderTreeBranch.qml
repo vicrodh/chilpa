@@ -42,6 +42,7 @@ Column {
             color: Theme.color.textTertiary
             rotation: branch.opened ? 90 : 0
 
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: branch.manuallyExpanded = !branch.opened }
         }
         Icon {
@@ -67,6 +68,7 @@ Column {
         }
 
         HoverHandler { id: hover }
+        HoverHandler { cursorShape: Qt.PointingHandCursor }
         TapHandler {
             onTapped: {
                 branch.manuallyExpanded = true

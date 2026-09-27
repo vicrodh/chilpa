@@ -25,5 +25,6 @@ Rectangle {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: chip.clicked() }
 }

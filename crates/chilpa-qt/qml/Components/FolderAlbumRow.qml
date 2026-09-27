@@ -29,5 +29,6 @@ Item {
     }
     Icon { id: chevron; anchors.right: parent.right; anchors.rightMargin: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter; glyph: Icons.chevronRight; size: Metrics.iconSm; color: Theme.color.textTertiary }
     HoverHandler { id: hover }
+    HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: row.open() }
 }

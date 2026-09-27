@@ -113,6 +113,7 @@ Item {
     }
 
     HoverHandler { id: hover }
+    HoverHandler { enabled: !row.editing; cursorShape: Qt.PointingHandCursor }
     TapHandler {
         enabled: !row.editing
         acceptedButtons: Qt.LeftButton | Qt.RightButton

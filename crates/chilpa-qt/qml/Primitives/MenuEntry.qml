@@ -117,5 +117,6 @@ Item {
             ? TipState.show([line.entry.text, line.entry.detail].filter(t => !!t).join(" — "), line)
             : TipState.hide(line)
     }
+    HoverHandler { enabled: !line.separator && !line.note; cursorShape: Qt.PointingHandCursor }
     TapHandler { enabled: !line.separator && !line.note; onTapped: line.clicked() }
 }

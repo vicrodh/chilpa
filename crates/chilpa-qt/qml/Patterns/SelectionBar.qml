@@ -16,6 +16,7 @@ Item {
     implicitHeight: Metrics.selectionBarHeight
 
     // Clicks in its empty space do not reach the grid under it.
+    // no cursor: keeps clicks off the list beneath
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons

@@ -45,6 +45,7 @@ Item {
             font.weight: active ? Type.bold : Type.medium
             color: active ? Theme.color.textPrimary : Theme.color.textSecondary
 
+            HoverHandler { enabled: head.sortable && modelData.sort !== ""; cursorShape: Qt.PointingHandCursor }
             TapHandler {
                 enabled: head.sortable && modelData.sort !== ""
                 onTapped: head.sortRequested(modelData.sort)

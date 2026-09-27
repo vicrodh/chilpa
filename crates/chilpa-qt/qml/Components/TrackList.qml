@@ -88,6 +88,7 @@ Item {
 
     MouseArea {
         id: pointer
+        cursorShape: Qt.PointingHandCursor
 
         property int pressedRow: -1
         property real pressedY: 0

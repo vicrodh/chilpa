@@ -24,6 +24,7 @@ Item {
                 font.pointSize: Type.body
                 font.weight: crumbs.filtered ? Type.regular : Type.medium
                 color: crumbs.filtered ? Theme.color.textSecondary : Theme.color.textPrimary
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: Library.clear() }
             }
         }

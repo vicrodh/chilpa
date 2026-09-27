@@ -113,6 +113,7 @@ Window {
     // Browser-style side buttons follow the active tab's own history. This
     // transparent layer accepts only those two buttons; wheel, primary and
     // secondary input continue to the control under the pointer.
+    // no cursor: only the mouse's side buttons, over everything
     MouseArea {
         anchors.fill: parent
         z: Metrics.tooltipLayer

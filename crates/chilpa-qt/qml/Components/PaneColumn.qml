@@ -84,6 +84,7 @@ Rectangle {
                 color: clear.hovered ? Theme.color.textPrimary : Theme.color.textTertiary
 
                 HoverHandler { id: clear }
+                HoverHandler { cursorShape: Qt.PointingHandCursor }
                 TapHandler { onTapped: input.text = "" }
             }
         }
