@@ -26,6 +26,7 @@ mod scrobble;
 mod search;
 pub mod settings_schema;
 pub mod sidebar;
+pub mod theme;
 mod volume;
 pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
