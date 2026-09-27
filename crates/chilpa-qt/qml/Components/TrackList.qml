@@ -62,6 +62,8 @@ Item {
         id: view
 
         property int hovered: -1
+        // The row whose artist is under the pointer, which a click opens.
+        property int artistHovered: -1
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -80,6 +82,7 @@ Item {
         delegate: TrackRow {
             cols: columns
             hovered: index === view.hovered
+            artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
         }
 
@@ -104,6 +107,18 @@ Item {
         }
         function track() {
             view.hovered = containsMouse ? rowAt(mouseY) : -1
+            view.artistHovered = containsMouse && onArtist(view.hovered, mouseX, mouseY) ? view.hovered : -1
+        }
+        // Whether the pointer is on the row's artist: its own column in
+        // compact rows, the line under the title in rich ones. Worked out
+        // here, once for the list, and not by a handler on every row.
+        function onArtist(row, x, y) {
+            const item = row >= 0 ? view.itemAtIndex(row) : null
+            if (!item || item.header || item.artist === "" || !list.model.canGo(row, "artist"))
+                return false
+            if (columns.rich)
+                return x >= columns.titleX && x < columns.titleX + columns.titleW && y + view.contentY - item.y > item.height / 2 // derived: the second of the two lines
+            return columns.artistW > 0 && x >= columns.artistX && x < columns.artistX + columns.artistW
         }
 
         onPressed: (mouse) => {
@@ -138,6 +153,10 @@ Item {
                 return
             }
             const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
+            if (!toggle && !(mouse.modifiers & Qt.ShiftModifier) && onArtist(row, mouse.x, mouse.y)) {
+                list.model.go(row, "artist")
+                return
+            }
             list.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
         }
         onDoubleClicked: (mouse) => {
