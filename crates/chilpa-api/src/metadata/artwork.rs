@@ -77,13 +77,23 @@ pub(crate) fn sweep() {
     }
 }
 
+/// A name of its own for every cover put in wait: an answer that arrives
+/// late for a cover no longer wanted removes its own file, never the one
+/// that replaced it.
 fn waiting_path(session: u64, extension: &str) -> PathBuf {
-    folder().join(format!("{session}-cover.{extension}"))
+    static TAKEN: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let n = TAKEN.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    folder().join(format!("{session}-{n}-cover.{extension}"))
 }
 
 pub(crate) fn forget_waiting(session: u64) {
-    for extension in ["jpg", "png"] {
-        let _ = std::fs::remove_file(waiting_path(session, extension));
+    let Ok(entries) = std::fs::read_dir(folder()) else { return };
+    let prefix = format!("{session}-");
+    for entry in entries.flatten() {
+        let name = entry.file_name().to_string_lossy().into_owned();
+        if name.starts_with(&prefix) && name.contains("-cover.") {
+            let _ = std::fs::remove_file(entry.path());
+        }
     }
 }
 
