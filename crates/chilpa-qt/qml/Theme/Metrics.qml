@@ -164,6 +164,7 @@ QtObject {
     readonly property int artRow: 40
     readonly property int colQualityCompact: 96
     readonly property int colQualityRich: 118
+    readonly property int colRating: 82
     readonly property int colPlaysCompact: 60
     readonly property int colPlaysRich: 92
     readonly property int colFavorite: 32
@@ -187,6 +188,9 @@ QtObject {
     readonly property int overlayIcon: 16
     readonly property int overlayCheckIcon: 21
     readonly property int cardRing: 2
+    readonly property int carouselCard: 164
+    readonly property int ratingStar: 14
+    readonly property int ratingMaximum: 5
     // The quick view under a row (03-components.md AlbumQuickView).
     readonly property int quickArt: 184
     readonly property int quickPad: 22
@@ -205,6 +209,8 @@ QtObject {
     readonly property int shelfLimit: 12
     readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
+    readonly property int artworkModal: 680
+    readonly property int artworkModalGutter: 64
     readonly property int pageHero: 168
     readonly property int playlistFilter: 26
     readonly property int playlistIndent: 22

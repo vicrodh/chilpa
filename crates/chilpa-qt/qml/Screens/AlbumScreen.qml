@@ -4,11 +4,14 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "../Patterns"
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
 Flickable {
     id: page
+
+    property bool selectionMode: false
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -26,6 +29,20 @@ Flickable {
         filterRev: Library.contentRev
         playingPath: Player.path
     }
+    AlbumGridModel {
+        id: sameArtist
+        kind: "sameArtist"
+        key: Navigation.routeId.toString()
+        limit: 8
+        contentRev: Library.contentRev
+    }
+    AlbumGridModel {
+        id: related
+        kind: "related"
+        key: Navigation.routeId.toString()
+        limit: 8
+        contentRev: Library.contentRev
+    }
 
     Column {
         id: column
@@ -35,10 +52,23 @@ Flickable {
         spacing: Metrics.gap16
 
         AlbumHero {
+            id: hero
             width: parent.width
             detail: detail
+            selecting: page.selectionMode
+            favorite: AlbumActions.favorite(Navigation.routeId, AlbumActions.rev)
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
+            onSelectToggle: {
+                page.selectionMode = !page.selectionMode
+                tracks.clearSelection()
+            }
+            onFavoriteToggle: AlbumActions.setFavorite(Navigation.routeId, !favorite)
+            onContext: (left, top) => {
+                const at = hero.mapToItem(page, left, top)
+                albumMenu.show(Navigation.routeId, detail.title, detail.artist, -1, at.x, at.y)
+            }
+            onArtwork: artwork.show(detail.art)
         }
 
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
@@ -83,6 +113,34 @@ Flickable {
             showAlbum: false
             showArt: false
             model: tracks
+            selectionMode: page.selectionMode
+        }
+
+        AlbumCarousel {
+            width: parent.width
+            title: I18n.tr("From same artist", I18n.rev)
+            model: sameArtist
+        }
+        AlbumCarousel {
+            width: parent.width
+            title: I18n.tr("From this source", I18n.rev)
+            model: related
+        }
+    }
+
+    AlbumMenu { id: albumMenu }
+    ArtworkModal { id: artwork }
+    PlaylistSelectionBar {
+        visible: page.selectionMode && tracks.selectedCount > 0
+        z: 2
+        model: tracks
+        playlistName: detail.title
+        canRemove: false
+        x: (page.width - width) / 2
+        y: page.contentY + page.height - height - Metrics.selectionBottom
+        onFinished: {
+            tracks.clearSelection()
+            page.selectionMode = false
         }
     }
 }

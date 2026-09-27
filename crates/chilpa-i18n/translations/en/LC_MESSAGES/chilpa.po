@@ -124,6 +124,9 @@ msgstr ""
 msgid "Album"
 msgstr ""
 
+msgid "Album actions"
+msgstr ""
+
 msgid "Album page"
 msgstr ""
 
@@ -474,6 +477,12 @@ msgid "Forward"
 msgstr ""
 
 msgid "Forward 10 seconds"
+msgstr ""
+
+msgid "From same artist"
+msgstr ""
+
+msgid "From this source"
 msgstr ""
 
 msgid "From this week"
@@ -849,6 +858,9 @@ msgid "Quick view"
 msgstr ""
 
 msgid "Quit"
+msgstr ""
+
+msgid "Rating"
 msgstr ""
 
 msgid "Reactivate"
