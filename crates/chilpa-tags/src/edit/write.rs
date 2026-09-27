@@ -195,8 +195,9 @@ pub enum WriteError {
 
 /// Copies written and checked, waiting beside their originals.
 pub struct Staged {
-    /// The copy and the original it stands for, in the order they came.
-    pairs: Vec<(PathBuf, PathBuf)>,
+    /// The copy, the file it replaces -- a link's target, not the link --
+    /// and the path it was asked for by, in the order they came.
+    pairs: Vec<(PathBuf, PathBuf, PathBuf)>,
 }
 
 impl Staged {
@@ -213,8 +214,8 @@ impl Staged {
     pub fn commit(mut self) -> Result<Vec<PathBuf>, WriteError> {
         let mut replaced = Vec::with_capacity(self.pairs.len());
         while !self.pairs.is_empty() {
-            let (copy, original) = self.pairs.remove(0);
-            if let Err(error) = std::fs::rename(&copy, &original) {
+            let (copy, target, original) = self.pairs.remove(0);
+            if let Err(error) = std::fs::rename(&copy, &target) {
                 let _ = std::fs::remove_file(&copy);
                 // The copies still waiting go when `self` is dropped.
                 return Err(WriteError::Replace { path: original, error, replaced });
@@ -227,7 +228,7 @@ impl Staged {
 
 impl Drop for Staged {
     fn drop(&mut self) {
-        for (copy, _) in &self.pairs {
+        for (copy, _, _) in &self.pairs {
             let _ = std::fs::remove_file(copy);
         }
     }
@@ -235,9 +236,14 @@ impl Drop for Staged {
 
 /// Where a file's copy waits: beside it, under a name that is not audio, so
 /// a scan that finds one left behind does not take it for a track.
+///
+/// Built from the name as the system has it, not as text: two names that
+/// are not valid UTF-8 would otherwise come out as the same copy.
 fn copy_path(original: &Path) -> PathBuf {
-    let name = original.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
-    original.with_file_name(format!(".{name}.chilpa-tmp"))
+    let mut name = std::ffi::OsString::from(".");
+    name.push(original.file_name().unwrap_or_default());
+    name.push(".chilpa-tmp");
+    original.with_file_name(name)
 }
 
 /// A copy is named for what it is and not for what it holds, so its kind is
@@ -556,8 +562,12 @@ pub fn stage(
     on_progress: &mut dyn FnMut(usize, usize),
 ) -> Result<Staged, WriteError> {
     let files: Vec<&FileChanges> = files.iter().filter(|f| !f.is_empty()).collect();
+    // A link is written through: the copy goes beside the file it points to
+    // and replaces that file, and the link stays a link. Two paths to one
+    // file are the same file twice.
+    let targets: Vec<PathBuf> = files.iter().map(|f| std::fs::canonicalize(&f.path).unwrap_or_else(|_| f.path.clone())).collect();
     for (i, file) in files.iter().enumerate() {
-        if files[..i].iter().any(|other| other.path == file.path) {
+        if targets[..i].contains(&targets[i]) {
             return Err(WriteError::Write { path: file.path.clone(), reason: "the same file twice".to_string() });
         }
     }
@@ -573,11 +583,11 @@ pub fn stage(
 
     let total = files.len();
     let mut staged = Staged { pairs: Vec::with_capacity(total) };
-    for (done, changes) in files.iter().enumerate() {
-        let copy = copy_path(&changes.path);
+    for (done, (changes, target)) in files.iter().zip(targets).enumerate() {
+        let copy = copy_path(&target);
         // `staged` owns the copy from here: an error below drops it, and
         // dropping it removes every copy it holds.
-        staged.pairs.push((copy.clone(), changes.path.clone()));
+        staged.pairs.push((copy.clone(), target, changes.path.clone()));
         one(changes, &copy, options)?;
         on_progress(done + 1, total);
     }

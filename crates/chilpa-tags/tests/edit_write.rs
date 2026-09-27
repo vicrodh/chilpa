@@ -535,3 +535,56 @@ fn other_layers_are_left_alone_unless_asked() {
     assert_eq!(inspect(&[path]).conflicting, 1, "which the editor is told");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[cfg(unix)]
+#[test]
+fn a_link_is_written_through_and_stays_a_link() {
+    let dir = folder("link");
+    let Some(real) = tone(&dir, "real", &FORMATS[0], TAGS) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let link = dir.join("link.flac");
+    std::os::unix::fs::symlink(&real, &link).unwrap();
+
+    let mut changes = FileChanges::none(link.clone());
+    changes.title = Change::Set("Through the link".into());
+    assert_eq!(write(&[changes]).unwrap(), vec![link.clone()], "it answers for the path it was asked by");
+
+    assert!(std::fs::symlink_metadata(&link).unwrap().file_type().is_symlink(), "the link is still a link");
+    assert_eq!(snapshot(&real).unwrap().title.as_deref(), Some("Through the link"), "and the file it points to took the change");
+    assert_eq!(copies(&dir), 0);
+
+    // The file and its link are the same file twice.
+    let mut one = FileChanges::none(real.clone());
+    one.title = Change::Set("A".into());
+    let mut other = FileChanges::none(link);
+    other.title = Change::Set("B".into());
+    assert!(write(&[one, other]).is_err());
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[cfg(unix)]
+#[test]
+fn two_names_that_are_not_text_get_two_copies() {
+    use std::os::unix::ffi::OsStrExt;
+
+    let dir = folder("bytes");
+    let Some(made) = tone(&dir, "made", &FORMATS[0], TAGS) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let first = dir.join(std::ffi::OsStr::from_bytes(b"a\x80.flac"));
+    let second = dir.join(std::ffi::OsStr::from_bytes(b"a\x81.flac"));
+    std::fs::copy(&made, &first).unwrap();
+    std::fs::copy(&made, &second).unwrap();
+
+    let mut one = FileChanges::none(first.clone());
+    one.title = Change::Set("First".into());
+    let mut other = FileChanges::none(second.clone());
+    other.title = Change::Set("Second".into());
+    write(&[one, other]).unwrap();
+    assert_eq!(snapshot(&first).unwrap().title.as_deref(), Some("First"));
+    assert_eq!(snapshot(&second).unwrap().title.as_deref(), Some("Second"));
+    let _ = std::fs::remove_dir_all(dir);
+}
