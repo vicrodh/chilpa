@@ -40,6 +40,13 @@ def camel(name: str) -> str:
     return head + "".join(p[:1].upper() + p[1:] for p in rest)
 
 
+def qml_escape(point: int) -> str:
+    if point <= 0xFFFF:
+        return f"\\u{point:04x}"
+    point -= 0x10000
+    return f"\\u{0xD800 + (point >> 10):04x}\\u{0xDC00 + (point & 0x3FF):04x}"
+
+
 def main():
     if len(sys.argv) != 2:
         sys.exit(__doc__)
@@ -76,7 +83,7 @@ def main():
         subset.save_font(font, str(OUT / f"tabler-{kind}.ttf"), options)
         suffix = "Filled" if kind == "filled" else ""
         for n in sorted(wanted[kind]):
-            props.append(f'    readonly property string {camel(n)}{suffix}: "\\u{points[n]:04x}"')
+            props.append(f'    readonly property string {camel(n)}{suffix}: "{qml_escape(points[n])}"')
     QML.write_text(
         "pragma Singleton\n"
         "import QtQuick\n\n"
