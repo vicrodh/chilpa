@@ -15,6 +15,7 @@ mod browse;
 mod covers;
 mod folders;
 mod library;
+mod metadata;
 pub mod navigation;
 mod outputs;
 mod playlists;
@@ -27,6 +28,7 @@ pub mod settings_schema;
 pub mod sidebar;
 mod volume;
 pub use volume::VolumeView;
+pub use metadata::view::MetadataView;
 
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
 pub use covers::{cover_derivative, header_atmosphere};
@@ -540,6 +542,8 @@ pub struct Chilpa {
     /// the window can be told when it changed without asking the stacks for
     /// their whole list on a timer.
     outputs_generation: String,
+    /// The metadata editor, and the record open in it if there is one.
+    metadata: metadata::Editor,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -603,6 +607,7 @@ impl Chilpa {
             sample_rate: 0,
             relaunching: None,
             outputs_generation: String::new(),
+            metadata: metadata::Editor::default(),
         };
         chilpa.restore_queue_session();
         chilpa

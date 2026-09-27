@@ -29,6 +29,10 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("a scan is already running");
             return;
         }
+        if self.metadata.saving() {
+            self.now.error = chilpa_i18n::t("metadata is being saved; scan when it is done");
+            return;
+        }
         // The folder is written down before its scan starts, so the list of
         // folders shows it at once, as being scanned. It used to appear only
         // when the scan ended, and until then adding it looked like it had
@@ -57,6 +61,10 @@ impl Chilpa {
     pub fn rescan(&mut self) {
         if self.scan.is_some() {
             self.now.error = chilpa_i18n::t("a scan is already running");
+            return;
+        }
+        if self.metadata.saving() {
+            self.now.error = chilpa_i18n::t("metadata is being saved; scan when it is done");
             return;
         }
         let folders = self.roots();
