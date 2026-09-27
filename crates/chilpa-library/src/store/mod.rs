@@ -6,6 +6,7 @@
 
 pub mod albums;
 pub mod browse;
+pub mod edit;
 pub mod features;
 pub mod find;
 pub mod fingerprints;
@@ -14,6 +15,7 @@ pub mod plays;
 pub mod regroup;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
+pub use edit::{AlbumEdit, EditTrack, Edited, Put, TrackEdit};
 pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
 pub use find::Found;
 pub use playlists::{PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, StoredPlaylist};
@@ -41,7 +43,7 @@ pub struct StoredTrack {
 /// filed as one genre is neither Rock nor Blues when filtering. "/" is left
 /// alone: "R&B/Soul" names one genre as often as two. Case-insensitive
 /// repeats are dropped, keeping the first spelling.
-pub(crate) fn split_genres(genres: &[String]) -> Vec<String> {
+pub fn split_genres(genres: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
     for field in genres {
         for part in field.split([';', '|', '\0']) {

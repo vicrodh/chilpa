@@ -303,3 +303,47 @@ fn a_sidecar_written_outside_a_scan_is_not_news_to_the_next_one() {
     assert_eq!(report.read, 0, "whoever wrote it said so");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn a_scan_after_an_edit_changes_nothing() {
+    use chilpa_library::{AlbumEdit, Put, TrackEdit};
+
+    let Some(dir) = record("invariant") else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let album: i64 = lib.connection().query_row("SELECT id FROM albums LIMIT 1", [], |r| r.get(0)).unwrap();
+    let tracks = lib.edit_tracks(album).unwrap();
+
+    // What an editor does: the sidecar first, then the library.
+    let (home, file) = home_of(&dir);
+    store(&home, &overriding(), 1).unwrap();
+    lib.note_home(&home, &file, 1).unwrap();
+    let mut first = TrackEdit::none(tracks[0].id);
+    first.title = Put::Set("Sidecar one".into());
+    first.artist = Put::Set("Someone feat. Someone else".into());
+    first.track_number = Put::Set(Some(9));
+    first.disc_number = Put::Set(Some(2));
+    first.genres = Put::Set(vec!["Blues".into(), "Soul".into()]);
+    let mut second = TrackEdit::none(tracks[1].id);
+    second.genres = Put::Set(vec!["Blues".into(), "Soul".into()]);
+    lib.apply_edit(&AlbumEdit {
+        album_id: album,
+        title: "Sidecar album".into(),
+        album_artist: "Sidecar artist".into(),
+        year: Put::Keep,
+        artwork: Put::Keep,
+        tracks: vec![first, second],
+    })
+    .unwrap();
+    let edited = (rows(&lib), albums(&lib));
+
+    // The files are made to look changed, so the scan reads every one again.
+    lib.connection().execute("UPDATE scanned_files SET mtime = 0", []).unwrap();
+    let report = scan_root(&lib, &dir).unwrap();
+    assert_eq!(report.read, 2);
+    assert_eq!((rows(&lib), albums(&lib)), edited, "the scan and the edit say the same");
+    let _ = std::fs::remove_dir_all(dir);
+}
