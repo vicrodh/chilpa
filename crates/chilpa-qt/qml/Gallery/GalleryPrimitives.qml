@@ -66,7 +66,6 @@ GallerySection {
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
         StatusField { state: "fine"; options: ["Disconnect", "Uninstall"]; values: ["disconnect", "uninstall"] }
-        Rating { value: 3 }
     }
 
     Rectangle {

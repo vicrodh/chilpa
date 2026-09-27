@@ -157,7 +157,7 @@ Item {
             Text { text: row.quality; font.pointSize: Type.small; color: Theme.color.textSecondary }
         }
 
-        Rating {
+        RatingStars {
             x: row.cols.ratingX
             anchors.verticalCenter: parent.verticalCenter
             visible: row.cols.rating > 0
