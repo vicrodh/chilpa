@@ -73,18 +73,19 @@ pub fn is_discogs(image: &str) -> bool {
 }
 
 /// "1", "A1", "1-1", "CD1-1", "1.1" as disc and track. What is not
-/// understood is 1.
+/// understood is 0: an empty position is not the first track, and the
+/// tracklist numbers it by its place (`numbered_in_order`).
 pub fn position(text: &str) -> (u16, u16) {
     let text = text.trim();
     if text.is_empty() {
-        return (1, 1);
+        return (0, 0);
     }
     let digits = |part: &str| part.chars().filter(char::is_ascii_digit).collect::<String>().parse::<u16>().unwrap_or(1);
     if let Some((disc, track)) = text.split_once('-') {
-        return (digits(disc), track.trim().parse().unwrap_or(1));
+        return (digits(disc), track.trim().parse().unwrap_or(0));
     }
     if let Some((disc, track)) = text.split_once('.') {
-        return (disc.trim().parse().unwrap_or(1), track.trim().parse().unwrap_or(1));
+        return (disc.trim().parse().unwrap_or(1), track.trim().parse().unwrap_or(0));
     }
     let mut letters = text.chars();
     if let Some(side) = letters.next().filter(char::is_ascii_alphabetic) {
@@ -94,9 +95,51 @@ pub fn position(text: &str) -> (u16, u16) {
             'E' | 'F' => 3,
             _ => 1,
         };
-        return (disc, letters.as_str().trim().parse().unwrap_or(1));
+        return (disc, letters.as_str().trim().parse().unwrap_or(0));
     }
-    (1, text.parse().unwrap_or(1))
+    match text.parse() {
+        Ok(number) => (1, number),
+        Err(_) => (0, 0),
+    }
+}
+
+/// When positions do not say one track each -- a record's sides start
+/// over at B1, a bonus track has none -- every track is numbered by its
+/// place on its disc instead, which is how the files of such a record are
+/// numbered.
+fn numbered_in_order(tracks: &mut [ReleaseTrack]) {
+    let mut seen = std::collections::HashSet::new();
+    let clear = tracks.iter().all(|t| t.number > 0 && t.disc > 0 && seen.insert((t.disc, t.number)));
+    if clear {
+        return;
+    }
+    let mut disc = 1;
+    let mut number = 0;
+    for track in tracks.iter_mut() {
+        let this = if track.disc == 0 { disc } else { track.disc };
+        if this != disc {
+            disc = this;
+            number = 0;
+        }
+        number += 1;
+        track.disc = disc;
+        track.number = number;
+    }
+}
+
+/// The entries of a tracklist that are tracks, with what an index holds in
+/// its place: an index is a title over tracks of its own.
+fn entries(list: &Value) -> Vec<&Value> {
+    let mut out = Vec::new();
+    for entry in list.as_array().into_iter().flatten() {
+        match entry["type_"].as_str() {
+            Some("track") => out.push(entry),
+            Some("index") => out.extend(entries(&entry["sub_tracks"])),
+            // A heading names what follows.
+            _ => {}
+        }
+    }
+    out
 }
 
 /// "3:45" and "1:02:03" in milliseconds. Zero for anything else.
@@ -235,13 +278,8 @@ fn release_of(value: &Value) -> Result<Release, Failure> {
             genres.push(style);
         }
     }
-    let tracks: Vec<ReleaseTrack> = value["tracklist"]
-        .as_array()
+    let mut tracks: Vec<ReleaseTrack> = entries(&value["tracklist"])
         .into_iter()
-        .flatten()
-        // A heading names what follows and an index holds other tracks:
-        // neither is one.
-        .filter(|entry| entry["type_"].as_str() == Some("track"))
         .map(|entry| {
             let (disc, number) = position(&text(&entry["position"]));
             ReleaseTrack {
@@ -257,6 +295,7 @@ fn release_of(value: &Value) -> Result<Release, Failure> {
             }
         })
         .collect();
+    numbered_in_order(&mut tracks);
     let label = &value["labels"][0];
     Ok(Release {
         provider: Provider::Discogs,
@@ -406,7 +445,7 @@ mod tests {
 
     #[test]
     fn discogs_positions() {
-        for (said, means) in [("1", (1, 1)), ("12", (1, 12)), ("A1", (1, 1)), ("B3", (1, 3)), ("C2", (2, 2)), ("F1", (3, 1)), ("1-5", (1, 5)), ("CD2-3", (2, 3)), ("2.4", (2, 4)), ("", (1, 1)), ("A", (1, 1)), ("??", (1, 1))] {
+        for (said, means) in [("1", (1, 1)), ("12", (1, 12)), ("A1", (1, 1)), ("B3", (1, 3)), ("C2", (2, 2)), ("F1", (3, 1)), ("1-5", (1, 5)), ("CD2-3", (2, 3)), ("2.4", (2, 4)), ("", (0, 0)), ("A", (1, 0)), ("??", (0, 0))] {
             assert_eq!(position(said), means, "{said:?}");
         }
         assert_eq!(duration_ms("3:45"), 225_000);
@@ -438,6 +477,22 @@ mod tests {
         assert_eq!((found.tracks[2].disc, found.tracks[2].number), (2, 1));
         assert_eq!(found.tracks[2].duration_ms, 3_723_000);
         assert_eq!(found.tracks[1].duration_ms, 0);
+    }
+
+    #[test]
+    fn sides_that_start_over_an_index_and_a_bonus_are_numbered_by_place() {
+        let vinyl = r#"{"id":7,"title":"Sides","tracklist":[
+            {"position":"A1","type_":"track","title":"One"},
+            {"position":"A2","type_":"track","title":"Two"},
+            {"position":"B1","type_":"track","title":"Three"},
+            {"position":"B2","type_":"index","title":"A suite","sub_tracks":[
+                {"position":"B2a","type_":"track","title":"Four"},
+                {"position":"B2b","type_":"track","title":"Five"}]},
+            {"position":"","type_":"track","title":"Bonus"}]}"#;
+        let http = Canned::new().json(vinyl);
+        let found = release(&Net::free(&http), "7").unwrap();
+        let tracks: Vec<(u16, u16, &str)> = found.tracks.iter().map(|t| (t.disc, t.number, t.title.as_str())).collect();
+        assert_eq!(tracks, [(1, 1, "One"), (1, 2, "Two"), (1, 3, "Three"), (1, 4, "Four"), (1, 5, "Five"), (1, 6, "Bonus")]);
     }
 
     #[test]
