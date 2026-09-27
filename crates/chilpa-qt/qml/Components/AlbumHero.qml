@@ -77,7 +77,7 @@ Item {
 
         Item { width: 1; height: Metrics.gap8 }
 
-        Rating { baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary }
+        RatingStars { baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary }
 
         Row {
             spacing: Metrics.gap8

@@ -47,7 +47,7 @@ Item {
         enabled: root.interactive
         hoverEnabled: true
         onClicked: {
-            root.value = root.preview
+            root.value = root.value === root.preview ? 0 : root.preview
             root.rated(root.value)
         }
     }

@@ -40,6 +40,7 @@ GallerySection {
             QualityIcon { tier: 1 }
             QualityIcon { tier: 2 }
             QualityIcon { tier: 3 }
+            RatingStars { value: 3 }
             PlayingIndicator {}
         }
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
