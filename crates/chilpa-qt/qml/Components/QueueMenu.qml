@@ -8,13 +8,19 @@ Menu {
 
     property TrackListModel model
     property string laterLabel
+    property bool canRemove: false
+
+    signal remove()
 
     function show(left, top) {
         entries = [
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
             { text: I18n.tr("Play next", I18n.rev), act: "next" },
             { text: I18n.tr("Play later", I18n.rev), act: "later" }
-        ]
+        ].concat(canRemove ? [
+            { separator: true },
+            { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
+        ] : [])
         x = left
         y = top
         open()
@@ -26,7 +32,9 @@ Menu {
             model.queueAll()
         else if (action === "next")
             model.playNextAll()
-        else
+        else if (action === "later")
             model.playLaterAll(laterLabel)
+        else if (action === "remove")
+            menu.remove()
     }
 }

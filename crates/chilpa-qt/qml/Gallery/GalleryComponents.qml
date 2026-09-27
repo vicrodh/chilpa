@@ -10,6 +10,16 @@ GallerySection {
     TrackListModel { id: most; kind: "mostPlayed"; limit: 3; playingPath: Player.path }
     AlbumGridModel { id: added; kind: "recentlyAdded"; limit: 6; maxRows: 1; columns: grid.columns }
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
+    QtObject {
+        id: playlistManager
+        function open(index) {}
+        function moveCustom(index, by) {}
+        function folderIds() { return [] }
+        function folderNames() { return [] }
+        function setVisible(id, visible) {}
+        function moveToFolder(id, folder) {}
+        function removeFolder(id) {}
+    }
 
     Column {
         width: section.width
@@ -52,7 +62,7 @@ GallerySection {
         Row {
             height: Metrics.panesHeight
             PaneColumn { width: Metrics.sidebarWidth; height: parent.height; title: "Genre"; column: "genre" }
-            PaneRow { width: Metrics.sidebarWidth; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
+            PaneRow { width: Metrics.sidebarWidth; index: 1; key: ""; label: "A selected entry"; meta: "8"; selected: true; all: false }
         }
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
@@ -94,7 +104,7 @@ GallerySection {
         FolderTree { width: Metrics.folderTreeWidth; height: Metrics.panesHeight; activePath: "/music/Mora Vale" }
         FolderTreeBranch { width: Metrics.folderTreeWidth; name: "Mora Vale"; path: "/music/Mora Vale"; activePath: "/music/Mora Vale/Low Orbit" }
         FolderTile { width: Metrics.folderTileMinWidth; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
-        FolderAlbumRow { width: section.width; albumId: 1; title: "Low Orbit"; artist: "Mora Vale"; art: "" }
+        FolderAlbumRow { width: section.width; index: 1; albumId: 1; title: "Low Orbit"; artist: "Mora Vale"; art: "" }
         FolderContent { width: section.width; height: Metrics.panesHeight; folder: top; tracks: folderTracks; albums: folderAlbums }
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueFooter { width: Metrics.rightPanel }
@@ -107,18 +117,24 @@ GallerySection {
             model: audio
             SettingsRow { width: section.width; page: audio }
         }
-        FolderRow { width: section.width; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
-        FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
+        FolderRow { width: section.width; index: 0; path: "/music/Mora Vale/Low Orbit"; name: "Low Orbit"; lastScan: new Date(); reachable: true }
+        FolderRow { width: section.width; index: 1; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
         SeekBar { width: Metrics.searchFlyout; position: Metrics.searchFlyout / 4; duration: Metrics.searchFlyout; bubbleText: "1:10" } // derived: a quarter of the way
-        OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
-        OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Changed tracks are reported as processed." }
+        OptionRow { width: Metrics.playbackOptionsWidth; index: 0; title: "Gapless"; detail: "One track straight into the next."; checked: true }
+        OptionRow { width: Metrics.playbackOptionsWidth; index: 1; title: "Normalization"; detail: "Changed tracks are reported as processed." }
         PlaylistMenu {}
         AlbumMenu {}
         PlaylistPicker {}
-        PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; active: true }
-        PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8 }
+        PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; source: ""; sourceName: "Local"; local: true; artwork: ""; folderId: 0; visibleInSidebar: true; cover1: ""; cover2: ""; cover3: ""; cover4: ""; active: true }
+        PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8; source: "demo"; sourceName: "Example source"; local: false; artwork: ""; folderId: 0; visibleInSidebar: true; cover1: ""; cover2: ""; cover3: ""; cover4: "" }
+        PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
+        Row {
+            spacing: Metrics.gap12
+            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 0; rowKind: 1; entryId: 1; name: "Road music"; detail: ""; source: ""; sourceName: "Local"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: "warning"; tracks: 4; plays: 0; folderId: 0; local: true; visibleInSidebar: true; manager: playlistManager }
+            PlaylistManagerRow { width: Metrics.playlistManagerCardWidth; index: 1; rowKind: 0; entryId: 2; name: "Late Night"; detail: "Quiet records"; source: "demo"; sourceName: "Example source"; artwork: ""; cover1: ""; cover2: ""; cover3: ""; cover4: ""; colorName: ""; tracks: 18; plays: 9; folderId: 0; local: false; visibleInSidebar: true; manager: playlistManager }
+        }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
         SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
     }

@@ -1,25 +1,15 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Primitives"
-
-// Which playlist something goes to: a submenu with a new one, or one of ours.
-Menu {
-    id: picker
-
-    property var ids: []
-
-    // Zero for a new playlist.
-    signal picked(int playlist)
-
+// A lightweight host adapter for the application-wide picker dialog. Menus
+// give it the exact library track ids they carry; the dialog outlives them.
+Item {
+    property var trackIds: []
     function show(left, top) {
-        ids = Playlists.ids(Playlists.rev)
-        const lists = Playlists.names(Playlists.rev).map(n => ({ text: n }))
-        entries = [{ text: I18n.tr("New playlist", I18n.rev) }].concat(lists.length > 0 ? [{ separator: true }] : [], lists)
-        x = left
-        y = top
-        open()
+        dialog.show(trackIds)
     }
-
-    // The first is a new one; after the separator, ours in order.
-    onChosen: (index) => picker.picked(index === 0 ? 0 : Number(ids[index - 2]))
+    function beginCreate() { dialog.beginCreate() }
+    width: 0
+    height: 0
+    visible: false
+    PlaylistPickerDialog { id: dialog }
 }

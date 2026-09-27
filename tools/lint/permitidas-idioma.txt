@@ -437,3 +437,6 @@ rustfmt
 fifo
 sinc
 frac
+# Playlist UI vocabulary used as API/property names.
+reorderable
+writable

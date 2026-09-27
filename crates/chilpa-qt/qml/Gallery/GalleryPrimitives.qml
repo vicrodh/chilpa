@@ -35,6 +35,12 @@ GallerySection {
 
     SearchField { width: Metrics.sidebarWidth; placeholder: "Search"; shortcut: "Ctrl K" }
 
+    Column {
+        width: Metrics.playlistManagerCardWidth
+        ListRowSurface { width: parent.width; height: Metrics.rowCompact; index: 0 }
+        ListRowSurface { width: parent.width; height: Metrics.rowCompact; index: 1 }
+    }
+
     Row {
         spacing: Metrics.gap8
         ResizeHandle { height: Metrics.sidebarCollapsed }

@@ -34,14 +34,14 @@ Item {
     width: cols.width
     height: header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
 
-    Rectangle {
+    ListRowSurface {
         anchors.fill: parent
+        index: row.index
         radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
         visible: !row.header
-        color: row.selected ? Theme.color.rowSelected
-             : row.playing && row.rich ? Theme.color.rowPlaying
-             : row.hovered ? Theme.color.stateHover
-             : !row.rich && row.index % 2 === 1 ? Theme.color.stateStripe : "transparent"
+        hovered: row.hovered
+        selected: row.selected
+        emphasized: row.playing && row.rich
     }
 
     Row {

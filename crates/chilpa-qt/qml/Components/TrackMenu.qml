@@ -46,9 +46,9 @@ Menu {
             { text: I18n.tr("Show in folder", I18n.rev), act: "folder" }
         ]
         const shown = all.filter(e => e.note ? many
-            : e.act === "unlist" ? model.kind === "playlist" && !many
-            : e.act === "up" ? model.kind === "playlist" && !many && row > 0
-            : e.act === "down" ? model.kind === "playlist" && !many && row < model.count - 1
+            : e.act === "unlist" ? model.kind === "playlist" && model.playlistEditable && !many
+            : e.act === "up" ? model.kind === "playlist" && model.playlistEditable && model.order === "custom" && !many && row > 0
+            : e.act === "down" ? model.kind === "playlist" && model.playlistEditable && model.order === "custom" && !many && row < model.count - 1
             : !e.act || ["play", "next", "queue", "pick", "dequeue"].includes(e.act) || (!many && model.canGo(row, e.act)))
         // A separator with nothing after it is a line for nothing.
         if (shown[shown.length - 1].separator)
@@ -68,8 +68,10 @@ Menu {
             model.playNext(row)
         else if (act === "queue")
             model.queue(row)
-        else if (act === "pick")
+        else if (act === "pick") {
+            picker.trackIds = model.chosenTrackIds(row)
             picker.show(x, y)
+        }
         else if (act === "dequeue")
             Player.removeQueued(row)
         else if (act === "unlist")
@@ -79,13 +81,15 @@ Menu {
         else
             model.go(row, act)
     }
-    onSubmenu: (index, top) => picker.show(menu.x + menu.width - Metrics.gap4, top)
+    onSubmenu: (index, top) => {
+        picker.trackIds = model.chosenTrackIds(row)
+        picker.show(menu.x + menu.width - Metrics.gap4, top)
+    }
 
     PlaylistPicker {
         id: picker
 
         // Beside the track menu, not inside it: together they read as a submenu.
         parent: menu.parent
-        onPicked: (playlist) => menu.model.addToPlaylist(menu.row, playlist)
     }
 }

@@ -7,6 +7,10 @@ GallerySection {
     id: section
     title: "Patterns"
 
+    TrackListModel { id: playlistTracks; kind: "mostPlayed"; limit: 3 }
+    PlaylistPickerDialog { id: pickerDialog }
+    PlaylistEditDialog { id: playlistEditor }
+
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     SidebarPlaylists { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     RightPanel { width: Metrics.rightPanel; height: Metrics.queueMin * 3 } // derived: room for both and the divider
@@ -28,6 +32,12 @@ GallerySection {
         SearchBox { width: Metrics.screenSearch; active: false }
         PlaybackOptions {}
         SelectionBar {}
+        PlaylistSelectionBar { width: implicitWidth; model: playlistTracks; playlistName: "Gallery playlist" }
+        Row {
+            spacing: Metrics.gap8
+            PillButton { text: "New playlist modal"; onClicked: pickerDialog.beginCreate() }
+            PillButton { text: "Edit playlist modal"; enabled: false; onClicked: playlistEditor.show(0) }
+        }
         Toast { visible: true; message: "Playback failed" }
     }
 }

@@ -8,6 +8,7 @@ import "../Primitives"
 Item {
     id: row
 
+    required property int index
     required property string path
     required property string name
     required property var lastScan
@@ -21,10 +22,11 @@ Item {
 
     implicitHeight: Metrics.folderRow
 
-    Rectangle {
+    ListRowSurface {
         anchors.fill: parent
+        index: row.index
         radius: Metrics.radiusControl
-        color: hover.hovered ? Theme.color.stateHover : "transparent"
+        hovered: hover.hovered
     }
 
     Icon {
