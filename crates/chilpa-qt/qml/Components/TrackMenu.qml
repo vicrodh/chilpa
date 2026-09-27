@@ -43,7 +43,8 @@ Menu {
             { separator: true },
             { text: I18n.tr("Go to album", I18n.rev), act: "album" },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist" },
-            { text: I18n.tr("Show in folder", I18n.rev), act: "folder" }
+            { text: I18n.tr("Show in folder", I18n.rev), act: "folder" },
+            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata" }
         ]
         const shown = all.filter(e => e.note ? many
             : e.act === "unlist" ? model.kind === "playlist" && model.playlistEditable && !many
