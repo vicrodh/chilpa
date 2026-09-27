@@ -9,30 +9,26 @@ pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::PluginInfo;
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
-mod browse;
-pub mod navigation;
-pub mod sidebar;
-pub mod settings_schema;
-mod covers;
-mod library;
-mod quality;
-mod queue;
-mod playlists;
 mod accounts;
 mod approvals;
-mod plugins;
-mod search;
+mod browse;
+mod covers;
 mod folders;
-mod scrobble;
+mod library;
+pub mod navigation;
 mod outputs;
+mod playlists;
+mod plugins;
+mod quality;
+mod queue;
+mod scrobble;
+mod search;
+pub mod settings_schema;
+pub mod sidebar;
 mod volume;
 pub use volume::VolumeView;
 
-pub use browse::{
-    filter_facets, select_facets, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader,
-    Snapshot, Totals,
-    TrackOrder, TrackRow,
-};
+pub use browse::{filter_facets, select_facets, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackOrder, TrackRow};
 pub use covers::cover_derivative;
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
@@ -52,7 +48,11 @@ pub enum Command {
     ListSources,
     /// Play a local file on a device, with the given output policy. It is
     /// the minimal path while the library does not exist.
-    PlayFile { path: PathBuf, device: String, bit_perfect: bool },
+    PlayFile {
+        path: PathBuf,
+        device: String,
+        bit_perfect: bool,
+    },
 }
 
 /// What Chilpa tells the frontend.
@@ -60,13 +60,22 @@ pub enum Command {
 pub enum Event {
     Sources(Vec<SourceId>),
     /// Something started playing, with the output's real quality.
-    Playing { track: TrackRef, quality: AudioQuality },
+    Playing {
+        track: TrackRef,
+        quality: AudioQuality,
+    },
     Paused,
     /// A file finished playing: how many frames went out, what format the
     /// device was opened with and whether it was bit-perfect.
-    Played { frames: u64, quality: AudioQuality, bit_perfect: bool },
+    Played {
+        frames: u64,
+        quality: AudioQuality,
+        bit_perfect: bool,
+    },
     /// Something went wrong, in text the UI can show.
-    Failed { message: String },
+    Failed {
+        message: String,
+    },
 }
 
 /// An audio output the user can choose.
@@ -116,6 +125,7 @@ pub struct NowPlaying {
     pub album_id: i64,
     /// The cover already on disk, ready to show. Empty if there is none.
     pub artwork_path: String,
+    pub covers: Vec<String>,
     pub playing: bool,
     pub paused: bool,
     /// Frames delivered and their equivalent in seconds.
@@ -186,11 +196,7 @@ fn order_by_tempo(bpms: &[Option<f32>], from: usize) -> Vec<usize> {
 ///
 /// Loudness is stated, not applied: correcting it would change the samples,
 /// and there goes bit-perfect.
-pub(crate) fn describe_analysis(
-    bpm: Option<f32>,
-    tone: Option<&str>,
-    lufs: Option<f32>,
-) -> String {
+pub(crate) fn describe_analysis(bpm: Option<f32>, tone: Option<&str>, lufs: Option<f32>) -> String {
     let mut parts: Vec<String> = Vec::new();
     if let Some(b) = bpm {
         parts.push(format!("{b:.0} BPM"));
@@ -206,17 +212,7 @@ pub(crate) fn describe_analysis(
 
 /// Translates a library track into what a view needs.
 fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
-    LibraryTrack {
-        id: t.id,
-        path: t.external_id,
-        title: t.title,
-        artist: t.artist,
-        album: t.album,
-        track_number: t.track_number,
-        duration_ms: t.duration_ms,
-        present: t.present,
-        analysis: String::new(),
-    }
+    LibraryTrack { id: t.id, path: t.external_id, title: t.title, artist: t.artist, album: t.album, track_number: t.track_number, duration_ms: t.duration_ms, present: t.present, analysis: String::new() }
 }
 
 /// The title a queue shows: the tag's, or the file's name.
@@ -224,20 +220,12 @@ fn title_of(path: &std::path::Path) -> String {
     if let Some(title) = chilpa_core::sacd_tracks::title(path) {
         return title;
     }
-    chilpa_tags::read(path)
-        .ok()
-        .and_then(|info| info.tags.title)
-        .unwrap_or_else(|| {
-            path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default()
-        })
+    chilpa_tags::read(path).ok().and_then(|info| info.tags.title).unwrap_or_else(|| path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
 }
 
 /// Now, in seconds since the epoch.
 fn now_unix() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
 /// How a channel count is named, already plural where it should be.
@@ -245,12 +233,7 @@ fn channels(n: u16) -> String {
     match n {
         1 => chilpa_i18n::t("mono"),
         2 => chilpa_i18n::t("stereo"),
-        others => chilpa_i18n::tf(
-            "{} channel",
-            "{} channels",
-            i64::from(others),
-            &[&others.to_string()],
-        ),
+        others => chilpa_i18n::tf("{} channel", "{} channels", i64::from(others), &[&others.to_string()]),
     }
 }
 
@@ -286,17 +269,85 @@ pub struct SmartListInfo {
 /// `provider` says where it came from. The view can filter on it: that is
 /// what lets a plugin bring its own lists without them being confused with
 /// the ones from here.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
 pub struct Playlist {
-    /// The library's row id. Zero on a source's list, which has no row.
+    /// The library's stable cached row id.
     pub id: i64,
+    /// The cached source row that owns it.
+    pub source_id: i64,
     pub name: String,
+    pub description: String,
+    pub artwork_path: String,
+    /// Up to four cached track covers used by the optional sidebar collage.
+    pub covers: Vec<String>,
+    pub tags: Vec<String>,
     pub provider: String,
+    pub instance: String,
     pub track_count: usize,
+    pub play_count: u64,
+    pub folder_id: Option<i64>,
+    pub custom_position: i64,
+    pub visible_sidebar: bool,
+    pub updated_at: i64,
+    /// Only our own playlists are mixed-source. A source-owned list is
+    /// writable only when its source declares that capability.
+    pub writable: bool,
+    pub mixed: bool,
     /// The plugin it came from, empty when it is one of ours.
     pub source: String,
     /// The id that source gives it, empty when it is one of ours.
     pub external_id: String,
+}
+
+/// One folder in the playlist manager.
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
+pub struct PlaylistFolder {
+    pub id: i64,
+    pub name: String,
+    pub color: String,
+    pub position: i64,
+    pub playlist_count: usize,
+}
+
+/// What the add-to-playlist picker says about one target.
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
+pub struct PlaylistTarget {
+    pub playlist: Playlist,
+    pub exact: usize,
+    pub similar: usize,
+    pub accepts: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, serde::Serialize)]
+pub struct PlaylistAddResult {
+    pub added: usize,
+    pub exact: usize,
+    pub similar: usize,
+    pub rejected: bool,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, serde::Serialize)]
+pub enum PlaylistManagerKind {
+    Folder,
+    Playlist,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
+pub struct PlaylistManagerEntry {
+    pub kind: PlaylistManagerKind,
+    pub id: i64,
+    pub name: String,
+    pub detail: String,
+    pub source: String,
+    pub source_name: String,
+    pub artwork_path: String,
+    pub covers: Vec<String>,
+    pub color: String,
+    pub track_count: usize,
+    pub play_count: u64,
+    pub folder_id: Option<i64>,
+    pub local: bool,
+    pub visible_sidebar: bool,
 }
 
 /// What the wizard found about an output.
@@ -514,11 +565,7 @@ impl Chilpa {
         // The language is set before anything can speak: a message built
         // during startup has to come out in the same language as the rest.
         let saved = chilpa_core::settings::load();
-        chilpa_i18n::set_language(if saved.language.is_empty() {
-            chilpa_i18n::from_environment()
-        } else {
-            &saved.language
-        });
+        chilpa_i18n::set_language(if saved.language.is_empty() { chilpa_i18n::from_environment() } else { &saved.language });
         let on = |key| saved.window.get(key).is_some_and(|v| v == "true");
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
@@ -599,24 +646,17 @@ impl Chilpa {
         self.library.as_ref()
     }
 
-
-
-
-
-
-
-
-
-
     /// What the analysis already knew about the track that is starting.
     fn load_analysis(&mut self, path: &std::path::Path) {
         self.now.analysis = String::new();
         let Some(lib) = self.library() else { return };
-        let Ok(source) = lib.source_id("local", "default") else { return };
-        let Some(id) = lib.track_by_path(source, path).ok().flatten() else { return };
-        let Some((bpm, tone, loudness)) =
-            lib.track_features(id, chilpa_core::analysis_job::ANALYZER).ok().flatten()
-        else {
+        let Ok(source) = lib.source_id("local", "default") else {
+            return;
+        };
+        let Some(id) = lib.track_by_path(source, path).ok().flatten() else {
+            return;
+        };
+        let Some((bpm, tone, loudness)) = lib.track_features(id, chilpa_core::analysis_job::ANALYZER).ok().flatten() else {
             return;
         };
         self.now.analysis = describe_analysis(bpm, tone.as_deref(), loudness);
@@ -626,12 +666,7 @@ impl Chilpa {
     /// unscanned file has no local record page and deliberately returns zero.
     fn load_album_context(&mut self) {
         let path = self.now.path.clone();
-        self.now.album_id = self
-            .library()
-            .and_then(|library| library.tracks_by_paths(&[path]).ok())
-            .and_then(|mut rows| rows.pop().flatten())
-            .and_then(|track| track.album_id)
-            .unwrap_or_default();
+        self.now.album_id = self.library().and_then(|library| library.tracks_by_paths(&[path]).ok()).and_then(|mut rows| rows.pop().flatten()).and_then(|track| track.album_id).unwrap_or_default();
     }
 
     /// Looks up the lyrics of what is starting to play.
@@ -640,10 +675,7 @@ impl Chilpa {
     /// opening a file sixty times a minute makes no sense at all.
     fn load_lyrics(&mut self, path: &std::path::Path) {
         let found = chilpa_lyrics::find(path);
-        self.now.lyrics = found
-            .as_ref()
-            .map(|h| h.lyrics.lines.iter().map(|l| l.text.clone()).collect())
-            .unwrap_or_default();
+        self.now.lyrics = found.as_ref().map(|h| h.lyrics.lines.iter().map(|l| l.text.clone()).collect()).unwrap_or_default();
         self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.lyrics.synced);
         self.now.lyrics_source = match found.as_ref().map(|h| &h.source) {
             Some(chilpa_lyrics::Source::Sidecar(_)) => chilpa_i18n::t("file"),
@@ -656,44 +688,12 @@ impl Chilpa {
 
     /// Which line of the lyrics belongs to that second.
     fn line_at(&self, seconds: f64) -> i32 {
-        let Some(lyrics) = &self.lyrics else { return -1 };
+        let Some(lyrics) = &self.lyrics else {
+            return -1;
+        };
         let ms = (seconds.max(0.0) * 1000.0) as u64;
         lyrics.line_at(ms).map(|i| i as i32).unwrap_or(-1)
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     /// The CD drives on the machine.
     ///
@@ -739,9 +739,6 @@ impl Chilpa {
         self.spawn(0, device, bit_perfect);
     }
 
-
-
-
     /// What Chilpa remembers: the last output and the last folder opened.
     pub fn settings(&self) -> chilpa_core::settings::Settings {
         chilpa_core::settings::load()
@@ -777,8 +774,7 @@ impl Chilpa {
     /// An empty code means whatever the environment asks for, which is what
     /// a fresh install has and what someone gets back by clearing the choice.
     pub fn choose_language(&mut self, language: &str) {
-        let code =
-            if language.is_empty() { chilpa_i18n::from_environment() } else { language };
+        let code = if language.is_empty() { chilpa_i18n::from_environment() } else { language };
         chilpa_i18n::set_language(code);
         let mut s = chilpa_core::settings::load();
         s.language = language.to_string();
@@ -909,11 +905,7 @@ impl Chilpa {
         if snapshot.samples.is_empty() {
             return Vec::new();
         }
-        let mono: Vec<f32> = snapshot
-            .samples
-            .chunks_exact(channels)
-            .map(|f| f.iter().sum::<f32>() / channels as f32)
-            .collect();
+        let mono: Vec<f32> = snapshot.samples.chunks_exact(channels).map(|f| f.iter().sum::<f32>() / channels as f32).collect();
         chilpa_core::spectrum::bands(&mono, snapshot.sample_rate_hz, bands)
     }
 
@@ -982,18 +974,10 @@ impl Chilpa {
     ///
     /// It returns the queued titles: the tag's when the file carries one,
     /// and the file's name otherwise.
-    pub fn play_folder(
-        &mut self,
-        folder: &std::path::Path,
-        device: &str,
-        bit_perfect: bool,
-    ) -> Vec<String> {
+    pub fn play_folder(&mut self, folder: &std::path::Path, device: &str, bit_perfect: bool) -> Vec<String> {
         let tracks = chilpa_core::sacd_tracks::expand(&audio_files_in(folder));
         if tracks.is_empty() {
-            self.now.error = chilpa_i18n::t_args(
-                "there is nothing Chilpa can play in {}",
-                &[&folder.display().to_string()],
-            );
+            self.now.error = chilpa_i18n::t_args("there is nothing Chilpa can play in {}", &[&folder.display().to_string()]);
             return Vec::new();
         }
         // The folder goes into the queue too: otherwise saving it or going
@@ -1008,13 +992,7 @@ impl Chilpa {
         if !paused && self.player.is_none() && !self.queue.is_empty() {
             if let Some(seconds) = self.restored_at.take() {
                 let (device, bit_perfect) = self.chosen_output();
-                self.spawn_from(
-                    0,
-                    &device,
-                    bit_perfect,
-                    Some(std::time::Duration::from_secs_f64(seconds.max(0.0))),
-                    Relaunch::Track,
-                );
+                self.spawn_from(0, &device, bit_perfect, Some(std::time::Duration::from_secs_f64(seconds.max(0.0))), Relaunch::Track);
                 return;
             }
         }
@@ -1083,30 +1061,11 @@ impl Chilpa {
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
             match event {
-                PlayerEvent::Started {
-                    path,
-                    opened,
-                    channels: music_channels,
-                    bits,
-                    bit_perfect,
-                    total_frames,
-                    tags,
-                    artwork,
-                    index,
-                    queue_len,
-                    dsd_multiple,
-                    dsd_passthrough,
-                } => {
+                PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
-                    let name = path
-                        .file_stem()
-                        .map(|s| s.to_string_lossy().to_string())
-                        .unwrap_or_default();
-                    self.now.artwork_path = artwork
-                        .as_ref()
-                        .map(|p| p.display().to_string())
-                        .unwrap_or_default();
+                    let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
+                    self.now.artwork_path = artwork.as_ref().map(|p| p.display().to_string()).unwrap_or_default();
                     match &tags {
                         Some(t) => {
                             self.now.title = t.title.clone().unwrap_or(name);
@@ -1138,11 +1097,7 @@ impl Chilpa {
                     // The player counts over what it was given; the view
                     // counts over the whole queue.
                     self.now.index = self.base + index;
-                    self.now.queue_len = if self.queue.is_empty() {
-                        queue_len
-                    } else {
-                        self.queue.len()
-                    };
+                    self.now.queue_len = if self.queue.is_empty() { queue_len } else { self.queue.len() };
                     // Every start closes the previous one: in a queue, the
                     // track that starts is the proof the one before it
                     // finished.
@@ -1177,29 +1132,10 @@ impl Chilpa {
                         // On DSD what matters is the DSD rate; the DoP
                         // carrier is stated separately, because it is the
                         // format the device was opened with.
-                        (Some(multiple), true) => chilpa_i18n::t_args(
-                            "DSD{} · DoP at {} Hz · {}",
-                            &[
-                                &multiple.to_string(),
-                                &opened.sample_rate_hz.to_string(),
-                                &channels(music_channels),
-                            ],
-                        ),
-                        (Some(multiple), false) => chilpa_i18n::t_args(
-                            "DSD{} · PCM at {} Hz · {}",
-                            &[
-                                &multiple.to_string(),
-                                &opened.sample_rate_hz.to_string(),
-                                &channels(music_channels),
-                            ],
-                        ),
+                        (Some(multiple), true) => chilpa_i18n::t_args("DSD{} · DoP at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
+                        (Some(multiple), false) => chilpa_i18n::t_args("DSD{} · PCM at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
                         (None, _) => match bits {
-                            Some(bits) => format!(
-                                "{} Hz · {} bits · {}",
-                                opened.sample_rate_hz,
-                                bits,
-                                channels(music_channels)
-                            ),
+                            Some(bits) => format!("{} Hz · {} bits · {}", opened.sample_rate_hz, bits, channels(music_channels)),
                             // A lossy track has no bit depth, and the word it
                             // was rounded into is not one: "32 bits" on an
                             // MP3 reads as more than it is.
@@ -1284,7 +1220,9 @@ impl Chilpa {
     }
 
     fn log_play(&mut self, skipped: bool) {
-        let Some(current) = self.in_progress.take() else { return };
+        let Some(current) = self.in_progress.take() else {
+            return;
+        };
         let frames = current.played_frames;
         if current.sample_rate_hz == 0 || frames == 0 {
             return;
@@ -1292,19 +1230,11 @@ impl Chilpa {
         let played_ms = frames * 1000 / u64::from(current.sample_rate_hz);
         let path = std::path::PathBuf::from(&current.path);
         let Some(lib) = self.library() else { return };
-        let Ok(source) = lib.source_id("local", "default") else { return };
+        let Ok(source) = lib.source_id("local", "default") else {
+            return;
+        };
         let track = lib.track_by_path(source, &path).ok().flatten();
-        let _ = lib.log_play(
-            track,
-            Some(source),
-            current.started_at,
-            played_ms,
-            current.duration_ms,
-            skipped,
-            Some(current.sample_rate_hz),
-            current.bit_depth,
-            current.bit_perfect,
-        );
+        let _ = lib.log_play(track, Some(source), current.started_at, played_ms, current.duration_ms, skipped, Some(current.sample_rate_hz), current.bit_depth, current.bit_perfect);
     }
 
     /// The current state, without collecting events.
@@ -1316,19 +1246,11 @@ impl Chilpa {
     pub fn dispatch(&mut self, command: Command) -> Event {
         match command {
             Command::ListSources => Event::Sources(self.core.sources().to_vec()),
-            Command::PlayFile { path, device, bit_perfect } => {
-                match self.core.play_local(&path, &device, bit_perfect) {
-                    Ok(played) => Event::Played {
-                        frames: played.frames,
-                        quality: played.quality,
-                        bit_perfect: played.bit_perfect,
-                    },
-                    Err(message) => Event::Failed { message },
-                }
-            }
-            Command::Play(_) | Command::Pause | Command::Resume => {
-                Event::Failed { message: "the player is not behaving yet".into() }
-            }
+            Command::PlayFile { path, device, bit_perfect } => match self.core.play_local(&path, &device, bit_perfect) {
+                Ok(played) => Event::Played { frames: played.frames, quality: played.quality, bit_perfect: played.bit_perfect },
+                Err(message) => Event::Failed { message },
+            },
+            Command::Play(_) | Command::Pause | Command::Resume => Event::Failed { message: "the player is not behaving yet".into() },
         }
     }
 }
@@ -1402,20 +1324,13 @@ mod tests {
         // exactly what somebody has to be told when a remembered output is
         // no longer there.
         for output in Chilpa::new().outputs() {
-            let (stack, bare) = output
-                .id
-                .split_once(':')
-                .unwrap_or_else(|| panic!("{} names no stack", output.id));
+            let (stack, bare) = output.id.split_once(':').unwrap_or_else(|| panic!("{} names no stack", output.id));
             // Asked of the core and not of the audio crate. The facade is
             // not allowed to reach into the engine (ADR-001), and the answer
             // to "which stacks are there" belongs to whoever assembles them.
             // Writing the list out here instead would be the same leak with
             // the wires hidden: a copy that goes stale the day one is added.
-            assert!(
-                chilpa_core::backends::StackKind::from_key(stack).is_some(),
-                "{} names no stack this build has",
-                output.id
-            );
+            assert!(chilpa_core::backends::StackKind::from_key(stack).is_some(), "{} names no stack this build has", output.id);
             assert!(!bare.is_empty(), "{} names no output", output.id);
             assert!(!output.label.is_empty(), "{} has no name to show", output.id);
         }

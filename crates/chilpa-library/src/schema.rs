@@ -17,11 +17,11 @@
 mod steps;
 
 use rusqlite::Connection;
-use steps::*;
 use std::path::{Path, PathBuf};
+use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 18;
+pub const VERSION: i64 = 19;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -29,8 +29,7 @@ pub const VERSION: i64 = 18;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] =
-    &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
@@ -205,9 +204,7 @@ pub fn update_statistics_if_stale(db: &Connection) -> rusqlite::Result<()> {
         .optional()
         // No `sqlite_stat1` at all: nothing has ever been analyzed.
         .unwrap_or(None);
-    let believed: i64 = recorded
-        .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
-        .unwrap_or(0);
+    let believed: i64 = recorded.and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok())).unwrap_or(0);
     let real: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0))?;
     if real > believed.saturating_mul(4) || believed > real.saturating_mul(4) {
         update_statistics(db)?;
@@ -242,8 +239,7 @@ mod tests {
         // left it and walks it to today.
         let db = Connection::open_in_memory().unwrap();
         stop_at(&db, 8);
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         db.execute(
             "INSERT INTO tracks (id, source_id, external_id, title, added_at)
              VALUES (1, 1, '/a.flac', 'One', 0)",
@@ -260,36 +256,14 @@ mod tests {
             )
             .unwrap();
         }
-        assert_eq!(
-            db.query_row("SELECT count(*) FROM audio_features", [], |r| r.get::<_, i64>(0))
-                .unwrap(),
-            3
-        );
+        assert_eq!(db.query_row("SELECT count(*) FROM audio_features", [], |r| r.get::<_, i64>(0)).unwrap(), 3);
 
         migrate(&db).unwrap();
 
-        assert_eq!(
-            db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(),
-            VERSION
-        );
-        let rows: Vec<(String, i64, f64)> = db
-            .prepare("SELECT analyzer, version, bpm FROM audio_features ORDER BY analyzer")
-            .unwrap()
-            .query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))
-            .unwrap()
-            .map(|r| r.unwrap())
-            .collect();
-        assert_eq!(
-            rows,
-            vec![("chilpa".to_string(), 2, 90.0), ("other".to_string(), 1, 77.0)],
-            "the newest of each analyzer, and the superseded one gone"
-        );
-        assert_eq!(
-            db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0))
-                .unwrap(),
-            "One",
-            "and the track it was about is still there"
-        );
+        assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION);
+        let rows: Vec<(String, i64, f64)> = db.prepare("SELECT analyzer, version, bpm FROM audio_features ORDER BY analyzer").unwrap().query_map([], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?))).unwrap().map(|r| r.unwrap()).collect();
+        assert_eq!(rows, vec![("chilpa".to_string(), 2, 90.0), ("other".to_string(), 1, 77.0)], "the newest of each analyzer, and the superseded one gone");
+        assert_eq!(db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0)).unwrap(), "One", "and the track it was about is still there");
 
         // And what the old key allowed cannot happen again.
         assert!(
@@ -334,32 +308,17 @@ mod tests {
 
         migrate(&db).unwrap();
 
-        let (rows, id, year, cover): (i64, i64, Option<i64>, Option<String>) = db
-            .query_row(
-                "SELECT (SELECT count(*) FROM albums), id, year, artwork_path FROM albums",
-                [],
-                |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)),
-            )
-            .unwrap();
+        let (rows, id, year, cover): (i64, i64, Option<i64>, Option<String>) = db.query_row("SELECT (SELECT count(*) FROM albums), id, year, artwork_path FROM albums", [], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?))).unwrap();
         assert_eq!(rows, 1, "one album");
         assert_eq!(id, 1, "the first one is the one that stays");
         assert_eq!(year, Some(1959), "and it kept what the others knew");
         assert_eq!(cover, Some("/covers/kob.jpg".to_string()));
 
-        let on_it: i64 = db
-            .query_row("SELECT count(*) FROM tracks WHERE album_id = 1", [], |r| r.get(0))
-            .unwrap();
+        let on_it: i64 = db.query_row("SELECT count(*) FROM tracks WHERE album_id = 1", [], |r| r.get(0)).unwrap();
         assert_eq!(on_it, 2, "both tracks point at it");
 
         // And it cannot happen again.
-        assert!(
-            db.execute(
-                "INSERT INTO albums (title, album_artist) VALUES ('Kind of Blue', 'Miles')",
-                [],
-            )
-            .is_err(),
-            "a second row for the same album is refused"
-        );
+        assert!(db.execute("INSERT INTO albums (title, album_artist) VALUES ('Kind of Blue', 'Miles')", [],).is_err(), "a second row for the same album is refused");
     }
 
     #[test]
@@ -369,11 +328,7 @@ mod tests {
             let db = Connection::open_in_memory().unwrap();
             stop_at(&db, v);
             migrate(&db).unwrap_or_else(|e| panic!("from version {v}: {e}"));
-            assert_eq!(
-                db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(),
-                VERSION,
-                "from version {v}"
-            );
+            assert_eq!(db.query_row("PRAGMA user_version", [], |r| r.get::<_, i64>(0)).unwrap(), VERSION, "from version {v}");
         }
     }
 
@@ -388,9 +343,7 @@ mod tests {
     fn migrating_twice_does_nothing_the_second_time() {
         let db = in_memory();
         migrate(&db).unwrap();
-        let tables: i64 = db
-            .query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0))
-            .unwrap();
+        let tables: i64 = db.query_row("SELECT count(*) FROM sqlite_master WHERE type='table'", [], |r| r.get(0)).unwrap();
         assert!(tables >= 8, "{tables} tables");
     }
 
@@ -400,8 +353,7 @@ mod tests {
         // A database as version 1 left it.
         db.execute_batch(SCHEMA_V1).unwrap();
         db.pragma_update(None, "user_version", 1).unwrap();
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         db.execute(
             "INSERT INTO tracks (source_id, external_id, title, added_at)
              VALUES (1, '/music/a.flac', 'One', 0)",
@@ -427,8 +379,7 @@ mod tests {
     #[test]
     fn tempo_confidence_has_a_column_of_its_own() {
         let db = in_memory();
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         db.execute(
             "INSERT INTO tracks (id, source_id, external_id, title, added_at)
              VALUES (1, 1, '/a.flac', 'One', 0)",
@@ -441,11 +392,7 @@ mod tests {
             [],
         )
         .unwrap();
-        let (bpm, conf): (f64, f64) = db
-            .query_row("SELECT bpm, tempo_confidence FROM audio_features", [], |r| {
-                Ok((r.get(0)?, r.get(1)?))
-            })
-            .unwrap();
+        let (bpm, conf): (f64, f64) = db.query_row("SELECT bpm, tempo_confidence FROM audio_features", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
         assert_eq!(bpm, 128.0);
         assert_eq!(conf, 0.8);
     }
@@ -454,17 +401,13 @@ mod tests {
     fn a_genre_is_the_same_however_it_is_spelled() {
         let db = in_memory();
         db.execute("INSERT INTO genres (name) VALUES ('Rock')", []).unwrap();
-        assert!(
-            db.execute("INSERT INTO genres (name) VALUES ('rock')", []).is_err(),
-            "different case is not two genres"
-        );
+        assert!(db.execute("INSERT INTO genres (name) VALUES ('rock')", []).is_err(), "different case is not two genres");
     }
 
     #[test]
     fn a_playlist_never_repeats_a_position() {
         let db = in_memory();
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         db.execute(
             "INSERT INTO playlists (source_id, name, created_at, updated_at)
              VALUES (1, 'Mine', 0, 0)",
@@ -496,8 +439,7 @@ mod tests {
     #[test]
     fn two_tracks_cannot_share_a_source_and_an_external_id() {
         let db = in_memory();
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         let insert = |external: &str| {
             db.execute(
                 "INSERT INTO tracks (source_id, external_id, title, added_at)
@@ -513,8 +455,7 @@ mod tests {
     #[test]
     fn the_play_log_accepts_what_the_stats_need() {
         let db = in_memory();
-        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-            .unwrap();
+        db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
         db.execute(
             "INSERT INTO tracks (source_id, external_id, title, added_at)
              VALUES (1, '/a.flac', 'One', 0)",
@@ -529,11 +470,7 @@ mod tests {
             [],
         )
         .unwrap();
-        let (ms, bp): (i64, i64) = db
-            .query_row("SELECT played_ms, bit_perfect FROM play_events", [], |r| {
-                Ok((r.get(0)?, r.get(1)?))
-            })
-            .unwrap();
+        let (ms, bp): (i64, i64) = db.query_row("SELECT played_ms, bit_perfect FROM play_events", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
         assert_eq!((ms, bp), (180_000, 1));
     }
 }

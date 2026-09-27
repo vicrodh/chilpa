@@ -16,7 +16,7 @@ pub mod regroup;
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
 pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
 pub use find::Found;
-pub use playlists::{PlaylistEntry, StoredPlaylist};
+pub use playlists::{PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, StoredPlaylist};
 pub use plays::{Stats, TrackStat};
 
 use crate::schema;
@@ -35,7 +35,6 @@ pub struct StoredTrack {
     pub duration_ms: u64,
     pub present: bool,
 }
-
 
 /// The genres a tag states, one each. Taggers write several in one field
 /// separated by ";" or "|" as often as in several fields, and "Rock; Blues"
@@ -64,7 +63,6 @@ pub struct StoredRoot {
     pub last_scan: Option<i64>,
     pub reachable: bool,
 }
-
 
 /// The open library.
 pub struct Library {
@@ -167,26 +165,21 @@ impl Library {
 
     /// The source's id, creating it if needed.
     pub fn source_id(&self, provider: &str, instance: &str) -> rusqlite::Result<i64> {
-        self.db.execute(
-            "INSERT OR IGNORE INTO sources (provider, instance) VALUES (?1, ?2)",
-            params![provider, instance],
-        )?;
-        self.db.query_row(
-            "SELECT id FROM sources WHERE provider = ?1 AND instance = ?2",
-            params![provider, instance],
-            |r| r.get(0),
-        )
+        self.db.execute("INSERT OR IGNORE INTO sources (provider, instance) VALUES (?1, ?2)", params![provider, instance])?;
+        self.db.query_row("SELECT id FROM sources WHERE provider = ?1 AND instance = ?2", params![provider, instance], |r| r.get(0))
+    }
+
+    /// Keeps the name a source wants the interface to show.
+    pub fn set_source_label(&self, source_id: i64, label: &str) -> rusqlite::Result<()> {
+        self.db.execute("UPDATE sources SET label = ?2 WHERE id = ?1", params![source_id, label])?;
+        Ok(())
     }
 
     /// The root's id, creating it if needed.
     pub fn root_id(&self, source_id: i64, path: &Path) -> rusqlite::Result<i64> {
         let path = path.display().to_string();
-        self.db.execute(
-            "INSERT OR IGNORE INTO roots (source_id, path) VALUES (?1, ?2)",
-            params![source_id, path],
-        )?;
-        self.db
-            .query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
+        self.db.execute("INSERT OR IGNORE INTO roots (source_id, path) VALUES (?1, ?2)", params![source_id, path])?;
+        self.db.query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
     }
 
     /// A transaction, unless the caller already opened one.
@@ -218,9 +211,7 @@ impl Library {
         {
             let mut insert = tx.prepare("INSERT OR IGNORE INTO genres (name) VALUES (?1)")?;
             let mut find = tx.prepare("SELECT id FROM genres WHERE name = ?1")?;
-            let mut link = tx.prepare(
-                "INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)",
-            )?;
+            let mut link = tx.prepare("INSERT OR IGNORE INTO track_genres (track_id, genre_id) VALUES (?1, ?2)")?;
             for name in split_genres(genres) {
                 let name = name.as_str();
                 insert.execute(params![name])?;
@@ -238,8 +229,7 @@ impl Library {
     /// were split.
     pub fn split_stored_genres(&self) -> rusqlite::Result<usize> {
         let joined: Vec<(i64, String)> = {
-            let mut stmt =
-                self.db.prepare("SELECT id, name FROM genres WHERE name LIKE '%;%' OR name LIKE '%|%'")?;
+            let mut stmt = self.db.prepare("SELECT id, name FROM genres WHERE name LIKE '%;%' OR name LIKE '%|%'")?;
             let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?;
             rows.collect::<rusqlite::Result<_>>()?
         };
@@ -278,8 +268,7 @@ impl Library {
              GROUP BY g.id
              ORDER BY count(t.id) DESC, g.name COLLATE NOCASE",
         )?;
-        let rows =
-            stmt.query_map([], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? as usize)))?;
+        let rows = stmt.query_map([], |r| Ok((r.get(0)?, r.get::<_, i64>(1)? as usize)))?;
         rows.collect()
     }
 
@@ -300,17 +289,8 @@ impl Library {
     /// It is what is needed to rescan without the user having to remember
     /// where their music is.
     pub fn roots(&self) -> rusqlite::Result<Vec<StoredRoot>> {
-        let mut stmt = self.db.prepare(
-            "SELECT id, path, last_scan, reachable FROM roots ORDER BY path COLLATE NOCASE",
-        )?;
-        let rows = stmt.query_map([], |r| {
-            Ok(StoredRoot {
-                id: r.get(0)?,
-                path: r.get::<_, String>(1)?.into(),
-                last_scan: r.get(2)?,
-                reachable: r.get::<_, i64>(3)? != 0,
-            })
-        })?;
+        let mut stmt = self.db.prepare("SELECT id, path, last_scan, reachable FROM roots ORDER BY path COLLATE NOCASE")?;
+        let rows = stmt.query_map([], |r| Ok(StoredRoot { id: r.get(0)?, path: r.get::<_, String>(1)?.into(), last_scan: r.get(2)?, reachable: r.get::<_, i64>(3)? != 0 }))?;
         rows.collect()
     }
 
@@ -331,10 +311,7 @@ impl Library {
 
     /// Marks whether a root is reachable. A missing root prunes NOTHING.
     pub fn set_root_reachable(&self, root_id: i64, reachable: bool) -> rusqlite::Result<()> {
-        self.db.execute(
-            "UPDATE roots SET reachable = ?2 WHERE id = ?1",
-            params![root_id, i64::from(reachable)],
-        )?;
+        self.db.execute("UPDATE roots SET reachable = ?2 WHERE id = ?1", params![root_id, i64::from(reachable)])?;
         if !reachable {
             // What is its own is marked missing, not deleted.
             self.db.execute(
@@ -348,19 +325,16 @@ impl Library {
 
     /// How many tracks there are, counting the missing ones or not.
     pub fn track_count(&self, include_absent: bool) -> rusqlite::Result<usize> {
-        let sql = if include_absent {
-            "SELECT count(*) FROM tracks"
-        } else {
-            "SELECT count(*) FROM tracks WHERE present = 1"
-        };
+        let sql = if include_absent { "SELECT count(*) FROM tracks" } else { "SELECT count(*) FROM tracks WHERE present = 1" };
         let n: i64 = self.db.query_row(sql, [], |r| r.get(0))?;
         Ok(n as usize)
     }
 
-
     /// Searches by title, artist or album.
     pub fn search(&self, text: &str, limit: usize) -> rusqlite::Result<Vec<StoredTrack>> {
-        let Some(query) = fts_query(text) else { return Ok(Vec::new()) };
+        let Some(query) = fts_query(text) else {
+            return Ok(Vec::new());
+        };
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, t.present
@@ -400,13 +374,7 @@ impl Library {
             }
         }
         let mut stmt = self.db.prepare("PRAGMA foreign_key_check")?;
-        let rows = stmt.query_map([], |r| {
-            Ok(format!(
-                "{}: a row points at a {} that is not there",
-                r.get::<_, String>(0)?,
-                r.get::<_, String>(2)?
-            ))
-        })?;
+        let rows = stmt.query_map([], |r| Ok(format!("{}: a row points at a {} that is not there", r.get::<_, String>(0)?, r.get::<_, String>(2)?)))?;
         for row in rows {
             found.push(row?);
         }
@@ -506,13 +474,7 @@ impl Library {
 
     /// The track at that path, if it is in the library.
     pub fn track_by_path(&self, source_id: i64, path: &Path) -> rusqlite::Result<Option<i64>> {
-        self.db
-            .query_row(
-                "SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2",
-                params![source_id, path.display().to_string()],
-                |r| r.get(0),
-            )
-            .optional()
+        self.db.query_row("SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2", params![source_id, path.display().to_string()], |r| r.get(0)).optional()
     }
 }
 
@@ -548,32 +510,16 @@ const CONSIDERED: usize = 5_000;
 /// that tokenizes to nothing. An empty FTS5 query is a syntax error, and
 /// answering "nothing found" is the truth anyway.
 pub(crate) fn fts_query(text: &str) -> Option<String> {
-    let tokens: Vec<String> = text
-        .split(|c: char| !c.is_alphanumeric())
-        .filter(|t| !t.is_empty())
-        .map(|t| format!("\"{}\"*", t.replace('"', "\"\"")))
-        .collect();
+    let tokens: Vec<String> = text.split(|c: char| !c.is_alphanumeric()).filter(|t| !t.is_empty()).map(|t| format!("\"{}\"*", t.replace('"', "\"\""))).collect();
     (!tokens.is_empty()).then(|| tokens.join(" "))
 }
 
 pub(crate) fn now_unix() -> i64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map(|d| d.as_secs() as i64)
-        .unwrap_or(0)
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
 }
 
 pub(crate) fn row_to_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
-    Ok(StoredTrack {
-        id: r.get(0)?,
-        external_id: r.get(1)?,
-        title: r.get(2)?,
-        artist: r.get(3)?,
-        album: r.get(4)?,
-        track_number: r.get::<_, Option<i64>>(5)?.map(|n| n as u16),
-        duration_ms: r.get::<_, i64>(6)? as u64,
-        present: r.get::<_, i64>(7)? == 1,
-    })
+    Ok(StoredTrack { id: r.get(0)?, external_id: r.get(1)?, title: r.get(2)?, artist: r.get(3)?, album: r.get(4)?, track_number: r.get::<_, Option<i64>>(5)?.map(|n| n as u16), duration_ms: r.get::<_, i64>(6)? as u64, present: r.get::<_, i64>(7)? == 1 })
 }
 
 /// What every subject's tests seed, in one place: if each file built its
@@ -588,11 +534,7 @@ pub(crate) mod fixtures {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         // (id, title, artist, year, added_at)
-        for (id, title, artist, year, high) in [
-            (1, "Bayou", "Creedence", 1969, 100),
-            (2, "Aqualung", "Tull", 1971, 300),
-            (3, "Cosmo", "Creedence", 1970, 200),
-        ] {
+        for (id, title, artist, year, high) in [(1, "Bayou", "Creedence", 1969, 100), (2, "Aqualung", "Tull", 1971, 300), (3, "Cosmo", "Creedence", 1970, 200)] {
             lib.db
                 .execute(
                     "INSERT INTO albums (id, title, album_artist, year)
@@ -616,13 +558,8 @@ pub(crate) mod fixtures {
     }
 
     pub(crate) fn titles(lib: &Library, order: AlbumSort) -> Vec<String> {
-        lib.albums_sorted(order, 50, 0)
-            .unwrap()
-            .into_iter()
-            .map(|(a, _)| a.title)
-            .collect()
+        lib.albums_sorted(order, 50, 0).unwrap().into_iter().map(|(a, _)| a.title).collect()
     }
-
 }
 
 #[cfg(test)]
@@ -640,9 +577,7 @@ mod genre_tests {
     fn genres_stored_joined_are_split_once_with_their_tracks() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        lib.db
-            .execute("INSERT INTO tracks (id, source_id, external_id, title, added_at) VALUES (1, ?1, '/a.flac', 'A', 1)", params![source])
-            .unwrap();
+        lib.db.execute("INSERT INTO tracks (id, source_id, external_id, title, added_at) VALUES (1, ?1, '/a.flac', 'A', 1)", params![source]).unwrap();
         lib.db.execute("INSERT INTO genres (id, name) VALUES (9, 'Rock; Blues')", []).unwrap();
         lib.db.execute("INSERT INTO track_genres (track_id, genre_id) VALUES (1, 9)", []).unwrap();
         assert_eq!(lib.split_stored_genres().unwrap(), 1);
@@ -670,12 +605,7 @@ mod repair_tests {
         // log, and nothing else has to be touched.
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        lib.db
-            .execute(
-                "INSERT INTO albums (id, title, album_artist) VALUES (1, 'An album', 'Someone')",
-                [],
-            )
-            .unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'An album', 'Someone')", []).unwrap();
         lib.db
             .execute(
                 "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id,
@@ -715,14 +645,7 @@ mod tests {
     /// What the planner knows about the library on a fresh row of numbers.
     fn believed_tracks(lib: &Library) -> i64 {
         use rusqlite::OptionalExtension;
-        lib.db
-            .query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| {
-                r.get::<_, String>(0)
-            })
-            .optional()
-            .unwrap_or(None)
-            .and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok()))
-            .unwrap_or(0)
+        lib.db.query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| r.get::<_, String>(0)).optional().unwrap_or(None).and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok())).unwrap_or(0)
     }
 
     #[test]
@@ -750,24 +673,14 @@ mod tests {
         lib.db.execute("UPDATE tracks SET present = 0 WHERE id = 1", []).expect("and it goes");
         lib.db.execute("UPDATE tracks SET present = 1 WHERE id = 1", []).expect("and comes back");
 
-        let rollups: i64 = lib
-            .db
-            .query_row("SELECT count(*) FROM album_rollup", [], |r| r.get(0))
-            .unwrap();
+        let rollups: i64 = lib.db.query_row("SELECT count(*) FROM album_rollup", [], |r| r.get(0)).unwrap();
         assert_eq!(rollups, 0, "no album, no rollup row");
         assert!(lib.check().unwrap().is_empty(), "and nothing points at nothing");
 
         // And a track that does have an album still gets counted.
-        lib.db
-            .execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'A', 'B')", [])
-            .unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'A', 'B')", []).unwrap();
         lib.db.execute("UPDATE tracks SET album_id = 1 WHERE id = 1", []).unwrap();
-        let (album, present): (i64, i64) = lib
-            .db
-            .query_row("SELECT album_id, present_tracks FROM album_rollup", [], |r| {
-                Ok((r.get(0)?, r.get(1)?))
-            })
-            .unwrap();
+        let (album, present): (i64, i64) = lib.db.query_row("SELECT album_id, present_tracks FROM album_rollup", [], |r| Ok((r.get(0)?, r.get(1)?))).unwrap();
         assert_eq!((album, present), (1, 1), "it moved into the album and was counted");
     }
 
@@ -792,11 +705,7 @@ mod tests {
         let tx = lib.db.unchecked_transaction().unwrap();
         lib.set_track_genres(1, &["Rock".into(), "Jazz".into()]).expect("inside a transaction");
         let playlist = lib.create_playlist(source, "Mine", "").unwrap();
-        lib.set_playlist_entries(
-            playlist,
-            &[PlaylistEntry { track_id: Some(1), external_id: "/a.flac".into() }],
-        )
-        .expect("inside a transaction");
+        lib.set_playlist_entries(playlist, &[PlaylistEntry { track_id: Some(1), source_id: Some(source), external_id: "/a.flac".into() }]).expect("inside a transaction");
         tx.commit().unwrap();
 
         assert_eq!(lib.track_genres(1).unwrap(), vec!["Jazz".to_string(), "Rock".to_string()]);
@@ -815,9 +724,7 @@ mod tests {
         // copies drift, so this drives all five after the migration has run.
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        lib.db
-            .execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'Kind of Blue', 'Miles')", [])
-            .unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist) VALUES (1, 'Kind of Blue', 'Miles')", []).unwrap();
         lib.db
             .execute(
                 "INSERT INTO tracks (id, source_id, external_id, title, artist, album_id,
@@ -869,8 +776,7 @@ mod tests {
             let db = rusqlite::Connection::open(&path).unwrap();
             crate::schema::apply_pragmas(&db).unwrap();
             crate::schema::stop_at(&db, 1);
-            db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", [])
-                .unwrap();
+            db.execute("INSERT INTO sources (provider, instance) VALUES ('local', 'default')", []).unwrap();
             db.execute(
                 "INSERT INTO tracks (id, source_id, external_id, title, added_at)
                  VALUES (1, 1, '/a.flac', 'What was there', 0)",
@@ -887,13 +793,7 @@ mod tests {
         assert!(backup.exists(), "and there is a way back");
 
         let kept = Library::open(&backup).unwrap();
-        assert_eq!(
-            kept.db
-                .query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0))
-                .unwrap(),
-            "What was there",
-            "the copy opens and holds what was in it"
-        );
+        assert_eq!(kept.db.query_row("SELECT title FROM tracks WHERE id = 1", [], |r| r.get::<_, String>(0)).unwrap(), "What was there", "the copy opens and holds what was in it");
 
         let _ = std::fs::remove_dir_all(&dir);
     }
@@ -906,10 +806,7 @@ mod tests {
         drop(Library::open(&path).unwrap());
         // Opening it again changes nothing, so there is nothing to keep.
         drop(Library::open(&path).unwrap());
-        assert!(
-            !crate::schema::backup_path(&path).exists(),
-            "a copy per open would be half a second and a second library on disk"
-        );
+        assert!(!crate::schema::backup_path(&path).exists(), "a copy per open would be half a second and a second library on disk");
         let _ = std::fs::remove_dir_all(&dir);
     }
 
@@ -1047,20 +944,15 @@ mod tests {
         assert_eq!(lib.roots().unwrap().len(), 1);
     }
 
-
     #[test]
     fn search_looks_at_the_genre_too() {
         let lib = sample_library();
         // Album 1's track is blues; the others are not.
-        let id: i64 = lib
-            .db
-            .query_row("SELECT id FROM tracks WHERE album_id = 1", [], |r| r.get(0))
-            .unwrap();
+        let id: i64 = lib.db.query_row("SELECT id FROM tracks WHERE album_id = 1", [], |r| r.get(0)).unwrap();
         lib.set_track_genres(id, &["Delta Blues".to_string()]).unwrap();
 
         let found = lib.search("blues", 50).unwrap();
         assert_eq!(found.len(), 1, "it came out by its genre, not by its title");
         assert_eq!(found[0].id, id);
     }
-
 }
