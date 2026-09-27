@@ -16,12 +16,11 @@ Item {
                     + Metrics.cardTextGap + Metrics.cardTextHeight
     visible: model && model.albums > 0
 
-    Text {
+    // The Home's section title, which is the ceiling for any title in a page.
+    SectionHeader {
         id: heading
-        text: root.title
-        font.pointSize: Type.titleSmall
-        font.weight: Type.bold
-        color: Theme.color.textPrimary
+        width: parent.width
+        title: root.title
     }
 
     ListView {

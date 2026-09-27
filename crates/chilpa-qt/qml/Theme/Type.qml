@@ -10,8 +10,11 @@ QtObject {
 
     readonly property real display: 39 * pointsPerPixel
     readonly property real title: 28 * pointsPerPixel
-    readonly property real titleSmall: 36 * pointsPerPixel
+    // The ceiling for any title inside a page -- a shelf, a section, a
+    // dialog -- is the Home's "Recently played": `section`. Only a page's
+    // own heading (`title`) and a record's hero go past it.
     readonly property real section: 19 * pointsPerPixel
+    readonly property real titleSmall: section
     readonly property real heroTitle: 18 * pointsPerPixel
     readonly property real bestResult: 15 * pointsPerPixel
     readonly property real body: 13 * pointsPerPixel
