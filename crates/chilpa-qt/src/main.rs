@@ -103,4 +103,17 @@ fn main() {
     if let Some(app) = app.as_mut() {
         app.exec();
     }
+
+    // The window is gone, so the process ends now, whatever is still
+    // running: a process that outlives its window is one nobody can see or
+    // close. What is left gets a moment to finish in order; past that, what
+    // was being waited for is said and the process leaves without it.
+    std::thread::spawn(|| {
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        eprintln!("chilpa: closing took more than 3 s (the player, the card or a request still pending); leaving without waiting");
+        std::process::exit(0);
+    });
+    drop(engine);
+    app::shutdown();
+    std::process::exit(0);
 }

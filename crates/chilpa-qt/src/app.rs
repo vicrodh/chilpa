@@ -27,6 +27,15 @@ pub fn with<R>(f: impl FnOnce(&mut chilpa_api::Chilpa) -> R) -> R {
     })
 }
 
+/// Lets the facade go while this thread is still whole: the queue is
+/// written down, the player stops and the card goes back. Left to the end
+/// of the process, that ran among the thread's destructors, where nothing
+/// bounds how long it takes.
+pub fn shutdown() {
+    let api = API.with(|cell| cell.borrow_mut().take());
+    drop(api);
+}
+
 /// A msgid in the current language. The shorthand every model uses for the
 /// labels it builds on this side.
 pub fn t(msgid: &str) -> String {
