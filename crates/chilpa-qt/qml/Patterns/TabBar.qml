@@ -5,8 +5,8 @@ import "../Primitives"
 import "../Components"
 
 // The strip above the content (design/02 3): with the sidebar closed, a way
-// to show it and its search; history, tabs, density and, outside macOS, the
-// window's own controls. Its empty space moves the window, and a double
+// to show it; history and tabs; the search, centered and always there;
+// density and, outside macOS, the window's own controls. Its empty space moves the window, and a double
 // click maximizes it.
 Item {
     id: bar
@@ -25,6 +25,9 @@ Item {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.topMargin: Metrics.tabBarTop
+        // The tabs stop short of the search; what does not fit is cut.
+        width: Math.min(implicitWidth, search.x - Metrics.gap12)
+        clip: true
         spacing: Metrics.gap4
 
         IconButton {
@@ -32,14 +35,6 @@ Item {
             tip: I18n.tr("Show the sidebar", I18n.rev)
             glyph: Icons.layoutSidebarLeftExpand
             onClicked: SettingsModel.sidebarMode = "open"
-        }
-        // With the sidebar closed, its search lives here, results below it.
-        SearchBox {
-            visible: SettingsModel.sidebarMode === "closed"
-            width: Metrics.screenSearch
-            active: visible
-            flyoutY: height + Metrics.gap10
-            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
         }
         IconButton {
             tip: I18n.tr("Back", I18n.rev)
@@ -75,6 +70,18 @@ Item {
             glyph: Icons.plus
             onClicked: Navigation.open("library", 0)
         }
+    }
+
+    // Centered over the content, whatever screen is open; the results open
+    // under it.
+    SearchBox {
+        id: search
+        x: (bar.width - width) / 2 // derived: centered over the content
+        y: Metrics.tabBarTop
+        width: Math.min(Metrics.topSearch, bar.width / 3) // derived: a third of the bar at most
+        flyoutX: (width - Metrics.searchFlyout) / 2 // derived: centered under the field
+        flyoutY: height + Metrics.gap6
+        room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
     }
 
     Row {

@@ -14,7 +14,9 @@ QtObject {
     readonly property int windowGrip: 6
 
     // Spacing.
-    readonly property int spaceWindow: 10
+    // The window's margin on its four sides: 6, which covers the rounded
+    // corners of a macOS window.
+    readonly property int spaceWindow: 6
     readonly property int contentX: 28
     readonly property int contentTop: 14
     readonly property int contentBottom: 120
@@ -110,8 +112,8 @@ QtObject {
     readonly property real notchStrong: 0.6
 
     // Tab bar (02-layout.md 3).
-    readonly property int tabBarHeight: 52
-    readonly property int tabBarTop: 10
+    readonly property int tabBarHeight: 42
+    readonly property int tabBarTop: 6
     readonly property int tabHeight: 30
     readonly property int tabMaxWidth: 180
     readonly property int tabPadLeft: 11
@@ -122,7 +124,10 @@ QtObject {
 
     // Player bar (02-layout.md 7).
     readonly property int playerHeight: 62
-    readonly property int playerBottom: 14
+    // The same margin as the sidebars'.
+    readonly property int playerBottom: spaceWindow
+    // How long the mouse is still before the bar steps away, when asked to.
+    readonly property int playerIdle: 10000
     readonly property int playerMaxWidth: 980
     readonly property int playerInset: 16
     readonly property int playerPadLeft: 14
@@ -242,6 +247,8 @@ QtObject {
     readonly property int searchAvatar: 52
     // The filter field of a screen that searches itself (design/04 11).
     readonly property int screenSearch: 200
+    // The search at the top of every screen.
+    readonly property int topSearch: 320
     readonly property int sourcesPopoverWidth: 340
     readonly property int sourceFilterRow: 44
     readonly property int playlistModalWidth: 520
