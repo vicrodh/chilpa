@@ -37,7 +37,7 @@ Popup {
     }
     contentItem: Column {
         spacing: Metrics.gap12
-        Text { text: I18n.tr("Edit playlist", I18n.rev); font.pointSize: Type.titleSm; font.weight: Type.bold; color: Theme.color.textPrimary }
+        Text { text: I18n.tr("Edit playlist", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
         TextField { id: nameField; width: parent.width; placeholder: I18n.tr("Playlist name", I18n.rev) }
         TextField { id: descriptionField; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
         TextField { id: tagsField; width: parent.width; placeholder: I18n.tr("Tags, separated by commas", I18n.rev) }

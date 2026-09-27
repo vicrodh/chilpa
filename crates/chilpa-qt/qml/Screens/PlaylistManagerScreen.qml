@@ -244,7 +244,7 @@ Item {
         background: Rectangle { radius: Metrics.radiusPanel; color: Theme.color.surfaceRaised; border.width: 1; border.color: Theme.color.strokeHairline }
         contentItem: Column {
             spacing: Metrics.gap12
-            Text { text: folderDialog.folderId > 0 ? I18n.tr("Edit folder", I18n.rev) : I18n.tr("New folder", I18n.rev); font.pointSize: Type.titleSm; font.weight: Type.bold; color: Theme.color.textPrimary }
+            Text { text: folderDialog.folderId > 0 ? I18n.tr("Edit folder", I18n.rev) : I18n.tr("New folder", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
             TextField { id: folderName; width: parent.width; placeholder: I18n.tr("Folder name", I18n.rev) }
             Row {
                 spacing: Metrics.gap8

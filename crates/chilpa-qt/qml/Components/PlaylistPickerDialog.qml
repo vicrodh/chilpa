@@ -49,7 +49,7 @@ Popup {
                 width: parent.width - close.width
                 text: dialog.creating ? I18n.tr("New playlist", I18n.rev)
                                       : I18n.tr("Add to playlist", I18n.rev)
-                font.pointSize: Type.titleSm
+                font.pointSize: Type.titleSmall
                 font.weight: Type.bold
                 color: Theme.color.textPrimary
             }
