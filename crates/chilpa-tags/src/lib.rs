@@ -8,8 +8,8 @@
 //! 2. **The date is kept whole.** If the file says `2019-03-15`, that is what
 //!    there is; QBZ truncated it to the year even when nothing had changed.
 //!
-//! This crate only reads. Writing tags is another story and arrives with the
-//! editor.
+//! The scan reads through `read`. What the metadata editor reads and writes
+//! is in `edit`.
 
 use chilpa_models::{ArtworkRef, Track, TrackRef};
 use lofty::file::{AudioFile, TaggedFileExt};
@@ -21,6 +21,7 @@ use std::time::Duration;
 
 mod dff;
 mod dsf;
+pub mod edit;
 
 #[derive(Debug)]
 pub enum TagError {

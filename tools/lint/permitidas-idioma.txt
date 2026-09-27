@@ -451,3 +451,9 @@ CatmullRom
 catmull
 rom
 powi
+# lofty's names for the tags of AIFF, MP4 and Ogg files.
+aiff
+ilst
+vorbis
+# The release database the metadata editor looks records up in.
+discogs
