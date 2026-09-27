@@ -9,8 +9,13 @@ Rectangle {
     property alias text: input.text
     property string placeholder
     property bool secret: false
+    // True while the field has the keyboard, so a value that changes
+    // underneath is not written over what is being typed.
+    readonly property alias editing: input.activeFocus
 
     signal accepted()
+    // Enter, or the focus leaving the field.
+    signal editingFinished()
 
     function focusInput() {
         input.forceActiveFocus()
@@ -36,6 +41,10 @@ Rectangle {
         color: Theme.color.textPrimary
         selectionColor: Theme.color.rowSelected
         onAccepted: root.accepted()
+        onEditingFinished: root.editingFinished()
+        // A long value set from outside shows its start, not its end.
+        onTextChanged: if (!activeFocus) cursorPosition = 0
+        onActiveFocusChanged: if (!activeFocus) cursorPosition = 0
 
         Text {
             anchors.fill: parent

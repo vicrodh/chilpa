@@ -22,6 +22,7 @@ Rectangle {
 
     implicitWidth: row.implicitWidth + (ghost ? Metrics.gap8 : Metrics.pillPadding) * 2 // derived: padding on both sides
     implicitHeight: ghost ? Metrics.button28 : Metrics.pillHeight
+    opacity: enabled ? 1 : Metrics.disabledOpacity
     radius: ghost ? Metrics.radiusControl : height / 2 // derived: a pill
     color: ghost ? (area.containsMouse ? Theme.color.stateHover : "transparent")
          : !primary ? (area.containsMouse ? Theme.color.stateSelected : Theme.color.fillField)
