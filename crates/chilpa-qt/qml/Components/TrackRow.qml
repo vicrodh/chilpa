@@ -27,6 +27,7 @@ Item {
 
     property TrackColumns cols
     property bool hovered: false
+    property bool selectionMode: false
 
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
@@ -63,7 +64,7 @@ Item {
             x: row.cols.indexX
             width: row.cols.index - Metrics.gap8
             anchors.verticalCenter: parent.verticalCenter
-            visible: !row.playing
+            visible: !row.playing && !row.selectionMode
             text: row.number > 0 ? row.number : ""
             horizontalAlignment: Text.AlignRight
             font.pointSize: Type.small
@@ -74,7 +75,17 @@ Item {
         PlayingIndicator {
             x: row.cols.indexX + row.cols.index - Metrics.gap8 - width
             anchors.verticalCenter: parent.verticalCenter
-            visible: row.playing
+            visible: row.playing && !row.selectionMode
+        }
+
+        Icon {
+            x: row.cols.indexX + (row.cols.index - width) / 2
+            anchors.verticalCenter: parent.verticalCenter
+            visible: row.selectionMode
+            glyph: row.selected ? Icons.squareCheckFilled : Icons.square
+            filled: row.selected
+            size: Metrics.iconMd
+            color: row.selected ? Theme.color.accent : Theme.color.textTertiary
         }
 
         // Only a rich row with covers builds one: a compact row carries no

@@ -66,6 +66,8 @@ pub mod qobject {
         #[qinvokable]
         fn subtitle(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
+        fn year(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
+        #[qinvokable]
         fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
@@ -223,6 +225,10 @@ impl qobject::AlbumGridModel {
 
     pub fn subtitle(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.artist)).unwrap_or_default()
+    }
+
+    pub fn year(&self, index: i32, _rev: i32) -> QString {
+        self.rust().get(index, |a| a.year.map(|year| QString::from(&year.to_string())).unwrap_or_default()).unwrap_or_default()
     }
 
     pub fn art(&self, index: i32, _rev: i32) -> QUrl {

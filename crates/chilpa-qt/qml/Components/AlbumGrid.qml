@@ -70,7 +70,7 @@ Item {
             required property int span
 
             width: grid.width
-            height: grid.rowHeight + (quick.active ? Metrics.gridGap + quick.height : 0)
+            height: grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
 
             Repeater {
                 // A fixed count: a recycled row keeps its cards and only
@@ -88,6 +88,7 @@ Item {
                     albumId: visible ? grid.model.albumId(at, rev) : 0
                     title: visible ? grid.model.title(at, rev) : ""
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
+                    year: visible ? grid.model.year(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
                     tint: at
                     round: grid.round
@@ -108,7 +109,7 @@ Item {
             Loader {
                 id: quick
 
-                y: grid.rowHeight + Metrics.gridGap
+                y: grid.rowHeight + Metrics.gap8
                 x: Metrics.cardRing
                 width: grid.layoutWidth
                 active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span

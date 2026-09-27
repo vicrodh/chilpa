@@ -17,6 +17,7 @@ QtObject {
     readonly property string arrowsSort: "\ueb5a"
     readonly property string books: "\ueff2"
     readonly property string broadcast: "\uf1e9"
+    readonly property string browserMaximize: "\u100b0"
     readonly property string browserPlus: "\uefd7"
     readonly property string calendar: "\uea53"
     readonly property string cast: "\uea56"

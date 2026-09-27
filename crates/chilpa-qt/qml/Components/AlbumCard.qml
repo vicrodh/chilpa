@@ -13,6 +13,7 @@ Item {
     property int albumId
     property string title
     property string subtitle
+    property string year
     property url art
     property int tint: 0
     // An artist: a round portrait and the text centered under it
@@ -74,6 +75,7 @@ Item {
         active: hover.hovered && !card.round
         sourceComponent: AlbumCardOverlay {
             albumId: card.albumId
+            year: card.year
             selected: card.selected
             expanded: card.expanded
             canExpand: card.canExpand

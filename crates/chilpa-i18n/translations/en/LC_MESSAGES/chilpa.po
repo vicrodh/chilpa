@@ -785,6 +785,9 @@ msgstr ""
 msgid "Play the CD"
 msgstr ""
 
+msgid "Play this group"
+msgstr ""
+
 msgid "Playback"
 msgstr ""
 
@@ -834,6 +837,9 @@ msgid "Queue and playlist actions"
 msgstr ""
 
 msgid "Queue options"
+msgstr ""
+
+msgid "Queue this group"
 msgstr ""
 
 msgid "Queue · {}"

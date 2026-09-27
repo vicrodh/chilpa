@@ -10,6 +10,7 @@ Rectangle {
     id: overlay
 
     property int albumId
+    property string year
     property bool selected
     property bool expanded
     // Only where a grid can open one under the row (ADR-0007).
@@ -23,25 +24,38 @@ Rectangle {
     radius: Metrics.radiusCard
     color: Theme.color.overlayScrim
 
-    Item {
+    Row {
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: Metrics.overlayPad
-        width: Metrics.overlayCheck
-        height: Metrics.overlayCheck
+        spacing: Metrics.gap6
 
-        Icon {
-            anchors.centerIn: parent
-            glyph: overlay.selected ? Icons.circleCheckFilled : Icons.circle
-            filled: overlay.selected
-            size: Metrics.overlayCheckIcon
-            color: Theme.color.textOnAccent
+        Item {
+            id: selector
+            width: Metrics.overlayCheck
+            height: Metrics.overlayCheck
+
+            Icon {
+                anchors.centerIn: parent
+                glyph: overlay.selected ? Icons.circleCheckFilled : Icons.circle
+                filled: overlay.selected
+                size: Metrics.overlayCheckIcon
+                color: Theme.color.textOnAccent
+            }
+            MouseArea {
+                anchors.fill: parent
+                hoverEnabled: true
+                onClicked: overlay.select()
+                onContainsMouseChanged: containsMouse ? TipState.show(I18n.tr("Select", I18n.rev), selector) : TipState.hide(selector)
+            }
         }
-        MouseArea {
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: overlay.select()
-            onContainsMouseChanged: containsMouse ? TipState.show(I18n.tr("Select", I18n.rev), parent) : TipState.hide(parent)
+        Text {
+            visible: overlay.year !== ""
+            anchors.verticalCenter: parent.verticalCenter
+            text: overlay.year
+            font.pointSize: Type.meta
+            font.weight: Type.semibold
+            color: Theme.color.textOnAccent
         }
     }
 
