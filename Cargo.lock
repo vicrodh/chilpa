@@ -558,6 +558,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "chilpa-meta"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "chilpa-models"
 version = "0.0.0"
 

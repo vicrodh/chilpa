@@ -30,6 +30,7 @@ ENGINE = [
     "chilpa-analysis",
     "chilpa-i18n",
     "chilpa-auth",
+    "chilpa-meta",
     "chilpa-secrets",
     "chilpa-stream",
     "chilpa-decode",
