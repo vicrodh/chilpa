@@ -111,7 +111,8 @@ Item {
                 }
                 IconButton {
                     round: true
-                    glyph: Icons.listDetails
+                    glyph: Lucide.listEnd
+                    iconFamily: Lucide.font
                     tip: I18n.tr("Add to queue", I18n.rev)
                     onClicked: tracks.queueAll()
                 }

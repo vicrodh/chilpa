@@ -9,6 +9,7 @@ Rectangle {
 
     property string text
     property string glyph
+    property string iconFamily
     // A glyph from the filled font: play, pause, a filled heart.
     property bool filled: false
     // "primary", "secondary" or "ghost".
@@ -37,6 +38,7 @@ Rectangle {
             visible: root.glyph !== ""
             glyph: root.glyph
             filled: root.filled
+            iconFamily: root.iconFamily
             size: Metrics.iconSm
             color: root.primary ? Theme.color.textOnAccent : root.ghost ? Theme.color.textSecondary : Theme.color.textPrimary
         }

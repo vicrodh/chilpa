@@ -66,12 +66,14 @@ Item {
             onClicked: AlbumActions.play(0, false)
         }
         IconButton {
-            glyph: Icons.listDetails
+            glyph: Lucide.listEnd
+            iconFamily: Lucide.font
             tip: I18n.tr("Add to queue", I18n.rev)
             onClicked: AlbumActions.queue(0)
         }
         IconButton {
-            glyph: Icons.playerTrackNext
+            glyph: Lucide.listStart
+            iconFamily: Lucide.font
             tip: I18n.tr("Play next", I18n.rev)
             onClicked: AlbumActions.playNext(0)
         }

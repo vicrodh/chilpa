@@ -34,8 +34,8 @@ Menu {
         const all = model.kind === "queue" ? queued : [
             { text: I18n.trCount("{} track", "{} tracks", model.selectedCount, I18n.rev), note: true },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
-            { text: I18n.tr("Play next", I18n.rev), act: "next" },
-            { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
+            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
+            { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
             { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
             { text: I18n.tr("Remove from playlist", I18n.rev), act: "unlist" },
             { text: I18n.tr("Move up", I18n.rev), act: "up", hint: "Alt ↑" },

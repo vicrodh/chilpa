@@ -8,6 +8,7 @@ Item {
     required property string tip
     property string glyph
     property bool filled: false
+    property string iconFamily
     property int size: Metrics.button28
     property int iconSize: size <= Metrics.button26 ? Metrics.iconSm : Metrics.iconMd
     property bool checked: false
@@ -36,6 +37,7 @@ Item {
         anchors.centerIn: parent
         glyph: root.glyph
         filled: root.filled
+        iconFamily: root.iconFamily
         size: root.iconSize
         color: !root.enabled ? Theme.color.textTertiary
              : root.tone === "solid" ? Theme.color.textOnAccent

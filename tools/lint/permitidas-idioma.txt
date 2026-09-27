@@ -442,3 +442,5 @@ reorderable
 writable
 # JavaScript's stable JSON serialization boundary for QML-to-Rust arrays.
 stringify
+# The icon family that supplies queue-placement glyphs missing from Tabler.
+lucide

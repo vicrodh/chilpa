@@ -1,0 +1,4 @@
+# Lucide glyphs used where Tabler has no semantic equivalent.
+list-end
+list-plus
+list-start

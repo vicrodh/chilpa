@@ -30,8 +30,8 @@ Menu {
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
-            { text: I18n.tr("Play next", I18n.rev), act: "next" },
-            { text: I18n.tr("Add to queue", I18n.rev), act: "queue" },
+            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
+            { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
             { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
             { separator: true, when: one },
             { text: I18n.tr("Open album", I18n.rev), act: "open", when: one },
