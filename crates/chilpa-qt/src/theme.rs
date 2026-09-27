@@ -49,6 +49,7 @@ pub const TOKENS: &[&str] = &[
     "state.stripe", "fill.field", "row.playing", "row.selected", "accent", "accent.hover",
     "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
     "overlay.button", "overlay.ink",
+    "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
 ];
 
 /// The themes that ship inside the binary.

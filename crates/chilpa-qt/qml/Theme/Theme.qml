@@ -42,6 +42,10 @@ QtObject {
         readonly property color overlayScrim: ThemeModel.color("overlay.scrim", theme.rev)
         readonly property color overlayButton: ThemeModel.color("overlay.button", theme.rev)
         readonly property color overlayInk: ThemeModel.color("overlay.ink", theme.rev)
+        readonly property color albumHeaderBase: ThemeModel.color("albumHeader.base", theme.rev)
+        readonly property color albumHeaderDim: ThemeModel.color("albumHeader.dim", theme.rev)
+        readonly property color albumHeaderTop: ThemeModel.color("albumHeader.top", theme.rev)
+        readonly property color albumHeaderBottom: ThemeModel.color("albumHeader.bottom", theme.rev)
 
         // The one elevation, in two layers, and the soft one for panels.
         readonly property color shadowElevated: ThemeModel.shadowColor("elevated", 0, theme.rev)

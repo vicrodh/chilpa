@@ -1,11 +1,7 @@
 //! The desktop shell.
 //!
-//! Rust owns the state and QML draws it (ADR-001). The QML tree under `qml/`
-//! is layered -- Theme, Primitives, Components, Patterns, Screens, then the
-//! window -- and `tools/lint` checks the layering, the per-file budgets and
-//! that no color or measure is written outside the theme.
-//!
-//! This crate is the ONLY one that may hold Qt types.
+//! Rust owns state and layered QML draws it (ADR-001). This is the only crate
+//! that may hold Qt types.
 
 mod app;
 mod bridge;
@@ -15,13 +11,11 @@ mod paths;
 mod registry;
 mod theme;
 mod worker;
-
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 // Only Linux has a desktop file to be named after, and only there is the
 // name what makes the window pick up its icon.
 #[cfg(target_os = "linux")]
 use cxx_qt_lib::QString;
-
 unsafe extern "C" {
     /// Registers a font from the resources as the application's default.
     /// See `fonts.cpp`.
@@ -33,13 +27,8 @@ unsafe extern "C" {
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
 }
 
-/// Makes or finds a cover's derivative and writes its path, NUL-terminated,
-/// into `out`. Called by `covers.cpp` from its own pool, never the window's
-/// thread.
-///
-/// # Safety
-///
-/// `path` is a NUL-terminated string and `out` has room for `capacity` bytes.
+/// Makes a derivative off the UI thread. The C strings are valid and `out`
+/// has room for `capacity` bytes.
 #[no_mangle]
 pub unsafe extern "C" fn chilpa_cover(
     path: *const std::ffi::c_char,
@@ -48,7 +37,15 @@ pub unsafe extern "C" fn chilpa_cover(
     capacity: std::ffi::c_ulong,
 ) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
-    let Some(made) = chilpa_api::cover_derivative(std::path::Path::new(path), size) else { return false };
+    write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity)
+}
+#[no_mangle]
+pub unsafe extern "C" fn chilpa_atmosphere(path: *const std::ffi::c_char, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
+    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
+    write_path(chilpa_api::header_atmosphere(std::path::Path::new(path)), out, capacity)
+}
+fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
+    let Some(made) = made else { return false };
     let bytes = made.to_string_lossy().into_owned().into_bytes();
     if bytes.len() + 1 > capacity as usize {
         return false;

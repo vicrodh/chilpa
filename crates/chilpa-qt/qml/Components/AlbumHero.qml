@@ -11,6 +11,7 @@ Item {
     property AlbumDetailModel detail
     property bool selecting: false
     property bool favorite: false
+    property bool contrasted: false
 
     signal play()
     signal shuffle()
@@ -42,7 +43,8 @@ Item {
             font.pointSize: Type.micro
             font.weight: Type.semibold
             font.letterSpacing: Type.labelTracking
-            color: Theme.color.textSecondary
+            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary
+            opacity: hero.contrasted ? 0.78 : 1
         }
         Text {
             width: parent.width
@@ -51,13 +53,15 @@ Item {
             font.pointSize: Type.display
             font.weight: Type.bold
             font.letterSpacing: Type.displayTracking
-            color: Theme.color.textPrimary
+            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
         Text {
             text: hero.detail.artist
             font.pointSize: Type.body
             font.weight: Type.medium
-            color: artistHover.hovered ? Theme.color.accentHover : Theme.color.textPrimary
+            color: hero.contrasted ? Theme.color.textOnAccent
+                                   : artistHover.hovered ? Theme.color.accentHover : Theme.color.textPrimary
+            opacity: !hero.contrasted || artistHover.hovered ? 1 : 0.88
 
             HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: Navigation.openArtist(hero.detail.artist) }
@@ -67,12 +71,13 @@ Item {
             text: hero.detail.meta
             elide: Text.ElideRight
             font.pointSize: Type.row
-            color: Theme.color.textSecondary
+            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary
+            opacity: hero.contrasted ? 0.82 : 1
         }
 
         Item { width: 1; height: Metrics.gap8 }
 
-        Rating {}
+        Rating { baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary }
 
         Row {
             spacing: Metrics.gap8
@@ -92,7 +97,8 @@ Item {
                 round: true
                 glyph: hero.favorite ? Icons.heartFilled : Icons.heart
                 filled: hero.favorite
-                tone: hero.favorite ? "accent" : "secondary"
+                checked: hero.favorite
+                tone: hero.contrasted ? "overlay" : hero.favorite ? "accent" : "secondary"
                 tip: hero.favorite ? I18n.tr("Remove from favorites", I18n.rev)
                                    : I18n.tr("Add to favorites", I18n.rev)
                 onClicked: hero.favoriteToggle()
@@ -100,7 +106,8 @@ Item {
             IconButton {
                 round: true
                 glyph: Icons.checkbox
-                tone: hero.selecting ? "accent" : "secondary"
+                checked: hero.selecting
+                tone: hero.contrasted ? "overlay" : hero.selecting ? "accent" : "secondary"
                 tip: hero.selecting ? I18n.tr("Finish selecting", I18n.rev)
                                     : I18n.tr("Select tracks", I18n.rev)
                 onClicked: hero.selectToggle()
@@ -109,6 +116,7 @@ Item {
                 id: contextButton
                 round: true
                 glyph: Icons.dots
+                tone: hero.contrasted ? "overlay" : "secondary"
                 tip: I18n.tr("Album actions", I18n.rev)
                 onClicked: {
                     const at = contextButton.mapToItem(hero, contextButton.width - Metrics.menuWidth,

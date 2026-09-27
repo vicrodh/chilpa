@@ -444,3 +444,10 @@ writable
 stringify
 # The icon family that supplies queue-placement glyphs missing from Tabler.
 lucide
+# image crate and floating-point API names used by the header atmosphere.
+imageops
+catmullrom
+CatmullRom
+catmull
+rom
+powi

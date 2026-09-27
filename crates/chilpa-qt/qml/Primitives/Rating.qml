@@ -8,6 +8,7 @@ Item {
 
     property int value: 0
     property bool interactive: true
+    property color baseColor: Theme.color.textTertiary
     signal rated(int value)
 
     readonly property int preview: area.containsMouse
@@ -25,7 +26,7 @@ Item {
         text: root.emptyStars
         font.family: Icons.outline
         font.pixelSize: Metrics.ratingStar
-        color: Theme.color.textTertiary
+        color: root.baseColor
     }
     Item {
         width: parent.width * root.preview / Metrics.ratingMaximum

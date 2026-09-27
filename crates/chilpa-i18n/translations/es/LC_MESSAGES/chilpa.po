@@ -127,6 +127,9 @@ msgstr "Álbum"
 msgid "Album actions"
 msgstr "Acciones del álbum"
 
+msgid "Album header"
+msgstr "Encabezado del álbum"
+
 msgid "Album page"
 msgstr "Página del álbum"
 
@@ -266,6 +269,9 @@ msgstr "Cerrar pestaña"
 
 msgid "Collapse sidebar"
 msgstr "Contraer barra lateral"
+
+msgid "Colors"
+msgstr "Colores"
 
 msgid "Compact"
 msgstr "Compacta"
@@ -487,6 +493,12 @@ msgstr "De esta fuente"
 
 msgid "From this week"
 msgstr "De esta semana"
+
+msgid "Full"
+msgstr "Completo"
+
+msgid "Full atmosphere, artwork colors only, or no derived background."
+msgstr "Atmósfera completa, sólo colores de la portada o sin fondo derivado."
 
 msgid "Gapless"
 msgstr "Gapless"
@@ -712,6 +724,9 @@ msgstr "Sonando"
 
 msgid "Number of tracks"
 msgstr "Cantidad de pistas"
+
+msgid "Off"
+msgstr "Apagado"
 
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."

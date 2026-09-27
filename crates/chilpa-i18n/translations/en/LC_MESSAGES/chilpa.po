@@ -127,6 +127,9 @@ msgstr ""
 msgid "Album actions"
 msgstr ""
 
+msgid "Album header"
+msgstr ""
+
 msgid "Album page"
 msgstr ""
 
@@ -265,6 +268,9 @@ msgid "Close tab"
 msgstr ""
 
 msgid "Collapse sidebar"
+msgstr ""
+
+msgid "Colors"
 msgstr ""
 
 msgid "Compact"
@@ -486,6 +492,12 @@ msgid "From this source"
 msgstr ""
 
 msgid "From this week"
+msgstr ""
+
+msgid "Full"
+msgstr ""
+
+msgid "Full atmosphere, artwork colors only, or no derived background."
 msgstr ""
 
 msgid "Gapless"
@@ -711,6 +723,9 @@ msgid "Now playing"
 msgstr ""
 
 msgid "Number of tracks"
+msgstr ""
+
+msgid "Off"
 msgstr ""
 
 msgid "On the sidebar's destinations."
