@@ -19,15 +19,18 @@ Item {
     readonly property int playlistCount: rows.length - folderCount
     PlaylistPicker { id: createPicker }
 
+    function artworkUrl(value) {
+        return !value || value.indexOf("://") >= 0 ? (value || "") : "file://" + value
+    }
     function reload() {
         const raw = JSON.parse(Playlists.managerJson(search.text, filterButton.value,
                                                      sort.value, direction.checked, folderId))
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, detail: entry.detail,
             source: entry.source, sourceName: entry.source_name,
-            artwork: entry.artwork_path, cover1: entry.covers[0] || "",
-            cover2: entry.covers[1] || "", cover3: entry.covers[2] || "",
-            cover4: entry.covers[3] || "", colorName: entry.color,
+            artwork: artworkUrl(entry.artwork_path), cover1: artworkUrl(entry.covers[0]),
+            cover2: artworkUrl(entry.covers[1]), cover3: artworkUrl(entry.covers[2]),
+            cover4: artworkUrl(entry.covers[3]), colorName: entry.color,
             tracks: entry.track_count, plays: entry.play_count,
             folderId: entry.folder_id || 0, local: entry.local,
             visibleInSidebar: entry.visible_sidebar}))
@@ -54,7 +57,7 @@ Item {
             const from = ids.indexOf(at.entryId), to = from + by
             if (to < 0 || to >= ids.length) return
             const moved = ids.splice(from, 1)[0]; ids.splice(to, 0, moved)
-            Playlists.setCustomOrder(ids)
+            Playlists.setCustomOrder(JSON.stringify(ids))
         }
     }
 
@@ -237,7 +240,7 @@ Item {
             open()
             Qt.callLater(folderName.focusInput)
         }
-        contentItem: Column {
+        Column {
             spacing: Metrics.gap12
             Text { text: folderDialog.folderId > 0 ? I18n.tr("Edit folder", I18n.rev) : I18n.tr("New folder", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
             TextField { id: folderName; width: parent.width; placeholder: I18n.tr("Folder name", I18n.rev) }

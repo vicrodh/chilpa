@@ -29,6 +29,8 @@ QtObject {
     readonly property int gap12: 12
     readonly property int gap14: 14
     readonly property int gap16: 16
+    readonly property int modalInset: 20
+    readonly property int modalInsets: 40
     readonly property int gap22: 22
 
     // Radii.

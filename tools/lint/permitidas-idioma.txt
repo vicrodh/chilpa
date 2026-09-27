@@ -440,3 +440,5 @@ frac
 # Playlist UI vocabulary used as API/property names.
 reorderable
 writable
+# JavaScript's stable JSON serialization boundary for QML-to-Rust arrays.
+stringify

@@ -74,16 +74,16 @@ pub mod qobject {
 
         #[qinvokable] fn catalog_json(self: &Playlists, query: &QString) -> QString;
         #[qinvokable] fn manager_json(self: &Playlists, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString;
-        #[qinvokable] fn picker_json(self: &Playlists, track_ids: Vec<i64>, query: &QString) -> QString;
-        #[qinvokable] fn add_track_ids(self: Pin<&mut Playlists>, playlist_id: i64, track_ids: Vec<i64>) -> QString;
-        #[qinvokable] fn create_full(self: Pin<&mut Playlists>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids: Vec<i64>) -> i64;
+        #[qinvokable] fn picker_json(self: &Playlists, track_ids_json: &QString, query: &QString) -> QString;
+        #[qinvokable] fn add_track_ids(self: Pin<&mut Playlists>, playlist_id: i64, track_ids_json: &QString) -> QString;
+        #[qinvokable] fn create_full(self: Pin<&mut Playlists>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids_json: &QString) -> i64;
         #[qinvokable] fn choose_artwork(self: &Playlists) -> QString;
         #[qinvokable] fn create_folder(self: Pin<&mut Playlists>, name: &QString, color: &QString) -> i64;
         #[qinvokable] fn update_folder(self: Pin<&mut Playlists>, id: i64, name: &QString, color: &QString);
         #[qinvokable] fn remove_folder(self: Pin<&mut Playlists>, id: i64);
         #[qinvokable] fn move_to_folder(self: Pin<&mut Playlists>, id: i64, folder_id: i64);
         #[qinvokable] fn set_visible(self: Pin<&mut Playlists>, id: i64, visible: bool);
-        #[qinvokable] fn set_custom_order(self: Pin<&mut Playlists>, ids: Vec<i64>);
+        #[qinvokable] fn set_custom_order(self: Pin<&mut Playlists>, ids_json: &QString);
     }
 
     impl cxx_qt::Threading for Playlists {}
@@ -257,17 +257,20 @@ impl qobject::Playlists {
         QString::from(&serde_json::to_string(&rows).unwrap_or_else(|_| "[]".into()))
     }
 
-    pub fn picker_json(&self, track_ids: Vec<i64>, query: &QString) -> QString {
+    pub fn picker_json(&self, track_ids_json: &QString, query: &QString) -> QString {
+        let track_ids = ids_from_json(track_ids_json);
         QString::from(&serde_json::to_string(&app::with(|api| api.playlist_targets(&track_ids, &query.to_string()))).unwrap_or_else(|_| "[]".into()))
     }
 
-    pub fn add_track_ids(mut self: Pin<&mut Self>, playlist_id: i64, track_ids: Vec<i64>) -> QString {
+    pub fn add_track_ids(mut self: Pin<&mut Self>, playlist_id: i64, track_ids_json: &QString) -> QString {
+        let track_ids = ids_from_json(track_ids_json);
         let result = app::with(|api| api.add_track_ids_to_playlist(playlist_id, &track_ids));
         if result.added > 0 { self.as_mut().changed(); }
         QString::from(&serde_json::to_string(&result).unwrap_or_else(|_| "{}".into()))
     }
 
-    pub fn create_full(mut self: Pin<&mut Self>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids: Vec<i64>) -> i64 {
+    pub fn create_full(mut self: Pin<&mut Self>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids_json: &QString) -> i64 {
+        let track_ids = ids_from_json(track_ids_json);
         let tags: Vec<String> = tags.to_string().split(',').map(str::trim).filter(|tag| !tag.is_empty()).map(str::to_string).collect();
         let artwork = artwork.to_string();
         let id = app::with(|api| api.create_playlist_with(&name.to_string(), &description.to_string(), (!artwork.is_empty()).then_some(artwork.as_str()), &tags, (folder_id > 0).then_some(folder_id))).unwrap_or(0);
@@ -284,13 +287,17 @@ impl qobject::Playlists {
     pub fn remove_folder(mut self: Pin<&mut Self>, id: i64) { if app::with(|api| api.delete_playlist_folder(id)) { self.as_mut().changed(); } }
     pub fn move_to_folder(mut self: Pin<&mut Self>, id: i64, folder_id: i64) { if app::with(|api| api.move_playlist_to_folder(id, (folder_id > 0).then_some(folder_id))) { self.as_mut().changed(); } }
     pub fn set_visible(mut self: Pin<&mut Self>, id: i64, visible: bool) { if app::with(|api| api.set_playlist_visible(id, visible)) { self.as_mut().changed(); } }
-    pub fn set_custom_order(mut self: Pin<&mut Self>, ids: Vec<i64>) { if app::with(|api| api.set_playlist_custom_order(&ids)) { self.as_mut().changed(); } }
+    pub fn set_custom_order(mut self: Pin<&mut Self>, ids_json: &QString) { let ids = ids_from_json(ids_json); if app::with(|api| api.set_playlist_custom_order(&ids)) { self.as_mut().changed(); } }
 
     /// Something about the playlists changed: whoever shows them reads again.
     pub fn changed(mut self: Pin<&mut Self>) {
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
     }
+}
+
+fn ids_from_json(value: &QString) -> Vec<i64> {
+    serde_json::from_str(&value.to_string()).unwrap_or_default()
 }
 
 impl cxx_qt::Initialize for qobject::Playlists {

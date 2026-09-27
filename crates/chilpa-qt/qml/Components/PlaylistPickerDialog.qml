@@ -23,9 +23,9 @@ Modal {
         Qt.callLater(creating ? nameField.focusInput : search.focusInput)
     }
     function beginCreate() { show([]) }
-    function reload() { rows = JSON.parse(Playlists.pickerJson(trackIds, search.text)) }
+    function reload() { rows = JSON.parse(Playlists.pickerJson(JSON.stringify(trackIds || []), search.text)) }
 
-    contentItem: Column {
+    Column {
         spacing: Metrics.gap12
 
         Row {
@@ -92,6 +92,7 @@ Modal {
             ScrollBar.vertical: ScrollBar {}
 
             delegate: ListRowSurface {
+                required property int index
                 required property var playlist
                 required property int exact
                 required property int similar
@@ -142,7 +143,7 @@ Modal {
                 TapHandler {
                     enabled: accepts
                     onTapped: {
-                        const result = JSON.parse(Playlists.addTrackIds(playlist.id, dialog.trackIds))
+                        const result = JSON.parse(Playlists.addTrackIds(playlist.id, JSON.stringify(dialog.trackIds || [])))
                         dialog.warning = result.similar > 0 || result.rejected
                         if (result.rejected) dialog.notice = I18n.tr("That source does not allow tracks from here in this playlist.", I18n.rev)
                         else {
@@ -192,7 +193,7 @@ Modal {
                     onClicked: {
                         if (Playlists.createFull(nameField.text, descriptionField.text,
                                                  artworkField.text, tagsField.text, 0,
-                                                 dialog.trackIds) > 0)
+                                                 JSON.stringify(dialog.trackIds || [])) > 0)
                             dialog.close()
                     }
                 }
