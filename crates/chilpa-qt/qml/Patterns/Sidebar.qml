@@ -4,8 +4,8 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// The floating left panel (design/02 2): search, the main destinations and
-// the playlists. Collapsed, a column of icons.
+// The floating left panel (design/02 2): the main destinations and the
+// playlists. Collapsed, a column of icons.
 Rectangle {
     id: side
 
@@ -24,37 +24,13 @@ Rectangle {
         anchors.rightMargin: Metrics.sidebarPadH
         spacing: Metrics.sidebarGap
 
-        Row {
-            width: parent.width
-            spacing: Metrics.gap6
-
-            // Beside the sidebar, whatever its width (design/02 8).
-            SearchBox {
-                id: searchBox
-                visible: !side.collapsed
-                width: parent.width - toggle.width - parent.spacing
-                active: SettingsModel.sidebarMode !== "closed"
-                compact: side.collapsed
-                flyoutX: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
-                flyoutY: Metrics.searchTop - Metrics.spaceWindow - Metrics.sidebarPadV // derived: from the field to the window's top
-                room: side.height
-            }
-
-            IconButton {
-                id: toggle
-                x: side.collapsed ? (parent.width - width) / 2 : 0 // derived: centered when collapsed
-                tip: side.collapsed ? I18n.tr("Expand sidebar", I18n.rev) : I18n.tr("Collapse sidebar", I18n.rev)
-                glyph: side.collapsed ? Icons.layoutSidebarLeftExpand : Icons.layoutSidebarLeftCollapse
-                onClicked: SettingsModel.sidebarMode = side.collapsed ? "open" : "collapsed"
-            }
-        }
-
+        // The search is at the top of every screen now, not here.
         IconButton {
-            visible: side.collapsed
-            x: (parent.width - width) / 2 // derived: centered
-            tip: I18n.tr("Search", I18n.rev)
-            glyph: Icons.search
-            onClicked: searchBox.focusSearch()
+            id: toggle
+            x: side.collapsed ? (parent.width - width) / 2 : parent.width - width // derived: centered when collapsed, at the edge when open
+            tip: side.collapsed ? I18n.tr("Expand sidebar", I18n.rev) : I18n.tr("Collapse sidebar", I18n.rev)
+            glyph: side.collapsed ? Icons.layoutSidebarLeftExpand : Icons.layoutSidebarLeftCollapse
+            onClicked: SettingsModel.sidebarMode = side.collapsed ? "open" : "collapsed"
         }
 
         Column {
