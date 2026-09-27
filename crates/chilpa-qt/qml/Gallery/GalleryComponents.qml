@@ -51,7 +51,7 @@ GallerySection {
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
         Row {
             spacing: Metrics.gridGap
-            AlbumCardOverlay { width: Metrics.cardMinWidth; height: width; albumId: added.albumId(0, added.rev); selected: true }
+            AlbumCardOverlay { width: Metrics.cardMinWidth; height: width; albumId: added.albumId(0, added.rev); year: "2026"; selected: true }
             AlbumCard { width: Metrics.cardMinWidth; title: "Selected"; subtitle: "While selecting"; tint: 3; selected: true; selecting: true }
             AlbumCard { width: Metrics.cardMinWidth; title: "Quick view open"; subtitle: "Mora Vale"; tint: 4; expanded: true }
         }
@@ -67,12 +67,13 @@ GallerySection {
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
         Repeater {
-            // A row resting, playing, selected, and a disc header.
+            // Resting, playing, selection-mode, selected and disc-header rows.
             model: [
-                { kind: 0, playing: false, selected: false },
-                { kind: 0, playing: true, selected: false },
-                { kind: 0, playing: false, selected: true },
-                { kind: 1, playing: false, selected: false }
+                { kind: 0, playing: false, selected: false, selecting: false },
+                { kind: 0, playing: true, selected: false, selecting: false },
+                { kind: 0, playing: false, selected: false, selecting: true },
+                { kind: 0, playing: false, selected: true, selecting: true },
+                { kind: 1, playing: false, selected: false, selecting: false }
             ]
             TrackRow {
                 required property var modelData
@@ -89,6 +90,7 @@ GallerySection {
                 tier: 3
                 playing: modelData.playing
                 selected: modelData.selected
+                selectionMode: modelData.selecting
                 art: ""
                 headerLabel: "Disc 1"
                 headerMeta: "6 songs"

@@ -117,7 +117,7 @@ Item {
                 }
                 IconButton {
                     round: true
-                    glyph: Icons.arrowUpRight
+                    glyph: Icons.browserMaximize
                     tip: I18n.tr("Open album", I18n.rev)
                     onClicked: Navigation.go("album", quick.albumId)
                 }

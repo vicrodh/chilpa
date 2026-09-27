@@ -78,6 +78,7 @@ Item {
         delegate: TrackRow {
             cols: columns
             hovered: index === view.hovered
+            selectionMode: list.selectionMode
         }
 
         onContentYChanged: pointer.track()
@@ -149,7 +150,43 @@ Item {
     }
 
     Row {
-        visible: list.reorderable && view.hovered >= 0
+        id: groupActions
+        readonly property int row: view.hovered
+        readonly property var item: row >= 0 ? view.itemAtIndex(row) : null
+
+        visible: item && item.header
+        x: list.width - width - Metrics.gap10
+        y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
+        spacing: Metrics.gap2
+        z: 3
+
+        IconButton {
+            size: Metrics.button24
+            glyph: Icons.playerPlayFilled
+            filled: true
+            tip: I18n.tr("Play this group", I18n.rev)
+            onClicked: list.model.groupAction(groupActions.row, "play", groupActions.item.headerLabel)
+        }
+        IconButton {
+            id: groupQueueButton
+            size: Metrics.button24
+            glyph: Icons.playlistAdd
+            tip: I18n.tr("Queue this group", I18n.rev)
+            onClicked: {
+                const at = groupQueueButton.mapToItem(list, groupQueueButton.width - Metrics.menuWidth,
+                                                      groupQueueButton.height + Metrics.gap4)
+                groupQueue.showGroup(groupActions.row, groupActions.item.headerLabel, at.x, at.y)
+            }
+        }
+    }
+
+    QueueMenu {
+        id: groupQueue
+        model: list.model
+    }
+
+    Row {
+        visible: list.reorderable && view.hovered >= 0 && (!groupActions.item || !groupActions.item.header)
         x: list.width - width - Metrics.gap10
         y: {
             const item = view.itemAtIndex(view.hovered)

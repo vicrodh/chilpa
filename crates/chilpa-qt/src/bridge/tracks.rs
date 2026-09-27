@@ -50,6 +50,8 @@ pub mod qobject {
         fn play_next_all(self: Pin<&mut TrackListModel>);
         #[qinvokable]
         fn play_later_all(self: Pin<&mut TrackListModel>, label: &QString);
+        #[qinvokable]
+        fn group_action(self: Pin<&mut TrackListModel>, row: i32, action: &QString, label: &QString);
 
         /// Selects a row. `modifiers`: 1 toggles it (Ctrl or Cmd), 2 extends
         /// from the anchor (Shift), 4 leaves the selection alone when the
@@ -131,7 +133,7 @@ pub mod qobject {
 }
 
 use crate::{app, browse, format, registry, worker};
-use chilpa_api::{TrackOrder, TrackRow};
+use chilpa_api::{TrackEntry as Entry, TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::cell::RefCell;
@@ -148,11 +150,6 @@ const ROLE_SELECTED: i32 = USER_ROLE + 10;
 /// Rows read at a time from a snapshot, and how many pages stay cached.
 const PAGE: usize = 128;
 const PAGES_KEPT: usize = 32;
-
-enum Entry {
-    Header { label: String, meta: String },
-    Track(TrackRow),
-}
 
 #[derive(Default)]
 struct Pages {
@@ -267,6 +264,21 @@ impl TrackListRust {
             At::Header(..) => None,
         }
     }
+
+    /// Tracks belonging to a loaded group header, up to the next header.
+    /// The boundary is label-agnostic, so discs, acts and scenes share it.
+    fn group_paths(&self, row: usize) -> Vec<String> {
+        let Rows::Loaded(entries) = &self.rows else {
+            return Vec::new();
+        };
+        if !matches!(entries.get(row), Some(Entry::Header { .. })) {
+            return Vec::new();
+        }
+        entries[row + 1..].iter().take_while(|entry| !matches!(entry, Entry::Header { .. })).filter_map(|entry| match entry {
+            Entry::Track(track) => Some(track.path.clone()),
+            Entry::Header { .. } => None,
+        }).collect()
+    }
 }
 
 fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
@@ -310,29 +322,6 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         }
         _ => QVariant::default(),
     }
-}
-
-/// A record's tracks, with a header before each disc when there is more
-/// than one.
-fn with_discs(rows: Vec<TrackRow>) -> Vec<Entry> {
-    let mut discs: Vec<u16> = rows.iter().map(|t| t.disc.max(1)).collect();
-    discs.dedup();
-    if discs.len() < 2 {
-        return rows.into_iter().map(Entry::Track).collect();
-    }
-    let mut out = Vec::with_capacity(rows.len() + discs.len());
-    let mut current = None;
-    for (i, t) in rows.iter().enumerate() {
-        let disc = t.disc.max(1);
-        if current != Some(disc) {
-            current = Some(disc);
-            let songs = rows[i..].iter().take_while(|r| r.disc.max(1) == disc).count();
-            let n = songs.to_string();
-            out.push(Entry::Header { label: app::with(|api| api.t_args("Disc {}", &[&disc.to_string()])), meta: app::with(|api| api.tf("{} song", "{} songs", songs as i64, &[&n])) });
-        }
-        out.push(Entry::Track(t.clone()));
-    }
-    out
 }
 
 /// Adds files to the end of the queue, on the output in use.
@@ -406,6 +395,20 @@ impl qobject::TrackListModel {
         });
     }
 
+    pub fn group_action(self: Pin<&mut Self>, row: i32, action: &QString, label: &QString) {
+        let paths = self.rust().group_paths(row.max(0) as usize);
+        if paths.is_empty() {
+            return;
+        }
+        app::with(|api| match action.to_string().as_str() {
+            "play" => api.play_from(&paths, 0),
+            "queue" => api.enqueue_here(&paths),
+            "next" => api.play_next_here(&paths),
+            "later" => { api.play_later_here(&paths, &label.to_string()); }
+            _ => {}
+        });
+    }
+
     fn with_all_paths(&self, then: impl FnOnce(&[String]) + Send + 'static) {
         match &self.rust().rows {
             Rows::Loaded(_) => {
@@ -430,30 +433,10 @@ impl qobject::TrackListModel {
 
     pub fn select(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
         let row = row.max(0) as usize;
-        let Some(id) = self.rust().track_id(row) else {
-            return;
-        };
-        let anchor = self.rust().anchor;
-        if modifiers & 4 != 0 && self.rust().selected.contains(&id) {
-            return;
-        }
-        if modifiers & 2 != 0 && anchor.is_some() {
-            let from = anchor.unwrap_or(row);
-            let (lo, hi) = (from.min(row), from.max(row));
-            let ids: Vec<i64> = (lo..=hi).filter_map(|r| self.rust().track_id(r)).collect();
-            let mut this = self.as_mut().rust_mut();
-            this.selected = ids.into_iter().collect();
-        } else if modifiers & 1 != 0 {
-            let mut this = self.as_mut().rust_mut();
-            if !this.selected.remove(&id) {
-                this.selected.insert(id);
-            }
-            this.anchor = Some(row);
-        } else {
-            let mut this = self.as_mut().rust_mut();
-            this.selected = [id].into_iter().collect();
-            this.anchor = Some(row);
-        }
+        let (selected, anchor) = chilpa_api::select_tracks(&self.rust().selected, self.rust().anchor, row, modifiers, |at| self.rust().track_id(at));
+        let mut this = self.as_mut().rust_mut();
+        this.selected = selected;
+        this.anchor = anchor;
         self.changed(ROLE_SELECTED);
     }
 
@@ -699,9 +682,9 @@ impl qobject::TrackListModel {
         // The rows, and how long they last when the list says so.
         let (rows, length) = match kind.as_str() {
             "album" if id > 0 => {
-                let tracks = app::with(|api| api.album_track_rows(id));
-                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
-                (Rows::Loaded(with_discs(tracks)), Some(ms))
+                let entries = app::with(|api| api.album_track_entries(id));
+                let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header { .. } => None }).sum::<u64>();
+                (Rows::Loaded(entries), Some(ms))
             }
             "mostPlayed" => {
                 let tracks = app::with(|api| api.most_played_rows(limit));

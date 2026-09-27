@@ -785,6 +785,9 @@ msgstr "Reproducir ahora"
 msgid "Play the CD"
 msgstr "Reproducir el CD"
 
+msgid "Play this group"
+msgstr "Reproducir este grupo"
+
 msgid "Playback"
 msgstr "Reproducción"
 
@@ -835,6 +838,9 @@ msgstr "Acciones de cola y playlist"
 
 msgid "Queue options"
 msgstr "Opciones de cola"
+
+msgid "Queue this group"
+msgstr "Acciones de cola para este grupo"
 
 msgid "Queue · {}"
 msgstr "Cola · {}"

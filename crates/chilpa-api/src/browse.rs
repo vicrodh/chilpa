@@ -8,6 +8,7 @@
 use crate::quality::Quality;
 use crate::{Album, Chilpa};
 pub use chilpa_library::{FacetEntry, Filter, Snapshot, Totals, TrackOrder};
+use std::collections::HashSet;
 
 /// A track as a list draws it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,6 +28,14 @@ pub struct TrackRow {
     pub quality: Quality,
     /// Its record's cover, empty if there is none.
     pub artwork_path: String,
+}
+
+/// One row in a grouped track list. Headers are explicit boundaries, so the
+/// same list contract can represent discs, acts or scenes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum TrackEntry {
+    Header { label: String, meta: String },
+    Track(TrackRow),
 }
 
 fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
@@ -104,6 +113,37 @@ pub fn select_facets(entries: &[FacetEntry], current: &[String], anchor: Option<
         }
         (chosen, Some(at))
     }
+}
+
+/// Excel-style track selection. The caller supplies row ids because a view
+/// may interleave tracks with headers or page them instead of loading all.
+pub fn select_tracks(
+    current: &HashSet<i64>,
+    anchor: Option<usize>,
+    row: usize,
+    modifiers: i32,
+    id_at: impl Fn(usize) -> Option<i64>,
+) -> (HashSet<i64>, Option<usize>) {
+    let Some(id) = id_at(row) else {
+        return (current.clone(), anchor);
+    };
+    if modifiers & 4 != 0 && current.contains(&id) {
+        return (current.clone(), anchor);
+    }
+    if modifiers & 2 != 0 && anchor.is_some() {
+        let from = anchor.unwrap_or(row);
+        let selected = (from.min(row)..=from.max(row)).filter_map(id_at).collect();
+        return (selected, anchor);
+    }
+    let mut selected = current.clone();
+    if modifiers & 1 != 0 {
+        if !selected.remove(&id) {
+            selected.insert(id);
+        }
+    } else {
+        selected = [id].into_iter().collect();
+    }
+    (selected, Some(row))
 }
 
 /// What a search found, best first.
@@ -432,6 +472,32 @@ impl Chilpa {
         lib.browse_tracks(&f, TrackOrder::Disc, 10_000).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
+    /// Album tracks with a header for every disc when there is more than one.
+    pub fn album_track_entries(&mut self, album_id: i64) -> Vec<TrackEntry> {
+        let rows = self.album_track_rows(album_id);
+        let mut discs: Vec<u16> = rows.iter().map(|track| track.disc.max(1)).collect();
+        discs.dedup();
+        if discs.len() < 2 {
+            return rows.into_iter().map(TrackEntry::Track).collect();
+        }
+        let mut entries = Vec::with_capacity(rows.len() + discs.len());
+        let mut current = None;
+        for (index, track) in rows.iter().enumerate() {
+            let disc = track.disc.max(1);
+            if current != Some(disc) {
+                current = Some(disc);
+                let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == disc).count();
+                let count = songs.to_string();
+                entries.push(TrackEntry::Header {
+                    label: self.t_args("Disc {}", &[&disc.to_string()]),
+                    meta: self.tf("{} song", "{} songs", songs as i64, &[&count]),
+                });
+            }
+            entries.push(TrackEntry::Track(track.clone()));
+        }
+        entries
+    }
+
     /// The most played tracks. What never played is not "most played".
     pub fn most_played_rows(&mut self, limit: usize) -> Vec<TrackRow> {
         let Some(lib) = self.library() else {
@@ -515,6 +581,16 @@ mod tests {
         assert_eq!(span, ["B", "C", "D"]);
         let (more, _) = select_facets(&entries, &span, anchor, 1, 1);
         assert_eq!(more, ["B", "C", "D", "A"]);
+    }
+
+    #[test]
+    fn track_selection_skips_headers_while_spanning_rows() {
+        let ids = [Some(10), None, Some(20), Some(30)];
+        let (one, anchor) = select_tracks(&HashSet::new(), None, 0, 0, |row| ids[row]);
+        let (span, anchor) = select_tracks(&one, anchor, 3, 2, |row| ids[row]);
+        assert_eq!(span, HashSet::from([10, 20, 30]));
+        let (toggled, _) = select_tracks(&span, anchor, 2, 1, |row| ids[row]);
+        assert_eq!(toggled, HashSet::from([10, 30]));
     }
 
     #[test]

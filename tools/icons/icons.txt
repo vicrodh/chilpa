@@ -10,6 +10,7 @@ arrows-sort
 books
 broadcast
 browser-plus
+browser-maximize
 calendar
 cast
 check
