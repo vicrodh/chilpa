@@ -9,6 +9,8 @@ Rectangle {
     property alias text: input.text
     property string placeholder
     property bool secret: false
+    // A cell of a table: no fill and no corners until it has the keyboard.
+    property bool flat: false
     // True while the field has the keyboard, so a value that changes
     // underneath is not written over what is being typed.
     readonly property alias editing: input.activeFocus
@@ -26,9 +28,9 @@ Rectangle {
 
     implicitWidth: Metrics.selectWidth
     implicitHeight: Metrics.fieldHeight
-    radius: Metrics.radiusControl
-    color: Theme.color.fillField
-    border.width: input.activeFocus ? Metrics.focusRing : 0
+    radius: flat ? 0 : Metrics.radiusControl
+    color: !flat || input.activeFocus ? Theme.color.fillField : "transparent"
+    border.width: input.activeFocus ? (flat ? 1 : Metrics.focusRing) : 0
     border.color: Theme.color.accent
 
     TextInput {

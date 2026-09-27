@@ -309,6 +309,9 @@ msgstr ""
 msgid "Compilation"
 msgstr ""
 
+msgid "Compilation (various artists)"
+msgstr ""
+
 msgid "Composers"
 msgstr ""
 
@@ -333,9 +336,6 @@ msgid "CoreAudio reports no device that can play"
 msgstr ""
 
 msgid "Counting tracks…"
-msgstr ""
-
-msgid "Cover"
 msgstr ""
 
 msgid "Cover collage"
@@ -980,6 +980,9 @@ msgstr ""
 msgid "Processed"
 msgstr ""
 
+msgid "Provider identifiers"
+msgstr ""
+
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr ""
 
@@ -1035,9 +1038,6 @@ msgid "Recently added"
 msgstr ""
 
 msgid "Recently played"
-msgstr ""
-
-msgid "Record"
 msgstr ""
 
 msgid "Records"
@@ -1301,13 +1301,13 @@ msgstr ""
 msgid "Track"
 msgstr ""
 
+msgid "Track details · {}"
+msgstr ""
+
 msgid "Track lists"
 msgstr ""
 
 msgid "Track {}"
-msgstr ""
-
-msgid "Track: {}"
 msgstr ""
 
 msgid "Tracks"

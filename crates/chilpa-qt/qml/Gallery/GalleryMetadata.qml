@@ -35,20 +35,22 @@ GallerySection {
                    candidates: [{ index: 0, preview: "", title: "Nevermind", detail: "1991" }, { index: 1, preview: "", title: "Nevermind", detail: "2011" }] }
     })
 
-    MetadataField { width: Metrics.metadataSide; field: section.sample.album[0] }
-    MetadataField { width: Metrics.metadataSide; field: section.sample.album[3] }
-    MetadataField { width: Metrics.metadataSide; field: section.sample.album[4] }
-    MetadataField { width: Metrics.metadataSide; field: section.sample.album[5] }
-    MetadataField { width: Metrics.metadataSide; field: section.sample.album[2] }
+    MetadataField { width: Metrics.metadataColumnMin; field: section.sample.album[0] }
+    MetadataField { width: Metrics.metadataColumnMin; field: section.sample.album[3] }
+    MetadataField { width: Metrics.metadataColumnMin; field: section.sample.album[4] }
+    MetadataField { width: Metrics.metadataColumnMin; field: section.sample.album[5] }
+    MetadataField { width: Metrics.metadataColumnMin; field: section.sample.album[2] }
+    MetadataField { width: Metrics.metadataCellMin; cell: true; field: section.sample.album[0] }
     MetadataTrackRow { width: section.width; track: section.sample.tracks[0]; chosen: true }
     MetadataTrackRow { width: section.width; track: section.sample.tracks[1]; rowIndex: 1 }
-    ReleaseHitRow { width: Metrics.metadataSide; hit: section.sample.lookup.hits[0]; chosen: true }
-    ReleaseHitRow { width: Metrics.metadataSide; hit: section.sample.lookup.hits[1]; rowIndex: 1 }
+    ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[0]; chosen: true }
+    ReleaseHitRow { width: Metrics.metadataColumnMin; hit: section.sample.lookup.hits[1]; rowIndex: 1 }
     CoverCandidate { candidate: section.sample.artwork.candidates[0] }
     MetadataHeader { width: section.width; doc: section.sample }
-    MetadataFields { width: section.width - Metrics.metadataSide - Metrics.gridGap; doc: section.sample } // derived: the screen's left column
-    MetadataArtwork { width: Metrics.metadataSide; doc: section.sample }
-    MetadataLookup { width: Metrics.metadataSide; doc: section.sample }
+    MetadataTracks { width: section.width * 2 / 3; height: Metrics.metadataDetails * 2; doc: section.sample } // derived: two thirds of the section, room for the rows
+    MetadataLookup { width: Metrics.metadataColumnMin; doc: section.sample }
+    MetadataArtwork { width: Metrics.metadataColumnMin; doc: section.sample }
+    MetadataAlbum { width: Metrics.metadataColumnMin; height: Metrics.metadataDetails * 3; doc: section.sample } // derived: room for the column's fields
     ConfirmDialog {
         id: confirm
         title: "Write into the audio files?"

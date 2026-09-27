@@ -299,13 +299,19 @@ QtObject {
     // The three one-pixel separators between them and the edge on each side.
     readonly property int paneSeams: 5
 
-    // The metadata editor.
-    readonly property int metadataLabel: 190
-    readonly property int metadataSide: 380
-    readonly property int metadataCover: 132
-    readonly property int metadataCandidate: 88
-    readonly property int metadataNumber: 48
-    readonly property int metadataRow: 36
-    readonly property int metadataHit: 48
+    // The metadata editor: a spreadsheet of tracks and the record's column.
+    readonly property int metadataCover: 96
+    readonly property int metadataCandidate: 72
+    readonly property int metadataRow: 32
+    readonly property int metadataHit: 40
+    readonly property int metadataDisc: 56
+    readonly property int metadataTrack: 64
+    readonly property int metadataTitleMin: 180
+    readonly property int metadataCellMin: 150
+    readonly property int metadataCellPad: 9
+    readonly property int metadataDetailsBar: 38
+    readonly property int metadataDetails: 218
+    readonly property int metadataHitsShown: 5
+    readonly property int metadataColumnMin: 340
     readonly property int confirmWidth: 440
 }

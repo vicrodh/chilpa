@@ -3,15 +3,17 @@ import com.blitzfc.chilpa
 import "../Primitives"
 import "../Theme"
 
-// One track in the metadata editor: disc, number, title and artist, each
-// editable in place, and the file it lives in. A click chooses it, and the
-// editor shows the rest of its fields under the list. `track` is one entry
-// of the editor's view.
+// One track in the metadata editor's spreadsheet: disc, number, title and
+// artist, each a cell edited in place, and the file it lives in, read only.
+// A click, or a cell taking the keyboard, chooses it; the editor shows the
+// rest of its fields under the table. `track` is one entry of the editor's
+// view; the column widths come from the table so every row lines up.
 ListRowSurface {
     id: root
 
     property var track: ({ fields: [] })
     property bool chosen: false
+    property var widths: [Metrics.metadataDisc, Metrics.metadataTrack, Metrics.metadataTitleMin, Metrics.metadataCellMin, Metrics.metadataCellMin]
 
     signal choose()
     signal edited(int trackId, string name, string value)
@@ -24,8 +26,6 @@ ListRowSurface {
         }
         return { name: name, value: "" }
     }
-    readonly property bool faulty: (track.fields || []).some(f => f.invalid !== "")
-    readonly property bool changed: (track.fields || []).some(f => f.dirty)
 
     implicitHeight: Metrics.metadataRow
     selected: chosen
@@ -34,51 +34,52 @@ ListRowSurface {
     HoverHandler { id: pointer }
     TapHandler { onTapped: root.choose() }
 
+    // The chosen row's mark, as a spreadsheet's.
+    Rectangle {
+        width: root.chosen ? Metrics.focusRing : 0
+        height: parent.height
+        color: Theme.color.accent
+    }
+
     Row {
         anchors.fill: parent
-        anchors.leftMargin: Metrics.gap8
-        anchors.rightMargin: Metrics.gap8
-        spacing: Metrics.gap6
+        Repeater {
+            model: ["disc_number", "track_number", "title", "artist_credit"]
+            MetadataField {
+                required property string modelData
+                required property int index
+                width: root.widths[index]
+                cell: true
+                ofTrack: true
+                field: root.field(modelData)
+                onEdited: (name, value) => root.edited(root.track.id, name, value)
+                onEditingChanged: if (editing) root.choose()
 
-        Repeater {
-            model: ["disc_number", "track_number"]
-            MetadataField {
-                required property string modelData
-                bare: true
-                ofTrack: true
-                width: Metrics.metadataNumber
-                anchors.verticalCenter: parent.verticalCenter
-                field: root.field(modelData)
-                onEdited: (name, value) => root.edited(root.track.id, name, value)
-            }
-        }
-        Repeater {
-            model: ["title", "artist_credit"]
-            MetadataField {
-                required property string modelData
-                bare: true
-                ofTrack: true
-                width: (root.width - Metrics.metadataNumber * 2 - file.width - marks.width - Metrics.gap6 * 5 - Metrics.gap8 * 2) / 2 // derived: what the fixed cells leave, in halves
-                anchors.verticalCenter: parent.verticalCenter
-                field: root.field(modelData)
-                onEdited: (name, value) => root.edited(root.track.id, name, value)
+                Rectangle {
+                    anchors.right: parent.right
+                    width: 1
+                    height: parent.height
+                    color: Theme.color.strokeHairline
+                }
             }
         }
         Text {
-            id: file
-            width: Metrics.selectWidth / 2 // derived: half a field
-            anchors.verticalCenter: parent.verticalCenter
+            width: root.widths[4] // derived: the file column, the last of the table
+            height: parent.height
+            leftPadding: Metrics.metadataCellPad
+            rightPadding: Metrics.metadataCellPad
+            verticalAlignment: Text.AlignVCenter
             text: root.track.file || ""
             elide: Text.ElideMiddle
             font.pointSize: Type.small
             color: Theme.color.textTertiary
         }
-        Icon {
-            id: marks
-            anchors.verticalCenter: parent.verticalCenter
-            size: Metrics.iconSm
-            glyph: root.faulty ? Icons.alertTriangle : root.changed ? Icons.circleCheck : ""
-            color: root.faulty ? Theme.color.statusNegative : Theme.color.textSecondary
-        }
+    }
+
+    Rectangle {
+        anchors.bottom: parent.bottom
+        width: parent.width
+        height: 1
+        color: Theme.color.strokeHairline
     }
 }
