@@ -16,7 +16,10 @@ import "../Theme"
 Item {
     id: root
 
-    property url source
+    // A file on disk, as a path: it becomes the source, each part of it
+    // escaped, so spaces, brackets and a '#' in a folder name survive.
+    property string path
+    property url source: path === "" ? "" : "file://" + path.split("/").map(encodeURIComponent).join("/")
     property int radius: Metrics.radiusCard
     // Which placeholder color, so a grid of empty covers is not one block.
     property int tint: 0
