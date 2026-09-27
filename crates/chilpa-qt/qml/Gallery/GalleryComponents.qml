@@ -58,6 +58,7 @@ GallerySection {
             AlbumCard { width: Metrics.cardMinWidth; title: "Quick view open"; subtitle: "Mora Vale"; tint: 4; expanded: true }
         }
         AlbumQuickView { width: parent.width; albumId: added.albumId(0, added.rev); notchX: Metrics.cardMinWidth / 2 } // derived: under the first card
+        AlbumHeaderBackground { width: parent.width; height: Metrics.heroArt; art: detail.art; mode: "full" }
         AlbumHero { width: parent.width; detail: detail }
         ArtworkModal { id: artworkModal }
         PillButton { text: "Open artwork"; onClicked: artworkModal.show(detail.art) }

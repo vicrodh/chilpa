@@ -44,6 +44,13 @@ Flickable {
         contentRev: Library.contentRev
     }
 
+    AlbumHeaderBackground {
+        width: page.width
+        height: Metrics.contentTop + Metrics.heroArt + Metrics.gap16
+        art: detail.art
+        mode: SettingsModel.albumHeader
+    }
+
     Column {
         id: column
         x: Metrics.contentX
@@ -57,6 +64,7 @@ Flickable {
             detail: detail
             selecting: page.selectionMode
             favorite: AlbumActions.favorite(Navigation.routeId, AlbumActions.rev)
+            contrasted: SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
             onSelectToggle: {

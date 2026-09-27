@@ -1,13 +1,7 @@
 //! The rows of an album grid (frontend ADR-0002, `AlbumGrid`).
 //!
-//! A grid is a list of rows, not a GridView: the view recycles whole rows
-//! and each row lays out a fixed number of cards, which is what keeps the
-//! recycling cheap and what lets a quick view open between two rows. Each
-//! row is its first album and how many it holds; a card reads its album by
-//! index, passing `rev` so its bindings run again when the albums change.
-//!
-//! `columns` comes from the view's width. While it is zero nothing is laid
-//! out, instead of one column that reflows a frame later.
+//! A grid recycles rows of cards, which also lets a quick view open between
+//! rows. `columns` comes from the width; zero lays out nothing.
 //!
 //! A shelf ("recentlyPlayed", "recentlyAdded") is read whole. The whole
 //! library ("all") is a snapshot of ids taken on the worker and read a page
@@ -29,7 +23,6 @@ pub mod qobject {
         include!("cxx-qt-lib/qurl.h");
         type QUrl = cxx_qt_lib::QUrl;
     }
-
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -61,7 +54,6 @@ pub mod qobject {
         /// The card whose quick view is open, or -1: one per grid.
         #[qproperty(i32, expanded)]
         type AlbumGridModel = super::AlbumGridRust;
-
         #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
         #[qinvokable]
@@ -78,7 +70,6 @@ pub mod qobject {
         #[qinvokable]
         fn select(self: Pin<&mut AlbumGridModel>, index: i32, modifiers: i32);
     }
-
     unsafe extern "RustQt" {
         #[inherit]
         #[cxx_name = "beginResetModel"]
@@ -87,7 +78,6 @@ pub mod qobject {
         #[cxx_name = "endResetModel"]
         unsafe fn end_reset_model(self: Pin<&mut AlbumGridModel>);
     }
-
     unsafe extern "RustQt" {
         #[qinvokable]
         #[cxx_override]
@@ -101,11 +91,9 @@ pub mod qobject {
         #[cxx_name = "rowCount"]
         fn row_count(self: &AlbumGridModel, parent: &QModelIndex) -> i32;
     }
-
     impl cxx_qt::Threading for AlbumGridModel {}
     impl cxx_qt::Initialize for AlbumGridModel {}
 }
-
 use crate::{app, registry, worker};
 use chilpa_api::{Album, AlbumSort};
 use std::cell::RefCell;
@@ -118,24 +106,20 @@ use std::pin::Pin;
 const USER_ROLE: i32 = 256;
 const PAGE: usize = 128;
 const PAGES_KEPT: usize = 24;
-
 #[derive(Default)]
 struct Pages {
     map: HashMap<usize, Rc<Vec<Album>>>,
     order: VecDeque<usize>,
 }
-
 enum Albums {
     Loaded(Vec<Album>),
     Snapshot { ids: Vec<i64>, pages: RefCell<Pages> },
 }
-
 impl Default for Albums {
     fn default() -> Self {
         Albums::Loaded(Vec::new())
     }
 }
-
 impl Albums {
     fn len(&self) -> usize {
         match self {
@@ -143,7 +127,6 @@ impl Albums {
             Albums::Snapshot { ids, .. } => ids.len(),
         }
     }
-
     /// Runs `f` with the album at `index`, reading its page if it is not
     /// cached. By id: any page costs what the first one costs.
     fn with<R>(&self, index: usize, f: impl FnOnce(&Album) -> R) -> Option<R> {
@@ -177,7 +160,6 @@ impl Albums {
         }
     }
 }
-
 #[derive(Default)]
 pub struct AlbumGridRust {
     kind: QString,

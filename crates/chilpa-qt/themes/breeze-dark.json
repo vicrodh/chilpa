@@ -31,6 +31,10 @@
     "overlay.scrim": "rgba(20,22,24,0.34)",
     "overlay.button": "rgba(255,255,255,0.94)",
     "overlay.ink": "#232629",
+    "albumHeader.base": "#0A0A0B",
+    "albumHeader.dim": "rgba(0,0,0,0.24)",
+    "albumHeader.top": "#66000000",
+    "albumHeader.bottom": "#80000000",
     "art.placeholder": ["#31363B", "#2A2E32", "#3A3F44", "#25292C", "#353A3F", "#40454A"]
   },
   "shadow": {

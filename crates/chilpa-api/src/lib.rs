@@ -29,7 +29,7 @@ mod volume;
 pub use volume::VolumeView;
 
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
-pub use covers::cover_derivative;
+pub use covers::{cover_derivative, header_atmosphere};
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};
 pub use scrobble::ScrobbleStatus;

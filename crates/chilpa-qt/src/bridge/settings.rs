@@ -41,6 +41,7 @@ pub mod qobject {
         /// Sidebar playlist and folder artwork preferences.
         #[qproperty(bool, playlist_collage)]
         #[qproperty(bool, folder_colors)]
+        #[qproperty(QString, album_header)]
         /// The Settings sections: ids, labels and the names of their glyphs.
         #[qproperty(QStringList, sections)]
         #[qproperty(QStringList, section_labels)]
@@ -85,6 +86,7 @@ const EXTRA_CONTROLS: &str = "playback.extra";
 const MIDDLE_CLICK_TABS: &str = "navigation.newtab";
 const PLAYLIST_ARTWORK: &str = "navigation.playlistArtwork";
 const FOLDER_COLORS: &str = "navigation.folderColors";
+const ALBUM_HEADER: &str = "appearance.albumHeader";
 
 #[derive(Default)]
 pub struct SettingsRust {
@@ -102,6 +104,7 @@ pub struct SettingsRust {
     quick_view_click: bool,
     playlist_collage: bool,
     folder_colors: bool,
+    album_header: QString,
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
@@ -143,7 +146,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         let (density, mode, width) = app::with(|api| (api.preference(DENSITY), api.preference(SIDEBAR_MODE), api.preference(SIDEBAR_WIDTH)));
         let (queue, lyrics, queue_share) = app::with(|api| (api.preference(QUEUE_MODE), api.preference(LYRICS_OPEN), api.preference(QUEUE_SHARE)));
         let (panes, panes_height, view) = app::with(|api| (api.preference(PANES_OPEN), api.preference(PANES_HEIGHT), api.preference(LIBRARY_VIEW)));
-        let (extra, middle, click, playlist_artwork, folder_colors) = app::with(|api| (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS), api.preference("navigation.albumClick"), api.preference(PLAYLIST_ARTWORK), api.preference(FOLDER_COLORS)));
+        let (extra, middle, click, playlist_artwork, folder_colors, album_header) = app::with(|api| (api.preference(EXTRA_CONTROLS), api.preference(MIDDLE_CLICK_TABS), api.preference("navigation.albumClick"), api.preference(PLAYLIST_ARTWORK), api.preference(FOLDER_COLORS), api.preference(ALBUM_HEADER)));
         {
             let mut this = self.as_mut().rust_mut();
             let all = chilpa_api::settings_schema::SECTIONS;
@@ -165,6 +168,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.quick_view_click = click.as_deref() == Some("quick");
             this.playlist_collage = playlist_artwork.as_deref() == Some("collage");
             this.folder_colors = folder_colors.as_deref() == Some("true");
+            this.album_header = QString::from(album_header.as_deref().unwrap_or("full"));
         }
         self.as_mut().on_density_changed(|m| remember(DENSITY, m.density().to_string())).release();
         self.as_mut().on_sidebar_mode_changed(|m| remember(SIDEBAR_MODE, m.sidebar_mode().to_string())).release();
@@ -179,5 +183,6 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
         self.as_mut().on_middle_click_tabs_changed(|m| remember(MIDDLE_CLICK_TABS, m.middle_click_tabs().to_string())).release();
         self.as_mut().on_playlist_collage_changed(|m| remember(PLAYLIST_ARTWORK, if *m.playlist_collage() { "collage" } else { "icon" }.to_string())).release();
         self.as_mut().on_folder_colors_changed(|m| remember(FOLDER_COLORS, m.folder_colors().to_string())).release();
+        self.as_mut().on_album_header_changed(|m| remember(ALBUM_HEADER, m.album_header().to_string())).release();
     }
 }

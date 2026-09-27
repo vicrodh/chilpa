@@ -23,6 +23,12 @@ pub fn cover_derivative(path: &Path, size: u32) -> Option<PathBuf> {
     derivative_in(&chilpa_dirs::cache().join("covers"), path, size)
 }
 
+/// A small, deliberately color-heavy field for an album header. The 8 px
+/// intermediate is the look: no recognizable cover detail survives it.
+pub fn header_atmosphere(path: &Path) -> Option<PathBuf> {
+    atmosphere_in(&chilpa_dirs::cache().join("atmosphere"), path)
+}
+
 fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     let size = size.clamp(32, 2048);
     // The file's own date is in the name, so a cover replaced on disk gets
@@ -50,6 +56,58 @@ fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     drop(writer);
     std::fs::rename(&next, &out).ok()?;
     Some(out)
+}
+
+fn atmosphere_in(dir: &Path, path: &Path) -> Option<PathBuf> {
+    let modified = std::fs::metadata(path).and_then(|m| m.modified()).ok().and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok()).map_or(0, |d| d.as_secs());
+    let out = dir.join(format!("{:016x}.png", key(path, modified)));
+    if out.exists() { return Some(out) }
+    let source = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?.into_rgba8();
+    let tiny = image::imageops::resize(&source, 8, 8, image::imageops::FilterType::Triangle);
+    let large = image::imageops::resize(&tiny, 128, 128, image::imageops::FilterType::CatmullRom);
+    let mut field = image::imageops::blur(&large, 16.0);
+    color_field(&mut field);
+    vignette(&mut field);
+    std::fs::create_dir_all(dir).ok()?;
+    let next = out.with_extension("png.new");
+    field.save_with_format(&next, image::ImageFormat::Png).ok()?;
+    std::fs::rename(next, &out).ok()?;
+    Some(out)
+}
+
+fn color_field(image: &mut image::RgbaImage) {
+    let (mut low, mut high, mut light) = ([255.0f32; 3], [0.0f32; 3], 0.0f32);
+    for pixel in image.pixels_mut() {
+        let gray = (f32::from(pixel[0]) + f32::from(pixel[1]) + f32::from(pixel[2])) / 3.0;
+        for channel in 0..3 {
+            let saturated = gray + (f32::from(pixel[channel]) - gray) * 2.45;
+            pixel[channel] = ((saturated * 0.92 - 128.0) * 1.18 + 128.0).clamp(0.0, 255.0) as u8;
+            low[channel] = low[channel].min(f32::from(pixel[channel]));
+            high[channel] = high[channel].max(f32::from(pixel[channel]));
+            light += f32::from(pixel[channel]) / 3.0;
+        }
+    }
+    let strength = (light / (image.width() * image.height()).max(1) as f32 / 80.0).min(1.0);
+    for pixel in image.pixels_mut() {
+        for channel in 0..3 {
+            let value = f32::from(pixel[channel]);
+            let normalized = 18.0 + (value - low[channel]) / (high[channel] - low[channel]).max(1.0) * 232.0;
+            let lifted = (value * 1.5).min(255.0);
+            let adjusted = lifted + (normalized - lifted) * strength;
+            pixel[channel] = (if channel == 0 { adjusted * 1.08 } else { adjusted }).min(255.0) as u8;
+        }
+    }
+}
+
+fn vignette(image: &mut image::RgbaImage) {
+    let (width, height) = (image.width() as f32, image.height() as f32);
+    let inner = width.min(height) * 0.20;
+    let outer = width.min(height) * 0.70;
+    for (x, y, pixel) in image.enumerate_pixels_mut() {
+        let distance = ((x as f32 - width / 2.0).powi(2) + (y as f32 - height / 2.0).powi(2)).sqrt();
+        let factor = 1.0 - 0.20 * ((distance - inner) / (outer - inner)).clamp(0.0, 1.0);
+        for channel in 0..3 { pixel[channel] = (f32::from(pixel[channel]) * factor) as u8; }
+    }
 }
 
 fn key(path: &Path, modified: u64) -> u64 {
@@ -110,6 +168,19 @@ mod tests {
         std::fs::write(dir.join("cover.jpg"), b"not a picture").unwrap();
         assert!(derivative_in(&dir.join("cache"), &dir.join("cover.jpg"), 256).is_none());
         assert!(derivative_in(&dir.join("cache"), &dir.join("missing.jpg"), 256).is_none());
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn an_atmosphere_is_small_cached_and_has_no_cover_detail() {
+        let dir = std::env::temp_dir().join("chilpa-atmosphere");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let original = cover(&dir, "cover.png", 300);
+        let made = atmosphere_in(&dir.join("cache"), &original).unwrap();
+        let image = image::open(&made).unwrap();
+        assert_eq!((image.width(), image.height()), (128, 128));
+        assert_eq!(atmosphere_in(&dir.join("cache"), &original).unwrap(), made);
         let _ = std::fs::remove_dir_all(dir);
     }
 }
