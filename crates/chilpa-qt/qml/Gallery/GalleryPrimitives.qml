@@ -32,7 +32,7 @@ GallerySection {
     Modal {
         id: sampleModal
         width: Metrics.playlistFolderDialog
-        contentItem: Column {
+        Column {
             spacing: Metrics.gap12
             Text { text: "Modal"; font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
             Text { text: "Shared padding and surface"; color: Theme.color.textSecondary }

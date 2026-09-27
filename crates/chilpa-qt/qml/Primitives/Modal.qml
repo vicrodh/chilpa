@@ -5,12 +5,31 @@ import "../Theme"
 
 // One visual and spacing contract for every application modal.
 Popup {
+    id: root
+
+    default property alias body: inset.data
+
     parent: Overlay.overlay
     anchors.centerIn: parent
     modal: true
     focus: true
-    padding: Metrics.gap20
+    padding: 0
     closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+
+    contentItem: Item {
+        implicitWidth: inset.implicitWidth + Metrics.modalInsets
+        implicitHeight: inset.implicitHeight + Metrics.modalInsets
+
+        Item {
+            id: inset
+            x: Metrics.modalInset
+            y: Metrics.modalInset
+            width: Math.max(0, parent.width - Metrics.modalInsets)
+            height: Math.max(0, parent.height - Metrics.modalInsets)
+            implicitWidth: childrenRect.width
+            implicitHeight: childrenRect.height
+        }
+    }
 
     background: Item {
         RectangularShadow {
