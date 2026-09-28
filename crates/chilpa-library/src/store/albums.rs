@@ -429,7 +429,7 @@ impl Library {
                     t.track_number, t.duration_ms, t.present
              FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
              WHERE t.album_id = ?1
-             ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
+             ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
         )?;
         let rows = stmt.query_map(params![album_id], row_to_track)?;
         rows.collect()

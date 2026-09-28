@@ -110,13 +110,13 @@ fn grouped_results_respect_source_exclusions_and_never_interleave_versions() {
 
 #[test]
 fn sibling_disc_folders_are_one_complete_edition() {
-    assert_eq!(chilpa_library::store::versions::local_location("/music/İstanbul CD 1/01.flac"), "/music/İstanbul");
+    assert_eq!(chilpa_library::store::versions::local_location("/music/İstanbul CD 1/01.flac"), "/music/İstanbul CD 1");
     let lib = Library::in_memory().unwrap();
     let source = lib.source_id("local", "default").unwrap();
     album(&lib, 1, "Past Masters", "The Beatles");
     album(&lib, 2, "Past Masters", "The Beatles");
-    track(&lib, 1, 1, source, "/Beatles/Past Masters CD 1/01.flac", 24, 44100);
-    track(&lib, 2, 2, source, "/Beatles/Past Masters CD 2/19.flac", 24, 44100);
+    track(&lib, 1, 1, source, "/Beatles/Past Masters/CD 1/01.flac", 24, 44100);
+    track(&lib, 2, 2, source, "/Beatles/Past Masters/CD 2/19.flac", 24, 44100);
     lib.separate_local_editions().unwrap();
     assert_eq!(lib.album_ids(AlbumSort::Title).unwrap(), vec![1]);
     assert_eq!(lib.album_tracks(1).unwrap().len(), 2);
@@ -134,12 +134,15 @@ fn selection_survives_connections_and_an_unavailable_version_falls_back() {
     track(&lib, 1, 1, source, "/one/1.flac", 16, 44100);
     track(&lib, 2, 2, source, "/two/1.flac", 24, 96000);
     let reader = Library::open(&path).unwrap();
+    lib.set_group_artist_versions(false).unwrap();
+    assert!(!reader.group_artist_versions(), "the artist preference is visible across connections");
     assert_eq!(reader.selected_album(1), 2);
     lib.select_album_version(2, 1).unwrap();
     assert_eq!(reader.selected_album(2), 1, "an existing reader notices the committed choice");
     drop(reader);
     drop(lib);
     let lib = Library::open(&path).unwrap();
+    assert!(!lib.group_artist_versions(), "the artist preference survives reopening");
     assert_eq!(lib.selected_album(2), 1);
     lib.connection().execute("UPDATE tracks SET present = 0 WHERE id = 1", []).unwrap();
     assert_eq!(lib.selected_album(2), 2);

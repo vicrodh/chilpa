@@ -96,6 +96,22 @@ fn a_second_scan_does_not_reread_what_did_not_change() {
 }
 
 #[test]
+fn rereading_a_known_part_retains_album_marks_and_version_choice() {
+    let Some(dir) = album("retained-release", 2) else { return };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    let id = lib.album_ids(chilpa_library::AlbumSort::Title).unwrap()[0];
+    lib.set_album_favorite(id, true).unwrap();
+    lib.select_album_version(id, id).unwrap();
+    lib.connection().execute("UPDATE tracks SET release_evidence_read = 0", []).unwrap();
+    assert_eq!(scan_root(&lib, &dir.join("disc 1")).unwrap().read, 2);
+    assert_eq!(lib.album_ids(chilpa_library::AlbumSort::Title).unwrap(), [id]);
+    assert!(lib.favorite_albums().unwrap().contains(&id));
+    assert_eq!(lib.connection().query_row("SELECT album_id FROM album_preferences", [], |r| r.get::<_, i64>(0)).unwrap(), id);
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
 fn tagged_editions_in_separate_folders_stay_separate_after_rescanning() {
     if !have_ffmpeg() { return; }
     let dir = std::env::temp_dir().join(format!("chilpa-scan-editions-{}", std::process::id()));

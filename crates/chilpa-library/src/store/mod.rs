@@ -14,6 +14,7 @@ pub mod playlists;
 pub mod plays;
 pub mod regroup;
 mod compilations;
+pub(crate) mod releases;
 pub mod versions;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
@@ -133,10 +134,7 @@ impl Library {
         lib.split_stored_genres()?;
         // And records an earlier scan split by artist, or credited to an
         // empty album artist tag, the same way.
-        lib.regroup_split_albums()?;
-        lib.credit_unnamed_albums()?;
-        lib.separate_local_editions()?;
-        lib.join_local_compilations()?;
+        lib.assemble_local_releases()?;
         Ok(lib)
     }
 

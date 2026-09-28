@@ -87,6 +87,8 @@ impl Seen {
             "UPDATE albums SET artwork_path = ?2 WHERE id = (SELECT album_id FROM tracks WHERE id = ?1)",
             params![track_id, cover.display().to_string()],
         )?;
+        lib.db.execute("UPDATE tracks SET release_artwork = ?2 WHERE id = ?1",
+            params![track_id, cover.display().to_string()])?;
         Ok(())
     }
 

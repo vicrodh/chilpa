@@ -3,7 +3,7 @@
 
 use super::Library;
 use rusqlite::{params, OptionalExtension};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -89,25 +89,9 @@ pub fn album_group(title: &str, artist: &str) -> String {
     format!("{}:{credit}{name}", credit.len())
 }
 
-/// A local source supplies a folder or an image as its release identity.
-/// Remote adapters can supply their own opaque release identity instead.
+/// I identify only the physical part here; evidence assembles its release.
 pub fn local_location(path: &str) -> String {
-    if let Some(image) = path.strip_prefix("sacd:") {
-        return image.rsplit_once('#').map_or(image, |(file, _)| file).to_string();
-    }
-    let folder = crate::album_folder::album_folder(Path::new(path));
-    let dir = Path::new(&folder);
-    let name = dir.file_name().and_then(|n| n.to_str()).unwrap_or("");
-    let lower = name.to_lowercase();
-    for marker in [" cd ", " cd", " disc ", " disk "] {
-        if let Some((head, number)) = lower.rsplit_once(marker) {
-            if !head.is_empty() && !number.is_empty() && number.chars().all(|c| c.is_ascii_digit()) {
-                let end = name.len() - marker.len() - number.len();
-                return dir.with_file_name(name[..end].trim_end_matches([' ', '-'])).display().to_string();
-            }
-        }
-    }
-    folder
+    super::releases::location(path)
 }
 
 impl VersionCatalog {
@@ -170,6 +154,15 @@ impl Library {
 
     pub fn group_album_versions(&self) -> bool {
         self.db.query_row("SELECT grouped FROM album_presentation WHERE id = 1", [], |r| r.get(0)).unwrap_or(true)
+    }
+
+    pub fn group_artist_versions(&self) -> bool {
+        self.db.query_row("SELECT artist_grouped FROM album_presentation WHERE id = 1", [], |r| r.get(0)).unwrap_or(true)
+    }
+
+    pub fn set_group_artist_versions(&self, on: bool) -> rusqlite::Result<()> {
+        self.db.execute("UPDATE album_presentation SET artist_grouped = ?1 WHERE id = 1", [on])?;
+        Ok(())
     }
 
     pub fn set_group_album_versions(&self, on: bool) -> rusqlite::Result<()> {
@@ -257,51 +250,9 @@ impl Library {
         Ok(catalog)
     }
 
-    /// Repair the old title/artist identity once, without rereading music or
-    /// changing track ids, playlist entries, favorites or listening history.
+    /// I retain this entry point for callers upgrading the old identity.
     pub fn separate_local_editions(&self) -> rusqlite::Result<()> {
-        let tx = self.own_transaction()?;
-        let done: bool = tx.query_row("SELECT repaired FROM album_presentation WHERE id = 1", [], |r| r.get(0))?;
-        if done { return tx.finish(); }
-        let mut groups: BTreeMap<i64, BTreeMap<(i64, String), Vec<i64>>> = BTreeMap::new();
-        {
-            let mut stmt = tx.prepare("SELECT t.album_id, t.source_id, t.external_id, t.id
-                FROM tracks t JOIN sources s ON s.id = t.source_id
-                WHERE t.album_id IS NOT NULL AND s.provider = 'local' ORDER BY t.id")?;
-            let mut rows = stmt.query([])?;
-            while let Some(row) = rows.next()? {
-                let path: String = row.get(2)?;
-                groups.entry(row.get(0)?).or_default().entry((row.get(1)?, local_location(&path))).or_default().push(row.get(3)?);
-            }
-        }
-        let mut targets: HashMap<(String, String, String), i64> = HashMap::new();
-        for (album, editions) in groups {
-            let (title, artist): (String, String) = tx.query_row("SELECT title, album_artist FROM albums WHERE id = ?1", [album], |r| Ok((r.get(0)?, r.get(1)?)))?;
-            for (index, ((source, location), tracks)) in editions.into_iter().enumerate() {
-                let key = format!("{source}:{location}");
-                let identity = (title.clone(), artist.clone(), key.clone());
-                let target = if let Some(id) = targets.get(&identity) {
-                    *id
-                } else if index == 0 {
-                    tx.execute("UPDATE albums SET folder = ?2, version_key = ?3 WHERE id = ?1", params![album, location, key])?;
-                    album
-                } else {
-                    tx.execute("INSERT INTO albums(title, album_artist, year, artwork_path, folder, version_key)
-                        SELECT title, album_artist, year, artwork_path, ?2, ?3 FROM albums WHERE id = ?1", params![album, location, key])?;
-                    let id = tx.last_insert_rowid();
-                    id
-                };
-                targets.insert(identity, target);
-                tx.execute("INSERT OR IGNORE INTO album_favorites(album_id, added_at)
-                    SELECT ?2, added_at FROM album_favorites WHERE album_id = ?1", params![album, target])?;
-                for track in tracks {
-                    tx.execute("UPDATE tracks SET album_id = ?2 WHERE id = ?1", params![track, target])?;
-                }
-            }
-        }
-        self.rebuild_rollups()?;
-        tx.execute("UPDATE album_presentation SET repaired = 1 WHERE id = 1", [])?;
-        tx.finish()
+        self.assemble_local_releases()
     }
 
     pub(crate) fn local_edition(&self, source: i64, title: &str, artist: &str, location: &str, year: Option<u32>) -> rusqlite::Result<i64> {
