@@ -1227,3 +1227,8 @@ INSERT OR IGNORE INTO album_members
     SELECT album_id, id, trim(album_credit) FROM tracks
     WHERE album_id IS NOT NULL AND present = 1 AND trim(album_credit) <> '';
 "#;
+
+/// Upgrade the early V22 view through the guarded credits migration.
+pub(super) const MIGRATION_V23: &str = r#"
+SELECT 1;
+"#;
