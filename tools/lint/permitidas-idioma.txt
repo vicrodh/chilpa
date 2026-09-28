@@ -459,3 +459,5 @@ vorbis
 discogs
 # ALSA's packed native DSD sample-format names.
 dsdu
+# Coordinated Universal Time, used for listening timestamps and local offsets.
+utc
