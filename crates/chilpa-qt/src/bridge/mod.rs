@@ -19,6 +19,7 @@ pub mod metadata;
 pub mod navigation;
 pub mod player;
 pub mod playlists;
+pub mod ratings;
 pub mod search;
 pub mod settings;
 pub mod settings_page;

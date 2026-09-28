@@ -78,7 +78,12 @@ Item {
 
         Item { width: 1; height: Metrics.gap8 }
 
-        RatingStars { baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary }
+        RatingStars {
+            baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary
+            value: Ratings.album(hero.detail.selectedId, Ratings.rev)
+            interactive: hero.detail.selectedId > 0
+            onRated: (stars) => Ratings.rateAlbum(hero.detail.selectedId, stars)
+        }
 
         Flow {
             width: parent.width

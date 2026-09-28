@@ -8,13 +8,14 @@ Item {
 
     property int value: 0
     property bool interactive: true
+    property int pointerPreview: 0
     property color baseColor: Theme.color.textTertiary
     signal rated(int value)
 
     readonly property int preview: area.containsMouse
         ? Math.max(1, Math.min(Metrics.ratingMaximum,
                               Math.ceil(area.mouseX / width * Metrics.ratingMaximum)))
-        : value
+        : pointerPreview > 0 ? pointerPreview : value
     readonly property string emptyStars: Array(Metrics.ratingMaximum + 1).join(Icons.star)
     readonly property string fullStars: Array(Metrics.ratingMaximum + 1).join(Icons.starFilled)
 
@@ -47,9 +48,7 @@ Item {
         anchors.fill: parent
         enabled: root.interactive
         hoverEnabled: true
-        onClicked: {
-            root.value = root.value === root.preview ? 0 : root.preview
-            root.rated(root.value)
-        }
+        onClicked: root.rated(root.value === root.preview ? 0 : root.preview)
+        onDoubleClicked: (mouse) => { mouse.accepted = true }
     }
 }

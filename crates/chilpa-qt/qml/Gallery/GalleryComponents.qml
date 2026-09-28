@@ -40,7 +40,7 @@ GallerySection {
             QualityIcon { tier: 1 }
             QualityIcon { tier: 2 }
             QualityIcon { tier: 3 }
-            RatingStars { value: 3 }
+            RatingStars { value: 3; onRated: (stars) => value = stars }
             PlayingIndicator {}
         }
         SectionHeader { width: parent.width; title: "Section header"; link: "See all" }
@@ -50,6 +50,7 @@ GallerySection {
         SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
+        TrackGroupActions { row: 0; item: ({ headerLabel: "Disc 1" }); model: most }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
         AlbumCarousel { width: parent.width; title: "From same artist"; model: added }
         Row {
