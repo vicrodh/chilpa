@@ -1267,3 +1267,33 @@ CREATE TABLE album_ratings (
     updated_at INTEGER NOT NULL
 );
 "#;
+
+/// I snapshot listening metadata without inventing historical time zones.
+pub(super) const MIGRATION_V26: &str = r#"
+CREATE TABLE play_context (
+    event_id INTEGER PRIMARY KEY REFERENCES play_events(id) ON DELETE CASCADE,
+    external_id TEXT NOT NULL DEFAULT '',
+    album_external_id TEXT NOT NULL DEFAULT '',
+    album_id INTEGER,
+    title TEXT NOT NULL DEFAULT '',
+    artist TEXT NOT NULL DEFAULT '',
+    album TEXT NOT NULL DEFAULT '',
+    album_artist TEXT NOT NULL DEFAULT '',
+    utc_offset_seconds INTEGER CHECK(utc_offset_seconds BETWEEN -86400 AND 86400),
+    backfilled INTEGER NOT NULL DEFAULT 0 CHECK(backfilled IN (0, 1))
+);
+CREATE TABLE play_genres (
+    event_id INTEGER NOT NULL REFERENCES play_events(id) ON DELETE CASCADE,
+    genre TEXT NOT NULL COLLATE NOCASE,
+    PRIMARY KEY(event_id, genre)
+);
+CREATE INDEX play_genres_genre ON play_genres(genre, event_id);
+CREATE INDEX play_events_source_time ON play_events(source_id, started_at);
+INSERT INTO play_context(event_id, external_id, album_id, title, artist, album, album_artist, backfilled)
+    SELECT p.id, coalesce(t.external_id, ''), t.album_id, coalesce(t.title, ''),
+        coalesce(t.artist, ''), coalesce(a.title, ''), coalesce(a.album_artist, ''), 1
+    FROM play_events p LEFT JOIN tracks t ON t.id = p.track_id LEFT JOIN albums a ON a.id = t.album_id;
+INSERT OR IGNORE INTO play_genres(event_id, genre)
+    SELECT p.id, g.name FROM play_events p JOIN track_genres tg ON tg.track_id = p.track_id
+    JOIN genres g ON g.id = tg.genre_id;
+"#;

@@ -114,24 +114,16 @@ impl Library {
         bit_depth: Option<u8>,
         bit_perfect: bool,
     ) -> rusqlite::Result<()> {
-        self.db.execute(
-            "INSERT INTO play_events
-             (track_id, source_id, started_at, played_ms, duration_ms, skipped,
-              sample_rate_hz, bit_depth, bit_perfect)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![
-                track_id,
-                source_id,
-                started_at,
-                played_ms as i64,
-                duration_ms as i64,
-                i64::from(skipped),
-                sample_rate_hz,
-                bit_depth,
-                i64::from(bit_perfect)
-            ],
-        )?;
-        Ok(())
+        let context = match track_id {
+            Some(id) => self.listen_context(id)?,
+            None => super::listening::ListenContext { source_id, ..Default::default() },
+        };
+        if source_id.is_some() && source_id != context.source_id {
+            return Err(rusqlite::Error::InvalidParameterName("source does not own the track".into()));
+        }
+        self.record_listen(&super::listening::ListenEvent {
+            context, started_at, played_ms, duration_ms, skipped, sample_rate_hz, bit_depth, bit_perfect,
+        }).map(|_| ())
     }
 
     /// How many times a track has been played, counting only what played more
