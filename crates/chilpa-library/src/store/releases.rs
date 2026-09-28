@@ -56,10 +56,10 @@ impl Library {
             for i in ids {
                 let part = &parts[i];
                 for track in &part.tracks {
-                    changed |= tx.execute("UPDATE tracks SET album_id = ?2, release_part = ?3,
+                    changed |= tx.prepare_cached("UPDATE tracks SET album_id = ?2, release_part = ?3,
                         album_title = ?4, release_disc = ?5, release_year = ?6, release_artwork = ?7 WHERE id = ?1 AND
                         (album_id IS NOT ?2 OR release_part <> ?3 OR album_title <> ?4 OR release_disc IS NOT ?5
-                         OR release_year IS NOT ?6 OR release_artwork IS NOT ?7)",
+                         OR release_year IS NOT ?6 OR release_artwork IS NOT ?7)")?.execute(
                         params![track.id, target, part.location, track.title, part.folder_disc, track.year, track.artwork])? > 0;
                 }
             }
@@ -79,17 +79,17 @@ impl Library {
         }
         changed |= tx.execute("DELETE FROM albums WHERE NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = albums.id)", [])? > 0;
         for (id, _, _, _, key, _, _) in &metadata {
-            changed |= tx.execute("UPDATE albums SET version_key = ?2 WHERE id = ?1 AND version_key <> ?3",
+            changed |= tx.prepare_cached("UPDATE albums SET version_key = ?2 WHERE id = ?1 AND version_key <> ?3")?.execute(
                 params![id, format!("pending:{id}:{key}"), key])? > 0;
         }
         for (id, title, artist, folder, key, artwork, year) in metadata {
-            changed |= tx.execute("INSERT OR IGNORE INTO album_preferences(group_key, album_id)
-                SELECT ?1, ?2 WHERE EXISTS (SELECT 1 FROM album_preferences WHERE album_id = ?2)",
+            changed |= tx.prepare_cached("INSERT OR IGNORE INTO album_preferences(group_key, album_id)
+                SELECT ?1, ?2 WHERE EXISTS (SELECT 1 FROM album_preferences WHERE album_id = ?2)")?.execute(
                 params![super::versions::album_group(&title, &artist), id])? > 0;
-            changed |= tx.execute("UPDATE albums SET title = ?2, album_artist = ?3, folder = ?4,
+            changed |= tx.prepare_cached("UPDATE albums SET title = ?2, album_artist = ?3, folder = ?4,
                 version_key = ?5, artwork_path = ?6, year = ?7 WHERE id = ?1 AND
                 (title <> ?2 OR album_artist <> ?3 OR folder <> ?4 OR version_key <> ?5
-                 OR artwork_path IS NOT ?6 OR year IS NOT ?7)", params![id, title, artist, folder, key, artwork, year])? > 0;
+                 OR artwork_path IS NOT ?6 OR year IS NOT ?7)")?.execute(params![id, title, artist, folder, key, artwork, year])? > 0;
         }
         if changed { self.rebuild_rollups()?; }
         tx.finish()
