@@ -77,6 +77,153 @@ pub(crate) fn dop_request(info: &chilpa_dsd::DsdInfo) -> StreamFormat {
     StreamFormat::new(SampleFormat::S24In32, carrier_rate(info.dsd_rate_hz), info.channels)
 }
 
+/// The exact ALSA native-DSD format this card exposes for the source rate.
+/// BE is preferred because it is what the kernel's generic USB-audio DSD
+/// quirk normally publishes; LE is used when that is the card's format.
+pub(crate) fn native_request(info: &chilpa_dsd::DsdInfo, caps: &DeviceCaps) -> Option<StreamFormat> {
+    if !caps.probed || info.channels != 2 {
+        return None;
+    }
+    let rate = info.dsd_rate_hz / 32;
+    let format = [SampleFormat::DsdU32Be, SampleFormat::DsdU32Le]
+        .into_iter().find(|format| caps.formats.contains(format))?;
+    let request = StreamFormat::new(format, rate, info.channels);
+    caps.accepts(&request).then_some(request)
+}
+
+/// Packs normalized DSD bytes into ALSA's native DSD_U32 frames.
+pub(crate) struct NativeFrames<'a> {
+    source: &'a mut dyn DsdSource,
+    format: SampleFormat,
+    carry: Vec<Vec<u8>>,
+    skip: Option<SkipSignal>,
+    seek: Option<SeekSignal>,
+    pub(crate) skipped: bool,
+    discard: usize,
+    moved: bool,
+    pub(crate) base: std::sync::Arc<std::sync::atomic::AtomicI64>,
+    pub(crate) delivered: std::sync::Arc<std::sync::atomic::AtomicU64>,
+}
+
+impl<'a> NativeFrames<'a> {
+    pub(crate) fn new(source: &'a mut dyn DsdSource, format: SampleFormat) -> Self {
+        debug_assert!(format.is_dsd());
+        let channels = usize::from(source.info().channels);
+        Self {
+            source,
+            format,
+            carry: vec![Vec::new(); channels],
+            skip: None,
+            seek: None,
+            skipped: false,
+            discard: 0,
+            moved: false,
+            base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
+            delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
+        }
+    }
+
+    pub(crate) fn controlled(mut self, skip: SkipSignal, seek: SeekSignal) -> Self {
+        self.skip = Some(skip);
+        self.seek = Some(seek);
+        self
+    }
+
+    fn words(&self, channels: &[Vec<u8>], count: usize) -> Vec<u8> {
+        let mut out = Vec::with_capacity(count * channels.len() * 4);
+        for word in 0..count {
+            for channel in channels {
+                let start = word * 4;
+                let bytes = [channel[start], channel[start + 1], channel[start + 2], channel[start + 3]];
+                match self.format {
+                    SampleFormat::DsdU32Be => out.extend_from_slice(&bytes),
+                    SampleFormat::DsdU32Le => out.extend(bytes.into_iter().rev()),
+                    _ => unreachable!("native frames only target DSD_U32"),
+                }
+            }
+        }
+        out
+    }
+
+    fn seek_to(&mut self, target: std::time::Duration) -> Result<(), String> {
+        let rate = self.source.info().dsd_rate_hz;
+        let wanted = chilpa_audio::seek::frames_at(target, rate) / 32 * 32;
+        let Some(landed) = self.source.seek(wanted).map_err(|error| error.to_string())? else {
+            return Ok(());
+        };
+        let at = wanted.max(landed);
+        self.discard = ((at - landed) / 8) as usize;
+        self.carry.iter_mut().for_each(Vec::clear);
+        self.moved = true;
+        let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
+        self.base.store((at / 32) as i64 - delivered as i64, std::sync::atomic::Ordering::Relaxed);
+        Ok(())
+    }
+}
+
+impl FrameSource for NativeFrames<'_> {
+    fn moved(&mut self) -> bool {
+        std::mem::take(&mut self.moved)
+    }
+
+    fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
+        let asked = self.seek.as_ref().and_then(|seek| seek.take());
+        if self.skip.as_ref().is_some_and(|skip| skip.take()) {
+            self.skipped = true;
+            return Ok(None);
+        }
+        if let Some(target) = asked {
+            self.seek_to(target)?;
+        }
+
+        loop {
+            let Some(mut channels) = self.source.next_block().map_err(|error| error.to_string())? else {
+                if self.carry.iter().all(Vec::is_empty) {
+                    return Ok(None);
+                }
+                for channel in &mut self.carry {
+                    channel.resize(4, 0x69);
+                }
+                let out = self.words(&self.carry, 1);
+                self.carry.iter_mut().for_each(Vec::clear);
+                return Ok(Some(out));
+            };
+            if channels.len() != self.carry.len() {
+                return Err(chilpa_i18n::t("the DSD channel count changed while playing"));
+            }
+            for (channel, carry) in channels.iter_mut().zip(&mut self.carry) {
+                if !carry.is_empty() {
+                    let mut joined = std::mem::take(carry);
+                    joined.extend_from_slice(channel);
+                    *channel = joined;
+                }
+            }
+            if self.discard > 0 {
+                let cut = self.discard.min(channels.iter().map(Vec::len).min().unwrap_or(0));
+                for channel in &mut channels {
+                    channel.drain(..cut);
+                }
+                self.discard -= cut;
+                if channels.iter().any(Vec::is_empty) {
+                    continue;
+                }
+            }
+            let words = channels.iter().map(Vec::len).min().unwrap_or(0) / 4;
+            if words == 0 {
+                for (carry, channel) in self.carry.iter_mut().zip(channels) {
+                    *carry = channel;
+                }
+                continue;
+            }
+            let out = self.words(&channels, words);
+            for (carry, channel) in self.carry.iter_mut().zip(channels) {
+                *carry = channel[words * 4..].to_vec();
+            }
+            return Ok(Some(out));
+        }
+    }
+}
+
 /// Turns DSD blocks into DoP words, in the word the output was opened at.
 ///
 /// The packer is lent, not owned: tracks that share an opening share its
@@ -331,6 +478,38 @@ mod tests {
             info: DsdInfo { dsd_rate_hz: 2_822_400, channels: 2, samples: 32 },
             blocks: vec![vec![vec![0xAB, 0xCD, 0x12, 0x34], vec![0x55, 0xAA, 0x9C, 0x63]]],
         }
+    }
+
+    #[test]
+    fn native_dsd_packs_be_and_le_words_byte_for_byte() {
+        let expected_be = vec![0xAB, 0xCD, 0x12, 0x34, 0x55, 0xAA, 0x9C, 0x63];
+        let expected_le = vec![0x34, 0x12, 0xCD, 0xAB, 0x63, 0x9C, 0xAA, 0x55];
+
+        let mut be_source = source();
+        let mut be = NativeFrames::new(&mut be_source, SampleFormat::DsdU32Be);
+        assert_eq!(be.next_block().unwrap(), Some(expected_be));
+        assert_eq!(be.next_block().unwrap(), None);
+
+        let mut le_source = source();
+        let mut le = NativeFrames::new(&mut le_source, SampleFormat::DsdU32Le);
+        assert_eq!(le.next_block().unwrap(), Some(expected_le));
+        assert_eq!(le.next_block().unwrap(), None);
+    }
+
+    #[test]
+    fn native_dsd_requires_the_exact_u32_format_rate_and_stereo() {
+        let info = source().info;
+        let supported = DeviceCaps {
+            sample_rates: vec![88_200],
+            formats: vec![SampleFormat::S32, SampleFormat::DsdU32Be],
+            channels: vec![2],
+            probed: true,
+        };
+        assert_eq!(native_request(&info, &supported), Some(StreamFormat::new(SampleFormat::DsdU32Be, 88_200, 2)));
+
+        let mut wrong_rate = supported.clone();
+        wrong_rate.sample_rates = vec![176_400];
+        assert_eq!(native_request(&info, &wrong_rate), None);
     }
 
     #[test]

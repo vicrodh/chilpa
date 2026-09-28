@@ -132,6 +132,8 @@ fn format_name(f: SampleFormat) -> String {
         SampleFormat::S24In32 => chilpa_i18n::t("24 bit in 32"),
         SampleFormat::S32 => chilpa_i18n::t("32 bit"),
         SampleFormat::F32 => chilpa_i18n::t("32 bit float"),
+        SampleFormat::DsdU32Be => "DSD_U32_BE".to_string(),
+        SampleFormat::DsdU32Le => "DSD_U32_LE".to_string(),
     }
 }
 

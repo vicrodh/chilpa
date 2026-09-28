@@ -22,6 +22,8 @@ pub enum PackError {
     /// The source's bits do not fit the wire format without throwing
     /// information away. Nothing is ever truncated silently.
     WouldTruncate { from_bits: u8, to_bits: u8 },
+    /// Native DSD words are packed from one-bit source bytes, never PCM.
+    NativeDsdNeedsDsdSource,
 }
 
 /// Writes the samples in the wire format.
@@ -31,6 +33,9 @@ pub enum PackError {
 /// `f32` into an integer format does scale, and that is no longer
 /// bit-perfect; the bit-perfect path never arrives here with floats.
 pub fn pack(samples: &Samples<'_>, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
+    if to.is_dsd() {
+        return Err(PackError::NativeDsdNeedsDsdSource);
+    }
     match samples {
         Samples::Int { data, bits } => pack_int(data, *bits, to, out),
         Samples::Float(data) => {
@@ -47,6 +52,9 @@ pub fn duplicate_mono<T: Copy>(samples: &[T]) -> Vec<T> {
 }
 
 fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Result<(), PackError> {
+    if to.is_dsd() {
+        return Err(PackError::NativeDsdNeedsDsdSource);
+    }
     if to == SampleFormat::F32 {
         // The device only takes floats: convert, and the caller already knows
         // from `Delivery` that this is not bit-perfect.
@@ -73,12 +81,14 @@ fn pack_int(data: &[i32], bits: u8, to: SampleFormat, out: &mut Vec<u8>) -> Resu
             SampleFormat::S24In32 => out.extend_from_slice(&(v << 8).to_le_bytes()),
             SampleFormat::S32 => out.extend_from_slice(&v.to_le_bytes()),
             SampleFormat::F32 => unreachable!("handled above"),
+            SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => unreachable!("native DSD was refused above"),
         }
     }
     Ok(())
 }
 
 fn pack_float(data: &[f32], to: SampleFormat, out: &mut Vec<u8>) {
+    assert!(!to.is_dsd(), "PCM floats cannot be packed as native DSD");
     out.reserve(data.len() * to.bytes());
     for &s in data {
         let s = s.clamp(-1.0, 1.0);
@@ -96,6 +106,7 @@ fn pack_float(data: &[f32], to: SampleFormat, out: &mut Vec<u8>) {
                 let v = (f64::from(s) * f64::from(i32::MAX)).round() as i32;
                 out.extend_from_slice(&v.to_le_bytes());
             }
+            SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => unreachable!("native DSD was refused above"),
         }
     }
 }

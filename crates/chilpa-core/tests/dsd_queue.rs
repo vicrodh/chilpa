@@ -87,6 +87,7 @@ fn a_dsd_album_plays_past_its_first_track() {
         }),
     );
 
+    player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Dop);
     player.play_all(&tracks, "alsa:hw:0,0");
     let mut started = Vec::new();
     let limit = Instant::now() + Duration::from_secs(10);
@@ -113,6 +114,40 @@ fn a_dsd_album_plays_past_its_first_track() {
     for t in tracks {
         let _ = std::fs::remove_file(t);
     }
+}
+
+#[test]
+fn native_dsd_opens_the_kernel_u32_format_without_a_pcm_carrier() {
+    let track = dsf("native", 1);
+    let opened = Arc::new(Mutex::new(Vec::new()));
+    let seen = Arc::clone(&opened);
+    let player = Player::spawn(
+        Box::new(|_| Ok(DeviceCaps { sample_rates: vec![88_200], formats: vec![SampleFormat::DsdU32Be], channels: vec![2], probed: true })),
+        Box::new(move |_, format, _| {
+            seen.lock().unwrap().push(format);
+            Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)
+        }),
+    );
+    player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Native);
+    player.play(&track, "alsa:hw:0,0");
+
+    let limit = Instant::now() + Duration::from_secs(10);
+    let mut result = None;
+    while result.is_none() && Instant::now() < limit {
+        for event in player.poll() {
+            match event {
+                PlayerEvent::Finished { .. } => result = Some(Ok(())),
+                PlayerEvent::Failed { message } => result = Some(Err(message)),
+                _ => {}
+            }
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    assert_eq!(result, Some(Ok(())));
+    assert_eq!(*opened.lock().unwrap(), vec![StreamFormat::new(SampleFormat::DsdU32Be, 88_200, 2)]);
+
+    drop(player);
+    let _ = std::fs::remove_file(track);
 }
 
 /// Keeps what reaches it, as DoP words.
@@ -149,7 +184,8 @@ fn the_dop_marker_alternates_across_the_join_between_tracks() {
     };
     let mut kept = Some(kept);
     let controls = Controls::new();
-    controls.dsd_passthrough.set(true);
+    controls.dsd_mode.set(chilpa_core::queue_playback::DsdMode::Dop);
+    controls.direct_dsd.set(true);
     play_queue_with(
         &SharedQueue::new(tracks.clone()),
         &caps,
@@ -250,7 +286,8 @@ fn a_seek_in_a_dsd_track_moves_the_music_and_the_position() {
     };
     let mut positions = Vec::new();
     let controls = Controls { seek, ..Controls::new() };
-    controls.dsd_passthrough.set(true);
+    controls.dsd_mode.set(chilpa_core::queue_playback::DsdMode::Dop);
+    controls.direct_dsd.set(true);
     let results = play_queue_with(
         &SharedQueue::new(vec![track.clone()]),
         &caps,
@@ -307,6 +344,7 @@ fn a_dsdiff_file_plays_in_a_queue_like_a_dsf() {
         }),
         Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
     );
+    player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Dop);
     player.play_all(&tracks, "alsa:hw:0,0");
     let mut started = Vec::new();
     let limit = Instant::now() + Duration::from_secs(10);

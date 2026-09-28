@@ -84,7 +84,7 @@ pub fn hold(device: &str) -> Result<Option<Reservation>, chilpa_audio::sink::Sin
 
 /// A card held for Chilpa. Dropping it gives the card back.
 pub struct Reservation {
-    bus: Arc<SyncConnection>,
+    _bus: Arc<SyncConnection>,
     name: String,
     _server: Server,
 }
@@ -195,9 +195,10 @@ impl Reservation {
                 format_args!("after={:?} card={card} reply={second:?}", second_started.elapsed()),
             );
             if !released || !matches!(second, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) {
-                // Also removes a queued request, so a refused hand-off does
-                // not surprise the owner later.
-                let _ = bus.release_name(name.as_str());
+                // Disconnecting this request's private connection below also
+                // removes a queued name request. Do not issue synchronous
+                // ReleaseName here: that is the call that stalled playback
+                // teardown for seconds on an unhealthy session bus.
                 chilpa_audio::diagnostics::trace(
                     "reserve",
                     "take_refused",
@@ -211,7 +212,7 @@ impl Reservation {
             "take_finished",
             format_args!("after={:?} card={card}", started.elapsed()),
         );
-        Ok(Some(Self { bus, name, _server: server }))
+        Ok(Some(Self { _bus: bus, name, _server: server }))
     }
 
     /// Keeps it for the opening that follows a measurement. If none comes,
@@ -236,8 +237,16 @@ impl Reservation {
 
 impl Drop for Reservation {
     fn drop(&mut self) {
-        chilpa_audio::diagnostics::trace("reserve", "released", format_args!("name={:?}", self.name));
-        let _ = self.bus.release_name(self.name.as_str());
+        // A synchronous ReleaseName call can wait on a wedged session-bus
+        // peer for many seconds. Closing this reservation's connection has
+        // exactly the same ownership semantics and cannot strand a queued
+        // request; the server worker is stopped below and the final Arc drop
+        // disconnects from D-Bus.
+        chilpa_audio::diagnostics::trace(
+            "reserve",
+            "release_by_disconnect",
+            format_args!("name={:?}", self.name),
+        );
     }
 }
 
@@ -290,7 +299,7 @@ fn serve(bus: &Arc<SyncConnection>, stop: &Arc<AtomicBool>, card: u32) -> JoinHa
     let stop = Arc::clone(stop);
     std::thread::spawn(move || {
         while !stop.load(Ordering::Relaxed) {
-            let _ = bus.process(Duration::from_millis(100));
+            let _ = bus.process(Duration::from_millis(10));
         }
     })
 }
@@ -323,7 +332,7 @@ mod tests {
         let name = format!("org.freedesktop.ReserveDevice1.Audio{card}");
         let before = owner(&name);
         let held = Reservation::take(card).expect("the server lets go").expect("a session bus");
-        assert_eq!(owner(&name), Some(held.bus.unique_name().to_string()), "Chilpa has the card");
+        assert_eq!(owner(&name), Some(held._bus.unique_name().to_string()), "Chilpa has the card");
         // The former owner immediately asks the newly published object for
         // the priority.  Let that handshake finish before simulating stop.
         std::thread::sleep(Duration::from_millis(100));

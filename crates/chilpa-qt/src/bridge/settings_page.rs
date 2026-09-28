@@ -142,6 +142,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
             vec![("icon", app::t("Playlist icon")), ("collage", app::t("Cover collage"))]
         }
         "library.metaSrc" => vec![("musicbrainz", "MusicBrainz".to_string()), ("discogs", "Discogs".to_string()), ("embedded", app::t("Embedded tags only"))],
+        "audio.dsdMode" => vec![("native", app::t("Native DSD")), ("dop", app::t("DSD over PCM (DoP)")), ("pcm", app::t("Convert to PCM"))],
         _ => Vec::new(),
     }
 }
@@ -266,6 +267,18 @@ impl SettingsPageRust {
                         _ => app::t("pcm: shared, as ALSA sets it up"),
                     });
                 }
+            }
+            "audio.dsdMode" => {
+                let (direct, mode) = app::with(|api| (api.stack_of(output) == "alsa" && api.alsa_plugin() == "hw", api.dsd_mode()));
+                if !direct {
+                    row.control.clear();
+                    return;
+                }
+                for (value, label) in fixed(&row.key) {
+                    row.values.push(value.to_string());
+                    row.options.push(label);
+                }
+                row.value = mode.key().to_string();
             }
             "audio.wizard" => {
                 if let Some(report) = &self.report {
@@ -513,6 +526,7 @@ impl qobject::SettingsPage {
             }
             "audio.device" => app::with(|api| api.use_output_as_chosen(&value)),
             "audio.alsaPlugin" => app::with(|api| api.set_alsa_plugin(&value)),
+            "audio.dsdMode" => app::with(|api| api.set_dsd_mode(&value)),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
             "advanced.hwVolume" => {

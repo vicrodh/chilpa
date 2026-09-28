@@ -549,6 +549,7 @@ fn to_f32(bytes: &[u8], format: SampleFormat) -> Vec<f32> {
             .chunks_exact(4)
             .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
             .collect(),
+        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => Vec::new(),
     }
 }
 

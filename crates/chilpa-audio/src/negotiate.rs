@@ -261,7 +261,7 @@ pub fn negotiate(
         .filter(|f| f.is_integer() && f.valid_bits() >= requests)
         .min_by_key(|f| f.valid_bits())
         .or_else(|| caps.formats.iter().filter(|f| f.is_integer()).max_by_key(|f| f.valid_bits()))
-        .or_else(|| caps.formats.first())
+        .or_else(|| caps.formats.iter().find(|format| !format.is_dsd()))
         .copied()
         .ok_or(NegotiationError::Unsupported { requested, policy })?;
     // Only the track's own rate. There is no resampler: this used to open

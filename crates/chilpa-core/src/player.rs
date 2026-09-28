@@ -10,7 +10,9 @@ use chilpa_audio::render::Outcome;
 use chilpa_audio::sink::{AudioSink, SinkError, StopSignal};
 use chilpa_audio::format::StreamFormat;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender, TryRecvError};
+use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 use crate::playback::PlayError;
@@ -40,7 +42,8 @@ pub enum PlayerEvent {
         queue_len: usize,
         /// For DSD: the multiple that names it (64, 128...). `None` on PCM.
         dsd_multiple: Option<u32>,
-        /// True only when that DSD is leaving as DoP, not converted PCM.
+        /// True when that DSD leaves as one-bit data, either Native or DoP,
+        /// rather than being converted to PCM.
         dsd_passthrough: bool,
     },
     /// Where the track is, in frames, and how many frames of it have gone
@@ -57,8 +60,11 @@ pub enum PlayerEvent {
 }
 
 enum Order {
-    /// Plays the shared queue, which the sender has already set.
+    /// Plays this request's queue. A queue belongs to one launch so a delayed
+    /// order can never observe tracks from a newer click.
     Play {
+        queue: crate::queue_playback::SharedQueue,
+        generation: u64,
         device: String,
         /// Where the first track starts, when it is not at the beginning.
         ///
@@ -99,7 +105,10 @@ pub struct Player {
     controls: crate::queue_playback::Controls,
     /// The queue that is playing. It is shared with the thread so things
     /// can be added without cutting off what is playing.
-    queue: crate::queue_playback::SharedQueue,
+    queue: Arc<Mutex<crate::queue_playback::SharedQueue>>,
+    /// Monotonically identifies the newest play/stop request. Delayed play
+    /// orders are discarded instead of replaying the newest queue twice.
+    generation: Arc<AtomicU64>,
     thread: Option<JoinHandle<()>>,
 }
 
@@ -110,8 +119,9 @@ impl Player {
         let (events_tx, events_rx) = channel::<PlayerEvent>();
         let controls = crate::queue_playback::Controls::new();
         let controls_thread = controls.clone();
-        let queue = crate::queue_playback::SharedQueue::default();
-        let queue_thread = queue.clone();
+        let queue = Arc::new(Mutex::new(crate::queue_playback::SharedQueue::default()));
+        let generation = Arc::new(AtomicU64::new(0));
+        let generation_thread = Arc::clone(&generation);
         let stop_thread = controls.stop.clone();
         let skip_thread = controls.skip.clone();
         let seek_thread = controls.seek.clone();
@@ -129,13 +139,22 @@ impl Player {
                         Order::Stop => {
                             chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=stop barrier=passed"));
                         }
-                        Order::Play { device, start_at } => {
+                        Order::Play { queue, generation, device, start_at } => {
+                            let latest = generation_thread.load(Ordering::Acquire);
+                            if generation != latest {
+                                chilpa_audio::diagnostics::trace(
+                                    "player",
+                                    "order_discarded",
+                                    format_args!("kind=play generation={generation} latest={latest}"),
+                                );
+                                continue;
+                            }
                             chilpa_audio::diagnostics::trace(
                                 "player",
                                 "order_received",
                                 format_args!(
                                     "kind=play device={device:?} start_at={start_at:?} queue_len={} paused={}",
-                                    queue_thread.len(),
+                                    queue.len(),
                                     controls_thread.pause.is_paused()
                                 ),
                             );
@@ -143,6 +162,7 @@ impl Player {
                             // stop order does not kill the next one. The
                             // pause is not touched here: it was set when the
                             // order was sent (`play_all_from_paused`).
+                            controls_thread.handoff.set(false);
                             stop_thread.reset();
                             skip_thread.take();
                             // Whatever seek was left pending belonged to the
@@ -155,7 +175,7 @@ impl Player {
                             }
                             let started = std::time::Instant::now();
                             let result = play(
-                                &queue_thread,
+                                &queue,
                                 &device,
                                 &controls_thread,
                                 &mut probe,
@@ -187,7 +207,7 @@ impl Player {
             })
             .expect("the player thread starts");
 
-        Self { orders: orders_tx, events: events_rx, controls, queue, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, controls, queue, generation, thread: Some(thread) }
     }
 
     /// Asks to play a file. Returns immediately.
@@ -231,18 +251,24 @@ impl Player {
         // taking the order later, would have undone it. A disc image goes
         // in as its tracks, one entry each, like any album.
         self.controls.stop_after.clear();
-        self.queue.set(crate::sacd_tracks::expand(paths));
+        let queue = crate::queue_playback::SharedQueue::new(crate::sacd_tracks::expand(paths));
+        if let Ok(mut current) = self.queue.lock() {
+            *current = queue.clone();
+        }
+        let generation = self.generation.fetch_add(1, Ordering::AcqRel).wrapping_add(1);
         self.controls.pause.set(paused);
         chilpa_audio::diagnostics::trace(
             "player",
             "order_sent",
             format_args!(
                 "kind=play device={device:?} tracks={} first={:?} start_at={start_at:?} paused={paused}",
-                self.queue.len(),
-                self.queue.get(0)
+                queue.len(),
+                queue.get(0)
             ),
         );
         let _ = self.orders.send(Order::Play {
+            queue,
+            generation,
             device: device.to_string(),
             start_at,
         });
@@ -307,6 +333,11 @@ impl Player {
         self.controls.exclusive.set(on);
     }
 
+    /// Chooses explicitly how one-bit DSD leaves Chilpa.
+    pub fn set_dsd_mode(&self, mode: crate::queue_playback::DsdMode) {
+        self.controls.dsd_mode.set(mode);
+    }
+
     pub fn repeat(&self) -> crate::queue_playback::Repeat {
         self.controls.repeat.get()
     }
@@ -316,18 +347,18 @@ impl Player {
     /// Returns how many are left in the queue. If nothing is playing, the
     /// shared queue is empty and the caller decides whether to start it.
     pub fn enqueue(&self, paths: &[PathBuf]) -> usize {
-        self.queue.extend(paths)
+        self.queue.lock().map(|queue| queue.extend(paths)).unwrap_or(0)
     }
 
     /// Removes a track from the playing queue, by its position within what
     /// was given to the player. The one already playing is not removed.
     pub fn remove_from_queue(&self, index: usize) -> bool {
-        self.queue.remove(index)
+        self.queue.lock().map(|queue| queue.remove(index)).unwrap_or(false)
     }
 
     /// How many tracks the playing queue carries.
     pub fn queue_len(&self) -> usize {
-        self.queue.len()
+        self.queue.lock().map(|queue| queue.len()).unwrap_or(0)
     }
 
     /// Shuffles the playing queue. It takes effect when the track ends.
@@ -353,6 +384,18 @@ impl Player {
     /// Asks to stop. It does not wait on the device.
     pub fn stop(&self) {
         chilpa_audio::diagnostics::trace("player", "stop_requested", format_args!(""));
+        self.controls.handoff.set(false);
+        self.generation.fetch_add(1, Ordering::AcqRel);
+        self.controls.stop.stop();
+        let _ = self.orders.send(Order::Stop);
+    }
+
+    /// Stops because another playback request is about to replace this one.
+    /// The ALSA sink may keep the reservation across that short hand-off.
+    pub fn stop_for_handoff(&self) {
+        chilpa_audio::diagnostics::trace("player", "handoff_requested", format_args!(""));
+        self.controls.handoff.set(true);
+        self.generation.fetch_add(1, Ordering::AcqRel);
         self.controls.stop.stop();
         let _ = self.orders.send(Order::Stop);
     }
@@ -372,6 +415,8 @@ impl Player {
 
 impl Drop for Player {
     fn drop(&mut self) {
+        self.controls.handoff.set(false);
+        self.generation.fetch_add(1, Ordering::AcqRel);
         self.controls.stop.stop();
         let _ = self.orders.send(Order::Quit);
         if let Some(t) = self.thread.take() {
@@ -430,14 +475,15 @@ fn play(
     // Fidelity is reported from the route and the transformations that
     // actually happened. It is not a promise that may prevent playback.
     let policy = Policy::AllowAnything;
-    let dsd_passthrough = crate::backends::resolve(device)
+    let direct_dsd = crate::backends::resolve(device)
         .is_some_and(|(stack, _)| stack.kind() == chilpa_audio::backend::BackendKind::Alsa);
-    controls.dsd_passthrough.set(dsd_passthrough);
+    controls.direct_dsd.set(direct_dsd);
     chilpa_audio::diagnostics::trace(
         "player",
         "route_resolved",
         format_args!(
-            "device={device:?} exact_path={exact_path} policy={policy:?} dsd_passthrough={dsd_passthrough}"
+            "device={device:?} exact_path={exact_path} policy={policy:?} dsd_mode={:?} direct_dsd={direct_dsd}",
+            controls.dsd_mode.get()
         ),
     );
     let total = paths.len();
@@ -740,7 +786,7 @@ mod tests {
 
     use chilpa_audio::format::SampleFormat;
     use std::io::Write;
-    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
     use std::sync::Arc;
     use std::time::{Duration, Instant};
 
@@ -759,6 +805,28 @@ mod tests {
             Ok(n)
         }
         fn close(&mut self) -> Result<(), SinkError> {
+            Ok(())
+        }
+    }
+
+    struct ClosingGateSink {
+        stream: StreamFormat,
+        closing: Arc<AtomicBool>,
+        release: Arc<AtomicBool>,
+    }
+
+    impl AudioSink for ClosingGateSink {
+        fn format(&self) -> StreamFormat {
+            self.stream
+        }
+        fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
+            Ok(frames.len() / self.stream.frame_bytes())
+        }
+        fn close(&mut self) -> Result<(), SinkError> {
+            self.closing.store(true, Ordering::Release);
+            while !self.release.load(Ordering::Acquire) {
+                std::thread::yield_now();
+            }
             Ok(())
         }
     }
@@ -861,6 +929,46 @@ mod tests {
         let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Finished { .. })));
         assert!(matches!(events.last(), Some(PlayerEvent::Finished { frames: 2_000 })));
         let _ = std::fs::remove_file(file);
+    }
+
+    #[test]
+    fn rapid_replacements_discard_stale_play_orders_and_their_queues() {
+        let closing = Arc::new(AtomicBool::new(false));
+        let release = Arc::new(AtomicBool::new(false));
+        let close_seen = Arc::clone(&closing);
+        let close_release = Arc::clone(&release);
+        let p = Player::spawn(
+            Box::new(|_| Ok(DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true })),
+            Box::new(move |_, stream, _| Ok(Box::new(ClosingGateSink { stream, closing: Arc::clone(&close_seen), release: Arc::clone(&close_release) }) as Box<dyn AudioSink + Send>)),
+        );
+        let a = wav("replacement-a", 400_000);
+        let stale = wav("replacement-stale", 1_000);
+        let latest = wav("replacement-latest", 1_000);
+
+        p.play(&a, "fake");
+        let first = wait(&p, |events| events.iter().any(|event| matches!(event, PlayerEvent::Started { path, .. } if path == &a)));
+        p.stop_for_handoff();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !closing.load(Ordering::Acquire) {
+            assert!(Instant::now() < deadline, "the first stream never began closing");
+            std::thread::yield_now();
+        }
+        p.play(&stale, "fake");
+        p.stop_for_handoff();
+        p.play(&latest, "fake");
+        release.store(true, Ordering::Release);
+
+        let mut events = first;
+        events.extend(wait(&p, |events| events.iter().any(|event| matches!(event, PlayerEvent::Finished { .. }))));
+        let starts: Vec<PathBuf> = events.iter().filter_map(|event| match event {
+            PlayerEvent::Started { path, .. } => Some(path.clone()),
+            _ => None,
+        }).collect();
+        assert_eq!(starts, vec![a.clone(), latest.clone()]);
+
+        for path in [a, stale, latest] {
+            let _ = std::fs::remove_file(path);
+        }
     }
 
     #[test]

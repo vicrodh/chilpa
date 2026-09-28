@@ -1091,8 +1091,8 @@ impl Chilpa {
                     self.load_album_context();
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
-                    // On DSD the rate that names it is the DSD rate, not the
-                    // DoP carrier the device was opened at.
+                    // On DSD the rate that names it is the one-bit source
+                    // rate, not the DoP carrier or native U32 frame rate.
                     let rate = match dsd_multiple {
                         Some(multiple) => multiple * 44_100,
                         None => opened.sample_rate_hz,
@@ -1134,13 +1134,14 @@ impl Chilpa {
                     };
                     // The channels are the music's: a mono track that goes
                     // out in both channels of a stereo DAC is still mono.
-                    self.now.format = match (dsd_multiple, dsd_passthrough) {
+                    self.now.format = match (dsd_multiple, opened.sample_format.is_dsd(), dsd_passthrough) {
+                        (Some(multiple), true, _) => chilpa_i18n::t_args("DSD{} · Native at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
                         // On DSD what matters is the DSD rate; the DoP
                         // carrier is stated separately, because it is the
                         // format the device was opened with.
-                        (Some(multiple), true) => chilpa_i18n::t_args("DSD{} · DoP at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
-                        (Some(multiple), false) => chilpa_i18n::t_args("DSD{} · PCM at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
-                        (None, _) => match bits {
+                        (Some(multiple), false, true) => chilpa_i18n::t_args("DSD{} · DoP at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
+                        (Some(multiple), false, false) => chilpa_i18n::t_args("DSD{} · PCM at {} Hz · {}", &[&multiple.to_string(), &opened.sample_rate_hz.to_string(), &channels(music_channels)]),
+                        (None, _, _) => match bits {
                             Some(bits) => format!("{} Hz · {} bits · {}", opened.sample_rate_hz, bits, channels(music_channels)),
                             // A lossy track has no bit depth, and the word it
                             // was rounded into is not one: "32 bits" on an
