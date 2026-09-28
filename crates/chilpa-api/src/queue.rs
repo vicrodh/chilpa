@@ -188,6 +188,16 @@ impl Chilpa {
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
+        chilpa_core::trace_playback(
+            "facade",
+            "launch_requested",
+            format_args!(
+                "from={from} device={device:?} start_at={start_at:?} reason={why:?} queue_len={} playing={} player_exists={}",
+                self.queue.len(),
+                self.now.playing,
+                self.player.is_some()
+            ),
+        );
         let tracks: Vec<std::path::PathBuf> =
             self.queue.iter().skip(from).map(std::path::PathBuf::from).collect();
         if tracks.is_empty() {
@@ -203,6 +213,11 @@ impl Chilpa {
                 self.in_progress = None;
             }
             self.stop();
+            chilpa_core::trace_playback(
+                "facade",
+                "old_playback_stopped",
+                format_args!("reason={why:?}"),
+            );
         }
         self.base = from;
         self.removed = vec![false; self.queue.len()];
@@ -238,6 +253,15 @@ impl Chilpa {
         };
         // Moved while paused, it stays paused where it went.
         let paused = why == Relaunch::Output && self.now.paused;
+        chilpa_core::trace_playback(
+            "facade",
+            "launch_submitted",
+            format_args!(
+                "device={device:?} tracks={} first={:?} paused={paused} gapless={gapless} normalize={normalize} exclusive={exclusive}",
+                tracks.len(),
+                tracks.first()
+            ),
+        );
         player.play_all_from_paused(&tracks, device, start_at, paused);
     }
 
@@ -256,6 +280,11 @@ impl Chilpa {
 
     /// Starts what a search found playing, in that order.
     pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
+        chilpa_core::trace_playback(
+            "facade",
+            "play_tracks_called",
+            format_args!("paths={} device={device:?} legacy_bit_perfect={bit_perfect}", paths.len()),
+        );
         let tracks: Vec<std::path::PathBuf> =
             paths.iter().map(std::path::PathBuf::from).collect();
         // A disc image goes in as its tracks, one entry each.
@@ -812,8 +841,19 @@ impl Chilpa {
     /// It returns the queue's titles, not its paths: a queue showing file
     /// names tells nobody anything.
     pub fn play_album(&mut self, album_id: i64, device: &str, bit_perfect: bool) -> Vec<String> {
+        let started = std::time::Instant::now();
+        chilpa_core::trace_playback(
+            "facade",
+            "play_album_called",
+            format_args!("album_id={album_id} device={device:?} legacy_bit_perfect={bit_perfect}"),
+        );
         let available: Vec<LibraryTrack> =
             self.album_tracks(album_id).into_iter().filter(|t| t.present).collect();
+        chilpa_core::trace_playback(
+            "facade",
+            "album_tracks_loaded",
+            format_args!("after={:?} album_id={album_id} tracks={}", started.elapsed(), available.len()),
+        );
         if available.is_empty() {
             self.now.error = chilpa_i18n::t("that album has no playable tracks");
             return Vec::new();

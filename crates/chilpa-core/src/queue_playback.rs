@@ -776,7 +776,43 @@ where
         // queue is over.
         let Some(path) = next_live(queue, order, repeat, &mut index) else { break };
         let path = &path;
-        let (mut source, mut delivery) = open_track(path, caps, policy, controls.dsd_passthrough.get())?;
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "track_selected",
+            format_args!(
+                "index={index} queue_len={} path={path:?} policy={policy:?} dsd_passthrough={}",
+                queue.len(),
+                controls.dsd_passthrough.get()
+            ),
+        );
+        let source_started = std::time::Instant::now();
+        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_passthrough.get()) {
+            Ok(opened) => opened,
+            Err(error) => {
+                chilpa_audio::diagnostics::trace(
+                    "queue",
+                    "source_failed",
+                    format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
+                );
+                return Err(error);
+            }
+        };
+        let source_kind = match &source {
+            Source::Pcm(_) => "pcm",
+            Source::Dop(_) => "dop",
+            Source::DsdPcm(_) => "dsd-pcm",
+        };
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "source_opened",
+            format_args!(
+                "after={:?} kind={source_kind} requested={:?} opened={:?} transforms={:?}",
+                source_started.elapsed(),
+                delivery.requested,
+                delivery.opened,
+                delivery.transforms
+            ),
+        );
 
         let transition = match &opened {
             Some((actual, _)) => transition(*actual, delivery.opened),
@@ -785,20 +821,83 @@ where
         // Without gapless, one track does not run into the next: the device
         // plays out what it holds and is opened again.
         let keep_open = transition.is_seamless() && gapless.get();
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "transition_decided",
+            format_args!(
+                "transition={transition:?} gapless={} keep_open={keep_open} sink_open={}",
+                gapless.get(),
+                opened.is_some()
+            ),
+        );
         if !keep_open || opened.is_none() {
-            if let Some((_, mut old)) = opened.take() {
+            if let Some((old_format, mut old)) = opened.take() {
                 if ended_by_itself {
-                    old.drain(&give_up).map_err(PlayError::Sink)?;
+                    let started = std::time::Instant::now();
+                    chilpa_audio::diagnostics::trace(
+                        "queue",
+                        "sink_drain_started",
+                        format_args!("format={old_format:?}"),
+                    );
+                    if let Err(error) = old.drain(&give_up) {
+                        chilpa_audio::diagnostics::trace(
+                            "queue",
+                            "sink_drain_failed",
+                            format_args!("after={:?} error={error}", started.elapsed()),
+                        );
+                        return Err(PlayError::Sink(error));
+                    }
+                    chilpa_audio::diagnostics::trace(
+                        "queue",
+                        "sink_drain_finished",
+                        format_args!("after={:?}", started.elapsed()),
+                    );
                 }
-                old.close().map_err(PlayError::Sink)?;
+                let started = std::time::Instant::now();
+                if let Err(error) = old.close() {
+                    chilpa_audio::diagnostics::trace(
+                        "queue",
+                        "sink_close_failed",
+                        format_args!("after={:?} format={old_format:?} error={error}", started.elapsed()),
+                    );
+                    return Err(PlayError::Sink(error));
+                }
+                chilpa_audio::diagnostics::trace(
+                    "queue",
+                    "sink_closed",
+                    format_args!("after={:?} format={old_format:?}", started.elapsed()),
+                );
             }
-            let new = open_sink(delivery.opened).map_err(PlayError::Sink)?;
+            let started = std::time::Instant::now();
+            chilpa_audio::diagnostics::trace(
+                "queue",
+                "sink_open_started",
+                format_args!("format={:?}", delivery.opened),
+            );
+            let new = match open_sink(delivery.opened) {
+                Ok(sink) => sink,
+                Err(error) => {
+                    chilpa_audio::diagnostics::trace(
+                        "queue",
+                        "sink_open_failed",
+                        format_args!("after={:?} format={:?} error={error}", started.elapsed(), delivery.opened),
+                    );
+                    return Err(PlayError::Sink(error));
+                }
+            };
+            chilpa_audio::diagnostics::trace(
+                "queue",
+                "sink_opened",
+                format_args!("after={:?} format={:?}", started.elapsed(), delivery.opened),
+            );
             opened = Some((delivery.opened, new));
             packer = DopPacker::new();
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
         if skipped_before && keep_open {
+            chilpa_audio::diagnostics::trace("queue", "sink_flush_started", format_args!("reason=skip"));
             sink.flush().map_err(PlayError::Sink)?;
+            chilpa_audio::diagnostics::trace("queue", "sink_flush_finished", format_args!("reason=skip"));
         }
 
         // Normalizing is asked for per track, from what its tags say; a gain
@@ -823,6 +922,12 @@ where
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
         on_track(index, path, &delivery);
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "render_started",
+            format_args!("index={index} kind={source_kind} format={:?}", delivery.opened),
+        );
+        let render_started = std::time::Instant::now();
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
         let (outcome, skipped) = match &mut source {
@@ -894,6 +999,14 @@ where
                 (outcome, frames.skipped)
             }
         };
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "render_finished",
+            format_args!(
+                "after={:?} index={index} kind={source_kind} skipped={skipped} outcome={outcome:?}",
+                render_started.elapsed()
+            ),
+        );
         let finished_ok = outcome.may_advance_queue();
         ended_by_itself = finished_ok && !skipped;
         skipped_before = skipped;
@@ -920,11 +1033,38 @@ where
         }
     }
 
-    if let Some((_, mut sink)) = opened.take() {
+    if let Some((format, mut sink)) = opened.take() {
         if ended_by_itself {
-            sink.drain(&give_up).map_err(PlayError::Sink)?;
+            let started = std::time::Instant::now();
+            chilpa_audio::diagnostics::trace("queue", "sink_drain_started", format_args!("format={format:?} final=true"));
+            if let Err(error) = sink.drain(&give_up) {
+                chilpa_audio::diagnostics::trace(
+                    "queue",
+                    "sink_drain_failed",
+                    format_args!("after={:?} final=true error={error}", started.elapsed()),
+                );
+                return Err(PlayError::Sink(error));
+            }
+            chilpa_audio::diagnostics::trace(
+                "queue",
+                "sink_drain_finished",
+                format_args!("after={:?} final=true", started.elapsed()),
+            );
         }
-        sink.close().map_err(PlayError::Sink)?;
+        let started = std::time::Instant::now();
+        if let Err(error) = sink.close() {
+            chilpa_audio::diagnostics::trace(
+                "queue",
+                "sink_close_failed",
+                format_args!("after={:?} final=true error={error}", started.elapsed()),
+            );
+            return Err(PlayError::Sink(error));
+        }
+        chilpa_audio::diagnostics::trace(
+            "queue",
+            "sink_closed",
+            format_args!("after={:?} format={format:?} final=true", started.elapsed()),
+        );
     }
     Ok(results)
 }

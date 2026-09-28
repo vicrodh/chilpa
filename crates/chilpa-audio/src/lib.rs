@@ -12,6 +12,7 @@
 
 pub mod backend;
 pub mod capture;
+pub mod diagnostics;
 pub mod dop;
 pub mod format;
 pub mod gapless;

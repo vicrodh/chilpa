@@ -44,6 +44,7 @@ const PATIENCE: Duration = Duration::from_secs(3);
 
 /// Whether cards are asked for before they are opened.
 pub fn set_asking(on: bool) {
+    chilpa_audio::diagnostics::trace("reserve", "setting_changed", format_args!("asking={on}"));
     ASKING.store(on, Ordering::Relaxed);
 }
 
@@ -65,9 +66,19 @@ pub fn card_of(device: &str) -> Option<u32> {
 /// None when they are not, or the name is not a numbered card, or there is
 /// nobody to ask.
 pub fn hold(device: &str) -> Result<Option<Reservation>, chilpa_audio::sink::SinkError> {
-    match card_of(device).filter(|_| asking()) {
+    let card = card_of(device);
+    let asking = asking();
+    chilpa_audio::diagnostics::trace(
+        "reserve",
+        "hold_requested",
+        format_args!("device={device:?} card={card:?} asking={asking}"),
+    );
+    match card.filter(|_| asking) {
         Some(card) => Reservation::take(card).map_err(chilpa_audio::sink::SinkError::Backend),
-        None => Ok(None),
+        None => {
+            chilpa_audio::diagnostics::trace("reserve", "hold_skipped", format_args!("device={device:?}"));
+            Ok(None)
+        }
     }
 }
 
@@ -93,9 +104,19 @@ impl Reservation {
     /// opened as it is.
     pub fn take(card: u32) -> Result<Option<Self>, String> {
         if let Some((_, parked)) = PARKED.lock().ok().and_then(|mut p| p.as_mut()?.remove(&card)) {
+            chilpa_audio::diagnostics::trace("reserve", "parked_claimed", format_args!("card={card}"));
             return Ok(Some(parked));
         }
-        let Ok(bus) = SyncConnection::new_session() else { return Ok(None) };
+        let started = std::time::Instant::now();
+        chilpa_audio::diagnostics::trace("reserve", "take_started", format_args!("card={card}"));
+        let Ok(bus) = SyncConnection::new_session() else {
+            chilpa_audio::diagnostics::trace(
+                "reserve",
+                "session_bus_missing",
+                format_args!("after={:?} card={card}", started.elapsed()),
+            );
+            return Ok(None);
+        };
         let name = format!("org.freedesktop.ReserveDevice1.Audio{card}");
         let refused = || chilpa_i18n::t_args("the sound server would not let go of card {}", &[&card.to_string()]);
         // Be ready to answer on the reservation object before acquiring its
@@ -112,21 +133,84 @@ impl Reservation {
         // reacquires the name first and we then steal it without a second
         // RequestRelease.  WirePlumber consequently believes it still owns
         // the card and does not try again when Chilpa stops.
-        let first = bus.request_name(name.as_str(), false, false, false).map_err(|e| e.to_string())?;
+        let request_started = std::time::Instant::now();
+        let first = match bus.request_name(name.as_str(), false, false, false) {
+            Ok(reply) => reply,
+            Err(error) => {
+                chilpa_audio::diagnostics::trace(
+                    "reserve",
+                    "name_request_failed",
+                    format_args!("after={:?} card={card} stage=queue error={error}", request_started.elapsed()),
+                );
+                return Err(error.to_string());
+            }
+        };
+        chilpa_audio::diagnostics::trace(
+            "reserve",
+            "name_requested",
+            format_args!("after={:?} card={card} reply={first:?}", request_started.elapsed()),
+        );
         if !matches!(first, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) {
             let path = format!("/org/freedesktop/ReserveDevice1/Audio{card}");
             let owner = bus.with_proxy(name.as_str(), path, PATIENCE);
-            let (released,): (bool,) = owner
+            let release_started = std::time::Instant::now();
+            chilpa_audio::diagnostics::trace(
+                "reserve",
+                "release_requested",
+                format_args!("card={card} priority={PRIORITY}"),
+            );
+            let (released,): (bool,) = match owner
                 .method_call("org.freedesktop.ReserveDevice1", "RequestRelease", (PRIORITY,))
-                .map_err(|e| e.to_string())?;
-            let second = bus.request_name(name.as_str(), false, false, false).map_err(|e| e.to_string())?;
+            {
+                Ok(reply) => reply,
+                Err(error) => {
+                    chilpa_audio::diagnostics::trace(
+                        "reserve",
+                        "release_failed",
+                        format_args!("after={:?} card={card} error={error}", release_started.elapsed()),
+                    );
+                    return Err(error.to_string());
+                }
+            };
+            chilpa_audio::diagnostics::trace(
+                "reserve",
+                "release_answered",
+                format_args!("after={:?} card={card} released={released}", release_started.elapsed()),
+            );
+            let second_started = std::time::Instant::now();
+            let second = match bus.request_name(name.as_str(), false, false, false) {
+                Ok(reply) => reply,
+                Err(error) => {
+                    chilpa_audio::diagnostics::trace(
+                        "reserve",
+                        "name_request_failed",
+                        format_args!("after={:?} card={card} stage=claim error={error}", second_started.elapsed()),
+                    );
+                    return Err(error.to_string());
+                }
+            };
+            chilpa_audio::diagnostics::trace(
+                "reserve",
+                "name_claimed",
+                format_args!("after={:?} card={card} reply={second:?}", second_started.elapsed()),
+            );
             if !released || !matches!(second, RequestNameReply::PrimaryOwner | RequestNameReply::AlreadyOwner) {
                 // Also removes a queued request, so a refused hand-off does
                 // not surprise the owner later.
                 let _ = bus.release_name(name.as_str());
+                chilpa_audio::diagnostics::trace(
+                    "reserve",
+                    "take_refused",
+                    format_args!("after={:?} card={card} released={released} reply={second:?}", started.elapsed()),
+                );
                 return Err(refused());
             }
         }
+        chilpa_audio::diagnostics::trace(
+            "reserve",
+            "take_finished",
+            format_args!("after={:?} card={card}", started.elapsed()),
+        );
         Ok(Some(Self { bus, name, _server: server }))
     }
 
@@ -134,6 +218,7 @@ impl Reservation {
     /// it goes back by itself.
     pub fn park(self, card: u32) {
         let turn = TURN.fetch_add(1, Ordering::Relaxed);
+        chilpa_audio::diagnostics::trace("reserve", "parked", format_args!("card={card} turn={turn}"));
         if let Ok(mut parked) = PARKED.lock() {
             parked.get_or_insert_with(HashMap::new).insert(card, (turn, self));
         }
@@ -141,6 +226,7 @@ impl Reservation {
             std::thread::sleep(PATIENCE);
             if let Ok(mut parked) = PARKED.lock() {
                 if let Some(p) = parked.as_mut().filter(|p| p.get(&card).is_some_and(|(t, _)| *t == turn)) {
+                    chilpa_audio::diagnostics::trace("reserve", "park_expired", format_args!("card={card} turn={turn}"));
                     p.remove(&card);
                 }
             }
@@ -150,16 +236,19 @@ impl Reservation {
 
 impl Drop for Reservation {
     fn drop(&mut self) {
+        chilpa_audio::diagnostics::trace("reserve", "released", format_args!("name={:?}", self.name));
         let _ = self.bus.release_name(self.name.as_str());
     }
 }
 
 impl Drop for Server {
     fn drop(&mut self) {
+        chilpa_audio::diagnostics::trace("reserve", "server_stopping", format_args!(""));
         self.stop.store(true, Ordering::Relaxed);
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
         }
+        chilpa_audio::diagnostics::trace("reserve", "server_stopped", format_args!(""));
     }
 }
 
