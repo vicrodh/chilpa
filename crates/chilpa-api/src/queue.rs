@@ -206,13 +206,6 @@ impl Chilpa {
         }
         if self.player.is_some() && self.now.playing {
             self.relaunching = Some(why);
-            if why == Relaunch::Output {
-                // The listen did not end and it was not skipped: it is the
-                // same track, still going, coming out somewhere else. What
-                // was played so far is dropped rather than written down as a
-                // listen of its own, so one track logs one listen.
-                self.in_progress = None;
-            }
             if let Some(player) = &self.player {
                 player.stop_for_handoff();
             }

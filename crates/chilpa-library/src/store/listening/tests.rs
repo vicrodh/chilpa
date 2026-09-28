@@ -141,7 +141,7 @@ fn snapshot_survives_metadata_edits_and_missing_tracks() {
     let captured = event(&lib, 1, 1, Some(0), 1000);
     lib.db
         .execute_batch(
-            "UPDATE tracks SET artist = 'Changed', present = 0 WHERE id = 1;
+            "UPDATE tracks SET artist = 'Changed', external_id = 'moved', present = 0 WHERE id = 1;
         DELETE FROM track_genres WHERE track_id = 1;",
         )
         .unwrap();
@@ -163,6 +163,8 @@ fn snapshot_survives_metadata_edits_and_missing_tracks() {
         lib.stats().unwrap().listened_ms,
         lib.listening_summary(&f).unwrap().listened_ms
     );
+    lib.record_listen(&event(&lib, 1, 2, Some(0), 1000)).unwrap();
+    assert_eq!(lib.listening_summary(&f).unwrap().distinct_tracks, 1);
 }
 
 #[test]

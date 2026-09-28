@@ -1469,6 +1469,9 @@ msgstr "este sidecar lo escribió un Chilpa más nuevo; actualiza Chilpa para ca
 msgid "a number from 1 to 9999, or nothing"
 msgstr "un número del 1 al 9999, o nada"
 
+msgid "a rating must be between 0 and 5 stars"
+msgstr "La valoración debe estar entre 0 y 5 estrellas"
+
 msgid "a scan is already running"
 msgstr "ya hay un escaneo corriendo"
 
@@ -1772,6 +1775,9 @@ msgstr "poner un panel suyo en la ventana"
 msgid "quarantined"
 msgstr "en cuarentena"
 
+msgid "ratings could not be loaded: {}"
+msgstr "No se pudieron cargar las valoraciones: {}"
+
 msgid "reach the internet, only {}"
 msgstr "salir a internet, solo a {}"
 
@@ -2045,6 +2051,9 @@ msgstr "no se pudo abrir la biblioteca: {}"
 msgid "the library could not be repaired: {}"
 msgstr "no se pudo reparar la biblioteca: {}"
 
+msgid "the library is unavailable"
+msgstr "La biblioteca no está disponible"
+
 msgid "the link it gave has already expired"
 msgstr "el enlace que dio ya caducó"
 
@@ -2056,6 +2065,9 @@ msgstr "no se pudo leer la lista: {}"
 
 msgid "the list could not be saved: {}"
 msgstr "no se pudo guardar la lista: {}"
+
+msgid "the listen could not be saved: {}"
+msgstr "No se pudo guardar la escucha: {}"
 
 msgid "the manifest is not understood: {}"
 msgstr "el manifest no se entiende: {}"
@@ -2086,6 +2098,9 @@ msgstr "el sandbox de plugins no está arrancado"
 
 msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
 msgstr "no se pudieron leer las frecuencias a las que puede correr el grafo de PipeWire, así que no se puede prometer nada sin tocar"
+
+msgid "the rating could not be saved: {}"
+msgstr "No se pudo guardar la valoración: {}"
 
 msgid "the record has no artist"
 msgstr "el disco no tiene artista"
