@@ -130,7 +130,10 @@ where
     S: FrameSource,
     K: AudioSink,
 {
-    let frame_bytes = sink.format().frame_bytes();
+    let format = sink.format();
+    let frame_bytes = format.frame_bytes();
+    let started = std::time::Instant::now();
+    crate::diagnostics::trace("render", "started", format_args!("format={format:?}"));
     let mut frames: u64 = 0;
     let mut xruns = 0;
     // Since when the device has taken nothing, while it says it is full.
@@ -146,14 +149,35 @@ where
     while !stop.is_stopped() {
         let block = match source.next_block() {
             Ok(Some(block)) => block,
-            Ok(None) => return Outcome::Finished { frames },
-            Err(reason) => return Outcome::Unreadable { frames, reason },
+            Ok(None) => {
+                crate::diagnostics::trace(
+                    "render",
+                    "source_finished",
+                    format_args!("after={:?} frames={frames}", started.elapsed()),
+                );
+                return Outcome::Finished { frames };
+            }
+            Err(reason) => {
+                crate::diagnostics::trace(
+                    "render",
+                    "source_failed",
+                    format_args!("after={:?} frames={frames} reason={reason:?}", started.elapsed()),
+                );
+                return Outcome::Unreadable { frames, reason };
+            }
         };
         // From somewhere else in the track: what the device holds is from
         // before, and it goes.
         if source.moved() {
-            thrown_away += sink.held();
+            let held = sink.held();
+            crate::diagnostics::trace(
+                "render",
+                "position_moved",
+                format_args!("frames={frames} held={held} thrown_away={thrown_away}"),
+            );
+            thrown_away += held;
             if let Err(error) = sink.flush() {
+                crate::diagnostics::trace("render", "flush_failed", format_args!("error={error}"));
                 return Outcome::Failed { frames, error };
             }
         }
@@ -161,10 +185,16 @@ where
         let mut warned = false;
         while offset < block.len() {
             if stop.is_stopped() {
+                crate::diagnostics::trace(
+                    "render",
+                    "stopped",
+                    format_args!("after={:?} frames={frames}", started.elapsed()),
+                );
                 return Outcome::Stopped { frames };
             }
             if pause.is_paused() {
                 if !warned {
+                    crate::diagnostics::trace("render", "pause_entered", format_args!("frames={frames}"));
                     let _ = sink.set_paused(true);
                     warned = true;
                 }
@@ -175,12 +205,22 @@ where
                     // go back to it, and let what the device held go with
                     // the device.
                     let held = sink.held();
+                    crate::diagnostics::trace(
+                        "render",
+                        "suspend_started",
+                        format_args!("frames={frames} held={held}"),
+                    );
                     on_progress(frames.saturating_sub(thrown_away + held));
                     thrown_away += held;
                     if source.rewind() {
                         offset = block.len();
                     }
-                    let _ = sink.suspend();
+                    let result = sink.suspend();
+                    crate::diagnostics::trace(
+                        "render",
+                        "suspend_finished",
+                        format_args!("result={result:?}"),
+                    );
                     released = true;
                 }
                 std::thread::sleep(std::time::Duration::from_millis(20));
@@ -189,11 +229,15 @@ where
             paused_since = None;
             if released {
                 released = false;
+                crate::diagnostics::trace("render", "wake_started", format_args!("frames={frames}"));
                 if let Err(error) = sink.wake() {
+                    crate::diagnostics::trace("render", "wake_failed", format_args!("error={error}"));
                     return Outcome::Failed { frames, error };
                 }
+                crate::diagnostics::trace("render", "wake_finished", format_args!("frames={frames}"));
             }
             if warned {
+                crate::diagnostics::trace("render", "pause_left", format_args!("frames={frames}"));
                 let _ = sink.set_paused(false);
                 warned = false;
             }
@@ -208,6 +252,11 @@ where
                 Ok(0) => {
                     let since = *full_since.get_or_insert_with(std::time::Instant::now);
                     if since.elapsed() > STALL_LIMIT {
+                        crate::diagnostics::trace(
+                            "render",
+                            "sink_stalled",
+                            format_args!("frames={frames} for={:?}", since.elapsed()),
+                        );
                         return Outcome::Failed { frames, error: SinkError::Timeout(since.elapsed()) };
                     }
                     std::thread::sleep(FULL_WAIT);
@@ -223,14 +272,36 @@ where
                 }
                 Err(e) if e.is_recoverable() => {
                     xruns += 1;
+                    crate::diagnostics::trace(
+                        "render",
+                        "recoverable_error",
+                        format_args!("frames={frames} consecutive={xruns} error={e}"),
+                    );
                     if xruns >= MAX_CONSECUTIVE_XRUNS {
+                        crate::diagnostics::trace(
+                            "render",
+                            "device_lost",
+                            format_args!("frames={frames} reason=consecutive_xruns"),
+                        );
                         return Outcome::Failed { frames, error: SinkError::DeviceLost };
                     }
                 }
-                Err(error) => return Outcome::Failed { frames, error },
+                Err(error) => {
+                    crate::diagnostics::trace(
+                        "render",
+                        "write_failed",
+                        format_args!("after={:?} frames={frames} error={error}", started.elapsed()),
+                    );
+                    return Outcome::Failed { frames, error };
+                }
             }
         }
     }
+    crate::diagnostics::trace(
+        "render",
+        "stopped",
+        format_args!("after={:?} frames={frames}", started.elapsed()),
+    );
     Outcome::Stopped { frames }
 }
 

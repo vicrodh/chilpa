@@ -22,6 +22,11 @@ pub mod sacd_tracks;
 /// What goes out the device, for whoever wants to draw it.
 pub use chilpa_audio::{spectrum, tap};
 
+/// Adds a facade event to the playback lifecycle trace.
+pub fn trace_playback(scope: &str, event: &str, details: std::fmt::Arguments<'_>) {
+    chilpa_audio::diagnostics::trace(scope, event, details);
+}
+
 /// A request made on a plugin's behalf. The caller supplies the credential,
 /// never the plugin (ADR-007).
 pub use chilpa_stream::send_request;

@@ -70,7 +70,14 @@ fn alsa_format(f: SampleFormat) -> Format {
 /// promise bit-perfect. Guessing rates and turning resampling off, the way
 /// the QBZ wizard did, is worse than not knowing.
 pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
+    let started = std::time::Instant::now();
+    chilpa_audio::diagnostics::trace("alsa", "probe_started", format_args!("device={device:?}"));
     let reservation = reserve::hold(device)?;
+    chilpa_audio::diagnostics::trace(
+        "alsa",
+        "probe_reserved",
+        format_args!("after={:?} device={device:?} reserved={}", started.elapsed(), reservation.is_some()),
+    );
     let pcm = open_patiently(device, false, reservation.is_some())?;
     let params = HwParams::any(&pcm).map_err(backend)?;
     let mut caps = DeviceCaps { probed: true, ..DeviceCaps::default() };
@@ -96,6 +103,17 @@ pub fn probe(device: &str) -> Result<DeviceCaps, SinkError> {
     if let (Some(held), Some(card)) = (reservation, reserve::card_of(device)) {
         held.park(card);
     }
+    chilpa_audio::diagnostics::trace(
+        "alsa",
+        "probe_finished",
+        format_args!(
+            "after={:?} device={device:?} rates={:?} formats={:?} channels={:?}",
+            started.elapsed(),
+            caps.sample_rates,
+            caps.formats,
+            caps.channels
+        ),
+    );
     Ok(caps)
 }
 
@@ -131,8 +149,24 @@ impl AlsaSink {
     }
 
     fn opening(device: &str, stream: StreamFormat, named: bool) -> Result<Self, SinkError> {
+        let started = std::time::Instant::now();
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "sink_open_started",
+            format_args!("device={device:?} stream={stream:?} named={named}"),
+        );
         let reservation = reserve::hold(device)?;
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "sink_reserved",
+            format_args!("after={:?} reserved={}", started.elapsed(), reservation.is_some()),
+        );
         let pcm = Self::pcm_at(device, stream, named, reservation.is_some())?;
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "sink_open_finished",
+            format_args!("after={:?} device={device:?} stream={stream:?}", started.elapsed()),
+        );
         Ok(Self { pcm: Some(pcm), reservation, device: device.to_string(), named, stream })
     }
 
@@ -214,20 +248,32 @@ impl AudioSink for AlsaSink {
         // because an endpoint that stopped answering would hang the stop
         // (the stop() deadlock in QBZ). Waiting for the last of a track is
         // `drain` below, which the player asks for at a natural end.
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "close_started",
+            format_args!("device={:?} stream={:?} pcm_open={}", self.device, self.stream, self.pcm.is_some()),
+        );
         if let Some(pcm) = &self.pcm {
             pcm.drop().map_err(backend)?;
         }
+        chilpa_audio::diagnostics::trace("alsa", "close_finished", format_args!("device={:?}", self.device));
         Ok(())
     }
 
     /// Closes the PCM for real -- `drop` only stops it; the device is let go
     /// when the PCM itself goes -- and keeps how to open it again.
     fn suspend(&mut self) -> Result<(), SinkError> {
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "suspend_started",
+            format_args!("device={:?} stream={:?}", self.device, self.stream),
+        );
         if let Some(pcm) = self.pcm.take() {
             let _ = pcm.drop();
         }
         // The card goes back to the server for the pause.
         self.reservation = None;
+        chilpa_audio::diagnostics::trace("alsa", "suspend_finished", format_args!("device={:?}", self.device));
         Ok(())
     }
 
@@ -235,8 +281,19 @@ impl AudioSink for AlsaSink {
     /// as the first time: resuming never settles for less.
     fn wake(&mut self) -> Result<(), SinkError> {
         if self.pcm.is_none() {
+            let started = std::time::Instant::now();
+            chilpa_audio::diagnostics::trace(
+                "alsa",
+                "wake_started",
+                format_args!("device={:?} stream={:?}", self.device, self.stream),
+            );
             self.reservation = reserve::hold(&self.device)?;
             self.pcm = Some(Self::pcm_at(&self.device, self.stream, self.named, self.reservation.is_some())?);
+            chilpa_audio::diagnostics::trace(
+                "alsa",
+                "wake_finished",
+                format_args!("after={:?} device={:?}", started.elapsed(), self.device),
+            );
         }
         Ok(())
     }
@@ -249,9 +306,17 @@ impl AudioSink for AlsaSink {
     /// Drops what the device holds and makes it ready for more, without
     /// closing it.
     fn flush(&mut self) -> Result<(), SinkError> {
+        let started = std::time::Instant::now();
+        chilpa_audio::diagnostics::trace("alsa", "flush_started", format_args!("device={:?}", self.device));
         let Some(pcm) = &self.pcm else { return Ok(()) };
         pcm.drop().map_err(backend)?;
-        pcm.prepare().map_err(backend)
+        let result = pcm.prepare().map_err(backend);
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "flush_finished",
+            format_args!("after={:?} device={:?} result={result:?}", started.elapsed(), self.device),
+        );
+        result
     }
 
     /// Watches the device play out what it holds, instead of asking ALSA to
@@ -260,6 +325,8 @@ impl AudioSink for AlsaSink {
     /// plus a second.
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         let Some(pcm) = &self.pcm else { return Ok(()) };
+        let started = std::time::Instant::now();
+        let initial_state = pcm.state();
         // A PCM below its start threshold holds what it was handed and does
         // not play it: a track shorter than the buffer never started.
         if pcm.state() == State::Prepared {
@@ -267,12 +334,26 @@ impl AudioSink for AlsaSink {
         }
         let rate = u64::from(self.stream.sample_rate_hz.max(1));
         let held = pcm.hw_params_current().and_then(|p| p.get_buffer_size()).unwrap_or(0).max(0) as u64;
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "drain_started",
+            format_args!(
+                "device={:?} stream={:?} state={initial_state:?} buffer_frames={held}",
+                self.device,
+                self.stream
+            ),
+        );
         let limit = std::time::Instant::now()
             + std::time::Duration::from_millis(held * 1000 / rate)
             + std::time::Duration::from_secs(1);
         // It ran out, which is where it stops once all of it has played.
         while pcm.state() == State::Running && std::time::Instant::now() < limit {
             if give_up() {
+                chilpa_audio::diagnostics::trace(
+                    "alsa",
+                    "drain_cancelled",
+                    format_args!("after={:?} device={:?}", started.elapsed(), self.device),
+                );
                 return Ok(());
             }
             match pcm.delay() {
@@ -283,6 +364,11 @@ impl AudioSink for AlsaSink {
                 _ => break,
             }
         }
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "drain_finished",
+            format_args!("after={:?} device={:?} state={:?}", started.elapsed(), self.device, pcm.state()),
+        );
         Ok(())
     }
 }
@@ -302,14 +388,38 @@ fn open(device: &str) -> Result<PCM, SinkError> {
 /// device are not one step on its side.
 fn open_patiently(device: &str, named: bool, reserved: bool) -> Result<PCM, SinkError> {
     let mut tries = if reserved { 40 } else { 1 };
+    let total = tries;
+    let started = std::time::Instant::now();
     loop {
         tries -= 1;
+        let attempt = total - tries;
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "pcm_open_attempt",
+            format_args!("device={device:?} named={named} reserved={reserved} attempt={attempt}/{total}"),
+        );
         let opened = if named { open_named(device) } else { open(device) };
         match opened {
             Err(SinkError::Backend(_)) if tries > 0 && busy(device) => {
+                chilpa_audio::diagnostics::trace(
+                    "alsa",
+                    "pcm_busy",
+                    format_args!("after={:?} device={device:?} attempt={attempt}/{total}", started.elapsed()),
+                );
                 std::thread::sleep(std::time::Duration::from_millis(50));
             }
-            other => return other,
+            other => {
+                chilpa_audio::diagnostics::trace(
+                    "alsa",
+                    "pcm_open_finished",
+                    format_args!(
+                        "after={:?} device={device:?} attempt={attempt}/{total} result={}",
+                        started.elapsed(),
+                        if other.is_ok() { "ok" } else { "error" }
+                    ),
+                );
+                return other;
+            }
         }
     }
 }

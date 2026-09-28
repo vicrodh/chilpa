@@ -119,11 +119,26 @@ impl Player {
         let thread = std::thread::Builder::new()
             .name("chilpa-player".into())
             .spawn(move || {
+                chilpa_audio::diagnostics::trace("player", "thread_started", format_args!(""));
                 while let Ok(order) = orders_rx.recv() {
                     match order {
-                        Order::Quit => break,
-                        Order::Stop => {}
+                        Order::Quit => {
+                            chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=quit"));
+                            break;
+                        }
+                        Order::Stop => {
+                            chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=stop barrier=passed"));
+                        }
                         Order::Play { device, start_at } => {
+                            chilpa_audio::diagnostics::trace(
+                                "player",
+                                "order_received",
+                                format_args!(
+                                    "kind=play device={device:?} start_at={start_at:?} queue_len={} paused={}",
+                                    queue_thread.len(),
+                                    controls_thread.pause.is_paused()
+                                ),
+                            );
                             // Every track starts with the flag clear: an old
                             // stop order does not kill the next one. The
                             // pause is not touched here: it was set when the
@@ -138,6 +153,7 @@ impl Player {
                             if let Some(at) = start_at {
                                 seek_thread.request(at);
                             }
+                            let started = std::time::Instant::now();
                             let result = play(
                                 &queue_thread,
                                 &device,
@@ -145,6 +161,11 @@ impl Player {
                                 &mut probe,
                                 &mut open,
                                 &events_tx,
+                            );
+                            chilpa_audio::diagnostics::trace(
+                                "player",
+                                "play_returned",
+                                format_args!("after={:?} result={result:?}", started.elapsed()),
                             );
                             let event = match result {
                                 Ok(Outcome::Finished { frames }) => PlayerEvent::Finished { frames },
@@ -162,6 +183,7 @@ impl Player {
                         }
                     }
                 }
+                chilpa_audio::diagnostics::trace("player", "thread_stopped", format_args!(""));
             })
             .expect("the player thread starts");
 
@@ -211,6 +233,15 @@ impl Player {
         self.controls.stop_after.clear();
         self.queue.set(crate::sacd_tracks::expand(paths));
         self.controls.pause.set(paused);
+        chilpa_audio::diagnostics::trace(
+            "player",
+            "order_sent",
+            format_args!(
+                "kind=play device={device:?} tracks={} first={:?} start_at={start_at:?} paused={paused}",
+                self.queue.len(),
+                self.queue.get(0)
+            ),
+        );
         let _ = self.orders.send(Order::Play {
             device: device.to_string(),
             start_at,
@@ -219,6 +250,7 @@ impl Player {
 
     /// Pauses or resumes. The track does not lose its place.
     pub fn set_paused(&self, paused: bool) {
+        chilpa_audio::diagnostics::trace("player", "pause_requested", format_args!("paused={paused}"));
         self.controls.pause.set(paused);
     }
 
@@ -229,12 +261,14 @@ impl Player {
     /// Skips to the next track in the queue. The current one ends as if it
     /// had finished, so the queue advances instead of stopping.
     pub fn next(&self) {
+        chilpa_audio::diagnostics::trace("player", "skip_requested", format_args!(""));
         self.controls.skip.skip();
     }
 
     /// Asks to seek to that point of the playing track. The seek is handled
     /// between blocks; asking does not block.
     pub fn seek(&self, position: std::time::Duration) {
+        chilpa_audio::diagnostics::trace("player", "seek_requested", format_args!("position={position:?}"));
         self.controls.seek.request(position);
     }
 
@@ -318,6 +352,7 @@ impl Player {
 
     /// Asks to stop. It does not wait on the device.
     pub fn stop(&self) {
+        chilpa_audio::diagnostics::trace("player", "stop_requested", format_args!(""));
         self.controls.stop.stop();
         let _ = self.orders.send(Order::Stop);
     }
@@ -361,13 +396,49 @@ fn play(
     let (stop, pause) = (&controls.stop, &controls.pause);
     let paths = queue.to_vec();
     let paths = paths.as_slice();
-    let caps = probe(device).map_err(PlayError::Sink)?;
+    chilpa_audio::diagnostics::trace(
+        "player",
+        "probe_started",
+        format_args!("device={device:?} exclusive={exclusive} tracks={}", paths.len()),
+    );
+    let probe_started = std::time::Instant::now();
+    let caps = match probe(device) {
+        Ok(caps) => {
+            chilpa_audio::diagnostics::trace(
+                "player",
+                "probe_finished",
+                format_args!(
+                    "after={:?} rates={:?} formats={:?} channels={:?} probed={}",
+                    probe_started.elapsed(),
+                    caps.sample_rates,
+                    caps.formats,
+                    caps.channels,
+                    caps.probed
+                ),
+            );
+            caps
+        }
+        Err(error) => {
+            chilpa_audio::diagnostics::trace(
+                "player",
+                "probe_failed",
+                format_args!("after={:?} error={error}", probe_started.elapsed()),
+            );
+            return Err(PlayError::Sink(error));
+        }
+    };
     // Fidelity is reported from the route and the transformations that
     // actually happened. It is not a promise that may prevent playback.
     let policy = Policy::AllowAnything;
-    controls.dsd_passthrough.set(
-        crate::backends::resolve(device)
-            .is_some_and(|(stack, _)| stack.kind() == chilpa_audio::backend::BackendKind::Alsa),
+    let dsd_passthrough = crate::backends::resolve(device)
+        .is_some_and(|(stack, _)| stack.kind() == chilpa_audio::backend::BackendKind::Alsa);
+    controls.dsd_passthrough.set(dsd_passthrough);
+    chilpa_audio::diagnostics::trace(
+        "player",
+        "route_resolved",
+        format_args!(
+            "device={device:?} exact_path={exact_path} policy={policy:?} dsd_passthrough={dsd_passthrough}"
+        ),
     );
     let total = paths.len();
 
@@ -386,6 +457,16 @@ fn play(
         controls,
         |format| open(device, format, exclusive),
         &mut |index, path, delivery| {
+            chilpa_audio::diagnostics::trace(
+                "player",
+                "track_started",
+                format_args!(
+                    "index={index}/{total} path={path:?} requested={:?} opened={:?} transforms={:?} exact_path={exact_path}",
+                    delivery.requested,
+                    delivery.opened,
+                    delivery.transforms
+                ),
+            );
             // Tags and the cover are read as each track starts, not as it is
             // queued: a long queue must not read hundreds of files before the
             // first one plays.
