@@ -43,6 +43,8 @@ fn build(dst: bool) -> TestImage {
         m[..8].copy_from_slice(b"SACDMTOC");
         m[8] = 1; // version 1.20
         m[9] = 20;
+        m[0x10..0x12].copy_from_slice(&3u16.to_be_bytes()); // three-disc album set
+        m[0x12..0x14].copy_from_slice(&2u16.to_be_bytes()); // this is disc two
         // The stereo area slot: primary, backup and size in sectors.
         m[0x40..0x44].copy_from_slice(&be32(AREA_TOC_LSN));
         m[0x44..0x48].copy_from_slice(&be32(0));
@@ -111,6 +113,8 @@ fn both_tracks_of_the_stereo_area_are_read() {
     let path = build(false).write("two-tracks");
     let img = open(&path).unwrap();
     assert_eq!(img.area.encoding, Encoding::Dsd3In14);
+    assert_eq!(img.area.disc_number, Some(2));
+    assert_eq!(img.area.disc_total, Some(3));
     assert_eq!(img.area.tracks.len(), 2);
     assert_eq!(img.area.tracks[0].number, 1);
     assert_eq!(img.area.tracks[0].start_lsn, AUDIO_START);

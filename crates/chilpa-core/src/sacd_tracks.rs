@@ -124,6 +124,8 @@ fn tags(area: &chilpa_sacd::SacdArea, track: &chilpa_sacd::SacdTrack, image: &Pa
             .or_else(|| image.file_stem().map(|s| s.to_string_lossy().to_string())),
         album_artist: area.artist.clone(),
         track_number: Some(u16::from(track.number)),
+        disc_number: area.disc_number,
+        disc_total: area.disc_total,
         ..chilpa_tags::Tags::default()
     }
 }

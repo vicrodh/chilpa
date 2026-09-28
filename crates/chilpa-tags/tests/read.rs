@@ -34,6 +34,7 @@ fn the_basic_fields_and_the_duration_are_read() {
             ("artist", "Artist"),
             ("album", "Album"),
             ("track", "3"),
+            ("disc", "2/3"),
             ("date", "2019-03-15"),
         ],
     ) else {
@@ -45,6 +46,8 @@ fn the_basic_fields_and_the_duration_are_read() {
     assert_eq!(info.tags.artist_line(), "Artist");
     assert_eq!(info.tags.album.as_deref(), Some("Album"));
     assert_eq!(info.tags.track_number, Some(3));
+    assert_eq!(info.tags.disc_number, Some(2));
+    assert_eq!(info.tags.disc_total, Some(3));
     assert_eq!(info.tags.date.as_deref(), Some("2019-03-15"), "the date is not truncated");
     assert_eq!(info.tags.year(), Some(2019));
     assert!(info.duration.as_millis() >= 900, "it lasted {:?}", info.duration);
