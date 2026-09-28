@@ -60,7 +60,7 @@ Rectangle {
         x: row.grid ? 0 : Metrics.gap12
         y: row.grid ? Metrics.gap16 : (parent.height - height) / 2
         glyph: Icons.folder
-        size: row.grid ? Metrics.playlistManagerFolderIcon : Metrics.iconLg
+        size: row.grid ? Metrics.playlistManagerFolderIcon : Metrics.iconMd
         color: row.folderColor
     }
 
@@ -130,6 +130,7 @@ Rectangle {
         }
         IconButton {
             id: moreButton
+            objectName: "playlistMore"
             size: Metrics.button24
             glyph: Icons.dotsVertical
             tip: I18n.tr("More actions", I18n.rev)
@@ -143,7 +144,7 @@ Rectangle {
 
     Menu {
         id: actions
-        property var actions: []
+        objectName: "playlistActions"
 
         function show() {
             const base = row.folder ? [
@@ -166,8 +167,7 @@ Rectangle {
                 if (row.local)
                     base.push({separator: true}, {text: I18n.tr("Delete", I18n.rev), act: "delete"})
             }
-            actions = base.filter(e => e.when === undefined || e.when)
-            entries = actions
+            entries = base.filter(e => e.when === undefined || e.when)
             const at = moreButton.mapToItem(row, moreButton.width - Metrics.menuWidth,
                                              moreButton.height + Metrics.gap4)
             x = at.x
@@ -176,7 +176,7 @@ Rectangle {
         }
 
         onChosen: (at) => {
-            const action = actions[at]
+            const action = entries[at]
             if (action.act === "open") row.manager.open(row.index)
             else if (action.act === "edit") row.editFolder(row.entryId, row.name, row.colorName)
             else if (action.act === "edit-playlist") row.editPlaylist(row.entryId)

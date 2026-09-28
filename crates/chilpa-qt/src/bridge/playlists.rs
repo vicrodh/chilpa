@@ -79,7 +79,7 @@ pub mod qobject {
         #[qinvokable] fn create_full(self: Pin<&mut Playlists>, name: &QString, description: &QString, artwork: &QString, tags: &QString, folder_id: i64, track_ids_json: &QString) -> i64;
         #[qinvokable] fn choose_artwork(self: &Playlists) -> QString;
         #[qinvokable] fn create_folder(self: Pin<&mut Playlists>, name: &QString, color: &QString) -> i64;
-        #[qinvokable] fn update_folder(self: Pin<&mut Playlists>, id: i64, name: &QString, color: &QString);
+        #[qinvokable] fn update_folder(self: Pin<&mut Playlists>, id: i64, name: &QString, color: &QString) -> bool;
         #[qinvokable] fn remove_folder(self: Pin<&mut Playlists>, id: i64);
         #[qinvokable] fn move_to_folder(self: Pin<&mut Playlists>, id: i64, folder_id: i64);
         #[qinvokable] fn set_visible(self: Pin<&mut Playlists>, id: i64, visible: bool);
@@ -274,7 +274,14 @@ impl qobject::Playlists {
         let tags: Vec<String> = tags.to_string().split(',').map(str::trim).filter(|tag| !tag.is_empty()).map(str::to_string).collect();
         let artwork = artwork.to_string();
         let id = app::with(|api| api.create_playlist_with(&name.to_string(), &description.to_string(), (!artwork.is_empty()).then_some(artwork.as_str()), &tags, (folder_id > 0).then_some(folder_id))).unwrap_or(0);
-        if id > 0 { app::with(|api| { api.add_track_ids_to_playlist(id, &track_ids); }); self.as_mut().changed(); }
+        if id > 0 {
+            let added = app::with(|api| api.add_track_ids_to_playlist(id, &track_ids));
+            if added.rejected {
+                app::with(|api| api.delete_playlist(id));
+                return 0;
+            }
+            self.as_mut().changed();
+        }
         id
     }
 
@@ -283,7 +290,11 @@ impl qobject::Playlists {
     }
 
     pub fn create_folder(mut self: Pin<&mut Self>, name: &QString, color: &QString) -> i64 { let id = app::with(|api| api.create_playlist_folder(&name.to_string(), &color.to_string())).unwrap_or(0); if id > 0 { self.as_mut().changed(); } id }
-    pub fn update_folder(mut self: Pin<&mut Self>, id: i64, name: &QString, color: &QString) { if app::with(|api| api.update_playlist_folder(id, &name.to_string(), &color.to_string())) { self.as_mut().changed(); } }
+    pub fn update_folder(mut self: Pin<&mut Self>, id: i64, name: &QString, color: &QString) -> bool {
+        let changed = app::with(|api| api.update_playlist_folder(id, &name.to_string(), &color.to_string()));
+        if changed { self.as_mut().changed(); }
+        changed
+    }
     pub fn remove_folder(mut self: Pin<&mut Self>, id: i64) { if app::with(|api| api.delete_playlist_folder(id)) { self.as_mut().changed(); } }
     pub fn move_to_folder(mut self: Pin<&mut Self>, id: i64, folder_id: i64) { if app::with(|api| api.move_playlist_to_folder(id, (folder_id > 0).then_some(folder_id))) { self.as_mut().changed(); } }
     pub fn set_visible(mut self: Pin<&mut Self>, id: i64, visible: bool) { if app::with(|api| api.set_playlist_visible(id, visible)) { self.as_mut().changed(); } }

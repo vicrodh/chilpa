@@ -32,7 +32,7 @@ Menu {
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
             { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
-            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", submenu: true },
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", glyph: Icons.playlistAdd },
             { separator: true, when: one },
             { text: I18n.tr("Open album", I18n.rev), act: "open", when: one },
             { text: I18n.tr("Open in new tab", I18n.rev), act: "tab", when: one },
@@ -55,7 +55,7 @@ Menu {
         case "play": AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
         case "queue": AlbumActions.queue(albumId); break
-        case "pick": picker.trackIds = AlbumActions.trackIds(albumId); picker.show(x, y); break
+        case "pick": picker.trackIdsJson = AlbumActions.trackIdsJson(albumId); picker.show(x, y); break
         case "open": Navigation.go("album", albumId); break
         case "tab": Navigation.open("album", albumId); break
         case "quick": menu.quick(at); break
@@ -64,10 +64,6 @@ Menu {
         case "favorite": AlbumActions.setFavorite(albumId, true); break
         case "unfavorite": AlbumActions.setFavorite(albumId, false); break
         }
-    }
-    onSubmenu: (index, top) => {
-        picker.trackIds = AlbumActions.trackIds(albumId)
-        picker.show(menu.x + menu.width - Metrics.gap4, top)
     }
 
     PlaylistPicker {

@@ -338,6 +338,18 @@ msgstr ""
 msgid "CoreAudio reports no device that can play"
 msgstr ""
 
+msgid "Could not add tracks to this playlist."
+msgstr ""
+
+msgid "Could not create the playlist. Please try again."
+msgstr ""
+
+msgid "Could not save the folder. Please try again."
+msgstr ""
+
+msgid "Could not save the playlist. Please try again."
+msgstr ""
+
 msgid "Counting tracks…"
 msgstr ""
 
@@ -351,6 +363,9 @@ msgid "Create and add"
 msgstr ""
 
 msgid "Create new playlist"
+msgstr ""
+
+msgid "Create playlist"
 msgstr ""
 
 msgid "Custom"
@@ -842,7 +857,13 @@ msgstr ""
 msgid "No lyrics for this track."
 msgstr ""
 
+msgid "No playlists match your search."
+msgstr ""
+
 msgid "No playlists yet."
+msgstr ""
+
+msgid "No playlists yet. Create one to get started."
 msgstr ""
 
 msgid "No source plugins installed"
@@ -1244,9 +1265,6 @@ msgstr ""
 msgid "That answer does not belong to this window."
 msgstr ""
 
-msgid "That source does not allow tracks from here in this playlist."
-msgstr ""
-
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr ""
 
@@ -1302,6 +1320,9 @@ msgid "This one makes no sound. It writes what would have gone to the device, so
 msgstr ""
 
 msgid "This output is always Chilpa's alone."
+msgstr ""
+
+msgid "This playlist is read-only or belongs to another source."
 msgstr ""
 
 msgid "This screen is not built yet."

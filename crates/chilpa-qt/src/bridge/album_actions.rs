@@ -41,11 +41,8 @@ pub mod qobject {
         fn play_next(self: &AlbumActions, id: i64);
         #[qinvokable]
         fn queue(self: &AlbumActions, id: i64);
-        /// Zero makes a new playlist.
         #[qinvokable]
-        fn add_to_playlist(self: &AlbumActions, id: i64, playlist: i64);
-        #[qinvokable]
-        fn track_ids(self: &AlbumActions, id: i64) -> Vec<i64>;
+        fn track_ids_json(self: &AlbumActions, id: i64) -> QString;
     }
 
     impl cxx_qt::Threading for AlbumActions {}
@@ -146,19 +143,9 @@ impl qobject::AlbumActions {
         app::with(|api| api.enqueue_here(&paths));
     }
 
-    pub fn add_to_playlist(&self, id: i64, playlist: i64) {
-        let paths = self.rust().paths(id);
-        registry::playlists(move |mut lists| {
-            let id = if playlist == 0 { lists.as_mut().create() } else { playlist };
-            if id != 0 {
-                app::with(|api| api.add_to_playlist(id, &paths));
-                lists.changed();
-            }
-        });
-    }
-
-    pub fn track_ids(&self, id: i64) -> Vec<i64> {
-        self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect()
+    pub fn track_ids_json(&self, id: i64) -> cxx_qt_lib::QString {
+        let ids: Vec<i64> = self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect();
+        cxx_qt_lib::QString::from(serde_json::to_string(&ids).unwrap_or_default())
     }
 
     fn bump(mut self: Pin<&mut Self>) {

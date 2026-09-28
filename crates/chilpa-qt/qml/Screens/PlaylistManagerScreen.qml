@@ -41,7 +41,7 @@ Item {
     Connections { target: Playlists; function onRevChanged() { page.reload() } }
 
     QtObject {
-        id: manager
+        id: playlistManager
         function open(index) { const row = page.rows[index]; if (row.rowKind === 1) page.enterFolder(row.entryId, row.name); else Playlists.open(row.entryId) }
         function createFolder(name, color) { Playlists.createFolder(name, color) }
         function updateFolder(id, name, color) { Playlists.updateFolder(id, name, color) }
@@ -197,7 +197,7 @@ Item {
             delegate: PlaylistManagerRow {
                 width: GridView.view.cellWidth - Metrics.gap12
                 grid: true
-                manager: manager
+                manager: playlistManager
                 custom: sort.value === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
                 onEditPlaylist: (id) => playlistEdit.show(id)
@@ -219,7 +219,7 @@ Item {
             delegate: PlaylistManagerRow {
                 width: ListView.view.width - Metrics.contentHorizontalMargins
                 grid: false
-                manager: manager
+                manager: playlistManager
                 custom: sort.value === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
                 onEditPlaylist: (id) => playlistEdit.show(id)
@@ -227,41 +227,7 @@ Item {
         }
     }
 
-    Modal {
-        id: folderDialog
-        property int folderId: 0
-        property string colorName: "accent"
-        width: Metrics.playlistFolderDialog
-
-        function show(id, name, color) {
-            folderId = id
-            folderName.text = name
-            colorName = color
-            open()
-            Qt.callLater(folderName.focusInput)
-        }
-        Column {
-            spacing: Metrics.gap12
-            Text { text: folderDialog.folderId > 0 ? I18n.tr("Edit folder", I18n.rev) : I18n.tr("New folder", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
-            TextField { id: folderName; width: parent.width; placeholder: I18n.tr("Folder name", I18n.rev) }
-            Row {
-                spacing: Metrics.gap8
-                Repeater {
-                    model: ["accent", "positive", "warning", "negative"]
-                    Rectangle {
-                        required property string modelData
-                        width: Metrics.colorSwatch; height: width; radius: Metrics.colorSwatchRadius
-                        color: modelData === "positive" ? Theme.color.statusPositive : modelData === "warning" ? Theme.color.statusWarning : modelData === "negative" ? Theme.color.statusNegative : Theme.color.accent
-                        border.width: folderDialog.colorName === modelData ? Metrics.focusRing : 0
-                        border.color: Theme.color.textPrimary
-                        HoverHandler { cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: folderDialog.colorName = parent.modelData }
-                    }
-                }
-            }
-            PillButton { kind: "primary"; text: folderDialog.folderId > 0 ? I18n.tr("Save", I18n.rev) : I18n.tr("Create", I18n.rev); onClicked: { if (folderDialog.folderId > 0) manager.updateFolder(folderDialog.folderId, folderName.text, folderDialog.colorName); else manager.createFolder(folderName.text, folderDialog.colorName); folderDialog.close() } }
-        }
-    }
+    PlaylistFolderDialog { id: folderDialog }
 
     PlaylistEditDialog { id: playlistEdit }
 }
