@@ -347,11 +347,15 @@ impl Reader {
             left.queries[2..].fill(String::new());
             let ids = self.lib.facet_albums(&left).unwrap_or_default().iter().filter_map(|a| a.key.parse().ok()).collect::<Vec<_>>();
             if let Ok(catalog) = self.lib.version_catalog() {
-                let mut counts = std::collections::HashMap::<String, usize>::new();
-                for id in catalog.collapse(&ids) {
-                    if let Some(v) = catalog.versions.get(&id) { *counts.entry(v.artist.to_lowercase()).or_default() += 1; }
+                let mut groups = std::collections::HashMap::<String, HashSet<String>>::new();
+                for id in ids {
+                    for (artist, _) in catalog.artists.get(&id).into_iter().flatten() {
+                        if let Some(version) = catalog.versions.get(&id) {
+                            groups.entry(artist.to_lowercase()).or_default().insert(version.group.clone());
+                        }
+                    }
                 }
-                for artist in &mut artists { artist.albums = counts.get(&artist.label.to_lowercase()).copied().unwrap_or(0); }
+                for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
         Facets { sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(), genres: self.lib.facet_genres(f).unwrap_or_default(), artists, albums }
@@ -612,6 +616,34 @@ mod tests {
         let labels = vec![entry("Massive Attack"), entry("Björk")];
         assert_eq!(filter_facets(labels.clone(), "attack"), vec![labels[0].clone()]);
         assert_eq!(filter_facets(labels, "björk").len(), 1);
+    }
+
+    #[test]
+    fn compilation_members_keep_group_counts_and_find_the_complete_album() {
+        let lib = chilpa_library::Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for (release, bits) in [("original", 16), ("remaster", 24)] {
+            let id = lib.source_edition(source, release, "Reference CD", "Various Artists", Some(2007)).unwrap();
+            for (number, artist, credit) in [(1, "歌手 A", "Singer A"), (2, "歌手 B", "Singer B")] {
+                lib.connection().execute("INSERT INTO tracks(source_id, external_id, title, artist, album_credit,
+                    album_id, bit_depth, duration_ms, added_at) VALUES (?1, ?2, 'Song', ?3, ?4, ?5, ?6, 1000, 1)",
+                    rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
+            }
+        }
+        let reader = Reader { lib };
+        for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
+            let mut filter = Filter::default();
+            filter.queries[2] = artist.into();
+            let facets = reader.facets(&filter);
+            assert_eq!(facets.artists.iter().find(|a| a.label == artist).unwrap().albums, 1);
+            assert_eq!(facets.albums.len(), 1);
+            assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
+            filter.queries[2].clear();
+            filter.artists = vec![artist.into()];
+            assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
+            assert_eq!(reader.artists().iter().find(|a| a.name == artist).unwrap().album_count, 1);
+            assert_eq!(reader.artists().iter().find(|a| a.name == artist).unwrap().track_count, 1);
+        }
     }
 
     #[test]
