@@ -56,6 +56,7 @@ pub struct Tags {
     pub date: Option<String>,
     pub track_number: Option<u16>,
     pub disc_number: Option<u16>,
+    pub disc_total: Option<u16>,
     pub isrc: Option<String>,
     pub musicbrainz_recording_id: Option<String>,
     /// How many covers it carries inside.
@@ -185,6 +186,7 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
             .or_else(|| tag.get_string(ItemKey::Year).map(str::to_string)),
         track_number: tag.track().map(|n| n as u16),
         disc_number: tag.disk().map(|n| n as u16),
+        disc_total: tag.disk_total().map(|n| n as u16),
         isrc: tag.get_string(ItemKey::Isrc).map(str::to_string),
         musicbrainz_recording_id: tag
             .get_string(ItemKey::MusicBrainzRecordingId)

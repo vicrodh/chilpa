@@ -41,6 +41,10 @@ pub struct SacdArea {
     /// The album's title and artist, from the master table's text.
     pub album: Option<String>,
     pub artist: Option<String>,
+    /// This disc's position in an album set, from the Master TOC.
+    pub disc_number: Option<u16>,
+    /// How many discs the album set declares, from the Master TOC.
+    pub disc_total: Option<u16>,
     pub encoding: Encoding,
     /// First and last sector of the audio area.
     pub audio_start_lsn: u32,
@@ -140,6 +144,8 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
             tracks: Vec::new(),
             album: None,
             artist: None,
+            disc_number: None,
+            disc_total: None,
             encoding: Encoding::Dsd3In14,
             audio_start_lsn: 0,
             audio_end_lsn: 0,
@@ -192,6 +198,15 @@ pub fn open(path: &Path) -> Result<SacdImage, SacdError> {
         .ok_or_else(|| SacdError::MalformedToc(chilpa_i18n::mark("the stereo area (TWOCHTOC) was not found").into()))?;
 
     image.area = parse_area(&toc, image.sectors)?;
+    // `master_toc_t` in sacd-ripper's Scarlet Book declarations places the
+    // two big-endian fields after the 8-byte id, version and 6 reserved
+    // bytes: album set size at 0x10, sequence number at 0x12.
+    let set_size = be16(&master, 0x10);
+    let sequence = be16(&master, 0x12);
+    if set_size > 0 && sequence > 0 && sequence <= set_size {
+        image.area.disc_number = Some(sequence);
+        image.area.disc_total = Some(set_size);
+    }
     // The text is optional: a disc whose text cannot be read still plays,
     // and is named after its file instead.
     if master[0x80] != 0 {
@@ -355,7 +370,16 @@ fn parse_area(toc: &[u8], sectors: u64) -> Result<SacdArea, SacdError> {
         });
     }
 
-    Ok(SacdArea { tracks, album: None, artist: None, encoding, audio_start_lsn, audio_end_lsn })
+    Ok(SacdArea {
+        tracks,
+        album: None,
+        artist: None,
+        disc_number: None,
+        disc_total: None,
+        encoding,
+        audio_start_lsn,
+        audio_end_lsn,
+    })
 }
 
 /// Looks for a block with that signature inside the area's table.

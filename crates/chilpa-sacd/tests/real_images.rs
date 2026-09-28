@@ -42,8 +42,10 @@ fn every_sacd_image_under_a_folder_opens() {
         let name = path.file_name().unwrap().to_string_lossy().to_string();
         match chilpa_sacd::open(&path) {
             Ok(image) => eprintln!(
-                "smoke: {:?}, {} tracks | {} / {} / {} | {name}",
+                "smoke: {:?}, disc {:?}/{:?}, {} tracks | {} / {} / {} | {name}",
                 image.area.encoding,
+                image.area.disc_number,
+                image.area.disc_total,
                 image.area.tracks.len(),
                 image.area.artist.as_deref().unwrap_or("-"),
                 image.area.album.as_deref().unwrap_or("-"),
