@@ -24,6 +24,8 @@ use rusqlite::params_from_iter;
 /// What the four columns have chosen. `None` is "All".
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
+    /// Header searches participate in the result, even with All selected.
+    pub queries: [String; 4],
     pub year: Option<i32>,
     pub genre: Option<String>,
     /// The album artist: what the record says about itself.
@@ -98,6 +100,14 @@ pub enum TrackOrder {
 }
 
 impl TrackOrder {
+    pub fn from_name(name: &str) -> Self {
+        match name {
+            "album" => Self::Album, "year" => Self::Year, "added" => Self::Added,
+            "title" => Self::Title, "plays" => Self::Plays, "duration" => Self::Duration,
+            "disc" => Self::Disc, _ => Self::Artist,
+        }
+    }
+
     fn keys(self) -> &'static str {
         match self {
             TrackOrder::Artist => {
@@ -219,6 +229,17 @@ const FROM: &str = "FROM tracks t
 fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut sql = String::from("WHERE t.present = 1");
     let mut args: Vec<Box<dyn ToSql>> = Vec::new();
+    for (column, query) in f.queries.iter().enumerate() {
+        if query.trim().is_empty() { continue; }
+        let pattern = format!("%{}%", query.trim().replace('\\', "\\\\").replace('%', "\\%").replace('_', "\\_"));
+        sql.push_str(match column {
+            0 => " AND CAST(a.year AS TEXT) LIKE ? ESCAPE '\\'",
+            1 => " AND EXISTS (SELECT 1 FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE tq.track_id = t.id AND gq.name LIKE ? ESCAPE '\\')",
+            2 => " AND a.album_artist LIKE ? ESCAPE '\\'",
+            _ => " AND a.title LIKE ? ESCAPE '\\'",
+        });
+        args.push(Box::new(pattern));
+    }
     let marks = |n: usize| vec!["?"; n].join(",");
     let mut years = f.years.clone();
     if let Some(year) = f.year.filter(|year| !years.contains(year)) { years.push(year); }
@@ -325,6 +346,7 @@ impl Library {
     /// The genres the chosen year leaves, by name.
     pub fn facet_genres(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
+        left.queries[1..].fill(String::new());
         left.genre = None;
         left.genres.clear();
         left.artist = None;
@@ -344,10 +366,15 @@ impl Library {
     /// The album artists the year and the genre leave.
     pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
+        left.queries[2..].fill(String::new());
         left.artist = None;
         left.artists.clear();
         left.album = None;
         left.albums.clear();
+        if left == Filter::default() {
+            return self.named_facet(&format!("SELECT min(a.album_artist), count(*) {ALBUMS}
+                GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"), Vec::new());
+        }
         let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT min(a.album_artist), count(DISTINCT a.id) {FROM} {filter}
@@ -358,7 +385,9 @@ impl Library {
 
     /// The albums the other three leave, in shelf order, with their year.
     pub fn facet_albums(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
-        let (filter, args) = clause(&Filter { album: None, albums: Vec::new(), ..f.clone() });
+        let mut left = Filter { album: None, albums: Vec::new(), ..f.clone() };
+        left.queries[3].clear();
+        let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
              GROUP BY a.id ORDER BY a.title COLLATE NOCASE, a.album_artist COLLATE NOCASE, a.year"

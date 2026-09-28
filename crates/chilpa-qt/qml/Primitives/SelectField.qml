@@ -10,7 +10,10 @@ Rectangle {
     property var options: []
     property var values: []
     property var marks: []
+    property var sources: []
+    property var details: []
     property string value
+    property real menuWidthLimit: Metrics.menuMaxWidth
 
     signal picked(string value)
 
@@ -21,9 +24,19 @@ Rectangle {
     radius: Metrics.radiusControl
     color: area.containsMouse ? Theme.color.stateSelected : Theme.color.fillField
 
-    Text {
+    SourceIcon {
+        id: sourceBadge
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap10
+        anchors.verticalCenter: parent.verticalCenter
+        visible: field.sources.length > 0
+        width: visible ? implicitWidth : 0
+        sourceInfo: field.sources[field.current] || ({})
+    }
+
+    Text {
+        anchors.left: sourceBadge.right
+        anchors.leftMargin: sourceBadge.visible ? Metrics.gap6 : 0
         anchors.right: chevron.left
         anchors.rightMargin: Metrics.gap6
         anchors.verticalCenter: parent.verticalCenter
@@ -49,16 +62,24 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         anchors.fill: parent
         hoverEnabled: true
-        onClicked: menu.open()
+        onClicked: {
+            TipState.hide(field)
+            menu.open()
+        }
+        onContainsMouseChanged: containsMouse && field.sources.length > 0
+            ? TipState.show(field.options[field.current] || "", field) : TipState.hide(field)
     }
 
     Menu {
         id: menu
+        widthLimit: field.menuWidthLimit
         y: field.height + Metrics.gap4
         x: field.width - width
         entries: field.options.map((text, i) => ({
             text: text,
             checked: i === field.current,
+            sourceInfo: field.sources[i],
+            detail: field.details[i] || "",
             mark: field.marks.length > i ? field.marks[i] : ""
         }))
         onChosen: (index) => field.picked(field.values[index])

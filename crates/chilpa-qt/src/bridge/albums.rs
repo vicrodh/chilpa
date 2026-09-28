@@ -377,10 +377,17 @@ impl qobject::AlbumGridModel {
     }
 
     fn show(mut self: Pin<&mut Self>, list: Albums) {
+        let opened = self.rust().get(self.rust().expanded, |a| a.id)
+            .map(|id| app::with(|api| api.selected_album_version(id)));
+        let expanded = match (&list, opened) {
+            (Albums::Loaded(cards), Some(id)) => cards.iter().position(|a| a.id == id),
+            (Albums::Snapshot { ids, .. }, Some(id)) => ids.iter().position(|a| *a == id),
+            _ => None,
+        }.map(|at| at as i32).unwrap_or(-1);
         let count = list.len() as i32;
         self.as_mut().rust_mut().list = list;
         self.as_mut().rust_mut().anchor = None;
-        self.as_mut().set_expanded(-1);
+        self.as_mut().set_expanded(expanded);
         self.as_mut().split_rows();
         self.as_mut().set_albums(count);
         let next = self.rev().wrapping_add(1);

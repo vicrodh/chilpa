@@ -42,6 +42,28 @@ Popup {
     contentItem: Column {
         spacing: Metrics.gap8
 
+        Item {
+            width: parent.width
+            height: Metrics.sourceFilterRow
+            Text {
+                anchors.left: parent.left
+                anchors.right: grouping.left
+                anchors.rightMargin: Metrics.gap8
+                anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("Group album versions", I18n.rev)
+                font.pointSize: Type.body
+                elide: Text.ElideRight
+                color: Theme.color.textPrimary
+            }
+            Toggle {
+                id: grouping
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                checked: Library.groupVersions
+                onToggled: Library.groupAlbums(!Library.groupVersions)
+            }
+        }
+
         Text {
             text: I18n.tr("Sources", I18n.rev)
             font.pointSize: Type.small

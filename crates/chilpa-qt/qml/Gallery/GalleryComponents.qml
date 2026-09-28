@@ -61,6 +61,10 @@ GallerySection {
         AlbumQuickView { width: parent.width; albumId: added.albumId(0, added.rev); notchX: Metrics.cardMinWidth / 2 } // derived: under the first card
         AlbumHeaderBackground { width: parent.width; height: Metrics.heroArt; art: detail.art; mode: "full" }
         AlbumHero { width: parent.width; detail: detail }
+        AlbumVersionSelect { detail: ({ versions: JSON.stringify([
+            { id: 1, label: "Local · FLAC 24/96 · 13 tracks", source: { local: true } },
+            { id: 2, label: "Server · FLAC 16/44.1 · 13 tracks", source: { local: false } }
+        ]), selectedId: 1, selectVersion: function(value) {} }) }
         ArtworkModal { id: artworkModal }
         PillButton { text: "Open artwork"; onClicked: artworkModal.show(detail.art) }
         PageHero { width: parent.width; label: "Artist"; round: true; name: "Mora Vale"; meta: "8 records" }

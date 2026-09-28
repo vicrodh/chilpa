@@ -40,6 +40,8 @@ Rectangle {
 
         TextInput {
             id: input
+            text: Library.queries[["year", "genre", "artist", "album"].indexOf(pane.column)] ?? ""
+            onTextEdited: Library.searchColumn(pane.column, text)
             anchors.left: lens.right
             anchors.leftMargin: Metrics.gap6
             anchors.right: tail.left
@@ -85,7 +87,7 @@ Rectangle {
 
                 HoverHandler { id: clear }
                 HoverHandler { cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: input.text = "" }
+                TapHandler { onTapped: Library.searchColumn(pane.column, "") }
             }
         }
 

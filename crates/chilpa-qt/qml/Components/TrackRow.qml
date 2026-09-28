@@ -34,6 +34,14 @@ Item {
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
 
+    function containsArtist(x, y) {
+        const label = rich ? richArtist : compactArtist
+        const point = label.mapFromItem(row, x, y)
+        return !header && label.visible && point.x >= 0 && point.y >= 0
+            && point.x < Math.min(label.width, label.contentWidth)
+            && point.y < Math.min(label.height, label.contentHeight)
+    }
+
     width: cols.width
     height: header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
 
@@ -119,17 +127,18 @@ Item {
                 color: row.playing ? Theme.color.accent : Theme.color.textPrimary
             }
             Text {
+                id: richArtist
                 width: parent.width
                 visible: row.rich
                 text: row.artist
                 elide: Text.ElideRight
                 font.pointSize: Type.meta
-                font.underline: row.artistHovered
                 color: row.artistHovered ? Theme.color.textPrimary : Theme.color.textSecondary
             }
         }
 
         Text {
+            id: compactArtist
             x: row.cols.artistX
             width: row.cols.artistW - Metrics.gap12
             visible: width > 0
@@ -137,7 +146,6 @@ Item {
             text: row.artist
             elide: Text.ElideRight
             font.pointSize: Type.row
-            font.underline: row.artistHovered
             color: row.playing ? Theme.color.accent : Theme.color.textPrimary
         }
 

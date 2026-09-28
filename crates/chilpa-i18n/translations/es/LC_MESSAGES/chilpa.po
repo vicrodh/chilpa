@@ -605,6 +605,9 @@ msgstr "Ir al artista"
 msgid "Grid"
 msgstr "Cuadrícula"
 
+msgid "Group album versions"
+msgstr "Agrupar versiones de un álbum"
+
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
 

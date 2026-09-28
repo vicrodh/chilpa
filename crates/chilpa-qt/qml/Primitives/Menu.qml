@@ -12,6 +12,7 @@ Popup {
 
     property var entries: []
     property string title
+    property real widthLimit: Metrics.menuMaxWidth
 
     signal chosen(int index)
     signal submenu(int index, real top)
@@ -33,7 +34,7 @@ Popup {
 
     padding: Metrics.gap4
     margins: Metrics.gap10
-    implicitWidth: Math.min(Metrics.menuMaxWidth, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides
+    implicitWidth: Math.min(widthLimit, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides
 
     background: Item {
         RectangularShadow {
@@ -90,6 +91,7 @@ Popup {
                 required property var modelData
                 width: column.width
                 entry: modelData
+                onImplicitWidthChanged: menu.measure()
                 // Closed before it says what was chosen: what it says can
                 // rebuild the view the menu lives in.
                 onClicked: {

@@ -1115,3 +1115,22 @@ CREATE TABLE sidecars (
     seen_at INTEGER NOT NULL
 );
 "#;
+
+/// Keep physical editions separate and remember their presentation.
+pub(super) const MIGRATION_V21: &str = r#"
+ALTER TABLE sources ADD COLUMN icon TEXT NOT NULL DEFAULT '';
+ALTER TABLE albums ADD COLUMN version_key TEXT NOT NULL DEFAULT '';
+DROP INDEX albums_identity;
+CREATE UNIQUE INDEX albums_identity
+    ON albums(title, album_artist, ifnull(mbid, ''), folder, version_key);
+CREATE TABLE album_preferences (
+    group_key TEXT PRIMARY KEY,
+    album_id INTEGER NOT NULL REFERENCES albums(id) ON DELETE CASCADE
+);
+CREATE TABLE album_presentation (
+    id INTEGER PRIMARY KEY CHECK(id = 1),
+    grouped INTEGER NOT NULL DEFAULT 1,
+    repaired INTEGER NOT NULL DEFAULT 0
+);
+INSERT INTO album_presentation(id) VALUES (1);
+"#;

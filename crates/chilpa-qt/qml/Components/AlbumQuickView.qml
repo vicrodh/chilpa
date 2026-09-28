@@ -23,17 +23,19 @@ Item {
     AlbumDetailModel {
         id: detail
         albumId: quick.albumId
+        contentRev: Library.contentRev
     }
     TrackListModel {
         id: tracks
         kind: "album"
-        albumId: quick.albumId
+        albumId: detail.selectedId
         filterRev: Library.contentRev
         playingPath: Player.path
     }
 
     Rectangle {
         id: panel
+        readonly property var albumDetail: detail
 
         y: quick.notchHalf
         width: quick.width
@@ -120,8 +122,12 @@ Item {
                     round: true
                     glyph: Icons.browserMaximize
                     tip: I18n.tr("Open album", I18n.rev)
-                    onClicked: Navigation.go("album", quick.albumId)
+                    onClicked: Navigation.go("album", detail.selectedId)
                 }
+            }
+            AlbumVersionSelect {
+                width: parent.width
+                detail: panel.albumDetail
             }
         }
 

@@ -96,6 +96,28 @@ fn a_second_scan_does_not_reread_what_did_not_change() {
 }
 
 #[test]
+fn tagged_editions_in_separate_folders_stay_separate_after_rescanning() {
+    if !have_ffmpeg() { return; }
+    let dir = std::env::temp_dir().join(format!("chilpa-scan-editions-{}", std::process::id()));
+    for edition in ["Original", "Remaster"] {
+        std::fs::create_dir_all(dir.join(edition)).unwrap();
+        assert!(tagged_file(&dir.join(edition).join("01.flac"), "Song", "Artist", "Album", Some("Artist")));
+    }
+    let lib = Library::in_memory().unwrap();
+    assert_eq!(scan_root(&lib, &dir).unwrap().read, 2);
+    let albums = lib.albums(10, 0).unwrap();
+    assert_eq!(albums.len(), 2, "equal album-artist tags do not merge physical editions");
+    assert!(albums.iter().all(|album| album.track_count == 1));
+    let ids: Vec<_> = albums.iter().map(|album| album.id).collect();
+    let chosen = lib.grouped_album_ids(&ids).unwrap();
+    assert_eq!(chosen.len(), 1);
+    assert!(lib.album_tracks(chosen[0]).unwrap()[0].external_id.contains("Remaster"));
+    assert_eq!(scan_root(&lib, &dir).unwrap().unchanged, 2);
+    assert_eq!(lib.albums(10, 0).unwrap(), albums);
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
 fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
     // The audit's high finding: an unmounted mountpoint looked empty and
     // the prune deleted all its tracks.

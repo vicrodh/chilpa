@@ -136,6 +136,7 @@ impl Library {
 
         let from = edit.album_id;
         let tx = self.own_transaction()?;
+        let (folder, version): (String, String) = tx.query_row("SELECT folder, version_key FROM albums WHERE id = ?1", [from], |r| Ok((r.get(0)?, r.get(1)?)))?;
         for id in &ids {
             let on: Option<i64> = tx
                 .query_row("SELECT album_id FROM tracks WHERE id = ?1", params![id], |r| r.get::<_, Option<i64>>(0))
@@ -153,8 +154,8 @@ impl Library {
         // The question the scan asks, so both find the same record.
         let there: Option<i64> = tx
             .query_row(
-                "SELECT id FROM albums WHERE title = ?1 AND album_artist = ?2 AND folder = ''",
-                params![title, artist],
+                "SELECT id FROM albums WHERE title = ?1 AND album_artist = ?2 AND version_key = ?3 AND (?3 <> '' OR folder = '')",
+                params![title, artist, version],
                 |r| r.get(0),
             )
             .optional()?;
@@ -162,8 +163,8 @@ impl Library {
             Some(id) => id,
             None if whole => {
                 tx.execute(
-                    "UPDATE albums SET title = ?2, album_artist = ?3, folder = '' WHERE id = ?1",
-                    params![from, title, artist],
+                    "UPDATE albums SET title = ?2, album_artist = ?3, folder = ?4 WHERE id = ?1",
+                    params![from, title, artist, if version.is_empty() { "" } else { &folder }],
                 )?;
                 // The search keeps a copy of the record's title on each
                 // track's row, refreshed when the track's record is set.
@@ -171,7 +172,7 @@ impl Library {
                 from
             }
             None => {
-                tx.execute("INSERT INTO albums (title, album_artist) VALUES (?1, ?2)", params![title, artist])?;
+                tx.execute("INSERT INTO albums (title, album_artist, folder, version_key) VALUES (?1, ?2, ?3, ?4)", params![title, artist, if version.is_empty() { "" } else { &folder }, version])?;
                 tx.last_insert_rowid()
             }
         };

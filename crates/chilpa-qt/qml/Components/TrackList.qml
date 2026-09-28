@@ -116,9 +116,7 @@ Item {
             const item = row >= 0 ? view.itemAtIndex(row) : null
             if (!item || item.header || item.artist === "" || !list.model.canGo(row, "artist"))
                 return false
-            if (columns.rich)
-                return x >= columns.titleX && x < columns.titleX + columns.titleW && y + view.contentY - item.y > item.height / 2 // derived: the second of the two lines
-            return columns.artistW > 0 && x >= columns.artistX && x < columns.artistX + columns.artistW
+            return item.containsArtist(x - item.x, y + view.contentY - item.y)
         }
 
         onPressed: (mouse) => {
