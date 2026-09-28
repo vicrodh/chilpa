@@ -67,14 +67,6 @@ pub struct AlbumDetailRust {
     tier: i32,
 }
 
-struct Lines {
-    kind: String,
-    meta: String,
-    discs: String,
-    info: String,
-    summary: String,
-}
-
 impl qobject::AlbumDetailModel {
     pub fn select_version(mut self: Pin<&mut Self>, value: &QString) {
         let Ok(version) = value.to_string().parse() else { return };
@@ -95,32 +87,7 @@ impl qobject::AlbumDetailModel {
             self.as_mut().set_found(false);
             return;
         };
-        let lines = app::with(|api| {
-            let songs = d.album.track_count.to_string();
-            let songs = api.tf("{} song", "{} songs", d.album.track_count as i64, &[&songs]);
-            let length = format::span(d.duration_ms);
-            let mut meta: Vec<String> = Vec::new();
-            if !d.genre.is_empty() {
-                meta.push(d.genre.clone());
-            }
-            meta.extend([songs.clone(), length.clone()]);
-            let quality = d.quality.long();
-            if !quality.is_empty() {
-                meta.push(quality);
-            }
-            let kind = api.t("Album").to_uppercase();
-            let n = d.discs.to_string();
-            Lines {
-                kind: match d.album.year {
-                    Some(y) => format!("{kind} · {y}"),
-                    None => kind,
-                },
-                meta: meta.join(" · "),
-                discs: if d.discs > 1 { api.tf("{} disc", "{} discs", d.discs as i64, &[&n]) } else { String::new() },
-                info: api.t("Info: Embedded tags"),
-                summary: format!("{songs} · {length}"),
-            }
-        });
+        let lines = app::with(|api| api.album_heading(&d, &format::span(d.duration_ms)));
         let art = if d.album.artwork_path.is_empty() {
             QUrl::default()
         } else {
@@ -149,7 +116,7 @@ impl cxx_qt::Initialize for qobject::AlbumDetailModel {
             m.load();
         }).release();
         self.as_mut().on_content_rev_changed(|mut m| {
-            let id = app::with(|api| api.selected_album_version(*m.album_id()));
+            let id = app::with(|api| api.selected_album_version(*m.selected_id()));
             m.as_mut().set_selected_id(id);
             m.load();
         }).release();

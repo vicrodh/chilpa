@@ -37,11 +37,14 @@ Item {
             grid.model.select(at, modifiers === 0 ? 1 : modifiers)
         else if (!grid.round && SettingsModel.quickViewClick)
             toggleQuick(at)
-        else
+        else {
+            grid.model.prepareOpen(at)
             grid.open(albumId, title)
+        }
     }
 
     function toggleQuick(at) {
+        grid.model.prepareOpen(at)
         grid.model.expanded = grid.model.expanded === at ? -1 : at
     }
 
