@@ -18,7 +18,7 @@ use chilpa_audio::sink::{AudioSink, PauseSignal, SinkError, SkipSignal, StopSign
 use chilpa_decode::{Block, Decoded};
 use std::path::{Path, PathBuf};
 
-use crate::dsd_playback::{dop_request, is_dsd_file, open_dsd_file, DopFrames};
+use crate::dsd_playback::{dop_request, is_dsd_file, native_request, open_dsd_file, DopFrames, NativeFrames};
 use crate::playback::PlayError;
 use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
@@ -27,6 +27,7 @@ use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 enum Source {
     Pcm(Decoded),
     Dop(Box<dyn DsdSource>),
+    Native(Box<dyn DsdSource>),
     DsdPcm(DsdPcmConverter),
 }
 
@@ -40,16 +41,17 @@ fn open_track(
     path: &Path,
     caps: &DeviceCaps,
     policy: Policy,
-    dsd_passthrough: bool,
+    dsd_mode: DsdMode,
+    direct_dsd: bool,
 ) -> Result<(Source, Delivery), PlayError> {
     let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
-        return dsd_track(Box::new(reader), caps, dsd_passthrough);
+        return dsd_track(Box::new(reader), caps, dsd_mode, direct_dsd);
     }
     if is_dsd_file(path) {
         let reader = open_dsd_file(path).map_err(|e| unreadable(e.to_string()))?;
-        return dsd_track(reader, caps, dsd_passthrough);
+        return dsd_track(reader, caps, dsd_mode, direct_dsd);
     }
     let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
@@ -62,15 +64,28 @@ fn open_track(
 fn dsd_track(
     reader: Box<dyn DsdSource>,
     caps: &DeviceCaps,
-    dsd_passthrough: bool,
+    mode: DsdMode,
+    direct: bool,
 ) -> Result<(Source, Delivery), PlayError> {
-    if dsd_passthrough {
-        let request = dop_request(reader.info());
-        if let Ok(delivery) = negotiate(request, caps, Policy::BitPerfect) {
-            return Ok((Source::Dop(reader), delivery));
+    if mode != DsdMode::Pcm && !direct {
+        return Err(PlayError::Sink(SinkError::Backend(chilpa_i18n::t(
+            "Native DSD and DoP require a direct ALSA hardware output",
+        ))));
+    }
+    match mode {
+        DsdMode::Pcm => pcm_track(reader, caps),
+        DsdMode::Dop => {
+            let request = dop_request(reader.info());
+            let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(PlayError::Negotiation)?;
+            Ok((Source::Dop(reader), delivery))
+        }
+        DsdMode::Native => {
+            let request = native_request(reader.info(), caps).ok_or_else(|| PlayError::Sink(
+                SinkError::Backend(chilpa_i18n::t("the device does not expose an ALSA native DSD_U32 format at this DSD rate"))
+            ))?;
+            Ok((Source::Native(reader), Delivery { requested: request, opened: request, transforms: Vec::new() }))
         }
     }
-    pcm_track(reader, caps)
 }
 
 fn pcm_track(reader: Box<dyn DsdSource>, caps: &DeviceCaps) -> Result<(Source, Delivery), PlayError> {
@@ -93,6 +108,46 @@ pub enum Repeat {
     /// Repeats the playing track. Skipping does advance: repeating is not
     /// getting stuck.
     One = 2,
+}
+
+/// How one-bit DSD is delivered to the chosen output.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[repr(u8)]
+pub enum DsdMode {
+    /// Low-pass filter and decimate to ordinary PCM. Safe on every output.
+    #[default]
+    Pcm = 0,
+    /// Carry untouched DSD bits inside marked 24-bit PCM words.
+    Dop = 1,
+    /// Use ALSA's DSD_U32_BE/LE formats without a PCM carrier.
+    Native = 2,
+}
+
+impl DsdMode {
+    pub fn key(self) -> &'static str {
+        match self { Self::Pcm => "pcm", Self::Dop => "dop", Self::Native => "native" }
+    }
+
+    pub fn from_key(key: &str) -> Self {
+        match key { "dop" => Self::Dop, "native" => Self::Native, _ => Self::Pcm }
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct DsdModeChoice(std::sync::Arc<std::sync::atomic::AtomicU8>);
+
+impl DsdModeChoice {
+    pub fn set(&self, mode: DsdMode) {
+        self.0.store(mode as u8, std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn get(&self) -> DsdMode {
+        match self.0.load(std::sync::atomic::Ordering::Relaxed) {
+            1 => DsdMode::Dop,
+            2 => DsdMode::Native,
+            _ => DsdMode::Pcm,
+        }
+    }
 }
 
 /// Repeat, shared with whoever drives the queue.
@@ -377,9 +432,14 @@ pub struct Controls {
     /// read on every block, so a change is heard as soon as what the device
     /// holds plays out. Never applied to raw DoP.
     pub volume: Level,
-    /// Raw DoP is only eligible on the physical ALSA device route. All other
-    /// routes convert DSD to PCM before opening their sink.
-    pub dsd_passthrough: Switch,
+    /// The user's explicit DSD delivery choice.
+    pub dsd_mode: DsdModeChoice,
+    /// Whether the selected route is the physical ALSA hardware path.
+    pub direct_dsd: Switch,
+    /// A new playback request is waiting. The current sink hands its device
+    /// lease to that request instead of returning the card to the sound
+    /// server for a few milliseconds and taking it straight back.
+    pub handoff: Switch,
 }
 
 /// A factor shared with whoever drives the queue, read every block.
@@ -445,7 +505,9 @@ impl Default for Controls {
             normalize: Switch::new(false),
             exclusive: Switch::new(false),
             volume: Level::new(1.0),
-            dsd_passthrough: Switch::new(false),
+            dsd_mode: DsdModeChoice::default(),
+            direct_dsd: Switch::new(false),
+            handoff: Switch::new(false),
         }
     }
 }
@@ -780,13 +842,14 @@ where
             "queue",
             "track_selected",
             format_args!(
-                "index={index} queue_len={} path={path:?} policy={policy:?} dsd_passthrough={}",
+                "index={index} queue_len={} path={path:?} policy={policy:?} dsd_mode={:?} direct_dsd={}",
                 queue.len(),
-                controls.dsd_passthrough.get()
+                controls.dsd_mode.get(),
+                controls.direct_dsd.get()
             ),
         );
         let source_started = std::time::Instant::now();
-        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_passthrough.get()) {
+        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get()) {
             Ok(opened) => opened,
             Err(error) => {
                 chilpa_audio::diagnostics::trace(
@@ -800,6 +863,7 @@ where
         let source_kind = match &source {
             Source::Pcm(_) => "pcm",
             Source::Dop(_) => "dop",
+            Source::Native(_) => "native-dsd",
             Source::DsdPcm(_) => "dsd-pcm",
         };
         chilpa_audio::diagnostics::trace(
@@ -854,7 +918,7 @@ where
                     );
                 }
                 let started = std::time::Instant::now();
-                if let Err(error) = old.close() {
+                if let Err(error) = old.handoff() {
                     chilpa_audio::diagnostics::trace(
                         "queue",
                         "sink_close_failed",
@@ -977,6 +1041,18 @@ where
                 });
                 (outcome, frames.skipped)
             }
+            Source::Native(reader) => {
+                let mut frames = NativeFrames::new(reader.as_mut(), delivery.opened.sample_format)
+                    .controlled(skip.clone(), seek.clone());
+                let base = std::sync::Arc::clone(&frames.base);
+                let delivered = std::sync::Arc::clone(&frames.delivered);
+                let outcome = chilpa_audio::render::render_paused(&mut frames, sink, stop, pause, &mut |f| {
+                    delivered.store(f, std::sync::atomic::Ordering::Relaxed);
+                    let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
+                    on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
+                });
+                (outcome, frames.skipped)
+            }
             Source::DsdPcm(converter) => {
                 let mut frames = DsdPcmFrames {
                     converter,
@@ -1052,18 +1128,20 @@ where
             );
         }
         let started = std::time::Instant::now();
-        if let Err(error) = sink.close() {
+        let closing = if controls.handoff.get() { "handoff" } else { "close" };
+        let result = if controls.handoff.get() { sink.handoff() } else { sink.close() };
+        if let Err(error) = result {
             chilpa_audio::diagnostics::trace(
                 "queue",
                 "sink_close_failed",
-                format_args!("after={:?} final=true error={error}", started.elapsed()),
+                format_args!("after={:?} final=true mode={closing} error={error}", started.elapsed()),
             );
             return Err(PlayError::Sink(error));
         }
         chilpa_audio::diagnostics::trace(
             "queue",
             "sink_closed",
-            format_args!("after={:?} format={format:?} final=true", started.elapsed()),
+            format_args!("after={:?} format={format:?} final=true mode={closing}", started.elapsed()),
         );
     }
     Ok(results)

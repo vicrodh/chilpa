@@ -9,6 +9,7 @@ use super::*;
 const GAPLESS: &str = "playback.gapless";
 const NORMALIZE: &str = "playback.normalize";
 const EXCLUSIVE: &str = "audio.exclusive";
+const DSD_MODE: &str = "audio.dsdMode";
 const KEEP_QUEUE: &str = "playback.keepQueue";
 
 #[derive(serde::Serialize, serde::Deserialize)]
@@ -212,7 +213,9 @@ impl Chilpa {
                 // listen of its own, so one track logs one listen.
                 self.in_progress = None;
             }
-            self.stop();
+            if let Some(player) = &self.player {
+                player.stop_for_handoff();
+            }
             chilpa_core::trace_playback(
                 "facade",
                 "old_playback_stopped",
@@ -226,6 +229,7 @@ impl Chilpa {
         self.mix = false;
         let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
+        let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
         let tap = self.tap.clone();
         let player = self
@@ -235,6 +239,7 @@ impl Chilpa {
         player.set_gapless(gapless);
         player.set_normalize(normalize);
         player.set_exclusive(exclusive);
+        player.set_dsd_mode(dsd_mode);
         player.set_volume(volume);
         if shuffle {
             player.shuffle(tracks.len());
@@ -713,11 +718,33 @@ impl Chilpa {
         self.move_output(&output, false);
     }
 
+    /// The explicit one-bit delivery selected for DSD tracks.
+    pub fn dsd_mode(&self) -> chilpa_core::queue_playback::DsdMode {
+        chilpa_core::queue_playback::DsdMode::from_key(
+            // Existing installations played direct ALSA DSD as DoP before
+            // this became an explicit three-way choice. Preserve that route
+            // until the user chooses Native or PCM.
+            self.preference(DSD_MODE).as_deref().unwrap_or("dop"),
+        )
+    }
+
+    pub fn set_dsd_mode(&mut self, mode: &str) {
+        let mode = chilpa_core::queue_playback::DsdMode::from_key(mode);
+        self.remember_preference(DSD_MODE, mode.key());
+        if let Some(player) = &self.player {
+            player.set_dsd_mode(mode);
+        }
+        let (output, _) = self.chosen_output();
+        self.move_output(&output, false);
+    }
+
     /// Hands the player the switches as they stand.
     pub(crate) fn apply_playback_options(&mut self, _legacy_bit_perfect: bool) {
+        let dsd_mode = self.dsd_mode();
         if let Some(p) = &self.player {
             p.set_gapless(self.gapless());
             p.set_normalize(self.normalize());
+            p.set_dsd_mode(dsd_mode);
         }
         self.apply_volume();
     }

@@ -71,6 +71,13 @@ pub trait AudioSink {
     /// the device to answer.
     fn close(&mut self) -> Result<(), SinkError>;
 
+    /// Closes the stream while keeping any exclusive-device lease available
+    /// for the stream that immediately replaces it. Backends without a
+    /// separate lease simply close normally.
+    fn handoff(&mut self) -> Result<(), SinkError> {
+        self.close()
+    }
+
     /// Waits until what was written has been played, at a natural end, so
     /// the last of a track is heard before the device is closed: a DAC held
     /// two seconds of it, and closing threw them away.
@@ -148,6 +155,10 @@ impl AudioSink for Box<dyn AudioSink + Send> {
 
     fn close(&mut self) -> Result<(), SinkError> {
         (**self).close()
+    }
+
+    fn handoff(&mut self) -> Result<(), SinkError> {
+        (**self).handoff()
     }
 
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {

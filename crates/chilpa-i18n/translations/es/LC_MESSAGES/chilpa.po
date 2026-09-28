@@ -332,6 +332,9 @@ msgid_plural "Contains {} similar versions"
 msgstr[0] "Contiene {} versión similar"
 msgstr[1] "Contiene {} versiones similares"
 
+msgid "Convert to PCM"
+msgstr "Convertir a PCM"
+
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
@@ -365,6 +368,12 @@ msgstr "los archivos DSD guardan sus cambios en un sidecar"
 msgid "DSD not supported: {}"
 msgstr "DSD no soportado: {}"
 
+msgid "DSD over PCM (DoP)"
+msgstr "DSD sobre PCM (DoP)"
+
+msgid "DSD playback"
+msgstr "Reproducción DSD"
+
 msgid "DSD128 over DoP"
 msgstr "DSD128 por DoP"
 
@@ -376,6 +385,9 @@ msgstr "DSDIFF comprimido con DST"
 
 msgid "DSD{} · DoP at {} Hz · {}"
 msgstr "DSD{} · DoP a {} Hz · {}"
+
+msgid "DSD{} · Native at {} Hz · {}"
+msgstr "DSD{} · Nativo a {} Hz · {}"
 
 msgid "DSD{} · PCM at {} Hz · {}"
 msgstr "DSD{} · PCM a {} Hz · {}"
@@ -788,6 +800,15 @@ msgstr "Mi biblioteca"
 msgid "Name"
 msgstr "Nombre"
 
+msgid "Native DSD"
+msgstr "DSD nativo"
+
+msgid "Native DSD and DoP require a direct ALSA hardware output"
+msgstr "DSD nativo y DoP requieren una salida directa de hardware ALSA"
+
+msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
+msgstr "Nativo usa el formato DSD_U32 de ALSA. DoP transporta el mismo flujo de un bit dentro de palabras PCM marcadas. PCM convierte DSD para que cualquier salida pueda reproducirlo."
+
 msgid "Navigation"
 msgstr "Navegación"
 
@@ -901,6 +922,9 @@ msgstr "Salida"
 
 msgid "Output device"
 msgstr "Dispositivo de salida"
+
+msgid "PCM samples cannot be written to a native DSD stream"
+msgstr "no se pueden escribir muestras PCM en un flujo DSD nativo"
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
@@ -1802,6 +1826,9 @@ msgstr "ese source no usa OAuth"
 msgid "the CHNL chunk is missing"
 msgstr "falta el chunk CHNL"
 
+msgid "the DSD channel count changed while playing"
+msgstr "el número de canales DSD cambió durante la reproducción"
+
 msgid "the DSD chunk is missing"
 msgstr "falta el chunk DSD"
 
@@ -1900,6 +1927,9 @@ msgstr "el dispositivo no acepta {} Hz, que es lo que pide este DSD por DoP"
 
 msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
 msgstr "el dispositivo no acepta {} a {} Hz y la política no deja convertir"
+
+msgid "the device does not expose an ALSA native DSD_U32 format at this DSD rate"
+msgstr "el dispositivo no expone un formato DSD_U32 nativo de ALSA a esta frecuencia DSD"
 
 msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
 msgstr "el dispositivo no reproduce {} Hz (reproduce {}), y Chilpa no convierte frecuencias"

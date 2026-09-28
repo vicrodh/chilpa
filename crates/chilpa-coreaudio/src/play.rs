@@ -116,6 +116,7 @@ fn wire(format: SampleFormat) -> Option<(u32, u32, u32)> {
         // A float track is not what a DAC takes; whoever decoded it has
         // already been asked to hand over integers.
         SampleFormat::F32 => return None,
+        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => return None,
     })
 }
 

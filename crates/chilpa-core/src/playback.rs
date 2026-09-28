@@ -66,6 +66,11 @@ impl std::fmt::Display for PlayError {
                     &[&from_bits.to_string(), &to_bits.to_string()],
                 )
             ),
+            PlayError::Pack(PackError::NativeDsdNeedsDsdSource) => write!(
+                f,
+                "{}",
+                chilpa_i18n::t("PCM samples cannot be written to a native DSD stream")
+            ),
             PlayError::Sink(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("device: {}", &[&e.to_string()]))
             }

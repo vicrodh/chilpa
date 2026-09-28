@@ -457,3 +457,5 @@ ilst
 vorbis
 # The release database the metadata editor looks records up in.
 discogs
+# ALSA's packed native DSD sample-format names.
+dsdu

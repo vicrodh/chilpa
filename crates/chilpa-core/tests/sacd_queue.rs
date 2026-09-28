@@ -162,6 +162,7 @@ fn played(paths: &[PathBuf]) -> Result<Vec<(usize, Option<String>, Option<u32>)>
         }),
         Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
     );
+    player.set_dsd_mode(chilpa_core::queue_playback::DsdMode::Dop);
     player.play_all(paths, "alsa:hw:0,0");
     let mut started = Vec::new();
     let limit = Instant::now() + Duration::from_secs(10);

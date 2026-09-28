@@ -38,12 +38,16 @@ pub struct Pulse;
 /// track reached the server with its top byte dropped, which is noise. The
 /// same mistake was made and fixed in the ALSA backend.
 fn spec_format(f: SampleFormat) -> Option<Format> {
+    if f.is_dsd() {
+        return None;
+    }
     Some(match f {
         SampleFormat::S16 => Format::S16le,
         SampleFormat::S24Packed => Format::S24le,
         SampleFormat::S24In32 => Format::S32le,
         SampleFormat::S32 => Format::S32le,
         SampleFormat::F32 => Format::F32le,
+        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => unreachable!(),
     })
 }
 

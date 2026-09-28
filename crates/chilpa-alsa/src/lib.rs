@@ -58,6 +58,8 @@ const FORMATS: &[(SampleFormat, Format)] = &[
     (SampleFormat::S24In32, Format::s32()),
     (SampleFormat::S32, Format::s32()),
     (SampleFormat::F32, Format::float()),
+    (SampleFormat::DsdU32Be, Format::DSDU32BE),
+    (SampleFormat::DsdU32Le, Format::DSDU32LE),
 ];
 
 fn alsa_format(f: SampleFormat) -> Format {
@@ -253,11 +255,36 @@ impl AudioSink for AlsaSink {
             "close_started",
             format_args!("device={:?} stream={:?} pcm_open={}", self.device, self.stream, self.pcm.is_some()),
         );
-        if let Some(pcm) = &self.pcm {
+        if let Some(pcm) = self.pcm.take() {
             pcm.drop().map_err(backend)?;
         }
+        self.reservation = None;
         chilpa_audio::diagnostics::trace("alsa", "close_finished", format_args!("device={:?}", self.device));
         Ok(())
+    }
+
+    fn handoff(&mut self) -> Result<(), SinkError> {
+        let started = std::time::Instant::now();
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "handoff_started",
+            format_args!("device={:?} stream={:?}", self.device, self.stream),
+        );
+        let dropped = match self.pcm.take() {
+            Some(pcm) => pcm.drop().map_err(backend),
+            None => Ok(()),
+        };
+        if let Some(reservation) = self.reservation.take() {
+            if let Some(card) = reserve::card_of(&self.device) {
+                reservation.park(card);
+            }
+        }
+        chilpa_audio::diagnostics::trace(
+            "alsa",
+            "handoff_finished",
+            format_args!("after={:?} device={:?}", started.elapsed(), self.device),
+        );
+        dropped
     }
 
     /// Closes the PCM for real -- `drop` only stops it; the device is let go
@@ -473,6 +500,8 @@ mod tests {
             SampleFormat::S24In32,
             SampleFormat::S32,
             SampleFormat::F32,
+            SampleFormat::DsdU32Be,
+            SampleFormat::DsdU32Le,
         ] {
             let _ = alsa_format(f);
         }

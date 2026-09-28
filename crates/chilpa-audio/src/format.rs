@@ -18,6 +18,11 @@ pub enum SampleFormat {
     /// 32-bit float. The device converts, so what reaches the DAC is no
     /// longer what we produced.
     F32,
+    /// Four native DSD bytes per ALSA frame, earliest byte first in memory.
+    DsdU32Be,
+    /// Four native DSD bytes per ALSA frame, earliest byte in the word's most
+    /// significant lane (reversed in memory on little-endian hosts).
+    DsdU32Le,
 }
 
 impl SampleFormat {
@@ -26,7 +31,8 @@ impl SampleFormat {
         match self {
             SampleFormat::S16 => 2,
             SampleFormat::S24Packed => 3,
-            SampleFormat::S24In32 | SampleFormat::S32 | SampleFormat::F32 => 4,
+            SampleFormat::S24In32 | SampleFormat::S32 | SampleFormat::F32
+            | SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => 4,
         }
     }
 
@@ -37,13 +43,20 @@ impl SampleFormat {
             SampleFormat::S24Packed | SampleFormat::S24In32 => 24,
             SampleFormat::S32 => 32,
             SampleFormat::F32 => 32,
+            SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => 1,
         }
     }
 
     /// True when the device receives integers as they are. A float stream can
     /// never be bit-perfect, because somebody converts.
     pub const fn is_integer(self) -> bool {
-        !matches!(self, SampleFormat::F32)
+        !matches!(self, SampleFormat::F32 | SampleFormat::DsdU32Be | SampleFormat::DsdU32Le)
+    }
+
+    /// True for ALSA's native one-bit formats, which must never participate
+    /// in PCM word-width negotiation.
+    pub const fn is_dsd(self) -> bool {
+        matches!(self, SampleFormat::DsdU32Be | SampleFormat::DsdU32Le)
     }
 }
 

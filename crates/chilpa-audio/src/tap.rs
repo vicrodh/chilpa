@@ -166,6 +166,10 @@ impl<S: AudioSink> AudioSink for TapSink<S> {
         self.inner.close()
     }
 
+    fn handoff(&mut self) -> Result<(), SinkError> {
+        self.inner.handoff()
+    }
+
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         self.inner.drain(give_up)
     }
@@ -210,6 +214,9 @@ fn normalize(bytes: &[u8], format: SampleFormat) -> f32 {
             v as f32 / 2_147_483_648.0
         }
         SampleFormat::F32 => f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+        // A one-bit stream has no PCM amplitude for the oscilloscope. It is
+        // still counted and passed through byte-for-byte.
+        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => 0.0,
     }
 }
 
