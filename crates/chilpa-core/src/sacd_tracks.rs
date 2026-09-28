@@ -135,6 +135,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn synthetic_tracks_retain_the_master_set_evidence() {
+        let track = chilpa_sacd::SacdTrack { number: 1, start_lsn: 550, length_lsn: 10,
+            start_frame: 0, duration_frames: 75, encoding: chilpa_sacd::Encoding::Dsd3In14,
+            title: None, performer: None };
+        let mut area = chilpa_sacd::SacdArea { tracks: vec![track.clone()], album: None,
+            artist: None, disc_number: Some(2), disc_total: Some(3),
+            encoding: chilpa_sacd::Encoding::Dsd3In14, audio_start_lsn: 550, audio_end_lsn: 559 };
+        for (number, total) in [(Some(2), Some(3)), (Some(1), Some(1)), (None, None)] {
+            area.disc_number = number;
+            area.disc_total = total;
+            let read = tags(&area, &track, Path::new("disc.iso"));
+            assert_eq!((read.disc_number, read.disc_total), (number, total));
+        }
+    }
+
+    #[test]
     fn a_track_path_goes_out_and_comes_back() {
         let image = Path::new("/music/Pink Floyd #1/Wish You Were Here.iso");
         let path = path_of(image, 3);

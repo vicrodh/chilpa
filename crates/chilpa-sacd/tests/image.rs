@@ -124,6 +124,22 @@ fn both_tracks_of_the_stereo_area_are_read() {
 }
 
 #[test]
+fn master_set_numbers_are_big_endian_and_invalid_pairs_supply_no_evidence() {
+    for (number, total, expected) in [(1u16, 1u16, Some((1, 1))), (257, 300, Some((257, 300))),
+        (0, 2, None), (2, 0, None), (3, 2, None)] {
+        let mut image = build(false);
+        let master = image.sector(510);
+        master[0x10..0x12].copy_from_slice(&total.to_be_bytes());
+        master[0x12..0x14].copy_from_slice(&number.to_be_bytes());
+        let path = image.write("set-evidence");
+        let image = open(&path).unwrap();
+        assert_eq!(image.area.disc_number.zip(image.area.disc_total), expected);
+        drop(image);
+        std::fs::remove_file(path).unwrap();
+    }
+}
+
+#[test]
 fn a_track_delivers_stereo_dsd64_with_the_channels_split() {
     let path = build(false).write("audio");
     let img = open(&path).unwrap();
