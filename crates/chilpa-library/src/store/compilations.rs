@@ -25,6 +25,7 @@ impl Library {
             let keep = ids[0];
             let group = super::versions::album_group(&title, crate::VARIOUS_ARTISTS);
             for &other in &ids[1..] {
+                super::ratings::merge_album_rating(&tx, other, keep)?;
                 tx.execute("UPDATE albums SET
                     artwork_path = coalesce(artwork_path, (SELECT artwork_path FROM albums WHERE id = ?2)),
                     year = coalesce(year, (SELECT year FROM albums WHERE id = ?2)) WHERE id = ?1", params![keep, other])?;

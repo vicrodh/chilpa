@@ -12,6 +12,7 @@ pub mod find;
 pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
+pub mod ratings;
 pub mod regroup;
 mod compilations;
 pub(crate) mod releases;

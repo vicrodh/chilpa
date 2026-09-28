@@ -184,6 +184,7 @@ impl Library {
             }
             let left: i64 = tx.query_row("SELECT count(*) FROM tracks WHERE album_id = ?1", params![from], |r| r.get(0))?;
             if left == 0 {
+                super::ratings::merge_album_rating(&tx, from, to)?;
                 tx.execute(
                     "INSERT OR IGNORE INTO album_favorites (album_id, added_at)
                      SELECT ?2, added_at FROM album_favorites WHERE album_id = ?1",

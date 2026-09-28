@@ -76,6 +76,7 @@ impl Library {
                 group.artists.iter().next().cloned().unwrap_or_default()
             };
             for other in &rest {
+                super::ratings::merge_album_rating(&tx, *other, keep)?;
                 // What another part knew that the one kept did not.
                 tx.execute(
                     "UPDATE albums SET
@@ -163,6 +164,7 @@ impl Library {
                 for track in tracks {
                     tx.execute("UPDATE tracks SET album_id = ?1 WHERE id = ?2", params![target, track])?;
                 }
+                super::ratings::merge_album_rating(&tx, album, target)?;
                 made += 1;
             }
             tx.execute("DELETE FROM albums WHERE id = ?1", params![album])?;

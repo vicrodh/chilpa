@@ -1249,3 +1249,21 @@ UPDATE tracks SET release_year = (SELECT year FROM albums WHERE id = tracks.albu
 CREATE INDEX tracks_release_part ON tracks(source_id, release_part);
 ALTER TABLE album_presentation ADD COLUMN artist_grouped INTEGER NOT NULL DEFAULT 1;
 "#;
+
+/// I keep personal ratings separate from source metadata and favorites.
+pub(super) const MIGRATION_V25: &str = r#"
+CREATE TABLE rating_clock (id INTEGER PRIMARY KEY CHECK(id = 1), revision INTEGER NOT NULL);
+INSERT INTO rating_clock VALUES (1, 0);
+CREATE TABLE track_ratings (
+    track_id INTEGER PRIMARY KEY REFERENCES tracks(id) ON DELETE CASCADE,
+    stars INTEGER NOT NULL CHECK(stars BETWEEN 0 AND 5),
+    revision INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE TABLE album_ratings (
+    album_id INTEGER PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+    stars INTEGER NOT NULL CHECK(stars BETWEEN 0 AND 5),
+    revision INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+"#;
