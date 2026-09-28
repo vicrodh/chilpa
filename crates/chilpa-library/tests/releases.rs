@@ -215,8 +215,10 @@ fn audit_disposable_copy() {
     let lib = Library::open(std::path::Path::new(&path)).unwrap();
     lib.assemble_local_releases().unwrap();
     let changes = lib.connection().total_changes();
+    let started = std::time::Instant::now();
     lib.assemble_local_releases().unwrap();
     assert_eq!(changes, lib.connection().total_changes());
+    eprintln!("unchanged assembly: {:?}", started.elapsed());
     assert!(lib.check().unwrap().is_empty());
     eprintln!("present releases: {}", ids(&lib).len());
 }
