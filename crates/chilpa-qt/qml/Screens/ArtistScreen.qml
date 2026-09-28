@@ -65,6 +65,14 @@ Flickable {
             onShuffle: every.playAll(true)
         }
 
+        PillButton {
+            text: I18n.tr("Group album versions", I18n.rev)
+            glyph: Library.artistGroupVersions ? Icons.squareCheckFilled : Icons.square
+            filled: Library.artistGroupVersions
+            kind: Library.artistGroupVersions ? "primary" : "secondary"
+            onClicked: Library.groupArtistAlbums(!Library.artistGroupVersions)
+        }
+
         SectionHeader { width: parent.width; visible: top.count > 0; title: I18n.tr("Most played", I18n.rev) }
         TrackList {
             width: parent.width

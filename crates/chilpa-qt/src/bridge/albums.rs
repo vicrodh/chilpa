@@ -64,6 +64,8 @@ pub mod qobject {
         fn art(self: &AlbumGridModel, index: i32, rev: i32) -> QUrl;
         #[qinvokable]
         fn album_id(self: &AlbumGridModel, index: i32, rev: i32) -> i64;
+        #[qinvokable]
+        fn prepare_open(self: &AlbumGridModel, index: i32);
 
         /// Selects on a click: 1 (Ctrl) flips one record, 2 (Shift) takes
         /// the records from the last one clicked (ADR-0007).
@@ -202,6 +204,15 @@ impl AlbumGridRust {
 }
 
 impl qobject::AlbumGridModel {
+    pub fn prepare_open(&self, index: i32) {
+        if !matches!(self.rust().kind.to_string().as_str(), "artist" | "appearsOn") { return; }
+        if let Some(id) = self.rust().get(index, |album| album.id) {
+            app::with(|api| {
+                if !api.group_artist_versions() { api.select_album_version(id, id); }
+            });
+        }
+    }
+
     pub fn title(&self, index: i32, _rev: i32) -> QString {
         self.rust().get(index, |a| QString::from(&a.title)).unwrap_or_default()
     }
@@ -296,11 +307,11 @@ impl qobject::AlbumGridModel {
             }
             "artist" => {
                 let name = self.rust().key.to_string();
-                app::with(|api| api.artist_albums(&name))
+                app::with(|api| api.artist_release_cards(&name, false))
             }
             "appearsOn" => {
                 let name = self.rust().key.to_string();
-                app::with(|api| api.artist_appearances(&name))
+                app::with(|api| api.artist_release_cards(&name, true))
             }
             "sameArtist" => {
                 let id = self.rust().key.to_string().parse().unwrap_or_default();

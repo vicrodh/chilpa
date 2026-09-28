@@ -2,6 +2,14 @@
 
 use crate::{Album, Chilpa};
 
+pub struct AlbumHeading {
+    pub kind: String,
+    pub meta: String,
+    pub discs: String,
+    pub info: String,
+    pub summary: String,
+}
+
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct AlbumSource {
     pub key: String,
@@ -32,6 +40,11 @@ mod tests {
         api.library = Some(lib);
         assert_eq!(api.albums(20, 0).iter().map(|v| v.id).collect::<Vec<_>>(), [b]);
         assert_eq!(api.artist_albums("Band")[0].id, b);
+        assert_eq!(api.artist_release_cards("Band", false).len(), 1);
+        assert!(api.set_group_artist_versions(false));
+        assert_eq!(api.artist_release_cards("Band", false).len(), 2);
+        assert_eq!(api.albums(20, 0).len(), 1, "the artist toggle does not change Library or Albums");
+        assert!(api.set_group_artist_versions(true));
         let versions = api.album_versions(a);
         assert_eq!(versions.len(), 2);
         assert_eq!(versions[0].id, b);
@@ -49,7 +62,10 @@ mod tests {
         assert_eq!(api.album_paths(&[a]), ["1.flac"]);
         assert!(api.set_group_album_versions(false));
         assert_eq!(api.albums(20, 0).len(), 2);
-        assert!(api.album_versions(a).is_empty());
+        assert_eq!(api.artist_release_cards("Band", false).len(), 1);
+        assert_eq!(api.album_versions(a).len(), 2, "the selector is independent of grid grouping");
+        assert!(api.set_group_artist_versions(false));
+        assert_eq!(api.artist_release_cards("Band", false).len(), 2);
         assert_eq!(api.album_sources(a).len(), 1);
         assert!(api.set_group_album_versions(true));
         assert_eq!(api.albums(20, 0)[0].id, a);
@@ -93,6 +109,47 @@ fn edition(title: &str) -> String {
 }
 
 impl Chilpa {
+    pub fn album_heading(&self, detail: &crate::AlbumDetail, length: &str) -> AlbumHeading {
+        let songs = self.tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
+        let mut meta = Vec::new();
+        if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
+        meta.extend([songs.clone(), length.to_owned()]);
+        let quality = detail.quality.long();
+        if !quality.is_empty() { meta.push(quality); }
+        let kind = self.t("Album").to_uppercase();
+        AlbumHeading {
+            kind: detail.album.year.map_or(kind.clone(), |year| format!("{kind} · {year}")),
+            meta: meta.join(" · "),
+            discs: if detail.discs > 1 { self.tf("{} disc", "{} discs", detail.discs as i64, &[&detail.discs.to_string()]) } else { String::new() },
+            info: self.t("Info: Embedded tags"),
+            summary: format!("{songs} · {length}"),
+        }
+    }
+
+    pub fn group_artist_versions(&mut self) -> bool {
+        self.library().is_none_or(|lib| lib.group_artist_versions())
+    }
+
+    pub fn set_group_artist_versions(&mut self, on: bool) -> bool {
+        match self.library().map(|lib| lib.set_group_artist_versions(on)) {
+            Some(Ok(())) => true,
+            Some(Err(error)) => { self.now.error = error.to_string(); false }
+            None => false,
+        }
+    }
+
+    /// I apply the artist page's preference without changing other grids.
+    pub fn artist_release_cards(&mut self, name: &str, appearances: bool) -> Vec<Album> {
+        let Some(lib) = self.library() else { return Vec::new() };
+        let records = if appearances { lib.albums_appearing(name) }
+            else { lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0) }.unwrap_or_default();
+        let mut ids: Vec<_> = records.iter().map(|(a, _)| a.id).collect();
+        if lib.group_artist_versions() {
+            if let Ok(catalog) = lib.version_catalog() { ids = catalog.collapse(&ids); }
+        }
+        ids.chunks(500).flat_map(|ids| lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect()
+    }
+
     pub fn group_album_versions(&mut self) -> bool {
         self.library().is_none_or(|lib| lib.group_album_versions())
     }
@@ -119,7 +176,6 @@ impl Chilpa {
 
     pub fn album_versions(&mut self, album: i64) -> Vec<AlbumVersion> {
         let Some(lib) = self.library() else { return Vec::new() };
-        if !lib.group_album_versions() { return Vec::new(); }
         let versions = lib.version_catalog().map(|c| c.choices(album)).unwrap_or_default();
         versions.into_iter().map(|v| {
             let quality = crate::quality::Quality::of_file(&v.path, v.bits, v.rate).long();
