@@ -63,6 +63,11 @@ Window {
     }
 
     Connections {
+        target: Library
+        function onContentRevChanged() { Ratings.refresh() }
+    }
+
+    Connections {
         target: Navigation
         function onScreenChanged() { window.panelAside = Navigation.screen === "metadata" }
     }

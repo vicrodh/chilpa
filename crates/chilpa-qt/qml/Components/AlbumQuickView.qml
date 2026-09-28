@@ -129,6 +129,11 @@ Item {
                 width: parent.width
                 detail: panel.albumDetail
             }
+            RatingStars {
+                value: Ratings.album(detail.selectedId, Ratings.rev)
+                interactive: detail.selectedId > 0
+                onRated: (stars) => Ratings.rateAlbum(detail.selectedId, stars)
+            }
         }
 
         Column {

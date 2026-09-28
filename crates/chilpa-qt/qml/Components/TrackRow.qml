@@ -30,6 +30,9 @@ Item {
     // Its artist is under the pointer: a click on it opens the artist.
     property bool artistHovered: false
     property bool selectionMode: false
+    property int rating: 0
+    property int ratingPreview: 0
+    property bool canRate: false
 
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
@@ -40,6 +43,13 @@ Item {
         return !header && label.visible && point.x >= 0 && point.y >= 0
             && point.x < Math.min(label.width, label.contentWidth)
             && point.y < Math.min(label.height, label.contentHeight)
+    }
+
+    function ratingAt(x, y) {
+        const point = stars.mapFromItem(row, x, y)
+        return !header && canRate && stars.visible && point.x >= 0 && point.x < stars.width
+            && point.y >= 0 && point.y < stars.height
+            ? Math.floor(point.x / stars.width * Metrics.ratingMaximum) + 1 : 0
     }
 
     width: cols.width
@@ -170,12 +180,13 @@ Item {
         }
 
         RatingStars {
+            id: stars
             x: row.cols.ratingX
             anchors.verticalCenter: parent.verticalCenter
             visible: row.cols.rating > 0
             interactive: false
-            // Persistence follows with the rating model; this already gives
-            // the row its final five-star interaction and geometry.
+            value: row.rating
+            pointerPreview: row.ratingPreview
         }
 
         Text {

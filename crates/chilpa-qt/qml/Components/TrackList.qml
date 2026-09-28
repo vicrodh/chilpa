@@ -60,10 +60,12 @@ Item {
 
     ListView {
         id: view
+        objectName: "trackListView"
 
         property int hovered: -1
         // The row whose artist is under the pointer, which a click opens.
         property int artistHovered: -1
+        property int ratingHovered: 0
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -80,7 +82,11 @@ Item {
         ScrollBar.vertical: ScrollBar { policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
         delegate: TrackRow {
+            required property double trackId
             cols: columns
+            canRate: trackId > 0
+            rating: Ratings.track(trackId, Ratings.rev)
+            ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
@@ -96,6 +102,7 @@ Item {
         property int pressedRow: -1
         property real pressedY: 0
         property bool dragging: false
+        property bool pressedRating: false
 
         anchors.fill: view
         anchors.rightMargin: list.fitContent ? 0 : Metrics.gap10
@@ -108,6 +115,11 @@ Item {
         function track() {
             view.hovered = containsMouse ? rowAt(mouseY) : -1
             view.artistHovered = containsMouse && onArtist(view.hovered, mouseX, mouseY) ? view.hovered : -1
+            view.ratingHovered = ratingAt(view.hovered, mouseX, mouseY)
+        }
+        function ratingAt(row, x, y) {
+            const item = row >= 0 ? view.itemAtIndex(row) : null
+            return item ? item.ratingAt(x - item.x, y + view.contentY - item.y) : 0
         }
         // Whether the pointer is on the row's artist: its own column in
         // compact rows, the line under the title in rich ones. Worked out
@@ -120,7 +132,8 @@ Item {
         }
 
         onPressed: (mouse) => {
-            if (mouse.button === Qt.LeftButton && list.reorderable) {
+            pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
+            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating) {
                 pressedRow = rowAt(mouse.y)
                 pressedY = mouse.y
                 dragging = false
@@ -150,6 +163,14 @@ Item {
                 actions.show(row, mouse.x, view.y + mouse.y)
                 return
             }
+            const star = ratingAt(row, mouse.x, mouse.y)
+            if (pressedRating && star === 0)
+                return
+            if (star > 0) {
+                const item = view.itemAtIndex(row)
+                Ratings.rateTrack(item.trackId, item.rating === star ? 0 : star)
+                return
+            }
             const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
             if (!toggle && !(mouse.modifiers & Qt.ShiftModifier) && onArtist(row, mouse.x, mouse.y)) {
                 list.model.go(row, "artist")
@@ -159,7 +180,7 @@ Item {
         }
         onDoubleClicked: (mouse) => {
             const row = rowAt(mouse.y)
-            if (row >= 0 && mouse.button === Qt.LeftButton)
+            if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y))
                 list.model.play(row)
         }
     }
@@ -169,40 +190,16 @@ Item {
         model: list.model
     }
 
-    Row {
+    TrackGroupActions {
         id: groupActions
-        readonly property int row: view.hovered
-        readonly property var item: row >= 0 ? view.itemAtIndex(row) : null
+        row: view.hovered
+        item: row >= 0 ? view.itemAtIndex(row) : null
+        model: list.model
 
         visible: item && item.header
         x: list.width - width - Metrics.gap10
         y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
-        spacing: Metrics.gap2
         z: 3
-
-        IconButton {
-            size: Metrics.button24
-            glyph: Icons.playerPlayFilled
-            filled: true
-            tip: I18n.tr("Play this group", I18n.rev)
-            onClicked: list.model.groupAction(groupActions.row, "play", groupActions.item.headerLabel)
-        }
-        IconButton {
-            id: groupQueueButton
-            size: Metrics.button24
-            glyph: Icons.playlistAdd
-            tip: I18n.tr("Queue this group", I18n.rev)
-            onClicked: {
-                const at = groupQueueButton.mapToItem(list, groupQueueButton.width - Metrics.menuWidth,
-                                                      groupQueueButton.height + Metrics.gap4)
-                groupQueue.showGroup(groupActions.row, groupActions.item.headerLabel, at.x, at.y)
-            }
-        }
-    }
-
-    QueueMenu {
-        id: groupQueue
-        model: list.model
     }
 
     Row {

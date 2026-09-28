@@ -291,6 +291,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
                 0 => QVariant::from(&1i32),
                 11 => QVariant::from(&QString::from(*label)),
                 12 => QVariant::from(&QString::from(*meta)),
+                13 => QVariant::from(&0i64),
                 15 => QVariant::from(&QUrl::default()),
                 _ => QVariant::default(),
             };
