@@ -28,7 +28,7 @@ pub struct Filter {
     pub queries: [String; 4],
     pub year: Option<i32>,
     pub genre: Option<String>,
-    /// The album artist: what the record says about itself.
+    /// An album credit or any artist contributing to the album.
     pub artist: Option<String>,
     pub album: Option<i64>,
     /// Multi-selection from Library Explorer. Singular fields remain for
@@ -235,7 +235,8 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         sql.push_str(match column {
             0 => " AND CAST(a.year AS TEXT) LIKE ? ESCAPE '\\'",
             1 => " AND EXISTS (SELECT 1 FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE tq.track_id = t.id AND gq.name LIKE ? ESCAPE '\\')",
-            2 => " AND a.album_artist LIKE ? ESCAPE '\\'",
+            2 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
+                WHERE artist LIKE ? ESCAPE '\\')",
             _ => " AND a.title LIKE ? ESCAPE '\\'",
         });
         args.push(Box::new(pattern));
@@ -256,7 +257,8 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     let mut artists = f.artists.clone();
     if let Some(artist) = f.artist.as_ref().filter(|artist| !artists.iter().any(|v| v.eq_ignore_ascii_case(artist))) { artists.push(artist.clone()); }
     if !artists.is_empty() {
-        sql.push_str(&format!(" AND a.album_artist COLLATE NOCASE IN ({})", marks(artists.len())));
+        sql.push_str(&format!(" AND a.id IN (SELECT album_id FROM album_artist_rollup
+            WHERE artist COLLATE NOCASE IN ({}))", marks(artists.len())));
         args.extend(artists.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     let mut albums = f.albums.clone();
@@ -297,8 +299,8 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         if !formats.is_empty() { sql.push_str(&format!(" AND ({})", formats.join(" OR "))); }
     }
     if let Some(name) = &f.performer {
-        sql.push_str(" AND (a.album_artist = ? COLLATE NOCASE OR t.artist = ? COLLATE NOCASE)");
-        args.push(Box::new(name.clone()));
+        sql.push_str(" AND a.id IN (SELECT album_id FROM album_artist_rollup
+            WHERE artist = ? COLLATE NOCASE)");
         args.push(Box::new(name.clone()));
     }
     (sql, args)
@@ -363,7 +365,7 @@ impl Library {
         self.named_facet(&sql, args)
     }
 
-    /// The album artists the year and the genre leave.
+    /// Album credits and contributing artists the year and genre leave.
     pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
         left.queries[2..].fill(String::new());
@@ -372,14 +374,15 @@ impl Library {
         left.album = None;
         left.albums.clear();
         if left == Filter::default() {
-            return self.named_facet(&format!("SELECT min(a.album_artist), count(*) {ALBUMS}
-                GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"), Vec::new());
+            return self.named_facet("SELECT min(artist), count(album_id)
+                FROM album_artist_rollup GROUP BY artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE", Vec::new());
         }
-        let (filter, args) = clause(&left);
-        let sql = format!(
-            "SELECT min(a.album_artist), count(DISTINCT a.id) {FROM} {filter}
-             GROUP BY a.album_artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
-        );
+        let albums: Vec<i64> = self.facet_albums(&left)?.iter().filter_map(|a| a.key.parse().ok()).collect();
+        if albums.is_empty() { return Ok(Vec::new()); }
+        let placeholders = vec!["?"; albums.len()].join(",");
+        let sql = format!("SELECT min(artist), count(album_id) FROM album_artist_rollup
+            WHERE album_id IN ({placeholders}) GROUP BY artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE");
+        let args = albums.into_iter().map(|id| Box::new(id) as Box<dyn ToSql>).collect();
         self.named_facet(&sql, args)
     }
 

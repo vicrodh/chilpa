@@ -146,6 +146,26 @@ fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
 }
 
 #[test]
+fn different_album_artist_tags_in_one_release_do_not_split_a_compilation() {
+    if !have_ffmpeg() { return; }
+    let dir = std::env::temp_dir().join(format!("chilpa-scan-compilation-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    for (file, artist, credit) in [("01.flac", "歌手 A", "Singer A"), ("02.flac", "歌手 B", "Singer B")] {
+        assert!(tagged_file(&dir.join(file), "Song", artist, "Reference CD", Some(credit)));
+    }
+    let lib = Library::in_memory().unwrap();
+    assert_eq!(scan_root(&lib, &dir).unwrap().read, 2);
+    let albums = lib.albums(100, 0).unwrap();
+    assert_eq!(albums.len(), 1);
+    assert_eq!(albums[0].album_artist, "Various Artists");
+    assert_eq!(albums[0].track_count, 2);
+    assert_eq!(lib.album_ids_matching(chilpa_library::AlbumSort::Title, "Singer B").unwrap(), [albums[0].id]);
+    assert_eq!(scan_root(&lib, &dir).unwrap().unchanged, 2);
+    assert_eq!(lib.albums(100, 0).unwrap(), albums);
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
 fn a_deleted_file_is_marked_missing_and_keeps_its_history() {
     let Some(dir) = album("deleted", 3) else {
         eprintln!("no ffmpeg: skipped");

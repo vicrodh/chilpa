@@ -465,7 +465,7 @@ fn save_track(
             // record of that title that had one.
             let named = tags.album_artist.as_deref().map(str::trim).filter(|a| !a.is_empty());
             let location = crate::store::versions::local_location(external_id);
-            let id = lib.local_edition(source, album_title, named.unwrap_or(&artist), named.is_some(), &location, tags.year())?;
+            let id = lib.local_edition(source, album_title, named.unwrap_or(&artist), &location, tags.year())?;
             // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
                 save_cover(lib, id, cover_from, cache)?;
@@ -510,6 +510,8 @@ fn save_track(
         params![source, external_id],
         |r| r.get(0),
     )?;
+    lib.db.execute("UPDATE tracks SET album_credit = ?2 WHERE id = ?1",
+        params![track_id, tags.album_artist.as_deref().unwrap_or("").trim()])?;
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;

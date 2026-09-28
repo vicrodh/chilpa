@@ -1134,3 +1134,96 @@ CREATE TABLE album_presentation (
 );
 INSERT INTO album_presentation(id) VALUES (1);
 "#;
+
+/// Preserve per-file album credits before joining compilation fragments.
+pub(super) const MIGRATION_V22: &str = r#"
+ALTER TABLE tracks ADD COLUMN album_credit TEXT NOT NULL DEFAULT '';
+UPDATE tracks SET album_credit = coalesce((SELECT album_artist FROM albums WHERE id = tracks.album_id), '');
+CREATE TABLE album_members (
+    album_id INTEGER NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    track_id INTEGER NOT NULL REFERENCES tracks(id) ON DELETE CASCADE,
+    artist TEXT NOT NULL COLLATE NOCASE,
+    PRIMARY KEY (track_id, artist)
+) WITHOUT ROWID;
+CREATE INDEX album_members_artist ON album_members(artist, album_id, track_id);
+CREATE INDEX album_members_album ON album_members(album_id, artist, track_id);
+
+CREATE TABLE album_artist_rollup (
+    album_id INTEGER NOT NULL REFERENCES albums(id) ON DELETE CASCADE,
+    artist TEXT NOT NULL COLLATE NOCASE,
+    tracks INTEGER NOT NULL,
+    PRIMARY KEY (album_id, artist)
+) WITHOUT ROWID;
+CREATE INDEX album_artist_rollup_artist ON album_artist_rollup(artist, album_id);
+
+CREATE TRIGGER album_artist_rollup_in AFTER INSERT ON album_members
+BEGIN
+    INSERT INTO album_artist_rollup(album_id, artist, tracks) VALUES (NEW.album_id, NEW.artist, 1)
+    ON CONFLICT(album_id, artist) DO UPDATE SET tracks = tracks + 1;
+END;
+
+CREATE TRIGGER album_artist_rollup_out AFTER DELETE ON album_members
+BEGIN
+    UPDATE album_artist_rollup SET tracks = tracks - 1
+    WHERE album_id = OLD.album_id AND artist = OLD.artist COLLATE NOCASE;
+    DELETE FROM album_artist_rollup
+    WHERE album_id = OLD.album_id AND artist = OLD.artist COLLATE NOCASE AND tracks <= 0;
+END;
+
+CREATE TRIGGER album_members_track_in AFTER INSERT ON tracks
+WHEN NEW.present = 1 AND NEW.album_id IS NOT NULL
+BEGIN
+    INSERT INTO album_members
+        SELECT NEW.album_id, NEW.id, trim(album_artist) COLLATE NOCASE FROM albums
+        WHERE id = NEW.album_id AND trim(album_artist) <> ''
+        UNION
+        SELECT NEW.album_id, NEW.id, trim(NEW.artist) COLLATE NOCASE WHERE trim(NEW.artist) <> ''
+        UNION
+        SELECT NEW.album_id, NEW.id, trim(NEW.album_credit) COLLATE NOCASE WHERE trim(NEW.album_credit) <> '';
+END;
+
+CREATE TRIGGER album_members_track_out AFTER DELETE ON tracks
+BEGIN
+    DELETE FROM album_members WHERE track_id = OLD.id;
+END;
+
+CREATE TRIGGER album_members_track_changed
+AFTER UPDATE OF album_id, present, artist, album_credit ON tracks
+BEGIN
+    DELETE FROM album_members WHERE track_id = NEW.id;
+    INSERT INTO album_members
+        SELECT NEW.album_id, NEW.id, trim(album_artist) COLLATE NOCASE FROM albums
+        WHERE id = NEW.album_id AND NEW.present = 1 AND trim(album_artist) <> ''
+        UNION
+        SELECT NEW.album_id, NEW.id, trim(NEW.artist) COLLATE NOCASE
+        WHERE NEW.album_id IS NOT NULL AND NEW.present = 1 AND trim(NEW.artist) <> ''
+        UNION
+        SELECT NEW.album_id, NEW.id, trim(NEW.album_credit) COLLATE NOCASE
+        WHERE NEW.album_id IS NOT NULL AND NEW.present = 1 AND trim(NEW.album_credit) <> '';
+END;
+
+CREATE TRIGGER album_members_album_changed AFTER UPDATE OF album_artist ON albums
+BEGIN
+    DELETE FROM album_members WHERE album_id = NEW.id;
+    INSERT INTO album_members
+        SELECT t.album_id, t.id, trim(NEW.album_artist) COLLATE NOCASE FROM tracks t
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(NEW.album_artist) <> ''
+        UNION
+        SELECT t.album_id, t.id, trim(t.artist) COLLATE NOCASE FROM tracks t
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(t.artist) <> ''
+        UNION
+        SELECT t.album_id, t.id, trim(t.album_credit) COLLATE NOCASE FROM tracks t
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(t.album_credit) <> '';
+END;
+
+INSERT OR IGNORE INTO album_members
+    SELECT t.album_id, t.id, trim(a.album_artist)
+    FROM tracks t JOIN albums a ON a.id = t.album_id
+    WHERE t.present = 1 AND trim(a.album_artist) <> '';
+INSERT OR IGNORE INTO album_members
+    SELECT album_id, id, trim(artist) FROM tracks
+    WHERE album_id IS NOT NULL AND present = 1 AND trim(artist) <> '';
+INSERT OR IGNORE INTO album_members
+    SELECT album_id, id, trim(album_credit) FROM tracks
+    WHERE album_id IS NOT NULL AND present = 1 AND trim(album_credit) <> '';
+"#;
