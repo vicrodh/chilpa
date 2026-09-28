@@ -411,10 +411,9 @@ impl Player {
         }
         out
     }
-}
-
-impl Drop for Player {
-    fn drop(&mut self) {
+    /// I stop and join while keeping the final delivery events available to poll.
+    pub fn shutdown(&mut self) {
+        if self.thread.is_none() { return; }
         self.controls.handoff.set(false);
         self.generation.fetch_add(1, Ordering::AcqRel);
         self.controls.stop.stop();
@@ -423,6 +422,10 @@ impl Drop for Player {
             let _ = t.join();
         }
     }
+}
+
+impl Drop for Player {
+    fn drop(&mut self) { self.shutdown(); }
 }
 
 fn play(

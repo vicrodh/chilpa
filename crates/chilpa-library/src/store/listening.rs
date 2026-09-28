@@ -107,12 +107,13 @@ impl Library {
         }
         let tx = self.own_transaction()?;
         if let Some(track) = c.track_id {
-            let identity: (i64, String) = tx.query_row(
-                "SELECT source_id, external_id FROM tracks WHERE id = ?1",
+            let source: i64 = tx.query_row(
+                "SELECT source_id FROM tracks WHERE id = ?1",
                 [track],
-                |r| Ok((r.get(0)?, r.get(1)?)),
+                |r| r.get(0),
             )?;
-            if c.source_id != Some(identity.0) || c.external_id != identity.1 {
+            // I allow a scan to relocate the same track while it is playing.
+            if c.source_id != Some(source) {
                 return Err(invalid());
             }
         }

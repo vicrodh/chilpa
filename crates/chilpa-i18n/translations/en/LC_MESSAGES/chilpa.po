@@ -1469,6 +1469,9 @@ msgstr ""
 msgid "a number from 1 to 9999, or nothing"
 msgstr ""
 
+msgid "a rating must be between 0 and 5 stars"
+msgstr ""
+
 msgid "a scan is already running"
 msgstr ""
 
@@ -1772,6 +1775,9 @@ msgstr ""
 msgid "quarantined"
 msgstr ""
 
+msgid "ratings could not be loaded: {}"
+msgstr ""
+
 msgid "reach the internet, only {}"
 msgstr ""
 
@@ -2045,6 +2051,9 @@ msgstr ""
 msgid "the library could not be repaired: {}"
 msgstr ""
 
+msgid "the library is unavailable"
+msgstr ""
+
 msgid "the link it gave has already expired"
 msgstr ""
 
@@ -2055,6 +2064,9 @@ msgid "the list could not be read: {}"
 msgstr ""
 
 msgid "the list could not be saved: {}"
+msgstr ""
+
+msgid "the listen could not be saved: {}"
 msgstr ""
 
 msgid "the manifest is not understood: {}"
@@ -2085,6 +2097,9 @@ msgid "the plugin sandbox is not started"
 msgstr ""
 
 msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
+msgstr ""
+
+msgid "the rating could not be saved: {}"
 msgstr ""
 
 msgid "the record has no artist"

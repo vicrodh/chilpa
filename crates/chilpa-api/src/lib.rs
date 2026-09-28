@@ -14,13 +14,18 @@ mod approvals;
 mod browse;
 mod covers;
 mod folders;
+pub mod format;
+pub mod paths;
 mod library;
+pub mod listening;
 mod metadata;
 pub mod navigation;
 mod outputs;
 mod playlists;
 mod plugins;
 mod quality;
+mod ratings;
+pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod track_menu;
 pub use track_menu::{track_menu, TrackMenuContext};
@@ -247,7 +252,10 @@ fn channels(n: u16) -> String {
 /// What is known about the playing track, to log it when it ends.
 #[derive(Clone, Debug)]
 struct InProgress {
-    path: String,
+    context: listening::ListenContext,
+    path: PathBuf,
+    resuming: bool,
+    carried_ms: u64,
     started_at: i64,
     sample_rate_hz: u32,
     bit_depth: Option<u8>,
@@ -1111,27 +1119,31 @@ impl Chilpa {
                     // Every start closes the previous one: in a queue, the
                     // track that starts is the proof the one before it
                     // finished.
-                    self.log_play(false);
                     let started_at = now_unix();
                     let duration_ms = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f * 1000 / u64::from(rate),
                         _ => 0,
                     };
-                    let listen = self.announce(tags.as_ref(), duration_ms, started_at);
-                    self.in_progress = Some(InProgress {
-                        path: path.display().to_string(),
-                        started_at,
-                        sample_rate_hz: opened.sample_rate_hz,
-                        // The bits that carry the music, not the word they
-                        // travel in: a CD rip widened for a DAC that only
-                        // takes 32 bit words was logged as 24.
-                        bit_depth: bits,
-                        bit_perfect,
-                        duration_ms,
-                        played_frames: 0,
-                        listen,
-                        scrobbled: false,
-                    });
+                    if !self.resume_listen(&path, opened.sample_rate_hz, bits, bit_perfect) {
+                        self.log_play(false);
+                        let listen = self.announce(tags.as_ref(), duration_ms, started_at);
+                        let context = self.context_at_start(&path, tags.as_ref(), started_at);
+                        self.in_progress = Some(InProgress {
+                            context,
+                            path: path.clone(),
+                            resuming: false,
+                            carried_ms: 0,
+                            started_at,
+                            sample_rate_hz: opened.sample_rate_hz,
+                            // I log signal bits, not the DAC's wider transport word.
+                            bit_depth: bits,
+                            bit_perfect,
+                            duration_ms,
+                            played_frames: 0,
+                            listen,
+                            scrobbled: false,
+                        });
+                    }
                     self.now.total_seconds = match (total_frames, opened.sample_rate_hz) {
                         (Some(f), rate) if rate > 0 => f as f64 / f64::from(rate),
                         _ => 0.0,
@@ -1189,9 +1201,10 @@ impl Chilpa {
                         // Going back: the track that was left is a skip,
                         // because somebody chose to leave it.
                         Some(Relaunch::Track) => self.log_play(true),
-                        // Moving output: `in_progress` was already dropped,
-                        // so there is nothing to write down.
-                        Some(Relaunch::Output) => {}
+                        // I carry the delivered time into the next output segment.
+                        Some(Relaunch::Output) => {
+                            if let Some(current) = self.in_progress.as_mut() { current.resuming = true; }
+                        }
                         None => {
                             self.now.playing = false;
                             self.stop_after = None;
@@ -1230,24 +1243,6 @@ impl Chilpa {
         self.scrobble_if_heard();
     }
 
-    fn log_play(&mut self, skipped: bool) {
-        let Some(current) = self.in_progress.take() else {
-            return;
-        };
-        let frames = current.played_frames;
-        if current.sample_rate_hz == 0 || frames == 0 {
-            return;
-        }
-        let played_ms = frames * 1000 / u64::from(current.sample_rate_hz);
-        let path = std::path::PathBuf::from(&current.path);
-        let Some(lib) = self.library() else { return };
-        let Ok(source) = lib.source_id("local", "default") else {
-            return;
-        };
-        let track = lib.track_by_path(source, &path).ok().flatten();
-        let _ = lib.log_play(track, Some(source), current.started_at, played_ms, current.duration_ms, skipped, Some(current.sample_rate_hz), current.bit_depth, current.bit_perfect);
-    }
-
     /// The current state, without collecting events.
     pub fn now_playing(&self) -> &NowPlaying {
         &self.now
@@ -1269,6 +1264,9 @@ impl Chilpa {
 impl Drop for Chilpa {
     fn drop(&mut self) {
         self.persist_queue_session();
+        if let Some(player) = self.player.as_mut() { player.shutdown(); }
+        if self.player.is_some() { self.poll(); }
+        self.log_play(true);
     }
 }
 

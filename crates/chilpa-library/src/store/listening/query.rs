@@ -111,9 +111,10 @@ const LISTENS: &str = "WITH listens AS (
              WHEN c.album_external_id <> '' AND p.source_id IS NOT NULL
              THEN printf('source:%d:%d:%s', p.source_id, length(c.album_external_id), c.album_external_id) END AS release_id,
         coalesce(c.backfilled, 1) AS backfilled, c.utc_offset_seconds,
-        CASE WHEN c.external_id <> '' AND p.source_id IS NOT NULL
+        CASE WHEN p.track_id IS NOT NULL THEN 'track:' || p.track_id
+             WHEN c.external_id <> '' AND p.source_id IS NOT NULL
              THEN printf('%d:%d:%s', p.source_id, length(c.external_id), c.external_id)
-             WHEN p.track_id IS NOT NULL THEN 'track:' || p.track_id END AS identity,
+             END AS identity,
         strftime('%H', p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS hour,
         strftime('%w', p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS weekday,
         date(p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS day

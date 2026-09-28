@@ -225,7 +225,7 @@ impl crate::Chilpa {
         if current.scrobbled || current.sample_rate_hz == 0 {
             return;
         }
-        let played_ms = current.played_frames * 1000 / u64::from(current.sample_rate_hz);
+        let played_ms = current.heard_ms();
         if counts(played_ms, current.duration_ms) {
             current.scrobbled = true;
             if let (Some(s), Some(listen)) = (&self.scrobbler, &current.listen) {
