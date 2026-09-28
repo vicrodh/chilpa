@@ -337,7 +337,7 @@ impl Chilpa {
     /// The library's artists.
     pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.artists(limit, offset)
+        lib.presented_artists(limit, offset)
             .unwrap_or_default()
             .into_iter()
             .map(|a| Artist {
@@ -380,21 +380,16 @@ impl Chilpa {
         offset: usize,
     ) -> Vec<Album> {
         let artist = self.artist.clone();
-        let filter = (!artist.is_empty()).then_some(artist.as_str());
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.albums_filtered(order, filter, limit, offset)
-            .unwrap_or_default()
-            .into_iter()
-            .map(|(a, listens)| Album {
-                id: a.id,
-                title: a.title,
-                artist: a.album_artist,
-                year: a.year,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-                play_count: listens,
-            })
-            .collect()
+        let mut ids = lib.album_ids(order).unwrap_or_default();
+        if !artist.is_empty() {
+            if let Ok(catalog) = lib.version_catalog() {
+                ids.retain(|id| catalog.versions.get(id).is_some_and(|v| v.artist.eq_ignore_ascii_case(&artist)));
+            }
+        }
+        let ids = lib.grouped_album_ids(&ids).unwrap_or(ids);
+        let page: Vec<i64> = ids.into_iter().skip(offset).take(limit).collect();
+        page.chunks(500).flat_map(|ids| lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect()
     }
 
     /// An album by its id, with its cover and its play count.

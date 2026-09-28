@@ -27,6 +27,8 @@ pub mod qobject {
         #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
         #[qproperty(QStringList, qualities)] #[qproperty(QStringList, formats)]
         #[qproperty(bool, extra_filtered)]
+        #[qproperty(bool, group_versions)]
+        #[qproperty(QStringList, queries)]
         /// How the tracks are ordered: "artist", "album", "year", "added",
         /// "title", "plays" or "duration".
         #[qproperty(QString, order, READ = order, WRITE = choose_order, NOTIFY = order_changed)]
@@ -54,6 +56,8 @@ pub mod qobject {
 
         #[qinvokable] fn toggle_filter(self: Pin<&mut Library>, kind: &QString, key: &QString);
         #[qinvokable] fn reset_extra(self: Pin<&mut Library>);
+        #[qinvokable] fn group_albums(self: Pin<&mut Library>, on: bool);
+        #[qinvokable] fn search_column(self: Pin<&mut Library>, column: &QString, query: &QString);
     }
 
     impl cxx_qt::Threading for Library {}
@@ -80,25 +84,14 @@ pub struct LibraryRust {
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList,
     excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
     extra_filtered: bool,
+    group_versions: bool,
+    queries: QStringList,
     order: QString,
     album_order: QString,
     generation: u64,
 }
 
 const ORDER_KEY: &str = "ui.library.order";
-
-/// An order by its name, and back.
-fn order_of(name: &str) -> TrackOrder {
-    match name {
-        "album" => TrackOrder::Album,
-        "year" => TrackOrder::Year,
-        "added" => TrackOrder::Added,
-        "title" => TrackOrder::Title,
-        "plays" => TrackOrder::Plays,
-        "duration" => TrackOrder::Duration,
-        _ => TrackOrder::Artist,
-    }
-}
 
 const ORDER: [&str; 4] = ["year", "genre", "artist", "album"];
 
@@ -109,6 +102,23 @@ fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
 }
 
 impl qobject::Library {
+    pub fn group_albums(mut self: Pin<&mut Self>, on: bool) {
+        if app::with(|api| api.set_group_album_versions(on)) {
+            self.as_mut().set_group_versions(on);
+            self.content_changed();
+        }
+    }
+
+    pub fn search_column(mut self: Pin<&mut Self>, column: &QString, query: &QString) {
+        let Some(at) = ORDER.iter().position(|c| *c == column.to_string()) else { return };
+        let queries = browse::write(|s| {
+            s.filter.queries[at] = query.to_string();
+            s.filter.queries.clone()
+        });
+        self.as_mut().set_queries(strings(queries));
+        self.refresh();
+    }
+
     pub fn choose(mut self: Pin<&mut Self>, column: &QString, key: &QString, label: &QString) {
         let column = column.to_string();
         let Some(at) = ORDER.iter().position(|c| *c == column) else { return };
@@ -146,6 +156,7 @@ impl qobject::Library {
 
     pub fn clear(mut self: Pin<&mut Self>) {
         browse::write(|s| s.filter = Filter::default());
+        self.as_mut().set_queries(strings([String::new(), String::new(), String::new(), String::new()]));
         for set in [Self::set_year, Self::set_genre, Self::set_artist, Self::set_album] {
             set(self.as_mut(), QString::default());
         }
@@ -189,7 +200,7 @@ impl qobject::Library {
         }
         let name = order.to_string();
         app::with(|api| api.remember_preference(ORDER_KEY, &name));
-        browse::write(|s| s.order = order_of(&name));
+        browse::write(|s| s.order = TrackOrder::from_name(&name));
         self.as_mut().rust_mut().order = order;
         self.as_mut().order_changed();
         self.refresh();
@@ -246,8 +257,11 @@ impl qobject::Library {
 impl cxx_qt::Initialize for qobject::Library {
     fn initialize(mut self: Pin<&mut Self>) {
         crate::registry::register_library(self.qt_thread());
+        let grouped = app::with(|api| api.group_album_versions());
+        self.as_mut().set_group_versions(grouped);
+        self.as_mut().set_queries(strings(browse::read(|s| s.filter.queries.clone())));
         let name = app::with(|api| api.preference(ORDER_KEY)).unwrap_or_else(|| "artist".to_string());
-        browse::write(|s| s.order = order_of(&name));
+        browse::write(|s| s.order = TrackOrder::from_name(&name));
         self.as_mut().rust_mut().order = QString::from(&name);
         let albums = app::with(|api| api.album_sort().name().to_string());
         self.as_mut().rust_mut().album_order = QString::from(&albums);

@@ -9,11 +9,10 @@
 //!    there or cannot be opened, it is marked unreachable and we leave. In
 //!    QBZ an unmounted mountpoint looked empty and pruned all its tracks.
 
-use crate::album_folder::{album_folder, VARIOUS_ARTISTS};
 use crate::store::Library;
 use crate::scan_sidecar::{overlaid, Homes, Seen};
 use crate::sidecar::Home;
-use rusqlite::{params, OptionalExtension};
+use rusqlite::params;
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -465,17 +464,8 @@ fn save_track(
             // record by it credited the record to nobody and joined every
             // record of that title that had one.
             let named = tags.album_artist.as_deref().map(str::trim).filter(|a| !a.is_empty());
-            let id = match named {
-                Some(album_artist) => album_id(lib, album_title, album_artist, tags.year())?,
-                // Without an album artist the files do not say whose record
-                // this is, and keying it by the track's artist turned a
-                // compilation into one record per artist. Its folder says
-                // which record it is instead.
-                None => {
-                    let folder = album_folder(cover_from);
-                    folder_album_id(lib, source, album_title, &artist, &folder, tags.year())?
-                }
-            };
+            let location = crate::store::versions::local_location(external_id);
+            let id = lib.local_edition(source, album_title, named.unwrap_or(&artist), named.is_some(), &location, tags.year())?;
             // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
                 save_cover(lib, id, cover_from, cache)?;
@@ -550,71 +540,6 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
 }
 
 
-/// The album with that title and artist, made if it is not there yet.
-///
-/// The `OR IGNORE` leans on `albums_identity` (`MIGRATION_V14`), which is
-/// the index that knows an album with no MusicBrainz id is still the same
-/// album. The table constraint it was written against did not: it let every
-/// null through, so this made a row per track for years.
-fn album_id(lib: &Library, title: &str, artist: &str, year: Option<u32>) -> rusqlite::Result<i64> {
-    lib.db.execute(
-        "INSERT OR IGNORE INTO albums (title, album_artist, year) VALUES (?1, ?2, ?3)",
-        params![title, artist, year],
-    )?;
-    lib.db.query_row(
-        "SELECT id FROM albums WHERE title = ?1 AND album_artist = ?2 AND folder = ''",
-        params![title, artist],
-        |r| r.get(0),
-    )
-}
-
-/// The record with that title in that folder, for files that do not name
-/// their album artist; made if it is not there yet. Its artist is the
-/// tracks' while they agree, and "Various Artists" once they do not.
-fn folder_album_id(
-    lib: &Library,
-    source: i64,
-    title: &str,
-    artist: &str,
-    folder: &str,
-    year: Option<u32>,
-) -> rusqlite::Result<i64> {
-    let found: Option<i64> = lib
-        .db
-        .query_row("SELECT id FROM albums WHERE title = ?1 AND folder = ?2", params![title, folder], |r| r.get(0))
-        .optional()?;
-    if let Some(id) = found {
-        lib.db.execute(
-            "UPDATE albums SET album_artist = ?3 WHERE id = ?1 AND album_artist <> ?2 AND album_artist <> ?3",
-            params![id, artist, VARIOUS_ARTISTS],
-        )?;
-        return Ok(id);
-    }
-    // A record an earlier scan made by the track's artist, before records
-    // were grouped by folder, and that already holds files of this folder:
-    // it is this one, and it learns its folder.
-    let (from, to) = (format!("{folder}/"), format!("{folder}0"));
-    let earlier: Option<i64> = lib
-        .db
-        .query_row(
-            "SELECT a.id FROM albums a JOIN tracks t ON t.album_id = a.id
-             WHERE a.title = ?1 AND a.album_artist = ?2 AND a.folder = ''
-               AND t.source_id = ?3 AND t.external_id >= ?4 AND t.external_id < ?5
-             LIMIT 1",
-            params![title, artist, source, from, to],
-            |r| r.get(0),
-        )
-        .optional()?;
-    if let Some(id) = earlier {
-        lib.db.execute("UPDATE albums SET folder = ?2 WHERE id = ?1", params![id, folder])?;
-        return Ok(id);
-    }
-    lib.db.execute(
-        "INSERT INTO albums (title, album_artist, year, folder) VALUES (?1, ?2, ?3, ?4)",
-        params![title, artist, year, folder],
-    )?;
-    Ok(lib.db.last_insert_rowid())
-}
 
 /// Marks the root's files that did not turn up as missing.
 fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite::Result<usize> {

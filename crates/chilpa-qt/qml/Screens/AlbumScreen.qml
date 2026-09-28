@@ -21,25 +21,26 @@ Flickable {
     AlbumDetailModel {
         id: detail
         albumId: Navigation.routeId
+        contentRev: Library.contentRev
     }
     TrackListModel {
         id: tracks
         kind: "album"
-        albumId: Navigation.routeId
+        albumId: detail.selectedId
         filterRev: Library.contentRev
         playingPath: Player.path
     }
     AlbumGridModel {
         id: sameArtist
         kind: "sameArtist"
-        key: Navigation.routeId.toString()
+        key: detail.selectedId.toString()
         limit: 8
         contentRev: Library.contentRev
     }
     AlbumGridModel {
         id: related
         kind: "related"
-        key: Navigation.routeId.toString()
+        key: detail.selectedId.toString()
         limit: 8
         contentRev: Library.contentRev
     }
@@ -63,7 +64,7 @@ Flickable {
             width: parent.width
             detail: detail
             selecting: page.selectionMode
-            favorite: AlbumActions.favorite(Navigation.routeId, AlbumActions.rev)
+            favorite: AlbumActions.favorite(detail.selectedId, AlbumActions.rev)
             contrasted: SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
@@ -71,10 +72,10 @@ Flickable {
                 page.selectionMode = !page.selectionMode
                 tracks.clearSelection()
             }
-            onFavoriteToggle: AlbumActions.setFavorite(Navigation.routeId, !favorite)
+            onFavoriteToggle: AlbumActions.setFavorite(detail.selectedId, !favorite)
             onContext: (left, top) => {
                 const at = hero.mapToItem(page, left, top)
-                albumMenu.show(Navigation.routeId, detail.title, detail.artist, -1, at.x, at.y)
+                albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y)
             }
             onArtwork: artwork.show(detail.art)
         }

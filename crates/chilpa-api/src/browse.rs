@@ -55,7 +55,7 @@ fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     }
 }
 
-fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Album {
+pub(crate) fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Album {
     Album { id: a.id, title: a.title, artist: a.album_artist, year: a.year, track_count: a.track_count, artwork_path: a.artwork_path.unwrap_or_default(), play_count: listens }
 }
 
@@ -206,7 +206,7 @@ pub struct Reader {
 impl Reader {
     /// Every id the filter leaves, in that order, with the totals.
     pub fn snapshot(&self, filter: &Filter, order: TrackOrder) -> Snapshot {
-        self.lib.browse_ids(filter, order).unwrap_or_default()
+        self.lib.grouped_snapshot(filter, order).unwrap_or_default()
     }
 
     /// The files behind those ids, in order: what a list queues when one
@@ -220,7 +220,7 @@ impl Reader {
     /// Every artist with something present, by name, with their records,
     /// tracks and a cover of theirs.
     pub fn artists(&self) -> Vec<crate::Artist> {
-        self.lib.artists(1_000_000, 0).unwrap_or_default().into_iter().map(artist_of).collect()
+        self.lib.presented_artists(1_000_000, 0).unwrap_or_default().into_iter().map(artist_of).collect()
     }
 
     /// What the search box finds for `text`: artists, records and songs, up
@@ -261,7 +261,8 @@ impl Reader {
     /// The same, keeping the records whose title or artist holds every word
     /// of `text`.
     pub fn album_ids_matching(&self, order: chilpa_library::AlbumSort, text: &str) -> Vec<i64> {
-        self.lib.album_ids_matching(order, text).unwrap_or_default()
+        let ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
+        self.lib.grouped_album_ids(&ids).unwrap_or(ids)
     }
 
     /// A folder: the library's roots for an empty path, what the library
@@ -335,7 +336,25 @@ impl Reader {
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
     pub fn facets(&self, f: &Filter) -> Facets {
-        Facets { sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(), genres: self.lib.facet_genres(f).unwrap_or_default(), artists: self.lib.facet_artists(f).unwrap_or_default(), albums: self.lib.facet_albums(f).unwrap_or_default() }
+        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[3].trim().to_lowercase());
+        let ids: Vec<i64> = albums.iter().filter_map(|a| a.key.parse().ok()).collect();
+        let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
+        albums.retain(|a| a.key.parse().is_ok_and(|id| chosen.contains(&id)));
+        let mut artists = self.lib.facet_artists(f).unwrap_or_default();
+        if self.lib.group_album_versions() {
+            let mut left = f.clone();
+            left.choose(2, &[]);
+            left.queries[2..].fill(String::new());
+            let ids = self.lib.facet_albums(&left).unwrap_or_default().iter().filter_map(|a| a.key.parse().ok()).collect::<Vec<_>>();
+            if let Ok(catalog) = self.lib.version_catalog() {
+                let mut counts = std::collections::HashMap::<String, usize>::new();
+                for id in catalog.collapse(&ids) {
+                    if let Some(v) = catalog.versions.get(&id) { *counts.entry(v.artist.to_lowercase()).or_default() += 1; }
+                }
+                for artist in &mut artists { artist.albums = counts.get(&artist.label.to_lowercase()).copied().unwrap_or(0); }
+            }
+        }
+        Facets { sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(), genres: self.lib.facet_genres(f).unwrap_or_default(), artists, albums }
     }
 }
 
@@ -425,7 +444,8 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0).unwrap_or_default().into_iter().map(album_of).collect()
+        let cards = lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 10_000, 0).unwrap_or_default().into_iter().map(album_of).collect();
+        self.group_album_cards(cards)
     }
 
     /// Eight records by the same artist, excluding this one and in a stable
@@ -443,7 +463,8 @@ impl Chilpa {
     /// similarity can extend the library rank once analysis exposes them.
     pub fn related_albums(&mut self, album_id: i64, limit: usize) -> Vec<Album> {
         let Some(lib) = self.library() else { return Vec::new() };
-        lib.related_albums(album_id, limit).unwrap_or_default().into_iter().map(album_of).collect()
+        let cards = lib.related_albums(album_id, limit).unwrap_or_default().into_iter().map(album_of).collect();
+        self.group_album_cards(cards)
     }
 
     /// The records marked as favorites.
@@ -468,7 +489,8 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        lib.albums_appearing(name).unwrap_or_default().into_iter().map(album_of).collect()
+        let cards = lib.albums_appearing(name).unwrap_or_default().into_iter().map(album_of).collect();
+        self.group_album_cards(cards)
     }
 
     /// An artist's tracks, in that order, as many as asked for: on their own
@@ -540,7 +562,9 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        lib.albums_filtered(order, None, limit, 0).unwrap_or_default().into_iter().map(album_of).collect()
+        let ids = lib.album_ids(order).unwrap_or_default();
+        let ids = lib.grouped_album_ids(&ids).unwrap_or(ids);
+        lib.albums_by_ids(&ids[..ids.len().min(limit)]).unwrap_or_default().into_iter().map(album_of).collect()
     }
 
     /// A record with what its header states.

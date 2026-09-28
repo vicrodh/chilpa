@@ -18,7 +18,7 @@ Item {
 
     implicitWidth: separator ? 0
         : Metrics.gap10 * 2 + check.width + Metrics.gap8 + Math.max(title.implicitWidth, detail.implicitWidth) // derived: padding, the check and the text
-          + (tail.width > 0 ? tail.width + Metrics.gap16 : 0)
+          + (tail.width > 0 ? tail.width + Metrics.gap16 : 0) + sourceBadge.width
     implicitHeight: separator ? Metrics.gap8 + 1 : entry.detail ? Metrics.menuItemTall : Metrics.menuItem
 
     Rectangle {
@@ -50,9 +50,18 @@ Item {
         color: line.entry.checked ? Theme.color.accent : Theme.color.textSecondary
     }
 
+    SourceIcon {
+        id: sourceBadge
+        anchors.left: check.right
+        anchors.verticalCenter: parent.verticalCenter
+        sourceInfo: line.entry.sourceInfo || ({})
+        visible: !!line.entry.sourceInfo && !line.separator
+        width: visible ? implicitWidth : 0
+    }
+
     Column {
         visible: !line.separator
-        anchors.left: check.right
+        anchors.left: sourceBadge.right
         anchors.leftMargin: Metrics.gap8
         anchors.right: tail.left
         anchors.rightMargin: tail.width > 0 ? Metrics.gap16 : 0

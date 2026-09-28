@@ -20,7 +20,7 @@ Item {
     signal context(real left, real top)
     signal artwork()
 
-    implicitHeight: Metrics.heroArt
+    implicitHeight: Math.max(Metrics.heroArt, information.implicitHeight)
 
     ArtTile {
         id: cover
@@ -32,6 +32,7 @@ Item {
     TapHandler { parent: cover; onTapped: hero.artwork() }
 
     Column {
+        id: information
         anchors.left: cover.right
         anchors.leftMargin: Metrics.heroGap
         anchors.right: parent.right
@@ -79,7 +80,8 @@ Item {
 
         RatingStars { baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary }
 
-        Row {
+        Flow {
+            width: parent.width
             spacing: Metrics.gap8
             PillButton {
                 kind: "primary"
@@ -123,6 +125,9 @@ Item {
                                                        contextButton.height + Metrics.gap4)
                     hero.context(at.x, at.y)
                 }
+            }
+            AlbumVersionSelect {
+                detail: hero.detail
             }
         }
     }

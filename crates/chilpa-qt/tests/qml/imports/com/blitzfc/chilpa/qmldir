@@ -1,0 +1,2 @@
+module com.blitzfc.chilpa
+singleton ThemeModel 1.0 ThemeModel.qml

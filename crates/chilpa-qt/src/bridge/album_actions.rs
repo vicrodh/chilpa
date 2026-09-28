@@ -12,6 +12,10 @@
 
 #[cxx_qt::bridge]
 pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+    }
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -23,6 +27,8 @@ pub mod qobject {
 
         #[qinvokable]
         fn favorite(self: &AlbumActions, id: i64, rev: i32) -> bool;
+        #[qinvokable]
+        fn sources(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
         fn set_favorite(self: Pin<&mut AlbumActions>, id: i64, on: bool);
         #[qinvokable]
@@ -76,6 +82,10 @@ impl AlbumActionsRust {
 }
 
 impl qobject::AlbumActions {
+    pub fn sources(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
+        cxx_qt_lib::QString::from(app::with(|api| serde_json::to_string(&api.album_sources(id)).unwrap_or_default()))
+    }
+
     pub fn favorite(&self, id: i64, _rev: i32) -> bool {
         self.rust().favorites.contains(&id)
     }

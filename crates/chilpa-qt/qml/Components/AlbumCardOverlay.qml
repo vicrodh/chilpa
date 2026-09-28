@@ -16,6 +16,7 @@ Rectangle {
     // Only where a grid can open one under the row (ADR-0007).
     property bool canExpand: true
     readonly property bool favorite: AlbumActions.favorite(albumId, AlbumActions.rev)
+    readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
 
     signal select()
     signal quick()
@@ -51,7 +52,7 @@ Rectangle {
             }
         }
         Text {
-            visible: overlay.year !== ""
+            visible: overlay.year !== "" && overlay.sources.length < 2
             anchors.verticalCenter: parent.verticalCenter
             text: overlay.year
             font.pointSize: Type.meta
@@ -61,6 +62,7 @@ Rectangle {
     }
 
     IconButton {
+        id: favoriteButton
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: Metrics.overlayPad
@@ -73,6 +75,24 @@ Rectangle {
         filled: overlay.favorite
         tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
         onClicked: AlbumActions.setFavorite(overlay.albumId, !overlay.favorite)
+    }
+
+    Row {
+        anchors.right: favoriteButton.left
+        anchors.rightMargin: Metrics.gap4
+        anchors.verticalCenter: favoriteButton.verticalCenter
+        spacing: Metrics.gap4
+        Repeater {
+            model: overlay.sources.slice(0, 4)
+            SourceIcon {
+                required property var modelData
+                sourceInfo: modelData
+                color: Theme.color.textOnAccent
+                HoverHandler {
+                    onHoveredChanged: hovered ? TipState.show(parent.sourceInfo.label, parent) : TipState.hide(parent)
+                }
+            }
+        }
     }
 
     Rectangle {

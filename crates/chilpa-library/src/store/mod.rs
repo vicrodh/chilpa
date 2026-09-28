@@ -13,6 +13,7 @@ pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
 pub mod regroup;
+pub mod versions;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
 pub use edit::{AlbumEdit, EditTrack, Edited, Put, TrackEdit};
@@ -69,6 +70,7 @@ pub struct StoredRoot {
 /// The open library.
 pub struct Library {
     pub(crate) db: Connection,
+    versions: std::cell::RefCell<Option<versions::CachedVersions>>,
 }
 
 /// A transaction of one's own, or somebody else's.
@@ -124,7 +126,7 @@ impl Library {
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
         schema::update_statistics_if_stale(&db)?;
-        let lib = Self { db };
+        let lib = Self { db, versions: Default::default() };
         // Genres an earlier scan stored joined are split once, here: files
         // that did not change are never read again to do it.
         lib.split_stored_genres()?;
@@ -132,6 +134,7 @@ impl Library {
         // empty album artist tag, the same way.
         lib.regroup_split_albums()?;
         lib.credit_unnamed_albums()?;
+        lib.separate_local_editions()?;
         Ok(lib)
     }
 
@@ -147,7 +150,7 @@ impl Library {
         let db = Connection::open_in_memory()?;
         schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
-        Ok(Self { db })
+        Ok(Self { db, versions: Default::default() })
     }
 
     /// Lets the planner see the library it actually has.
@@ -429,9 +432,9 @@ impl Library {
     ///
     /// It is one transaction, so a library is never left half rebuilt.
     pub fn rebuild_rollups(&self) -> rusqlite::Result<()> {
-        self.db.execute_batch(
-            "BEGIN;
-             DELETE FROM album_rollup;
+        let tx = self.own_transaction()?;
+        tx.execute_batch(
+            "DELETE FROM album_rollup;
              INSERT INTO album_rollup (album_id, plays, last_played, added_at, present_tracks)
              SELECT a.id,
                     COALESCE(e.plays, 0),
@@ -469,9 +472,9 @@ impl Library {
                     skips = COALESCE((SELECT sum(skipped) FROM play_events), 0),
                     bit_perfect = COALESCE((SELECT sum(bit_perfect) FROM play_events), 0),
                     since = (SELECT min(started_at) FROM play_events)
-              WHERE id = 1;
-             COMMIT;",
-        )
+              WHERE id = 1;",
+        )?;
+        tx.finish()
     }
 
     /// The track at that path, if it is in the library.

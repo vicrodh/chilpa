@@ -32,6 +32,8 @@ pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
 
 pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
+mod album_versions;
+pub use album_versions::{AlbumSource, AlbumVersion};
 pub use covers::{cover_derivative, header_atmosphere};
 pub use folders::audio_files_in;
 pub use quality::{Quality, Tier};

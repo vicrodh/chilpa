@@ -18,6 +18,9 @@ pub mod qobject {
         #[qobject]
         #[qml_element]
         #[qproperty(i64, album_id)]
+        #[qproperty(i64, selected_id)]
+        #[qproperty(i32, content_rev)]
+        #[qproperty(QString, versions)]
         #[qproperty(bool, found)]
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
@@ -35,6 +38,7 @@ pub mod qobject {
         /// The tier of its best file, for the quality icon.
         #[qproperty(i32, tier)]
         type AlbumDetailModel = super::AlbumDetailRust;
+        #[qinvokable] fn select_version(self: Pin<&mut AlbumDetailModel>, value: &QString);
     }
 
     impl cxx_qt::Initialize for AlbumDetailModel {}
@@ -48,6 +52,9 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct AlbumDetailRust {
     album_id: i64,
+    selected_id: i64,
+    content_rev: i32,
+    versions: QString,
     found: bool,
     title: QString,
     artist: QString,
@@ -69,8 +76,20 @@ struct Lines {
 }
 
 impl qobject::AlbumDetailModel {
+    pub fn select_version(mut self: Pin<&mut Self>, value: &QString) {
+        let Ok(version) = value.to_string().parse() else { return };
+        let album = self.rust().album_id;
+        if app::with(|api| api.select_album_version(album, version)) {
+            self.as_mut().set_selected_id(version);
+            self.as_mut().load();
+            crate::registry::library(|library| library.content_changed());
+        }
+    }
+
     fn load(mut self: Pin<&mut Self>) {
-        let id = self.rust().album_id;
+        let id = self.rust().selected_id;
+        let versions = app::with(|api| api.album_versions(id));
+        self.as_mut().set_versions(QString::from(serde_json::to_string(&versions).unwrap_or_default()));
         let found = if id > 0 { app::with(|api| api.album_detail(id)) } else { None };
         let Some(d) = found else {
             self.as_mut().set_found(false);
@@ -122,6 +141,17 @@ impl qobject::AlbumDetailModel {
 
 impl cxx_qt::Initialize for qobject::AlbumDetailModel {
     fn initialize(mut self: Pin<&mut Self>) {
-        self.as_mut().on_album_id_changed(|m| m.load()).release();
+        self.as_mut().on_album_id_changed(|mut m| {
+            let original = *m.album_id();
+            let filtered = crate::browse::read(|s| s.filter.extra_filtered() && s.snapshot.album_ids.contains(&original));
+            let id = if filtered { original } else { app::with(|api| api.selected_album_version(original)) };
+            m.as_mut().set_selected_id(id);
+            m.load();
+        }).release();
+        self.as_mut().on_content_rev_changed(|mut m| {
+            let id = app::with(|api| api.selected_album_version(*m.album_id()));
+            m.as_mut().set_selected_id(id);
+            m.load();
+        }).release();
     }
 }
