@@ -1,2 +1,6 @@
 module com.blitzfc.chilpa
 singleton ThemeModel 1.0 ThemeModel.qml
+singleton I18n 1.0 I18n.qml
+singleton Playlists 1.0 Playlists.qml
+TrackListModel 1.0 TrackListModel.qml
+singleton SettingsModel 1.0 SettingsModel.qml

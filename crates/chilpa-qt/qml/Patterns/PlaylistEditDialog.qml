@@ -3,52 +3,69 @@ import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
+import "../Components"
 
-// Metadata editor for a local playlist.
 Modal {
     id: dialog
-
+    objectName: "playlistEditDialog"
     property int playlistId: 0
     property int folderId: 0
-
-    width: Metrics.playlistModalWidth
+    property string notice: ""
+    width: Math.max(Metrics.modalInsets, Math.min(Metrics.playlistModalWidth, parent.width - Metrics.modalInset))
+    height: Math.max(Metrics.modalInsets, Math.min(body.implicitHeight + Metrics.modalInsets, parent.height - Metrics.modalInset))
 
     function show(id) {
         playlistId = id
         folderId = Playlists.folderId(id, Playlists.rev)
-        nameField.text = Playlists.name(id, Playlists.rev)
-        descriptionField.text = Playlists.description(id, Playlists.rev)
-        tagsField.text = Playlists.tags(id, Playlists.rev)
-        artworkField.text = Playlists.artwork(id, Playlists.rev)
+        form.name = Playlists.name(id, Playlists.rev)
+        form.description = Playlists.description(id, Playlists.rev)
+        form.tags = Playlists.tags(id, Playlists.rev)
+        form.artwork = Playlists.artwork(id, Playlists.rev)
+        notice = ""
         open()
-        Qt.callLater(nameField.focusInput)
+        Qt.callLater(form.focusInput)
+    }
+    function save() {
+        if (!form.valid) return
+        if (Playlists.update(playlistId, form.name, form.description, form.artwork, form.tags, folderId)) close()
+        else notice = I18n.tr("Could not save the playlist. Please try again.", I18n.rev)
     }
 
-    Column {
-        spacing: Metrics.gap12
-        Text { text: I18n.tr("Edit playlist", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
-        TextField { id: nameField; width: parent.width; placeholder: I18n.tr("Playlist name", I18n.rev) }
-        TextField { id: descriptionField; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
-        TextField { id: tagsField; width: parent.width; placeholder: I18n.tr("Tags, separated by commas", I18n.rev) }
-        Row {
+    Flickable {
+        anchors.fill: parent
+        contentHeight: body.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {}
+        Column {
+            id: body
             width: parent.width
-            spacing: Metrics.gap8
-            TextField { id: artworkField; width: parent.width - choose.width - parent.spacing; placeholder: I18n.tr("Custom image", I18n.rev) }
-            PillButton { id: choose; text: I18n.tr("Choose", I18n.rev); onClicked: artworkField.text = Playlists.chooseArtwork() }
-        }
-        Row {
-            spacing: Metrics.gap8
-            PillButton { text: I18n.tr("Cancel", I18n.rev); onClicked: dialog.close() }
-            PillButton {
-                kind: "primary"
-                text: I18n.tr("Save", I18n.rev)
-                enabled: nameField.text.trim() !== ""
-                onClicked: {
-                    if (Playlists.update(dialog.playlistId, nameField.text,
-                                         descriptionField.text, artworkField.text,
-                                         tagsField.text, dialog.folderId))
-                        dialog.close()
+            spacing: Metrics.gap12
+            Row {
+                width: parent.width
+                Text {
+                    width: parent.width - closeButton.width
+                    text: I18n.tr("Edit playlist", I18n.rev)
+                    font.pointSize: Type.titleSmall
+                    font.weight: Type.bold
+                    color: Theme.color.textPrimary
                 }
+                IconButton { id: closeButton; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: dialog.close() }
+            }
+            PlaylistForm { id: form; width: parent.width; onAccepted: dialog.save() }
+            Text {
+                visible: dialog.notice !== ""
+                width: parent.width
+                text: dialog.notice
+                wrapMode: Text.Wrap
+                font.pointSize: Type.small
+                color: Theme.color.statusWarning
+            }
+            Row {
+                anchors.right: parent.right
+                spacing: Metrics.gap8
+                PillButton { text: I18n.tr("Cancel", I18n.rev); onClicked: dialog.close() }
+                PillButton { kind: "primary"; text: I18n.tr("Save", I18n.rev); enabled: form.valid; onClicked: dialog.save() }
             }
         }
     }

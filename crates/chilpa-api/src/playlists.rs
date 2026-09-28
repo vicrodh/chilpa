@@ -326,7 +326,7 @@ impl Chilpa {
         };
         let entries = lib.playlist_entries_for_tracks(track_ids).unwrap_or_default();
         let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
-        lib.playlists()
+        let mut targets: Vec<_> = lib.playlists()
             .unwrap_or_default()
             .into_iter()
             .map(playlist_of)
@@ -339,24 +339,35 @@ impl Chilpa {
                 let accepts = playlist.writable && (playlist.mixed || entries.iter().all(|entry| entry.source_id == Some(playlist.source_id)));
                 PlaylistTarget { playlist, exact: membership.exact, similar: membership.similar, accepts }
             })
-            .collect()
+            .collect();
+        targets.sort_by_key(|target| target.playlist.name.to_lowercase());
+        targets
     }
 
     pub fn add_track_ids_to_playlist(&mut self, playlist_id: i64, track_ids: &[i64]) -> PlaylistAddResult {
         let Some(lib) = self.library() else {
-            return PlaylistAddResult::default();
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
         let Some(target) = lib.playlists().ok().and_then(|lists| lists.into_iter().find(|playlist| playlist.id == playlist_id)) else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
         let playlist = playlist_of(target);
-        let entries = lib.playlist_entries_for_tracks(track_ids).unwrap_or_default();
+        let Ok(entries) = lib.playlist_entries_for_tracks(track_ids) else {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        };
+        if entries.len() != track_ids.len() {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        }
         let accepts = playlist.writable && (playlist.mixed || entries.iter().all(|entry| entry.source_id == Some(playlist.source_id)));
         if !accepts {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         }
-        let membership = lib.playlist_membership(playlist_id, &entries).unwrap_or_default();
-        let added = lib.append_to_playlist(playlist_id, &entries).unwrap_or(0);
+        let Ok(membership) = lib.playlist_membership(playlist_id, &entries) else {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        };
+        let Ok(added) = lib.append_to_playlist(playlist_id, &entries) else {
+            return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
+        };
         PlaylistAddResult { added, exact: membership.exact, similar: membership.similar, rejected: false }
     }
 

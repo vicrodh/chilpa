@@ -72,7 +72,7 @@ Item {
             glyph: Icons.playlistAdd
             tip: I18n.tr("Add to playlist…", I18n.rev)
             onClicked: {
-                picker.trackIds = bar.model.selectedTrackIds()
+                picker.trackIdsJson = bar.model.selectedTrackIdsJson()
                 picker.show(add.x, 0)
             }
         }

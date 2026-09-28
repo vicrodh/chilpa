@@ -7,10 +7,10 @@ import com.blitzfc.chilpa
 // never opened: the dialog, with its list and its search, is built the first
 // time it is asked for and kept from then on.
 Item {
-    property var trackIds: []
+    property string trackIdsJson: "[]"
     function show(left, top) {
         host.active = true
-        host.item.show(trackIds)
+        host.item.show(trackIdsJson)
     }
     function beginCreate() {
         host.active = true

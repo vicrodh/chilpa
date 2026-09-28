@@ -338,6 +338,18 @@ msgstr "Convertir a PCM"
 msgid "CoreAudio reports no device that can play"
 msgstr "CoreAudio no reporta ningún aparato que pueda reproducir"
 
+msgid "Could not add tracks to this playlist."
+msgstr "No se pudieron agregar las pistas a esta playlist."
+
+msgid "Could not create the playlist. Please try again."
+msgstr "No se pudo crear la playlist. Inténtalo de nuevo."
+
+msgid "Could not save the folder. Please try again."
+msgstr "No se pudo guardar la carpeta. Inténtalo de nuevo."
+
+msgid "Could not save the playlist. Please try again."
+msgstr "No se pudo guardar la playlist. Inténtalo de nuevo."
+
 msgid "Counting tracks…"
 msgstr "Contando pistas…"
 
@@ -351,6 +363,9 @@ msgid "Create and add"
 msgstr "Crear y agregar"
 
 msgid "Create new playlist"
+msgstr "Crear playlist"
+
+msgid "Create playlist"
 msgstr "Crear playlist"
 
 msgid "Custom"
@@ -842,8 +857,14 @@ msgstr "Todavía no hay carpetas en la biblioteca."
 msgid "No lyrics for this track."
 msgstr "Esta pista no tiene letra."
 
+msgid "No playlists match your search."
+msgstr "No hay playlists que coincidan con tu búsqueda."
+
 msgid "No playlists yet."
 msgstr "Todavía no hay playlists."
+
+msgid "No playlists yet. Create one to get started."
+msgstr "Todavía no hay playlists. Crea una para empezar."
 
 msgid "No source plugins installed"
 msgstr "No hay plugins de fuentes instalados"
@@ -1244,9 +1265,6 @@ msgstr "Tomar la tarjeta del servidor de sonido"
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
 
-msgid "That source does not allow tracks from here in this playlist."
-msgstr "Ese source no permite pistas de aquí en esta playlist."
-
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el resultado a una sola frecuencia, así que una pista nunca llega al aparato como salió del archivo. No hay ningún ajuste aquí que cambie eso. Es el que funciona en todos lados; para que las muestras lleguen sin tocarse, elige la tarjeta directo o PipeWire."
 
@@ -1303,6 +1321,9 @@ msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder co
 
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
+
+msgid "This playlist is read-only or belongs to another source."
+msgstr "Esta playlist es de solo lectura o pertenece a otra fuente."
 
 msgid "This screen is not built yet."
 msgstr "Esta pantalla todavía no está hecha."

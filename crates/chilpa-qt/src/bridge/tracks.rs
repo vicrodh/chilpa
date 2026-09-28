@@ -67,8 +67,6 @@ pub mod qobject {
         #[qinvokable]
         fn play_later(self: Pin<&mut TrackListModel>, row: i32, label: &QString);
         #[qinvokable]
-        fn add_to_playlist(self: Pin<&mut TrackListModel>, row: i32, playlist: i64);
-        #[qinvokable]
         fn remove_from_playlist(self: Pin<&mut TrackListModel>, row: i32);
         #[qinvokable]
         fn remove_chosen(self: Pin<&mut TrackListModel>, row: i32);
@@ -83,9 +81,11 @@ pub mod qobject {
         #[qinvokable]
         fn selected_any_row(self: &TrackListModel) -> i32;
         #[qinvokable]
-        fn selected_track_ids(self: &TrackListModel) -> Vec<i64>;
+        fn selected_track_ids_json(self: &TrackListModel) -> QString;
         #[qinvokable]
-        fn chosen_track_ids(self: &TrackListModel, row: i32) -> Vec<i64>;
+        fn chosen_track_ids_json(self: &TrackListModel, row: i32) -> QString;
+        #[qinvokable]
+        fn menu_json(self: &TrackListModel, row: i32) -> QString;
 
         /// Whether the row has an "album", an "artist" or a "folder" to go
         /// to. A record's page does not offer the record, nor an artist's
@@ -469,7 +469,11 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_later(self: Pin<&mut Self>, row: i32, label: &QString) {
-        let label = label.to_string();
+        let mut label = label.to_string();
+        if label.trim().is_empty() {
+            label = self.rust().track(row.max(0) as usize).map(|track| track.album).unwrap_or_default();
+            if label.is_empty() { label = app::t("Play later"); }
+        }
         let later = move |paths: &[String]| {
             app::with(|api| api.play_later_here(paths, &label));
         };
@@ -480,26 +484,6 @@ impl qobject::TrackListModel {
             return;
         }
         self.with_selection(later);
-    }
-
-    pub fn add_to_playlist(self: Pin<&mut Self>, row: i32, playlist: i64) {
-        let add = move |paths: &[String]| {
-            let paths = paths.to_vec();
-            registry::playlists(move |mut lists| {
-                let id = if playlist == 0 { lists.as_mut().create() } else { playlist };
-                if id != 0 {
-                    app::with(|api| api.add_to_playlist(id, &paths));
-                    lists.changed();
-                }
-            });
-        };
-        if !self.in_selection(row) {
-            if let Some(track) = self.rust().track(row.max(0) as usize) {
-                add(&[track.path]);
-            }
-            return;
-        }
-        self.with_selection(add);
     }
 
     pub fn remove_from_playlist(mut self: Pin<&mut Self>, row: i32) {
@@ -567,9 +551,31 @@ impl qobject::TrackListModel {
         (0..this.len()).find(|&row| this.track_id(row).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |row| row as i32)
     }
 
-    pub fn selected_track_ids(&self) -> Vec<i64> {
+    pub fn selected_track_ids_json(&self) -> QString {
         let this = self.rust();
-        (0..this.len()).filter_map(|row| this.track_id(row)).filter(|id| this.selected.contains(id)).collect()
+        let ids: Vec<i64> = (0..this.len()).filter_map(|row| this.track_id(row)).filter(|id| this.selected.contains(id)).collect();
+        QString::from(serde_json::to_string(&ids).unwrap_or_default())
+    }
+
+    pub fn chosen_track_ids_json(&self, row: i32) -> QString {
+        QString::from(serde_json::to_string(&self.chosen_track_ids(row)).unwrap_or_default())
+    }
+
+    pub fn menu_json(&self, row: i32) -> QString {
+        let this = self.rust();
+        let editable = this.kind.to_string() == "playlist" && this.playlist_editable;
+        let context = chilpa_api::TrackMenuContext {
+            count: if row < 0 { 0 } else { self.chosen_track_ids(row).len() },
+            queued: this.kind.to_string() == "queue",
+            editable,
+            move_up: editable && this.order.to_string() == "custom" && row > 0,
+            move_down: editable && this.order.to_string() == "custom" && row < this.len() as i32 - 1,
+            album: self.can_go(row, &QString::from("album")),
+            artist: self.can_go(row, &QString::from("artist")),
+            folder: self.can_go(row, &QString::from("folder")),
+            metadata: self.can_go(row, &QString::from("metadata")),
+        };
+        QString::from(serde_json::to_string(&chilpa_api::track_menu(context)).unwrap_or_default())
     }
 
     /// Whether the row is one of several selected.

@@ -22,6 +22,8 @@ mod playlists;
 mod plugins;
 mod quality;
 mod queue;
+mod track_menu;
+pub use track_menu::{track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
 pub mod settings_schema;
