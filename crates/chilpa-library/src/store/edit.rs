@@ -136,7 +136,7 @@ impl Library {
 
         let from = edit.album_id;
         let tx = self.own_transaction()?;
-        let (folder, version): (String, String) = tx.query_row("SELECT folder, version_key FROM albums WHERE id = ?1", [from], |r| Ok((r.get(0)?, r.get(1)?)))?;
+        let (folder, version, old_artist): (String, String, String) = tx.query_row("SELECT folder, version_key, album_artist FROM albums WHERE id = ?1", [from], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
         for id in &ids {
             let on: Option<i64> = tx
                 .query_row("SELECT album_id FROM tracks WHERE id = ?1", params![id], |r| r.get::<_, Option<i64>>(0))
@@ -209,6 +209,16 @@ impl Library {
         }
 
         for track in &edit.tracks {
+            tx.execute("UPDATE tracks SET album_title = ?2 WHERE id = ?1", params![track.id, title])?;
+            if artist != old_artist {
+                tx.execute("UPDATE tracks SET album_credit = ?2 WHERE id = ?1", params![track.id, artist])?;
+            }
+            if let Put::Set(year) = &edit.year {
+                tx.execute("UPDATE tracks SET release_year = ?2 WHERE id = ?1", params![track.id, year])?;
+            }
+            if let Put::Set(path) = &edit.artwork {
+                tx.execute("UPDATE tracks SET release_artwork = ?2 WHERE id = ?1", params![track.id, path])?;
+            }
             if let Put::Set(v) = &track.title {
                 tx.execute("UPDATE tracks SET title = ?2 WHERE id = ?1", params![track.id, v.trim()])?;
             }

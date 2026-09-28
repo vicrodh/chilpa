@@ -1232,3 +1232,20 @@ INSERT OR IGNORE INTO album_members
 pub(super) const MIGRATION_V23: &str = r#"
 SELECT 1;
 "#;
+
+/// Keep the release evidence a scan read, independently of presentation.
+pub(super) const MIGRATION_V24: &str = r#"
+ALTER TABLE tracks ADD COLUMN album_title TEXT NOT NULL DEFAULT '';
+ALTER TABLE tracks ADD COLUMN disc_total INTEGER;
+ALTER TABLE tracks ADD COLUMN release_part TEXT NOT NULL DEFAULT '';
+ALTER TABLE tracks ADD COLUMN release_disc INTEGER;
+ALTER TABLE tracks ADD COLUMN release_year INTEGER;
+ALTER TABLE tracks ADD COLUMN release_artwork TEXT;
+ALTER TABLE tracks ADD COLUMN release_evidence_read INTEGER NOT NULL DEFAULT 0;
+UPDATE tracks SET album_title = coalesce(
+    (SELECT title FROM albums WHERE id = tracks.album_id), '');
+UPDATE tracks SET release_year = (SELECT year FROM albums WHERE id = tracks.album_id),
+    release_artwork = (SELECT artwork_path FROM albums WHERE id = tracks.album_id);
+CREATE INDEX tracks_release_part ON tracks(source_id, release_part);
+ALTER TABLE album_presentation ADD COLUMN artist_grouped INTEGER NOT NULL DEFAULT 1;
+"#;

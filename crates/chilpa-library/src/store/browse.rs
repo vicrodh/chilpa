@@ -111,15 +111,15 @@ impl TrackOrder {
     fn keys(self) -> &'static str {
         match self {
             TrackOrder::Artist => {
-                "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE, t.disc_number, t.track_number"
+                "a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
             }
-            TrackOrder::Album => "a.title COLLATE NOCASE, t.disc_number, t.track_number",
-            TrackOrder::Year => "a.year, a.title COLLATE NOCASE, t.disc_number, t.track_number",
-            TrackOrder::Added => "t.added_at DESC, t.disc_number, t.track_number",
+            TrackOrder::Album => "a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::Year => "a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::Added => "t.added_at DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Title => "t.title COLLATE NOCASE",
             TrackOrder::Plays => "plays DESC, t.title COLLATE NOCASE",
             TrackOrder::Duration => "t.duration_ms",
-            TrackOrder::Disc => "t.disc_number, t.track_number, t.title COLLATE NOCASE",
+            TrackOrder::Disc => "coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
         }
     }
 }
@@ -194,7 +194,7 @@ pub struct Snapshot {
     pub totals: Totals,
 }
 
-const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, t.disc_number,
+const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
             COALESCE(r.plays, 0) AS plays, a.artwork_path";
 
@@ -506,7 +506,7 @@ impl Library {
         let sql = format!(
             "{ROW} {FROM} WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
                AND instr(substr(t.external_id, ?3), '/') = 0
-             ORDER BY t.disc_number, t.track_number, t.external_id"
+             ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.external_id"
         );
         let mut stmt = self.db.prepare(&sql)?;
         let tracks = stmt.query_map(rusqlite::params![from, to, cut], row)?.collect::<rusqlite::Result<Vec<_>>>()?;

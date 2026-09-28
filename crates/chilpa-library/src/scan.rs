@@ -218,7 +218,7 @@ fn scan(
         if let Some((m, s, track)) = &known {
             // A sidecar that changed makes its folder's files worth reading
             // again, though none of them did.
-            if *m == mtime && *s == size && track.is_some() && !stale {
+            if *m == mtime && *s == size && track.is_some() && !stale && evidence_read(lib, *track) {
                 // Same as last time: neither read nor rewritten.
                 report.unchanged += 1;
                 lib.db.execute(
@@ -279,6 +279,7 @@ fn scan(
     // missing, never deleted.
     report.sidecars_unreadable = homes.record(lib, now)?;
     report.missing = mark_missing(lib, root_id, &readable)?;
+    lib.assemble_local_releases()?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     // A scan is the only thing that changes the size of the library, so it is
@@ -338,7 +339,7 @@ impl Found<'_> {
             .prepare("SELECT path, mtime, size, track_id FROM scanned_files WHERE container = ?1")?
             .query_map(params![container], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?)))?
             .collect::<rusqlite::Result<_>>()?;
-        if !stale && !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some()) {
+        if !stale && !known.is_empty() && known.iter().all(|(_, m, s, t)| *m == mtime && *s == size && t.is_some() && evidence_read(lib, *t)) {
             for (path, _, _, track) in &known {
                 lib.db.execute("UPDATE tracks SET present = 1 WHERE id = ?1", params![track])?;
                 readable.insert(path.clone());
@@ -389,6 +390,10 @@ impl Found<'_> {
 struct Moved {
     row_id: i64,
     track_id: i64,
+}
+
+fn evidence_read(lib: &Library, track: Option<i64>) -> bool {
+    lib.db.query_row("SELECT release_evidence_read FROM tracks WHERE id = ?1", [track], |r| r.get(0)).unwrap_or(false)
 }
 
 /// The track a file used to be, when what arrived is the same file under
@@ -464,8 +469,16 @@ fn save_track(
             // record by it credited the record to nobody and joined every
             // record of that title that had one.
             let named = tags.album_artist.as_deref().map(str::trim).filter(|a| !a.is_empty());
-            let location = crate::store::versions::local_location(external_id);
-            let id = lib.local_edition(source, album_title, named.unwrap_or(&artist), &location, tags.year())?;
+            let location = crate::store::releases::location(external_id);
+            // I retain a known track's album until the assembly transaction
+            // can move its marks and preferences along with the whole part.
+            let existing: Option<i64> = lib.db.query_row(
+                "SELECT album_id FROM tracks WHERE source_id = ?1 AND external_id = ?2",
+                params![source, external_id], |r| r.get(0)).ok().flatten();
+            let id = match existing {
+                Some(id) => id,
+                None => lib.local_edition(source, album_title, named.unwrap_or(&artist), &location, tags.year())?,
+            };
             // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
                 save_cover(lib, id, cover_from, cache)?;
@@ -510,8 +523,12 @@ fn save_track(
         params![source, external_id],
         |r| r.get(0),
     )?;
-    lib.db.execute("UPDATE tracks SET album_credit = ?2 WHERE id = ?1",
-        params![track_id, tags.album_artist.as_deref().unwrap_or("").trim()])?;
+    lib.db.execute("UPDATE tracks SET album_credit = ?2, album_title = ?3, disc_total = ?4,
+        release_part = ?5, release_year = ?6, release_artwork =
+        coalesce(release_artwork, (SELECT artwork_path FROM albums WHERE id = ?7)), release_evidence_read = 1 WHERE id = ?1",
+        params![track_id, tags.album_artist.as_deref().unwrap_or("").trim(),
+            tags.album.as_deref().unwrap_or(""), tags.disc_total,
+            crate::store::releases::location(external_id), tags.year(), album_id])?;
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;
