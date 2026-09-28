@@ -32,6 +32,7 @@ impl Library {
                     SELECT ?1, added_at FROM album_favorites WHERE album_id = ?2", params![keep, other])?;
                 tx.execute("INSERT OR IGNORE INTO album_preferences(group_key, album_id)
                     SELECT ?1, ?2 FROM album_preferences WHERE album_id IN (?2, ?3)", params![group, keep, other])?;
+                tx.execute("UPDATE album_preferences SET album_id = ?1 WHERE album_id = ?2", params![keep, other])?;
                 tx.execute("UPDATE tracks SET album_id = ?1 WHERE album_id = ?2", params![keep, other])?;
                 tx.execute("DELETE FROM albums WHERE id = ?1", [other])?;
                 merged += 1;
@@ -80,6 +81,9 @@ mod tests {
         assert_eq!(lib.album(1).unwrap().unwrap().1, 1, "play history follows tracks");
         assert_eq!(lib.playlist_entries(playlist).unwrap(), entries);
         assert!(lib.favorite_albums().unwrap().contains(&1));
+        assert_eq!(lib.db.query_row("SELECT album_id FROM album_preferences WHERE group_key = 'old-group'", [], |r| r.get::<_, i64>(0)).unwrap(), 1);
+        let performed = lib.grouped_snapshot(&Filter { performer: Some("歌手 B".into()), ..Filter::default() }, TrackOrder::Album).unwrap();
+        assert_eq!(performed.ids, [11], "an artist's tracks exclude other compilation performers");
         assert_eq!(lib.album_ids(AlbumSort::Title).unwrap().len(), 3, "different folders and sources stay separate");
         assert!(lib.check().unwrap().is_empty());
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B", "Various Artists"] {

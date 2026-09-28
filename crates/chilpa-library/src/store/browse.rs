@@ -299,7 +299,7 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         if !formats.is_empty() { sql.push_str(&format!(" AND ({})", formats.join(" OR "))); }
     }
     if let Some(name) = &f.performer {
-        sql.push_str(" AND a.id IN (SELECT album_id FROM album_artist_rollup
+        sql.push_str(" AND t.id IN (SELECT track_id FROM album_members
             WHERE artist = ? COLLATE NOCASE)");
         args.push(Box::new(name.clone()));
     }
