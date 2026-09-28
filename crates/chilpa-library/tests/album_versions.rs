@@ -156,6 +156,23 @@ fn inspect_a_disposable_library_copy() {
     let lib = Library::open(std::path::Path::new(&path)).unwrap();
     assert!(lib.check().unwrap().is_empty());
     let catalog = lib.version_catalog().unwrap();
+    for title in ["A.T. EVA01 Reference CD", "EVANGELION 2.0 YOU CAN (NOT) ADVANCE", "EVANGELION WIND SYMPHONY", "Refrain of Evangelion"] {
+        let ids = lib.album_ids_matching(AlbumSort::Title, title).unwrap();
+        for (album, _) in lib.albums_by_ids(&ids).unwrap() {
+            eprintln!("compilation: {}: {} tracks, {}", album.title, album.track_count, album.album_artist);
+        }
+    }
+    for artist in ["Claire", "Megumi Hayashibara", "Amano & Kosei", "林原めぐみ"] {
+        let mut filter = Filter::default();
+        filter.queries[2] = artist.into();
+        let started = std::time::Instant::now();
+        let snapshot = lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap();
+        eprintln!("member {artist}: {} albums, {} tracks, {:?}", snapshot.album_ids.len(), snapshot.ids.len(), started.elapsed());
+        assert!(!snapshot.ids.is_empty());
+    }
+    let started = std::time::Instant::now();
+    let artists = lib.facet_artists(&Filter::default()).unwrap();
+    eprintln!("artist facets: {} entries, {:?}", artists.len(), started.elapsed());
     for artist in ["Led Zeppelin", "The Beatles"] {
         let albums = lib.albums_filtered(AlbumSort::Title, Some(artist), 1000, 0).unwrap();
         let ids: Vec<i64> = albums.iter().map(|(a, _)| a.id).collect();

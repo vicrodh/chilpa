@@ -33,6 +33,7 @@ pub(crate) struct CachedVersions {
 #[derive(Default)]
 pub struct VersionCatalog {
     pub versions: HashMap<i64, AlbumVersion>,
+    pub artists: HashMap<i64, Vec<(String, usize)>>,
     tracks: HashMap<i64, (i64, u64)>,
     groups: HashMap<String, Vec<i64>>,
     preferred: HashMap<String, i64>,
@@ -246,6 +247,11 @@ impl Library {
         }
         let mut stmt = self.db.prepare("SELECT group_key, album_id FROM album_preferences")?;
         catalog.preferred = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?.collect::<rusqlite::Result<_>>()?;
+        let mut stmt = self.db.prepare("SELECT album_id, artist, tracks FROM album_artist_rollup")?;
+        for row in stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, String>(1)?, r.get::<_, i64>(2)? as usize)))? {
+            let (album, artist, tracks) = row?;
+            catalog.artists.entry(album).or_default().push((artist, tracks));
+        }
         let catalog = Arc::new(catalog);
         *self.versions.borrow_mut() = Some(CachedVersions { stamp, catalog: Arc::clone(&catalog) });
         Ok(catalog)
@@ -298,14 +304,11 @@ impl Library {
         tx.finish()
     }
 
-    pub(crate) fn local_edition(&self, source: i64, title: &str, artist: &str, named: bool, location: &str, year: Option<u32>) -> rusqlite::Result<i64> {
+    pub(crate) fn local_edition(&self, source: i64, title: &str, artist: &str, location: &str, year: Option<u32>) -> rusqlite::Result<i64> {
         let key = format!("{source}:{location}");
-        let found: Option<i64> = self.db.query_row("SELECT id FROM albums WHERE title = ?1 AND version_key = ?2
-            AND (?3 = 0 OR album_artist = ?4)", params![title, key, named, artist], |r| r.get(0)).optional()?;
+        let found: Option<i64> = self.db.query_row("SELECT id FROM albums WHERE title = ?1 AND version_key = ?2", params![title, key], |r| r.get(0)).optional()?;
         if let Some(id) = found {
-            if !named {
-                self.db.execute("UPDATE albums SET album_artist = ?3 WHERE id = ?1 AND album_artist <> ?2", params![id, artist, crate::VARIOUS_ARTISTS])?;
-            }
+            self.db.execute("UPDATE albums SET album_artist = ?3 WHERE id = ?1 AND album_artist <> ?2 COLLATE NOCASE", params![id, artist, crate::VARIOUS_ARTISTS])?;
             return Ok(id);
         }
         self.db.execute("INSERT INTO albums(title, album_artist, year, folder, version_key) VALUES (?1, ?2, ?3, ?4, ?5)", params![title, artist, year, location, key])?;
@@ -321,25 +324,20 @@ impl Library {
             self.db.execute("UPDATE albums SET title = ?2, album_artist = ?3, year = ?4 WHERE id = ?1", params![id, title, artist, year])?;
             return Ok(id);
         }
-        self.local_edition(source, title, artist, true, release_id, year)
+        self.local_edition(source, title, artist, release_id, year)
     }
 
     pub fn presented_artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<super::StoredArtist>> {
         let mut artists = self.artists(limit, offset)?;
         if !self.group_album_versions() { return Ok(artists); }
         let catalog = self.version_catalog()?;
-        let ids: Vec<i64> = catalog.versions.keys().copied().collect();
-        let selected: HashSet<i64> = catalog.collapse(&ids).into_iter().collect();
-        let mut removed: HashMap<String, (usize, usize)> = HashMap::new();
-        for v in catalog.versions.values().filter(|v| !selected.contains(&v.id)) {
-            let delta = removed.entry(v.artist.to_lowercase()).or_default();
-            delta.0 += 1; delta.1 += v.tracks;
-        }
         for artist in &mut artists {
-            if let Some((albums, tracks)) = removed.get(&artist.name.to_lowercase()) {
-                artist.album_count = artist.album_count.saturating_sub(*albums);
-                artist.track_count = artist.track_count.saturating_sub(*tracks);
-            }
+            let contributions: HashMap<i64, usize> = catalog.artists.iter().filter_map(|(id, members)|
+                members.iter().find(|(name, _)| name.eq_ignore_ascii_case(&artist.name)).map(|(_, tracks)| (*id, *tracks))).collect();
+            let ids: Vec<i64> = contributions.keys().copied().collect();
+            let chosen = catalog.collapse(&ids);
+            artist.album_count = chosen.len();
+            artist.track_count = chosen.iter().map(|id| contributions[id]).sum();
         }
         Ok(artists)
     }

@@ -2,10 +2,9 @@
 //! whose names hold every word typed, and the songs the search index ranks
 //! best.
 //!
-//! Artists and records are matched with `LIKE` over the albums, not over the
-//! tracks: there are a tenth as many, so a keystroke walks thousands of rows
-//! and not a hundred thousand. Songs go through the full-text index, which
-//! folds accents and ranks by how well each one matches.
+//! Artists include the credits on individual files, so a compilation stays
+//! discoverable through every performer. Songs go through the full-text
+//! index, which folds accents and ranks by how well each one matches.
 
 use crate::store::albums::StoredArtist;
 use crate::store::{fts_query, Library};
@@ -49,19 +48,19 @@ impl Library {
         let mut args: Vec<Box<dyn ToSql>> = Vec::new();
         let mut artist_clause = String::new();
         for w in &words {
-            artist_clause.push_str(" AND a.album_artist LIKE ? ESCAPE '\\'");
+            artist_clause.push_str(" AND m.artist LIKE ? ESCAPE '\\'");
             args.push(Box::new(w.clone()));
         }
         args.extend(starts.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>));
         args.push(Box::new(limit as i64));
         let sql = format!(
-            "SELECT a.album_artist, count(a.id), sum(r.present_tracks), max(a.artwork_path)
-             FROM albums a JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
-             WHERE a.album_artist <> '' {artist_clause}
-             GROUP BY a.album_artist COLLATE NOCASE
-             ORDER BY max({}) DESC, count(a.id) DESC, a.album_artist COLLATE NOCASE
+            "SELECT min(m.artist), count(a.id), sum(m.tracks), max(a.artwork_path)
+             FROM albums a JOIN album_artist_rollup m ON m.album_id = a.id
+             WHERE 1 {artist_clause}
+             GROUP BY m.artist COLLATE NOCASE
+             ORDER BY max({}) DESC, count(a.id) DESC, m.artist COLLATE NOCASE
              LIMIT ?",
-            score("a.album_artist")
+            score("m.artist")
         );
         let mut stmt = self.db.prepare(&sql)?;
         let artists = stmt
@@ -78,7 +77,8 @@ impl Library {
         let mut args: Vec<Box<dyn ToSql>> = Vec::new();
         let mut album_clause = String::new();
         for w in &words {
-            album_clause.push_str(" AND (a.title LIKE ? ESCAPE '\\' OR a.album_artist LIKE ? ESCAPE '\\')");
+            album_clause.push_str(" AND (a.title LIKE ? ESCAPE '\\' OR a.id IN
+                (SELECT album_id FROM album_artist_rollup WHERE artist LIKE ? ESCAPE '\\'))");
             args.push(Box::new(w.clone()));
             args.push(Box::new(w.clone()));
         }

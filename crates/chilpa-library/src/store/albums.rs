@@ -4,7 +4,6 @@
 //! aggregated the whole library again, and that was the audit's high
 //! finding.
 
-use crate::album_folder::VARIOUS_ARTISTS;
 use crate::store::Library;
 use rusqlite::{params, OptionalExtension};
 use crate::store::{row_to_track, StoredTrack};
@@ -23,10 +22,8 @@ pub struct StoredAlbum {
 
 /// An artist in the library, with what they have.
 ///
-/// It comes from `albums.album_artist`, which is what the record says about
-/// itself. The `artists` table is there for when there are MusicBrainz
-/// identities; today, inventing rows there would add nothing the tag does
-/// not already say.
+/// Includes both album credits and contributing performers, with their
+/// own track counts on compilations.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StoredArtist {
     pub name: String,
@@ -193,7 +190,8 @@ impl Library {
              JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> ?1 COLLATE NOCASE
                AND EXISTS (SELECT 1 FROM tracks t
-                           WHERE t.album_id = a.id AND t.present = 1 AND t.artist = ?1 COLLATE NOCASE)
+                           WHERE t.album_id = a.id AND t.present = 1 AND
+                           (t.artist = ?1 COLLATE NOCASE OR t.album_credit = ?1 COLLATE NOCASE))
              ORDER BY a.year DESC, a.title COLLATE NOCASE",
         )?;
         let rows = stmt.query_map(params![artist], |r| {
@@ -321,7 +319,9 @@ impl Library {
         if words.is_empty() {
             return self.album_ids(order);
         }
-        let clause = " AND (a.title LIKE ? ESCAPE '\\' OR a.album_artist LIKE ? ESCAPE '\\')".repeat(words.len());
+        let clause = " AND (a.title LIKE ? ESCAPE '\\' OR a.album_artist LIKE ? ESCAPE '\\'
+            OR EXISTS (SELECT 1 FROM tracks member WHERE member.album_id = a.id AND member.present = 1
+            AND (member.artist LIKE ? ESCAPE '\\' OR member.album_credit LIKE ? ESCAPE '\\')))".repeat(words.len());
         let sql = format!(
             "SELECT a.id FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
@@ -329,7 +329,7 @@ impl Library {
              ORDER BY {}",
             order.order_by()
         );
-        let args: Vec<&String> = words.iter().flat_map(|w| [w, w]).collect();
+        let args: Vec<&String> = words.iter().flat_map(|w| [w, w, w, w]).collect();
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(rusqlite::params_from_iter(args), |r| r.get(0))?;
         rows.collect()
@@ -372,34 +372,14 @@ impl Library {
     /// An artist with no present tracks does not show up: the view shows what
     /// can be played, not what was once there.
     pub fn artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredArtist>> {
-        // It groups over albums and not over tracks: the track count comes
-        // from the rollup, so this walks five thousand rows where it used to
-        // walk fifty thousand. Same answer, and the join it removes was the
-        // whole cost.
-        //
-        // The one exception is a compilation: whoever plays on it is an
-        // artist of the library too, with the record counted as theirs and
-        // their own tracks on it. Those are read per track, but only for the
-        // records credited to "Various Artists".
         let mut stmt = self.db.prepare(
-            "SELECT name, count(DISTINCT album), sum(tracks), max(art)
-             FROM (
-                 SELECT a.album_artist AS name, a.id AS album, r.present_tracks AS tracks,
-                        a.artwork_path AS art
-                 FROM albums a
-                 JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
-                 WHERE a.album_artist <> ''
-                 UNION ALL
-                 SELECT t.artist, a.id, 1, a.artwork_path
-                 FROM albums a
-                 JOIN tracks t ON t.album_id = a.id AND t.present = 1
-                 WHERE a.album_artist = ?3 AND t.artist <> '' AND t.artist <> ?3
-             )
-             GROUP BY name COLLATE NOCASE
-             ORDER BY name COLLATE NOCASE
+            "SELECT min(m.artist), count(m.album_id), sum(m.tracks), max(a.artwork_path)
+             FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id
+             GROUP BY m.artist COLLATE NOCASE
+             ORDER BY m.artist COLLATE NOCASE
              LIMIT ?1 OFFSET ?2",
         )?;
-        let rows = stmt.query_map(params![limit as i64, offset as i64, VARIOUS_ARTISTS], |r| {
+        let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
             Ok(StoredArtist {
                 name: r.get(0)?,
                 album_count: r.get::<_, i64>(1)? as usize,

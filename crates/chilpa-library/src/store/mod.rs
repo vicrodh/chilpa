@@ -13,6 +13,7 @@ pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
 pub mod regroup;
+mod compilations;
 pub mod versions;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
@@ -135,6 +136,7 @@ impl Library {
         lib.regroup_split_albums()?;
         lib.credit_unnamed_albums()?;
         lib.separate_local_editions()?;
+        lib.join_local_compilations()?;
         Ok(lib)
     }
 
