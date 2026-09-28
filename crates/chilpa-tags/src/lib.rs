@@ -185,8 +185,8 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
             .map(str::to_string)
             .or_else(|| tag.get_string(ItemKey::Year).map(str::to_string)),
         track_number: tag.track().map(|n| n as u16),
-        disc_number: tag.disk().map(|n| n as u16),
-        disc_total: tag.disk_total().map(|n| n as u16),
+        disc_number: tag.disk().and_then(disc_index),
+        disc_total: tag.disk_total().and_then(disc_index),
         isrc: tag.get_string(ItemKey::Isrc).map(str::to_string),
         musicbrainz_recording_id: tag
             .get_string(ItemKey::MusicBrainzRecordingId)
@@ -206,6 +206,10 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
 }
 
 /// A ReplayGain value as tags write it: "-7.23 dB", "+1.5 dB", "0.987654".
+fn disc_index(value: u32) -> Option<u16> {
+    u16::try_from(value).ok().filter(|value| *value > 0)
+}
+
 fn number(text: &str) -> Option<f32> {
     let text = text.trim();
     let text = text.strip_suffix("dB").or_else(|| text.strip_suffix("db")).unwrap_or(text).trim();
@@ -354,6 +358,14 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn disc_evidence_never_wraps_into_a_different_set() {
+        assert_eq!(disc_index(0), None);
+        assert_eq!(disc_index(65537), None);
+        assert_eq!(disc_index(2), Some(2));
+        assert_eq!(disc_index(65535), Some(65535));
+    }
 
     #[test]
     fn replaygain_reads_as_tags_write_it() {
