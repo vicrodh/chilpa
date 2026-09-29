@@ -47,6 +47,7 @@ pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
 pub use settings_rows::{RowNotes, SettingsRow};
 pub mod sidebar;
 pub mod theme;
+pub mod window;
 mod volume;
 pub use volume::VolumeView;
 pub use metadata::view::MetadataView;

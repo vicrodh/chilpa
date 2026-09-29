@@ -39,6 +39,10 @@ pub mod qobject {
         #[qinvokable]
         fn shadow_color(self: &ThemeModel, name: &QString, layer: i32, rev: i32) -> QColor;
 
+        /// The system's window controls, that far under the top; false to ask again.
+        #[qinvokable]
+        fn center_window_controls(self: &ThemeModel, middle: f64) -> bool;
+
         /// Replaces the accent with a `#RRGGBB` color and remembers it.
         /// Empty goes back to the theme's own.
         #[qinvokable]
@@ -102,6 +106,10 @@ impl qobject::ThemeModel {
         // typo in Theme.qml: it shows as a transparent area, and the theme
         // test lists the names that exist.
         self.theme.color(&token.to_string()).map(qcolor).unwrap_or_default()
+    }
+
+    pub fn center_window_controls(&self, middle: f64) -> bool {
+        chilpa_api::window::center_window_controls(middle)
     }
 
     pub fn placeholder(&self, index: i32, _rev: i32) -> QColor {
