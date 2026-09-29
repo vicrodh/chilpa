@@ -82,6 +82,9 @@ msgstr ""
 msgid "ALSA plugin"
 msgstr ""
 
+msgid "API key"
+msgstr ""
+
 msgid "Accent"
 msgstr ""
 
@@ -107,6 +110,9 @@ msgid "Add a folder to the library"
 msgstr ""
 
 msgid "Add a server"
+msgstr ""
+
+msgid "Add server"
 msgstr ""
 
 msgid "Add to favorites"
@@ -340,6 +346,9 @@ msgid "Contains {} similar version"
 msgid_plural "Contains {} similar versions"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "Continue"
+msgstr ""
 
 msgid "Convert to PCM"
 msgstr ""
@@ -695,6 +704,12 @@ msgstr ""
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr ""
 
+msgid "Its music is being read; it appears in the library as it arrives."
+msgstr ""
+
+msgid "Its music joins your library, listed with your own files."
+msgstr ""
+
 msgid "Its page, or its quick view under the row."
 msgstr ""
 
@@ -953,6 +968,9 @@ msgstr ""
 msgid "Open its page"
 msgstr ""
 
+msgid "Open plex.tv/link"
+msgstr ""
+
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr ""
 
@@ -966,6 +984,9 @@ msgid "Output device"
 msgstr ""
 
 msgid "PCM samples cannot be written to a native DSD stream"
+msgstr ""
+
+msgid "Password"
 msgstr ""
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
@@ -1121,6 +1142,9 @@ msgstr ""
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr ""
 
+msgid "Remove"
+msgstr ""
+
 msgid "Remove from favorites"
 msgstr ""
 
@@ -1131,6 +1155,9 @@ msgid "Remove from queue"
 msgstr ""
 
 msgid "Remove from the library"
+msgstr ""
+
+msgid "Remove this server?"
 msgstr ""
 
 msgid "Remove…"
@@ -1235,6 +1262,9 @@ msgstr ""
 msgid "Send listens"
 msgstr ""
 
+msgid "Server added"
+msgstr ""
+
 msgid "Servers"
 msgstr ""
 
@@ -1263,6 +1293,12 @@ msgid "Shuffle"
 msgstr ""
 
 msgid "Sidecar"
+msgstr ""
+
+msgid "Sign in"
+msgstr ""
+
+msgid "Sign in with an API key"
 msgstr ""
 
 msgid "Signed out"
@@ -1426,6 +1462,12 @@ msgstr ""
 msgid "Tracks"
 msgstr ""
 
+msgid "Type this code at plex.tv/link, signed in to your Plex account."
+msgstr ""
+
+msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr ""
+
 msgid "Uninstall"
 msgstr ""
 
@@ -1441,7 +1483,13 @@ msgstr ""
 msgid "Updates"
 msgstr ""
 
+msgid "Use Quick Connect"
+msgstr ""
+
 msgid "Use the playlist icon or a cover collage."
+msgstr ""
+
+msgid "User"
 msgstr ""
 
 msgid "Volume {}%"
@@ -1459,6 +1507,9 @@ msgstr ""
 msgid "Wherever the system is sending sound"
 msgstr ""
 
+msgid "Which of its libraries come in?"
+msgstr ""
+
 msgid "Windows audio would not answer ({})"
 msgstr ""
 
@@ -1471,6 +1522,9 @@ msgstr ""
 msgid "Withdraw approval"
 msgstr ""
 
+msgid "Working…"
+msgstr ""
+
 msgid "Write into the audio files?"
 msgstr ""
 
@@ -1481,6 +1535,9 @@ msgid "Write to a file"
 msgstr ""
 
 msgid "Year"
+msgstr ""
+
+msgid "Your account reaches more than one server. Which one?"
 msgstr ""
 
 msgid "a DASH manifest, which Chilpa cannot read yet"

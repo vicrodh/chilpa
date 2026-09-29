@@ -82,6 +82,9 @@ msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que 
 msgid "ALSA plugin"
 msgstr "Plugin de ALSA"
 
+msgid "API key"
+msgstr "API key"
+
 msgid "Accent"
 msgstr "Acento"
 
@@ -108,6 +111,9 @@ msgstr "Agregar una carpeta a la biblioteca"
 
 msgid "Add a server"
 msgstr "Agregar un servidor"
+
+msgid "Add server"
+msgstr "Agregar servidor"
 
 msgid "Add to favorites"
 msgstr "Agregar a favoritos"
@@ -340,6 +346,9 @@ msgid "Contains {} similar version"
 msgid_plural "Contains {} similar versions"
 msgstr[0] "Contiene {} versión similar"
 msgstr[1] "Contiene {} versiones similares"
+
+msgid "Continue"
+msgstr "Continuar"
 
 msgid "Convert to PCM"
 msgstr "Convertir a PCM"
@@ -695,6 +704,12 @@ msgstr "Integraciones"
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
 
+msgid "Its music is being read; it appears in the library as it arrives."
+msgstr "Se está leyendo su música; aparece en la biblioteca conforme llega."
+
+msgid "Its music joins your library, listed with your own files."
+msgstr "Su música se une a tu biblioteca, junto con tus propios archivos."
+
 msgid "Its page, or its quick view under the row."
 msgstr "Su página, o su vista rápida bajo la fila."
 
@@ -953,6 +968,9 @@ msgstr "Abrirlo otra vez"
 msgid "Open its page"
 msgstr "Abrir su página"
 
+msgid "Open plex.tv/link"
+msgstr "Abrir plex.tv/link"
+
 msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a la biblioteca."
 
@@ -967,6 +985,9 @@ msgstr "Dispositivo de salida"
 
 msgid "PCM samples cannot be written to a native DSD stream"
 msgstr "no se pueden escribir muestras PCM en un flujo DSD nativo"
+
+msgid "Password"
+msgstr "Contraseña"
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
@@ -1121,6 +1142,9 @@ msgstr "Discos"
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
 
+msgid "Remove"
+msgstr "Quitar"
+
 msgid "Remove from favorites"
 msgstr "Quitar de favoritos"
 
@@ -1132,6 +1156,9 @@ msgstr "Quitar de la cola"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove this server?"
+msgstr "¿Quitar este servidor?"
 
 msgid "Remove…"
 msgstr "Quitar…"
@@ -1235,6 +1262,9 @@ msgstr "Seleccionar pistas"
 msgid "Send listens"
 msgstr "Enviar escuchas"
 
+msgid "Server added"
+msgstr "Servidor agregado"
+
 msgid "Servers"
 msgstr "Servidores"
 
@@ -1264,6 +1294,12 @@ msgstr "Aleatorio"
 
 msgid "Sidecar"
 msgstr "Sidecar"
+
+msgid "Sign in"
+msgstr "Iniciar sesión"
+
+msgid "Sign in with an API key"
+msgstr "Iniciar sesión con una API key"
 
 msgid "Signed out"
 msgstr "Sesión cerrada"
@@ -1426,6 +1462,12 @@ msgstr "Pista {}"
 msgid "Tracks"
 msgstr "Pistas"
 
+msgid "Type this code at plex.tv/link, signed in to your Plex account."
+msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
+
+msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr "Escribe este código en Quick Connect, en un Jellyfin donde ya iniciaste sesión."
+
 msgid "Uninstall"
 msgstr "Desinstalar"
 
@@ -1441,8 +1483,14 @@ msgstr "A continuación"
 msgid "Updates"
 msgstr "Actualizaciones"
 
+msgid "Use Quick Connect"
+msgstr "Usar Quick Connect"
+
 msgid "Use the playlist icon or a cover collage."
 msgstr "Usa el icono de playlist o un collage de portadas."
+
+msgid "User"
+msgstr "Usuario"
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"
@@ -1459,6 +1507,9 @@ msgstr "Por dónde van las muestras: directo al dispositivo o a través de un se
 msgid "Wherever the system is sending sound"
 msgstr "A donde el sistema esté mandando el sonido"
 
+msgid "Which of its libraries come in?"
+msgstr "¿Cuáles de sus bibliotecas entran?"
+
 msgid "Windows audio would not answer ({})"
 msgstr "el audio de Windows no respondió ({})"
 
@@ -1471,6 +1522,9 @@ msgstr "Windows no dijo qué acepta \"{}\" ({})"
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"
 
+msgid "Working…"
+msgstr "Trabajando…"
+
 msgid "Write into the audio files?"
 msgstr "¿Escribir en los archivos de audio?"
 
@@ -1482,6 +1536,9 @@ msgstr "Escribir a un archivo"
 
 msgid "Year"
 msgstr "Año"
+
+msgid "Your account reaches more than one server. Which one?"
+msgstr "Tu cuenta alcanza más de un servidor. ¿Cuál?"
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
 msgstr "un manifiesto DASH, que Chilpa todavía no sabe leer"

@@ -142,7 +142,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -257,6 +257,12 @@ impl TrackListRust {
         }
     }
 
+    /// Whether the row's track can play now. A row not loaded yet, or a
+    /// header, counts as one that can.
+    fn available(&self, row: usize) -> bool {
+        self.track(row).is_none_or(|t| t.available)
+    }
+
     fn track_id(&self, row: usize) -> Option<i64> {
         match self.at(row)? {
             At::Track(page, i) => Some(page[i].id),
@@ -293,6 +299,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
                 12 => QVariant::from(&QString::from(*meta)),
                 13 => QVariant::from(&0i64),
                 15 => QVariant::from(&QUrl::default()),
+                16 => QVariant::from(&true),
                 _ => QVariant::default(),
             };
         }
@@ -321,6 +328,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
             let url = if track.artwork_path.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&track.artwork_path)) };
             QVariant::from(&url)
         }
+        16 => QVariant::from(&track.available),
         _ => QVariant::default(),
     }
 }
@@ -360,6 +368,10 @@ impl qobject::TrackListModel {
 
     pub fn play(self: Pin<&mut Self>, row: i32) {
         let row = row.max(0) as usize;
+        // A row that cannot play now does not play, by click or by key (ADR-017).
+        if self.rust().track(row).is_some_and(|t| !t.available) {
+            return;
+        }
         match &self.rust().rows {
             Rows::Loaded(entries) => {
                 // A header row plays the first track under it.
@@ -516,7 +528,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn move_in_playlist(self: Pin<&mut Self>, row: i32, by: i32) {
-        if self.rust().kind.to_string() != "playlist" || row < 0 {
+        if self.rust().kind.to_string() != "playlist" || row < 0 || !self.rust().available(row as usize) {
             return;
         }
         let to = row + by;
@@ -531,6 +543,9 @@ impl qobject::TrackListModel {
 
     pub fn move_in_playlist_to(self: Pin<&mut Self>, from: i32, to: i32) {
         if self.rust().kind.to_string() != "playlist" || self.rust().order.to_string() != "custom" || from < 0 || to < 0 || from == to {
+            return;
+        }
+        if !self.rust().available(from as usize) {
             return;
         }
         let playlist = self.rust().album_id;
@@ -575,9 +590,21 @@ impl qobject::TrackListModel {
             artist: self.can_go(row, &QString::from("artist")),
             folder: self.can_go(row, &QString::from("folder")),
             metadata: self.can_go(row, &QString::from("metadata")),
-            unavailable: this.track(row.max(0) as usize).is_some_and(|t| !t.available),
+            // Over the whole selection it acts on, not the row clicked: one
+            // that cannot play among several leaves only what removes it.
+            unavailable: self.acts_on_unavailable(row),
         };
         QString::from(serde_json::to_string(&chilpa_api::track_menu(context)).unwrap_or_default())
+    }
+
+    /// Whether any track the menu of that row would act on cannot play.
+    fn acts_on_unavailable(&self, row: i32) -> bool {
+        let this = self.rust();
+        if self.in_selection(row) {
+            (0..this.len()).filter_map(|at| this.track(at)).any(|t| this.selected.contains(&t.id) && !t.available)
+        } else {
+            !this.available(row.max(0) as usize)
+        }
     }
 
     /// Whether the row is one of several selected.
@@ -619,6 +646,11 @@ impl qobject::TrackListModel {
         let Some(track) = self.rust().track(row.max(0) as usize) else {
             return false;
         };
+        // A track that cannot play goes nowhere: its record does not open
+        // either (ADR-017).
+        if !track.available {
+            return false;
+        }
         let kind = self.rust().kind.to_string();
         match target.to_string().as_str() {
             "album" => track.album_id > 0 && kind != "album",
@@ -626,13 +658,17 @@ impl qobject::TrackListModel {
                 let own = matches!(kind.as_str(), "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
                 !track.artist.is_empty() && !own
             }
-            "folder" => kind != "folder",
-            "metadata" => track.album_id > 0,
+            // A server's track has no folder here and no file to edit.
+            "folder" => kind != "folder" && !chilpa_api::on_a_server(&track.path),
+            "metadata" => track.album_id > 0 && !chilpa_api::on_a_server(&track.path),
             _ => false,
         }
     }
 
     pub fn go(self: Pin<&mut Self>, row: i32, target: &QString) {
+        if !self.can_go(row, target) {
+            return;
+        }
         let Some(track) = self.rust().track(row.max(0) as usize) else {
             return;
         };

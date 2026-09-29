@@ -88,6 +88,8 @@ fn main() {
         api.load_plugins();
         // Listens go to ListenBrainz from now on, if an account is connected.
         api.start_scrobbling();
+        // My servers: their tracks play, sync and are watched (ADR-017).
+        api.start_servers();
     });
 
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of

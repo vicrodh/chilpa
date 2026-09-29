@@ -319,7 +319,11 @@ impl qobject::Player {
 
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
-        let now = app::with(|api| api.poll().clone());
+        let (now, changed) = app::with(|api| (api.poll().clone(), api.library_changed()));
+        // A sync, a server or a folder came or went underneath the lists.
+        if changed {
+            crate::registry::library(|l| l.content_changed());
+        }
         if now.path != self.rust().shown {
             self.as_mut().rust_mut().shown = now.path.clone();
             // A new queue drops the mix; the switch follows.

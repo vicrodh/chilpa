@@ -11,4 +11,8 @@ QtObject {
     readonly property int panel: reduced ? 0 : 200
     readonly property int ambient: reduced ? 0 : 600
     readonly property int toast: 2200
+    // How often a view reads again what moves on another thread: a setup
+    // being waited for, a sync. Not motion: never reduced.
+    readonly property int poll: 300
+    readonly property int refresh: 1000
 }

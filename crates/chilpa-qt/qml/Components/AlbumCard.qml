@@ -24,6 +24,9 @@ Item {
     property bool selecting: false
     property bool expanded: false
     property bool canExpand: true
+    // Nothing of it plays now: its folder is not mounted or its server does
+    // not answer (ADR-017). Dimmed, and no overlay: a click says why.
+    property bool available: true
 
     // A click outside the overlay's buttons, with the modifiers held: 1 for
     // Ctrl or Cmd, 2 for Shift.
@@ -32,6 +35,7 @@ Item {
     signal menu(real x, real y)
 
     implicitHeight: width + Metrics.cardTextGap + Metrics.cardTextHeight
+    opacity: available ? 1 : Metrics.disabledOpacity
 
     ArtTile {
         id: cover
@@ -72,7 +76,7 @@ Item {
 
     Loader {
         anchors.fill: cover
-        active: hover.hovered && !card.round
+        active: hover.hovered && !card.round && card.available
         sourceComponent: AlbumCardOverlay {
             albumId: card.albumId
             year: card.year

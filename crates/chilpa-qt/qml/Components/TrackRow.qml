@@ -24,6 +24,8 @@ Item {
     required property string headerLabel
     required property string headerMeta
     required property url art
+    // It cannot play now (ADR-017): dimmed, and the list does not play it.
+    required property bool available
 
     property TrackColumns cols
     property bool hovered: false
@@ -54,6 +56,7 @@ Item {
 
     width: cols.width
     height: header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
+    opacity: available ? 1 : Metrics.disabledOpacity
 
     ListRowSurface {
         anchors.fill: parent

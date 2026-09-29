@@ -1,8 +1,7 @@
 //! The rows of one Settings section, with their values (frontend ADR-0010).
 //!
-//! The rows come from `settings_schema`; this fills in what each one says
-//! now -- the stacks and outputs there are, the chosen theme -- and carries
-//! out a change. A change another object owns (the theme, the density, the
+//! The rows and what each says now are the facade's
+//! (`Chilpa::settings_rows`); this draws them and carries out a change. A change another object owns (the theme, the density, the
 //! folders) is handed to it through the registry, and the preference is
 //! written here too, so the page shows the new value at once.
 
@@ -42,6 +41,10 @@ pub mod qobject {
         /// Presses a setting's button or link.
         #[qinvokable]
         fn press(self: Pin<&mut SettingsPage>, key: &QString);
+
+        /// Reads the rows again: a sync moving, a server coming back.
+        #[qinvokable]
+        fn refresh(self: Pin<&mut SettingsPage>);
     }
 
     unsafe extern "RustQt" {
@@ -78,7 +81,6 @@ pub mod qobject {
 }
 
 use crate::{app, registry};
-use chilpa_api::settings_schema;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
 use std::pin::Pin;
@@ -89,21 +91,8 @@ use std::time::Duration;
 const ROLES: &[&str] = &["rowKind", "key", "title", "description", "control", "action", "value", "options", "optionValues", "marks"];
 const USER_ROLE: i32 = 256;
 
-/// What a row shows: a group title (0), a setting (1) or a line of a
-/// report under one (2).
-#[derive(Default)]
-struct Row {
-    kind: i32,
-    key: String,
-    title: String,
-    description: String,
-    control: String,
-    action: String,
-    value: String,
-    options: Vec<String>,
-    values: Vec<String>,
-    marks: Vec<String>,
-}
+/// What a row shows, as the facade builds it.
+type Row = chilpa_api::SettingsRow;
 
 #[derive(Default)]
 pub struct SettingsPageRust {
@@ -127,317 +116,11 @@ fn list(items: &[String]) -> QVariant {
     QVariant::from(&QStringList::from(&l))
 }
 
-/// The options of a segmented or select setting, as (value, label).
-fn fixed(key: &str) -> Vec<(&'static str, String)> {
-    // Each label is spelled out as an `app::t` call so the extractor finds it.
-    match key {
-        "appearance.theme" => {
-            vec![("light", app::t("Light")), ("dark", app::t("Dark")), ("system", app::t("System"))]
-        }
-        "appearance.density" => vec![("compact", app::t("Compact")), ("rich", app::t("Rich"))],
-        "appearance.font" => vec![("inter", "Inter".to_string()), ("system", app::t("System"))],
-        "appearance.albumHeader" => vec![("full", app::t("Full")), ("colors", app::t("Colors")), ("off", app::t("Off"))],
-        "navigation.albumClick" => vec![("page", app::t("Album page")), ("quick", app::t("Quick view"))],
-        "navigation.playlistArtwork" => {
-            vec![("icon", app::t("Playlist icon")), ("collage", app::t("Cover collage"))]
-        }
-        "library.metaSrc" => vec![("musicbrainz", "MusicBrainz".to_string()), ("discogs", "Discogs".to_string()), ("embedded", app::t("Embedded tags only"))],
-        "audio.dsdMode" => vec![("native", app::t("Native DSD")), ("dop", app::t("DSD over PCM (DoP)")), ("pcm", app::t("Convert to PCM"))],
-        _ => Vec::new(),
-    }
-}
-
-/// A toggle's value from its preference, "true" or "false".
-fn pref_on(key: &str, default: bool) -> String {
-    app::with(|api| api.preference(key)).map_or(default, |v| v == "true").to_string()
-}
-
-/// The accents offered (design/05): the theme's own, then four.
-const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
-
-const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
-
 impl SettingsPageRust {
     fn build(&mut self) {
-        let section = settings_schema::section(&self.section.to_string());
-        let mut rows = Vec::new();
-        let (output, _) = app::with(|api| api.chosen_output());
-        for group in section.groups {
-            rows.push(Row { kind: 0, title: app::t(group.title), ..Row::default() });
-            for s in group.settings {
-                if s.key == "sources.plugins" {
-                    let plugins = app::with(|api| api.plugins());
-                    if plugins.is_empty() {
-                        rows.push(Row { kind: 1, key: s.key.into(), title: app::t(s.title), description: app::t(s.description), control: "none".into(), ..Row::default() });
-                    } else {
-                        for plugin in plugins {
-                            rows.extend(self.source_rows(plugin));
-                        }
-                    }
-                    continue;
-                }
-                let mut row = Row { kind: 1, key: s.key.into(), title: app::t(s.title), description: if s.description.is_empty() { String::new() } else { app::t(s.description) }, control: s.control.name().into(), action: if s.action.is_empty() { String::new() } else { app::t(s.action) }, ..Row::default() };
-                self.fill(&mut row, &output);
-                // A row that does not apply to what is chosen is left out.
-                if row.control.is_empty() {
-                    continue;
-                }
-                rows.push(row);
-                if s.key == "audio.wizard" {
-                    for line in self.report.iter().flat_map(|r| &r.rows) {
-                        rows.push(Row { kind: 2, title: line.name.clone(), description: line.format.clone(), value: line.verdict.clone(), ..Row::default() });
-                    }
-                }
-            }
-        }
-        self.pending = section.groups.is_empty();
-        self.rows = rows;
-    }
-
-    /// The value, the options and anything the row says about its state.
-    fn fill(&self, row: &mut Row, output: &str) {
-        match row.key.as_str() {
-            "audio.backend" => {
-                let (stacks, current) = app::with(|api| (api.stacks(), api.stack_of(output)));
-                for s in stacks.iter().filter(|s| s.present) {
-                    row.values.push(s.key.clone());
-                    row.options.push(s.label.clone());
-                }
-                if let Some(s) = stacks.iter().find(|s| s.key == current && !s.caveat.is_empty()) {
-                    row.description = s.caveat.clone();
-                }
-                row.value = current;
-            }
-            "audio.device" => {
-                let outputs = app::with(|api| api.outputs_beside(output));
-                for o in outputs {
-                    row.values.push(o.id);
-                    row.options.push(o.label);
-                    row.marks.push(if o.bit_perfect { "BP".to_string() } else { String::new() });
-                }
-                row.value = output.to_string();
-            }
-            "audio.exclusive" => {
-                // Only a stack that shares can be asked not to; a card is
-                // always alone.
-                let (fidelity, chosen) = app::with(|api| (api.fidelity_of(output), api.exclusive()));
-                let fixed = match fidelity {
-                    "exact" => Some((true, app::t("This output is always Chilpa's alone."))),
-                    "depends" => None,
-                    _ => Some((false, app::t("Not through this stack: it mixes by design."))),
-                };
-                row.value = fixed.as_ref().map_or(chosen, |(on, _)| *on).to_string();
-                if let Some((_, why)) = fixed {
-                    row.control = "fixed".into();
-                    row.description = format!("{} {why}", row.description);
-                }
-            }
-            "audio.forceRate" => {
-                let (shown, on, alone) = app::with(|api| (api.stack_of(output) == "pipewire", api.forcing_rate(), api.exclusive()));
-                row.value = (on && alone).to_string();
-                row.control = if !shown {
-                    String::new()
-                } else if alone {
-                    row.control.clone()
-                } else {
-                    "fixed".into()
-                };
-                if shown && !alone {
-                    row.description = format!("{} {}", row.description, app::t("Only with exclusive mode on."));
-                }
-            }
-            "advanced.hwVolume" => row.value = app::with(|api| api.hardware_volume()).to_string(),
-            "audio.reserve" => {
-                let (card, on) = app::with(|api| (!api.alsa_plugin().is_empty(), api.reserving()));
-                row.value = on.to_string();
-                row.control = if card { row.control.clone() } else { String::new() };
-            }
-            "audio.alsaPlugin" => {
-                let (plugin, plugins) = app::with(|api| (api.alsa_plugin(), api.alsa_plugins()));
-                row.value = plugin.to_string();
-                // Only a card has a plugin to choose.
-                if row.value.is_empty() {
-                    row.control.clear();
-                }
-                for p in plugins {
-                    row.values.push(p.to_string());
-                    row.options.push(match *p {
-                        "hw" => app::t("hw: the card alone"),
-                        "plughw" => app::t("plughw: converts what it refuses"),
-                        _ => app::t("pcm: shared, as ALSA sets it up"),
-                    });
-                }
-            }
-            "audio.dsdMode" => {
-                let (direct, mode) = app::with(|api| (api.stack_of(output) == "alsa" && api.alsa_plugin() == "hw", api.dsd_mode()));
-                if !direct {
-                    row.control.clear();
-                    return;
-                }
-                for (value, label) in fixed(&row.key) {
-                    row.values.push(value.to_string());
-                    row.options.push(label);
-                }
-                row.value = mode.key().to_string();
-            }
-            "audio.wizard" => {
-                if let Some(report) = &self.report {
-                    row.description = report.summary.clone();
-                }
-            }
-            "integrations.listenbrainz.account" => {
-                let status = app::with(|api| api.listenbrainz());
-                account(row, &status);
-            }
-            "appearance.accent" => {
-                // The theme's own first -- drawn by the window, which knows
-                // which theme is on -- then the design's four.
-                row.values = ACCENTS.iter().map(|a| a.to_string()).collect();
-                row.options = row.values.clone();
-                row.value = app::with(|api| api.preference("appearance.accent")).unwrap_or_default();
-            }
-            "playback.extra" | "playback.autoHide" => row.value = pref_on(&row.key, false),
-            "playback.gapless" => row.value = app::with(|api| api.gapless()).to_string(),
-            "playback.normalize" => row.value = app::with(|api| api.normalize()).to_string(),
-            "playback.keepQueue" => row.value = app::with(|api| api.keep_queue()).to_string(),
-            "navigation.newtab" => row.value = pref_on("navigation.newtab", true),
-            "navigation.restoreTabs" => row.value = pref_on("navigation.restoreTabs", true),
-            "navigation.folderColors" => row.value = pref_on("navigation.folderColors", false),
-            "integrations.listenbrainz.enabled" => row.value = app::with(|api| api.listenbrainz().enabled).to_string(),
-            "integrations.lastfm.account" => {
-                let status = app::with(|api| api.lastfm());
-                if status.checking && !status.link.is_empty() {
-                    // Waiting for the person to allow it on the site: the page
-                    // opens, and can be opened again from here. "external"
-                    // is no control of the schema's: only this state has it.
-                    row.description = app::t("Allow Chilpa on Last.fm; this updates by itself.");
-                    row.control = "external".into();
-                    row.action = app::t("Open Last.fm");
-                    row.value = status.link.clone();
-                } else {
-                    account(row, &status);
-                }
-            }
-            "integrations.lastfm.enabled" => row.value = app::with(|api| api.lastfm().enabled).to_string(),
-            "library.folders" => {
-                let n = app::with(|api| api.library_folders().len());
-                let shown = n.to_string();
-                row.description = app::with(|api| api.tf("{} folder", "{} folders", n as i64, &[&shown]));
-            }
-            "library.analysis" => {
-                let status = app::with(|api| api.analysis_status().clone());
-                row.action = if status.running { app::t("Cancel") } else { app::t("Analyze") };
-                if status.running {
-                    if status.total == 0 {
-                        row.description = app::t("Counting tracks…");
-                    } else {
-                        let (done, total) = (status.done.to_string(), status.total.to_string());
-                        let progress = app::with(|api| api.t_args("Analyzing {} of {} tracks", &[&done, &total]));
-                        row.description = if status.last.is_empty() { progress } else { format!("{progress} · {}", status.last) };
-                        row.value = (status.done as f64 / status.total as f64).to_string();
-                    }
-                } else if status.analyzed + status.without_pulse + status.failed > 0 {
-                    let (analyzed, quiet, failed) = (status.analyzed.to_string(), status.without_pulse.to_string(), status.failed.to_string());
-                    row.description = app::with(|api| api.t_args("{} analyzed, {} without pulse, {} unreadable", &[&analyzed, &quiet, &failed]));
-                }
-            }
-            key => {
-                for (value, label) in fixed(key) {
-                    row.values.push(value.to_string());
-                    row.options.push(label);
-                }
-                if !row.values.is_empty() {
-                    let default = DEFAULTS.iter().find(|(k, _)| *k == key).map(|(_, v)| *v).unwrap_or("");
-                    row.value = app::with(|api| api.preference(key)).unwrap_or_else(|| default.to_string());
-                }
-            }
-        }
-        if let Some((key, said)) = &self.said {
-            if key == &row.key {
-                row.description = said.clone();
-            }
-        }
-    }
-    /// One status row, plus the token field when that is how the plugin
-    /// connects. The available actions are derived from the state so the
-    /// menu cannot offer an operation that does not make sense now.
-    fn source_rows(&self, plugin: chilpa_api::PluginInfo) -> Vec<Row> {
-        let key = format!("sources.plugin/{}", plugin.id);
-        let mut details = Vec::new();
-        if !plugin.problem.is_empty() {
-            details.push(plugin.problem.clone());
-        }
-        if !plugin.pending.is_empty() {
-            let asks = plugin.pending.join(", ");
-            details.push(app::with(|api| api.t_args("Requests: {}", &[&asks])));
-            if plugin.wants_more {
-                details.push(app::t("This update asks for additional access."));
-            }
-        } else if plugin.connected {
-            details.push(app::t("Account connected."));
-        } else if plugin.account_expired {
-            details.push(app::t("The account expired; connect it again."));
-        } else if !plugin.account_kind.is_empty() {
-            details.push(app::t("Account not connected."));
-        }
-        let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: app::t(&plugin.state), ..Row::default() };
-        if let Some((said_key, said)) = &self.said {
-            if said_key == &row.key {
-                row.description = said.clone();
-            }
-        }
-        if !plugin.pending.is_empty() {
-            row.values.push("approve".into());
-            row.options.push(if plugin.wants_more { app::t("Approve new access") } else { app::t("Approve") });
-        } else {
-            if plugin.state == "quarantined" {
-                row.values.push("reactivate".into());
-                row.options.push(app::t("Reactivate"));
-            }
-            if plugin.connected {
-                row.values.push("disconnect".into());
-                row.options.push(app::t("Disconnect account"));
-            } else if plugin.account_kind == "oauth" {
-                row.values.push("connect".into());
-                let host = if plugin.account_host.is_empty() { app::t("the source") } else { plugin.account_host.clone() };
-                row.options.push(app::with(|api| api.t_args("Connect on {}", &[&host])));
-            }
-            row.values.push("revoke".into());
-            row.options.push(app::t("Withdraw approval"));
-        }
-        row.values.push("uninstall".into());
-        row.options.push(app::t("Uninstall"));
-        if let Some((id, url)) = &self.plugin_link {
-            if id == &plugin.id {
-                row.value = url.clone();
-            }
-        }
-        let mut rows = vec![row];
-        if plugin.pending.is_empty() && plugin.account_kind == "token" && !plugin.connected {
-            rows.push(Row { kind: 1, key: format!("sources.token/{}", plugin.id), title: app::with(|api| api.t_args("Connect {}", &[&plugin.name])), description: app::t("Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."), control: "secret".into(), action: app::t("Connect"), ..Row::default() });
-        }
-        rows
-    }
-}
-
-/// An account's row: checking it, or who it is with a way out and how many
-/// listens wait, or what went wrong.
-fn account(row: &mut Row, status: &chilpa_api::ScrobbleStatus) {
-    if status.checking {
-        row.description = app::t("Checking the account…");
-    } else if !status.user.is_empty() {
-        row.title = app::with(|api| api.t_args("Connected as {}", &[&status.user]));
-        row.control = "button".into();
-        row.action = app::t("Disconnect");
-        row.description = if status.pending > 0 {
-            let n = status.pending.to_string();
-            app::with(|api| api.tf("{} listen waiting to be sent", "{} listens waiting to be sent", status.pending as i64, &[&n]))
-        } else {
-            String::new()
-        };
-    }
-    if !status.error.is_empty() {
-        row.description = status.error.clone();
+        let notes = chilpa_api::RowNotes { report: self.report.as_ref(), said: self.said.as_ref(), plugin_link: self.plugin_link.as_ref() };
+        let section = self.section.to_string();
+        (self.rows, self.pending) = app::with(|api| api.settings_rows(&section, &notes));
     }
 }
 
@@ -476,6 +159,12 @@ impl qobject::SettingsPage {
 
     pub fn set(mut self: Pin<&mut Self>, key: &QString, value: &QString) {
         let (key, value) = (key.to_string(), value.to_string());
+        // A server's "Remove…" is confirmed by the window first (ADR-017).
+        if let (Some(id), "sync") = (key.strip_prefix("sources.server/").and_then(|id| id.parse().ok()), value.as_str()) {
+            app::with(|api| api.sync_server(id));
+            self.reload();
+            return;
+        }
         if let Some(id) = key.strip_prefix("sources.token/") {
             if !app::with(|api| api.connect_plugin(id, &value)) {
                 let said = app::with(|api| api.now_playing().error.clone());
@@ -737,6 +426,10 @@ impl qobject::SettingsPage {
                 }
             }
         });
+    }
+
+    pub fn refresh(self: Pin<&mut Self>) {
+        self.reload();
     }
 
     /// Reads the rows again. The same number of rows is the same page with

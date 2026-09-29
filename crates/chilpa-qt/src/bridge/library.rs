@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(QString, album)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
         #[qproperty(QStringList, source_counts)] #[qproperty(QStringList, excluded_sources)]
+        #[qproperty(QStringList, source_icons)]
         #[qproperty(QStringList, qualities)] #[qproperty(QStringList, formats)]
         #[qproperty(bool, extra_filtered)]
         #[qproperty(bool, group_versions)]
@@ -83,7 +84,7 @@ pub struct LibraryRust {
     genre: QString,
     artist: QString,
     album: QString,
-    source_keys: QStringList, source_labels: QStringList, source_counts: QStringList,
+    source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
     excluded_sources: QStringList, qualities: QStringList, formats: QStringList,
     extra_filtered: bool,
     group_versions: bool,
@@ -245,6 +246,7 @@ impl qobject::Library {
         self.as_mut().set_source_keys(strings(facets.sources.iter().map(|entry| entry.key.clone())));
         self.as_mut().set_source_labels(strings(facets.sources.iter().map(|entry| entry.label.clone())));
         self.as_mut().set_source_counts(strings(facets.sources.iter().map(|entry| entry.albums.to_string())));
+        self.as_mut().set_source_icons(strings(facets.sources.iter().map(|entry| entry.icon.clone())));
         browse::write(|s| {
             s.facets = Rc::new(facets);
             s.snapshot = Rc::new(snapshot);

@@ -78,13 +78,15 @@ GallerySection {
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
         Repeater {
-            // Resting, playing, selection-mode, selected and disc-header rows.
+            // Resting, playing, selection-mode, selected, unavailable and
+            // disc-header rows.
             model: [
-                { kind: 0, playing: false, selected: false, selecting: false },
-                { kind: 0, playing: true, selected: false, selecting: false },
-                { kind: 0, playing: false, selected: false, selecting: true },
-                { kind: 0, playing: false, selected: true, selecting: true },
-                { kind: 1, playing: false, selected: false, selecting: false }
+                { kind: 0, playing: false, selected: false, selecting: false, available: true },
+                { kind: 0, playing: true, selected: false, selecting: false, available: true },
+                { kind: 0, playing: false, selected: false, selecting: true, available: true },
+                { kind: 0, playing: false, selected: true, selecting: true, available: true },
+                { kind: 0, playing: false, selected: false, selecting: false, available: false },
+                { kind: 1, playing: false, selected: false, selecting: false, available: true }
             ]
             TrackRow {
                 required property var modelData
@@ -105,9 +107,11 @@ GallerySection {
                 art: ""
                 headerLabel: "Disc 1"
                 headerMeta: "6 songs"
+                available: modelData.available
             }
         }
         AlbumCard { width: Metrics.cardMinWidth; title: "Low Orbit"; subtitle: "Mora Vale"; tint: 2 }
+        AlbumCard { width: Metrics.cardMinWidth; title: "Away Record"; subtitle: "Server that does not answer"; tint: 3; available: false }
         FolderModel { id: top; path: ""; content: true }
         TrackListModel { id: folderTracks; kind: "folder"; filterRev: top.rev }
         AlbumGridModel { id: folderAlbums; kind: "folder"; contentRev: top.rev; columns: 3 }

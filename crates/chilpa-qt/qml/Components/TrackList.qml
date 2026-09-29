@@ -84,7 +84,7 @@ Item {
         delegate: TrackRow {
             required property double trackId
             cols: columns
-            canRate: trackId > 0
+            canRate: trackId > 0 && available
             rating: Ratings.track(trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
@@ -133,7 +133,8 @@ Item {
 
         onPressed: (mouse) => {
             pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
-            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating) {
+            const pressed = view.itemAtIndex(rowAt(mouse.y))
+            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating && pressed && pressed.available) {
                 pressedRow = rowAt(mouse.y)
                 pressedY = mouse.y
                 dragging = false
@@ -204,6 +205,7 @@ Item {
 
     Row {
         visible: list.reorderable && view.hovered >= 0 && (!groupActions.item || !groupActions.item.header)
+            && (groupActions.item ? groupActions.item.available : false)
         x: list.width - width - Metrics.gap10
         y: {
             const item = view.itemAtIndex(view.hovered)

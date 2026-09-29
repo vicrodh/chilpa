@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Components"
+import "../Patterns"
 
 // Settings (design/06 Settings): the sections on the left, the chosen one's
 // rows on the right. Every row comes from the schema in Rust.
@@ -66,8 +67,52 @@ Item {
 
         delegate: SettingsRow {
             width: ListView.view.width - Metrics.gap12
-            page: rows
+            page: actions
         }
+    }
+
+    // What a row does, with the servers' own steps in between: adding one
+    // opens its dialog, removing one says first what it takes (ADR-017).
+    QtObject {
+        id: actions
+        function set(key, value) {
+            if (key.startsWith("sources.server/") && value === "remove") {
+                removing.serverId = Number(key.split("/")[1])
+                removing.message = Servers.removal(removing.serverId)
+                return removing.open()
+            }
+            rows.set(key, value)
+        }
+        function press(key) {
+            if (key === "sources.addServer")
+                return adding.open()
+            rows.press(key)
+        }
+    }
+
+    ServerSetupDialog {
+        id: adding
+        onClosed: rows.refresh()
+    }
+
+    ConfirmDialog {
+        id: removing
+        property int serverId
+        title: I18n.tr("Remove this server?", I18n.rev)
+        confirmText: I18n.tr("Remove", I18n.rev)
+        destructive: true
+        onConfirmed: {
+            Servers.remove(serverId)
+            rows.refresh()
+        }
+    }
+
+    // A sync moving, a server coming back: its rows follow while shown.
+    Timer {
+        interval: Motion.refresh
+        repeat: true
+        running: page.visible && page.section === "sources"
+        onTriggered: rows.refresh()
     }
 
     Text {
