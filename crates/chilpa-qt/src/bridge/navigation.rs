@@ -44,6 +44,16 @@ pub mod qobject {
         #[qinvokable]
         fn open_artist(self: Pin<&mut Navigation>, name: &QString);
 
+        /// Opens the page of one of the artists a credit names: the first
+        /// is 0. A place that is none of them opens nothing.
+        #[qinvokable]
+        fn open_credit(self: Pin<&mut Navigation>, credit: &QString, place: i32);
+
+        /// Where each artist of a credit is inside it, as "0,5,7,22"; empty
+        /// when it names one.
+        #[qinvokable]
+        fn credit_stops(self: &Navigation, credit: &QString) -> QString;
+
         /// Opens a Settings section inside the active tab.
         #[qinvokable]
         fn open_section(self: Pin<&mut Navigation>, id: &QString);
@@ -159,6 +169,17 @@ impl qobject::Navigation {
             self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Artist, id: 0, key });
             self.publish();
         }
+    }
+
+    pub fn open_credit(self: Pin<&mut Self>, credit: &QString, place: i32) {
+        let names = app::with(|api| api.credit_names(&credit.to_string()));
+        if let Some(name) = usize::try_from(place).ok().and_then(|place| names.get(place)) {
+            self.open_artist(&QString::from(name));
+        }
+    }
+
+    pub fn credit_stops(&self, credit: &QString) -> QString {
+        QString::from(&app::with(|api| api.credit_stops(&credit.to_string())))
     }
 
     pub fn open_folder(mut self: Pin<&mut Self>, path: &QString) {

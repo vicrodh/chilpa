@@ -85,23 +85,12 @@ Rectangle {
                 anchors.centerIn: parent
                 spacing: Metrics.gap6
 
-                Text {
+                CreditLine {
                     id: artist
                     width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
-                    text: Player.artist
-                    elide: Text.ElideRight
+                    credit: Player.artist
                     font.pointSize: Type.small
-                    color: artistHover.hovered ? Theme.color.textPrimary : Theme.color.textSecondary
-
-                    HoverHandler {
-                        id: artistHover
-                        enabled: Player.artist !== ""
-                        cursorShape: Qt.PointingHandCursor
-                    }
-                    TapHandler {
-                        enabled: Player.artist !== ""
-                        onTapped: Navigation.openArtist(Player.artist)
-                    }
+                    color: hovered ? Theme.color.textPrimary : Theme.color.textSecondary
                 }
 
                 Text {

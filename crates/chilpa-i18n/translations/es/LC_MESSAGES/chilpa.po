@@ -638,6 +638,9 @@ msgstr "Ir al disco"
 msgid "Go to artist"
 msgstr "Ir al artista"
 
+msgid "Go to {}"
+msgstr "Ir a {}"
+
 msgid "Grid"
 msgstr "Cuadrícula"
 

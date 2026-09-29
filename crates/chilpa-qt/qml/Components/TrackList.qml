@@ -174,7 +174,10 @@ Item {
             }
             const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
             if (!toggle && !(mouse.modifiers & Qt.ShiftModifier) && onArtist(row, mouse.x, mouse.y)) {
-                list.model.go(row, "artist")
+                const label = view.itemAtIndex(row).artistLabel
+                credit.font = label.font
+                credit.credit = list.model.creditOf(row)
+                list.model.go(row, "artist:" + credit.placeAt(label.mapFromItem(pointer, mouse.x, mouse.y).x))
                 return
             }
             list.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
@@ -185,6 +188,9 @@ Item {
                 list.model.play(row)
         }
     }
+
+    // Measures where each artist of a row's credit is; one for the list.
+    CreditLine { id: credit; visible: false }
 
     TrackMenu {
         id: actions

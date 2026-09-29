@@ -39,6 +39,10 @@ Item {
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
 
+    // The label that shows its artist, for the list to tell which one of
+    // several a click is on.
+    readonly property Text artistLabel: rich ? richArtist : compactArtist
+
     function containsArtist(x, y) {
         const label = rich ? richArtist : compactArtist
         const point = label.mapFromItem(row, x, y)

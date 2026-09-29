@@ -12,6 +12,7 @@ pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 mod accounts;
 mod approvals;
 mod browse;
+mod credits;
 mod queries;
 pub use queries::QueryWorker;
 mod covers;
@@ -569,6 +570,10 @@ pub struct Chilpa {
     metadata: metadata::Editor,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
+    /// The artists of the credits the window asked about, and the state of
+    /// the library they were read at.
+    credits: std::collections::HashMap<String, Vec<String>>,
+    credits_read_at: (i64, u64),
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -634,6 +639,8 @@ impl Chilpa {
             outputs_generation: String::new(),
             metadata: metadata::Editor::default(),
             servers: servers::Servers::default(),
+            credits: Default::default(),
+            credits_read_at: (0, 0),
         };
         chilpa.restore_queue_session();
         chilpa

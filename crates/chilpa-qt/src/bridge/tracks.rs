@@ -95,6 +95,10 @@ pub mod qobject {
 
         #[qinvokable]
         fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
+
+        /// The row's artist, for the list to tell which one a click is on.
+        #[qinvokable]
+        fn credit_of(self: &TrackListModel, row: i32) -> QString;
         #[qinvokable]
         fn clear_selection(self: Pin<&mut TrackListModel>);
     }
@@ -588,6 +592,7 @@ impl qobject::TrackListModel {
             move_down: editable && this.order.to_string() == "custom" && row < this.len() as i32 - 1,
             album: self.can_go(row, &QString::from("album")),
             artist: self.can_go(row, &QString::from("artist")),
+            artists: this.track(row.max(0) as usize).map(|t| app::with(|api| api.credit_names(&t.artist))).unwrap_or_default(),
             folder: self.can_go(row, &QString::from("folder")),
             metadata: self.can_go(row, &QString::from("metadata")),
             // Over the whole selection it acts on, not the row clicked: one
@@ -652,7 +657,8 @@ impl qobject::TrackListModel {
             return false;
         }
         let kind = self.rust().kind.to_string();
-        match target.to_string().as_str() {
+        // "artist:1" is the second artist its credit names.
+        match target.to_string().split(':').next().unwrap_or_default() {
             "album" => track.album_id > 0 && kind != "album",
             "artist" => {
                 let own = matches!(kind.as_str(), "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
@@ -663,6 +669,10 @@ impl qobject::TrackListModel {
             "metadata" => track.album_id > 0 && !chilpa_api::on_a_server(&track.path),
             _ => false,
         }
+    }
+
+    pub fn credit_of(&self, row: i32) -> QString {
+        QString::from(&self.rust().track(row.max(0) as usize).map(|t| t.artist.clone()).unwrap_or_default())
     }
 
     pub fn go(self: Pin<&mut Self>, row: i32, target: &QString) {
@@ -691,7 +701,8 @@ impl qobject::TrackListModel {
         registry::navigation(move |mut nav| match target.as_str() {
             "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
             "metadata" => nav.as_mut().go(&QString::from("metadata"), track.album_id),
-            "artist" => nav.as_mut().open_artist(&QString::from(&track.artist)),
+            "artist" => nav.as_mut().open_credit(&QString::from(&track.artist), 0),
+            one if one.starts_with("artist:") => nav.as_mut().open_credit(&QString::from(&track.artist), one[7..].parse().unwrap_or(-1)),
             "folder" => {
                 let dir = std::path::Path::new(&track.path).parent().map(|d| d.display().to_string());
                 if let Some(dir) = dir {

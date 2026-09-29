@@ -11,6 +11,8 @@ pub struct TrackMenuContext {
     pub move_down: bool,
     pub album: bool,
     pub artist: bool,
+    /// The artists its credit names, when it names several.
+    pub artists: Vec<String>,
     pub folder: bool,
     pub metadata: bool,
     /// None of the chosen tracks can be played now (ADR-017).
@@ -51,7 +53,16 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
             (context.folder, "folder", i18n::mark("Show in folder")),
             (context.metadata, "metadata", i18n::mark("Edit metadata…")),
         ] {
-            if enabled { navigation.push(item(act, label)); }
+            if !enabled {
+                continue;
+            }
+            if act == "artist" && context.artists.len() > 1 {
+                for (place, name) in context.artists.iter().enumerate() {
+                    navigation.push(json!({"act": format!("artist:{place}"), "text": i18n::t_args(i18n::mark("Go to {}"), &[name])}));
+                }
+            } else {
+                navigation.push(item(act, label));
+            }
         }
     }
     if !navigation.is_empty() {
@@ -92,6 +103,18 @@ mod tests {
         let menu = track_menu(TrackMenuContext { count: 1, queued: true, ..Default::default() });
         let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
         assert_eq!(actions, ["play", "dequeue", "pick"]);
+    }
+}
+
+#[cfg(test)]
+mod credit_tests {
+    use super::*;
+
+    #[test]
+    fn a_track_by_several_offers_the_page_of_each() {
+        let menu = track_menu(TrackMenuContext { count: 1, artist: true, artists: vec!["A".into(), "B".into()], ..Default::default() });
+        let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
+        assert!(actions.contains(&"artist:0") && actions.contains(&"artist:1") && !actions.contains(&"artist"), "{actions:?}");
     }
 }
 

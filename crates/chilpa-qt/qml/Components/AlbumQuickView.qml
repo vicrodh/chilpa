@@ -76,16 +76,12 @@ Item {
                 font.weight: Type.bold
                 color: Theme.color.textPrimary
             }
-            Text {
+            CreditLine {
                 width: Math.min(implicitWidth, parent.width)
-                text: detail.artist
-                elide: Text.ElideRight
+                credit: detail.artist
                 font.pointSize: Type.body
-                font.underline: artistHover.hovered
+                font.underline: hovered
                 color: Theme.color.accent
-
-                HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: Navigation.openArtist(detail.artist) }
             }
             Text {
                 width: parent.width
