@@ -63,6 +63,15 @@ Item {
 
         contentItem: Column {
             spacing: Metrics.gap6
+            Text {
+                width: parent.width
+                visible: Cast.active
+                text: I18n.tr("Receiver volume", I18n.rev)
+                wrapMode: Text.WordWrap
+                horizontalAlignment: Text.AlignHCenter
+                font.pointSize: Type.micro
+                color: Theme.color.textSecondary
+            }
 
             Text {
                 width: parent.width

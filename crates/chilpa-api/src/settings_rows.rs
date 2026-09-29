@@ -114,6 +114,7 @@ impl Chilpa {
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
         match row.key.as_str() {
+            "devices.original" | "devices.discovery" => row.control = "none".into(),
             "audio.backend" => {
                 let (stacks, current) = (self.stacks(), self.stack_of(output));
                 for s in stacks.iter().filter(|s| s.present) {

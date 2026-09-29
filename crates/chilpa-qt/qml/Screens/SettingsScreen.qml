@@ -84,11 +84,15 @@ Item {
             rows.set(key, value)
         }
         function press(key) {
+            if (key === "devices.cast")
+                return casting.open()
             if (key === "sources.addServer")
                 return adding.open()
             rows.press(key)
         }
     }
+
+    CastPicker { id: casting }
 
     ServerSetupDialog {
         id: adding

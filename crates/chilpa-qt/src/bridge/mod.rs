@@ -26,3 +26,5 @@ pub mod settings;
 pub mod settings_page;
 pub mod theme;
 pub mod tracks;
+
+mod cast;

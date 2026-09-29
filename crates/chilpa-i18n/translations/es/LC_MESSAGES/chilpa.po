@@ -306,6 +306,15 @@ msgstr "Elige una carátula"
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
 
+msgid "Choose a renderer on your local network."
+msgstr "Elige un receptor de tu red local."
+
+msgid "Choose a renderer on your local network. The queue stays in Chilpa."
+msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
+
+msgid "Choose device"
+msgstr "Elegir dispositivo"
+
 msgid "Choose playlist artwork"
 msgstr "Elegir imagen de la playlist"
 
@@ -425,6 +434,9 @@ msgstr "Imagen personalizada"
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
 
+msgid "DLNA / UPnP and Chromecast"
+msgstr "DLNA / UPnP y Chromecast"
+
 msgid "DSD files keep their changes in a sidecar"
 msgstr "los archivos DSD guardan sus cambios en un sidecar"
 
@@ -487,6 +499,9 @@ msgstr "Descripción"
 
 msgid "Device"
 msgstr "Dispositivo"
+
+msgid "Device discovery"
+msgstr "Búsqueda de dispositivos"
 
 msgid "Devices & cast"
 msgstr "Dispositivos y transmisión"
@@ -896,6 +911,9 @@ msgstr "Nativo usa el formato DSD_U32 de ALSA. DoP transporta el mismo flujo de 
 msgid "Navigation"
 msgstr "Navegación"
 
+msgid "Network playback"
+msgstr "Reproducción en red"
+
 msgid "Never played"
 msgstr "Nunca escuchadas"
 
@@ -916,6 +934,9 @@ msgstr "Siguiente"
 
 msgid "No cover"
 msgstr "Sin carátula"
+
+msgid "No devices found. Check that both devices use the same network."
+msgstr "No se encontraron dispositivos. Revisa que ambos estén en la misma red."
 
 msgid "No folders in your local library yet."
 msgstr "Todavía no hay carpetas en tu biblioteca local."
@@ -1028,8 +1049,14 @@ msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a
 msgid "Opens the device and says which formats reach it untouched."
 msgstr "Abre el dispositivo y dice qué formatos le llegan intactos."
 
+msgid "Original bytes"
+msgstr "Bytes originales"
+
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
 msgstr "Bytes originales · sin transcodificar por Chilpa · procesamiento del receptor desconocido"
+
+msgid "Original files"
+msgstr "Archivos originales"
 
 msgid "Output"
 msgstr "Salida"
@@ -1081,6 +1108,9 @@ msgstr "Reproducir después"
 
 msgid "Play now"
 msgstr "Reproducir ahora"
+
+msgid "Play on"
+msgstr "Reproducir en"
 
 msgid "Play the CD"
 msgstr "Reproducir el CD"
@@ -1187,6 +1217,9 @@ msgstr "Lee el tempo, la tonalidad y la sonoridad en segundo plano. AutoMix apar
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
 
+msgid "Receiver processing unknown"
+msgstr "Procesamiento del receptor desconocido"
+
 msgid "Receiver volume"
 msgstr "Volumen del receptor"
 
@@ -1201,6 +1234,9 @@ msgstr "Escuchados recientemente"
 
 msgid "Records"
 msgstr "Discos"
+
+msgid "Refresh"
+msgstr "Actualizar"
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
@@ -1310,11 +1346,17 @@ msgstr "Buscar"
 msgid "Search folders"
 msgstr "Buscar carpetas"
 
+msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
+msgstr "Busca solo mientras el selector está abierto. Al desconectar se detiene el receptor y la reproducción local permanece detenida."
+
 msgid "Search playlists"
 msgstr "Buscar playlists"
 
 msgid "Search playlists and folders"
 msgstr "Buscar playlists y folders"
+
+msgid "Searching for devices…"
+msgstr "Buscando dispositivos…"
 
 msgid "Searching…"
 msgstr "Buscando…"

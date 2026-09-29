@@ -223,7 +223,13 @@ pub const SECTIONS: &[Section] = &[
             },
         ],
     },
-    Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[] },
+    Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[
+        Group { title: Chilpa::mark("Network playback"), settings: &[
+            action("devices.cast", Chilpa::mark("DLNA / UPnP and Chromecast"), Chilpa::mark("Choose a renderer on your local network. The queue stays in Chilpa."), Control::Button, Chilpa::mark("Choose device")),
+            setting("devices.original", Chilpa::mark("Original files"), Chilpa::mark("Original bytes · no transcoding by Chilpa · receiver processing unknown"), Control::Status),
+            setting("devices.discovery", Chilpa::mark("Device discovery"), Chilpa::mark("Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."), Control::Status),
+        ] },
+    ] },
     Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[] },
     Section {
         id: "advanced",

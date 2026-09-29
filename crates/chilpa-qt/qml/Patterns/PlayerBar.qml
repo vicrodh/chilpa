@@ -26,6 +26,8 @@ Item {
         showPanel()
     }
 
+    CastPicker { id: castPicker }
+    Timer { interval: Motion.refresh; repeat: true; running: true; triggeredOnStart: true; onTriggered: Cast.refresh() }
     implicitHeight: Metrics.playerHeight
 
     // The pointer is over the bar: it does not step away from under it.
@@ -159,6 +161,12 @@ Item {
                 x: optionsButton.width - width
                 y: -height - Metrics.gap10
             }
+        }
+        IconButton {
+            tip: Cast.active ? Cast.destination : I18n.tr("Play on", I18n.rev)
+            glyph: Icons.cast
+            checked: Cast.active || castPicker.opened
+            onClicked: castPicker.open()
         }
         IconButton {
             tip: I18n.tr("Lyrics", I18n.rev)

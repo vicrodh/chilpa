@@ -306,6 +306,15 @@ msgstr ""
 msgid "Choose a file…"
 msgstr ""
 
+msgid "Choose a renderer on your local network."
+msgstr ""
+
+msgid "Choose a renderer on your local network. The queue stays in Chilpa."
+msgstr ""
+
+msgid "Choose device"
+msgstr ""
+
 msgid "Choose playlist artwork"
 msgstr ""
 
@@ -425,6 +434,9 @@ msgstr ""
 msgid "DAC passthrough"
 msgstr ""
 
+msgid "DLNA / UPnP and Chromecast"
+msgstr ""
+
 msgid "DSD files keep their changes in a sidecar"
 msgstr ""
 
@@ -486,6 +498,9 @@ msgid "Description"
 msgstr ""
 
 msgid "Device"
+msgstr ""
+
+msgid "Device discovery"
 msgstr ""
 
 msgid "Devices & cast"
@@ -896,6 +911,9 @@ msgstr ""
 msgid "Navigation"
 msgstr ""
 
+msgid "Network playback"
+msgstr ""
+
 msgid "Never played"
 msgstr ""
 
@@ -915,6 +933,9 @@ msgid "Next"
 msgstr ""
 
 msgid "No cover"
+msgstr ""
+
+msgid "No devices found. Check that both devices use the same network."
 msgstr ""
 
 msgid "No folders in your local library yet."
@@ -1028,7 +1049,13 @@ msgstr ""
 msgid "Opens the device and says which formats reach it untouched."
 msgstr ""
 
+msgid "Original bytes"
+msgstr ""
+
 msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
+msgstr ""
+
+msgid "Original files"
 msgstr ""
 
 msgid "Output"
@@ -1080,6 +1107,9 @@ msgid "Play next"
 msgstr ""
 
 msgid "Play now"
+msgstr ""
+
+msgid "Play on"
 msgstr ""
 
 msgid "Play the CD"
@@ -1187,6 +1217,9 @@ msgstr ""
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr ""
 
+msgid "Receiver processing unknown"
+msgstr ""
+
 msgid "Receiver volume"
 msgstr ""
 
@@ -1200,6 +1233,9 @@ msgid "Recently played"
 msgstr ""
 
 msgid "Records"
+msgstr ""
+
+msgid "Refresh"
 msgstr ""
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
@@ -1310,10 +1346,16 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
+msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
+msgstr ""
+
 msgid "Search playlists"
 msgstr ""
 
 msgid "Search playlists and folders"
+msgstr ""
+
+msgid "Searching for devices…"
 msgstr ""
 
 msgid "Searching…"

@@ -84,7 +84,7 @@ Item {
                 }
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: Player.bitPerfect ? I18n.tr("Bit perfect", I18n.rev) : I18n.tr("Processed", I18n.rev)
+                    text: Cast.active ? I18n.tr("Original bytes", I18n.rev) : Player.bitPerfect ? I18n.tr("Bit perfect", I18n.rev) : I18n.tr("Processed", I18n.rev)
                     font.pointSize: Type.small
                     font.weight: Type.medium
                     color: Player.bitPerfect ? Theme.color.accent : Theme.color.textSecondary
@@ -96,8 +96,8 @@ Item {
             model: [
                 { label: I18n.tr("Source", I18n.rev), value: Player.qualityLong },
                 { label: I18n.tr("Output", I18n.rev), value: Player.outputFormat },
-                { label: I18n.tr("Device", I18n.rev), value: Player.device },
-                { label: I18n.tr("Route", I18n.rev), value: Player.route }
+                { label: I18n.tr("Device", I18n.rev), value: Cast.active ? Cast.destination : Player.device },
+                { label: I18n.tr("Route", I18n.rev), value: Cast.active ? I18n.tr("Receiver processing unknown", I18n.rev) : Player.route }
             ]
 
             Row {

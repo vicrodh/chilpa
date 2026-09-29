@@ -146,6 +146,7 @@ const TICK: std::time::Duration = std::time::Duration::from_millis(250);
 
 #[derive(Default)]
 pub struct PlayerRust {
+    casting: bool,
     gapless: bool,
     normalize: bool,
     normalize_applies: bool,
@@ -269,7 +270,7 @@ impl qobject::Player {
     }
 
     pub fn toggle(mut self: Pin<&mut Self>) {
-        let paused = !self.rust().paused;
+        let paused = self.rust().playing && !self.rust().paused;
         app::with(|api| api.set_paused(paused));
         self.as_mut().set_paused(paused);
     }
@@ -319,12 +320,14 @@ impl qobject::Player {
 
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
-        let (now, changed) = app::with(|api| (api.poll().clone(), api.library_changed()));
+        let (now, changed, casting) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some()));
+        if casting || casting != self.rust().casting { self.as_mut().read_volume(); }
+        self.as_mut().rust_mut().casting = casting;
         // A sync, a server or a folder came or went underneath the lists.
         if changed {
             crate::registry::library(|l| l.content_changed());
         }
-        if now.path != self.rust().shown {
+        if now.path != self.rust().shown || QString::from(&now.title) != self.rust().title || QString::from(&now.format) != self.rust().output_format {
             self.as_mut().rust_mut().shown = now.path.clone();
             // A new queue drops the mix; the switch follows.
             let mix = app::with(|api| api.automix_on());
@@ -364,6 +367,7 @@ impl qobject::Player {
             self.as_mut().set_lyrics(QStringList::from(&lines));
             self.as_mut().set_lyrics_synced(now.lyrics_synced);
         }
+        if now.total_seconds != self.rust().duration { self.as_mut().set_duration(now.total_seconds); }
         if now.lyrics_line != self.rust().lyrics_line {
             self.as_mut().set_lyrics_line(now.lyrics_line);
         }
