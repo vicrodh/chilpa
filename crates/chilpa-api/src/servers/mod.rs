@@ -84,10 +84,16 @@ impl Chilpa {
             self.now.title = crate::title_of(std::path::Path::new(&self.now.path));
         }
         let now = crate::now_unix();
-        let due: Vec<i64> = self
-            .library()
-            .and_then(|lib| lib.servers().ok())
-            .unwrap_or_default()
+        let stored = self.library().and_then(|lib| lib.servers().ok()).unwrap_or_default();
+        // A server added before its kind had a glyph of its own takes it now.
+        if let Some(lib) = self.library() {
+            for s in &stored {
+                if let Some(kind) = chilpa_servers::Kind::from_provider(&s.provider) {
+                    let _ = lib.set_source_icon(s.source_id, kind.icon(&s.product));
+                }
+            }
+        }
+        let due: Vec<i64> = stored
             .into_iter()
             .filter(|s| s.synced_at.is_none_or(|at| now - at > STALE))
             .map(|s| s.source_id)
@@ -132,7 +138,7 @@ impl Chilpa {
                     product: s.product.clone(),
                     unencrypted: plain_and_outside(&s.address),
                     address: s.address.clone(),
-                    icon: kind.map(|k| k.icon()).unwrap_or("server").to_string(),
+                    icon: kind.map(|k| k.icon(&s.product)).unwrap_or("server").to_string(),
                     reachable: s.reachable,
                     syncing: running.contains_key(&s.source_id),
                     tracks: s.tracks,
@@ -261,7 +267,7 @@ impl Chilpa {
             provider: ready.kind.provider().into(),
             instance: ready.instance.clone(),
             label: ready.label.clone(),
-            icon: ready.kind.icon().into(),
+            icon: ready.kind.icon(&ready.product).into(),
             address: ready.address.clone(),
             account: ready.account.clone(),
             identity: ready.identity.clone(),

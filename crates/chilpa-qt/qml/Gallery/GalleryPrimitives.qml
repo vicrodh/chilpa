@@ -66,6 +66,14 @@ GallerySection {
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
         SourceIcon { sourceInfo: ({ local: true }) }
+        Repeater {
+            model: ["opensubsonic", "navidrome", "jellyfin", "plex", "collection", "cassette", "cast-audio", "dlna", "musicbrainz", "discogs", "gandalf"]
+            SourceIcon {
+                required property string modelData
+                sourceInfo: ({ icon: modelData })
+                color: Theme.color.accent
+            }
+        }
         StatusField { state: "fine"; options: ["Disconnect", "Uninstall"]; values: ["disconnect", "uninstall"] }
     }
 
