@@ -21,6 +21,10 @@ Item {
     property string path
     property url source: path === "" ? "" : "file://" + path.split("/").map(encodeURIComponent).join("/")
     property int radius: Metrics.radiusCard
+    // Top left, top right, bottom right, bottom left: a tile of a mosaic
+    // rounds only the corner that is the mosaic's, and draws no hairline.
+    property vector4d corners: Qt.vector4d(radius, radius, radius, radius)
+    property bool edged: true
     // Which placeholder color, so a grid of empty covers is not one block.
     property int tint: 0
 
@@ -30,7 +34,10 @@ Item {
     Rectangle {
         anchors.fill: parent
         visible: image.status !== Image.Ready
-        radius: root.radius
+        topLeftRadius: root.corners.x
+        topRightRadius: root.corners.y
+        bottomRightRadius: root.corners.z
+        bottomLeftRadius: root.corners.w
         color: Theme.placeholder(root.tint)
     }
 
@@ -44,6 +51,9 @@ Item {
         asynchronous: true
         retainWhileLoading: true
         fillMode: Image.PreserveAspectCrop
+        // The smallest decode is still several times a tile of a mosaic:
+        // drawn that much smaller without its reductions, a cover is noise.
+        mipmap: root.decode > Math.max(root.width, root.height) * Screen.devicePixelRatio * 2 // derived: less than half the decode
         sourceSize.width: root.decode
         sourceSize.height: root.decode
     }
@@ -53,11 +63,11 @@ Item {
         visible: image.status === Image.Ready
         property variant source: image
         property size dims: Qt.size(width, height)
-        property real radius: root.radius
+        property vector4d corners: root.corners
         fragmentShader: "../../assets/shaders/rounded.frag.qsb"
     }
 
     // Over the cover and over the placeholder alike, as the design's inset
     // hairline.
-    Edge { radius: root.radius }
+    Edge { visible: root.edged; radius: root.radius }
 }

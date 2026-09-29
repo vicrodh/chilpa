@@ -4,12 +4,27 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// The strip above the content (design/02 3): with the sidebar closed, a way
-// to show it and its search; history, tabs, density and, outside macOS, the
-// window's own controls. Its empty space moves the window, and a double
+// The strip above everything (design/02 3): history and the sidebar's
+// button at the window's left, after the room macOS wants for its own
+// controls; then the tabs, over the content; density and, outside macOS,
+// the window's controls. Its empty space moves the window, and a double
 // click maximizes it.
 Item {
     id: bar
+
+    // Where the content starts, from the bar's left: the tabs stand over it.
+    property real contentLeft: 0
+    // What the system's own controls take of the bar's left, on a Mac.
+    property real controlsRoom: 0
+
+    readonly property bool mac: Qt.platform.os === "osx"
+    // The sidebar goes from open to collapsed to closed and back to open.
+    readonly property var turns: ({
+        open: { next: "collapsed", glyph: Icons.layoutSidebarLeftCollapse, tip: I18n.tr("Collapse sidebar", I18n.rev) },
+        collapsed: { next: "closed", glyph: Icons.layoutSidebarLeftCollapse, tip: I18n.tr("Hide sidebar", I18n.rev) },
+        closed: { next: "open", glyph: Icons.layoutSidebarLeftExpand, tip: I18n.tr("Show the sidebar", I18n.rev) }
+    })
+    readonly property var turn: turns[SettingsModel.sidebarMode] || turns.open
 
     implicitHeight: Metrics.tabBarHeight
 
@@ -24,24 +39,24 @@ Item {
     }
 
     Row {
+        id: lead
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.topMargin: Metrics.tabBarTop
         spacing: Metrics.gap4
 
-        IconButton {
-            visible: SettingsModel.sidebarMode === "closed"
-            tip: I18n.tr("Show the sidebar", I18n.rev)
-            glyph: Icons.layoutSidebarLeftExpand
-            onClicked: SettingsModel.sidebarMode = "open"
+        // The system's three controls float here.
+        Item {
+            visible: bar.mac
+            width: bar.controlsRoom
+            height: Metrics.button28
         }
-        // With the sidebar closed, its search lives here, results below it.
-        SearchBox {
-            visible: SettingsModel.sidebarMode === "closed"
-            width: Metrics.screenSearch
-            active: visible
-            flyoutY: height + Metrics.gap10
-            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
+        Rectangle {
+            visible: bar.mac
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: Metrics.dividerHeight
+            color: Theme.color.strokeHairline
         }
         IconButton {
             tip: I18n.tr("Back", I18n.rev)
@@ -56,6 +71,28 @@ Item {
             tone: "primary"
             enabled: Navigation.canForward
             onClicked: Navigation.forward()
+        }
+        IconButton {
+            tip: bar.turn.tip
+            glyph: bar.turn.glyph
+            onClicked: SettingsModel.sidebarMode = bar.turn.next
+        }
+    }
+
+    Row {
+        anchors.left: parent.left
+        anchors.leftMargin: Math.max(bar.contentLeft, lead.width + Metrics.gap8) // derived: over the content, never under the buttons
+        anchors.top: parent.top
+        anchors.topMargin: Metrics.tabBarTop
+        spacing: Metrics.gap4
+
+        // With the sidebar closed, its search lives here, results below it.
+        SearchBox {
+            visible: SettingsModel.sidebarMode === "closed"
+            width: Metrics.screenSearch
+            active: visible
+            flyoutY: height + Metrics.gap10
+            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
         }
 
         Repeater {
@@ -118,7 +155,7 @@ Item {
         }
 
         Rectangle {
-            visible: Qt.platform.os !== "osx"
+            visible: !bar.mac
             anchors.verticalCenter: parent.verticalCenter
             width: 1
             height: Metrics.dividerHeight
@@ -126,7 +163,7 @@ Item {
         }
 
         Repeater {
-            model: Qt.platform.os === "osx" ? [] : [
+            model: bar.mac ? [] : [
                 { glyph: Icons.minus, tip: I18n.tr("Minimize", I18n.rev), act: "min" },
                 { glyph: Icons.square, tip: I18n.tr("Maximize", I18n.rev), act: "max" },
                 { glyph: Icons.x, tip: I18n.tr("Close", I18n.rev), act: "close" }

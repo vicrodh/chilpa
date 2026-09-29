@@ -19,10 +19,10 @@ Item {
     required property string artwork
     required property int folderId
     required property bool visibleInSidebar
-    required property url cover1
-    required property url cover2
-    required property url cover3
-    required property url cover4
+    // Paths of the covers of its first records, up to four.
+    required property var covers
+    // Its own picture when it has one on disk, its records' covers if not.
+    readonly property var shown: row.artwork !== "" && row.artwork.indexOf("://") < 0 ? [row.artwork] : row.covers
     property bool active: false
     property bool editing: false
 
@@ -40,45 +40,33 @@ Item {
         hovered: hover.hovered
     }
 
-    Icon {
+    // The icon's place, as wide as the collage and centered where the icon
+    // is, so the names stay in line with the folders'.
+    Item {
         id: icon
-        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0)
-        anchors.verticalCenter: parent.verticalCenter
-        visible: !covers.active
-        glyph: row.local ? Icons.playlist : Icons.server
-        size: Metrics.iconMd
-        color: Theme.color.textSecondary
-    }
+        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0) - (width - Metrics.iconMd) / 2 // derived: centered on the icon
+        width: Metrics.playlistCollage
+        height: parent.height
 
-    Loader {
-        id: covers
-        x: Metrics.navItemPadding + (row.folderId > 0 ? Metrics.playlistIndent : 0)
-        anchors.verticalCenter: parent.verticalCenter
-        width: Metrics.iconMd
-        height: Metrics.iconMd
-        active: SettingsModel.playlistCollage && row.cover1.toString() !== ""
-
-        sourceComponent: Grid {
-            columns: 2
-            Repeater {
-                model: [row.cover1, row.cover2, row.cover3, row.cover4]
-                ArtTile {
-                    required property var modelData
-                    required property int index
-                    width: Metrics.playlistCollageTile
-                    height: width
-                    radius: 0
-                    source: modelData
-                    tint: index
-                }
-            }
+        Icon {
+            anchors.centerIn: parent
+            visible: !collage.active
+            glyph: row.local ? Icons.playlist : Icons.server
+            size: Metrics.iconMd
+            color: Theme.color.textSecondary
+        }
+        Loader {
+            id: collage
+            anchors.centerIn: parent
+            active: SettingsModel.playlistCollage && row.shown.length > 0
+            sourceComponent: PlaylistCollage { covers: row.shown; tint: row.index }
         }
     }
 
     Text {
         visible: !row.editing
         anchors.left: icon.right
-        anchors.leftMargin: Metrics.navItemPadding
+        anchors.leftMargin: Metrics.navItemPadding - (icon.width - Metrics.iconMd) / 2 // derived: where the name was
         anchors.right: parent.right
         anchors.rightMargin: Metrics.navItemPadding
         anchors.verticalCenter: parent.verticalCenter

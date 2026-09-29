@@ -24,8 +24,7 @@ Item {
                 result.push({rowKind: 1, playlistId: 0, name: folder.name,
                     tracks: folder.playlist_count, source: "", sourceName: "",
                     local: true, artwork: "", folderId: folder.id,
-                    visibleInSidebar: true, cover1: "", cover2: "", cover3: "",
-                    cover4: "", folderColor: folder.color,
+                    visibleInSidebar: true, covers: [], folderColor: folder.color,
                     expanded: filter.text !== "" || !!expanded[folder.id]})
                 if (filter.text !== "" || expanded[folder.id])
                     for (const playlist of children) result.push(playlistRow(playlist))
@@ -39,9 +38,7 @@ Item {
         return {rowKind: 0, playlistId: p.id, name: p.name, tracks: p.track_count,
             source: p.source, sourceName: p.provider, local: p.mixed,
             artwork: p.artwork_path, folderId: p.folder_id || 0,
-            visibleInSidebar: p.visible_sidebar, cover1: p.covers[0] || "",
-            cover2: p.covers[1] || "", cover3: p.covers[2] || "",
-            cover4: p.covers[3] || "", folderColor: "", expanded: false}
+            visibleInSidebar: p.visible_sidebar, covers: p.covers, folderColor: "", expanded: false}
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
     Component.onCompleted: reload()
@@ -112,10 +109,7 @@ Item {
             required property string artwork
             required property int folderId
             required property bool visibleInSidebar
-            required property url cover1
-            required property url cover2
-            required property url cover3
-            required property url cover4
+            required property var covers
             required property string folderColor
             required property bool expanded
 
@@ -151,10 +145,7 @@ Item {
                     artwork: host.artwork
                     folderId: host.folderId
                     visibleInSidebar: host.visibleInSidebar
-                    cover1: host.cover1
-                    cover2: host.cover2
-                    cover3: host.cover3
-                    cover4: host.cover4
+                    covers: host.covers
                     active: Navigation.screen === "playlist" && Navigation.routeId === playlistId
                     onOpened: Playlists.open(playlistId)
                     onMenu: (left, top) => {

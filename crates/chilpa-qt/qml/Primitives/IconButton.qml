@@ -54,4 +54,7 @@ Item {
         onClicked: root.clicked()
         onContainsMouseChanged: containsMouse ? TipState.show(root.tip, root) : TipState.hide(root)
     }
+
+    // A button that says something else after its click says it at once.
+    onTipChanged: if (area.containsMouse) TipState.show(root.tip, root)
 }

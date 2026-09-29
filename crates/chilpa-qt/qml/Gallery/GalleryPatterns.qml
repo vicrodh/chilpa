@@ -16,6 +16,7 @@ GallerySection {
     ServerSetupDialog { id: serverSetup }
     CastPicker { id: castPreview; preview: true }
 
+    SystemControls {}
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     SidebarPlaylists { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     RightPanel { width: Metrics.rightPanel; height: Metrics.queueMin * 3 } // derived: room for both and the divider

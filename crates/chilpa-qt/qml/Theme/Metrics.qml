@@ -122,6 +122,10 @@ QtObject {
     readonly property int tabPadRight: 5
     readonly property int tabClose: 18
     readonly property int windowControl: 24
+    // What a Mac's three controls take at the window's left, at the least.
+    readonly property int windowControlsRoom: 78
+    // How many times their placing is asked before giving up.
+    readonly property int systemControlsTries: 25
     readonly property int dividerHeight: 18
 
     // Player bar (02-layout.md 7).
@@ -265,7 +269,9 @@ QtObject {
     readonly property int playlistFolderDialog: 360
     readonly property int colorSwatch: 28
     readonly property int colorSwatchRadius: 14
-    readonly property int playlistCollageTile: 8
+    readonly property int playlistCollage: 20
+    // Two, so the tiles are whole pixels.
+    readonly property int playlistCollageSeam: 2
     readonly property int contentHorizontalMargins: 56
     readonly property int selectionHorizontalPadding: 32
 
