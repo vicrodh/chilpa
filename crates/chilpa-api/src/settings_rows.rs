@@ -43,7 +43,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
     // finds it.
     match key {
         "appearance.theme" => {
-            vec![("light", chilpa_i18n::t("Light")), ("dark", chilpa_i18n::t("Dark")), ("system", chilpa_i18n::t("System"))]
+            vec![("light", chilpa_i18n::t("Light")), ("dark", chilpa_i18n::t("Dark")), ("oled", chilpa_i18n::t("Dark OLED")), ("system", chilpa_i18n::t("System"))]
         }
         "appearance.density" => vec![("compact", chilpa_i18n::t("Compact")), ("rich", chilpa_i18n::t("Rich"))],
         "appearance.font" => vec![("inter", "Inter".to_string()), ("system", chilpa_i18n::t("System"))],

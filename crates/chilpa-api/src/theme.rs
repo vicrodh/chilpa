@@ -56,7 +56,20 @@ pub const TOKENS: &[&str] = &[
 pub const BUILT_IN: &[(&str, &str)] = &[
     ("breeze-light", include_str!("../themes/breeze-light.json")),
     ("breeze-dark", include_str!("../themes/breeze-dark.json")),
+    ("dark-oled", include_str!("../themes/dark-oled.json")),
 ];
+
+/// The theme a choice in Settings stands for. "system" follows the desktop,
+/// and so does a choice nobody knows.
+pub fn for_choice(choice: &str, system_dark: bool) -> &'static str {
+    match choice {
+        "light" => "breeze-light",
+        "dark" => "breeze-dark",
+        "oled" => "dark-oled",
+        _ if system_dark => "breeze-dark",
+        _ => "breeze-light",
+    }
+}
 
 impl Theme {
     pub fn parse(json: &str) -> Result<Theme, String> {
@@ -106,6 +119,10 @@ impl Theme {
             return Err(format!("{} has no art.placeholder colors", theme.id));
         }
         Ok(theme)
+    }
+
+    pub fn id(&self) -> &str {
+        &self.id
     }
 
     /// A built-in theme by id.
@@ -226,6 +243,25 @@ mod tests {
 
     fn close(a: f64, b: f64) -> bool {
         (a - b).abs() < 0.002
+    }
+
+    #[test]
+    fn a_choice_stands_for_its_theme_and_system_follows_the_desktop() {
+        assert_eq!(for_choice("light", true), "breeze-light");
+        assert_eq!(for_choice("dark", false), "breeze-dark");
+        assert_eq!(for_choice("oled", false), "dark-oled");
+        assert_eq!(for_choice("system", true), "breeze-dark");
+        assert_eq!(for_choice("system", false), "breeze-light");
+        assert_eq!(for_choice("gone", false), "breeze-light");
+        assert_eq!(Theme::built_in(for_choice("oled", false)).id(), "dark-oled");
+    }
+
+    #[test]
+    fn the_oled_theme_is_black_where_the_window_is() {
+        let theme = Theme::built_in("dark-oled");
+        assert!(theme.dark);
+        let window = theme.color("surface.window").unwrap();
+        assert!(window.r == 0.0 && window.g == 0.0 && window.b == 0.0 && close(window.a, 1.0));
     }
 
     #[test]

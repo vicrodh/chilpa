@@ -473,6 +473,9 @@ msgstr "DSD{} · PCM a {} Hz · {}"
 msgid "Dark"
 msgstr "Oscuro"
 
+msgid "Dark OLED"
+msgstr "Oscuro OLED"
+
 msgid "Date"
 msgstr "Fecha"
 
