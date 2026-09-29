@@ -33,6 +33,10 @@ pub mod qobject {
         type FolderModel = super::FolderModelRust;
         #[qinvokable]
         fn play_all(self: Pin<&mut FolderModel>);
+        /// Plays a folder and what is under it ("play"), or queues it
+        /// "next", "later" or at the end ("queue").
+        #[qinvokable]
+        fn act(self: Pin<&mut FolderModel>, path: &QString, action: &QString);
         #[qinvokable]
         fn pick(self: Pin<&mut FolderModel>);
         #[qinvokable]
@@ -140,12 +144,25 @@ impl qobject::FolderModel {
     }
 
     pub fn play_all(self: Pin<&mut Self>) {
-        let dir = self.rust().path.to_string();
+        let dir = self.rust().path.clone();
+        self.act(&dir, &QString::from("play"));
+    }
+
+    pub fn act(self: Pin<&mut Self>, path: &QString, action: &QString) {
+        let (dir, action) = (path.to_string(), action.to_string());
         let thread = self.qt_thread();
         worker::submit(move |reader| {
             let files = reader.folder_files(&dir);
+            let label = std::path::Path::new(&dir).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
             // Played on the window's thread: the player belongs to it.
-            let _ = thread.queue(move |_| app::with(|api| api.play_from(&files, 0)));
+            let _ = thread.queue(move |_| {
+                app::with(|api| match action.as_str() {
+                    "next" => api.play_next_here(&files),
+                    "later" => { api.play_later_here(&files, &label); }
+                    "queue" => api.enqueue_here(&files),
+                    _ => api.play_from(&files, 0),
+                })
+            });
         });
     }
 
@@ -194,7 +211,7 @@ impl qobject::FolderModel {
         if generation != self.rust().generation {
             return;
         }
-        let (folders, tracks) = (view.folders.len() as i32, view.tracks.len() as i32);
+        let (folders, tracks) = (view.folders.len() as i32, view.total as i32);
         if self.rust().content {
             TRACKS.with(|t| *t.borrow_mut() = Rc::new(view.tracks));
         }

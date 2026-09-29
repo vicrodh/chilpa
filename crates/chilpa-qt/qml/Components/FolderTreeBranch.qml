@@ -3,9 +3,9 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-// One lazily opened branch of the folder tree. Closed branches do not query
-// their children; the route's own ancestors open so the current folder stays
-// visible when navigation came from a breadcrumb or track menu.
+// One branch of the folder tree. A closed branch does not ask for what is
+// inside it. Its arrow opens and closes it; a click on it selects it, which
+// shows what it holds beside the tree and leaves the branch as it was.
 Column {
     id: branch
 
@@ -13,11 +13,23 @@ Column {
     required property string path
     property string activePath
     property int depth: 0
-    property bool manuallyExpanded: false
+    property int closed: 0
+    property var rail
+    // Its arrow was used: it is open or closed because somebody said so.
+    property bool turned: false
+    property bool expanded: false
 
-    readonly property bool active: activePath === path
-    readonly property bool activeWithin: active || activePath.startsWith(path + "/")
-    readonly property bool opened: manuallyExpanded || activeWithin
+    // A root is kept with the slash it was added with.
+    readonly property string place: path.replace(/\/+$/, "")
+    readonly property bool active: activePath === place
+    // The folder that is open is always in sight, until its branch is closed.
+    readonly property bool leadsToActive: activePath.startsWith(place + "/")
+    readonly property bool opened: turned ? expanded : leadsToActive
+
+    onClosedChanged: {
+        turned = true
+        expanded = false
+    }
 
     width: parent ? parent.width : 0
 
@@ -43,7 +55,12 @@ Column {
             rotation: branch.opened ? 90 : 0
 
             HoverHandler { cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: branch.manuallyExpanded = !branch.opened }
+            TapHandler {
+                onTapped: {
+                    branch.expanded = !branch.opened
+                    branch.turned = true
+                }
+            }
         }
         Icon {
             id: folderIcon
@@ -52,7 +69,7 @@ Column {
             anchors.verticalCenter: parent.verticalCenter
             glyph: branch.opened ? Icons.folderOpen : Icons.folder
             size: Metrics.iconSm
-            color: branch.active ? Theme.color.accent : Theme.color.textSecondary
+            color: Theme.color.accent
         }
         Text {
             anchors.left: folderIcon.right
@@ -69,12 +86,8 @@ Column {
 
         HoverHandler { id: hover }
         HoverHandler { cursorShape: Qt.PointingHandCursor }
-        TapHandler {
-            onTapped: {
-                branch.manuallyExpanded = true
-                Navigation.openFolder(branch.path)
-            }
-        }
+        TapHandler { onTapped: Navigation.openFolder(branch.path) }
+        TapHandler { acceptedButtons: Qt.RightButton; onTapped: (point) => branch.rail.context(branch, branch.path, point.position.x, point.position.y) }
     }
 
     Loader {
@@ -93,6 +106,7 @@ Column {
                     required property string name
                     required property string path
                     property string activePath: branch.activePath
+                    property int closed: branch.closed
                     width: branch.width
                     height: item ? item.implicitHeight : 0
 
@@ -100,9 +114,12 @@ Column {
                         name: child.name,
                         path: child.path,
                         activePath: child.activePath,
+                        closed: child.closed,
+                        rail: branch.rail,
                         depth: branch.depth + 1
                     })
                     onActivePathChanged: if (item) item.activePath = activePath
+                    onClosedChanged: if (item) item.closed = closed
                 }
             }
         }

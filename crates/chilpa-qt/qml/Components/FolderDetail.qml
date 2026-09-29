@@ -1,0 +1,165 @@
+import QtQuick
+import QtQuick.Controls.Basic
+import com.blitzfc.chilpa
+import "../Theme"
+import "../Primitives"
+
+// The folder that is open: what it is called and how much it holds, the
+// folders inside it, and its own tracks. Its play button plays it with
+// everything under it.
+Item {
+    id: detail
+
+    property FolderModel folder
+    property TrackListModel tracks
+    property FolderMenu menu
+    property bool grid: SettingsModel.kept("ui.folders.detail") !== "list"
+    readonly property string name: folder.path.replace(/\/+$/, "").split("/").pop()
+    readonly property string sought: find.text.trim().toLowerCase()
+
+    function context(item, path, left, top) {
+        const at = item.mapToItem(detail.menu.parent, left, top)
+        detail.menu.show(path, at.x, at.y)
+    }
+
+    Text {
+        visible: detail.folder.path === ""
+        anchors.centerIn: parent
+        text: I18n.tr("Select a folder to see its contents.", I18n.rev)
+        font.pointSize: Type.body
+        color: Theme.color.textSecondary
+    }
+
+    Item {
+        id: head
+        visible: detail.folder.path !== ""
+        width: parent.width
+        height: Metrics.button40
+
+        IconButton {
+            id: play
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Play", I18n.rev)
+            glyph: Icons.playerPlayFilled
+            filled: true
+            round: true
+            tone: "solid"
+            size: Metrics.button40
+            onClicked: detail.folder.playAll()
+        }
+        Column {
+            anchors.left: play.right
+            anchors.leftMargin: Metrics.gap12
+            anchors.right: tools.left
+            anchors.rightMargin: Metrics.gap12
+            anchors.verticalCenter: parent.verticalCenter
+
+            Text { width: parent.width; text: detail.name; elide: Text.ElideMiddle; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
+            Text { text: I18n.trCount("{} track", "{} tracks", detail.folder.tracks, I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+        }
+        SegmentedControl {
+            id: tools
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            options: [
+                { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) },
+                { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) }
+            ]
+            current: detail.grid ? 0 : 1
+            onActivated: (index) => {
+                detail.grid = index === 0
+                SettingsModel.keep("ui.folders.detail", detail.grid ? "grid" : "list")
+            }
+        }
+    }
+
+    Flickable {
+        visible: detail.folder.path !== ""
+        anchors.top: head.bottom
+        anchors.topMargin: Metrics.gap16
+        anchors.bottom: parent.bottom
+        width: parent.width
+        clip: true
+        contentWidth: width
+        contentHeight: body.height + Metrics.contentBottom
+        boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.vertical: ScrollBar {}
+
+        Column {
+            id: body
+            width: parent.width - Metrics.gap10
+            spacing: Metrics.gap12
+
+            Item {
+                visible: detail.folder.folders > 0
+                width: parent.width
+                height: Math.max(folders.height, find.height)
+
+                SectionHeader { id: folders; anchors.verticalCenter: parent.verticalCenter; width: parent.width - find.width - Metrics.gap12; title: I18n.tr("Folders", I18n.rev) }
+                SearchField {
+                    id: find
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: Math.min(Metrics.screenSearch, parent.width * Metrics.folderTreeShare)
+                    placeholder: I18n.tr("Search folders", I18n.rev)
+                    onEscaped: text = ""
+                }
+            }
+            Flow {
+                id: cards
+                readonly property int columns: Math.max(1, Math.floor((width + Metrics.gap12) / (Metrics.folderCardMin + Metrics.gap12)))
+                readonly property real cardWidth: Math.floor((width - (columns - 1) * Metrics.gap12) / columns)
+                visible: detail.grid && detail.folder.folders > 0
+                width: parent.width
+                spacing: Metrics.gap12
+
+                Repeater {
+                    model: detail.grid ? detail.folder : null
+                    FolderCard {
+                        id: card
+                        visible: detail.sought === "" || name.toLowerCase().includes(detail.sought)
+                        width: cards.cardWidth
+                        onOpen: Navigation.openFolder(path)
+                        onContext: (left, top) => detail.context(card, path, left, top)
+                    }
+                }
+            }
+            Column {
+                visible: !detail.grid && detail.folder.folders > 0
+                width: parent.width
+
+                Repeater {
+                    model: detail.grid ? null : detail.folder
+                    FolderEntryRow {
+                        id: entry
+                        visible: detail.sought === "" || name.toLowerCase().includes(detail.sought)
+                        width: body.width
+                        height: visible ? Metrics.folderListRow : 0
+                        onOpen: Navigation.openFolder(path)
+                        onContext: (left, top) => detail.context(entry, path, left, top)
+                    }
+                }
+            }
+
+            SectionHeader { visible: detail.tracks.count > 0; width: parent.width; title: I18n.tr("Tracks", I18n.rev) }
+            TrackList {
+                visible: detail.tracks.count > 0
+                width: parent.width
+                height: visible ? implicitHeight : 0
+                fitContent: true
+                header: false
+                rich: true
+                showAlbum: false
+                showRating: width > Metrics.folderTreeWidth * 2 // derived: the title comes before the stars
+                model: detail.tracks
+            }
+            Text {
+                visible: !detail.folder.loading && detail.folder.tracks === 0
+                topPadding: Metrics.section
+                text: I18n.tr("This folder has no tracks.", I18n.rev)
+                font.pointSize: Type.body
+                color: Theme.color.textSecondary
+            }
+        }
+    }
+}

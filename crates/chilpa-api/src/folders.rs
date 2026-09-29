@@ -169,9 +169,10 @@ pub(crate) fn disk_folder(dir: &std::path::Path) -> crate::FolderView {
     }
     folders.sort_by(|a, b| in_natural_order(std::path::Path::new(&a.name), std::path::Path::new(&b.name)));
     files.sort_by(|a, b| in_natural_order(a, b));
-    let tracks = chilpa_core::sacd_tracks::expand(&files)
+    let tracks: Vec<crate::TrackRow> = chilpa_core::sacd_tracks::expand(&files)
         .iter()
         .map(|p| crate::browse::file_row(&p.display().to_string()))
         .collect();
-    crate::FolderView { folders, tracks, in_library: false }
+    let total = tracks.len();
+    crate::FolderView { folders, tracks, in_library: false, total }
 }
