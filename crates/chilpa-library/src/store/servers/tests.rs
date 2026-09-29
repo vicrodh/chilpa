@@ -359,3 +359,23 @@ fn a_queue_entry_leads_back_to_its_track_and_says_whether_it_can_play() {
     assert_eq!(lib.unplayable_entries(&entries).unwrap(), HashSet::from([entry]), "what the library does not know is not refused");
     let _ = id;
 }
+
+#[test]
+fn the_artists_a_server_gives_apart_are_kept_and_go_with_the_server() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.add_server(&new_server("aaaa", "server-id-1")).unwrap();
+    let joined = ServerTrack { artist: "One, Two".into(), artists: vec!["One".into(), "Two".into()], ..track("t1", "Record") };
+    synced(&lib, source, &[joined, track("t2", "Record")]);
+
+    assert_eq!(lib.credit_names("One, Two").unwrap(), ["One", "Two"]);
+    let filed: Vec<String> = {
+        let mut stmt = lib.connection().prepare("SELECT DISTINCT artist FROM album_members ORDER BY artist").unwrap();
+        let rows = stmt.query_map([], |r| r.get(0)).unwrap();
+        rows.collect::<rusqlite::Result<_>>().unwrap()
+    };
+    assert_eq!(filed, ["Band", "One", "Two"], "nobody is filed under the joined credit");
+
+    lib.remove_source(source).unwrap();
+    let left: i64 = lib.connection().query_row("SELECT count(*) FROM credit_parts", [], |r| r.get(0)).unwrap();
+    assert_eq!(left, 0);
+}

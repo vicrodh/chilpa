@@ -69,6 +69,7 @@ pub(crate) fn track(stored: &chilpa_library::StoredServer, t: chilpa_servers::Tr
         external_id: entry(stored, &t.id),
         title: t.title,
         artist: t.artist,
+        artists: t.artists,
         album: t.album,
         album_artist: t.album_artist,
         album_key: t.album_id,

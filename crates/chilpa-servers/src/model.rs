@@ -153,6 +153,9 @@ pub struct Track {
     pub id: String,
     pub title: String,
     pub artist: String,
+    /// The artists apart, when the server gives them so and `artist` joins
+    /// several. Empty when it gives one line.
+    pub artists: Vec<String>,
     pub album: String,
     pub album_artist: String,
     pub album_id: String,

@@ -61,6 +61,8 @@ pub struct ServerTrack {
     pub title: String,
     /// The performers, as one line.
     pub artist: String,
+    /// The artists the server gives apart, when `artist` joins several.
+    pub artists: Vec<String>,
     pub album: String,
     pub album_artist: String,
     /// The record's id on its server. Tracks that share it are one record.
@@ -230,6 +232,9 @@ impl Library {
         let tx = self.own_transaction()?;
         let now = now_unix();
         for track in tracks {
+            if track.artists.len() > 1 {
+                self.state_credit(&track.artist, &track.artists)?;
+            }
             let album_id = if track.album.trim().is_empty() {
                 None
             } else {
@@ -317,6 +322,7 @@ impl Library {
         )?;
         tx.execute("UPDATE servers SET synced_at = ?2 WHERE source_id = ?1", params![source_id, now_unix()])?;
         tx.finish()?;
+        self.match_credits()?;
         Ok(gone)
     }
 
@@ -487,6 +493,14 @@ impl Library {
         }
         tx.execute("DELETE FROM roots WHERE source_id = ?1", params![source_id])?;
         tx.execute("DELETE FROM sources WHERE id = ?1", params![source_id])?;
+        // The credits only it carried name nobody now.
+        self.db.execute(
+            "DELETE FROM credit_parts WHERE credit NOT IN
+                 (SELECT trim(artist) FROM tracks UNION SELECT trim(album_credit) FROM tracks
+                  UNION SELECT trim(album_artist) FROM albums)",
+            [],
+        )?;
+        self.match_credits()?;
         self.rebuild_rollups()?;
         tx.finish()
     }

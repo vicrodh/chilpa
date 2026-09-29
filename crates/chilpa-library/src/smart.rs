@@ -195,8 +195,8 @@ fn condition(rule: &Rule, i: usize, now: i64) -> (String, Vec<Value>) {
             vec![Value::Integer(*ms as i64)],
         ),
         Rule::ArtistIs(name) => (
-            "t.artist = ? COLLATE NOCASE".into(),
-            vec![Value::Text(name.clone())],
+            "(t.artist = ? COLLATE NOCASE OR EXISTS (SELECT 1 FROM credit_parts p WHERE p.credit = trim(t.artist) AND p.name = ?))".into(),
+            vec![Value::Text(name.clone()), Value::Text(name.clone())],
         ),
         // Whichever analyzer ran last: the list says what matches today.
         // See `join` for why this is a join and not an `EXISTS`.

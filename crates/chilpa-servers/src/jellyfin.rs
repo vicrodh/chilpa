@@ -253,6 +253,7 @@ fn track(item: &Value) -> Option<Track> {
         album: string(item, "Album").unwrap_or_default(),
         album_artist: string(item, "AlbumArtist").unwrap_or_else(|| artist.clone()),
         artist,
+        artists,
         album_id,
         cover,
         disc: number(item, "ParentIndexNumber").map(|n| n as u16),

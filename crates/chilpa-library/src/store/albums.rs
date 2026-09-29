@@ -189,9 +189,12 @@ impl Library {
              FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> ?1 COLLATE NOCASE
+               AND NOT EXISTS (SELECT 1 FROM credit_parts p WHERE p.credit = trim(a.album_artist) AND p.name = ?1)
                AND EXISTS (SELECT 1 FROM tracks t
                            WHERE t.album_id = a.id AND t.present = 1 AND
-                           (t.artist = ?1 COLLATE NOCASE OR t.album_credit = ?1 COLLATE NOCASE))
+                           (t.artist = ?1 COLLATE NOCASE OR t.album_credit = ?1 COLLATE NOCASE
+                            OR EXISTS (SELECT 1 FROM credit_parts p
+                                       WHERE p.name = ?1 AND p.credit IN (trim(t.artist), trim(t.album_credit)))))
              ORDER BY a.year DESC, a.title COLLATE NOCASE",
         )?;
         let rows = stmt.query_map(params![artist], |r| {
@@ -266,7 +269,8 @@ impl Library {
                  SELECT a.id AS id
                  FROM albums a
                  JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
-                 WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE)
+                 WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE
+                        OR EXISTS (SELECT 1 FROM credit_parts p WHERE p.credit = trim(a.album_artist) AND p.name = ?3))
                  ORDER BY {}
                  LIMIT ?1 OFFSET ?2
              )

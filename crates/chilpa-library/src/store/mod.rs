@@ -6,6 +6,7 @@
 
 pub mod albums;
 pub mod browse;
+pub mod credits;
 pub mod edit;
 pub mod features;
 mod genres;
@@ -127,6 +128,12 @@ impl Library {
         // And records an earlier scan split by artist, or credited to an
         // empty album artist tag, the same way.
         lib.assemble_local_releases()?;
+        // And credits whose artists the library already has on their own.
+        // Another connection writing right now is no reason not to open:
+        // the next one that opens does it.
+        if let Err(e) = lib.match_credits() {
+            eprintln!("chilpa-library: credits were not matched this time: {e}");
+        }
         Ok(lib)
     }
 
