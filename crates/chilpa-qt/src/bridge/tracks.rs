@@ -105,6 +105,9 @@ pub mod qobject {
         fn credit_of(self: &TrackListModel, row: i32) -> QString;
         #[qinvokable]
         fn clear_selection(self: Pin<&mut TrackListModel>);
+        /// Selects every track of the list.
+        #[qinvokable]
+        fn select_all(self: Pin<&mut TrackListModel>);
     }
 
     unsafe extern "RustQt" {
@@ -725,6 +728,15 @@ impl qobject::TrackListModel {
             }
             _ => {}
         });
+    }
+
+    pub fn select_all(mut self: Pin<&mut Self>) {
+        let all: HashSet<i64> = match &self.rust().rows {
+            Rows::Loaded(_) => self.rust().loaded_tracks().iter().map(|t| t.id).collect(),
+            Rows::Snapshot { ids, .. } => ids.ids.iter().copied().collect(),
+        };
+        self.as_mut().rust_mut().selected = all;
+        self.changed(ROLE_SELECTED);
     }
 
     pub fn clear_selection(mut self: Pin<&mut Self>) {

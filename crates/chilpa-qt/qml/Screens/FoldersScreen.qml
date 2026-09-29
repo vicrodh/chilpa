@@ -44,6 +44,7 @@ Item {
         height: Metrics.shelfHeader
 
         Text {
+            id: title
             anchors.verticalCenter: parent.verticalCenter
             text: I18n.tr("Folders", I18n.rev)
             font.pointSize: Type.title
@@ -60,11 +61,13 @@ Item {
                 id: find
                 anchors.verticalCenter: parent.verticalCenter
                 visible: page.flat
-                width: Metrics.screenSearch
+                // What the title and the other tools leave, and no less than it takes to type in.
+                width: Math.max(Metrics.folderTreeMin, Math.min(Metrics.screenSearch, head.width - title.width - sort.width - open.width - modes.width - Metrics.folderTreeMin))
                 placeholder: I18n.tr("Search", I18n.rev)
                 onEscaped: text = ""
             }
             SortButton {
+                id: sort
                 anchors.verticalCenter: parent.verticalCenter
                 visible: page.flat
                 value: Library.albumOrder
@@ -77,6 +80,7 @@ Item {
                 onPicked: (value) => Library.albumOrder = value
             }
             PillButton {
+                id: open
                 glyph: Icons.folderPlus
                 text: I18n.tr("Open a folder…", I18n.rev)
                 onClicked: current.pick()
@@ -90,6 +94,7 @@ Item {
                 onClicked: current.playCd()
             }
             SegmentedControl {
+                id: modes
                 anchors.verticalCenter: parent.verticalCenter
                 options: [
                     { glyph: Icons.disc, tip: I18n.tr("Flat", I18n.rev) },

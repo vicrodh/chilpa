@@ -34,6 +34,23 @@ Item {
         playingPath: Player.path
     }
 
+    // Escape lets the selection go; Ctrl+A takes every track.
+    Shortcut {
+        enabled: page.selectionMode
+        sequence: "Escape"
+        onActivated: {
+            tracks.clearSelection()
+            page.selectionMode = false
+        }
+    }
+    Shortcut {
+        sequence: StandardKey.SelectAll
+        onActivated: {
+            page.selectionMode = true
+            tracks.selectAll()
+        }
+    }
+
     // What is typed is asked for once the typing stops.
     Timer {
         id: settle
