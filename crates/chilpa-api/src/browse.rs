@@ -248,10 +248,12 @@ impl Reader {
         ids.chunks(500).flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default()).map(|t| t.external_id).collect()
     }
 
-    /// Every artist with something present, by name, with their records,
-    /// tracks and a cover of theirs.
-    pub fn artists(&self) -> Vec<crate::Artist> {
-        self.lib.presented_artists(1_000_000, 0).unwrap_or_default().into_iter().map(artist_of).collect()
+    /// The artists with something present, by name, with their records,
+    /// tracks and a cover of theirs. `role` is "all" for everyone who plays
+    /// on a track; anything else leaves who a record is credited to.
+    pub fn artists(&self, role: &str) -> Vec<crate::Artist> {
+        let role = chilpa_library::ArtistRole::from_name(role);
+        self.lib.artists_by_role(role).unwrap_or_default().into_iter().map(artist_of).collect()
     }
 
     /// What the search box finds for `text`: artists, records and songs, up
@@ -713,9 +715,11 @@ mod tests {
             filter.queries[2].clear();
             filter.artists = vec![artist.into()];
             assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
-            assert_eq!(reader.artists().iter().find(|a| a.name == artist).unwrap().album_count, 1);
-            assert_eq!(reader.artists().iter().find(|a| a.name == artist).unwrap().track_count, 1);
+            assert_eq!(reader.artists("all").iter().find(|a| a.name == artist).unwrap().album_count, 1);
+            assert_eq!(reader.artists("all").iter().find(|a| a.name == artist).unwrap().track_count, 1);
         }
+        let credited: Vec<(String, usize, usize)> = reader.artists("album").into_iter().map(|a| (a.name, a.album_count, a.track_count)).collect();
+        assert_eq!(credited, [("Various Artists".to_string(), 1, 2)], "who plays on a compilation is not credited with it");
     }
 
     #[test]

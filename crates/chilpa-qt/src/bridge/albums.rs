@@ -33,7 +33,8 @@ pub mod qobject {
         /// records, by `key`), "sameArtist" and "related" (an album id),
         /// "appearsOn" (the compilations they are on)
         /// "folder" (the records directly in its current directory) or
-        /// "artists" (every artist, as round cards).
+        /// "artists" (the artists, as round cards; `key` is "all" for
+        /// everyone who plays, and the album artists otherwise).
         #[qproperty(QString, kind)]
         #[qproperty(QString, key)]
         /// For "all": "artist", "title", "year", "added", "played" or
@@ -179,7 +180,7 @@ pub struct AlbumGridRust {
     filter: QString,
     expanded: i32,
     anchor: Option<i32>,
-    /// Every artist, for "artists", kept so the filter needs no query.
+    /// The artists of "artists", kept so the filter needs no query.
     artists: Vec<chilpa_api::Artist>,
     list: Albums,
     /// Where each group starts, and the rows that leaves at this width.
@@ -320,9 +321,10 @@ impl qobject::AlbumGridModel {
                 // title goes, how many records it has under it.
                 let generation = self.rust().generation + 1;
                 self.as_mut().rust_mut().generation = generation;
+                let role = self.rust().key.to_string();
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let artists = reader.artists();
+                    let artists = reader.artists(&role);
                     let _ = thread.queue(move |model| model.arrive_artists(generation, artists));
                 });
                 return;

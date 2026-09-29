@@ -166,6 +166,9 @@ msgstr "Todo"
 msgid "All ({})"
 msgstr "Todo ({})"
 
+msgid "All artists"
+msgstr "Todos los artistas"
+
 msgid "All music"
 msgstr "Toda la música"
 
@@ -595,6 +598,9 @@ msgstr "Cada pista al mismo volumen, según su ReplayGain. Una pista cuya gananc
 
 msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
 msgstr "Cada pista al mismo volumen, según su ReplayGain. Las pistas modificadas se muestran como procesadas."
+
+msgid "Everyone who plays on a track"
+msgstr "Todos los que tocan en alguna pista"
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que la Mac convierta."
@@ -1662,6 +1668,9 @@ msgstr "A donde el sistema esté mandando el sonido"
 
 msgid "Which of its libraries come in?"
 msgstr "¿Cuáles de sus bibliotecas entran?"
+
+msgid "Who the records are credited to"
+msgstr "A quién se acreditan los discos"
 
 msgid "Windows audio would not answer ({})"
 msgstr "el audio de Windows no respondió ({})"
