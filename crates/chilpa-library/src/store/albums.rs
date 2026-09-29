@@ -213,42 +213,6 @@ impl Library {
         rows.collect()
     }
 
-    /// Nearby records from the same source, ranked by shared genre and a
-    /// five-year window around the requested album. The final stable shuffle
-    /// keeps repeat visits varied without changing underneath one session.
-    pub fn related_albums(&self, album_id: i64, limit: usize) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
-        let mut stmt = self.db.prepare(
-            "WITH target AS (
-                 SELECT a.year, min(t.source_id) AS source_id,
-                        (SELECT tg.genre_id FROM tracks gt
-                         JOIN track_genres tg ON tg.track_id = gt.id
-                         WHERE gt.album_id = a.id AND gt.present = 1
-                         GROUP BY tg.genre_id ORDER BY count(*) DESC LIMIT 1) AS genre_id
-                 FROM albums a JOIN tracks t ON t.album_id = a.id AND t.present = 1
-                 WHERE a.id = ?1 GROUP BY a.id
-             )
-             SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
-                    r.present_tracks, r.plays
-             FROM albums a
-             JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
-             JOIN tracks t ON t.album_id = a.id AND t.present = 1
-             LEFT JOIN track_genres tg ON tg.track_id = t.id
-             CROSS JOIN target x
-             WHERE a.id <> ?1
-             GROUP BY a.id
-             HAVING max(t.source_id = x.source_id) = 1
-             ORDER BY max(tg.genre_id = x.genre_id) DESC,
-                      CASE WHEN a.year BETWEEN x.year - 5 AND x.year + 5 THEN 0 ELSE 1 END,
-                      abs(coalesce(a.year, x.year) - coalesce(x.year, a.year)),
-                      ((a.id * 1103515245 + ?1) & 2147483647)
-             LIMIT ?2",
-        )?;
-        let rows = stmt.query_map(params![album_id, limit as i64], |r| {
-            Ok((StoredAlbum { id: r.get(0)?, title: r.get(1)?, album_artist: r.get(2)?, year: r.get(3)?, artwork_path: r.get(4)?, track_count: r.get::<_, i64>(5)? as usize }, r.get::<_, i64>(6)? as usize))
-        })?;
-        rows.collect()
-    }
-
     /// The same, but only one artist's when one is asked for.
     pub fn albums_filtered(
         &self,
@@ -653,13 +617,6 @@ mod tests {
         assert_eq!(lib.albums_filtered(AlbumSort::Title, None, 50, 0).unwrap().len(), 3);
         // And a name that does not exist brings nothing, without crashing.
         assert!(lib.albums_filtered(AlbumSort::Title, Some("Nobody"), 50, 0).unwrap().is_empty());
-    }
-
-    #[test]
-    fn related_records_stay_on_the_source_and_near_the_year() {
-        let lib = sample_library();
-        let ids: Vec<i64> = lib.related_albums(1, 8).unwrap().into_iter().map(|(album, _)| album.id).collect();
-        assert_eq!(ids, [3, 2]);
     }
 
     #[test]

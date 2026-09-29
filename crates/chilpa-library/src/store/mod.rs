@@ -17,6 +17,7 @@ pub mod plays;
 pub mod listening;
 pub mod ratings;
 pub mod regroup;
+mod related;
 pub(crate) mod reach;
 pub mod servers;
 mod compilations;
@@ -66,6 +67,7 @@ pub struct StoredRoot {
 pub struct Library {
     pub(crate) db: Connection,
     versions: std::cell::RefCell<Option<versions::CachedVersions>>,
+    related: std::cell::RefCell<Option<related::Profiles>>,
 }
 
 /// A transaction of one's own, or somebody else's.
@@ -121,7 +123,7 @@ impl Library {
         // statistics of an empty database and would keep them until its next
         // scan, which may be never.
         schema::update_statistics_if_stale(&db)?;
-        let lib = Self { db, versions: Default::default() };
+        let lib = Self { db, versions: Default::default(), related: Default::default() };
         // Genres an earlier scan stored joined are split once, here: files
         // that did not change are never read again to do it.
         lib.split_stored_genres()?;
@@ -150,7 +152,7 @@ impl Library {
                 Some(format!("library reader needs schema version {}, found {version}; open the main library first", schema::VERSION)),
             ));
         }
-        Ok(Self { db, versions: Default::default() })
+        Ok(Self { db, versions: Default::default(), related: Default::default() })
     }
 
     /// An in-memory library, for tests.
@@ -165,7 +167,7 @@ impl Library {
         let db = Connection::open_in_memory()?;
         schema::apply_pragmas(&db)?;
         schema::migrate(&db)?;
-        Ok(Self { db, versions: Default::default() })
+        Ok(Self { db, versions: Default::default(), related: Default::default() })
     }
 
     /// Lets the planner see the library it actually has.
