@@ -5,6 +5,7 @@
 //! What stays here is the connection, sources and roots, genres and search.
 
 pub mod albums;
+pub mod artists;
 pub mod browse;
 pub mod credits;
 pub mod edit;
@@ -26,6 +27,7 @@ pub(crate) mod releases;
 pub mod versions;
 
 pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
+pub use artists::{is_various, ArtistRole};
 pub use edit::{AlbumEdit, EditTrack, Edited, Put, TrackEdit};
 pub use browse::{letter_of, BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
 pub use find::Found;
