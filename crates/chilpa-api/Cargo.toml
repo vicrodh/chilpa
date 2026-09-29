@@ -21,6 +21,8 @@ chilpa-meta.workspace = true
 # My servers' protocols (ADR-017).
 chilpa-servers.workspace = true
 chilpa-i18n.workspace = true
+# The window's controls, where they are the system's.
+chilpa-appkit.workspace = true
 # Approvals are kept as JSON, readable by hand on purpose.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

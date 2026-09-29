@@ -54,6 +54,13 @@ TARGETS = [
 ]
 
 
+# A platform's own crate, against the one target it is written for. It has
+# no C in it, so it is checked from here whatever the machine.
+BACKENDS = [
+    ("chilpa-appkit", "aarch64-apple-darwin", "macOS"),
+]
+
+
 def installed():
     out = subprocess.run(
         ["rustup", "target", "list", "--installed"], capture_output=True, text=True
@@ -103,6 +110,16 @@ def main():
             )
         else:
             failed.append((name, target, output))
+    for crate, target, name in BACKENDS:
+        if target not in have:
+            continue
+        done = subprocess.run(
+            ["cargo", "check", "--quiet", "--target", target, "-p", crate], capture_output=True, text=True
+        )
+        if done.returncode == 0:
+            print(f"platforms: {name} ({target}) -- {crate} compiles")
+        else:
+            failed.append((f"{name}, {crate}", target, done.stderr))
     for name, target, output in failed:
         print()
         print(f"platforms: {name} ({target}) FAILED")

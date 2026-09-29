@@ -428,6 +428,7 @@ dependencies = [
 name = "chilpa-api"
 version = "0.0.0"
 dependencies = [
+ "chilpa-appkit",
  "chilpa-auth",
  "chilpa-cast",
  "chilpa-core",
@@ -449,6 +450,15 @@ dependencies = [
  "serde_json",
  "tiny_http",
  "wat",
+]
+
+[[package]]
+name = "chilpa-appkit"
+version = "0.0.0"
+dependencies = [
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
 ]
 
 [[package]]
