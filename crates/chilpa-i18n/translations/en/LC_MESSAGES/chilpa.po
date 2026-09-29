@@ -166,6 +166,9 @@ msgstr ""
 msgid "All ({})"
 msgstr ""
 
+msgid "All artists"
+msgstr ""
+
 msgid "All music"
 msgstr ""
 
@@ -594,6 +597,9 @@ msgid "Every track at one loudness, by its ReplayGain. A track whose gain change
 msgstr ""
 
 msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
+msgstr ""
+
+msgid "Everyone who plays on a track"
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
@@ -1661,6 +1667,9 @@ msgid "Wherever the system is sending sound"
 msgstr ""
 
 msgid "Which of its libraries come in?"
+msgstr ""
+
+msgid "Who the records are credited to"
 msgstr ""
 
 msgid "Windows audio would not answer ({})"
