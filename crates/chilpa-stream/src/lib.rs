@@ -12,10 +12,14 @@
 pub mod icy;
 pub mod request;
 pub mod fetch;
+pub mod ranged;
+pub mod server;
 
 pub use icy::IcyReader;
 pub use request::send as send_request;
 pub use fetch::{fetch, Fetch, FetchError, Fetched};
+pub use ranged::{Ranged, RangedError, RangedRequest};
+pub use server::{call as call_server, Call};
 
 use std::io::{self, Read, Seek, SeekFrom};
 use std::sync::{Arc, Mutex};

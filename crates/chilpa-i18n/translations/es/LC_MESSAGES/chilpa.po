@@ -1844,11 +1844,17 @@ msgstr "eso no es un número de release de Discogs"
 msgid "that is not a MusicBrainz id"
 msgstr "eso no es un id de MusicBrainz"
 
+msgid "that is not a server address"
+msgstr "esa no es la dirección de un servidor"
+
 msgid "that is not something {} can be asked for"
 msgstr "eso no es algo que se le pueda pedir a {}"
 
 msgid "that list is empty"
 msgstr "esa lista está vacía"
+
+msgid "that server name does not resolve"
+msgstr "ese nombre de servidor no se resuelve"
 
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
@@ -1921,6 +1927,12 @@ msgstr "los cambios se guardaron"
 
 msgid "the client_id came in empty"
 msgstr "el client_id viene vacío"
+
+msgid "the connection failed: interrupted"
+msgstr "la conexión falló: se interrumpió"
+
+msgid "the connection failed: {}"
+msgstr "la conexión falló: {}"
 
 msgid "the cover could not be kept: {}"
 msgstr "la carátula no se pudo guardar: {}"
@@ -2132,11 +2144,44 @@ msgstr "el escaneo falló: {}"
 msgid "the sector is not encoded the way its area says"
 msgstr "el sector no está codificado como dice su área"
 
+msgid "the server answered with a message instead of the file"
+msgstr "el servidor respondió con un mensaje en lugar del archivo"
+
+msgid "the server answered with something that is not HTTP"
+msgstr "el servidor respondió con algo que no es HTTP"
+
+msgid "the server answered {}"
+msgstr "el servidor respondió {}"
+
 msgid "the server answering is {}, not PipeWire"
 msgstr "el servidor que contesta es {}, no PipeWire"
 
+msgid "the server cannot send part of a file, and this one is too big to take whole"
+msgstr "el servidor no puede enviar parte de un archivo, y este es demasiado grande para recibirlo completo"
+
+msgid "the server could not be reached"
+msgstr "no se pudo llegar al servidor"
+
+msgid "the server did not say how long the file is"
+msgstr "el servidor no dijo cuánto mide el archivo"
+
+msgid "the server is converting the file instead of sending it as it is"
+msgstr "el servidor está convirtiendo el archivo en lugar de enviarlo como es"
+
+msgid "the server sent more than was asked for"
+msgstr "el servidor envió más de lo que se pidió"
+
 msgid "the server sent no audio: {}"
 msgstr "el servidor no mandó audio: {}"
+
+msgid "the server stopped sending the file"
+msgstr "el servidor dejó de enviar el archivo"
+
+msgid "the server took too long to answer"
+msgstr "el servidor tardó demasiado en responder"
+
+msgid "the server's certificate is not trusted by this system"
+msgstr "este sistema no confía en el certificado del servidor"
 
 msgid "the sidecar could not be written: {}"
 msgstr "el sidecar no se pudo escribir: {}"
