@@ -80,7 +80,7 @@ virt
 # del sistema (ALSA, CoreAudio, WASAPI, ioctl de CD-ROM), siglas, jerga de
 # audio y nombres propios.
 abi
-addr
+ip
 adr
 aead
 alac
@@ -461,3 +461,23 @@ discogs
 dsdu
 # Coordinated Universal Time, used for listening timestamps and local offsets.
 utc
+# My servers' protocols and what they speak (ADR-017).
+subsonic
+opensubsonic
+navidrome
+gonic
+funkwhale
+jellyfin
+emby
+plex
+etag
+json
+xml
+tls
+ipv6
+lan
+flac
+hexdigit
+syncer
+ip
+addr

@@ -13,11 +13,13 @@
 pub mod artwork;
 pub mod quality;
 pub mod queue;
+pub mod remote;
 pub mod source;
 pub mod track;
 
 pub use artwork::ArtworkRef;
 pub use quality::AudioQuality;
+pub use remote::RemoteEntry;
 pub use queue::{OrderError, PlaybackState, Progress, Queue, QueueItem, RepeatMode};
 pub use source::{preferred, Availability, Reachability, SourceId};
 pub use track::{AlbumRef, ArtistRef, Track, TrackRef};
