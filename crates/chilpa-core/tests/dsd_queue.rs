@@ -9,7 +9,7 @@ use chilpa_audio::negotiate::{DeviceCaps, Transform};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use chilpa_audio::negotiate::Policy;
 use chilpa_core::player::{Player, PlayerEvent};
-use chilpa_core::queue_playback::{play_queue_with, Controls, SharedQueue};
+use chilpa_core::queue_playback::{play_queue_with, Controls, DsdMode, SharedQueue};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -234,6 +234,39 @@ fn a_shared_route_converts_dsd_to_pcm() {
     assert!(!delivery.nothing_was_converted());
     assert_eq!(results[0].frames(), 8_820, "a tenth of a second of PCM");
     let _ = std::fs::remove_file(track);
+}
+
+#[test]
+fn dsd_asked_untouched_is_converted_where_it_cannot_go_untouched() {
+    // Through a sound server, and on a card that takes neither DoP nor the
+    // native format: the record plays as PCM, whichever was asked for.
+    let caps = DeviceCaps {
+        sample_rates: vec![44_100, 88_200],
+        formats: vec![SampleFormat::S24In32],
+        channels: vec![2],
+        probed: true,
+    };
+    for (mode, direct) in [(DsdMode::Native, false), (DsdMode::Dop, false), (DsdMode::Native, true)] {
+        let track = dsf_of("asked-untouched", u64::from(RATE) / 10);
+        let controls = Controls::new();
+        controls.dsd_mode.set(mode);
+        controls.direct_dsd.set(direct);
+        let mut delivery = None;
+        play_queue_with(
+            &SharedQueue::new(vec![track.clone()]),
+            &caps,
+            Policy::AllowAnything,
+            &controls,
+            |format| Ok(Swallow(format)),
+            &mut |_, _, opened| delivery = Some(opened.clone()),
+            &mut |_, _| {},
+        )
+        .unwrap_or_else(|e| panic!("{mode:?}, direct {direct}: the queue runs, not {e:?}"));
+        let delivery = delivery.unwrap_or_else(|| panic!("{mode:?}, direct {direct}: the track started"));
+        assert!(delivery.transforms.contains(&Transform::DsdToPcm), "{mode:?}, direct {direct}");
+        assert!(!delivery.nothing_was_converted(), "and nothing calls it bit-perfect");
+        let _ = std::fs::remove_file(track);
+    }
 }
 
 #[test]
