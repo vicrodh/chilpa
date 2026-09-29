@@ -1844,10 +1844,16 @@ msgstr ""
 msgid "that is not a MusicBrainz id"
 msgstr ""
 
+msgid "that is not a server address"
+msgstr ""
+
 msgid "that is not something {} can be asked for"
 msgstr ""
 
 msgid "that list is empty"
+msgstr ""
+
+msgid "that server name does not resolve"
 msgstr ""
 
 msgid "that source does not use OAuth"
@@ -1920,6 +1926,12 @@ msgid "the changes were saved"
 msgstr ""
 
 msgid "the client_id came in empty"
+msgstr ""
+
+msgid "the connection failed: interrupted"
+msgstr ""
+
+msgid "the connection failed: {}"
 msgstr ""
 
 msgid "the cover could not be kept: {}"
@@ -2132,10 +2144,43 @@ msgstr ""
 msgid "the sector is not encoded the way its area says"
 msgstr ""
 
+msgid "the server answered with a message instead of the file"
+msgstr ""
+
+msgid "the server answered with something that is not HTTP"
+msgstr ""
+
+msgid "the server answered {}"
+msgstr ""
+
 msgid "the server answering is {}, not PipeWire"
 msgstr ""
 
+msgid "the server cannot send part of a file, and this one is too big to take whole"
+msgstr ""
+
+msgid "the server could not be reached"
+msgstr ""
+
+msgid "the server did not say how long the file is"
+msgstr ""
+
+msgid "the server is converting the file instead of sending it as it is"
+msgstr ""
+
+msgid "the server sent more than was asked for"
+msgstr ""
+
 msgid "the server sent no audio: {}"
+msgstr ""
+
+msgid "the server stopped sending the file"
+msgstr ""
+
+msgid "the server took too long to answer"
+msgstr ""
+
+msgid "the server's certificate is not trusted by this system"
 msgstr ""
 
 msgid "the sidecar could not be written: {}"

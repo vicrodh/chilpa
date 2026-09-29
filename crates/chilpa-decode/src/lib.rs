@@ -99,6 +99,22 @@ impl Decoded {
         Self::from_source(Box::new(stream), hint)
     }
 
+    /// Opens a file on a server of mine, read by windows (ADR-017). It is
+    /// the original, so it seeks and has a duration like one on disk.
+    ///
+    /// `extension` is the file's own ("flac", "m4a"), which the server says
+    /// and the address does not.
+    pub fn open_remote(file: chilpa_stream::Ranged, extension: Option<&str>) -> Result<Self, DecodeError> {
+        let mut hint = Hint::new();
+        if let Some(ext) = extension.filter(|e| !e.is_empty()) {
+            hint.with_extension(ext);
+        }
+        if let Some(kind) = file.content_type() {
+            hint.mime_type(kind);
+        }
+        Self::from_source(Box::new(file), hint)
+    }
+
     fn from_source(
         source: Box<dyn symphonia::core::io::MediaSource>,
         hint: Hint,
