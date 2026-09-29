@@ -16,6 +16,8 @@ mod approvals;
 mod browse;
 mod credits;
 mod tracks_view;
+mod albums_view;
+pub use albums_view::{grid_rows, AlbumsFound, GridRow};
 pub use tracks_view::{group_of, FoundTracks, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;

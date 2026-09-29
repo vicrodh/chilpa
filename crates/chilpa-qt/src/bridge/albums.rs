@@ -39,6 +39,8 @@ pub mod qobject {
         /// For "all": "artist", "title", "year", "added", "played" or
         /// "last_played".
         #[qproperty(QString, order)]
+        /// "letter", "artist" or nothing: how the records of "all" are grouped.
+        #[qproperty(QString, group)]
         #[qproperty(i32, limit)]
         #[qproperty(i32, columns)]
         /// Zero lays out every row; a shelf asks for one.
@@ -97,7 +99,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for AlbumGridModel {}
 }
 use crate::{app, registry, worker};
-use chilpa_api::{Album, AlbumSort};
+use chilpa_api::Album;
 use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
@@ -167,6 +169,7 @@ pub struct AlbumGridRust {
     kind: QString,
     key: QString,
     order: QString,
+    group: QString,
     limit: i32,
     columns: i32,
     max_rows: i32,
@@ -179,7 +182,9 @@ pub struct AlbumGridRust {
     /// Every artist, for "artists", kept so the filter needs no query.
     artists: Vec<chilpa_api::Artist>,
     list: Albums,
-    rows: usize,
+    /// Where each group starts, and the rows that leaves at this width.
+    groups: Vec<(usize, String)>,
+    rows: Vec<chilpa_api::GridRow>,
     pending: bool,
     /// Tags the worker's answers, so one for an old order is dropped.
     generation: u64,
@@ -190,16 +195,8 @@ impl AlbumGridRust {
         self.list.with(usize::try_from(index).ok()?, f)
     }
 
-    fn row_total(&self) -> usize {
-        let cols = self.columns.max(0) as usize;
-        if cols == 0 {
-            return 0;
-        }
-        let rows = self.list.len().div_ceil(cols);
-        match self.max_rows {
-            n if n > 0 => rows.min(n as usize),
-            _ => rows,
-        }
+    fn laid_out(&self) -> Vec<chilpa_api::GridRow> {
+        chilpa_api::grid_rows(self.list.len(), self.columns.max(0) as usize, self.max_rows.max(0) as usize, &self.groups)
     }
 }
 
@@ -256,12 +253,11 @@ impl qobject::AlbumGridModel {
     }
 
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
-        let this = self.rust();
-        let cols = this.columns.max(1) as usize;
-        let first = index.row().max(0) as usize * cols;
+        let Some(row) = self.rust().rows.get(index.row().max(0) as usize) else { return QVariant::default() };
         match role - USER_ROLE {
-            0 => QVariant::from(&(first as i32)),
-            1 => QVariant::from(&(this.list.len().saturating_sub(first).min(cols) as i32)),
+            0 => QVariant::from(&(row.first as i32)),
+            1 => QVariant::from(&(row.span as i32)),
+            2 => QVariant::from(&QString::from(&row.label)),
             _ => QVariant::default(),
         }
     }
@@ -270,11 +266,12 @@ impl qobject::AlbumGridModel {
         let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
         roles.insert(USER_ROLE, QByteArray::from("first"));
         roles.insert(USER_ROLE + 1, QByteArray::from("span"));
+        roles.insert(USER_ROLE + 2, QByteArray::from("group"));
         roles
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
-        self.rust().rows as i32
+        self.rust().rows.len() as i32
     }
 
     fn schedule(mut self: Pin<&mut Self>) {
@@ -296,12 +293,12 @@ impl qobject::AlbumGridModel {
                 // worker takes the snapshot and the rows follow.
                 let generation = self.rust().generation + 1;
                 self.as_mut().rust_mut().generation = generation;
-                let order = AlbumSort::from_name(&self.rust().order.to_string());
-                let text = self.rust().filter.to_string();
+                let (order, group, text) = (self.rust().order.to_string(), self.rust().group.to_string(), self.rust().filter.to_string());
+                let extras = crate::browse::read(|s| s.filter.clone());
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let ids = reader.album_ids_matching(order, &text);
-                    let _ = thread.queue(move |model| model.arrive(generation, ids));
+                    let found = reader.albums_view(&order, &group, &text, &extras);
+                    let _ = thread.queue(move |model| model.arrive(generation, found));
                 });
                 return;
             }
@@ -381,9 +378,10 @@ impl qobject::AlbumGridModel {
         self.show(Albums::Loaded(cards));
     }
 
-    fn arrive(self: Pin<&mut Self>, generation: u64, ids: Vec<i64>) {
+    fn arrive(mut self: Pin<&mut Self>, generation: u64, found: chilpa_api::AlbumsFound) {
         if generation == self.rust().generation {
-            self.show(Albums::Snapshot { ids, pages: RefCell::default() });
+            self.as_mut().rust_mut().groups = found.groups;
+            self.show(Albums::Snapshot { ids: found.ids, pages: RefCell::default() });
         }
     }
 
@@ -408,7 +406,7 @@ impl qobject::AlbumGridModel {
     /// Splits the albums into rows again. Only the row count depends on the
     /// width, so nothing is read again.
     fn split_rows(mut self: Pin<&mut Self>) {
-        let rows = self.rust().row_total();
+        let rows = self.rust().laid_out();
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         self.as_mut().rust_mut().rows = rows;
@@ -422,6 +420,7 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();
+        self.as_mut().on_group_changed(|m| m.schedule()).release();
         self.as_mut().on_limit_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut()
