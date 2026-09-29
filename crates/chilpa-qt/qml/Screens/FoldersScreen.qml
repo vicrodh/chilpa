@@ -28,6 +28,11 @@ Item {
         playingPath: Player.path
     }
     AlbumGridModel {
+        id: inside
+        kind: "folder"
+        contentRev: current.rev
+    }
+    AlbumGridModel {
         id: records
         kind: page.flat ? "all" : ""
         order: Library.albumOrder
@@ -150,6 +155,7 @@ Item {
             height: parent.height
             folder: current
             tracks: tracks
+            albums: inside
             menu: actions
         }
     }

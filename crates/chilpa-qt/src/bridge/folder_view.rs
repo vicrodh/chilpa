@@ -14,8 +14,6 @@ pub mod qobject {
         type QModelIndex = cxx_qt_lib::QModelIndex;
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
-        include!("cxx-qt-lib/qstringlist.h");
-        type QStringList = cxx_qt_lib::QStringList;
     }
 
     #[auto_cxx_name]
@@ -31,12 +29,18 @@ pub mod qobject {
         #[qproperty(bool, in_library)]
         #[qproperty(i32, folders)]
         #[qproperty(i32, tracks)]
-        /// The names of the files that sit in it, for the tree's leaves.
-        #[qproperty(QStringList, files)]
+        /// The folder tree as a list instead of one folder's children.
+        #[qproperty(bool, tree)]
         #[qproperty(bool, has_cd)]
         type FolderModel = super::FolderModelRust;
         #[qinvokable]
         fn play_all(self: Pin<&mut FolderModel>);
+        /// Opens or closes a branch of the tree; with no path, closes all.
+        #[qinvokable]
+        fn turn(self: Pin<&mut FolderModel>, path: &QString);
+        /// Opens the branches that lead to a folder, so it is in sight.
+        #[qinvokable]
+        fn reveal(self: Pin<&mut FolderModel>, path: &QString);
         /// Plays a folder and what is under it ("play"), or queues it
         /// "next", "later" or at the end ("queue").
         #[qinvokable]
@@ -82,11 +86,15 @@ use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
 
-const ROLES: &[&str] = &["name", "path", "count", "art"];
+const ROLES: &[&str] = &["name", "path", "count", "art", "folders", "album", "depth", "open", "file"];
 const USER_ROLE: i32 = 256;
 
 thread_local! {
     static TRACKS: RefCell<Rc<Vec<TrackRow>>> = RefCell::new(Rc::new(Vec::new()));
+    /// The folders of the one on screen that are records, in its order.
+    static ALBUMS: RefCell<Vec<i64>> = const { RefCell::new(Vec::new()) };
+    /// The branches of the tree that are open, for as long as the window lasts.
+    static OPEN: RefCell<std::collections::HashSet<String>> = RefCell::new(Default::default());
 }
 
 /// The tracks of the folder on screen, for the track list.
@@ -94,10 +102,9 @@ pub fn tracks() -> Rc<Vec<TrackRow>> {
     TRACKS.with(|t| t.borrow().clone())
 }
 
-/// The records in the current folder, once and in first-track order.
+/// The folders of the current one that are records.
 pub fn album_ids() -> Vec<i64> {
-    let mut seen = std::collections::HashSet::new();
-    tracks().iter().filter_map(|track| (track.album_id > 0 && seen.insert(track.album_id)).then_some(track.album_id)).collect()
+    ALBUMS.with(|a| a.borrow().clone())
 }
 
 #[derive(Default)]
@@ -110,7 +117,7 @@ pub struct FolderModelRust {
     in_library: bool,
     folders: i32,
     tracks: i32,
-    files: cxx_qt_lib::QStringList,
+    tree: bool,
     has_cd: bool,
     items: Vec<FolderItem>,
     generation: u64,
@@ -132,6 +139,11 @@ impl qobject::FolderModel {
                 };
                 QVariant::from(&url)
             }
+            4 => QVariant::from(&(f.folders as i32)),
+            5 => QVariant::from(&f.album_id),
+            6 => QVariant::from(&(f.depth as i32)),
+            7 => QVariant::from(&f.open),
+            8 => QVariant::from(&f.file),
             _ => QVariant::default(),
         }
     }
@@ -146,6 +158,30 @@ impl qobject::FolderModel {
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
         self.rust().items.len() as i32
+    }
+
+    pub fn turn(self: Pin<&mut Self>, path: &QString) {
+        let path = path.to_string();
+        OPEN.with(|open| {
+            let mut open = open.borrow_mut();
+            if path.is_empty() {
+                open.clear();
+            } else if !open.remove(&path) {
+                open.insert(path);
+            }
+        });
+        self.schedule();
+    }
+
+    pub fn reveal(self: Pin<&mut Self>, path: &QString) {
+        let path = path.to_string();
+        let added = OPEN.with(|open| {
+            let mut open = open.borrow_mut();
+            std::path::Path::new(&path).ancestors().skip(1).filter(|a| a.parent().is_some()).fold(false, |any, a| open.insert(a.display().to_string()) || any)
+        });
+        if added {
+            self.schedule();
+        }
     }
 
     pub fn play_all(self: Pin<&mut Self>) {
@@ -206,8 +242,13 @@ impl qobject::FolderModel {
         let dir = self.rust().path.to_string();
         let query = self.rust().query.to_string();
         let thread = self.qt_thread();
+        let tree = self.rust().tree.then(|| OPEN.with(|open| open.borrow().clone()));
         worker::submit(move |reader| {
-            let view = if query.trim().is_empty() { reader.folder(&dir) } else { reader.folder_matches(&query) };
+            let view = match &tree {
+                Some(open) => reader.folder_tree(open, &query),
+                None if query.trim().is_empty() => reader.folder(&dir),
+                None => reader.folder_matches(&query),
+            };
             let _ = thread.queue(move |model| model.arrive(generation, view));
         });
     }
@@ -217,10 +258,9 @@ impl qobject::FolderModel {
             return;
         }
         let (folders, tracks) = (view.folders.len() as i32, view.total as i32);
-        let named = |t: &TrackRow| std::path::Path::new(&t.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| t.title.clone());
-        self.as_mut().set_files(crate::format::strings(view.tracks.iter().map(named)));
         if self.rust().content {
             TRACKS.with(|t| *t.borrow_mut() = Rc::new(view.tracks));
+            ALBUMS.with(|a| *a.borrow_mut() = view.folders.iter().filter(|f| f.album_id > 0).map(|f| f.album_id).collect());
         }
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
@@ -241,6 +281,7 @@ impl cxx_qt::Initialize for qobject::FolderModel {
         self.as_mut().set_has_cd(has_cd);
         self.as_mut().on_path_changed(|m| m.schedule()).release();
         self.as_mut().on_query_changed(|m| m.schedule()).release();
+        self.as_mut().on_tree_changed(|m| m.schedule()).release();
         self.schedule();
     }
 }

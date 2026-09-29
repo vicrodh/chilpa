@@ -3,14 +3,17 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-// A folder inside the one that is open: a cover of what it holds, or a
-// folder where it has none, its name and how many tracks are under it.
+// A folder inside the one that is open, and said to be one: a folder's mark
+// over a cover of what it holds, its name, and how many folders and tracks
+// are in it. A folder that is a record is not drawn with this: it is a record.
 Item {
     id: card
 
     required property string name
     required property string path
     required property int count
+    required property int folders
+    required property double album
     required property url art
 
     signal open()
@@ -45,6 +48,23 @@ Item {
             size: Metrics.folderGlyph
             color: Theme.color.textSecondary
         }
+        // Over a cover, what says this is a folder and not the record.
+        Rectangle {
+            visible: card.art.toString() !== ""
+            x: Metrics.gap6
+            y: Metrics.gap6
+            width: Metrics.button26
+            height: Metrics.button26
+            radius: Metrics.radiusItem
+            color: Theme.color.overlayButton
+
+            Icon {
+                anchors.centerIn: parent
+                glyph: Icons.folder
+                size: Metrics.iconSm
+                color: Theme.color.overlayInk
+            }
+        }
     }
 
     Column {
@@ -54,7 +74,14 @@ Item {
         width: cover.width
 
         Text { width: parent.width; text: card.name; elide: Text.ElideMiddle; font.pointSize: Type.body; font.weight: Type.medium; color: Theme.color.textPrimary }
-        Text { text: I18n.trCount("{} track", "{} tracks", card.count, I18n.rev); font.pointSize: Type.label; color: Theme.color.textSecondary }
+        Text {
+            width: parent.width
+            text: (card.folders > 0 ? I18n.trCount("{} folder", "{} folders", card.folders, I18n.rev) + " · " : "")
+                  + I18n.trCount("{} track", "{} tracks", card.count, I18n.rev)
+            elide: Text.ElideRight
+            font.pointSize: Type.label
+            color: Theme.color.textSecondary
+        }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

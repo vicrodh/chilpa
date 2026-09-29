@@ -191,6 +191,10 @@ pub struct FolderEntry {
     pub tracks: usize,
     /// A cover from one of its records, if any has one.
     pub artwork_path: Option<String>,
+    /// How many folders sit in it.
+    pub folders: usize,
+    /// The record it is, when its files sit in it and are all of one.
+    pub album_id: Option<i64>,
 }
 
 /// The paths under `dir`, as a range: every path that starts with `dir/`
@@ -552,7 +556,11 @@ impl Library {
         let base = from.clone();
         let sql = format!(
             "SELECT substr(t.external_id, ?3, instr(substr(t.external_id, ?3), '/') - 1) AS name,
-                    count(*), max(a.artwork_path)
+                    count(*), max(a.artwork_path),
+                    count(DISTINCT CASE WHEN instr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), '/') > 0
+                          THEN substr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), 1,
+                               instr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), '/') - 1) END),
+                    count(DISTINCT coalesce(t.album_id, -t.id)), min(t.album_id)
              FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
              WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
                AND instr(substr(t.external_id, ?3), '/') > 0
@@ -567,6 +575,11 @@ impl Library {
                     name,
                     tracks: r.get::<_, i64>(1)? as usize,
                     artwork_path: r.get(2)?,
+                    folders: r.get::<_, i64>(3)? as usize,
+                    album_id: match (r.get::<_, i64>(3)?, r.get::<_, i64>(4)?) {
+                        (0, 1) => r.get(5)?,
+                        _ => None,
+                    },
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -781,6 +794,10 @@ mod tests {
         let names: Vec<(String, usize)> = folders.iter().map(|f| (f.name.clone(), f.tracks)).collect();
         assert_eq!(names, [("Disc 1".to_string(), 2), ("Disc 2".to_string(), 1)]);
         assert_eq!(folders[0].path, "/m/Box/Disc 1");
+        assert_eq!((folders[0].folders, folders[0].album_id), (0, Some(1)), "its files sit in it and are of one record");
+        let (top, _) = lib.folder_children("/m").unwrap();
+        let box_folder = top.iter().find(|f| f.name == "Box").unwrap();
+        assert_eq!((box_folder.folders, box_folder.album_id), (2, None), "a folder of folders is a folder");
         assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
         assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
         assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");

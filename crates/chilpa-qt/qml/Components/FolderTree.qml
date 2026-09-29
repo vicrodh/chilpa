@@ -4,20 +4,22 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-// The library's folders as a tree that opens a level at a time, with a
-// search across all of it and a way to close every branch at once.
+// The library's folders as a tree: one list of rows, each as deep as it is,
+// so closing a branch takes its rows out and leaves nothing behind. It has
+// a search across all of it, a way to close every branch at once, and a
+// way to choose several folders.
 Rectangle {
     id: tree
 
     property string activePath
     property FolderMenu menu
-    // Moves when every branch is asked to close.
-    property int closed: 0
     // Choosing several: the folders chosen, and a mark that moves with them.
     property bool selecting: false
     property var chosen: ({})
     property int chosenRev: 0
     readonly property var chosenPaths: Object.keys(chosen)
+    // Where the list was before its rows were read again.
+    property real heldAt: 0
 
     // 1 when the folder or one above it is chosen, 2 when one under it is.
     function chosenAt(path, rev) {
@@ -32,25 +34,31 @@ Rectangle {
         chosen = next
         chosenRev += 1
     }
+    function release() {
+        chosen = ({})
+        chosenRev += 1
+    }
     function act(action) {
         const paths = action === "next" ? chosenPaths.slice().reverse() : chosenPaths
         paths.forEach((path) => tree.menu.folder.act(path, action))
     }
-
-    function context(item, path, left, top) {
-        const at = item.mapToItem(tree.menu.parent, left, top)
-        tree.menu.show(path, at.x, at.y)
+    function turn(path) {
+        heldAt = view.contentY
+        rows.turn(path)
     }
 
     radius: Metrics.radiusMenu
     color: Theme.color.surfacePanel
+    onActivePathChanged: rows.reveal(activePath)
+    Component.onCompleted: rows.reveal(activePath)
 
     Edge {}
 
     FolderModel {
-        id: roots
-        path: ""
+        id: rows
+        tree: true
         query: sought.text
+        onRevChanged: view.contentY = Math.max(0, Math.min(tree.heldAt, view.contentHeight - view.height))
     }
     // What is typed is looked for once the typing stops.
     Timer {
@@ -69,8 +77,7 @@ Rectangle {
         checked: tree.selecting
         onClicked: {
             tree.selecting = !tree.selecting
-            tree.chosen = ({})
-            tree.chosenRev += 1
+            tree.release()
         }
     }
     IconButton {
@@ -79,22 +86,7 @@ Rectangle {
         anchors.verticalCenter: find.verticalCenter
         tip: I18n.tr("Collapse all", I18n.rev)
         glyph: Icons.chevronUp
-        onClicked: tree.closed += 1
-    }
-    FolderBulkBar {
-        id: bulk
-        visible: tree.selecting && tree.chosenPaths.length > 0
-        anchors.top: find.bottom
-        anchors.topMargin: Metrics.gap6
-        x: Metrics.gap8
-        width: parent.width - Metrics.gap16 // derived: padding on both sides
-        height: visible ? implicitHeight : 0
-        count: tree.chosenPaths.length
-        onActed: (action) => tree.act(action)
-        onCleared: {
-            tree.chosen = ({})
-            tree.chosenRev += 1
-        }
+        onClicked: tree.turn("")
     }
     SearchField {
         id: find
@@ -107,95 +99,81 @@ Rectangle {
         onTextChanged: settle.restart()
         onEscaped: text = ""
     }
+    FolderBulkBar {
+        id: bulk
+        visible: tree.selecting && tree.chosenPaths.length > 0
+        anchors.top: find.bottom
+        anchors.topMargin: Metrics.gap6
+        x: Metrics.gap8
+        width: parent.width - Metrics.gap16 // derived: padding on both sides
+        height: visible ? implicitHeight : 0
+        count: tree.chosenPaths.length
+        onActed: (action) => tree.act(action)
+        onCleared: tree.release()
+    }
 
-    Flickable {
+    ListView {
+        id: view
+
+        property int hovered: -1
+
         anchors.top: bulk.visible ? bulk.bottom : find.bottom
         anchors.topMargin: Metrics.gap6
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.gap8
         width: parent.width
         clip: true
-        contentWidth: width
-        contentHeight: sought.text === "" ? branches.height : matches.height
+        model: rows
+        reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar {}
 
-        Column {
-            id: branches
-            width: parent.width
-            visible: sought.text === ""
-
-            Repeater {
-                model: sought.text === "" ? roots : null
-                FolderTreeBranch {
-                    activePath: tree.activePath
-                    closed: tree.closed
-                    rail: tree
-                }
-            }
-            Text {
-                visible: roots.folders === 0 && !roots.loading
-                x: Metrics.gap10
-                topPadding: Metrics.gap8
-                text: I18n.tr("No folders in your local library yet.", I18n.rev)
-                font.pointSize: Type.small
-                color: Theme.color.textSecondary
-            }
+        delegate: FolderTreeRow {
+            width: view.width
+            active: !file && tree.activePath === path
+            hovered: index === view.hovered
+            selecting: tree.selecting
+            chosen: tree.selecting && !file ? tree.chosenAt(path, tree.chosenRev) : 0
         }
+    }
+    // One pointer for the list, not a handler on every row.
+    MouseArea {
+        anchors.fill: view
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        cursorShape: view.hovered >= 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
 
-        Column {
-            id: matches
-            width: parent.width
-            visible: sought.text !== ""
-
-            Repeater {
-                model: sought.text !== "" ? roots : null
-                Item {
-                    id: match
-                    required property string name
-                    required property string path
-                    width: matches.width
-                    height: Metrics.folderTreeRow
-
-                    Rectangle {
-                        anchors.fill: parent
-                        anchors.leftMargin: Metrics.gap4
-                        anchors.rightMargin: Metrics.gap4
-                        radius: Metrics.radiusItem
-                        color: tree.activePath === match.path ? Theme.color.stateSelected : over.hovered ? Theme.color.stateHover : "transparent"
-                    }
-                    Icon {
-                        id: glyph
-                        x: Metrics.gap10
-                        anchors.verticalCenter: parent.verticalCenter
-                        glyph: Icons.folder
-                        size: Metrics.iconSm
-                        color: Theme.color.accent
-                    }
-                    Text {
-                        anchors.left: glyph.right
-                        anchors.leftMargin: Metrics.gap6
-                        anchors.right: parent.right
-                        anchors.rightMargin: Metrics.gap8
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: match.name
-                        elide: Text.ElideMiddle
-                        font.pointSize: Type.small
-                        color: Theme.color.textPrimary
-                    }
-                    HoverHandler { id: over; cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: Navigation.openFolder(match.path) }
-                    TapHandler { acceptedButtons: Qt.RightButton; onTapped: (point) => tree.context(match, match.path, point.position.x, point.position.y) }
-                }
-            }
-            Text {
-                visible: roots.folders === 0 && !roots.loading
-                x: Metrics.gap10
-                topPadding: Metrics.gap8
-                text: I18n.tr("No folders match your search.", I18n.rev)
-                font.pointSize: Type.small
-                color: Theme.color.textSecondary
-            }
+        function rowAt(y) {
+            const at = view.indexAt(Metrics.gap2, y + view.contentY)
+            const item = at >= 0 ? view.itemAtIndex(at) : null
+            return item && !item.file ? item : null
         }
+        onPositionChanged: (mouse) => { const item = rowAt(mouse.y); view.hovered = item ? item.index : -1 }
+        onExited: view.hovered = -1
+        onClicked: (mouse) => {
+            const item = rowAt(mouse.y)
+            if (!item)
+                return
+            if (mouse.button === Qt.RightButton) {
+                const at = mapToItem(tree.menu.parent, mouse.x, mouse.y)
+                tree.menu.show(item.path, at.x, at.y)
+            } else if (item.count > 0 && mouse.x >= item.arrowLeft && mouse.x < item.arrowRight)
+                tree.turn(item.path)
+            else if (tree.selecting)
+                tree.choose(item.path)
+            else
+                Navigation.openFolder(item.path)
+        }
+    }
+    Text {
+        visible: rows.folders === 0 && !rows.loading
+        anchors.top: view.top
+        x: Metrics.gap10
+        width: parent.width - Metrics.gap16 // derived: padding on both sides
+        topPadding: Metrics.gap8
+        wrapMode: Text.Wrap
+        text: sought.text === "" ? I18n.tr("No folders in your local library yet.", I18n.rev) : I18n.tr("No folders match your search.", I18n.rev)
+        font.pointSize: Type.small
+        color: Theme.color.textSecondary
     }
 }

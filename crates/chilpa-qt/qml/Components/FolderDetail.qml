@@ -5,14 +5,18 @@ import "../Theme"
 import "../Primitives"
 
 // The folder that is open: what it is called and how much it holds, the
-// folders inside it, and its own tracks. Its play button plays it with
-// everything under it.
+// folders inside it, the records inside it, and its own tracks. A folder
+// that is a record is drawn as the record it is, with all a record has.
+// Its play button plays the folder with everything under it.
 Item {
     id: detail
 
     property FolderModel folder
     property TrackListModel tracks
+    property AlbumGridModel albums
     property FolderMenu menu
+    // The folders that are not records.
+    readonly property int plain: folder.folders - (albums ? albums.albums : 0)
     property bool grid: SettingsModel.kept("ui.folders.detail") !== "list"
     readonly property string name: folder.path.replace(/\/+$/, "").split("/").pop()
     readonly property string sought: find.text.trim().toLowerCase()
@@ -98,7 +102,7 @@ Item {
             spacing: Metrics.gap12
 
             Item {
-                visible: detail.folder.folders > 0
+                visible: detail.plain > 0
                 width: parent.width
                 height: Math.max(folders.height, find.height)
 
@@ -116,7 +120,7 @@ Item {
                 id: cards
                 readonly property int columns: Math.max(1, Math.floor((width + Metrics.gap12) / (Metrics.folderCardMin + Metrics.gap12)))
                 readonly property real cardWidth: Math.floor((width - (columns - 1) * Metrics.gap12) / columns)
-                visible: detail.grid && detail.folder.folders > 0
+                visible: detail.grid && detail.plain > 0
                 width: parent.width
                 spacing: Metrics.gap12
 
@@ -124,7 +128,7 @@ Item {
                     model: detail.grid ? detail.folder : null
                     FolderCard {
                         id: card
-                        visible: detail.sought === "" || name.toLowerCase().includes(detail.sought)
+                        visible: album === 0 && (detail.sought === "" || name.toLowerCase().includes(detail.sought))
                         width: cards.cardWidth
                         onOpen: Navigation.openFolder(path)
                         onContext: (left, top) => detail.context(card, path, left, top)
@@ -132,20 +136,36 @@ Item {
                 }
             }
             Column {
-                visible: !detail.grid && detail.folder.folders > 0
+                visible: !detail.grid && detail.plain > 0
                 width: parent.width
 
                 Repeater {
                     model: detail.grid ? null : detail.folder
                     FolderEntryRow {
                         id: entry
-                        visible: detail.sought === "" || name.toLowerCase().includes(detail.sought)
+                        visible: album === 0 && (detail.sought === "" || name.toLowerCase().includes(detail.sought))
                         width: body.width
                         height: visible ? Metrics.folderListRow : 0
                         onOpen: Navigation.openFolder(path)
                         onContext: (left, top) => detail.context(entry, path, left, top)
                     }
                 }
+            }
+
+            SectionHeader { visible: records.visible; width: parent.width; title: I18n.tr("Albums", I18n.rev) }
+            AlbumGrid {
+                id: records
+                visible: detail.albums && detail.albums.albums > 0
+                width: parent.width
+                height: visible ? implicitHeight : 0
+                fitContent: true
+                model: detail.albums
+                onOpen: (albumId) => Navigation.go("album", albumId)
+            }
+            Binding {
+                target: detail.albums
+                property: "columns"
+                value: records.columns
             }
 
             SectionHeader { visible: detail.tracks.count > 0; width: parent.width; title: I18n.tr("Tracks", I18n.rev) }

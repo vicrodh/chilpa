@@ -173,13 +173,22 @@ pub struct FolderView {
     pub total: usize,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FolderItem {
     pub name: String,
     pub path: String,
     /// Tracks under it, all the way down; zero when it is not known.
     pub tracks: usize,
     pub artwork_path: String,
+    /// How many folders sit in it; zero when it is not known.
+    pub folders: usize,
+    /// The record it is, or zero: a folder whose files are all of one.
+    pub album_id: i64,
+    /// In the folder tree: how deep it is, whether it is open, and whether
+    /// it is a file, which a tree lists under the folders beside it.
+    pub depth: usize,
+    pub open: bool,
+    pub file: bool,
 }
 
 /// A row for a file the library does not have: its name, and what its
@@ -299,7 +308,7 @@ impl Reader {
                     // A root is called what its folder is called; where it
                     // is belongs to Settings.
                     let name = r.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.clone());
-                    FolderItem { name, tracks: self.lib.folder_track_count(&path).unwrap_or(0), artwork_path: String::new(), path }
+                    FolderItem { name, tracks: self.lib.folder_track_count(&path).unwrap_or(0), artwork_path: String::new(), path, ..FolderItem::default() }
                 })
                 .collect();
             let total = roots.iter().map(|r| self.lib.folder_track_count(&r.path.to_string_lossy()).unwrap_or(0)).sum();
@@ -308,9 +317,37 @@ impl Reader {
         let inside = roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path));
         if inside {
             let (folders, tracks) = self.lib.folder_children(dir).unwrap_or_default();
-            return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true, total: self.lib.folder_track_count(dir).unwrap_or(0) };
+            return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default(), folders: f.folders, album_id: f.album_id.unwrap_or(0), ..FolderItem::default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true, total: self.lib.folder_track_count(dir).unwrap_or(0) };
         }
         crate::folders::disk_folder(std::path::Path::new(dir))
+    }
+
+    /// The folder tree as a list: the library's folders, and under each one
+    /// that is open, its folders and then its files. `text` typed to find a
+    /// folder makes it the folders that match, at one depth.
+    pub fn folder_tree(&self, open: &std::collections::HashSet<String>, text: &str) -> FolderView {
+        if !text.trim().is_empty() {
+            return self.folder_matches(text);
+        }
+        let mut folders = Vec::new();
+        self.branch("", 0, open, &mut folders);
+        FolderView { folders, tracks: Vec::new(), in_library: true, total: 0 }
+    }
+
+    fn branch(&self, dir: &str, depth: usize, open: &std::collections::HashSet<String>, rows: &mut Vec<FolderItem>) {
+        let view = self.folder(dir);
+        for folder in view.folders {
+            let path = folder.path.trim_end_matches('/').to_string();
+            let is_open = open.contains(&path);
+            rows.push(FolderItem { path: path.clone(), depth, open: is_open, ..folder });
+            if is_open {
+                self.branch(&path, depth + 1, open, rows);
+            }
+        }
+        for track in view.tracks {
+            let name = std::path::Path::new(&track.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(track.title);
+            rows.push(FolderItem { name, path: track.path, depth, file: true, ..FolderItem::default() });
+        }
     }
 
     /// Library folders whose path contains every word in `text`. Search is
@@ -341,7 +378,7 @@ impl Reader {
             .filter_map(|path| {
                 let shown = path.to_string_lossy().into_owned();
                 let lower = shown.to_lowercase();
-                words.iter().all(|word| lower.contains(word)).then_some(FolderItem { name: shown.clone(), path: shown, tracks: 0, artwork_path: String::new() })
+                words.iter().all(|word| lower.contains(word)).then_some(FolderItem { name: shown.clone(), path: shown, tracks: 0, ..FolderItem::default() })
             })
             .collect();
         FolderView { folders, tracks: Vec::new(), in_library: true, total: 0 }
