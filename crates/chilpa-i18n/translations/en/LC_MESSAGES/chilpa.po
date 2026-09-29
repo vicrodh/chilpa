@@ -899,9 +899,6 @@ msgstr ""
 msgid "No cover"
 msgstr ""
 
-msgid "No folders in the library yet."
-msgstr ""
-
 msgid "No folders in your local library yet."
 msgstr ""
 
@@ -1050,9 +1047,6 @@ msgid "Play"
 msgstr ""
 
 msgid "Play count"
-msgstr ""
-
-msgid "Play folder"
 msgstr ""
 
 msgid "Play later"
@@ -1299,6 +1293,9 @@ msgid "Select"
 msgstr ""
 
 msgid "Select a folder to see its contents."
+msgstr ""
+
+msgid "Select folders"
 msgstr ""
 
 msgid "Select tracks"
@@ -2719,6 +2716,9 @@ msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} sel"
+msgstr ""
 
 msgid "{} selected track"
 msgid_plural "{} selected tracks"

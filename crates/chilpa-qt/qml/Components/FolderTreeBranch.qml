@@ -46,8 +46,20 @@ Column {
         }
 
         Icon {
+            id: mark
+            visible: !!branch.rail && branch.rail.selecting
+            x: Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            // Chosen, holding something chosen, or neither.
+            readonly property int chosen: visible ? branch.rail.chosenAt(branch.place, branch.rail.chosenRev) : 0
+            glyph: chosen === 1 ? Icons.squareCheckFilled : chosen === 2 ? Icons.minus : Icons.square
+            filled: chosen === 1
+            size: Metrics.iconSm
+            color: chosen === 0 ? Theme.color.textSecondary : Theme.color.accent
+        }
+        Icon {
             id: turn
-            x: Metrics.gap8 + branch.depth * Metrics.folderTreeIndent
+            x: Metrics.gap8 + (mark.visible ? mark.width + Metrics.gap6 : 0) + branch.depth * Metrics.folderTreeIndent
             anchors.verticalCenter: parent.verticalCenter
             glyph: Icons.chevronRight
             size: Metrics.iconXs
@@ -86,7 +98,7 @@ Column {
 
         HoverHandler { id: hover }
         HoverHandler { cursorShape: Qt.PointingHandCursor }
-        TapHandler { onTapped: Navigation.openFolder(branch.path) }
+        TapHandler { onTapped: mark.visible ? branch.rail.choose(branch.place) : Navigation.openFolder(branch.path) }
         TapHandler { acceptedButtons: Qt.RightButton; onTapped: (point) => branch.rail.context(branch, branch.path, point.position.x, point.position.y) }
     }
 
@@ -96,7 +108,7 @@ Column {
         sourceComponent: Column {
             width: branch.width
 
-            FolderModel { id: children; path: branch.path }
+            FolderModel { id: children; path: branch.path; content: false }
             Repeater {
                 model: children
 
@@ -120,6 +132,37 @@ Column {
                     })
                     onActivePathChanged: if (item) item.activePath = activePath
                     onClosedChanged: if (item) item.closed = closed
+                }
+            }
+            // The files that sit in it: leaves, which only say they are there.
+            Repeater {
+                model: children.files
+
+                Item {
+                    id: leaf
+                    required property string modelData
+                    width: branch.width
+                    height: Metrics.folderTreeRow
+
+                    Icon {
+                        id: note
+                        x: Metrics.gap8 + Metrics.iconXs + Metrics.gap4 + (branch.depth + 1) * Metrics.folderTreeIndent
+                        anchors.verticalCenter: parent.verticalCenter
+                        glyph: Icons.music
+                        size: Metrics.iconSm
+                        color: Theme.color.textTertiary
+                    }
+                    Text {
+                        anchors.left: note.right
+                        anchors.leftMargin: Metrics.gap6
+                        anchors.right: parent.right
+                        anchors.rightMargin: Metrics.gap8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: leaf.modelData
+                        elide: Text.ElideMiddle
+                        font.pointSize: Type.small
+                        color: Theme.color.textSecondary
+                    }
                 }
             }
         }

@@ -55,7 +55,14 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
 
             Text { width: parent.width; text: detail.name; elide: Text.ElideMiddle; font.pointSize: Type.section; font.weight: Type.semibold; color: Theme.color.textPrimary }
-            Text { text: I18n.trCount("{} track", "{} tracks", detail.folder.tracks, I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+            Text {
+                width: parent.width
+                text: detail.folder.inLibrary ? I18n.trCount("{} track", "{} tracks", detail.folder.tracks, I18n.rev)
+                                              : I18n.tr("Not in the library: this is the folder as it is on disk.", I18n.rev)
+                elide: Text.ElideRight
+                font.pointSize: Type.meta
+                color: Theme.color.textSecondary
+            }
         }
         SegmentedControl {
             id: tools
