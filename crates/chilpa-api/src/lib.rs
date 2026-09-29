@@ -33,6 +33,8 @@ mod outputs;
 mod playlists;
 mod plugins;
 mod quality;
+mod marks;
+pub use marks::Marks;
 mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod queue;
