@@ -24,3 +24,22 @@ pub fn dlna(window: Duration) -> Result<Vec<Device>> {
 pub fn location(reply: &str) -> Option<String> {
     reply.lines().filter_map(|s| s.split_once(':')).find(|(key, _)| key.eq_ignore_ascii_case("location")).map(|(_, value)| value.trim().to_string())
 }
+
+pub fn chromecast(window: Duration) -> Result<Vec<Device>> {
+    let daemon = mdns_sd::ServiceDaemon::new().map_err(|_| Error::Network)?;
+    let result = (|| {
+        let receiver = daemon.browse("_googlecast._tcp.local.").map_err(|_| Error::Network)?;
+        let deadline = Instant::now() + window;
+        let mut devices = std::collections::HashMap::new();
+        while Instant::now() < deadline {
+            if let Ok(mdns_sd::ServiceEvent::ServiceResolved(info)) = receiver.recv_timeout(Duration::from_millis(100)) {
+                let Some(id) = info.get_property_val_str("id").filter(|s| !s.is_empty()) else { continue };
+                let Some(ip) = info.get_addresses().iter().map(|a| a.to_ip_addr()).filter(|a| !a.is_loopback()).min_by_key(|a| !a.is_ipv4()) else { continue };
+                devices.insert(id.to_string(), Device { id: id.into(), name: info.get_property_val_str("fn").unwrap_or(id).into(), model: info.get_property_val_str("md").unwrap_or("Chromecast").into(), kind: crate::Kind::Chromecast, address: std::net::SocketAddr::new(ip, info.get_port()), description: String::new() });
+            }
+        }
+        Ok(devices.into_values().collect())
+    })();
+    let _ = daemon.shutdown();
+    result
+}
