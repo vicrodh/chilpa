@@ -234,6 +234,9 @@ msgstr "Pila de audio"
 msgid "AutoMix"
 msgstr "AutoMix"
 
+msgid "Available"
+msgstr "Disponible"
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr "BP marca una salida que recibe las muestras intactas."
 
@@ -362,6 +365,12 @@ msgstr "Conectado"
 
 msgid "Connected as {}"
 msgstr "Conectado como {}"
+
+msgid "Connecting…"
+msgstr "Conectando…"
+
+msgid "Connection error"
+msgstr "Error de conexión"
 
 msgid "Contains {} similar version"
 msgid_plural "Contains {} similar versions"
@@ -517,6 +526,9 @@ msgstr "Desconectar"
 
 msgid "Disconnect account"
 msgstr "Desconectar la cuenta"
+
+msgid "Disconnected"
+msgstr "Desconectado"
 
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
@@ -1016,6 +1028,9 @@ msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a
 msgid "Opens the device and says which formats reach it untouched."
 msgstr "Abre el dispositivo y dice qué formatos le llegan intactos."
 
+msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
+msgstr "Bytes originales · sin transcodificar por Chilpa · procesamiento del receptor desconocido"
+
 msgid "Output"
 msgstr "Salida"
 
@@ -1036,6 +1051,9 @@ msgstr "Pega el token de usuario de listenbrainz.org/settings."
 
 msgid "Pause"
 msgstr "Pausa"
+
+msgid "Paused"
+msgstr "En pausa"
 
 msgid "Performers"
 msgstr "Intérpretes"
@@ -1078,6 +1096,9 @@ msgstr "Opciones de reproducción"
 
 msgid "Player bar"
 msgstr "Barra del reproductor"
+
+msgid "Playing"
+msgstr "Reproduciendo"
 
 msgid "Playlist"
 msgstr "Playlist"
@@ -1165,6 +1186,9 @@ msgstr "Lee el tempo, la tonalidad y la sonoridad en segundo plano. AutoMix apar
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr "Reconstruye los conteos y el índice de búsqueda a partir de las pistas y el historial. No se pierde nada."
+
+msgid "Receiver volume"
+msgstr "Volumen del receptor"
 
 msgid "Recent"
 msgstr "Recientes"
