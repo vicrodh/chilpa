@@ -70,6 +70,11 @@ mod tests {
             INSERT INTO album_favorites VALUES (2, 123);
             INSERT INTO album_preferences VALUES ('old-group', 2);").unwrap();
         crate::schema::migrate(&db).unwrap();
+        // Before V27 every source that was not local was a service, and the
+        // migration takes its tracks out of the library. Source 2 stands for
+        // a server of mine here, which is what a server is from V27 on.
+        db.execute_batch("UPDATE sources SET kind = 'server' WHERE id = 2;
+            UPDATE tracks SET present = 1 WHERE source_id = 2;").unwrap();
         let lib = Library { db, versions: Default::default() };
         lib.log_play(Some(11), None, 1, 2000, 2000, false, None, None, true).unwrap();
         let playlist = lib.create_playlist(1, "Mix", "mix").unwrap();

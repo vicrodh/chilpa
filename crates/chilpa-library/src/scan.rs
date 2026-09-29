@@ -114,12 +114,12 @@ pub fn scan_root_with(
 
 /// How many audio files live under a folder. It does not touch the database.
 pub fn count_audio_files(root: &Path) -> usize {
-    walk(root, &NoContainers).len()
+    walk(root, &NoContainers).0.len()
 }
 
 /// The same, counting a file that may hold tracks as one.
 pub fn count_files(root: &Path, containers: &dyn Containers) -> usize {
-    walk(root, containers).len()
+    walk(root, containers).0.len()
 }
 
 fn scan(
@@ -133,15 +133,22 @@ fn scan(
     let source = lib.source_id("local", "default")?;
     let root_id = lib.root_id(source, root)?;
 
-    if !root.is_dir() {
+    if !crate::store::reach::root_answers(lib, root_id, root)? {
         lib.set_root_reachable(root_id, false)?;
         report.unreachable = true;
         return Ok(report);
     }
     lib.set_root_reachable(root_id, true)?;
+    // The scan is what says which of the folder's tracks can be read: all of
+    // them, until a subfolder it cannot open says otherwise.
+    lib.db.execute(
+        "UPDATE tracks SET reachable = 1 WHERE reachable = 0 AND id IN
+         (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
+        params![root_id],
+    )?;
 
     let now = now_unix();
-    let files = walk(root, containers);
+    let (files, blocked) = walk(root, containers);
 
     // Committing once per file costs more than writing the file's row. Every
     // statement outside a transaction is its own commit, and a file takes
@@ -278,7 +285,7 @@ fn scan(
     // What was there and is not, or is there and cannot be read: marked
     // missing, never deleted.
     report.sidecars_unreadable = homes.record(lib, now)?;
-    report.missing = mark_missing(lib, root_id, &readable)?;
+    report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
     lib.assemble_local_releases()?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
@@ -561,7 +568,12 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
 
 
 /// Marks the root's files that did not turn up as missing.
-fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite::Result<usize> {
+///
+/// Not the ones under a subfolder that could not be opened: whether they
+/// are still there is unknown, so they stay listed and cannot be played,
+/// like a folder that does not answer (ADR-017 §2). A subfolder that was
+/// never readable, a `lost+found`, holds none and changes nothing.
+fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>, blocked: &[PathBuf]) -> rusqlite::Result<usize> {
     let mut stmt = lib
         .db
         .prepare("SELECT path, track_id FROM scanned_files WHERE root_id = ?1")?;
@@ -575,6 +587,12 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite
         if seen.contains(&path) {
             continue;
         }
+        if blocked.iter().any(|dir| Path::new(&path).starts_with(dir)) {
+            if let Some(id) = track {
+                lib.db.execute("UPDATE tracks SET reachable = 0 WHERE id = ?1", params![id])?;
+            }
+            continue;
+        }
         if let Some(id) = track {
             lib.db.execute("UPDATE tracks SET present = 0 WHERE id = ?1", params![id])?;
         }
@@ -584,15 +602,18 @@ fn mark_missing(lib: &Library, root_id: i64, seen: &HashSet<String>) -> rusqlite
     Ok(missing)
 }
 
-/// Every audio file under a folder.
-fn walk(root: &Path, containers: &dyn Containers) -> Vec<PathBuf> {
+/// Every audio file under a folder, and the subfolders that could not be
+/// opened.
+fn walk(root: &Path, containers: &dyn Containers) -> (Vec<PathBuf>, Vec<PathBuf>) {
     let mut output = Vec::new();
+    let mut blocked = Vec::new();
     let mut pending = vec![root.to_path_buf()];
     while let Some(dir) = pending.pop() {
         let Ok(entries) = std::fs::read_dir(&dir) else {
             // An unreadable subfolder neither cancels the scan nor disables the
-            // prune: it is skipped and that is all. In QBZ a lost+found disabled
-            // it forever.
+            // prune for the rest: in QBZ a lost+found disabled it forever. What
+            // was known under it is left as it was, not taken for gone.
+            blocked.push(dir);
             continue;
         };
         for entry in entries.flatten() {
@@ -605,7 +626,7 @@ fn walk(root: &Path, containers: &dyn Containers) -> Vec<PathBuf> {
         }
     }
     output.sort();
-    output
+    (output, blocked)
 }
 
 fn is_audio(path: &Path) -> bool {

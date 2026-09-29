@@ -142,6 +142,12 @@ pub struct BrowseTrack {
     pub plays: usize,
     /// Its record's cover.
     pub artwork_path: Option<String>,
+    /// In the library and reachable now. A row that is not is drawn dimmed
+    /// and does not play (ADR-017).
+    pub available: bool,
+    /// The codec the file's source says it is, for a track whose name has no
+    /// extension: a server's.
+    pub codec: Option<String>,
 }
 
 /// One entry of a facet column: what it is called, how many albums it
@@ -153,6 +159,8 @@ pub struct FacetEntry {
     pub label: String,
     pub albums: usize,
     pub year: Option<i32>,
+    /// A source's glyph (`sources.icon`); empty for the other columns.
+    pub icon: String,
 }
 
 /// A folder inside the library, as the Folders screen lists it.
@@ -196,7 +204,7 @@ pub struct Snapshot {
 
 const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
-            COALESCE(r.plays, 0) AS plays, a.artwork_path";
+            COALESCE(r.plays, 0) AS plays, a.artwork_path, (t.present = 1 AND t.reachable = 1), t.codec";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -213,6 +221,8 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         bit_depth: r.get::<_, Option<i64>>(10)?.map(|n| n as u8),
         plays: r.get::<_, i64>(11)? as usize,
         artwork_path: r.get(12)?,
+        available: r.get::<_, i64>(13)? == 1,
+        codec: r.get(14)?,
     })
 }
 
@@ -310,17 +320,20 @@ impl Library {
     /// Sources that currently contribute tracks to Library Explorer.
     pub fn facet_sources(&self) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut stmt = self.db.prepare(
-            "SELECT s.provider, s.instance, count(*) FROM tracks t JOIN sources s ON s.id = t.source_id
+            "SELECT s.provider, s.instance, count(*), s.label, s.icon FROM tracks t JOIN sources s ON s.id = t.source_id
              WHERE t.present = 1 GROUP BY s.id ORDER BY s.provider COLLATE NOCASE, s.instance COLLATE NOCASE",
         )?;
         let rows = stmt.query_map([], |r| {
             let provider: String = r.get(0)?;
             let instance: String = r.get(1)?;
+            let label: String = r.get(3)?;
             Ok(FacetEntry {
                 key: format!("{provider}:{instance}"),
-                label: if instance == "default" { provider } else { instance },
+                // A server has a name; its instance is an opaque id nobody reads.
+                label: if !label.is_empty() { label } else if instance == "default" { provider } else { instance },
                 albums: r.get::<_, i64>(2)? as usize,
                 year: None,
+                icon: r.get(4)?,
             })
         })?;
         rows.collect()
@@ -340,6 +353,7 @@ impl Library {
                 label: year.to_string(),
                 albums: r.get::<_, i64>(1)? as usize,
                 year: Some(year),
+                icon: String::new(),
             })
         })?;
         rows.collect()
@@ -402,6 +416,7 @@ impl Library {
                 label: r.get(1)?,
                 albums: 1,
                 year: r.get(2)?,
+                icon: String::new(),
             })
         })?;
         rows.collect()
@@ -411,7 +426,7 @@ impl Library {
         let mut stmt = self.db.prepare(sql)?;
         let rows = stmt.query_map(params_from_iter(args.iter()), |r| {
             let name: String = r.get(0)?;
-            Ok(FacetEntry { key: name.clone(), label: name, albums: r.get::<_, i64>(1)? as usize, year: None })
+            Ok(FacetEntry { key: name.clone(), label: name, albums: r.get::<_, i64>(1)? as usize, year: None, icon: String::new() })
         })?;
         rows.collect()
     }

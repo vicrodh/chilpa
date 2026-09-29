@@ -22,6 +22,10 @@ pub struct AlbumVersion {
     pub bits: Option<u8>,
     pub rate: Option<u32>,
     pub tracks: usize,
+    /// Some track of it can be played now. An edition whose folder is not
+    /// mounted or whose server does not answer is offered dimmed and never
+    /// chosen for me while another one can play (ADR-017).
+    pub reachable: bool,
     rank: (u8, u8, u32, usize, bool),
 }
 
@@ -102,8 +106,20 @@ impl VersionCatalog {
 
     pub fn selected(&self, id: i64) -> i64 {
         let Some(version) = self.versions.get(&id) else { return id };
-        self.preferred.get(&version.group).filter(|id| self.versions.contains_key(id)).copied()
-            .or_else(|| self.groups.get(&version.group).and_then(|ids| ids.first()).copied()).unwrap_or(id)
+        let ids = self.groups.get(&version.group).map(Vec::as_slice).unwrap_or(&[]);
+        self.pick(&version.group, ids).unwrap_or(id)
+    }
+
+    /// The remembered edition while it can play, or while nothing else can;
+    /// otherwise the best one that can. `ids` come in the group's order,
+    /// which puts what can play first.
+    fn pick(&self, group: &str, ids: &[i64]) -> Option<i64> {
+        let playable = |id: &i64| self.versions.get(id).is_some_and(|v| v.reachable);
+        let preferred = self.preferred.get(group).filter(|id| ids.contains(id)).copied();
+        match preferred {
+            Some(id) if playable(&id) || !ids.iter().any(playable) => Some(id),
+            _ => ids.first().copied(),
+        }
     }
 
     /// Pick only among eligible editions, so excluding a source or quality
@@ -114,8 +130,8 @@ impl VersionCatalog {
         ids.iter().filter_map(|id| {
             let Some(v) = self.versions.get(id) else { return Some(*id) };
             if !seen.insert(&v.group) { return None; }
-            self.preferred.get(&v.group).filter(|id| eligible.contains(id)).copied()
-                .or_else(|| self.groups[&v.group].iter().find(|id| eligible.contains(id)).copied())
+            let candidates: Vec<i64> = self.groups[&v.group].iter().filter(|id| eligible.contains(id)).copied().collect();
+            self.pick(&v.group, &candidates)
         }).collect()
     }
 }
@@ -199,7 +215,7 @@ impl Library {
         let mut catalog = VersionCatalog::default();
         let mut stmt = self.db.prepare("SELECT a.id, a.title, a.album_artist, a.folder,
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,
-            s.label, s.icon, s.provider = 'local'
+            s.label, s.icon, s.provider = 'local', t.reachable, coalesce(t.codec, ''), s.kind = 'server'
             FROM albums a JOIN tracks t ON t.album_id = a.id JOIN sources s ON s.id = t.source_id
             WHERE t.present = 1 ORDER BY a.id, t.id")?;
         let mut rows = stmt.query([])?;
@@ -211,9 +227,13 @@ impl Library {
             let bits: Option<u8> = row.get(6)?;
             let rate: Option<u32> = row.get(7)?;
             let location: String = row.get(3)?;
+            // A server's track has an id, not a file name: its codec says
+            // what the extension would have.
             let ext = Path::new(&path).extension().and_then(|s| s.to_str()).unwrap_or("").to_lowercase();
+            let ext = if row.get::<_, bool>(15)? { row.get::<_, String>(14)?.to_lowercase() } else { ext };
+            let reachable = row.get::<_, i64>(13)? == 1;
             let dsd = path.starts_with("sacd:") || matches!(ext.as_str(), "dsf" | "dff" | "dsd") || rate.is_some_and(|r| r >= 2_822_400);
-            let lossy = matches!(ext.as_str(), "mp3" | "ogg" | "oga" | "opus" | "aac") || (matches!(ext.as_str(), "m4a" | "mp4") && bits.is_none());
+            let lossy = matches!(ext.as_str(), "mp3" | "ogg" | "oga" | "opus" | "aac" | "vorbis" | "wma") || (matches!(ext.as_str(), "m4a" | "mp4") && bits.is_none());
             let tier = if dsd { 4 } else if lossy { 1 } else if bits.is_some_and(|b| b >= 24) || rate.is_some_and(|r| r > 48_000) { 3 } else if bits.is_some() { 2 } else { 0 };
             let quality = (tier, if lossy || dsd { 0 } else { bits.unwrap_or(0) }, rate.unwrap_or(0));
             let edition = format!("{title} {location}").to_lowercase();
@@ -223,9 +243,10 @@ impl Library {
                 rank: (quality.0, quality.1, quality.2, 0, enhanced),
                 title, artist: row.get(2).unwrap_or_default(), location, source: row.get(4).unwrap_or_default(),
                 source_label: row.get(10).unwrap_or_default(), source_icon: row.get(11).unwrap_or_default(), local: row.get(12).unwrap_or(false),
-                path: path.clone(), bits, rate, tracks: 0,
+                path: path.clone(), bits, rate, tracks: 0, reachable: false,
             });
             v.tracks += 1;
+            v.reachable |= reachable;
             if quality < (v.rank.0, v.rank.1, v.rank.2) {
                 v.rank.0 = quality.0; v.rank.1 = quality.1; v.rank.2 = quality.2;
                 v.bits = bits; v.rate = rate; v.path = path;
@@ -236,7 +257,7 @@ impl Library {
             catalog.groups.entry(version.group.clone()).or_default().push(version.id);
         }
         for ids in catalog.groups.values_mut() {
-            ids.sort_by_key(|id| (std::cmp::Reverse(catalog.versions[id].rank), *id));
+            ids.sort_by_key(|id| (!catalog.versions[id].reachable, std::cmp::Reverse(catalog.versions[id].rank), *id));
         }
         let mut stmt = self.db.prepare("SELECT group_key, album_id FROM album_preferences")?;
         catalog.preferred = stmt.query_map([], |r| Ok((r.get(0)?, r.get(1)?)))?.collect::<rusqlite::Result<_>>()?;

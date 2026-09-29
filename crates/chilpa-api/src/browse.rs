@@ -608,7 +608,7 @@ mod tests {
     use super::*;
 
     fn entry(label: &str) -> FacetEntry {
-        FacetEntry { key: label.into(), label: label.into(), albums: 0, year: None }
+        FacetEntry { key: label.into(), label: label.into(), albums: 0, year: None, icon: String::new() }
     }
 
     #[test]

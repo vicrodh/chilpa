@@ -179,6 +179,10 @@ impl Library {
 
     /// Replaces a source playlist's cached entries and refreshes the tracks
     /// they refer to. The source remains the owner of every identity.
+    ///
+    /// The tracks are kept as `present = 2`: a copy the playlist points at,
+    /// never part of my library (ADR-017). This is a service's playlist; a
+    /// server's tracks come in through its sync, as `present = 1`.
     pub fn sync_source_playlist_tracks(&self, source_id: i64, playlist_id: i64, tracks: &[PlaylistTrackMetadata]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
         let mut entries = Vec::with_capacity(tracks.len());
@@ -207,7 +211,7 @@ impl Library {
                          duration_ms, sample_rate_hz, bit_depth, channels,
                          codec, isrc, recording_mbid, present, added_at)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
-                         ?12, 1, ?13)
+                         ?12, 2, ?13)
                  ON CONFLICT(source_id, external_id) DO UPDATE SET
                     title = excluded.title,
                     artist = excluded.artist,
@@ -219,7 +223,7 @@ impl Library {
                     codec = excluded.codec,
                     isrc = excluded.isrc,
                     recording_mbid = excluded.recording_mbid,
-                    present = 1",
+                    present = 2",
                 params![source_id, track.external_id, track.title, track.artist, album_id, track.duration_ms as i64, track.sample_rate_hz, track.bit_depth, track.channels, track.codec, track.isrc, track.recording_mbid, now_unix()],
             )?;
             let track_id = tx.query_row("SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2", params![source_id, track.external_id], |r| r.get(0))?;
