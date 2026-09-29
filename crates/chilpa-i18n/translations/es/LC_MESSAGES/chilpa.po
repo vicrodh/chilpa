@@ -569,6 +569,9 @@ msgstr "Duración"
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo entonces reemplaza al original. Hace falta tanto espacio libre como ocupa el disco. Lo que se escribe no se puede deshacer."
 
+msgid "Earlier tabs"
+msgstr "Pestañas anteriores"
+
 msgid "Edit"
 msgstr "Editar"
 
@@ -778,6 +781,9 @@ msgstr "Conservar la cola entre sesiones"
 
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
+
+msgid "Later tabs"
+msgstr "Pestañas siguientes"
 
 msgid "Library"
 msgstr "Biblioteca"

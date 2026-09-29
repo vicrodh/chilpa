@@ -23,6 +23,8 @@ QtObject {
     readonly property string cast: "\uea56"
     readonly property string check: "\uea5e"
     readonly property string checkbox: "\ueba6"
+    readonly property string chevronCompactLeft: "\ufaf1"
+    readonly property string chevronCompactRight: "\ufaf2"
     readonly property string chevronDown: "\uea5f"
     readonly property string chevronLeft: "\uea60"
     readonly property string chevronRight: "\uea61"

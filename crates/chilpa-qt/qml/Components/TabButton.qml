@@ -66,7 +66,7 @@ Item {
             width: Math.min(implicitWidth, Metrics.tabMaxWidth - Metrics.tabPadLeft - Metrics.tabPadRight - Metrics.iconSm - Metrics.tabClose - Metrics.gap12)
             text: tab.title
             elide: Text.ElideRight
-            font.pointSize: Type.row
+            font.pointSize: Type.meta
             font.weight: tab.active ? Type.semibold : Type.regular
             color: tab.active ? Theme.color.textPrimary : Theme.color.textSecondary
         }

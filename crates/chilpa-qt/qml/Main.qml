@@ -34,7 +34,7 @@ Window {
         id: host
         x: window.contentLeft
         y: Metrics.tabBarHeight
-        width: (right.visible ? right.x - Metrics.spaceWindow : window.width) - x
+        width: (right.visible ? right.x : window.width) - Metrics.spaceWindow - x // derived: the window's margin on the right too
         height: window.height - y
         clip: true
     }

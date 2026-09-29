@@ -75,46 +75,29 @@ Item {
             glyph: bar.turn.glyph
             onClicked: SettingsModel.sidebarMode = bar.turn.next
         }
+        // The sidebar's destinations, while it is closed.
+        NavMenu {
+            visible: SettingsModel.sidebarMode === "closed"
+        }
+        Rectangle {
+            visible: SettingsModel.sidebarMode === "closed"
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: Metrics.dividerHeight
+            color: Theme.color.strokeHairline
+        }
     }
 
-    Row {
+    TabStrip {
         anchors.left: parent.left
         anchors.leftMargin: lead.width + Metrics.gap8 // derived: right after the buttons
         anchors.top: parent.top
         anchors.topMargin: Metrics.tabBarTop
-        spacing: Metrics.gap4
-
-        // With the sidebar closed, its search lives here, results below it.
-        SearchBox {
-            visible: SettingsModel.sidebarMode === "closed"
-            width: Metrics.screenSearch
-            active: visible
-            flyoutY: height + Metrics.gap10
-            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
-        }
-
-        Repeater {
-            model: Navigation.tabTitles
-
-            TabButton {
-                required property int index
-                required property string modelData
-                title: modelData
-                glyph: Icons[Navigation.tabIcons[index]] || ""
-                active: index === Navigation.active
-                onActivated: Navigation.activate(index)
-                onClosed: Navigation.close(index)
-            }
-        }
-
-        IconButton {
-            tip: I18n.tr("New tab", I18n.rev)
-            glyph: Icons.plus
-            onClicked: Navigation.open("library", 0)
-        }
+        room: bar.width - anchors.leftMargin - tools.width - Metrics.gap12 // derived: what the two ends leave
     }
 
     Row {
+        id: tools
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.topMargin: Metrics.tabBarTop
@@ -127,6 +110,18 @@ Item {
             ]
             current: SettingsModel.density === "rich" ? 1 : 0
             onActivated: (index) => SettingsModel.density = index === 1 ? "rich" : "compact"
+        }
+
+        // With the sidebar closed, its search lives here, results below it
+        // and ending where the field ends.
+        SearchBox {
+            visible: SettingsModel.sidebarMode === "closed"
+            anchors.verticalCenter: parent.verticalCenter
+            width: Metrics.screenSearch
+            active: visible
+            flyoutX: width - Metrics.searchFlyout // derived: its right edge on the field's
+            flyoutY: height + Metrics.gap10
+            room: bar.Window.window ? bar.Window.window.height - Metrics.tabBarHeight - Metrics.spaceWindow : 0 // derived: under the tab bar
         }
 
         IconButton {
