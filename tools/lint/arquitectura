@@ -56,6 +56,10 @@ ALLOWED = {
     # It has no network of its own. Whoever calls it hands in the request,
     # so every test runs without one.
     "chilpa-meta": set(),
+    # The three protocols of my servers (ADR-017). No network of its own,
+    # like chilpa-meta: the request is handed in. It is the only crate that
+    # names them.
+    "chilpa-servers": set(),
     # Los catálogos de traducción. No dependen de nada, y viven aparte del
     # shell a propósito: cambiar de ventana no debe poder romper el idioma.
     "chilpa-i18n": set(),
@@ -80,7 +84,7 @@ ALLOWED = {
     "chilpa-coreaudio": {"chilpa-audio"},
     "chilpa-wasapi": {"chilpa-audio"},
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
-    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta"},
+    "chilpa-api": {"chilpa-core", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api"},
 }

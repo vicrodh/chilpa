@@ -1025,6 +1025,9 @@ msgstr ""
 msgid "Plays"
 msgstr ""
 
+msgid "Plex did not accept the session; sign in again"
+msgstr ""
+
 msgid "Previous"
 msgstr ""
 
@@ -1053,6 +1056,9 @@ msgid "Queue this group"
 msgstr ""
 
 msgid "Queue · {}"
+msgstr ""
+
+msgid "Quick Connect is turned off on that server"
 msgstr ""
 
 msgid "Quick view"
@@ -1736,6 +1742,9 @@ msgstr ""
 msgid "none of that record's files are here now"
 msgstr ""
 
+msgid "none of that server's addresses answers from here"
+msgstr ""
+
 msgid "not supported: {}"
 msgstr ""
 
@@ -1814,6 +1823,15 @@ msgstr ""
 msgid "tags"
 msgstr ""
 
+msgid "that address does not answer like a Jellyfin server (HTTP {})"
+msgstr ""
+
+msgid "that address does not answer like a Plex server (HTTP {})"
+msgstr ""
+
+msgid "that address does not answer like a Subsonic server (HTTP {})"
+msgstr ""
+
 msgid "that album has no playable tracks"
 msgstr ""
 
@@ -1830,6 +1848,9 @@ msgid "that file is not an image"
 msgstr ""
 
 msgid "that id does not work as a folder"
+msgstr ""
+
+msgid "that is an Emby server, and Chilpa does not speak Emby"
 msgstr ""
 
 msgid "that is longer than {} characters"
@@ -1926,6 +1947,9 @@ msgid "the changes were saved"
 msgstr ""
 
 msgid "the client_id came in empty"
+msgstr ""
+
+msgid "the code expired; start again"
 msgstr ""
 
 msgid "the connection failed: interrupted"
@@ -2162,10 +2186,34 @@ msgstr ""
 msgid "the server could not be reached"
 msgstr ""
 
+msgid "the server did not accept the session; sign in again"
+msgstr ""
+
+msgid "the server did not accept the user or the password"
+msgstr ""
+
 msgid "the server did not say how long the file is"
 msgstr ""
 
+msgid "the server does not accept this way of signing in"
+msgstr ""
+
 msgid "the server is converting the file instead of sending it as it is"
+msgstr ""
+
+msgid "the server is reading its own library; sync again when it finishes"
+msgstr ""
+
+msgid "the server is starting; try again in a moment"
+msgstr ""
+
+msgid "the server moved to {}; use that address"
+msgstr ""
+
+msgid "the server no longer has it"
+msgstr ""
+
+msgid "the server said: {}"
 msgstr ""
 
 msgid "the server sent more than was asked for"
@@ -2193,6 +2241,9 @@ msgid "the source"
 msgstr ""
 
 msgid "the stereo area (TWOCHTOC) was not found"
+msgstr ""
+
+msgid "the sync lost its place; start it again"
 msgstr ""
 
 msgid "the tags could not be read: {}"
@@ -2279,6 +2330,9 @@ msgstr ""
 msgid "this track is on a server, and servers are not connected"
 msgstr ""
 
+msgid "this user may not do that on the server"
+msgstr ""
+
 msgid "through {}"
 msgstr ""
 
@@ -2298,6 +2352,9 @@ msgid "virtual"
 msgstr ""
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
+msgstr ""
+
+msgid "write the address alone: no user, password or query in it"
 msgstr ""
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"

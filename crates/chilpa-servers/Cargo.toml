@@ -1,0 +1,18 @@
+[package]
+name = "chilpa-servers"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+# Why a server refused or failed is read by the user.
+chilpa-i18n.workspace = true
+# The three protocols answer in JSON, and the credential is kept as JSON
+# before it is sealed.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Subsonic's token is md5(password + salt): its protocol, not a choice.
+md-5 = "0.10"
+# A fresh salt per Subsonic request, and ids nobody can guess.
+rand = "0.10"
