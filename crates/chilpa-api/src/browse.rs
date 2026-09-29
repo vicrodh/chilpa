@@ -28,6 +28,9 @@ pub struct TrackRow {
     pub quality: Quality,
     /// Its record's cover, empty if there is none.
     pub artwork_path: String,
+    /// It can be played now. A row that cannot is dimmed, does not play,
+    /// and offers only to be taken out of an editable playlist (ADR-017).
+    pub available: bool,
 }
 
 /// One row in a grouped track list. Headers are explicit boundaries, so the
@@ -40,7 +43,8 @@ pub enum TrackEntry {
 
 fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     TrackRow {
-        quality: Quality::of_file(&t.external_id, t.bit_depth, t.sample_rate_hz),
+        quality: Quality::of_track(&t.external_id, t.codec.as_deref(), t.bit_depth, t.sample_rate_hz),
+        available: t.available,
         id: t.id,
         path: t.external_id,
         title: t.title,
@@ -179,7 +183,10 @@ pub struct FolderItem {
 /// A row for a file the library does not have: its name, and what its
 /// extension says.
 pub(crate) fn file_row(path: &str) -> TrackRow {
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new() }
+    // Not in the library: a file opened from a folder plays if it is there;
+    // a server's track the library no longer holds does not.
+    let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
+    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available }
 }
 
 /// A record as its page shows it.
@@ -597,8 +604,18 @@ impl Chilpa {
         if start >= paths.len() {
             return;
         }
+        // What cannot play now stays out, and the start moves with it: the
+        // track asked for, or the next one that can play.
+        let chosen = &paths[start];
+        let kept = self.playable(paths);
+        let Some(start) = kept.iter().position(|p| p == chosen).or_else(|| {
+            let before = paths[..start].iter().filter(|p| kept.contains(p)).count();
+            (before < kept.len()).then_some(before)
+        }) else {
+            return;
+        };
         let (device, bit_perfect) = self.chosen_output();
-        self.replace_queue(paths.to_vec());
+        self.replace_queue(kept);
         self.spawn(start, &device, bit_perfect);
     }
 }

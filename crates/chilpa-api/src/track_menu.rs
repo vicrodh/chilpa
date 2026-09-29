@@ -13,10 +13,21 @@ pub struct TrackMenuContext {
     pub artist: bool,
     pub folder: bool,
     pub metadata: bool,
+    /// None of the chosen tracks can be played now (ADR-017).
+    pub unavailable: bool,
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
     if context.count == 0 { return Vec::new(); }
+    // What cannot be played now offers nothing but leaving a list of mine,
+    // and outside one, nothing at all (ADR-017).
+    if context.unavailable {
+        return if context.editable {
+            vec![json!({"act": "remove", "text": i18n::t(i18n::mark("Remove from playlist"))})]
+        } else {
+            Vec::new()
+        };
+    }
     let mut entries = Vec::new();
     if context.count > 1 {
         entries.push(json!({"text": i18n::tf("{} track", "{} tracks", context.count as i64, &[&context.count.to_string()]), "note": true}));
@@ -81,5 +92,19 @@ mod tests {
         let menu = track_menu(TrackMenuContext { count: 1, queued: true, ..Default::default() });
         let actions: Vec<_> = menu.iter().filter_map(|entry| entry["act"].as_str()).collect();
         assert_eq!(actions, ["play", "dequeue", "pick"]);
+    }
+}
+
+#[cfg(test)]
+mod unavailable_tests {
+    use super::*;
+
+    #[test]
+    fn an_unplayable_track_can_only_leave_a_playlist_of_mine() {
+        let in_playlist = track_menu(TrackMenuContext { count: 1, editable: true, album: true, unavailable: true, ..Default::default() });
+        assert_eq!(in_playlist.len(), 1);
+        assert_eq!(in_playlist[0]["act"], "remove");
+        assert!(track_menu(TrackMenuContext { count: 1, album: true, unavailable: true, ..Default::default() }).is_empty());
+        assert!(track_menu(TrackMenuContext { count: 1, unavailable: false, ..Default::default() }).len() > 1);
     }
 }

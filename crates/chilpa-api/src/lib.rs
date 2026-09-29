@@ -31,7 +31,11 @@ mod track_menu;
 pub use track_menu::{track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
+mod servers;
+pub mod settings_rows;
 pub mod settings_schema;
+pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
+pub use settings_rows::{RowNotes, SettingsRow};
 pub mod sidebar;
 pub mod theme;
 mod volume;
@@ -231,6 +235,10 @@ fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
 fn title_of(path: &std::path::Path) -> String {
     if let Some(title) = chilpa_core::sacd_tracks::title(path) {
         return title;
+    }
+    // A server's track has no file here to read a title from.
+    if chilpa_models::RemoteEntry::is_remote(&path.to_string_lossy()) {
+        return chilpa_core::remote::title(path).unwrap_or_default();
     }
     chilpa_tags::read(path).ok().and_then(|info| info.tags.title).unwrap_or_else(|| path.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
 }
@@ -557,6 +565,8 @@ pub struct Chilpa {
     outputs_generation: String,
     /// The metadata editor, and the record open in it if there is one.
     metadata: metadata::Editor,
+    /// My servers: adding, syncing, watching and removing them (ADR-017).
+    servers: servers::Servers,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -621,6 +631,7 @@ impl Chilpa {
             relaunching: None,
             outputs_generation: String::new(),
             metadata: metadata::Editor::default(),
+            servers: servers::Servers::default(),
         };
         chilpa.restore_queue_session();
         chilpa
@@ -1073,6 +1084,7 @@ impl Chilpa {
         }
         self.advance_search();
         self.advance_connect();
+        self.poll_servers();
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }
@@ -1109,7 +1121,8 @@ impl Chilpa {
                         Some(multiple) => multiple * 44_100,
                         None => opened.sample_rate_hz,
                     };
-                    self.now.quality = Quality::of_file(&self.now.path, bits, Some(rate));
+                    let codec = self.remote_codec(&self.now.path.clone());
+                    self.now.quality = Quality::of_track(&self.now.path, codec.as_deref(), bits, Some(rate));
                     self.load_lyrics(&path);
                     self.load_analysis(&path);
                     // The player counts over what it was given; the view

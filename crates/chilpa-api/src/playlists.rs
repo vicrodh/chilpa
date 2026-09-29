@@ -263,7 +263,7 @@ impl Chilpa {
         let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
-        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| chilpa_library::PlaylistEntry { track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(), source_id: Some(source), external_id: r.clone() }).collect();
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| entry_of(lib, source, r)).collect();
         let id = lib.create_playlist(source, &name, "").ok()?;
         lib.set_playlist_entries(id, &entries).ok()?;
         Some(id)
@@ -314,7 +314,7 @@ impl Chilpa {
         let Ok(source) = lib.source_id("local", "default") else {
             return 0;
         };
-        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| chilpa_library::PlaylistEntry { track_id: lib.track_by_path(source, std::path::Path::new(r)).ok().flatten(), source_id: Some(source), external_id: r.clone() }).collect();
+        let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| entry_of(lib, source, r)).collect();
         lib.append_to_playlist(playlist_id, &entries).unwrap_or(0)
     }
 
@@ -500,4 +500,13 @@ impl Chilpa {
             let _ = lib.record_playlist_play(id);
         }
     }
+}
+
+/// A queue entry as a playlist keeps it: a server's track with its server,
+/// anything else as a local file, found in the library or not.
+fn entry_of(lib: &chilpa_library::Library, local: i64, path: &str) -> chilpa_library::PlaylistEntry {
+    if let Some((track, source)) = lib.track_by_entry(path).ok().flatten() {
+        return chilpa_library::PlaylistEntry { track_id: Some(track), source_id: Some(source), external_id: path.to_string() };
+    }
+    chilpa_library::PlaylistEntry { track_id: lib.track_by_path(local, std::path::Path::new(path)).ok().flatten(), source_id: Some(local), external_id: path.to_string() }
 }

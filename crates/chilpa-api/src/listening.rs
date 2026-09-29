@@ -68,7 +68,11 @@ impl Chilpa {
             return context;
         };
         let local = path.is_absolute() || path.to_string_lossy().starts_with("sacd:");
-        if local {
+        // A server's track: its entry is its id in the library, and the
+        // source it comes from goes with the listen (ADR-017).
+        if let Some((track, _)) = lib.track_by_entry(&path.to_string_lossy()).ok().flatten() {
+            context = lib.listen_context(track).unwrap_or_default();
+        } else if local {
             context = lib
                 .local_listen_context(&path.to_string_lossy())
                 .ok()

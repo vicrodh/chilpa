@@ -190,6 +190,11 @@ pub const SECTIONS: &[Section] = &[
         label: Chilpa::mark("Sources"),
         icon: "server",
         groups: &[Group {
+            title: Chilpa::mark("Servers"),
+            // Expands to one row per server, and the row that adds one
+            // (ADR-017).
+            settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
+        }, Group {
             title: Chilpa::mark("Installed plugins"),
             // This sentinel expands to one row per installed plugin in the
             // frontend model.  The schema still owns the section and its

@@ -106,6 +106,9 @@ msgstr ""
 msgid "Add a folder to the library"
 msgstr ""
 
+msgid "Add a server"
+msgstr ""
+
 msgid "Add to favorites"
 msgstr ""
 
@@ -119,6 +122,9 @@ msgid "Add to queue"
 msgstr ""
 
 msgid "Added this month"
+msgstr ""
+
+msgid "Add…"
 msgstr ""
 
 msgid "Advanced"
@@ -324,6 +330,9 @@ msgstr ""
 msgid "Connect {}"
 msgstr ""
 
+msgid "Connected"
+msgstr ""
+
 msgid "Connected as {}"
 msgstr ""
 
@@ -474,6 +483,9 @@ msgid "Disconnect"
 msgstr ""
 
 msgid "Disconnect account"
+msgstr ""
+
+msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr ""
 
 msgid "Done"
@@ -872,6 +884,9 @@ msgstr ""
 msgid "Normalization"
 msgstr ""
 
+msgid "Not answering"
+msgstr ""
+
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
@@ -936,6 +951,9 @@ msgid "Open it again"
 msgstr ""
 
 msgid "Open its page"
+msgstr ""
+
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
 msgstr ""
 
 msgid "Opens the device and says which formats reach it untouched."
@@ -1100,6 +1118,9 @@ msgstr ""
 msgid "Records"
 msgstr ""
 
+msgid "Refused the sign-in. Its records stay listed and cannot be played."
+msgstr ""
+
 msgid "Remove from favorites"
 msgstr ""
 
@@ -1110,6 +1131,9 @@ msgid "Remove from queue"
 msgstr ""
 
 msgid "Remove from the library"
+msgstr ""
+
+msgid "Remove…"
 msgstr ""
 
 msgid "Rename"
@@ -1211,6 +1235,9 @@ msgstr ""
 msgid "Send listens"
 msgstr ""
 
+msgid "Servers"
+msgstr ""
+
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr ""
 
@@ -1238,6 +1265,9 @@ msgstr ""
 msgid "Sidecar"
 msgstr ""
 
+msgid "Signed out"
+msgstr ""
+
 msgid "Songs"
 msgstr ""
 
@@ -1251,6 +1281,20 @@ msgid "Sources and quality"
 msgstr ""
 
 msgid "Studio 24/48"
+msgstr ""
+
+msgid "Sync now"
+msgstr ""
+
+msgid "Syncing"
+msgstr ""
+
+msgid "Syncing: {} track read"
+msgid_plural "Syncing: {} tracks read"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "Syncing…"
 msgstr ""
 
 msgid "System"
@@ -1278,6 +1322,9 @@ msgid "The account did not connect. You can close this tab."
 msgstr ""
 
 msgid "The account expired; connect it again."
+msgstr ""
+
+msgid "The connection is not encrypted."
 msgstr ""
 
 msgid "The first follows the theme: crimson in light, red in dark."
@@ -1329,6 +1376,12 @@ msgid "This output is always Chilpa's alone."
 msgstr ""
 
 msgid "This playlist is read-only or belongs to another source."
+msgstr ""
+
+msgid "This record cannot be played now."
+msgstr ""
+
+msgid "This removes {} from your library."
 msgstr ""
 
 msgid "This screen is not built yet."
@@ -1538,6 +1591,9 @@ msgstr ""
 msgid "cannot be done"
 msgstr ""
 
+msgid "choose at least one library"
+msgstr ""
+
 msgid "converted to {}"
 msgstr ""
 
@@ -1739,6 +1795,9 @@ msgstr ""
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr ""
 
+msgid "none of that can be played now: its folder is not mounted or its server does not answer"
+msgstr ""
+
 msgid "none of that record's files are here now"
 msgstr ""
 
@@ -1802,10 +1861,19 @@ msgstr ""
 msgid "send you to grant permission at {}"
 msgstr ""
 
+msgid "servers are not started"
+msgstr ""
+
 msgid "shared"
 msgstr ""
 
 msgid "shared at {}"
+msgstr ""
+
+msgid "shared with you"
+msgstr ""
+
+msgid "sign in to {} again"
 msgstr ""
 
 msgid "stereo"
@@ -1821,6 +1889,9 @@ msgid "stumbling"
 msgstr ""
 
 msgid "tags"
+msgstr ""
+
+msgid "that Plex account reaches no server"
 msgstr ""
 
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
@@ -1874,10 +1945,22 @@ msgstr ""
 msgid "that list is empty"
 msgstr ""
 
+msgid "that server has no music library"
+msgstr ""
+
+msgid "that server is already in the library"
+msgstr ""
+
+msgid "that server is no longer in the library"
+msgstr ""
+
 msgid "that server name does not resolve"
 msgstr ""
 
 msgid "that source does not use OAuth"
+msgstr ""
+
+msgid "that track is no longer in the library"
 msgstr ""
 
 msgid "the CHNL chunk is missing"
@@ -1973,7 +2056,16 @@ msgstr ""
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr ""
 
+msgid "the covers of {} could not be deleted from {}"
+msgstr ""
+
+msgid "the credential could not be kept safely on this system"
+msgstr ""
+
 msgid "the credential could not be saved: {}"
+msgstr ""
+
+msgid "the credential of {} could not be deleted; nothing was removed"
 msgstr ""
 
 msgid "the data chunk is missing"
@@ -2081,10 +2173,16 @@ msgstr ""
 msgid "the library could not be checked: {}"
 msgstr ""
 
+msgid "the library could not be opened"
+msgstr ""
+
 msgid "the library could not be opened: {}"
 msgstr ""
 
 msgid "the library could not be repaired: {}"
+msgstr ""
+
+msgid "the library could not be written"
 msgstr ""
 
 msgid "the library is unavailable"
@@ -2192,6 +2290,9 @@ msgstr ""
 msgid "the server did not accept the user or the password"
 msgstr ""
 
+msgid "the server did not describe every track it listed; nothing was taken out, sync again"
+msgstr ""
+
 msgid "the server did not say how long the file is"
 msgstr ""
 
@@ -2205,6 +2306,9 @@ msgid "the server is reading its own library; sync again when it finishes"
 msgstr ""
 
 msgid "the server is starting; try again in a moment"
+msgstr ""
+
+msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
 msgstr ""
 
 msgid "the server moved to {}; use that address"
@@ -2244,6 +2348,9 @@ msgid "the stereo area (TWOCHTOC) was not found"
 msgstr ""
 
 msgid "the sync lost its place; start it again"
+msgstr ""
+
+msgid "the sync was stopped"
 msgstr ""
 
 msgid "the tags could not be read: {}"
@@ -2368,7 +2475,13 @@ msgstr[1] ""
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr ""
 
+msgid "{} and its files are not touched."
+msgstr ""
+
 msgid "{} answered something Chilpa did not expect: {}"
+msgstr ""
+
+msgid "{} are not available. The record will open when they are back."
 msgstr ""
 
 msgid "{} artist"
@@ -2407,6 +2520,9 @@ msgid_plural "{} discs"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} does not answer. The record will open when it is back."
+msgstr ""
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] ""
@@ -2438,12 +2554,18 @@ msgstr ""
 msgid "{} is not available yet: {}"
 msgstr ""
 
+msgid "{} is not available. The record will open when it is back."
+msgstr ""
+
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] ""
 msgstr[1] ""
 
 msgid "{} no longer accepts the account; connect again"
+msgstr ""
+
+msgid "{} of its tracks leave {} of your playlists."
 msgstr ""
 
 msgid "{} of the list's tracks are gone"
@@ -2458,8 +2580,18 @@ msgstr ""
 msgid "{} of {} tracks match this release"
 msgstr ""
 
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} playlist"
 msgid_plural "{} playlists"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} rating"
+msgid_plural "{} ratings"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -2495,6 +2627,9 @@ msgid "{} track added"
 msgid_plural "{} tracks added"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} tracks in {} records"
+msgstr ""
 
 msgid "{} was already there"
 msgid_plural "{} were already there"
