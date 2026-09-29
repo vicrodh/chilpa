@@ -1,5 +1,6 @@
 //! Network renderers own their clock; I keep the queue in Chilpa.
 pub mod dlna;
+pub mod chromecast;
 pub mod discovery;
 
 use std::net::SocketAddr;

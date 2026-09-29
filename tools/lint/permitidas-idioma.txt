@@ -490,3 +490,11 @@ didl
 roxmltree
 ssdp
 udp
+ipv
+mdns
+openssl
+pkcs
+varint
+vendored
+val
+schannel
