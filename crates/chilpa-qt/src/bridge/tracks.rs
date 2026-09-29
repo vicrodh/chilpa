@@ -575,6 +575,7 @@ impl qobject::TrackListModel {
             artist: self.can_go(row, &QString::from("artist")),
             folder: self.can_go(row, &QString::from("folder")),
             metadata: self.can_go(row, &QString::from("metadata")),
+            unavailable: this.track(row.max(0) as usize).is_some_and(|t| !t.available),
         };
         QString::from(serde_json::to_string(&chilpa_api::track_menu(context)).unwrap_or_default())
     }

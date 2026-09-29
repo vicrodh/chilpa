@@ -106,6 +106,9 @@ msgstr "Agregar una carpeta"
 msgid "Add a folder to the library"
 msgstr "Agregar una carpeta a la biblioteca"
 
+msgid "Add a server"
+msgstr "Agregar un servidor"
+
 msgid "Add to favorites"
 msgstr "Agregar a favoritos"
 
@@ -120,6 +123,9 @@ msgstr "Agregar a la cola"
 
 msgid "Added this month"
 msgstr "Agregadas este mes"
+
+msgid "Add…"
+msgstr "Agregar…"
 
 msgid "Advanced"
 msgstr "Avanzado"
@@ -324,6 +330,9 @@ msgstr "Conectar en {}"
 msgid "Connect {}"
 msgstr "Conectar {}"
 
+msgid "Connected"
+msgstr "Conectado"
+
 msgid "Connected as {}"
 msgstr "Conectado como {}"
 
@@ -475,6 +484,9 @@ msgstr "Desconectar"
 
 msgid "Disconnect account"
 msgstr "Desconectar la cuenta"
+
+msgid "Does not answer. Its records stay listed and cannot be played."
+msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
 
 msgid "Done"
 msgstr "Listo"
@@ -872,6 +884,9 @@ msgstr "No hay plugins de fuentes instalados"
 msgid "Normalization"
 msgstr "Normalización"
 
+msgid "Not answering"
+msgstr "No responde"
+
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
@@ -937,6 +952,9 @@ msgstr "Abrirlo otra vez"
 
 msgid "Open its page"
 msgstr "Abrir su página"
+
+msgid "OpenSubsonic (Navidrome, gonic…), Jellyfin or Plex. Its music joins the library."
+msgstr "OpenSubsonic (Navidrome, gonic…), Jellyfin o Plex. Su música se une a la biblioteca."
 
 msgid "Opens the device and says which formats reach it untouched."
 msgstr "Abre el dispositivo y dice qué formatos le llegan intactos."
@@ -1100,6 +1118,9 @@ msgstr "Escuchados recientemente"
 msgid "Records"
 msgstr "Discos"
 
+msgid "Refused the sign-in. Its records stay listed and cannot be played."
+msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
+
 msgid "Remove from favorites"
 msgstr "Quitar de favoritos"
 
@@ -1111,6 +1132,9 @@ msgstr "Quitar de la cola"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove…"
+msgstr "Quitar…"
 
 msgid "Rename"
 msgstr "Renombrar"
@@ -1211,6 +1235,9 @@ msgstr "Seleccionar pistas"
 msgid "Send listens"
 msgstr "Enviar escuchas"
 
+msgid "Servers"
+msgstr "Servidores"
+
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
 
@@ -1238,6 +1265,9 @@ msgstr "Aleatorio"
 msgid "Sidecar"
 msgstr "Sidecar"
 
+msgid "Signed out"
+msgstr "Sesión cerrada"
+
 msgid "Songs"
 msgstr "Canciones"
 
@@ -1252,6 +1282,20 @@ msgstr "Fuentes y calidad"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
+
+msgid "Sync now"
+msgstr "Sincronizar ahora"
+
+msgid "Syncing"
+msgstr "Sincronizando"
+
+msgid "Syncing: {} track read"
+msgid_plural "Syncing: {} tracks read"
+msgstr[0] "Sincronizando: {} pista leída"
+msgstr[1] "Sincronizando: {} pistas leídas"
+
+msgid "Syncing…"
+msgstr "Sincronizando…"
 
 msgid "System"
 msgstr "Sistema"
@@ -1279,6 +1323,9 @@ msgstr "No se conectó la cuenta. Puedes cerrar esta pestaña."
 
 msgid "The account expired; connect it again."
 msgstr "La cuenta expiró; vuelve a conectarla."
+
+msgid "The connection is not encrypted."
+msgstr "La conexión no está cifrada."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
@@ -1330,6 +1377,12 @@ msgstr "Esta salida siempre es solo de Chilpa."
 
 msgid "This playlist is read-only or belongs to another source."
 msgstr "Esta playlist es de solo lectura o pertenece a otra fuente."
+
+msgid "This record cannot be played now."
+msgstr "Este disco no se puede reproducir ahora."
+
+msgid "This removes {} from your library."
+msgstr "Esto quita {} de tu biblioteca."
 
 msgid "This screen is not built yet."
 msgstr "Esta pantalla todavía no está hecha."
@@ -1538,6 +1591,9 @@ msgstr "llamar a \"{}\", que nadie ha aprobado"
 msgid "cannot be done"
 msgstr "no se puede"
 
+msgid "choose at least one library"
+msgstr "elige al menos una biblioteca"
+
 msgid "converted to {}"
 msgstr "convertido a {}"
 
@@ -1739,6 +1795,9 @@ msgstr "no hay ninguna tarjeta de sonido listada en /proc/asound"
 msgid "no sound server answered; install pipewire and pipewire-pulse"
 msgstr "ningún servidor de sonido contestó; instala pipewire y pipewire-pulse"
 
+msgid "none of that can be played now: its folder is not mounted or its server does not answer"
+msgstr "nada de eso se puede reproducir ahora: su carpeta no está montada o su servidor no responde"
+
 msgid "none of that record's files are here now"
 msgstr "ninguno de los archivos de ese disco está aquí ahorita"
 
@@ -1802,11 +1861,20 @@ msgstr "sector {} inválido: {}"
 msgid "send you to grant permission at {}"
 msgstr "mandarte a dar permiso en {}"
 
+msgid "servers are not started"
+msgstr "los servidores no están iniciados"
+
 msgid "shared"
 msgstr "compartido"
 
 msgid "shared at {}"
 msgstr "compartido a {}"
+
+msgid "shared with you"
+msgstr "compartido contigo"
+
+msgid "sign in to {} again"
+msgstr "vuelve a iniciar sesión en {}"
 
 msgid "stereo"
 msgstr "estéreo"
@@ -1822,6 +1890,9 @@ msgstr "tropezando"
 
 msgid "tags"
 msgstr "tags"
+
+msgid "that Plex account reaches no server"
+msgstr "esa cuenta de Plex no alcanza ningún servidor"
 
 msgid "that address does not answer like a Jellyfin server (HTTP {})"
 msgstr "esa dirección no responde como un servidor Jellyfin (HTTP {})"
@@ -1874,11 +1945,23 @@ msgstr "eso no es algo que se le pueda pedir a {}"
 msgid "that list is empty"
 msgstr "esa lista está vacía"
 
+msgid "that server has no music library"
+msgstr "ese servidor no tiene ninguna biblioteca de música"
+
+msgid "that server is already in the library"
+msgstr "ese servidor ya está en la biblioteca"
+
+msgid "that server is no longer in the library"
+msgstr "ese servidor ya no está en la biblioteca"
+
 msgid "that server name does not resolve"
 msgstr "ese nombre de servidor no se resuelve"
 
 msgid "that source does not use OAuth"
 msgstr "ese source no usa OAuth"
+
+msgid "that track is no longer in the library"
+msgstr "esa pista ya no está en la biblioteca"
 
 msgid "the CHNL chunk is missing"
 msgstr "falta el chunk CHNL"
@@ -1973,8 +2056,17 @@ msgstr "la carátula tiene que ser una imagen de hasta 25 MiB"
 msgid "the cover is larger than 12,000 pixels on a side"
 msgstr "la carátula mide más de 12,000 pixeles por lado"
 
+msgid "the covers of {} could not be deleted from {}"
+msgstr "no se pudieron borrar las portadas de {} en {}"
+
+msgid "the credential could not be kept safely on this system"
+msgstr "la credencial no se pudo guardar de forma segura en este sistema"
+
 msgid "the credential could not be saved: {}"
 msgstr "no se pudo guardar la credencial: {}"
+
+msgid "the credential of {} could not be deleted; nothing was removed"
+msgstr "no se pudo borrar la credencial de {}; no se quitó nada"
 
 msgid "the data chunk is missing"
 msgstr "falta el chunk data"
@@ -2081,11 +2173,17 @@ msgstr "la imagen se lee igual como volcado de sectores de 2048 y de 2064 bytes"
 msgid "the library could not be checked: {}"
 msgstr "no se pudo revisar la biblioteca: {}"
 
+msgid "the library could not be opened"
+msgstr "no se pudo abrir la biblioteca"
+
 msgid "the library could not be opened: {}"
 msgstr "no se pudo abrir la biblioteca: {}"
 
 msgid "the library could not be repaired: {}"
 msgstr "no se pudo reparar la biblioteca: {}"
+
+msgid "the library could not be written"
+msgstr "no se pudo escribir en la biblioteca"
 
 msgid "the library is unavailable"
 msgstr "La biblioteca no está disponible"
@@ -2192,6 +2290,9 @@ msgstr "el servidor no aceptó la sesión; vuelve a iniciar sesión"
 msgid "the server did not accept the user or the password"
 msgstr "el servidor no aceptó el usuario o la contraseña"
 
+msgid "the server did not describe every track it listed; nothing was taken out, sync again"
+msgstr "el servidor no describió todas las pistas que listó; no se quitó nada, sincroniza otra vez"
+
 msgid "the server did not say how long the file is"
 msgstr "el servidor no dijo cuánto mide el archivo"
 
@@ -2206,6 +2307,9 @@ msgstr "el servidor está leyendo su propia biblioteca; sincroniza de nuevo cuan
 
 msgid "the server is starting; try again in a moment"
 msgstr "el servidor está arrancando; intenta de nuevo en un momento"
+
+msgid "the server listed {} of its {} tracks; nothing was taken out, sync again"
+msgstr "el servidor listó {} de sus {} pistas; no se quitó nada, sincroniza de nuevo"
 
 msgid "the server moved to {}; use that address"
 msgstr "el servidor se movió a {}; usa esa dirección"
@@ -2245,6 +2349,9 @@ msgstr "no se encontró el área estéreo (TWOCHTOC)"
 
 msgid "the sync lost its place; start it again"
 msgstr "la sincronización perdió su lugar; iníciala de nuevo"
+
+msgid "the sync was stopped"
+msgstr "la sincronización se detuvo"
 
 msgid "the tags could not be read: {}"
 msgstr "no se pudieron leer los tags: {}"
@@ -2368,8 +2475,14 @@ msgstr[1] "{} álbumes"
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analizadas, {} sin pulso, {} ilegibles"
 
+msgid "{} and its files are not touched."
+msgstr "{} y sus archivos no se tocan."
+
 msgid "{} answered something Chilpa did not expect: {}"
 msgstr "{} contestó algo que Chilpa no esperaba: {}"
+
+msgid "{} are not available. The record will open when they are back."
+msgstr "{} no están disponibles. El disco se abrirá cuando regresen."
 
 msgid "{} artist"
 msgid_plural "{} artists"
@@ -2407,6 +2520,9 @@ msgid_plural "{} discs"
 msgstr[0] "{} disco"
 msgstr[1] "{} discos"
 
+msgid "{} does not answer. The record will open when it is back."
+msgstr "{} no responde. El disco se abrirá cuando regrese."
+
 msgid "{} file whose tags disagree"
 msgid_plural "{} files whose tags disagree"
 msgstr[0] "{} archivo con tags que no coinciden"
@@ -2438,6 +2554,9 @@ msgstr "{} no es un sidecar que Chilpa pueda leer; quítalo de ahí o arréglalo
 msgid "{} is not available yet: {}"
 msgstr "{} todavía no está disponible: {}"
 
+msgid "{} is not available. The record will open when it is back."
+msgstr "{} no está disponible. El disco se abrirá cuando regrese."
+
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} escucha pendiente de enviar"
@@ -2445,6 +2564,9 @@ msgstr[1] "{} escuchas pendientes de enviar"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} ya no acepta la cuenta; vuelve a conectar"
+
+msgid "{} of its tracks leave {} of your playlists."
+msgstr "{} de sus pistas salen de {} de tus playlists."
 
 msgid "{} of the list's tracks are gone"
 msgstr "{} de las pistas de la lista ya no están"
@@ -2458,10 +2580,20 @@ msgstr "{} de {} formatos salen tal cual"
 msgid "{} of {} tracks match this release"
 msgstr "{} de {} pistas coinciden con este release"
 
+msgid "{} play"
+msgid_plural "{} plays"
+msgstr[0] "{} reproducción"
+msgstr[1] "{} reproducciones"
+
 msgid "{} playlist"
 msgid_plural "{} playlists"
 msgstr[0] "{} playlist"
 msgstr[1] "{} playlists"
+
+msgid "{} rating"
+msgid_plural "{} ratings"
+msgstr[0] "{} calificación"
+msgstr[1] "{} calificaciones"
 
 msgid "{} read, {} unchanged, {} missing"
 msgstr "{} leídos, {} sin cambios, {} faltantes"
@@ -2495,6 +2627,9 @@ msgid "{} track added"
 msgid_plural "{} tracks added"
 msgstr[0] "Se agregó {} pista"
 msgstr[1] "Se agregaron {} pistas"
+
+msgid "{} tracks in {} records"
+msgstr "{} pistas en {} discos"
 
 msgid "{} was already there"
 msgid_plural "{} were already there"

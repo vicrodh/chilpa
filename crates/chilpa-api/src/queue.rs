@@ -278,6 +278,7 @@ impl Chilpa {
 
     /// Starts what a search found playing, in that order.
     pub fn play_tracks(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
+        let paths = &self.playable(paths);
         chilpa_core::trace_playback(
             "facade",
             "play_tracks_called",
@@ -293,6 +294,22 @@ impl Chilpa {
         self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         tracks.iter().map(|p| title_of(p)).collect()
+    }
+
+    /// What of those can be played now. A track whose folder is not mounted
+    /// or whose server does not answer never reaches the queue (ADR-017);
+    /// what the library does not know -- a file opened from a folder, a
+    /// radio -- goes in as it is.
+    pub(crate) fn playable(&mut self, paths: &[String]) -> Vec<String> {
+        let refused = self.library().and_then(|lib| lib.unplayable_entries(paths).ok()).unwrap_or_default();
+        if refused.is_empty() {
+            return paths.to_vec();
+        }
+        let kept: Vec<String> = paths.iter().filter(|p| !refused.contains(*p)).cloned().collect();
+        if kept.is_empty() {
+            self.now.error = chilpa_i18n::t("none of that can be played now: its folder is not mounted or its server does not answer");
+        }
+        kept
     }
 
     /// The queue's titles, in the order they were queued.
@@ -328,6 +345,63 @@ impl Chilpa {
             *q = true;
         }
         true
+    }
+
+    /// Takes every entry `gone` names out of the queue, with a player or
+    /// without one: removing a server leaves no track of it here, nor in
+    /// the saved queue (ADR-017 §6). What is left is rebuilt from the
+    /// current track on, with its groups; the history before it goes. It
+    /// stays at the same second when the current track stays, and plays on
+    /// if it was playing; when the current track goes, it waits paused.
+    pub(crate) fn purge_queue(&mut self, gone: impl Fn(&str) -> bool) {
+        if !self.queue.iter().any(|path| gone(path)) {
+            return;
+        }
+        let playing = self.player.is_some() && !self.now.paused;
+        let keeps_current = self.queue.get(self.now.index).is_some_and(|path| !gone(path));
+        let seconds = if keeps_current { self.now.seconds.max(0.0) } else { 0.0 };
+        let kept: Vec<(String, QueuePlacement, Option<QueueGroup>)> = self
+            .queue_order()
+            .into_iter()
+            .filter(|&i| !gone(&self.queue[i]))
+            .map(|i| (self.queue[i].clone(), self.queue_placement.get(i).copied().unwrap_or_default(), self.queue_group_at(i).cloned()))
+            .collect();
+        let next_group = self.next_queue_group;
+        self.clear_queue();
+        self.player = None;
+        self.next_queue_group = next_group;
+        if kept.is_empty() {
+            self.now = NowPlaying::default();
+            return;
+        }
+        let mut groups = std::collections::BTreeMap::<u64, QueueGroup>::new();
+        for (index, (_, _, group)) in kept.iter().enumerate() {
+            if let Some(group) = group {
+                groups
+                    .entry(group.key)
+                    .or_insert_with(|| QueueGroup { key: group.key, label: group.label.clone(), tracks: Vec::new(), collapsed: group.collapsed })
+                    .tracks
+                    .push(index);
+            }
+        }
+        self.queue_groups = groups.into_values().collect();
+        self.queue_placement = kept.iter().map(|(_, placement, _)| *placement).collect();
+        self.queue = kept.into_iter().map(|(path, _, _)| path).collect();
+        self.removed = vec![false; self.queue.len()];
+        self.now = NowPlaying {
+            path: self.queue[0].clone(),
+            title: title_of(std::path::Path::new(&self.queue[0])),
+            playing: true,
+            paused: true,
+            seconds,
+            index: 0,
+            queue_len: self.queue.len(),
+            ..NowPlaying::default()
+        };
+        self.restored_at = Some(seconds);
+        if playing && keeps_current {
+            self.set_paused(false);
+        }
     }
 
     /// Stops and empties the queue.
@@ -381,6 +455,7 @@ impl Chilpa {
     /// Queueing does not cut off what is playing: the queue grows behind it
     /// and what was added comes in when its turn arrives.
     pub fn enqueue(&mut self, paths: &[String], device: &str, bit_perfect: bool) -> Vec<String> {
+        let paths = &self.playable(paths);
         let tracks: Vec<std::path::PathBuf> =
             paths.iter().map(std::path::PathBuf::from).collect();
         // A disc image goes in as its tracks, one entry each.
@@ -424,6 +499,7 @@ impl Chilpa {
     /// read again each time a track ends. With shuffle on they go next in
     /// the shuffled order.
     pub fn play_next(&mut self, paths: &[String], device: &str, bit_perfect: bool) {
+        let paths = &self.playable(paths);
         let tracks: Vec<std::path::PathBuf> = paths.iter().map(std::path::PathBuf::from).collect();
         let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {
@@ -462,6 +538,7 @@ impl Chilpa {
     /// interrupting the track that is playing. Later groups keep the order
     /// in which they were added.
     pub fn play_later(&mut self, paths: &[String], label: &str, device: &str, bit_perfect: bool) -> Option<u64> {
+        let paths = &self.playable(paths);
         let tracks: Vec<std::path::PathBuf> = paths.iter().map(std::path::PathBuf::from).collect();
         let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {

@@ -84,6 +84,30 @@ impl Quality {
         }
     }
 
+    /// A track's quality from what the library knows of it. A server's track
+    /// is named by its queue entry, which has no extension; its codec says
+    /// what the extension would (ADR-017).
+    pub fn of_track(path: &str, codec: Option<&str>, bits: Option<u8>, rate_hz: Option<u32>) -> Quality {
+        if !chilpa_models::RemoteEntry::is_remote(path) {
+            return Self::of_file(path, bits, rate_hz);
+        }
+        let ext = match codec.unwrap_or("") {
+            "flac" => "flac",
+            "alac" => "m4a",
+            "aac" => "aac",
+            "mp3" => "mp3",
+            "vorbis" | "ogg" => "ogg",
+            "opus" => "opus",
+            "wav" | "pcm" => "wav",
+            "aiff" => "aiff",
+            "wavpack" => "wv",
+            "ape" => "ape",
+            "dsd" | "dsf" | "dff" => "dsf",
+            _ => "",
+        };
+        Self::of_file(&format!("track.{ext}"), bits, rate_hz)
+    }
+
     /// For a list column: "FLAC 24/96", "DSD64", "MP3".
     pub fn short(&self) -> String {
         if self.tier == Tier::Dsd {
@@ -169,5 +193,19 @@ mod tests {
     fn what_cannot_be_told_says_nothing() {
         let q = Quality::of_file("a.xyz", None, None);
         assert_eq!((q.tier, q.short()), (Tier::Unknown, String::new()));
+    }
+}
+
+#[cfg(test)]
+mod remote_tests {
+    use super::*;
+
+    #[test]
+    fn a_server_s_track_is_labelled_by_its_codec() {
+        let entry = "remote:example-server/aaaa/0Hj5";
+        assert_eq!(Quality::of_track(entry, Some("flac"), Some(24), Some(96_000)).short(), "FLAC 24/96");
+        assert_eq!(Quality::of_track(entry, Some("alac"), Some(16), Some(48_000)).short(), "ALAC 16/48");
+        assert_eq!(Quality::of_track(entry, Some("opus"), None, Some(48_000)).tier, Tier::Lossy);
+        assert_eq!(Quality::of_track("/m/a.flac", Some("mp3"), Some(16), Some(44_100)).format, "FLAC", "a file is named by its extension");
     }
 }
