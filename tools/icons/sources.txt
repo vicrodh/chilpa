@@ -1,0 +1,14 @@
+# The glyphs of assets/icons/sources.ttf, one a line. A glyph's code point is
+# its place in this list, from U+E000, so a new one goes at the end.
+folder-open
+opensubsonic
+navidrome
+jellyfin
+plex
+collection
+cassette
+cast-audio
+dlna
+musicbrainz
+discogs
+gandalf

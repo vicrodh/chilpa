@@ -1,0 +1,23 @@
+Source icons (crates/chilpa-qt/assets/icons/sources.ttf)
+
+Built by tools/icons/build-sources from the drawings in tools/icons/sources.
+What each file says about where it comes from:
+
+  cast-audio      Material Design Icons ("mdi-cast-audio")
+  cassette        SVG Repo
+  collection      SVG Repo
+  discogs         SVG Repo
+  dlna            SVG Repo
+  folder-open     SVG Repo
+  musicbrainz     SVG Repo
+  navidrome       SVG Repo
+  plex            SVG Repo
+  gandalf         no origin in the file
+  jellyfin        no origin in the file
+  opensubsonic    traced with potrace 1.16; no origin in the file
+
+SVG Repo hosts drawings under different licenses, one per drawing, and the
+files do not carry theirs. The license of each drawing is not verified yet.
+
+The marks of the servers and services drawn here belong to their owners, and
+are used only to tell which one a source is.

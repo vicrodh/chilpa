@@ -4,3 +4,4 @@ singleton Type 1.0 Type.qml
 singleton Motion 1.0 Motion.qml
 singleton Icons 1.0 Icons.qml
 singleton Lucide 1.0 Lucide.qml
+singleton SourceGlyphs 1.0 SourceGlyphs.qml

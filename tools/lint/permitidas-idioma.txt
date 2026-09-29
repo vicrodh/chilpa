@@ -481,3 +481,6 @@ hexdigit
 syncer
 ip
 addr
+dlna
+gandalf
+typeof

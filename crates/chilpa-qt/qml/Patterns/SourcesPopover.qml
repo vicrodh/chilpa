@@ -79,14 +79,13 @@ Popup {
                 height: Metrics.sourceFilterRow
                 readonly property string sourceKey: Library.sourceKeys[index]
 
-                Icon {
+                SourceIcon {
                     id: sourceIcon
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    // "server-2" in the tokens is `Icons.server2`.
-                    glyph: Icons[(Library.sourceIcons[index] || "").replace(/-(\w)/g, (m, c) => c.toUpperCase())] || Icons.folder
-                    size: Metrics.iconNav
-                    color: Theme.color.textSecondary
+                    width: Metrics.iconNav
+                    height: Metrics.iconNav
+                    sourceInfo: ({ icon: Library.sourceIcons[index] || "", local: sourceKey === "local:default" })
                 }
                 Column {
                     anchors.left: sourceIcon.right
