@@ -13,6 +13,8 @@ mod accounts;
 mod approvals;
 mod browse;
 mod credits;
+mod tracks_view;
+pub use tracks_view::{group_of, FoundTracks, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;
 mod covers;

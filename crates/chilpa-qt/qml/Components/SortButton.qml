@@ -10,6 +10,7 @@ Item {
 
     property var options: []
     property string value
+    property string glyph: Icons.arrowsSort
 
     signal picked(string value)
 
@@ -20,7 +21,7 @@ Item {
 
     PillButton {
         id: pill
-        glyph: Icons.arrowsSort
+        glyph: sort.glyph
         text: sort.current >= 0 ? sort.options[sort.current].text : ""
         onClicked: menu.open()
     }

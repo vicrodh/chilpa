@@ -210,6 +210,12 @@ msgstr ""
 msgid "Artist"
 msgstr ""
 
+msgid "Artist A-Z"
+msgstr ""
+
+msgid "Artist Z-A"
+msgstr ""
+
 msgid "Artists"
 msgstr ""
 
@@ -250,6 +256,15 @@ msgid "Browse…"
 msgstr ""
 
 msgid "Buttons to go back or forward ten seconds."
+msgstr ""
+
+msgid "By album"
+msgstr ""
+
+msgid "By artist"
+msgstr ""
+
+msgid "By name"
 msgstr ""
 
 msgid "CD in {}"
@@ -432,6 +447,9 @@ msgid "Date"
 msgstr ""
 
 msgid "Date added"
+msgstr ""
+
+msgid "Default"
 msgstr ""
 
 msgid "Delete"
@@ -884,6 +902,9 @@ msgstr ""
 msgid "No folders in the library yet."
 msgstr ""
 
+msgid "No grouping"
+msgstr ""
+
 msgid "No lyrics for this track."
 msgstr ""
 
@@ -897,6 +918,12 @@ msgid "No playlists yet. Create one to get started."
 msgstr ""
 
 msgid "No source plugins installed"
+msgstr ""
+
+msgid "No tracks in your local library yet."
+msgstr ""
+
+msgid "No tracks match your search."
 msgstr ""
 
 msgid "Normalization"
@@ -1083,6 +1110,9 @@ msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr ""
 
 msgid "Quality"
+msgstr ""
+
+msgid "Quality, format and source filters"
 msgstr ""
 
 msgid "Queue"
@@ -1441,6 +1471,12 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
+msgid "Title A-Z"
+msgstr ""
+
+msgid "Title Z-A"
+msgstr ""
+
 msgid "To move to"
 msgstr ""
 
@@ -1538,6 +1574,12 @@ msgid "Write to a file"
 msgstr ""
 
 msgid "Year"
+msgstr ""
+
+msgid "Year (newest)"
+msgstr ""
+
+msgid "Year (oldest)"
 msgstr ""
 
 msgid "Your account reaches more than one server. Which one?"

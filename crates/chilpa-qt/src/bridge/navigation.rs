@@ -122,6 +122,7 @@ fn label(r: &Route) -> (String, &'static str) {
         Screen::Library => (app::t("Library"), "columns3"),
         Screen::Artists => (app::t("Artists"), "microphone2"),
         Screen::Albums => (app::t("Albums"), "disc"),
+        Screen::Tracks => (app::t("Tracks"), "music"),
         Screen::Settings => (app::t("Settings"), "settings"),
         Screen::LibraryFolders => (app::t("Library folders"), "folder"),
         Screen::Artist => (r.key.clone(), "user"),

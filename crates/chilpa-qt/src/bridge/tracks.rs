@@ -96,6 +96,10 @@ pub mod qobject {
         #[qinvokable]
         fn go(self: Pin<&mut TrackListModel>, row: i32, target: &QString);
 
+        /// Where each letter starts in a grouped list, as `[["A", 12]]`.
+        #[qinvokable]
+        fn letters(self: &TrackListModel, rev: i32) -> QString;
+
         /// The row's artist, for the list to tell which one a click is on.
         #[qinvokable]
         fn credit_of(self: &TrackListModel, row: i32) -> QString;
@@ -146,7 +150,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -196,6 +200,11 @@ pub struct TrackListRust {
     /// Which list the rows are: kind, id and key.
     loaded: Option<(String, i64, String)>,
     pending: bool,
+    /// The Tracks screen: how its rows are grouped, where each letter
+    /// starts, and which of its questions is the last one asked.
+    group: String,
+    letters: String,
+    asked: u64,
 }
 
 /// A row, either loaded or read from the snapshot's page.
@@ -333,6 +342,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
             QVariant::from(&url)
         }
         16 => QVariant::from(&track.available),
+        17 => text(&chilpa_api::group_of(&list.group, track)),
         _ => QVariant::default(),
     }
 }
@@ -671,6 +681,10 @@ impl qobject::TrackListModel {
         }
     }
 
+    pub fn letters(&self, _rev: i32) -> QString {
+        QString::from(&self.rust().letters)
+    }
+
     pub fn credit_of(&self, row: i32) -> QString {
         QString::from(&self.rust().track(row.max(0) as usize).map(|t| t.artist.clone()).unwrap_or_default())
     }
@@ -751,6 +765,24 @@ impl qobject::TrackListModel {
         self.as_mut().rust_mut().pending = false;
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
+        if kind == "tracks" {
+            // Found on the worker; what is shown stays until it is back.
+            let (query, extras) = (self.rust().key.to_string(), browse::read(|s| s.filter.clone()));
+            let asked = self.rust().asked + 1;
+            self.as_mut().rust_mut().asked = asked;
+            let thread = self.qt_thread();
+            worker::submit(move |reader| {
+                let found = reader.tracks(&query, &extras);
+                let _ = thread.queue(move |mut model| {
+                    if model.rust().asked == asked {
+                        let ms = found.snapshot.totals.duration_ms;
+                        (model.as_mut().rust_mut().group, model.as_mut().rust_mut().letters) = (found.group, found.letters);
+                        model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: RefCell::default() }, Some(ms));
+                    }
+                });
+            });
+            return;
+        }
         // The rows, and how long they last when the list says so.
         let (rows, length) = match kind.as_str() {
             "album" if id > 0 => {
@@ -798,6 +830,11 @@ impl qobject::TrackListModel {
             }
             _ => (Rows::default(), None),
         };
+        self.show(kind, rows, length);
+    }
+
+    fn show(mut self: Pin<&mut Self>, kind: String, rows: Rows, length: Option<u64>) {
+        let id = self.rust().album_id;
         // The same list read again -- a track moved in a playlist, the filter
         // narrowed -- keeps what is selected and still there; another list
         // starts with nothing selected.

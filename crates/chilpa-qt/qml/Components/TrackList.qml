@@ -34,6 +34,8 @@ Item {
     signal sortRequested(string order)
 
     readonly property alias contentHeight: view.contentHeight
+    // The list itself, for a screen that groups its rows or jumps in them.
+    readonly property alias rows: view
 
     implicitHeight: (header ? Metrics.rowHeader : 0) + view.contentHeight
 

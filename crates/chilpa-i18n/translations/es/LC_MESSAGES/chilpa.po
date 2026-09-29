@@ -210,6 +210,12 @@ msgstr "Aprobar el nuevo acceso"
 msgid "Artist"
 msgstr "Artista"
 
+msgid "Artist A-Z"
+msgstr "Artista A-Z"
+
+msgid "Artist Z-A"
+msgstr "Artista Z-A"
+
 msgid "Artists"
 msgstr "Artistas"
 
@@ -251,6 +257,15 @@ msgstr "Buscar…"
 
 msgid "Buttons to go back or forward ten seconds."
 msgstr "Botones para regresar o adelantar diez segundos."
+
+msgid "By album"
+msgstr "Por álbum"
+
+msgid "By artist"
+msgstr "Por artista"
+
+msgid "By name"
+msgstr "Por nombre"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -433,6 +448,9 @@ msgstr "Fecha"
 
 msgid "Date added"
 msgstr "Fecha de alta"
+
+msgid "Default"
+msgstr "Predeterminado"
 
 msgid "Delete"
 msgstr "Borrar"
@@ -884,6 +902,9 @@ msgstr "Sin carátula"
 msgid "No folders in the library yet."
 msgstr "Todavía no hay carpetas en la biblioteca."
 
+msgid "No grouping"
+msgstr "Sin agrupar"
+
 msgid "No lyrics for this track."
 msgstr "Esta pista no tiene letra."
 
@@ -898,6 +919,12 @@ msgstr "Todavía no hay playlists. Crea una para empezar."
 
 msgid "No source plugins installed"
 msgstr "No hay plugins de fuentes instalados"
+
+msgid "No tracks in your local library yet."
+msgstr "Todavía no hay pistas en tu biblioteca local."
+
+msgid "No tracks match your search."
+msgstr "Ninguna pista coincide con tu búsqueda."
 
 msgid "Normalization"
 msgstr "Normalización"
@@ -1084,6 +1111,9 @@ msgstr "Pon la carpeta de un plugin en el directorio de plugins de Chilpa y vuel
 
 msgid "Quality"
 msgstr "Calidad"
+
+msgid "Quality, format and source filters"
+msgstr "Filtros de calidad, formato y fuente"
 
 msgid "Queue"
 msgstr "Cola"
@@ -1441,6 +1471,12 @@ msgstr "Duración"
 msgid "Title"
 msgstr "Título"
 
+msgid "Title A-Z"
+msgstr "Título A-Z"
+
+msgid "Title Z-A"
+msgstr "Título Z-A"
+
 msgid "To move to"
 msgstr "Para moverse"
 
@@ -1539,6 +1575,12 @@ msgstr "Escribir a un archivo"
 
 msgid "Year"
 msgstr "Año"
+
+msgid "Year (newest)"
+msgstr "Año (más reciente)"
+
+msgid "Year (oldest)"
+msgstr "Año (más antiguo)"
 
 msgid "Your account reaches more than one server. Which one?"
 msgstr "Tu cuenta alcanza más de un servidor. ¿Cuál?"

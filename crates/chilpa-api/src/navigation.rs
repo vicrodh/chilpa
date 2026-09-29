@@ -12,6 +12,8 @@ pub enum Screen {
     Library,
     Artists,
     Albums,
+    /// Every track of the library, in one list.
+    Tracks,
     Album,
     Artist,
     Settings,
@@ -32,6 +34,7 @@ impl Screen {
             Screen::Library => "library",
             Screen::Artists => "artists",
             Screen::Albums => "albums",
+            Screen::Tracks => "tracks",
             Screen::Album => "album",
             Screen::Artist => "artist",
             Screen::Settings => "settings",
@@ -44,7 +47,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata].into_iter().find(|s| s.name() == name)
     }
 }
 
