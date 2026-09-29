@@ -159,8 +159,7 @@ pub(crate) fn disk_folder(dir: &std::path::Path) -> crate::FolderView {
                 folders.push(crate::FolderItem {
                     name,
                     path: path.display().to_string(),
-                    tracks: 0,
-                    artwork_path: String::new(),
+                    ..crate::FolderItem::default()
                 });
             }
         } else if is_audio(&path) {

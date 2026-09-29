@@ -13,6 +13,8 @@ Item {
     required property string name
     required property string path
     required property int count
+    required property int folders
+    required property double album
     required property url art
 
     signal open()
@@ -66,7 +68,8 @@ Item {
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
         visible: row.count > 0
-        text: I18n.trCount("{} track", "{} tracks", row.count, I18n.rev)
+        text: (row.folders > 0 ? I18n.trCount("{} folder", "{} folders", row.folders, I18n.rev) + " · " : "")
+              + I18n.trCount("{} track", "{} tracks", row.count, I18n.rev)
         font.pointSize: Type.small
         color: Theme.color.textTertiary
     }

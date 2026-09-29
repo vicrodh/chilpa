@@ -117,13 +117,13 @@ GallerySection {
         FolderModel { id: top; path: ""; content: true }
         TrackListModel { id: folderTracks; kind: "folder"; filterRev: top.rev }
         AlbumGridModel { id: folderAlbums; kind: "folder"; contentRev: top.rev; columns: 3 }
-        FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
+        FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; folders: 2; album: 0; art: "" }
         FolderTree { width: Metrics.folderTreeWidth; height: Metrics.panesHeight; activePath: "/music/Mora Vale" }
-        FolderTreeBranch { width: Metrics.folderTreeWidth; name: "Mora Vale"; path: "/music/Mora Vale"; activePath: "/music/Mora Vale/Low Orbit" }
-        FolderCard { width: Metrics.folderCardMin; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
+        FolderTreeRow { width: Metrics.folderTreeWidth; index: 0; name: "Mora Vale"; path: "/music/Mora Vale"; count: 11; depth: 1; open: true; file: false; active: true }
+        FolderCard { width: Metrics.folderCardMin; name: "Mora Vale"; path: "/music/Mora Vale"; count: 41; folders: 3; album: 0; art: "" }
         FolderMenu {}
         FolderBulkBar { width: Metrics.folderTreeWidth; count: 3 }
-        FolderDetail { width: section.width; height: Metrics.panesHeight; folder: top; tracks: folderTracks }
+        FolderDetail { width: section.width; height: Metrics.panesHeight; folder: top; tracks: folderTracks; albums: folderAlbums }
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueFooter { width: Metrics.rightPanel }
         QueueMenu { model: folderTracks; laterLabel: "Library selection" }
