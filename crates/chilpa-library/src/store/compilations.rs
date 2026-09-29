@@ -75,7 +75,7 @@ mod tests {
         // a server of mine here, which is what a server is from V27 on.
         db.execute_batch("UPDATE sources SET kind = 'server' WHERE id = 2;
             UPDATE tracks SET present = 1 WHERE source_id = 2;").unwrap();
-        let lib = Library { db, versions: Default::default() };
+        let lib = Library { db, versions: Default::default(), related: Default::default() };
         lib.log_play(Some(11), None, 1, 2000, 2000, false, None, None, true).unwrap();
         let playlist = lib.create_playlist(1, "Mix", "mix").unwrap();
         let entries = lib.playlist_entries_for_tracks(&[10, 11]).unwrap();
