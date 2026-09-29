@@ -662,9 +662,6 @@ msgstr ""
 msgid "From same artist"
 msgstr ""
 
-msgid "From this source"
-msgstr ""
-
 msgid "From this week"
 msgstr ""
 
@@ -1416,6 +1413,9 @@ msgid "Sign in with an API key"
 msgstr ""
 
 msgid "Signed out"
+msgstr ""
+
+msgid "Similar albums"
 msgstr ""
 
 msgid "Songs"

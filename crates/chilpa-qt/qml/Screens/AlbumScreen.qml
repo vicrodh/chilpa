@@ -132,7 +132,7 @@ Flickable {
         }
         AlbumCarousel {
             width: parent.width
-            title: I18n.tr("From this source", I18n.rev)
+            title: I18n.tr("Similar albums", I18n.rev)
             model: related
         }
     }

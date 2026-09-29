@@ -662,9 +662,6 @@ msgstr "Adelante 10 segundos"
 msgid "From same artist"
 msgstr "Del mismo artista"
 
-msgid "From this source"
-msgstr "De esta fuente"
-
 msgid "From this week"
 msgstr "De esta semana"
 
@@ -1417,6 +1414,9 @@ msgstr "Iniciar sesión con una API key"
 
 msgid "Signed out"
 msgstr "Sesión cerrada"
+
+msgid "Similar albums"
+msgstr "Álbumes similares"
 
 msgid "Songs"
 msgstr "Canciones"
