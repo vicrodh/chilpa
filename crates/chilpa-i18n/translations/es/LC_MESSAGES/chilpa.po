@@ -73,6 +73,9 @@ msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentr
 msgid "A click on a record opens"
 msgstr "Un clic en un disco abre"
 
+msgid "A secure cast URL could not be created."
+msgstr "No se pudo crear una URL segura para transmitir."
+
 msgid "A sidecar sets this, not the file"
 msgstr "Lo pone un sidecar, no el archivo"
 
@@ -275,6 +278,9 @@ msgstr "Tranquilo"
 
 msgid "Cancel"
 msgstr "Cancelar"
+
+msgid "Casting needs an original file with a known size and byte ranges."
+msgstr "Para transmitir se necesita un archivo original con tamaño conocido y acceso por rangos."
 
 msgid "Catalog number"
 msgstr "Número de catálogo"
@@ -1425,6 +1431,18 @@ msgstr "El disco no está abierto en el editor."
 
 msgid "The record's cover"
 msgstr "La carátula del disco"
+
+msgid "The renderer description could not be read."
+msgstr "No se pudo leer la descripción del receptor."
+
+msgid "The renderer did not answer. Check its connection."
+msgstr "El receptor no respondió. Revisa su conexión."
+
+msgid "The renderer does not support this format or control. Chilpa does not transcode."
+msgstr "El receptor no admite este formato o control. Chilpa no transcodifica."
+
+msgid "The renderer refused the command."
+msgstr "El receptor rechazó la orden."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
