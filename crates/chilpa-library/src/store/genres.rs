@@ -7,8 +7,18 @@
 //! genres in another order are a fourth. Reading them is done here, once,
 //! for a file, a sidecar, a server and what is already stored.
 
-/// Genres whose own name has what otherwise separates two.
-const WHOLE: &[&str] = &["Folk, World, & Country"];
+use std::collections::HashSet;
+use std::sync::OnceLock;
+
+/// Genre names that a catalog publishes with a separator inside them:
+/// "Funk / Soul", "Hip-Hop/Rap", "Christmas: Rock". A tag that states one
+/// of them states one genre.
+const WHOLE: &str = include_str!("../../data/genres-whole.txt");
+
+/// The genres somebody else already lists: MusicBrainz's, which are in the
+/// public domain (`licenses/genre-lists.txt`). What "/" and ":" may split a
+/// tag into is checked against them, so nothing is split on a guess.
+const KNOWN: &str = include_str!("../../data/genres-known.txt");
 
 /// What a catalog's page puts before its values, pasted into the tag with
 /// them. Matched with its capital anywhere, since it comes glued to the word
@@ -16,33 +26,111 @@ const WHOLE: &[&str] = &["Folk, World, & Country"];
 /// "Freestyle: ..." is a genre.
 const LABELS: &[&str] = &["Styles:", "Style:", "Genres:", "Genre:"];
 
+/// The one whole name that has a comma in it, kept through the split at
+/// commas under a name no tag carries.
+const WITH_A_COMMA: &str = "Folk, World, & Country";
+const KEPT: &str = "\u{1}";
+
 /// The genres a tag states, one each, as they will be filed.
 ///
-/// A field is split at ";", "|", ",", ":" and line ends, and at a catalog's
-/// labels. "/" is left alone: "R&B/Soul" names one genre as often as two,
-/// and "Death/Doom Metal" split would file a "Death". What is left of each
-/// one loses the spaces and the loose punctuation around it. Repeats are
-/// dropped whatever their case, keeping the first spelling.
+/// In this order, which is where the programs that read tags agree and
+/// where the catalogs' own names allow it:
+///
+/// 1. a field is split at ";", "|" and line ends, and a catalog's labels
+///    are taken out;
+/// 2. a name a catalog publishes whole stays whole;
+/// 3. what is left is split at commas;
+/// 4. "/" and ":" split only when every genre that comes out is one that
+///    MusicBrainz lists: "Death/Doom Metal" is Death Metal and Doom Metal,
+///    and "Progressive/Industrial/Atmospheric Metal" stays as it was
+///    written, because nobody lists an Atmospheric Metal.
+///
+/// Each genre loses the spaces and the loose punctuation around it. Repeats
+/// are dropped whatever their case, keeping the first spelling.
 pub fn split_genres(genres: &[String]) -> Vec<String> {
     let mut out: Vec<String> = Vec::new();
-    for field in genres {
-        let mut field = without_labels(field);
-        // Kept whole through the split, under a name no tag carries.
-        for (place, whole) in WHOLE.iter().enumerate() {
-            field = replace_ignoring_case(&field, whole, &format!("\u{1}{place}\u{1}"));
+    let mut keep = |genre: String| {
+        if !genre.is_empty() && !out.iter().any(|g| g.to_lowercase() == genre.to_lowercase()) {
+            out.push(genre);
         }
-        for part in field.split([';', '|', ',', ':', '\0', '\n', '\r']) {
-            let part = tidy(part);
-            let part = match part.strip_prefix('\u{1}').and_then(|p| p.strip_suffix('\u{1}')).and_then(|p| p.parse::<usize>().ok()) {
-                Some(place) if place < WHOLE.len() => WHOLE[place].to_string(),
-                _ => part.replace('\u{1}', ""),
-            };
-            if !part.is_empty() && !out.iter().any(|g| g.to_lowercase() == part.to_lowercase()) {
-                out.push(part);
+    };
+    for field in genres {
+        for stated in without_labels(field).split([';', '|', '\0', '\n', '\r']) {
+            if let Some(whole) = whole(&tidy(stated)) {
+                keep(whole);
+                continue;
+            }
+            for part in replace_ignoring_case(stated, WITH_A_COMMA, KEPT).split(',') {
+                let part = tidy(part);
+                if part == KEPT {
+                    keep(WITH_A_COMMA.to_string());
+                } else if let Some(whole) = whole(&part) {
+                    keep(whole);
+                } else {
+                    several(&part.replace(KEPT, "")).into_iter().for_each(&mut keep);
+                }
             }
         }
     }
     out
+}
+
+/// The name as its catalog spells it, when the tag states one of the whole
+/// names, however it is cased or spaced around its separator.
+fn whole(stated: &str) -> Option<String> {
+    static NAMES: OnceLock<Vec<(String, &'static str)>> = OnceLock::new();
+    let names = NAMES.get_or_init(|| WHOLE.lines().map(str::trim).filter(|l| !l.is_empty()).map(|l| (squeezed(l), l)).collect());
+    let stated = squeezed(stated);
+    names.iter().find(|(name, _)| *name == stated).map(|(_, spelled)| spelled.to_string())
+}
+
+/// A name without its case and without the spaces around a separator:
+/// "Funk/Soul" and "funk / soul" are the same name.
+fn squeezed(name: &str) -> String {
+    let spaced = name.to_lowercase().split_whitespace().collect::<Vec<_>>().join(" ");
+    spaced.replace(" /", "/").replace("/ ", "/").replace(" :", ":").replace(": ", ":")
+}
+
+fn known(genre: &str) -> bool {
+    static NAMES: OnceLock<HashSet<String>> = OnceLock::new();
+    NAMES.get_or_init(|| KNOWN.lines().map(plain).filter(|l| !l.is_empty()).collect()).contains(&plain(genre))
+}
+
+/// A genre as lists are compared: "Avant-Garde Metal", "avant garde metal"
+/// and "Rock & Roll", "rock and roll" are each one name.
+fn plain(genre: &str) -> String {
+    let lowered = genre.to_lowercase().replace('-', " ").replace('&', " and ");
+    lowered.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+/// What one stated genre is when it has "/" or ":" in it: the genres it
+/// names, if every one of them is known, and itself if not.
+fn several(stated: &str) -> Vec<String> {
+    if !stated.contains(['/', ':']) {
+        return vec![stated.to_string()];
+    }
+    let parts: Vec<String> = stated.split(['/', ':']).map(tidy).collect();
+    if parts.len() < 2 || parts.iter().any(String::is_empty) {
+        return vec![tidy(stated.trim_matches([' ', '/', ':']))];
+    }
+    // The word they share first: "Gothic/Doom Metal" is Gothic Metal, and
+    // "Gothic" alone is a genre too, which the tag did not state.
+    let (last, before) = parts.split_last().expect("two parts or more");
+    let words: Vec<&str> = last.split(' ').collect();
+    for shared in 1..=2 {
+        if words.len() > shared {
+            let head = words[words.len() - shared..].join(" ");
+            let mut named: Vec<String> = before.iter().map(|part| format!("{part} {head}")).collect();
+            named.push(last.clone());
+            if named.iter().all(|genre| known(genre)) {
+                return named;
+            }
+        }
+    }
+    if parts.iter().all(|genre| known(genre)) {
+        return parts;
+    }
+    vec![stated.to_string()]
 }
 
 /// The field with each label turned into a separator.
@@ -72,7 +160,7 @@ fn without_labels(field: &str) -> String {
 /// and no quotes, dashes, ampersands or stops left at either end.
 fn tidy(part: &str) -> String {
     let joined = part.split_whitespace().collect::<Vec<_>>().join(" ");
-    let loose = |c: char| c.is_whitespace() || matches!(c, '&' | '-' | '\u{2013}' | '\u{2014}' | '/' | '\\' | '"' | '\'' | '\u{201c}' | '\u{201d}' | '+' | '*' | '=');
+    let loose = |c: char| c.is_whitespace() || matches!(c, '&' | ':' | '-' | '\u{2013}' | '\u{2014}' | '/' | '\\' | '"' | '\'' | '\u{201c}' | '\u{201d}' | '+' | '*' | '=');
     let kept = joined.trim_matches(loose);
     // "and Country", what is left of a list that ended "..., and Country".
     let kept = match kept.get(..4) {
@@ -111,8 +199,40 @@ mod tests {
     fn a_joined_genre_field_is_several_genres() {
         let g = split_genres(&["Alternative Metal; Alternative Rock".into(), "Grunge|Heavy Metal|grunge".into()]);
         assert_eq!(g, ["Alternative Metal", "Alternative Rock", "Grunge", "Heavy Metal"]);
-        assert_eq!(of("R&B/Soul"), ["R&B/Soul"], "a slash is left alone");
-        assert_eq!(of("Death/Doom Metal"), ["Death/Doom Metal"]);
+    }
+
+    #[test]
+    fn a_name_a_catalog_publishes_whole_is_one_genre() {
+        assert_eq!(of("R&B/Soul"), ["R&B/Soul"]);
+        assert_eq!(of("Hip-Hop/Rap; Pop/Rock"), ["Hip-Hop/Rap", "Pop/Rock"]);
+        assert_eq!(of("Funk / Soul"), ["Funk / Soul"]);
+        assert_eq!(of("funk/soul, Jazz"), ["Funk / Soul", "Jazz"], "as its catalog spells it");
+        assert_eq!(of("Christmas: Rock"), ["Christmas: Rock"]);
+        assert_eq!(of("Singer/Songwriter"), ["Singer/Songwriter"]);
+    }
+
+    #[test]
+    fn a_slash_splits_into_genres_that_are_known_and_into_nothing_else() {
+        // The genres of my library that had one, as they were measured.
+        assert_eq!(of("Death/Doom Metal"), ["Death Metal", "Doom Metal"]);
+        assert_eq!(of("Death/Thrash Metal"), ["Death Metal", "Thrash Metal"]);
+        assert_eq!(of("Doom / Death Metal"), ["Doom Metal", "Death Metal"]);
+        assert_eq!(of("Doom/Gothic Metal"), ["Doom Metal", "Gothic Metal"]);
+        assert_eq!(of("Power/Progressive Metal"), ["Power Metal", "Progressive Metal"]);
+        assert_eq!(of("Gothic Metal / Rock"), ["Gothic Metal", "Rock"]);
+        assert_eq!(of("Hard Rock / Alternative Rock"), ["Hard Rock", "Alternative Rock"]);
+        assert_eq!(of("Progressive/Industrial/Atmospheric Metal"), ["Progressive/Industrial/Atmospheric Metal"], "nobody lists an Atmospheric Metal");
+        assert_eq!(of("Brutal/Technical Death Metal"), ["Brutal Death Metal", "Technical Death Metal"], "two words shared");
+        assert_eq!(of("Zork/Blorb"), ["Zork/Blorb"], "nothing known, nothing split");
+    }
+
+    #[test]
+    fn the_word_two_genres_share_is_tried_before_the_parts_as_written() {
+        // "Gothic", "Progressive" and "Psychedelic" are genres too, and not
+        // what these tags state.
+        assert_eq!(of("Gothic/Doom Metal"), ["Gothic Metal", "Doom Metal"]);
+        assert_eq!(of("Progressive/Avant-Garde Metal"), ["Progressive Metal", "Avant-Garde Metal"]);
+        assert_eq!(of("Psychedelic/Progressive Rock"), ["Psychedelic Rock", "Progressive Rock"]);
     }
 
     #[test]
@@ -138,6 +258,7 @@ mod tests {
     #[test]
     fn a_genre_under_another_is_both() {
         assert_eq!(of("Metal: Heavy Metal"), ["Metal", "Heavy Metal"]);
+        assert_eq!(of("Disc 2: Live"), ["Disc 2: Live"], "and what is not two genres is left as written");
     }
 
     #[test]
@@ -171,7 +292,7 @@ mod tests {
 
     #[test]
     fn reading_what_was_read_changes_nothing() {
-        for tag in ["Heavy Metal; Folk; World; & CountryStyle:Heavy Metal", "Rock, folk, world, & country, Pop", "Metal: Heavy Metal", "R&B/Soul"] {
+        for tag in ["Heavy Metal; Folk; World; & CountryStyle:Heavy Metal", "Rock, folk, world, & country, Pop", "Metal: Heavy Metal", "R&B/Soul", "Death/Doom Metal", "funk/soul", "Progressive/Industrial/Atmospheric Metal", "Christmas: Rock"] {
             let once = of(tag);
             let again: Vec<String> = once.iter().flat_map(|g| of(g)).collect();
             assert_eq!(once, again, "{tag}");
