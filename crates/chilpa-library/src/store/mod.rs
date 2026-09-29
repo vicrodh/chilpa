@@ -145,6 +145,22 @@ impl Library {
         Ok(lib)
     }
 
+    /// Opens an existing, current library for queries only. The main
+    /// connection owns migrations and maintenance; a reader must never
+    /// upgrade a read transaction to a write while another writer runs.
+    pub fn open_read_only(path: &Path) -> rusqlite::Result<Self> {
+        let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        db.busy_timeout(std::time::Duration::from_secs(5))?;
+        let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version != schema::VERSION {
+            return Err(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_MISMATCH),
+                Some(format!("library reader needs schema version {}, found {version}; open the main library first", schema::VERSION)),
+            ));
+        }
+        Ok(Self { db, versions: Default::default() })
+    }
+
     /// An in-memory library, for tests.
     ///
     /// It gets the same pragmas as one on disk. It did not, and the one that

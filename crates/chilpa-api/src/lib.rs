@@ -12,6 +12,8 @@ pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 mod accounts;
 mod approvals;
 mod browse;
+mod queries;
+pub use queries::QueryWorker;
 mod covers;
 mod folders;
 pub mod format;

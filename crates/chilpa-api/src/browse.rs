@@ -211,9 +211,17 @@ pub struct Reader {
 }
 
 impl Reader {
+    pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib })
+            .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
+    }
+
     /// Every id the filter leaves, in that order, with the totals.
     pub fn snapshot(&self, filter: &Filter, order: TrackOrder) -> Snapshot {
-        self.lib.grouped_snapshot(filter, order).unwrap_or_default()
+        self.lib.grouped_snapshot(filter, order).unwrap_or_else(|e| {
+            eprintln!("chilpa-queries: library snapshot failed: {e}");
+            Snapshot::default()
+        })
     }
 
     /// The files behind those ids, in order: what a list queues when one
@@ -370,11 +378,10 @@ impl Reader {
 }
 
 impl Chilpa {
-    /// A second connection to the library, for the window's worker. `None`
-    /// if the library cannot be opened, which the window's own connection
-    /// has already reported.
+    /// A second, read-only connection to an initialized library. Reports
+    /// its own open errors: the main connection may still be healthy.
     pub fn reader(&self) -> Option<Reader> {
-        chilpa_core::open_library().ok().map(|lib| Reader { lib })
+        Reader::open(&chilpa_library::Library::default_path()).map_err(|e| eprintln!("chilpa-queries: {e}")).ok()
     }
 
     /// The rows of those ids, in that order. By primary key: the same cost
