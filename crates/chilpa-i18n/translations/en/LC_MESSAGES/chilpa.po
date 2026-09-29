@@ -234,6 +234,9 @@ msgstr ""
 msgid "AutoMix"
 msgstr ""
 
+msgid "Available"
+msgstr ""
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr ""
 
@@ -361,6 +364,12 @@ msgid "Connected"
 msgstr ""
 
 msgid "Connected as {}"
+msgstr ""
+
+msgid "Connecting…"
+msgstr ""
+
+msgid "Connection error"
 msgstr ""
 
 msgid "Contains {} similar version"
@@ -516,6 +525,9 @@ msgid "Disconnect"
 msgstr ""
 
 msgid "Disconnect account"
+msgstr ""
+
+msgid "Disconnected"
 msgstr ""
 
 msgid "Does not answer. Its records stay listed and cannot be played."
@@ -1016,6 +1028,9 @@ msgstr ""
 msgid "Opens the device and says which formats reach it untouched."
 msgstr ""
 
+msgid "Original bytes · no transcoding by Chilpa · receiver processing unknown"
+msgstr ""
+
 msgid "Output"
 msgstr ""
 
@@ -1035,6 +1050,9 @@ msgid "Paste the user token from listenbrainz.org/settings."
 msgstr ""
 
 msgid "Pause"
+msgstr ""
+
+msgid "Paused"
 msgstr ""
 
 msgid "Performers"
@@ -1077,6 +1095,9 @@ msgid "Playback options"
 msgstr ""
 
 msgid "Player bar"
+msgstr ""
+
+msgid "Playing"
 msgstr ""
 
 msgid "Playlist"
@@ -1164,6 +1185,9 @@ msgid "Reads tempo, musical key and loudness in the background. AutoMix appears 
 msgstr ""
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
+msgstr ""
+
+msgid "Receiver volume"
 msgstr ""
 
 msgid "Recent"

@@ -2,6 +2,7 @@
 pub mod dlna;
 pub mod chromecast;
 pub mod discovery;
+pub mod media_server;
 
 use std::net::SocketAddr;
 use serde::Serialize;

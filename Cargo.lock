@@ -474,6 +474,7 @@ name = "chilpa-cast"
 version = "0.0.0"
 dependencies = [
  "chilpa-i18n",
+ "getrandom 0.4.3",
  "mdns-sd",
  "native-tls",
  "openssl",

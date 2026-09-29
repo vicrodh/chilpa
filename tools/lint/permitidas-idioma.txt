@@ -498,3 +498,6 @@ varint
 vendored
 val
 schannel
+
+cancelled
+getrandom
