@@ -127,14 +127,16 @@ impl TrackOrder {
             TrackOrder::Album => "a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Year => "a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Added => "t.added_at DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
-            TrackOrder::Title => "t.title COLLATE NOCASE",
+            // Without the spaces a tag left before it: a title that starts
+            // with one is not before the alphabet.
+            TrackOrder::Title => "ltrim(t.title) COLLATE NOCASE",
             TrackOrder::Plays => "plays DESC, t.title COLLATE NOCASE",
             TrackOrder::Duration => "t.duration_ms",
             TrackOrder::Disc => "coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
             TrackOrder::ArtistDescending => {
                 "a.album_artist COLLATE NOCASE DESC, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
             }
-            TrackOrder::TitleDescending => "t.title COLLATE NOCASE DESC",
+            TrackOrder::TitleDescending => "ltrim(t.title) COLLATE NOCASE DESC",
             TrackOrder::YearDescending => "a.year DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Performer => "t.artist COLLATE NOCASE, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
         }
@@ -827,7 +829,7 @@ mod tracks_view_tests {
     fn library() -> Library {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
-        let rows = [(1, "Zebra", "Alpha Band", "First"), (2, "apple", "beta Band", "Second"), (3, "\u{c1}rbol", "Alpha Band", "First"), (4, "99 Problems", "Gamma", "Third")];
+        let rows = [(1, "  Zebra", "Alpha Band", "First"), (2, "apple", "beta Band", "Second"), (3, "\u{c1}rbol", "Alpha Band", "First"), (4, "99 Problems", "Gamma", "Third")];
         for (id, title, artist, album) in rows {
             lib.db.execute("INSERT OR IGNORE INTO albums (id, title, album_artist, folder) VALUES (?1, ?2, ?3, ?2)", params![id, album, artist]).unwrap();
             let album_id: i64 = lib.db.query_row("SELECT id FROM albums WHERE title = ?1", params![album], |r| r.get(0)).unwrap();
@@ -843,7 +845,7 @@ mod tracks_view_tests {
         let lib = library();
         let found = |text: &str| lib.browse_ids(&Filter { text: text.into(), ..Filter::default() }, TrackOrder::Title).unwrap().ids;
         assert_eq!(found("alpha"), [1, 3]);
-        assert_eq!(found("alpha zeb"), [1]);
+        assert_eq!(found("alpha zeb"), [1], "a title with spaces before it is in its place");
         assert_eq!(found("second"), [2]);
         assert_eq!(found("100%"), Vec::<i64>::new(), "a percent sign is a character");
         assert_eq!(found("").len(), 4);

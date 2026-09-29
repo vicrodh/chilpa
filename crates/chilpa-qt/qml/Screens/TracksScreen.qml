@@ -13,9 +13,18 @@ Item {
 
     property string order: SettingsModel.kept("ui.tracks.order") || "default"
     property string group: SettingsModel.kept("ui.tracks.group") || "off"
-    property string typed: ""
+    property string typed: Visit.recall("tracks.typed", "")
+    // Where the list was when the screen was left, until it is back there.
+    property real returnTo: Visit.recall("tracks.at", 0)
+
+    Component.onDestruction: {
+        Visit.keep("tracks.typed", typed)
+        Visit.keep("tracks.at", list.rows.contentY)
+    }
     property bool selectionMode: false
     readonly property bool grouped: group !== "off"
+    // Where each letter starts, read again each time the list arrives.
+    property var letters: []
 
     TrackListModel {
         id: tracks
@@ -71,7 +80,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Metrics.screenSearch
                 placeholder: I18n.tr("Search", I18n.rev)
-                onTextChanged: settle.restart()
+                text: page.typed
+                onTextChanged: if (text.trim() !== page.typed) settle.restart()
                 onEscaped: text = ""
             }
             SortButton {
@@ -151,6 +161,18 @@ Item {
         model: tracks
         Component.onCompleted: rows.section.delegate = band
     }
+    Connections {
+        target: tracks
+        function onModelReset() {
+            page.letters = JSON.parse(tracks.letters(0) || "[]")
+        }
+        function onCountChanged() {
+            if (page.returnTo > 0 && tracks.count > 0) {
+                list.rows.contentY = Math.min(page.returnTo, Math.max(0, list.rows.contentHeight - list.rows.height))
+                page.returnTo = 0
+            }
+        }
+    }
     Binding {
         target: list.rows.section
         property: "property"
@@ -179,7 +201,7 @@ Item {
         anchors.bottom: list.bottom
         anchors.bottomMargin: Metrics.contentBottom
         anchors.right: head.right
-        letters: visible ? JSON.parse(tracks.letters(tracks.count) || "[]") : []
+        letters: page.letters
         onJumped: (row) => list.rows.positionViewAtIndex(row, ListView.Beginning)
     }
 

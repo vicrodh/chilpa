@@ -1,1 +1,2 @@
 singleton TipState 1.0 TipState.qml
+singleton Visit 1.0 Visit.qml

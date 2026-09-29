@@ -98,7 +98,14 @@ Column {
 
         HoverHandler { id: hover }
         HoverHandler { cursorShape: Qt.PointingHandCursor }
-        TapHandler { onTapped: mark.visible ? branch.rail.choose(branch.place) : Navigation.openFolder(branch.path) }
+        TapHandler {
+            // The arrow is its own place: it opens the branch and chooses nothing.
+            onTapped: (point) => {
+                if (point.position.x >= turn.x && point.position.x < folderIcon.x)
+                    return
+                mark.visible ? branch.rail.choose(branch.place) : Navigation.openFolder(branch.path)
+            }
+        }
         TapHandler { acceptedButtons: Qt.RightButton; onTapped: (point) => branch.rail.context(branch, branch.path, point.position.x, point.position.y) }
     }
 
