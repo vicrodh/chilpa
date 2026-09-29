@@ -183,8 +183,8 @@ mod tests {
         assert_eq!(s.album.album_artist, Override::Value("Shiro Sagisu".to_string()));
         assert_eq!(s.album.date, Override::Value("2014".to_string()));
         assert_eq!(s.album.catalog_number, Override::Value("KICA-3219".to_string()));
-        // A comma is not where a genre ends: it is one, as it was written.
-        assert_eq!(s.album.genres, Override::Value(vec!["Jazz, Non-Music, Pop".to_string()]));
+        // Read as any genre tag is: a list with commas is its genres.
+        assert_eq!(s.album.genres, Override::Value(vec!["Jazz".to_string(), "Non-Music".to_string(), "Pop".to_string()]));
         let track = &s.tracks["01. Welcome to the Tokyo III jazz club.flac"];
         assert_eq!(track.title, Override::Value("Welcome To The Tokyo III Jazz Club".to_string()));
         assert_eq!(track.track_number, Override::Value(1));
