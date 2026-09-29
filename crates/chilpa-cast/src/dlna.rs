@@ -1,6 +1,6 @@
 use crate::{Device, Error, Kind, Metadata, RemoteTransport, Result, State, Status, CONTENT_FEATURES};
 use std::{collections::HashMap, time::Duration};
-use url::Url;
+use http::Uri;
 
 #[derive(Clone, Debug)]
 pub struct Service { pub kind: String, pub endpoint: String }
@@ -12,28 +12,31 @@ fn field(node: roxmltree::Node<'_, '_>, name: &str) -> String {
     node.children().find(|n| n.has_tag_name(name)).and_then(|n| n.text()).unwrap_or("").trim().into()
 }
 pub fn parse(location: &str, xml: &str) -> Result<Description> {
-    let url = Url::parse(location).map_err(|_| Error::Description)?;
+    let url = location.parse::<Uri>().map_err(|_| Error::Description)?;
+    if url.scheme_str() != Some("http") || url.authority().is_none_or(|a| a.as_str().contains('@')) { return Err(Error::Description); }
     let doc = roxmltree::Document::parse(xml).map_err(|_| Error::Description)?;
     let node = doc.descendants().find(|n| n.has_tag_name("device") && field(*n, "deviceType").contains(":device:MediaRenderer:")).ok_or(Error::Description)?;
     let base = doc.descendants().find(|n| n.has_tag_name("URLBase")).and_then(|n| n.text()).filter(|s| !s.trim().is_empty()).unwrap_or(location);
-    let base = Url::parse(base).map_err(|_| Error::Description)?;
+    let base = base.parse::<Uri>().map_err(|_| Error::Description)?;
     let services: Vec<Service> = node.descendants().filter(|n| n.has_tag_name("service")).filter_map(|n| {
         let path = field(n, "controlURL");
         if path.is_empty() || path.len() > 8192 || path.chars().any(char::is_whitespace) { return None; }
         // Legacy renderers advertise paths without the leading slash.
         let path = if path.starts_with('/') || path.contains("://") { path } else { format!("/{path}") };
-        let endpoint = base.join(&path).ok()?;
-        if endpoint.host_str() != url.host_str() || endpoint.scheme() != "http" || !endpoint.username().is_empty() { return None; }
+        let endpoint = if path.starts_with('/') {
+            format!("http://{}{path}", base.authority()?).parse::<Uri>().ok()?
+        } else { path.parse::<Uri>().ok()? };
+        if endpoint.host() != url.host() || endpoint.scheme_str() != Some("http") || endpoint.authority()?.as_str().contains('@') { return None; }
         Some(Service { kind: field(n, "serviceType"), endpoint: endpoint.to_string() })
     }).collect();
     let find = |name: &str| services.iter().find(|s| s.kind.starts_with(&format!("urn:schemas-upnp-org:service:{name}:"))).cloned();
     let transport = find("AVTransport").ok_or(Error::Description)?;
     let id = field(node, "UDN");
     if id.is_empty() { return Err(Error::Description); }
-    let ip = url.host_str().ok_or(Error::Description)?.trim_matches(['[', ']']).parse().map_err(|_| Error::Description)?;
+    let ip = url.host().ok_or(Error::Description)?.trim_matches(['[', ']']).parse().map_err(|_| Error::Description)?;
     Ok(Description {
         device: Device { id, name: field(node, "friendlyName"), model: field(node, "modelName"), kind: Kind::Dlna,
-            address: std::net::SocketAddr::new(ip, url.port_or_known_default().unwrap_or(80)), description: location.into() },
+            address: std::net::SocketAddr::new(ip, url.port_u16().unwrap_or(80)), description: location.into() },
         transport, rendering: find("RenderingControl"), connection: find("ConnectionManager"),
     })
 }

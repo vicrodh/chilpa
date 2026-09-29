@@ -9,7 +9,7 @@ rust-version.workspace = true
 chilpa-i18n.workspace = true
 ureq = { version = "3", default-features = false }
 roxmltree = "0.21"
-url = "2"
+http = "1"
 serde = { version = "1", features = ["derive"] }
 
 native-tls = "0.2"

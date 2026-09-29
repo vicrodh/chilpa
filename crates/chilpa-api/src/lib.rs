@@ -10,6 +10,8 @@ pub use plugins::PluginInfo;
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod accounts;
+mod casting;
+pub use chilpa_cast::{Device as CastDevice, Kind as CastKind};
 mod approvals;
 mod browse;
 mod credits;
@@ -572,6 +574,7 @@ pub struct Chilpa {
     metadata: metadata::Editor,
     /// My servers: adding, syncing, watching and removing them (ADR-017).
     servers: servers::Servers,
+    casting: casting::Casting,
     /// The artists of the credits the window asked about, and the state of
     /// the library they were read at.
     credits: std::collections::HashMap<String, Vec<String>>,
@@ -641,6 +644,7 @@ impl Chilpa {
             outputs_generation: String::new(),
             metadata: metadata::Editor::default(),
             servers: servers::Servers::default(),
+            casting: casting::Casting::default(),
             credits: Default::default(),
             credits_read_at: (0, 0),
         };
@@ -1029,12 +1033,14 @@ impl Chilpa {
 
     /// Pauses or resumes what is playing.
     pub fn set_paused(&mut self, paused: bool) {
+        if self.casting.active() { self.cast_pause(paused); return; }
         if !paused && self.player.is_none() && !self.queue.is_empty() {
-            if let Some(seconds) = self.restored_at.take() {
-                let (device, bit_perfect) = self.chosen_output();
-                self.spawn_from(0, &device, bit_perfect, Some(std::time::Duration::from_secs_f64(seconds.max(0.0))), Relaunch::Track);
-                return;
-            }
+            let restored = self.restored_at.take();
+            let seconds = restored.unwrap_or(self.now.seconds).max(0.0);
+            let index = if restored.is_some() { 0 } else { self.now.index.min(self.queue.len() - 1) };
+            let (device, bit_perfect) = self.chosen_output();
+            self.spawn_from(index, &device, bit_perfect, Some(std::time::Duration::from_secs_f64(seconds)), Relaunch::Track);
+            return;
         }
         if let Some(p) = &self.player {
             p.set_paused(paused);
@@ -1044,6 +1050,7 @@ impl Chilpa {
 
     /// Seeks to that second of the playing track.
     pub fn seek(&mut self, seconds: f64) {
+        if self.casting.active() { self.cast_seek(seconds); return; }
         if let Some(p) = &self.player {
             let safe = seconds.max(0.0);
             p.seek(std::time::Duration::from_secs_f64(safe));
@@ -1052,6 +1059,7 @@ impl Chilpa {
 
     /// Skips to the next track in the queue.
     pub fn next_track(&mut self) {
+        if self.casting.active() { self.cast_next(false); return; }
         if let Some(p) = &self.player {
             p.next();
         }
@@ -1081,6 +1089,7 @@ impl Chilpa {
 
     /// Stops whatever is playing.
     pub fn stop(&mut self) {
+        if self.casting.active() { self.cast_stop(); return; }
         if let Some(p) = &self.player {
             p.stop();
         }
@@ -1096,6 +1105,7 @@ impl Chilpa {
         self.advance_search();
         self.advance_connect();
         self.poll_servers();
+        self.poll_cast();
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }

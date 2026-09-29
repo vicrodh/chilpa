@@ -14,16 +14,17 @@ pub struct MediaServer {
     stopped: Arc<AtomicBool>, cancellations: Mutex<Vec<std::sync::Weak<AtomicBool>>>, worker: Option<JoinHandle<()>>,
 }
 /// I ask the routing table without sending a UDP datagram.
-pub fn interface_to(renderer: SocketAddr) -> Result<IpAddr> {
+pub fn interface_to(renderer: SocketAddr) -> Result<IpAddr> { route(renderer).map(|address| address.ip()) }
+fn route(renderer: SocketAddr) -> Result<SocketAddr> {
     let bind = if renderer.is_ipv4() { "0.0.0.0:0" } else { "[::]:0" };
     let socket = UdpSocket::bind(bind).map_err(|_| Error::Network)?;
     socket.connect(renderer).map_err(|_| Error::Network)?;
-    socket.local_addr().map(|s| s.ip()).map_err(|_| Error::Network)
+    socket.local_addr().map_err(|_| Error::Network)
 }
 impl MediaServer {
     pub fn start(renderer: SocketAddr) -> Result<Self> { Self::start_guarded(renderer, None) }
     pub fn start_guarded(renderer: SocketAddr, generation: Option<Arc<AtomicU64>>) -> Result<Self> {
-        let address = SocketAddr::new(interface_to(renderer)?, 0);
+        let mut address = route(renderer)?; address.set_port(0);
         let listener = TcpListener::bind(address).map_err(|_| Error::Network)?;
         listener.set_nonblocking(true).map_err(|_| Error::Network)?;
         let address = listener.local_addr().map_err(|_| Error::Network)?;
@@ -98,9 +99,11 @@ fn empty(socket: &mut TcpStream, code: u16, extra: &str) -> std::io::Result<()> 
 }
 fn respond(mut socket: TcpStream, current: Arc<Mutex<Option<Current>>>, stopped: Arc<AtomicBool>) -> std::io::Result<()> {
     socket.set_read_timeout(Some(Duration::from_secs(5)))?; socket.set_write_timeout(Some(Duration::from_secs(5)))?;
+    let deadline = std::time::Instant::now() + Duration::from_secs(10);
     let mut request = Vec::new();
     let mut byte = [0];
     while request.len() < 16 * 1024 && !request.ends_with(b"\r\n\r\n") {
+        if stopped.load(Ordering::Acquire) || std::time::Instant::now() >= deadline { return Ok(()); }
         socket.read_exact(&mut byte)?; request.push(byte[0]);
     }
     if !request.ends_with(b"\r\n\r\n") { return empty(&mut socket, 431, ""); }

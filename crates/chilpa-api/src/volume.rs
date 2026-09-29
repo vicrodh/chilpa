@@ -25,6 +25,7 @@ pub struct VolumeView {
 impl Chilpa {
     /// Where the volume is, and whether and how it can be moved.
     pub fn player_volume(&mut self) -> VolumeView {
+        if self.casting.active() { return self.cast_volume(); }
         let (output, _) = self.chosen_output();
         if self.hardware_volume() {
             let knob = chilpa_core::volume_of(&output);
@@ -45,6 +46,7 @@ impl Chilpa {
     }
 
     pub fn set_player_volume(&mut self, percent: u8) {
+        if self.casting.active() { self.cast_set_volume(percent); return; }
         let percent = percent.min(100);
         let view = self.player_volume();
         if view.locked {
@@ -62,6 +64,7 @@ impl Chilpa {
     }
 
     pub fn set_player_muted(&mut self, muted: bool) {
+        if self.casting.active() { self.cast_set_muted(muted); return; }
         let view = self.player_volume();
         if view.locked {
             return;

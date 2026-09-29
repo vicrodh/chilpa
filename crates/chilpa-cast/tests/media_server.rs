@@ -51,3 +51,12 @@ fn a_new_generation_revokes_before_the_worker_can_answer() {
     generation.store(2, Ordering::Release);
     assert!(request(&server, &url, "GET", "").0.starts_with("HTTP/1.1 404"));
 }
+
+#[test]
+fn ipv6_loopback_serves_original_bytes() {
+    let server = MediaServer::start("[::1]:9".parse().unwrap()).unwrap();
+    assert!(server.address().is_ipv6());
+    let url = server.publish(ExternalAsset { length: 3, mime: "audio/flac".into(), source: Arc::new(Bytes(vec![1,2,3])) }).unwrap();
+    assert!(url.starts_with("http://[::1]:"));
+    assert_eq!(request(&server, &url, "GET", "").1, [1,2,3]);
+}

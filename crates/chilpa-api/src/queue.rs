@@ -40,6 +40,7 @@ impl Chilpa {
     pub(crate) fn replace_queue(&mut self, queue: Vec<String>) {
         self.set_stop_after(None);
         self.queue = queue;
+        self.casting.order.clear();
         self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
         self.queue_groups.clear();
         self.removed = vec![false; self.queue.len()];
@@ -189,6 +190,10 @@ impl Chilpa {
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
+        if self.casting.active() {
+            self.cast_load(from, start_at.map(|s| s.as_secs_f64()).unwrap_or(0.0), false);
+            return;
+        }
         chilpa_core::trace_playback(
             "facade",
             "launch_requested",
@@ -335,6 +340,10 @@ impl Chilpa {
         if index <= self.now.index || index >= self.queue.len() {
             return false;
         }
+        if self.casting.active() {
+            if let Some(removed) = self.removed.get_mut(index) { *removed = true; return true; }
+            return false;
+        }
         let Some(p) = &self.player else { return false };
         // The player counts from where it started; the view, from the start
         // of the queue.
@@ -463,7 +472,7 @@ impl Chilpa {
         if tracks.is_empty() {
             return Vec::new();
         }
-        let playing = self.now.playing && self.player.is_some();
+        let playing = self.now.playing && (self.player.is_some() || self.casting.active());
         if !playing {
             return self.play_tracks(paths, device, bit_perfect);
         }
@@ -474,6 +483,7 @@ impl Chilpa {
             p.enqueue(&tracks);
         }
         self.now.queue_len = self.queue.len();
+        if self.casting.active() { self.cast_order(); }
         tracks.iter().map(|p| title_of(p)).collect()
     }
 
@@ -503,6 +513,10 @@ impl Chilpa {
         let tracks: Vec<std::path::PathBuf> = paths.iter().map(std::path::PathBuf::from).collect();
         let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {
+            return;
+        }
+        if self.casting.active() && self.now.playing {
+            self.cast_insert(&tracks, QueuePlacement::Next);
             return;
         }
         let playing = self.now.playing && self.player.is_some();
@@ -543,6 +557,14 @@ impl Chilpa {
         let tracks = chilpa_core::sacd_tracks::expand(&tracks);
         if tracks.is_empty() {
             return None;
+        }
+        if self.casting.active() && self.now.playing {
+            let first = self.queue.len();
+            self.cast_insert(&tracks, QueuePlacement::Later);
+            let key = self.next_queue_group;
+            self.next_queue_group = key.wrapping_add(1).max(1);
+            self.queue_groups.push(QueueGroup { key, label: label.into(), tracks: (first..self.queue.len()).collect(), collapsed: false });
+            return Some(key);
         }
         let playing = self.now.playing && self.player.is_some();
         let Some(player) = self.player.as_ref().filter(|_| playing) else {
@@ -615,7 +637,7 @@ impl Chilpa {
     /// that same view before the selected rows are lifted. The playing row
     /// cannot move; array positions stay fixed and only traversal changes.
     pub fn move_queued(&mut self, rows: &[usize], to: usize) -> bool {
-        let Some(player) = &self.player else { return false };
+        if self.player.is_none() && !self.casting.active() { return false; }
         let visible = self.queue_order();
         if rows.is_empty() || to > visible.len() {
             return false;
@@ -637,7 +659,7 @@ impl Chilpa {
         }
 
         let own = self.queue.len().saturating_sub(self.base);
-        let mut order = player.order();
+        let mut order = if self.casting.active() { self.casting.order.clone() } else { self.player.as_ref().map(|p| p.order()).unwrap_or_default() };
         if order.len() != own {
             order = (0..own).collect();
         }
@@ -648,7 +670,7 @@ impl Chilpa {
                 *entry = replacements.next().expect("one replacement for every visible queue row");
             }
         }
-        player.set_order(order, own)
+        if self.casting.active() { self.casting.order = order; true } else { self.player.as_ref().is_some_and(|p| p.set_order(order, own)) }
     }
 
     /// Folding is presentation state only; it never changes traversal.
@@ -677,6 +699,7 @@ impl Chilpa {
     /// in the order they will play and without the ones taken out: what the
     /// queue panel lists, row by row.
     pub fn queue_order(&self) -> Vec<usize> {
+        if self.casting.active() { return self.cast_upcoming(); }
         let len = self.queue.len();
         let from = self.now.index.min(len);
         let order = self.player.as_ref().map(|p| p.order()).unwrap_or_default();
@@ -741,6 +764,7 @@ impl Chilpa {
         }
 
         let order = order_by_tempo(&bpms, current.min(paths.len().saturating_sub(1)));
+        if self.casting.active() { self.casting.order = order.clone(); }
         if let Some(p) = &self.player {
             p.set_order(order, paths.len());
         }
@@ -840,6 +864,7 @@ impl Chilpa {
             self.mix = self.automix() > 0;
         } else {
             self.mix = false;
+            if self.casting.active() { self.casting.order = (0..self.queue.len()).collect(); }
             if let Some(p) = &self.player {
                 p.clear_order();
             }
@@ -855,6 +880,7 @@ impl Chilpa {
     /// the playing track ends: shuffling does not cut the audio.
     pub fn set_shuffle(&mut self, shuffle: bool) {
         self.shuffle = shuffle;
+        if self.casting.active() { self.cast_order(); }
         // Shuffling and the mix are two orders: one replaces the other.
         self.mix = false;
         let remaining = self.queue.len().saturating_sub(self.base);

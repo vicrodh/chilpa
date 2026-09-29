@@ -9,6 +9,7 @@ rust-version.workspace = true
 # Where the plugins go, per platform (ADR-010 M3).
 chilpa-dirs.workspace = true
 chilpa-core.workspace = true
+chilpa-cast.workspace = true
 chilpa-models.workspace = true
 chilpa-library.workspace = true
 chilpa-tags.workspace = true
@@ -39,3 +40,5 @@ wat = "1"
 # chilpa-library already uses.
 chilpa-library.workspace = true
 rusqlite = "0.40"
+tiny_http = "0.12"
+native-tls = "0.2"
