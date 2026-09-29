@@ -115,7 +115,9 @@ QtObject {
     // Tab bar (02-layout.md 3).
     readonly property int tabBarHeight: 42
     readonly property int tabBarTop: 6
-    readonly property int tabHeight: 30
+    readonly property int tabHeight: 28
+    // What a wheel reports for one notch.
+    readonly property int wheelNotch: 120
     readonly property int tabMaxWidth: 180
     readonly property int tabPadLeft: 11
     readonly property int tabPadRight: 5

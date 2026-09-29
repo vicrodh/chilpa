@@ -569,6 +569,9 @@ msgstr ""
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr ""
 
+msgid "Earlier tabs"
+msgstr ""
+
 msgid "Edit"
 msgstr ""
 
@@ -777,6 +780,9 @@ msgid "Keep the queue between sessions"
 msgstr ""
 
 msgid "Last.fm opens in the browser to allow Chilpa."
+msgstr ""
+
+msgid "Later tabs"
 msgstr ""
 
 msgid "Library"
