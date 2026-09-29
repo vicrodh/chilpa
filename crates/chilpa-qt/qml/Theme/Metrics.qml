@@ -201,8 +201,6 @@ QtObject {
     readonly property int cardRing: 2
     readonly property int carouselCard: 164
     readonly property int ratingStar: 14
-    // In the flyout that rates, where they are the only thing to hit.
-    readonly property int ratingStarLarge: 24
     readonly property int ratingMaximum: 5
     // The quick view under a row (03-components.md AlbumQuickView).
     readonly property int quickArt: 184

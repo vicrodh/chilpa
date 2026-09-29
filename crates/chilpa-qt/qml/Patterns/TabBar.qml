@@ -6,14 +6,12 @@ import "../Components"
 
 // The strip above everything (design/02 3): history and the sidebar's
 // button at the window's left, after the room macOS wants for its own
-// controls; then the tabs, over the content; density and, outside macOS,
+// controls; then the tabs; density and, outside macOS,
 // the window's controls. Its empty space moves the window, and a double
 // click maximizes it.
 Item {
     id: bar
 
-    // Where the content starts, from the bar's left: the tabs stand over it.
-    property real contentLeft: 0
     // What the system's own controls take of the bar's left, on a Mac.
     property real controlsRoom: 0
 
@@ -81,7 +79,7 @@ Item {
 
     Row {
         anchors.left: parent.left
-        anchors.leftMargin: Math.max(bar.contentLeft, lead.width + Metrics.gap8) // derived: over the content, never under the buttons
+        anchors.leftMargin: lead.width + Metrics.gap8 // derived: right after the buttons
         anchors.top: parent.top
         anchors.topMargin: Metrics.tabBarTop
         spacing: Metrics.gap4
