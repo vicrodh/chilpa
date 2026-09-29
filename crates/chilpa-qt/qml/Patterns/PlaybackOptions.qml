@@ -11,12 +11,18 @@ import "../Components"
 Popup {
     id: options
 
+    // A click outside closes it and is nothing else: it is not also a click
+    // on what is there.
+    modal: true
+    dim: false
+
     padding: Metrics.gap12
     width: Metrics.playbackOptionsWidth
     margins: Metrics.gap10
-    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+    closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
     background: Item {
+        Hold {}
         RectangularShadow {
             anchors.fill: panel
             radius: panel.radius

@@ -56,6 +56,7 @@ Popup {
     }
 
     background: Item {
+        Hold {}
         RectangularShadow {
             anchors.fill: panel
             radius: panel.radius

@@ -42,7 +42,7 @@ Row {
                 color: swatch.modelData === "" ? Theme.color.accentBase : swatch.modelData
             }
             HoverHandler { cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: swatches.picked(swatches.values[swatch.index]) }
+            TapHandler { gesturePolicy: TapHandler.ReleaseWithinBounds; onTapped: swatches.picked(swatches.values[swatch.index]) }
         }
     }
 }

@@ -66,6 +66,7 @@ GallerySection {
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
         SourceIcon { sourceInfo: ({ local: true }) }
+        Item { width: Metrics.button32; height: Metrics.button32; Hold {} }
         Repeater {
             model: ["opensubsonic", "navidrome", "jellyfin", "plex", "collection", "cassette", "cast-audio", "dlna", "musicbrainz", "discogs", "gandalf"]
             SourceIcon {
