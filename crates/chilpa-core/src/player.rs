@@ -541,6 +541,26 @@ fn play(
                 });
                 return;
             }
+            if let Some(entry) = crate::remote::entry(path) {
+                // Its tags are on the server; the library's copy of them
+                // stands in, and the length comes from the decoder.
+                let (about, frames) = crate::remote::describe(path, &entry);
+                let _ = events.send(PlayerEvent::Started {
+                    path: path.to_path_buf(),
+                    opened: delivery.opened,
+                    channels: delivery.requested.channels,
+                    bits: delivery.bits_carried(),
+                    bit_perfect: delivery.nothing_was_converted() && exact_path,
+                    total_frames: frames,
+                    tags: Some(about.tags),
+                    artwork: about.artwork,
+                    index,
+                    queue_len: total,
+                    dsd_multiple: None,
+                    dsd_passthrough: false,
+                });
+                return;
+            }
             let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
             let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
             // A DSD track is named by its source rate. Its frame count follows

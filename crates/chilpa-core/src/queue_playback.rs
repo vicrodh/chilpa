@@ -53,7 +53,12 @@ fn open_track(
         let reader = open_dsd_file(path).map_err(|e| unreadable(e.to_string()))?;
         return dsd_track(reader, caps, dsd_mode, direct_dsd);
     }
-    let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
+    // A track on a server: the original bytes, read by windows, decoded
+    // here like a file on disk (ADR-017).
+    let decoded = match crate::remote::entry(path) {
+        Some(entry) => crate::remote::open(path, &entry).map_err(unreadable)?,
+        None => Decoded::open(path).map_err(PlayError::Decode)?,
+    };
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
     Ok((Source::Pcm(decoded), delivery))
 }
@@ -818,6 +823,11 @@ where
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
     let mut consecutive_silent = 0usize;
+    // A server that stopped answering: its tracks are passed over and the
+    // queue goes on (ADR-017). The last error is kept to say, when nothing
+    // at all could play, why; and a full lap of them ends it.
+    let mut unreachable_in_a_row = 0usize;
+    let mut passed_over: Option<PlayError> = None;
     // The DoP marker of whatever is open. It carries on across tracks that
     // share an opening and starts over with a new one.
     let mut packer = DopPacker::new();
@@ -851,6 +861,23 @@ where
         let source_started = std::time::Instant::now();
         let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get()) {
             Ok(opened) => opened,
+            Err(error) if crate::remote::entry(path).is_some() => {
+                chilpa_audio::diagnostics::trace(
+                    "queue",
+                    "source_passed_over",
+                    format_args!("after={:?} path={path:?} error={error}", source_started.elapsed()),
+                );
+                unreachable_in_a_row += 1;
+                passed_over = Some(error);
+                if unreachable_in_a_row > queue.len() || stop_after.take_at(index) {
+                    break;
+                }
+                match order.next(index, queue.len(), repeat.get() == Repeat::All) {
+                    Some(n) => index = n,
+                    None => break,
+                }
+                continue;
+            }
             Err(error) => {
                 chilpa_audio::diagnostics::trace(
                     "queue",
@@ -860,6 +887,7 @@ where
                 return Err(error);
             }
         };
+        unreachable_in_a_row = 0;
         let source_kind = match &source {
             Source::Pcm(_) => "pcm",
             Source::Dop(_) => "dop",
@@ -1143,6 +1171,11 @@ where
             "sink_closed",
             format_args!("after={:?} format={format:?} final=true mode={closing}", started.elapsed()),
         );
+    }
+    // Every track it reached was on a server that did not answer: that is
+    // what the window says, not that the queue ended.
+    if let (true, Some(error)) = (results.is_empty(), passed_over) {
+        return Err(error);
     }
     Ok(results)
 }
