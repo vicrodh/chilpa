@@ -101,3 +101,10 @@ pub fn title(path: &Path) -> Option<String> {
     let entry = entry(path)?;
     opener()?.describe(&entry).tags.title
 }
+
+/// I resolve an original external asset with the same opener as playback.
+/// Only the facade's network worker calls this; credentials stay there.
+pub fn external(entry: &RemoteEntry) -> Result<(Located, Described), String> {
+    let opener = opener().ok_or_else(|| chilpa_i18n::t("this track is on a server, and servers are not connected"))?;
+    Ok((opener.locate(entry)?, opener.describe(entry)))
+}
