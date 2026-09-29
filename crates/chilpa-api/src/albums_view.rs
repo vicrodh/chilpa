@@ -50,15 +50,11 @@ pub fn grid_rows(len: usize, columns: usize, max_rows: usize, groups: &[(usize, 
 
 impl Reader {
     /// The records of the Albums screen. `group` is "letter", "artist" or
-    /// nothing, and decides the order when it is set: groups that are not
-    /// together are not groups. The sources, qualities and formats left out
-    /// come from `extras`, which the Library screen shares.
+    /// nothing. The groups come in their order, and the order asked for is
+    /// the order inside each one. The sources, qualities and formats left
+    /// out come from `extras`, which the Library screen shares.
     pub fn albums_view(&self, order: &str, group: &str, text: &str, extras: &Filter) -> AlbumsFound {
-        let order = AlbumSort::from_name(match group {
-            "artist" => "artist",
-            "letter" if order != "artist" => "title",
-            _ => order,
-        });
+        let order = AlbumSort::from_name(order);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
         if !extras.excluded_sources.is_empty() || !extras.qualities.is_empty() || !extras.formats.is_empty() {
             let through = Filter {
@@ -71,26 +67,40 @@ impl Reader {
             ids.retain(|id| left.contains(id));
         }
         let ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
-        let mut groups: Vec<(usize, String)> = Vec::new();
-        if matches!(group, "letter" | "artist") {
-            let by_artist = order == AlbumSort::Artist;
-            let mut at = 0;
-            for chunk in ids.chunks(500) {
-                for (album, _) in self.lib.albums_by_ids(chunk).unwrap_or_default() {
-                    let label = match (group, by_artist) {
-                        ("artist", _) => album.album_artist.clone(),
-                        (_, true) => chilpa_library::letter_of(&album.album_artist),
-                        _ => chilpa_library::letter_of(&album.title),
-                    };
-                    if groups.last().is_none_or(|(_, last)| last.to_lowercase() != label.to_lowercase()) {
-                        groups.push((at, label));
-                    }
-                    at += 1;
-                }
+        if !matches!(group, "letter" | "artist") {
+            return AlbumsFound { ids, groups: Vec::new() };
+        }
+        // Each record with the group it is in. A letter is the artist's when
+        // the records are ordered by artist, and the title's otherwise.
+        let by_artist = order == AlbumSort::Artist;
+        let mut named: Vec<(String, i64)> = Vec::with_capacity(ids.len());
+        for chunk in ids.chunks(500) {
+            for (album, _) in self.lib.albums_by_ids(chunk).unwrap_or_default() {
+                let label = match (group, by_artist) {
+                    ("artist", _) => album.album_artist.trim().to_string(),
+                    (_, true) => chilpa_library::letter_of(&album.album_artist),
+                    _ => chilpa_library::letter_of(&album.title),
+                };
+                named.push((label, album.id));
             }
         }
-        AlbumsFound { ids, groups }
+        arrange(named)
     }
+}
+
+/// Records that came in the order asked for, put in groups: the groups by
+/// name, whatever their case, and each one's records as they came.
+fn arrange(mut named: Vec<(String, i64)>) -> AlbumsFound {
+    // Stable: what shares a group stays in the order it came in.
+    named.sort_by_cached_key(|(label, _)| label.to_lowercase());
+    let mut found = AlbumsFound::default();
+    for (at, (label, id)) in named.into_iter().enumerate() {
+        if found.groups.last().is_none_or(|(_, last)| last.to_lowercase() != label.to_lowercase()) {
+            found.groups.push((at, label));
+        }
+        found.ids.push(id);
+    }
+    found
 }
 
 #[cfg(test)]
@@ -100,6 +110,15 @@ mod tests {
     fn rows(len: usize, columns: usize, max_rows: usize, groups: &[(usize, &str)]) -> Vec<(usize, usize, String)> {
         let groups: Vec<(usize, String)> = groups.iter().map(|(at, label)| (*at, label.to_string())).collect();
         grid_rows(len, columns, max_rows, &groups).into_iter().map(|r| (r.first, r.span, r.label)).collect()
+    }
+
+    #[test]
+    fn a_group_keeps_its_records_in_the_order_they_came() {
+        // By year, newest first: 30, 20, 10. Two artists.
+        let came = vec![("Band".to_string(), 30), ("Another".to_string(), 25), ("band".to_string(), 20), ("Band".to_string(), 10)];
+        let found = arrange(came);
+        assert_eq!(found.ids, [25, 30, 20, 10]);
+        assert_eq!(found.groups, [(0, "Another".to_string()), (1, "Band".to_string())], "one group whatever its case");
     }
 
     #[test]

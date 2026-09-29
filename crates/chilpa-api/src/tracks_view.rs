@@ -20,16 +20,10 @@ impl TracksQuery {
         Self { order: next(), group: next(), text: next() }
     }
 
-    /// The order the list is read in. A grouping decides it: groups that
-    /// are not together are not groups.
+    /// The order inside each group, or of the whole list when it has none:
+    /// the one asked for, and the order of the records when none was.
     pub fn order(&self) -> TrackOrder {
-        TrackOrder::from_name(match self.group.as_str() {
-            "album" => "album",
-            "artist" => "performer",
-            "name" => "title",
-            _ if self.order.is_empty() => "album",
-            _ => &self.order,
-        })
+        TrackOrder::from_name(if self.order.is_empty() { "album" } else { &self.order })
     }
 
     pub fn grouped(&self) -> bool {
@@ -66,6 +60,7 @@ impl Reader {
             excluded_sources: extras.excluded_sources.clone(),
             qualities: extras.qualities.clone(),
             formats: extras.formats.clone(),
+            grouped_by: if query.grouped() { query.group.clone() } else { String::new() },
             ..Filter::default()
         };
         let snapshot = self.snapshot(&filter, query.order());
@@ -85,11 +80,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_grouping_decides_the_order_and_no_grouping_leaves_it() {
+    fn the_order_asked_for_stands_whatever_the_grouping() {
         let asked = |key: &str| TracksQuery::parse(key).order();
         assert_eq!(asked("title-desc\u{1f}off\u{1f}"), TrackOrder::TitleDescending);
-        assert_eq!(asked("title-desc\u{1f}artist\u{1f}"), TrackOrder::Performer);
-        assert_eq!(asked("year\u{1f}name\u{1f}"), TrackOrder::Title);
+        assert_eq!(asked("title-desc\u{1f}artist\u{1f}"), TrackOrder::TitleDescending, "a grouping orders the groups, not what is in them");
         assert_eq!(asked(""), TrackOrder::Album, "nothing asked is the order of the records");
         assert_eq!(TracksQuery::parse("added\u{1f}album\u{1f}two words").text, "two words");
     }

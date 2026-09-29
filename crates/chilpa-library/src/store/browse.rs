@@ -47,6 +47,10 @@ pub struct Filter {
     /// What was typed to find tracks: every word of it has to be in the
     /// title, the artist or the record.
     pub text: String,
+    /// What a list of tracks is grouped by: "album", "artist", "name" (the
+    /// title's letter) or nothing. The groups come in their order, and the
+    /// order asked for is the order inside each one.
+    pub grouped_by: String,
 }
 
 impl Filter {
@@ -494,7 +498,13 @@ impl Library {
         let (filter, args) = clause(f);
         let sql = format!(
             "SELECT t.id, t.album_id, t.duration_ms, COALESCE(r.plays, 0) AS plays
-             {FROM} {filter} ORDER BY {}",
+             {FROM} {filter} ORDER BY {}{}",
+            match f.grouped_by.as_str() {
+                "album" => "a.title COLLATE NOCASE, a.id, ".to_string(),
+                "artist" => "t.artist COLLATE NOCASE, ".to_string(),
+                "name" => format!("{}, ", letter_in_sql("t.title")),
+                _ => String::new(),
+            },
             order.keys()
         );
         let mut stmt = self.db.prepare(&sql)?;
@@ -818,24 +828,38 @@ mod tests {
     }
 }
 
+/// The letters that are filed under another: an accent does not make a
+/// letter of its own.
+const UNDER: &[(char, &str)] = &[
+    ('A', "ÁÀÂÄÃÅáàâäãå"),
+    ('E', "ÉÈÊËéèêë"),
+    ('I', "ÍÌÎÏíìîï"),
+    ('O', "ÓÒÔÖÕóòôöõ"),
+    ('U', "ÚÙÛÜúùûü"),
+    ('N', "Ññ"),
+    ('C', "Çç"),
+];
+
 /// The letter a name is filed under: its first, from A to Z, without its
 /// accent, and "#" for anything else.
 pub fn letter_of(name: &str) -> String {
-    let first = name.trim().chars().next().map(|c| c.to_uppercase().next().unwrap_or(c));
-    let plain = match first {
-        Some('Á' | 'À' | 'Â' | 'Ä' | 'Ã' | 'Å') => Some('A'),
-        Some('É' | 'È' | 'Ê' | 'Ë') => Some('E'),
-        Some('Í' | 'Ì' | 'Î' | 'Ï') => Some('I'),
-        Some('Ó' | 'Ò' | 'Ô' | 'Ö' | 'Õ') => Some('O'),
-        Some('Ú' | 'Ù' | 'Û' | 'Ü') => Some('U'),
-        Some('Ñ') => Some('N'),
-        Some('Ç') => Some('C'),
-        other => other,
-    };
-    match plain {
-        Some(c) if c.is_ascii_uppercase() => c.to_string(),
-        _ => "#".to_string(),
-    }
+    let Some(first) = name.trim().chars().next() else { return "#".to_string() };
+    let plain = UNDER.iter().find(|(_, accented)| accented.contains(first)).map_or(first, |(letter, _)| *letter).to_ascii_uppercase();
+    if plain.is_ascii_uppercase() { plain.to_string() } else { "#".to_string() }
+}
+
+/// The same letter, worked out by the database for the text of a column, so
+/// a list can be ordered by it. "#" sorts before "A".
+pub fn letter_in_sql(column: &str) -> String {
+    let first = format!("substr(ltrim({column}), 1, 1)");
+    let accents: String = UNDER
+        .iter()
+        .map(|(letter, accented)| {
+            let list: Vec<String> = accented.chars().map(|c| format!("'{c}'")).collect();
+            format!(" WHEN {first} IN ({}) THEN '{letter}'", list.join(", "))
+        })
+        .collect();
+    format!("CASE{accents} WHEN upper({first}) BETWEEN 'A' AND 'Z' THEN upper({first}) ELSE '#' END")
 }
 
 #[cfg(test)]
@@ -886,6 +910,19 @@ mod tracks_view_tests {
         let letters = lib.letters(&ids, "title").unwrap();
         assert_eq!(letters, [("#".to_string(), 0), ("A".to_string(), 1), ("Z".to_string(), 2)]);
         assert_eq!(letter_of("\u{f1}u"), "N");
+        assert_eq!(letter_of("zebra"), "Z");
         assert_eq!(letter_of("  "), "#");
+    }
+
+    #[test]
+    fn a_grouped_list_keeps_the_order_asked_for_inside_each_group() {
+        let lib = library();
+        let ids = |by: &str, order| lib.browse_ids(&Filter { grouped_by: by.into(), ..Filter::default() }, order).unwrap().ids;
+        // By artist: Alpha Band's two, then beta Band, then Gamma. Inside
+        // Alpha Band, the titles forwards or backwards.
+        assert_eq!(ids("artist", TrackOrder::Title), [1, 3, 2, 4]);
+        assert_eq!(ids("artist", TrackOrder::TitleDescending), [3, 1, 2, 4]);
+        // By letter: "#", then A with its accent, then Z.
+        assert_eq!(ids("name", TrackOrder::Title), [4, 2, 3, 1]);
     }
 }
