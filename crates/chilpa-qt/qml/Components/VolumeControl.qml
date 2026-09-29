@@ -30,13 +30,19 @@ Item {
     Popup {
         id: volume
 
+        // A click outside closes it and is nothing else: it is not also a click
+        // on what is there.
+        modal: true
+        dim: false
+
         x: (control.width - width) / 2 // derived: centered over its button
         y: -height - Metrics.gap8
         width: Metrics.volumePopupWidth
         padding: Metrics.gap8
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutsideParent
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Item {
+            Hold {}
             RectangularShadow {
                 anchors.fill: panel
                 radius: panel.radius

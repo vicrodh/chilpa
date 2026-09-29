@@ -10,6 +10,11 @@ import "../Theme"
 Popup {
     id: menu
 
+    // A click outside closes it and is nothing else: it is not also a click
+    // on what is there.
+    modal: true
+    dim: false
+
     property var entries: []
     property string title
     property real widthLimit: Metrics.menuMaxWidth
@@ -37,6 +42,7 @@ Popup {
     implicitWidth: Math.min(widthLimit, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides
 
     background: Item {
+        Hold {}
         RectangularShadow {
             anchors.fill: panel
             radius: panel.radius
