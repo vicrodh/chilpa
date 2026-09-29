@@ -103,20 +103,20 @@ Rectangle {
 
                 Text {
                     id: album
-                    visible: Player.album !== ""
+                    visible: Cast.active || Player.album !== ""
                     width: Player.artist === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
-                    text: Player.album
+                    text: Cast.active ? Cast.destination : Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    color: albumHover.hovered && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
+                    color: albumHover.hovered && !Cast.active && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: albumHover
-                        enabled: Player.albumId > 0
+                        enabled: !Cast.active && Player.albumId > 0
                         cursorShape: Qt.PointingHandCursor
                     }
                     TapHandler {
-                        enabled: Player.albumId > 0
+                        enabled: !Cast.active && Player.albumId > 0
                         onTapped: Navigation.go("album", Player.albumId)
                     }
                 }

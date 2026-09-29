@@ -14,6 +14,7 @@ GallerySection {
     PlaylistEditDialog { id: playlistEditor }
     PlaylistFolderDialog { id: folderEditor }
     ServerSetupDialog { id: serverSetup }
+    CastPicker { id: castPreview; preview: true }
 
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     SidebarPlaylists { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
@@ -42,6 +43,7 @@ GallerySection {
             PillButton { text: "New playlist modal"; onClicked: pickerDialog.beginCreate() }
             PillButton { text: "Folder modal"; onClicked: folderEditor.show(0, "", "accent") }
             PillButton { text: "Edit playlist modal"; enabled: false; onClicked: playlistEditor.show(0) }
+            PillButton { text: I18n.tr("Play on", I18n.rev); onClicked: castPreview.open() }
             PillButton { text: "Add server modal"; onClicked: serverSetup.open() }
         }
         Toast { visible: true; message: "Playback failed" }

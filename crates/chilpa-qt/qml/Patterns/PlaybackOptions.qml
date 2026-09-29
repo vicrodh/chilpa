@@ -48,6 +48,7 @@ Popup {
             width: parent.width
             title: I18n.tr("Gapless", I18n.rev)
             detail: I18n.tr("One track straight into the next.", I18n.rev)
+            available: !Cast.active
             checked: Player.gapless
             onToggled: (on) => Player.chooseGapless(on)
         }
@@ -56,7 +57,7 @@ Popup {
             title: I18n.tr("Normalization", I18n.rev)
             detail: I18n.tr("Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed.", I18n.rev)
             checked: Player.normalize
-            available: Player.normalizeApplies
+            available: !Cast.active && Player.normalizeApplies
             onToggled: (on) => Player.chooseNormalize(on)
         }
         // Offered only when the library has tracks whose tempo was read.
