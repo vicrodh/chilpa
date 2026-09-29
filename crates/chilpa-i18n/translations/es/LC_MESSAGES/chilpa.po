@@ -2201,6 +2201,9 @@ msgstr "no se pudieron leer los tags: {}"
 msgid "the token_url is not https"
 msgstr "el token_url no es https"
 
+msgid "the track on {} could not be read: {}"
+msgstr "no se pudo leer la pista de {}: {}"
+
 msgid "the track's number is its place inside the disc image"
 msgstr "el número de la pista es su lugar dentro de la imagen de disco"
 
@@ -2272,6 +2275,9 @@ msgstr "esta salida ya no está"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"
+
+msgid "this track is on a server, and servers are not connected"
+msgstr "esta pista está en un servidor, y los servidores no están conectados"
 
 msgid "through {}"
 msgstr "por {}"

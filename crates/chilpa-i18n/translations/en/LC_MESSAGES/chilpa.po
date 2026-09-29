@@ -2201,6 +2201,9 @@ msgstr ""
 msgid "the token_url is not https"
 msgstr ""
 
+msgid "the track on {} could not be read: {}"
+msgstr ""
+
 msgid "the track's number is its place inside the disc image"
 msgstr ""
 
@@ -2271,6 +2274,9 @@ msgid "this output is not there any more"
 msgstr ""
 
 msgid "this plugin declared no network permission"
+msgstr ""
+
+msgid "this track is on a server, and servers are not connected"
 msgstr ""
 
 msgid "through {}"

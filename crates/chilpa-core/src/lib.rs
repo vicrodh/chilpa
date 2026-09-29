@@ -17,6 +17,7 @@ pub mod player;
 pub mod settings;
 pub mod wizard;
 pub mod queue_playback;
+pub mod remote;
 pub mod sacd_tracks;
 
 /// What goes out the device, for whoever wants to draw it.
@@ -31,6 +32,7 @@ pub fn trace_playback(scope: &str, event: &str, details: std::fmt::Arguments<'_>
 /// never the plugin (ADR-007).
 pub use chilpa_stream::send_request;
 pub use chilpa_stream::{fetch, Fetch, FetchError, Fetched};
+pub use chilpa_stream::{call_server, Call, RangedRequest};
 
 use chilpa_models::SourceId;
 
