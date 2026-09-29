@@ -1,0 +1,16 @@
+[package]
+name = "chilpa-cast"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+chilpa-i18n.workspace = true
+ureq = { version = "3", default-features = false }
+roxmltree = "0.21"
+url = "2"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+tiny_http = "0.12"

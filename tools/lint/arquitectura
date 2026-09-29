@@ -60,6 +60,7 @@ ALLOWED = {
     # like chilpa-meta: the request is handed in. It is the only crate that
     # names them.
     "chilpa-servers": set(),
+    "chilpa-cast": set(),
     # Los catálogos de traducción. No dependen de nada, y viven aparte del
     # shell a propósito: cambiar de ventana no debe poder romper el idioma.
     "chilpa-i18n": set(),
