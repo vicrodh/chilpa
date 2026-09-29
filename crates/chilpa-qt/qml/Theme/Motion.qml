@@ -15,4 +15,6 @@ QtObject {
     // being waited for, a sync. Not motion: never reduced.
     readonly property int poll: 300
     readonly property int refresh: 1000
+    // How long after the last key what was typed is asked for.
+    readonly property int searchSettle: 250
 }

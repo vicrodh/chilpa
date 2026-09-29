@@ -295,6 +295,10 @@ QtObject {
     readonly property int folderEntry: 44
     readonly property int folderArt: 34
     readonly property int folderTreeWidth: 236
+
+    // The strip of letters beside a grouped list.
+    readonly property int alphaStrip: 18
+    readonly property int alphaCell: 15
     readonly property int folderTreeRow: 28
     readonly property int folderTreeIndent: 14
     readonly property int folderTileMinWidth: 180

@@ -44,6 +44,9 @@ pub struct Filter {
     /// Who made the record or plays on one of its tracks: an artist's page,
     /// where a compilation they are on counts as theirs too.
     pub performer: Option<String>,
+    /// What was typed to find tracks: every word of it has to be in the
+    /// title, the artist or the record.
+    pub text: String,
 }
 
 impl Filter {
@@ -97,6 +100,13 @@ pub enum TrackOrder {
     Duration,
     /// Disc and track number: the order of one record.
     Disc,
+    ArtistDescending,
+    TitleDescending,
+    /// The newest records first.
+    YearDescending,
+    /// Who plays each track, then the record, then the title: a list
+    /// grouped by artist.
+    Performer,
 }
 
 impl TrackOrder {
@@ -104,7 +114,8 @@ impl TrackOrder {
         match name {
             "album" => Self::Album, "year" => Self::Year, "added" => Self::Added,
             "title" => Self::Title, "plays" => Self::Plays, "duration" => Self::Duration,
-            "disc" => Self::Disc, _ => Self::Artist,
+            "disc" => Self::Disc, "artist-desc" => Self::ArtistDescending, "title-desc" => Self::TitleDescending,
+            "year-desc" => Self::YearDescending, "performer" => Self::Performer, _ => Self::Artist,
         }
     }
 
@@ -120,6 +131,12 @@ impl TrackOrder {
             TrackOrder::Plays => "plays DESC, t.title COLLATE NOCASE",
             TrackOrder::Duration => "t.duration_ms",
             TrackOrder::Disc => "coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
+            TrackOrder::ArtistDescending => {
+                "a.album_artist COLLATE NOCASE DESC, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
+            }
+            TrackOrder::TitleDescending => "t.title COLLATE NOCASE DESC",
+            TrackOrder::YearDescending => "a.year DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::Performer => "t.artist COLLATE NOCASE, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
         }
     }
 }
@@ -308,6 +325,12 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         let formats: Vec<String> = f.formats.iter().filter_map(|name| format_clause(name)).collect();
         if !formats.is_empty() { sql.push_str(&format!(" AND ({})", formats.join(" OR "))); }
     }
+    for word in super::find::patterns(&f.text) {
+        sql.push_str(" AND (t.title LIKE ? ESCAPE '\\' OR t.artist LIKE ? ESCAPE '\\' OR a.title LIKE ? ESCAPE '\\')");
+        for _ in 0..3 {
+            args.push(Box::new(word.clone()));
+        }
+    }
     if let Some(name) = &f.performer {
         sql.push_str(" AND t.id IN (SELECT track_id FROM album_members
             WHERE artist = ? COLLATE NOCASE)");
@@ -433,6 +456,33 @@ impl Library {
 
     /// The snapshot of an order: every id the filter leaves, sorted, and
     /// the totals, in one pass. The costly half of browsing; the window
+    /// Where each letter starts in a list of tracks: the first track whose
+    /// record ("album"), artist ("artist") or title (anything else) begins
+    /// with it. What does not begin with a letter from A to Z goes under
+    /// "#". The list has to be in the order of what is asked about.
+    pub fn letters(&self, ids: &[i64], by: &str) -> rusqlite::Result<Vec<(String, usize)>> {
+        let named = match by {
+            "album" => "a.title",
+            "artist" => "t.artist",
+            _ => "t.title",
+        };
+        let mut initial: std::collections::HashMap<i64, String> = std::collections::HashMap::new();
+        let mut stmt = self.db.prepare(&format!("SELECT t.id, substr(trim({named}), 1, 1) {FROM} WHERE t.present = 1"))?;
+        let rows = stmt.query_map([], |r| Ok((r.get::<_, i64>(0)?, r.get::<_, Option<String>>(1)?.unwrap_or_default())))?;
+        for row in rows {
+            let (id, first) = row?;
+            initial.insert(id, letter_of(&first));
+        }
+        let mut out: Vec<(String, usize)> = Vec::new();
+        for (at, id) in ids.iter().enumerate() {
+            let letter = initial.get(id).cloned().unwrap_or_else(|| "#".into());
+            if !out.iter().any(|(seen, _)| *seen == letter) {
+                out.push((letter, at));
+            }
+        }
+        Ok(out)
+    }
+
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
         let (filter, args) = clause(f);
@@ -746,5 +796,77 @@ mod tests {
         let lib = shelf();
         assert_eq!(lib.album_genre(1).unwrap().as_deref(), Some("Alternative"));
         assert_eq!(lib.album_genre(99).unwrap(), None);
+    }
+}
+
+/// The letter a name is filed under: its first, from A to Z, without its
+/// accent, and "#" for anything else.
+pub fn letter_of(name: &str) -> String {
+    let first = name.trim().chars().next().map(|c| c.to_uppercase().next().unwrap_or(c));
+    let plain = match first {
+        Some('Á' | 'À' | 'Â' | 'Ä' | 'Ã' | 'Å') => Some('A'),
+        Some('É' | 'È' | 'Ê' | 'Ë') => Some('E'),
+        Some('Í' | 'Ì' | 'Î' | 'Ï') => Some('I'),
+        Some('Ó' | 'Ò' | 'Ô' | 'Ö' | 'Õ') => Some('O'),
+        Some('Ú' | 'Ù' | 'Û' | 'Ü') => Some('U'),
+        Some('Ñ') => Some('N'),
+        Some('Ç') => Some('C'),
+        other => other,
+    };
+    match plain {
+        Some(c) if c.is_ascii_uppercase() => c.to_string(),
+        _ => "#".to_string(),
+    }
+}
+
+#[cfg(test)]
+mod tracks_view_tests {
+    use super::*;
+    use rusqlite::params;
+
+    fn library() -> Library {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        let rows = [(1, "Zebra", "Alpha Band", "First"), (2, "apple", "beta Band", "Second"), (3, "\u{c1}rbol", "Alpha Band", "First"), (4, "99 Problems", "Gamma", "Third")];
+        for (id, title, artist, album) in rows {
+            lib.db.execute("INSERT OR IGNORE INTO albums (id, title, album_artist, folder) VALUES (?1, ?2, ?3, ?2)", params![id, album, artist]).unwrap();
+            let album_id: i64 = lib.db.query_row("SELECT id FROM albums WHERE title = ?1", params![album], |r| r.get(0)).unwrap();
+            lib.db
+                .execute("INSERT INTO tracks (id, source_id, external_id, title, artist, album_id, added_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)", params![id, source, format!("/{id}.flac"), title, artist, album_id])
+                .unwrap();
+        }
+        lib
+    }
+
+    #[test]
+    fn typed_words_each_have_to_be_in_the_title_the_artist_or_the_record() {
+        let lib = library();
+        let found = |text: &str| lib.browse_ids(&Filter { text: text.into(), ..Filter::default() }, TrackOrder::Title).unwrap().ids;
+        assert_eq!(found("alpha"), [1, 3]);
+        assert_eq!(found("alpha zeb"), [1]);
+        assert_eq!(found("second"), [2]);
+        assert_eq!(found("100%"), Vec::<i64>::new(), "a percent sign is a character");
+        assert_eq!(found("").len(), 4);
+    }
+
+    #[test]
+    fn a_list_can_run_backwards_and_by_who_plays() {
+        let lib = library();
+        let ids = |order| lib.browse_ids(&Filter::default(), order).unwrap().ids;
+        assert_eq!(ids(TrackOrder::TitleDescending), [3, 1, 2, 4]);
+        assert_eq!(ids(TrackOrder::from_name("performer")), [1, 3, 2, 4]);
+    }
+
+    #[test]
+    fn each_letter_says_where_it_starts() {
+        let lib = library();
+        let ids = lib.browse_ids(&Filter::default(), TrackOrder::Title).unwrap().ids;
+        // A letter with an accent sorts after the alphabet, as everywhere
+        // in the library, and is still filed under its letter.
+        assert_eq!(ids, [4, 2, 1, 3]);
+        let letters = lib.letters(&ids, "title").unwrap();
+        assert_eq!(letters, [("#".to_string(), 0), ("A".to_string(), 1), ("Z".to_string(), 2)]);
+        assert_eq!(letter_of("\u{f1}u"), "N");
+        assert_eq!(letter_of("  "), "#");
     }
 }

@@ -66,6 +66,7 @@ Rectangle {
                     { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
                     { screen: "artists", glyph: Icons.microphone2, text: I18n.tr("Artists", I18n.rev) },
                     { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
+                    { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
                     { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
                 ]
 

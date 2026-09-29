@@ -48,6 +48,7 @@ GallerySection {
         LibraryPanes { width: parent.width; height: Metrics.panesHeight }
         LibraryToolbar { width: parent.width; tracks: most }
         SortButton { value: "artist"; options: [{ value: "artist", text: "Artist" }, { value: "year", text: "Year" }] }
+        AlphaStrip { height: Metrics.folderTreeWidth; letters: [["A", 0], ["M", 40], ["Z", 90]] }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
         TrackGroupActions { row: 0; item: ({ headerLabel: "Disc 1" }); model: most }

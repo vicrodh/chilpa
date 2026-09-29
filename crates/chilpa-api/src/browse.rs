@@ -224,6 +224,11 @@ impl Reader {
         })
     }
 
+    /// Where each letter starts among those tracks (`Library::letters`).
+    pub fn letters(&self, ids: &[i64], by: &str) -> Vec<(String, usize)> {
+        self.lib.letters(ids, by).unwrap_or_default()
+    }
+
     /// The files behind those ids, in order: what a list queues when one
     /// of its rows is played. Read in chunks, so a snapshot of the whole
     /// library resolves without one statement holding thousands of

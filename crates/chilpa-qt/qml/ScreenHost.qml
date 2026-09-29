@@ -12,6 +12,7 @@ Loader {
         case "library": return library
         case "album": return album
         case "albums": return albums
+        case "tracks": return tracks
         case "artists": return artists
         case "artist": return artist
         case "settings": return settings
@@ -28,6 +29,7 @@ Loader {
     Component { id: library; LibraryScreen {} }
     Component { id: album; AlbumScreen {} }
     Component { id: albums; AlbumsScreen {} }
+    Component { id: tracks; TracksScreen {} }
     Component { id: artists; ArtistsScreen {} }
     Component { id: artist; ArtistScreen {} }
     Component { id: settings; SettingsScreen {} }

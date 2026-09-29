@@ -52,6 +52,15 @@ pub mod qobject {
 
         /// Settles the sidebar where a drag released it: open at that width,
         /// collapsed or closed.
+        /// What a screen kept under a name of its own ("ui.tracks.group"),
+        /// or empty.
+        #[qinvokable]
+        fn kept(self: &SettingsModel, key: &QString) -> QString;
+
+        /// Keeps something for a screen, under its name.
+        #[qinvokable]
+        fn keep(self: &SettingsModel, key: &QString, value: &QString);
+
         #[qinvokable]
         fn place_sidebar(self: Pin<&mut SettingsModel>, width: f64, window_width: f64);
 
@@ -136,6 +145,16 @@ impl qobject::SettingsModel {
             self.as_mut().set_sidebar_width(settled);
         }
         self.as_mut().set_sidebar_mode(QString::from(mode));
+    }
+}
+
+impl qobject::SettingsModel {
+    pub fn kept(&self, key: &QString) -> QString {
+        QString::from(&app::with(|api| api.preference(&key.to_string())).unwrap_or_default())
+    }
+
+    pub fn keep(&self, key: &QString, value: &QString) {
+        app::with(|api| api.remember_preference(&key.to_string(), &value.to_string()));
     }
 }
 
