@@ -102,6 +102,13 @@ GallerySection {
         Edge {}
     }
 
+    Rectangle {
+        width: Metrics.sidebarWidth
+        height: Metrics.fieldHeight
+        color: Theme.color.accent
+        PlaneCorners { width: parent.width }
+    }
+
     Row {
         spacing: Metrics.gap8
         ArtTile { width: Metrics.heroArt / 2; height: width; tint: 0 } // derived: half a hero cover

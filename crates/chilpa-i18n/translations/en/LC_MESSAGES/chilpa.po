@@ -605,9 +605,6 @@ msgstr ""
 msgid "Exclusive mode"
 msgstr ""
 
-msgid "Expand sidebar"
-msgstr ""
-
 msgid "Extra controls"
 msgstr ""
 
@@ -708,6 +705,9 @@ msgid "Hi-Res Lossless"
 msgstr ""
 
 msgid "Hide from sidebar"
+msgstr ""
+
+msgid "Hide sidebar"
 msgstr ""
 
 msgid "Hide the columns"

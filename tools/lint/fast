@@ -10,6 +10,8 @@ root=$(git rev-parse --show-toplevel)
 "$root/tools/lint/qml-imports"
 "$root/tools/lint/qml-hotpath"
 "$root/tools/lint/qml-cursors"
+"$root/tools/lint/qml-names"
+"$root/tools/lint/mac-window"
 "$root/tools/lint/idioma"
 "$root/tools/lint/licencias"
 "$root/tools/i18n/extract" --check

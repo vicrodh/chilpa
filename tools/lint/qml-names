@@ -1,0 +1,38 @@
+#!/usr/bin/env python3
+"""No property of ours takes the name of an item's anchor line.
+
+An Item's `top`, `bottom`, `left`, `right`, `horizontalCenter`,
+`verticalCenter` and `baseline` are FINAL: a `property real top` or a
+`property bool right` in anything that is an Item does not shadow the
+anchor line, it stops the file from loading, and with it every file that
+uses it: the window does not open. Nothing says so before run time, and it
+has happened three times. An id may carry those names; a property may not.
+"""
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from qmllib import code_only, files, rel  # noqa: E402
+
+TAKEN = {"top", "bottom", "left", "right", "horizontalCenter", "verticalCenter", "baseline"}
+DECLARED = re.compile(r"^\s*(?:default\s+|required\s+|readonly\s+)*property\s+[\w.<>]+\s+(\w+)", re.MULTILINE)
+
+
+def main():
+    errors = []
+    for path in files():
+        code = code_only(path.read_text())
+        for m in DECLARED.finditer(code):
+            if m.group(1) in TAKEN:
+                line = code[: m.start(1)].count("\n") + 1
+                errors.append(f"{rel(path)}:{line}: a property named `{m.group(1)}`, which is an item's anchor line")
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"qml-names: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"qml-names: no property in {len(files())} files takes the name of an anchor line")
+
+
+if __name__ == "__main__":
+    main()

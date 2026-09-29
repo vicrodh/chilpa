@@ -24,29 +24,16 @@ Rectangle {
         anchors.rightMargin: Metrics.sidebarPadH
         spacing: Metrics.sidebarGap
 
-        Row {
+        // Beside the sidebar, whatever its width (design/02 8).
+        SearchBox {
+            id: searchBox
+            visible: !side.collapsed
             width: parent.width
-            spacing: Metrics.gap6
-
-            // Beside the sidebar, whatever its width (design/02 8).
-            SearchBox {
-                id: searchBox
-                visible: !side.collapsed
-                width: parent.width - toggle.width - parent.spacing
-                active: SettingsModel.sidebarMode !== "closed"
-                compact: side.collapsed
-                flyoutX: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
-                flyoutY: Metrics.searchTop - Metrics.spaceWindow - Metrics.sidebarPadV // derived: from the field to the window's top
-                room: side.height
-            }
-
-            IconButton {
-                id: toggle
-                x: side.collapsed ? (parent.width - width) / 2 : 0 // derived: centered when collapsed
-                tip: side.collapsed ? I18n.tr("Expand sidebar", I18n.rev) : I18n.tr("Collapse sidebar", I18n.rev)
-                glyph: side.collapsed ? Icons.layoutSidebarLeftExpand : Icons.layoutSidebarLeftCollapse
-                onClicked: SettingsModel.sidebarMode = side.collapsed ? "open" : "collapsed"
-            }
+            active: SettingsModel.sidebarMode !== "closed"
+            compact: side.collapsed
+            flyoutX: side.width - Metrics.sidebarPadH + Metrics.gap8 // derived: past the sidebar's edge
+            flyoutY: -Metrics.sidebarPadV // derived: level with the sidebar's top
+            room: side.height
         }
 
         IconButton {

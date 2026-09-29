@@ -605,9 +605,6 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "Exclusive mode"
 msgstr "Modo exclusivo"
 
-msgid "Expand sidebar"
-msgstr "Expandir barra lateral"
-
 msgid "Extra controls"
 msgstr "Controles extra"
 
@@ -709,6 +706,9 @@ msgstr "Alta resolución sin pérdida"
 
 msgid "Hide from sidebar"
 msgstr "Ocultar del sidebar"
+
+msgid "Hide sidebar"
+msgstr "Ocultar barra lateral"
 
 msgid "Hide the columns"
 msgstr "Ocultar las columnas"

@@ -6,6 +6,7 @@ import "Primitives"
 import "Patterns"
 
 // The floating sidebar and the grip on its right edge (design/02 2, ADR-0011).
+// It starts under the tab bar, where the content and the right panel do.
 // While the grip is dragged the sidebar already shows where it would land,
 // as Rust decides it: free between its default and 40 % of the window, and
 // to the left, collapsed and then closed. Release leaves it there.
@@ -18,6 +19,8 @@ Item {
     property real dragged: -1
     property real grabbed: 0
 
+    readonly property int head: Metrics.tabBarHeight
+    readonly property int tall: height - head - Metrics.spaceWindow // derived: down to the window's margin
     readonly property bool dragging: dragged >= 0
     // The mode while dragging is where the drag would land.
     readonly property string mode: dragging ? SettingsModel.sidebarModeAt(dragged, window.width) : SettingsModel.sidebarMode
@@ -31,9 +34,9 @@ Item {
     RectangularShadow {
         visible: frame.shown > 0
         x: Metrics.spaceWindow
-        y: Metrics.spaceWindow
+        y: frame.head
         width: frame.shown
-        height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
+        height: frame.tall
         radius: Metrics.radiusPanel
         offset.y: Metrics.shadowSubtleY
         blur: Metrics.shadowSubtleBlur
@@ -44,16 +47,16 @@ Item {
         visible: frame.shown > 0
         collapsed: frame.mode === "collapsed"
         x: Metrics.spaceWindow
-        y: Metrics.spaceWindow
+        y: frame.head
         width: frame.shown
-        height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
+        height: frame.tall
     }
 
     ResizeHandle {
         visible: frame.dragging || SettingsModel.sidebarMode !== "closed"
         x: Metrics.spaceWindow + frame.shown - width / 2 // derived: centered on the edge
-        y: Metrics.spaceWindow
-        height: frame.height - Metrics.spaceWindow * 2 // derived: a margin above and below
+        y: frame.head
+        height: frame.tall
         onStarted: frame.grabbed = frame.settled
         onMoved: (delta) => frame.dragged = frame.grabbed + delta
         onReleased: {

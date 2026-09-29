@@ -22,7 +22,9 @@ Window {
     minimumWidth: Metrics.windowMinWidth
     minimumHeight: Metrics.windowMinHeight
     visible: true
-    flags: Qt.Window | Qt.FramelessWindowHint
+    // A Mac's window keeps its frame, and with it the system's controls.
+    flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
+        : Qt.Window | Qt.FramelessWindowHint
     color: Theme.color.surfaceWindow
     title: "Chilpa"
 
@@ -37,12 +39,26 @@ Window {
         clip: true
     }
 
-    TabBar {
-        x: window.contentLeft
-        width: window.width - window.contentLeft - Metrics.spaceWindow
+    // The content is a plane like the panels beside it.
+    PlaneCorners {
+        x: host.x
+        y: host.y
+        width: host.width
     }
 
-    RightPanel {
+    TabBar {
+        x: Metrics.spaceWindow
+        width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
+        contentLeft: window.contentLeft - x
+        controlsRoom: systemControls.room
+    }
+
+    SystemControls {
+        id: systemControls
+        window: window
+    }
+
+    RightPanelFrame {
         id: right
         z: 2
         visible: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
@@ -50,16 +66,6 @@ Window {
         y: Metrics.tabBarHeight
         width: Metrics.rightPanel
         height: window.height - y - Metrics.spaceWindow
-    }
-
-    RectangularShadow {
-        anchors.fill: right
-        visible: right.visible
-        radius: right.radius
-        offset.y: Metrics.shadowSubtleY
-        blur: Metrics.shadowSubtleBlur
-        color: Theme.color.shadowSubtle
-        z: 1
     }
 
     Connections {

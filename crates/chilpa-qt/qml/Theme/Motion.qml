@@ -18,4 +18,6 @@ QtObject {
     // How long after the last key what was typed is asked for.
     readonly property int searchSettle: 250
     readonly property int treeSettle: 180
+    // Between one asking and the next for the system's window controls.
+    readonly property int systemControlsRetry: 200
 }
