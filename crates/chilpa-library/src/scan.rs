@@ -287,6 +287,8 @@ fn scan(
     report.sidecars_unreadable = homes.record(lib, now)?;
     report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
     lib.assemble_local_releases()?;
+    // What came in can be the artist a joined credit was waiting for.
+    lib.match_credits()?;
     lib.db
         .execute("UPDATE roots SET last_scan = ?2 WHERE id = ?1", params![root_id, now])?;
     // A scan is the only thing that changes the size of the library, so it is
@@ -470,6 +472,10 @@ fn save_track(
     let tags = info.map(|i| i.tags.clone()).unwrap_or_default();
     let title = tags.title.clone().unwrap_or_else(|| name.to_string());
     let artist = tags.artist_line();
+    // A file with a field for each artist says who they are.
+    if tags.artists.len() > 1 {
+        lib.state_credit(&artist, &tags.artists)?;
+    }
     let album_id = match &tags.album {
         Some(album_title) => {
             // An empty tag names nobody: it is no album artist, and keying a

@@ -304,6 +304,7 @@ fn track(meta: &Value) -> Option<Track> {
         id: id(meta, "ratingKey")?,
         title: string(meta, "title").unwrap_or_default(),
         artist: string(meta, "originalTitle").unwrap_or_else(|| album_artist.clone()),
+        artists: Vec::new(),
         album: string(meta, "parentTitle").unwrap_or_default(),
         album_artist,
         album_id: id(meta, "parentRatingKey").unwrap_or_default(),

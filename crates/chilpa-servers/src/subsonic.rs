@@ -286,6 +286,7 @@ fn track(song: &Value, album: &Value) -> Option<Track> {
             .or_else(|| string(album, "artist"))
             .unwrap_or_else(|| artist.clone()),
         artist,
+        artists,
         album_id: id(song, "albumId").or_else(|| id(album, "id")).unwrap_or_default(),
         cover: string(album, "coverArt").or_else(|| string(song, "coverArt")),
         disc: number(song, "discNumber").map(|n| n as u16),

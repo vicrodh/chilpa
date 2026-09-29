@@ -1360,3 +1360,120 @@ CREATE TABLE server_covers (
     fetched  INTEGER NOT NULL DEFAULT 0
 );
 "#;
+
+/// The artists of a joined credit.
+///
+/// A track by two artists is tagged "A, B" as often as with a field for
+/// each, and a server gives them apart and the library kept them joined.
+/// Filed whole, "A, B" was a third artist with a page of its own, and the
+/// track was on neither A's page nor B's.
+///
+/// `credit_parts` says which artists a credit names. `stated` parts come
+/// from the source, which gave them apart. `matched` ones are found here,
+/// and only when every part is an artist the library already has on its
+/// own: "AC/DC" and "Emerson, Lake & Palmer" have no such parts and stay
+/// whole. The credit itself is not changed: it is what the tag says and
+/// what is shown.
+///
+/// A track is filed under the parts of its credits instead of under the
+/// credit, so the artists view, the columns, the search and an artist's
+/// page find it without any of them changing.
+///
+/// A server's tracks lose their revision, so the next sync reads them all
+/// again and keeps the artists the server gives apart.
+pub(super) const MIGRATION_V28: &str = r#"
+CREATE TABLE credit_parts (
+    credit   TEXT NOT NULL COLLATE NOCASE,
+    position INTEGER NOT NULL,
+    name     TEXT NOT NULL COLLATE NOCASE,
+    origin   TEXT NOT NULL CHECK (origin IN ('stated', 'matched')),
+    PRIMARY KEY (credit, position)
+) WITHOUT ROWID;
+CREATE INDEX credit_parts_name ON credit_parts(name, credit);
+
+DROP TRIGGER album_members_track_in;
+DROP TRIGGER album_members_track_changed;
+DROP TRIGGER album_members_album_changed;
+
+CREATE TRIGGER album_members_track_in AFTER INSERT ON tracks
+WHEN NEW.present = 1 AND NEW.album_id IS NOT NULL
+BEGIN
+    INSERT OR IGNORE INTO album_members
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(a.album_artist)
+        WHERE t.id = NEW.id
+        UNION
+        SELECT t.album_id, t.id, trim(a.album_artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND trim(a.album_artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(a.album_artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.artist)
+        WHERE t.id = NEW.id
+        UNION
+        SELECT t.album_id, t.id, trim(t.artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND trim(t.artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.album_credit)
+        WHERE t.id = NEW.id
+        UNION
+        SELECT t.album_id, t.id, trim(t.album_credit) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND trim(t.album_credit) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.album_credit));
+END;
+
+CREATE TRIGGER album_members_track_changed
+AFTER UPDATE OF album_id, present, artist, album_credit ON tracks
+BEGIN
+    DELETE FROM album_members WHERE track_id = NEW.id;
+    INSERT OR IGNORE INTO album_members
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(a.album_artist)
+        WHERE t.id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(a.album_artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND t.present = 1 AND trim(a.album_artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(a.album_artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.artist)
+        WHERE t.id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(t.artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND t.present = 1 AND trim(t.artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.album_credit)
+        WHERE t.id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(t.album_credit) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.id = NEW.id AND t.present = 1 AND trim(t.album_credit) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.album_credit));
+END;
+
+CREATE TRIGGER album_members_album_changed AFTER UPDATE OF album_artist ON albums
+BEGIN
+    DELETE FROM album_members WHERE album_id = NEW.id;
+    INSERT OR IGNORE INTO album_members
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(a.album_artist)
+        WHERE t.album_id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(a.album_artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(a.album_artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(a.album_artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.artist)
+        WHERE t.album_id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(t.artist) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(t.artist) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.artist))
+        UNION
+        SELECT t.album_id, t.id, p.name FROM tracks t JOIN albums a ON a.id = t.album_id JOIN credit_parts p ON p.credit = trim(t.album_credit)
+        WHERE t.album_id = NEW.id AND t.present = 1
+        UNION
+        SELECT t.album_id, t.id, trim(t.album_credit) FROM tracks t JOIN albums a ON a.id = t.album_id
+        WHERE t.album_id = NEW.id AND t.present = 1 AND trim(t.album_credit) <> ''
+          AND NOT EXISTS (SELECT 1 FROM credit_parts WHERE credit = trim(t.album_credit));
+END;
+
+UPDATE tracks SET revision = NULL
+ WHERE source_id IN (SELECT id FROM sources WHERE kind = 'server');
+"#;
