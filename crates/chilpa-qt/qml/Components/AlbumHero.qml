@@ -56,16 +56,14 @@ Item {
             font.letterSpacing: Type.displayTracking
             color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
-        Text {
-            text: hero.detail.artist
+        CreditLine {
+            width: Math.min(implicitWidth, parent.width)
+            credit: hero.detail.artist
             font.pointSize: Type.body
             font.weight: Type.medium
             color: hero.contrasted ? Theme.color.textOnAccent
-                                   : artistHover.hovered ? Theme.color.accentHover : Theme.color.textPrimary
-            opacity: !hero.contrasted || artistHover.hovered ? 1 : 0.88
-
-            HoverHandler { id: artistHover; cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: Navigation.openArtist(hero.detail.artist) }
+                                   : hovered ? Theme.color.accentHover : Theme.color.textPrimary
+            opacity: !hero.contrasted || hovered ? 1 : 0.88
         }
         Text {
             width: parent.width

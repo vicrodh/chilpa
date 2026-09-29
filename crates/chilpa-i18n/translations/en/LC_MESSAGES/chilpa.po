@@ -638,6 +638,9 @@ msgstr ""
 msgid "Go to artist"
 msgstr ""
 
+msgid "Go to {}"
+msgstr ""
+
 msgid "Grid"
 msgstr ""
 

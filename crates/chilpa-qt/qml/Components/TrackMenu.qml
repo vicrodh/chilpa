@@ -20,7 +20,7 @@ Menu {
             up: Icons.chevronUp, down: Icons.chevronDown
         }
         entries = JSON.parse(model.menuJson(row)).map(function(entry) {
-            entry.glyph = icons[entry.act] || ""
+            entry.glyph = icons[(entry.act || "").split(":")[0]] || ""
             if (["queue", "next", "later"].includes(entry.act)) entry.family = Lucide.font
             entry.filled = entry.act === "play"
             return entry
