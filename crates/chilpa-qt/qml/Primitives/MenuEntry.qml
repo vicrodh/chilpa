@@ -127,5 +127,11 @@ Item {
             : TipState.hide(line)
     }
     HoverHandler { enabled: !line.separator && !line.note; cursorShape: Qt.PointingHandCursor }
-    TapHandler { enabled: !line.separator && !line.note; onTapped: line.clicked() }
+    TapHandler {
+        enabled: !line.separator && !line.note
+        // The click is the entry's alone: left to pass, it is also a click
+        // on whatever the menu is drawn over.
+        gesturePolicy: TapHandler.ReleaseWithinBounds
+        onTapped: line.clicked()
+    }
 }
