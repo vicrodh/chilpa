@@ -83,7 +83,8 @@ Popup {
                     id: sourceIcon
                     anchors.left: parent.left
                     anchors.verticalCenter: parent.verticalCenter
-                    glyph: Icons.folder
+                    // "server-2" in the tokens is `Icons.server2`.
+                    glyph: Icons[(Library.sourceIcons[index] || "").replace(/-(\w)/g, (m, c) => c.toUpperCase())] || Icons.folder
                     size: Metrics.iconNav
                     color: Theme.color.textSecondary
                 }
@@ -95,7 +96,7 @@ Popup {
                     anchors.verticalCenter: parent.verticalCenter
                     Text {
                         width: parent.width
-                        text: sourceKey === "local:default" ? I18n.tr("Local library", I18n.rev) : Library.sourceLabels[index]
+                        text: sourceKey === "local:default" ? I18n.tr("Local library", I18n.rev) : (Library.sourceLabels[index] || "")
                         elide: Text.ElideRight
                         font.pointSize: Type.body
                         color: Theme.color.textPrimary

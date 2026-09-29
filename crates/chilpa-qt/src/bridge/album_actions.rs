@@ -43,6 +43,12 @@ pub mod qobject {
         fn queue(self: &AlbumActions, id: i64);
         #[qinvokable]
         fn track_ids_json(self: &AlbumActions, id: i64) -> QString;
+        /// Whether the record opens: some track of it plays now (ADR-017).
+        #[qinvokable]
+        fn available(self: &AlbumActions, id: i64, rev: i32) -> bool;
+        /// Says why it does not, where the window shows problems.
+        #[qinvokable]
+        fn explain(self: &AlbumActions, id: i64);
     }
 
     impl cxx_qt::Threading for AlbumActions {}
@@ -79,6 +85,14 @@ impl AlbumActionsRust {
 }
 
 impl qobject::AlbumActions {
+    pub fn available(&self, id: i64, _rev: i32) -> bool {
+        app::with(|api| api.album_available(id))
+    }
+
+    pub fn explain(&self, id: i64) {
+        app::with(|api| api.explain_unavailable_album(id));
+    }
+
     pub fn sources(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(app::with(|api| serde_json::to_string(&api.album_sources(id)).unwrap_or_default()))
     }

@@ -21,7 +21,8 @@ Item {
     required property var optionValues
     required property var marks
 
-    property SettingsPage page
+    // The page, or what stands in front of it to add a step (SettingsScreen).
+    property var page
 
     // A group's title, or a line of a report under a setting.
     readonly property bool group: rowKind === 0

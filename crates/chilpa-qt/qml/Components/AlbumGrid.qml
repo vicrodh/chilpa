@@ -32,8 +32,10 @@ Item {
 
     // A click selects while anything is selected or with a modifier held;
     // otherwise it opens the page or the quick view, as Settings says.
-    function clicked(at, albumId, title, modifiers) {
-        if (!grid.round && (modifiers !== 0 || AlbumActions.selectedCount > 0))
+    function clicked(at, albumId, title, modifiers, available) {
+        if (!available)
+            AlbumActions.explain(albumId)
+        else if (!grid.round && (modifiers !== 0 || AlbumActions.selectedCount > 0))
             grid.model.select(at, modifiers === 0 ? 1 : modifiers)
         else if (!grid.round && SettingsModel.quickViewClick)
             toggleQuick(at)
@@ -98,10 +100,13 @@ Item {
                     selected: !grid.round && AlbumActions.selected(albumId, AlbumActions.rev)
                     selecting: !grid.round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at
-                    onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers)
+                    available: grid.round || !visible || AlbumActions.available(albumId, rev)
+                    onClicked: (modifiers) => grid.clicked(at, albumId, title, modifiers, available)
+                    // A record that stops playing closes its quick view too.
+                    onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
                     onQuick: grid.toggleQuick(at)
                     onMenu: (x, y) => {
-                        if (grid.round)
+                        if (grid.round || !available)
                             return
                         const p = mapToItem(grid, x, y)
                         albumMenu.show(albumId, title, subtitle, at, p.x, p.y)
