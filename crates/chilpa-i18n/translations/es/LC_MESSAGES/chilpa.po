@@ -1025,6 +1025,9 @@ msgstr "Playlists"
 msgid "Plays"
 msgstr "Reproducciones"
 
+msgid "Plex did not accept the session; sign in again"
+msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
+
 msgid "Previous"
 msgstr "Anterior"
 
@@ -1054,6 +1057,9 @@ msgstr "Acciones de cola para este grupo"
 
 msgid "Queue · {}"
 msgstr "Cola · {}"
+
+msgid "Quick Connect is turned off on that server"
+msgstr "Quick Connect está apagado en ese servidor"
 
 msgid "Quick view"
 msgstr "Vista rápida"
@@ -1736,6 +1742,9 @@ msgstr "ningún servidor de sonido contestó; instala pipewire y pipewire-pulse"
 msgid "none of that record's files are here now"
 msgstr "ninguno de los archivos de ese disco está aquí ahorita"
 
+msgid "none of that server's addresses answers from here"
+msgstr "ninguna de las direcciones de ese servidor responde desde aquí"
+
 msgid "not supported: {}"
 msgstr "no soportado: {}"
 
@@ -1814,6 +1823,15 @@ msgstr "tropezando"
 msgid "tags"
 msgstr "tags"
 
+msgid "that address does not answer like a Jellyfin server (HTTP {})"
+msgstr "esa dirección no responde como un servidor Jellyfin (HTTP {})"
+
+msgid "that address does not answer like a Plex server (HTTP {})"
+msgstr "esa dirección no responde como un servidor Plex (HTTP {})"
+
+msgid "that address does not answer like a Subsonic server (HTTP {})"
+msgstr "esa dirección no responde como un servidor Subsonic (HTTP {})"
+
 msgid "that album has no playable tracks"
 msgstr "ese álbum no tiene pistas disponibles"
 
@@ -1831,6 +1849,9 @@ msgstr "ese archivo no es una imagen"
 
 msgid "that id does not work as a folder"
 msgstr "ese id no sirve de carpeta"
+
+msgid "that is an Emby server, and Chilpa does not speak Emby"
+msgstr "ese es un servidor Emby, y Chilpa no habla Emby"
 
 msgid "that is longer than {} characters"
 msgstr "eso mide más de {} caracteres"
@@ -1927,6 +1948,9 @@ msgstr "los cambios se guardaron"
 
 msgid "the client_id came in empty"
 msgstr "el client_id viene vacío"
+
+msgid "the code expired; start again"
+msgstr "el código venció; empieza de nuevo"
 
 msgid "the connection failed: interrupted"
 msgstr "la conexión falló: se interrumpió"
@@ -2162,11 +2186,35 @@ msgstr "el servidor no puede enviar parte de un archivo, y este es demasiado gra
 msgid "the server could not be reached"
 msgstr "no se pudo llegar al servidor"
 
+msgid "the server did not accept the session; sign in again"
+msgstr "el servidor no aceptó la sesión; vuelve a iniciar sesión"
+
+msgid "the server did not accept the user or the password"
+msgstr "el servidor no aceptó el usuario o la contraseña"
+
 msgid "the server did not say how long the file is"
 msgstr "el servidor no dijo cuánto mide el archivo"
 
+msgid "the server does not accept this way of signing in"
+msgstr "el servidor no acepta esta forma de iniciar sesión"
+
 msgid "the server is converting the file instead of sending it as it is"
 msgstr "el servidor está convirtiendo el archivo en lugar de enviarlo como es"
+
+msgid "the server is reading its own library; sync again when it finishes"
+msgstr "el servidor está leyendo su propia biblioteca; sincroniza de nuevo cuando termine"
+
+msgid "the server is starting; try again in a moment"
+msgstr "el servidor está arrancando; intenta de nuevo en un momento"
+
+msgid "the server moved to {}; use that address"
+msgstr "el servidor se movió a {}; usa esa dirección"
+
+msgid "the server no longer has it"
+msgstr "el servidor ya no lo tiene"
+
+msgid "the server said: {}"
+msgstr "el servidor dijo: {}"
 
 msgid "the server sent more than was asked for"
 msgstr "el servidor envió más de lo que se pidió"
@@ -2194,6 +2242,9 @@ msgstr "la fuente"
 
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr "no se encontró el área estéreo (TWOCHTOC)"
+
+msgid "the sync lost its place; start it again"
+msgstr "la sincronización perdió su lugar; iníciala de nuevo"
 
 msgid "the tags could not be read: {}"
 msgstr "no se pudieron leer los tags: {}"
@@ -2279,6 +2330,9 @@ msgstr "este plugin no declaró permiso de red"
 msgid "this track is on a server, and servers are not connected"
 msgstr "esta pista está en un servidor, y los servidores no están conectados"
 
+msgid "this user may not do that on the server"
+msgstr "este usuario no tiene permiso para hacer eso en el servidor"
+
 msgid "through {}"
 msgstr "por {}"
 
@@ -2299,6 +2353,9 @@ msgstr "virtual"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "lo que se guardó no se pudo anotar en la biblioteca: {}; vuelve a escanear para verlo"
+
+msgid "write the address alone: no user, password or query in it"
+msgstr "escribe solo la dirección, sin usuario, contraseña ni parámetros"
 
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
