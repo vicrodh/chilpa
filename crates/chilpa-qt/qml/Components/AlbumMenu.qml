@@ -26,7 +26,7 @@ Menu {
         at = index
         const one = !(AlbumActions.selected(id, AlbumActions.rev) && AlbumActions.selectedCount > 1)
         title = one ? albumTitle : ""
-        const favorite = AlbumActions.favorite(id, AlbumActions.rev)
+        const favorite = Ratings.favorite("album", id, Ratings.rev)
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
@@ -61,8 +61,8 @@ Menu {
         case "quick": menu.quick(at); break
         case "artist": Navigation.openArtist(artist); break
         case "metadata": Navigation.go("metadata", albumId); break
-        case "favorite": AlbumActions.setFavorite(albumId, true); break
-        case "unfavorite": AlbumActions.setFavorite(albumId, false); break
+        case "favorite": Ratings.setFavorite("album", albumId, true); break
+        case "unfavorite": Ratings.setFavorite("album", albumId, false); break
         }
     }
 

@@ -980,6 +980,9 @@ msgstr ""
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
+msgid "Not rated"
+msgstr ""
+
 msgid "Not through this stack: it mixes by design."
 msgstr ""
 
@@ -1197,6 +1200,9 @@ msgid "Quick view"
 msgstr ""
 
 msgid "Quit"
+msgstr ""
+
+msgid "Rate"
 msgstr ""
 
 msgid "Rating"
@@ -2332,6 +2338,9 @@ msgstr ""
 msgid "the editor could not be started"
 msgstr ""
 
+msgid "the favorite could not be saved: {}"
+msgstr ""
+
 msgid "the file carries no tracks"
 msgstr ""
 
@@ -2822,6 +2831,11 @@ msgstr[1] ""
 
 msgid "{} song"
 msgid_plural "{} songs"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} star"
+msgid_plural "{} stars"
 msgstr[0] ""
 msgstr[1] ""
 

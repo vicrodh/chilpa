@@ -10,6 +10,7 @@ Item {
     property bool interactive: true
     property int pointerPreview: 0
     property color baseColor: Theme.color.textTertiary
+    property int size: Metrics.ratingStar
     signal rated(int value)
 
     readonly property int preview: area.containsMouse
@@ -19,14 +20,14 @@ Item {
     readonly property string emptyStars: Array(Metrics.ratingMaximum + 1).join(Icons.star)
     readonly property string fullStars: Array(Metrics.ratingMaximum + 1).join(Icons.starFilled)
 
-    implicitWidth: Metrics.ratingStar * Metrics.ratingMaximum
-    implicitHeight: Metrics.ratingStar
+    implicitWidth: size * Metrics.ratingMaximum
+    implicitHeight: size
 
     Text {
         anchors.fill: parent
         text: root.emptyStars
         font.family: Icons.outline
-        font.pixelSize: Metrics.ratingStar
+        font.pixelSize: root.size
         color: root.baseColor
     }
     Item {
@@ -38,7 +39,7 @@ Item {
             height: root.height
             text: root.fullStars
             font.family: Icons.filled
-            font.pixelSize: Metrics.ratingStar
+            font.pixelSize: root.size
             color: Theme.color.accent
         }
     }

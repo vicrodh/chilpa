@@ -35,6 +35,7 @@ Item {
     property int rating: 0
     property int ratingPreview: 0
     property bool canRate: false
+    property bool favorite: false
 
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
@@ -206,6 +207,16 @@ Item {
             font.pointSize: Type.small
             font.features: { "tnum": 1 }
             color: Theme.color.textTertiary
+        }
+
+        Icon {
+            x: row.cols.moreX + Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            visible: row.favorite && !row.hovered
+            glyph: Icons.heartFilled
+            filled: true
+            size: Metrics.iconSm
+            color: Theme.color.accent
         }
 
         Text {

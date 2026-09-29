@@ -1,7 +1,11 @@
-//! I publish one rating snapshot to every surface, without resetting track lists.
+//! I publish one snapshot of stars and favorites to every surface, without resetting track lists.
 
 #[cxx_qt::bridge]
 pub mod qobject {
+    unsafe extern "C++" {
+        include!("cxx-qt-lib/qstring.h");
+        type QString = cxx_qt_lib::QString;
+    }
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -10,13 +14,13 @@ pub mod qobject {
         #[qproperty(i32, rev)]
         type Ratings = super::RatingsRust;
         #[qinvokable]
-        fn track(self: &Ratings, id: i64, rev: i32) -> i32;
+        fn stars(self: &Ratings, kind: &QString, id: i64, rev: i32) -> i32;
         #[qinvokable]
-        fn album(self: &Ratings, id: i64, rev: i32) -> i32;
+        fn rate(self: Pin<&mut Ratings>, kind: &QString, id: i64, stars: i32);
         #[qinvokable]
-        fn rate_track(self: Pin<&mut Ratings>, id: i64, stars: i32);
+        fn favorite(self: &Ratings, kind: &QString, key: &QString, rev: i32) -> bool;
         #[qinvokable]
-        fn rate_album(self: Pin<&mut Ratings>, id: i64, stars: i32);
+        fn set_favorite(self: Pin<&mut Ratings>, kind: &QString, key: &QString, on: bool);
         #[qinvokable]
         fn refresh(self: Pin<&mut Ratings>);
     }
@@ -24,31 +28,31 @@ pub mod qobject {
 }
 
 use crate::app;
-use chilpa_api::RatingTarget;
 use cxx_qt::CxxQtType as _;
+use cxx_qt_lib::QString;
 use std::pin::Pin;
 
 #[derive(Default)]
 pub struct RatingsRust {
     rev: i32,
-    values: chilpa_api::Ratings,
+    values: chilpa_api::Marks,
 }
 
 impl qobject::Ratings {
-    pub fn track(&self, id: i64, _rev: i32) -> i32 {
-        self.rust().values.get(RatingTarget::Track(id)).into()
+    pub fn stars(&self, kind: &QString, id: i64, _rev: i32) -> i32 {
+        self.rust().values.stars(&kind.to_string(), id)
     }
-    pub fn album(&self, id: i64, _rev: i32) -> i32 {
-        self.rust().values.get(RatingTarget::Album(id)).into()
+    pub fn rate(self: Pin<&mut Self>, kind: &QString, id: i64, stars: i32) {
+        if app::with(|api| api.rate_as(&kind.to_string(), id, stars)) { self.refresh(); }
     }
-    pub fn rate_track(self: Pin<&mut Self>, id: i64, stars: i32) {
-        if app::with(|api| api.rate(RatingTarget::Track(id), stars)) { self.refresh(); }
+    pub fn favorite(&self, kind: &QString, key: &QString, _rev: i32) -> bool {
+        self.rust().values.favorite(&kind.to_string(), &key.to_string())
     }
-    pub fn rate_album(self: Pin<&mut Self>, id: i64, stars: i32) {
-        if app::with(|api| api.rate(RatingTarget::Album(id), stars)) { self.refresh(); }
+    pub fn set_favorite(self: Pin<&mut Self>, kind: &QString, key: &QString, on: bool) {
+        if app::with(|api| api.set_favorite(&kind.to_string(), &key.to_string(), on)) { self.refresh(); }
     }
     pub fn refresh(mut self: Pin<&mut Self>) {
-        if let Some(values) = app::with(|api| api.ratings()) {
+        if let Some(values) = app::with(|api| api.marks()) {
             self.as_mut().rust_mut().values = values;
             let next = self.rev().wrapping_add(1);
             self.set_rev(next);

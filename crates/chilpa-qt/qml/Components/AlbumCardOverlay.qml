@@ -15,7 +15,7 @@ Rectangle {
     property bool expanded
     // Only where a grid can open one under the row (ADR-0007).
     property bool canExpand: true
-    readonly property bool favorite: AlbumActions.favorite(albumId, AlbumActions.rev)
+    readonly property bool favorite: Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
 
     signal select()
@@ -74,7 +74,7 @@ Rectangle {
         glyph: overlay.favorite ? Icons.heartFilled : Icons.heart
         filled: overlay.favorite
         tip: overlay.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev)
-        onClicked: AlbumActions.setFavorite(overlay.albumId, !overlay.favorite)
+        onClicked: Ratings.setFavorite("album", overlay.albumId, !overlay.favorite)
     }
 
     Row {

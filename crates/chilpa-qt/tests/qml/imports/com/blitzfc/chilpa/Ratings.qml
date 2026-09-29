@@ -4,9 +4,10 @@ QtObject {
     property int rev: 0
     property var tracks: ({})
     property var albums: ({})
+    property var favorites: ({})
     property bool fail: false
-    function track(id, unused) { return tracks[id] || 0 }
-    function album(id, unused) { return albums[id] || 0 }
-    function rateTrack(id, stars) { if (!fail) { tracks[id] = stars; ++rev } }
-    function rateAlbum(id, stars) { if (!fail) { albums[id] = stars; ++rev } }
+    function stars(kind, id, unused) { return (kind === "track" ? tracks[id] : albums[id]) || 0 }
+    function rate(kind, id, stars) { if (!fail) { (kind === "track" ? tracks : albums)[id] = stars; ++rev } }
+    function favorite(kind, key, unused) { return !!favorites[kind + ":" + key] }
+    function setFavorite(kind, key, on) { if (!fail) { favorites[kind + ":" + key] = on; ++rev } }
 }

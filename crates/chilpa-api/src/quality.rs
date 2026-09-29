@@ -119,6 +119,18 @@ impl Quality {
         }
     }
 
+    /// Where there is little room: "FLAC 24-96", "DSD64".
+    pub fn brief(&self) -> String {
+        if self.tier == Tier::Dsd {
+            return self.dsd_name();
+        }
+        match (self.bits, self.rate_hz) {
+            (Some(bits), Some(rate)) => format!("{} {bits}-{}", self.format, khz(rate)),
+            (None, Some(rate)) if !self.format.is_empty() => format!("{} {}", self.format, khz(rate)),
+            _ => self.format.clone(),
+        }
+    }
+
     /// For a record's header: "FLAC · 24-bit / 192 kHz".
     pub fn long(&self) -> String {
         if self.tier == Tier::Dsd {

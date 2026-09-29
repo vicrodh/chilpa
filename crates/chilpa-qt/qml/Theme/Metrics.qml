@@ -70,7 +70,6 @@ QtObject {
     readonly property int fieldPadding: 9
     readonly property int fieldHeightLarge: 32
     readonly property int selectWidth: 260
-    readonly property int albumVersionWidth: 360
     readonly property int albumVersionMenuWidth: 560
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
@@ -176,12 +175,13 @@ QtObject {
     readonly property int colQualityCompact: 96
     readonly property int colQualityRich: 118
     readonly property int colRating: 82
+    // The favorite's heart and the button that opens the row's menu.
+    readonly property int colMore: 56
     readonly property int colPlaysCompact: 60
     readonly property int colPlaysRich: 92
     readonly property int colFavorite: 32
     readonly property int colTimeCompact: 44
     readonly property int colTimeRich: 48
-    readonly property int colMore: 32
     readonly property int playingBarWidth: 2
     readonly property int playingBox: 12
     // Enough to build every row of a list that grows instead of scrolling.
@@ -201,6 +201,8 @@ QtObject {
     readonly property int cardRing: 2
     readonly property int carouselCard: 164
     readonly property int ratingStar: 14
+    // In the flyout that rates, where they are the only thing to hit.
+    readonly property int ratingStarLarge: 24
     readonly property int ratingMaximum: 5
     // The quick view under a row (03-components.md AlbumQuickView).
     readonly property int quickArt: 184

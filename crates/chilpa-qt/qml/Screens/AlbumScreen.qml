@@ -64,7 +64,6 @@ Flickable {
             width: parent.width
             detail: detail
             selecting: page.selectionMode
-            favorite: AlbumActions.favorite(detail.selectedId, AlbumActions.rev)
             contrasted: SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
@@ -72,7 +71,6 @@ Flickable {
                 page.selectionMode = !page.selectionMode
                 tracks.clearSelection()
             }
-            onFavoriteToggle: AlbumActions.setFavorite(detail.selectedId, !favorite)
             onContext: (left, top) => {
                 const at = hero.mapToItem(page, left, top)
                 albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y)
