@@ -10,12 +10,14 @@ use std::collections::BTreeMap;
 pub enum RatingTarget {
     Track(i64),
     Album(i64),
+    Playlist(i64),
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Ratings {
     pub tracks: BTreeMap<i64, u8>,
     pub albums: BTreeMap<i64, u8>,
+    pub playlists: BTreeMap<i64, u8>,
 }
 
 impl Ratings {
@@ -23,6 +25,7 @@ impl Ratings {
         match target {
             RatingTarget::Track(id) => self.tracks.get(&id),
             RatingTarget::Album(id) => self.albums.get(&id),
+            RatingTarget::Playlist(id) => self.playlists.get(&id),
         }
         .copied()
         .unwrap_or(0)
@@ -45,6 +48,10 @@ impl Library {
                 &self.db,
                 "SELECT album_id, stars FROM album_ratings WHERE stars > 0",
             )?,
+            playlists: read(
+                &self.db,
+                "SELECT playlist_id, stars FROM playlist_ratings WHERE stars > 0",
+            )?,
         })
     }
 
@@ -59,6 +66,7 @@ impl Library {
         let (table, key, id) = match target {
             RatingTarget::Track(id) => ("track_ratings", "track_id", id),
             RatingTarget::Album(id) => ("album_ratings", "album_id", id),
+            RatingTarget::Playlist(id) => ("playlist_ratings", "playlist_id", id),
         };
         tx.execute(
             "UPDATE rating_clock SET revision = revision + 1 WHERE id = 1",

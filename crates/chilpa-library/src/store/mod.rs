@@ -8,6 +8,7 @@ pub mod albums;
 pub mod browse;
 pub mod credits;
 pub mod edit;
+pub mod favorites;
 pub mod features;
 mod genres;
 pub mod find;
