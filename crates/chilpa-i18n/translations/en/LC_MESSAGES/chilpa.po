@@ -267,6 +267,9 @@ msgstr ""
 msgid "By artist"
 msgstr ""
 
+msgid "By letter"
+msgstr ""
+
 msgid "By name"
 msgstr ""
 

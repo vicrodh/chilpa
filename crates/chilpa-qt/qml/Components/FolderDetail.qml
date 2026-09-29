@@ -159,6 +159,7 @@ Item {
                 width: parent.width
                 height: visible ? implicitHeight : 0
                 fitContent: true
+                list: !detail.grid
                 model: detail.albums
                 onOpen: (albumId) => Navigation.go("album", albumId)
             }

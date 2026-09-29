@@ -56,8 +56,8 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         options: [
-            { glyph: Icons.list, tip: I18n.tr("Tracks", I18n.rev) },
-            { glyph: Icons.layoutGrid, tip: I18n.tr("Records", I18n.rev) }
+            { glyph: Icons.list, tip: I18n.tr("List", I18n.rev) },
+            { glyph: Icons.layoutGrid, tip: I18n.tr("Grid", I18n.rev) }
         ]
         current: SettingsModel.libraryView === "grid" ? 1 : 0
         onActivated: (index) => SettingsModel.libraryView = index === 1 ? "grid" : "tracks"

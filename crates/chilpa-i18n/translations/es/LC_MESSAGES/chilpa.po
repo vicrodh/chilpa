@@ -267,6 +267,9 @@ msgstr "Por álbum"
 msgid "By artist"
 msgstr "Por artista"
 
+msgid "By letter"
+msgstr "Por letra"
+
 msgid "By name"
 msgstr "Por nombre"
 

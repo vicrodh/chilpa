@@ -19,14 +19,16 @@ Item {
     property int bottomInset: 0
     // The artist whose page holds the grid: its menu does not lead there.
     property string artistPage
+    // Records as rows, one under another, instead of cards side by side.
+    property bool list: false
 
     // A selected cover paints outside its card. Keep that ring inside the
     // scrollable plane on every edge instead of clipping boundary cards.
     readonly property real layoutWidth: Math.max(0, width - Metrics.cardRing * 2) // derived: a ring on both sides
-    readonly property int columns: layoutWidth <= 0 ? 0
+    readonly property int columns: layoutWidth <= 0 ? 0 : list ? 1
         : Math.max(Metrics.gridMinColumns, Math.floor((layoutWidth + Metrics.gridGap) / Metrics.cardMinWidth))
     readonly property real cardWidth: columns > 0 ? (layoutWidth - (columns - 1) * Metrics.gridGap) / columns : 0
-    readonly property real rowHeight: cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
+    readonly property real rowHeight: list ? Metrics.rowRich : cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
 
     signal open(int albumId, string title)
 
@@ -37,7 +39,7 @@ Item {
             AlbumActions.explain(albumId)
         else if (!grid.round && (modifiers !== 0 || AlbumActions.selectedCount > 0))
             grid.model.select(at, modifiers === 0 ? 1 : modifiers)
-        else if (!grid.round && SettingsModel.quickViewClick)
+        else if (!grid.round && !grid.list && SettingsModel.quickViewClick)
             toggleQuick(at)
         else {
             grid.model.prepareOpen(at)
@@ -60,7 +62,7 @@ Item {
         // Scrolled rows stay inside the grid, not over what sits above it.
         clip: !grid.fitContent
         model: grid.model
-        spacing: Metrics.gridGap
+        spacing: grid.list ? Metrics.gap2 : Metrics.gridGap
         reuseItems: true
         cacheBuffer: grid.rowHeight * 2 // derived: two rows ready on each side
         topMargin: Metrics.cardRing
@@ -73,14 +75,57 @@ Item {
 
             required property int first
             required property int span
+            // The group this row opens, if it opens one.
+            required property string group
+            readonly property real lead: group !== "" ? Metrics.rowGroup : 0
 
             width: grid.width
-            height: grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
+            height: lead + grid.rowHeight + (quick.active ? Metrics.gap8 + quick.height : 0)
+
+            Text {
+                visible: row.group !== ""
+                x: Metrics.cardRing
+                width: grid.layoutWidth
+                height: Metrics.rowGroup
+                verticalAlignment: Text.AlignVCenter
+                text: row.group
+                elide: Text.ElideRight
+                font.pointSize: Type.meta
+                font.weight: Type.semibold
+                color: Theme.color.textSecondary
+            }
+
+            AlbumRow {
+                readonly property int rev: grid.model ? grid.model.rev : 0
+
+                visible: grid.list
+                x: Metrics.cardRing
+                y: row.lead
+                width: grid.layoutWidth
+                albumId: visible ? grid.model.albumId(row.first, rev) : 0
+                title: visible ? grid.model.title(row.first, rev) : ""
+                subtitle: visible ? grid.model.subtitle(row.first, rev) : ""
+                year: visible ? grid.model.year(row.first, rev) : ""
+                art: visible ? grid.model.art(row.first, rev) : ""
+                tint: row.first
+                selected: visible && AlbumActions.selected(albumId, AlbumActions.rev)
+                expanded: visible && grid.model.expanded === row.first
+                available: !visible || AlbumActions.available(albumId, rev)
+                onClicked: (modifiers) => grid.clicked(row.first, albumId, title, modifiers, available)
+                onAvailableChanged: if (!available && expanded) grid.model.expanded = -1
+                onQuick: grid.toggleQuick(row.first)
+                onMenu: (x, y) => {
+                    if (!available)
+                        return
+                    const p = mapToItem(grid, x, y)
+                    albumMenu.show(albumId, title, subtitle, row.first, p.x, p.y)
+                }
+            }
 
             Repeater {
                 // A fixed count: a recycled row keeps its cards and only
                 // rebinds them.
-                model: grid.columns
+                model: grid.list ? 0 : grid.columns
 
                 AlbumCard {
                     required property int index
@@ -88,6 +133,7 @@ Item {
                     readonly property int rev: grid.model ? grid.model.rev : 0
 
                     x: Metrics.cardRing + index * (grid.cardWidth + Metrics.gridGap)
+                    y: row.lead
                     width: grid.cardWidth
                     visible: index < row.span
                     albumId: visible ? grid.model.albumId(at, rev) : 0
@@ -117,13 +163,14 @@ Item {
             Loader {
                 id: quick
 
-                y: grid.rowHeight + Metrics.gap8
+                y: row.lead + grid.rowHeight + Metrics.gap8
                 x: Metrics.cardRing
                 width: grid.layoutWidth
                 active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
                 sourceComponent: AlbumQuickView {
                     albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)
-                    notchX: (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 // derived: the card's center
+                    notchX: grid.list ? Metrics.button32 / 2 // derived: under the row's arrow
+                          : (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 // derived: the card's center
                     onClose: grid.model.expanded = -1
                 }
             }

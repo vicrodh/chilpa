@@ -6,7 +6,7 @@ import "../Components"
 import "../Patterns"
 
 // Library (design/02 9, design/06): the four filter columns in cascade and
-// what they leave, as tracks or as records. A fixed layout with no scroll of
+// the records they leave, as cards or as rows. A fixed layout with no scroll of
 // its own: only the columns and the result scroll.
 Item {
     id: page
@@ -28,9 +28,9 @@ Item {
     }
     AlbumGridModel {
         id: records
-        kind: page.grid ? "library" : ""
+        kind: "library"
         contentRev: Library.rev
-        columns: result.item && page.grid ? result.item.columns : 0
+        columns: result.columns
     }
 
     Item {
@@ -141,33 +141,17 @@ Item {
         tracks: tracks
     }
 
-    // Tracks or records: only the one on screen is built.
-    Loader {
+    // The records the columns leave, as cards or as rows.
+    AlbumGrid {
         id: result
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         x: head.x
         width: head.width
-        sourceComponent: page.grid ? grid : list
-    }
-
-    Component {
-        id: list
-        TrackList {
-            bottomInset: Metrics.contentBottom
-            sortable: true
-            order: Library.order
-            onSortRequested: (order) => Library.order = order
-            model: tracks
-        }
-    }
-    Component {
-        id: grid
-        AlbumGrid {
-            bottomInset: Metrics.contentBottom
-            model: records
-            onOpen: (albumId) => Navigation.go("album", albumId)
-        }
+        bottomInset: Metrics.contentBottom
+        list: !page.grid
+        model: records
+        onOpen: (albumId) => Navigation.go("album", albumId)
     }
 }

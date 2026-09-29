@@ -218,7 +218,7 @@ pub struct AlbumDetail {
 /// The library is in WAL mode, so this reads while the window's connection
 /// or a scan writes.
 pub struct Reader {
-    lib: chilpa_library::Library,
+    pub(crate) lib: chilpa_library::Library,
 }
 
 impl Reader {
