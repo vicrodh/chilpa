@@ -4,7 +4,7 @@
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
 list="$root/tools/lint/streaming-names.txt"
-pattern=$(grep -v '^#' "$list" | grep -v '^\s*$' | paste -sd'|')
+pattern=$(grep -v '^#' "$list" | grep -v '^\s*$' | paste -sd'|' -)
 if [ "${1:-}" = "--message" ]; then
     if grep -v '^#' "$2" | grep -inwE "$pattern"; then
         echo "no-platform-names: el mensaje del commit nombra un servicio de streaming (ADR-004)" >&2
