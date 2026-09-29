@@ -63,33 +63,31 @@ fn open_track(
     Ok((Source::Pcm(decoded), delivery))
 }
 
-/// Sends DSD untouched only to a direct route that accepts its DoP carrier.
-/// Every other path receives ordinary PCM, which a sound server may safely
-/// mix, resample and scale.
+/// Sends DSD untouched only to a direct route that takes it as asked: DoP
+/// in its carrier, or the kernel's native format. Every other path receives
+/// ordinary PCM, which a sound server may safely mix, resample and scale.
+///
+/// Asking for DoP or native DSD is asking for the exact path where there is
+/// one, not refusing the track where there is none. It used to refuse: with
+/// either chosen, a DSD record did not play through a sound server or on a
+/// card that takes neither, where converting is all it took. The delivery
+/// says it was converted, so nothing calls it bit-perfect.
 fn dsd_track(
     reader: Box<dyn DsdSource>,
     caps: &DeviceCaps,
     mode: DsdMode,
     direct: bool,
 ) -> Result<(Source, Delivery), PlayError> {
-    if mode != DsdMode::Pcm && !direct {
-        return Err(PlayError::Sink(SinkError::Backend(chilpa_i18n::t(
-            "Native DSD and DoP require a direct ALSA hardware output",
-        ))));
-    }
-    match mode {
-        DsdMode::Pcm => pcm_track(reader, caps),
-        DsdMode::Dop => {
-            let request = dop_request(reader.info());
-            let delivery = negotiate(request, caps, Policy::BitPerfect).map_err(PlayError::Negotiation)?;
-            Ok((Source::Dop(reader), delivery))
-        }
-        DsdMode::Native => {
-            let request = native_request(reader.info(), caps).ok_or_else(|| PlayError::Sink(
-                SinkError::Backend(chilpa_i18n::t("the device does not expose an ALSA native DSD_U32 format at this DSD rate"))
-            ))?;
-            Ok((Source::Native(reader), Delivery { requested: request, opened: request, transforms: Vec::new() }))
-        }
+    let untouched = match mode {
+        DsdMode::Dop if direct => negotiate(dop_request(reader.info()), caps, Policy::BitPerfect).ok(),
+        DsdMode::Native if direct => native_request(reader.info(), caps)
+            .map(|request| Delivery { requested: request, opened: request, transforms: Vec::new() }),
+        _ => None,
+    };
+    match (mode, untouched) {
+        (DsdMode::Dop, Some(delivery)) => Ok((Source::Dop(reader), delivery)),
+        (DsdMode::Native, Some(delivery)) => Ok((Source::Native(reader), delivery)),
+        _ => pcm_track(reader, caps),
     }
 }
 

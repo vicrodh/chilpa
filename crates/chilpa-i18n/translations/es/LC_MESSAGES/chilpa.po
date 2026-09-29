@@ -905,9 +905,6 @@ msgstr "Nombre"
 msgid "Native DSD"
 msgstr "DSD nativo"
 
-msgid "Native DSD and DoP require a direct ALSA hardware output"
-msgstr "DSD nativo y DoP requieren una salida directa de hardware ALSA"
-
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
 msgstr "Nativo usa el formato DSD_U32 de ALSA. DoP transporta el mismo flujo de un bit dentro de palabras PCM marcadas. PCM convierte DSD para que cualquier salida pueda reproducirlo."
 
@@ -1548,6 +1545,9 @@ msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder co
 
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
+
+msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
+msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo recibe intacto; lo elegido para la tarjeta se conserva."
 
 msgid "This playlist is read-only or belongs to another source."
 msgstr "Esta playlist es de solo lectura o pertenece a otra fuente."
@@ -2295,9 +2295,6 @@ msgstr "el dispositivo no acepta {} Hz, que es lo que pide este DSD por DoP"
 
 msgid "the device does not accept {} at {} Hz, and the policy does not allow converting"
 msgstr "el dispositivo no acepta {} a {} Hz y la política no deja convertir"
-
-msgid "the device does not expose an ALSA native DSD_U32 format at this DSD rate"
-msgstr "el dispositivo no expone un formato DSD_U32 nativo de ALSA a esta frecuencia DSD"
 
 msgid "the device does not play {} Hz (it plays {}), and Chilpa does not convert rates"
 msgstr "el dispositivo no reproduce {} Hz (reproduce {}), y Chilpa no convierte frecuencias"

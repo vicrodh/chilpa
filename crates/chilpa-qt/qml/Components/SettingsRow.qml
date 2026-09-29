@@ -80,8 +80,8 @@ Item {
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         sourceComponent: row.line ? verdict
-            : row.control === "toggle" || row.control === "fixed" ? toggle
-            : row.control === "select" || row.control === "device" ? select
+            : row.control === "toggle" || (row.control === "fixed" && row.options.length === 0) ? toggle
+            : row.control === "select" || row.control === "device" || row.control === "fixed" ? select
             : row.control === "segmented" ? segmented
             : row.control === "button" || row.control === "link" ? button
             : row.control === "secret" ? secret
@@ -103,6 +103,7 @@ Item {
     Component {
         id: select
         SelectField {
+            enabled: row.control !== "fixed"
             options: row.options
             values: row.optionValues
             marks: row.marks

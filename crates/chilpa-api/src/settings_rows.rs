@@ -187,16 +187,20 @@ impl Chilpa {
                 }
             }
             "audio.dsdMode" => {
+                // Only a card on hw takes DSD untouched. Anywhere else it
+                // plays converted, and the row says so instead of going
+                // away: a hidden row left the choice made for the card
+                // looking like the one in force.
                 let (direct, mode) = (self.stack_of(output) == "alsa" && self.alsa_plugin() == "hw", self.dsd_mode());
-                if !direct {
-                    row.control.clear();
-                    return;
-                }
                 for (value, label) in fixed(&row.key) {
                     row.values.push(value.to_string());
                     row.options.push(label);
                 }
-                row.value = mode.key().to_string();
+                row.value = if direct { mode.key() } else { "pcm" }.to_string();
+                if !direct {
+                    row.control = "fixed".into();
+                    row.description = chilpa_i18n::t("This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept.");
+                }
             }
             "audio.wizard" => {
                 if let Some(report) = notes.report {
