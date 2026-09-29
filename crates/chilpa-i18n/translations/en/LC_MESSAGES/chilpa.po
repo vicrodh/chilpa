@@ -163,9 +163,6 @@ msgstr ""
 msgid "All ({})"
 msgstr ""
 
-msgid "All folders"
-msgstr ""
-
 msgid "All music"
 msgstr ""
 
@@ -316,6 +313,9 @@ msgid "Close"
 msgstr ""
 
 msgid "Close tab"
+msgstr ""
+
+msgid "Collapse all"
 msgstr ""
 
 msgid "Collapse sidebar"
@@ -590,9 +590,6 @@ msgstr ""
 msgid "Filter artists"
 msgstr ""
 
-msgid "Filter folders"
-msgstr ""
-
 msgid "Filter playlists"
 msgstr ""
 
@@ -600,6 +597,9 @@ msgid "Find covers"
 msgstr ""
 
 msgid "Finish selecting"
+msgstr ""
+
+msgid "Flat"
 msgstr ""
 
 msgid "Folder colors in the sidebar"
@@ -900,6 +900,12 @@ msgid "No cover"
 msgstr ""
 
 msgid "No folders in the library yet."
+msgstr ""
+
+msgid "No folders in your local library yet."
+msgstr ""
+
+msgid "No folders match your search."
 msgstr ""
 
 msgid "No grouping"
@@ -1277,6 +1283,9 @@ msgstr ""
 msgid "Search"
 msgstr ""
 
+msgid "Search folders"
+msgstr ""
+
 msgid "Search playlists"
 msgstr ""
 
@@ -1287,6 +1296,9 @@ msgid "Searching…"
 msgstr ""
 
 msgid "Select"
+msgstr ""
+
+msgid "Select a folder to see its contents."
 msgstr ""
 
 msgid "Select tracks"
@@ -1432,7 +1444,7 @@ msgstr ""
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr ""
 
-msgid "This folder is empty."
+msgid "This folder has no tracks."
 msgstr ""
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
@@ -1499,6 +1511,9 @@ msgid "Track {}"
 msgstr ""
 
 msgid "Tracks"
+msgstr ""
+
+msgid "Tree"
 msgstr ""
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."

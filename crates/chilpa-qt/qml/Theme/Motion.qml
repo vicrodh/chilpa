@@ -17,4 +17,5 @@ QtObject {
     readonly property int refresh: 1000
     // How long after the last key what was typed is asked for.
     readonly property int searchSettle: 250
+    readonly property int treeSettle: 180
 }

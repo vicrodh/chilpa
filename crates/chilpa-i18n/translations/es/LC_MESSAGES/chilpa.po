@@ -163,9 +163,6 @@ msgstr "Todo"
 msgid "All ({})"
 msgstr "Todo ({})"
 
-msgid "All folders"
-msgstr "Todas las carpetas"
-
 msgid "All music"
 msgstr "Toda la música"
 
@@ -317,6 +314,9 @@ msgstr "Cerrar"
 
 msgid "Close tab"
 msgstr "Cerrar pestaña"
+
+msgid "Collapse all"
+msgstr "Contraer todo"
 
 msgid "Collapse sidebar"
 msgstr "Contraer barra lateral"
@@ -590,9 +590,6 @@ msgstr "Filtrar discos"
 msgid "Filter artists"
 msgstr "Filtrar artistas"
 
-msgid "Filter folders"
-msgstr "Filtrar carpetas"
-
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
 
@@ -601,6 +598,9 @@ msgstr "Buscar carátulas"
 
 msgid "Finish selecting"
 msgstr "Terminar selección"
+
+msgid "Flat"
+msgstr "Plano"
 
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
@@ -901,6 +901,12 @@ msgstr "Sin carátula"
 
 msgid "No folders in the library yet."
 msgstr "Todavía no hay carpetas en la biblioteca."
+
+msgid "No folders in your local library yet."
+msgstr "Todavía no hay carpetas en tu biblioteca local."
+
+msgid "No folders match your search."
+msgstr "Ninguna carpeta coincide con tu búsqueda."
 
 msgid "No grouping"
 msgstr "Sin agrupar"
@@ -1277,6 +1283,9 @@ msgstr "Registrar escuchas"
 msgid "Search"
 msgstr "Buscar"
 
+msgid "Search folders"
+msgstr "Buscar carpetas"
+
 msgid "Search playlists"
 msgstr "Buscar playlists"
 
@@ -1288,6 +1297,9 @@ msgstr "Buscando…"
 
 msgid "Select"
 msgstr "Seleccionar"
+
+msgid "Select a folder to see its contents."
+msgstr "Elige una carpeta para ver su contenido."
 
 msgid "Select tracks"
 msgstr "Seleccionar pistas"
@@ -1432,8 +1444,8 @@ msgstr "Tema"
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC o amplificador."
 
-msgid "This folder is empty."
-msgstr "Esta carpeta está vacía."
+msgid "This folder has no tracks."
+msgstr "Esta carpeta no tiene pistas."
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
@@ -1500,6 +1512,9 @@ msgstr "Pista {}"
 
 msgid "Tracks"
 msgstr "Pistas"
+
+msgid "Tree"
+msgstr "Árbol"
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."

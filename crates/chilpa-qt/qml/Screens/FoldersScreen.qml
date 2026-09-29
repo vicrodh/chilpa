@@ -4,10 +4,17 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// A virtual root and lazy tree on the left; the selected directory's child
-// folders, records or loose tracks on the right.
+// Folders, two ways. As a tree: the library's folders on the left, and on
+// the right the one that is open, with the folders inside it and its own
+// tracks. Flat: every record, by the folder it is in. A folder outside the
+// library, or a CD, opens from here without joining it.
 Item {
     id: page
+
+    property bool flat: SettingsModel.kept("ui.folders.mode") === "flat"
+    property real rail: Number(SettingsModel.kept("ui.folders.rail")) || Metrics.folderTreeWidth
+    // The rail's width when its edge was taken.
+    property real taken: 0
 
     FolderModel {
         id: current
@@ -21,10 +28,12 @@ Item {
         playingPath: Player.path
     }
     AlbumGridModel {
-        id: albums
-        kind: "folder"
-        contentRev: current.rev
-        columns: Math.max(1, Math.floor((body.width - Metrics.folderTreeWidth + Metrics.gridGap) / Metrics.cardMinWidth))
+        id: records
+        kind: page.flat ? "all" : ""
+        order: Library.albumOrder
+        filter: find.text
+        contentRev: Library.contentRev
+        columns: grid.columns
     }
 
     Item {
@@ -47,13 +56,25 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             spacing: Metrics.gap8
 
-            PillButton {
-                visible: current.path !== ""
-                kind: "primary"
-                glyph: Icons.playerPlayFilled
-                filled: true
-                text: I18n.tr("Play folder", I18n.rev)
-                onClicked: current.playAll()
+            SearchField {
+                id: find
+                anchors.verticalCenter: parent.verticalCenter
+                visible: page.flat
+                width: Metrics.screenSearch
+                placeholder: I18n.tr("Search", I18n.rev)
+                onEscaped: text = ""
+            }
+            SortButton {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: page.flat
+                value: Library.albumOrder
+                options: [
+                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                    { value: "title", text: I18n.tr("Title", I18n.rev) },
+                    { value: "year", text: I18n.tr("Year", I18n.rev) },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev) }
+                ]
+                onPicked: (value) => Library.albumOrder = value
             }
             PillButton {
                 glyph: Icons.folderPlus
@@ -61,11 +82,24 @@ Item {
                 onClicked: current.pick()
             }
             IconButton {
+                anchors.verticalCenter: parent.verticalCenter
                 visible: current.hasCd
                 tip: I18n.tr("Play the CD", I18n.rev)
                 glyph: Icons.disc
                 round: true
                 onClicked: current.playCd()
+            }
+            SegmentedControl {
+                anchors.verticalCenter: parent.verticalCenter
+                options: [
+                    { glyph: Icons.disc, tip: I18n.tr("Flat", I18n.rev) },
+                    { glyph: Icons.folderOpen, tip: I18n.tr("Tree", I18n.rev) }
+                ]
+                current: page.flat ? 0 : 1
+                onActivated: (index) => {
+                    page.flat = index === 0
+                    SettingsModel.keep("ui.folders.mode", page.flat ? "flat" : "tree")
+                }
             }
         }
     }
@@ -78,21 +112,45 @@ Item {
         x: head.x
         width: head.width
 
-        FolderTree {
-            id: tree
-            width: Math.min(Metrics.folderTreeWidth, body.width / 3) // derived: keep two thirds for content
-            height: parent.height - Metrics.contentBottom
-            activePath: current.path
+        AlbumGrid {
+            id: grid
+            visible: page.flat
+            anchors.fill: parent
+            bottomInset: Metrics.contentBottom
+            model: records
+            onOpen: (albumId) => Navigation.go("album", albumId)
         }
 
-        FolderContent {
+        FolderTree {
+            id: tree
+            visible: !page.flat
+            width: Math.max(Metrics.folderTreeMin, Math.min(page.rail, body.width * Metrics.folderTreeShare)) // derived: the rail takes half at most
+            height: parent.height - Metrics.contentBottom
+            activePath: current.path
+            menu: actions
+        }
+        ResizeHandle {
+            visible: !page.flat
+            anchors.left: tree.right
+            height: tree.height
+            onStarted: page.taken = tree.width
+            onMoved: (delta) => page.rail = Math.max(Metrics.folderTreeMin, Math.min(body.width * Metrics.folderTreeShare, page.taken + delta))
+            onReleased: SettingsModel.keep("ui.folders.rail", String(Math.round(page.rail)))
+        }
+        FolderDetail {
+            visible: !page.flat
             anchors.left: tree.right
             anchors.leftMargin: Metrics.gridGap
             anchors.right: parent.right
             height: parent.height
             folder: current
-            albums: albums
             tracks: tracks
+            menu: actions
         }
+    }
+
+    FolderMenu {
+        id: actions
+        folder: current
     }
 }

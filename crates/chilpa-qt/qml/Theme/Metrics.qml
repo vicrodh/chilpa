@@ -294,14 +294,20 @@ QtObject {
     readonly property int folderStatusWidth: 70
     readonly property int folderEntry: 44
     readonly property int folderArt: 34
-    readonly property int folderTreeWidth: 236
+    readonly property int folderTreeWidth: 272
+    readonly property int folderTreeMin: 136
+    readonly property real folderTreeShare: 0.5
+    readonly property int folderTreeRow: 26
+    readonly property int folderTreeIndent: 16
+    readonly property int folderTileMinWidth: 180
+    readonly property int folderCardMin: 140
+    readonly property int folderCardText: 42
+    readonly property int folderListRow: 34
+    readonly property int folderGlyph: 32
 
     // The strip of letters beside a grouped list.
     readonly property int alphaStrip: 18
     readonly property int alphaCell: 15
-    readonly property int folderTreeRow: 28
-    readonly property int folderTreeIndent: 14
-    readonly property int folderTileMinWidth: 180
     readonly property int folderTileHeight: 72
     readonly property int folderAlbumRow: 54
     // How the four columns share the width: year, genre, artist, album.

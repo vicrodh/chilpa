@@ -16,6 +16,7 @@ Item {
     required property url art
 
     signal open()
+    signal context(real left, real top)
 
     height: Metrics.folderEntry
 
@@ -83,4 +84,5 @@ Item {
     HoverHandler { id: hover }
     HoverHandler { cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: row.open() }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: (point) => row.context(point.position.x, point.position.y) }
 }

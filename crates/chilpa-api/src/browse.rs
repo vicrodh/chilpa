@@ -169,6 +169,8 @@ pub struct FolderView {
     pub tracks: Vec<TrackRow>,
     /// False for a folder outside the library, read from the disk as it is.
     pub in_library: bool,
+    /// How many tracks it holds with everything under it.
+    pub total: usize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -294,15 +296,19 @@ impl Reader {
                 .iter()
                 .map(|r| {
                     let path = r.path.to_string_lossy().into_owned();
-                    FolderItem { name: path.clone(), tracks: self.lib.folder_track_count(&path).unwrap_or(0), artwork_path: String::new(), path }
+                    // A root is called what its folder is called; where it
+                    // is belongs to Settings.
+                    let name = r.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| path.clone());
+                    FolderItem { name, tracks: self.lib.folder_track_count(&path).unwrap_or(0), artwork_path: String::new(), path }
                 })
                 .collect();
-            return FolderView { folders, tracks: Vec::new(), in_library: true };
+            let total = roots.iter().map(|r| self.lib.folder_track_count(&r.path.to_string_lossy()).unwrap_or(0)).sum();
+            return FolderView { folders, tracks: Vec::new(), in_library: true, total };
         }
         let inside = roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path));
         if inside {
             let (folders, tracks) = self.lib.folder_children(dir).unwrap_or_default();
-            return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true };
+            return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true, total: self.lib.folder_track_count(dir).unwrap_or(0) };
         }
         crate::folders::disk_folder(std::path::Path::new(dir))
     }
@@ -338,7 +344,7 @@ impl Reader {
                 words.iter().all(|word| lower.contains(word)).then_some(FolderItem { name: shown.clone(), path: shown, tracks: 0, artwork_path: String::new() })
             })
             .collect();
-        FolderView { folders, tracks: Vec::new(), in_library: true }
+        FolderView { folders, tracks: Vec::new(), in_library: true, total: 0 }
     }
 
     /// Every playable file under a folder, in order: the library's for one
