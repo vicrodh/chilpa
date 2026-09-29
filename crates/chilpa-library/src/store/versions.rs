@@ -21,6 +21,8 @@ pub struct AlbumVersion {
     pub path: String,
     pub bits: Option<u8>,
     pub rate: Option<u32>,
+    /// What says its format: a file's extension, a server track's codec.
+    pub codec: String,
     pub tracks: usize,
     /// Some track of it can be played now. An edition whose folder is not
     /// mounted or whose server does not answer is offered dimmed and never
@@ -243,13 +245,13 @@ impl Library {
                 rank: (quality.0, quality.1, quality.2, 0, enhanced),
                 title, artist: row.get(2).unwrap_or_default(), location, source: row.get(4).unwrap_or_default(),
                 source_label: row.get(10).unwrap_or_default(), source_icon: row.get(11).unwrap_or_default(), local: row.get(12).unwrap_or(false),
-                path: path.clone(), bits, rate, tracks: 0, reachable: false,
+                path: path.clone(), bits, rate, codec: ext.clone(), tracks: 0, reachable: false,
             });
             v.tracks += 1;
             v.reachable |= reachable;
             if quality < (v.rank.0, v.rank.1, v.rank.2) {
                 v.rank.0 = quality.0; v.rank.1 = quality.1; v.rank.2 = quality.2;
-                v.bits = bits; v.rate = rate; v.path = path;
+                v.bits = bits; v.rate = rate; v.path = path; v.codec = ext;
             }
             v.rank.3 = v.tracks;
         }

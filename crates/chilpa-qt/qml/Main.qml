@@ -49,7 +49,6 @@ Window {
     TabBar {
         x: Metrics.spaceWindow
         width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
-        contentLeft: window.contentLeft - x
         controlsRoom: systemControls.room
     }
 

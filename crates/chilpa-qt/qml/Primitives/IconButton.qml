@@ -52,9 +52,10 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: root.clicked()
-        onContainsMouseChanged: containsMouse ? TipState.show(root.tip, root) : TipState.hide(root)
+        onContainsMouseChanged: containsMouse && root.tip !== "" ? TipState.show(root.tip, root) : TipState.hide(root)
     }
 
     // A button that says something else after its click says it at once.
-    onTipChanged: if (area.containsMouse) TipState.show(root.tip, root)
+    // With nothing to say, as while what it opened is in sight, it says nothing.
+    onTipChanged: if (area.containsMouse) root.tip !== "" ? TipState.show(root.tip, root) : TipState.hide(root)
 }

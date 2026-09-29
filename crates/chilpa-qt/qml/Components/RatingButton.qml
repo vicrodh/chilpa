@@ -33,7 +33,7 @@ Item {
         filled: control.value > 0
         checked: flyout.opened || control.value > 0
         tone: control.contrasted ? "overlay" : control.value > 0 ? "accent" : "secondary"
-        tip: control.value > 0 ? I18n.trCount("{} star", "{} stars", control.value, I18n.rev)
+        tip: flyout.opened ? "" : control.value > 0 ? I18n.trCount("{} star", "{} stars", control.value, I18n.rev)
                                : I18n.tr("Rate", I18n.rev)
         onClicked: flyout.opened ? flyout.close() : flyout.open()
     }
@@ -72,7 +72,6 @@ Item {
 
             RatingStars {
                 anchors.horizontalCenter: parent.horizontalCenter
-                size: Metrics.ratingStarLarge
                 value: control.value
                 onRated: (stars) => {
                     Ratings.rate(control.kind, control.target, stars)

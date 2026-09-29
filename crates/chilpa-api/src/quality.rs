@@ -91,7 +91,12 @@ impl Quality {
         if !chilpa_models::RemoteEntry::is_remote(path) {
             return Self::of_file(path, bits, rate_hz);
         }
-        let ext = match codec.unwrap_or("") {
+        Self::of_codec(codec.unwrap_or(""), bits, rate_hz)
+    }
+
+    /// A quality from a codec's name alone, for what has no file name.
+    pub fn of_codec(codec: &str, bits: Option<u8>, rate_hz: Option<u32>) -> Quality {
+        let ext = match codec {
             "flac" => "flac",
             "alac" => "m4a",
             "aac" => "aac",
@@ -163,6 +168,12 @@ fn khz(rate: u32) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_codec_names_the_format_of_what_has_no_file_name() {
+        assert_eq!(Quality::of_codec("flac", Some(16), Some(44_100)).brief(), "FLAC 16-44.1");
+        assert_eq!(Quality::of_codec("flac", Some(24), Some(96_000)).long(), "FLAC · 24-bit / 96 kHz");
+    }
 
     #[test]
     fn a_cd_rip_is_lossless_and_says_16_bits() {
