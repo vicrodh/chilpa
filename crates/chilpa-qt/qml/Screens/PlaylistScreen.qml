@@ -49,6 +49,8 @@ Flickable {
             name: page.playlistName
             covers: Playlists.covers(page.playlistId, Playlists.rev)
             meta: tracks.count > 0 ? tracks.summary : I18n.tr("Empty. Add tracks from any list with a right click.", I18n.rev)
+            markKind: "playlist"
+            markKey: page.playlistId > 0 ? page.playlistId.toString() : ""
             canQueue: page.editable
             canPlay: page.editable
             queueGlyph: Icons.dotsVertical

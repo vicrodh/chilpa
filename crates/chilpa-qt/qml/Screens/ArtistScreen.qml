@@ -58,6 +58,8 @@ Flickable {
             label: I18n.tr("Artist", I18n.rev)
             round: true
             name: page.name
+            markKind: "artist"
+            markKey: page.name
             art: records.albums > 0 ? records.art(0, records.rev) : guest.art(0, guest.rev)
             meta: records.albums > 0 ? I18n.trCount("{} record", "{} records", records.albums, I18n.rev) + " · " + every.summary
                 : every.summary

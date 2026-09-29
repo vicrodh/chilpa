@@ -980,6 +980,9 @@ msgstr "No responde"
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
+msgid "Not rated"
+msgstr "Sin calificar"
+
 msgid "Not through this stack: it mixes by design."
 msgstr "No con esta pila: mezcla por diseño."
 
@@ -1198,6 +1201,9 @@ msgstr "Vista rápida"
 
 msgid "Quit"
 msgstr "Salir"
+
+msgid "Rate"
+msgstr "Calificar"
 
 msgid "Rating"
 msgstr "Calificación"
@@ -2332,6 +2338,9 @@ msgstr "falta la unidad"
 msgid "the editor could not be started"
 msgstr "el editor no pudo arrancar"
 
+msgid "the favorite could not be saved: {}"
+msgstr "no se pudo guardar el favorito: {}"
+
 msgid "the file carries no tracks"
 msgstr "el archivo no trae pistas"
 
@@ -2824,6 +2833,11 @@ msgid "{} song"
 msgid_plural "{} songs"
 msgstr[0] "{} canción"
 msgstr[1] "{} canciones"
+
+msgid "{} star"
+msgid_plural "{} stars"
+msgstr[0] "{} estrella"
+msgstr[1] "{} estrellas"
 
 msgid "{} track"
 msgid_plural "{} tracks"

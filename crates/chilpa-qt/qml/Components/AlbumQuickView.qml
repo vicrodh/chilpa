@@ -126,9 +126,9 @@ Item {
                 detail: panel.albumDetail
             }
             RatingStars {
-                value: Ratings.album(detail.selectedId, Ratings.rev)
+                value: Ratings.stars("album", detail.selectedId, Ratings.rev)
                 interactive: detail.selectedId > 0
-                onRated: (stars) => Ratings.rateAlbum(detail.selectedId, stars)
+                onRated: (stars) => Ratings.rate("album", detail.selectedId, stars)
             }
         }
 

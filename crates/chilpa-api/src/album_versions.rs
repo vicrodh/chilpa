@@ -49,6 +49,7 @@ mod tests {
         assert_eq!(versions.len(), 2);
         assert_eq!(versions[0].id, b);
         assert!(versions[0].label.starts_with("Home server · FLAC"));
+        assert_eq!(versions[0].brief, "FLAC 24-96");
         assert!(versions[0].label.contains("1994 Remaster"));
         assert!(versions[0].label.ends_with("1 track"));
         assert_eq!(versions[0].source.icon, "qrc:/source.svg");
@@ -84,6 +85,8 @@ impl AlbumSource {
 pub struct AlbumVersion {
     pub id: i64,
     pub label: String,
+    /// What the closed selector shows beside the source's icon.
+    pub brief: String,
     pub detail: String,
     pub source: AlbumSource,
 }
@@ -178,14 +181,15 @@ impl Chilpa {
         let Some(lib) = self.library() else { return Vec::new() };
         let versions = lib.version_catalog().map(|c| c.choices(album)).unwrap_or_default();
         versions.into_iter().map(|v| {
-            let quality = crate::quality::Quality::of_file(&v.path, v.bits, v.rate).long();
+            let quality = crate::quality::Quality::of_file(&v.path, v.bits, v.rate);
+            let (quality, brief) = (quality.long(), quality.brief());
             let location = std::path::Path::new(&v.location).file_name().and_then(|s| s.to_str()).unwrap_or(&v.location);
             let tracks = chilpa_i18n::tf("{} track", "{} tracks", v.tracks as i64, &[&v.tracks.to_string()]);
             let source = AlbumSource::of(&v);
             let annotation = edition(&v.title);
             let annotation = if annotation.is_empty() { edition(location) } else { annotation };
             let annotation = if annotation.is_empty() { annotation } else { format!(" - {annotation}") };
-            AlbumVersion { id: v.id, label: format!("{} · {quality}{annotation} · {tracks}", source.label),
+            AlbumVersion { id: v.id, brief, label: format!("{} · {quality}{annotation} · {tracks}", source.label),
                 detail: format!("{} · {location}", v.title), source }
         }).collect()
     }

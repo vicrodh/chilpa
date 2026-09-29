@@ -12,6 +12,9 @@ Rectangle {
     property var marks: []
     property var sources: []
     property var details: []
+    // What the closed field says instead of the whole option, where the
+    // option is long: the field is then as wide as that.
+    property var briefs: []
     property string value
     property real menuWidthLimit: Metrics.menuMaxWidth
 
@@ -19,7 +22,9 @@ Rectangle {
 
     readonly property int current: values.indexOf(value)
 
-    implicitWidth: Metrics.selectWidth
+    implicitWidth: briefs.length > 0
+        ? Metrics.gap10 + sourceBadge.width + Metrics.gap6 + said.implicitWidth + Metrics.gap6 + chevron.width + Metrics.gap8 // derived: what it holds and its margins
+        : Metrics.selectWidth
     implicitHeight: Metrics.fieldHeightLarge
     radius: Metrics.radiusControl
     color: area.containsMouse ? Theme.color.stateSelected : Theme.color.fillField
@@ -35,6 +40,7 @@ Rectangle {
     }
 
     Text {
+        id: said
         anchors.left: sourceBadge.right
         anchors.leftMargin: sourceBadge.visible ? Metrics.gap6 : 0
         anchors.right: chevron.left
@@ -42,7 +48,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         // `values` and `options` can arrive one after the other when the row
         // changes in place; for that moment the index may be past `options`.
-        text: field.options[field.current] ?? ""
+        text: field.briefs[field.current] ?? field.options[field.current] ?? ""
         elide: Text.ElideRight
         font.pointSize: Type.body
         color: Theme.color.textPrimary

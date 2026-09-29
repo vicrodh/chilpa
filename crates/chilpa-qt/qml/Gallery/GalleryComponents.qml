@@ -149,6 +149,9 @@ GallerySection {
         PlaylistRow { width: Metrics.sidebarWidth; index: 0; playlistId: 1; name: "Road Trip 2026"; tracks: 19; source: ""; sourceName: "Local"; local: true; artwork: ""; folderId: 0; visibleInSidebar: true; covers: []; active: true }
         PlaylistRow { width: Metrics.sidebarWidth; index: 1; playlistId: 2; name: "Late Night"; tracks: 8; source: "demo"; sourceName: "Example source"; local: false; artwork: ""; folderId: 0; visibleInSidebar: true; covers: [] }
         PlaylistCollage { covers: [] }
+        MarkButtons { kind: "album"; key: "1" }
+        RatingButton { kind: "album"; target: 1 }
+        TrackRowActions {}
         PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
         Row {
             spacing: Metrics.gap12

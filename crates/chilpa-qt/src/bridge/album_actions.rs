@@ -1,10 +1,9 @@
 //! What can be done with records from wherever one is drawn: a card, its
 //! quick view, its menu, the selection bar (frontend ADR-0007).
 //!
-//! The favorites and the selection live here, one of each for the window:
-//! a record marked in one grid is marked in every other, and selecting in
-//! one grid replaces what another had selected. `rev` moves with either,
-//! for the bindings that read them.
+//! The selection lives here, one for the window: selecting in one grid
+//! replaces what another had selected. `rev` moves with it, for the
+//! bindings that read it.
 //!
 //! An action names a record and acts on the whole selection when that
 //! record is part of it, or when it names none (zero), as the selection bar
@@ -26,11 +25,7 @@ pub mod qobject {
         type AlbumActions = super::AlbumActionsRust;
 
         #[qinvokable]
-        fn favorite(self: &AlbumActions, id: i64, rev: i32) -> bool;
-        #[qinvokable]
         fn sources(self: &AlbumActions, id: i64, rev: i32) -> QString;
-        #[qinvokable]
-        fn set_favorite(self: Pin<&mut AlbumActions>, id: i64, on: bool);
         #[qinvokable]
         fn selected(self: &AlbumActions, id: i64, rev: i32) -> bool;
         #[qinvokable]
@@ -57,14 +52,12 @@ pub mod qobject {
 
 use crate::{app, registry};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use std::collections::HashSet;
 use std::pin::Pin;
 
 #[derive(Default)]
 pub struct AlbumActionsRust {
     rev: i32,
     selected_count: i32,
-    favorites: HashSet<i64>,
     /// In the order it was picked, which is the order it plays in.
     selection: Vec<i64>,
 }
@@ -95,21 +88,6 @@ impl qobject::AlbumActions {
 
     pub fn sources(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(app::with(|api| serde_json::to_string(&api.album_sources(id)).unwrap_or_default()))
-    }
-
-    pub fn favorite(&self, id: i64, _rev: i32) -> bool {
-        self.rust().favorites.contains(&id)
-    }
-
-    pub fn set_favorite(mut self: Pin<&mut Self>, id: i64, on: bool) {
-        app::with(|api| api.set_album_favorite(id, on));
-        let mut this = self.as_mut().rust_mut();
-        if on {
-            this.favorites.insert(id);
-        } else {
-            this.favorites.remove(&id);
-        }
-        self.bump();
     }
 
     pub fn selected(&self, id: i64, _rev: i32) -> bool {
@@ -171,8 +149,7 @@ impl qobject::AlbumActions {
 }
 
 impl cxx_qt::Initialize for qobject::AlbumActions {
-    fn initialize(mut self: Pin<&mut Self>) {
-        self.as_mut().rust_mut().favorites = app::with(|api| api.favorite_albums());
+    fn initialize(self: Pin<&mut Self>) {
         registry::register_album_actions(self.qt_thread());
     }
 }

@@ -23,6 +23,10 @@ Item {
     property string queueTip: I18n.tr("Add to queue", I18n.rev)
     property bool canSelect: false
     property bool selecting: false
+    // What the listener's marks go on: a playlist takes stars and a heart,
+    // an artist a heart.
+    property string markKind
+    property string markKey
 
     signal play()
     signal shuffle()
@@ -107,6 +111,12 @@ Item {
                 glyph: Icons.arrowsShuffle
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
+            }
+            MarkButtons {
+                anchors.verticalCenter: parent.verticalCenter
+                kind: hero.markKind
+                key: hero.markKey
+                rates: hero.markKind !== "artist"
             }
             IconButton {
                 id: queueButton

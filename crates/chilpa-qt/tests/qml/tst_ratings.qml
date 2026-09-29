@@ -15,8 +15,8 @@ TestCase {
         id: albumStars
         y: 300
         property int albumId: 1
-        value: Ratings.album(albumId, Ratings.rev)
-        onRated: (stars) => Ratings.rateAlbum(albumId, stars)
+        value: Ratings.stars("album", albumId, Ratings.rev)
+        onRated: (stars) => Ratings.rate("album", albumId, stars)
     }
     function init() {
         Ratings.tracks = ({}); Ratings.albums = ({}); Ratings.fail = false; ++Ratings.rev
@@ -36,10 +36,10 @@ TestCase {
         const x = item.cols.ratingX + 3
         const y = item.height / 2
         mouseClick(item, x, y)
-        compare(Ratings.track(42, 0), 1)
+        compare(Ratings.stars("track", 42, 0), 1)
         compare(tracks.lastAction, "")
         mouseClick(item, x, y)
-        compare(Ratings.track(42, 0), 0)
+        compare(Ratings.stars("track", 42, 0), 0)
         mouseDoubleClickSequence(item, x, y)
         compare(tracks.lastAction, "")
         mousePress(item, x, y)
@@ -55,16 +55,16 @@ TestCase {
         compare(item.rating, 1)
         tracks.setProperty(0, "trackId", 43)
         tryCompare(item, "rating", 0)
-        Ratings.rateTrack(43, 5)
+        Ratings.rate("track", 43, 5)
         tryCompare(item, "rating", 5)
-        compare(Ratings.track(42, 0), 1)
+        compare(Ratings.stars("track", 42, 0), 1)
     }
     function test_album_binding_survives_clicks_version_changes_and_errors() {
         mouseClick(albumStars, albumStars.width / 2, albumStars.height / 2)
         compare(albumStars.value, 3)
         albumStars.albumId = 2
         compare(albumStars.value, 0)
-        Ratings.rateAlbum(2, 4)
+        Ratings.rate("album", 2, 4)
         compare(albumStars.value, 4)
         Ratings.fail = true
         mouseClick(albumStars, 1, 1)

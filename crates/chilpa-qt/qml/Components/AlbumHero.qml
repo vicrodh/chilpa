@@ -10,13 +10,11 @@ Item {
 
     property AlbumDetailModel detail
     property bool selecting: false
-    property bool favorite: false
     property bool contrasted: false
 
     signal play()
     signal shuffle()
     signal selectToggle()
-    signal favoriteToggle()
     signal context(real left, real top)
     signal artwork()
 
@@ -76,13 +74,6 @@ Item {
 
         Item { width: 1; height: Metrics.gap8 }
 
-        RatingStars {
-            baseColor: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textTertiary
-            value: Ratings.album(hero.detail.selectedId, Ratings.rev)
-            interactive: hero.detail.selectedId > 0
-            onRated: (stars) => Ratings.rateAlbum(hero.detail.selectedId, stars)
-        }
-
         Flow {
             width: parent.width
             spacing: Metrics.gap8
@@ -98,15 +89,10 @@ Item {
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
             }
-            IconButton {
-                round: true
-                glyph: hero.favorite ? Icons.heartFilled : Icons.heart
-                filled: hero.favorite
-                checked: hero.favorite
-                tone: hero.contrasted ? "overlay" : hero.favorite ? "accent" : "secondary"
-                tip: hero.favorite ? I18n.tr("Remove from favorites", I18n.rev)
-                                   : I18n.tr("Add to favorites", I18n.rev)
-                onClicked: hero.favoriteToggle()
+            MarkButtons {
+                kind: "album"
+                key: hero.detail.selectedId > 0 ? hero.detail.selectedId.toString() : ""
+                contrasted: hero.contrasted
             }
             IconButton {
                 round: true

@@ -87,7 +87,8 @@ Item {
             required property double trackId
             cols: columns
             canRate: trackId > 0 && available
-            rating: Ratings.track(trackId, Ratings.rev)
+            rating: Ratings.stars("track", trackId, Ratings.rev)
+            favorite: trackId > 0 && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
             artistHovered: index === view.artistHovered
@@ -171,7 +172,7 @@ Item {
                 return
             if (star > 0) {
                 const item = view.itemAtIndex(row)
-                Ratings.rateTrack(item.trackId, item.rating === star ? 0 : star)
+                Ratings.rate("track", item.trackId, item.rating === star ? 0 : star)
                 return
             }
             const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
@@ -211,28 +212,19 @@ Item {
         z: 3
     }
 
-    Row {
-        visible: list.reorderable && view.hovered >= 0 && (!groupActions.item || !groupActions.item.header)
-            && (groupActions.item ? groupActions.item.available : false)
-        x: list.width - width - Metrics.gap10
-        y: {
-            const item = view.itemAtIndex(view.hovered)
-            return head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
-        }
-        spacing: Metrics.gap2
-        z: 2
+    TrackRowActions {
+        row: view.hovered
+        item: groupActions.item
+        model: list.model
+        reorderable: list.reorderable
 
-        IconButton {
-            size: Metrics.button24
-            glyph: Icons.chevronUp
-            tip: I18n.tr("Move up", I18n.rev)
-            onClicked: list.model.moveInPlaylist(view.hovered, -1)
-        }
-        IconButton {
-            size: Metrics.button24
-            glyph: Icons.chevronDown
-            tip: I18n.tr("Move down", I18n.rev)
-            onClicked: list.model.moveInPlaylist(view.hovered, 1)
+        visible: !!item && !item.header && item.available
+        x: list.width - width - Metrics.gap10
+        y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
+        z: 2
+        onMenu: (row, left, top) => {
+            list.model.select(row, 4)
+            actions.show(row, left, top)
         }
     }
 }

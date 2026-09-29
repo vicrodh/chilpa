@@ -8,7 +8,8 @@ import QtQuick
 QtObject {
     readonly property real pointsPerPixel: 0.75
 
-    readonly property real display: 39 * pointsPerPixel
+    // A record's, an artist's or a playlist's name at the head of its page.
+    readonly property real display: 23 * pointsPerPixel
     readonly property real title: 28 * pointsPerPixel
     // The ceiling for any title inside a page -- a shelf, a section, a
     // dialog -- is the Home's "Recently played": `section`. Only a page's
@@ -35,7 +36,7 @@ QtObject {
     readonly property int bold: 700
 
     // Tracking, in pixels, for the sizes that carry it.
-    readonly property real displayTracking: -0.975
+    readonly property real displayTracking: -0.46
     readonly property real titleTracking: -0.56
     readonly property real sectionTracking: -0.19
     readonly property real labelTracking: 0.44
