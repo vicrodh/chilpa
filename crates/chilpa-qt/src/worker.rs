@@ -1,36 +1,19 @@
-//! The thread for what does not fit in a frame.
-//!
-//! Sorting fifty thousand tracks or counting every genre takes around a
-//! hundred milliseconds; on the window's thread that is six dropped frames
-//! each time a filter changes. Those queries run here instead, on one
-//! thread with its own read-only connection, one job at a time. A job
-//! computes and then queues its result back onto the window's thread
-//! through the QObject that asked, so nothing here touches Qt.
+//! The query worker shared by the window's models. Queries and connection
+//! recovery live in the API; a model only queues its result back to Qt.
 
-use std::sync::mpsc::{channel, Sender};
-use std::sync::OnceLock;
+use std::cell::RefCell;
 
-type Job = Box<dyn FnOnce(&chilpa_api::Reader) + Send>;
+thread_local! {
+    static WORKER: RefCell<Option<chilpa_api::QueryWorker>> = const { RefCell::new(None) };
+}
 
-static JOBS: OnceLock<Option<Sender<Job>>> = OnceLock::new();
-
-/// Runs `job` on the worker. It is dropped when the library cannot be
-/// opened; the window's own connection has already said why.
+/// Queues a query, retrying failed startup on the next submission.
 pub fn submit(job: impl FnOnce(&chilpa_api::Reader) + Send + 'static) {
-    let jobs = JOBS.get_or_init(|| {
-        let reader = crate::app::with(|api| api.reader())?;
-        let (tx, rx) = channel::<Job>();
-        std::thread::Builder::new()
-            .name("chilpa-queries".into())
-            .spawn(move || {
-                for job in rx {
-                    job(&reader);
-                }
-            })
-            .ok()?;
-        Some(tx)
+    WORKER.with(|slot| {
+        let mut worker = slot.borrow_mut();
+        if worker.is_none() { *worker = crate::app::with(|api| api.query_worker()); }
+        if let Some(running) = worker.as_ref() {
+            if !running.submit(job) { *worker = None; }
+        }
     });
-    if let Some(tx) = jobs {
-        let _ = tx.send(Box::new(job));
-    }
 }
