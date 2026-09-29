@@ -473,6 +473,9 @@ msgstr ""
 msgid "Dark"
 msgstr ""
 
+msgid "Dark OLED"
+msgstr ""
+
 msgid "Date"
 msgstr ""
 

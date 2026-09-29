@@ -70,7 +70,7 @@ pub mod qobject {
 }
 
 use crate::app;
-use chilpa_api::theme::{parse_color, Rgba, Theme};
+use chilpa_api::theme::{for_choice, parse_color, Rgba, Theme};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QColor, QString};
 use std::pin::Pin;
@@ -90,7 +90,7 @@ impl Default for ThemeModelRust {
     fn default() -> Self {
         let (mode, accent) = app::with(|api| (api.preference(MODE_KEY), api.preference(ACCENT_KEY)));
         let mode = mode.unwrap_or_else(|| "system".to_string());
-        let mut theme = Theme::built_in(if mode == "dark" { "breeze-dark" } else { "breeze-light" });
+        let mut theme = Theme::built_in(for_choice(&mode, false));
         theme.set_accent(accent.as_deref().and_then(parse_color));
         Self { rev: 0, dark: theme.dark, mode: QString::from(&mode), system_dark: false, theme }
     }
@@ -158,17 +158,14 @@ impl qobject::ThemeModel {
 
     /// Loads the theme the mode and the system ask for, keeping the accent.
     fn apply(mut self: Pin<&mut Self>) {
-        let dark = match self.rust().mode.to_string().as_str() {
-            "dark" => true,
-            "light" => false,
-            _ => self.rust().system_dark,
-        };
-        if dark == self.rust().theme.dark {
+        let id = for_choice(&self.rust().mode.to_string(), self.rust().system_dark);
+        if id == self.rust().theme.id() {
             return;
         }
         let accent = app::with(|api| api.preference(ACCENT_KEY));
-        let mut theme = Theme::built_in(if dark { "breeze-dark" } else { "breeze-light" });
+        let mut theme = Theme::built_in(id);
         theme.set_accent(accent.as_deref().and_then(parse_color));
+        let dark = theme.dark;
         self.as_mut().rust_mut().theme = theme;
         self.as_mut().set_dark(dark);
         self.bump();
