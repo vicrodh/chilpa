@@ -899,9 +899,6 @@ msgstr "Siguiente"
 msgid "No cover"
 msgstr "Sin carátula"
 
-msgid "No folders in the library yet."
-msgstr "Todavía no hay carpetas en la biblioteca."
-
 msgid "No folders in your local library yet."
 msgstr "Todavía no hay carpetas en tu biblioteca local."
 
@@ -1051,9 +1048,6 @@ msgstr "Reproducir"
 
 msgid "Play count"
 msgstr "Reproducciones"
-
-msgid "Play folder"
-msgstr "Reproducir carpeta"
 
 msgid "Play later"
 msgstr "Reproducir más tarde"
@@ -1300,6 +1294,9 @@ msgstr "Seleccionar"
 
 msgid "Select a folder to see its contents."
 msgstr "Elige una carpeta para ver su contenido."
+
+msgid "Select folders"
+msgstr "Seleccionar carpetas"
 
 msgid "Select tracks"
 msgstr "Seleccionar pistas"
@@ -2719,6 +2716,9 @@ msgid "{} record"
 msgid_plural "{} records"
 msgstr[0] "{} disco"
 msgstr[1] "{} discos"
+
+msgid "{} sel"
+msgstr "{} sel."
 
 msgid "{} selected track"
 msgid_plural "{} selected tracks"

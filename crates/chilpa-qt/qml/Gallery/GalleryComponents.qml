@@ -117,12 +117,12 @@ GallerySection {
         FolderModel { id: top; path: ""; content: true }
         TrackListModel { id: folderTracks; kind: "folder"; filterRev: top.rev }
         AlbumGridModel { id: folderAlbums; kind: "folder"; contentRev: top.rev; columns: 3 }
-        FolderHead { width: section.width; folder: top }
         FolderEntryRow { width: section.width; index: 0; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
         FolderTree { width: Metrics.folderTreeWidth; height: Metrics.panesHeight; activePath: "/music/Mora Vale" }
         FolderTreeBranch { width: Metrics.folderTreeWidth; name: "Mora Vale"; path: "/music/Mora Vale"; activePath: "/music/Mora Vale/Low Orbit" }
         FolderCard { width: Metrics.folderCardMin; name: "Low Orbit"; path: "/music/Low Orbit"; count: 11; art: "" }
         FolderMenu {}
+        FolderBulkBar { width: Metrics.folderTreeWidth; count: 3 }
         FolderDetail { width: section.width; height: Metrics.panesHeight; folder: top; tracks: folderTracks }
         PanelHeader { width: Metrics.rightPanel; title: "Queue"; detail: "12 songs · 48 min" }
         QueueFooter { width: Metrics.rightPanel }

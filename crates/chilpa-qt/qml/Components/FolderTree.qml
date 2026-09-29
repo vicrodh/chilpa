@@ -13,6 +13,29 @@ Rectangle {
     property FolderMenu menu
     // Moves when every branch is asked to close.
     property int closed: 0
+    // Choosing several: the folders chosen, and a mark that moves with them.
+    property bool selecting: false
+    property var chosen: ({})
+    property int chosenRev: 0
+    readonly property var chosenPaths: Object.keys(chosen)
+
+    // 1 when the folder or one above it is chosen, 2 when one under it is.
+    function chosenAt(path, rev) {
+        if (chosenPaths.some((one) => path === one || path.startsWith(one + "/")))
+            return 1
+        return chosenPaths.some((one) => one.startsWith(path + "/")) ? 2 : 0
+    }
+    function choose(path) {
+        const next = Object.assign({}, chosen)
+        if (next[path]) delete next[path]
+        else next[path] = true
+        chosen = next
+        chosenRev += 1
+    }
+    function act(action) {
+        const paths = action === "next" ? chosenPaths.slice().reverse() : chosenPaths
+        paths.forEach((path) => tree.menu.folder.act(path, action))
+    }
 
     function context(item, path, left, top) {
         const at = item.mapToItem(tree.menu.parent, left, top)
@@ -38,12 +61,40 @@ Rectangle {
     QtObject { id: sought; property string text }
 
     IconButton {
-        id: close
+        id: select
         x: Metrics.gap8
+        anchors.verticalCenter: find.verticalCenter
+        tip: I18n.tr("Select folders", I18n.rev)
+        glyph: Icons.checkbox
+        checked: tree.selecting
+        onClicked: {
+            tree.selecting = !tree.selecting
+            tree.chosen = ({})
+            tree.chosenRev += 1
+        }
+    }
+    IconButton {
+        id: close
+        anchors.left: select.right
         anchors.verticalCenter: find.verticalCenter
         tip: I18n.tr("Collapse all", I18n.rev)
         glyph: Icons.chevronUp
         onClicked: tree.closed += 1
+    }
+    FolderBulkBar {
+        id: bulk
+        visible: tree.selecting && tree.chosenPaths.length > 0
+        anchors.top: find.bottom
+        anchors.topMargin: Metrics.gap6
+        x: Metrics.gap8
+        width: parent.width - Metrics.gap16 // derived: padding on both sides
+        height: visible ? implicitHeight : 0
+        count: tree.chosenPaths.length
+        onActed: (action) => tree.act(action)
+        onCleared: {
+            tree.chosen = ({})
+            tree.chosenRev += 1
+        }
     }
     SearchField {
         id: find
@@ -58,7 +109,7 @@ Rectangle {
     }
 
     Flickable {
-        anchors.top: find.bottom
+        anchors.top: bulk.visible ? bulk.bottom : find.bottom
         anchors.topMargin: Metrics.gap6
         anchors.bottom: parent.bottom
         anchors.bottomMargin: Metrics.gap8

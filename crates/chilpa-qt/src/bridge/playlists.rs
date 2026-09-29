@@ -90,6 +90,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for Playlists {}
 }
 
+use crate::format::strings;
 use crate::{app, registry};
 use cxx_qt::Threading as _;
 use cxx_qt_lib::{QList, QString, QStringList, QUrl};
@@ -98,14 +99,6 @@ use std::pin::Pin;
 #[derive(Default)]
 pub struct PlaylistsRust {
     rev: i32,
-}
-
-fn strings(items: impl Iterator<Item = String>) -> QStringList {
-    let mut list = QList::<QString>::default();
-    for i in items {
-        list.append(QString::from(&i));
-    }
-    QStringList::from(&list)
 }
 
 fn paths_of(id: i64) -> Vec<String> {

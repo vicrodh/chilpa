@@ -14,6 +14,8 @@ pub mod qobject {
         type QModelIndex = cxx_qt_lib::QModelIndex;
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
+        include!("cxx-qt-lib/qstringlist.h");
+        type QStringList = cxx_qt_lib::QStringList;
     }
 
     #[auto_cxx_name]
@@ -29,6 +31,8 @@ pub mod qobject {
         #[qproperty(bool, in_library)]
         #[qproperty(i32, folders)]
         #[qproperty(i32, tracks)]
+        /// The names of the files that sit in it, for the tree's leaves.
+        #[qproperty(QStringList, files)]
         #[qproperty(bool, has_cd)]
         type FolderModel = super::FolderModelRust;
         #[qinvokable]
@@ -106,6 +110,7 @@ pub struct FolderModelRust {
     in_library: bool,
     folders: i32,
     tracks: i32,
+    files: cxx_qt_lib::QStringList,
     has_cd: bool,
     items: Vec<FolderItem>,
     generation: u64,
@@ -212,6 +217,8 @@ impl qobject::FolderModel {
             return;
         }
         let (folders, tracks) = (view.folders.len() as i32, view.total as i32);
+        let named = |t: &TrackRow| std::path::Path::new(&t.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| t.title.clone());
+        self.as_mut().set_files(crate::format::strings(view.tracks.iter().map(named)));
         if self.rust().content {
             TRACKS.with(|t| *t.borrow_mut() = Rc::new(view.tracks));
         }

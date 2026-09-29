@@ -79,9 +79,10 @@ pub mod qobject {
     impl cxx_qt::Initialize for SettingsModel {}
 }
 
+use crate::format::strings;
 use crate::app;
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QList, QString, QStringList};
+use cxx_qt_lib::{QString, QStringList};
 use std::pin::Pin;
 
 const DENSITY: &str = "appearance.density";
@@ -120,14 +121,6 @@ pub struct SettingsRust {
     sections: QStringList,
     section_labels: QStringList,
     section_icons: QStringList,
-}
-
-fn strings(items: impl Iterator<Item = String>) -> QStringList {
-    let mut l = QList::<QString>::default();
-    for i in items {
-        l.append(QString::from(&i));
-    }
-    QStringList::from(&l)
 }
 
 impl qobject::SettingsModel {
