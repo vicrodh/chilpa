@@ -1297,3 +1297,66 @@ INSERT OR IGNORE INTO play_genres(event_id, genre)
     SELECT p.id, g.name FROM play_events p JOIN track_genres tg ON tg.track_id = p.track_id
     JOIN genres g ON g.id = tg.genre_id;
 "#;
+
+/// What a source is to the library, whether it answers, and the servers
+/// (ADR-017).
+///
+/// `present` gets a third value. 1 is in the library, 0 is gone, and 2 is a
+/// copy of a service's track: kept so its playlists and ratings have
+/// something to point at, never listed as mine. Every view already asks for
+/// `present = 1`, so none of them had to change to leave a service out.
+///
+/// `reachable` is the other axis. A track in the library whose folder is
+/// not mounted, or whose server does not answer, stays listed and cannot be
+/// played. Until now an unmounted folder marked its tracks gone, and the
+/// library emptied every time the NAS went away.
+pub(super) const MIGRATION_V27: &str = r#"
+ALTER TABLE sources ADD COLUMN kind TEXT NOT NULL DEFAULT 'service'
+    CHECK (kind IN ('local', 'server', 'service'));
+UPDATE sources SET kind = 'local' WHERE provider = 'local';
+-- A local source always answers; its folders answer one by one, in roots.
+ALTER TABLE sources ADD COLUMN reachable INTEGER NOT NULL DEFAULT 1;
+
+ALTER TABLE tracks ADD COLUMN reachable INTEGER NOT NULL DEFAULT 1;
+-- Which sync of its server last saw it, and what the server said its
+-- version was. Both NULL for a local file.
+ALTER TABLE tracks ADD COLUMN sync_generation INTEGER;
+ALTER TABLE tracks ADD COLUMN revision TEXT;
+CREATE INDEX tracks_source_generation ON tracks(source_id, sync_generation);
+
+UPDATE tracks SET present = 2
+ WHERE present = 1 AND source_id IN (SELECT id FROM sources WHERE kind = 'service');
+
+UPDATE tracks SET present = 1, reachable = 0
+ WHERE present = 0 AND id IN (
+    SELECT sf.track_id FROM scanned_files sf JOIN roots r ON r.id = sf.root_id
+     WHERE r.reachable = 0 AND sf.track_id IS NOT NULL);
+
+-- How a server is reached. The credential is not here: it is sealed apart,
+-- one per server (chilpa-secrets).
+CREATE TABLE servers (
+    source_id  INTEGER PRIMARY KEY REFERENCES sources(id) ON DELETE CASCADE,
+    address    TEXT NOT NULL,
+    account    TEXT NOT NULL DEFAULT '',
+    -- The server's own id, to refuse adding it twice. Empty when it has none.
+    identity   TEXT NOT NULL DEFAULT '',
+    -- What it says it is, for the window: "Navidrome 0.64.2".
+    product    TEXT NOT NULL DEFAULT '',
+    -- The libraries of the server that come in, as JSON.
+    libraries  TEXT NOT NULL DEFAULT '[]',
+    -- What only its protocol needs, as JSON.
+    details    TEXT NOT NULL DEFAULT '{}',
+    added_at   INTEGER NOT NULL,
+    -- When a sync last finished. A sync that was cut off does not count.
+    synced_at  INTEGER,
+    generation INTEGER NOT NULL DEFAULT 0
+);
+
+-- The cover of a server's record, as the server names it, until it is
+-- fetched into the cache and set as the album's artwork.
+CREATE TABLE server_covers (
+    album_id INTEGER PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+    cover    TEXT NOT NULL,
+    fetched  INTEGER NOT NULL DEFAULT 0
+);
+"#;

@@ -367,6 +367,42 @@ impl Library {
         Ok(ids.iter().filter_map(|id| found.get(id).cloned()).collect())
     }
 
+    /// Which of those records cannot be opened now: none of their tracks
+    /// in the library is reachable. The grid draws them dimmed and a click
+    /// says why instead of opening them (ADR-017).
+    pub fn unavailable_albums(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashSet<i64>> {
+        let mut out = std::collections::HashSet::new();
+        for chunk in ids.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let sql = format!(
+                "SELECT a.id FROM albums a WHERE a.id IN ({marks})
+                   AND NOT EXISTS (SELECT 1 FROM tracks t
+                                   WHERE t.album_id = a.id AND t.present = 1 AND t.reachable = 1)"
+            );
+            let mut stmt = self.db.prepare(&sql)?;
+            for id in stmt.query_map(rusqlite::params_from_iter(chunk.iter()), |r| r.get::<_, i64>(0))? {
+                out.insert(id?);
+            }
+        }
+        Ok(out)
+    }
+
+    /// Why a record cannot be played now, in the names the window shows: the
+    /// servers that do not answer and the folders that are not mounted,
+    /// among the sources its tracks come from.
+    pub fn unreachable_sources_of(&self, album_id: i64) -> rusqlite::Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "SELECT DISTINCT CASE WHEN s.kind = 'local' THEN coalesce(r.path, '') ELSE s.label END
+             FROM tracks t JOIN sources s ON s.id = t.source_id
+             LEFT JOIN scanned_files f ON f.track_id = t.id
+             LEFT JOIN roots r ON r.id = f.root_id
+             WHERE t.album_id = ?1 AND t.present = 1 AND t.reachable = 0
+             ORDER BY 1",
+        )?;
+        let rows = stmt.query_map(params![album_id], |r| r.get(0))?;
+        rows.collect()
+    }
+
     /// The library's artists, by name.
     ///
     /// An artist with no present tracks does not show up: the view shows what
@@ -426,7 +462,7 @@ impl Library {
     pub fn album_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
              FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
              WHERE t.album_id = ?1
              ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",

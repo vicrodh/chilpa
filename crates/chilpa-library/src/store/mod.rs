@@ -15,6 +15,8 @@ pub mod plays;
 pub mod listening;
 pub mod ratings;
 pub mod regroup;
+pub(crate) mod reach;
+pub mod servers;
 mod compilations;
 pub(crate) mod releases;
 pub mod versions;
@@ -25,6 +27,7 @@ pub use browse::{BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals,
 pub use find::Found;
 pub use playlists::{PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, StoredPlaylist};
 pub use plays::{Stats, TrackStat};
+pub use servers::{NewServer, Removal, ServerTrack, StoredServer};
 
 use crate::schema;
 use rusqlite::{params, Connection, OptionalExtension};
@@ -40,7 +43,9 @@ pub struct StoredTrack {
     pub album: String,
     pub track_number: Option<u16>,
     pub duration_ms: u64,
-    pub present: bool,
+    /// In the library and reachable right now: its folder is mounted, its
+    /// server answers. What is not is still listed, and cannot be played.
+    pub playable: bool,
 }
 
 /// The genres a tag states, one each. Taggers write several in one field
@@ -172,7 +177,13 @@ impl Library {
 
     /// The source's id, creating it if needed.
     pub fn source_id(&self, provider: &str, instance: &str) -> rusqlite::Result<i64> {
-        self.db.execute("INSERT OR IGNORE INTO sources (provider, instance) VALUES (?1, ?2)", params![provider, instance])?;
+        // What is not the local library and was not added as a server is a
+        // service: browsed, never kept as mine (ADR-017).
+        self.db.execute(
+            "INSERT OR IGNORE INTO sources (provider, instance, kind)
+             VALUES (?1, ?2, CASE WHEN ?1 = 'local' THEN 'local' ELSE 'service' END)",
+            params![provider, instance],
+        )?;
         self.db.query_row("SELECT id FROM sources WHERE provider = ?1 AND instance = ?2", params![provider, instance], |r| r.get(0))
     }
 
@@ -309,25 +320,43 @@ impl Library {
     /// again instead of starting the history from zero. What does go is what
     /// the scan remembered about the files, because forgetting a folder and
     /// keeping notes on it is not forgetting it.
+    ///
+    /// Gone, not unreachable: a folder I took out of the library is not
+    /// waiting to come back, so its records are not listed (ADR-017).
     pub fn forget_root(&self, root_id: i64) -> rusqlite::Result<()> {
-        self.set_root_reachable(root_id, false)?;
+        self.db.execute(
+            "UPDATE tracks SET present = 0 WHERE present = 1 AND id IN
+             (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
+            params![root_id],
+        )?;
         self.db.execute("DELETE FROM scanned_files WHERE root_id = ?1", params![root_id])?;
         self.db.execute("DELETE FROM roots WHERE id = ?1", params![root_id])?;
         Ok(())
     }
 
-    /// Marks whether a root is reachable. A missing root prunes NOTHING.
-    pub fn set_root_reachable(&self, root_id: i64, reachable: bool) -> rusqlite::Result<()> {
-        self.db.execute("UPDATE roots SET reachable = ?2 WHERE id = ?1", params![root_id, i64::from(reachable)])?;
-        if !reachable {
-            // What is its own is marked missing, not deleted.
-            self.db.execute(
-                "UPDATE tracks SET present = 0 WHERE id IN
-                 (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
-                params![root_id],
-            )?;
+    /// Marks whether a root is reachable, and its tracks with it. A missing
+    /// root prunes NOTHING and hides nothing: its records stay listed and
+    /// cannot be played until it is back (ADR-017).
+    ///
+    /// Returns whether anything changed, so a watcher that asks every
+    /// minute only tells the window when there is something to redraw.
+    pub fn set_root_reachable(&self, root_id: i64, reachable: bool) -> rusqlite::Result<bool> {
+        let changed = self.db.execute(
+            "UPDATE roots SET reachable = ?2 WHERE id = ?1 AND reachable <> ?2",
+            params![root_id, i64::from(reachable)],
+        )?;
+        // Only when the folder itself came or went: while it stays, which of
+        // its tracks can be read is the scan's to say (a subfolder it could
+        // not open, `scan::mark_missing`).
+        if changed == 0 {
+            return Ok(false);
         }
-        Ok(())
+        let moved = self.db.execute(
+            "UPDATE tracks SET reachable = ?2 WHERE reachable <> ?2 AND id IN
+             (SELECT track_id FROM scanned_files WHERE root_id = ?1 AND track_id IS NOT NULL)",
+            params![root_id, i64::from(reachable)],
+        )?;
+        Ok(changed + moved > 0)
     }
 
     /// How many tracks there are, counting the missing ones or not.
@@ -344,7 +373,7 @@ impl Library {
         };
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
              FROM (SELECT rowid FROM track_search WHERE track_search MATCH ?1 LIMIT ?3) s
              JOIN tracks t ON t.id = s.rowid
              LEFT JOIN albums a ON a.id = t.album_id
@@ -526,7 +555,7 @@ pub(crate) fn now_unix() -> i64 {
 }
 
 pub(crate) fn row_to_track(r: &rusqlite::Row<'_>) -> rusqlite::Result<StoredTrack> {
-    Ok(StoredTrack { id: r.get(0)?, external_id: r.get(1)?, title: r.get(2)?, artist: r.get(3)?, album: r.get(4)?, track_number: r.get::<_, Option<i64>>(5)?.map(|n| n as u16), duration_ms: r.get::<_, i64>(6)? as u64, present: r.get::<_, i64>(7)? == 1 })
+    Ok(StoredTrack { id: r.get(0)?, external_id: r.get(1)?, title: r.get(2)?, artist: r.get(3)?, album: r.get(4)?, track_number: r.get::<_, Option<i64>>(5)?.map(|n| n as u16), duration_ms: r.get::<_, i64>(6)? as u64, playable: r.get::<_, i64>(7)? == 1 })
 }
 
 /// What every subject's tests seed, in one place: if each file built its
@@ -893,7 +922,7 @@ mod tests {
     }
 
     #[test]
-    fn an_unreachable_root_marks_its_tracks_but_does_not_delete_them() {
+    fn an_unreachable_root_keeps_its_tracks_listed_and_unplayable() {
         let lib = Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
         let root = lib.root_id(source, Path::new("/nas")).unwrap();
@@ -912,10 +941,16 @@ mod tests {
             )
             .unwrap();
 
-        lib.set_root_reachable(root, false).unwrap();
+        assert!(lib.set_root_reachable(root, false).unwrap(), "it changed");
+        assert!(!lib.set_root_reachable(root, false).unwrap(), "asking again changes nothing");
 
-        assert_eq!(lib.track_count(true).unwrap(), 1, "the row is still there");
-        assert_eq!(lib.track_count(false).unwrap(), 0, "but it no longer counts as present");
+        assert_eq!(lib.track_count(false).unwrap(), 1, "still in the library, so still listed");
+        let playable: i64 = lib.db.query_row("SELECT reachable FROM tracks WHERE id = 1", [], |r| r.get(0)).unwrap();
+        assert_eq!(playable, 0, "and it cannot be played");
+
+        assert!(lib.set_root_reachable(root, true).unwrap());
+        let playable: i64 = lib.db.query_row("SELECT reachable FROM tracks WHERE id = 1", [], |r| r.get(0)).unwrap();
+        assert_eq!(playable, 1, "back when the folder is, without a rescan");
     }
 
     #[test]

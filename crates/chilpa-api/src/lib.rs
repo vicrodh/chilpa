@@ -224,7 +224,7 @@ pub(crate) fn describe_analysis(bpm: Option<f32>, tone: Option<&str>, lufs: Opti
 
 /// Translates a library track into what a view needs.
 fn track_of(t: chilpa_library::StoredTrack) -> LibraryTrack {
-    LibraryTrack { id: t.id, path: t.external_id, title: t.title, artist: t.artist, album: t.album, track_number: t.track_number, duration_ms: t.duration_ms, present: t.present, analysis: String::new() }
+    LibraryTrack { id: t.id, path: t.external_id, title: t.title, artist: t.artist, album: t.album, track_number: t.track_number, duration_ms: t.duration_ms, present: t.playable, analysis: String::new() }
 }
 
 /// The title a queue shows: the tag's, or the file's name.

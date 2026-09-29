@@ -297,7 +297,7 @@ impl Library {
 
         let sql = format!(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
              FROM tracks t
              LEFT JOIN albums a ON a.id = t.album_id
              {}

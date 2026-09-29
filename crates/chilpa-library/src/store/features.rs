@@ -21,10 +21,13 @@ impl Library {
     ) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
              FROM tracks t
              LEFT JOIN albums a ON a.id = t.album_id
-             WHERE t.present = 1
+             WHERE t.present = 1 AND t.reachable = 1
+               -- Analysis reads the file. A server's track has none here,
+               -- and a folder that is not mounted cannot be read (ADR-017).
+               AND t.source_id IN (SELECT id FROM sources WHERE kind = 'local')
                AND NOT EXISTS (
                    SELECT 1 FROM audio_features f
                    WHERE f.track_id = t.id AND f.analyzer = ?1 AND f.version >= ?2
@@ -41,7 +44,8 @@ impl Library {
         let n: i64 = self.db.query_row(
             "SELECT count(*) FROM audio_features f
              JOIN tracks t ON t.id = f.track_id AND t.present = 1
-             WHERE f.analyzer = ?1 AND f.version >= ?2",
+             WHERE f.analyzer = ?1 AND f.version >= ?2
+               AND t.source_id IN (SELECT id FROM sources WHERE kind = 'local')",
             params![analyzer, version],
             |r| r.get(0),
         )?;

@@ -67,7 +67,7 @@ impl Library {
         // made this grow with the library instead of with the answer.
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present,
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1),
                     r.plays, r.last_played
              FROM track_rollup r
              JOIN tracks t ON t.id = r.track_id
@@ -87,7 +87,7 @@ impl Library {
         // not -- those are two different questions and the rollup keeps both.
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
-                    t.track_number, t.duration_ms, t.present,
+                    t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1),
                     r.plays, r.last_touched
              FROM track_rollup r
              JOIN tracks t ON t.id = r.track_id

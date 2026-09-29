@@ -150,14 +150,15 @@ fn a_root_that_disappears_marks_its_tracks_but_does_not_delete_them() {
 
     assert!(report.unreachable, "the root could not be read");
     assert_eq!(report.missing, 0, "nothing was pruned");
-    assert_eq!(lib.track_count(true).unwrap(), 2, "the rows are still there");
-    assert_eq!(lib.track_count(false).unwrap(), 0, "marked as missing");
+    assert_eq!(lib.track_count(false).unwrap(), 2, "still listed (ADR-017)");
+    assert_eq!(unreachable(&lib), 2, "and none of them can be played");
 
-    // And when it comes back, they count again.
+    // And when it comes back, they play again.
     let dir2 = album("unmounted", 2).unwrap();
     let wrap = scan_root(&lib, &dir2).unwrap();
     assert_eq!(wrap.read, 2);
     assert_eq!(lib.track_count(false).unwrap(), 2);
+    assert_eq!(unreachable(&lib), 0);
     let _ = std::fs::remove_dir_all(dir2);
 }
 
@@ -629,4 +630,68 @@ fn a_compilation_without_an_album_artist_is_one_record() {
     scan_root(&lib, &dir).unwrap();
     assert_eq!(lib.albums(10, 0).unwrap().len(), 3);
     let _ = std::fs::remove_dir_all(dir);
+}
+
+fn unreachable(lib: &Library) -> i64 {
+    lib.connection().query_row("SELECT count(*) FROM tracks WHERE present = 1 AND reachable = 0", [], |r| r.get(0)).unwrap()
+}
+
+#[test]
+fn an_empty_mount_point_is_a_folder_that_is_away_not_one_that_was_emptied() {
+    // The mount point exists and nothing is mounted on it. Counting every
+    // file as deleted emptied the library each time the NAS was away.
+    let Some(dir) = album("empty-mount", 2) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        let path = entry.unwrap().path();
+        if path.is_dir() { std::fs::remove_dir_all(path).unwrap() } else { std::fs::remove_file(path).unwrap() }
+    }
+    let report = scan_root(&lib, &dir).unwrap();
+
+    assert!(report.unreachable);
+    assert_eq!(report.missing, 0, "nothing was taken for deleted");
+    assert_eq!(lib.track_count(false).unwrap(), 2);
+    assert_eq!(unreachable(&lib), 2);
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn a_subfolder_that_cannot_be_opened_is_away_not_emptied() {
+    use std::os::unix::fs::PermissionsExt;
+    let Some(dir) = album("blocked-subfolder", 2) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    // One track outside it, so the folder itself answers.
+    std::fs::copy(dir.join("disc 1").join("01-track.flac"), dir.join("loose.flac")).unwrap();
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(lib.track_count(false).unwrap(), 3);
+
+    let sub = dir.join("disc 1");
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o000)).unwrap();
+    if std::fs::read_dir(&sub).is_ok() {
+        // Run as root: permissions do not stop it.
+        std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+        eprintln!("permissions do not apply here: skipped");
+        return;
+    }
+    let report = scan_root(&lib, &dir).unwrap();
+    std::fs::set_permissions(&sub, std::fs::Permissions::from_mode(0o755)).unwrap();
+
+    assert!(!report.unreachable, "the folder answers");
+    assert_eq!(report.missing, 0, "nothing was taken for deleted");
+    assert_eq!(lib.track_count(false).unwrap(), 3, "all still listed");
+    assert_eq!(unreachable(&lib), 2, "the two under it cannot be played");
+
+    // Readable again: the next scan gives them back.
+    scan_root(&lib, &dir).unwrap();
+    assert_eq!(unreachable(&lib), 0);
+    std::fs::remove_dir_all(dir).unwrap();
 }
