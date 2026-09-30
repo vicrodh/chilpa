@@ -112,7 +112,9 @@ Item {
                     { value: "title-desc", text: I18n.tr("Title Z-A", I18n.rev) },
                     { value: "year-desc", text: I18n.tr("Year (newest)", I18n.rev) },
                     { value: "year", text: I18n.tr("Year (oldest)", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev) }
+                    { value: "added", text: I18n.tr("Date added", I18n.rev) },
+                    { value: "duration", text: I18n.tr("Duration (shortest)", I18n.rev) },
+                    { value: "duration-desc", text: I18n.tr("Duration (longest)", I18n.rev) }
                 ]
                 onPicked: (value) => {
                     page.order = value
