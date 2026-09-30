@@ -506,3 +506,6 @@ superview
 appkit
 objc
 oled
+
+# Tabler device-tv icon.
+tv

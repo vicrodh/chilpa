@@ -35,6 +35,8 @@ QtObject {
     readonly property string columns3: "\uf6d6"
     readonly property string deviceDesktop: "\uea89"
     readonly property string deviceMobile: "\uea8a"
+    readonly property string deviceSpeaker: "\uea8b"
+    readonly property string deviceTv: "\uea8d"
     readonly property string disc: "\uea90"
     readonly property string dots: "\uea95"
     readonly property string dotsVertical: "\uea94"

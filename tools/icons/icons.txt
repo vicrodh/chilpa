@@ -89,3 +89,6 @@ filled:player-track-next
 filled:player-track-prev
 filled:square-check
 filled:star
+
+device-speaker
+device-tv

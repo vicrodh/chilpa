@@ -3,38 +3,40 @@ use chilpa_api::{CastDevice, CastKind, Chilpa};
 use std::{io::Write, sync::{Arc, Mutex, atomic::{AtomicBool, Ordering}}, time::{Duration, Instant}};
 
 #[derive(Default)]
-struct State { uri: String, playing: bool, paused: bool, finish: bool, loads: usize, bytes: Vec<u8>, seeks: usize, volume: u8, muted: bool }
+struct State { uri: String, playing: bool, paused: bool, finish: bool, loads: usize, bytes: Vec<u8>, mime: String, seeks: usize, volume: u8, muted: bool, position: u32, duration: u32, reject_transport: bool, reject_seek: bool, stop_delay: bool }
 struct Renderer { device: CastDevice, state: Arc<Mutex<State>>, done: Arc<AtomicBool>, thread: Option<std::thread::JoinHandle<()>> }
 impl Renderer {
     fn new() -> Self {
         let server = tiny_http::Server::http("127.0.0.1:0").unwrap(); let address = server.server_addr().to_ip().unwrap();
-        let state = Arc::new(Mutex::new(State::default())); let shared = state.clone();
+        let state = Arc::new(Mutex::new(State { position: 9, duration: 10, ..Default::default() })); let shared = state.clone();
         let done = Arc::new(AtomicBool::new(false)); let stopped = done.clone();
         let thread = std::thread::spawn(move || {
             while !stopped.load(Ordering::Acquire) {
                 let Some(mut request) = server.recv_timeout(Duration::from_millis(50)).unwrap() else { continue };
                 let content = if request.method() == &tiny_http::Method::Get {
-                    "<root><device><deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>Silent renderer</friendlyName><UDN>uuid:silent</UDN><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:3</serviceType><controlURL>/transport</controlURL></service><service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType><controlURL>/volume</controlURL></service></serviceList></device></root>".to_string()
+                    "<root><device><deviceType>urn:schemas-upnp-org:device:MediaRenderer:1</deviceType><friendlyName>Silent renderer</friendlyName><UDN>uuid:silent</UDN><serviceList><service><serviceType>urn:schemas-upnp-org:service:AVTransport:3</serviceType><controlURL>/transport</controlURL></service><service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType><controlURL>/volume</controlURL></service><service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType><controlURL>/connection</controlURL></service></serviceList></device></root>".to_string()
                 } else {
                     let action = request.headers().iter().find(|h| h.field.equiv("SOAPAction")).unwrap().value.as_str().trim_matches('"').rsplit('#').next().unwrap().to_string();
                     let mut body = String::new(); request.as_reader().read_to_string(&mut body).unwrap();
                     let field = |name: &str| body.split(&format!("<{name}>")).nth(1).and_then(|s| s.split(&format!("</{name}>")).next()).unwrap_or("").to_string();
                     let mut state = shared.lock().unwrap();
                     match action.as_str() {
+                        "GetProtocolInfo" => "<Source/><Sink>http-get:*:audio/*:*</Sink>".into(),
                         "SetAVTransportURI" => { state.uri = field("CurrentURI"); state.loads += 1; state.finish = false; "".into() }
                         "Play" => {
                             state.playing = true; state.paused = false;
                             let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &state.uri, headers: &[], body: None, timeout: Duration::from_secs(3), max_bytes: 1_000_000 }).unwrap();
-                            assert_eq!(reply.status, 200); state.bytes = reply.body; "".into()
+                            assert_eq!(reply.status, 200); state.mime = reply.headers.iter().find(|(key, _)| key.eq_ignore_ascii_case("content-type")).unwrap().1.clone(); state.bytes = reply.body; "".into()
                         }
                         "Pause" => { state.paused = true; "".into() }
-                        "Stop" => { state.playing = false; "".into() }
-                        "Seek" => { state.seeks += 1; "".into() }
+                        "Stop" => { if state.stop_delay { std::thread::sleep(Duration::from_millis(500)); } state.playing = false; "".into() }
+                        "Seek" => { state.seeks += 1; state.position = field("Target").rsplit(':').next().unwrap().parse().unwrap(); if state.reject_seek { "<errorCode>710</errorCode>".into() } else { "".into() } }
                         "SetVolume" => { state.volume = field("DesiredVolume").parse().unwrap(); "".into() }
                         "SetMute" => { state.muted = field("DesiredMute") == "1"; "".into() }
                         "GetVolume" => format!("<CurrentVolume>{}</CurrentVolume>", state.volume),
                         "GetMute" => format!("<CurrentMute>{}</CurrentMute>", u8::from(state.muted)),
-                        "GetPositionInfo" => "<RelTime>00:00:09</RelTime><TrackDuration>00:00:10</TrackDuration>".into(),
+                        "GetPositionInfo" => format!("<RelTime>00:00:{:02}</RelTime><TrackDuration>00:00:{:02}</TrackDuration>", state.position, state.duration),
+                        "GetTransportInfo" if state.reject_transport => "<errorCode>501</errorCode>".into(),
                         "GetTransportInfo" => format!("<CurrentTransportState>{}</CurrentTransportState>", if state.finish || !state.playing { "STOPPED" } else if state.paused { "PAUSED_PLAYBACK" } else { "PLAYING" }),
                         _ => panic!("unexpected action: {action}"),
                     }
@@ -47,14 +49,18 @@ impl Renderer {
     }
 }
 impl Drop for Renderer { fn drop(&mut self) { self.done.store(true, Ordering::Release); self.thread.take().unwrap().join().unwrap(); } }
+#[track_caller]
 fn wait(api: &mut Chilpa, test: impl Fn(&chilpa_api::NowPlaying) -> bool) {
     let until = Instant::now() + Duration::from_secs(18);
-    loop { let now = api.poll(); if test(now) { return; } assert!(Instant::now() < until, "cast did not reach expected state: {}", now.error); std::thread::sleep(Duration::from_millis(40)); }
+    loop { let now = api.poll(); if test(now) { return; } assert!(Instant::now() < until, "cast did not reach expected state: playing={} paused={} title={:?} index={} seconds={} error={:?}", now.playing, now.paused, now.title, now.index, now.seconds, now.error); std::thread::sleep(Duration::from_millis(40)); }
 }
 #[test]
 fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
     let dir = std::env::temp_dir().join(format!("chilpa-cast-smoke-{}", std::process::id())); std::fs::create_dir_all(&dir).unwrap();
     for key in ["XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"] { std::env::set_var(key, dir.join(key)); }
+    std::env::set_var("TMPDIR", &dir);
+    let cover = dir.join("cover.png");
+    image::RgbImage::from_pixel(8, 8, image::Rgb([40, 80, 120])).save(&cover).unwrap();
     let path = dir.join("first.wav");
     let mut file = std::fs::File::create(&path).unwrap();
     let mut bytes = Vec::new();
@@ -71,14 +77,67 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
     wait(&mut api, |n| n.playing && n.title == "first" && n.seconds > 0.0);
     assert_eq!(renderer.state.lock().unwrap().bytes, bytes);
     assert!(!api.poll().bit_perfect);
-    api.set_paused(true); wait(&mut api, |n| n.paused);
-    api.set_paused(false); wait(&mut api, |n| !n.paused && n.playing);
+    assert_eq!(api.now_playing().artwork_path, cover.display().to_string());
+    assert_eq!(serde_json::from_str::<serde_json::Value>(&api.cast_json()).unwrap()["icon"], "dlna");
+    assert_eq!(api.now_playing().quality.bits, Some(16));
+    assert_eq!(api.now_playing().quality.rate_hz, Some(44100));
+    api.set_paused(true); wait(&mut api, |n| n.paused && renderer.state.lock().unwrap().paused);
+    api.set_paused(false); wait(&mut api, |n| !n.paused && n.playing && !renderer.state.lock().unwrap().paused);
     api.seek(4.0); api.set_player_volume(42); api.set_player_muted(true);
     wait(&mut api, |_| { let s = renderer.state.lock().unwrap(); s.seeks > 0 && s.volume == 42 && s.muted });
+    wait(&mut api, |n| n.seconds == 4.0);
+    assert_eq!(renderer.state.lock().unwrap().position, 4);
     renderer.state.lock().unwrap().finish = true;
     wait(&mut api, |n| n.index == 1 && n.title == "second");
     api.previous_track("file:capture", false); wait(&mut api, |n| n.index == 0 && n.title == "first");
     api.next_track(); wait(&mut api, |n| n.index == 1 && n.title == "second");
+    // The position query can work even when the transport query faults.
+    renderer.state.lock().unwrap().reject_transport = true;
+    api.set_paused(true); wait(&mut api, |n| n.paused && renderer.state.lock().unwrap().paused);
+    let until = Instant::now() + Duration::from_secs(6);
+    while Instant::now() < until {
+        let now = api.poll();
+        assert!(now.paused && now.error.is_empty(), "a live position query was treated as a lost renderer");
+        assert!(api.cast_destination().is_some());
+        std::thread::sleep(Duration::from_millis(40));
+    }
+    api.set_paused(false); wait(&mut api, |n| !n.paused && n.playing && !renderer.state.lock().unwrap().paused);
+    renderer.state.lock().unwrap().reject_transport = false;
+
+    // Selecting an output with a stopped queue must not start it.
+    api.stop();
+    api.cast_disconnect();
+    let loads = renderer.state.lock().unwrap().loads;
+    api.cast_connect_device(renderer.device.clone());
+    let until = Instant::now() + Duration::from_millis(1500);
+    while Instant::now() < until { api.poll(); std::thread::sleep(Duration::from_millis(30)); }
+    assert_eq!(renderer.state.lock().unwrap().loads, loads, "connecting started a stopped queue");
+    assert!(!api.now_playing().playing);
+    api.set_paused(false);
+    wait(&mut api, |n| n.playing && n.title == "second" && n.seconds > 0.0);
+
+    // A receiver that cannot seek still owns a loaded, controllable track.
+    let other = Renderer::new();
+    let mut other_device = other.device.clone(); other_device.id = "uuid:other".into();
+    other.state.lock().unwrap().reject_seek = true;
+    api.cast_connect_device(other_device);
+    wait(&mut api, |n| n.title == "second" && n.playing && !n.error.is_empty());
+    assert!(other.state.lock().unwrap().playing);
+    api.set_paused(true); wait(&mut api, |n| n.paused && other.state.lock().unwrap().paused);
+    api.set_paused(false); wait(&mut api, |n| !n.paused && n.playing && !other.state.lock().unwrap().paused);
+    let loads = other.state.lock().unwrap().loads;
+    assert_eq!(loads, 1, "resume reloaded an already playing track");
+    api.cast_connect_device(renderer.device.clone());
+    wait(&mut api, |n| n.title == "second" && n.playing && n.seconds > 0.0);
+    drop(other);
+
+    // Pause/resume queued behind LOAD controls that load, without replacing it.
+    let loads = renderer.state.lock().unwrap().loads;
+    api.play_file(&path, "file:capture", false);
+    api.set_paused(true);
+    api.set_paused(false);
+    wait(&mut api, |n| n.title == "first" && n.playing && n.seconds > 0.0);
+    assert_eq!(renderer.state.lock().unwrap().loads, loads + 1);
     let url = renderer.state.lock().unwrap().uri.clone(); api.stop();
     let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &url, headers: &[], body: None, timeout: Duration::from_secs(3), max_bytes: 1 }).unwrap();
     assert_eq!(reply.status, 404);
@@ -97,30 +156,52 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
         }
         count
     });
-    chilpa_core::remote::install(Arc::new(Opener(format!("http://{address}/private"))));
+    chilpa_core::remote::install(Arc::new(Opener(format!("http://{address}/private"), cover.clone())));
     let entry = chilpa_models::RemoteEntry::new(chilpa_models::SourceId::new("fixture", "instance"), "track").to_entry();
     api.play_file(std::path::Path::new(&entry), "file:capture", false);
     wait(&mut api, |n| n.title == "Remote fixture" && n.seconds > 0.0);
     assert_eq!(renderer.state.lock().unwrap().bytes, bytes);
     assert!(!renderer.state.lock().unwrap().uri.contains("private"));
+    assert_eq!(api.now_playing().artwork_path, cover.display().to_string());
+    assert_eq!(api.now_playing().artist, "Fixture artist");
+    assert_eq!(api.now_playing().album, "Fixture album");
+    renderer.state.lock().unwrap().duration = 30;
+    wait(&mut api, |n| n.total_seconds == 30.0);
     assert!(origin_thread.join().unwrap() >= 2);
-    let unsupported = dir.join("unsupported.dsf"); std::fs::write(&unsupported, b"DSD ").unwrap();
-    let loads = renderer.state.lock().unwrap().loads;
-    api.play_file(&unsupported, "file:capture", false);
-    wait(&mut api, |n| !n.error.is_empty());
-    assert_eq!(renderer.state.lock().unwrap().loads, loads, "an unsupported format was handed to the renderer");
+    // I verify original-byte delivery and MIME selection, not decoder support.
+    for (extension, mime) in [("AIFF", "audio/aiff"), ("dsf", "audio/x-dsf"), ("dff", "audio/x-dff"),
+        ("ape", "audio/x-ape"), ("alac", "audio/mp4"), ("oga", "audio/ogg"), ("opus", "audio/opus"), ("unknown", "application/octet-stream")] {
+        let original = b"opaque original fixture";
+        let path = dir.join(format!("original.{extension}")); std::fs::write(&path, original).unwrap();
+        let loads = renderer.state.lock().unwrap().loads;
+        api.play_file(&path, "file:capture", false);
+        wait(&mut api, |n| n.playing && n.title == "original" && renderer.state.lock().unwrap().loads > loads);
+        let state = renderer.state.lock().unwrap();
+        assert_eq!(state.bytes, original);
+        assert_eq!(state.mime, mime);
+    }
     api.cast_disconnect(); assert!(api.cast_destination().is_none()); assert!(!api.poll().playing);
     exercise_cast_receiver(&mut api, &path, &second, &bytes);
+    api.cast_connect_device(renderer.device.clone());
+    api.play_file(&path, "file:capture", false);
+    wait(&mut api, |n| n.playing && n.title == "first" && n.seconds > 0.0);
+    renderer.state.lock().unwrap().stop_delay = true;
+    api.cast_disconnect();
+    api.play_file(&path, "file:capture", false);
+    let capture = chilpa_core::capture_path();
+    assert!(!capture.exists(), "the local output opened before renderer teardown");
+    wait(&mut api, |_| capture.exists());
+    assert!(!renderer.state.lock().unwrap().playing);
     drop(api); drop(renderer); let _ = std::fs::remove_dir_all(dir);
 }
 
-struct Opener(String);
+struct Opener(String, std::path::PathBuf);
 impl chilpa_core::remote::RemoteOpener for Opener {
     fn locate(&self, _: &chilpa_models::RemoteEntry) -> std::result::Result<chilpa_core::remote::Located, String> {
         Ok(chilpa_core::remote::Located { request: chilpa_core::RangedRequest { url: self.0.clone(), headers: vec![("Authorization".into(), "Bearer fixture-only".into())] }, extension: Some("wav".into()), server: "Fixture".into() })
     }
     fn describe(&self, _: &chilpa_models::RemoteEntry) -> chilpa_core::remote::Described {
-        chilpa_core::remote::Described { tags: chilpa_tags::Tags { title: Some("Remote fixture".into()), ..Default::default() }, artwork: None }
+        chilpa_core::remote::Described { tags: chilpa_tags::Tags { title: Some("Remote fixture".into()), artists: vec!["Fixture artist".into()], album: Some("Fixture album".into()), ..Default::default() }, artwork: Some(self.1.clone()) }
     }
 }
 
@@ -154,7 +235,7 @@ fn exercise_cast_receiver(api: &mut Chilpa, first: &std::path::Path, second: &st
                         state.uri = request["media"]["contentId"].as_str().unwrap().into();
                         state.loads += 1; state.finish = false; state.playing = true; state.paused = false;
                         let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &state.uri, headers: &[], body: None, timeout: Duration::from_secs(3), max_bytes: 1_000_000 }).unwrap();
-                        assert_eq!(reply.status, 200); state.bytes = reply.body;
+                        assert_eq!(reply.status, 200); state.mime = reply.headers.iter().find(|(key, _)| key.eq_ignore_ascii_case("content-type")).unwrap().1.clone(); state.bytes = reply.body;
                     }
                     "PLAY" => state.paused = false,
                     "PAUSE" => state.paused = true,

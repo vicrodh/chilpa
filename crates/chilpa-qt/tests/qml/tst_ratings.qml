@@ -25,7 +25,7 @@ TestCase {
         tracks.clear()
         tracks.append({ trackId: 42, rowKind: 0, number: 1, title: "Track", artist: "Band",
             album: "Album", duration: "3:00", plays: 0, quality: "FLAC", tier: 2,
-            playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
+            available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
         tracks.lastAction = ""
         wait(30)
     }

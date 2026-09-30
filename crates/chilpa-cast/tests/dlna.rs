@@ -25,6 +25,45 @@ fn ssdp_header_case_is_not_significant() {
     assert_eq!(discovery::location("HTTP/1.1 200 OK\r\nlOcAtIoN: http://127.0.0.1/device.xml\r\n"), Some("http://127.0.0.1/device.xml".into()));
 }
 #[test]
+fn protocol_advertisements_do_not_veto_a_renderer_load() {
+    for sink in [include_str!("fixtures/gmediarender-sink.txt").trim(), "http-get:*:audio/*:*", "http-get:*:audio/x-flac:*", "", "http-get:*:audio/mpeg:*"] {
+        let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
+        let addr = server.server_addr().to_ip().unwrap();
+        let worker = std::thread::spawn(move || {
+            let mut calls = Vec::new();
+            while let Some(request) = server.recv_timeout(Duration::from_millis(500)).unwrap() {
+                let action = request.headers().iter().find(|h| h.field.equiv("SOAPAction")).unwrap().value.as_str().trim_matches('"').rsplit('#').next().unwrap().to_string();
+                let content = if action == "GetProtocolInfo" { format!("<Source/><Sink>{sink}</Sink>") } else { String::new() };
+                request.respond(tiny_http::Response::from_string(format!("<response>{content}</response>"))).unwrap();
+                let finished = action == "Play";
+                calls.push(action);
+                if finished { break; }
+            }
+            calls
+        });
+        let xml = description(1, "/control").replace("</serviceList>", "<service><serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType><controlURL>/connection</controlURL></service></serviceList>");
+        let mut remote = Dlna::connect(dlna::parse(&format!("http://{addr}/device.xml"), &xml).unwrap());
+        let result = remote.load("http://127.0.0.1/audio/fixture/1", "audio/flac", &Metadata::default());
+        let calls = worker.join().unwrap();
+        assert!(result.is_ok(), "advertised sink {sink:?} blocked a supported load: {result:?}");
+        assert_eq!(calls, ["SetAVTransportURI", "Play"]);
+    }
+}
+#[test]
+fn actual_renderer_format_rejection_is_preserved() {
+    let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
+    let addr = server.server_addr().to_ip().unwrap();
+    let worker = std::thread::spawn(move || {
+        let request = server.recv_timeout(Duration::from_secs(2)).unwrap().unwrap();
+        assert!(request.headers().iter().any(|h| h.field.equiv("SOAPAction") && h.value.as_str().contains("#SetAVTransportURI")));
+        request.respond(tiny_http::Response::from_string("<response><errorCode>714</errorCode></response>").with_status_code(500)).unwrap();
+        assert!(server.recv_timeout(Duration::from_millis(300)).unwrap().is_none(), "a rejected URI must not trigger Play");
+    });
+    let mut remote = Dlna::connect(dlna::parse(&format!("http://{addr}/device.xml"), &description(1, "/control")).unwrap());
+    assert_eq!(remote.load("http://127.0.0.1/audio/fixture/1", "audio/x-dsf", &Metadata::default()), Err(chilpa_cast::Error::Fault(714)));
+    worker.join().unwrap();
+}
+#[test]
 fn loopback_renderer_controls_metadata_state_and_no_contents_recovery() {
     let server = tiny_http::Server::http("127.0.0.1:0").unwrap();
     let addr = server.server_addr().to_ip().unwrap();

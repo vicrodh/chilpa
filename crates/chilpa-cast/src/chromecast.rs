@@ -54,7 +54,7 @@ impl Chromecast {
 }
 impl RemoteTransport for Chromecast {
     fn load(&mut self, url: &str, mime: &str, m: &Metadata) -> Result<()> {
-        if !matches!(mime, "audio/flac" | "audio/mpeg" | "audio/mp4" | "audio/wav" | "audio/aac" | "audio/ogg") { return Err(Error::Unsupported); }
+        if !matches!(mime, "audio/flac" | "audio/mpeg" | "audio/mp4" | "audio/wav" | "audio/aac" | "audio/ogg" | "audio/opus") { return Err(Error::Unsupported); }
         if self.transport.is_empty() {
             let reply = self.ask("receiver-0", RECEIVER, json!({"type":"LAUNCH","appId":"CC1AD845"}))?;
             let app = reply["status"]["applications"].as_array().and_then(|a| a.iter().find(|a| a["appId"] == "CC1AD845")).ok_or(Error::Protocol)?;

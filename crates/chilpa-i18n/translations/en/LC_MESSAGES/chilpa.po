@@ -234,9 +234,6 @@ msgstr ""
 msgid "AutoMix"
 msgstr ""
 
-msgid "Available"
-msgstr ""
-
 msgid "BP marks an output that takes the samples untouched."
 msgstr ""
 
@@ -307,9 +304,6 @@ msgid "Choose a cover"
 msgstr ""
 
 msgid "Choose a file…"
-msgstr ""
-
-msgid "Choose a renderer on your local network."
 msgstr ""
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
@@ -803,6 +797,9 @@ msgstr ""
 msgid "Loading the release…"
 msgstr ""
 
+msgid "Loading…"
+msgstr ""
+
 msgid "Local library"
 msgstr ""
 
@@ -941,7 +938,7 @@ msgstr ""
 msgid "No cover"
 msgstr ""
 
-msgid "No devices found. Check that both devices use the same network."
+msgid "No devices found"
 msgstr ""
 
 msgid "No folders in your local library yet."
@@ -1247,9 +1244,6 @@ msgstr ""
 msgid "Records"
 msgstr ""
 
-msgid "Refresh"
-msgstr ""
-
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr ""
 
@@ -1445,6 +1439,9 @@ msgstr ""
 msgid "Sources and quality"
 msgstr ""
 
+msgid "Status"
+msgstr ""
+
 msgid "Studio 24/48"
 msgstr ""
 
@@ -1535,6 +1532,9 @@ msgid "The service's answer is missing."
 msgstr ""
 
 msgid "Theme"
+msgstr ""
+
+msgid "This computer"
 msgstr ""
 
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."

@@ -234,9 +234,6 @@ msgstr "Pila de audio"
 msgid "AutoMix"
 msgstr "AutoMix"
 
-msgid "Available"
-msgstr "Disponible"
-
 msgid "BP marks an output that takes the samples untouched."
 msgstr "BP marca una salida que recibe las muestras intactas."
 
@@ -308,9 +305,6 @@ msgstr "Elige una carátula"
 
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
-
-msgid "Choose a renderer on your local network."
-msgstr "Elige un receptor de tu red local."
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
@@ -803,6 +797,9 @@ msgstr "Lista"
 msgid "Loading the release…"
 msgstr "Cargando el release…"
 
+msgid "Loading…"
+msgstr "Cargando…"
+
 msgid "Local library"
 msgstr "Biblioteca local"
 
@@ -941,8 +938,8 @@ msgstr "Siguiente"
 msgid "No cover"
 msgstr "Sin carátula"
 
-msgid "No devices found. Check that both devices use the same network."
-msgstr "No se encontraron dispositivos. Revisa que ambos estén en la misma red."
+msgid "No devices found"
+msgstr "No se encontraron dispositivos"
 
 msgid "No folders in your local library yet."
 msgstr "Todavía no hay carpetas en tu biblioteca local."
@@ -1247,9 +1244,6 @@ msgstr "Escuchados recientemente"
 msgid "Records"
 msgstr "Discos"
 
-msgid "Refresh"
-msgstr "Actualizar"
-
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
 
@@ -1445,6 +1439,9 @@ msgstr "Fuentes"
 msgid "Sources and quality"
 msgstr "Fuentes y calidad"
 
+msgid "Status"
+msgstr "Estado"
+
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
 
@@ -1536,6 +1533,9 @@ msgstr "Falta la respuesta del servicio."
 
 msgid "Theme"
 msgstr "Tema"
+
+msgid "This computer"
+msgstr "Este equipo"
 
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC o amplificador."

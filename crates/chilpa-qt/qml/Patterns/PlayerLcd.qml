@@ -11,6 +11,7 @@ Rectangle {
 
     property bool showTimes: true
     readonly property bool qualityHovered: quality.hovered
+    readonly property var castState: JSON.parse(Cast.snapshot || "{}")
 
     height: Metrics.lcdHeight
     radius: Metrics.radiusLcd
@@ -18,6 +19,7 @@ Rectangle {
 
     ArtTile {
         id: cover
+        objectName: "playerCover"
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap4
         anchors.verticalCenter: parent.verticalCenter
@@ -51,6 +53,8 @@ Rectangle {
     }
 
     Column {
+        // The seek hit area overlaps the lower text edge; links keep priority.
+        z: 1
         anchors.centerIn: parent
         width: parent.width - (cover.width + Metrics.gap16) * 2 - elapsed.implicitWidth * 2 // derived: room for the cover and the times on both sides
         spacing: Metrics.gap2
@@ -69,8 +73,13 @@ Rectangle {
             }
 
             QualityIcon {
+                objectName: "playbackIndicator"
                 anchors.verticalCenter: parent.verticalCenter
                 tier: Player.qualityTier
+                glyph: Cast.active ? (lcd.castState.icon === "dlna" ? SourceGlyphs.dlna : SourceGlyphs.castAudio) : Icons.waveSquare
+                iconFamily: Cast.active ? SourceGlyphs.font : ""
+                color: Cast.active ? Theme.color.casting : tierColor
+                visible: Cast.active || tier > 0
 
                 HoverHandler { id: quality }
             }
@@ -103,20 +112,21 @@ Rectangle {
 
                 Text {
                     id: album
-                    visible: Cast.active || Player.album !== ""
+                    objectName: "playerAlbum"
+                    visible: Player.album !== ""
                     width: Player.artist === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
-                    text: Cast.active ? Cast.destination : Player.album
+                    text: Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    color: albumHover.hovered && !Cast.active && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
+                    color: albumHover.hovered && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: albumHover
-                        enabled: !Cast.active && Player.albumId > 0
+                        enabled: Player.albumId > 0
                         cursorShape: Qt.PointingHandCursor
                     }
                     TapHandler {
-                        enabled: !Cast.active && Player.albumId > 0
+                        enabled: Player.albumId > 0
                         onTapped: Navigation.go("album", Player.albumId)
                     }
                 }
@@ -125,6 +135,7 @@ Rectangle {
     }
 
     SeekBar {
+        objectName: "playerSeek"
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right

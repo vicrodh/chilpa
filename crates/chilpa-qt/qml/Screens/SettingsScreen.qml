@@ -85,7 +85,7 @@ Item {
         }
         function press(key) {
             if (key === "devices.cast")
-                return casting.open()
+                return casting.show(actions)
             if (key === "sources.addServer")
                 return adding.open()
             rows.press(key)

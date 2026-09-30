@@ -10,6 +10,7 @@ import "../Components"
 // comes from the engine; nothing here is worked out from the format.
 Item {
     id: tip
+    readonly property var castState: JSON.parse(Cast.snapshot || "{}")
 
     width: Metrics.qualityTooltipWidth
     height: lines.implicitHeight + Metrics.gap12 * 2 // derived: padding above and below
@@ -95,10 +96,10 @@ Item {
         Repeater {
             model: [
                 { label: I18n.tr("Source", I18n.rev), value: Player.qualityLong },
-                { label: I18n.tr("Output", I18n.rev), value: Player.outputFormat },
+                { label: I18n.tr("Output", I18n.rev), value: Cast.active ? I18n.tr("Original bytes", I18n.rev) : Player.outputFormat },
                 { label: I18n.tr("Device", I18n.rev), value: Cast.active ? Cast.destination : Player.device },
-                { label: I18n.tr("Route", I18n.rev), value: Cast.active ? I18n.tr("Receiver processing unknown", I18n.rev) : Player.route }
-            ]
+                { label: I18n.tr("Route", I18n.rev), value: Cast.active ? tip.castState.protocol || "" : Player.route }
+            ].concat(Cast.active ? [{ label: I18n.tr("Status", I18n.rev), value: tip.castState.state || "" }] : [])
 
             Row {
                 required property var modelData
@@ -119,6 +120,14 @@ Item {
                     color: Theme.color.textSecondary
                 }
             }
+        }
+        Text {
+            visible: Cast.active
+            width: parent.width
+            text: I18n.tr("Receiver processing unknown", I18n.rev)
+            wrapMode: Text.WordWrap
+            font.pointSize: Type.small
+            color: Theme.color.textTertiary
         }
     }
 }

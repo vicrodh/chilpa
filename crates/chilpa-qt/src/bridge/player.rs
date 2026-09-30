@@ -358,7 +358,6 @@ impl qobject::Player {
             });
             self.as_mut().set_device(QString::from(&device));
             self.as_mut().set_route(QString::from(&route));
-            self.as_mut().set_duration(now.total_seconds);
             self.as_mut().set_path(QString::from(&now.path));
             let mut lines = QList::<QString>::default();
             for line in &now.lyrics {
@@ -367,7 +366,6 @@ impl qobject::Player {
             self.as_mut().set_lyrics(QStringList::from(&lines));
             self.as_mut().set_lyrics_synced(now.lyrics_synced);
         }
-        if now.total_seconds != self.rust().duration { self.as_mut().set_duration(now.total_seconds); }
         if now.lyrics_line != self.rust().lyrics_line {
             self.as_mut().set_lyrics_line(now.lyrics_line);
         }
@@ -385,15 +383,16 @@ impl qobject::Player {
             self.as_mut().set_paused(now.paused);
         }
         let quarter = (now.seconds * 4.0).floor() / 4.0;
-        if quarter != self.rust().position {
+        if quarter != self.rust().position || now.total_seconds != self.rust().duration {
+            self.as_mut().set_duration(now.total_seconds);
             self.as_mut().set_position(quarter);
             let (at, total) = ((now.seconds * 1000.0) as u64, (now.total_seconds * 1000.0) as u64);
             let elapsed = QString::from(&format::clock(at));
             if elapsed != self.rust().elapsed {
                 self.as_mut().set_elapsed(elapsed);
-                let left = format!("-{}", format::clock(total.saturating_sub(at)));
-                self.as_mut().set_remaining(QString::from(&left));
             }
+            let left = format!("-{}", format::clock(total.saturating_sub(at)));
+            self.as_mut().set_remaining(QString::from(&left));
         }
         if QString::from(&now.error) != self.rust().error {
             self.as_mut().set_error(QString::from(&now.error));

@@ -4,95 +4,55 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-// I keep discovery scoped to the picker; the facade owns the session.
-Modal {
+// I use the wireframe's output menu, anchored to its invoking control.
+Menu {
     id: picker
-    width: Metrics.confirmWidth
+    property Item invokingControl
     property bool preview: false
-    readonly property var castState: preview ? ({ devices: [{ id: "preview", name: "Living room", model: "Network renderer", kind: "DLNA / UPnP", state: I18n.tr("Available", I18n.rev) }], searching: false, active: false, error: "" }) : JSON.parse(Cast.snapshot || "{}")
-    onOpened: if (!preview) Cast.picker(true)
-    onClosed: if (!preview) Cast.picker(false)
+    property var previewEntries: [
+        { act: "local", icon: "local", text: "Desktop audio", detail: I18n.tr("This computer", I18n.rev), checked: true },
+        { separator: true }, { text: "Chromecast", note: true },
+        { act: "connect", id: "living", icon: "cast", text: "Living Room", detail: "Chromecast Audio" },
+        { separator: true }, { text: "DLNA / UPnP", note: true },
+        { act: "connect", id: "receiver", icon: "dlna", text: "Network receiver", detail: "UPnP renderer" }
+    ]
+    readonly property var castState: JSON.parse(Cast.snapshot || "{}")
+    parent: Overlay.overlay
+    width: Metrics.castMenuWidth
+    heightLimit: parent ? parent.height - Metrics.gap10 * 2 : Infinity // derived: the overlay margins
+    title: I18n.tr("Play on", I18n.rev)
+    entries: (preview ? previewEntries : castState.entries || []).map(function(entry) {
+        const icons = { local: Icons.deviceSpeaker, cast: SourceGlyphs.castAudio, dlna: SourceGlyphs.dlna }
+        return Object.assign({}, entry, { glyph: icons[entry.icon] || "", family: entry.icon === "cast" || entry.icon === "dlna" ? SourceGlyphs.font : "" })
+    })
 
+    function place() {
+        if (!invokingControl) return
+        const point = invokingControl.mapToItem(parent, invokingControl.width, 0)
+        x = Math.max(Metrics.gap10, Math.min(point.x - width, parent.width - width - Metrics.gap10))
+        y = Math.max(Metrics.gap10, point.y - implicitHeight - Metrics.gap8)
+    }
+    function show(anchor) {
+        invokingControl = anchor
+        place()
+        open()
+    }
+    onOpened: {
+        if (!preview) Cast.picker(true)
+        place()
+    }
+    onClosed: if (!preview) Cast.picker(false)
+    onImplicitHeightChanged: if (opened) place()
+    onChosen: (index) => {
+        if (preview) return
+        const entry = entries[index]
+        if (entry.act === "local") Cast.disconnectDevice()
+        else if (entry.act === "connect") Cast.connectDevice(entry.id)
+    }
     Timer {
         interval: Motion.refresh
         repeat: true
         running: picker.opened && !picker.preview
         onTriggered: Cast.refresh()
-    }
-    Column {
-        width: parent.width
-        spacing: Metrics.gap12
-        Text {
-            width: parent.width
-            text: I18n.tr("Play on", I18n.rev)
-            font.pointSize: Type.titleSmall
-            font.weight: Type.bold
-            color: Theme.color.textPrimary
-        }
-        Text {
-            width: parent.width
-            text: picker.castState.active ? picker.castState.name + " · " + picker.castState.state : I18n.tr("Choose a renderer on your local network.", I18n.rev)
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.body
-            color: Theme.color.textSecondary
-        }
-        Text {
-            width: parent.width
-            text: picker.castState.searching ? I18n.tr("Searching for devices…", I18n.rev) : I18n.tr("No devices found. Check that both devices use the same network.", I18n.rev)
-            visible: picker.castState.searching || !(picker.castState.devices || []).length
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.small
-            color: Theme.color.textTertiary
-        }
-        ListView {
-            width: parent.width
-            height: Math.min(contentHeight, Metrics.panesHeight)
-            clip: true
-            spacing: Metrics.gap8
-            model: picker.castState.devices || []
-            ScrollBar.vertical: ScrollBar {}
-            delegate: Item {
-                required property var modelData
-                width: ListView.view.width
-                height: Metrics.optionRow
-                Column {
-                    anchors.left: parent.left
-                    anchors.right: connectButton.left
-                    anchors.rightMargin: Metrics.gap12
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text { width: parent.width; text: modelData.name; elide: Text.ElideRight; font.pointSize: Type.body; color: Theme.color.textPrimary }
-                    Text { width: parent.width; text: modelData.kind + " · " + modelData.state; elide: Text.ElideRight; font.pointSize: Type.small; color: Theme.color.textSecondary }
-                }
-                PillButton {
-                    id: connectButton
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: I18n.tr("Connect", I18n.rev)
-                    enabled: !picker.preview
-                    onClicked: Cast.connectDevice(modelData.id)
-                }
-            }
-        }
-        Text {
-            width: parent.width
-            text: I18n.tr("Original bytes · no transcoding by Chilpa · receiver processing unknown", I18n.rev)
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.small
-            color: Theme.color.textTertiary
-        }
-        Text {
-            width: parent.width
-            visible: (picker.castState.error || "") !== ""
-            text: picker.castState.error || ""
-            wrapMode: Text.WordWrap
-            font.pointSize: Type.body
-            color: Theme.color.textPrimary
-        }
-        Row {
-            spacing: Metrics.gap8
-            PillButton { text: I18n.tr("Refresh", I18n.rev); enabled: !picker.castState.searching && !picker.preview; onClicked: Cast.discover() }
-            PillButton { text: I18n.tr("Disconnect", I18n.rev); visible: picker.castState.active || false; onClicked: Cast.disconnectDevice() }
-            PillButton { text: I18n.tr("Done", I18n.rev); kind: "primary"; onClicked: picker.close() }
-        }
     }
 }

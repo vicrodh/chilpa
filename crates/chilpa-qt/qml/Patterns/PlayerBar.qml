@@ -6,8 +6,7 @@ import "../Primitives"
 import "../Components"
 
 // The floating player (design/02 7): transport, the "LCD" with what plays,
-// and the actions. Only controls that work are shown; cast, lyrics and the
-// queue join when they exist.
+// and the actions for the active output.
 Item {
     id: bar
 
@@ -164,9 +163,11 @@ Item {
         }
         IconButton {
             tip: Cast.active ? Cast.destination : I18n.tr("Play on", I18n.rev)
-            glyph: Icons.cast
+            glyph: Cast.active && lcd.castState.icon === "dlna" ? SourceGlyphs.dlna : SourceGlyphs.castAudio
+            iconFamily: SourceGlyphs.font
+            tone: Cast.active ? "accent" : "secondary"
             checked: Cast.active || castPicker.opened
-            onClicked: castPicker.open()
+            onClicked: castPicker.show(this)
         }
         IconButton {
             tip: I18n.tr("Lyrics", I18n.rev)
@@ -196,7 +197,7 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: parent.top
         anchors.bottomMargin: Metrics.gap10
-        visible: lcd.qualityHovered && Player.playing
+        visible: lcd.qualityHovered && (Player.playing || Cast.active)
         z: Metrics.tooltipLayer
     }
 }

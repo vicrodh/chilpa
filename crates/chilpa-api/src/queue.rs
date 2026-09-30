@@ -190,6 +190,11 @@ impl Chilpa {
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
+        if self.casting.disconnecting {
+            // I wait for the renderer's teardown before opening a local sink.
+            self.casting.local_start = Some((from, device.to_string(), start_at));
+            return;
+        }
         if self.casting.active() {
             self.cast_load(from, start_at.map(|s| s.as_secs_f64()).unwrap_or(0.0), false);
             return;

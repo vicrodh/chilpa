@@ -22,6 +22,7 @@
     "fill.field": "rgba(255,255,255,0.08)",
     "row.playing": "rgba(255,255,255,0.05)",
     "row.selected": "derive:accent@0.20",
+    "casting": "#B794F4",
     "accent": "#D8323A",
     "accent.hover": "derive:accent+L0.06",
     "accent.pressed": "derive:accent-L0.08",

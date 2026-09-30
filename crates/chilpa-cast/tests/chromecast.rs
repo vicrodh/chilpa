@@ -29,7 +29,7 @@ fn self_signed_receiver_loads_controls_reports_and_closes_without_audio() {
                 json!({"type":"RECEIVER_STATUS","status":{"volume":{"level":0.42,"muted":true},"applications":[{"appId":"CC1AD845","sessionId":"app-session","transportId":"transport-1"}]}})
             } else {
                 if kind == "LOAD" {
-                    assert_eq!(request["media"]["contentType"], "audio/flac");
+                    assert_eq!(request["media"]["contentType"], if calls.iter().filter(|name| *name == "LOAD").count() == 1 { "audio/flac" } else { "audio/opus" });
                     assert_eq!(request["media"]["contentId"], "http://127.0.0.1/audio/test/1");
                     assert_eq!(request["media"]["metadata"]["title"], "Fixture");
                 } else { assert_eq!(request["mediaSessionId"], 42); }
@@ -43,6 +43,7 @@ fn self_signed_receiver_loads_controls_reports_and_closes_without_audio() {
     });
     let mut cast = Chromecast::connect(addr).unwrap();
     cast.load("http://127.0.0.1/audio/test/1", "audio/flac", &Metadata { title: "Fixture".into(), ..Default::default() }).unwrap();
+    cast.load("http://127.0.0.1/audio/test/1", "audio/opus", &Metadata { title: "Fixture".into(), ..Default::default() }).unwrap();
     cast.pause().unwrap(); cast.play().unwrap(); cast.seek(83.0).unwrap(); cast.volume(0.42).unwrap(); cast.mute(true).unwrap();
     let status = cast.status().unwrap();
     assert_eq!(status.state, State::Playing); assert_eq!(status.position, Some(83.0)); assert_eq!(status.duration, Some(300.0)); assert_eq!(status.volume, Some(0.42)); assert_eq!(status.muted, Some(true));
