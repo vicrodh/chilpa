@@ -38,10 +38,11 @@ pub use marks::Marks;
 mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod queue;
+mod listen;
 mod found;
 pub use found::{found_menu, found_rows, FoundRow, Leads};
 mod track_menu;
-pub use track_menu::{track_menu, TrackMenuContext};
+pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
 mod servers;
@@ -458,7 +459,7 @@ pub struct LibraryFolder {
 
 /// A named batch added with "Play later". Its positions stay stable because
 /// removing queue entries marks them instead of shifting the array.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct QueueGroup {
     pub key: u64,
     pub label: String,
@@ -466,7 +467,7 @@ pub struct QueueGroup {
     pub collapsed: bool,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default, serde::Serialize, serde::Deserialize)]
 enum QueuePlacement {
     #[default]
     Original,
@@ -521,6 +522,7 @@ pub struct Chilpa {
     /// The current queue's paths, whole and in the order they were queued.
     /// Going back does not trim it.
     queue: Vec<String>,
+    listen: listen::Workspace,
     /// Which position of `queue` was the first one handed to the player.
     /// Going back restarts from there, and the position the view sees is
     /// counted over the whole queue.
@@ -622,6 +624,7 @@ impl Chilpa {
             in_progress: None,
             scrobbler: None,
             queue: Vec::new(),
+            listen: listen::Workspace::default(),
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,
@@ -655,7 +658,7 @@ impl Chilpa {
             credits: Default::default(),
             credits_read_at: (0, 0),
         };
-        chilpa.restore_queue_session();
+        if !chilpa.restore_buffers() { chilpa.restore_queue_session(); }
         chilpa
     }
 
@@ -1042,10 +1045,10 @@ impl Chilpa {
     pub fn set_paused(&mut self, paused: bool) {
         if paused { self.casting.local_start = None; }
         if self.casting.active() { self.cast_pause(paused); return; }
-        if !paused && self.player.is_none() && !self.queue.is_empty() {
+        if !paused && self.player.as_ref().is_none_or(|p| p.idle()) && !self.queue.is_empty() {
             let restored = self.restored_at.take();
             let seconds = restored.unwrap_or(self.now.seconds).max(0.0);
-            let index = if restored.is_some() { 0 } else { self.now.index.min(self.queue.len() - 1) };
+            let index = self.now.index.min(self.queue.len() - 1);
             let (device, bit_perfect) = self.chosen_output();
             self.spawn_from(index, &device, bit_perfect, Some(std::time::Duration::from_secs_f64(seconds)), Relaunch::Track);
             return;
@@ -1084,20 +1087,19 @@ impl Chilpa {
     /// the queue is done, so without the stop this did nothing at all until
     /// the queue ran out -- and with repeat on, nothing ever.
     ///
-    /// With shuffle on there is no meaningful "previous one": what happens
-    /// is that the playing one restarts.
+    /// Previous follows the retained listening order, including shuffle.
     pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
         if self.casting.active() { self.cast_previous(); return; }
-        if self.queue.is_empty() || self.now.index == 0 || self.shuffle {
-            // On the first track, "previous" means starting it over.
-            self.seek(0.0);
-            return;
-        }
-        self.spawn(self.now.index - 1, device, bit_perfect);
+        let order = self.full_queue_order();
+        let at = order.iter().position(|&i| i == self.now.index).unwrap_or(0);
+        if let Some(index) = order[..at].iter().rev().copied().find(|&i| !self.removed.get(i).copied().unwrap_or(false)) {
+            self.spawn(index, device, bit_perfect);
+        } else { self.seek(0.0); }
     }
 
     /// Stops whatever is playing.
     pub fn stop(&mut self) {
+        self.listen.pending = None;
         self.casting.local_start = None;
         if self.casting.active() { self.cast_stop(); return; }
         if let Some(p) = &self.player {
@@ -1121,6 +1123,7 @@ impl Chilpa {
         }
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
+            if self.listen.active == 0 { continue; }
             match event {
                 PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
                     self.sample_rate = opened.sample_rate_hz;
@@ -1273,6 +1276,7 @@ impl Chilpa {
         // level the player holds, not the settings: this runs every tick.
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
         self.mark_scaled(gain);
+        self.finish_buffer_switch();
         &self.now
     }
 

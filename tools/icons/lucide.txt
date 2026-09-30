@@ -2,3 +2,4 @@
 list-end
 list-plus
 list-start
+square-play

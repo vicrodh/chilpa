@@ -130,6 +130,12 @@ msgstr ""
 msgid "Add to queue"
 msgstr ""
 
+msgid "Add to queue {}"
+msgstr ""
+
+msgid "Add tracks from a track menu to this queue."
+msgstr ""
+
 msgid "Added this month"
 msgstr ""
 
@@ -285,6 +291,9 @@ msgstr ""
 msgid "Cancel"
 msgstr ""
 
+msgid "Cancel stop after this track"
+msgstr ""
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr ""
 
@@ -319,6 +328,12 @@ msgid "Choose playlist artwork"
 msgstr ""
 
 msgid "Clear"
+msgstr ""
+
+msgid "Clear after this track"
+msgstr ""
+
+msgid "Clear queue"
 msgstr ""
 
 msgid "Clear the selection"
@@ -620,6 +635,9 @@ msgstr ""
 msgid "Extra controls"
 msgstr ""
 
+msgid "Extra queues"
+msgstr ""
+
 msgid "Fetching the cover…"
 msgstr ""
 
@@ -743,6 +761,9 @@ msgstr ""
 msgid "High resolution"
 msgstr ""
 
+msgid "History"
+msgstr ""
+
 msgid "Home"
 msgstr ""
 
@@ -804,6 +825,9 @@ msgid "Light"
 msgstr ""
 
 msgid "List"
+msgstr ""
+
+msgid "ListenList"
 msgstr ""
 
 msgid "Loading the release…"
@@ -938,6 +962,9 @@ msgstr ""
 msgid "New playlist"
 msgstr ""
 
+msgid "New queue"
+msgstr ""
+
 msgid "New tab"
 msgstr ""
 
@@ -1037,6 +1064,9 @@ msgstr ""
 msgid "Open Last.fm"
 msgstr ""
 
+msgid "Open ListenList"
+msgstr ""
+
 msgid "Open a folder"
 msgstr ""
 
@@ -1047,6 +1077,9 @@ msgid "Open account page"
 msgstr ""
 
 msgid "Open album"
+msgstr ""
+
+msgid "Open in new queue"
 msgstr ""
 
 msgid "Open in new tab"
@@ -1196,10 +1229,16 @@ msgstr ""
 msgid "Queue and playlist actions"
 msgstr ""
 
+msgid "Queue name"
+msgstr ""
+
 msgid "Queue options"
 msgstr ""
 
 msgid "Queue this group"
+msgstr ""
+
+msgid "Queue {}"
 msgstr ""
 
 msgid "Queue · {}"
@@ -1298,6 +1337,9 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
+msgid "Replace queue {}"
+msgstr ""
+
 msgid "Requests: {}"
 msgstr ""
 
@@ -1340,6 +1382,9 @@ msgstr ""
 msgid "Save to"
 msgstr ""
 
+msgid "Saved position"
+msgstr ""
+
 msgid "Saving…"
 msgstr ""
 
@@ -1371,6 +1416,9 @@ msgid "Search playlists"
 msgstr ""
 
 msgid "Search playlists and folders"
+msgstr ""
+
+msgid "Search queue"
 msgstr ""
 
 msgid "Searching for devices…"
@@ -1452,6 +1500,9 @@ msgid "Sources and quality"
 msgstr ""
 
 msgid "Status"
+msgstr ""
+
+msgid "Stop after this track"
 msgstr ""
 
 msgid "Studio 24/48"
@@ -1631,6 +1682,9 @@ msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr ""
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr ""
+
+msgid "Undo queue replacement or closing"
 msgstr ""
 
 msgid "Uninstall"

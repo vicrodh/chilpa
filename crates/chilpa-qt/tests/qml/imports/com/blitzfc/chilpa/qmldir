@@ -8,3 +8,5 @@ singleton Ratings 1.0 Ratings.qml
 singleton Cast 1.0 Cast.qml
 singleton Player 1.0 Player.qml
 singleton Navigation 1.0 Navigation.qml
+
+singleton ListenList 1.0 ListenList.qml

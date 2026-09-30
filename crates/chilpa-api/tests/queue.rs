@@ -16,6 +16,8 @@ use std::path::PathBuf;
 /// open.
 fn other_library(dir: &std::path::Path) {
     std::env::set_var("XDG_DATA_HOME", dir.join("data"));
+    std::env::set_var("XDG_CONFIG_HOME", dir.join("config"));
+    std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
 }
 
 /// The capture output writes to a file, so this runs without sound and
@@ -317,6 +319,11 @@ fn the_upcoming_queue_and_its_groups_survive_a_session() {
         assert_eq!(queue_names(&restored), ["01.wav", "l1.wav", "l2.wav", "02.wav", "03.wav"]);
         assert_eq!(restored.queue_groups()[0].label, "Saved album");
         assert!(restored.queue_groups()[0].collapsed);
+        restored.enqueue_here(&[original[1].clone()]);
+        restored.play_next_here(&[original[2].clone()]);
+        assert!(restored.now_playing().paused, "editing a restored queue must not start it");
+        assert_eq!(queue_names(&restored), ["01.wav", "03.wav", "l1.wav", "l2.wav", "02.wav", "03.wav", "02.wav"]);
+        restored.use_output(OUTPUT, false);
         restored.set_paused(false);
         assert!(restored.now_playing().playing && !restored.now_playing().paused, "resume starts the restored queue");
         restored.clear_queue();

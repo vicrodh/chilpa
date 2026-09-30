@@ -139,6 +139,7 @@ fn label(r: &Route) -> (String, &'static str) {
             (name, "playlist")
         }
         Screen::PlaylistManager => (app::t("Playlist manager"), "playlist"),
+        Screen::ListenList => (app::t("ListenList"), "listDetails"),
         Screen::Metadata => (app::t("Edit metadata"), "listDetails"),
     }
 }

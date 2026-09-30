@@ -141,6 +141,15 @@ GallerySection {
         FolderRow { width: section.width; path: "/mnt/nas/DSD"; name: "DSD"; lastScan: undefined; reachable: false }
         ScanProgress { width: section.width }
         TrackMenu {}
+        PillButton {
+            text: "Extra queues"
+            onClicked: cascade.open()
+            CascadingMenu {
+                id: cascade
+                y: parent.height
+                entries: [{text:"Play now", act:"play"}, {text:"Extra queues", submenu:true, children:[{text:"New queue",act:"new"},{text:"Add to Jazz",act:"add"}]}]
+            }
+        }
         SeekBar { width: Metrics.searchFlyout; position: Metrics.searchFlyout / 4; duration: Metrics.searchFlyout; bubbleText: "1:10" } // derived: a quarter of the way
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Normalization"; detail: "Changed tracks are reported as processed." }

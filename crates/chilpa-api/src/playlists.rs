@@ -251,16 +251,13 @@ impl Chilpa {
     /// It returns the list's id. Whatever is not in the library is saved
     /// anyway, by its path: the list holds even with the scan still pending.
     pub fn save_queue_as(&mut self, name: &str) -> Option<i64> {
-        let name = name.trim().to_string();
-        if name.is_empty() {
-            self.now.error = chilpa_i18n::t("a list needs a name");
-            return None;
-        }
-        if self.queue.is_empty() {
-            self.now.error = chilpa_i18n::t("there is no queue to save");
-            return None;
-        }
         let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
+        self.save_paths_as(name, &paths)
+    }
+
+    pub(crate) fn save_paths_as(&mut self, name: &str, paths: &[String]) -> Option<i64> {
+        let name = name.trim();
+        if name.is_empty() || paths.is_empty() { return None; }
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
         let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| entry_of(lib, source, r)).collect();

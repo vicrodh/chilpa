@@ -125,6 +125,14 @@ Item {
         }
 
         IconButton {
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("Open ListenList", I18n.rev)
+            glyph: Lucide.squarePlay
+            iconFamily: Lucide.font
+            onClicked: Navigation.go("listenlist", 0)
+        }
+
+        IconButton {
             id: more
             anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("Menu", I18n.rev)

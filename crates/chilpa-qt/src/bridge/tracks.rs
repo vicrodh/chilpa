@@ -43,6 +43,8 @@ pub mod qobject {
         #[qinvokable]
         fn play(self: Pin<&mut TrackListModel>, row: i32);
         #[qinvokable]
+        fn list_action(self: Pin<&mut TrackListModel>, action: &QString, row: i32, to: i32);
+        #[qinvokable]
         fn play_all(self: Pin<&mut TrackListModel>, shuffled: bool);
         #[qinvokable]
         fn queue_all(self: Pin<&mut TrackListModel>);
@@ -208,6 +210,8 @@ pub struct TrackListRust {
     group: String,
     letters: String,
     asked: u64,
+    queue_keys: Vec<String>,
+    queue_numbers: Vec<i32>,
 }
 
 /// A row, either loaded or read from the snapshot's page.
@@ -326,7 +330,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
     match role - USER_ROLE {
         0 => QVariant::from(&0i32),
         1 => {
-            let n = if list.by_track_number { i32::from(track.number) } else { row as i32 + 1 };
+            let n = if list.by_track_number { i32::from(track.number) } else { list.queue_numbers.get(row).copied().unwrap_or(row as i32 + 1) };
             QVariant::from(&n)
         }
         2 => text(&track.title),
@@ -336,8 +340,8 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         6 => QVariant::from(&(track.plays as i32)),
         7 => text(&track.quality.short()),
         8 => QVariant::from(&track.quality.tier.rank()),
-        9 => QVariant::from(&(!list.playing.is_empty() && track.path == list.playing)),
-        10 => QVariant::from(&list.selected.contains(&track.id)),
+        9 => QVariant::from(&if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing }),
+        10 => QVariant::from(&(if list.queue_keys.is_empty() { list.selected.contains(&track.id) } else { list.anchor == Some(row) })),
         13 => QVariant::from(&track.id),
         14 => QVariant::from(&track.album_id),
         15 => {
@@ -385,6 +389,10 @@ impl qobject::TrackListModel {
 
     pub fn play(self: Pin<&mut Self>, row: i32) {
         let row = row.max(0) as usize;
+        if let Some(key) = self.rust().queue_keys.get(row) {
+            app::with(|api| api.listen_row_action(key, "play", ""));
+            return;
+        }
         // A row that cannot play now does not play, by click or by key (ADR-017).
         if self.rust().track(row).is_some_and(|t| !t.available) {
             return;
@@ -456,6 +464,22 @@ impl qobject::TrackListModel {
         }
     }
 
+    pub fn list_action(mut self: Pin<&mut Self>, action: &QString, row: i32, to: i32) {
+        let action = action.to_string();
+        if row < 0 || (action == "move" && to < 0) { return; }
+        if action.starts_with("buffer:") {
+            if self.in_selection(row) {
+                self.with_selection(move |paths| app::with(|api| api.listen_paths_action(&action, paths)));
+            } else if let Some(track) = self.rust().track(row.max(0) as usize) {
+                app::with(|api| api.listen_paths_action(&action, &[track.path]));
+            }
+        } else if let Some(key) = self.rust().queue_keys.get(row.max(0) as usize) {
+            let target = self.rust().queue_keys.get(to.max(0) as usize).map(String::as_str).unwrap_or("");
+            app::with(|api| api.listen_row_action(key, &action, target));
+            self.as_mut().schedule();
+        }
+    }
+
     pub fn play_all(self: Pin<&mut Self>, shuffled: bool) {
         app::with(|api| api.set_shuffle(shuffled));
         self.play(0);
@@ -463,6 +487,7 @@ impl qobject::TrackListModel {
 
     pub fn select(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
         let row = row.max(0) as usize;
+        let modifiers = if self.rust().queue_keys.is_empty() { modifiers } else { 0 };
         let (selected, anchor) = chilpa_api::select_tracks(&self.rust().selected, self.rust().anchor, row, modifiers, |at| self.rust().track_id(at));
         let mut this = self.as_mut().rust_mut();
         this.selected = selected;
@@ -481,7 +506,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_chosen(self: Pin<&mut Self>, row: i32) {
-        if !self.in_selection(row) {
+        if !self.rust().queue_keys.is_empty() || !self.in_selection(row) {
             self.play(row);
             return;
         }
@@ -545,6 +570,11 @@ impl qobject::TrackListModel {
     }
 
     pub fn move_in_playlist(self: Pin<&mut Self>, row: i32, by: i32) {
+        if !self.rust().queue_keys.is_empty() {
+            let mut to = row + by;
+            while to >= 0 && self.rust().queue_keys.get(to as usize).is_some_and(String::is_empty) { to += by; }
+            self.list_action(&QString::from("move"), row, to); return;
+        }
         if self.rust().kind.to_string() != "playlist" || row < 0 || !self.rust().available(row as usize) {
             return;
         }
@@ -559,6 +589,10 @@ impl qobject::TrackListModel {
     }
 
     pub fn move_in_playlist_to(self: Pin<&mut Self>, from: i32, to: i32) {
+        if !self.rust().queue_keys.is_empty() {
+            self.list_action(&QString::from("move"), from, to);
+            return;
+        }
         if self.rust().kind.to_string() != "playlist" || self.rust().order.to_string() != "custom" || from < 0 || to < 0 || from == to {
             return;
         }
@@ -573,6 +607,7 @@ impl qobject::TrackListModel {
 
     pub fn selected_row(&self) -> i32 {
         let this = self.rust();
+        if !this.queue_keys.is_empty() { return this.anchor.map_or(-1, |r| r as i32); }
         if this.selected.len() != 1 {
             return -1;
         }
@@ -599,7 +634,7 @@ impl qobject::TrackListModel {
         let editable = this.kind.to_string() == "playlist" && this.playlist_editable;
         let context = chilpa_api::TrackMenuContext {
             count: if row < 0 { 0 } else { self.chosen_track_ids(row).len() },
-            queued: this.kind.to_string() == "queue",
+            queued: !this.queue_keys.is_empty(),
             editable,
             move_up: editable && this.order.to_string() == "custom" && row > 0,
             move_down: editable && this.order.to_string() == "custom" && row < this.len() as i32 - 1,
@@ -612,7 +647,13 @@ impl qobject::TrackListModel {
             // that cannot play among several leaves only what removes it.
             unavailable: self.acts_on_unavailable(row),
         };
-        QString::from(serde_json::to_string(&chilpa_api::track_menu(context)).unwrap_or_default())
+        let mut entries = chilpa_api::track_menu(context);
+        if let Some(key) = this.queue_keys.get(row.max(0) as usize) {
+            entries.retain(|e| !matches!(e["act"].as_str(), Some("play" | "dequeue")));
+            let mut queue = app::with(|api| api.listen_menu(key));
+            queue.extend(entries); entries = queue;
+        } else if row >= 0 { entries.extend(app::with(|api| api.listen_targets())); }
+        QString::from(serde_json::to_string(&entries).unwrap_or_default())
     }
 
     /// Whether any track the menu of that row would act on cannot play.
@@ -664,24 +705,7 @@ impl qobject::TrackListModel {
         let Some(track) = self.rust().track(row.max(0) as usize) else {
             return false;
         };
-        // A track that cannot play goes nowhere: its record does not open
-        // either (ADR-017).
-        if !track.available {
-            return false;
-        }
-        let kind = self.rust().kind.to_string();
-        // "artist:1" is the second artist its credit names.
-        match target.to_string().split(':').next().unwrap_or_default() {
-            "album" => track.album_id > 0 && kind != "album",
-            "artist" => {
-                let own = matches!(kind.as_str(), "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(&self.rust().key.to_string());
-                !track.artist.is_empty() && !own
-            }
-            // A server's track has no folder here and no file to edit.
-            "folder" => kind != "folder" && !chilpa_api::on_a_server(&track.path),
-            "metadata" => track.album_id > 0 && !chilpa_api::on_a_server(&track.path),
-            _ => false,
-        }
+        chilpa_api::track_can_go(&track, &self.rust().kind.to_string(), &self.rust().key.to_string(), &target.to_string())
     }
 
     pub fn letters(&self, _rev: i32) -> QString {
@@ -774,6 +798,8 @@ impl qobject::TrackListModel {
     }
 
     fn reload(mut self: Pin<&mut Self>) {
+        self.as_mut().rust_mut().queue_keys.clear();
+        self.as_mut().rust_mut().queue_numbers.clear();
         self.as_mut().rust_mut().pending = false;
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
@@ -830,10 +856,13 @@ impl qobject::TrackListModel {
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
             }
-            "queue" => {
-                let tracks = app::with(|api| api.queue_rows());
-                let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
-                (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
+            "queue" | "listenlist" => {
+                let (entries, keys) = app::with(|api| api.listen_rows(id as u64, &self.rust().key.to_string(), kind == "listenlist"));
+                let mut number = 0;
+                self.as_mut().rust_mut().queue_numbers = keys.iter().map(|key| { if !key.is_empty() { number += 1; } number }).collect();
+                self.as_mut().rust_mut().queue_keys = keys;
+                let ms = entries.iter().filter_map(|e| if let Entry::Track(t) = e { Some(t.duration_ms) } else { None }).sum();
+                (Rows::Loaded(entries), Some(ms))
             }
             "library" => {
                 let snapshot = browse::read(|s| s.snapshot.clone());

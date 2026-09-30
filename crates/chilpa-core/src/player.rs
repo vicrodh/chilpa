@@ -77,8 +77,9 @@ enum Order {
         /// play it belongs to, because the thread arms it after the previous
         /// one has already returned.
         start_at: Option<std::time::Duration>,
+        start_index: Option<usize>,
     },
-    Stop,
+    Stop(u64),
     Quit,
 }
 
@@ -110,6 +111,7 @@ pub struct Player {
     /// orders are discarded instead of replaying the newest queue twice.
     generation: Arc<AtomicU64>,
     thread: Option<JoinHandle<()>>,
+    settled: Arc<AtomicU64>,
 }
 
 impl Player {
@@ -122,6 +124,8 @@ impl Player {
         let queue = Arc::new(Mutex::new(crate::queue_playback::SharedQueue::default()));
         let generation = Arc::new(AtomicU64::new(0));
         let generation_thread = Arc::clone(&generation);
+        let settled = Arc::new(AtomicU64::new(0));
+        let settled_thread = settled.clone();
         let stop_thread = controls.stop.clone();
         let skip_thread = controls.skip.clone();
         let seek_thread = controls.seek.clone();
@@ -136,10 +140,11 @@ impl Player {
                             chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=quit"));
                             break;
                         }
-                        Order::Stop => {
+                        Order::Stop(stamp) => {
+                            settled_thread.store(stamp, Ordering::Release);
                             chilpa_audio::diagnostics::trace("player", "order_received", format_args!("kind=stop barrier=passed"));
                         }
-                        Order::Play { queue, generation, device, start_at } => {
+                        Order::Play { queue, generation, device, start_at, start_index } => {
                             let latest = generation_thread.load(Ordering::Acquire);
                             if generation != latest {
                                 chilpa_audio::diagnostics::trace(
@@ -173,6 +178,7 @@ impl Player {
                             if let Some(at) = start_at {
                                 seek_thread.request(at);
                             }
+                            controls_thread.start_index.store(start_index.unwrap_or(usize::MAX), Ordering::Release);
                             let started = std::time::Instant::now();
                             let result = play(
                                 &queue,
@@ -207,7 +213,7 @@ impl Player {
             })
             .expect("the player thread starts");
 
-        Self { orders: orders_tx, events: events_rx, controls, queue, generation, thread: Some(thread) }
+        Self { orders: orders_tx, events: events_rx, controls, queue, generation, thread: Some(thread), settled }
     }
 
     /// Asks to play a file. Returns immediately.
@@ -245,13 +251,24 @@ impl Player {
         start_at: Option<std::time::Duration>,
         paused: bool,
     ) {
+        self.play_from_index(paths, device, start_at, paused, None, &[], None);
+    }
+
+    /// I launch the whole queue with an explicit cursor, keeping its earlier rows.
+    #[allow(clippy::too_many_arguments)]
+    pub fn play_from_index(
+        &self, paths: &[PathBuf], device: &str,
+        start_at: Option<std::time::Duration>, paused: bool, start_index: Option<usize>,
+        removed: &[bool], stop_after: Option<usize>,
+    ) {
         // The queue and the pause are set as the order is sent, not as the
         // thread takes it: what the caller does right after this call --
         // pause, play next, queue more -- comes after it, and the thread,
         // taking the order later, would have undone it. A disc image goes
         // in as its tracks, one entry each, like any album.
-        self.controls.stop_after.clear();
+        self.controls.stop_after.set(stop_after);
         let queue = crate::queue_playback::SharedQueue::new(crate::sacd_tracks::expand(paths));
+        for (index, removed) in removed.iter().enumerate() { if *removed { queue.remove(index); } }
         if let Ok(mut current) = self.queue.lock() {
             *current = queue.clone();
         }
@@ -271,6 +288,7 @@ impl Player {
             generation,
             device: device.to_string(),
             start_at,
+            start_index,
         });
     }
 
@@ -387,7 +405,7 @@ impl Player {
         self.controls.handoff.set(false);
         self.generation.fetch_add(1, Ordering::AcqRel);
         self.controls.stop.stop();
-        let _ = self.orders.send(Order::Stop);
+        let _ = self.orders.send(Order::Stop(self.generation.load(Ordering::Acquire)));
     }
 
     /// Stops because another playback request is about to replace this one.
@@ -397,7 +415,12 @@ impl Player {
         self.controls.handoff.set(true);
         self.generation.fetch_add(1, Ordering::AcqRel);
         self.controls.stop.stop();
-        let _ = self.orders.send(Order::Stop);
+        let _ = self.orders.send(Order::Stop(self.generation.load(Ordering::Acquire)));
+    }
+
+    /// Whether the worker has acknowledged the latest stop barrier.
+    pub fn idle(&self) -> bool {
+        self.settled.load(Ordering::Acquire) == self.generation.load(Ordering::Acquire)
     }
 
     /// Whatever events there are, without blocking.
@@ -491,9 +514,11 @@ fn play(
     );
     let total = paths.len();
 
-    if let Some(first) = paths.first() {
+    let index = controls.start_index.load(Ordering::Acquire).min(paths.len().saturating_sub(1));
+    let index = if controls.start_index.load(Ordering::Acquire) == usize::MAX { 0 } else { index };
+    if let Some(first) = paths.get(index) {
         if is_url(first) {
-            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events);
+            return play_stream(first, device, &caps, policy, exclusive, stop, pause, open, events, index, total);
         }
         if is_cd(first) {
             return play_cd(first, device, exclusive, &caps, controls, open, events);
@@ -632,6 +657,8 @@ fn play_stream(
     pause: &chilpa_audio::sink::PauseSignal,
     open: &mut OpenSink,
     events: &Sender<PlayerEvent>,
+    index: usize,
+    queue_len: usize,
 ) -> Result<Outcome, PlayError> {
     let exact_path = crate::path_is_exact(device, exclusive);
     let parts = parts_of(url);
@@ -666,8 +693,8 @@ fn play_stream(
                 total_frames: None,
                 tags: Some(tag.clone()),
                 artwork: None,
-                index: 0,
-                queue_len: 1,
+                index,
+                queue_len,
                 dsd_multiple: None,
                 dsd_passthrough: false,
             });

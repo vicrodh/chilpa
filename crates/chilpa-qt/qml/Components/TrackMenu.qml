@@ -4,7 +4,7 @@ import "../Primitives"
 import "../Theme"
 
 // Context rules come from the facade; QML only decorates and dispatches.
-Menu {
+CascadingMenu {
     id: menu
     property TrackListModel model
     property int row: -1
@@ -31,9 +31,13 @@ Menu {
         open()
     }
 
-    onChosen: (index) => {
-        const act = entries[index].act
-        if (act === "play")
+    onActionChosen: (entry) => {
+        const act = entry.act
+        if (act.startsWith("buffer:") || act.startsWith("listen:")) {
+            model.listAction(act.startsWith("listen:") ? act.slice("listen:".length) : act, row, -1)
+            ListenList.refresh()
+            if (act === "buffer:new") Navigation.go("listenlist", 0)
+        } else if (act === "play")
             model.playChosen(row)
         else if (act === "next")
             model.playNext(row)
