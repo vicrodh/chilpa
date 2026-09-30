@@ -26,6 +26,7 @@ Item {
     required property url art
     // It cannot play now (ADR-017): dimmed, and the list does not play it.
     required property bool available
+    required property double trackId
 
     property TrackColumns cols
     property bool hovered: false
@@ -36,6 +37,10 @@ Item {
     property int ratingPreview: 0
     property bool canRate: false
     property bool favorite: false
+    // The action under the pointer: 1 the heart, 2 the menu, 0 neither.
+    property int actionHovered: 0
+    // Its heart and its menu button, which the list resolves the clicks of.
+    readonly property TrackRowEnd end: rowEnd
 
     readonly property bool header: rowKind === 1
     readonly property bool rich: cols.rich
@@ -209,14 +214,14 @@ Item {
             color: Theme.color.textTertiary
         }
 
-        Icon {
-            x: row.cols.moreX + Metrics.gap8
-            anchors.verticalCenter: parent.verticalCenter
-            visible: row.favorite && !row.hovered
-            glyph: Icons.heartFilled
-            filled: true
-            size: Metrics.iconSm
-            color: Theme.color.accent
+        TrackRowEnd {
+            id: rowEnd
+            x: row.cols.moreX
+            height: parent.height
+            visible: row.available
+            trackId: row.trackId
+            favorite: row.favorite
+            hovered: row.actionHovered
         }
 
         Text {

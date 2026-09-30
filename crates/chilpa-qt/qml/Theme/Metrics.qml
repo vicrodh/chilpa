@@ -180,7 +180,9 @@ QtObject {
     readonly property int colQualityRich: 118
     readonly property int colRating: 82
     // The favorite's heart and the button that opens the row's menu.
-    readonly property int colMore: 56
+    // The heart and the menu button, a cell each.
+    readonly property int rowAction: 28
+    readonly property int colMore: rowAction * 2 // derived: two cells
     readonly property int colPlaysCompact: 60
     readonly property int colPlaysRich: 92
     readonly property int colFavorite: 32
