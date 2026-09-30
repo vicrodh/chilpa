@@ -6,6 +6,9 @@ import "../Primitives"
 // One row of the search flyout (design/03 SearchFlyout): a section label,
 // the top result -- a large portrait and a play button -- or an artist, a
 // record or a song, with its cover, what it is and, for a song, its time.
+// Its menu opens with the right button or with the button at its end. The
+// row takes every press on it, so none is also a press on what the flyout
+// covers.
 Item {
     id: hit
 
@@ -20,6 +23,8 @@ Item {
 
     signal activated()
     signal played()
+    // Its menu was asked for, at that point of the row.
+    signal menu(real left, real top)
 
     readonly property bool header: kind === 0
     readonly property bool best: kind === 1
@@ -42,7 +47,7 @@ Item {
         visible: !hit.header
         anchors.fill: parent
         radius: Metrics.radiusCard
-        color: hover.hovered || hit.current ? Theme.color.stateHover : hit.best ? Theme.color.fillField : "transparent"
+        color: area.containsMouse || hit.current ? Theme.color.stateHover : hit.best ? Theme.color.fillField : "transparent"
     }
 
     ArtTile {
@@ -87,12 +92,14 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        width: hit.best ? Metrics.button32 : time.implicitWidth
+        width: more.width + Metrics.gap6 + (hit.best ? Metrics.button32 : time.implicitWidth)
         height: parent.height
+        z: 1
 
         Text {
             id: time
-            anchors.right: parent.right
+            anchors.right: more.left
+            anchors.rightMargin: Metrics.gap6
             anchors.verticalCenter: parent.verticalCenter
             visible: !hit.best && !hit.header
             text: hit.duration
@@ -101,6 +108,8 @@ Item {
             color: Theme.color.textTertiary
         }
         IconButton {
+            anchors.right: more.left
+            anchors.rightMargin: Metrics.gap6
             anchors.verticalCenter: parent.verticalCenter
             visible: hit.best
             size: Metrics.button32
@@ -111,9 +120,25 @@ Item {
             tip: I18n.tr("Play", I18n.rev)
             onClicked: hit.played()
         }
+        IconButton {
+            id: more
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            visible: !hit.header
+            size: Metrics.button28
+            glyph: Icons.dots
+            tip: I18n.tr("More", I18n.rev)
+            onClicked: hit.menu(tail.x + more.x + more.width - Metrics.menuWidth, tail.y + more.y + more.height + Metrics.gap4)
+        }
     }
 
-    HoverHandler { id: hover; enabled: !hit.header }
-    HoverHandler { enabled: !hit.header; cursorShape: Qt.PointingHandCursor }
-    TapHandler { enabled: !hit.header; onTapped: hit.activated() }
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        enabled: !hit.header
+        hoverEnabled: true
+        cursorShape: Qt.PointingHandCursor
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: (mouse) => mouse.button === Qt.RightButton ? hit.menu(mouse.x, mouse.y) : hit.activated()
+    }
 }

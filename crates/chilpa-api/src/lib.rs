@@ -38,6 +38,8 @@ pub use marks::Marks;
 mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod queue;
+mod found;
+pub use found::{found_menu, found_rows, FoundRow, Leads};
 mod track_menu;
 pub use track_menu::{track_menu, TrackMenuContext};
 mod scrobble;
