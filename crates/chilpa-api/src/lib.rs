@@ -1038,6 +1038,7 @@ impl Chilpa {
 
     /// Pauses or resumes what is playing.
     pub fn set_paused(&mut self, paused: bool) {
+        if paused { self.casting.local_start = None; }
         if self.casting.active() { self.cast_pause(paused); return; }
         if !paused && self.player.is_none() && !self.queue.is_empty() {
             let restored = self.restored_at.take();
@@ -1084,6 +1085,7 @@ impl Chilpa {
     /// With shuffle on there is no meaningful "previous one": what happens
     /// is that the playing one restarts.
     pub fn previous_track(&mut self, device: &str, bit_perfect: bool) {
+        if self.casting.active() { self.cast_previous(); return; }
         if self.queue.is_empty() || self.now.index == 0 || self.shuffle {
             // On the first track, "previous" means starting it over.
             self.seek(0.0);
@@ -1094,6 +1096,7 @@ impl Chilpa {
 
     /// Stops whatever is playing.
     pub fn stop(&mut self) {
+        self.casting.local_start = None;
         if self.casting.active() { self.cast_stop(); return; }
         if let Some(p) = &self.player {
             p.stop();

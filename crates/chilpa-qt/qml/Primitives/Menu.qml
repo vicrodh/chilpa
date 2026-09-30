@@ -17,6 +17,8 @@ Popup {
 
     property var entries: []
     property string title
+    property real heightLimit: Infinity
+    readonly property alias entryItems: column.children
     property real widthLimit: Metrics.menuMaxWidth
 
     signal chosen(int index)
@@ -67,46 +69,57 @@ Popup {
         }
     }
 
-    contentItem: Column {
-        id: column
+    contentItem: Flickable {
+        id: viewport
+        implicitHeight: Math.min(column.implicitHeight, menu.heightLimit - menu.padding * 2) // derived: the useful viewport
+        contentHeight: column.implicitHeight
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
+        ScrollBar.vertical: ScrollBar {}
 
-        Text {
-            id: titleLabel
-            visible: menu.title !== ""
-            width: column.width
-            height: visible ? Metrics.menuItem : 0
-            leftPadding: Metrics.gap10
-            rightPadding: Metrics.gap10
-            verticalAlignment: Text.AlignVCenter
-            text: menu.title
-            elide: Text.ElideRight
-            font.pointSize: Type.small
-            font.weight: Type.semibold
-            color: Theme.color.textTertiary
-            onImplicitWidthChanged: menu.measure()
-        }
+        Column {
+            id: column
+            width: viewport.width
 
-        Repeater {
-            id: entriesRepeater
-            model: menu.entries
-            onItemAdded: menu.measure()
-            onItemRemoved: menu.measure()
-
-            MenuEntry {
-                required property int index
-                required property var modelData
+            Text {
+                id: titleLabel
+                visible: menu.title !== ""
                 width: column.width
-                entry: modelData
+                height: visible ? Metrics.menuItem : 0
+                leftPadding: Metrics.gap10
+                rightPadding: Metrics.gap10
+                verticalAlignment: Text.AlignVCenter
+                text: menu.title
+                elide: Text.ElideRight
+                font.pointSize: Type.small
+                font.weight: Type.semibold
+                color: Theme.color.textTertiary
                 onImplicitWidthChanged: menu.measure()
-                // Closed before it says what was chosen: what it says can
-                // rebuild the view the menu lives in.
-                onClicked: {
-                    if (modelData.submenu) {
-                        menu.submenu(index, menu.y + y)
-                        return
+            }
+
+            Repeater {
+                id: entriesRepeater
+                model: menu.entries
+                onItemAdded: menu.measure()
+                onItemRemoved: menu.measure()
+
+                MenuEntry {
+                    required property int index
+                    required property var modelData
+                    width: column.width
+                    entry: modelData
+                    onImplicitWidthChanged: menu.measure()
+                    // Closed before it says what was chosen: what it says can
+                    // rebuild the view the menu lives in.
+                    onClicked: {
+                        if (modelData.submenu) {
+                            menu.submenu(index, menu.y + y - viewport.contentY)
+                            return
+                        }
+                        menu.close()
+                        menu.chosen(index)
                     }
-                    menu.close()
-                    menu.chosen(index)
                 }
             }
         }

@@ -22,7 +22,7 @@ TestCase {
             verify(menu !== null)
             tryCompare(menu, "opened", true)
             let edit = null
-            for (const item of menu.contentItem.children)
+            for (const item of menu.entryItems)
                 if (item.entry !== undefined && item.entry.act === "edit-playlist") edit = item
             verify(edit !== null)
             waitForRendering(edit)

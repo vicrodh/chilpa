@@ -13,7 +13,7 @@ TestCase {
     TrackMenu { id: menu; model: tracks }
 
     function entry(action) {
-        for (const item of menu.contentItem.children)
+        for (const item of menu.entryItems)
             if (item.entry !== undefined && item.entry.act === action) return item
         return null
     }

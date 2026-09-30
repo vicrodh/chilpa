@@ -16,6 +16,7 @@ TestCase {
         cols: columns
         index: 0; rowKind: 0; number: 1; title: "A track"; artist: "Band"
         album: "Album"; duration: "3:00"; plays: 0; quality: "FLAC"; tier: 2
+        available: true
         playing: false; selected: false; headerLabel: ""; headerMeta: ""; art: ""
     }
     QtObject {
@@ -88,7 +89,7 @@ TestCase {
         versionsMenu.open()
         tryCompare(versionsMenu, "opened", true)
         let rows = 0
-        for (let item of versionsMenu.contentItem.children) {
+        for (let item of versionsMenu.entryItems) {
             if (item.entry !== undefined) {
                 ++rows
                 verify(!item.cut, "the track count must fit without a tooltip")

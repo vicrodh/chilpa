@@ -51,9 +51,9 @@ pub fn describe(location: &str) -> Result<Description> {
 }
 pub fn escape(s: &str) -> String { s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;").replace('"', "&quot;").replace('\'', "&apos;") }
 
-pub struct Dlna { pub description: Description, agent: ureq::Agent, payload: Option<String>, fresh: bool }
+pub struct Dlna { pub description: Description, agent: ureq::Agent, payload: Option<String>, fresh: bool, state: State }
 impl Dlna {
-    pub fn connect(description: Description) -> Self { Self { description, agent: agent(), payload: None, fresh: false } }
+    pub fn connect(description: Description) -> Self { Self { description, agent: agent(), payload: None, fresh: false, state: State::Stopped } }
     fn action(&self, service: &Service, name: &str, args: &str) -> Result<HashMap<String, String>> {
         let body = format!("<?xml version=\"1.0\"?><s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body><u:{name} xmlns:u=\"{}\">{args}</u:{name}></s:Body></s:Envelope>", service.kind);
         let mut reply = self.agent.post(&service.endpoint).header("Content-Type", "text/xml; charset=\"utf-8\"")
@@ -69,18 +69,11 @@ impl Dlna {
     fn rc(&self, name: &str, args: &str) -> Result<HashMap<String, String>> {
         self.action(self.description.rendering.as_ref().ok_or(Error::Unsupported)?, name, &format!("<InstanceID>0</InstanceID><Channel>Master</Channel>{args}"))
     }
-    fn accepts(&self, mime: &str) -> Result<()> {
-        if let Some(service) = &self.description.connection {
-            let info = self.action(service, "GetProtocolInfo", "")?;
-            let sink = info.get("Sink").ok_or(Error::Unsupported)?;
-            if !sink.split(',').any(|s| { let p: Vec<_> = s.split(':').collect(); p.len() >= 4 && p[0] == "http-get" && (p[2] == mime || p[2] == "*") }) { return Err(Error::Unsupported); }
-        } else if !matches!(mime, "audio/flac" | "audio/mpeg" | "audio/mp4" | "audio/wav" | "audio/aac") { return Err(Error::Unsupported); }
-        Ok(())
-    }
 }
 impl RemoteTransport for Dlna {
     fn load(&mut self, url: &str, mime: &str, m: &Metadata) -> Result<()> {
-        self.accepts(mime)?;
+        // Like the reference player, I submit the original to AVTransport.
+        // ConnectionManager advertisements are not a decoder capability gate.
         let didl = format!("<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\"><item id=\"1\" parentID=\"0\" restricted=\"1\"><dc:title>{}</dc:title><upnp:artist>{}</upnp:artist><upnp:album>{}</upnp:album><upnp:class>object.item.audioItem.musicTrack</upnp:class><res protocolInfo=\"http-get:*:{}:{CONTENT_FEATURES}\" duration=\"{}\">{}</res></item></DIDL-Lite>", escape(&m.title), escape(&m.artist), escape(&m.album), escape(mime), time(m.duration), escape(url));
         let payload = format!("<CurrentURI>{}</CurrentURI><CurrentURIMetaData>{}</CurrentURIMetaData>", escape(url), escape(&didl));
         self.transport_action("SetAVTransportURI", &payload)?; self.payload = Some(payload); self.fresh = true;
@@ -93,7 +86,7 @@ impl RemoteTransport for Dlna {
         self.fresh = false;
         for attempt in 0..3 {
             match self.transport_action("Play", "<Speed>1</Speed>") {
-                Ok(_) => return Ok(()),
+                Ok(_) => { self.state = State::Playing; return Ok(()); },
                 Err(Error::Fault(code @ (701 | 702))) if attempt < 2 => {
                     if code == 702 { if let Some(payload) = &self.payload { self.transport_action("SetAVTransportURI", payload)?; } }
                     std::thread::sleep(Duration::from_millis(300 * (attempt + 1)));
@@ -103,17 +96,22 @@ impl RemoteTransport for Dlna {
         }
         Err(Error::Protocol)
     }
-    fn pause(&mut self) -> Result<()> { self.transport_action("Pause", "").map(|_| ()) }
-    fn stop(&mut self) -> Result<()> { self.payload = None; self.transport_action("Stop", "").map(|_| ()) }
+    fn pause(&mut self) -> Result<()> { self.transport_action("Pause", "")?; self.state = State::Paused; Ok(()) }
+    fn stop(&mut self) -> Result<()> { self.payload = None; self.transport_action("Stop", "")?; self.state = State::Stopped; Ok(()) }
     fn seek(&mut self, seconds: f64) -> Result<()> { self.transport_action("Seek", &format!("<Unit>REL_TIME</Unit><Target>{}</Target>", time(seconds))).map(|_| ()) }
     fn volume(&mut self, level: f64) -> Result<()> { self.rc("SetVolume", &format!("<DesiredVolume>{}</DesiredVolume>", (level.clamp(0.0, 1.0) * 100.0).round() as u32)).map(|_| ()) }
     fn mute(&mut self, muted: bool) -> Result<()> { self.rc("SetMute", &format!("<DesiredMute>{}</DesiredMute>", u8::from(muted))).map(|_| ()) }
     fn status(&mut self) -> Result<Status> {
-        let info = self.transport_action("GetTransportInfo", "")?;
-        let state = match info.get("CurrentTransportState").map(String::as_str) {
-            Some("PLAYING") => State::Playing, Some("PAUSED_PLAYBACK") => State::Paused, Some("TRANSITIONING") => State::Buffering, _ => State::Stopped,
+        let info = self.transport_action("GetTransportInfo", "");
+        let position = self.transport_action("GetPositionInfo", "");
+        // A renderer answering either query is alive. Some reject transport
+        // queries while reporting position; I retain the last accepted command.
+        if info.is_err() && position.is_err() { return Err(Error::Network); }
+        let state = match info.as_ref().ok().and_then(|i| i.get("CurrentTransportState")).map(String::as_str) {
+            Some("PLAYING") => State::Playing, Some("PAUSED_PLAYBACK") => State::Paused, Some("TRANSITIONING") => State::Buffering, Some("STOPPED" | "NO_MEDIA_PRESENT") => State::Stopped, _ => self.state.clone(),
         };
-        let pos = self.transport_action("GetPositionInfo", "").unwrap_or_default();
+        if state != State::Buffering { self.state = state.clone(); }
+        let pos = position.unwrap_or_default();
         let volume = self.rc("GetVolume", "").ok().and_then(|r| r.get("CurrentVolume").and_then(|s| s.parse::<f64>().ok())).map(|v| v / 100.0);
         let muted = self.rc("GetMute", "").ok().and_then(|r| r.get("CurrentMute").map(|s| s == "1" || s == "true"));
         Ok(Status { state, position: pos.get("RelTime").and_then(|s| seconds(s)), duration: pos.get("TrackDuration").and_then(|s| seconds(s)), volume, muted })

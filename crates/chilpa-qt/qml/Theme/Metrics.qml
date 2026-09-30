@@ -71,6 +71,7 @@ QtObject {
     readonly property int fieldHeightLarge: 32
     readonly property int selectWidth: 260
     readonly property int albumVersionMenuWidth: 560
+    readonly property int castMenuWidth: 270
     readonly property int menuWidth: 236
     readonly property int menuMaxWidth: 310
     readonly property int menuIconColumn: 18

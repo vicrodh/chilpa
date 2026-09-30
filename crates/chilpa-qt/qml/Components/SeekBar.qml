@@ -18,8 +18,9 @@ Item {
 
     readonly property bool active: area.containsMouse || area.pressed
     readonly property real shown: area.pressed ? dragged : position
-    readonly property real hoverSeconds: duration * Math.max(0, Math.min(1, area.mouseX / width))
+    readonly property real hoverSeconds: secondsAt(area.mouseX)
     property real dragged: 0
+    function secondsAt(x) { return duration * Math.max(0, Math.min(1, x / width)) }
 
     implicitHeight: Metrics.seekHit
 
@@ -78,8 +79,8 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         preventStealing: true
-        onPressed: (mouse) => bar.dragged = bar.hoverSeconds
-        onPositionChanged: (mouse) => { if (pressed) bar.dragged = bar.hoverSeconds }
+        onPressed: (mouse) => bar.dragged = bar.secondsAt(mouse.x)
+        onPositionChanged: (mouse) => { if (pressed) bar.dragged = bar.secondsAt(mouse.x) }
         onReleased: (mouse) => bar.seek(bar.dragged)
     }
 }

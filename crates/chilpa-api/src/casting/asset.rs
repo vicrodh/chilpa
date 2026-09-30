@@ -1,6 +1,9 @@
 use chilpa_cast::{media_server::{ExternalAsset, RangeSource}, Error, Metadata};
 use std::{io::{self, Read, Seek, SeekFrom}, path::{Path, PathBuf}, sync::Arc, time::Duration};
 
+pub(super) struct Presentation {
+    pub artwork: Option<PathBuf>, pub bits: Option<u8>, pub rate: Option<u32>,
+}
 struct FileSource(PathBuf);
 impl RangeSource for FileSource {
     fn open(&self, start: u64, length: u64) -> io::Result<Box<dyn Read + Send>> {
@@ -38,26 +41,28 @@ impl RangeSource for ServerSource {
         Ok(Box::new(ServerReader { source: self.clone(), next: start, left: length, buffer: io::Cursor::new(Vec::new()) }))
     }
 }
-fn mime(extension: &str) -> Result<&'static str, Error> {
+fn mime(extension: &str) -> &'static str {
     match extension.to_ascii_lowercase().as_str() {
-        "flac" => Ok("audio/flac"), "mp3" => Ok("audio/mpeg"), "m4a" | "mp4" => Ok("audio/mp4"),
-        "aac" => Ok("audio/aac"), "wav" => Ok("audio/wav"), "ogg" | "opus" => Ok("audio/ogg"), _ => Err(Error::Unsupported),
+        "flac" => "audio/flac", "mp3" => "audio/mpeg", "m4a" | "alac" | "mp4" => "audio/mp4",
+        "aac" => "audio/aac", "wav" => "audio/wav", "ogg" | "oga" => "audio/ogg", "opus" => "audio/opus",
+        "aif" | "aiff" => "audio/aiff", "dsf" => "audio/x-dsf", "dff" => "audio/x-dff", "ape" => "audio/x-ape",
+        _ => "application/octet-stream",
     }
 }
-pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata), Error> {
+pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata, Presentation), Error> {
     if let Some(entry) = chilpa_models::RemoteEntry::parse(path) {
         let (located, described) = chilpa_core::remote::external(&entry).map_err(|_| Error::Asset)?;
-        let mime = mime(located.extension.as_deref().ok_or(Error::Unsupported)?)?;
+        let mime = mime(located.extension.as_deref().unwrap_or_default());
         let mut headers = located.request.headers.clone();
         headers.push(("Range".into(), "bytes=0-0".into())); headers.push(("Accept-Encoding".into(), "identity".into()));
         let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &located.request.url, headers: &headers, body: None, timeout: Duration::from_secs(20), max_bytes: 1 }).map_err(|_| Error::Asset)?;
         let length = reply.headers.iter().find(|(k,_)| k.eq_ignore_ascii_case("content-range")).and_then(|(_,v)| v.strip_prefix("bytes 0-0/")).and_then(|v| v.parse::<u64>().ok()).filter(|n| *n > 0).ok_or(Error::Asset)?;
         if reply.status != 206 || reply.body.len() != 1 { return Err(Error::Asset); }
         let metadata = Metadata { title: described.tags.title.clone().unwrap_or_default(), artist: described.tags.artist_line(), album: described.tags.album.unwrap_or_default(), duration: 0.0 };
-        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request: located.request, length }) }, metadata));
+        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request: located.request, length }) }, metadata, Presentation { artwork: described.artwork, bits: None, rate: None }));
     }
     let path = Path::new(path);
-    let mime = mime(path.extension().and_then(|s| s.to_str()).ok_or(Error::Unsupported)?)?;
+    let mime = mime(path.extension().and_then(|s| s.to_str()).unwrap_or_default());
     let info = std::fs::metadata(path).map_err(|_| Error::Asset)?;
     if !info.is_file() || info.len() == 0 { return Err(Error::Asset); }
     let tags = chilpa_tags::read(path).ok();
@@ -66,5 +71,9 @@ pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata), Error> {
         artist: tags.as_ref().map(|t| t.tags.artist_line()).unwrap_or_default(),
         album: tags.as_ref().and_then(|t| t.tags.album.clone()).unwrap_or_default(), duration: tags.as_ref().map(|t| t.duration.as_secs_f64()).unwrap_or_default(),
     };
-    Ok((ExternalAsset { length: info.len(), mime: mime.into(), source: Arc::new(FileSource(path.into())) }, metadata))
+    let presentation = Presentation {
+        artwork: chilpa_tags::artwork_for(path, &chilpa_core::artwork_cache()),
+        bits: tags.as_ref().and_then(|t| t.bit_depth), rate: tags.as_ref().and_then(|t| t.sample_rate_hz),
+    };
+    Ok((ExternalAsset { length: info.len(), mime: mime.into(), source: Arc::new(FileSource(path.into())) }, metadata, presentation))
 }

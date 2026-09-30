@@ -48,7 +48,7 @@ pub const TOKENS: &[&str] = &[
     "text.onAccent", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
     "state.stripe", "fill.field", "row.playing", "row.selected", "accent", "accent.hover",
     "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
-    "overlay.button", "overlay.ink",
+    "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
 ];
 

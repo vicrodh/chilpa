@@ -6,6 +6,11 @@ pub(super) struct End {
 }
 impl End {
     pub fn new(duration: f64) -> Self { Self { started: Instant::now(), seen_playing: false, maximum: 0.0, previous: 0.0, stopped: 0, frozen: 0, duration } }
+    pub fn seek(&mut self) {
+        let seen_playing = self.seen_playing;
+        *self = Self::new(self.duration);
+        self.seen_playing = seen_playing;
+    }
     pub fn tick(&mut self, status: &Status) -> bool {
         if status.state == State::Finished { return true; }
         if let Some(duration) = status.duration.filter(|d| *d > 0.0) { self.duration = duration; }
