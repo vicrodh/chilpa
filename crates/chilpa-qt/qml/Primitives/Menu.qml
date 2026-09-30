@@ -39,6 +39,9 @@ Popup {
         widest = Math.max(w, titleLabel.implicitWidth + Metrics.gap16)
     }
 
+    // The tooltip of the button that opened it would sit over its entries.
+    onAboutToShow: TipState.hide(TipState.target)
+
     padding: Metrics.gap4
     margins: Metrics.gap10
     implicitWidth: Math.min(widthLimit, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides

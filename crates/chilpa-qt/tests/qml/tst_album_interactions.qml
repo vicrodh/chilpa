@@ -16,7 +16,7 @@ TestCase {
         cols: columns
         index: 0; rowKind: 0; number: 1; title: "A track"; artist: "Band"
         album: "Album"; duration: "3:00"; plays: 0; quality: "FLAC"; tier: 2
-        available: true
+        available: true; trackId: 1
         playing: false; selected: false; headerLabel: ""; headerMeta: ""; art: ""
     }
     QtObject {

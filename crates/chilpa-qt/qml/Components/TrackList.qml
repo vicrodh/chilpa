@@ -68,6 +68,8 @@ Item {
         // The row whose artist is under the pointer, which a click opens.
         property int artistHovered: -1
         property int ratingHovered: 0
+        // 1 the heart, 2 the menu button, of the row under the pointer.
+        property int actionHovered: 0
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -84,13 +86,13 @@ Item {
         ScrollBar.vertical: ScrollBar { policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
         delegate: TrackRow {
-            required property double trackId
             cols: columns
             canRate: trackId > 0 && available
             rating: Ratings.stars("track", trackId, Ratings.rev)
             favorite: trackId > 0 && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
+            actionHovered: index === view.hovered ? view.actionHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
         }
@@ -119,6 +121,11 @@ Item {
             view.hovered = containsMouse ? rowAt(mouseY) : -1
             view.artistHovered = containsMouse && onArtist(view.hovered, mouseX, mouseY) ? view.hovered : -1
             view.ratingHovered = ratingAt(view.hovered, mouseX, mouseY)
+            view.actionHovered = containsMouse ? actionAt(view.hovered, mouseX, mouseY) : 0
+        }
+        function actionAt(row, x, y) {
+            const item = row >= 0 ? view.itemAtIndex(row) : null
+            return item ? item.end.actionAt(x - item.x - item.end.x, y + view.contentY - item.y) : 0
         }
         function ratingAt(row, x, y) {
             const item = row >= 0 ? view.itemAtIndex(row) : null
@@ -137,7 +144,8 @@ Item {
         onPressed: (mouse) => {
             pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
             const pressed = view.itemAtIndex(rowAt(mouse.y))
-            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating && pressed && pressed.available) {
+            const onAction = actionAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
+            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating && !onAction && pressed && pressed.available) {
                 pressedRow = rowAt(mouse.y)
                 pressedY = mouse.y
                 dragging = false
@@ -167,6 +175,14 @@ Item {
                 actions.show(row, mouse.x, view.y + mouse.y)
                 return
             }
+            const action = actionAt(row, mouse.x, mouse.y)
+            if (action === 2) {
+                const at = view.itemAtIndex(row).end.menuPoint(list)
+                list.model.select(row, 4)
+                actions.show(row, at.x, at.y)
+            }
+            if (action > 0)
+                return view.itemAtIndex(row).end.act()
             const star = ratingAt(row, mouse.x, mouse.y)
             if (pressedRating && star === 0)
                 return
@@ -187,7 +203,7 @@ Item {
         }
         onDoubleClicked: (mouse) => {
             const row = rowAt(mouse.y)
-            if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y))
+            if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y) && !actionAt(row, mouse.x, mouse.y))
                 list.model.play(row)
         }
     }
@@ -214,17 +230,11 @@ Item {
 
     TrackRowActions {
         row: view.hovered
-        item: groupActions.item
         model: list.model
-        reorderable: list.reorderable
 
-        visible: !!item && !item.header && item.available
-        x: list.width - width - Metrics.gap10
-        y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
+        visible: list.reorderable && !!groupActions.item && !groupActions.item.header && groupActions.item.available
+        x: columns.moreX - width
+        y: head.height + (groupActions.item ? groupActions.item.y - view.contentY + (groupActions.item.height - height) / 2 : 0)
         z: 2
-        onMenu: (row, left, top) => {
-            list.model.select(row, 4)
-            actions.show(row, left, top)
-        }
     }
 }

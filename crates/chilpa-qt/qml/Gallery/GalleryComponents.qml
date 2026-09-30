@@ -97,6 +97,7 @@ GallerySection {
                 index: 1
                 rowKind: modelData.kind
                 number: 3
+                trackId: 1
                 title: "Faded Lines"
                 artist: "Mora Vale"
                 album: "Low Orbit"
@@ -152,7 +153,8 @@ GallerySection {
         PlaylistCollage { covers: [] }
         MarkButtons { kind: "album"; key: "1" }
         RatingButton { kind: "album"; target: 1 }
-        TrackRowActions {}
+        TrackRowActions { model: null }
+        TrackRowEnd { height: Metrics.rowCompact; trackId: 1 }
         PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
         Row {
             spacing: Metrics.gap12
