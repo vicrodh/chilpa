@@ -101,7 +101,10 @@ pub enum TrackOrder {
     Title,
     /// The most played first.
     Plays,
+    /// The shortest first.
     Duration,
+    /// The longest first.
+    DurationDescending,
     /// Disc and track number: the order of one record.
     Disc,
     ArtistDescending,
@@ -118,6 +121,7 @@ impl TrackOrder {
         match name {
             "album" => Self::Album, "year" => Self::Year, "added" => Self::Added,
             "title" => Self::Title, "plays" => Self::Plays, "duration" => Self::Duration,
+            "duration-desc" => Self::DurationDescending,
             "disc" => Self::Disc, "artist-desc" => Self::ArtistDescending, "title-desc" => Self::TitleDescending,
             "year-desc" => Self::YearDescending, "performer" => Self::Performer, _ => Self::Artist,
         }
@@ -135,7 +139,8 @@ impl TrackOrder {
             // with one is not before the alphabet.
             TrackOrder::Title => "ltrim(t.title) COLLATE NOCASE",
             TrackOrder::Plays => "plays DESC, t.title COLLATE NOCASE",
-            TrackOrder::Duration => "t.duration_ms",
+            TrackOrder::Duration => "t.duration_ms, ltrim(t.title) COLLATE NOCASE",
+            TrackOrder::DurationDescending => "t.duration_ms DESC, ltrim(t.title) COLLATE NOCASE",
             TrackOrder::Disc => "coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
             TrackOrder::ArtistDescending => {
                 "a.album_artist COLLATE NOCASE DESC, a.year, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number"
@@ -898,6 +903,17 @@ mod tracks_view_tests {
         let ids = |order| lib.browse_ids(&Filter::default(), order).unwrap().ids;
         assert_eq!(ids(TrackOrder::TitleDescending), [3, 1, 2, 4]);
         assert_eq!(ids(TrackOrder::from_name("performer")), [1, 3, 2, 4]);
+    }
+
+    #[test]
+    fn a_list_can_run_from_the_shortest_or_from_the_longest() {
+        let lib = library();
+        for (id, ms) in [(1, 3000), (2, 1000), (3, 1000), (4, 2000)] {
+            lib.db.execute("UPDATE tracks SET duration_ms = ?2 WHERE id = ?1", params![id, ms]).unwrap();
+        }
+        let ids = |order| lib.browse_ids(&Filter::default(), TrackOrder::from_name(order)).unwrap().ids;
+        assert_eq!(ids("duration"), [2, 3, 4, 1], "two of a length, by title");
+        assert_eq!(ids("duration-desc"), [1, 4, 2, 3]);
     }
 
     #[test]

@@ -563,6 +563,12 @@ msgstr ""
 msgid "Duration"
 msgstr ""
 
+msgid "Duration (longest)"
+msgstr ""
+
+msgid "Duration (shortest)"
+msgstr ""
+
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr ""
 

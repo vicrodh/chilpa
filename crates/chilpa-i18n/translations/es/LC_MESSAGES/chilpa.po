@@ -563,6 +563,12 @@ msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
 msgid "Duration"
 msgstr "Duración"
 
+msgid "Duration (longest)"
+msgstr "Duración (más largas)"
+
+msgid "Duration (shortest)"
+msgstr "Duración (más cortas)"
+
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo entonces reemplaza al original. Hace falta tanto espacio libre como ocupa el disco. Lo que se escribe no se puede deshacer."
 
