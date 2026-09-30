@@ -21,6 +21,9 @@ Popup {
     readonly property alias entryItems: column.children
     property real widthLimit: Metrics.menuMaxWidth
 
+    property Item hotRow: null
+    readonly property bool hovering: panelHover.hovered || !!(hotRow && hotRow.hovered)
+    signal entryHovered(int index, real top)
     signal chosen(int index)
     signal submenu(int index, real top)
 
@@ -48,6 +51,7 @@ Popup {
 
     background: Item {
         Hold {}
+        HoverHandler { id: panelHover }
         RectangularShadow {
             anchors.fill: panel
             radius: panel.radius
@@ -113,6 +117,7 @@ Popup {
                     width: column.width
                     entry: modelData
                     onImplicitWidthChanged: menu.measure()
+                    onHoveredChanged: if (hovered) { menu.hotRow = this; menu.entryHovered(index, y - viewport.contentY) }
                     // Closed before it says what was chosen: what it says can
                     // rebuild the view the menu lives in.
                     onClicked: {

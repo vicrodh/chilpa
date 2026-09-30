@@ -30,6 +30,7 @@ Item {
     // only order that may be dragged or moved with arrows.
     property bool selectionMode: false
     property bool reorderable: false
+    property bool groupActionsEnabled: true
 
     signal sortRequested(string order)
 
@@ -222,7 +223,7 @@ Item {
         item: row >= 0 ? view.itemAtIndex(row) : null
         model: list.model
 
-        visible: item && item.header
+        visible: list.groupActionsEnabled && item && item.header
         x: list.width - width - Metrics.gap10
         y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
         z: 3

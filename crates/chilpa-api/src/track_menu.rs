@@ -131,3 +131,15 @@ mod unavailable_tests {
         assert!(track_menu(TrackMenuContext { count: 1, unavailable: false, ..Default::default() }).len() > 1);
     }
 }
+
+/// Navigation stays consistent across the library, playlist and queue views.
+pub fn track_can_go(track: &crate::TrackRow, kind: &str, key: &str, target: &str) -> bool {
+    if !track.available { return false; }
+    match target.split(':').next().unwrap_or_default() {
+        "album" => track.album_id > 0 && kind != "album",
+        "artist" => !track.artist.is_empty() && !(matches!(kind, "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(key)),
+        "folder" => kind != "folder" && !crate::on_a_server(&track.path),
+        "metadata" => track.album_id > 0 && !crate::on_a_server(&track.path),
+        _ => false,
+    }
+}

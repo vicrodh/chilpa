@@ -5,22 +5,17 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 
-// The side queue (design/03, frontend ADR-0008, wireframe 17): its head
-// with how much is queued, "Now playing" and "Up next" over their rows, and
-// a foot that clears it or keeps it as a playlist. "Play later" groups,
-// the timer and stop-after need the facade and the player first; dragging
-// to reorder needs a facade move over Player::set_order. Docking it below
-// and the full queue need nothing below the window and are simply not built
-// yet. None of them has a button here until it works.
+// The active queue drives local playback, casting and ListenList.
 Item {
     id: panel
 
     signal closed()
+    Timer { interval: Motion.listenRefresh; running: panel.visible; repeat: true; onTriggered: ListenList.refresh() }
 
     TrackListModel {
         id: queue
         kind: "queue"
-        filterRev: Player.queueRev
+        filterRev: Player.queueRev + ListenList.revision
         playingPath: Player.path
     }
 
@@ -30,6 +25,12 @@ Item {
         title: I18n.tr("Queue", I18n.rev)
         detail: queue.summary
 
+        IconButton {
+            tip: I18n.tr("Open ListenList", I18n.rev)
+            glyph: Icons.listDetails
+            size: Metrics.button26
+            onClicked: Navigation.go("listenlist", 0)
+        }
         IconButton {
             tip: I18n.tr("Close", I18n.rev)
             glyph: Icons.x

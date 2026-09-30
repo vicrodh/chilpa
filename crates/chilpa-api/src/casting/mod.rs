@@ -210,23 +210,6 @@ impl Chilpa {
     }
 }
 
-impl Chilpa {
-    pub(crate) fn cast_insert(&mut self, tracks: &[std::path::PathBuf], placement: crate::QueuePlacement) {
-        let first = self.queue.len();
-        if self.casting.order.len() != first { self.cast_order(); }
-        self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
-        self.queue_placement.resize(self.queue.len(), placement); self.removed.resize(self.queue.len(), false);
-        let mut at = self.casting.order.iter().position(|i| *i == self.now.index).map_or(0, |i| i + 1);
-        while at < self.casting.order.len() {
-            let existing = self.queue_placement[self.casting.order[at]];
-            if existing != crate::QueuePlacement::Next && !(placement == crate::QueuePlacement::Later && existing == crate::QueuePlacement::Later) { break; }
-            at += 1;
-        }
-        self.casting.order.splice(at..at, first..self.queue.len());
-        self.now.queue_len = self.queue.len();
-    }
-}
-
 impl Drop for Casting {
     fn drop(&mut self) {
         if let Some(running) = &self.discovery_running { running.store(false, Ordering::Release); }

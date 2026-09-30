@@ -11,6 +11,7 @@ Item {
     property var entry: ({})
 
     signal clicked()
+    readonly property bool hovered: hover.hovered
 
     readonly property bool separator: entry.separator === true
     readonly property bool note: entry.note === true

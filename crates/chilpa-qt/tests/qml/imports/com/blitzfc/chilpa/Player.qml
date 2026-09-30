@@ -1,6 +1,8 @@
 pragma Singleton
 import QtQuick
 QtObject {
+    property string path: "/test.wav"
+    property int queueRev: 0
     property bool playing: true
     property bool paused: false
     property bool bitPerfect: false

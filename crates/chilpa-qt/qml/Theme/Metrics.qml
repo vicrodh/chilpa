@@ -286,6 +286,8 @@ QtObject {
     readonly property int panelHeader: 40
     // A share kept as a whole number, in thousandths.
     readonly property int shareUnits: 1000
+    readonly property int listenArt: 232
+    readonly property int listenWide: 900
     readonly property int queueMin: 250
     readonly property int lyricsMin: 110
     readonly property int queueRow: 46

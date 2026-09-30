@@ -38,6 +38,7 @@ fn queue_session_path() -> std::path::PathBuf {
 
 impl Chilpa {
     pub(crate) fn replace_queue(&mut self, queue: Vec<String>) {
+        self.before_queue_replace();
         self.set_stop_after(None);
         self.queue = queue;
         self.casting.order.clear();
@@ -45,6 +46,10 @@ impl Chilpa {
         self.queue_groups.clear();
         self.removed = vec![false; self.queue.len()];
         self.restored_at = None;
+        let order = if self.shuffle { chilpa_core::queue_playback::shuffled(self.queue.len(), crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
+        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
+        if let Some(p) = &self.player { p.set_order(order.clone(), self.queue.len()); }
+        self.casting.order = order;
     }
 
     /// Queue persistence is on unless explicitly disabled in Settings.
@@ -58,54 +63,12 @@ impl Chilpa {
             self.persist_queue_session();
         } else {
             let _ = std::fs::remove_file(queue_session_path());
+            self.forget_buffers();
         }
     }
 
-    /// Keeps the upcoming queue in the order it will play. History and
-    /// removed entries are intentionally omitted; reopening resumes from
-    /// the first saved row, at the current track's saved position.
     pub(crate) fn persist_queue_session(&self) {
-        if !self.keep_queue() {
-            return;
-        }
-        let file = queue_session_path();
-        let order = self.queue_order();
-        if order.is_empty() {
-            let _ = std::fs::remove_file(file);
-            return;
-        }
-        let entries = order
-            .into_iter()
-            .map(|index| SavedEntry {
-                path: self.queue[index].clone(),
-                placement: match self.queue_placement.get(index).copied().unwrap_or_default() {
-                    QueuePlacement::Original => "original",
-                    QueuePlacement::Next => "next",
-                    QueuePlacement::Later => "later",
-                }
-                .into(),
-                group: self.queue_group_at(index).map(|group| SavedGroup {
-                    key: group.key,
-                    label: group.label.clone(),
-                    collapsed: group.collapsed,
-                }),
-            })
-            .collect();
-        let saved = SavedQueue { entries, seconds: self.now.seconds.max(0.0) };
-        let Ok(bytes) = serde_json::to_vec_pretty(&saved) else { return };
-        let Some(dir) = file.parent() else { return };
-        if std::fs::create_dir_all(dir).is_err() {
-            return;
-        }
-        let temporary = file.with_extension("json.tmp");
-        if std::fs::write(&temporary, bytes).is_ok() {
-            if std::fs::rename(&temporary, &file).is_err() {
-                // Windows does not replace an existing destination. The
-                // temporary is already complete, so make room and retry.
-                let _ = std::fs::remove_file(&file);
-                let _ = std::fs::rename(temporary, file);
-            }
-        }
+        self.persist_buffers();
     }
 
     pub(crate) fn restore_queue_session(&mut self) {
@@ -210,7 +173,7 @@ impl Chilpa {
             ),
         );
         let tracks: Vec<std::path::PathBuf> =
-            self.queue.iter().skip(from).map(std::path::PathBuf::from).collect();
+            self.queue.iter().map(std::path::PathBuf::from).collect();
         if tracks.is_empty() {
             return;
         }
@@ -225,12 +188,11 @@ impl Chilpa {
                 format_args!("reason={why:?}"),
             );
         }
-        self.base = from;
-        self.removed = vec![false; self.queue.len()];
-        // The player starts in the queue's own order or shuffled: a mix of
-        // what played before does not carry over.
+        let order = self.full_queue_order();
+        self.base = 0;
+        // I retain the complete order while changing only the cursor.
         self.mix = false;
-        let (shuffle, repeat, total) = (self.shuffle, self.repeat, self.queue.len());
+        let (repeat, total) = (self.repeat, self.queue.len());
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
         let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
@@ -244,11 +206,7 @@ impl Chilpa {
         player.set_exclusive(exclusive);
         player.set_dsd_mode(dsd_mode);
         player.set_volume(volume);
-        if shuffle {
-            player.shuffle(tracks.len());
-        } else {
-            player.clear_order();
-        }
+        player.set_order(order, tracks.len());
         // Moving output is the same track going on somewhere else, so what
         // the window is showing stays up. Clearing it would blank the title,
         // the artwork and the position for the moment the new device takes to
@@ -257,7 +215,7 @@ impl Chilpa {
         self.now = if why == Relaunch::Output {
             NowPlaying { playing: true, queue_len: total, ..std::mem::take(&mut self.now) }
         } else {
-            NowPlaying { playing: true, queue_len: total, ..NowPlaying::default() }
+            NowPlaying { path: self.queue[from].clone(), index: from, seconds: start_at.map_or(0.0, |at| at.as_secs_f64()), playing: true, queue_len: total, ..NowPlaying::default() }
         };
         // Moved while paused, it stays paused where it went.
         let paused = why == Relaunch::Output && self.now.paused;
@@ -270,7 +228,7 @@ impl Chilpa {
                 tracks.first()
             ),
         );
-        player.play_all_from_paused(&tracks, device, start_at, paused);
+        player.play_from_index(&tracks, device, start_at, paused, Some(from), &self.removed, self.stop_after);
     }
 
     /// Moves what is playing to another output, keeping its place.
@@ -420,6 +378,7 @@ impl Chilpa {
 
     /// Stops and empties the queue.
     pub fn clear_queue(&mut self) {
+        self.before_queue_replace();
         self.stop();
         self.set_stop_after(None);
         self.sleep_until = None;
@@ -477,19 +436,29 @@ impl Chilpa {
         if tracks.is_empty() {
             return Vec::new();
         }
-        let playing = self.now.playing && (self.player.is_some() || self.casting.active());
-        if !playing {
-            return self.play_tracks(paths, device, bit_perfect);
-        }
-        self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
-        self.queue_placement.resize(self.queue.len(), QueuePlacement::Original);
-        self.removed.resize(self.queue.len(), false);
-        if let Some(p) = &self.player {
-            p.enqueue(&tracks);
-        }
-        self.now.queue_len = self.queue.len();
-        if self.casting.active() { self.cast_order(); }
+        if !self.now.playing { return self.play_tracks(paths, device, bit_perfect); }
+        self.insert_queued(&tracks, QueuePlacement::Original);
         tracks.iter().map(|p| title_of(p)).collect()
+    }
+
+    // Every output and a restored paused queue use the same insertion order.
+    fn insert_queued(&mut self, tracks: &[std::path::PathBuf], placement: QueuePlacement) {
+        let first = self.queue.len();
+        let mut order = self.full_queue_order();
+        let mut at = if placement == QueuePlacement::Original { order.len() }
+            else { order.iter().position(|&i| i == self.now.index).map_or(order.len(), |i| i + 1) };
+        while placement == QueuePlacement::Later && at < order.len()
+            && matches!(self.queue_placement.get(order[at]), Some(QueuePlacement::Next | QueuePlacement::Later)) { at += 1; }
+        self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
+        self.queue_placement.resize(self.queue.len(), placement);
+        self.removed.resize(self.queue.len(), false);
+        order.splice(at..at, first..self.queue.len());
+        if let Some(p) = self.player.as_ref().filter(|p| !p.idle()) {
+            p.enqueue(tracks); p.set_order(order.clone(), self.queue.len());
+        }
+        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
+        self.casting.order = order;
+        self.now.queue_len = self.queue.len();
     }
 
     /// `enqueue` on the output chosen in Settings, which is the one the
@@ -520,37 +489,8 @@ impl Chilpa {
         if tracks.is_empty() {
             return;
         }
-        if self.casting.active() && self.now.playing {
-            self.cast_insert(&tracks, QueuePlacement::Next);
-            return;
-        }
-        let playing = self.now.playing && self.player.is_some();
-        let Some(p) = self.player.as_ref().filter(|_| playing) else {
-            self.play_tracks(paths, device, bit_perfect);
-            return;
-        };
-        let before = p.queue_len();
-        self.queue.extend(tracks.iter().map(|t| t.display().to_string()));
-        self.queue_placement.resize(self.queue.len(), QueuePlacement::Next);
-        self.removed.resize(self.queue.len(), false);
-        p.enqueue(&tracks);
-        let len = before + tracks.len();
-        let mut order = p.order();
-        if order.len() != before {
-            order = (0..before).collect();
-        }
-        // The player counts from where it started; the view, from the start
-        // of the queue.
-        let current = self.now.index.saturating_sub(self.base);
-        let mut at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
-        while at < order.len()
-            && self.queue_placement.get(self.base + order[at]) == Some(&QueuePlacement::Next)
-        {
-            at += 1;
-        }
-        order.splice(at..at, before..len);
-        p.set_order(order, len);
-        self.now.queue_len = self.queue.len();
+        if self.now.playing { self.insert_queued(&tracks, QueuePlacement::Next); }
+        else { self.play_tracks(paths, device, bit_perfect); }
     }
 
     /// Adds a named batch after everything explicitly queued next, without
@@ -563,55 +503,15 @@ impl Chilpa {
         if tracks.is_empty() {
             return None;
         }
-        if self.casting.active() && self.now.playing {
+        let first = if self.now.playing {
             let first = self.queue.len();
-            self.cast_insert(&tracks, QueuePlacement::Later);
-            let key = self.next_queue_group;
-            self.next_queue_group = key.wrapping_add(1).max(1);
-            self.queue_groups.push(QueueGroup { key, label: label.into(), tracks: (first..self.queue.len()).collect(), collapsed: false });
-            return Some(key);
-        }
-        let playing = self.now.playing && self.player.is_some();
-        let Some(player) = self.player.as_ref().filter(|_| playing) else {
-            if self.play_tracks(paths, device, bit_perfect).is_empty() {
-                return None;
-            }
+            self.insert_queued(&tracks, QueuePlacement::Later);
+            first
+        } else {
+            if self.play_tracks(paths, device, bit_perfect).is_empty() { return None; }
             self.queue_placement.fill(QueuePlacement::Later);
-            let key = self.next_queue_group;
-            self.next_queue_group = self.next_queue_group.wrapping_add(1).max(1);
-            self.queue_groups.push(QueueGroup {
-                key,
-                label: label.to_string(),
-                tracks: (0..self.queue.len()).collect(),
-                collapsed: false,
-            });
-            return Some(key);
+            0
         };
-
-        let first = self.queue.len();
-        let before = player.queue_len();
-        self.queue.extend(tracks.iter().map(|track| track.display().to_string()));
-        self.queue_placement.resize(self.queue.len(), QueuePlacement::Later);
-        self.removed.resize(self.queue.len(), false);
-        player.enqueue(&tracks);
-
-        let len = before + tracks.len();
-        let mut order = player.order();
-        if order.len() != before {
-            order = (0..before).collect();
-        }
-        let current = self.now.index.saturating_sub(self.base);
-        let mut at = order.iter().position(|&i| i == current).map_or(order.len(), |pos| pos + 1);
-        while at < order.len()
-            && matches!(
-                self.queue_placement.get(self.base + order[at]),
-                Some(QueuePlacement::Next | QueuePlacement::Later)
-            )
-        {
-            at += 1;
-        }
-        order.splice(at..at, before..len);
-        player.set_order(order, len);
 
         let key = self.next_queue_group;
         self.next_queue_group = self.next_queue_group.wrapping_add(1).max(1);
@@ -704,19 +604,9 @@ impl Chilpa {
     /// in the order they will play and without the ones taken out: what the
     /// queue panel lists, row by row.
     pub fn queue_order(&self) -> Vec<usize> {
-        if self.casting.active() { return self.cast_upcoming(); }
-        let len = self.queue.len();
-        let from = self.now.index.min(len);
-        let order = self.player.as_ref().map(|p| p.order()).unwrap_or_default();
-        let own = len.saturating_sub(self.base);
-        let ahead: Vec<usize> = if own > 0 && order.len() == own {
-            let current = from.saturating_sub(self.base);
-            let at = order.iter().position(|&i| i == current).unwrap_or(0);
-            order[at..].iter().map(|i| i + self.base).collect()
-        } else {
-            (from..len).collect()
-        };
-        ahead.into_iter().filter(|&i| !self.removed.get(i).copied().unwrap_or(false)).collect()
+        let order = self.full_queue_order();
+        let at = order.iter().position(|&i| i == self.now.index).unwrap_or(0);
+        order[at..].iter().copied().filter(|&i| !self.removed.get(i).copied().unwrap_or(false)).collect()
     }
 
     /// Queues a whole album.
@@ -888,14 +778,10 @@ impl Chilpa {
         if self.casting.active() { self.cast_order(); }
         // Shuffling and the mix are two orders: one replaces the other.
         self.mix = false;
-        let remaining = self.queue.len().saturating_sub(self.base);
-        if let Some(p) = &self.player {
-            if shuffle {
-                p.shuffle(remaining);
-            } else {
-                p.clear_order();
-            }
-        }
+        let order = if shuffle { chilpa_core::queue_playback::shuffled_now(self.queue.len()) }
+            else { (0..self.queue.len()).collect() };
+        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
+        if let Some(p) = &self.player { p.set_order(order, self.queue.len()); }
     }
 
     pub fn repeat(&self) -> Repeat {

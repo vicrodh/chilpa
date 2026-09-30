@@ -130,6 +130,12 @@ msgstr "Agregar a playlist…"
 msgid "Add to queue"
 msgstr "Agregar a la cola"
 
+msgid "Add to queue {}"
+msgstr "Agregar a la queue {}"
+
+msgid "Add tracks from a track menu to this queue."
+msgstr "Agrega pistas a esta queue desde el menú de una pista."
+
 msgid "Added this month"
 msgstr "Agregadas este mes"
 
@@ -285,6 +291,9 @@ msgstr "Tranquilo"
 msgid "Cancel"
 msgstr "Cancelar"
 
+msgid "Cancel stop after this track"
+msgstr "Cancelar la parada después de esta pista"
+
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Para transmitir se necesita un archivo original con tamaño conocido y acceso por rangos."
 
@@ -320,6 +329,12 @@ msgstr "Elegir imagen de la playlist"
 
 msgid "Clear"
 msgstr "Vaciar"
+
+msgid "Clear after this track"
+msgstr "Vaciar después de esta pista"
+
+msgid "Clear queue"
+msgstr "Vaciar queue"
 
 msgid "Clear the selection"
 msgstr "Quitar la selección"
@@ -620,6 +635,9 @@ msgstr "Modo exclusivo"
 msgid "Extra controls"
 msgstr "Controles extra"
 
+msgid "Extra queues"
+msgstr "Extra queues"
+
 msgid "Fetching the cover…"
 msgstr "Bajando la carátula…"
 
@@ -743,6 +761,9 @@ msgstr "Alta 24/96"
 msgid "High resolution"
 msgstr "Alta resolución"
 
+msgid "History"
+msgstr "Historial"
+
 msgid "Home"
 msgstr "Inicio"
 
@@ -805,6 +826,9 @@ msgstr "Claro"
 
 msgid "List"
 msgstr "Lista"
+
+msgid "ListenList"
+msgstr "ListenList"
 
 msgid "Loading the release…"
 msgstr "Cargando el release…"
@@ -938,6 +962,9 @@ msgstr "Nuevo folder"
 msgid "New playlist"
 msgstr "Nueva playlist"
 
+msgid "New queue"
+msgstr "Nueva queue"
+
 msgid "New tab"
 msgstr "Nueva pestaña"
 
@@ -1037,6 +1064,9 @@ msgstr "Abrir"
 msgid "Open Last.fm"
 msgstr "Abrir Last.fm"
 
+msgid "Open ListenList"
+msgstr "Abrir ListenList"
+
 msgid "Open a folder"
 msgstr "Abrir una carpeta"
 
@@ -1048,6 +1078,9 @@ msgstr "Abrir la página de la cuenta"
 
 msgid "Open album"
 msgstr "Abrir álbum"
+
+msgid "Open in new queue"
+msgstr "Abrir en una nueva queue"
 
 msgid "Open in new tab"
 msgstr "Abrir en otra pestaña"
@@ -1196,11 +1229,17 @@ msgstr "Cola"
 msgid "Queue and playlist actions"
 msgstr "Acciones de cola y playlist"
 
+msgid "Queue name"
+msgstr "Nombre de la queue"
+
 msgid "Queue options"
 msgstr "Opciones de cola"
 
 msgid "Queue this group"
 msgstr "Acciones de cola para este grupo"
+
+msgid "Queue {}"
+msgstr "Queue {}"
 
 msgid "Queue · {}"
 msgstr "Cola · {}"
@@ -1298,6 +1337,9 @@ msgstr "Reparada. No se perdió nada."
 msgid "Repeat"
 msgstr "Repetir"
 
+msgid "Replace queue {}"
+msgstr "Reemplazar queue {}"
+
 msgid "Requests: {}"
 msgstr "Solicita: {}"
 
@@ -1340,6 +1382,9 @@ msgstr "Guardar como playlist"
 msgid "Save to"
 msgstr "Guardar en"
 
+msgid "Saved position"
+msgstr "Posición guardada"
+
 msgid "Saving…"
 msgstr "Guardando…"
 
@@ -1372,6 +1417,9 @@ msgstr "Buscar playlists"
 
 msgid "Search playlists and folders"
 msgstr "Buscar playlists y folders"
+
+msgid "Search queue"
+msgstr "Buscar en la cola"
 
 msgid "Searching for devices…"
 msgstr "Buscando dispositivos…"
@@ -1453,6 +1501,9 @@ msgstr "Fuentes y calidad"
 
 msgid "Status"
 msgstr "Estado"
+
+msgid "Stop after this track"
+msgstr "Detener después de esta pista"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -1632,6 +1683,9 @@ msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr "Escribe este código en Quick Connect, en un Jellyfin donde ya iniciaste sesión."
+
+msgid "Undo queue replacement or closing"
+msgstr "Deshacer reemplazo o cierre de queue"
 
 msgid "Uninstall"
 msgstr "Desinstalar"

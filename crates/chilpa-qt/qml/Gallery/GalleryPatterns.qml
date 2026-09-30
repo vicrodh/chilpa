@@ -33,6 +33,8 @@ GallerySection {
         spacing: Metrics.gap12
         TabBar { width: parent.width }
         PlayerBar { width: Math.min(parent.width, Metrics.playerMaxWidth) }
+        ListenBuffers { width: parent.width; document: ({ selected: "1", tabs: [{id: "1", name: "Jazz", count: 12, playing: true}, {id: "2", name: "Later", count: 8, playing: false}] }) }
+        ListenNow { width: Metrics.listenArt }
         PlayerLcd { width: parent.width / 2 } // derived: half the section
         QualityTooltip {}
         SearchModel { id: sample; text: "mora" }

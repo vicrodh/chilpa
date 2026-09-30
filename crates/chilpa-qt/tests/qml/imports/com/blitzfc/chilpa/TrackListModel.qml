@@ -1,5 +1,12 @@
 import QtQuick
 ListModel {
+    property string kind: ""
+    property double albumId: 0
+    property string key: ""
+    property int filterRev: 0
+    property string playingPath: ""
+    property string summary: "3 tracks"
+    function listAction(action, row, to) { lastAction = action; lastRow = row }
     property string lastAction: ""
     property int lastRow: -1
     function canGo(row, kind) { return true }

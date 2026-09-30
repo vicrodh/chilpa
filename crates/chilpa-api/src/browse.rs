@@ -457,6 +457,10 @@ impl Chilpa {
     pub fn queue_rows(&mut self) -> Vec<TrackRow> {
         // In the order they will play, which shuffle and "play next" change.
         let paths: Vec<String> = self.queue_order().into_iter().map(|i| self.queue[i].clone()).collect();
+        self.rows_for_paths(&paths)
+    }
+
+    pub(crate) fn rows_for_paths(&mut self, paths: &[String]) -> Vec<TrackRow> {
         let Some(lib) = self.library() else {
             return Vec::new();
         };

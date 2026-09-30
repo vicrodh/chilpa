@@ -87,6 +87,20 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
     wait(&mut api, |_| { let s = renderer.state.lock().unwrap(); s.seeks > 0 && s.volume == 42 && s.muted });
     wait(&mut api, |n| n.seconds == 4.0);
     assert_eq!(renderer.state.lock().unwrap().position, 4);
+    // Preparing another tab cannot send audio; activating it replaces this one queue.
+    let original = serde_json::from_str::<serde_json::Value>(&api.listen_json()).unwrap()["active"].as_str().unwrap().parse().unwrap();
+    let loads = renderer.state.lock().unwrap().loads;
+    let buffer = api.listen_create("Other", &[second.display().to_string()]);
+    api.listen_select(buffer); api.listen_rename(buffer, "Later");
+    api.poll();
+    assert_eq!(renderer.state.lock().unwrap().loads, loads);
+    assert_eq!(api.now_playing().title, "first");
+    assert!(api.listen_play(buffer, ""));
+    wait(&mut api, |n| n.title == "second" && renderer.state.lock().unwrap().loads > loads);
+    let loads = renderer.state.lock().unwrap().loads;
+    assert!(api.listen_play(original, ""));
+    wait(&mut api, |n| n.title == "first" && n.total_seconds == 10.0 && n.seconds == 4.0 && renderer.state.lock().unwrap().loads > loads);
+    assert_eq!(api.queue_paths().len(), 2);
     renderer.state.lock().unwrap().finish = true;
     wait(&mut api, |n| n.index == 1 && n.title == "second");
     api.previous_track("file:capture", false); wait(&mut api, |n| n.index == 0 && n.title == "first");

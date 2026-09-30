@@ -420,6 +420,8 @@ pub struct Controls {
     pub skip: SkipSignal,
     pub repeat: RepeatMode,
     pub order: Order,
+    /// I arm the first cursor only after the preceding request has stopped.
+    pub start_index: std::sync::Arc<std::sync::atomic::AtomicUsize>,
     /// Stops cleanly after this queue position finishes.
     pub stop_after: StopAfter,
     /// One track straight into the next, with the device kept open. Off,
@@ -503,6 +505,7 @@ impl Default for Controls {
             skip: SkipSignal::default(),
             repeat: RepeatMode::default(),
             order: Order::default(),
+            start_index: std::sync::Arc::new(std::sync::atomic::AtomicUsize::new(usize::MAX)),
             stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
@@ -816,7 +819,8 @@ where
     let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, volume, .. } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, K)> = None;
-    let mut index = order.first(queue.len());
+    let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
+    let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
     // A file that delivers not one frame plus repeat turned on would be a
     // loop that spins forever. How many tracks in a row did not play is
     // counted, and it cuts off after one full lap.
