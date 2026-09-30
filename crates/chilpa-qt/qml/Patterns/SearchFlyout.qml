@@ -32,7 +32,7 @@ Popup {
     }
     function choose(row) {
         close()
-        search.activate(row)
+        search.act(row, "open")
     }
     // Enter: the row the keyboard is on, or the first result.
     function chooseCurrent() {
@@ -131,8 +131,18 @@ Popup {
                 onActivated: flyout.choose(index)
                 onPlayed: {
                     flyout.close()
-                    flyout.search.play(index)
+                    flyout.search.act(index, "play")
                 }
+                onMenu: (left, top) => {
+                    const at = mapToItem(list, left, top)
+                    hitMenu.show(index, at.x, at.y)
+                }
+            }
+
+            SearchMenu {
+                id: hitMenu
+                search: flyout.search
+                onLeft: flyout.close()
             }
         }
 
