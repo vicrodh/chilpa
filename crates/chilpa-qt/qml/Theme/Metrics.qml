@@ -131,7 +131,7 @@ QtObject {
     readonly property int dividerHeight: 18
 
     // Player bar (02-layout.md 7).
-    readonly property int playerHeight: 62
+    readonly property int playerHeight: 70
     // The same margin as the sidebars'.
     readonly property int playerBottom: spaceWindow
     // How long the mouse is still before the bar steps away, when asked to.
@@ -140,12 +140,13 @@ QtObject {
     readonly property int playerInset: 16
     readonly property int playerPadLeft: 14
     readonly property int playerPadRight: 12
-    readonly property int lcdHeight: 46
-    readonly property int lcdArt: 38
+    // Tall enough for the seek bar to stay clear of who plays and the record.
+    readonly property int lcdHeight: 54
+    readonly property int lcdArt: 44
     readonly property int progress: 2
     readonly property int progressHover: 4
     readonly property int seekKnob: 10
-    readonly property int seekHit: 14
+    readonly property int seekHit: 10
     readonly property int volumeWidth: 64
     readonly property int volumeTrack: 3
     readonly property int volumePopupWidth: 52
