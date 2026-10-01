@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Primitives"
+import "../Theme"
 
 // The three placements offered by every collection's queue button.
 Menu {
