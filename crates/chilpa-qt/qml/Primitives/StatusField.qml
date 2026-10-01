@@ -7,6 +7,9 @@ Row {
     id: root
 
     property string state
+    // The color of its light: "positive", "warning" or "negative". Empty
+    // shows none.
+    property string light
     property string link
     property string openText
     property var options: []
@@ -15,6 +18,15 @@ Row {
     signal picked(string value)
 
     spacing: Metrics.gap8
+
+    Rectangle {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.light !== ""
+        width: Metrics.gap8
+        height: width
+        radius: width / 2 // derived: a circle
+        color: root.light === "positive" ? Theme.color.statusPositive : root.light === "negative" ? Theme.color.statusNegative : Theme.color.statusWarning
+    }
 
     PillButton {
         id: stateButton

@@ -115,7 +115,7 @@ Item {
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: page.visible && page.section === "sources"
+        running: page.visible && (page.section === "sources" || page.section === "plugins")
         onTriggered: { rows.refresh(); Sources.refresh() }
     }
 
