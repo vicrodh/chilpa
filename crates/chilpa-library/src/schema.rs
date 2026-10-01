@@ -24,7 +24,7 @@ use later::*;
 use steps::*;
 
 /// The schema version this code understands.
-pub const VERSION: i64 = 29;
+pub const VERSION: i64 = 30;
 
 /// The steps, in order. The index is the version they lead to: the first
 /// goes from 0 to 1, the second from 1 to 2.
@@ -32,7 +32,7 @@ pub const VERSION: i64 = 29;
 /// Each step runs once and is never edited after shipping: a database that
 /// already applied it will not apply it again, so changing it would only
 /// create two different shapes of the same version.
-const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29];
+const STEPS: &[&str] = &[SCHEMA_V1, MIGRATION_V2, MIGRATION_V3, MIGRATION_V4, MIGRATION_V5, MIGRATION_V6, MIGRATION_V7, MIGRATION_V8, MIGRATION_V9, MIGRATION_V10, MIGRATION_V11, MIGRATION_V12, MIGRATION_V13, MIGRATION_V14, MIGRATION_V15, MIGRATION_V16, MIGRATION_V17, MIGRATION_V18, MIGRATION_V19, MIGRATION_V20, MIGRATION_V21, MIGRATION_V22, MIGRATION_V23, MIGRATION_V24, MIGRATION_V25, MIGRATION_V26, MIGRATION_V27, MIGRATION_V28, MIGRATION_V29, MIGRATION_V30];
 
 /// Where the copy of a library about to be upgraded goes.
 ///
