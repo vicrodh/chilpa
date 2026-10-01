@@ -70,4 +70,4 @@ chilpa-api = { path = "crates/chilpa-api" }
 # The messages Chilpa and a plugin exchange. They live in the sdk branch of the
 # plugins repository so a plugin builds without this source; the revision is
 # pinned, and moving it is a change to the protocol.
-chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", rev = "96e49c6fb1313c222dd1d6e11244c727ed6c0a8d" }
+chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", rev = "81db071897ee5f9f0c02cb35493a475f7971225d" }

@@ -157,6 +157,11 @@ pub struct Manifest {
     /// failing. It is not a limitation of ours and it is not hidden.
     #[serde(default = "yes")]
     pub delivers_audio: bool,
+    /// The name of the icon its entry in the window is drawn with, when it
+    /// has one. It is a hint: a name the window does not know gets the
+    /// generic icon.
+    #[serde(default)]
+    pub icon: String,
 }
 
 fn yes() -> bool {

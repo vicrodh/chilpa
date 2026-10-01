@@ -192,6 +192,22 @@ impl Registry {
             .collect()
     }
 
+    /// The ones that work now and asked to put an entry of their own in the
+    /// window: id, name and icon hint, in the same steady order.
+    pub fn panels(&self) -> Vec<(String, String, String)> {
+        self.plugins
+            .values()
+            .filter(|i| self.watchdog.usable(&i.id))
+            .filter_map(|i| {
+                let manifest = i.plugin.as_ref()?.manifest();
+                manifest.has(&crate::manifest::Capability::RegisterPanel).then(|| {
+                    let name = if i.name.is_empty() { i.id.clone() } else { i.name.clone() };
+                    (i.id.clone(), name, manifest.icon.clone())
+                })
+            })
+            .collect()
+    }
+
     pub fn state(&self, id: &str) -> State {
         let Some(inst) = self.plugins.get(id) else {
             return State::Quarantined { reason: chilpa_i18n::t("it is not installed") };
