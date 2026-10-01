@@ -26,6 +26,8 @@ pub enum Screen {
     /// The metadata editor, on one record.
     Metadata,
     ListenList,
+    /// A plugin's own tree, browsed. The route's key is the plugin's id.
+    Source,
 }
 
 impl Screen {
@@ -45,11 +47,12 @@ impl Screen {
             Screen::PlaylistManager => "playlistManager",
             Screen::Metadata => "metadata",
             Screen::ListenList => "listenlist",
+            Screen::Source => "source",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata, Screen::ListenList].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata, Screen::ListenList, Screen::Source].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -211,6 +214,61 @@ impl Tabs {
             self.active -= 1;
         }
         self.active = self.active.min(self.tabs.len() - 1);
+    }
+}
+
+/// Where the open tabs are kept between runs.
+const TABS_KEY: &str = "ui.tabs";
+
+impl crate::Chilpa {
+    /// A tab's title and the name of its icon. A record's tab is named
+    /// after the record, and a source's after its plugin.
+    pub fn tab_label(&mut self, r: &Route) -> (String, String) {
+        let (title, icon) = match r.screen {
+            Screen::Home => (self.t("Home"), "home"),
+            Screen::Library => (self.t("Library"), "columns3"),
+            Screen::Artists => (self.t("Artists"), "microphone2"),
+            Screen::Albums => (self.t("Albums"), "disc"),
+            Screen::Tracks => (self.t("Tracks"), "music"),
+            Screen::Settings => (self.t("Settings"), "settings"),
+            Screen::LibraryFolders => (self.t("Library folders"), "folder"),
+            Screen::Artist => (r.key.clone(), "user"),
+            Screen::Folders => match std::path::Path::new(&r.key).file_name() {
+                Some(name) => (name.to_string_lossy().into_owned(), "folder"),
+                None => (self.t("Folders"), "folder"),
+            },
+            Screen::Album => (self.album(r.id).map(|a| a.title).unwrap_or_default(), "disc"),
+            Screen::Playlist => (self.playlist(r.id).map(|p| p.name).unwrap_or_default(), "playlist"),
+            Screen::PlaylistManager => (self.t("Playlist manager"), "playlist"),
+            Screen::ListenList => (self.t("Queues"), "listDetails"),
+            Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
+            Screen::Source => {
+                let panel = self.source_panels().into_iter().find(|p| p.id == r.key).unwrap_or_default();
+                let icon = if panel.icon.is_empty() { "server".to_string() } else { panel.icon };
+                return (if panel.name.is_empty() { r.key.clone() } else { panel.name }, icon);
+            }
+        };
+        (title, icon.to_string())
+    }
+
+    /// True when the tabs are kept and brought back (Settings > Navigation).
+    fn restores_tabs(&self) -> bool {
+        self.preference("navigation.restoreTabs").as_deref() != Some("false")
+    }
+
+    /// The tabs of the last run, unless keeping them was turned off.
+    pub fn restored_tabs(&self) -> Option<Tabs> {
+        // The preferences file is one line per key, so the lines of the
+        // tabs are kept as "\n".
+        let saved = self.preference(TABS_KEY).filter(|_| self.restores_tabs())?;
+        Some(Tabs::restore(&saved.replace("\\n", "\n")))
+    }
+
+    /// Keeps the open tabs for the next run, unless that was turned off.
+    pub fn keep_tabs(&mut self, tabs: &Tabs) {
+        if self.restores_tabs() {
+            self.remember_preference(TABS_KEY, &tabs.save().replace('\n', "\\n"));
+        }
     }
 }
 

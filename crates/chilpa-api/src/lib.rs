@@ -45,6 +45,7 @@ mod track_menu;
 pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
+mod sources;
 mod servers;
 pub mod settings_rows;
 pub mod settings_schema;
@@ -187,6 +188,9 @@ pub struct NowPlaying {
     pub lyrics_source: String,
     /// The last problem, empty if there is none.
     pub error: String,
+    /// True when what plays has no end and cannot be sought, like a radio
+    /// station: the window shows no seek bar and no time left.
+    pub live: bool,
 }
 
 /// The walk that keeps the tempo most even, starting at `from`.
@@ -563,6 +567,8 @@ pub struct Chilpa {
     /// The search in progress: what is local, what the sources contributed
     /// and what the view draws.
     search: search::SearchState,
+    /// Where the window stands in a source that is browsed.
+    sources: sources::SourcesState,
     /// The account being connected, between the browser opening and the
     /// user coming back.
     connecting: Option<plugins::Connecting>,
@@ -647,6 +653,7 @@ impl Chilpa {
             analysis_status: AnalysisStatus::default(),
             player: None,
             search: search::SearchState::default(),
+            sources: sources::SourcesState::default(),
             connecting: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -1115,6 +1122,7 @@ impl Chilpa {
             self.stop();
         }
         self.advance_search();
+        self.advance_sources();
         self.advance_connect();
         self.poll_servers();
         self.poll_cast();
@@ -1148,6 +1156,7 @@ impl Chilpa {
                     // the search. Without this the window would show the raw
                     // URL, which is all the decoder knows about it.
                     self.name_from_source(&path);
+                    self.now.live = self.name_from_entry(&path);
                     self.load_album_context();
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
@@ -1217,8 +1226,17 @@ impl Chilpa {
                 }
                 PlayerEvent::StreamTitle { title } => {
                     // On a radio the title is sent by the station and
-                    // changes with every song.
-                    self.now.title = title;
+                    // changes with every song. A station that was browsed
+                    // keeps its name beside the song, and gets it back when
+                    // the station sends an empty title between songs.
+                    match self.station_on() {
+                        Some(station) if title.trim().is_empty() => self.now.title = station,
+                        Some(station) => {
+                            self.now.title = title;
+                            self.now.artist = station;
+                        }
+                        None => self.now.title = title,
+                    }
                 }
                 PlayerEvent::Progress { frames, played } => {
                     self.now.frames = frames;
