@@ -31,6 +31,7 @@ pub mod qobject {
         #[qproperty(QString, path)]
         #[qproperty(bool, playing)]
         #[qproperty(bool, paused)]
+        #[qproperty(bool, live)]
         /// Seconds, published in quarters.
         #[qproperty(f64, position)]
         #[qproperty(f64, duration)]
@@ -166,6 +167,7 @@ pub struct PlayerRust {
     path: QString,
     playing: bool,
     paused: bool,
+    live: bool,
     position: f64,
     duration: f64,
     elapsed: QString,
@@ -384,6 +386,7 @@ impl qobject::Player {
         }
         let quarter = (now.seconds * 4.0).floor() / 4.0;
         if quarter != self.rust().position || now.total_seconds != self.rust().duration {
+            self.as_mut().set_live(now.live);
             self.as_mut().set_duration(now.total_seconds);
             self.as_mut().set_position(quarter);
             let (at, total) = ((now.seconds * 1000.0) as u64, (now.total_seconds * 1000.0) as u64);

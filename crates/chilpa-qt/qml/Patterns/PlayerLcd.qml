@@ -45,7 +45,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        visible: lcd.showTimes && Player.playing
+        visible: lcd.showTimes && Player.playing && !Player.live
         text: Player.remaining
         font.pointSize: Type.micro
         font.features: { "tnum": 1 }
@@ -136,6 +136,7 @@ Rectangle {
 
     SeekBar {
         objectName: "playerSeek"
+        visible: !Player.live
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right

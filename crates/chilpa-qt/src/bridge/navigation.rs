@@ -1,8 +1,7 @@
 //! The tabs and where each one is, as QML reads them (frontend ADR-0005).
 //!
 //! The history lives in [`crate::navigation`]; this object only publishes
-//! it. A tab's title and icon are decided here: a record's tab is named
-//! after the record.
+//! it. What a tab is called is the facade's to say.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -39,6 +38,11 @@ pub mod qobject {
         /// empty path is the top: the library's folders.
         #[qinvokable]
         fn open_folder(self: Pin<&mut Navigation>, path: &QString);
+
+        /// Goes to a screen that is told apart by a text, like a source by
+        /// its plugin's id.
+        #[qinvokable]
+        fn go_key(self: Pin<&mut Navigation>, screen: &QString, key: &QString);
 
         /// Opens an artist's page inside the active tab.
         #[qinvokable]
@@ -103,45 +107,8 @@ pub struct NavigationRust {
     tabs: Tabs,
 }
 
-/// Where the open tabs are kept between runs.
-const TABS_KEY: &str = "ui.tabs";
-
-/// Whether the tabs are kept and brought back (Settings > Navigation).
-fn restoring() -> bool {
-    app::with(|api| api.preference("navigation.restoreTabs")).as_deref() != Some("false")
-}
-
 fn route(screen: &QString, id: i64) -> Option<Route> {
     Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id, key: String::new() })
-}
-
-/// A tab's title and icon.
-fn label(r: &Route) -> (String, &'static str) {
-    match r.screen {
-        Screen::Home => (app::t("Home"), "home"),
-        Screen::Library => (app::t("Library"), "columns3"),
-        Screen::Artists => (app::t("Artists"), "microphone2"),
-        Screen::Albums => (app::t("Albums"), "disc"),
-        Screen::Tracks => (app::t("Tracks"), "music"),
-        Screen::Settings => (app::t("Settings"), "settings"),
-        Screen::LibraryFolders => (app::t("Library folders"), "folder"),
-        Screen::Artist => (r.key.clone(), "user"),
-        Screen::Folders => match std::path::Path::new(&r.key).file_name() {
-            Some(name) => (name.to_string_lossy().into_owned(), "folder"),
-            None => (app::t("Folders"), "folder"),
-        },
-        Screen::Album => {
-            let title = app::with(|api| api.album(r.id).map(|a| a.title)).unwrap_or_default();
-            (title, "disc")
-        }
-        Screen::Playlist => {
-            let name = app::with(|api| api.playlist(r.id).map(|p| p.name)).unwrap_or_default();
-            (name, "playlist")
-        }
-        Screen::PlaylistManager => (app::t("Playlist manager"), "playlist"),
-        Screen::ListenList => (app::t("Queues"), "listDetails"),
-        Screen::Metadata => (app::t("Edit metadata"), "listDetails"),
-    }
 }
 
 impl qobject::Navigation {
@@ -165,12 +132,15 @@ impl qobject::Navigation {
         self.publish();
     }
 
-    pub fn open_artist(mut self: Pin<&mut Self>, name: &QString) {
-        let key = name.to_string();
-        if !key.is_empty() {
-            self.as_mut().rust_mut().tabs.go(Route { screen: Screen::Artist, id: 0, key });
+    pub fn go_key(mut self: Pin<&mut Self>, screen: &QString, key: &QString) {
+        if let Some(screen) = Screen::from_name(&screen.to_string()).filter(|_| !key.is_empty()) {
+            self.as_mut().rust_mut().tabs.go(Route { screen, id: 0, key: key.to_string() });
             self.publish();
         }
+    }
+
+    pub fn open_artist(self: Pin<&mut Self>, name: &QString) {
+        self.go_key(&QString::from("artist"), name);
     }
 
     pub fn open_credit(self: Pin<&mut Self>, credit: &QString, place: i32) {
@@ -229,9 +199,9 @@ impl qobject::Navigation {
         let tabs = self.rust().tabs.clone();
         let (mut titles, mut icons) = (QList::<QString>::default(), QList::<QString>::default());
         for r in tabs.routes() {
-            let (title, icon) = label(&r);
+            let (title, icon) = app::with(|api| api.tab_label(&r));
             titles.append(QString::from(&title));
-            icons.append(QString::from(icon));
+            icons.append(QString::from(&icon));
         }
         let now = tabs.current();
         self.as_mut().set_tab_titles(QStringList::from(&titles));
@@ -244,23 +214,15 @@ impl qobject::Navigation {
         self.as_mut().set_section(QString::from(section));
         self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
-        if restoring() {
-            // The preferences file is one line per key, so the lines are
-            // written as "\n".
-            let saved = tabs.save().replace('\n', "\\n");
-            app::with(|api| api.remember_preference(TABS_KEY, &saved));
-        }
+        app::with(|api| api.keep_tabs(&tabs));
     }
 }
 
 impl cxx_qt::Initialize for qobject::Navigation {
     fn initialize(mut self: Pin<&mut Self>) {
         crate::registry::register_navigation(self.qt_thread());
-        // The tabs of the last run, unless that was turned off.
-        if restoring() {
-            if let Some(saved) = app::with(|api| api.preference(TABS_KEY)) {
-                self.as_mut().rust_mut().tabs = Tabs::restore(&saved.replace("\\n", "\n"));
-            }
+        if let Some(tabs) = app::with(|api| api.restored_tabs()) {
+            self.as_mut().rust_mut().tabs = tabs;
         }
         self.publish();
     }
