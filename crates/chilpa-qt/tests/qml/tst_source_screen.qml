@@ -83,6 +83,31 @@ TestCase {
         compare(findChild(screen, "sourceList").headerItem.height, 0, "a place with nothing to say takes no room")
     }
 
+    function test_a_root_with_columns_is_narrowed_by_picking_and_a_pick_is_cleared_by_its_chip() {
+        const country = { id: "country", title: "Country", picked: "", pickedTitle: "", entries: [{ id: "ar", title: "Argentina", subtitle: "1,140" }, { id: "mx", title: "Mexico", subtitle: "980" }] }
+        Sources.show({ crumbs: [], explorer: true, columns: [country], shortcuts: [{ id: "chilpa:saved", title: "Saved" }] })
+        wait(30)
+        compare(findChild(screen, "sourceTitle").text, "Radio", "the title is the source's, and only that")
+        const pane = findChild(screen, "sourceColumn")
+        verify(pane)
+        const rows = findChild(pane, "sourceColumnList")
+        compare(rows.count, 3, "All, then its two entries")
+        mouseClick(rows.itemAtIndex(2), 30, 8)
+        compare(last(), ["pick", "country", "mx"])
+
+        Sources.show({ columns: [Object.assign({}, country, { picked: "mx", pickedTitle: "Mexico" })] })
+        wait(30)
+        const chip = findChild(screen, "sourcePick")
+        compare(chip.value, "Mexico")
+        mouseClick(chip, chip.width - 12, chip.height / 2)
+        compare(last(), ["pick", "country", ""])
+        compare(findChild(screen, "sourceColumn"), pane, "a pick does not draw the column again")
+        mouseClick(findChild(pane, "sourceColumnList").itemAtIndex(0), 30, 8)
+        compare(last(), ["pick", "country", ""], "All clears it as well")
+        Sources.show({ explorer: false, columns: [], shortcuts: [] })
+        wait(30)
+    }
+
     function test_a_place_that_can_be_saved_shows_its_heart() {
         Sources.show({ crumbs: ["A Show"], placeSavable: true, placeSaved: false })
         wait(30)

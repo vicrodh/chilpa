@@ -633,7 +633,7 @@ dependencies = [
 [[package]]
 name = "chilpa-plugin-api"
 version = "0.1.0"
-source = "git+ssh://forgejo/blitzkriegfc/chilpa-plugins.git?tag=protocol-3#d611aa4cf1133c60621b3dcf91a761c18a764e0b"
+source = "git+ssh://forgejo/blitzkriegfc/chilpa-plugins.git?tag=protocol-4#30d304ae2dc4186b1a789518a0ba4b494a9b2410"
 dependencies = [
  "serde",
 ]

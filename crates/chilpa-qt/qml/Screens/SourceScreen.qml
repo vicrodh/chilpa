@@ -70,27 +70,14 @@ Item {
         width: page.width - Metrics.contentX * 2 // derived: padding on both sides
         height: Metrics.shelfHeader
 
-        Row {
-            objectName: "sourceCrumbs"
+        Text {
+            objectName: "sourceTitle"
             anchors.verticalCenter: parent.verticalCenter
-            spacing: Metrics.gap8
-
-            Repeater {
-                model: [page.view.name || ""].concat(page.crumbs)
-
-                Text {
-                    required property string modelData
-                    required property int index
-                    text: index > 0 ? "› " + modelData : modelData
-                    font.pointSize: Type.title
-                    font.weight: Type.bold
-                    font.letterSpacing: Type.titleTracking
-                    color: index === page.crumbs.length ? Theme.color.textPrimary : Theme.color.textTertiary
-
-                    HoverHandler { cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: page.ask("crumb", String(index), "") }
-                }
-            }
+            text: page.view.name || ""
+            font.pointSize: Type.title
+            font.weight: Type.bold
+            font.letterSpacing: Type.titleTracking
+            color: Theme.color.textPrimary
         }
         SortButton {
             anchors.right: save.left
@@ -133,11 +120,58 @@ Item {
         }
     }
 
+    SourceCrumbs {
+        id: crumbs
+        anchors.top: head.bottom
+        x: head.x
+        width: head.width
+        // Only when it has something to say: a way back, a pick, a shortcut.
+        height: page.crumbs.length > 0 || page.view.explorer === true || (page.view.shortcuts || []).length > 0 ? Metrics.breadcrumb : 0
+        visible: height > 0
+        view: page.view
+        onStepped: (index) => page.ask("crumb", String(index), "")
+        onCleared: (column) => page.ask("pick", column, "")
+        onOpened: (id) => page.ask("enter", id, "")
+    }
+
+    Rectangle {
+        id: panes
+        anchors.top: crumbs.bottom
+        x: head.x
+        width: head.width
+        height: page.view.explorer === true ? Metrics.panesHeight : 0
+        visible: height > 0
+        radius: Metrics.radiusMenu
+        color: Theme.color.strokeHairline
+        clip: true
+
+        Row {
+            anchors.fill: parent
+            anchors.margins: 1
+            spacing: 1
+
+            // By count, not by the columns themselves: each snapshot is a new
+            // object, and a column drawn again would lose what was typed in it.
+            Repeater {
+                model: (page.view.columns || []).length
+
+                SourceColumn {
+                    required property int index
+                    objectName: "sourceColumn"
+                    width: (panes.width - 2 - (page.view.columns.length - 1)) / page.view.columns.length // derived: the seams shared out
+                    height: parent.height
+                    column: page.view.columns[index] || ({})
+                    onPicked: (id) => page.ask("pick", column.id, id)
+                }
+            }
+        }
+    }
+
     ListView {
         id: list
         objectName: "sourceList"
         x: Metrics.contentX
-        anchors.top: head.bottom
+        anchors.top: panes.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         width: head.width

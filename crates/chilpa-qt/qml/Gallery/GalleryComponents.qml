@@ -197,6 +197,12 @@ GallerySection {
         }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
         SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
+        SourceCrumbs { width: Metrics.searchFlyout; height: Metrics.breadcrumb; view: ({ name: "Radio", crumbs: ["By country", "Mexico"], explorer: false, columns: [], shortcuts: [{ id: "chilpa:saved", title: "Saved" }] }) }
+        SourceColumn {
+            width: Metrics.searchFlyout / 2 // derived: half a flyout
+            height: Metrics.panesHeight
+            column: ({ id: "country", title: "Country", picked: "mx", entries: [{ id: "ar", title: "Argentina", subtitle: "1,140" }, { id: "mx", title: "Mexico", subtitle: "980" }] })
+        }
         SourceAbout { width: Metrics.searchFlyout; entry: ({ title: "Low Orbit Radio", subtitle: "Mora Vale", image: "x", description: "A show about what plays between two records.", facts: [{ label: "Genre", value: "Music" }] }) }
     }
 }

@@ -147,7 +147,9 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert_eq!(top["name"], "Fixture");
     assert_eq!(top["searchable"], true);
     let listed = ids(&top);
-    assert_eq!(listed[0], "chilpa:saved");
+    // A root narrowed by columns keeps Chilpa's folder beside the field.
+    assert!(!listed.contains(&"chilpa:saved".to_string()));
+    assert_eq!(top["shortcuts"][0]["id"], "chilpa:saved");
     assert!(!listed.contains(&"search".to_string()));
     assert!(listed.contains(&"genres".to_string()));
     assert_eq!(top["crumbs"].as_array().unwrap().len(), 0);
@@ -159,6 +161,18 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert_eq!(narrowed["total"], top["total"], "the listing is still whole underneath");
     chilpa.sources_command("filter", "", "");
     assert_eq!(ids(&view(&mut chilpa)).len(), listed.len());
+
+    // Its column narrows it; "all" is a pick too, and puts it back whole.
+    assert_eq!(top["explorer"], true);
+    assert_eq!(top["columns"][0]["id"], "kind");
+    assert_eq!(top["columns"][0]["picked"], "");
+    let live = go(&mut chilpa, "pick", "kind", "live");
+    assert_eq!(ids(&live), ["live:one", "live:two"]);
+    assert_eq!((live["columns"][0]["picked"].clone(), live["columns"][0]["pickedTitle"].clone()), ("live".into(), "Live".into()));
+    chilpa.sources_command("pick", "kind", "nothing of it");
+    assert_eq!(view(&mut chilpa)["columns"][0]["picked"], "live", "what the column does not offer is not picked");
+    let whole = go(&mut chilpa, "pick", "kind", "");
+    assert_eq!(ids(&whole), listed, "the same root as before any pick");
 
     // Two levels down, and back up by the crumbs.
     let genres = go(&mut chilpa, "enter", "genres", "");
@@ -191,7 +205,7 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert_eq!(ids(&found), ["live:two"]);
     assert_eq!(found["text"], "two");
     let cleared = go(&mut chilpa, "search", "", "");
-    assert_eq!(ids(&cleared)[0], "chilpa:saved");
+    assert_eq!(ids(&cleared), listed, "the root again");
 
     // What cannot be played says why and starts nothing.
     chilpa.sources_command("play", "hls:one", "");
