@@ -251,6 +251,13 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert_eq!(ids(&show), ["ep:one", "ep:two"]);
     assert_eq!((show["placeSavable"].clone(), show["placeSaved"].clone()), (true.into(), false.into()));
     assert_eq!(show["entries"][0]["finite"], true);
+    // The show itself is told above its episodes, and they can be reordered.
+    assert_eq!(show["about"]["description"], "A show about nothing.");
+    assert_eq!(show["about"]["subtitle"], "Somebody");
+    assert_eq!(show["sortable"], true);
+    assert_eq!(jazz["sortable"], false, "a listing of stations has no order to change");
+    assert!(top["about"].is_null());
+    assert!(!ids(&top).contains(&"chilpa:unfinished".to_string()), "nothing was left halfway yet");
     assert_eq!(show["entries"][0]["meta"], "2023-11-14 · 0:02");
     chilpa.sources_command("save", "", "");
     assert_eq!(view(&mut chilpa)["placeSaved"], true);
@@ -309,6 +316,12 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     chilpa.sources_command("heard", "ep:two", "");
     assert_eq!(view(&mut chilpa)["entries"][1]["played"], false);
     assert_eq!(view(&mut chilpa)["entries"][1]["heard"], "");
+    // With one of them not heard, "not heard first" brings it up, and the
+    // order as it came puts it back.
+    chilpa.sources_command("order", "unheard", "");
+    assert_eq!(ids(&view(&mut chilpa)), ["ep:two", "ep:one"]);
+    chilpa.sources_command("order", "", "");
+    assert_eq!(ids(&view(&mut chilpa)), ["ep:one", "ep:two"]);
     chilpa.sources_command("heard", "ep:two", "");
     assert_eq!(view(&mut chilpa)["entries"][1]["played"], true);
 

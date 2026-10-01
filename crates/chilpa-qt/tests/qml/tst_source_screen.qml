@@ -74,6 +74,15 @@ TestCase {
         compare(Navigation.went, ["sourceEntry", "radio station:1"])
     }
 
+    function test_a_show_is_shown_above_its_episodes_and_they_can_be_put_in_another_order() {
+        Sources.show({ crumbs: ["A Show"], entries: [episode], sortable: true, order: "", about: { title: "A Show", subtitle: "Somebody", image: "", description: "What it is about.", facts: [] } })
+        wait(30)
+        compare(findChild(screen, "aboutDescription").text, "What it is about.")
+        Sources.show({ about: null })
+        wait(30)
+        compare(findChild(screen, "sourceList").headerItem.height, 0, "a place with nothing to say takes no room")
+    }
+
     function test_a_place_that_can_be_saved_shows_its_heart() {
         Sources.show({ crumbs: ["A Show"], placeSavable: true, placeSaved: false })
         wait(30)

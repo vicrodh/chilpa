@@ -407,6 +407,9 @@ msgstr[1] ""
 msgid "Continue"
 msgstr ""
 
+msgid "Continue listening"
+msgstr ""
+
 msgid "Convert to PCM"
 msgstr ""
 
@@ -983,6 +986,9 @@ msgstr ""
 msgid "New, saved with the next save"
 msgstr ""
 
+msgid "Newest first"
+msgstr ""
+
 msgid "Next"
 msgstr ""
 
@@ -1028,6 +1034,9 @@ msgstr ""
 msgid "Not answering"
 msgstr ""
 
+msgid "Not heard first"
+msgstr ""
+
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
 
@@ -1068,6 +1077,9 @@ msgid "Number of tracks"
 msgstr ""
 
 msgid "Off"
+msgstr ""
+
+msgid "Oldest first"
 msgstr ""
 
 msgid "On the sidebar's destinations."
