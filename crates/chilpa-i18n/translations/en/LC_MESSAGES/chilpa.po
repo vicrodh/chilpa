@@ -827,9 +827,6 @@ msgstr ""
 msgid "List"
 msgstr ""
 
-msgid "ListenList"
-msgstr ""
-
 msgid "Loading the release…"
 msgstr ""
 
@@ -1242,6 +1239,9 @@ msgid "Queue {}"
 msgstr ""
 
 msgid "Queue · {}"
+msgstr ""
+
+msgid "Queues"
 msgstr ""
 
 msgid "Quick Connect is turned off on that server"

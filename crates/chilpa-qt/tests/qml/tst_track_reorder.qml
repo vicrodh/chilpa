@@ -90,9 +90,14 @@ TestCase {
         const spot = ghost.mapToItem(list, 0, 0)
         verify(Math.abs(spot.x - end.x) < 40 && Math.abs(spot.y - end.y) < 40, "next to the pointer")
         compare(ghost.count, count)
+        const line = findChild(list, "dropLine")
+        verify(line.visible, "a line marks where it would land")
+        const under = to.mapToItem(list, 0, to.height)
+        verify(Math.abs(line.y + line.height / 2 - under.y) < 1, "under the target, coming from above")
         compare(ghost.title, "Track 1")
         mouseRelease(list, end.x, end.y)
         verify(!ghost.visible)
+        verify(!findChild(list, "dropLine").visible)
         compare(tracks.lastAction, "move"); compare(tracks.lastRow, 0); compare(tracks.movedTo, 2)
     }
     function test_a_dragged_row_carries_its_ghost() { drag(1) }
