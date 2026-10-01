@@ -10,12 +10,14 @@
 //!   guessing from the extension of a URL that often has none.
 
 pub mod icy;
+pub mod patience;
 pub mod request;
 pub mod fetch;
 pub mod ranged;
 pub mod server;
 
 pub use icy::IcyReader;
+pub use patience::Patience;
 pub use request::send as send_request;
 pub use fetch::{fetch, Fetch, FetchError, Fetched};
 pub use ranged::{Ranged, RangedError, RangedRequest};
@@ -205,11 +207,14 @@ impl Read for Chained {
 
 /// Opens a URL and hands back only its body.
 fn body_of(url: &str) -> Result<Box<dyn Read + Send + Sync>, StreamError> {
-    let reply = ureq::get(url)
+    let patience = Patience::default();
+    let reply = patience
+        .agent()
+        .get(url)
         .header("User-Agent", "Chilpa")
         .call()
         .map_err(|e| StreamError::Open(e.to_string()))?;
-    Ok(Box::new(reply.into_body().into_reader()))
+    Ok(Box::new(patience::Watched::new(reply.into_body().into_reader(), patience.silence)))
 }
 
 /// Opens a track that comes in several parts and reads them in order.
@@ -242,7 +247,14 @@ pub fn open_parts(urls: &[String]) -> Result<HttpStream, StreamError> {
 /// Asks for ICY metadata: if the server offers it, the reader takes it out
 /// of the stream and publishes the title; if not, the audio passes through.
 pub fn open(url: &str) -> Result<HttpStream, StreamError> {
-    let reply = ureq::get(url)
+    open_with(url, Patience::default())
+}
+
+/// The same, saying how long each wait may last.
+pub fn open_with(url: &str, patience: Patience) -> Result<HttpStream, StreamError> {
+    let reply = patience
+        .agent()
+        .get(url)
         .header("Icy-MetaData", "1")
         .header("User-Agent", "Chilpa")
         .call()
@@ -265,7 +277,7 @@ pub fn open(url: &str) -> Result<HttpStream, StreamError> {
     }
 
     let now_playing = NowPlaying::new();
-    let body = reply.into_body().into_reader();
+    let body = patience::Watched::new(reply.into_body().into_reader(), patience.silence);
     let reader: Box<dyn Read + Send + Sync> = match info.icy_metaint {
         Some(metaint) if metaint > 0 => {
             Box::new(IcyReader::new(body, metaint, now_playing.clone()))

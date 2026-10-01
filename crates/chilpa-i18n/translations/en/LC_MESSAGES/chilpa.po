@@ -2677,6 +2677,9 @@ msgstr ""
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr ""
 
+msgid "the stream went quiet"
+msgstr ""
+
 msgid "the sync lost its place; start it again"
 msgstr ""
 
