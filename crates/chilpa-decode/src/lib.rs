@@ -17,6 +17,139 @@ use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::MetadataOptions;
 use symphonia::core::probe::Hint;
 
+/// How much of a stream may be read to find out what it is.
+const PROBE_BUDGET: u64 = 1024 * 1024;
+
+/// A stream that ends once its budget is spent, until the budget is lifted.
+struct Budgeted {
+    inner: chilpa_stream::HttpStream,
+    left: std::sync::Arc<std::sync::atomic::AtomicU64>,
+}
+
+impl std::io::Read for Budgeted {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        use std::sync::atomic::Ordering::Relaxed;
+        let left = self.left.load(Relaxed);
+        if left == u64::MAX {
+            return self.inner.read(buf);
+        }
+        let room = buf.len().min(left as usize);
+        if room == 0 {
+            return Ok(0);
+        }
+        let n = self.inner.read(&mut buf[..room])?;
+        self.left.store(left - n as u64, Relaxed);
+        Ok(n)
+    }
+}
+
+/// AAC frames as a station sends them, handed on as the decoder expects.
+///
+/// An ADTS frame header says whether it is MPEG-4 or MPEG-2. The audio is
+/// the same either way, but the reader underneath only looks for the MPEG-4
+/// header (`FF F1`) and never finds a frame in a stream of MPEG-2 ones
+/// (`FF F9`). This walks the stream frame by frame and clears that one bit.
+/// The payload goes through untouched.
+struct AdtsFrames<R> {
+    inner: R,
+    frame: Vec<u8>,
+    at: usize,
+}
+
+impl<R: std::io::Read> AdtsFrames<R> {
+    fn new(inner: R) -> Self {
+        Self { inner, frame: Vec::new(), at: 0 }
+    }
+
+    /// Reads the next whole frame. False at the end of the stream.
+    fn next_frame(&mut self) -> std::io::Result<bool> {
+        let mut header = [0u8; 7];
+        if !filled(&mut self.inner, &mut header)? {
+            return Ok(false);
+        }
+        loop {
+            // Twelve bits of sync, a layer of zero, and no checksum: the one
+            // shape the reader underneath takes.
+            let synced = header[0] == 0xff && header[1] & 0xf7 == 0xf1;
+            let length = (usize::from(header[3] & 0x03) << 11)
+                | (usize::from(header[4]) << 3)
+                | usize::from(header[5] >> 5);
+            if synced && length >= header.len() {
+                header[1] = 0xf1;
+                self.frame.clear();
+                self.frame.extend_from_slice(&header);
+                self.frame.resize(length, 0);
+                self.at = 0;
+                return filled(&mut self.inner, &mut self.frame[7..]);
+            }
+            // Not at a frame: one byte further on, until one lines up.
+            header.copy_within(1.., 0);
+            if !filled(&mut self.inner, &mut header[6..])? {
+                return Ok(false);
+            }
+        }
+    }
+}
+
+/// Fills the whole buffer. False if the stream ended first.
+fn filled(reader: &mut impl std::io::Read, buf: &mut [u8]) -> std::io::Result<bool> {
+    match reader.read_exact(buf) {
+        Ok(()) => Ok(true),
+        Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => Ok(false),
+        Err(e) => Err(e),
+    }
+}
+
+impl<R: std::io::Read> std::io::Read for AdtsFrames<R> {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        if self.at >= self.frame.len() && !self.next_frame()? {
+            return Ok(0);
+        }
+        let n = buf.len().min(self.frame.len() - self.at);
+        buf[..n].copy_from_slice(&self.frame[self.at..self.at + n]);
+        self.at += n;
+        Ok(n)
+    }
+}
+
+/// What the decoder reads a stream through: forward only, of no known
+/// length.
+struct Forward {
+    inner: Box<dyn std::io::Read + Send + Sync>,
+    position: u64,
+}
+
+impl std::io::Read for Forward {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        let n = self.inner.read(buf)?;
+        self.position += n as u64;
+        Ok(n)
+    }
+}
+
+impl std::io::Seek for Forward {
+    fn seek(&mut self, pos: std::io::SeekFrom) -> std::io::Result<u64> {
+        match pos {
+            std::io::SeekFrom::Current(0) => Ok(self.position),
+            std::io::SeekFrom::Start(n) if n == self.position => Ok(self.position),
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                chilpa_i18n::t("a stream cannot be rewound"),
+            )),
+        }
+    }
+}
+
+impl symphonia::core::io::MediaSource for Forward {
+    fn is_seekable(&self) -> bool {
+        false
+    }
+
+    fn byte_len(&self) -> Option<u64> {
+        None
+    }
+}
+
 #[derive(Debug)]
 pub enum DecodeError {
     Open(std::io::Error),
@@ -91,12 +224,43 @@ impl Decoded {
     ///
     /// The format comes from what the server announced: a radio URL almost
     /// never carries an extension, and guessing from the name fails.
+    ///
+    /// A stream never ends, so nothing here may read until it finds what it
+    /// is looking for: finding the format gets a budget of bytes, and a
+    /// stream that spends it without being recognized is refused. Without
+    /// the budget an unrecognized station kept the player reading forever,
+    /// and everything asked of it afterwards waited behind that.
     pub fn open_stream(stream: chilpa_stream::HttpStream) -> Result<Self, DecodeError> {
-        let mut hint = Hint::new();
-        if let Some(ext) = stream.info().extension_hint() {
-            hint.with_extension(&ext);
-        }
-        Self::from_source(Box::new(stream), hint)
+        let extension = stream.info().extension_hint();
+        let budget = std::sync::Arc::new(std::sync::atomic::AtomicU64::new(PROBE_BUDGET));
+        let source = Budgeted { inner: stream, left: budget.clone() };
+        let aac = extension.as_deref() == Some("aac");
+        let inner: Box<dyn std::io::Read + Send + Sync> =
+            if aac { Box::new(AdtsFrames::new(source)) } else { Box::new(source) };
+        let mss = MediaSourceStream::new(Box::new(Forward { inner, position: 0 }), Default::default());
+        let format: Box<dyn FormatReader> = if aac {
+            // The server said it is AAC, so it is read as ADTS without
+            // guessing: there is nothing to guess, and a guess reads on.
+            let reader = symphonia::default::formats::AdtsReader::try_new(mss, &FormatOptions::default())
+                .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
+            Box::new(reader)
+        } else {
+            let mut hint = Hint::new();
+            if let Some(ext) = &extension {
+                hint.with_extension(ext);
+            }
+            symphonia::default::get_probe()
+                .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
+                .map_err(|e| DecodeError::Unsupported(e.to_string()))?
+                .format
+        };
+        // The budget also covers the first block, which is decoded up front:
+        // a stream whose packets never decode would be read on forever
+        // looking for one that does. Once it is open it is read for as long
+        // as it plays.
+        let opened = Self::from_format(format);
+        budget.store(u64::MAX, std::sync::atomic::Ordering::Relaxed);
+        opened
     }
 
     /// Opens a file on a server of mine, read by windows (ADR-017). It is
@@ -123,7 +287,10 @@ impl Decoded {
         let probed = symphonia::default::get_probe()
             .format(&hint, mss, &FormatOptions::default(), &MetadataOptions::default())
             .map_err(|e| DecodeError::Unsupported(e.to_string()))?;
-        let format = probed.format;
+        Self::from_format(probed.format)
+    }
+
+    fn from_format(format: Box<dyn FormatReader>) -> Result<Self, DecodeError> {
         let track = format
             .default_track()
             .ok_or_else(|| DecodeError::Unsupported(chilpa_i18n::t("the file carries no tracks").into()))?;

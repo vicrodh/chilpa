@@ -516,3 +516,5 @@ listenlist
 # crate comes from.
 forgejo
 blitzkriegfc
+# The framing an AAC stream travels in.
+adts
