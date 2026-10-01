@@ -13,7 +13,19 @@ TestCase {
     TrackListModel { id: tracks }
     TrackList { id: list; width: 1000; height: 250; model: tracks; rich: false; reorderable: true }
     TrackList { id: plain; y: 260; width: 1000; height: 120; model: tracks; rich: false }
+    // A playlist's page: the list grows with its rows inside a page that
+    // scrolls as a whole.
+    Flickable {
+        id: page
+        x: 0; y: 0; z: -1
+        width: 1000; height: 100
+        visible: false
+        contentHeight: paged.implicitHeight + 400
+        TrackList { id: paged; width: 1000; height: implicitHeight; fitContent: true; model: tracks; rich: false; reorderable: true }
+    }
     function init() {
+        page.visible = false; page.contentY = 0
+        list.visible = true; plain.visible = true
         list.rich = false
         tracks.clear()
         for (let i = 1; i <= 3; ++i)
@@ -99,6 +111,20 @@ TestCase {
         verify(!ghost.visible)
         verify(!findChild(list, "dropLine").visible)
         compare(tracks.lastAction, "move"); compare(tracks.lastRow, 0); compare(tracks.movedTo, 2)
+    }
+    function test_dragging_a_row_does_not_scroll_the_page_it_is_in() {
+        list.visible = false; plain.visible = false; page.visible = true
+        wait(30)
+        const from = row(paged, 0), to = row(paged, 2)
+        const start = from.mapToItem(page, 300, from.height / 2), end = to.mapToItem(page, 300, to.height / 2)
+        mousePress(page, start.x, start.y)
+        for (let step = 1; step <= 8; ++step)
+            mouseMove(page, start.x, start.y + (end.y - start.y) * step / 8)
+        verify(findChild(paged, "dragGhost").visible, "the row is being dragged")
+        compare(page.contentY, 0)
+        verify(!page.moving)
+        mouseRelease(page, end.x, end.y)
+        compare(tracks.lastAction, "move"); compare(tracks.movedTo, 2)
     }
     function test_a_dragged_row_carries_its_ghost() { drag(1) }
     function test_a_dragged_selection_carries_a_group_ghost() { drag(3) }
