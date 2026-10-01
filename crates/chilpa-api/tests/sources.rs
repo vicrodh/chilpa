@@ -129,6 +129,14 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert!(listed.contains(&"genres".to_string()));
     assert_eq!(top["crumbs"].as_array().unwrap().len(), 0);
 
+    // Typing narrows what is already on screen, without asking anybody.
+    chilpa.sources_command("filter", "", "GEN");
+    let narrowed = view(&mut chilpa);
+    assert_eq!(ids(&narrowed), ["genres"]);
+    assert_eq!(narrowed["total"], top["total"], "the listing is still whole underneath");
+    chilpa.sources_command("filter", "", "");
+    assert_eq!(ids(&view(&mut chilpa)).len(), listed.len());
+
     // Two levels down, and back up by the crumbs.
     let genres = go(&mut chilpa, "enter", "genres", "");
     assert_eq!(genres["title"], "Genres");
@@ -176,6 +184,26 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let row = playing["entries"].as_array().unwrap().iter().find(|e| e["id"] == "live:one").unwrap();
     assert_eq!(row["sounding"], true);
     assert_eq!(row["resolving"], false);
+
+    // A stream address typed where the search goes is played as it is, by
+    // Chilpa, and listed as one entry so it can be saved like any other.
+    chilpa.stop();
+    let address = format!("http://127.0.0.1:{port}/typed.wav");
+    chilpa.sources_command("search", "", &address);
+    let typed = view(&mut chilpa);
+    assert_eq!(ids(&typed), [format!("chilpa:url:{address}")]);
+    assert!(
+        // The card arrives when the player says it started, not when it was asked to.
+        wait_for(&mut chilpa, |c| c.now_playing().live && c.now_playing().path == address),
+        "the address started: {:?}",
+        chilpa.now_playing()
+    );
+    assert_eq!(chilpa.now_playing().title, format!("127.0.0.1:{port}"));
+    assert!(chilpa.now_playing().live);
+    let _ = go(&mut chilpa, "search", "", "");
+    chilpa.stop();
+    chilpa.sources_command("enter", "live:one", "");
+    assert!(wait_for(&mut chilpa, |c| c.now_playing().playing && c.now_playing().title == "Live One"));
 
     // Saving, and the saved folder listing it without asking the plugin.
     chilpa.sources_command("save", "live:one", "");

@@ -24,6 +24,10 @@ use std::sync::mpsc;
 /// listener saved from that source. A plugin never sees it.
 const SAVED: &str = "chilpa:saved";
 
+/// What an entry's id starts with when it is a stream address the listener
+/// typed. Chilpa plays it itself: no plugin gave it out, so none is asked.
+const ADDRESS: &str = "chilpa:url:";
+
 /// A plugin with an entry of its own in the window.
 #[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
 pub struct Panel {
@@ -46,12 +50,18 @@ struct Sounding {
     url: String,
     source: String,
     entry: Entry,
+    /// The station's own picture, once it is on disk. A song's cover goes
+    /// over it and this comes back when the next song has none.
+    picture: String,
 }
 
 /// What a thread asking a plugin brings back.
 enum Answer {
     Listing { generation: u64, cursor: Option<String>, result: Result<Listing, String> },
     Stream { source: String, name: String, entry: Entry, result: Result<Stream, String> },
+    /// A picture for what sounds from `url`, on disk. `song` is the title
+    /// it is the cover of, or empty when it is the station's own.
+    Picture { url: String, song: String, path: String },
 }
 
 /// Where the window stands in a source, and what it sees there.
@@ -63,6 +73,8 @@ pub(crate) struct SourcesState {
     /// The root's place to type, if the plugin offers one.
     search_id: String,
     text: String,
+    /// What narrows the listing on screen without asking anybody.
+    filter: String,
     title: String,
     entries: Vec<Entry>,
     next: Option<String>,
@@ -89,6 +101,7 @@ impl Default for SourcesState {
             trail: Vec::new(),
             search_id: String::new(),
             text: String::new(),
+            filter: String::new(),
             title: String::new(),
             entries: Vec::new(),
             next: None,
@@ -171,9 +184,15 @@ impl Chilpa {
             .filter(|p| self.now.playing && self.now.path == p.url && p.source == s.current)
             .map(|p| p.entry.id.as_str())
             .unwrap_or_default();
+        let needle = s.filter.to_lowercase();
         let entries: Vec<serde_json::Value> = s
             .entries
             .iter()
+            .filter(|e| {
+                needle.is_empty()
+                    || e.title.to_lowercase().contains(&needle)
+                    || e.subtitle.to_lowercase().contains(&needle)
+            })
             .map(|e| {
                 serde_json::json!({
                     "id": e.id,
@@ -200,6 +219,8 @@ impl Chilpa {
             "entries": entries,
             "searchable": !s.search_id.is_empty(),
             "text": s.text,
+            "filter": s.filter,
+            "total": s.entries.len(),
             "loading": s.loading,
             "more": s.next.is_some(),
             "error": s.error,
@@ -214,7 +235,9 @@ impl Chilpa {
     /// - `open`: start browsing the plugin `id`, at its root.
     /// - `enter`: open the folder `id` of the listing, or play the item.
     /// - `crumb`: go back to the step numbered `id`; zero is the root.
-    /// - `search`: list what matches `text`; empty goes back to the root.
+    /// - `search`: list what matches `text`; empty goes back to the root. A
+    ///   text that is an http address is played as a stream instead.
+    /// - `filter`: narrow the listing on screen to what carries `text`.
     /// - `more`: bring the next page of the listing.
     /// - `play`: play the item `id`.
     /// - `save`: save the entry `id`, or take it out if it was saved.
@@ -229,6 +252,7 @@ impl Chilpa {
                 self.load_listing();
             }
             "search" => self.search_source(text),
+            "filter" => self.sources.filter = text.trim().to_string(),
             "more" => self.load_more(),
             "play" => self.play_entry(id),
             "save" => self.toggle_saved(id),
@@ -265,6 +289,10 @@ impl Chilpa {
 
     fn search_source(&mut self, text: &str) {
         let text = text.trim();
+        if text.starts_with("http://") || text.starts_with("https://") {
+            self.open_address(text);
+            return;
+        }
         let s = &mut self.sources;
         if s.search_id.is_empty() || text == s.text {
             return;
@@ -275,6 +303,32 @@ impl Chilpa {
             s.trail.push(Crumb { id: s.search_id.clone(), title: format!("“{text}”") });
         }
         self.load_listing();
+    }
+
+    /// A stream address the listener typed: it is listed as one entry, so
+    /// it can be saved like any other, and it starts playing.
+    fn open_address(&mut self, address: &str) {
+        let host = address.split("://").nth(1).unwrap_or(address).split('/').next().unwrap_or(address);
+        let entry = Entry {
+            id: format!("{ADDRESS}{address}"),
+            title: host.to_string(),
+            subtitle: address.to_string(),
+            kind: EntryKind::Item,
+            live: true,
+            playable: true,
+            ..Entry::default()
+        };
+        let s = &mut self.sources;
+        s.generation += 1;
+        s.loading = false;
+        s.error.clear();
+        s.filter.clear();
+        s.next = None;
+        s.text = address.to_string();
+        s.title = chilpa_i18n::t("Stream address");
+        s.trail = vec![Crumb { id: entry.id.clone(), title: s.title.clone() }];
+        s.entries = vec![entry.clone()];
+        self.play_entry(&entry.id);
     }
 
     fn read_saved(&mut self) {
@@ -288,6 +342,7 @@ impl Chilpa {
         let s = &mut self.sources;
         s.generation += 1;
         s.entries.clear();
+        s.filter.clear();
         s.next = None;
         s.error.clear();
         s.title = s.trail.last().map(|c| c.title.clone()).unwrap_or_default();
@@ -366,6 +421,10 @@ impl Chilpa {
             return;
         }
         let source = self.sources.current.clone();
+        if let Some(address) = entry.id.strip_prefix(ADDRESS) {
+            self.sound(address.to_string(), source, entry.clone());
+            return;
+        }
         let name = self.source_name(&source);
         self.sources.resolving = entry.id.clone();
         let tx = self.sources.tx.clone();
@@ -423,16 +482,62 @@ impl Chilpa {
                         self.sources.resolving.clear();
                     }
                     match result.and_then(|stream| playable_url(&stream)) {
-                        Ok(url) => {
-                            self.sources.sounding = Some(Sounding { url: url.clone(), source, entry });
-                            let (device, bit_perfect) = self.chosen_output();
-                            self.play_url(&url, &device, bit_perfect);
-                        }
+                        Ok(url) => self.sound(url, source, entry),
                         Err(e) => self.now.error = format!("{name}: {e}"),
                     }
                 }
+                Answer::Picture { url, song, path } => self.take_picture(url, song, path),
             }
         }
+    }
+
+    /// Starts an entry from the address it sounds from, and goes for its
+    /// picture meanwhile.
+    fn sound(&mut self, url: String, source: String, entry: Entry) {
+        let picture = entry.image_url.clone();
+        self.sources.sounding = Some(Sounding { url: url.clone(), source, entry, picture: String::new() });
+        let (device, bit_perfect) = self.chosen_output();
+        self.play_url(&url, &device, bit_perfect);
+        if let Some(address) = picture {
+            let tx = self.sources.tx.clone();
+            crate::pictures::keep_later(address, move |path| {
+                let _ = tx.send(Answer::Picture { url, song: String::new(), path });
+            });
+        }
+    }
+
+    /// Puts a picture that arrived on what is playing, if it is still that.
+    fn take_picture(&mut self, url: String, song: String, path: String) {
+        let Some(sounding) = self.sources.sounding.as_mut().filter(|s| s.url == url) else { return };
+        if song.is_empty() {
+            sounding.picture = path.clone();
+        }
+        // A song's cover that arrives after the song is over is not shown.
+        let current = song.is_empty() && self.now.artwork_path.is_empty() || song == self.now.title;
+        if self.now.path == url && current {
+            self.now.artwork_path = path;
+        }
+    }
+
+    /// A station said what is on. Its own picture comes back, and the
+    /// song's cover is looked for when the title reads "artist - song".
+    pub(crate) fn song_changed(&mut self, title: &str) {
+        let Some(sounding) = self.sources.sounding.as_ref().filter(|s| s.url == self.now.path) else {
+            return;
+        };
+        self.now.artwork_path = sounding.picture.clone();
+        let Some((artist, song)) = title.split_once(" - ") else { return };
+        let (artist, song, title) = (artist.trim().to_string(), song.trim().to_string(), title.to_string());
+        if artist.is_empty() || song.is_empty() {
+            return;
+        }
+        let (url, tx) = (sounding.url.clone(), self.sources.tx.clone());
+        let _ = std::thread::Builder::new().name("chilpa-song-cover".into()).spawn(move || {
+            let Some(address) = crate::scrobble::lastfm::track_cover(&artist, &song) else { return };
+            if let Some(path) = crate::pictures::keep(&address) {
+                let _ = tx.send(Answer::Picture { url, song: title, path });
+            }
+        });
     }
 
     fn take_listing(&mut self, cursor: Option<String>, result: Result<Listing, String>) {

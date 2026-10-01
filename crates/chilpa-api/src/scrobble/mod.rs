@@ -8,7 +8,7 @@
 //! `queue`; what differs -- how an account is connected, what a request
 //! looks like -- is each service's own module.
 
-mod lastfm;
+pub(crate) mod lastfm;
 mod listenbrainz;
 mod queue;
 

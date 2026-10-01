@@ -31,6 +31,7 @@ mod metadata;
 pub mod navigation;
 mod outputs;
 mod playlists;
+mod pictures;
 mod plugins;
 mod quality;
 mod marks;
@@ -1232,6 +1233,7 @@ impl Chilpa {
                     match self.station_on() {
                         Some(station) if title.trim().is_empty() => self.now.title = station,
                         Some(station) => {
+                            self.song_changed(&title);
                             self.now.title = title;
                             self.now.artist = station;
                         }

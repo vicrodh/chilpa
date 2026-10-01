@@ -238,6 +238,8 @@ fn valid_id(id: &str) -> bool {
 pub struct PluginInfo {
     pub id: String,
     pub name: String,
+    /// What it says it is, in its own words. Empty if it says nothing.
+    pub description: String,
     /// "awaiting approval", "fine", "stumbling" or "quarantined".
     pub state: String,
     /// Why it is in the corner, or empty.
@@ -372,6 +374,7 @@ impl Plugins {
                 PluginInfo {
                     id: i.id.clone(),
                     name: if i.name.is_empty() { i.id.clone() } else { i.name.clone() },
+                    description: i.manifest.as_ref().map(|m| m.description.trim().to_string()).unwrap_or_default(),
                     state: match &state {
                         chilpa_plugin::State::PendingApproval => chilpa_i18n::mark("awaiting approval").into(),
                         chilpa_plugin::State::Healthy => chilpa_i18n::mark("fine").into(),
