@@ -74,7 +74,8 @@ impl Chilpa {
             return;
         }
         let keys = Arc::new(Keys::new(chilpa_dirs::data().join("servers")));
-        chilpa_core::remote::install(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
+        self.sources.servers_opener = Some(Arc::new(opener::Opener::new(Arc::clone(&keys), Arc::clone(&self.servers.failures))));
+        self.install_openers();
         self.servers.syncer = Some(sync::Syncer::start(Arc::clone(&keys)));
         self.servers.watcher = Some(watch::Watcher::start(Arc::clone(&keys)));
         self.servers.keys = Some(keys);

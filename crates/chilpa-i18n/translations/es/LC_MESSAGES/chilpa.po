@@ -734,6 +734,9 @@ msgstr "Agrupar versiones de un álbum"
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
 
+msgid "Heard"
+msgstr "Escuchado"
+
 msgid "Hi-Res"
 msgstr "Alta resolución"
 
@@ -877,6 +880,9 @@ msgstr "Administrar"
 
 msgid "Manage playlists"
 msgstr "Administrar playlists"
+
+msgid "Mark as heard"
+msgstr "Marcar como escuchado"
 
 msgid "Maximize"
 msgstr "Maximizar"
@@ -1054,6 +1060,9 @@ msgstr "Todavía no guardas nada."
 
 msgid "Now playing"
 msgstr "Sonando"
+
+msgid "Now playing: {}"
+msgstr "Suena ahora: {}"
 
 msgid "Number of tracks"
 msgstr "Cantidad de pistas"
@@ -1639,6 +1648,9 @@ msgstr "Este equipo"
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr "Esta salida directa no tiene control de volumen por hardware. Usa el DAC o amplificador."
 
+msgid "This entry is no longer at hand. Open it again from its source."
+msgstr "Esta entrada ya no está a la mano. Ábrela otra vez desde su fuente."
+
 msgid "This folder has no tracks."
 msgstr "Esta carpeta no tiene pistas."
 
@@ -2040,6 +2052,9 @@ msgstr "no se puede escribir en él"
 
 msgid "it cannot take tags"
 msgstr "no acepta tags"
+
+msgid "it comes in several parts, which cannot be read as one file"
+msgstr "viene en varias partes, que no se pueden leer como un solo archivo"
 
 msgid "it could not be saved"
 msgstr "no se pudo guardar"

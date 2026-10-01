@@ -27,19 +27,32 @@ fn kind(bytes: &[u8]) -> Option<&'static str> {
     }
 }
 
+fn name_of(address: &str) -> String {
+    let mut hasher = std::collections::hash_map::DefaultHasher::new();
+    address.hash(&mut hasher);
+    format!("{:016x}", hasher.finish())
+}
+
+/// The picture at that address if it is already on disk. Never goes out.
+pub(crate) fn kept(address: &str) -> Option<String> {
+    if address.is_empty() {
+        return None;
+    }
+    let (dir, name) = (folder(), name_of(address));
+    ["jpg", "png"]
+        .into_iter()
+        .map(|extension| dir.join(format!("{name}.{extension}")))
+        .find(|kept| kept.is_file())
+        .map(|kept| kept.to_string_lossy().into_owned())
+}
+
 /// The picture at that address, on disk. Fetched the first time and read
 /// from the cache after. `None` when there is none to show.
 pub(crate) fn keep(address: &str) -> Option<String> {
-    let mut hasher = std::collections::hash_map::DefaultHasher::new();
-    address.hash(&mut hasher);
-    let name = format!("{:016x}", hasher.finish());
-    let dir = folder();
-    for extension in ["jpg", "png"] {
-        let kept = dir.join(format!("{name}.{extension}"));
-        if kept.is_file() {
-            return Some(kept.to_string_lossy().into_owned());
-        }
+    if let Some(kept) = kept(address) {
+        return Some(kept);
     }
+    let (dir, name) = (folder(), name_of(address));
     let asked = chilpa_core::Fetch {
         url: address,
         user_agent: "Chilpa",

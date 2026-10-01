@@ -40,21 +40,43 @@ fn wave(frames: u32) -> Vec<u8> {
     w
 }
 
-/// Serves the same WAV to whoever asks, once per connection.
+/// Serves the same WAV to whoever asks, whole or by the range asked for,
+/// which is how a file with an end is read. An address under `/episodes/`
+/// is not the file: it redirects to it, the way a published episode does.
 fn serve(audio: Vec<u8>) -> u16 {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let port = listener.local_addr().unwrap().port();
     std::thread::spawn(move || {
         for stream in listener.incoming().flatten() {
             let mut stream = stream;
-            let mut buf = [0u8; 1024];
-            let _ = stream.read(&mut buf);
-            let head = format!(
-                "HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\n\r\n",
-                audio.len()
-            );
-            if stream.write_all(head.as_bytes()).is_ok() {
-                let _ = stream.write_all(&audio);
+            let mut buf = [0u8; 2048];
+            let n = stream.read(&mut buf).unwrap_or(0);
+            let asked = String::from_utf8_lossy(&buf[..n]).to_string();
+            let path = asked.split_whitespace().nth(1).unwrap_or("/").to_string();
+            if let Some(name) = path.strip_prefix("/episodes/") {
+                let _ = stream.write_all(format!("HTTP/1.1 302 Found\r\nLocation: /files/{name}\r\nContent-Length: 0\r\n\r\n").as_bytes());
+                continue;
+            }
+            let range = asked.lines().find_map(|l| l.to_ascii_lowercase().strip_prefix("range: bytes=").map(str::to_string));
+            let head = match range.as_deref().and_then(|r| r.trim().split_once('-')) {
+                Some((from, to)) => {
+                    let from: usize = from.parse().unwrap_or(0);
+                    let to = to.parse::<usize>().unwrap_or(audio.len() - 1).min(audio.len() - 1);
+                    let head = format!(
+                        "HTTP/1.1 206 Partial Content\r\nContent-Type: audio/wav\r\nContent-Range: bytes {from}-{to}/{}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                        audio.len(),
+                        to + 1 - from
+                    );
+                    (head, from, to + 1)
+                }
+                None => (
+                    format!("HTTP/1.1 200 OK\r\nContent-Type: audio/wav\r\nContent-Length: {}\r\n\r\n", audio.len()),
+                    0,
+                    audio.len(),
+                ),
+            };
+            if stream.write_all(head.0.as_bytes()).is_ok() {
+                let _ = stream.write_all(&audio[head.1..head.2]);
             }
             let _ = stream.flush();
         }
@@ -101,7 +123,8 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     std::env::set_var("XDG_CONFIG_HOME", dir.join("config"));
     std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
 
-    let port = serve(wave(44_100));
+    // Eight seconds: long enough for the place in it to be written down.
+    let port = serve(wave(44_100 * 8));
     let root = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(root.join(ID).join("store")).unwrap();
     std::fs::write(root.join(ID).join("manifest.json"), MANIFEST).unwrap();
@@ -143,6 +166,14 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let jazz = go(&mut chilpa, "enter", "genre:jazz", "");
     assert_eq!(jazz["crumbs"], serde_json::json!(["Genres", "Jazz"]));
     assert_eq!(ids(&jazz), ["live:one", "live:two"]);
+
+    // An entry has a page of its own, with what the plugin knows of it.
+    chilpa.sources_command("detail", "live:one", ID);
+    let page = view(&mut chilpa)["detail"].clone();
+    assert_eq!(page["title"], "Live One");
+    assert_eq!(page["name"], "Fixture");
+    assert_eq!(page["facts"][0]["label"], "Country");
+    assert_eq!(page["sounding"], false);
     let back = go(&mut chilpa, "crumb", "1", "");
     assert_eq!(ids(&back), ["genre:jazz"]);
 
@@ -211,6 +242,48 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let saved = go(&mut chilpa, "enter", "chilpa:saved", "");
     assert_eq!(ids(&saved), ["live:one"]);
     assert_eq!(saved["inSaved"], true);
+
+    // A show: a folder that is followed by saving it whole, with episodes
+    // that have an end, a length and a day.
+    let _ = go(&mut chilpa, "crumb", "0", "");
+    let show = go(&mut chilpa, "enter", "show", "");
+    assert_eq!(ids(&show), ["ep:one", "ep:two"]);
+    assert_eq!((show["placeSavable"].clone(), show["placeSaved"].clone()), (true.into(), false.into()));
+    assert_eq!(show["entries"][0]["finite"], true);
+    assert_eq!(show["entries"][0]["meta"], "2023-11-14 · 0:02");
+    chilpa.sources_command("save", "", "");
+    assert_eq!(view(&mut chilpa)["placeSaved"], true);
+
+    // An episode goes to the queue under its id, not its address, and plays
+    // as a file: it has a length, it is not live, and it is named.
+    chilpa.stop();
+    chilpa.sources_command("play", "ep:one", "");
+    assert!(
+        wait_for(&mut chilpa, |c| c.now_playing().playing && c.now_playing().total_seconds > 7.0),
+        "the episode started: {:?}",
+        chilpa.now_playing()
+    );
+    let now = chilpa.now_playing().clone();
+    assert!(now.path.starts_with("remote:plugin/"), "{}", now.path);
+    assert!(!now.path.contains("127.0.0.1"), "the queue carries no address: {}", now.path);
+    assert_eq!((now.title.as_str(), now.artist.as_str()), ("Episode one", "A Show"));
+    assert!(!now.live);
+    chilpa.sources_command("queue", "ep:two", "");
+    assert_eq!(chilpa.now_playing().queue_len, 2, "the second waits behind the first");
+
+    // The capture output takes the audio as fast as it is decoded, so both
+    // run to their end at once. One that reached its end is marked heard,
+    // even when it ended between two of the periodic notes of its place.
+    assert!(
+        wait_for(&mut chilpa, |c| {
+            let now = view(c);
+            now["entries"][0]["played"] == true && now["entries"][1]["played"] == true
+        }),
+        "both were heard to the end: {}",
+        view(&mut chilpa)["entries"]
+    );
+    assert_eq!(view(&mut chilpa)["entries"][0]["heard"], "Heard");
+    assert_eq!(view(&mut chilpa)["entries"][0]["progress"], 1.0);
     chilpa.stop();
     drop(chilpa);
 
@@ -218,10 +291,28 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let mut chilpa = chilpa_api::Chilpa::new();
     chilpa.use_output("file:capture", false);
     chilpa.load_plugins();
+    // What the last run left in the queue is still named, with nobody
+    // asked: the queue only carried its id.
+    let waiting = chilpa.now_playing().clone();
+    assert!(waiting.title.starts_with("Episode "), "{waiting:?}");
+    assert_eq!(waiting.artist, "A Show");
+
+    // What was heard is still marked, and the mark can be taken away and
+    // put back by hand.
     let _ = go(&mut chilpa, "open", ID, "");
+    let show = go(&mut chilpa, "enter", "show", "");
+    assert_eq!(show["entries"][0]["played"], true);
+    chilpa.sources_command("heard", "ep:two", "");
+    assert_eq!(view(&mut chilpa)["entries"][1]["played"], false);
+    assert_eq!(view(&mut chilpa)["entries"][1]["heard"], "");
+    chilpa.sources_command("heard", "ep:two", "");
+    assert_eq!(view(&mut chilpa)["entries"][1]["played"], true);
+
+    let _ = go(&mut chilpa, "crumb", "0", "");
     let saved = go(&mut chilpa, "enter", "chilpa:saved", "");
-    assert_eq!(ids(&saved), ["live:one"]);
-    assert_eq!(saved["entries"][0]["title"], "Live One");
+    assert_eq!(ids(&saved), ["show", "live:one"], "the latest first: the show, then the station");
+    assert_eq!(saved["entries"][1]["title"], "Live One");
+    assert_eq!(saved["entries"][0]["kind"], "folder", "a saved show still opens");
     chilpa.sources_command("play", "live:one", "");
     assert!(
         wait_for(&mut chilpa, |c| c.now_playing().playing && c.now_playing().live),
@@ -230,7 +321,7 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     );
     chilpa.sources_command("save", "live:one", "");
     let emptied = go(&mut chilpa, "retry", "", "");
-    assert!(ids(&emptied).is_empty(), "taken out, it is gone from the saved ones");
+    assert_eq!(ids(&emptied), ["show"], "taken out, the station is gone from the saved ones");
     chilpa.stop();
 
     let _ = std::fs::remove_dir_all(dir);

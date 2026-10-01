@@ -14,11 +14,14 @@
 //! What the listener saves is kept by the library, not by the plugin: it
 //! survives the plugin being reinstalled and lists with the network down.
 
+use crate::source_opener::{entry_of, of_plugin};
 use crate::Chilpa;
+use chilpa_library::store::progress::Heard;
 use chilpa_library::store::saved::SavedEntry;
 use chilpa_plugin::messages::{self, Browse, Entry, EntryKind, Listing, Resolve, Stream};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::mpsc;
+use std::time::{Duration, Instant};
 
 /// The id of the one folder that is Chilpa's and not the plugin's: what the
 /// listener saved from that source. A plugin never sees it.
@@ -42,10 +45,19 @@ pub struct Panel {
 struct Crumb {
     id: String,
     title: String,
+    /// The entry that was opened to get here, when it was one of the
+    /// plugin's: it is what saving this place keeps.
+    entry: Option<Entry>,
 }
 
+/// How often the place in an episode is written down while it plays.
+const KEEP_EVERY: Duration = Duration::from_secs(5);
+
+/// How close to its end something counts as heard, in seconds.
+const NEAR_THE_END: f64 = 30.0;
+
 /// Something of a source that is sounding, with the card it was listed with.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 struct Sounding {
     url: String,
     source: String,
@@ -82,6 +94,16 @@ pub(crate) struct SourcesState {
     error: String,
     /// The ids saved from the current source.
     saved: HashSet<String>,
+    /// What the listener started or finished from the current source.
+    heard: HashMap<String, Heard>,
+    /// The entry a page of its own is showing, and whose it is.
+    detail: Option<(String, Entry)>,
+    /// When the place in what plays was last written down.
+    kept_at: Option<Instant>,
+    /// True once the last run's station was looked for.
+    looked_back: bool,
+    /// The servers' opener, for the one opener the player holds.
+    pub(crate) servers_opener: Option<std::sync::Arc<dyn chilpa_core::remote::RemoteOpener>>,
     /// The entry whose address is being asked for, so its row can say so.
     resolving: String,
     sounding: Option<Sounding>,
@@ -108,6 +130,11 @@ impl Default for SourcesState {
             loading: false,
             error: String::new(),
             saved: HashSet::new(),
+            heard: HashMap::new(),
+            detail: None,
+            kept_at: None,
+            looked_back: false,
+            servers_opener: None,
             resolving: String::new(),
             sounding: None,
             generation: 0,
@@ -141,7 +168,7 @@ fn from_saved(saved: SavedEntry) -> Entry {
 /// Checks a stream before it is believed, the way a search hit's is: an
 /// address that is not http is not attempted, and neither is a delivery
 /// Chilpa cannot read or a link that already expired.
-fn playable_url(stream: &Stream) -> Result<String, String> {
+pub(crate) fn playable_url(stream: &Stream) -> Result<String, String> {
     if !stream.usable() {
         return Err(chilpa_i18n::t("it answered something that is not an http address"));
     }
@@ -168,6 +195,13 @@ impl Chilpa {
         self.sources.panels.clone()
     }
 
+    /// What the entry on a page of its own is called, if that is the one
+    /// the page is showing.
+    pub(crate) fn source_entry_title(&self, plugin: &str, id: &str) -> Option<String> {
+        let (source, entry) = self.sources.detail.as_ref()?;
+        (!id.is_empty() && source == plugin && entry.id == id).then(|| entry.title.clone())
+    }
+
     /// What a source is called, for its tab and its header.
     pub fn source_name(&self, id: &str) -> String {
         self.sources.panels.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default()
@@ -178,12 +212,12 @@ impl Chilpa {
     pub fn sources_json(&mut self) -> String {
         let panels = self.source_panels();
         let s = &self.sources;
-        let sounding = s
-            .sounding
-            .as_ref()
-            .filter(|p| self.now.playing && self.now.path == p.url && p.source == s.current)
-            .map(|p| p.entry.id.as_str())
-            .unwrap_or_default();
+        let on_air = s.sounding.as_ref().filter(|p| self.now.playing && self.now.path == p.url);
+        let playing = of_plugin(&self.now.path).filter(|_| self.now.playing);
+        let sounds = |source: &str, id: &str| {
+            on_air.is_some_and(|p| p.source == source && p.entry.id == id)
+                || playing.as_ref().is_some_and(|(plugin, entry)| plugin == source && entry == id)
+        };
         let needle = s.filter.to_lowercase();
         let entries: Vec<serde_json::Value> = s
             .entries
@@ -193,23 +227,26 @@ impl Chilpa {
                     || e.title.to_lowercase().contains(&needle)
                     || e.subtitle.to_lowercase().contains(&needle)
             })
-            .map(|e| {
-                serde_json::json!({
-                    "id": e.id,
-                    "title": e.title,
-                    "subtitle": e.subtitle,
-                    "image": e.image_url.clone().unwrap_or_default(),
-                    "kind": kind_name(e.kind),
-                    "live": e.live,
-                    "playable": e.playable,
-                    "whyNot": e.why_not,
-                    "saved": s.saved.contains(&e.id),
-                    "sounding": e.id == sounding,
-                    "resolving": e.id == s.resolving,
-                })
-            })
+            .map(|e| self.entry_json(&s.current, e, sounds(&s.current, &e.id)))
             .collect();
         let crumbs: Vec<&str> = s.trail.iter().map(|c| c.title.as_str()).collect();
+        let place = s.trail.last();
+        let detail = s.detail.as_ref().map(|(source, entry)| {
+            let mut card = self.entry_json(source, entry, sounds(source, &entry.id));
+            card["source"] = source.clone().into();
+            card["name"] = self.source_name(source).into();
+            card["description"] = entry.description.clone().into();
+            card["facts"] = serde_json::json!(entry.facts);
+            // On a station the title is the song it is playing right now.
+            let song = if entry.live && sounds(source, &entry.id) && self.now.title != entry.title {
+                self.now.title.clone()
+            } else {
+                String::new()
+            };
+            card["song"] = song.into();
+            card["art"] = if sounds(source, &entry.id) { self.now.artwork_path.clone() } else { String::new() }.into();
+            card
+        });
         serde_json::json!({
             "panels": panels,
             "source": s.current,
@@ -224,9 +261,71 @@ impl Chilpa {
             "loading": s.loading,
             "more": s.next.is_some(),
             "error": s.error,
-            "inSaved": s.trail.last().is_some_and(|c| c.id == SAVED),
+            "inSaved": place.is_some_and(|c| c.id == SAVED),
+            // A place that is an entry of the plugin can be saved whole: a
+            // show is followed by saving its folder.
+            "placeSavable": place.is_some_and(|c| c.entry.is_some()),
+            "placeSaved": place.is_some_and(|c| s.saved.contains(&c.id)),
+            // What is playing, when it is something of a source: the key of
+            // its page.
+            "onAir": on_air
+                .map(|p| format!("{} {}", p.source, p.entry.id))
+                .or_else(|| playing.as_ref().map(|(plugin, entry)| format!("{plugin} {entry}")))
+                .unwrap_or_default(),
+            "detail": detail,
         })
         .to_string()
+    }
+
+    /// One entry as the window draws it.
+    fn entry_json(&self, source: &str, e: &Entry, sounding: bool) -> serde_json::Value {
+        let s = &self.sources;
+        let finite = e.kind == EntryKind::Item && !e.live;
+        let heard = s.heard.get(&e.id).filter(|_| source == s.current);
+        let length = heard.map(|h| h.duration_ms).filter(|d| *d > 0).unwrap_or(e.duration_ms);
+        let progress = match heard {
+            Some(h) if h.played => 1.0,
+            Some(h) if length > 0 => (h.position_ms as f64 / length as f64).clamp(0.0, 1.0),
+            _ => 0.0,
+        };
+        let mut meta: Vec<String> = Vec::new();
+        if let Some(day) = e.published_at.and_then(crate::format::day) {
+            meta.push(day);
+        }
+        if finite && length > 0 {
+            meta.push(crate::format::clock(length));
+        }
+        serde_json::json!({
+            "id": e.id,
+            "key": format!("{source} {}", e.id),
+            "title": e.title,
+            "subtitle": e.subtitle,
+            "image": e.image_url.clone().unwrap_or_default(),
+            "kind": kind_name(e.kind),
+            "live": e.live,
+            "finite": finite,
+            "meta": meta.join(" · "),
+            "progress": progress,
+            "played": heard.is_some_and(|h| h.played),
+            // How far along it is, in words for its row.
+            "heard": match heard {
+                Some(h) if h.played => chilpa_i18n::t("Heard"),
+                Some(_) if progress > 0.0 => format!("{} %", (progress * 100.0).round() as u32),
+                _ => String::new(),
+            },
+            "playable": e.playable,
+            "whyNot": e.why_not,
+            "saved": if source == s.current { s.saved.contains(&e.id) } else { self.saved_elsewhere(source, &e.id) },
+            "sounding": sounding,
+            "resolving": e.id == s.resolving,
+        })
+    }
+
+    fn saved_elsewhere(&self, source: &str, id: &str) -> bool {
+        self.library
+            .as_ref()
+            .and_then(|lib| lib.saved_entries(source).ok())
+            .is_some_and(|saved| saved.iter().any(|e| e.external_id == id))
     }
 
     /// What the window asks of a source. `id` and `text` mean what the
@@ -240,7 +339,11 @@ impl Chilpa {
     /// - `filter`: narrow the listing on screen to what carries `text`.
     /// - `more`: bring the next page of the listing.
     /// - `play`: play the item `id`.
-    /// - `save`: save the entry `id`, or take it out if it was saved.
+    /// - `queue`: add the item `id` to the end of the queue.
+    /// - `save`: save the entry `id`, or take it out if it was saved. With
+    ///   no id it is the place the window stands in that is saved.
+    /// - `heard`: mark the item `id` as heard, or as not heard.
+    /// - `detail`: show the entry `id` of the plugin `text` on its page.
     /// - `retry`: ask again for the listing that failed.
     pub fn sources_command(&mut self, action: &str, id: &str, text: &str) {
         match action {
@@ -255,7 +358,10 @@ impl Chilpa {
             "filter" => self.sources.filter = text.trim().to_string(),
             "more" => self.load_more(),
             "play" => self.play_entry(id),
+            "queue" => self.queue_entry(id),
             "save" => self.toggle_saved(id),
+            "heard" => self.toggle_heard(id),
+            "detail" => self.show_detail(text, id),
             "retry" => self.load_listing(),
             _ => {}
         }
@@ -275,11 +381,54 @@ impl Chilpa {
         self.load_listing();
     }
 
+    /// The entry with that id, and whose it is: one of the listing on
+    /// screen, the place the window stands in, or the one on its own page.
+    fn entry_by_id(&self, id: &str) -> Option<(String, Entry)> {
+        let s = &self.sources;
+        if let Some(entry) = s.entries.iter().find(|e| e.id == id) {
+            return Some((s.current.clone(), entry.clone()));
+        }
+        if let Some(entry) = s.trail.iter().filter_map(|c| c.entry.as_ref()).find(|e| e.id == id) {
+            return Some((s.current.clone(), entry.clone()));
+        }
+        s.detail.as_ref().filter(|(_, e)| e.id == id).cloned()
+    }
+
+    /// Finds an entry for its page wherever Chilpa still knows it: on
+    /// screen, on the air, saved, or heard before.
+    fn show_detail(&mut self, source: &str, id: &str) {
+        let known = self
+            .entry_by_id(id)
+            .filter(|(whose, _)| whose == source)
+            .map(|(_, e)| e)
+            .or_else(|| self.sources.sounding.as_ref().filter(|p| p.source == source && p.entry.id == id).map(|p| p.entry.clone()))
+            .or_else(|| {
+                let saved = self.library()?.saved_entries(source).ok()?;
+                saved.into_iter().find(|e| e.external_id == id).map(from_saved)
+            })
+            .or_else(|| {
+                let heard = self.library()?.heard(source, id).ok()??;
+                Some(Entry {
+                    id: heard.external_id,
+                    title: heard.title,
+                    subtitle: heard.subtitle,
+                    image_url: Some(heard.image_url).filter(|u| !u.is_empty()),
+                    kind: EntryKind::Item,
+                    duration_ms: heard.duration_ms,
+                    playable: true,
+                    ..Entry::default()
+                })
+            });
+        self.source_panels();
+        self.sources.detail = known.map(|entry| (source.to_string(), entry));
+    }
+
     fn enter_entry(&mut self, id: &str) {
         let Some(entry) = self.sources.entries.iter().find(|e| e.id == id).cloned() else { return };
         match entry.kind {
             EntryKind::Folder => {
-                self.sources.trail.push(Crumb { id: entry.id, title: entry.title });
+                let kept = (entry.id != SAVED).then(|| entry.clone());
+                self.sources.trail.push(Crumb { id: entry.id, title: entry.title, entry: kept });
                 self.load_listing();
             }
             EntryKind::Item => self.play_entry(id),
@@ -300,7 +449,7 @@ impl Chilpa {
         s.text = text.to_string();
         s.trail.clear();
         if !text.is_empty() {
-            s.trail.push(Crumb { id: s.search_id.clone(), title: format!("“{text}”") });
+            s.trail.push(Crumb { id: s.search_id.clone(), title: format!("“{text}”"), entry: None });
         }
         self.load_listing();
     }
@@ -326,7 +475,7 @@ impl Chilpa {
         s.next = None;
         s.text = address.to_string();
         s.title = chilpa_i18n::t("Stream address");
-        s.trail = vec![Crumb { id: entry.id.clone(), title: s.title.clone() }];
+        s.trail = vec![Crumb { id: entry.id.clone(), title: s.title.clone(), entry: None }];
         s.entries = vec![entry.clone()];
         self.play_entry(&entry.id);
     }
@@ -335,6 +484,7 @@ impl Chilpa {
         let source = self.sources.current.clone();
         let saved = self.library().and_then(|lib| lib.saved_entries(&source).ok()).unwrap_or_default();
         self.sources.saved = saved.into_iter().map(|e| e.external_id).collect();
+        self.sources.heard = self.library().and_then(|lib| lib.heard_of(&source).ok()).unwrap_or_default();
     }
 
     /// Asks for the listing of where the window stands, from its beginning.
@@ -405,10 +555,11 @@ impl Chilpa {
         }
     }
 
-    /// Plays an item of the listing: asks the plugin where it sounds from,
-    /// and starts it when the answer arrives.
+    /// Plays an item: something live is asked of the plugin and started
+    /// when the answer arrives; something with an end goes to the queue as
+    /// an entry the player resolves itself, from where the listener left it.
     fn play_entry(&mut self, id: &str) {
-        let Some(entry) = self.sources.entries.iter().find(|e| e.id == id).cloned() else { return };
+        let Some((source, entry)) = self.entry_by_id(id) else { return };
         if entry.kind != EntryKind::Item {
             return;
         }
@@ -420,9 +571,17 @@ impl Chilpa {
             };
             return;
         }
-        let source = self.sources.current.clone();
         if let Some(address) = entry.id.strip_prefix(ADDRESS) {
             self.sound(address.to_string(), source, entry.clone());
+            return;
+        }
+        if !entry.live {
+            let Some(path) = self.keep_card(&source, &entry) else { return };
+            let heard = self.library().and_then(|lib| lib.heard(&source, &entry.id).ok().flatten());
+            let from = heard.filter(|h| !h.played && h.position_ms > 0).map(|h| Duration::from_millis(h.position_ms));
+            let (device, _) = self.chosen_output();
+            self.replace_queue(vec![path]);
+            self.spawn_from(0, &device, false, from, crate::Relaunch::Track);
             return;
         }
         let name = self.source_name(&source);
@@ -435,13 +594,93 @@ impl Chilpa {
         });
     }
 
+    /// Adds something with an end to the queue, behind what is there.
+    fn queue_entry(&mut self, id: &str) {
+        let Some((source, entry)) = self.entry_by_id(id) else { return };
+        if entry.kind != EntryKind::Item || entry.live || !entry.playable {
+            return;
+        }
+        let Some(path) = self.keep_card(&source, &entry) else { return };
+        let (device, bit_perfect) = self.chosen_output();
+        self.enqueue(&[path], &device, bit_perfect);
+    }
+
+    /// Writes down what an entry is before it goes to the queue, which only
+    /// carries its id, and goes for its picture. Answers its queue entry.
+    fn keep_card(&mut self, source: &str, entry: &Entry) -> Option<String> {
+        let card = Heard {
+            external_id: entry.id.clone(),
+            title: entry.title.clone(),
+            subtitle: entry.subtitle.clone(),
+            image_url: entry.image_url.clone().unwrap_or_default(),
+            duration_ms: entry.duration_ms,
+            ..Heard::default()
+        };
+        if !self.library().is_some_and(|lib| lib.remember_heard(source, &card).is_ok()) {
+            self.now.error = chilpa_i18n::t("it could not be saved");
+            return None;
+        }
+        if let Some(address) = entry.image_url.clone() {
+            crate::pictures::keep_later(address, |_| {});
+        }
+        Some(entry_of(source, &entry.id))
+    }
+
+    /// Marks something with an end as heard, or takes the mark away.
+    fn toggle_heard(&mut self, id: &str) {
+        let Some((source, entry)) = self.entry_by_id(id) else { return };
+        if self.keep_card(&source, &entry).is_none() {
+            return;
+        }
+        let was = self.sources.heard.get(id).is_some_and(|h| h.played);
+        if self.library().is_some_and(|lib| lib.set_heard(&source, id, 0, !was).is_ok()) {
+            self.read_saved();
+        }
+    }
+
+    /// Writes down where the listener is in an episode: every few seconds
+    /// while it plays, and with `now` when it ends, is left for another
+    /// track or is stopped, which is when the place matters most. Near its
+    /// end it counts as heard and starts over the next time.
+    pub(crate) fn keep_place(&mut self, now: bool) {
+        let Some((source, id)) = of_plugin(&self.now.path) else { return };
+        if !now && (!self.now.playing || self.sources.kept_at.is_some_and(|at| at.elapsed() < KEEP_EVERY)) {
+            return;
+        }
+        self.sources.kept_at = Some(Instant::now());
+        let (at, total) = (self.now.seconds, self.now.total_seconds);
+        if total <= 0.0 && at <= 0.0 {
+            // It has not started: there is no place yet.
+            return;
+        }
+        let done = total > 0.0 && at >= total - NEAR_THE_END.min(total * 0.05);
+        let place = if done { 0 } else { (at * 1000.0) as u64 };
+        let kept = self.library().is_some_and(|lib| lib.set_heard(&source, &id, place, done).is_ok());
+        if kept && source == self.sources.current {
+            if let Some(heard) = self.library().and_then(|lib| lib.heard(&source, &id).ok().flatten()) {
+                self.sources.heard.insert(id, heard);
+            }
+        }
+    }
+
     fn toggle_saved(&mut self, id: &str) {
-        let Some(entry) = self.sources.entries.iter().find(|e| e.id == id).cloned() else { return };
-        let source = self.sources.current.clone();
-        let was = self.sources.saved.contains(id);
+        // With no id it is the place the window stands in.
+        let id = if id.is_empty() {
+            match self.sources.trail.last() {
+                Some(place) => place.id.clone(),
+                None => return,
+            }
+        } else {
+            id.to_string()
+        };
+        let Some((source, entry)) = self.entry_by_id(&id) else { return };
+        if entry.id == SAVED {
+            return;
+        }
+        let was = if source == self.sources.current { self.sources.saved.contains(&id) } else { self.saved_elsewhere(&source, &id) };
         let kept = self.library().is_some_and(|lib| {
             if was {
-                lib.forget_entry(&source, id).is_ok()
+                lib.forget_entry(&source, &id).is_ok()
             } else {
                 lib.save_entry(
                     &source,
@@ -461,10 +700,13 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("it could not be saved");
             return;
         }
+        if source != self.sources.current {
+            return;
+        }
         if was {
-            self.sources.saved.remove(id);
+            self.sources.saved.remove(&id);
         } else {
-            self.sources.saved.insert(id.to_string());
+            self.sources.saved.insert(id);
         }
     }
 
@@ -496,6 +738,7 @@ impl Chilpa {
     fn sound(&mut self, url: String, source: String, entry: Entry) {
         let picture = entry.image_url.clone();
         self.sources.sounding = Some(Sounding { url: url.clone(), source, entry, picture: String::new() });
+        self.write_sounding();
         let (device, bit_perfect) = self.chosen_output();
         self.play_url(&url, &device, bit_perfect);
         if let Some(address) = picture {
@@ -509,7 +752,8 @@ impl Chilpa {
     /// Puts a picture that arrived on what is playing, if it is still that.
     fn take_picture(&mut self, url: String, song: String, path: String) {
         let Some(sounding) = self.sources.sounding.as_mut().filter(|s| s.url == url) else { return };
-        if song.is_empty() {
+        let stations = song.is_empty();
+        if stations {
             sounding.picture = path.clone();
         }
         // A song's cover that arrives after the song is over is not shown.
@@ -517,6 +761,29 @@ impl Chilpa {
         if self.now.path == url && current {
             self.now.artwork_path = path;
         }
+        if stations {
+            self.write_sounding();
+        }
+    }
+
+    /// Where the last thing that sounded from a source is written down, so
+    /// the next run can still say what the queue's address is.
+    fn sounding_file() -> std::path::PathBuf {
+        chilpa_dirs::data().join("sounding.json")
+    }
+
+    fn write_sounding(&self) {
+        if let Some(text) = self.sources.sounding.as_ref().and_then(|s| serde_json::to_string(s).ok()) {
+            let _ = std::fs::write(Self::sounding_file(), text);
+        }
+    }
+
+    /// Reads back what the last run left sounding, once.
+    fn look_back(&mut self) {
+        if std::mem::replace(&mut self.sources.looked_back, true) || self.sources.sounding.is_some() {
+            return;
+        }
+        self.sources.sounding = std::fs::read_to_string(Self::sounding_file()).ok().and_then(|text| serde_json::from_str(&text).ok());
     }
 
     /// A station said what is on. Its own picture comes back, and the
@@ -578,6 +845,7 @@ impl Chilpa {
     /// Puts the card of a browsed entry on what just started, if it is that
     /// entry. Answers whether what started is live.
     pub(crate) fn name_from_entry(&mut self, path: &std::path::Path) -> bool {
+        self.look_back();
         let path = path.display().to_string();
         let Some(sounding) = self.sources.sounding.as_ref().filter(|s| s.url == path) else {
             return false;
@@ -585,7 +853,31 @@ impl Chilpa {
         self.now.title = sounding.entry.title.clone();
         self.now.artist = sounding.entry.subtitle.clone();
         self.now.album = String::new();
+        if self.now.artwork_path.is_empty() {
+            self.now.artwork_path = sounding.picture.clone();
+        }
         sounding.entry.live
+    }
+
+    /// Names something with an end that waits in a restored queue, from
+    /// the card kept when it was queued: the queue only carries its id.
+    pub(crate) fn name_from_heard(&mut self) {
+        let Some((source, id)) = of_plugin(&self.now.path) else { return };
+        let Some(heard) = self.library().and_then(|lib| lib.heard(&source, &id).ok().flatten()) else { return };
+        self.now.title = heard.title;
+        self.now.artist = heard.subtitle;
+        if self.now.total_seconds <= 0.0 {
+            self.now.total_seconds = heard.duration_ms as f64 / 1000.0;
+        }
+        if self.now.artwork_path.is_empty() {
+            self.now.artwork_path = crate::pictures::kept(&heard.image_url).unwrap_or_default();
+        }
+    }
+
+    /// Sets the one opener the player holds: plugins here, servers there.
+    pub(crate) fn install_openers(&mut self) {
+        let openers = crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone());
+        chilpa_core::remote::install(std::sync::Arc::new(openers));
     }
 
     /// The name of the station that is on, when what plays is a live entry
