@@ -18,6 +18,11 @@ MouseArea {
     property real pressedY: 0
     property bool dragging: false
     property bool pressedRating: false
+    // What is being dragged, for the ghost that follows the pointer.
+    property string dragTitle
+    property string dragDetail
+    property int dragCount: 1
+    property bool dropped: false
 
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton
@@ -30,19 +35,23 @@ MouseArea {
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         rows.ratingHovered = ratingAt(rows.hovered, mouseX, mouseY)
         rows.actionHovered = containsMouse ? actionAt(rows.hovered, mouseX, mouseY) : 0
-        rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX) : 0
+        rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX, mouseY) : 0
     }
-    // The arrow at that point of a row kept in its own order: they sit
-    // where the track's number would be.
-    function moveAt(row, x) {
+    // The arrow at that point of a row kept in its own order: before the
+    // number, one over the other in a rich row and side by side in a
+    // compact one.
+    function moveAt(row, x, y) {
         const item = cols.reorder && row >= 0 ? rows.itemAtIndex(row) : null
-        if (!item || item.header || !item.available)
+        const left = item ? x - item.x - cols.moveX : -1
+        if (!item || item.header || !item.available || left < 0 || left >= cols.move)
             return 0
-        const cell = Math.floor((x - item.x - cols.indexX) / Metrics.rowAction)
-        return cell === 0 ? 1 : cell === 1 ? 2 : 0
+        if (!cols.rich)
+            return left < Metrics.moveCellCompact ? 1 : 2
+        const cell = Math.floor((y + rows.contentY - item.y - item.height / 2) / Metrics.moveCell)
+        return cell === -1 ? 1 : cell === 0 ? 2 : 0
     }
-    function move(row, x) {
-        const arrow = moveAt(row, x)
+    function move(row, x, y) {
+        const arrow = moveAt(row, x, y)
         if (arrow > 0)
             host.model.moveInPlaylist(row, arrow === 1 ? -1 : 1)
         return arrow > 0
@@ -66,13 +75,17 @@ MouseArea {
     }
 
     onPressed: (mouse) => {
+        dropped = false
         pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
         const pressed = rows.itemAtIndex(rowAt(mouse.y))
-        const onAction = actionAt(rowAt(mouse.y), mouse.x, mouse.y) > 0 || moveAt(rowAt(mouse.y), mouse.x) > 0
+        const onAction = actionAt(rowAt(mouse.y), mouse.x, mouse.y) > 0 || moveAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
         if (mouse.button === Qt.LeftButton && host.reorderable && !pressedRating && !onAction && pressed && pressed.available) {
             pressedRow = rowAt(mouse.y)
             pressedY = mouse.y
             dragging = false
+            dragCount = pressed.selected && host.model.selectedCount > 1 ? host.model.selectedCount : 1
+            dragTitle = pressed.title
+            dragDetail = [pressed.artist, pressed.album].filter((part) => part !== "").join(" · ")
         }
     }
     onPositionChanged: (mouse) => {
@@ -81,6 +94,8 @@ MouseArea {
             dragging = true
     }
     onReleased: (mouse) => {
+        // The release that ends a drag is a drop, not also a click.
+        dropped = dragging
         if (dragging && pressedRow >= 0) {
             const target = rowAt(mouse.y)
             if (target >= 0)
@@ -92,14 +107,14 @@ MouseArea {
     onContainsMouseChanged: track()
     onClicked: (mouse) => {
         const row = rowAt(mouse.y)
-        if (row < 0)
+        if (row < 0 || dropped)
             return
         if (mouse.button === Qt.RightButton) {
             host.model.select(row, 4)
             menu.show(row, mouse.x, rows.y + mouse.y)
             return
         }
-        if (move(row, mouse.x))
+        if (move(row, mouse.x, mouse.y))
             return
         const action = actionAt(row, mouse.x, mouse.y)
         if (action === 2) {
@@ -130,7 +145,7 @@ MouseArea {
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
         // A second quick press on an arrow is one more step, not a play.
-        if (row >= 0 && mouse.button === Qt.LeftButton && move(row, mouse.x))
+        if (row >= 0 && mouse.button === Qt.LeftButton && move(row, mouse.x, mouse.y))
             return
         if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y) && !actionAt(row, mouse.x, mouse.y))
             host.model.play(row)

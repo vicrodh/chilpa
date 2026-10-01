@@ -96,9 +96,11 @@ Item {
         visible: !row.header
 
         TrackRowLead {
-            x: row.cols.indexX
-            width: row.cols.index
+            x: row.cols.moveX
+            width: row.cols.move + row.cols.index
             height: parent.height
+            gutter: row.cols.move
+            stacked: row.rich
             number: row.number
             playing: row.playing
             selected: row.selected

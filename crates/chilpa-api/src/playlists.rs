@@ -387,6 +387,16 @@ impl Chilpa {
         self.library().is_some_and(|lib| lib.move_in_playlist(playlist_id, from, to).unwrap_or(false))
     }
 
+    /// Moves several tracks of a list, dragged together, to where one was
+    /// dropped. True if any of them moved.
+    pub fn move_group_in_playlist(&mut self, playlist_id: i64, rows: &[usize], to: usize) -> bool {
+        let mut moved = false;
+        for (from, to) in group_moves(rows, to) {
+            moved |= self.move_in_playlist(playlist_id, from, to);
+        }
+        moved
+    }
+
     /// Takes the track at that position out of a list.
     pub fn remove_from_playlist(&mut self, playlist_id: i64, position: usize) -> bool {
         if !self.playlist(playlist_id).is_some_and(|playlist| playlist.mixed) {
@@ -506,4 +516,54 @@ fn entry_of(lib: &chilpa_library::Library, local: i64, path: &str) -> chilpa_lib
         return chilpa_library::PlaylistEntry { track_id: Some(track), source_id: Some(source), external_id: path.to_string() };
     }
     chilpa_library::PlaylistEntry { track_id: lib.track_by_path(local, std::path::Path::new(path)).ok().flatten(), source_id: Some(local), external_id: path.to_string() }
+}
+
+/// The single moves that take the rows of a group to where it was dropped,
+/// as one block and in the order they had.
+///
+/// The rows above the target go down to it, the last one first, and the
+/// rows below come up after them: a move above the target never shifts a
+/// row below it, so the positions stay true from one move to the next.
+pub fn group_moves(rows: &[usize], to: usize) -> Vec<(usize, usize)> {
+    let mut rows = rows.to_vec();
+    rows.sort_unstable();
+    rows.dedup();
+    let on_target = rows.contains(&to);
+    let above: Vec<usize> = rows.iter().copied().filter(|&row| row < to).collect();
+    let below: Vec<usize> = rows.iter().copied().filter(|&row| row > to).collect();
+    let mut moves = Vec::new();
+    let last = if on_target { to.saturating_sub(1) } else { to };
+    for (step, &row) in above.iter().rev().enumerate() {
+        moves.push((row, last - step));
+    }
+    let first = if on_target || !above.is_empty() { to + 1 } else { to };
+    for (step, &row) in below.iter().enumerate() {
+        moves.push((row, first + step));
+    }
+    moves.retain(|(from, to)| from != to);
+    moves
+}
+
+#[cfg(test)]
+mod group_tests {
+    use super::group_moves;
+
+    fn dropped(rows: &[usize], to: usize) -> String {
+        let mut list: Vec<char> = "abcdef".chars().collect();
+        for (from, to) in group_moves(rows, to) {
+            let track = list.remove(from);
+            list.insert(to, track);
+        }
+        list.into_iter().collect()
+    }
+
+    #[test]
+    fn a_group_lands_as_one_block_in_its_order() {
+        assert_eq!(dropped(&[1, 4], 2), "acbedf", "one from above and one from below meet at the target");
+        assert_eq!(dropped(&[4, 5], 1), "aefbcd", "a group from below lands where it was dropped");
+        assert_eq!(dropped(&[0, 1], 3), "cdabef", "a group from above keeps its order");
+        assert_eq!(dropped(&[1, 3, 5], 3), "acbdfe", "dropped on one of its own, the group closes around it");
+        assert_eq!(dropped(&[2, 3], 2), "abcdef", "a block dropped on itself does not move");
+        assert_eq!(dropped(&[4], 1), "aebcdf", "one row moves as it always did");
+    }
 }

@@ -3,9 +3,9 @@ import QtQuick
 import "../Theme"
 import "../Primitives"
 
-// What a track row starts with, in the column of its number: the number,
-// the mark of the one playing, the check of a list being selected from, or
-// the arrows of a list kept in its own order.
+// What a track row starts with: the arrows of a list kept in its own
+// order, and then its number, the mark of the one playing, or the check of
+// a list being selected from.
 Item {
     id: lead
 
@@ -17,12 +17,15 @@ Item {
     // The arrow under the pointer: 1 up, 2 down, 0 neither.
     property int moveHovered: 0
 
-    readonly property bool plain: !selectionMode && !reorder
+    // The room the arrows take, before the number.
+    property int gutter: 0
+    property bool stacked: false
 
     Text {
-        width: lead.width - Metrics.gap8
+        x: lead.gutter
+        width: lead.width - lead.gutter - Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        visible: lead.plain && !lead.playing
+        visible: !lead.selectionMode && !lead.playing
         text: lead.number > 0 ? lead.number : ""
         horizontalAlignment: Text.AlignRight
         font.pointSize: Type.small
@@ -33,11 +36,12 @@ Item {
     PlayingIndicator {
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
-        visible: lead.plain && lead.playing
+        visible: !lead.selectionMode && lead.playing
     }
 
     Icon {
-        anchors.centerIn: parent
+        x: lead.gutter + (lead.width - lead.gutter - width) / 2
+        anchors.verticalCenter: parent.verticalCenter
         visible: lead.selectionMode
         glyph: lead.selected ? Icons.squareCheckFilled : Icons.square
         filled: lead.selected
@@ -49,6 +53,6 @@ Item {
     Loader {
         active: lead.reorder && !lead.selectionMode
         height: parent.height
-        sourceComponent: TrackRowMove { hovered: lead.moveHovered }
+        sourceComponent: TrackRowMove { stacked: lead.stacked; hovered: lead.moveHovered }
     }
 }
