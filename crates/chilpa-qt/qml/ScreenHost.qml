@@ -23,6 +23,7 @@ Loader {
         case "metadata": return metadata
         case "listenlist": return listenlist
         case "source": return source
+        case "sourceEntry": return sourceEntry
         default: return pending
         }
     }
@@ -42,5 +43,6 @@ Loader {
     Component { id: listenlist; ListenListScreen {} }
     Component { id: metadata; MetadataScreen {} }
     Component { id: source; SourceScreen {} }
+    Component { id: sourceEntry; SourceEntryScreen {} }
     Component { id: pending; PendingScreen {} }
 }

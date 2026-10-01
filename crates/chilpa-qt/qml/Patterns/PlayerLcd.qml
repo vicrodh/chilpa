@@ -12,6 +12,13 @@ Rectangle {
     property bool showTimes: true
     readonly property bool qualityHovered: quality.hovered
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
+    // The key of the page of what plays, when it is an entry of a source.
+    readonly property string onAir: JSON.parse(Sources.snapshot || "{}").onAir || ""
+
+    Connections {
+        target: Player
+        function onPathChanged() { Sources.refresh() }
+    }
 
     height: Metrics.lcdHeight
     radius: Metrics.radiusLcd
@@ -98,6 +105,7 @@ Rectangle {
                     id: artist
                     width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
                     credit: Player.artist
+                    entry: lcd.onAir
                     font.pointSize: Type.small
                     color: hovered ? Theme.color.textPrimary : Theme.color.textSecondary
                 }

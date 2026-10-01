@@ -7,6 +7,9 @@ import "../Theme"
 Text {
     id: line
     property string credit
+    // When what plays is an entry of a source, the key of its page: a
+    // station is not an artist, and a click opens the station.
+    property string entry
     readonly property alias hovered: hover.hovered
 
     // Which of its artists is at `x`: the first is 0, and between two of
@@ -26,5 +29,5 @@ Text {
 
     FontMetrics { id: metrics; font: line.font }
     HoverHandler { id: hover; enabled: line.credit !== ""; cursorShape: Qt.PointingHandCursor }
-    TapHandler { enabled: line.credit !== ""; onTapped: (point) => Navigation.openCredit(line.credit, line.placeAt(point.position.x)) }
+    TapHandler { enabled: line.credit !== ""; onTapped: (point) => line.entry !== "" ? Navigation.goKey("sourceEntry", line.entry) : Navigation.openCredit(line.credit, line.placeAt(point.position.x)) }
 }

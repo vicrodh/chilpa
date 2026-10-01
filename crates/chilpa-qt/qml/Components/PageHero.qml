@@ -18,6 +18,8 @@ Item {
     property string meta
     property bool canQueue: false
     property bool canPlay: true
+    // Off for what has no order to shuffle: a station, one episode.
+    property bool canShuffle: true
     property string queueGlyph: Icons.playlistAdd
     property string queueIconFamily
     property string queueTip: I18n.tr("Add to queue", I18n.rev)
@@ -107,13 +109,14 @@ Item {
                 onClicked: hero.play()
             }
             PillButton {
-                visible: hero.canPlay
+                visible: hero.canPlay && hero.canShuffle
                 glyph: Icons.arrowsShuffle
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
             }
             MarkButtons {
                 anchors.verticalCenter: parent.verticalCenter
+                visible: hero.markKind !== ""
                 kind: hero.markKind
                 key: hero.markKey
                 rates: hero.markKind !== "artist"

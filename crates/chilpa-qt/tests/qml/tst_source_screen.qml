@@ -11,13 +11,15 @@ TestCase {
     height: 500
 
     SourceScreen { id: screen; width: 640; height: 500 }
+    SourceEntryScreen { id: entryPage; x: 650; width: 250; height: 500 }
 
-    readonly property var station: ({ id: "station:1", title: "One FM", subtitle: "Somewhere", image: "", kind: "item", live: true, playable: true, whyNot: "", saved: false, sounding: false, resolving: false })
-    readonly property var folder: ({ id: "countries", title: "By country", subtitle: "", image: "", kind: "folder", live: false, playable: true, whyNot: "", saved: false, sounding: false, resolving: false })
+    readonly property var station: ({ id: "station:1", key: "radio station:1", title: "One FM", subtitle: "Somewhere", image: "", kind: "item", live: true, finite: false, meta: "", progress: 0, played: false, heard: "", playable: true, whyNot: "", saved: false, sounding: false, resolving: false })
+    readonly property var folder: ({ id: "countries", key: "radio countries", title: "By country", subtitle: "", image: "", kind: "folder", live: false, finite: false, meta: "", progress: 0, played: false, heard: "", playable: true, whyNot: "", saved: false, sounding: false, resolving: false })
+    readonly property var episode: Object.assign({}, station, { id: "ep:1", key: "shows ep:1", title: "An Episode", live: false, finite: true, meta: "2026-09-25 · 22:05", progress: 0.4, heard: "40 %" })
 
     function init() {
         Sources.asked = []
-        Sources.show({ crumbs: [], entries: [folder, station], error: "", loading: false, more: false })
+        Sources.show({ crumbs: [], entries: [folder, station, episode], error: "", loading: false, more: false, placeSavable: false, detail: null })
         wait(30)
     }
 
@@ -57,5 +59,38 @@ TestCase {
         Sources.show({ entries: [], error: "the directory did not answer" })
         wait(30)
         compare(findChild(screen, "sourceStatus").text, "the directory did not answer")
+    }
+
+    function test_an_episode_is_queued_by_its_button_and_shows_where_it_was_left() {
+        const row = this.row(2)
+        compare(row.detail, "2026-09-25 · 22:05")
+        compare(row.duration, "40 %")
+        mouseClick(row, row.width - 22, row.height / 2)
+        compare(last(), ["queue", "ep:1", ""])
+    }
+
+    function test_the_right_button_opens_the_entry_s_own_page() {
+        mouseClick(row(1), 60, 10, Qt.RightButton)
+        compare(Navigation.went, ["sourceEntry", "radio station:1"])
+    }
+
+    function test_a_place_that_can_be_saved_shows_its_heart() {
+        Sources.show({ crumbs: ["A Show"], placeSavable: true, placeSaved: false })
+        wait(30)
+        mouseClick(screen, 640 - 28 - 340 - 8 - 14, 14 + 20)
+        compare(last(), ["save", "", ""])
+    }
+
+    function test_the_page_of_an_entry_says_what_is_on_and_saves_it() {
+        compare(Sources.asked.some(a => a[0] === "detail"), false, "a key that names no entry asks for none")
+        Navigation.routeKey = "radio station:1"
+        verify(Sources.asked.some(a => a[0] === "detail" && a[1] === "station:1" && a[2] === "radio"))
+        Navigation.routeKey = "radio"
+        Sources.show({ detail: Object.assign({}, station, { source: "radio", name: "Radio", description: "", facts: [{ label: "Country", value: "Somewhere" }], song: "Someone - A Song", art: "" }) })
+        wait(30)
+        compare(findChild(entryPage, "entryHero").name, "One FM")
+        verify(findChild(entryPage, "entrySong").text.includes("Someone - A Song"))
+        mouseClick(findChild(entryPage, "entrySave"))
+        compare(last(), ["save", "station:1", "radio"])
     }
 }
