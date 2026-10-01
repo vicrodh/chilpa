@@ -827,6 +827,9 @@ msgstr "Claro"
 msgid "List"
 msgstr "Lista"
 
+msgid "Live"
+msgstr "En vivo"
+
 msgid "Loading the release…"
 msgstr "Cargando el release…"
 
@@ -1031,8 +1034,14 @@ msgstr "No se ha guardado nada. Si cierras el editor se pierde lo que cambiaste.
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
 
+msgid "Nothing here."
+msgstr "Aquí no hay nada."
+
 msgid "Nothing queued."
 msgstr "No hay nada en la cola."
+
+msgid "Nothing saved yet."
+msgstr "Todavía no guardas nada."
 
 msgid "Now playing"
 msgstr "Sonando"
@@ -1310,6 +1319,9 @@ msgstr "Quitar de la playlist"
 msgid "Remove from queue"
 msgstr "Quitar de la cola"
 
+msgid "Remove from saved"
+msgstr "Quitar de guardadas"
+
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
 
@@ -1381,6 +1393,9 @@ msgstr "Guardar como playlist"
 
 msgid "Save to"
 msgstr "Guardar en"
+
+msgid "Saved"
+msgstr "Guardadas"
 
 msgid "Saved position"
 msgstr "Posición guardada"
@@ -1677,6 +1692,9 @@ msgstr "Pistas"
 
 msgid "Tree"
 msgstr "Árbol"
+
+msgid "Try again"
+msgstr "Reintentar"
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
@@ -2001,6 +2019,9 @@ msgstr "no se puede escribir en él"
 
 msgid "it cannot take tags"
 msgstr "no acepta tags"
+
+msgid "it could not be saved"
+msgstr "no se pudo guardar"
 
 msgid "it delivers {}"
 msgstr "entrega {}"
@@ -2509,6 +2530,9 @@ msgstr "no se pudo abrir la siguiente parte de la pista: {}"
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
 
+msgid "the plugin could not be asked"
+msgstr "no se le pudo preguntar al plugin"
+
 msgid "the plugin sandbox could not be started"
 msgstr "no se pudo arrancar el sandbox de plugins"
 
@@ -2700,6 +2724,9 @@ msgstr "no hay dónde guardar un secreto en este equipo"
 
 msgid "this Mac has no output called \"{}\" any more"
 msgstr "esta Mac ya no tiene ninguna salida llamada \"{}\""
+
+msgid "this cannot be played"
+msgstr "esto no se puede reproducir"
 
 msgid "this device delivers bit-perfect in no common format"
 msgstr "este dispositivo no entrega bit-perfect en ningún formato común"

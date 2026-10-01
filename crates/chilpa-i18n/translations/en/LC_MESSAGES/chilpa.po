@@ -827,6 +827,9 @@ msgstr ""
 msgid "List"
 msgstr ""
 
+msgid "Live"
+msgstr ""
+
 msgid "Loading the release…"
 msgstr ""
 
@@ -1031,7 +1034,13 @@ msgstr ""
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr ""
 
+msgid "Nothing here."
+msgstr ""
+
 msgid "Nothing queued."
+msgstr ""
+
+msgid "Nothing saved yet."
 msgstr ""
 
 msgid "Now playing"
@@ -1310,6 +1319,9 @@ msgstr ""
 msgid "Remove from queue"
 msgstr ""
 
+msgid "Remove from saved"
+msgstr ""
+
 msgid "Remove from the library"
 msgstr ""
 
@@ -1380,6 +1392,9 @@ msgid "Save as playlist"
 msgstr ""
 
 msgid "Save to"
+msgstr ""
+
+msgid "Saved"
 msgstr ""
 
 msgid "Saved position"
@@ -1676,6 +1691,9 @@ msgid "Tracks"
 msgstr ""
 
 msgid "Tree"
+msgstr ""
+
+msgid "Try again"
 msgstr ""
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
@@ -2000,6 +2018,9 @@ msgid "it cannot be written to"
 msgstr ""
 
 msgid "it cannot take tags"
+msgstr ""
+
+msgid "it could not be saved"
 msgstr ""
 
 msgid "it delivers {}"
@@ -2509,6 +2530,9 @@ msgstr ""
 msgid "the output does not accept 16 bit at 44,100 Hz, which is what a CD carries"
 msgstr ""
 
+msgid "the plugin could not be asked"
+msgstr ""
+
 msgid "the plugin sandbox could not be started"
 msgstr ""
 
@@ -2699,6 +2723,9 @@ msgid "there is nowhere to keep a secret on this machine"
 msgstr ""
 
 msgid "this Mac has no output called \"{}\" any more"
+msgstr ""
+
+msgid "this cannot be played"
 msgstr ""
 
 msgid "this device delivers bit-perfect in no common format"

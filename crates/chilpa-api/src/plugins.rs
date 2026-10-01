@@ -525,6 +525,29 @@ impl Plugins {
         self.registry.usable_of_kind(chilpa_plugin::manifest::Kind::Source)
     }
 
+    /// The plugins that put an entry of their own in the window: id, name
+    /// and icon hint.
+    pub fn panels(&self) -> Vec<(String, String, String)> {
+        self.registry.panels()
+    }
+
+    /// Asks a plugin for something that goes out to the network and back
+    /// before it answers, like listing a folder of its tree.
+    ///
+    /// The compute and memory limits are the usual ones. The clock is not:
+    /// it also runs while the host waits on the network for the plugin, and
+    /// a directory with a slow mirror takes longer than the five seconds a
+    /// plain call gets. It is only ever called off the window's thread.
+    pub fn call_waiting(
+        &mut self,
+        id: &str,
+        operation: &str,
+        input: &[u8],
+    ) -> Result<Vec<u8>, String> {
+        let limits = Limits { timeout: std::time::Duration::from_secs(45), ..Limits::default() };
+        self.call_with(id, operation, input, limits)
+    }
+
     /// Asks a plugin for something.
     pub fn call(&mut self, id: &str, operation: &str, input: &[u8]) -> Result<Vec<u8>, String> {
         self.call_with(id, operation, input, Limits::default())
