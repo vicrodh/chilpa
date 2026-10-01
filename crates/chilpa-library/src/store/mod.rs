@@ -16,6 +16,7 @@ pub mod find;
 pub mod fingerprints;
 pub mod playlists;
 pub mod plays;
+pub mod progress;
 pub mod listening;
 pub mod ratings;
 pub mod regroup;

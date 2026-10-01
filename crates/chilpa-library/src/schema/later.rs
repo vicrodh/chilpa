@@ -44,3 +44,26 @@ CREATE TABLE source_saved (
     PRIMARY KEY (source, external_id)
 );
 "#;
+
+/// From 30 to 31: how far the listener got in something of a source that
+/// has an end, like an episode.
+///
+/// The row is also the card of the entry -- its title, whose it is, its
+/// picture -- because a queue names such an entry only by its id, and the
+/// player has to say what is playing after a restart, with nobody to ask.
+/// `played` is the listener's "I heard this one", which reaching the end
+/// sets and which can be set by hand.
+pub(super) const MIGRATION_V31: &str = r#"
+CREATE TABLE source_progress (
+    source      TEXT NOT NULL,
+    external_id TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    subtitle    TEXT NOT NULL DEFAULT '',
+    image_url   TEXT NOT NULL DEFAULT '',
+    duration_ms INTEGER NOT NULL DEFAULT 0,
+    position_ms INTEGER NOT NULL DEFAULT 0,
+    played      INTEGER NOT NULL DEFAULT 0,
+    updated_at  INTEGER NOT NULL,
+    PRIMARY KEY (source, external_id)
+);
+"#;
