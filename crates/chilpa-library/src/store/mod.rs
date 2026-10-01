@@ -213,15 +213,26 @@ impl Library {
         self.db.query_row("SELECT id FROM roots WHERE path = ?1", params![path], |r| r.get(0))
     }
 
+    /// A transaction that holds the write lock from its first statement.
+    pub(crate) fn write_transaction(&self) -> rusqlite::Result<rusqlite::Transaction<'_>> {
+        rusqlite::Transaction::new_unchecked(&self.db, rusqlite::TransactionBehavior::Immediate)
+    }
+
     /// A transaction, unless the caller already opened one.
     ///
     /// SQLite has no nested `BEGIN`: asking for one inside another is an
     /// error, not a no-op. A method that wants its writes to land together
     /// needs one when it is called on its own and needs to stay out of the
     /// way when it is called from inside a bigger one.
+    ///
+    /// It takes the write lock as it begins. A deferred one that reads first
+    /// and writes after is refused on the spot -- "database is locked", with
+    /// no wait -- whenever another connection is writing or has written
+    /// since the read: SQLite does not run the busy timeout for a read that
+    /// turns into a write. Asking for the write up front waits its turn.
     pub(crate) fn own_transaction(&self) -> rusqlite::Result<MaybeTransaction<'_>> {
         if self.db.is_autocommit() {
-            Ok(MaybeTransaction::Own(self.db.unchecked_transaction()?))
+            Ok(MaybeTransaction::Own(self.write_transaction()?))
         } else {
             Ok(MaybeTransaction::Someone(&self.db))
         }

@@ -288,3 +288,33 @@ fn source_adapters_can_log_stable_keys_before_tracks_are_cached() {
         2
     );
 }
+
+#[test]
+fn a_listen_waits_for_another_writer_instead_of_failing() {
+    let dir = std::env::temp_dir().join(format!("chilpa-listen-wait-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).unwrap();
+    let path = dir.join("library.db");
+    let lib = Library::open(&path).unwrap();
+    lib.db
+        .execute_batch(
+            "INSERT INTO sources(id, provider, instance) VALUES (7, 'server', 'home');
+        INSERT INTO tracks(id, source_id, external_id, title, added_at) VALUES (1, 7, 'one', 'One', 0);",
+        )
+        .unwrap();
+    let listen = event(&lib, 1, 100, None, 1000);
+    // Another connection is in the middle of a write, as a scan or the
+    // watch over the servers is every so often.
+    let other = rusqlite::Connection::open(&path).unwrap();
+    other.execute_batch("BEGIN IMMEDIATE; UPDATE tracks SET title = 'Other' WHERE id = 1;").unwrap();
+    let writer = std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        other.execute_batch("COMMIT").unwrap();
+    });
+    let saved = lib.record_listen(&listen);
+    writer.join().unwrap();
+    assert!(saved.is_ok(), "the listen was refused instead of waiting: {saved:?}");
+    assert_eq!(lib.stats().unwrap().plays, 1);
+    drop(lib);
+    let _ = std::fs::remove_dir_all(dir);
+}

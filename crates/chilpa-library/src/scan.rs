@@ -168,7 +168,7 @@ fn scan(
     // is interrupted loses at most a batch -- the files in it were never
     // recorded as scanned, so the next scan reads them again.
     const BATCH: usize = 200;
-    let mut tx = lib.db.unchecked_transaction()?;
+    let mut tx = lib.write_transaction()?;
     // What could be read. Only these are present at the end: a path that is
     // listed but cannot be opened is not a track anybody can play.
     let mut readable: HashSet<String> = HashSet::with_capacity(files.len());
@@ -182,7 +182,7 @@ fn scan(
         }
         if examined > 0 && examined % BATCH == 0 {
             tx.commit()?;
-            tx = lib.db.unchecked_transaction()?;
+            tx = lib.write_transaction()?;
         }
         if containers.may_hold(file) {
             let found = Found { lib, source, root_id, now, cache };
