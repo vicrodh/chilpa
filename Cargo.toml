@@ -68,6 +68,7 @@ chilpa-wasapi = { path = "crates/chilpa-wasapi" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }
 # The messages Chilpa and a plugin exchange. They live in the sdk branch of the
-# plugins repository so a plugin builds without this source; the revision is
-# pinned, and moving it is a change to the protocol.
-chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", rev = "81db071897ee5f9f0c02cb35493a475f7971225d" }
+# plugins repository so a plugin builds without this source. It is pinned to
+# a tag of that branch, one per change to the protocol, and the lockfile
+# holds the commit the tag named when it was taken.
+chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", tag = "protocol-3" }
