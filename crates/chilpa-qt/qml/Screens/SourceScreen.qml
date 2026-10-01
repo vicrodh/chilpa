@@ -12,7 +12,8 @@ Item {
 
     property var view: ({})
     readonly property var crumbs: view.crumbs || []
-    readonly property bool waiting: view.loading === true || (view.entries || []).some(e => e.resolving)
+    // Something is on its way, or an episode is playing and its place is moving.
+    readonly property bool waiting: view.loading === true || (view.entries || []).some(e => e.resolving || e.sounding && e.finite)
     // Where the listing on screen is from, to keep its scroll while it is the same place.
     property string place
     // True while the screen itself is changing the field, which is not the listener typing.
@@ -88,6 +89,18 @@ Item {
                 }
             }
         }
+        IconButton {
+            anchors.right: find.left
+            anchors.rightMargin: Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            visible: page.view.placeSavable === true
+            round: true
+            glyph: page.view.placeSaved ? Icons.heartFilled : Icons.heart
+            filled: page.view.placeSaved === true
+            tone: page.view.placeSaved ? "accent" : "secondary"
+            tip: page.view.placeSaved ? I18n.tr("Remove from saved", I18n.rev) : I18n.tr("Save", I18n.rev)
+            onClicked: page.ask("save", "", "")
+        }
         SearchField {
             id: find
             anchors.right: parent.right
@@ -120,16 +133,19 @@ Item {
             width: list.width
             kind: 4
             title: modelData.title
-            detail: modelData.playable ? modelData.subtitle : modelData.whyNot
+            // An episode says its day and its length; whose it is, the header already says.
+            detail: !modelData.playable ? modelData.whyNot : modelData.finite && modelData.meta !== "" ? modelData.meta : modelData.subtitle
             art: modelData.image
-            duration: modelData.live ? I18n.tr("Live", I18n.rev) : ""
+            duration: modelData.live ? I18n.tr("Live", I18n.rev) : modelData.heard
             current: modelData.sounding || modelData.resolving
             glyph: !folder ? Icons.broadcast : modelData.id === "chilpa:saved" ? Icons.heart : Icons.folder
-            endGlyph: folder ? Icons.chevronRight : modelData.saved ? Icons.heartFilled : Icons.heart
-            endOn: modelData.saved
-            endTip: folder ? I18n.tr("Open", I18n.rev) : modelData.saved ? I18n.tr("Remove from saved", I18n.rev) : I18n.tr("Save", I18n.rev)
+            endGlyph: folder ? Icons.chevronRight : modelData.finite ? Icons.playlistAdd : modelData.saved ? Icons.heartFilled : Icons.heart
+            endOn: modelData.saved && !modelData.finite
+            endTip: folder ? I18n.tr("Open", I18n.rev) : modelData.finite ? I18n.tr("Add to queue", I18n.rev) : modelData.saved ? I18n.tr("Remove from saved", I18n.rev) : I18n.tr("Save", I18n.rev)
             onActivated: page.ask("enter", modelData.id, "")
-            onEndClicked: page.ask(folder ? "enter" : "save", modelData.id, "")
+            onEndClicked: page.ask(folder ? "enter" : modelData.finite ? "queue" : "save", modelData.id, "")
+            // The right button opens the entry's own page.
+            onMenu: if (!folder) Navigation.goKey("sourceEntry", modelData.key)
         }
     }
 
