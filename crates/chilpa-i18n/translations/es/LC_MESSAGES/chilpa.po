@@ -827,9 +827,6 @@ msgstr "Claro"
 msgid "List"
 msgstr "Lista"
 
-msgid "ListenList"
-msgstr "ListenList"
-
 msgid "Loading the release…"
 msgstr "Cargando el release…"
 
@@ -1243,6 +1240,9 @@ msgstr "Queue {}"
 
 msgid "Queue · {}"
 msgstr "Cola · {}"
+
+msgid "Queues"
+msgstr "Colas"
 
 msgid "Quick Connect is turned off on that server"
 msgstr "Quick Connect está apagado en ese servidor"

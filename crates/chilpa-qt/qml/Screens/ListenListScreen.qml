@@ -40,7 +40,7 @@ Item {
         anchors.bottomMargin: Metrics.playerHeight + Metrics.playerBottom + Metrics.gap16
         Text {
             id: title
-            text: I18n.tr("ListenList", I18n.rev)
+            text: I18n.tr("Queues", I18n.rev)
             font.pointSize: Type.title
             font.weight: Type.bold
             color: Theme.color.textPrimary

@@ -116,6 +116,21 @@ Item {
         measure: credit
     }
 
+    // Where what is dragged would land.
+    Rectangle {
+        objectName: "dropLine"
+        readonly property Item target: pointer.dropRow >= 0 && pointer.dropRow !== pointer.pressedRow ? view.itemAtIndex(pointer.dropRow) : null
+
+        visible: !!target && !target.header
+        x: columns.pad
+        y: view.y + (target ? target.y - view.contentY + (pointer.dropAfter ? target.height : 0) : 0) - height / 2
+        z: 4
+        width: list.width - columns.pad * 2 // derived: padding on both sides
+        height: Metrics.gap2
+        radius: Metrics.gap2
+        color: Theme.color.accent
+    }
+
     DragGhost {
         objectName: "dragGhost"
         visible: pointer.dragging

@@ -23,6 +23,10 @@ MouseArea {
     property string dragDetail
     property int dragCount: 1
     property bool dropped: false
+    // Where what is dragged would land: on that row, after it when it comes
+    // from above and before it when it comes from below.
+    readonly property int dropRow: dragging && containsMouse ? rowAt(mouseY) : -1
+    readonly property bool dropAfter: dropRow > pressedRow
 
     hoverEnabled: true
     acceptedButtons: Qt.LeftButton | Qt.RightButton
