@@ -10,3 +10,4 @@ singleton Player 1.0 Player.qml
 singleton Navigation 1.0 Navigation.qml
 
 singleton ListenList 1.0 ListenList.qml
+singleton Sources 1.0 Sources.qml
