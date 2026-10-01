@@ -46,6 +46,7 @@ mod track_menu;
 pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
+mod source_opener;
 mod sources;
 mod servers;
 pub mod settings_rows;
@@ -1110,6 +1111,8 @@ impl Chilpa {
         self.listen.pending = None;
         self.casting.local_start = None;
         if self.casting.active() { self.cast_stop(); return; }
+        // An episode stopped halfway is picked up from here.
+        self.keep_place(true);
         if let Some(p) = &self.player {
             p.stop();
         }
@@ -1124,6 +1127,7 @@ impl Chilpa {
         }
         self.advance_search();
         self.advance_sources();
+        self.keep_place(false);
         self.advance_connect();
         self.poll_servers();
         self.poll_cast();
@@ -1136,6 +1140,8 @@ impl Chilpa {
             if self.listen.active == 0 { continue; }
             match event {
                 PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+                    // What was playing until now is left where it was.
+                    self.keep_place(true);
                     started = true;
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
@@ -1253,6 +1259,10 @@ impl Chilpa {
                     // the track was.
                     self.set_played(frames);
                     self.now.frames = frames;
+                    if self.sample_rate > 0 {
+                        self.now.seconds = frames as f64 / f64::from(self.sample_rate);
+                    }
+                    self.keep_place(true);
                     self.now.playing = false;
                     self.stop_after = None;
                     self.sleep_until = None;

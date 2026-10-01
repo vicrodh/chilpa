@@ -595,6 +595,8 @@ impl Chilpa {
     pub fn load_plugins(&mut self) -> usize {
         if self.plugins.is_none() {
             self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
+            // The player can now be told where something of a plugin is.
+            self.install_openers();
         }
         match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             Some(mut p) => p.load_all(),

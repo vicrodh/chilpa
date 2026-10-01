@@ -28,6 +28,9 @@ pub enum Screen {
     ListenList,
     /// A plugin's own tree, browsed. The route's key is the plugin's id.
     Source,
+    /// The page of one entry of a source: a station, an episode. The key
+    /// is the plugin's id, a space, and the entry's id.
+    SourceEntry,
 }
 
 impl Screen {
@@ -48,11 +51,12 @@ impl Screen {
             Screen::Metadata => "metadata",
             Screen::ListenList => "listenlist",
             Screen::Source => "source",
+            Screen::SourceEntry => "sourceEntry",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata, Screen::ListenList, Screen::Source].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -242,10 +246,13 @@ impl crate::Chilpa {
             Screen::PlaylistManager => (self.t("Playlist manager"), "playlist"),
             Screen::ListenList => (self.t("Queues"), "listDetails"),
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
-            Screen::Source => {
-                let panel = self.source_panels().into_iter().find(|p| p.id == r.key).unwrap_or_default();
+            Screen::Source | Screen::SourceEntry => {
+                let (plugin, entry) = r.key.split_once(' ').unwrap_or((r.key.as_str(), ""));
+                let panel = self.source_panels().into_iter().find(|p| p.id == plugin).unwrap_or_default();
                 let icon = if panel.icon.is_empty() { "server".to_string() } else { panel.icon };
-                return (if panel.name.is_empty() { r.key.clone() } else { panel.name }, icon);
+                let name = if panel.name.is_empty() { plugin.to_string() } else { panel.name };
+                // An entry's tab is named after the entry, when it is known.
+                return (self.source_entry_title(plugin, entry).unwrap_or(name), icon);
             }
         };
         (title, icon.to_string())

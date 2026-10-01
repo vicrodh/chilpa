@@ -146,6 +146,8 @@ impl Chilpa {
         }
         if self.now.title.is_empty() { self.now.title = title_of(&path); }
         self.name_from_source(&path);
+        self.now.live = self.name_from_entry(&path);
+        self.name_from_heard();
         self.load_lyrics(&path);
     }
 
@@ -180,6 +182,8 @@ impl Chilpa {
         start_at: Option<std::time::Duration>,
         why: Relaunch,
     ) {
+        // What is playing is about to be left: an episode keeps its place.
+        self.keep_place(true);
         if self.casting.disconnecting {
             // I wait for the renderer's teardown before opening a local sink.
             self.casting.local_start = Some((from, device.to_string(), start_at));

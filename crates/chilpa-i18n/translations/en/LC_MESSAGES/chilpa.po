@@ -734,6 +734,9 @@ msgstr ""
 msgid "Hardware volume"
 msgstr ""
 
+msgid "Heard"
+msgstr ""
+
 msgid "Hi-Res"
 msgstr ""
 
@@ -876,6 +879,9 @@ msgid "Manage"
 msgstr ""
 
 msgid "Manage playlists"
+msgstr ""
+
+msgid "Mark as heard"
 msgstr ""
 
 msgid "Maximize"
@@ -1053,6 +1059,9 @@ msgid "Nothing saved yet."
 msgstr ""
 
 msgid "Now playing"
+msgstr ""
+
+msgid "Now playing: {}"
 msgstr ""
 
 msgid "Number of tracks"
@@ -1639,6 +1648,9 @@ msgstr ""
 msgid "This direct output has no hardware volume control. Use the DAC or amplifier."
 msgstr ""
 
+msgid "This entry is no longer at hand. Open it again from its source."
+msgstr ""
+
 msgid "This folder has no tracks."
 msgstr ""
 
@@ -2039,6 +2051,9 @@ msgid "it cannot be written to"
 msgstr ""
 
 msgid "it cannot take tags"
+msgstr ""
+
+msgid "it comes in several parts, which cannot be read as one file"
 msgstr ""
 
 msgid "it could not be saved"
