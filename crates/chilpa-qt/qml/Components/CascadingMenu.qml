@@ -37,10 +37,12 @@ Menu {
     }
     closePolicy: Popup.CloseOnEscape
     // A shared backdrop consumes outside clicks without blocking the other popup.
+    // It hangs from the overlay only while the menu is open: left there hidden,
+    // it still swallowed clicks on the area the menu had covered.
     // no cursor: the backdrop only blocks clicks on the page beneath it.
     MouseArea {
         objectName: "menuBackdrop"
-        parent: root.Overlay.overlay
+        parent: root.visible ? root.Overlay.overlay : null
         anchors.fill: parent
         visible: root.visible
         z: -1

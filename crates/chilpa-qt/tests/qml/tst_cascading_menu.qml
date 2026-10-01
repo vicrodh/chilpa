@@ -13,7 +13,7 @@ TestCase {
         entries: [{text:"Play",act:"play"},{text:"Extra queues",submenu:true,children:[{text:"New queue",act:"new"},{text:"Add to Jazz",act:"add"}]}]
     }
     property int outsideClicks: 0
-    MouseArea { anchors.fill: parent; onClicked: test.outsideClicks++ }
+    MouseArea { anchors.fill: parent; acceptedButtons: Qt.LeftButton | Qt.RightButton; onClicked: test.outsideClicks++ }
     SignalSpy { id: chosen; target: menu; signalName: "actionChosen" }
     function cleanup() { menu.close(); chosen.clear(); outsideClicks=0; mouseMove(test,10,550) }
     function openBranch(x) {
@@ -42,6 +42,21 @@ TestCase {
         compare(chosen.signalArguments[0][0].act,"add")
         tryCompare(menu,"visible",false)
         tryCompare(branch,"visible",false)
+    }
+    function test_area_it_covered_takes_clicks_after_a_choice() {
+        menu.x=100; menu.y=100; menu.open()
+        tryCompare(menu,"opened",true)
+        const item=menu.entryItems.find(i => i.entry && i.entry.act==="play")
+        waitForRendering(item)
+        const spot=item.mapToItem(test,item.width/2,item.height/2)
+        mouseMove(item,item.width/2,item.height/2)
+        mouseClick(item,item.width/2,item.height/2)
+        compare(chosen.count,1)
+        tryCompare(menu,"visible",false)
+        mouseClick(test,spot.x,spot.y)
+        compare(outsideClicks,1)
+        mouseClick(test,spot.x,spot.y,Qt.RightButton)
+        compare(outsideClicks,2)
     }
     function test_outside_click_is_consumed() {
         openBranch(100)
