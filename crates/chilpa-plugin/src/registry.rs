@@ -231,7 +231,8 @@ impl Registry {
     ///
     /// An error from the plugin (JSON with `error`) does **not** count as a
     /// failure: "I did not find that song" is an answer, not a breakage.
-    /// What counts is blowing up, going over the limits or not answering.
+    /// Neither does being asked for an operation it does not have. What
+    /// counts is blowing up, going over the limits or not answering.
     pub fn call(
         &mut self,
         host: &Host,
@@ -270,6 +271,13 @@ impl Registry {
             Ok(r) => {
                 self.watchdog.success(id);
                 Ok(r)
+            }
+            // An operation the plugin does not export is something it does
+            // not do, not something it did wrong. Chilpa asks every source
+            // for its playlists, and one that has none to give was being
+            // counted towards quarantine for it.
+            Err(PluginError::MissingExport(name)) if name == operation => {
+                Err(PluginError::MissingExport(name))
             }
             Err(e) => {
                 self.watchdog.failure(id, &e.to_string());

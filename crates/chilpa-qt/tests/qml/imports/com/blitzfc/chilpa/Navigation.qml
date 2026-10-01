@@ -4,6 +4,7 @@ QtObject {
     property string page: ""
     property int selectedId: 0
     property string routeKey: "radio"
+    property string screen: "source"
     property var went: []
     function goKey(screen, key) { went = [screen, key] }
     function go(target, id) { page = target; selectedId = id }

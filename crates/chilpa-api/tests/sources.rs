@@ -215,6 +215,7 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     let row = playing["entries"].as_array().unwrap().iter().find(|e| e["id"] == "live:one").unwrap();
     assert_eq!(row["sounding"], true);
     assert_eq!(row["resolving"], false);
+    assert_eq!(playing["onAir"], format!("{ID} live:one"), "the bar's line leads to the station's page");
 
     // A stream address typed where the search goes is played as it is, by
     // Chilpa, and listed as one entry so it can be saved like any other.
@@ -283,6 +284,9 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
         view(&mut chilpa)["entries"]
     );
     assert_eq!(view(&mut chilpa)["entries"][0]["heard"], "Heard");
+    // The bar still names the last one, so its line still leads to its page.
+    assert!(!chilpa.now_playing().playing);
+    assert_eq!(view(&mut chilpa)["onAir"], format!("{ID} ep:two"));
     assert_eq!(view(&mut chilpa)["entries"][0]["progress"], 1.0);
     chilpa.stop();
     drop(chilpa);

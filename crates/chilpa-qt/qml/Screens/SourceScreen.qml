@@ -35,6 +35,9 @@ Item {
     }
 
     function open() {
+        // The key changes before the screen does: on the way out it is
+        // already another screen's, and not a plugin to open.
+        if (Navigation.screen !== "source") return
         ask("open", Navigation.routeKey, "")
         read()
     }
@@ -46,7 +49,7 @@ Item {
     }
     Connections {
         target: Navigation
-        function onRouteKeyChanged() { page.open() }
+        function onRouteKeyChanged() { Qt.callLater(page.open) }
     }
     Connections {
         target: Player
