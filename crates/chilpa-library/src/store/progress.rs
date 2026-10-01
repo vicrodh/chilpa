@@ -74,6 +74,20 @@ impl Library {
     }
 }
 
+impl Library {
+    /// What the listener left halfway from that source, the latest first.
+    pub fn unfinished(&self, source: &str) -> rusqlite::Result<Vec<Heard>> {
+        self.db
+            .prepare(
+                "SELECT external_id, title, subtitle, image_url, duration_ms, position_ms, played
+                 FROM source_progress WHERE source = ?1 AND played = 0 AND position_ms > 0
+                 ORDER BY updated_at DESC, rowid DESC",
+            )?
+            .query_map([source], read)?
+            .collect()
+    }
+}
+
 fn read(r: &rusqlite::Row) -> rusqlite::Result<Heard> {
     Ok(Heard {
         external_id: r.get(0)?,
@@ -122,6 +136,20 @@ mod tests {
         assert_eq!(heard.len(), 2);
         assert!(heard["ep:2"].played);
         assert!(lib.heard_of("other").unwrap().is_empty());
+    }
+
+    #[test]
+    fn what_was_left_halfway_is_listed_and_what_was_finished_is_not() {
+        let lib = Library::in_memory().unwrap();
+        for id in ["ep:1", "ep:2", "ep:3"] {
+            lib.remember_heard("shows", &episode(id)).unwrap();
+        }
+        lib.set_heard("shows", "ep:1", 5_000, false).unwrap();
+        lib.set_heard("shows", "ep:2", 0, true).unwrap();
+        let halfway = lib.unfinished("shows").unwrap();
+        assert_eq!(halfway.len(), 1);
+        assert_eq!((halfway[0].external_id.as_str(), halfway[0].position_ms), ("ep:1", 5_000));
+        assert!(lib.unfinished("other").unwrap().is_empty());
     }
 
     #[test]

@@ -407,6 +407,9 @@ msgstr[1] "Contiene {} versiones similares"
 msgid "Continue"
 msgstr "Continuar"
 
+msgid "Continue listening"
+msgstr "Seguir escuchando"
+
 msgid "Convert to PCM"
 msgstr "Convertir a PCM"
 
@@ -983,6 +986,9 @@ msgstr "Nueva pestaña"
 msgid "New, saved with the next save"
 msgstr "Nueva, se guarda con el siguiente guardado"
 
+msgid "Newest first"
+msgstr "Más nuevos primero"
+
 msgid "Next"
 msgstr "Siguiente"
 
@@ -1028,6 +1034,9 @@ msgstr "Normalización"
 msgid "Not answering"
 msgstr "No responde"
 
+msgid "Not heard first"
+msgstr "Sin escuchar primero"
+
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
@@ -1069,6 +1078,9 @@ msgstr "Cantidad de pistas"
 
 msgid "Off"
 msgstr "Apagado"
+
+msgid "Oldest first"
+msgstr "Más viejos primero"
 
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."

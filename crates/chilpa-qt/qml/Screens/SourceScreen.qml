@@ -92,11 +92,27 @@ Item {
                 }
             }
         }
+        SortButton {
+            anchors.right: save.left
+            anchors.rightMargin: Metrics.gap8
+            anchors.verticalCenter: parent.verticalCenter
+            visible: page.view.sortable === true
+            value: page.view.order || ""
+            options: [
+                { value: "", text: I18n.tr("Newest first", I18n.rev) },
+                { value: "oldest", text: I18n.tr("Oldest first", I18n.rev) },
+                { value: "unheard", text: I18n.tr("Not heard first", I18n.rev) }
+            ]
+            onPicked: (value) => page.ask("order", value, "")
+        }
         IconButton {
+            id: save
             anchors.right: find.left
             anchors.rightMargin: Metrics.gap8
             anchors.verticalCenter: parent.verticalCenter
-            visible: page.view.placeSavable === true
+            // It keeps its room when hidden, so what sits beside it does not jump.
+            opacity: page.view.placeSavable === true ? 1 : 0
+            enabled: page.view.placeSavable === true
             round: true
             glyph: page.view.placeSaved ? Icons.heartFilled : Icons.heart
             filled: page.view.placeSaved === true
@@ -127,6 +143,10 @@ Item {
         width: head.width
         clip: true
         model: page.view.entries || []
+        header: SourceAbout {
+            width: list.width
+            entry: page.view.about || null
+        }
         // Asked for once the listing has settled: reaching the end happens while the model is being set.
         onAtYEndChanged: if (atYEnd && page.view.more === true) Qt.callLater(page.ask, "more", "", "")
 

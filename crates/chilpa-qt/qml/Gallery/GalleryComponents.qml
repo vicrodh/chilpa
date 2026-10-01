@@ -197,5 +197,6 @@ GallerySection {
         }
         SearchHit { width: Metrics.searchFlyout; index: 0; kind: 1; title: "Mora Vale"; detail: "Artist · 8 records"; art: ""; duration: "" }
         SearchHit { width: Metrics.searchFlyout; index: 1; kind: 4; title: "Blue Weather"; detail: "Mora Vale — Low Orbit"; art: ""; duration: "4:37" }
+        SourceAbout { width: Metrics.searchFlyout; entry: ({ title: "Low Orbit Radio", subtitle: "Mora Vale", image: "x", description: "A show about what plays between two records.", facts: [{ label: "Genre", value: "Music" }] }) }
     }
 }

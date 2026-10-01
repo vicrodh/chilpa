@@ -27,6 +27,9 @@ use std::time::{Duration, Instant};
 /// listener saved from that source. A plugin never sees it.
 const SAVED: &str = "chilpa:saved";
 
+/// Chilpa's other folder: what the listener left halfway from that source.
+const UNFINISHED: &str = "chilpa:unfinished";
+
 /// What an entry's id starts with when it is a stream address the listener
 /// typed. Chilpa plays it itself: no plugin gave it out, so none is asked.
 const ADDRESS: &str = "chilpa:url:";
@@ -87,6 +90,9 @@ pub(crate) struct SourcesState {
     text: String,
     /// What narrows the listing on screen without asking anybody.
     filter: String,
+    /// How a listing of things with an end is ordered: as the plugin gave
+    /// it when empty, or "oldest", or "unheard".
+    order: String,
     title: String,
     entries: Vec<Entry>,
     next: Option<String>,
@@ -124,6 +130,7 @@ impl Default for SourcesState {
             search_id: String::new(),
             text: String::new(),
             filter: String::new(),
+            order: String::new(),
             title: String::new(),
             entries: Vec::new(),
             next: None,
@@ -149,6 +156,20 @@ fn kind_name(kind: EntryKind) -> &'static str {
         EntryKind::Folder => "folder",
         EntryKind::Item => "item",
         EntryKind::Search => "search",
+    }
+}
+
+/// Something with an end the listener started, as a row to pick it up from.
+fn from_heard(heard: Heard) -> Entry {
+    Entry {
+        id: heard.external_id,
+        title: heard.title,
+        subtitle: heard.subtitle,
+        image_url: Some(heard.image_url).filter(|u| !u.is_empty()),
+        kind: EntryKind::Item,
+        duration_ms: heard.duration_ms,
+        playable: true,
+        ..Entry::default()
     }
 }
 
@@ -219,7 +240,7 @@ impl Chilpa {
                 || playing.as_ref().is_some_and(|(plugin, entry)| plugin == source && entry == id)
         };
         let needle = s.filter.to_lowercase();
-        let entries: Vec<serde_json::Value> = s
+        let mut shown: Vec<&Entry> = s
             .entries
             .iter()
             .filter(|e| {
@@ -227,10 +248,33 @@ impl Chilpa {
                     || e.title.to_lowercase().contains(&needle)
                     || e.subtitle.to_lowercase().contains(&needle)
             })
-            .map(|e| self.entry_json(&s.current, e, sounds(&s.current, &e.id)))
             .collect();
+        // Only a listing of things with an end has an order of its own to
+        // change: episodes come newest first, and can be turned around or
+        // sorted so what was not heard comes up.
+        let sortable = s.entries.iter().any(|e| e.kind == EntryKind::Item && !e.live);
+        if sortable {
+            match s.order.as_str() {
+                "oldest" => shown.sort_by_key(|e| e.published_at.unwrap_or(i64::MAX)),
+                "unheard" => shown.sort_by_key(|e| s.heard.get(&e.id).is_some_and(|h| h.played)),
+                _ => {}
+            }
+        }
+        let entries: Vec<serde_json::Value> =
+            shown.into_iter().map(|e| self.entry_json(&s.current, e, sounds(&s.current, &e.id))).collect();
         let crumbs: Vec<&str> = s.trail.iter().map(|c| c.title.as_str()).collect();
         let place = s.trail.last();
+        // The entry the window is standing in, as its own page would show
+        // it: a show above its episodes.
+        let about = place.and_then(|c| c.entry.as_ref()).map(|e| {
+            serde_json::json!({
+                "title": e.title,
+                "subtitle": e.subtitle,
+                "image": e.image_url.clone().unwrap_or_default(),
+                "description": e.description,
+                "facts": e.facts,
+            })
+        });
         let detail = s.detail.as_ref().map(|(source, entry)| {
             let mut card = self.entry_json(source, entry, sounds(source, &entry.id));
             card["source"] = source.clone().into();
@@ -262,6 +306,9 @@ impl Chilpa {
             "more": s.next.is_some(),
             "error": s.error,
             "inSaved": place.is_some_and(|c| c.id == SAVED),
+            "about": about,
+            "sortable": sortable,
+            "order": s.order,
             // A place that is an entry of the plugin can be saved whole: a
             // show is followed by saving its folder.
             "placeSavable": place.is_some_and(|c| c.entry.is_some()),
@@ -341,6 +388,8 @@ impl Chilpa {
     /// - `search`: list what matches `text`; empty goes back to the root. A
     ///   text that is an http address is played as a stream instead.
     /// - `filter`: narrow the listing on screen to what carries `text`.
+    /// - `order`: order a listing of episodes by `id`: empty as it came,
+    ///   `oldest`, or `unheard`.
     /// - `more`: bring the next page of the listing.
     /// - `play`: play the item `id`.
     /// - `queue`: add the item `id` to the end of the queue.
@@ -360,6 +409,7 @@ impl Chilpa {
             }
             "search" => self.search_source(text),
             "filter" => self.sources.filter = text.trim().to_string(),
+            "order" => self.sources.order = id.to_string(),
             "more" => self.load_more(),
             "play" => self.play_entry(id),
             "queue" => self.queue_entry(id),
@@ -416,17 +466,7 @@ impl Chilpa {
                 saved.into_iter().find(|e| e.external_id == id).map(from_saved)
             })
             .or_else(|| {
-                let heard = self.library()?.heard(source, id).ok()??;
-                Some(Entry {
-                    id: heard.external_id,
-                    title: heard.title,
-                    subtitle: heard.subtitle,
-                    image_url: Some(heard.image_url).filter(|u| !u.is_empty()),
-                    kind: EntryKind::Item,
-                    duration_ms: heard.duration_ms,
-                    playable: true,
-                    ..Entry::default()
-                })
+                self.library()?.heard(source, id).ok()?.map(from_heard)
             });
         self.source_panels();
         self.sources.detail = known.map(|entry| (source.to_string(), entry));
@@ -436,7 +476,7 @@ impl Chilpa {
         let Some(entry) = self.sources.entries.iter().find(|e| e.id == id).cloned() else { return };
         match entry.kind {
             EntryKind::Folder => {
-                let kept = (entry.id != SAVED).then(|| entry.clone());
+                let kept = (entry.id != SAVED && entry.id != UNFINISHED).then(|| entry.clone());
                 self.sources.trail.push(Crumb { id: entry.id, title: entry.title, entry: kept });
                 self.load_listing();
             }
@@ -510,6 +550,13 @@ impl Chilpa {
             let source = s.current.clone();
             let saved = self.library().and_then(|lib| lib.saved_entries(&source).ok()).unwrap_or_default();
             self.sources.entries = saved.into_iter().map(from_saved).collect();
+            self.sources.loading = false;
+            return;
+        }
+        if at == UNFINISHED {
+            let source = s.current.clone();
+            let halfway = self.library().and_then(|lib| lib.unfinished(&source).ok()).unwrap_or_default();
+            self.sources.entries = halfway.into_iter().map(from_heard).collect();
             self.sources.loading = false;
             return;
         }
@@ -683,7 +730,7 @@ impl Chilpa {
             id.to_string()
         };
         let Some((source, entry)) = self.entry_by_id(&id) else { return };
-        if entry.id == SAVED {
+        if entry.id == SAVED || entry.id == UNFINISHED {
             return;
         }
         let was = if source == self.sources.current { self.sources.saved.contains(&id) } else { self.saved_elsewhere(&source, &id) };
@@ -835,15 +882,17 @@ impl Chilpa {
                 .map(|e| e.id.clone())
                 .unwrap_or_default();
             if cursor.is_none() {
-                self.sources.entries = vec![Entry {
-                    id: SAVED.to_string(),
-                    title: chilpa_i18n::t("Saved"),
-                    playable: true,
-                    ..Entry::default()
-                }];
+                let source = self.sources.current.clone();
+                let halfway = self.library().and_then(|lib| lib.unfinished(&source).ok()).is_some_and(|h| !h.is_empty());
+                let folder = |id: &str, title: String| Entry { id: id.to_string(), title, playable: true, ..Entry::default() };
+                self.sources.entries = vec![folder(SAVED, chilpa_i18n::t("Saved"))];
+                // Only when there is something to pick up.
+                if halfway {
+                    self.sources.entries.push(folder(UNFINISHED, chilpa_i18n::t("Continue listening")));
+                }
             }
         }
-        entries.retain(|e| e.kind != EntryKind::Search && e.id != SAVED);
+        entries.retain(|e| e.kind != EntryKind::Search && e.id != SAVED && e.id != UNFINISHED);
         self.sources.entries.extend(entries);
         self.sources.next = listing.next;
         if self.sources.title.is_empty() {
