@@ -29,6 +29,9 @@ MouseArea {
     readonly property bool dropAfter: dropRow > pressedRow
 
     hoverEnabled: true
+    // A press that starts on a row that can be moved is the row's: the page
+    // the list sits in may not take it over and scroll with it.
+    preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
     function rowAt(y) {
