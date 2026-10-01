@@ -109,7 +109,6 @@ Item {
             anchors.bottom: parent.bottom
             width: parent.width
             model: tracks
-            rich: false
             showRating: false
             groupActionsEnabled: false
             reorderable: page.typed === ""

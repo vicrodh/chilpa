@@ -39,6 +39,8 @@ Item {
     property bool favorite: false
     // The action under the pointer: 1 the heart, 2 the menu, 0 neither.
     property int actionHovered: 0
+    // The arrow under the pointer: 1 up, 2 down, 0 neither.
+    property int moveHovered: 0
     // Its heart and its menu button, which the list resolves the clicks of.
     readonly property TrackRowEnd end: rowEnd
 
@@ -93,32 +95,16 @@ Item {
         anchors.fill: parent
         visible: !row.header
 
-        Text {
+        TrackRowLead {
             x: row.cols.indexX
-            width: row.cols.index - Metrics.gap8
-            anchors.verticalCenter: parent.verticalCenter
-            visible: !row.playing && !row.selectionMode
-            text: row.number > 0 ? row.number : ""
-            horizontalAlignment: Text.AlignRight
-            font.pointSize: Type.small
-            font.features: { "tnum": 1 }
-            color: Theme.color.textTertiary
-        }
-
-        PlayingIndicator {
-            x: row.cols.indexX + row.cols.index - Metrics.gap8 - width
-            anchors.verticalCenter: parent.verticalCenter
-            visible: row.playing && !row.selectionMode
-        }
-
-        Icon {
-            x: row.cols.indexX + (row.cols.index - width) / 2
-            anchors.verticalCenter: parent.verticalCenter
-            visible: row.selectionMode
-            glyph: row.selected ? Icons.squareCheckFilled : Icons.square
-            filled: row.selected
-            size: Metrics.iconMd
-            color: row.selected ? Theme.color.accent : Theme.color.textTertiary
+            width: row.cols.index
+            height: parent.height
+            number: row.number
+            playing: row.playing
+            selected: row.selected
+            selectionMode: row.selectionMode
+            reorder: row.cols.reorder && row.available
+            moveHovered: row.moveHovered
         }
 
         // Only a rich row with covers builds one: a compact row carries no

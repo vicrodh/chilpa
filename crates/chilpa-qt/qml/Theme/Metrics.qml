@@ -183,6 +183,7 @@ QtObject {
     // The heart and the menu button, a cell each.
     readonly property int rowAction: 28
     readonly property int colMore: rowAction * 2 // derived: two cells
+    readonly property int colMove: rowAction * 2 // derived: two cells
     readonly property int colPlaysCompact: 60
     readonly property int colPlaysRich: 92
     readonly property int colFavorite: 32

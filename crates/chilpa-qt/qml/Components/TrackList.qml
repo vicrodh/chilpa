@@ -49,6 +49,7 @@ Item {
         showArt: list.showArt
         showPlays: list.showPlays
         showRating: list.showRating
+        reorder: list.reorderable && !list.selectionMode
     }
 
     TrackHeader {
@@ -71,6 +72,8 @@ Item {
         property int ratingHovered: 0
         // 1 the heart, 2 the menu button, of the row under the pointer.
         property int actionHovered: 0
+        // 1 the arrow up, 2 the arrow down, of the row under the pointer.
+        property int moveHovered: 0
 
         anchors.top: head.bottom
         anchors.bottom: parent.bottom
@@ -94,6 +97,7 @@ Item {
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
             actionHovered: index === view.hovered ? view.actionHovered : 0
+            moveHovered: index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
         }
@@ -101,112 +105,15 @@ Item {
         onContentYChanged: pointer.track()
     }
 
-    MouseArea {
+    TrackListPointer {
         id: pointer
-        cursorShape: Qt.PointingHandCursor
-
-        property int pressedRow: -1
-        property real pressedY: 0
-        property bool dragging: false
-        property bool pressedRating: false
-
         anchors.fill: view
         anchors.rightMargin: list.fitContent ? 0 : Metrics.gap10
-        hoverEnabled: true
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
-
-        function rowAt(y) {
-            return view.indexAt(Metrics.gap2, y + view.contentY)
-        }
-        function track() {
-            view.hovered = containsMouse ? rowAt(mouseY) : -1
-            view.artistHovered = containsMouse && onArtist(view.hovered, mouseX, mouseY) ? view.hovered : -1
-            view.ratingHovered = ratingAt(view.hovered, mouseX, mouseY)
-            view.actionHovered = containsMouse ? actionAt(view.hovered, mouseX, mouseY) : 0
-        }
-        function actionAt(row, x, y) {
-            const item = row >= 0 ? view.itemAtIndex(row) : null
-            return item ? item.end.actionAt(x - item.x - item.end.x, y + view.contentY - item.y) : 0
-        }
-        function ratingAt(row, x, y) {
-            const item = row >= 0 ? view.itemAtIndex(row) : null
-            return item ? item.ratingAt(x - item.x, y + view.contentY - item.y) : 0
-        }
-        // Whether the pointer is on the row's artist: its own column in
-        // compact rows, the line under the title in rich ones. Worked out
-        // here, once for the list, and not by a handler on every row.
-        function onArtist(row, x, y) {
-            const item = row >= 0 ? view.itemAtIndex(row) : null
-            if (!item || item.header || item.artist === "" || !list.model.canGo(row, "artist"))
-                return false
-            return item.containsArtist(x - item.x, y + view.contentY - item.y)
-        }
-
-        onPressed: (mouse) => {
-            pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
-            const pressed = view.itemAtIndex(rowAt(mouse.y))
-            const onAction = actionAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
-            if (mouse.button === Qt.LeftButton && list.reorderable && !pressedRating && !onAction && pressed && pressed.available) {
-                pressedRow = rowAt(mouse.y)
-                pressedY = mouse.y
-                dragging = false
-            }
-        }
-        onPositionChanged: (mouse) => {
-            track()
-            if (pressedRow >= 0 && Math.abs(mouse.y - pressedY) > Qt.styleHints.startDragDistance)
-                dragging = true
-        }
-        onReleased: (mouse) => {
-            if (dragging && pressedRow >= 0) {
-                const target = rowAt(mouse.y)
-                if (target >= 0)
-                    list.model.moveInPlaylistTo(pressedRow, target)
-            }
-            pressedRow = -1
-            dragging = false
-        }
-        onContainsMouseChanged: track()
-        onClicked: (mouse) => {
-            const row = rowAt(mouse.y)
-            if (row < 0)
-                return
-            if (mouse.button === Qt.RightButton) {
-                list.model.select(row, 4)
-                actions.show(row, mouse.x, view.y + mouse.y)
-                return
-            }
-            const action = actionAt(row, mouse.x, mouse.y)
-            if (action === 2) {
-                const at = view.itemAtIndex(row).end.menuPoint(list)
-                list.model.select(row, 4)
-                actions.show(row, at.x, at.y)
-            }
-            if (action > 0)
-                return view.itemAtIndex(row).end.act()
-            const star = ratingAt(row, mouse.x, mouse.y)
-            if (pressedRating && star === 0)
-                return
-            if (star > 0) {
-                const item = view.itemAtIndex(row)
-                Ratings.rate("track", item.trackId, item.rating === star ? 0 : star)
-                return
-            }
-            const toggle = list.selectionMode || (mouse.modifiers & Qt.ControlModifier) || (mouse.modifiers & Qt.MetaModifier)
-            if (!toggle && !(mouse.modifiers & Qt.ShiftModifier) && onArtist(row, mouse.x, mouse.y)) {
-                const label = view.itemAtIndex(row).artistLabel
-                credit.font = label.font
-                credit.credit = list.model.creditOf(row)
-                list.model.go(row, "artist:" + credit.placeAt(label.mapFromItem(pointer, mouse.x, mouse.y).x))
-                return
-            }
-            list.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
-        }
-        onDoubleClicked: (mouse) => {
-            const row = rowAt(mouse.y)
-            if (row >= 0 && mouse.button === Qt.LeftButton && !pressedRating && !ratingAt(row, mouse.x, mouse.y) && !actionAt(row, mouse.x, mouse.y))
-                list.model.play(row)
-        }
+        host: list
+        rows: view
+        cols: columns
+        menu: actions
+        measure: credit
     }
 
     // Measures where each artist of a row's credit is; one for the list.
@@ -227,15 +134,4 @@ Item {
         x: list.width - width - Metrics.gap10
         y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
         z: 3
-    }
-
-    TrackRowActions {
-        row: view.hovered
-        model: list.model
-
-        visible: list.reorderable && !!groupActions.item && !groupActions.item.header && groupActions.item.available
-        x: columns.moreX - width
-        y: head.height + (groupActions.item ? groupActions.item.y - view.contentY + (groupActions.item.height - height) / 2 : 0)
-        z: 2
-    }
-}
+    }}

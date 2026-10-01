@@ -52,6 +52,9 @@ GallerySection {
         AlphaStrip { height: Metrics.folderTreeWidth; letters: [["A", 0], ["M", 40], ["Z", 90]] }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: most }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; rich: true; showPlays: true; model: most }
+        TrackList { width: parent.width; height: implicitHeight; fitContent: true; reorderable: true; model: most }
+        // The list's own pointer, shown by the lists above; here it takes nothing.
+        TrackListPointer { enabled: false }
         TrackGroupActions { row: 0; item: ({ headerLabel: "Disc 1" }); model: most }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: added }
         AlbumCarousel { width: parent.width; title: "From same artist"; model: added }
@@ -162,7 +165,8 @@ GallerySection {
         PlaylistCollage { covers: [] }
         MarkButtons { kind: "album"; key: "1" }
         RatingButton { kind: "album"; target: 1 }
-        TrackRowActions { model: null }
+        TrackRowMove { height: Metrics.rowCompact }
+        TrackRowLead { width: Metrics.colMove; height: Metrics.rowCompact; number: 7 }
         TrackRowEnd { height: Metrics.rowCompact; trackId: 1 }
         PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
         Row {
