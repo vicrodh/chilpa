@@ -511,3 +511,8 @@ oled
 tv
 
 listenlist
+
+# The ssh host alias and the account of the git server the plugin protocol
+# crate comes from.
+forgejo
+blitzkriegfc

@@ -623,10 +623,19 @@ version = "0.0.0"
 dependencies = [
  "chilpa-auth",
  "chilpa-i18n",
+ "chilpa-plugin-api",
  "serde",
  "serde_json",
  "wasmtime",
  "wat",
+]
+
+[[package]]
+name = "chilpa-plugin-api"
+version = "0.1.0"
+source = "git+ssh://forgejo/blitzkriegfc/chilpa-plugins.git?rev=96e49c6fb1313c222dd1d6e11244c727ed6c0a8d#96e49c6fb1313c222dd1d6e11244c727ed6c0a8d"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

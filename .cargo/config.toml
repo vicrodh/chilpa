@@ -1,0 +1,5 @@
+# The plugin protocol crate is a git dependency reached over ssh through a
+# host alias. Cargo's built-in git does not read ~/.ssh/config, so the fetch
+# goes through the git command line, which does.
+[net]
+git-fetch-with-cli = true
