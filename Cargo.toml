@@ -71,4 +71,4 @@ chilpa-api = { path = "crates/chilpa-api" }
 # plugins repository so a plugin builds without this source. It is pinned to
 # a tag of that branch, one per change to the protocol, and the lockfile
 # holds the commit the tag named when it was taken.
-chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", tag = "protocol-3" }
+chilpa-plugin-api = { git = "ssh://forgejo/blitzkriegfc/chilpa-plugins.git", tag = "protocol-4" }

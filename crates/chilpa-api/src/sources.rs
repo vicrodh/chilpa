@@ -18,8 +18,8 @@ use crate::source_opener::{entry_of, of_plugin};
 use crate::Chilpa;
 use chilpa_library::store::progress::Heard;
 use chilpa_library::store::saved::SavedEntry;
-use chilpa_plugin::messages::{self, Browse, Entry, EntryKind, Listing, Resolve, Stream};
-use std::collections::{HashMap, HashSet};
+use chilpa_plugin::messages::{self, Browse, Column, Entry, EntryKind, Listing, Resolve, Stream};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
 
@@ -93,6 +93,12 @@ pub(crate) struct SourcesState {
     /// How a listing of things with an end is ordered: as the plugin gave
     /// it when empty, or "oldest", or "unheard".
     order: String,
+    /// The columns the source's root is narrowed by, kept from its first
+    /// listing while the listener picks.
+    columns: Vec<Column>,
+    /// What is picked in them, by column id. An empty value is "all", which
+    /// is a pick too: it is how a column that starts on something is left.
+    picks: BTreeMap<String, String>,
     title: String,
     entries: Vec<Entry>,
     next: Option<String>,
@@ -131,6 +137,8 @@ impl Default for SourcesState {
             text: String::new(),
             filter: String::new(),
             order: String::new(),
+            columns: Vec::new(),
+            picks: BTreeMap::new(),
             title: String::new(),
             entries: Vec::new(),
             next: None,
@@ -260,8 +268,35 @@ impl Chilpa {
                 _ => {}
             }
         }
-        let entries: Vec<serde_json::Value> =
-            shown.into_iter().map(|e| self.entry_json(&s.current, e, sounds(&s.current, &e.id))).collect();
+        // At a root with columns, Chilpa's own folders go beside the field
+        // as shortcuts: in the list they would sit above the stations.
+        let explorer = s.trail.is_empty() && !s.columns.is_empty();
+        let own = |e: &&Entry| e.id == SAVED || e.id == UNFINISHED;
+        let shortcuts: Vec<serde_json::Value> = s
+            .entries
+            .iter()
+            .filter(|e| explorer && own(e))
+            .map(|e| serde_json::json!({ "id": e.id, "title": e.title }))
+            .collect();
+        let entries: Vec<serde_json::Value> = shown
+            .into_iter()
+            .filter(|e| !(explorer && own(e)))
+            .map(|e| self.entry_json(&s.current, e, sounds(&s.current, &e.id)))
+            .collect();
+        let columns: Vec<serde_json::Value> = s
+            .columns
+            .iter()
+            .map(|c| {
+                let picked = s.picks.get(&c.id).cloned().unwrap_or_default();
+                let named = c.entries.iter().find(|e| e.id == picked).map(|e| e.title.clone()).unwrap_or_default();
+                let entries: Vec<serde_json::Value> = c
+                    .entries
+                    .iter()
+                    .map(|e| serde_json::json!({ "id": e.id, "title": e.title, "subtitle": e.subtitle }))
+                    .collect();
+                serde_json::json!({ "id": c.id, "title": c.title, "picked": picked, "pickedTitle": named, "entries": entries })
+            })
+            .collect();
         let crumbs: Vec<&str> = s.trail.iter().map(|c| c.title.as_str()).collect();
         let place = s.trail.last();
         // The entry the window is standing in, as its own page would show
@@ -297,6 +332,9 @@ impl Chilpa {
             "name": self.source_name(&s.current),
             "title": s.title,
             "crumbs": crumbs,
+            "columns": columns,
+            "explorer": explorer,
+            "shortcuts": shortcuts,
             "entries": entries,
             "searchable": !s.search_id.is_empty(),
             "text": s.text,
@@ -388,6 +426,8 @@ impl Chilpa {
     /// - `search`: list what matches `text`; empty goes back to the root. A
     ///   text that is an http address is played as a stream instead.
     /// - `filter`: narrow the listing on screen to what carries `text`.
+    /// - `pick`: in the root's column `id`, pick the entry `text`; empty is
+    ///   all of them. The window goes back to the root.
     /// - `order`: order a listing of episodes by `id`: empty as it came,
     ///   `oldest`, or `unheard`.
     /// - `more`: bring the next page of the listing.
@@ -409,6 +449,7 @@ impl Chilpa {
             }
             "search" => self.search_source(text),
             "filter" => self.sources.filter = text.trim().to_string(),
+            "pick" => self.pick(id, text),
             "order" => self.sources.order = id.to_string(),
             "more" => self.load_more(),
             "play" => self.play_entry(id),
@@ -436,6 +477,8 @@ impl Chilpa {
         s.trail.clear();
         s.text.clear();
         s.search_id.clear();
+        s.columns.clear();
+        s.picks.clear();
         self.read_saved();
         self.load_listing();
     }
@@ -529,6 +572,18 @@ impl Chilpa {
         self.play_entry(&entry.id);
     }
 
+    fn pick(&mut self, column: &str, value: &str) {
+        let Some(offered) = self.sources.columns.iter().find(|c| c.id == column) else { return };
+        if !value.is_empty() && !offered.entries.iter().any(|e| e.id == value) {
+            return;
+        }
+        let s = &mut self.sources;
+        s.picks.insert(column.to_string(), value.to_string());
+        s.trail.clear();
+        s.text.clear();
+        self.load_listing();
+    }
+
     fn read_saved(&mut self) {
         let source = self.sources.current.clone();
         let saved = self.library().and_then(|lib| lib.saved_entries(&source).ok()).unwrap_or_default();
@@ -578,7 +633,9 @@ impl Chilpa {
         let s = &mut self.sources;
         s.loading = true;
         let text = (at == s.search_id && !s.text.is_empty()).then(|| s.text.clone());
-        let ask = Browse { at, cursor: cursor.clone(), text, language };
+        // The root and a search stay inside what was picked.
+        let picks = if at.is_empty() || at == s.search_id { s.picks.clone() } else { BTreeMap::new() };
+        let ask = Browse { at, cursor: cursor.clone(), text, language, picks };
         let (generation, source, tx) = (s.generation, s.current.clone(), s.tx.clone());
         self.ask_plugin(source, messages::op::BROWSE, messages::write(&ask), move |answer| {
             let result = answer.and_then(|bytes| messages::read::<Listing>(&bytes));
@@ -874,6 +931,23 @@ impl Chilpa {
         };
         let at_root = self.sources.trail.is_empty();
         let mut entries = listing.entries;
+        if at_root && cursor.is_none() && !listing.columns.is_empty() {
+            // What a column starts on counts as picked: the root was
+            // answered as if it were.
+            for column in &listing.columns {
+                if let Some(preset) = &column.preset {
+                    self.sources.picks.entry(column.id.clone()).or_insert_with(|| preset.clone());
+                }
+            }
+            self.sources.columns = listing.columns;
+        }
+        // An item listed inside an entry, with nothing to say whose it is,
+        // is that entry's: an episode is its show's.
+        if let Some(whose) = self.sources.trail.last().filter(|c| c.entry.is_some()).map(|c| c.title.clone()) {
+            for entry in entries.iter_mut().filter(|e| e.kind == EntryKind::Item && e.subtitle.trim().is_empty()) {
+                entry.subtitle = whose.clone();
+            }
+        }
         if at_root {
             // The place to type is drawn as a field, not as a row.
             self.sources.search_id = entries
