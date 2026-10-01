@@ -13,6 +13,8 @@ chilpa-auth.workspace = true
 # Why a plugin did not load is read by the user, in the plugins panel, so
 # it goes through the catalog. The catalog depends on nothing.
 chilpa-i18n.workspace = true
+# The protocol types, shared with every plugin. Re-exported from `messages`.
+chilpa-plugin-api.workspace = true
 # serde and serde_json were already in the tree because of the streams
 # crate, so the message format adds no new dependency. A JSON parser written
 # by hand would be the project's most obvious attack surface.

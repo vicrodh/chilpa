@@ -386,7 +386,7 @@ impl Chilpa {
             return Err(chilpa_i18n::t("it answered something that is not an http address"));
         }
         if !stream.delivery.playable() {
-            return Err(chilpa_i18n::t_args("it delivers {}", &[&stream.delivery.describe()]));
+            return Err(chilpa_i18n::t_args("it delivers {}", &[&messages::describe_delivery(stream.delivery)]));
         }
         let now = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)

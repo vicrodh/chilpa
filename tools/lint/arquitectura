@@ -42,7 +42,10 @@ ALLOWED = {
     # cómo se conecta una cuenta. Ese crate no conoce la red —quien corre el
     # flujo le inyecta la petición—, así que el sandbox no acaba enlazando un
     # cliente HTTP que no tiene por qué existir ahí.
-    "chilpa-plugin": {"chilpa-auth"},
+    # chilpa-plugin-api no es de este workspace: son los tipos del protocolo,
+    # que viven en la rama sdk del repo de plugins para que un plugin se
+    # compile contra la misma definición. Solo depende de serde.
+    "chilpa-plugin": {"chilpa-auth", "chilpa-plugin-api"},
     # Dónde se guarda un secreto sin dejarlo en claro. No depende de nadie:
     # no conoce plugins ni biblioteca, solo cierra y abre bytes.
     "chilpa-secrets": set(),
