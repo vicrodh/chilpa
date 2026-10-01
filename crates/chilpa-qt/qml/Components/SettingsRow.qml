@@ -198,6 +198,7 @@ Item {
         id: status
         StatusField {
             state: row.action
+            light: row.marks.length > 0 ? row.marks[0] : ""
             link: row.value
             openText: I18n.tr("Open account page", I18n.rev)
             options: row.options

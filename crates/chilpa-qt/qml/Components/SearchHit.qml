@@ -20,7 +20,7 @@ Item {
     required property string duration
     // The row the keyboard is on.
     property bool current: false
-    // What the row is, drawn over the placeholder when it has no cover.
+    // What the row is, drawn over the placeholder while it has no cover.
     property string glyph
     // The button at its end: the menu's, unless the list gives it another.
     property string endGlyph: Icons.dots
@@ -72,7 +72,7 @@ Item {
 
     Icon {
         anchors.centerIn: cover
-        visible: hit.glyph !== "" && hit.art.toString() === ""
+        visible: hit.glyph !== "" && !cover.ready
         glyph: hit.glyph
         size: Metrics.iconNav
         color: Theme.color.accent
@@ -96,6 +96,7 @@ Item {
         }
         Text {
             width: parent.width
+            visible: text !== ""
             text: hit.detail
             elide: Text.ElideRight
             font.pointSize: Type.small

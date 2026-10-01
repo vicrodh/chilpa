@@ -28,6 +28,9 @@ Item {
     // Which placeholder color, so a grid of empty covers is not one block.
     property int tint: 0
 
+    // True once there is a picture to draw, so whoever uses the tile can
+    // put something of its own over the placeholder.
+    readonly property bool ready: image.status === Image.Ready
     readonly property bool local: root.source.toString().startsWith("file://")
     readonly property int decode: Math.ceil(Math.max(width, height) * Screen.devicePixelRatio / Metrics.artDecodeStep) * Metrics.artDecodeStep
 
