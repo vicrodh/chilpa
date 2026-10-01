@@ -19,6 +19,7 @@ pub mod plays;
 pub mod listening;
 pub mod ratings;
 pub mod regroup;
+pub mod saved;
 mod related;
 pub(crate) mod reach;
 pub mod servers;

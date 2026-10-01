@@ -23,3 +23,24 @@ CREATE TABLE artist_favorites (
     added_at INTEGER NOT NULL
 );
 "#;
+
+/// From 29 to 30: what the listener keeps from a source that is browsed.
+///
+/// A station, a show: something a plugin listed and the listener wants at
+/// hand. It is kept here and not by the plugin, so it survives the plugin
+/// being reinstalled and can be listed with the network down. The row
+/// carries what is needed to show it again without asking anybody; the
+/// `external_id` is whatever the plugin wants back to open or play it.
+pub(super) const MIGRATION_V30: &str = r#"
+CREATE TABLE source_saved (
+    source      TEXT NOT NULL,
+    external_id TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    subtitle    TEXT NOT NULL DEFAULT '',
+    image_url   TEXT NOT NULL DEFAULT '',
+    kind        TEXT NOT NULL,
+    live        INTEGER NOT NULL DEFAULT 0,
+    saved_at    INTEGER NOT NULL,
+    PRIMARY KEY (source, external_id)
+);
+"#;
