@@ -20,11 +20,19 @@ Item {
     required property string duration
     // The row the keyboard is on.
     property bool current: false
+    // What the row is, drawn over the placeholder when it has no cover.
+    property string glyph
+    // The button at its end: the menu's, unless the list gives it another.
+    property string endGlyph: Icons.dots
+    property string endTip: I18n.tr("More", I18n.rev)
+    property bool endOn: false
 
     signal activated()
     signal played()
     // Its menu was asked for, at that point of the row.
     signal menu(real left, real top)
+    // The button at its end was pressed, when it is not the menu's.
+    signal endClicked()
 
     readonly property bool header: kind === 0
     readonly property bool best: kind === 1
@@ -60,6 +68,14 @@ Item {
         radius: hit.person ? width / 2 : Metrics.radiusArtSmall // derived: a circle
         source: hit.art
         tint: hit.index
+    }
+
+    Icon {
+        anchors.centerIn: cover
+        visible: hit.glyph !== "" && hit.art.toString() === ""
+        glyph: hit.glyph
+        size: Metrics.iconNav
+        color: Theme.color.accent
     }
 
     Column {
@@ -126,9 +142,11 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: !hit.header
             size: Metrics.button28
-            glyph: Icons.dots
-            tip: I18n.tr("More", I18n.rev)
-            onClicked: hit.menu(tail.x + more.x + more.width - Metrics.menuWidth, tail.y + more.y + more.height + Metrics.gap4)
+            glyph: hit.endGlyph
+            tip: hit.endTip
+            filled: hit.endOn
+            tone: hit.endOn ? "accent" : "secondary"
+            onClicked: hit.endGlyph === Icons.dots ? hit.menu(tail.x + more.x + more.width - Metrics.menuWidth, tail.y + more.y + more.height + Metrics.gap4) : hit.endClicked()
         }
     }
 

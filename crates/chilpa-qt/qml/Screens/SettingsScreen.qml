@@ -116,7 +116,7 @@ Item {
         interval: Motion.refresh
         repeat: true
         running: page.visible && page.section === "sources"
-        onTriggered: rows.refresh()
+        onTriggered: { rows.refresh(); Sources.refresh() }
     }
 
     Text {
