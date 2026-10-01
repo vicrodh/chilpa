@@ -165,8 +165,14 @@ GallerySection {
         PlaylistCollage { covers: [] }
         MarkButtons { kind: "album"; key: "1" }
         RatingButton { kind: "album"; target: 1 }
-        TrackRowMove { height: Metrics.rowCompact }
-        TrackRowLead { width: Metrics.colMove; height: Metrics.rowCompact; number: 7 }
+        Row {
+            spacing: Metrics.gridGap
+            TrackRowMove { height: Metrics.rowCompact }
+            TrackRowMove { height: Metrics.rowRich; stacked: true }
+            TrackRowLead { width: Metrics.colMoveCompact + Metrics.colIndexCompact; height: Metrics.rowCompact; gutter: Metrics.colMoveCompact; reorder: true; number: 7 }
+            Item { id: oneDragged; width: Metrics.menuWidth; height: Metrics.rowRich; DragGhost { parent: oneDragged; title: "Different World"; detail: "Iron Maiden · A Matter Of Life And Death" } }
+            Item { id: severalDragged; width: Metrics.menuWidth; height: Metrics.rowRich; DragGhost { parent: severalDragged; count: 3 } }
+        }
         TrackRowEnd { height: Metrics.rowCompact; trackId: 1 }
         PlaylistFolderRow { width: Metrics.sidebarWidth; index: 0; folderId: 1; name: "Road music"; tracks: 4; folderColor: "warning"; expanded: true }
         Row {

@@ -13,9 +13,11 @@ ListModel {
     function select(row, mode) { lastAction = "select"; lastRow = row }
     function play(row) { lastAction = "play"; lastRow = row }
     function go(row, kind) { lastAction = kind; lastRow = row }
-    function moveInPlaylistTo(row, to) { lastAction = "move"; lastRow = row }
+    function moveInPlaylistTo(row, to) { lastAction = "move"; lastRow = row; movedTo = to }
     function moveInPlaylist(row, by) { lastAction = by < 0 ? "up" : "down"; lastRow = row; ++steps }
     property int steps: 0
+    property int selectedCount: 0
+    property int movedTo: -1
     function menuJson(row) {
         return JSON.stringify([
             { act: "play", text: "Play now" },

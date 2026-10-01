@@ -116,6 +116,16 @@ Item {
         measure: credit
     }
 
+    DragGhost {
+        objectName: "dragGhost"
+        visible: pointer.dragging
+        source: pointer
+        at: Qt.point(pointer.mouseX, pointer.mouseY)
+        count: pointer.dragCount
+        title: pointer.dragTitle
+        detail: pointer.dragDetail
+    }
+
     // Measures where each artist of a row's credit is; one for the list.
     CreditLine { id: credit; visible: false }
 

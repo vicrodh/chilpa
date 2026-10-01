@@ -600,7 +600,12 @@ impl qobject::TrackListModel {
             return;
         }
         let playlist = self.rust().album_id;
-        if app::with(|api| api.move_in_playlist(playlist, from as usize, to as usize)) {
+        // A row dragged out of a selection takes the selection with it.
+        let rows: Vec<usize> = if self.in_selection(from) {
+            let this = self.rust();
+            (0..this.len()).filter(|&at| this.track_id(at).is_some_and(|id| this.selected.contains(&id))).collect()
+        } else { vec![from as usize] };
+        if app::with(|api| api.move_group_in_playlist(playlist, &rows, to as usize)) {
             registry::playlists(|lists| lists.changed());
         }
     }
