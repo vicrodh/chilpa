@@ -11,6 +11,14 @@ Rectangle {
 
     // Its column of icons. The frame says so while a drag shows it.
     property bool collapsed: SettingsModel.sidebarMode === "collapsed"
+    // The plugins that asked for an entry of their own, once approved.
+    readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
+
+    Component.onCompleted: Sources.refresh()
+    Connections {
+        target: Navigation
+        function onScreenChanged() { Sources.refresh() }
+    }
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar
@@ -55,7 +63,7 @@ Rectangle {
                     { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
                     { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
                     { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
-                ]
+                ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: Icons[p.icon] || Icons.server, text: p.name })))
 
                 NavItem {
                     required property var modelData
@@ -63,9 +71,9 @@ Rectangle {
                     text: modelData.text
                     glyph: modelData.glyph
                     collapsed: side.collapsed
-                    active: Navigation.screen === modelData.screen
-                    onClicked: Navigation.go(modelData.screen, 0)
-                    onMiddleClicked: SettingsModel.middleClickTabs ? Navigation.open(modelData.screen, 0) : Navigation.go(modelData.screen, 0)
+                    active: Navigation.screen === modelData.screen && (!modelData.key || Navigation.routeKey === modelData.key)
+                    onClicked: modelData.key ? Navigation.goKey(modelData.screen, modelData.key) : Navigation.go(modelData.screen, 0)
+                    onMiddleClicked: modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(modelData.screen, 0) : Navigation.go(modelData.screen, 0)
                 }
             }
         }
