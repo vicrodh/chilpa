@@ -168,7 +168,7 @@ impl Chilpa {
                     self.now.artwork_path = presentation.artwork.map(|p| p.display().to_string()).unwrap_or_default();
                     let path = std::path::PathBuf::from(&self.now.path);
                     self.name_from_source(&path);
-                    self.cast_library_context();
+                    self.catalog_context();
                     self.load_lyrics(&path);
                 }
                 Event::Status(status) => {
@@ -194,13 +194,15 @@ impl Chilpa {
             }
         }
     }
-    fn cast_library_context(&mut self) {
+    /// Fills what is missing about the current track from the catalog.
+    pub(crate) fn catalog_context(&mut self) {
         let path = self.now.path.clone();
         let track = self.library().and_then(|lib| lib.tracks_by_paths(&[path]).ok()).and_then(|mut rows| rows.pop().flatten());
         let Some(track) = track else { return };
         self.now.album_id = track.album_id.unwrap_or_default();
         if self.now.total_seconds <= 0.0 { self.now.total_seconds = track.duration_ms as f64 / 1000.0; }
         if self.now.artwork_path.is_empty() { self.now.artwork_path = track.artwork_path.unwrap_or_default(); }
+        if self.now.title.is_empty() { self.now.title = track.title; }
         if self.now.artist.is_empty() { self.now.artist = track.artist; }
         if self.now.album.is_empty() { self.now.album = track.album; }
         // I retain measured file quality and fill missing source metadata from

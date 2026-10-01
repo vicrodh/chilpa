@@ -20,6 +20,20 @@ impl Chilpa {
             }
         }
     }
+    /// Writes the session down while it plays, not only on a clean close: a
+    /// killed process (a closed terminal, a logout, a crash) never reaches
+    /// `Drop`, and came back to whatever the last queue edit had saved.
+    /// A track that starts and a pause are written at once; the position
+    /// in between, at most every ten seconds.
+    pub(crate) fn persist_progress(&mut self, now: bool) {
+        const EVERY: std::time::Duration = std::time::Duration::from_secs(10);
+        if self.listen.pending.is_some() || self.listen.active == 0 { return; }
+        let due = self.listen.saved_at.is_none_or(|at| at.elapsed() >= EVERY);
+        if now || (self.now.playing && !self.now.paused && due) {
+            self.listen.saved_at = Some(std::time::Instant::now());
+            self.persist_buffers();
+        }
+    }
     pub(crate) fn forget_buffers(&self) { let _ = std::fs::remove_file(file()); }
     pub(crate) fn restore_buffers(&mut self) -> bool {
         if !self.keep_queue() { return false; }

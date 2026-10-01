@@ -44,11 +44,13 @@ pub(super) struct Workspace {
     pub pending: Option<(u64, usize, f64)>,
     #[serde(skip)]
     undo: Option<Buffer>,
+    #[serde(skip)]
+    pub saved_at: Option<std::time::Instant>,
 }
 impl Default for Workspace {
     fn default() -> Self {
         Self { version: 1, buffers: vec![Buffer::empty(1)], active: 1, selected: 1,
-            next: 2, pending: None, undo: None }
+            next: 2, pending: None, undo: None, saved_at: None }
     }
 }
 
@@ -102,9 +104,9 @@ impl Chilpa {
         if let Some(p) = &self.player { p.set_order(b.order.clone(), b.paths.len()); }
         let cursor = b.cursor.min(b.paths.len().saturating_sub(1));
         let path = b.paths.get(cursor).cloned().unwrap_or_default();
-        self.now = NowPlaying { title: crate::title_of(std::path::Path::new(&path)), path,
-            index: cursor, seconds: b.seconds, queue_len: b.paths.len(),
+        self.now = NowPlaying { path, index: cursor, seconds: b.seconds, queue_len: b.paths.len(),
             playing: b.live(cursor), paused: true, ..Default::default() };
+        self.describe_waiting();
         self.restored_at = Some(b.seconds);
     }
     /// The chosen buffer becomes the single queue shown in the side panel.
