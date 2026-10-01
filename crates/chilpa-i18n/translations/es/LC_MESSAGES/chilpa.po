@@ -2677,6 +2677,9 @@ msgstr "la fuente"
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr "no se encontró el área estéreo (TWOCHTOC)"
 
+msgid "the stream went quiet"
+msgstr "el stream se quedó en silencio"
+
 msgid "the sync lost its place; start it again"
 msgstr "la sincronización perdió su lugar; iníciala de nuevo"
 
