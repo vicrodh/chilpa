@@ -266,11 +266,15 @@ impl Chilpa {
             // show is followed by saving its folder.
             "placeSavable": place.is_some_and(|c| c.entry.is_some()),
             "placeSaved": place.is_some_and(|c| s.saved.contains(&c.id)),
-            // What is playing, when it is something of a source: the key of
-            // its page.
-            "onAir": on_air
+            // What the bar shows, when it is something of a source: the key
+            // of its page. It holds while paused and after it ends, for as
+            // long as the bar still names it.
+            "onAir": s
+                .sounding
+                .as_ref()
+                .filter(|p| self.now.path == p.url)
                 .map(|p| format!("{} {}", p.source, p.entry.id))
-                .or_else(|| playing.as_ref().map(|(plugin, entry)| format!("{plugin} {entry}")))
+                .or_else(|| of_plugin(&self.now.path).map(|(plugin, entry)| format!("{plugin} {entry}")))
                 .unwrap_or_default(),
             "detail": detail,
         })
@@ -368,6 +372,11 @@ impl Chilpa {
     }
 
     fn open_source(&mut self, id: &str) {
+        // Only a plugin with a place in the window is opened: anything else
+        // would throw away where the window stands for nothing.
+        if !self.source_panels().iter().any(|p| p.id == id) {
+            return;
+        }
         let s = &mut self.sources;
         if s.current == id && (s.loading || !s.entries.is_empty()) {
             // Coming back to it leaves it where it was.

@@ -83,8 +83,12 @@ TestCase {
 
     function test_the_page_of_an_entry_says_what_is_on_and_saves_it() {
         compare(Sources.asked.some(a => a[0] === "detail"), false, "a key that names no entry asks for none")
+        Navigation.screen = "sourceEntry"
         Navigation.routeKey = "radio station:1"
+        wait(30)
+        compare(Sources.asked.some(a => a[0] === "open" && a[1] === "radio station:1"), false, "the list does not take another screen's key for a plugin")
         verify(Sources.asked.some(a => a[0] === "detail" && a[1] === "station:1" && a[2] === "radio"))
+        Navigation.screen = "source"
         Navigation.routeKey = "radio"
         Sources.show({ detail: Object.assign({}, station, { source: "radio", name: "Radio", description: "", facts: [{ label: "Country", value: "Somewhere" }], song: "Someone - A Song", art: "" }) })
         wait(30)

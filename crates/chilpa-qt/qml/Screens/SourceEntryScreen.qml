@@ -17,7 +17,8 @@ Flickable {
     function ask(action) { Sources.command(action, page.entry.id || "", page.entry.source || "") }
     function open() {
         const cut = key.indexOf(" ")
-        if (cut < 0) return
+        // On the way out the key is already another screen's.
+        if (cut < 0 || Navigation.screen !== "sourceEntry") return
         Sources.command("detail", key.slice(cut + 1), key.slice(0, cut))
     }
 
@@ -25,7 +26,7 @@ Flickable {
     clip: true
 
     Component.onCompleted: open()
-    onKeyChanged: open()
+    onKeyChanged: Qt.callLater(page.open)
     Connections {
         target: Player
         function onTitleChanged() { Sources.refresh() }

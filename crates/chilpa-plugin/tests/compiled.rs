@@ -146,6 +146,23 @@ fn an_operation_it_does_not_export_is_said_and_is_not_a_crash() {
 }
 
 #[test]
+fn being_asked_for_what_it_does_not_do_never_sends_it_to_quarantine() {
+    let host = Host::new().unwrap();
+    let services: Services = Arc::new(Mutex::new(TestHost::new()));
+    let mut registry = chilpa_plugin::Registry::new();
+    assert!(registry.install(&host, MANIFEST, WASM, |_| true));
+    let id = "app.chilpa.fixture";
+    // Chilpa asks every source for its playlists, again and again.
+    for _ in 0..5 {
+        let answer = registry.call(&host, &services, id, op::PLAYLISTS, b"{}", Limits::default());
+        assert_eq!(answer, Err(PluginError::MissingExport(op::PLAYLISTS.to_string())));
+    }
+    assert_eq!(registry.state(id), chilpa_plugin::State::Healthy);
+    let found = registry.call(&host, &services, id, op::SEARCH, &messages::write(&Query::new("first", 5)), Limits::default());
+    assert!(matches!(found, Ok(Reply::Ok(_))), "and it still answers what it does do: {found:?}");
+}
+
+#[test]
 fn a_module_missing_a_required_export_does_not_load() {
     let host = Host::new().unwrap();
     let bare = wat::parse_str(r#"(module (memory (export "memory") 1))"#).unwrap();
