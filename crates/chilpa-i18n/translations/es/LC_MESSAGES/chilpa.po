@@ -243,6 +243,9 @@ msgstr "Pila de audio"
 msgid "AutoMix"
 msgstr "AutoMix"
 
+msgid "Awaiting approval"
+msgstr "Espera aprobación"
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr "BP marca una salida que recibe las muestras intactas."
 
@@ -656,6 +659,9 @@ msgstr "Filtrar artistas"
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
 
+msgid "Filter, Enter to search, or a stream URL"
+msgstr "Filtra, Enter para buscar, o la URL de un stream"
+
 msgid "Find covers"
 msgstr "Buscar carátulas"
 
@@ -782,8 +788,8 @@ msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuand
 msgid "Info: Embedded tags"
 msgstr "Info: etiquetas del archivo"
 
-msgid "Installed plugins"
-msgstr "Plugins instalados"
+msgid "Installed"
+msgstr "Instalados"
 
 msgid "Integrations"
 msgstr "Integraciones"
@@ -1001,8 +1007,8 @@ msgstr "Todavía no hay playlists."
 msgid "No playlists yet. Create one to get started."
 msgstr "Todavía no hay playlists. Crea una para empezar."
 
-msgid "No source plugins installed"
-msgstr "No hay plugins de fuentes instalados"
+msgid "No plugins installed"
+msgstr "No hay plugins instalados"
 
 msgid "No tracks in your local library yet."
 msgstr "Todavía no hay pistas en tu biblioteca local."
@@ -1030,6 +1036,9 @@ msgstr "Sin resultados para “{}”"
 
 msgid "Nothing has been saved. Closing the editor loses what was changed."
 msgstr "No se ha guardado nada. Si cierras el editor se pierde lo que cambiaste."
+
+msgid "Nothing here matches."
+msgstr "Nada de aquí coincide."
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
 msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus discos van a aparecer aquí."
@@ -1211,6 +1220,9 @@ msgstr "Reproducciones"
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
 
+msgid "Plugins"
+msgstr "Plugins"
+
 msgid "Previous"
 msgstr "Anterior"
 
@@ -1228,6 +1240,9 @@ msgstr "Calidad"
 
 msgid "Quality, format and source filters"
 msgstr "Filtros de calidad, formato y fuente"
+
+msgid "Quarantined"
+msgstr "En cuarentena"
 
 msgid "Queue"
 msgstr "Cola"
@@ -1520,8 +1535,14 @@ msgstr "Estado"
 msgid "Stop after this track"
 msgstr "Detener después de esta pista"
 
+msgid "Stream address"
+msgstr "Dirección de stream"
+
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
+
+msgid "Stumbling"
+msgstr "Con fallas"
 
 msgid "Sync now"
 msgstr "Sincronizar ahora"

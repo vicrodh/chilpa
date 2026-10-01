@@ -194,12 +194,20 @@ pub const SECTIONS: &[Section] = &[
             // Expands to one row per server, and the row that adds one
             // (ADR-017).
             settings: &[setting("sources.servers", Chilpa::mark("Servers"), "", Control::Status)],
-        }, Group {
-            title: Chilpa::mark("Installed plugins"),
+        }],
+    },
+    // A section of its own and not a group under Sources: a plugin is not
+    // always a source, and approving one is the first thing done with it.
+    Section {
+        id: "plugins",
+        label: Chilpa::mark("Plugins"),
+        icon: "stack2",
+        groups: &[Group {
+            title: Chilpa::mark("Installed"),
             // This sentinel expands to one row per installed plugin in the
             // frontend model.  The schema still owns the section and its
             // control; only the number of rows is necessarily dynamic.
-            settings: &[setting("sources.plugins", Chilpa::mark("No source plugins installed"), Chilpa::mark("Put a plugin folder in Chilpa's plugins directory and reopen the app."), Control::Status)],
+            settings: &[setting("plugins.installed", Chilpa::mark("No plugins installed"), Chilpa::mark("Put a plugin folder in Chilpa's plugins directory and reopen the app."), Control::Status)],
         }],
     },
     Section {

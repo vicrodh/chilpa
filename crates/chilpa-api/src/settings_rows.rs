@@ -79,7 +79,7 @@ impl Chilpa {
         for group in section.groups {
             rows.push(Row { kind: 0, title: chilpa_i18n::t(group.title), ..Row::default() });
             for s in group.settings {
-                if s.key == "sources.plugins" {
+                if s.key == "plugins.installed" {
                     let plugins = self.plugins();
                     if plugins.is_empty() {
                         rows.push(Row { kind: 1, key: s.key.into(), title: chilpa_i18n::t(s.title), description: chilpa_i18n::t(s.description), control: "none".into(), ..Row::default() });
@@ -286,6 +286,9 @@ impl Chilpa {
     fn source_rows(&self, plugin: crate::PluginInfo, notes: &RowNotes) -> Vec<Row> {
         let key = format!("sources.plugin/{}", plugin.id);
         let mut details = Vec::new();
+        if !plugin.description.is_empty() {
+            details.push(plugin.description.clone());
+        }
         if !plugin.problem.is_empty() {
             details.push(plugin.problem.clone());
         }
@@ -302,7 +305,15 @@ impl Chilpa {
         } else if !plugin.account_kind.is_empty() {
             details.push(chilpa_i18n::t("Account not connected."));
         }
-        let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: chilpa_i18n::t(&plugin.state), ..Row::default() };
+        // How it is doing, in a word and a color: the word is the pill's and
+        // the color its light's.
+        let (word, light) = match plugin.state.as_str() {
+            "fine" => (chilpa_i18n::t("Active"), "positive"),
+            "awaiting approval" => (chilpa_i18n::t("Awaiting approval"), "warning"),
+            "stumbling" => (chilpa_i18n::t("Stumbling"), "warning"),
+            _ => (chilpa_i18n::t("Quarantined"), "negative"),
+        };
+        let mut row = Row { kind: 1, key, title: plugin.name.clone(), description: details.join(" "), control: "status".into(), action: word, marks: vec![light.into()], ..Row::default() };
         if let Some((said_key, said)) = notes.said {
             if said_key == &row.key {
                 row.description = said.clone();

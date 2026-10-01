@@ -100,6 +100,26 @@ fn failure(code: i64, message: &str) -> Failure {
     }
 }
 
+/// The address of the cover Last.fm shows for a song, the largest it gives.
+/// `None` when it does not know the song or has no cover for it.
+pub(crate) fn track_cover(artist: &str, title: &str) -> Option<String> {
+    let mut params = Map::new();
+    params.insert("artist".into(), json!(artist));
+    params.insert("track".into(), json!(title));
+    params.insert("autocorrect".into(), json!("1"));
+    let reply = call("track.getInfo", params).ok()?;
+    largest_image(&reply)
+}
+
+/// The last image of the album a `track.getInfo` reply carries: they come
+/// from small to large. An empty address is how Last.fm says "none".
+fn largest_image(reply: &Value) -> Option<String> {
+    let images = reply.pointer("/track/album/image")?.as_array()?;
+    let url = images.iter().rev().find_map(|i| i.get("#text")?.as_str().filter(|u| !u.is_empty()))?;
+    // The address with nothing after the size is its placeholder star.
+    (!url.contains("2a96cbd8b46e442fc41c2b86b821562f")).then(|| url.to_string())
+}
+
 /// One method through the proxy, with its parameters as JSON.
 fn call(method: &str, params: Map<String, Value>) -> Result<Value, Failure> {
     let request = json!({
@@ -181,5 +201,19 @@ mod tests {
         assert_eq!(failure(9, ""), Failure::Token);
         assert_eq!(failure(29, ""), Failure::Later(300));
         assert_eq!(failure(6, "Invalid parameters"), Failure::Refused("Invalid parameters".into()));
+    }
+
+    #[test]
+    fn the_cover_of_a_song_is_the_largest_one_and_a_placeholder_is_none() {
+        let reply = json!({"track": {"album": {"image": [
+            {"#text": "https://a.b/34s/x.png", "size": "small"},
+            {"#text": "https://a.b/300x300/x.png", "size": "extralarge"}]}}});
+        assert_eq!(largest_image(&reply).as_deref(), Some("https://a.b/300x300/x.png"));
+        let empty = json!({"track": {"album": {"image": [{"#text": "", "size": "small"}]}}});
+        assert_eq!(largest_image(&empty), None);
+        assert_eq!(largest_image(&json!({"track": {"name": "No album"}})), None);
+        let star = json!({"track": {"album": {"image": [
+            {"#text": "https://a.b/300x300/2a96cbd8b46e442fc41c2b86b821562f.png"}]}}});
+        assert_eq!(largest_image(&star), None);
     }
 }

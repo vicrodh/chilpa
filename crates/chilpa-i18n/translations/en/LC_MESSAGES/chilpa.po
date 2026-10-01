@@ -243,6 +243,9 @@ msgstr ""
 msgid "AutoMix"
 msgstr ""
 
+msgid "Awaiting approval"
+msgstr ""
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr ""
 
@@ -656,6 +659,9 @@ msgstr ""
 msgid "Filter playlists"
 msgstr ""
 
+msgid "Filter, Enter to search, or a stream URL"
+msgstr ""
+
 msgid "Find covers"
 msgstr ""
 
@@ -782,7 +788,7 @@ msgstr ""
 msgid "Info: Embedded tags"
 msgstr ""
 
-msgid "Installed plugins"
+msgid "Installed"
 msgstr ""
 
 msgid "Integrations"
@@ -1001,7 +1007,7 @@ msgstr ""
 msgid "No playlists yet. Create one to get started."
 msgstr ""
 
-msgid "No source plugins installed"
+msgid "No plugins installed"
 msgstr ""
 
 msgid "No tracks in your local library yet."
@@ -1029,6 +1035,9 @@ msgid "Nothing found for “{}”"
 msgstr ""
 
 msgid "Nothing has been saved. Closing the editor loses what was changed."
+msgstr ""
+
+msgid "Nothing here matches."
 msgstr ""
 
 msgid "Nothing here yet: add a folder to the library and its records show up here."
@@ -1211,6 +1220,9 @@ msgstr ""
 msgid "Plex did not accept the session; sign in again"
 msgstr ""
 
+msgid "Plugins"
+msgstr ""
+
 msgid "Previous"
 msgstr ""
 
@@ -1227,6 +1239,9 @@ msgid "Quality"
 msgstr ""
 
 msgid "Quality, format and source filters"
+msgstr ""
+
+msgid "Quarantined"
 msgstr ""
 
 msgid "Queue"
@@ -1520,7 +1535,13 @@ msgstr ""
 msgid "Stop after this track"
 msgstr ""
 
+msgid "Stream address"
+msgstr ""
+
 msgid "Studio 24/48"
+msgstr ""
+
+msgid "Stumbling"
 msgstr ""
 
 msgid "Sync now"
