@@ -1043,7 +1043,7 @@ impl Chilpa {
 
     /// Pauses or resumes what is playing.
     pub fn set_paused(&mut self, paused: bool) {
-        if paused { self.casting.local_start = None; }
+        if paused { self.casting.local_start = None; self.persist_progress(true); }
         if self.casting.active() { self.cast_pause(paused); return; }
         if !paused && self.player.as_ref().is_none_or(|p| p.idle()) && !self.queue.is_empty() {
             let restored = self.restored_at.take();
@@ -1121,11 +1121,13 @@ impl Chilpa {
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }
+        let mut started = false;
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
             if self.listen.active == 0 { continue; }
             match event {
                 PlayerEvent::Started { path, opened, channels: music_channels, bits, bit_perfect, total_frames, tags, artwork, index, queue_len, dsd_multiple, dsd_passthrough } => {
+                    started = true;
                     self.sample_rate = opened.sample_rate_hz;
                     self.now.path = path.display().to_string();
                     let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
@@ -1277,6 +1279,7 @@ impl Chilpa {
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
         self.mark_scaled(gain);
         self.finish_buffer_switch();
+        self.persist_progress(started);
         &self.now
     }
 

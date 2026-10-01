@@ -111,7 +111,6 @@ impl Chilpa {
         self.next_queue_group = self.queue_groups.iter().map(|group| group.key).max().unwrap_or(0).wrapping_add(1).max(1);
         self.now = NowPlaying {
             path: self.queue[0].clone(),
-            title: title_of(std::path::Path::new(&self.queue[0])),
             playing: true,
             paused: true,
             seconds: saved.seconds.max(0.0),
@@ -119,7 +118,35 @@ impl Chilpa {
             queue_len: self.queue.len(),
             ..NowPlaying::default()
         };
+        self.describe_waiting();
         self.restored_at = Some(saved.seconds.max(0.0));
+    }
+
+    /// Says what the current track is before the player has opened it: a
+    /// restored session waits paused, and the bar would otherwise show only
+    /// the file name over an empty cover. The catalog answers without
+    /// touching the file; a track outside it is read the way the player
+    /// reads it when it starts.
+    pub(crate) fn describe_waiting(&mut self) {
+        if self.now.path.is_empty() { return; }
+        let path = std::path::PathBuf::from(&self.now.path);
+        self.catalog_context();
+        if self.now.title.is_empty() && path.is_file() {
+            if let Ok(info) = chilpa_tags::read(&path) {
+                self.now.title = info.tags.title.clone().unwrap_or_default();
+                self.now.artist = info.tags.artist_line();
+                self.now.album = info.tags.album.clone().unwrap_or_default();
+                self.now.total_seconds = info.duration.as_secs_f64();
+                self.now.quality = Quality::of_track(&self.now.path, None, info.bit_depth, info.sample_rate_hz);
+            }
+        }
+        if self.now.artwork_path.is_empty() {
+            self.now.artwork_path = chilpa_tags::artwork_for(&path, &chilpa_core::artwork_cache())
+                .map(|p| p.display().to_string()).unwrap_or_default();
+        }
+        if self.now.title.is_empty() { self.now.title = title_of(&path); }
+        self.name_from_source(&path);
+        self.load_lyrics(&path);
     }
 
     /// Sets the queue already in `self.queue` going, from that position.
@@ -362,7 +389,6 @@ impl Chilpa {
         self.removed = vec![false; self.queue.len()];
         self.now = NowPlaying {
             path: self.queue[0].clone(),
-            title: title_of(std::path::Path::new(&self.queue[0])),
             playing: true,
             paused: true,
             seconds,
