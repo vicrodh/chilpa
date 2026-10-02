@@ -113,6 +113,19 @@ impl Chilpa {
         self.source_panels();
         let layout = self.sources.layouts.get(plugin).cloned();
         let name = self.source_name(plugin);
+        if address.is_empty() && self.natives.is_native(plugin) {
+            // A process plugin's home is read whole, in one call; each of its
+            // shelves is a route, kept between runs with its title.
+            let home = format!("{plugin} home");
+            let _ = self.catalog.shelf(&home);
+            let shelves: Vec<serde_json::Value> = (0..).map_while(|at| {
+                let key = format!("{plugin} route:discover:{at}");
+                self.catalog.stored_shelf(&key).map(|s| serde_json::json!({"key": key, "title": s.title}))
+            }).collect();
+            let loading = shelves.is_empty() && self.catalog.loading(&home);
+            let error = if shelves.is_empty() { self.catalog.shelf_error(&home).unwrap_or_default() } else { String::new() };
+            return serde_json::json!({"music": true, "name": name, "title": name, "shelves": shelves, "loading": loading, "error": error}).to_string();
+        }
         if address.is_empty() {
             // The source's own page: a shelf for each route of its discover
             // section, or for each folder of its root when it has no layout.
@@ -210,6 +223,10 @@ impl Chilpa {
     /// A source whose tree the catalog draws as records: one that runs as a
     /// compatibility worker or that has a layout. Others keep their tree.
     pub fn source_draws_music(&mut self, plugin: &str) -> bool {
+        if self.natives.is_native(plugin) {
+            self.catalog.remember_drawn(plugin, true);
+            return true;
+        }
         let Some(plugins) = self.plugins.as_ref().and_then(|p| p.try_lock().ok()) else {
             return self.catalog.drawn(plugin);
         };

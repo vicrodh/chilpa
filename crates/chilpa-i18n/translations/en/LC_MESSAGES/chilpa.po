@@ -611,6 +611,9 @@ msgstr ""
 msgid "Disconnected"
 msgstr ""
 
+msgid "Discover"
+msgstr ""
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr ""
 
@@ -1473,6 +1476,9 @@ msgid "Refresh settings"
 msgstr "Refresh settings"
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
+msgstr ""
+
+msgid "Releases"
 msgstr ""
 
 msgid "Remove"
@@ -2887,6 +2893,9 @@ msgid "the sound server would not let go of card {}"
 msgstr ""
 
 msgid "the source"
+msgstr ""
+
+msgid "the source gave no address to play"
 msgstr ""
 
 msgid "the source no longer lists it"

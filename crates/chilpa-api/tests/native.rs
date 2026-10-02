@@ -17,7 +17,8 @@ while IFS= read -r line; do
   (
     id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
     case "$line" in
-      *'"method":"initialize"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"protocol":1,"capabilities":{"search":true}}}\n' "$id" ;;
+      *'"method":"initialize"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"protocol":1,"capabilities":{"home":true,"library":["albums"]}}}\n' "$id" ;;
+      *'"method":"home"'*) printf '{"jsonrpc":"2.0","id":%s,"result":{"shelves":[{"id":"n","title":"New","kind":"album","items":[{"kind":"album","ref":"album:1","title":"Record","artist":"Band"}]}]}}\n' "$id" ;;
       *'"method":"slow"'*) sleep 3; printf '{"jsonrpc":"2.0","id":%s,"result":"slow"}\n' "$id" ;;
       *) printf '{"jsonrpc":"2.0","id":%s,"result":"fast"}\n' "$id" ;;
     esac
@@ -58,6 +59,18 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     assert_eq!(chilpa.plugins().len(), 1);
     assert!(started.elapsed() < Duration::from_millis(500), "listing waited {:?}", started.elapsed());
     assert_eq!(slow.join().unwrap().unwrap(), json!("slow"));
+
+    // Its home is read in one call into the Discover page, as shelves.
+    let deadline = Instant::now() + Duration::from_secs(10);
+    let page = loop {
+        let page: serde_json::Value = serde_json::from_str(&chilpa.source_page("com.test.native")).unwrap();
+        if page["shelves"].as_array().is_some_and(|s| !s.is_empty()) || Instant::now() > deadline {
+            break page;
+        }
+        std::thread::sleep(Duration::from_millis(50));
+    };
+    assert_eq!(page["shelves"][0]["title"], "New", "{page}");
+    assert_eq!(page["shelves"][0]["key"], "com.test.native route:discover:0");
 
     let _ = std::fs::remove_dir_all(dir);
 }

@@ -13,6 +13,7 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
+use crate::source_layout::{Layout, Route, Section};
 
 /// Protocol version the host speaks with native plugins.
 pub(crate) const PROTOCOL: u32 = 1;
@@ -34,6 +35,10 @@ pub(crate) struct Natives {
 struct Known {
     manifest: Manifest,
     folder: PathBuf,
+    /// What the plugin said it can do, in its answer to `initialize`.
+    capabilities: Value,
+    /// The titles of its home's shelves, as last read.
+    discover: Vec<String>,
     restarts: usize,
     restarting: bool,
     last_start: Instant,
@@ -49,6 +54,63 @@ impl Natives {
         }
         self.restart(id);
         None
+    }
+
+    /// The domains a plugin's manifest names, which its covers are fetched within.
+    pub(crate) fn domains(&self, id: &str) -> Vec<String> {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id)
+            .map(|k| k.manifest.allowed_domains().into_iter().map(str::to_string).collect()).unwrap_or_default()
+    }
+
+    pub(crate) fn is_native(&self, id: &str) -> bool {
+        self.live.read().unwrap_or_else(|e| e.into_inner()).contains_key(id)
+    }
+
+    pub(crate) fn ids(&self) -> Vec<String> {
+        self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
+    }
+
+    /// Calls a plugin, or says it is not running.
+    pub(crate) fn call(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
+        let client = self.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
+        client.call(method, params, timeout).map_err(|e| e.to_string())
+    }
+
+    /// Remembers the titles of the plugin's home shelves, which are the
+    /// routes of its Discover page.
+    pub(crate) fn set_discover(&self, id: &str, titles: Vec<String>) {
+        if let Some(known) = self.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(id) {
+            known.discover = titles;
+        }
+    }
+
+    /// The pages a plugin's music is drawn in, the same way a layout file
+    /// maps a compatibility source onto them: Discover, its home's shelves;
+    /// Library, with a tab for each kind of favorite it lists.
+    pub(crate) fn layout(&self, id: &str) -> Option<Layout> {
+        let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
+        let known = known.get(id)?;
+        let section = |title: &str, icon: &str, entity: &str, order: i32, under: &str, paths: Vec<Route>| Section {
+            title: chilpa_i18n::t(title), icon: icon.into(), entity: entity.into(), paths, order, under: under.into() };
+        let mut sections = std::collections::BTreeMap::new();
+        if known.capabilities.get("home").and_then(Value::as_bool).unwrap_or(false) {
+            let routes = known.discover.iter().map(|title| Route { path: vec![title.clone()], membership: String::new() }).collect();
+            sections.insert("discover".to_string(), section(chilpa_i18n::mark("Discover"), "compass", "album", 0, "", routes));
+        }
+        let kinds: Vec<String> = known.capabilities.get("library").and_then(Value::as_array).into_iter().flatten()
+            .filter_map(Value::as_str).map(str::to_string).collect();
+        if !kinds.is_empty() {
+            sections.insert("library".to_string(), section(chilpa_i18n::mark("Library"), "library", "album", 1, "", Vec::new()));
+            let tabs = [("albums", chilpa_i18n::mark("Releases"), "album"), ("tracks", chilpa_i18n::mark("Tracks"), "track"),
+                ("artists", chilpa_i18n::mark("Artists"), "artist"), ("playlists", chilpa_i18n::mark("Playlists"), "playlist")];
+            for (order, (kind, title, entity)) in tabs.into_iter().enumerate() {
+                if kinds.iter().any(|k| k == kind) {
+                    sections.insert(kind.to_string(), section(title, "", entity, order as i32 + 2, "library",
+                        vec![Route { path: vec![kind.to_string()], membership: String::new() }]));
+                }
+            }
+        }
+        Some(Layout { sections })
     }
 
     /// Starts a plugin and greets it. It runs on the caller's thread, which
@@ -69,8 +131,10 @@ impl Natives {
         let id = manifest.id.clone();
         let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
         let restarts = known.get(&id).map(|k| k.restarts).unwrap_or(0);
+        let discover = known.get(&id).map(|k| k.discover.clone()).unwrap_or_default();
         known.insert(id.clone(), Known { manifest: manifest.clone(), folder: folder.to_path_buf(),
-            restarts, restarting: false, last_start: Instant::now() });
+            capabilities: greeting.get("capabilities").cloned().unwrap_or(Value::Null),
+            discover, restarts, restarting: false, last_start: Instant::now() });
         drop(known);
         self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id, client.clone());
         Ok(client)

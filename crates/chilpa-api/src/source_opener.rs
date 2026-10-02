@@ -83,8 +83,26 @@ impl Openers {
         f(library.as_ref()?)
     }
 
+    /// A process plugin gives the address itself, signed and direct: it is
+    /// asked without the sandbox lock and its redirects are not walked.
+    fn locate_in_native(&self, natives: &std::sync::Arc<crate::natives::Natives>, plugin: &str, reference: &str) -> Result<Located, String> {
+        let answer = natives.call(plugin, "track.resolve", serde_json::json!({"ref": reference, "purpose": "play",
+            "output": {"max_rate": 192_000, "max_bits": 24}}), Duration::from_secs(20))?;
+        let url = answer.get("url").and_then(serde_json::Value::as_str)
+            .filter(|url| url.starts_with("https://") || url.starts_with("http://"))
+            .ok_or_else(|| chilpa_i18n::t("the source gave no address to play"))?;
+        Ok(Located {
+            request: chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() },
+            extension: answer.pointer("/format/codec").and_then(serde_json::Value::as_str).filter(|c| !c.is_empty() && *c != "unknown").map(str::to_string),
+            server: self.catalog.name(plugin).unwrap_or_else(|| plugin.to_string()),
+        })
+    }
+
     fn locate_in_plugin(&self, entry: &RemoteEntry) -> Result<Located, String> {
         let plugin = &entry.source.instance;
+        if let Some(natives) = self.catalog.natives().filter(|natives| natives.is_native(plugin)) {
+            return self.locate_in_native(&natives, plugin, &entry.external_id);
+        }
         let Some(plugins) = &self.plugins else {
             return Err(chilpa_i18n::t("the plugin sandbox is not started"));
         };
