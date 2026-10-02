@@ -251,8 +251,10 @@ impl crate::Chilpa {
                 let panel = self.source_panels().into_iter().find(|p| p.id == plugin).unwrap_or_default();
                 let icon = if panel.icon.is_empty() { "server".to_string() } else { panel.icon };
                 let name = if panel.name.is_empty() { plugin.to_string() } else { panel.name };
-                // An entry's tab is named after the entry, when it is known.
-                return (self.source_entry_title(plugin, entry).unwrap_or(name), icon);
+                // A listing's tab is named after the listing, an entry's after
+                // the entry, when they are known.
+                let listing = (r.screen == Screen::Source && !entry.is_empty()).then(|| self.source_listing_title(&r.key)).flatten();
+                return (listing.or_else(|| self.source_entry_title(plugin, entry)).unwrap_or(name), icon);
             }
         };
         (title, icon.to_string())

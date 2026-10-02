@@ -175,11 +175,20 @@ msgstr "Todo ({})"
 msgid "All artists"
 msgstr "Todos los artistas"
 
+msgid "All categories"
+msgstr "Todas las categorías"
+
 msgid "All music"
 msgstr "Toda la música"
 
+msgid "All sources"
+msgstr ""
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
+
+msgid "Allowed network domains, separated by commas"
+msgstr "Dominios de red permitidos, separados por comas"
 
 msgid "Already contains {} track"
 msgid_plural "Already contains {} tracks"
@@ -207,14 +216,23 @@ msgstr "Apariencia"
 msgid "Appears on"
 msgstr "Aparece en"
 
+msgid "Apply system tint to the icon"
+msgstr ""
+
 msgid "Apply to the form"
 msgstr "Aplicar al formulario"
 
 msgid "Approve"
 msgstr "Aprobar"
 
+msgid "Approve network permission"
+msgstr ""
+
 msgid "Approve new access"
 msgstr "Aprobar el nuevo acceso"
+
+msgid "Approve permissions and install"
+msgstr "Aprobar permisos e instalar"
 
 msgid "Artist"
 msgstr "Artista"
@@ -227,6 +245,9 @@ msgstr "Artista Z-A"
 
 msgid "Artists"
 msgstr "Artistas"
+
+msgid "As the source lists them"
+msgstr "Como los muestra la fuente"
 
 msgid "Ascending"
 msgstr "Ascendente"
@@ -306,6 +327,12 @@ msgstr "Número de catálogo"
 msgid "Checking the account…"
 msgstr "Revisando la cuenta…"
 
+msgid "Chilpa Native Plugins"
+msgstr "Plugins nativos de Chilpa"
+
+msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
+msgstr "Chilpa puede ejecutar algunos plugins de otras plataformas. Agrega un catálogo de plugins que utilices. La compatibilidad no está garantizada; Chilpa no se hace responsable del comportamiento de estos plugins."
+
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
 
@@ -327,8 +354,14 @@ msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
 msgid "Choose device"
 msgstr "Elegir dispositivo"
 
+msgid "Choose image"
+msgstr ""
+
 msgid "Choose playlist artwork"
 msgstr "Elegir imagen de la playlist"
+
+msgid "Choose plugin icon"
+msgstr ""
 
 msgid "Clear"
 msgstr "Vaciar"
@@ -351,6 +384,9 @@ msgstr "Cerrar"
 msgid "Close tab"
 msgstr "Cerrar pestaña"
 
+msgid "Collapse"
+msgstr ""
+
 msgid "Collapse all"
 msgstr "Contraer todo"
 
@@ -368,6 +404,12 @@ msgstr "Filas compactas"
 
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
 msgstr "Filas compactas como una hoja de cálculo, o filas amplias con la portada."
+
+msgid "Compatibility is not fully verified"
+msgstr "La compatibilidad no está completamente verificada"
+
+msgid "Compatible plugins"
+msgstr "Plugins compatibles"
 
 msgid "Compilation"
 msgstr "Compilación"
@@ -638,11 +680,17 @@ msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una
 msgid "Exclusive mode"
 msgstr "Modo exclusivo"
 
+msgid "Expand"
+msgstr ""
+
 msgid "Extra controls"
 msgstr "Controles extra"
 
 msgid "Extra queues"
 msgstr "Extra queues"
+
+msgid "Favorites"
+msgstr "Favoritos"
 
 msgid "Fetching the cover…"
 msgstr "Bajando la carátula…"
@@ -734,6 +782,9 @@ msgstr "Cuadrícula"
 msgid "Group album versions"
 msgstr "Agrupar versiones de un álbum"
 
+msgid "Hardware"
+msgstr "Hardware"
+
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
 
@@ -791,11 +842,38 @@ msgstr "no conozco la lista \"{}\""
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuando le pedí borrarla: puede que tu credencial siga guardada donde él la haya puesto"
 
+msgid "Icon"
+msgstr ""
+
 msgid "Info: Embedded tags"
 msgstr "Info: etiquetas del archivo"
 
+msgid "Info: {}"
+msgstr "Info: {}"
+
+msgid "Information"
+msgstr "Información"
+
+msgid "Inspect"
+msgstr "Evaluar"
+
+msgid "Inspecting plugin…"
+msgstr "Inspeccionando plugin…"
+
+msgid "Inspection failed"
+msgstr "La inspección falló"
+
+msgid "Inspection passed"
+msgstr "Inspección aprobada"
+
 msgid "Installed"
 msgstr "Instalados"
+
+msgid "Installing plugin…"
+msgstr "Instalando plugin…"
+
+msgid "Integration"
+msgstr ""
 
 msgid "Integrations"
 msgstr "Integraciones"
@@ -830,6 +908,12 @@ msgstr "Biblioteca"
 msgid "Library folders"
 msgstr "Carpetas de la biblioteca"
 
+msgid "Library integration"
+msgstr ""
+
+msgid "Library scanning"
+msgstr "Escaneo de biblioteca"
+
 msgid "Library selection"
 msgstr "Selección de la biblioteca"
 
@@ -847,6 +931,9 @@ msgstr "Cargando el release…"
 
 msgid "Loading…"
 msgstr "Cargando…"
+
+msgid "Local"
+msgstr ""
 
 msgid "Local library"
 msgstr "Biblioteca local"
@@ -929,6 +1016,9 @@ msgstr "Mover a la raíz"
 msgid "Move up"
 msgstr "Subir"
 
+msgid "Music services"
+msgstr "Servicios de música"
+
 msgid "MusicBrainz album artists"
 msgstr "Artistas del álbum en MusicBrainz"
 
@@ -964,6 +1054,9 @@ msgstr "Nativo usa el formato DSD_U32 de ALSA. DoP transporta el mismo flujo de 
 
 msgid "Navigation"
 msgstr "Navegación"
+
+msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
+msgstr ""
 
 msgid "Network playback"
 msgstr "Reproducción en red"
@@ -1010,6 +1103,9 @@ msgstr "Sin agrupar"
 msgid "No lyrics for this track."
 msgstr "Esta pista no tiene letra."
 
+msgid "No matching plugins"
+msgstr "No hay plugins que coincidan"
+
 msgid "No playlists match your search."
 msgstr "No hay playlists que coincidan con tu búsqueda."
 
@@ -1034,11 +1130,17 @@ msgstr "Normalización"
 msgid "Not answering"
 msgstr "No responde"
 
+msgid "Not compatible"
+msgstr "No compatibles"
+
 msgid "Not heard first"
 msgstr "Sin escuchar primero"
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
+
+msgid "Not inspected"
+msgstr "Sin inspeccionar"
 
 msgid "Not rated"
 msgstr "Sin calificar"
@@ -1103,6 +1205,9 @@ msgstr "Abrir Last.fm"
 msgid "Open ListenList"
 msgstr "Abrir ListenList"
 
+msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
+msgstr ""
+
 msgid "Open a folder"
 msgstr "Abrir una carpeta"
 
@@ -1144,6 +1249,9 @@ msgstr "Bytes originales · sin transcodificar por Chilpa · procesamiento del r
 
 msgid "Original files"
 msgstr "Archivos originales"
+
+msgid "Other"
+msgstr "Otros"
 
 msgid "Output"
 msgstr "Salida"
@@ -1241,6 +1349,15 @@ msgstr "Reproducciones"
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
 
+msgid "Plugin initialized successfully"
+msgstr "El plugin se inició correctamente"
+
+msgid "Plugin repository URL"
+msgstr "URL del repositorio de plugins"
+
+msgid "Plugin-reported quality"
+msgstr "Calidad declarada por el plugin"
+
 msgid "Plugins"
 msgstr "Plugins"
 
@@ -1252,6 +1369,9 @@ msgstr "Procesado"
 
 msgid "Provider identifiers"
 msgstr "Identificadores de proveedores"
+
+msgid "Purchases"
+msgstr "Compras"
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
 msgstr "Pon la carpeta de un plugin en el directorio de plugins de Chilpa y vuelve a abrir la aplicación."
@@ -1298,6 +1418,9 @@ msgstr "Vista rápida"
 msgid "Quit"
 msgstr "Salir"
 
+msgid "Radio"
+msgstr "Radio"
+
 msgid "Rate"
 msgstr "Calificar"
 
@@ -1306,6 +1429,9 @@ msgstr "Calificación"
 
 msgid "Reactivate"
 msgstr "Reactivar"
+
+msgid "Reading it from {}…"
+msgstr "Leyéndolo de {}…"
 
 msgid "Reading the files…"
 msgstr "Leyendo los archivos…"
@@ -1339,6 +1465,12 @@ msgstr "Escuchados recientemente"
 
 msgid "Records"
 msgstr "Discos"
+
+msgid "Refresh"
+msgstr "Actualizar"
+
+msgid "Refresh settings"
+msgstr "Actualizar ajustes"
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
@@ -1397,11 +1529,20 @@ msgstr "Volver a escanear"
 msgid "Reset"
 msgstr "Restablecer"
 
+msgid "Restart plugin"
+msgstr ""
+
+msgid "Restore default"
+msgstr ""
+
 msgid "Restore tabs"
 msgstr "Restaurar pestañas"
 
 msgid "Revert"
 msgstr "Revertir"
+
+msgid "Review the requested permissions before installing."
+msgstr "Revisa los permisos solicitados antes de instalar."
 
 msgid "Rich"
 msgstr "Amplia"
@@ -1469,6 +1610,9 @@ msgstr "Buscar playlists"
 msgid "Search playlists and folders"
 msgstr "Buscar playlists y folders"
 
+msgid "Search plugins"
+msgstr "Buscar plugins"
+
 msgid "Search queue"
 msgstr "Buscar en la cola"
 
@@ -1477,6 +1621,9 @@ msgstr "Buscando dispositivos…"
 
 msgid "Searching…"
 msgstr "Buscando…"
+
+msgid "See all"
+msgstr "Ver todo"
 
 msgid "Select"
 msgstr "Seleccionar"
@@ -1507,6 +1654,9 @@ msgstr "Ajustes"
 
 msgid "Show each playlist folder in its chosen color."
 msgstr "Muestra cada folder de playlists con el color elegido."
+
+msgid "Show imported albums and tracks"
+msgstr ""
 
 msgid "Show in folder"
 msgstr "Mostrar en la carpeta"
@@ -1654,6 +1804,9 @@ msgstr "Falta la respuesta del servicio."
 msgid "Theme"
 msgstr "Tema"
 
+msgid "This collection exceeds the current page limit."
+msgstr ""
+
 msgid "This computer"
 msgstr "Este equipo"
 
@@ -1717,6 +1870,9 @@ msgstr "Para moverse"
 msgid "Token"
 msgstr "Token"
 
+msgid "Tools"
+msgstr "Herramientas"
+
 msgid "Top result"
 msgstr "Mejor resultado"
 
@@ -1747,11 +1903,17 @@ msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr "Escribe este código en Quick Connect, en un Jellyfin donde ya iniciaste sesión."
 
+msgid "Uncategorized"
+msgstr "Sin categoría"
+
 msgid "Undo queue replacement or closing"
 msgstr "Deshacer reemplazo o cierre de queue"
 
 msgid "Uninstall"
 msgstr "Desinstalar"
+
+msgid "Uninstall plugin and remove account data"
+msgstr ""
 
 msgid "Unknown quality"
 msgstr "Calidad desconocida"
@@ -1773,6 +1935,9 @@ msgstr "Usa el icono de playlist o un collage de portadas."
 
 msgid "User"
 msgstr "Usuario"
+
+msgid "Valid"
+msgstr "Válidos"
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"
@@ -2113,6 +2278,9 @@ msgstr "guardar una credencial tuya"
 msgid "keep things of its own on disk"
 msgstr "guardar sus propias cosas en disco"
 
+msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
+msgstr "permitir que este plugin maneje sus credenciales, cifradas en disco y separadas de otros plugins"
+
 msgid "looking records up is turned off in Settings"
 msgstr "buscar discos está apagado en Ajustes"
 
@@ -2176,6 +2344,9 @@ msgstr "en uno o más archivos no se puede escribir"
 msgid "one or more files cannot take tags"
 msgstr "uno o más archivos no aceptan tags"
 
+msgid "open it again from where it is listed"
+msgstr "ábrelo otra vez desde donde aparece"
+
 msgid "outside the image"
 msgstr "fuera de la imagen"
 
@@ -2205,6 +2376,9 @@ msgstr "salir a internet, solo a {}"
 
 msgid "read your library, without being able to change it"
 msgstr "leer tu biblioteca, sin poder cambiarla"
+
+msgid "run through a different plugin runtime"
+msgstr "ejecutarse mediante otro entorno de plugins"
 
 msgid "sector {} could not be read: {}"
 msgstr "no se pudo leer el sector {}: {}"
@@ -2701,8 +2875,14 @@ msgstr "el servidor de sonido no quiso soltar la tarjeta {}"
 msgid "the source"
 msgstr "la fuente"
 
+msgid "the source no longer lists it"
+msgstr "la fuente ya no lo muestra"
+
 msgid "the stereo area (TWOCHTOC) was not found"
 msgstr "no se encontró el área estéreo (TWOCHTOC)"
+
+msgid "the stream needs a network domain that this plugin was not granted"
+msgstr "la reproducción necesita un dominio de red que no se autorizó para este plugin"
 
 msgid "the stream went quiet"
 msgstr "el stream se quedó en silencio"
@@ -2793,6 +2973,9 @@ msgstr "esta salida no tiene control de volumen propio"
 
 msgid "this output is not there any more"
 msgstr "esta salida ya no está"
+
+msgid "this part of the source is not there now"
+msgstr "esta parte de la fuente no está ahora"
 
 msgid "this plugin declared no network permission"
 msgstr "este plugin no declaró permiso de red"

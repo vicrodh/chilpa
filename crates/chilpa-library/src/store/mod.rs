@@ -12,6 +12,7 @@ pub mod edit;
 pub mod favorites;
 pub mod features;
 mod genres;
+mod integrations;
 pub mod find;
 pub mod fingerprints;
 pub mod playlists;

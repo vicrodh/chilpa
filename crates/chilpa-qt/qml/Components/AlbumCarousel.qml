@@ -10,6 +10,10 @@ Column {
 
     property string title
     property AlbumGridModel model
+    // A link on the right of the title ("See all").
+    property string link
+
+    signal linkClicked()
 
     visible: model && model.albums > 0
     spacing: Metrics.gap12
@@ -17,6 +21,8 @@ Column {
     SectionHeader {
         width: parent.width
         title: root.title
+        link: root.link
+        onLinkClicked: root.linkClicked()
     }
     AlbumGrid {
         id: grid

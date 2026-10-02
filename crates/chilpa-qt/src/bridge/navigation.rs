@@ -108,7 +108,7 @@ pub struct NavigationRust {
 }
 
 fn route(screen: &QString, id: i64) -> Option<Route> {
-    Screen::from_name(&screen.to_string()).map(|screen| Route { screen, id, key: String::new() })
+    app::with(|api| api.route_to(&screen.to_string(), id))
 }
 
 impl qobject::Navigation {

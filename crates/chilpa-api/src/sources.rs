@@ -14,14 +14,17 @@
 //! What the listener saves is kept by the library, not by the plugin: it
 //! survives the plugin being reinstalled and lists with the network down.
 
+mod collection;
+
 use crate::source_opener::{entry_of, of_plugin};
 use crate::Chilpa;
 use chilpa_library::store::progress::Heard;
 use chilpa_library::store::saved::SavedEntry;
-use chilpa_plugin::messages::{self, Browse, Column, Entry, EntryKind, Listing, Resolve, Stream};
+use chilpa_plugin::messages::{self, Browse, Column, Entry, EntryKind, Resolve, Stream};
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::mpsc;
 use std::time::{Duration, Instant};
+use chilpa_plugin::presentation::{Presentation, SourceDocument};
 
 /// The id of the one folder that is Chilpa's and not the plugin's: what the
 /// listener saved from that source. A plugin never sees it.
@@ -41,7 +44,17 @@ pub struct Panel {
     pub name: String,
     /// The name of an icon, as a hint. Empty when it gave none.
     pub icon: String,
+    pub icon_image: String,
+    pub icon_tint: bool,
+    /// Drawn by the catalog as records, not as its own tree.
+    pub music: bool,
+    pub children: Vec<PanelChild>,
 }
+
+/// An entry under a plugin's. `route` is the source screen's key when the
+/// catalog draws it; empty, the plugin's tree opens at `id`.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize)]
+pub struct PanelChild { pub id: String, pub title: String, pub icon: String, pub route: String }
 
 /// A step of the way from the root to where the window stands.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -51,6 +64,7 @@ struct Crumb {
     /// The entry that was opened to get here, when it was one of the
     /// plugin's: it is what saving this place keeps.
     entry: Option<Entry>,
+    presentation: Option<Presentation>,
 }
 
 /// How often the place in an episode is written down while it plays.
@@ -72,7 +86,13 @@ struct Sounding {
 
 /// What a thread asking a plugin brings back.
 enum Answer {
-    Listing { generation: u64, cursor: Option<String>, result: Result<Listing, String> },
+    Cover { generation: u64, path: String },
+    Collection { serial: u64, result: Result<SourceDocument, String> },
+    Library { generation: u64, result: Result<SourceDocument, String> },
+    Section { generation: u64, at: String, title: String, result: Result<SourceDocument, String> },
+    Imported { source: String, at: String, result: Result<usize, String> },
+    Metadata { generation: u64, id: String, result: Result<serde_json::Value, String> },
+    Listing { generation: u64, cursor: Option<String>, result: Result<SourceDocument, String> },
     Stream { source: String, name: String, entry: Entry, result: Result<Stream, String> },
     /// A picture for what sounds from `url`, on disk. `song` is the title
     /// it is the cover of, or empty when it is the station's own.
@@ -81,7 +101,9 @@ enum Answer {
 
 /// Where the window stands in a source, and what it sees there.
 pub(crate) struct SourcesState {
+    collection: collection::Collection,
     panels: Vec<Panel>,
+    layouts: BTreeMap<String, crate::source_layout::Layout>,
     /// The plugin being browsed. Empty before any was opened.
     current: String,
     trail: Vec<Crumb>,
@@ -101,6 +123,17 @@ pub(crate) struct SourcesState {
     picks: BTreeMap<String, String>,
     title: String,
     entries: Vec<Entry>,
+    presentation: BTreeMap<String, Presentation>,
+    music: bool,
+    sections: Vec<serde_json::Value>,
+    section_entries: HashMap<String, Entry>,
+    sections_pending: usize,
+    preview_cancel: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    metadata_loading: bool,
+    importing: bool,
+    imported: Option<usize>,
+    play_after_load: bool,
+    roots: BTreeMap<String, Vec<Entry>>,
     next: Option<String>,
     loading: bool,
     error: String,
@@ -116,6 +149,10 @@ pub(crate) struct SourcesState {
     looked_back: bool,
     /// The servers' opener, for the one opener the player holds.
     pub(crate) servers_opener: Option<std::sync::Arc<dyn chilpa_core::remote::RemoteOpener>>,
+    /// The opener the player holds, to resolve the next track ahead.
+    openers: Option<std::sync::Arc<crate::source_opener::Openers>>,
+    /// The queue entry already resolved ahead, so it is asked once.
+    ahead_asked: String,
     /// The entry whose address is being asked for, so its row can say so.
     resolving: String,
     sounding: Option<Sounding>,
@@ -130,7 +167,9 @@ impl Default for SourcesState {
     fn default() -> Self {
         let (tx, rx) = mpsc::channel();
         Self {
+            collection: collection::Collection::default(),
             panels: Vec::new(),
+            layouts: BTreeMap::new(),
             current: String::new(),
             trail: Vec::new(),
             search_id: String::new(),
@@ -141,6 +180,17 @@ impl Default for SourcesState {
             picks: BTreeMap::new(),
             title: String::new(),
             entries: Vec::new(),
+            presentation: BTreeMap::new(),
+            music: false,
+            sections: Vec::new(),
+            section_entries: HashMap::new(),
+            sections_pending: 0,
+            preview_cancel: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            metadata_loading: false,
+            importing: false,
+            imported: None,
+            play_after_load: false,
+            roots: BTreeMap::new(),
             next: None,
             loading: false,
             error: String::new(),
@@ -150,6 +200,8 @@ impl Default for SourcesState {
             kept_at: None,
             looked_back: false,
             servers_opener: None,
+            openers: None,
+            ahead_asked: String::new(),
             resolving: String::new(),
             sounding: None,
             generation: 0,
@@ -218,10 +270,42 @@ impl Chilpa {
     /// would hold the window for as long as that call takes.
     pub fn source_panels(&mut self) -> Vec<Panel> {
         if let Some(plugins) = self.plugins.as_ref().and_then(|p| p.try_lock().ok()) {
-            self.sources.panels =
-                plugins.panels().into_iter().map(|(id, name, icon)| Panel { id, name, icon }).collect();
+            self.sources.layouts = plugins.layouts.clone();
+            let found: Vec<(String, String, String, bool)> = plugins.panels().into_iter()
+                .map(|(id, name, icon)| { let music = plugins.worker_domains(&id).is_some(); (id, name, icon, music) }).collect();
+            drop(plugins);
+            self.sources.panels = found.into_iter().map(|(id, name, icon, worker)| {
+                    let icon_image = crate::plugin_icons::image_url(&Self::plugins_dir(), &id);
+                    let icon = if icon.is_empty() { crate::plugin_icons::letter(&name) } else { icon };
+                    let layout = self.sources.layouts.get(&id).filter(|layout| !layout.sections.is_empty());
+                    let music = worker || layout.is_some();
+                    self.catalog.remember_drawn(&id, music);
+                    let children = if let Some(layout) = layout {
+                        // Discover is the source's own page; the rest are its sections.
+                        layout.ordered().into_iter().map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
+                            route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") } }).collect()
+                    } else if music {
+                        let root = self.catalog.shelf(&format!("{id} root")).unwrap_or_default();
+                        root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id) }).collect()
+                    } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new() }).collect() };
+                    Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, children }
+                }).collect();
         }
         self.sources.panels.clone()
+    }
+
+    pub(crate) fn invalidate_source_menus(&mut self) {
+        let state = &mut self.sources;
+        state.generation += 1;
+        state.roots.clear();
+        state.panels.clear();
+        state.entries.clear();
+        state.presentation.clear();
+        state.trail.clear();
+        state.current.clear();
+        state.detail = None;
+        state.metadata_loading = false;
+        state.loading = false;
     }
 
     /// What the entry on a page of its own is called, if that is the one
@@ -239,6 +323,7 @@ impl Chilpa {
     /// Everything the source screen and the sidebar draw, as one JSON
     /// object. The window reads it again whenever it changed.
     pub fn sources_json(&mut self) -> String {
+        self.advance_plugins();
         let panels = self.source_panels();
         let s = &self.sources;
         let on_air = s.sounding.as_ref().filter(|p| self.now.playing && self.now.path == p.url);
@@ -308,6 +393,7 @@ impl Chilpa {
                 "image": e.image_url.clone().unwrap_or_default(),
                 "description": e.description,
                 "facts": e.facts,
+                "presentation": place.and_then(|crumb| crumb.presentation.as_ref()),
             })
         });
         let detail = s.detail.as_ref().map(|(source, entry)| {
@@ -315,6 +401,7 @@ impl Chilpa {
             card["source"] = source.clone().into();
             card["name"] = self.source_name(source).into();
             card["description"] = entry.description.clone().into();
+            card["metadata_loading"] = s.metadata_loading.into();
             card["facts"] = serde_json::json!(entry.facts);
             // On a station the title is the song it is playing right now.
             let song = if entry.live && sounds(source, &entry.id) && self.now.title != entry.title {
@@ -327,8 +414,18 @@ impl Chilpa {
             card
         });
         serde_json::json!({
+            "collection": self.collection_json(),
+            "releases": s.trail.last().is_some_and(|crumb| crumb.id == "view:library"),
+            "home": s.trail.is_empty() && s.music,
+            "sections": s.sections,
+            "sections_loading": s.sections_pending > 0,
+            "starting": self.plugins_starting(),
             "panels": panels,
             "source": s.current,
+            "importing": s.importing,
+            "imported": s.imported,
+            "music": s.music,
+            "navigation_id": s.trail.last().map(|crumb| crumb.id.as_str()).unwrap_or_default(),
             "name": self.source_name(&s.current),
             "title": s.title,
             "crumbs": crumbs,
@@ -384,6 +481,8 @@ impl Chilpa {
         if finite && length > 0 {
             meta.push(crate::format::clock(length));
         }
+        let quality = s.presentation.get(&e.id).filter(|_| source == s.current)
+            .map(|value| value.advertised_quality.label()).unwrap_or_default();
         serde_json::json!({
             "id": e.id,
             "key": format!("{source} {}", e.id),
@@ -391,6 +490,12 @@ impl Chilpa {
             "subtitle": e.subtitle,
             "image": e.image_url.clone().unwrap_or_default(),
             "kind": kind_name(e.kind),
+            "presentation": if source == s.current { s.presentation.get(&e.id) } else { None },
+            "duration_ms": e.duration_ms,
+            "duration": if e.duration_ms > 0 { crate::format::clock(e.duration_ms) } else { String::new() },
+            "quality_label": if quality.is_empty() { quality } else {
+                format!("{}: {quality}", chilpa_i18n::t("Plugin-reported quality"))
+            },
             "live": e.live,
             "finite": finite,
             "meta": meta.join(" · "),
@@ -440,26 +545,57 @@ impl Chilpa {
     /// - `retry`: ask again for the listing that failed.
     pub fn sources_command(&mut self, action: &str, id: &str, text: &str) {
         match action {
-            "open" => self.open_source(id),
-            "enter" => self.enter_entry(id),
+            "home" => {
+                self.open_source(id);
+                self.sources.play_after_load = false;
+                self.sources.trail.clear();
+                self.sources.text.clear();
+                self.load_listing();
+            },
+            "open" => { self.sources.play_after_load = false; self.open_source(id); },
+            "child" => {
+                self.sources.play_after_load = false;
+                if let Some(section) = text.strip_prefix("view:") { self.open_source_layout(id, section); }
+                else { self.open_source_child(id, text); }
+            },
+            "enter" => { self.sources.play_after_load = false; self.enter_entry(id); },
             "crumb" => {
+                self.sources.play_after_load = false;
                 self.sources.trail.truncate(id.parse().unwrap_or(0));
                 self.sources.text.clear();
                 self.load_listing();
             }
-            "search" => self.search_source(text),
+            "search" => { self.sources.play_after_load = false; self.search_source(text); },
             "filter" => self.sources.filter = text.trim().to_string(),
-            "pick" => self.pick(id, text),
+            "pick" => { self.sources.play_after_load = false; self.pick(id, text); },
             "order" => self.sources.order = id.to_string(),
             "more" => self.load_more(),
             "play" => self.play_entry(id),
+            "play_collection" | "queue_collection" | "next_collection" | "play_preview_track" | "preview" | "close_preview" => self.collection_command(action, id),
             "queue" => self.queue_entry(id),
+            "import" => self.import_source_collection(),
             "save" => self.toggle_saved(id),
             "heard" => self.toggle_heard(id),
             "detail" => self.show_detail(text, id),
             "retry" => self.load_listing(),
+            "retry_listing" => self.source_retry(id),
             _ => {}
         }
+    }
+
+    fn import_source_collection(&mut self) {
+        if self.sources.importing { return; }
+        let Some(at) = self.sources.trail.last().map(|crumb| crumb.id.clone()) else { return };
+        let Some(plugins) = self.plugins.clone() else { return };
+        let source = self.sources.current.clone();
+        let name = self.source_name(&source);
+        let tx = self.sources.tx.clone();
+        self.sources.importing = true;
+        self.sources.imported = None;
+        std::thread::spawn(move || {
+            let result = crate::plugin_library::import(plugins, &source, &name, &at);
+            let _ = tx.send(Answer::Imported { source, at, result });
+        });
     }
 
     fn open_source(&mut self, id: &str) {
@@ -473,6 +609,7 @@ impl Chilpa {
             // Coming back to it leaves it where it was.
             return;
         }
+        s.music = false;
         s.current = id.to_string();
         s.trail.clear();
         s.text.clear();
@@ -483,15 +620,62 @@ impl Chilpa {
         self.load_listing();
     }
 
+    /// The sidebar passes only a source and an opaque child identity from
+    /// its snapshot. A child is resolved against the host's current root.
+    fn open_source_layout(&mut self, source: &str, section: &str) {
+        if section == "discover" { self.sources_command("home", source, ""); return; }
+        let Some(layout) = self.sources.layouts.get(source).and_then(|layout| layout.sections.get(section)).cloned() else { return };
+        let Some(plugins) = self.plugins.clone() else { return };
+        self.sources.preview_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.sources.preview_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        let cancelled = self.sources.preview_cancel.clone();
+        self.sources.sections_pending = 0;
+        self.sources.sections.clear();
+        self.sources.section_entries.clear();
+        self.sources.filter.clear();
+        self.sources.title = layout.title.clone();
+        self.sources.current = source.into();
+        self.sources.generation += 1;
+        self.sources.loading = true;
+        self.sources.music = true;
+        self.sources.error.clear();
+        self.sources.entries.clear();
+        self.sources.presentation.clear();
+        self.sources.text.clear();
+        self.sources.next = None;
+        self.sources.trail = vec![Crumb { id: format!("view:{section}"), title: layout.title.clone(), entry: None, presentation: None }];
+        let (source, generation, tx) = (source.to_string(), self.sources.generation, self.sources.tx.clone());
+        std::thread::spawn(move || {
+            let result = crate::source_layout::browse(&plugins, &source, &layout, &cancelled);
+            let _ = tx.send(Answer::Library { generation, result });
+        });
+    }
+
+    fn open_source_child(&mut self, source: &str, id: &str) {
+        if !self.source_panels().iter().any(|panel| panel.id == source) { return; }
+        let Some(entry) = self.sources.roots.get(source).and_then(|entries| entries.iter().find(|entry| entry.id == id)).cloned() else { return };
+        self.sources.current = source.into();
+        self.sources.text.clear();
+        self.sources.columns.clear();
+        self.sources.picks.clear();
+        self.sources.trail = vec![Crumb { id: entry.id.clone(), title: entry.title.clone(), presentation: self.sources.presentation.get(&entry.id).cloned(), entry: Some(entry) }];
+        self.read_saved();
+        self.load_listing();
+    }
+
     /// The entry with that id, and whose it is: one of the listing on
     /// screen, the place the window stands in, or the one on its own page.
     fn entry_by_id(&self, id: &str) -> Option<(String, Entry)> {
         let s = &self.sources;
+        if let Some(entry) = s.section_entries.get(id) { return Some((s.current.clone(), entry.clone())); }
         if let Some(entry) = s.entries.iter().find(|e| e.id == id) {
             return Some((s.current.clone(), entry.clone()));
         }
         if let Some(entry) = s.trail.iter().filter_map(|c| c.entry.as_ref()).find(|e| e.id == id) {
             return Some((s.current.clone(), entry.clone()));
+        }
+        if let Some(entry) = s.collection.document.listing.entries.iter().find(|e| e.id == id) {
+            return Some((s.collection.source.clone(), entry.clone()));
         }
         s.detail.as_ref().filter(|(_, e)| e.id == id).cloned()
     }
@@ -513,15 +697,29 @@ impl Chilpa {
             });
         self.source_panels();
         self.sources.detail = known.map(|entry| (source.to_string(), entry));
+        self.sources.metadata_loading = false;
+        if source == self.sources.current && self.sources.detail.as_ref().is_some_and(|(_, entry)| entry.playable && !entry.live) {
+            self.sources.metadata_loading = true;
+            let (generation, id, tx) = (self.sources.generation, id.to_string(), self.sources.tx.clone());
+            let input = serde_json::to_vec(&serde_json::json!({"id":id})).unwrap_or_default();
+            self.ask_plugin(source.to_string(), "source.metadata", input, move |answer| {
+                let result = answer.and_then(|bytes| messages::read::<serde_json::Value>(&bytes));
+                let _ = tx.send(Answer::Metadata { generation, id, result });
+            });
+        }
     }
 
     fn enter_entry(&mut self, id: &str) {
-        let Some(entry) = self.sources.entries.iter().find(|e| e.id == id).cloned() else { return };
+        let Some((_, entry)) = self.entry_by_id(id) else { return };
         match entry.kind {
             EntryKind::Folder => {
                 let kept = (entry.id != SAVED && entry.id != UNFINISHED).then(|| entry.clone());
-                self.sources.trail.push(Crumb { id: entry.id, title: entry.title, entry: kept });
+                self.sources.trail.push(Crumb { presentation: self.sources.presentation.get(&entry.id).cloned(), id: entry.id, title: entry.title, entry: kept });
                 self.load_listing();
+                if let Some(address) = self.sources.trail.last().and_then(|c| c.entry.as_ref()).and_then(|e| e.image_url.clone()).filter(|url| url.starts_with("https://") || url.starts_with("http://")) {
+                    let (generation, tx) = (self.sources.generation, self.sources.tx.clone());
+                    crate::pictures::keep_later(address, move |path| { let _ = tx.send(Answer::Cover { generation, path }); });
+                }
             }
             EntryKind::Item => self.play_entry(id),
             EntryKind::Search => {}
@@ -541,7 +739,7 @@ impl Chilpa {
         s.text = text.to_string();
         s.trail.clear();
         if !text.is_empty() {
-            s.trail.push(Crumb { id: s.search_id.clone(), title: format!("“{text}”"), entry: None });
+            s.trail.push(Crumb { id: s.search_id.clone(), title: format!("“{text}”"), entry: None, presentation: None });
         }
         self.load_listing();
     }
@@ -567,7 +765,7 @@ impl Chilpa {
         s.next = None;
         s.text = address.to_string();
         s.title = chilpa_i18n::t("Stream address");
-        s.trail = vec![Crumb { id: entry.id.clone(), title: s.title.clone(), entry: None }];
+        s.trail = vec![Crumb { id: entry.id.clone(), title: s.title.clone(), entry: None, presentation: None }];
         s.entries = vec![entry.clone()];
         self.play_entry(&entry.id);
     }
@@ -593,9 +791,16 @@ impl Chilpa {
 
     /// Asks for the listing of where the window stands, from its beginning.
     fn load_listing(&mut self) {
+        self.sources.imported = None;
+        self.sources.preview_cancel.store(true, std::sync::atomic::Ordering::Relaxed);
+        self.sources.preview_cancel = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+        self.sources.sections_pending = 0;
+        self.sources.sections.clear();
+        self.sources.section_entries.clear();
         let s = &mut self.sources;
         s.generation += 1;
         s.entries.clear();
+        s.presentation.clear();
         s.filter.clear();
         s.next = None;
         s.error.clear();
@@ -615,7 +820,10 @@ impl Chilpa {
             self.sources.loading = false;
             return;
         }
-        self.ask_listing(at, None);
+        if let Some(section) = at.strip_prefix("view:") {
+            let source = self.sources.current.clone();
+            self.open_source_layout(&source, section);
+        } else { self.ask_listing(at, None); }
     }
 
     fn load_more(&mut self) {
@@ -638,7 +846,7 @@ impl Chilpa {
         let ask = Browse { at, cursor: cursor.clone(), text, language, picks };
         let (generation, source, tx) = (s.generation, s.current.clone(), s.tx.clone());
         self.ask_plugin(source, messages::op::BROWSE, messages::write(&ask), move |answer| {
-            let result = answer.and_then(|bytes| messages::read::<Listing>(&bytes));
+            let result = answer.and_then(|bytes| messages::read::<SourceDocument>(&bytes));
             let _ = tx.send(Answer::Listing { generation, cursor, result });
         });
     }
@@ -689,6 +897,7 @@ impl Chilpa {
             return;
         }
         if !entry.live {
+            if source == self.sources.current && !self.sources.presentation.is_empty() { self.play_source_collection(id); return; }
             let Some(path) = self.keep_card(&source, &entry) else { return };
             let heard = self.library().and_then(|lib| lib.heard(&source, &entry.id).ok().flatten());
             let from = heard.filter(|h| !h.played && h.position_ms > 0).map(|h| Duration::from_millis(h.position_ms));
@@ -705,6 +914,24 @@ impl Chilpa {
             let result = answer.and_then(|bytes| messages::read::<Stream>(&bytes));
             let _ = tx.send(Answer::Stream { source, name, entry, result });
         });
+    }
+
+    fn play_source_collection(&mut self, first: &str) {
+        let entries: Vec<_> = self.sources.entries.iter().filter(|entry| entry.kind == EntryKind::Item && entry.playable && !entry.live).cloned().collect();
+        if entries.is_empty() { return; }
+        let index = entries.iter().position(|entry| entry.id == first).unwrap_or(0);
+        let source = self.sources.current.clone();
+        let cards: Vec<_> = entries.iter().map(|entry| Heard { external_id: entry.id.clone(), title: entry.title.clone(),
+            subtitle: entry.subtitle.clone(), image_url: entry.image_url.clone().unwrap_or_default(), duration_ms: entry.duration_ms,
+            ..Heard::default() }).collect();
+        if !self.library().is_some_and(|lib| lib.remember_heard_many(&source, &cards).is_ok()) {
+            self.sources.error = chilpa_i18n::t("it could not be saved");
+            return;
+        }
+        let paths = entries.iter().map(|entry| entry_of(&source, &entry.id)).collect();
+        let (device, bit_perfect) = self.chosen_output();
+        self.replace_queue(paths);
+        self.spawn_from(index, &device, bit_perfect, None, crate::Relaunch::Track);
     }
 
     /// Adds something with an end to the queue, behind what is there.
@@ -827,6 +1054,62 @@ impl Chilpa {
     pub(crate) fn advance_sources(&mut self) {
         while let Ok(answer) = self.sources.rx.try_recv() {
             match answer {
+                Answer::Cover { generation, path } => {
+                    if generation == self.sources.generation {
+                        if let Some(entry) = self.sources.trail.last_mut().and_then(|c| c.entry.as_mut()) {
+                            entry.image_url = url::Url::from_file_path(path).ok().map(|url| url.to_string());
+                        }
+                    }
+                },
+                Answer::Collection { serial, result } => self.take_collection(serial, result),
+                Answer::Section { generation, at, title, result } => {
+                    if generation != self.sources.generation { continue; }
+                    self.sources.sections_pending = self.sources.sections_pending.saturating_sub(1);
+                    if let Ok(document) = result {
+                        let mut cards = Vec::new();
+                        for entry in document.listing.entries {
+                            let display = document.presentation.get(&entry.id).cloned().unwrap_or_default();
+                            if !matches!(display.entity, chilpa_plugin::presentation::Entity::Album | chilpa_plugin::presentation::Entity::Playlist | chilpa_plugin::presentation::Entity::Artist) { continue; }
+                            self.sources.presentation.insert(entry.id.clone(), display);
+                            cards.push(self.entry_json(&self.sources.current, &entry, false));
+                            self.sources.section_entries.insert(entry.id.clone(), entry);
+                            if cards.len() >= 20 { break; }
+                        }
+                        if !cards.is_empty() { self.sources.sections.push(serde_json::json!({"id":at,"title":title,"entries":cards})); }
+                    }
+                }
+                Answer::Imported { source, at, result } => {
+                    self.sources.importing = false;
+                    if result.is_ok() { self.mark_library_changed(); }
+                    if source == self.sources.current && self.sources.trail.last().is_some_and(|crumb| crumb.id == at) {
+                        match result { Ok(count) => self.sources.imported = Some(count), Err(error) => self.sources.error = error }
+                    }
+                }
+                Answer::Metadata { generation, id, result } => {
+                    if generation == self.sources.generation && self.sources.detail.as_ref().is_some_and(|(_, entry)| entry.id == id) {
+                        self.sources.metadata_loading = false;
+                        if let Ok(reply) = result {
+                            if reply["available"] == true {
+                                if let Ok(mut value) = serde_json::from_value::<Presentation>(reply["presentation"].clone()) {
+                                    if value.clean().is_ok() {
+                                        let current = self.sources.presentation.entry(id).or_default();
+                                        let quality = &mut current.advertised_quality;
+                                        let extra = value.advertised_quality;
+                                        if !extra.format.is_empty() { quality.format = extra.format; }
+                                        if !extra.bitrate_label.is_empty() { quality.bitrate_label = extra.bitrate_label; }
+                                        quality.sample_rate_hz = extra.sample_rate_hz.or(quality.sample_rate_hz);
+                                        quality.bit_depth = extra.bit_depth.or(quality.bit_depth);
+                                        quality.channels = extra.channels.or(quality.channels);
+                                        current.metadata.extend(value.metadata);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Answer::Library { generation, result } => {
+                    if generation == self.sources.generation { self.take_document(None, result); }
+                }
                 Answer::Listing { generation, cursor, result } => {
                     if generation == self.sources.generation {
                         self.take_listing(cursor, result);
@@ -920,15 +1203,25 @@ impl Chilpa {
         });
     }
 
-    fn take_listing(&mut self, cursor: Option<String>, result: Result<Listing, String>) {
+    fn take_listing(&mut self, cursor: Option<String>, result: Result<SourceDocument, String>) {
+        self.take_document(cursor.clone(), result.and_then(|document| document.clean(cursor.as_deref()).map_err(str::to_string)));
+    }
+
+    // Aggregated library pages have already passed protocol validation individually.
+    fn take_document(&mut self, cursor: Option<String>, result: Result<SourceDocument, String>) {
         self.sources.loading = false;
-        let listing = match result {
-            Ok(listing) => listing.clean(cursor.as_deref()),
+        let document = match result {
+            Ok(document) => document,
             Err(e) => {
                 self.sources.error = e;
+                self.sources.play_after_load = false;
                 return;
             }
         };
+        self.sources.music |= !document.presentation.is_empty();
+        if cursor.is_none() { self.sources.presentation.clear(); }
+        self.sources.presentation.extend(document.presentation);
+        let listing = document.listing;
         let at_root = self.sources.trail.is_empty();
         let mut entries = listing.entries;
         if at_root && cursor.is_none() && !listing.columns.is_empty() {
@@ -968,10 +1261,43 @@ impl Chilpa {
         }
         entries.retain(|e| e.kind != EntryKind::Search && e.id != SAVED && e.id != UNFINISHED);
         self.sources.entries.extend(entries);
+        if at_root {
+            self.sources.roots.insert(self.sources.current.clone(), self.sources.entries.iter()
+                .filter(|entry| entry.kind == EntryKind::Folder).take(64).cloned().collect());
+        }
         self.sources.next = listing.next;
+        if at_root && cursor.is_none() && !self.sources.presentation.is_empty() { self.load_source_sections(); }
+        if self.sources.play_after_load {
+            if self.sources.next.is_some() && self.sources.entries.len() < 10_000 { self.load_more(); }
+            else {
+                self.sources.play_after_load = false;
+                if self.sources.next.is_some() { self.sources.error = "This collection exceeds the playback limit. Choose a smaller collection.".into(); }
+                else { self.play_source_collection(""); }
+            }
+        }
         if self.sources.title.is_empty() {
             self.sources.title = listing.title;
         }
+    }
+
+    fn load_source_sections(&mut self) {
+        let Some(plugins) = self.plugins.clone() else { return };
+        let requested = self.sources.layouts.get(&self.sources.current).and_then(|layout| layout.sections.get("discover"));
+        let sections: Vec<_> = self.sources.entries.iter().filter(|entry| self.sources.presentation.get(&entry.id).is_some_and(|display| display.can_preview))
+            .filter(|entry| requested.is_none_or(|section| section.paths.iter().any(|route| route.path.first() == Some(&entry.title))))
+            .take(20).cloned().collect();
+        self.sources.sections_pending = sections.len();
+        let (source, generation, tx, cancel) = (self.sources.current.clone(), self.sources.generation, self.sources.tx.clone(), self.sources.preview_cancel.clone());
+        std::thread::spawn(move || {
+            for entry in sections {
+                if cancel.load(std::sync::atomic::Ordering::Relaxed) { break; }
+                let result = plugins.lock().map_err(|_| "The plugin host is unavailable.".into()).and_then(|mut host| {
+                    if cancel.load(std::sync::atomic::Ordering::Relaxed) { return Err("Navigation changed.".into()); }
+                    host.call_waiting(&source, messages::op::BROWSE, &messages::write(&Browse { at: entry.id.clone(), cursor: None, text: None, language: "en".into(), picks: BTreeMap::new() }))
+                }).and_then(|bytes| messages::read::<SourceDocument>(&bytes)).and_then(|document| document.clean(None).map_err(str::to_string));
+                let _ = tx.send(Answer::Section { generation, at: entry.id, title: entry.title, result });
+            }
+        });
     }
 
     /// Puts the card of a browsed entry on what just started, if it is that
@@ -1008,8 +1334,28 @@ impl Chilpa {
 
     /// Sets the one opener the player holds: plugins here, servers there.
     pub(crate) fn install_openers(&mut self) {
-        let openers = crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone());
-        chilpa_core::remote::install(std::sync::Arc::new(openers));
+        self.catalog.attach(self.plugins.clone());
+        let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone()));
+        self.sources.openers = Some(openers.clone());
+        chilpa_core::remote::install(openers);
+    }
+
+    /// Near the end of a track, resolves the next one when it is a plugin's,
+    /// in queue order. With shuffle on the next one is the player's to pick.
+    pub(crate) fn resolve_next_ahead(&mut self) {
+        let left = self.now.total_seconds - self.now.seconds;
+        if !self.now.playing || self.shuffle || self.now.total_seconds <= 0.0 || left > 30.0 {
+            return;
+        }
+        let Some(at) = self.queue_paths().iter().position(|p| *p == self.now.path) else { return };
+        let Some(next) = self.queue_paths().get(at + 1).filter(|p| of_plugin(p).is_some()).cloned() else { return };
+        if self.sources.ahead_asked == next {
+            return;
+        }
+        self.sources.ahead_asked = next.clone();
+        if let Some(openers) = &self.sources.openers {
+            openers.resolve_ahead(next);
+        }
     }
 
     /// The name of the station that is on, when what plays is a live entry

@@ -18,11 +18,14 @@ Item {
     property string place
     // True while the screen itself is changing the field, which is not the listener typing.
     property bool settling: false
+    property bool startingPlugins: false
 
     function ask(action, id, text) { Sources.command(action, id, text) }
     function read() {
         if (settling) return
         const next = JSON.parse(Sources.snapshot || "{}")
+        if (startingPlugins && !next.starting) Qt.callLater(page.open)
+        startingPlugins = next.starting === true
         const mine = next.source === Navigation.routeKey
         const at = mine ? next.source + "/" + (next.crumbs || []).join("/") : ""
         const y = at === place ? list.contentY : 0

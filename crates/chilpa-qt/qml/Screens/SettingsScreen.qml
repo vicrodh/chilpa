@@ -51,6 +51,7 @@ Item {
     }
 
     ListView {
+        visible: page.section !== "plugins"
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section - Metrics.settingsGroup + Metrics.gap12
         anchors.bottom: parent.bottom
@@ -69,6 +70,18 @@ Item {
             width: ListView.view.width - Metrics.gap12
             page: actions
         }
+    }
+
+    PluginManager {
+        visible: page.section === "plugins"
+        page: rows
+        anchors.top: title.bottom
+        anchors.topMargin: Metrics.section
+        anchors.bottom: parent.bottom
+        anchors.left: nav.right
+        anchors.leftMargin: Metrics.heroGap
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.contentX
     }
 
     // What a row does, with the servers' own steps in between: adding one
@@ -115,7 +128,7 @@ Item {
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: page.visible && (page.section === "sources" || page.section === "plugins")
+        running: page.visible && page.section === "sources"
         onTriggered: { rows.refresh(); Sources.refresh() }
     }
 

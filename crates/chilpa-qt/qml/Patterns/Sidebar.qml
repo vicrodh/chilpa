@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
@@ -10,11 +11,14 @@ Rectangle {
     id: side
 
     // Its column of icons. The frame says so while a drag shows it.
+    property var expandedSources: ({})
     property bool collapsed: SettingsModel.sidebarMode === "collapsed"
     // The plugins that asked for an entry of their own, once approved.
-    readonly property var panels: JSON.parse(Sources.snapshot || "{}").panels || []
+    readonly property var sourceView: JSON.parse(Sources.snapshot || "{}")
+    readonly property var panels: sourceView.panels || []
 
     Component.onCompleted: Sources.refresh()
+    Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: Sources.refresh() }
     Connections {
         target: Navigation
         function onScreenChanged() { Sources.refresh() }
@@ -52,28 +56,79 @@ Rectangle {
             onClicked: searchBox.focusSearch()
         }
 
-        Column {
+        Flickable {
+            objectName: "sidebarNavigation"
             width: parent.width
+            // Reserve two playlist rows below navigation when it grows.
+            height: Math.min(contentHeight, Math.max(0, parent.height - y - Metrics.navItemHeight * 2 - Metrics.sidebarGap)) // derived: two rows and their gap
+            contentWidth: width
+            contentHeight: navigation.height
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: ScrollBar {}
 
-            Repeater {
-                model: [
-                    { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
-                    { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
-                    { screen: "artists", glyph: Icons.microphone2, text: I18n.tr("Artists", I18n.rev) },
-                    { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
-                    { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
-                    { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
-                ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: Icons[p.icon] || Icons.server, text: p.name })))
+            Column {
+                id: navigation
+                width: parent.width
 
-                NavItem {
-                    required property var modelData
-                    width: parent.width
-                    text: modelData.text
-                    glyph: modelData.glyph
-                    collapsed: side.collapsed
-                    active: Navigation.screen === modelData.screen && (!modelData.key || Navigation.routeKey === modelData.key)
-                    onClicked: modelData.key ? Navigation.goKey(modelData.screen, modelData.key) : Navigation.go(modelData.screen, 0)
-                    onMiddleClicked: modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(modelData.screen, 0) : Navigation.go(modelData.screen, 0)
+                Repeater {
+                    model: [
+                        { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
+                        { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
+                        { screen: "artists", glyph: Icons.microphone2, text: I18n.tr("Artists", I18n.rev) },
+                        { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
+                        { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
+                        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
+                    ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: Icons[p.icon] || Icons.letterX, image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
+
+                    Column {
+                        id: group
+                        required property var modelData
+                        width: parent.width
+
+                        NavItem {
+                            objectName: group.modelData.key ? "sourceParent" : "navigationParent"
+                            width: parent.width
+                            expandable: !!group.modelData.key
+                            expanded: side.expandedSources[group.modelData.key] === true
+                            onExpansionClicked: { const copy = Object.assign({}, side.expandedSources); copy[group.modelData.key] = !expanded; side.expandedSources = copy }
+                            text: group.modelData.text
+                            glyph: group.modelData.glyph
+                            tintIcon: group.modelData.tint || false
+                            iconSource: group.modelData.image || ""
+                            collapsed: side.collapsed
+                            active: Navigation.screen === group.modelData.screen && (!group.modelData.key || Navigation.routeKey === group.modelData.key)
+                            onClicked: {
+                                if (!group.modelData.key) Navigation.go(group.modelData.screen, 0)
+                                else {
+                                    // A tree starts over from its root; music opens its own page.
+                                    if (!group.modelData.music) Sources.command("home", group.modelData.key, "")
+                                    Navigation.goKey(group.modelData.screen, group.modelData.key)
+                                }
+                            }
+                            onMiddleClicked: group.modelData.key ? clicked() : SettingsModel.middleClickTabs ? Navigation.open(group.modelData.screen, 0) : Navigation.go(group.modelData.screen, 0)
+                        }
+                        Repeater {
+                            model: group.modelData.children || []
+                            NavItem {
+                                required property var modelData
+                                objectName: "sourceChild"
+                                visible: !side.collapsed && side.expandedSources[group.modelData.key] === true
+                                x: Metrics.navItemPadding
+                                width: parent.width - x
+                                text: modelData.title
+                                glyph: Icons[modelData.icon] || Icons.folder
+                                active: modelData.route ? Navigation.routeKey === modelData.route && (modelData.route !== group.modelData.key || Navigation.screen === "source")
+                                    : side.sourceView.navigation_id === modelData.id
+                                onClicked: {
+                                    if (modelData.route) { Navigation.goKey("source", modelData.route); return }
+                                    Sources.command("child", group.modelData.key, modelData.id)
+                                    Navigation.goKey("source", group.modelData.key)
+                                }
+                                onMiddleClicked: clicked()
+                            }
+                        }
+                    }
                 }
             }
         }

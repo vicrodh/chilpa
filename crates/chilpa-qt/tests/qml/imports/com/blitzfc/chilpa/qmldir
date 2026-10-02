@@ -3,6 +3,7 @@ singleton ThemeModel 1.0 ThemeModel.qml
 singleton I18n 1.0 I18n.qml
 singleton Playlists 1.0 Playlists.qml
 TrackListModel 1.0 TrackListModel.qml
+SearchModel 1.0 SearchModel.qml
 singleton SettingsModel 1.0 SettingsModel.qml
 singleton Ratings 1.0 Ratings.qml
 singleton Cast 1.0 Cast.qml
@@ -11,3 +12,7 @@ singleton Navigation 1.0 Navigation.qml
 
 singleton ListenList 1.0 ListenList.qml
 singleton Sources 1.0 Sources.qml
+AlbumGridModel 1.0 AlbumGridModel.qml
+
+AlbumDetailModel 1.0 AlbumDetailModel.qml
+singleton Library 1.0 Library.qml

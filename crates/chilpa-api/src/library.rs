@@ -394,6 +394,9 @@ impl Chilpa {
 
     /// An album by its id, with its cover and its play count.
     pub fn album(&mut self, album_id: i64) -> Option<Album> {
+        if album_id < 0 {
+            return self.source_album(album_id);
+        }
         let lib = self.library()?;
         let (a, listens) = lib.album(album_id).ok().flatten()?;
         Some(Album {

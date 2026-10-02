@@ -25,6 +25,12 @@ pub struct Heard {
 impl Library {
     /// Keeps the card of an entry that is about to play. What the listener
     /// already heard of it is left as it was.
+    pub fn remember_heard_many(&self, source: &str, cards: &[Heard]) -> rusqlite::Result<()> {
+        let tx = self.own_transaction()?;
+        for card in cards { self.remember_heard(source, card)?; }
+        tx.finish()
+    }
+
     pub fn remember_heard(&self, source: &str, card: &Heard) -> rusqlite::Result<()> {
         self.db.execute(
             "INSERT INTO source_progress (source, external_id, title, subtitle, image_url, duration_ms, updated_at)

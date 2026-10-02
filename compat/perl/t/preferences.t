@@ -1,0 +1,41 @@
+use strict;
+use warnings;
+use Test::More;
+use Slim::Utils::Prefs;
+
+my %stored;
+local $Slim::Utils::Prefs::LOAD = sub { $stored{$_[0]} };
+local $Slim::Utils::Prefs::SAVE = sub { $stored{$_[0]} = $_[1] };
+my $prefs = preferences('plugin.guest');
+$prefs->init({ accounts => {}, quality => 'high' });
+$prefs->init({ quality => 'low' });
+is($prefs->get('quality'), 'high', 'defaults never overwrite saved preferences');
+my @changes;
+$prefs->setChange(sub { push @changes, [@_] }, 'accounts');
+my $accounts = $prefs->get('accounts');
+$accounts->{listener} = { token => 'private value' };
+ok(!exists $stored{'plugin.guest'}{accounts}{listener}, 'uncommitted mutations cannot alter a stored snapshot');
+$prefs->set('accounts', $accounts);
+is($stored{'plugin.guest'}{accounts}{listener}{token}, 'private value', 'account credentials reach the private storage service');
+is($changes[0][0], 'accounts', 'preference change invokes the guest callback');
+$prefs->setValidate({ validator => sub { $_[1] =~ /^[A-Z]{2}$/ } }, 'country');
+eval { $prefs->set('country', 'private invalid input') };
+is($@ =~ /private invalid input/ ? 1 : 0, 0, 'validation errors do not disclose values');
+ok(!exists $stored{'plugin.guest'}{country}, 'invalid preference is not persisted');
+$prefs->set('country', 'MX');
+is($prefs->get('country'), 'MX', 'valid preference is accepted');
+{
+    local $Slim::Utils::Prefs::SAVE = sub { 0 };
+    eval { $prefs->set('country', 'US') };
+    like($@, qr/preference storage failed/, 'storage failure is not reported as a saved setting');
+    is($prefs->get('country'), 'MX', 'failed save preserves the previous value');
+}
+my $migrations = 0;
+$prefs->migrate(3, sub { $migrations++; 1 });
+$prefs->migrate(2, sub { $migrations++; 1 });
+delete $Slim::Utils::Prefs::SPACES{'plugin.guest'};
+my $reloaded = preferences('plugin.guest');
+$reloaded->migrate(3, sub { $migrations++; 1 });
+is($migrations, 1, 'completed migrations do not erase accounts on restart');
+is($reloaded->get('accounts')->{listener}{token}, 'private value', 'saved account is restored through the storage service');
+done_testing;

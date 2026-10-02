@@ -82,7 +82,7 @@ impl qobject::AlbumDetailModel {
         let id = self.rust().selected_id;
         let versions = app::with(|api| api.album_versions(id));
         self.as_mut().set_versions(QString::from(serde_json::to_string(&versions).unwrap_or_default()));
-        let found = if id > 0 { app::with(|api| api.album_detail(id)) } else { None };
+        let found = if id != 0 { app::with(|api| api.album_detail(id)) } else { None };
         let Some(d) = found else {
             self.as_mut().set_found(false);
             return;

@@ -17,6 +17,9 @@ pub mod qobject {
         fn refresh(self: Pin<&mut Sources>);
         #[qinvokable]
         fn command(self: Pin<&mut Sources>, action: &QString, id: &QString, text: &QString);
+        /// A listing's page as JSON: title, state, folders, memberships.
+        #[qinvokable]
+        fn page(self: &Sources, key: &QString, rev: i32) -> QString;
     }
 }
 use cxx_qt_lib::QString;
@@ -32,6 +35,7 @@ impl qobject::Sources {
             self.set_revision(next);
         }
     }
+    pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, id: &QString, text: &QString) {
         crate::app::with(|api| api.sources_command(&action.to_string(), &id.to_string(), &text.to_string()));
         self.as_mut().refresh();

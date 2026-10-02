@@ -17,6 +17,9 @@ pub mod qobject {
         #[qml_singleton]
         #[qproperty(i32, rev)]
         #[qproperty(i32, content_rev)]
+        /// Sources' listings and records changed; apart, their covers.
+        #[qproperty(i32, remote_rev)]
+        #[qproperty(i32, remote_art_rev)]
         #[qproperty(bool, busy)]
         #[qproperty(QString, summary)]
         #[qproperty(QString, year)]
@@ -78,6 +81,8 @@ use std::rc::Rc;
 pub struct LibraryRust {
     rev: i32,
     content_rev: i32,
+    remote_rev: i32,
+    remote_art_rev: i32,
     busy: bool,
     summary: QString,
     year: QString,

@@ -112,6 +112,10 @@ if [[ "${profile}" == release ]]; then
   artifact="${artifact_dir}/chilpa-qt"
   mkdir -p "${artifact_dir}"
   install -m 0755 "${binary}" "${artifact}"
+  if [[ -d "${repo_root}/target/compat-runtime" ]]; then
+    "${repo_root}/scripts/package-compat.sh" "${repo_root}/target/compat-runtime" "${artifact_dir}"
+    "${repo_root}/scripts/package-compat.sh" "${repo_root}/target/compat-runtime" "$(dirname "${binary}")"
+  fi
   artifact_sha256="$(sha256_file "${artifact}")"
   printf '%s  %s\n' "${artifact_sha256}" chilpa-qt > "${artifact_dir}/SHA256SUMS"
   printf 'source_commit=%s\nsource_state=%s\nprofile=%s\nbuilt_at=%s\n' \

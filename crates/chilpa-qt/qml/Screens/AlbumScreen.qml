@@ -21,13 +21,13 @@ Flickable {
     AlbumDetailModel {
         id: detail
         albumId: Navigation.routeId
-        contentRev: Library.contentRev
+        contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
     }
     TrackListModel {
         id: tracks
         kind: "album"
         albumId: detail.selectedId
-        filterRev: Library.contentRev
+        filterRev: Library.contentRev + Library.remoteRev
         playingPath: Player.path
     }
     AlbumGridModel {

@@ -15,3 +15,4 @@ ureq = { version = "3", default-features = false, features = ["rustls", "platfor
 # It was already in the tree through ureq; here it is for the requests Chilpa
 # makes on a plugin's behalf, which go in and out as JSON.
 serde_json = "1"
+base64 = "0.22"

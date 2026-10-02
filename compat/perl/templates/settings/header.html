@@ -1,0 +1,5 @@
+[% BLOCK setting %]<fieldset><legend>[% title | string | html %]</legend>[% IF desc %]<p>[% desc | string %]</p>[% END %][% content %]</fieldset>[% END %]
+[% BLOCK settingGroup %][% WRAPPER setting %][% content %][% END %][% END %]
+[% BLOCK settingSection %]<section>[% content %]</section>[% END %]
+<form>
+[% IF warning %]<p role="alert">[% warning | html %]</p>[% END %]

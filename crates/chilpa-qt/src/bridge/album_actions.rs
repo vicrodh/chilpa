@@ -70,11 +70,6 @@ impl AlbumActionsRust {
             vec![id]
         }
     }
-
-    fn paths(&self, id: i64) -> Vec<String> {
-        let ids = self.targets(id);
-        app::with(|api| api.album_paths(&ids))
-    }
 }
 
 impl qobject::AlbumActions {
@@ -117,23 +112,15 @@ impl qobject::AlbumActions {
         }
     }
 
-    pub fn play(&self, id: i64, shuffled: bool) {
-        let paths = self.rust().paths(id);
-        app::with(|api| {
-            api.set_shuffle(shuffled);
-            api.play_from(&paths, 0);
-        });
+    /// Plays, puts next or queues the record, or the selection it is in.
+    fn act(&self, id: i64, act: &str, shuffled: bool) {
+        let ids = self.rust().targets(id);
+        app::with(|api| api.album_action(&ids, act, shuffled));
     }
 
-    pub fn play_next(&self, id: i64) {
-        let paths = self.rust().paths(id);
-        app::with(|api| api.play_next_here(&paths));
-    }
-
-    pub fn queue(&self, id: i64) {
-        let paths = self.rust().paths(id);
-        app::with(|api| api.enqueue_here(&paths));
-    }
+    pub fn play(&self, id: i64, shuffled: bool) { self.act(id, "play", shuffled) }
+    pub fn play_next(&self, id: i64) { self.act(id, "next", false) }
+    pub fn queue(&self, id: i64) { self.act(id, "queue", false) }
 
     pub fn track_ids_json(&self, id: i64) -> cxx_qt_lib::QString {
         let ids: Vec<i64> = self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect();
