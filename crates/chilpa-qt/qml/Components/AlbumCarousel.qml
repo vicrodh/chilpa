@@ -12,6 +12,8 @@ Column {
     property AlbumGridModel model
     // A link on the right of the title ("See all").
     property string link
+    // Artists: round portraits.
+    property bool round: false
 
     signal linkClicked()
 
@@ -29,6 +31,7 @@ Column {
         width: parent.width
         height: implicitHeight
         fitContent: true
+        round: root.round
         model: root.model
         onOpen: (albumId) => Navigation.go("album", albumId)
     }

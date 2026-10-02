@@ -13,7 +13,7 @@ Loader {
 
     sourceComponent: {
         if (music.music === true)
-            return Navigation.routeKey.indexOf(" ") < 0 ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
+            return music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
         switch (Navigation.screen) {
         case "home": return home
         case "library": return library
@@ -50,7 +50,7 @@ Loader {
     Component { id: listenlist; ListenListScreen {} }
     Component { id: metadata; MetadataScreen {} }
     Component { id: source; SourceScreen {} }
-    Component { id: sourceHome; SourceHome { plugin: Navigation.routeKey } }
+    Component { id: sourceHome; SourceHome { key: Navigation.routeKey } }
     Component { id: sourceAlbums; AlbumsScreen { source: Navigation.routeKey } }
     Component { id: sourceListing; SourceListing { source: Navigation.routeKey } }
     Component { id: sourceEntry; SourceEntryScreen {} }

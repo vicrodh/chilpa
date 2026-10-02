@@ -50,6 +50,7 @@ Flickable {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
+        SourceTabs { model: page.about.tabs || [] }
 
         Flow {
             width: parent.width

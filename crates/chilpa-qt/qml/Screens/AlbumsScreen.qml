@@ -146,22 +146,33 @@ Item {
         }
     }
 
-    // What the source's records are to the listener: all, or one of them.
+    // The section's tabs, then what the records are to the listener. A
+    // membership is a toggle: none chosen is every record, so it has no
+    // "All" of its own to be confused with the tabs' first.
     Row {
         id: kinds
+        readonly property var memberships: (page.about.memberships || []).length > 1 ? page.about.memberships : []
         anchors.top: head.bottom
         x: head.x
         spacing: Metrics.gap8
-        visible: (page.about.memberships || []).length > 1
+        visible: memberships.length > 0 || (page.about.tabs || []).length > 0
         height: visible ? implicitHeight : 0
 
+        SourceTabs { model: page.about.tabs || [] }
+        Rectangle {
+            visible: kinds.memberships.length > 0 && (page.about.tabs || []).length > 0
+            anchors.verticalCenter: parent.verticalCenter
+            width: 1
+            height: Metrics.iconNav
+            color: Theme.color.strokeHairline
+        }
         Repeater {
-            model: [""].concat(page.about.memberships || [])
+            model: kinds.memberships
             PillButton {
                 required property string modelData
                 kind: page.membership === modelData ? "primary" : "secondary"
-                text: ({ "": I18n.tr("All", I18n.rev), favorites: I18n.tr("Favorites", I18n.rev), purchases: I18n.tr("Purchases", I18n.rev) })[modelData] || modelData
-                onClicked: page.membership = modelData
+                text: ({ favorites: I18n.tr("Favorites", I18n.rev), purchases: I18n.tr("Purchases", I18n.rev) })[modelData] || modelData
+                onClicked: page.membership = page.membership === modelData ? "" : modelData
             }
         }
     }
