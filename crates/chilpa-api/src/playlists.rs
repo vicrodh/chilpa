@@ -144,9 +144,17 @@ impl Chilpa {
     /// A source's lists refresh their cached metadata. A source that does not
     /// answer leaves the last cache intact: absence never means deletion.
     pub fn playlists(&mut self) -> Vec<Playlist> {
-        for (id, name) in self.sources() {
-            self.refresh_source_playlists(&id, &name);
+        // The window asks for these, so they never wait behind a plugin call
+        // in flight (a source's page can take seconds): a busy host leaves
+        // the cached lists, and the next ask refreshes them.
+        self.library();
+        let mut host = self.plugins.as_ref().and_then(|p| p.try_lock().ok());
+        if let Some(host) = host.as_mut() {
+            for (id, name) in host.searchers() {
+                refresh_source_playlists(self.library.as_ref(), host, &id, &name);
+            }
         }
+        drop(host);
         let Some(lib) = self.library() else {
             return Vec::new();
         };
@@ -155,26 +163,6 @@ impl Chilpa {
             playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
         }
         playlists
-    }
-
-    /// Refreshes what one source says its lists are. A failed refresh changes
-    /// nothing in the cache.
-    fn refresh_source_playlists(&mut self, id: &str, name: &str) {
-        let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
-        let Ok(bytes) = self.call_plugin_short(id, messages::op::PLAYLISTS, &request) else {
-            return;
-        };
-        let Ok(reply) = messages::read::<messages::Results>(&bytes) else {
-            return;
-        };
-        let Some(lib) = self.library() else { return };
-        let Ok(source_id) = lib.source_id(id, "default") else {
-            return;
-        };
-        let _ = lib.set_source_label(source_id, name);
-        for playlist in reply.playlists {
-            let _ = lib.sync_source_playlist(source_id, &playlist.external_id, &playlist.name, &playlist.description, playlist.artwork_url.as_deref());
-        }
     }
 
     /// Opens a source's list: its tracks become the results.
@@ -544,6 +532,26 @@ pub fn group_moves(rows: &[usize], to: usize) -> Vec<(usize, usize)> {
     moves
 }
 
+/// Refreshes what one source says its lists are, on a host already taken.
+/// A failed refresh changes nothing in the cache.
+fn refresh_source_playlists(library: Option<&chilpa_library::Library>, host: &mut crate::plugins::Plugins, id: &str, name: &str) {
+    let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
+    let Ok(bytes) = host.call_short(id, messages::op::PLAYLISTS, &request) else {
+        return;
+    };
+    let Ok(reply) = messages::read::<messages::Results>(&bytes) else {
+        return;
+    };
+    let Some(lib) = library else { return };
+    let Ok(source_id) = lib.source_id(id, "default") else {
+        return;
+    };
+    let _ = lib.set_source_label(source_id, name);
+    for playlist in reply.playlists {
+        let _ = lib.sync_source_playlist(source_id, &playlist.external_id, &playlist.name, &playlist.description, playlist.artwork_url.as_deref());
+    }
+}
+
 #[cfg(test)]
 mod group_tests {
     use super::group_moves;
@@ -565,5 +573,26 @@ mod group_tests {
         assert_eq!(dropped(&[1, 3, 5], 3), "acbdfe", "dropped on one of its own, the group closes around it");
         assert_eq!(dropped(&[2, 3], 2), "abcdef", "a block dropped on itself does not move");
         assert_eq!(dropped(&[4], 1), "aebcdf", "one row moves as it always did");
+    }
+
+    #[test]
+    fn the_lists_never_wait_for_a_plugin_call_in_flight() {
+        let mut api = crate::Chilpa::new();
+        api.library = Some(chilpa_library::Library::in_memory().unwrap());
+        let dir = std::env::temp_dir().join(format!("chilpa-playlists-busy-{}", std::process::id()));
+        let host = std::sync::Arc::new(std::sync::Mutex::new(crate::plugins::Plugins::new(dir).unwrap()));
+        api.plugins = Some(host.clone());
+        // A call in flight holds the host for as long as the source takes.
+        let (taken, wait) = std::sync::mpsc::channel();
+        let busy = std::thread::spawn(move || {
+            let _held = host.lock().unwrap();
+            taken.send(()).unwrap();
+            std::thread::sleep(std::time::Duration::from_secs(5));
+        });
+        wait.recv().unwrap();
+        let started = std::time::Instant::now();
+        api.playlists();
+        assert!(started.elapsed() < std::time::Duration::from_secs(1), "the window waited {:?} for the host", started.elapsed());
+        busy.join().unwrap();
     }
 }

@@ -765,12 +765,16 @@ impl Chilpa {
     }
 
     /// The installed plugins, loaded or not.
+    ///
+    /// Settings asks for this on the window's thread, and a source's call
+    /// can hold the sandbox for seconds: then the last list read stands.
     pub fn plugins(&self) -> Vec<PluginInfo> {
-        self.plugins
-            .as_ref()
-            .and_then(|p| p.lock().ok())
-            .map(|p| p.list())
-            .unwrap_or_default()
+        let Some(host) = self.plugins.as_ref() else { return Vec::new() };
+        let mut listed = self.sources.listed.lock().unwrap_or_else(|e| e.into_inner());
+        if let Ok(host) = host.try_lock() {
+            *listed = host.list();
+        }
+        listed.clone()
     }
 
     /// The user approves what a plugin asks for, and the folder is read
