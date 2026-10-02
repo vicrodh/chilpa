@@ -283,7 +283,7 @@ impl Chilpa {
                     self.catalog.remember_name(&id, &name);
                     let children = if let Some(layout) = layout {
                         // Discover is the source's own page; the rest are its sections.
-                        layout.ordered().into_iter().map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
+                        layout.ordered().into_iter().filter(|(_, section)| section.under.is_empty()).map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
                             route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") } }).collect()
                     } else if music {
                         let root = self.catalog.shelf(&format!("{id} root")).unwrap_or_default();

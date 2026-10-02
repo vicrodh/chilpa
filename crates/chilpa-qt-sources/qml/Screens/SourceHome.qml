@@ -7,13 +7,15 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
 
-// A source's own page (Discover): a shelf for each of its listings, each the
-// same carousel of records as a record page's, and a way to see it whole.
+// A page of shelves: a source's own (Discover), or a section's "All" of its
+// tabs. Each shelf is the same carousel of records as a record page's, with a
+// way to see it whole; tracks, which are not cards, are a link.
 Flickable {
     id: page
 
-    property string plugin
-    readonly property var about: JSON.parse(Sources.page(plugin, Library.remoteRev) || "{}")
+    // "<plugin>" or "<plugin> section:<name>".
+    property string key
+    readonly property var about: JSON.parse(Sources.page(key, Library.remoteRev) || "{}")
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -34,6 +36,7 @@ Flickable {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
+        SourceTabs { model: page.about.tabs || [] }
 
         Repeater {
             model: page.about.shelves || []
@@ -42,6 +45,8 @@ Flickable {
                 id: shelf
                 required property var modelData
                 width: column.width
+                visible: !modelData.tracks && model.albums > 0
+                round: modelData.round === true
                 title: modelData.title
                 link: I18n.tr("See all", I18n.rev)
                 onLinkClicked: Navigation.goKey("source", modelData.key)
@@ -53,10 +58,21 @@ Flickable {
             }
         }
 
+        Repeater {
+            model: (page.about.shelves || []).filter(s => s.tracks)
+            SectionHeader {
+                required property var modelData
+                width: column.width
+                title: modelData.title
+                link: I18n.tr("See all", I18n.rev)
+                onLinkClicked: Navigation.goKey("source", modelData.key)
+            }
+        }
+
         SourceState {
             width: column.width
             visible: (page.about.shelves || []).length === 0
-            source: page.plugin + " root"
+            source: page.key.indexOf(" ") < 0 ? page.key + " root" : page.key
             about: page.about
         }
     }

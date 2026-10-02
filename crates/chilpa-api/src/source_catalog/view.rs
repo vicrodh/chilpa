@@ -135,15 +135,29 @@ impl Chilpa {
             let loading = layout.is_none() && self.catalog.loading(&format!("{plugin} root"));
             return serde_json::json!({"music": music, "name": name, "title": name, "shelves": shelves, "loading": loading}).to_string();
         }
+        let section_name = address.strip_prefix("section:").unwrap_or_default();
+        let section = layout.as_ref().and_then(|l| l.sections.get(section_name));
+        // A section with tabs: its own and each tab's, the first being "All".
+        let tabs: Vec<serde_json::Value> = layout.as_ref().map(|l| l.tabs(section_name)).unwrap_or_default().into_iter().enumerate()
+            .map(|(at, (tab, s))| serde_json::json!({"key": format!("{plugin} section:{tab}"), "active": tab == section_name,
+                "title": if at == 0 { chilpa_i18n::t("All") } else { s.title.clone() }})).collect();
+        if let Some(parent) = section.filter(|s| s.under.is_empty() && !tabs.is_empty()) {
+            // "All": a shelf for each tab. Tracks are not cards: theirs is a link.
+            let shelves: Vec<serde_json::Value> = layout.as_ref().map(|l| l.tabs(section_name)).unwrap_or_default().into_iter().skip(1)
+                .map(|(tab, s)| serde_json::json!({"key": format!("{plugin} section:{tab}"), "title": s.title, "tracks": s.entity == "track", "round": s.entity == "artist"}))
+                .collect();
+            return serde_json::json!({"music": music, "name": name, "title": parent.title, "tabs": tabs, "shelves": shelves}).to_string();
+        }
         let shelf_key = format!("{plugin} {address}");
         let shelf = self.catalog.shelf(&shelf_key).unwrap_or_default();
-        let section = address.strip_prefix("section:").and_then(|s| layout.as_ref()?.sections.get(s));
         let mut memberships: Vec<String> = shelf.membership.values().flat_map(|m| m.split(',')).filter(|m| !m.is_empty()).map(String::from).collect();
         memberships.sort();
         memberships.dedup();
         let cards = self.catalog.cards(&shelf.cards);
         let artists = !cards.is_empty() && cards.iter().all(|c| c.kind == CardKind::Artist);
-        let title = section.map(|s| s.title.clone()).filter(|t| !t.is_empty()).unwrap_or(shelf.title.clone());
+        // A tab's page is titled after the page it is a tab of.
+        let named = section.and_then(|s| if s.under.is_empty() { Some(s) } else { layout.as_ref()?.sections.get(&s.under) });
+        let title = named.map(|s| s.title.clone()).filter(|t| !t.is_empty()).unwrap_or(shelf.title.clone());
         serde_json::json!({
             "music": music,
             "name": name,
@@ -156,6 +170,7 @@ impl Chilpa {
             "tracks": shelf.tracks.len(),
             "round": artists,
             "entity": section.map(|s| s.entity.clone()).unwrap_or_default(),
+            "tabs": tabs,
             "albumsOnly": shelf.tracks.is_empty() && shelf.folders.is_empty(),
         }).to_string()
     }

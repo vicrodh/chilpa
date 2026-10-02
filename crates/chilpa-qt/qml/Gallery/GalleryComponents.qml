@@ -209,6 +209,7 @@ GallerySection {
             column: ({ id: "country", title: "Country", picked: "mx", entries: [{ id: "ar", title: "Argentina", subtitle: "1,140" }, { id: "mx", title: "Mexico", subtitle: "980" }] })
         }
         SourceState { about: ({ error: "The source did not answer." }) }
+        SourceTabs { model: [{ key: "", title: "All", active: true }, { key: "", title: "Releases", active: false }] }
         SourceAbout { width: Metrics.searchFlyout; entry: ({ title: "Low Orbit Radio", subtitle: "Mora Vale", image: "x", description: "A show about what plays between two records.", facts: [{ label: "Genre", value: "Music" }] }) }
     }
 }

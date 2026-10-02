@@ -9,7 +9,12 @@ use std::{collections::BTreeMap, io::Read, path::Path, sync::{Arc, Mutex, atomic
 pub(crate) struct Layout { pub sections: BTreeMap<String, Section> }
 #[derive(Clone, Default, Deserialize)]
 #[serde(default)]
-pub(crate) struct Section { pub title: String, pub icon: String, pub entity: String, pub paths: Vec<Route>, pub order: i32 }
+pub(crate) struct Section {
+    pub title: String, pub icon: String, pub entity: String, pub paths: Vec<Route>, pub order: i32,
+    /// The section this one is a tab of. Such a section is not in the
+    /// sidebar: its parent's page is "All" of its tabs.
+    pub under: String,
+}
 #[derive(Clone, Default, Deserialize)]
 #[serde(default)]
 pub(crate) struct Route { pub path: Vec<String>, pub membership: String }
@@ -20,6 +25,17 @@ impl Layout {
         let mut sections: Vec<_> = self.sections.iter().collect();
         sections.sort_by_key(|(key, section)| (key.as_str() != "discover", section.order, key.as_str()));
         sections
+    }
+
+    /// The tabs of a section's page: its parent first, as "All", then the
+    /// parent's tabs. Empty for a section that has none.
+    pub fn tabs(&self, name: &str) -> Vec<(&String, &Section)> {
+        let parent = self.sections.get(name).map(|s| if s.under.is_empty() { name } else { s.under.as_str() }).unwrap_or(name);
+        let children: Vec<_> = self.ordered().into_iter().filter(|(_, s)| s.under == parent).collect();
+        if children.is_empty() {
+            return Vec::new();
+        }
+        self.sections.get_key_value(parent).into_iter().chain(children).collect()
     }
 
     pub fn load(root: &Path, id: &str) -> Self {

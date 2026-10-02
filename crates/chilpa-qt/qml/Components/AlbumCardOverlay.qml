@@ -63,6 +63,8 @@ Rectangle {
 
     IconButton {
         id: favoriteButton
+        // A source's record is a favorite of the service, not of the library.
+        visible: overlay.albumId >= 0
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: Metrics.overlayPad
@@ -78,8 +80,8 @@ Rectangle {
     }
 
     Row {
-        anchors.right: favoriteButton.left
-        anchors.rightMargin: Metrics.gap4
+        anchors.right: favoriteButton.visible ? favoriteButton.left : parent.right
+        anchors.rightMargin: favoriteButton.visible ? Metrics.gap4 : Metrics.overlayPad
         anchors.verticalCenter: favoriteButton.verticalCenter
         spacing: Metrics.gap4
         Repeater {
