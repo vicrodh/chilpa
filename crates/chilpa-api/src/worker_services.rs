@@ -52,7 +52,13 @@ impl WorkerServices for WorkerContext {
                         }
                     }
                 }
-                chilpa_core::send_worker_request(&request, &domains, timeout).map_err(|_| BridgeError::Denied)
+                let started = Instant::now();
+                let reply = chilpa_core::send_worker_request(&request, &domains, timeout);
+                // The host only: an address can carry a signature or a token.
+                let place = request["url"].as_str().and_then(|a| url::Url::parse(a).ok())
+                    .map(|u| format!("{}{}", u.host_str().unwrap_or_default(), u.path().chars().take(48).collect::<String>())).unwrap_or_default();
+                eprintln!("worker-http: at={place} status={} elapsed_ms={}", reply.as_ref().ok().and_then(|r| r["status"].as_u64()).unwrap_or(0), started.elapsed().as_millis());
+                reply.map_err(|_| BridgeError::Denied)
             }
         }
     }
