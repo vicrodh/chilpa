@@ -1625,6 +1625,11 @@ msgstr ""
 msgid "See all"
 msgstr ""
 
+msgid "See {} more"
+msgid_plural "See {} more"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "Select"
 msgstr ""
 

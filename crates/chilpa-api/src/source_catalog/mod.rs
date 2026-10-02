@@ -88,6 +88,9 @@ struct Inner {
     cover_asked: String,
     /// Each plugin's load as last seen, for what is taken in from outside.
     epochs: HashMap<String, u64>,
+    /// Covers asked for that belong to no card or track (a search result),
+    /// by address, with the plugin whose domains they are fetched within.
+    images: HashMap<String, String>,
 }
 
 pub(crate) struct Catalog {
@@ -411,6 +414,19 @@ impl Catalog {
             inner.store.names.insert(plugin.to_string(), name.to_string());
             inner.dirty = true;
         }
+    }
+
+    /// Fetches a picture a plugin gave outside any listing, as a search
+    /// result's, within that plugin's domains.
+    pub fn want_image(&self, plugin: &str, image: &str) {
+        if image.is_empty() || !(image.starts_with("https://") || image.starts_with("http://")) {
+            return;
+        }
+        let mut inner = self.lock();
+        if inner.images.len() < 4096 {
+            inner.images.insert(image.to_string(), plugin.to_string());
+        }
+        self.want_cover(&mut inner, image);
     }
 
     /// Asks for the cover of what started playing, once per entry.

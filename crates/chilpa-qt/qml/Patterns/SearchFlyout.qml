@@ -20,6 +20,17 @@ Popup {
     property int room: 0
     // The row Up and Down move to, which Enter opens.
     property int current: -1
+    // The sources a search asks, kept between runs: Local alone to begin with.
+    readonly property var chosen: search.source.split(",").filter(s => s !== "")
+    Component.onCompleted: search.source = SettingsModel.kept("ui.search.sources") || "local"
+    function toggle(id) {
+        let now = id === "all" ? (chosen.indexOf("all") >= 0 ? ["local"] : ["all"])
+            : chosen.filter(s => s !== "all")
+        if (id !== "all")
+            now = now.indexOf(id) >= 0 ? now.filter(s => s !== id) : now.concat([id])
+        search.source = (now.length > 0 ? now : ["local"]).join(",")
+        SettingsModel.keep("ui.search.sources", search.source)
+    }
     Timer { interval: Motion.poll; repeat: true; running: flyout.visible; onTriggered: flyout.search.refresh() }
 
     // Moves to the next result up or down, over the section labels.
@@ -33,7 +44,10 @@ Popup {
         list.positionViewAtIndex(current, ListView.Contain)
     }
     function choose(row) {
-        close()
+        // The way to more of a source's results stays open, with them.
+        const item = list.itemAtIndex(row)
+        if (!(item && item.link))
+            close()
         search.act(row, "open")
     }
     // Enter: the row the keyboard is on, or the first result.
@@ -111,8 +125,8 @@ Popup {
                     Chip {
                         required property var modelData
                         text: modelData.name
-                        active: flyout.search.source === modelData.id
-                        onClicked: flyout.search.source = modelData.id
+                        active: flyout.chosen.indexOf(modelData.id) >= 0 || (modelData.id !== "all" && flyout.chosen.indexOf("all") >= 0)
+                        onClicked: flyout.toggle(modelData.id)
                     }
                 }
             }

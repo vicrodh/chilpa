@@ -106,14 +106,14 @@ sub query {
             if ($entry->{kind} eq 'item' && $entry->{playable}) {
                 next if $seen{$entry->{id}}++ || @tracks >= $limit;
                 push @tracks, { external_id => $entry->{id}, title => $entry->{title},
-                    artist => $metadata->{artist} // '', album => $metadata->{album} // '',
+                    artist => $metadata->{artist} || $display->{secondary} || '', album => $metadata->{album} // '',
                     isrc => $metadata->{isrc}, musicbrainz_recording_id => $metadata->{musicbrainz_recording_id},
                     quality => Chilpa::Presentation::shared_quality($display->{advertised_quality} || {}),
                     duration_ms => $entry->{duration_ms}, artwork_url => $entry->{image_url} };
             } elsif (($display->{entity} // '') eq 'album') {
                 next if $seen{$entry->{id}}++ || @albums >= $limit;
                 push @albums, { external_id => $entry->{id}, title => $display->{title},
-                    artist => $metadata->{artist} // '', year => $display->{year} || undef,
+                    artist => $metadata->{artist} || $display->{secondary} || $entry->{subtitle} || '', year => $display->{year} || undef,
                     artwork_url => $entry->{image_url} };
             } elsif (($display->{entity} // '') eq 'playlist') {
                 next if $seen{$entry->{id}}++ || @playlists >= $limit;
@@ -125,7 +125,8 @@ sub query {
         }
     };
     $step = sub {
-        if (!@pending || $visited++ >= 20) {
+        # Enough of both is enough: every folder visited is a call to the service.
+        if (!@pending || $visited++ >= 20 || (@tracks >= $limit && @albums >= $limit)) {
             undef $step;
             return $done->({tracks => \@tracks, albums => \@albums, playlists => \@playlists});
         }

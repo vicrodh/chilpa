@@ -252,7 +252,7 @@ QtObject {
     readonly property int crumbHeight: 22
 
     // The search flyout (design/02 8, design/03 SearchFlyout).
-    readonly property int searchFlyout: 440
+    readonly property int searchFlyout: 600
     // The player's options (the player bar's switches).
     readonly property int playbackOptionsWidth: 320
     readonly property int optionRow: 44

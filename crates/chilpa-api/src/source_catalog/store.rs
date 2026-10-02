@@ -200,7 +200,7 @@ fn year_of(presentation: &Presentation) -> Option<i32> {
 
 /// A line that ends in a year in brackets, "Band (1992)", is the artist and
 /// the year: it is how a source without a field for it says it.
-fn split_year(line: &str) -> (String, Option<i32>) {
+pub(crate) fn split_year(line: &str) -> (String, Option<i32>) {
     let trimmed = line.trim_end();
     let year = trimmed.strip_suffix(')').and_then(|rest| rest.rsplit_once(" ("))
         .and_then(|(name, year)| Some((name, year.parse::<i32>().ok().filter(|y| (1900..=2100).contains(y))?)));
