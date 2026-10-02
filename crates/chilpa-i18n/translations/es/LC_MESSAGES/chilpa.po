@@ -869,6 +869,9 @@ msgstr "La inspección falló"
 msgid "Inspection passed"
 msgstr "Inspección aprobada"
 
+msgid "Install"
+msgstr "Instalar"
+
 msgid "Installed"
 msgstr "Instalados"
 
@@ -1940,6 +1943,9 @@ msgstr "Quitar silencio"
 
 msgid "Up next"
 msgstr "A continuación"
+
+msgid "Update"
+msgstr "Actualizar"
 
 msgid "Updates"
 msgstr "Actualizaciones"
