@@ -54,7 +54,8 @@ Item {
             anchors.right: tools.left
             anchors.rightMargin: Metrics.gap12
             anchors.baseline: title.baseline
-            text: I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
+            text: page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
+                : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
             elide: Text.ElideRight
             font.pointSize: Type.meta
             color: Theme.color.textSecondary

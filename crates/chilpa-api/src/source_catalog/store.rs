@@ -156,6 +156,7 @@ pub(crate) struct Store {
     /// Whether each plugin is drawn as records, so a restored page knows
     /// before the plugins have started.
     pub drawn: BTreeMap<String, bool>,
+    pub names: BTreeMap<String, String>,
     #[serde(skip)]
     card_ids: HashMap<(String, String), i64>,
     #[serde(skip)]
@@ -195,6 +196,18 @@ fn kind_of(entity: Entity) -> Option<CardKind> {
 
 fn year_of(presentation: &Presentation) -> Option<i32> {
     i32::try_from(presentation.year).ok().filter(|y| *y > 0)
+}
+
+/// A line that ends in a year in brackets, "Band (1992)", is the artist and
+/// the year: it is how a source without a field for it says it.
+fn split_year(line: &str) -> (String, Option<i32>) {
+    let trimmed = line.trim_end();
+    let year = trimmed.strip_suffix(')').and_then(|rest| rest.rsplit_once(" ("))
+        .and_then(|(name, year)| Some((name, year.parse::<i32>().ok().filter(|y| (1900..=2100).contains(y))?)));
+    match year {
+        Some((name, year)) if !name.trim().is_empty() => (name.trim().to_string(), Some(year)),
+        _ => (line.to_string(), None),
+    }
 }
 
 fn http(address: Option<&String>) -> String {
@@ -247,7 +260,9 @@ impl Store {
                     read.entries.push((entry.id.clone(), id));
                 }
                 (EntryKind::Item, _) if !entry.live && (entry.playable || shown.entity == Entity::Track) => read.tracks.push(self.take_track(plugin, entry, &shown, None)),
-                (EntryKind::Folder, None) => read.folders.push(Folder { id: entry.id.clone(), title: entry.title.clone() }),
+                // A folder that does something when opened (it removes a
+                // favorite, it signs out) is not a place: it is not shown.
+                (EntryKind::Folder, None) if shown.can_preview => read.folders.push(Folder { id: entry.id.clone(), title: entry.title.clone() }),
                 _ => {}
             }
         }
@@ -261,8 +276,10 @@ impl Store {
         card.kind = kind;
         card.title = if shown.title.is_empty() { entry.title.clone() } else { shown.title.clone() };
         let artist = shown.metadata.get("artist").cloned().unwrap_or_default();
-        card.artist = [artist, shown.secondary.clone(), entry.subtitle.clone()].into_iter().find(|a| !a.trim().is_empty()).unwrap_or_default();
-        card.year = year_of(shown).or(card.year);
+        let artist = [artist, shown.secondary.clone(), entry.subtitle.clone()].into_iter().find(|a| !a.trim().is_empty()).unwrap_or_default();
+        let (artist, said) = split_year(&artist);
+        card.artist = artist;
+        card.year = year_of(shown).or(said).or(card.year);
         if let Some(genre) = shown.metadata.get("genre").filter(|g| !g.is_empty()) {
             card.genre = genre.clone();
         }
@@ -348,6 +365,13 @@ mod tests {
         assert_eq!((card.title.as_str(), card.artist.as_str(), card.year), ("Record", "Band", Some(1999)));
         assert_eq!(card.handle, Some(Handle { epoch: 2, id: "menu:b:9".into() }));
         assert_eq!(card.format.as_ref().unwrap().quality().short(), "FLAC 24/96");
+    }
+
+    #[test]
+    fn a_year_in_brackets_after_the_artist_is_the_year() {
+        assert_eq!(split_year("Alice In Chains (1992)"), ("Alice In Chains".to_string(), Some(1992)));
+        assert_eq!(split_year("Band (Live)"), ("Band (Live)".to_string(), None));
+        assert_eq!(split_year("(1992)"), ("(1992)".to_string(), None));
     }
 
     #[test]

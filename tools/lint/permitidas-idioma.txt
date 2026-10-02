@@ -536,3 +536,5 @@ svg
 condvar
 # serde's serialization module.
 ser
+# The lossless codec, as symphonia names it.
+wavpack

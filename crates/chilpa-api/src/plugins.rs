@@ -667,10 +667,22 @@ impl Plugins {
         let started = std::time::Instant::now();
         let result = self.registry.call(&self.host, &self.services, id, operation, input, limits);
         eprintln!("plugin-call: plugin={id} operation={operation} ok={} elapsed_ms={}", result.is_ok(), started.elapsed().as_millis());
-        if result.is_err() {
+        if result.is_err() && !self.registry.alive(id) {
             // A worker that died on this call is not left dead for the next
-            // one: that is what used to need a restart from Settings.
+            // one: that is what used to need a restart from Settings. One
+            // found already dead is asked again, when the question only reads.
+            let found_dead = started.elapsed() < std::time::Duration::from_secs(1);
+            let reads = matches!(operation, chilpa_plugin::op::BROWSE | chilpa_plugin::op::SEARCH | chilpa_plugin::op::RESOLVER | "source.metadata");
             self.revive_if_dead(id);
+            if found_dead && reads && self.registry.alive(id) {
+                let result = self.registry.call(&self.host, &self.services, id, operation, input, limits);
+                eprintln!("plugin-call: plugin={id} operation={operation} retried=true ok={}", result.is_ok());
+                return match result {
+                    Ok(chilpa_plugin::Reply::Ok(bytes)) => Ok(bytes),
+                    Ok(chilpa_plugin::Reply::Error(e)) => Err(e),
+                    Err(e) => Err(e.to_string()),
+                };
+            }
         }
         match result {
             Ok(chilpa_plugin::Reply::Ok(bytes)) => Ok(bytes),

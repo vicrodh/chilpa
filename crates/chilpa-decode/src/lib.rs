@@ -207,6 +207,27 @@ pub struct Decoded {
     /// 32-bit buffer, and keeping the 32 would make the packing believe it
     /// has to truncate.
     declared_bits: Option<u8>,
+    /// What the decoder reads, by the library's name for it: a container
+    /// such as MP4 does not say on its own whether it holds FLAC or AAC.
+    codec: &'static str,
+}
+
+/// The library's name for a codec, empty for one it does not name.
+fn codec_name(codec: symphonia::core::codecs::CodecType) -> &'static str {
+    use symphonia::core::codecs::*;
+    match codec {
+        CODEC_TYPE_FLAC => "flac",
+        CODEC_TYPE_ALAC => "alac",
+        CODEC_TYPE_AAC => "aac",
+        CODEC_TYPE_MP3 => "mp3",
+        CODEC_TYPE_VORBIS => "vorbis",
+        CODEC_TYPE_OPUS => "opus",
+        CODEC_TYPE_WAVPACK => "wavpack",
+        other => match symphonia::default::get_codecs().get_codec(other) {
+            Some(known) if known.short_name.starts_with("pcm") => "pcm",
+            _ => "",
+        },
+    }
 }
 
 impl Decoded {
@@ -312,6 +333,7 @@ impl Decoded {
         // a 24 bit album at 16 and the window would have called it
         // bit-perfect, because nothing in Chilpa had converted anything --
         // it had simply asked for the wrong thing.
+        let codec = codec_name(params.codec);
         let declared_bits = params
             .bits_per_sample
             .map(|b| b.min(32) as u8)
@@ -360,7 +382,14 @@ impl Decoded {
             frames,
             declared_bits,
             pending,
+            codec,
         })
+    }
+
+    /// The codec it decodes ("flac", "aac"), empty when it is not one the
+    /// library names.
+    pub fn codec(&self) -> &'static str {
+        self.codec
     }
 
     /// Leading frames the encoder added that are not music.

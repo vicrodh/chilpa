@@ -127,6 +127,11 @@ is($enriched->{presentation}{'cached://track/1'}{advertised_quality}{sample_rate
     is($again->{entries}[0]{id}, $first->{entries}[0]{id}, 'a record listed again keeps its handle');
     isnt($again->{entries}[1]{id}, $first->{entries}[1]{id}, 'a folder without identity gets a new one');
     ok($keeper->{nodes}{$first->{entries}[0]{id}}, 'the kept handle still opens the record');
+    my $artist = {name => 'Band', url => sub {}, passthrough => [{artist_id => 'a1'}]};
+    my $page = $keeper->listing({items => [{name => 'Albums', url => sub {}, passthrough => [{artist_id => 'a1'}]},
+        {name => 'Similar', url => sub {}, passthrough => [{artist_id => 'a2'}]}]}, {}, 'Band', $artist);
+    is($page->{presentation}{$page->{entries}[0]{id}}{entity}, 'folder', 'a part of an artist page is not the artist again');
+    is($page->{presentation}{$page->{entries}[1]{id}}{entity}, 'artist', 'another artist listed there still is one');
     my $art = $keeper->listing({items => [{name => 'Cover', url => sub {}, icon => 'https://img.example/c.jpg'}]}, {});
     is($art->{entries}[0]{image_url}, 'https://img.example/c.jpg', 'an icon serves as the picture when there is no image');
 }

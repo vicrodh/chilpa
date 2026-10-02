@@ -38,6 +38,8 @@ const SHELF_FRESH: u64 = 300;
 const TRACKS_FRESH: u64 = 6 * 3600;
 /// How many records of a listing have their tracks read ahead.
 const READ_AHEAD: usize = 8;
+/// How many of a listing's loose tracks have their covers fetched.
+const TRACK_COVERS: usize = 200;
 /// How many covers are fetched at once.
 const COVER_THREADS: usize = 6;
 /// An action waiting for a record's tracks is dropped after this.
@@ -167,7 +169,18 @@ impl Catalog {
             return;
         }
         inner.queue.queued.insert(job.clone());
-        if urgent { inner.queue.urgent.push_back(job) } else { inner.queue.later.push_back(job) }
+        if urgent {
+            inner.queue.urgent.push_back(job);
+        } else {
+            // What is read ahead is for what was opened last: the oldest
+            // guesses go, so someone who opens something waits behind few.
+            inner.queue.later.push_back(job);
+            while inner.queue.later.len() > READ_AHEAD {
+                if let Some(old) = inner.queue.later.pop_front() {
+                    inner.queue.queued.remove(&old);
+                }
+            }
+        }
         self.wake.notify_all();
     }
 
@@ -192,7 +205,9 @@ impl Catalog {
         }
         if let Some(shelf) = &shelf {
             let images: Vec<String> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
-                .filter(|c| c.art.is_empty()).map(|c| c.image.clone()).collect();
+                .filter(|c| c.art.is_empty()).map(|c| c.image.clone())
+                .chain(shelf.tracks.iter().take(TRACK_COVERS).filter_map(|id| inner.store.tracks.get(id)).map(|t| t.image.clone()))
+                .collect();
             for image in images {
                 self.want_cover(&mut inner, &image);
             }
@@ -361,6 +376,39 @@ impl Catalog {
     pub fn remember_drawn(&self, plugin: &str, drawn: bool) {
         let mut inner = self.lock();
         if inner.loaded && inner.store.drawn.insert(plugin.to_string(), drawn) != Some(drawn) {
+            inner.dirty = true;
+        }
+    }
+
+    /// What a track decoded as: its row says that from now on, instead of
+    /// what the source advertised. The codec stays the source's word.
+    pub fn measured(&self, path: &str, codec: Option<&str>, bits: Option<u8>, rate: u32) {
+        let mut inner = self.lock();
+        let Some(id) = inner.store.track_by_path(path).map(|t| t.id) else { return };
+        let Some(track) = inner.store.tracks.get_mut(&id) else { return };
+        let format = track.format.get_or_insert_with(store::Format::default);
+        let codec = codec.map(str::to_string).unwrap_or_else(|| format.codec.clone());
+        if format.bits == bits && format.rate == Some(rate) && format.codec == codec {
+            return;
+        }
+        format.codec = codec;
+        format.bits = bits;
+        format.rate = Some(rate).filter(|r| *r > 0);
+        inner.dirty = true;
+        drop(inner);
+        self.changed();
+    }
+
+    /// What a plugin is called, kept so a restored tab has its name before
+    /// the plugins start.
+    pub fn name(&self, plugin: &str) -> Option<String> {
+        self.lock().store.names.get(plugin).cloned()
+    }
+
+    pub fn remember_name(&self, plugin: &str, name: &str) {
+        let mut inner = self.lock();
+        if inner.loaded && !name.is_empty() && inner.store.names.get(plugin).map(String::as_str) != Some(name) {
+            inner.store.names.insert(plugin.to_string(), name.to_string());
             inner.dirty = true;
         }
     }

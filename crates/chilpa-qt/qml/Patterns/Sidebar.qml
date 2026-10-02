@@ -23,6 +23,8 @@ Rectangle {
         target: Navigation
         function onScreenChanged() { Sources.refresh() }
     }
+    // The host is free again each time the catalog finishes asking it.
+    Connections { target: Library; function onRemoteRevChanged() { Sources.refresh() } }
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar

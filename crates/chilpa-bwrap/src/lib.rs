@@ -76,7 +76,7 @@ pub fn launch(paths: &RuntimePaths, guest: &Path, memory_bytes: usize) -> Result
         .args(["--nproc=0", "--nofile=64", "--fsize=1048576", "--cpu=120:120", "--core=0", "--",
             "/usr/bin/perl", "/bridge/worker.pl"])
         .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null());
-    let mut child = command.spawn().map_err(|_| BridgeError::Disconnected)?;
+    let mut child = spawn(command).map_err(|_| BridgeError::Disconnected)?;
     let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
     let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
     Ok(PipeTransport::isolated(input, output, move || {
@@ -85,6 +85,27 @@ pub fn launch(paths: &RuntimePaths, guest: &Path, memory_bytes: usize) -> Result
         let _ = child.kill();
         let _ = child.wait();
     }))
+}
+
+/// Starts a worker from the one thread that lives as long as Chilpa.
+///
+/// `--die-with-parent` is a parent-death signal, and Linux sends it when the
+/// thread that started the child ends, not the process. Workers started at
+/// startup, on a thread that then finished, were killed with it and every
+/// first call found them gone.
+fn spawn(command: Command) -> std::io::Result<std::process::Child> {
+    type Ask = (Command, std::sync::mpsc::Sender<std::io::Result<std::process::Child>>);
+    static LAUNCHER: std::sync::OnceLock<Option<std::sync::Mutex<std::sync::mpsc::Sender<Ask>>>> = std::sync::OnceLock::new();
+    let launcher = LAUNCHER.get_or_init(|| {
+        let (tx, rx) = std::sync::mpsc::channel::<Ask>();
+        std::thread::Builder::new().name("chilpa-worker-launcher".into())
+            .spawn(move || for (mut command, reply) in rx { let _ = reply.send(command.spawn()); })
+            .ok().map(|_| std::sync::Mutex::new(tx))
+    });
+    let gone = || std::io::Error::other("the worker launcher is not running");
+    let (reply, answer) = std::sync::mpsc::channel();
+    launcher.as_ref().ok_or_else(gone)?.lock().unwrap_or_else(|e| e.into_inner()).send((command, reply)).map_err(|_| gone())?;
+    answer.recv().map_err(|_| gone())?
 }
 
 fn canonical_directory(path: &Path) -> Result<PathBuf, BridgeError> {

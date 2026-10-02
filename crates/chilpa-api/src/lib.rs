@@ -1201,6 +1201,10 @@ impl Chilpa {
                     self.name_from_source(&path);
                     self.now.live = self.name_from_entry(&path);
                     self.load_album_context();
+                    if dsd_multiple.is_none() && crate::source_opener::of_plugin(&self.now.path).is_some() {
+                        // What a source's track turned out to be, measured, for its row.
+                        self.catalog.measured(&self.now.path, chilpa_core::remote::opened_codec(&self.now.path), bits, opened.sample_rate_hz);
+                    }
                     self.now.playing = true;
                     self.now.bit_perfect = bit_perfect;
                     // On DSD the rate that names it is the one-bit source
