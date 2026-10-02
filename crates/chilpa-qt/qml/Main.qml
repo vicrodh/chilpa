@@ -1,6 +1,8 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "Theme"
 import "Primitives"
 import "Patterns"
@@ -151,4 +153,7 @@ Window {
         contentItem.forceActiveFocus()
         panelAside = Navigation.screen === "metadata"
     }
+
+    // Over everything while the plugins start.
+    StartupSplash { anchors.fill: parent; z: 1000 }
 }

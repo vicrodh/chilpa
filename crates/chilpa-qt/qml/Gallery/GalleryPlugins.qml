@@ -1,4 +1,6 @@
 import QtQuick
+import com.blitzfc.chilpa.sources
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "../Theme"
 import "../Components"
 import "../Patterns"
@@ -10,6 +12,7 @@ GallerySection {
         function pluginsJson() { return JSON.stringify({catalog: [], installed: [], repositories: []}) }
         function pluginCommand(action, input) {}
     }
+    StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PluginValidation { width: Metrics.confirmWidth; phase: "passed" }
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Catalog source", light: "yellow"}) }
     PluginSettingsForm {

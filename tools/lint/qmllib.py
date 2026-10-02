@@ -14,6 +14,12 @@ ROOT = Path(
     ).stdout.strip()
 )
 QML = ROOT / "crates/chilpa-qt/qml"
+# The shell is two QML trees with the same layers: the window's, and the one
+# of what sources bring (`chilpa-qt-sources`). The second imports the first's
+# lower layers by their resource path, which `resolve_import` maps back.
+TREES = [QML, ROOT / "crates/chilpa-qt-sources/qml"]
+# Where each tree sits in the binary's resources, for imports across them.
+RESOURCES = {"qrc:/qt/qml/com/blitzfc/chilpa/qml/": TREES[0], "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/": TREES[1]}
 
 ORDER = {"Theme": 0, "Primitives": 1, "Components": 2, "Patterns": 3, "Screens": 4, "Main": 5}
 # The Gallery is a second window that shows every piece; it sits beside the
@@ -22,11 +28,27 @@ GALLERY = "Gallery"
 
 
 def files():
-    return sorted(QML.rglob("*.qml"))
+    return sorted(p for tree in TREES for p in tree.rglob("*.qml"))
+
+
+def tree_of(path: Path) -> Path:
+    return next(tree for tree in TREES if path.resolve().is_relative_to(tree.resolve()))
+
+
+def resolve_import(path: Path, target: str):
+    """Where an import points, as (tree, path inside it), or None when it
+    leaves every tree."""
+    prefix = next((p for p in RESOURCES if target.startswith(p)), None)
+    where = RESOURCES[prefix] / target[len(prefix):] if prefix else path.parent / target
+    where = where.resolve()
+    for tree in TREES:
+        if where.is_relative_to(tree.resolve()):
+            return tree, where.relative_to(tree.resolve())
+    return None
 
 
 def layer_of(path: Path):
-    rel = path.relative_to(QML)
+    rel = path.relative_to(tree_of(path))
     if len(rel.parts) == 1:
         return "Main"
     head = rel.parts[0]

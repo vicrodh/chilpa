@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from qmllib import GALLERY, ORDER, QML, code_only, files, layer_of, rel  # noqa: E402
+from qmllib import GALLERY, ORDER, TREES, code_only, files, layer_of, rel, resolve_import  # noqa: E402
 
 IMPORT = re.compile(r'^\s*import\s+"([^"]+)"', re.MULTILINE)
 MODULE = re.compile(r"^\s*import\s+([A-Za-z][\w.]*)", re.MULTILINE)
@@ -56,12 +56,11 @@ def main():
         name = rel(path)
         imported_layers = set()
         for target in IMPORT.findall(src):
-            where = (path.parent / target).resolve()
-            try:
-                inner = where.relative_to(QML.resolve())
-            except ValueError:
+            found = resolve_import(path, target)
+            if found is None:
                 errors.append(f"{name}: imports {target}, outside the QML tree")
                 continue
+            inner = found[1]
             to = inner.parts[0] if inner.parts else "Main"
             imported_layers.add(to)
             if to == GALLERY or to not in ORDER:
@@ -92,7 +91,8 @@ def main():
     # A singleton is not instantiated; it is shown by the pieces that use it.
     singletons = {
         line.split()[1]
-        for qmldir in QML.rglob("qmldir")
+        for tree in TREES
+        for qmldir in tree.rglob("qmldir")
         for line in qmldir.read_text().split("\n")
         if line.startswith("singleton ")
     }

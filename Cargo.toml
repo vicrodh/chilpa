@@ -30,6 +30,7 @@ members = [
     "crates/chilpa-wasapi",
     "crates/chilpa-core",
     "crates/chilpa-api",
+    "crates/chilpa-qt-sources",
     "crates/chilpa-qt",
 ]
 
@@ -69,6 +70,7 @@ chilpa-appkit = { path = "crates/chilpa-appkit" }
 chilpa-wasapi = { path = "crates/chilpa-wasapi" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }
+chilpa-qt-sources = { path = "crates/chilpa-qt-sources" }
 # The messages Chilpa and a plugin exchange. They live in the sdk branch of the
 # plugins repository so a plugin builds without this source. It is pinned to
 # a tag of that branch, one per change to the protocol, and the lockfile

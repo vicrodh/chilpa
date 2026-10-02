@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../Theme"
 import "../Primitives"
 import "../Components"

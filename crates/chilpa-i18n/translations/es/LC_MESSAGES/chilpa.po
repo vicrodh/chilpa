@@ -1700,6 +1700,12 @@ msgstr "Fuentes"
 msgid "Sources and quality"
 msgstr "Fuentes y calidad"
 
+msgid "Starting plugins…"
+msgstr "Iniciando plugins…"
+
+msgid "Starting {}…"
+msgstr "Iniciando {}…"
+
 msgid "Status"
 msgstr "Estado"
 
