@@ -834,10 +834,8 @@ impl qobject::TrackListModel {
                 let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header { .. } => None }).sum::<u64>();
                 (Rows::Loaded(entries), Some(ms))
             }
-            "source" => {
-                let tracks = app::with(|api| api.source_shelf_tracks(&self.rust().key.to_string()));
-                (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(tracks.iter().map(|t| t.duration_ms).sum::<u64>()))
-            }
+            "source" => { let tracks = app::with(|api| api.source_shelf_tracks(&self.rust().key.to_string()));
+                (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(tracks.iter().map(|t| t.duration_ms).sum::<u64>())) }
             "mostPlayed" => {
                 let tracks = app::with(|api| api.most_played_rows(limit));
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)
@@ -891,6 +889,8 @@ impl qobject::TrackListModel {
         // starts with nothing selected.
         let identity = (kind.clone(), id, self.rust().key.to_string());
         let same = self.rust().loaded.as_ref() == Some(&identity);
+        // Read again and unchanged, it is left as it is: a reset would flash.
+        if same && matches!((&self.rust().rows, &rows), (Rows::Loaded(a), Rows::Loaded(b)) if a == b) { return; }
         // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         {
