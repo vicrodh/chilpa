@@ -104,6 +104,8 @@ pub(crate) struct SourcesState {
     collection: collection::Collection,
     panels: Vec<Panel>,
     pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
+    /// The installed plugins as last read while the sandbox was free.
+    pub(crate) listed: std::sync::Mutex<Vec<crate::plugins::PluginInfo>>,
     /// The plugin being browsed. Empty before any was opened.
     current: String,
     trail: Vec<Crumb>,
@@ -170,6 +172,7 @@ impl Default for SourcesState {
             collection: collection::Collection::default(),
             panels: Vec::new(),
             layouts: BTreeMap::new(),
+            listed: std::sync::Mutex::default(),
             current: String::new(),
             trail: Vec::new(),
             search_id: String::new(),
@@ -271,6 +274,7 @@ impl Chilpa {
     pub fn source_panels(&mut self) -> Vec<Panel> {
         if let Some(plugins) = self.plugins.as_ref().and_then(|p| p.try_lock().ok()) {
             self.sources.layouts = plugins.layouts.clone();
+            *self.sources.listed.lock().unwrap_or_else(|e| e.into_inner()) = plugins.list();
             let found: Vec<(String, String, String, bool)> = plugins.panels().into_iter()
                 .map(|(id, name, icon)| { let music = plugins.worker_domains(&id).is_some(); (id, name, icon, music) }).collect();
             drop(plugins);
