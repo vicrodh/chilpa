@@ -36,4 +36,14 @@ is_deeply($cache->get('album'), { genre => { name => 'Rock' }, images => ['cover
 is_deeply($cache->remove('album'), { genre => { name => 'Rock' }, images => ['cover'] },
     'removal returns the stored snapshot');
 is($Slim::Utils::Cache::BYTES, 0, 'clear releases the accounted cache bytes');
+is(Slim::Utils::Cache::seconds('3M'), 3 * 2592000, 'an uppercase M is months');
+is(Slim::Utils::Cache::seconds('90 minutes'), 5400, 'a unit can be a word, in the plural');
+is(Slim::Utils::Cache::seconds('1y'), 31536000, 'a year');
+{
+    my $units = Slim::Utils::Cache->new('units');
+    ok($units->set('k', 'v', '1 day'), 'an expiry with a unit is accepted');
+    is($units->get('k'), 'v', 'and the value comes back');
+    ok($units->set('odd', 'v', 'whenever'), 'an expiry this does not read still caches');
+}
+
 done_testing;

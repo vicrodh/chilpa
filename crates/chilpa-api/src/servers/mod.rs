@@ -391,6 +391,10 @@ impl Chilpa {
         if !RemoteEntry::is_remote(path) {
             return None;
         }
+        // What the decoder found beats what anybody said of it.
+        if let Some(codec) = chilpa_core::remote::opened_codec(path) {
+            return Some(codec.to_string());
+        }
         let lib = self.library()?;
         let (_, source) = lib.track_by_entry(path).ok()??;
         lib.server_track(source, path).ok()??.0

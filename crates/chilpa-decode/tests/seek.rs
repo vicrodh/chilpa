@@ -83,3 +83,12 @@ fn the_file_declares_its_duration_in_frames() {
     assert_eq!(decoded.encoder_padding(), 0);
     let _ = std::fs::remove_file(path);
 }
+
+#[test]
+fn a_file_says_which_codec_it_is_decoded_with() {
+    let path = temp_file("codec");
+    write_ramp(&path, 1_000);
+    let decoded = Decoded::open(&path).unwrap();
+    assert_eq!(decoded.codec(), "pcm", "a WAV holds plain PCM");
+    let _ = std::fs::remove_file(path);
+}

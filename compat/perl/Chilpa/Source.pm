@@ -61,7 +61,7 @@ sub browse {
     my $finished = 0;
     my $finish = sub {
         return if $finished++;
-        $done->($self->listing($_[0], $input, $node->{name}));
+        $done->($self->listing($_[0], $input, $node->{name}, $node));
     };
     if (ref($node->{items}) eq 'ARRAY') {
         my @page = @{$node->{items}};
@@ -139,7 +139,10 @@ sub query {
 }
 
 sub listing {
-    my ($self, $feed, $input, $title) = @_;
+    my ($self, $feed, $input, $title, $parent) = @_;
+    # A folder inside an entity's page that names the same entity ("Albums"
+    # under an artist) is a part of that page, not the entity again.
+    my $around = ref($parent) eq 'HASH' ? Chilpa::Presentation::describe($parent, 0, 1)->{stable_id} : '';
     $feed = { items => $feed } if ref($feed) eq 'ARRAY';
     die 'unsupported source response' unless ref($feed) eq 'HASH' && ref($feed->{items}) eq 'ARRAY';
     die 'source response is too large' if @{$feed->{items}} > 1000;
@@ -153,6 +156,9 @@ sub listing {
         $item = {%{Chilpa::Metadata->cached($item->{url})}, %$item} if $media;
         my $openable = ref($item->{url}) eq 'CODE' || ref($item->{items}) eq 'ARRAY';
         my $shown = Chilpa::Presentation::describe($item, $media, $openable);
+        if (!$media && length($around) && $shown->{stable_id} eq $around) {
+            @$shown{qw(entity stable_id)} = ($openable ? 'folder' : 'notice', '');
+        }
         my $id = $media ? $item->{url} : $self->remember($item, $shown->{stable_id} ? "$shown->{entity}|$shown->{stable_id}" : undef);
         my $duration = $item->{duration} // 0;
         $duration = 0 unless !ref($duration) && $duration =~ /^\d+(?:\.\d+)?$/;

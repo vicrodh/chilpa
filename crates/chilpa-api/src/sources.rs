@@ -103,7 +103,7 @@ enum Answer {
 pub(crate) struct SourcesState {
     collection: collection::Collection,
     panels: Vec<Panel>,
-    layouts: BTreeMap<String, crate::source_layout::Layout>,
+    pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
     /// The plugin being browsed. Empty before any was opened.
     current: String,
     trail: Vec<Crumb>,
@@ -280,6 +280,7 @@ impl Chilpa {
                     let layout = self.sources.layouts.get(&id).filter(|layout| !layout.sections.is_empty());
                     let music = worker || layout.is_some();
                     self.catalog.remember_drawn(&id, music);
+                    self.catalog.remember_name(&id, &name);
                     let children = if let Some(layout) = layout {
                         // Discover is the source's own page; the rest are its sections.
                         layout.ordered().into_iter().map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
@@ -317,7 +318,8 @@ impl Chilpa {
 
     /// What a source is called, for its tab and its header.
     pub fn source_name(&self, id: &str) -> String {
-        self.sources.panels.iter().find(|p| p.id == id).map(|p| p.name.clone()).unwrap_or_default()
+        self.sources.panels.iter().find(|p| p.id == id).map(|p| p.name.clone())
+            .or_else(|| self.catalog.name(id)).unwrap_or_default()
     }
 
     /// Everything the source screen and the sidebar draw, as one JSON
@@ -1321,6 +1323,20 @@ impl Chilpa {
     /// the card kept when it was queued: the queue only carries its id.
     pub(crate) fn name_from_heard(&mut self) {
         let Some((source, id)) = of_plugin(&self.now.path) else { return };
+        // What the catalog read of it names it whole: its record and cover too.
+        if let Some(row) = self.source_row(&self.now.path) {
+            self.now.title = row.title;
+            self.now.artist = row.artist;
+            self.now.album = row.album;
+            if self.now.total_seconds <= 0.0 {
+                self.now.total_seconds = row.duration_ms as f64 / 1000.0;
+            }
+            if self.now.artwork_path.is_empty() {
+                self.now.artwork_path = row.artwork_path;
+            }
+            self.now.album_id = row.album_id;
+            return;
+        }
         let Some(heard) = self.library().and_then(|lib| lib.heard(&source, &id).ok().flatten()) else { return };
         self.now.title = heard.title;
         self.now.artist = heard.subtitle;

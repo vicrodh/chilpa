@@ -30,7 +30,7 @@ Flickable {
         id: tracks
         kind: "source"
         key: page.source
-        filterRev: Library.remoteRev
+        filterRev: Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
     }
 

@@ -42,6 +42,8 @@ static OPENER: RwLock<Option<Arc<dyn RemoteOpener>>> = RwLock::new(None);
 /// second. A few, not one: two players (a test, a relaunch on another
 /// output) may open one each before either announces.
 static OPENED: Mutex<Vec<(PathBuf, u64)>> = Mutex::new(Vec::new());
+/// And the codec each was decoded with, which its address does not say.
+static CODECS: Mutex<Vec<(PathBuf, &'static str)>> = Mutex::new(Vec::new());
 const REMEMBERED: usize = 8;
 
 /// Sets who fetches remote tracks. The facade calls it once, at startup.
@@ -70,6 +72,14 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<chilpa_decode::De
     });
     match opened {
         Ok(decoded) => {
+            if !decoded.codec().is_empty() {
+                let mut codecs = CODECS.lock().unwrap_or_else(|e| e.into_inner());
+                codecs.retain(|(p, _)| p != path);
+                codecs.push((path.to_path_buf(), decoded.codec()));
+                if codecs.len() > REMEMBERED {
+                    codecs.remove(0);
+                }
+            }
             if let Some(frames) = decoded.frame_count() {
                 let mut opened = OPENED.lock().unwrap_or_else(|e| e.into_inner());
                 opened.retain(|(p, _)| p != path);
@@ -85,6 +95,11 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<chilpa_decode::De
             Err(why)
         }
     }
+}
+
+/// The codec a remote track that was opened is decoded with.
+pub fn opened_codec(path: &str) -> Option<&'static str> {
+    CODECS.lock().unwrap_or_else(|e| e.into_inner()).iter().rev().find(|(p, _)| p.to_str() == Some(path)).map(|(_, c)| *c)
 }
 
 /// What to announce for a remote track that just started.

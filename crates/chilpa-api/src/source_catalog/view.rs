@@ -109,8 +109,10 @@ impl Chilpa {
         let (plugin, rest) = split(key);
         let address = rest.split(' ').next().unwrap_or_default();
         let music = self.source_draws_music(plugin);
-        let layout = self.plugins.as_ref().and_then(|p| p.try_lock().ok().and_then(|p| p.layouts.get(plugin).cloned()));
-        let name = { self.source_panels(); self.source_name(plugin) };
+        // The facade's copy: the host is often busy answering the catalog.
+        self.source_panels();
+        let layout = self.sources.layouts.get(plugin).cloned();
+        let name = self.source_name(plugin);
         if address.is_empty() {
             // The source's own page: a shelf for each route of its discover
             // section, or for each folder of its root when it has no layout.
@@ -153,6 +155,7 @@ impl Chilpa {
             "cards": shelf.cards.len(),
             "tracks": shelf.tracks.len(),
             "round": artists,
+            "entity": section.map(|s| s.entity.clone()).unwrap_or_default(),
             "albumsOnly": shelf.tracks.is_empty() && shelf.folders.is_empty(),
         }).to_string()
     }
@@ -163,7 +166,8 @@ impl Chilpa {
         let (plugin, rest) = split(key);
         let address = rest.split(' ').next().unwrap_or_default();
         if let Some(name) = address.strip_prefix("section:") {
-            let layout = self.plugins.as_ref().and_then(|p| p.try_lock().ok().and_then(|p| p.layouts.get(plugin).cloned()));
+            self.source_panels();
+            let layout = self.sources.layouts.get(plugin).cloned();
             if let Some(title) = layout.and_then(|l| l.sections.get(name).map(|s| s.title.clone())).filter(|t| !t.is_empty()) {
                 return Some(title);
             }
@@ -304,6 +308,11 @@ impl Chilpa {
     pub(crate) fn advance_catalog(&mut self) {
         for deferred in self.catalog.ready() {
             self.album_action(&deferred.albums, &deferred.act, deferred.shuffled);
+        }
+        // A queue restored before the catalog was read from disk is named
+        // once it is.
+        if self.now.title.is_empty() && crate::source_opener::of_plugin(&self.now.path).is_some() {
+            self.name_from_heard();
         }
         if self.now.artwork_path.is_empty() && crate::source_opener::of_plugin(&self.now.path).is_some() {
             self.catalog.want_track_cover(&self.now.path);
