@@ -27,8 +27,14 @@ use std::time::Duration;
 
 use crate::server;
 
-/// How much each request asks for: a few seconds of hi-res.
+/// The most a request asks for: a few seconds of hi-res.
 pub const WINDOW: u64 = 4 * 1024 * 1024;
+
+/// What the first request after opening or a seek asks for. Playing starts
+/// once it is in hand, so it is small; each window after it is twice the
+/// one before, up to [`WINDOW`], and is on its way while the one in hand
+/// plays.
+pub const FIRST: u64 = 512 * 1024;
 
 /// The largest file taken whole from a server that cannot send part of one.
 const WHOLE_MAX: u64 = 512 * 1024 * 1024;
@@ -81,7 +87,7 @@ impl Ranged {
     /// Asks for the first window, and with it the length and the type.
     pub fn open(request: RangedRequest) -> Result<Self, RangedError> {
         let agent = server::agent(Duration::from_secs(20), PER_WINDOW);
-        let reply = get(&agent, &request, 0, WINDOW).map_err(RangedError::Refused)?;
+        let reply = get(&agent, &request, 0, FIRST).map_err(RangedError::Refused)?;
         let Reply { status, total, content_type, body, chunked } = reply;
         if !(200..300).contains(&status) {
             return Err(RangedError::Refused(chilpa_i18n::t_args("the server answered {}", &[&status.to_string()])));
@@ -126,10 +132,11 @@ impl Ranged {
         if next >= self.len || self.ahead.as_ref().is_some_and(|(at, _)| *at == next) {
             return;
         }
+        let size = (self.bytes.len() as u64 * 2).clamp(FIRST, WINDOW);
         let (tx, rx) = channel();
         let (agent, request) = (self.agent.clone(), self.request.clone());
         let _ = std::thread::Builder::new().name("chilpa-window".into()).spawn(move || {
-            let _ = tx.send(window(&agent, &request, next));
+            let _ = tx.send(window(&agent, &request, next, size));
         });
         self.ahead = Some((next, Mutex::new(rx)));
     }
@@ -143,7 +150,7 @@ impl Ranged {
                 .recv()
                 .map_err(|_| chilpa_i18n::t("the connection failed: interrupted"))
                 .and_then(|w| w),
-            _ => window(&self.agent, &self.request, position),
+            _ => window(&self.agent, &self.request, position, FIRST),
         };
         let (start, bytes) = arrived.map_err(io::Error::other)?;
         if bytes.is_empty() {
@@ -207,8 +214,8 @@ struct Reply {
     chunked: bool,
 }
 
-fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64) -> Window {
-    let reply = get(agent, request, start, WINDOW)?;
+fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64, size: u64) -> Window {
+    let reply = get(agent, request, start, size)?;
     if reply.status == 206 {
         return Ok((start, reply.body));
     }
@@ -216,7 +223,7 @@ fn window(agent: &ureq::Agent, request: &RangedRequest, start: u64) -> Window {
         // The server sends the whole file instead of the window. It is the
         // file, so it can still be read: the window is cut out of it.
         let from = (start as usize).min(reply.body.len());
-        let to = (start + WINDOW).min(reply.body.len() as u64) as usize;
+        let to = (start + size).min(reply.body.len() as u64) as usize;
         return Ok((start, reply.body[from..to].to_vec()));
     }
     Err(chilpa_i18n::t_args("the server answered {}", &[&reply.status.to_string()]))
