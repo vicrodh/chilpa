@@ -95,12 +95,12 @@ impl Natives {
         let mut sections = std::collections::BTreeMap::new();
         if known.capabilities.get("home").and_then(Value::as_bool).unwrap_or(false) {
             let routes = known.discover.iter().map(|title| Route { path: vec![title.clone()], membership: String::new() }).collect();
-            sections.insert("discover".to_string(), section(chilpa_i18n::mark("Discover"), "compass", "album", 0, "", routes));
+            sections.insert("discover".to_string(), section(chilpa_i18n::mark("Discover"), "home", "album", 0, "", routes));
         }
         let kinds: Vec<String> = known.capabilities.get("library").and_then(Value::as_array).into_iter().flatten()
             .filter_map(Value::as_str).map(str::to_string).collect();
         if !kinds.is_empty() {
-            sections.insert("library".to_string(), section(chilpa_i18n::mark("Library"), "library", "album", 1, "", Vec::new()));
+            sections.insert("library".to_string(), section(chilpa_i18n::mark("Library"), "columns3", "album", 1, "", Vec::new()));
             let tabs = [("albums", chilpa_i18n::mark("Releases"), "album"), ("tracks", chilpa_i18n::mark("Tracks"), "track"),
                 ("artists", chilpa_i18n::mark("Artists"), "artist"), ("playlists", chilpa_i18n::mark("Playlists"), "playlist")];
             for (order, (kind, title, entity)) in tabs.into_iter().enumerate() {
