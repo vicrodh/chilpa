@@ -22,6 +22,7 @@
 //! listing's key is the plugin's id and its address, with a space.
 
 mod fetch;
+mod native;
 pub(crate) mod store;
 mod view;
 
@@ -98,6 +99,8 @@ pub(crate) struct Catalog {
     wake: Condvar,
     covers_wake: Condvar,
     plugins: Mutex<Option<Arc<Mutex<Plugins>>>>,
+    /// Process plugins, read without the sandbox lock and in parallel.
+    natives: Mutex<Option<Arc<crate::natives::Natives>>>,
     /// Bumped when a listing or a record's tracks change, and when a cover
     /// arrives: the window reads again on each.
     content_rev: AtomicI32,
@@ -121,6 +124,7 @@ impl Catalog {
             wake: Condvar::new(),
             covers_wake: Condvar::new(),
             plugins: Mutex::new(None),
+            natives: Mutex::new(None),
             content_rev: AtomicI32::new(0),
             art_rev: AtomicI32::new(0),
             started: Mutex::new(false),
@@ -134,8 +138,9 @@ impl Catalog {
     /// Hands the catalog the plugin host, and starts its threads the first
     /// time: one that reads the disk and then asks plugins, and the cover
     /// fetchers.
-    pub fn attach(self: &Arc<Self>, plugins: Option<Arc<Mutex<Plugins>>>) {
+    pub fn attach(self: &Arc<Self>, plugins: Option<Arc<Mutex<Plugins>>>, natives: Arc<crate::natives::Natives>) {
         *self.plugins.lock().unwrap_or_else(|e| e.into_inner()) = plugins;
+        *self.natives.lock().unwrap_or_else(|e| e.into_inner()) = Some(natives);
         self.wake.notify_all();
         let mut started = self.started.lock().unwrap_or_else(|e| e.into_inner());
         if std::mem::replace(&mut *started, true) {
@@ -147,6 +152,11 @@ impl Catalog {
             let me = self.clone();
             let _ = std::thread::Builder::new().name(format!("chilpa-covers-{n}")).spawn(move || fetch::covers(&me));
         }
+    }
+
+    /// The process plugins, once the plugins have started.
+    pub(crate) fn natives(&self) -> Option<Arc<crate::natives::Natives>> {
+        self.natives.lock().unwrap_or_else(|e| e.into_inner()).clone()
     }
 
     pub fn revisions(&self) -> (i32, i32) {
@@ -241,6 +251,11 @@ impl Catalog {
 
     pub fn shelf_error(&self, key: &str) -> Option<String> {
         self.lock().shelf_errors.get(key).cloned()
+    }
+
+    /// A listing as it is kept, without asking for it again.
+    pub fn stored_shelf(&self, key: &str) -> Option<store::Shelf> {
+        self.lock().store.shelves.get(key).cloned()
     }
 
     pub fn loading(&self, key: &str) -> bool {

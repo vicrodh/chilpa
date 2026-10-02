@@ -128,19 +128,29 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
     let mut saved = Instant::now();
     loop {
         let (job, plugins) = next(catalog);
+        // A process plugin is asked on a thread of its own: it answers many
+        // at once, and nothing of it waits behind a compatibility worker.
+        if let Some(natives) = native_of(catalog, &job) {
+            let (catalog, job) = (catalog.clone(), job.clone());
+            let _ = std::thread::Builder::new().name("chilpa-catalog-native".into()).spawn(move || {
+                let started = Instant::now();
+                let outcome = match &job {
+                    Job::Shelf(key) => super::native::read_shelf(&catalog, &natives, key),
+                    Job::Tracks(id) => super::native::read_tracks(&catalog, &natives, *id),
+                };
+                eprintln!("source-catalog: job={job:?} native ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
+                drop(finish(&catalog, &job, outcome));
+                catalog.changed();
+            });
+            continue;
+        }
         let started = Instant::now();
         let outcome = match &job {
             Job::Shelf(key) => read_shelf(catalog, &plugins, &mut pages, key, 0),
             Job::Tracks(id) => read_tracks(catalog, &plugins, &mut pages, *id),
         };
         eprintln!("source-catalog: job={job:?} ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
-        let mut inner = catalog.lock();
-        inner.running.remove(&job);
-        match (&job, outcome) {
-            (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
-            (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); }
-            _ => {}
-        }
+        let mut inner = finish(catalog, &job, outcome);
         let write = inner.dirty && saved.elapsed() > SAVE_EVERY;
         if write {
             inner.dirty = false;
@@ -151,6 +161,27 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
         drop(inner);
         catalog.changed();
     }
+}
+
+/// The job is done: it is no longer running, and what failed says why.
+fn finish<'a>(catalog: &'a Catalog, job: &Job, outcome: Result<(), String>) -> std::sync::MutexGuard<'a, Inner> {
+    let mut inner = catalog.lock();
+    inner.running.remove(job);
+    match (job, outcome) {
+        (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
+        (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); }
+        _ => {}
+    }
+    inner
+}
+
+/// The process plugins, when the job is one of theirs.
+fn native_of(catalog: &Catalog, job: &Job) -> Option<Arc<crate::natives::Natives>> {
+    let plugin = match job {
+        Job::Shelf(key) => split(key).0.to_string(),
+        Job::Tracks(id) => catalog.lock().store.cards.get(id)?.plugin.clone(),
+    };
+    catalog.natives().filter(|natives| natives.is_native(&plugin))
 }
 
 /// Waits for a job and for a host to ask. Writes the disk while idle.

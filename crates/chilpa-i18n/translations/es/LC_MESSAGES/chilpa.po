@@ -611,6 +611,9 @@ msgstr "Desconectar la cuenta"
 msgid "Disconnected"
 msgstr "Desconectado"
 
+msgid "Discover"
+msgstr "Descubrir"
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
 
@@ -1474,6 +1477,9 @@ msgstr "Actualizar ajustes"
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
+
+msgid "Releases"
+msgstr "Lanzamientos"
 
 msgid "Remove"
 msgstr "Quitar"
@@ -2888,6 +2894,9 @@ msgstr "el servidor de sonido no quiso soltar la tarjeta {}"
 
 msgid "the source"
 msgstr "la fuente"
+
+msgid "the source gave no address to play"
+msgstr "la fuente no dio una dirección para reproducir"
 
 msgid "the source no longer lists it"
 msgstr "la fuente ya no lo muestra"

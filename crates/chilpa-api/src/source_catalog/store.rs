@@ -232,7 +232,7 @@ impl Store {
         id
     }
 
-    fn track_id(&mut self, path: &str) -> i64 {
+    pub(super) fn track_id(&mut self, path: &str) -> i64 {
         if let Some(id) = self.track_ids.get(path) {
             return *id;
         }
@@ -241,6 +241,12 @@ impl Store {
         self.track_ids.insert(path.to_string(), id);
         self.tracks.insert(id, Track { id, path: path.into(), ..Track::default() });
         id
+    }
+
+    /// Whether a card for this identity was read, not only named.
+    pub(super) fn has_read(&self, plugin: &str, identity: &str) -> bool {
+        self.card_ids.get(&(plugin.to_string(), identity.to_string()))
+            .and_then(|id| self.cards.get(id)).is_some_and(|c| !c.title.is_empty())
     }
 
     pub fn track_by_path(&self, path: &str) -> Option<&Track> {

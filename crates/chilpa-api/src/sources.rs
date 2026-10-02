@@ -274,6 +274,12 @@ impl Chilpa {
     pub fn source_panels(&mut self) -> Vec<Panel> {
         if let Some(plugins) = self.plugins.as_ref().and_then(|p| p.try_lock().ok()) {
             self.sources.layouts = plugins.layouts.clone();
+            // A process plugin's pages come from what it can do.
+            for id in self.natives.ids() {
+                if let Some(layout) = self.natives.layout(&id) {
+                    self.sources.layouts.insert(id, layout);
+                }
+            }
             *self.sources.listed.lock().unwrap_or_else(|e| e.into_inner()) = plugins.list();
             let found: Vec<(String, String, String, bool)> = plugins.panels().into_iter()
                 .map(|(id, name, icon)| { let music = plugins.worker_domains(&id).is_some(); (id, name, icon, music) }).collect();
@@ -1355,7 +1361,7 @@ impl Chilpa {
 
     /// Sets the one opener the player holds: plugins here, servers there.
     pub(crate) fn install_openers(&mut self) {
-        self.catalog.attach(self.plugins.clone());
+        self.catalog.attach(self.plugins.clone(), self.natives.clone());
         let openers = std::sync::Arc::new(crate::source_opener::Openers::new(self.sources.servers_opener.clone(), self.plugins.clone(), self.catalog.clone()));
         self.sources.openers = Some(openers.clone());
         chilpa_core::remote::install(openers);
