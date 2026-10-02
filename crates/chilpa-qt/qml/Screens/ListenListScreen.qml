@@ -18,7 +18,7 @@ Item {
         kind: "listenlist"
         albumId: Number(page.document.selected || 0)
         key: page.typed
-        filterRev: ListenList.revision
+        filterRev: ListenList.revision + Library.remoteRev
         playingPath: Player.path
     }
     ListenNow {

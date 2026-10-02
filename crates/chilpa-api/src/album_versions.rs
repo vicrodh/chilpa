@@ -112,19 +112,20 @@ fn edition(title: &str) -> String {
 }
 
 impl Chilpa {
-    pub fn album_heading(&self, detail: &crate::AlbumDetail, length: &str) -> AlbumHeading {
+    pub fn album_heading(&mut self, detail: &crate::AlbumDetail, length: &str) -> AlbumHeading {
         let songs = self.tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
         let mut meta = Vec::new();
         if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
         meta.extend([songs.clone(), length.to_owned()]);
         let quality = detail.quality.long();
         if !quality.is_empty() { meta.push(quality); }
-        let kind = self.t("Album").to_uppercase();
+        let remote = detail.album.id < 0;
+        let kind = if remote { self.source_album_kind(detail.album.id) } else { self.t("Album").to_uppercase() };
         AlbumHeading {
             kind: detail.album.year.map_or(kind.clone(), |year| format!("{kind} · {year}")),
             meta: meta.join(" · "),
             discs: if detail.discs > 1 { self.tf("{} disc", "{} discs", detail.discs as i64, &[&detail.discs.to_string()]) } else { String::new() },
-            info: self.t("Info: Embedded tags"),
+            info: if remote { self.source_album_info(detail.album.id) } else { self.t("Info: Embedded tags") },
             summary: format!("{songs} · {length}"),
         }
     }
@@ -166,10 +167,16 @@ impl Chilpa {
     }
 
     pub fn selected_album_version(&mut self, id: i64) -> i64 {
+        if id < 0 {
+            return id;
+        }
         self.library().map(|lib| lib.selected_album(id)).unwrap_or(id)
     }
 
     pub fn select_album_version(&mut self, album: i64, version: i64) -> bool {
+        if album < 0 || version < 0 {
+            return false;
+        }
         match self.library().map(|lib| lib.select_album_version(album, version)) {
             Some(Ok(accepted)) => accepted,
             Some(Err(error)) => { self.now.error = error.to_string(); false }
@@ -178,6 +185,9 @@ impl Chilpa {
     }
 
     pub fn album_versions(&mut self, album: i64) -> Vec<AlbumVersion> {
+        if album < 0 {
+            return self.source_album_versions(album);
+        }
         let Some(lib) = self.library() else { return Vec::new() };
         let versions = lib.version_catalog().map(|c| c.choices(album)).unwrap_or_default();
         versions.into_iter().map(|v| {
@@ -197,6 +207,9 @@ impl Chilpa {
     }
 
     pub fn album_sources(&mut self, album: i64) -> Vec<AlbumSource> {
+        if album < 0 {
+            return self.source_album_sources(album);
+        }
         let Some(lib) = self.library() else { return Vec::new() };
         let Ok(catalog) = lib.version_catalog() else { return Vec::new() };
         let versions = if lib.group_album_versions() { catalog.choices(album) }

@@ -518,3 +518,21 @@ forgejo
 blitzkriegfc
 # The framing an AAC stream travels in.
 adts
+# Linux process isolation and HTTP authority validation.
+bwrap
+geteuid
+userinfo
+# Rust atomic ordering.
+seq
+cst
+# XML deserialization module and Unicode byte-order mark.
+de
+feff
+musicservices
+uncategorized
+
+svg
+# Rust's condition variable.
+condvar
+# serde's serialization module.
+ser

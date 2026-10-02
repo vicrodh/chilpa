@@ -20,9 +20,9 @@ uuid = { version = "1", features = ["v4"] }
 # The keyring stores text, so the key travels as base64.
 base64 = "0.22"
 thiserror = "2"
+tempfile = "3"
 
 [dev-dependencies]
-tempfile = "3"
 
 # The system's store: Secret Service on Linux, Keychain on macOS, Credential
 # Manager on Windows. Each one is turned on by hand, and ADR-010 says by hand

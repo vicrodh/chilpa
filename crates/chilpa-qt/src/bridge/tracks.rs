@@ -648,6 +648,7 @@ impl qobject::TrackListModel {
             artists: this.track(row.max(0) as usize).map(|t| app::with(|api| api.credit_names(&t.artist))).unwrap_or_default(),
             folder: self.can_go(row, &QString::from("folder")),
             metadata: self.can_go(row, &QString::from("metadata")),
+            remote: this.track(row.max(0) as usize).is_some_and(|t| t.id < 0),
             // Over the whole selection it acts on, not the row clicked: one
             // that cannot play among several leaves only what removes it.
             unavailable: self.acts_on_unavailable(row),
@@ -828,10 +829,14 @@ impl qobject::TrackListModel {
         }
         // The rows, and how long they last when the list says so.
         let (rows, length) = match kind.as_str() {
-            "album" if id > 0 => {
+            "album" if id != 0 => {
                 let entries = app::with(|api| api.album_track_entries(id));
                 let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header { .. } => None }).sum::<u64>();
                 (Rows::Loaded(entries), Some(ms))
+            }
+            "source" => {
+                let tracks = app::with(|api| api.source_shelf_tracks(&self.rust().key.to_string()));
+                (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(tracks.iter().map(|t| t.duration_ms).sum::<u64>()))
             }
             "mostPlayed" => {
                 let tracks = app::with(|api| api.most_played_rows(limit));

@@ -153,6 +153,11 @@ fn a_source_is_browsed_a_station_sounds_and_what_is_saved_stays() {
     assert!(!listed.contains(&"search".to_string()));
     assert!(listed.contains(&"genres".to_string()));
     assert_eq!(top["crumbs"].as_array().unwrap().len(), 0);
+    assert!(chilpa.source_panels()[0].children.iter().any(|child| child.id == "genres"));
+    let child = go(&mut chilpa, "child", ID, "genres");
+    assert_eq!(child["navigation_id"], "genres");
+    assert_eq!(child["error"], "");
+    go(&mut chilpa, "crumb", "0", "");
 
     // Typing narrows what is already on screen, without asking anybody.
     chilpa.sources_command("filter", "", "GEN");

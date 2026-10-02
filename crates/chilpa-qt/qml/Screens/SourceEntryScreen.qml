@@ -27,6 +27,12 @@ Flickable {
 
     Component.onCompleted: open()
     onKeyChanged: Qt.callLater(page.open)
+    Timer {
+        interval: Motion.poll
+        repeat: true
+        running: page.entry.metadata_loading === true
+        onTriggered: Sources.refresh()
+    }
     Connections {
         target: Player
         function onTitleChanged() { Sources.refresh() }
@@ -48,7 +54,7 @@ Flickable {
             label: page.entry.name || ""
             name: page.entry.title || ""
             art: page.entry.art ? "file://" + page.entry.art : page.entry.image || ""
-            meta: page.entry.finite && page.entry.meta ? page.entry.subtitle + " · " + page.entry.meta : page.entry.subtitle || ""
+            meta: [page.entry.finite && page.entry.meta ? page.entry.subtitle + " · " + page.entry.meta : page.entry.subtitle || "", page.entry.quality_label || ""].filter(Boolean).join(" · ")
             canPlay: page.entry.playable === true
             canShuffle: false
             canQueue: page.entry.finite === true

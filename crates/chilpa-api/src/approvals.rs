@@ -52,7 +52,7 @@ impl Approvals {
         // down a separate path: keeping them apart meant a brand new plugin
         // never said where it sends you to grant permission, because only
         // the other path added that line.
-        let nothing = Asked { kind: manifest.kind, capabilities: Vec::new(), auth: None };
+        let nothing = Asked { kind: manifest.kind, runtime: chilpa_plugin::Runtime::Wasm, capabilities: Vec::new(), auth: None };
         let before = self.approved.get(&manifest.id).unwrap_or(&nothing);
         manifest.asks_for().beyond(before)
     }

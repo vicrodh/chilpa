@@ -33,6 +33,25 @@ mod outputs;
 mod playlists;
 mod pictures;
 mod plugins;
+mod plugin_startup;
+mod worker_services;
+pub use worker_services::WorkerContext;
+mod worker_install;
+mod plugin_repositories;
+pub use plugin_repositories::{PluginRepositories, PluginRepository};
+mod plugin_package;
+pub use plugin_package::StagedPackage;
+mod plugin_inspection;
+pub use plugin_inspection::PluginInspection;
+mod plugin_installation;
+mod plugin_icons;
+mod svg_icon;
+mod plugin_library;
+mod plugin_center;
+mod plugin_evidence;
+mod plugin_domains;
+pub use plugin_installation::PreparedPlugin;
+pub use chilpa_plugin::bridge::WorkerLauncher;
 mod quality;
 mod marks;
 pub use marks::Marks;
@@ -41,6 +60,9 @@ pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod listen;
 mod found;
+mod source_search;
+mod source_layout;
+mod source_catalog;
 pub use found::{found_menu, found_rows, FoundRow, Leads};
 mod track_menu;
 pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
@@ -558,6 +580,8 @@ pub struct Chilpa {
     /// shared because search queries it from its own thread: a slow source
     /// must not leave the window waiting.
     plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
+    plugin_center: Option<plugin_center::PluginCenter>,
+    plugin_startup: plugin_startup::Startup,
     /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
     /// The background scan, while it runs.
@@ -571,6 +595,8 @@ pub struct Chilpa {
     search: search::SearchState,
     /// Where the window stands in a source that is browsed.
     sources: sources::SourcesState,
+    /// The records, lists and tracks of sources, as the library's own.
+    catalog: std::sync::Arc<source_catalog::Catalog>,
     /// The account being connected, between the browser opening and the
     /// user coming back.
     connecting: Option<plugins::Connecting>,
@@ -648,6 +674,8 @@ impl Chilpa {
             sleep_until: None,
             lyrics: None,
             plugins: None,
+            plugin_center: None,
+            plugin_startup: plugin_startup::Startup::default(),
             tap: chilpa_core::tap::Tap::new(),
             scan: None,
             scan_status: ScanStatus::default(),
@@ -656,6 +684,7 @@ impl Chilpa {
             player: None,
             search: search::SearchState::default(),
             sources: sources::SourcesState::default(),
+            catalog: source_catalog::Catalog::new(),
             connecting: None,
             now: NowPlaying::default(),
             sample_rate: 0,
@@ -729,6 +758,10 @@ impl Chilpa {
     /// unscanned file has no local record page and deliberately returns zero.
     fn load_album_context(&mut self) {
         let path = self.now.path.clone();
+        if crate::source_opener::of_plugin(&path).is_some() {
+            self.now.album_id = self.source_album_of_path(&path);
+            return;
+        }
         self.now.album_id = self.library().and_then(|library| library.tracks_by_paths(&[path]).ok()).and_then(|mut rows| rows.pop().flatten()).and_then(|track| track.album_id).unwrap_or_default();
     }
 
@@ -1125,8 +1158,11 @@ impl Chilpa {
             self.sleep_until = None;
             self.stop();
         }
+        self.advance_plugins();
         self.advance_search();
         self.advance_sources();
+        self.advance_catalog();
+        self.resolve_next_ahead();
         self.keep_place(false);
         self.advance_connect();
         self.poll_servers();

@@ -19,6 +19,7 @@ Popup {
     property int room: 0
     // The row Up and Down move to, which Enter opens.
     property int current: -1
+    Timer { interval: Motion.poll; repeat: true; running: flyout.visible; onTriggered: flyout.search.refresh() }
 
     // Moves to the next result up or down, over the section labels.
     function step(by) {
@@ -96,6 +97,25 @@ Popup {
             onEscaped: flyout.close()
         }
 
+        Flickable {
+            width: parent.width
+            height: Metrics.chipHeight
+            contentWidth: sources.width
+            clip: true
+            Row {
+                id: sources
+                spacing: Metrics.gap6
+                Repeater {
+                    model: [{id: "all", name: I18n.tr("All sources", I18n.rev)}, {id: "local", name: I18n.tr("Local", I18n.rev)}].concat(JSON.parse(Sources.snapshot || "{}").panels || [])
+                    Chip {
+                        required property var modelData
+                        text: modelData.name
+                        active: flyout.search.source === modelData.id
+                        onClicked: flyout.search.source = modelData.id
+                    }
+                }
+            }
+        }
         Row {
             spacing: Metrics.gap6
 

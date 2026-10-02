@@ -175,11 +175,20 @@ msgstr ""
 msgid "All artists"
 msgstr ""
 
+msgid "All categories"
+msgstr "All categories"
+
 msgid "All music"
+msgstr ""
+
+msgid "All sources"
 msgstr ""
 
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
+
+msgid "Allowed network domains, separated by commas"
+msgstr "Allowed network domains, separated by commas"
 
 msgid "Already contains {} track"
 msgid_plural "Already contains {} tracks"
@@ -207,14 +216,23 @@ msgstr ""
 msgid "Appears on"
 msgstr ""
 
+msgid "Apply system tint to the icon"
+msgstr ""
+
 msgid "Apply to the form"
 msgstr ""
 
 msgid "Approve"
 msgstr ""
 
+msgid "Approve network permission"
+msgstr ""
+
 msgid "Approve new access"
 msgstr ""
+
+msgid "Approve permissions and install"
+msgstr "Approve permissions and install"
 
 msgid "Artist"
 msgstr ""
@@ -226,6 +244,9 @@ msgid "Artist Z-A"
 msgstr ""
 
 msgid "Artists"
+msgstr ""
+
+msgid "As the source lists them"
 msgstr ""
 
 msgid "Ascending"
@@ -306,6 +327,12 @@ msgstr ""
 msgid "Checking the account…"
 msgstr ""
 
+msgid "Chilpa Native Plugins"
+msgstr "Chilpa Native Plugins"
+
+msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
+msgstr "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
+
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr ""
 
@@ -327,7 +354,13 @@ msgstr ""
 msgid "Choose device"
 msgstr ""
 
+msgid "Choose image"
+msgstr ""
+
 msgid "Choose playlist artwork"
+msgstr ""
+
+msgid "Choose plugin icon"
 msgstr ""
 
 msgid "Clear"
@@ -351,6 +384,9 @@ msgstr ""
 msgid "Close tab"
 msgstr ""
 
+msgid "Collapse"
+msgstr ""
+
 msgid "Collapse all"
 msgstr ""
 
@@ -368,6 +404,12 @@ msgstr ""
 
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
 msgstr ""
+
+msgid "Compatibility is not fully verified"
+msgstr "Compatibility is not fully verified"
+
+msgid "Compatible plugins"
+msgstr "Compatible plugins"
 
 msgid "Compilation"
 msgstr ""
@@ -638,10 +680,16 @@ msgstr ""
 msgid "Exclusive mode"
 msgstr ""
 
+msgid "Expand"
+msgstr ""
+
 msgid "Extra controls"
 msgstr ""
 
 msgid "Extra queues"
+msgstr ""
+
+msgid "Favorites"
 msgstr ""
 
 msgid "Fetching the cover…"
@@ -734,6 +782,9 @@ msgstr ""
 msgid "Group album versions"
 msgstr ""
 
+msgid "Hardware"
+msgstr "Hardware"
+
 msgid "Hardware volume"
 msgstr ""
 
@@ -791,10 +842,37 @@ msgstr ""
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr ""
 
+msgid "Icon"
+msgstr ""
+
 msgid "Info: Embedded tags"
 msgstr ""
 
+msgid "Info: {}"
+msgstr ""
+
+msgid "Information"
+msgstr "Information"
+
+msgid "Inspect"
+msgstr "Inspect"
+
+msgid "Inspecting plugin…"
+msgstr "Inspecting plugin…"
+
+msgid "Inspection failed"
+msgstr "Inspection failed"
+
+msgid "Inspection passed"
+msgstr "Inspection passed"
+
 msgid "Installed"
+msgstr ""
+
+msgid "Installing plugin…"
+msgstr "Installing plugin…"
+
+msgid "Integration"
 msgstr ""
 
 msgid "Integrations"
@@ -830,6 +908,12 @@ msgstr ""
 msgid "Library folders"
 msgstr ""
 
+msgid "Library integration"
+msgstr ""
+
+msgid "Library scanning"
+msgstr "Library scanning"
+
 msgid "Library selection"
 msgstr ""
 
@@ -846,6 +930,9 @@ msgid "Loading the release…"
 msgstr ""
 
 msgid "Loading…"
+msgstr ""
+
+msgid "Local"
 msgstr ""
 
 msgid "Local library"
@@ -929,6 +1016,9 @@ msgstr ""
 msgid "Move up"
 msgstr ""
 
+msgid "Music services"
+msgstr "Music services"
+
 msgid "MusicBrainz album artists"
 msgstr ""
 
@@ -963,6 +1053,9 @@ msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream in
 msgstr ""
 
 msgid "Navigation"
+msgstr ""
+
+msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr ""
 
 msgid "Network playback"
@@ -1010,6 +1103,9 @@ msgstr ""
 msgid "No lyrics for this track."
 msgstr ""
 
+msgid "No matching plugins"
+msgstr "No matching plugins"
+
 msgid "No playlists match your search."
 msgstr ""
 
@@ -1034,11 +1130,17 @@ msgstr ""
 msgid "Not answering"
 msgstr ""
 
+msgid "Not compatible"
+msgstr "Not compatible"
+
 msgid "Not heard first"
 msgstr ""
 
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr ""
+
+msgid "Not inspected"
+msgstr "Not inspected"
 
 msgid "Not rated"
 msgstr ""
@@ -1103,6 +1205,9 @@ msgstr ""
 msgid "Open ListenList"
 msgstr ""
 
+msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
+msgstr ""
+
 msgid "Open a folder"
 msgstr ""
 
@@ -1144,6 +1249,9 @@ msgstr ""
 
 msgid "Original files"
 msgstr ""
+
+msgid "Other"
+msgstr "Other"
 
 msgid "Output"
 msgstr ""
@@ -1241,6 +1349,15 @@ msgstr ""
 msgid "Plex did not accept the session; sign in again"
 msgstr ""
 
+msgid "Plugin initialized successfully"
+msgstr "Plugin initialized successfully"
+
+msgid "Plugin repository URL"
+msgstr "Plugin repository URL"
+
+msgid "Plugin-reported quality"
+msgstr "Plugin-reported quality"
+
 msgid "Plugins"
 msgstr ""
 
@@ -1251,6 +1368,9 @@ msgid "Processed"
 msgstr ""
 
 msgid "Provider identifiers"
+msgstr ""
+
+msgid "Purchases"
 msgstr ""
 
 msgid "Put a plugin folder in Chilpa's plugins directory and reopen the app."
@@ -1298,6 +1418,9 @@ msgstr ""
 msgid "Quit"
 msgstr ""
 
+msgid "Radio"
+msgstr "Radio"
+
 msgid "Rate"
 msgstr ""
 
@@ -1305,6 +1428,9 @@ msgid "Rating"
 msgstr ""
 
 msgid "Reactivate"
+msgstr ""
+
+msgid "Reading it from {}…"
 msgstr ""
 
 msgid "Reading the files…"
@@ -1339,6 +1465,12 @@ msgstr ""
 
 msgid "Records"
 msgstr ""
+
+msgid "Refresh"
+msgstr "Refresh"
+
+msgid "Refresh settings"
+msgstr "Refresh settings"
 
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr ""
@@ -1397,11 +1529,20 @@ msgstr ""
 msgid "Reset"
 msgstr ""
 
+msgid "Restart plugin"
+msgstr ""
+
+msgid "Restore default"
+msgstr ""
+
 msgid "Restore tabs"
 msgstr ""
 
 msgid "Revert"
 msgstr ""
+
+msgid "Review the requested permissions before installing."
+msgstr "Review the requested permissions before installing."
 
 msgid "Rich"
 msgstr ""
@@ -1469,6 +1610,9 @@ msgstr ""
 msgid "Search playlists and folders"
 msgstr ""
 
+msgid "Search plugins"
+msgstr "Search plugins"
+
 msgid "Search queue"
 msgstr ""
 
@@ -1476,6 +1620,9 @@ msgid "Searching for devices…"
 msgstr ""
 
 msgid "Searching…"
+msgstr ""
+
+msgid "See all"
 msgstr ""
 
 msgid "Select"
@@ -1506,6 +1653,9 @@ msgid "Settings"
 msgstr ""
 
 msgid "Show each playlist folder in its chosen color."
+msgstr ""
+
+msgid "Show imported albums and tracks"
 msgstr ""
 
 msgid "Show in folder"
@@ -1654,6 +1804,9 @@ msgstr ""
 msgid "Theme"
 msgstr ""
 
+msgid "This collection exceeds the current page limit."
+msgstr ""
+
 msgid "This computer"
 msgstr ""
 
@@ -1717,6 +1870,9 @@ msgstr ""
 msgid "Token"
 msgstr ""
 
+msgid "Tools"
+msgstr "Tools"
+
 msgid "Top result"
 msgstr ""
 
@@ -1747,10 +1903,16 @@ msgstr ""
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr ""
 
+msgid "Uncategorized"
+msgstr "Uncategorized"
+
 msgid "Undo queue replacement or closing"
 msgstr ""
 
 msgid "Uninstall"
+msgstr ""
+
+msgid "Uninstall plugin and remove account data"
 msgstr ""
 
 msgid "Unknown quality"
@@ -1773,6 +1935,9 @@ msgstr ""
 
 msgid "User"
 msgstr ""
+
+msgid "Valid"
+msgstr "Valid"
 
 msgid "Volume {}%"
 msgstr ""
@@ -2113,6 +2278,9 @@ msgstr ""
 msgid "keep things of its own on disk"
 msgstr ""
 
+msgid "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins"
+msgstr ""
+
 msgid "looking records up is turned off in Settings"
 msgstr ""
 
@@ -2176,6 +2344,9 @@ msgstr ""
 msgid "one or more files cannot take tags"
 msgstr ""
 
+msgid "open it again from where it is listed"
+msgstr ""
+
 msgid "outside the image"
 msgstr ""
 
@@ -2204,6 +2375,9 @@ msgid "reach the internet, only {}"
 msgstr ""
 
 msgid "read your library, without being able to change it"
+msgstr ""
+
+msgid "run through a different plugin runtime"
 msgstr ""
 
 msgid "sector {} could not be read: {}"
@@ -2701,7 +2875,13 @@ msgstr ""
 msgid "the source"
 msgstr ""
 
+msgid "the source no longer lists it"
+msgstr ""
+
 msgid "the stereo area (TWOCHTOC) was not found"
+msgstr ""
+
+msgid "the stream needs a network domain that this plugin was not granted"
 msgstr ""
 
 msgid "the stream went quiet"
@@ -2792,6 +2972,9 @@ msgid "this output has no volume control of its own"
 msgstr ""
 
 msgid "this output is not there any more"
+msgstr ""
+
+msgid "this part of the source is not there now"
 msgstr ""
 
 msgid "this plugin declared no network permission"

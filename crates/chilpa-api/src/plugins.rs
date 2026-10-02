@@ -1,8 +1,9 @@
 //! The plugins, as the facade sees them.
 //!
 //! Here the two halves meet: the sandbox, which lives in `chilpa-plugin` and
-//! knows neither network nor disk, and what Chilpa lends it. The credentials
-//! are on this side and never cross (ADR-007).
+//! knows neither network nor disk, and what Chilpa lends it. Native guests
+//! never receive credentials. Compatibility workers may handle their own
+//! credentials only with separate approval and encrypted private storage.
 //!
 //! Plugins are read from `~/.local/share/chilpa/plugins/<id>/`, with their
 //! `manifest.json` and their `plugin.wasm`. One that does not load is noted
@@ -300,7 +301,21 @@ pub struct Plugins {
     /// kept at all.
     secrets: Option<Arc<SecretBox>>,
     root: PathBuf,
+    private: Option<Arc<chilpa_secrets::PrivateStore>>,
+    worker_launcher: Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>>,
+    pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
+    pub(crate) network_requests: crate::worker_services::NetworkRequests,
+    /// When each worker was last brought back on its own, to bound it.
+    revived: BTreeMap<String, Vec<std::time::Instant>>,
+    /// Counts the times each plugin was loaded. A handle a worker gave out
+    /// is only good for the epoch it was given in.
+    epochs: BTreeMap<String, u64>,
 }
+
+/// How many times a dead worker is started again on its own, and within
+/// what time, before it is left to the watchdog and the user.
+const REVIVALS: usize = 3;
+const REVIVAL_WINDOW: std::time::Duration = std::time::Duration::from_secs(600);
 
 impl Plugins {
     /// Builds the host. It only fails if the engine could not be created, which
@@ -311,7 +326,43 @@ impl Plugins {
         let services: Services =
             Arc::new(Mutex::new(ChilpaServices::new(root.clone(), secrets.clone())));
         let approvals = Approvals::load(&root);
-        Some(Self { host, registry: Registry::new(), services, approvals, secrets, root })
+        let private = secrets.clone().map(|secrets| Arc::new(chilpa_secrets::PrivateStore::new(root.join(".worker-private"), secrets)));
+        let worker_launcher: Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>> = None;
+        #[cfg(target_os = "linux")]
+        let worker_launcher = chilpa_bwrap::RuntimePaths::installed(&root.join(".runtime"))
+            .map(|paths| Arc::new(paths) as Arc<dyn chilpa_plugin::bridge::WorkerLauncher>).or(worker_launcher);
+        Some(Self { host, registry: Registry::new(), services, approvals, secrets, root, private, worker_launcher,
+            layouts: BTreeMap::new(), network_requests: Arc::new(Mutex::new(BTreeMap::new())),
+            revived: BTreeMap::new(), epochs: BTreeMap::new() })
+    }
+
+    /// The application supplies a packaged, isolated runtime. Package
+    /// metadata never supplies executable paths or command-line arguments.
+    pub fn set_worker_launcher(&mut self, launcher: Arc<dyn chilpa_plugin::bridge::WorkerLauncher>) {
+        self.worker_launcher = Some(launcher);
+    }
+
+    pub(crate) fn compatibility_launcher(&self) -> Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>> { self.worker_launcher.clone() }
+    pub(crate) fn reload_one(&mut self, id: &str) {
+        if valid_id(id) { self.load_one(&self.root.join(id)); self.remember_auth(); }
+    }
+    pub(crate) fn grant_network(&mut self, id: &str, domain: &str) -> Result<(), String> {
+        let mut manifest = self.registry.installed().find(|plugin| plugin.id == id)
+            .and_then(|plugin| plugin.manifest.clone()).ok_or("The plugin is not installed.")?;
+        let mut domains = manifest.allowed_domains().into_iter().map(str::to_string).collect::<Vec<_>>();
+        if !domains.iter().any(|existing| existing == domain) { domains.push(domain.to_string()); }
+        manifest.capabilities.retain(|cap| !matches!(cap, chilpa_plugin::Capability::Network { .. }));
+        manifest.capabilities.push(chilpa_plugin::Capability::Network { domains });
+        let encoded = serde_json::to_string_pretty(&manifest).map_err(|_| "Invalid manifest.")?;
+        chilpa_plugin::Manifest::parse_for_runtime(&encoded, manifest.runtime).map_err(|error| error.to_string())?;
+        let mut temporary = tempfile::NamedTempFile::new_in(self.root.join(id)).map_err(|_| "Could not update permissions.")?;
+        use std::io::Write;
+        temporary.write_all(encoded.as_bytes()).and_then(|_| temporary.as_file().sync_all()).map_err(|_| "Could not update permissions.")?;
+        self.approvals.approve(&manifest).map_err(|error| error.to_string())?;
+        temporary.persist(self.root.join(id).join("manifest.json")).map_err(|_| "Could not update permissions.")?;
+        if let Ok(mut requests) = self.network_requests.lock() { if let Some(pending) = requests.get_mut(id) { if domain == "*" { pending.clear(); } else { pending.remove(domain); } } }
+        self.reload_one(id);
+        Ok(())
     }
 
     /// Reads the plugins folder and loads whatever it finds.
@@ -322,7 +373,7 @@ impl Plugins {
         let Ok(entries) = std::fs::read_dir(&self.root) else { return 0 };
         for entry in entries.flatten() {
             let dir = entry.path();
-            if !dir.is_dir() {
+            if entry.file_name().to_string_lossy().starts_with('.') || !dir.is_dir() {
                 continue;
             }
             self.load_one(&dir);
@@ -338,6 +389,18 @@ impl Plugins {
             // plugin. It is walked past without noting anything.
             Err(_) => return,
         };
+        if let Some(id) = serde_json::from_str::<serde_json::Value>(&manifest).ok().and_then(|value| value["id"].as_str().filter(|id| valid_id(id)).map(str::to_string)) {
+            self.layouts.insert(id.clone(), crate::source_layout::Layout::load(&self.root, &id));
+            *self.epochs.entry(id).or_default() += 1;
+        }
+        if serde_json::from_str::<serde_json::Value>(&manifest).ok()
+            .is_some_and(|value| value["runtime"] == "bridge") {
+            let approvals = &self.approvals;
+            crate::worker_install::install(&mut self.registry, &manifest, dir, self.worker_launcher.as_ref(), self.private.as_ref(),
+                self.network_requests.clone(),
+                |manifest| approvals.covers(manifest));
+            return;
+        }
         let wasm = std::fs::read(dir.join("plugin.wasm")).unwrap_or_default();
         // A plugin nobody approved is not even compiled: the closure
         // answers no and its wasm is never touched (ADR-008).
@@ -419,6 +482,14 @@ impl Plugins {
     /// Takes it out of quarantine. Only the user calls it.
     pub fn reactivate(&mut self, id: &str) {
         self.registry.reactivate(id);
+        let worker = self.registry.installed().find(|plugin| plugin.id == id)
+            .and_then(|plugin| plugin.manifest.as_ref())
+            .is_some_and(|manifest| manifest.runtime == chilpa_plugin::Runtime::Bridge);
+        if worker {
+            // A revoked transport is intentionally terminal. Reactivating
+            // creates a fresh isolated worker with the current approvals.
+            self.load_one(&self.root.join(id));
+        }
     }
 
     /// Keeps a plugin's credential, encrypted.
@@ -438,6 +509,9 @@ impl Plugins {
     pub fn forget_credential(&mut self, id: &str) {
         if let Some(path) = credential_file(&self.root, id) {
             let _ = std::fs::remove_file(path);
+        }
+        if let Some(store) = &self.private {
+            let _ = store.remove_owner(id);
         }
     }
 
@@ -469,6 +543,11 @@ impl Plugins {
     /// It does not load it: loading means rereading the folder, and the
     /// caller does that, so approving two in a row does not recompile
     /// everything twice.
+    pub(crate) fn enabled(&self, id: &str) -> bool {
+        self.registry.installed().find(|plugin| plugin.id == id).and_then(|plugin| plugin.manifest.as_ref())
+            .is_some_and(|manifest| self.approvals.covers(manifest))
+    }
+
     pub fn approve(&mut self, id: &str) -> Result<(), String> {
         let manifest = self
             .registry
@@ -496,7 +575,11 @@ impl Plugins {
         if !dir.exists() {
             return true;
         }
-        std::fs::remove_dir_all(&dir).is_ok()
+        if std::fs::remove_dir_all(&dir).is_err() { return false; }
+        self.registry.remove(id);
+        self.layouts.remove(id);
+        if let Ok(mut requests) = self.network_requests.lock() { requests.remove(id); }
+        true
     }
 
     /// True if that plugin said it handles its own account.
@@ -532,6 +615,12 @@ impl Plugins {
     /// and icon hint.
     pub fn panels(&self) -> Vec<(String, String, String)> {
         self.registry.panels()
+    }
+
+    pub(crate) fn worker_domains(&self, id: &str) -> Option<Vec<String>> {
+        let manifest = self.registry.installed().find(|plugin| plugin.id == id)?.manifest.as_ref()?;
+        (manifest.runtime == chilpa_plugin::Runtime::Bridge)
+            .then(|| manifest.allowed_domains().into_iter().map(str::to_string).collect())
     }
 
     /// Asks a plugin for something that goes out to the network and back
@@ -574,15 +663,61 @@ impl Plugins {
         input: &[u8],
         limits: Limits,
     ) -> Result<Vec<u8>, String> {
-        match self.registry.call(&self.host, &self.services, id, operation, input, limits) {
+        self.revive_if_dead(id);
+        let started = std::time::Instant::now();
+        let result = self.registry.call(&self.host, &self.services, id, operation, input, limits);
+        eprintln!("plugin-call: plugin={id} operation={operation} ok={} elapsed_ms={}", result.is_ok(), started.elapsed().as_millis());
+        if result.is_err() {
+            // A worker that died on this call is not left dead for the next
+            // one: that is what used to need a restart from Settings.
+            self.revive_if_dead(id);
+        }
+        match result {
             Ok(chilpa_plugin::Reply::Ok(bytes)) => Ok(bytes),
             Ok(chilpa_plugin::Reply::Error(e)) => Err(e),
             Err(e) => Err(e.to_string()),
         }
     }
+
+    /// Which load of a plugin is running. It changes whenever its worker is
+    /// started again, and with it every handle the worker gave out.
+    pub(crate) fn epoch(&self, id: &str) -> u64 {
+        self.epochs.get(id).copied().unwrap_or_default()
+    }
+
+    /// Starts a compatibility worker again when its session ended, with its
+    /// private storage and approvals as they are. It is bounded, so a guest
+    /// that dies on every call ends in quarantine instead of a loop.
+    fn revive_if_dead(&mut self, id: &str) {
+        if self.registry.alive(id) {
+            return;
+        }
+        let now = std::time::Instant::now();
+        let times = self.revived.entry(id.to_string()).or_default();
+        times.retain(|at| now.duration_since(*at) < REVIVAL_WINDOW);
+        if times.len() >= REVIVALS {
+            return;
+        }
+        times.push(now);
+        eprintln!("plugin-revive: plugin={id} attempt={}", times.len());
+        self.reactivate(id);
+    }
 }
 
 impl Chilpa {
+    /// Supplies an application-owned isolation backend before workers load.
+    /// I keep the same interface on every platform; an absent backend never
+    /// falls back to executing an unrestricted child process.
+    pub fn set_worker_launcher(&mut self, launcher: Arc<dyn chilpa_plugin::bridge::WorkerLauncher>) -> bool {
+        if self.plugins.is_none() {
+            self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
+            self.install_openers();
+        }
+        let Some(mut plugins) = self.plugins.as_ref().and_then(|plugins| plugins.lock().ok()) else { return false };
+        plugins.set_worker_launcher(launcher);
+        true
+    }
+
     /// Where the plugins live.
     pub fn plugins_dir() -> PathBuf {
         chilpa_dirs::data().join("plugins")
@@ -593,6 +728,7 @@ impl Chilpa {
     /// It returns how many ended up usable. Having none is the normal case
     /// today and is not a problem.
     pub fn load_plugins(&mut self) -> usize {
+        self.invalidate_source_menus();
         if self.plugins.is_none() {
             self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
             // The player can now be told where something of a plugin is.
@@ -630,7 +766,10 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t_args("the approval could not be saved: {}", &[&e.to_string()]);
             return 0;
         }
-        p.load_all()
+        let count = p.load_all();
+        drop(p);
+        self.invalidate_source_menus();
+        count
     }
 
     /// Withdraws a plugin's approval: it stops running right now and what
@@ -650,7 +789,10 @@ impl Chilpa {
         // uninstalling, which asks it to clean up first.
         p.forget_credential(id);
         p.forget();
-        p.load_all()
+        let count = p.load_all();
+        drop(p);
+        self.invalidate_source_menus();
+        count
     }
 
     /// Asks a plugin for an operation with the short limits.
@@ -814,6 +956,7 @@ impl Chilpa {
         let gone = p.uninstall(id);
         p.load_all();
         drop(p);
+        self.invalidate_source_menus();
 
         if !gone {
             self.now.error = chilpa_i18n::t_args("the folder for \"{}\" could not be deleted", &[id]);

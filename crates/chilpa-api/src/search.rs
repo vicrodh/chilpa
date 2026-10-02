@@ -19,6 +19,7 @@ use super::*;
 use chilpa_plugin::messages;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
 /// How long to wait for the user to stop typing before bothering a plugin.
@@ -32,6 +33,10 @@ const PER_SOURCE: usize = 50;
 
 /// Where a result already on disk came from.
 const LOCAL: &str = "local";
+
+fn searches_source(selected: &str, candidate: &str) -> bool {
+    selected == "all" || selected.is_empty() || selected == candidate
+}
 
 /// A search result, wherever it came from.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -192,12 +197,15 @@ pub struct SearchJob {
     text: String,
     replies: std::sync::mpsc::Receiver<SourceReply>,
     thread: Option<std::thread::JoinHandle<()>>,
+    cancelled: Arc<AtomicBool>,
 }
 
 impl SearchJob {
-    /// Fires the query at every plugin that knows how to search.
-    pub fn start(plugins: Arc<Mutex<plugins::Plugins>>, text: String, limit: usize) -> Self {
+    /// Fires the query only at the selected searchable sources.
+    pub fn start_in(plugins: Arc<Mutex<plugins::Plugins>>, text: String, limit: usize, source: String) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
+        let cancelled = Arc::new(AtomicBool::new(false));
+        let stopped = cancelled.clone();
         let query = messages::write(&messages::Query::new(&text, limit));
         let thread = std::thread::Builder::new()
             .name("chilpa-search".into())
@@ -207,10 +215,15 @@ impl SearchJob {
                 // block the rest of the facade.
                 let Ok(who) = plugins.lock().map(|p| p.searchers()) else { return };
                 for (id, name) in who {
+                    if stopped.load(Ordering::Relaxed) { return; }
+                    if !searches_source(&source, &id) { continue; }
                     let delivers =
                         plugins.lock().map(|p| p.delivers_audio(&id)).unwrap_or(true);
                     let answer = match plugins.lock() {
-                        Ok(mut p) => p.call_short(&id, messages::op::SEARCH, &query),
+                        Ok(mut p) => {
+                            if stopped.load(Ordering::Relaxed) { return; }
+                            p.call_waiting(&id, messages::op::SEARCH, &query)
+                        }
                         Err(_) => return,
                     };
                     let reply = match answer {
@@ -233,7 +246,7 @@ impl SearchJob {
                 }
             })
             .ok();
-        Self { text, replies: rx, thread }
+        Self { text, replies: rx, thread, cancelled }
     }
 
     /// Which text this search is for.
@@ -257,6 +270,7 @@ impl SearchJob {
 
 impl Drop for SearchJob {
     fn drop(&mut self) {
+        self.cancelled.store(true, Ordering::Relaxed);
         // The thread ends on its own as soon as the channel closes; it is not
         // waited on, because an old search must not hold up the new one.
         self.thread.take();
@@ -268,6 +282,7 @@ impl Drop for SearchJob {
 pub(crate) struct SearchState {
     /// What the user has typed now.
     pub text: String,
+    pub source: String,
     /// When they last typed.
     pub keystroke: Option<Instant>,
     /// When the sources were last asked.
@@ -300,17 +315,25 @@ impl Chilpa {
     /// plugins give arrives later through [`Chilpa::poll`] and is picked up
     /// with [`Chilpa::found`].
     pub fn search_all(&mut self, text: &str, limit: usize) -> Vec<Hit> {
+        self.search_in(text, limit, "all")
+    }
+
+    /// Selects the query destinations, not merely which replies are drawn.
+    /// An absent source never falls back to querying every installed plugin.
+    pub fn search_in(&mut self, text: &str, limit: usize, source: &str) -> Vec<Hit> {
+        let source = if source.is_empty() { "all" } else { source };
         let text = text.trim().to_string();
         if text.is_empty() {
-            self.search = SearchState::default();
+            self.search = SearchState { source: source.into(), playing: self.search.playing.take(), ..SearchState::default() };
             return Vec::new();
         }
-        let local = self.search(&text, limit);
+        let local = if searches_source(source, LOCAL) { self.search(&text, limit) } else { Vec::new() };
         let fingerprints = self.fingerprints_of(&local);
         // A new search throws away what the previous one's sources answered:
         // showing results from another query is worse than showing nothing.
         self.search = SearchState {
             text,
+            source: source.into(),
             keystroke: Some(Instant::now()),
             last_query: self.search.last_query,
             job: None,
@@ -354,6 +377,24 @@ impl Chilpa {
                 .collect();
             self.play_tracks(&paths, device, bit_perfect);
             return true;
+        }
+
+        let worker = self.plugins.as_ref().and_then(|plugins| plugins.lock().ok())
+            .is_some_and(|plugins| plugins.worker_domains(&hit.source).is_some());
+        if worker {
+            if !hit.playable { return false; }
+            let card = chilpa_library::store::progress::Heard { external_id: hit.id.clone(), title: hit.title.clone(),
+                subtitle: hit.artist.clone(), duration_ms: hit.duration_ms, ..Default::default() };
+            if !self.library().is_some_and(|library| library.remember_heard(&hit.source, &card).is_ok()) {
+                self.now.error = chilpa_i18n::t("it could not be saved");
+                return false;
+            }
+            // Keep the persistent identity in the queue. The remote opener
+            // resolves it off the UI thread and checks every media redirect
+            // against this worker's approved network domains.
+            let entry = crate::source_opener::entry_of(&hit.source, &hit.id);
+            self.search.playing = Some((entry.clone(), hit));
+            return !self.play_tracks(&[entry], device, bit_perfect).is_empty();
         }
 
         match self.resolve(&hit) {
@@ -447,7 +488,7 @@ impl Chilpa {
             self.rebuild_hits();
         }
 
-        if self.search.text.is_empty() {
+        if self.search.text.is_empty() || self.search.source == LOCAL {
             return;
         }
         // They are still typing.
@@ -463,12 +504,12 @@ impl Chilpa {
             return;
         }
         let Some(plugins) = self.plugins.clone() else { return };
-        let any = plugins.lock().map(|p| !p.searchers().is_empty()).unwrap_or(false);
+        let any = plugins.try_lock().map(|p| p.searchers().iter().any(|(id, _)| searches_source(&self.search.source, id))).unwrap_or(false);
         if !any {
             return;
         }
         self.search.last_query = Some(Instant::now());
-        self.search.job = Some(SearchJob::start(plugins, self.search.text.clone(), PER_SOURCE));
+        self.search.job = Some(SearchJob::start_in(plugins, self.search.text.clone(), PER_SOURCE, self.search.source.clone()));
     }
 
     fn rebuild_hits(&mut self) {
@@ -505,6 +546,17 @@ impl Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_selection_changes_destinations_without_falling_back_to_all() {
+        assert!(searches_source("all", "local"));
+        assert!(searches_source("all", "org.example.first"));
+        assert!(!searches_source("local", "org.example.first"));
+        assert!(!searches_source("org.example.first", "local"));
+        assert!(searches_source("org.example.first", "org.example.first"));
+        assert!(!searches_source("org.example.first", "org.example.second"));
+        assert!(!searches_source("removed", "org.example.first"));
+    }
 
     fn local(id: i64, title: &str) -> LibraryTrack {
         LibraryTrack {

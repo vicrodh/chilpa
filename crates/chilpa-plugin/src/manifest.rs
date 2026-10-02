@@ -38,6 +38,9 @@ pub enum Runtime {
     /// A separate process, for anything that needs native code. Not
     /// implemented yet; a manifest asking for it is refused, saying so.
     Process,
+    /// A host-owned compatibility worker with private storage and mediated
+    /// network access. Only an explicitly selected adapter can load it.
+    Bridge,
 }
 
 /// What a plugin asks to be able to do.
@@ -59,6 +62,9 @@ pub enum Capability {
     RegisterPanel,
     /// Register a command the user can trigger.
     RegisterCommand,
+    /// The compatibility guest receives its own account credentials. They
+    /// remain encrypted at rest and scoped to this installation.
+    GuestCredentials,
     /// It handles its own account: it authenticates itself and keeps its
     /// credential wherever it likes. Chilpa does not see it, does not put
     /// it in its requests and cannot delete it.
@@ -96,7 +102,9 @@ impl Capability {
     pub fn describe(&self) -> String {
         match self {
             Capability::Network { domains } => {
-                chilpa_i18n::t_args("reach the internet, only {}", &[&domains.join(", ")])
+                if domains.iter().any(|domain| domain == "*") {
+                    chilpa_i18n::t("Network access, including authentication, artwork and audio servers discovered by the plugin")
+                } else { chilpa_i18n::t_args("reach the internet, only {}", &[&domains.join(", ")]) }
             }
             Capability::Storage => chilpa_i18n::t("keep things of its own on disk"),
             Capability::LibraryRead => {
@@ -107,6 +115,9 @@ impl Capability {
             }
             Capability::RegisterPanel => chilpa_i18n::t("put a panel of its own in the window"),
             Capability::RegisterCommand => chilpa_i18n::t("add a command you trigger"),
+            Capability::GuestCredentials => chilpa_i18n::t(
+                "let this plugin handle its own sign-in secrets, encrypted on disk and separate from other plugins",
+            ),
             // It is worded differently from the rest on purpose: it is
             // the only one that leaves Chilpa out, and approving it
             // should not feel like approving a panel. And it says "says
@@ -251,13 +262,19 @@ impl std::fmt::Display for ManifestError {
 impl Manifest {
     /// Reads a manifest and validates it whole.
     pub fn parse(json: &str) -> Result<Self, ManifestError> {
+        Self::parse_for_runtime(json, Runtime::Wasm)
+    }
+
+    /// The host selects the available adapter before reading repository
+    /// metadata. A manifest cannot choose an executable or enable a runtime.
+    pub fn parse_for_runtime(json: &str, available: Runtime) -> Result<Self, ManifestError> {
         let m: Manifest =
             serde_json::from_str(json).map_err(|e| ManifestError::Unreadable(e.to_string()))?;
-        m.validate()?;
+        m.validate(available)?;
         Ok(m)
     }
 
-    fn validate(&self) -> Result<(), ManifestError> {
+    fn validate(&self, available: Runtime) -> Result<(), ManifestError> {
         if self.name.trim().is_empty() {
             return Err(ManifestError::Empty(chilpa_i18n::mark("the name")));
         }
@@ -273,13 +290,16 @@ impl Manifest {
                 have: API_VERSION,
             });
         }
-        if self.runtime == Runtime::Process {
+        if self.runtime == Runtime::Process || self.runtime != available {
             return Err(ManifestError::RuntimeNotImplemented(self.runtime));
+        }
+        if self.has(&Capability::GuestCredentials) && (self.runtime != Runtime::Bridge || !self.can_store()) {
+            return Err(ManifestError::BadAuth("guest credentials require an isolated bridge and private storage".into()));
         }
         for c in &self.capabilities {
             if let Capability::Network { domains } = c {
                 for d in domains {
-                    if !valid_domain(d) {
+                    if !valid_domain(d) && !(self.runtime == Runtime::Bridge && d == "*") {
                         return Err(ManifestError::BadDomain(d.clone()));
                     }
                 }
@@ -348,7 +368,7 @@ impl Manifest {
     pub fn asks_for(&self) -> Asked {
         let mut capabilities = self.capabilities.clone();
         capabilities.sort_by_key(|c| c.describe());
-        Asked { kind: self.kind, capabilities, auth: self.auth.clone() }
+        Asked { kind: self.kind, runtime: self.runtime, capabilities, auth: self.auth.clone() }
     }
 
     /// True if an account has to be connected before it is good for anything.
@@ -362,6 +382,10 @@ impl Manifest {
 #[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct Asked {
     pub kind: Kind,
+    /// Old approvals describe the native runtime. Moving to a compatibility
+    /// worker changes the trust boundary even with identical capabilities.
+    #[serde(default)]
+    pub runtime: Runtime,
     pub capabilities: Vec<Capability>,
     /// How the account connects. It is part of what was approved because
     /// changing where the user is sent to type their password is the last
@@ -383,6 +407,9 @@ impl Asked {
             .filter(|c| !approved.capabilities.contains(c))
             .map(Capability::describe)
             .collect();
+        if self.runtime != approved.runtime {
+            out.push(chilpa_i18n::t("run through a different plugin runtime"));
+        }
         if self.auth != approved.auth {
             out.push(match &self.auth {
                 Some(a) if a.host().is_empty() => chilpa_i18n::t("keep a credential of yours"),
@@ -523,6 +550,15 @@ mod tests {
                 "\"{bad}\" should not pass"
             );
         }
+    }
+
+    #[test]
+    fn only_the_compatibility_runtime_accepts_an_explicit_full_network_grant() {
+        let mut value: serde_json::Value = serde_json::from_str(&base()).unwrap();
+        value["runtime"] = serde_json::json!("bridge");
+        value["capabilities"] = serde_json::json!([{"type":"network","domains":["*"]}]);
+        assert!(Manifest::parse_for_runtime(&value.to_string(), Runtime::Bridge).is_ok());
+        assert!(Manifest::parse(&value.to_string()).is_err());
     }
 
     #[test]

@@ -69,6 +69,39 @@ pub(crate) fn keep(address: &str) -> Option<String> {
     Some(path.to_string_lossy().into_owned())
 }
 
+/// Guest artwork obeys the installation's domain permissions on every hop.
+pub(crate) fn keep_approved(address: &str, domains: &[String]) -> Option<String> {
+    if !chilpa_core::worker_url_allowed(address, domains) { return None; }
+    if let Some(path) = kept(address) { return Some(path); }
+    let started = std::time::Instant::now();
+    let mut url = url::Url::parse(address).ok()?;
+    for _ in 0..5 {
+        if !chilpa_core::worker_url_allowed(url.as_str(), domains) { return None; }
+        let timeout = Duration::from_secs(8).checked_sub(started.elapsed())?;
+        let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: url.as_str(),
+            headers: &[], body: None, timeout, max_bytes: LARGEST }).ok()?;
+        if (300..400).contains(&reply.status) {
+            url = url.join(reply.headers.get("location")?).ok()?;
+            continue;
+        }
+        if reply.status != 200 { return None; }
+        let extension = kind(&reply.body)?;
+        let mut reader = image::ImageReader::new(std::io::Cursor::new(&reply.body)).with_guessed_format().ok()?;
+        let mut limits = image::Limits::default();
+        limits.max_image_width = Some(4096);
+        limits.max_image_height = Some(4096);
+        limits.max_alloc = Some(32 * 1024 * 1024);
+        reader.limits(limits);
+        reader.decode().ok()?;
+        let directory = folder();
+        std::fs::create_dir_all(&directory).ok()?;
+        let path = directory.join(format!("{}.{}", name_of(address), extension));
+        std::fs::write(&path, &reply.body).ok()?;
+        return Some(path.to_string_lossy().into_owned());
+    }
+    None
+}
+
 /// The same, off the caller's thread: `then` gets the path if there is one.
 pub(crate) fn keep_later(address: String, then: impl FnOnce(String) + Send + 'static) {
     let _ = std::thread::Builder::new().name("chilpa-pictures".into()).spawn(move || {

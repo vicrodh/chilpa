@@ -20,10 +20,11 @@ chilpa-plugin-api.workspace = true
 # by hand would be the project's most obvious attack surface.
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+quick-xml = { version = "0.38", features = ["serialize"] }
+url = "2"
 wasmtime = { version = "49", default-features = false, features = ["cranelift", "runtime", "std"] }
 
 [dev-dependencies]
 # The test plugins are written in wasm text, so the hostile suite needs no
 # separate toolchain to run.
 wat = "1"
-

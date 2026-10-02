@@ -470,7 +470,7 @@ impl Chilpa {
             .zip(known)
             .map(|(path, row)| match row {
                 Some(t) => row_of(t),
-                None => file_row(&path),
+                None => self.source_row(&path).unwrap_or_else(|| file_row(&path)),
             })
             .collect()
     }
@@ -577,6 +577,9 @@ impl Chilpa {
 
     /// A record's tracks, in disc order.
     pub fn album_track_rows(&mut self, album_id: i64) -> Vec<TrackRow> {
+        if album_id < 0 {
+            return self.source_album_rows(album_id);
+        }
         let Some(lib) = self.library() else {
             return Vec::new();
         };
@@ -641,6 +644,9 @@ impl Chilpa {
 
     /// A record with what its header states.
     pub fn album_detail(&mut self, album_id: i64) -> Option<AlbumDetail> {
+        if album_id < 0 {
+            return self.source_album_detail(album_id);
+        }
         let album = self.album(album_id)?;
         let rows = self.album_track_rows(album_id);
         let genre = self.library()?.album_genre(album_id).ok().flatten().unwrap_or_default();

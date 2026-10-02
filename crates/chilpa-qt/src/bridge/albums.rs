@@ -316,6 +316,11 @@ impl qobject::AlbumGridModel {
                 app::with(|api| api.same_artist_albums(id, limit))
             }
             "related" => app::with(|api| api.related_albums(self.rust().key.to_string().parse().unwrap_or_default(), limit)),
+            "source" => {
+                let (cards, groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                self.as_mut().rust_mut().groups = groups;
+                cards
+            }
             "artists" => {
                 // An artist is drawn as a card too: its name where a record's
                 // title goes, how many records it has under it.
@@ -428,7 +433,7 @@ impl cxx_qt::Initialize for qobject::AlbumGridModel {
         self.as_mut()
             .on_filter_changed(|m| match m.kind().to_string().as_str() {
                 "artists" => m.show_artists(),
-                "all" => m.schedule(),
+                "all" | "source" => m.schedule(),
                 _ => {}
             })
             .release();

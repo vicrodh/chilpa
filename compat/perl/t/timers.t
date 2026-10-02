@@ -1,0 +1,34 @@
+use strict;
+use warnings;
+use Test::More;
+use Slim::Utils::Timers;
+
+my @calls;
+my $poll;
+$poll = sub {
+    my ($owner, $attempt) = @_;
+    push @calls, [$owner, $attempt];
+    Slim::Utils::Timers::setTimer($owner, 12, $poll, $attempt + 1) if $attempt < 2;
+};
+Slim::Utils::Timers::setTimer('challenge', 10, $poll, 1);
+Slim::Utils::Timers::fire_due(9);
+is(scalar @calls, 0, 'future polling is not fired early');
+Slim::Utils::Timers::fire_due(10);
+is_deeply(\@calls, [['challenge', 1]], 'owner and arguments survive dispatch');
+is(Slim::Utils::Timers::next_deadline(), 12, 'polling schedules the next attempt');
+Slim::Utils::Timers::killTimers('challenge', $poll);
+Slim::Utils::Timers::fire_due(12);
+is(scalar @calls, 1, 'cancelled authentication stops polling');
+ok(!defined Slim::Utils::Timers::next_deadline(), 'cancelled timer is released');
+my $other = sub { push @calls, ['unexpected'] };
+Slim::Utils::Timers::setTimer('owner', 20, sub { Slim::Utils::Timers::killTimers('owner', $other) });
+Slim::Utils::Timers::setTimer('owner', 20, $other);
+Slim::Utils::Timers::fire_due(20);
+is(scalar @calls, 1, 'callback can cancel another ready callback');
+my $repeat;
+$repeat = sub { push @calls, ['repeat']; Slim::Utils::Timers::setTimer('owner', 20, $repeat) };
+Slim::Utils::Timers::setTimer('owner', 20, $repeat);
+Slim::Utils::Timers::fire_due(20);
+is(scalar @calls, 2, 'immediate rescheduling yields to the next event-loop turn');
+Slim::Utils::Timers::killTimers('owner');
+done_testing;

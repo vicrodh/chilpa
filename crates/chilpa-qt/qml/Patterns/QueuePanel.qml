@@ -15,7 +15,7 @@ Item {
     TrackListModel {
         id: queue
         kind: "queue"
-        filterRev: Player.queueRev + ListenList.revision
+        filterRev: Player.queueRev + ListenList.revision + Library.remoteRev
         playingPath: Player.path
     }
 

@@ -1,11 +1,3 @@
-//! What the search flyout lists (design/04 10): the top artist, records and
-//! songs, or more of one kind when a chip narrows it.
-//!
-//! The rows, their menus and what each entry does are the facade's.
-//!
-//! Each keystroke asks the worker, tagged, and an answer for text already
-//! typed over is dropped. What was found is kept whole, so switching chips
-//! rebuilds the rows without asking again.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -28,22 +20,19 @@ pub mod qobject {
         #[base = QAbstractListModel]
         #[qml_element]
         #[qproperty(QString, text)]
-        /// "all", "artists", "albums" or "songs".
         #[qproperty(QString, scope)]
-        /// Rows that are results, headers excluded.
+        #[qproperty(QString, source)]
         #[qproperty(i32, count)]
         type SearchModel = super::SearchRust;
 
-        /// Does what an entry of the row's menu says. "open" is its own
-        /// click: an artist's or a record's page, and a song plays.
         #[qinvokable]
         fn act(self: Pin<&mut SearchModel>, row: i32, act: &QString);
-        /// What the row offers, as the entries of a menu.
         #[qinvokable]
         fn menu_json(self: &SearchModel, row: i32) -> QString;
-        /// The tracks the row stands for, for a playlist to take.
         #[qinvokable]
         fn track_ids_json(self: &SearchModel, row: i32) -> QString;
+        #[qinvokable]
+        fn refresh(self: Pin<&mut SearchModel>);
     }
 
     unsafe extern "RustQt" {
@@ -81,13 +70,13 @@ use std::pin::Pin;
 
 const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration"];
 const USER_ROLE: i32 = 256;
-/// As many of each kind as a chip shows; "All" shows fewer.
 const LIMIT: usize = 12;
 
 #[derive(Default)]
 pub struct SearchRust {
     text: QString,
     scope: QString,
+    source: QString,
     count: i32,
     found: Found,
     rows: Vec<FoundRow>,
@@ -106,10 +95,8 @@ impl qobject::SearchModel {
             0 => QVariant::from(&row.kind()),
             1 => text(row.title()),
             2 => text(&row.detail()),
-            // A row without a cover still has a url: an empty variant
-            // reads "undefined" where QML binds one.
             3 if row.artwork().is_empty() => QVariant::from(&QUrl::default()),
-            3 => QVariant::from(&QUrl::from_local_file(&QString::from(row.artwork()))),
+            3 => QVariant::from(&if row.artwork().starts_with("https://") { QUrl::from(row.artwork()) } else { QUrl::from_local_file(&QString::from(row.artwork())) }),
             _ => text(&row.duration()),
         }
     }
@@ -134,6 +121,7 @@ impl qobject::SearchModel {
             Leads::Artist(name) => nav.as_mut().open_artist(&QString::from(&name)),
             Leads::Credit(credit, place) => nav.as_mut().open_credit(&QString::from(&credit), place),
             Leads::Folder(dir) => nav.as_mut().open_folder(&QString::from(&dir)),
+            Leads::Source(source) => nav.as_mut().go_key(&QString::from("source"), &QString::from(source)),
             Leads::Nowhere => {}
         });
     }
@@ -150,7 +138,9 @@ impl qobject::SearchModel {
         let generation = self.rust().generation + 1;
         self.as_mut().rust_mut().generation = generation;
         let text = self.rust().text.to_string();
-        if text.trim().is_empty() {
+        let source = self.rust().source.to_string();
+        app::with(|api| api.search_source_catalogs(&text, &source));
+        if text.trim().is_empty() || !matches!(source.as_str(), "all" | "local") {
             self.arrive(generation, Found::default());
             return;
         }
@@ -169,10 +159,12 @@ impl qobject::SearchModel {
         self.rebuild();
     }
 
+    pub fn refresh(self: Pin<&mut Self>) { self.rebuild(); }
     fn rebuild(mut self: Pin<&mut Self>) {
-        let rows = chilpa_api::found_rows(&self.rust().found, &self.rust().scope.to_string());
+        let mut rows = chilpa_api::found_rows(&self.rust().found, &self.rust().scope.to_string());
+        rows.extend(app::with(|api| api.source_found_rows(&self.rust().scope.to_string())));
+        if rows == self.rust().rows { return; }
         let count = rows.iter().filter(|row| row.kind() > 0).count() as i32;
-        // SAFETY: the reset is begun and ended around the swap, as Qt asks.
         unsafe { self.as_mut().begin_reset_model() };
         self.as_mut().rust_mut().rows = rows;
         unsafe { self.as_mut().end_reset_model() };
@@ -183,6 +175,8 @@ impl qobject::SearchModel {
 impl cxx_qt::Initialize for qobject::SearchModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().scope = QString::from("all");
+        self.as_mut().rust_mut().source = QString::from("all");
+        self.as_mut().on_source_changed(|m| m.ask()).release();
         self.as_mut().on_text_changed(|m| m.ask()).release();
         self.as_mut().on_scope_changed(|m| m.rebuild()).release();
     }

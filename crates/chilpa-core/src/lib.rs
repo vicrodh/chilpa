@@ -31,6 +31,7 @@ pub fn trace_playback(scope: &str, event: &str, details: std::fmt::Arguments<'_>
 /// A request made on a plugin's behalf. The caller supplies the credential,
 /// never the plugin (ADR-007).
 pub use chilpa_stream::send_request;
+pub use chilpa_stream::{send_worker_request, worker_url_allowed, WorkerNetworkError};
 pub use chilpa_stream::{fetch, Fetch, FetchError, Fetched};
 pub use chilpa_stream::{call_server, Call, RangedRequest};
 

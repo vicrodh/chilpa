@@ -39,9 +39,11 @@ mod cipher;
 mod envelope;
 mod error;
 mod install_id;
+mod store;
 
 pub use backend::BackendKind;
 pub use error::SecretError;
+pub use store::{PrivateStore, StoreError};
 
 use std::path::Path;
 

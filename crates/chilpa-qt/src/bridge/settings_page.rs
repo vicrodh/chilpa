@@ -45,6 +45,10 @@ pub mod qobject {
         /// Reads the rows again: a sync moving, a server coming back.
         #[qinvokable]
         fn refresh(self: Pin<&mut SettingsPage>);
+        #[qinvokable]
+        fn plugins_json(self: &SettingsPage) -> QString;
+        #[qinvokable]
+        fn plugin_command(self: &SettingsPage, action: &QString, input: &QString);
     }
 
     unsafe extern "RustQt" {
@@ -82,7 +86,7 @@ pub mod qobject {
 
 use crate::{app, registry};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QList, QModelIndex, QString, QStringList, QVariant, QVector};
+use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QVariant, QVector};
 use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
@@ -108,14 +112,6 @@ pub struct SettingsPageRust {
     plugin_link: Option<(String, String)>,
 }
 
-fn list(items: &[String]) -> QVariant {
-    let mut l = QList::<QString>::default();
-    for i in items {
-        l.append(QString::from(i));
-    }
-    QVariant::from(&QStringList::from(&l))
-}
-
 impl SettingsPageRust {
     fn build(&mut self) {
         let notes = chilpa_api::RowNotes { report: self.report.as_ref(), said: self.said.as_ref(), plugin_link: self.plugin_link.as_ref() };
@@ -125,6 +121,18 @@ impl SettingsPageRust {
 }
 
 impl qobject::SettingsPage {
+    pub fn plugins_json(&self) -> QString { QString::from(app::with(|api| api.plugin_center_json())) }
+    pub fn plugin_command(&self, action: &QString, input: &QString) {
+        if action.to_string() != "choose_icon" { return app::with(|api| api.plugin_center_command(&action.to_string(), &input.to_string())); }
+        let (thread, title, input) = (self.qt_thread(), app::t("Choose plugin icon"), input.to_string());
+        std::thread::spawn(move || {
+            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).add_filter("Images", &["svg", "png", "jpg", "jpeg"]).pick_file());
+            if let (Some(file), Ok(mut input)) = (picked, serde_json::from_str::<serde_json::Value>(&input)) {
+                input["path"] = cxx_qt_lib::QUrl::from_local_file(&QString::from(file.path().display().to_string())).to_string().to_string().into();
+                let _ = thread.queue(move |_| app::with(|api| api.plugin_center_command("icon", &input.to_string())));
+            }
+        });
+    }
     pub fn data(&self, index: &QModelIndex, role: i32) -> QVariant {
         let Some(row) = self.rust().rows.get(index.row().max(0) as usize) else {
             return QVariant::default();
@@ -138,9 +146,9 @@ impl qobject::SettingsPage {
             4 => text(&row.control),
             5 => text(&row.action),
             6 => text(&row.value),
-            7 => list(&row.options),
-            8 => list(&row.values),
-            9 => list(&row.marks),
+            7 => QVariant::from(&crate::format::strings(row.options.clone().into_iter())),
+            8 => QVariant::from(&crate::format::strings(row.values.clone().into_iter())),
+            9 => QVariant::from(&crate::format::strings(row.marks.clone().into_iter())),
             _ => QVariant::default(),
         }
     }

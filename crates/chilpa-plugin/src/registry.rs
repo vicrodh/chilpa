@@ -5,9 +5,10 @@
 //! not load.* A plugin that does not pass is noted with its reason and the
 //! rest carry on; startup is never aborted because of one.
 
-use crate::host::{Host, Plugin, PluginError, Services};
+use crate::host::{Host, PluginError, Services};
+use crate::runtime::RuntimePlugin;
 use crate::limits::Limits;
-use crate::manifest::{Asked, Kind, Manifest};
+use crate::manifest::{Asked, Kind, Manifest, Runtime};
 use crate::watchdog::{State, Watchdog};
 use crate::Reply;
 use std::collections::BTreeMap;
@@ -21,7 +22,7 @@ pub struct Installed {
     /// they can approve or refuse.
     pub manifest: Option<Manifest>,
     /// The plugin, ready, or `None` if it did not load or nobody approved it.
-    pub plugin: Option<Plugin>,
+    pub plugin: Option<Box<dyn RuntimePlugin>>,
     /// Why it did not load, if it did not.
     pub problem: Option<String>,
     /// True if it is waiting for the user to approve what it asks for.
@@ -40,7 +41,7 @@ impl Installed {
     /// what a plugin asks for that can drift apart.
     pub fn asks(&self) -> Vec<String> {
         let Some(m) = &self.manifest else { return Vec::new() };
-        let nothing = Asked { kind: m.kind, capabilities: Vec::new(), auth: None };
+        let nothing = Asked { kind: m.kind, runtime: Runtime::Wasm, capabilities: Vec::new(), auth: None };
         m.asks_for().beyond(&nothing)
     }
 }
@@ -74,7 +75,33 @@ impl Registry {
         wasm: &[u8],
         approved: impl FnOnce(&Manifest) -> bool,
     ) -> bool {
-        let manifest = match Manifest::parse(manifest_json) {
+        self.install_with(manifest_json, approved, |manifest| {
+            host.load(manifest, wasm).map(|plugin| Box::new(plugin) as Box<dyn RuntimePlugin>)
+        })
+    }
+
+    /// Loads through a host-owned adapter, after validating the normalized
+    /// manifest and obtaining approval. The factory must not run guest code
+    /// while it is being constructed; only this call grants it that chance.
+    pub fn install_with(
+        &mut self,
+        manifest_json: &str,
+        approved: impl FnOnce(&Manifest) -> bool,
+        load: impl FnOnce(Manifest) -> Result<Box<dyn RuntimePlugin>, PluginError>,
+    ) -> bool {
+        self.install_adapter(Runtime::Wasm, manifest_json, approved, load)
+    }
+
+    /// The available runtime is selected by host code. Repository metadata
+    /// cannot turn the native loader into a process launcher.
+    pub fn install_adapter(
+        &mut self,
+        available: Runtime,
+        manifest_json: &str,
+        approved: impl FnOnce(&Manifest) -> bool,
+        load: impl FnOnce(Manifest) -> Result<Box<dyn RuntimePlugin>, PluginError>,
+    ) -> bool {
+        let manifest = match Manifest::parse_for_runtime(manifest_json, available) {
             Ok(m) => m,
             Err(e) => {
                 // The manifest did not pass, but its JSON may still parse: the
@@ -114,7 +141,13 @@ impl Registry {
         }
 
         let shown = manifest.clone();
-        match host.load(manifest, wasm) {
+        let loaded = load(manifest).and_then(|plugin| {
+            if plugin.manifest() != &shown {
+                return Err(PluginError::Crashed("adapter changed the approved manifest".into()));
+            }
+            Ok(plugin)
+        });
+        match loaded {
             Ok(p) => {
                 self.plugins.insert(
                     id.clone(),
@@ -194,6 +227,11 @@ impl Registry {
 
     /// The ones that work now and asked to put an entry of their own in the
     /// window: id, name and icon hint, in the same steady order.
+    pub fn remove(&mut self, id: &str) {
+        self.plugins.remove(id);
+        self.watchdog.reactivate(id);
+    }
+
     pub fn panels(&self) -> Vec<(String, String, String)> {
         self.plugins
             .values()
@@ -216,6 +254,12 @@ impl Registry {
             return State::PendingApproval;
         }
         self.watchdog.state(id)
+    }
+
+    /// Whether a loaded plugin can still answer. One that is not loaded
+    /// counts as alive: there is nothing to bring back.
+    pub fn alive(&self, id: &str) -> bool {
+        self.plugins.get(id).and_then(|inst| inst.plugin.as_ref()).is_none_or(|plugin| plugin.alive())
     }
 
     /// Takes it out of quarantine. Only the user calls it.
@@ -248,7 +292,7 @@ impl Registry {
                 &[id],
             )));
         }
-        let Some(inst) = self.plugins.get(id) else {
+        let Some(inst) = self.plugins.get_mut(id) else {
             return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
                 "calling \"{}\", which is not installed",
                 &[id],
@@ -260,7 +304,7 @@ impl Registry {
                 &[id],
             )));
         }
-        let Some(plugin) = &inst.plugin else {
+        let Some(plugin) = &mut inst.plugin else {
             return Err(PluginError::NotAllowed(chilpa_i18n::t_args(
                 "calling \"{}\", which did not load",
                 &[id],

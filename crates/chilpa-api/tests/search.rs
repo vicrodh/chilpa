@@ -172,6 +172,23 @@ fn a_source_plugin_answers_the_search_and_does_not_duplicate_what_is_local() {
     assert_eq!(problems.len(), 1, "{problems:?}");
     assert!(problems[0].starts_with("Source com.test.broken"), "{problems:?}");
 
+    // A dedicated source search must retain its own recording even when it
+    // has the same fingerprint as a local one, and never query its neighbor.
+    assert!(chilpa.search_in("Suzie", 20, "com.test.good").is_empty());
+    assert!(wait_for(&mut chilpa, |c| c.found().len() == 2));
+    assert!(chilpa.found().iter().all(|hit| hit.source == "com.test.good"));
+    assert!(chilpa.search_problems().is_empty());
+    assert_eq!(chilpa.search_in("Suzie", 20, "local").len(), 1);
+    let until = std::time::Instant::now() + chilpa_api::SOURCE_COOLDOWN + chilpa_api::KEYSTROKE_DEBOUNCE;
+    while std::time::Instant::now() < until {
+        chilpa.poll();
+        std::thread::sleep(std::time::Duration::from_millis(25));
+    }
+    assert_eq!(chilpa.found().len(), 1);
+    assert_eq!(chilpa.found()[0].source, "local");
+    assert!(chilpa.search_problems().is_empty());
+    assert!(!chilpa.search_running());
+
     // Searching for something else throws away the previous query's results at once.
     let other_search = chilpa.search_all("nothing like that exists", 20);
     assert!(other_search.is_empty());

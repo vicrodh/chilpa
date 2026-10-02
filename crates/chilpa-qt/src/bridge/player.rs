@@ -323,7 +323,8 @@ impl qobject::Player {
 
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
-        let (now, changed, casting) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some()));
+        let (now, changed, casting, remote) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions()));
+        crate::registry::library(move |mut l| { l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if casting || casting != self.rust().casting { self.as_mut().read_volume(); }
         self.as_mut().rust_mut().casting = casting;
         // A sync, a server or a folder came or went underneath the lists.

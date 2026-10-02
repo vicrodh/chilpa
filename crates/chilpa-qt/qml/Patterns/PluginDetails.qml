@@ -1,0 +1,158 @@
+import QtQuick
+import QtQuick.Controls.Basic
+import com.blitzfc.chilpa
+import "../Theme"
+import "../Components"
+import "../Primitives" as P
+
+P.Modal {
+    id: details
+    required property var manager
+    property var plugin: ({})
+    property string mode: "inspection"
+    property string tab: "settings"
+    readonly property var validation: manager.view.validation || ({})
+    readonly property bool matching: !!validation.id && validation.id === plugin.id && validation.repository_id === plugin.repository_id
+    property alias domains: domains.text
+    onClosed: manager.selected = ""
+    width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
+    height: Math.min(Metrics.panesHeight + Metrics.heroArt, parent ? parent.height - Metrics.modalInsets : Metrics.panesHeight)
+    Column {
+        id: heading
+        width: parent.width
+        spacing: Metrics.gap8
+        Text { text: details.plugin.name || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+        PluginValidation {
+            objectName: "validationStatus"
+            width: parent.width
+            visible: details.mode === "inspection"
+            phase: details.manager.view.busy && details.manager.view.operation === "prepare" ? "running"
+                : details.matching ? details.validation.state : "pending"
+            problem: details.matching ? details.validation.problem || "" : ""
+        }
+        Text {
+            objectName: "pluginStatus"
+            width: parent.width
+            text: details.manager.view.busy ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev)) : details.manager.view.error || ""
+            visible: text !== "" && (details.mode === "settings" || details.manager.view.operation !== "prepare")
+            wrapMode: Text.WordWrap
+            color: Theme.color.statusWarning
+            font.pointSize: Type.body
+        }
+    }
+    Flickable {
+        anchors.top: heading.bottom
+        anchors.topMargin: Metrics.gap12
+        anchors.bottom: close.top
+        anchors.bottomMargin: Metrics.gap12
+        width: parent.width
+        contentHeight: body.height
+        clip: true
+        ScrollBar.vertical: ScrollBar {}
+        Column {
+            id: body
+            width: parent.width - Metrics.gap12
+            spacing: Metrics.gap12
+            Text {
+                width: parent.width
+                text: [details.plugin.version || "", details.plugin.author || (details.plugin.origin || {}).catalog_entry?.author || "", details.plugin.description || "", details.plugin.problem || ""].filter(Boolean).join("\n\n")
+                textFormat: Text.PlainText
+                wrapMode: Text.WordWrap
+                color: Theme.color.textSecondary
+                font.pointSize: Type.body
+            }
+            Column {
+                width: parent.width
+                visible: !!details.manager.view.proposal && details.manager.view.proposal.catalog_id === details.plugin.id && details.manager.view.proposal.repository_id === details.plugin.repository_id && !(details.manager.view.busy && details.manager.view.operation === "prepare")
+                spacing: Metrics.gap8
+                Text {
+                    width: parent.width
+                    text: ((details.manager.view.proposal || {}).permissions || []).join("\n")
+                    textFormat: Text.PlainText
+                    wrapMode: Text.WordWrap
+                    color: Theme.color.textSecondary
+                    font.pointSize: Type.body
+                }
+                P.TextField { id: domains; visible: false; width: parent.width; placeholder: I18n.tr("Allowed network domains, separated by commas", I18n.rev) }
+                P.PillButton {
+                    objectName: "approvePlugin"
+                    text: I18n.tr("Approve permissions and install", I18n.rev)
+                    enabled: !details.manager.view.busy
+                    onClicked: details.manager.command("install", {domains: domains.text.split(",").map(v => v.trim()).filter(Boolean)})
+                }
+            }
+            Text {
+                width: parent.width
+                visible: details.mode === "inspection" && details.matching && details.validation.state === "passed" && text !== ""
+                text: ((details.manager.view.proposal || {}).inspection?.limitations || []).join("\n")
+                textFormat: Text.PlainText
+                wrapMode: Text.WordWrap
+                color: Theme.color.textSecondary
+                font.pointSize: Type.small
+            }
+            Row {
+                spacing: Metrics.gap8
+                visible: details.mode === "settings"
+                P.PillButton { text: I18n.tr("Settings", I18n.rev); onClicked: details.tab = "settings" }
+                P.PillButton { text: I18n.tr("Integration", I18n.rev); onClicked: details.tab = "integration" }
+            }
+            P.PillButton {
+                visible: details.mode === "settings" && !!details.manager.view.error
+                text: I18n.tr("Restart plugin", I18n.rev)
+                enabled: !details.manager.view.busy
+                onClicked: details.manager.command("restart", {id: details.plugin.id})
+            }
+            PluginIntegration {
+                width: parent.width
+                visible: details.mode === "settings" && details.tab === "integration"
+                plugin: (details.manager.view.installed || []).find(p => p.id === details.plugin.id) || details.plugin
+                onCommand: (action, input) => details.manager.command(action, input)
+            }
+            Column {
+                width: parent.width
+                visible: details.tab === "settings" && details.manager.selected === details.plugin.id
+                spacing: Metrics.gap8
+                P.PillButton { text: I18n.tr("Refresh settings", I18n.rev); enabled: !details.manager.view.busy; onClicked: details.manager.command("settings", {id: details.plugin.id}) }
+                PluginSettingsForm {
+                    objectName: "pluginSettingsForm"
+                    width: parent.width
+                    visible: !!details.manager.view.form
+                    document: details.manager.settingsDocument
+                    enabled: !details.manager.view.busy
+                    onSubmitted: (action, values) => details.manager.command("submit", {id: details.plugin.id, submission: {revision: details.manager.view.form.revision, action: action, values: values}})
+                    onLinked: (url) => {
+                        if (/^https?:\/\//i.test(url)) Qt.openUrlExternally(url)
+                        else details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
+                    }
+                }
+            }
+            Column {
+                width: parent.width
+                spacing: Metrics.gap8
+                visible: details.mode === "settings" && ((details.manager.view.installed || []).find(p => p.id === details.plugin.id) || {}).limited_network === true
+                Text {
+                    width: parent.width
+                    wrapMode: Text.WordWrap
+                    text: I18n.tr("Network access, including authentication, artwork and audio servers discovered by the plugin", I18n.rev)
+                    color: Theme.color.textSecondary
+                    font.pointSize: Type.body
+                }
+                P.PillButton {
+                    objectName: "approvePluginNetwork"
+                    text: I18n.tr("Approve network permission", I18n.rev)
+                    enabled: !details.manager.view.busy
+                    onClicked: details.manager.command("grant_network", {id: details.plugin.id, domain: "*"})
+                }
+            }
+        }
+    }
+    P.PillButton {
+        objectName: "uninstallPlugin"
+        anchors.bottom: parent.bottom
+        visible: details.mode === "settings"
+        enabled: !details.manager.view.busy
+        text: I18n.tr("Uninstall plugin and remove account data", I18n.rev)
+        onClicked: { details.manager.command("uninstall", {id: details.plugin.id}); details.close() }
+    }
+    P.PillButton { id: close; anchors.bottom: parent.bottom; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
+}

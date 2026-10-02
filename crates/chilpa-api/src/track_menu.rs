@@ -17,6 +17,9 @@ pub struct TrackMenuContext {
     pub metadata: bool,
     /// None of the chosen tracks can be played now (ADR-017).
     pub unavailable: bool,
+    /// A source's track, which the library does not hold: no playlist of
+    /// the library can take it.
+    pub remote: bool,
 }
 
 pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
@@ -44,7 +47,9 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
         entries.push(item("later", i18n::mark("Play later")));
     }
     entries.push(json!({"separator": true}));
-    entries.push(item("pick", i18n::mark("Add to playlist…")));
+    if !context.remote {
+        entries.push(item("pick", i18n::mark("Add to playlist…")));
+    }
     let mut navigation = Vec::new();
     if context.count == 1 {
         for (enabled, act, label) in [
@@ -136,7 +141,7 @@ mod unavailable_tests {
 pub fn track_can_go(track: &crate::TrackRow, kind: &str, key: &str, target: &str) -> bool {
     if !track.available { return false; }
     match target.split(':').next().unwrap_or_default() {
-        "album" => track.album_id > 0 && kind != "album",
+        "album" => track.album_id != 0 && kind != "album",
         "artist" => !track.artist.is_empty() && !(matches!(kind, "artist" | "artistTop") && track.artist.eq_ignore_ascii_case(key)),
         "folder" => kind != "folder" && !crate::on_a_server(&track.path),
         "metadata" => track.album_id > 0 && !crate::on_a_server(&track.path),

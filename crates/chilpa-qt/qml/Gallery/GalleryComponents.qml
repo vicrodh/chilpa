@@ -26,11 +26,14 @@ GallerySection {
         width: section.width
         spacing: Metrics.gap12
 
-        Row {
+        Flow {
+            width: parent.width
             spacing: Metrics.gap12
             NavItem { width: Metrics.sidebarWidth; text: "Library"; glyph: Icons.columns3 }
             NavItem { width: Metrics.sidebarWidth; text: "Active"; glyph: Icons.home; active: true }
             NavItem { width: Metrics.sidebarCollapsed; text: "Collapsed"; glyph: Icons.disc; collapsed: true }
+            NavItem { width: Metrics.sidebarWidth; text: "Plugin fallback"; glyph: Icons.letterG }
+            NavItem { width: Metrics.sidebarWidth; text: "Unavailable plugin image"; glyph: Icons.letterG; iconSource: "file:///missing-plugin-icon.png" }
         }
         Row {
             spacing: Metrics.gap12
@@ -203,6 +206,7 @@ GallerySection {
             height: Metrics.panesHeight
             column: ({ id: "country", title: "Country", picked: "mx", entries: [{ id: "ar", title: "Argentina", subtitle: "1,140" }, { id: "mx", title: "Mexico", subtitle: "980" }] })
         }
+        SourceState { about: ({ error: "The source did not answer." }) }
         SourceAbout { width: Metrics.searchFlyout; entry: ({ title: "Low Orbit Radio", subtitle: "Mora Vale", image: "x", description: "A show about what plays between two records.", facts: [{ label: "Genre", value: "Music" }] }) }
     }
 }

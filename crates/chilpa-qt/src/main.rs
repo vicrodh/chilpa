@@ -82,10 +82,9 @@ fn main() {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 
-    // Sources have to exist before anything in the window asks for searches,
-    // playlists or account state. Loading an empty folder is the normal case.
+    // Sources load independently; guest initialization cannot hold up the window.
     app::with(|api| {
-        api.load_plugins();
+        api.start_plugins();
         // Listens go to ListenBrainz from now on, if an account is connected.
         api.start_scrobbling();
         // My servers: their tracks play, sync and are watched (ADR-017).

@@ -90,7 +90,7 @@ impl Reader {
 
 /// Records that came in the order asked for, put in groups: the groups by
 /// name, whatever their case, and each one's records as they came.
-fn arrange(mut named: Vec<(String, i64)>) -> AlbumsFound {
+pub(crate) fn arrange(mut named: Vec<(String, i64)>) -> AlbumsFound {
     // Stable: what shares a group stays in the order it came in.
     named.sort_by_cached_key(|(label, _)| label.to_lowercase());
     let mut found = AlbumsFound::default();

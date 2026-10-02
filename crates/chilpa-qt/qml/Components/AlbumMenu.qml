@@ -32,16 +32,17 @@ Menu {
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
             { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
-            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", glyph: Icons.playlistAdd },
+            // A source's record (a negative id) is not the library's to edit or mark.
+            { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", glyph: Icons.playlistAdd, when: id > 0 },
             { separator: true, when: one },
             { text: I18n.tr("Open album", I18n.rev), act: "open", when: one },
             { text: I18n.tr("Open in new tab", I18n.rev), act: "tab", when: one },
             { text: I18n.tr("Quick view", I18n.rev), act: "quick", when: one && canExpand },
             { text: I18n.tr("Go to artist", I18n.rev), act: "artist", when: one && artist !== "" && artist !== artistPage },
-            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one },
-            { separator: true, when: one },
+            { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one && id > 0 },
+            { separator: true, when: one && id > 0 },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
-              act: favorite ? "unfavorite" : "favorite", when: one }
+              act: favorite ? "unfavorite" : "favorite", when: one && id > 0 }
         ]
         actions = all.filter(e => e.when === undefined || e.when)
         entries = actions

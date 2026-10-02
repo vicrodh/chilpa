@@ -6,6 +6,7 @@ QtObject {
     property var asked: []
     readonly property string snapshot: JSON.stringify(state)
     function refresh() {}
+    function page(key, rev) { return JSON.stringify({ music: false }) }
     function command(action, id, text) { asked = asked.concat([[action, id, text]]) }
     function show(change) { state = Object.assign({}, state, change); revision += 1 }
 }
