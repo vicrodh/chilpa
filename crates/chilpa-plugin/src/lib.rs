@@ -30,6 +30,7 @@ pub mod host;
 pub mod limits;
 pub mod manifest;
 pub mod messages;
+pub mod native;
 pub mod pipe_transport;
 pub mod registry;
 pub mod runtime;
