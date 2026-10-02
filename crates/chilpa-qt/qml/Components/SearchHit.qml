@@ -37,8 +37,10 @@ Item {
     readonly property bool header: kind === 0
     readonly property bool best: kind === 1
     readonly property bool person: kind === 1 || kind === 2
+    // The way to the rest of a source's results.
+    readonly property bool link: kind === 5
 
-    height: header ? Metrics.searchHeader : best ? Metrics.searchBest : Metrics.searchRow
+    height: header || link ? Metrics.searchHeader : best ? Metrics.searchBest : Metrics.searchRow
 
     Text {
         visible: hit.header
@@ -60,10 +62,10 @@ Item {
 
     ArtTile {
         id: cover
-        visible: !hit.header
+        visible: !hit.header && !hit.link
         x: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        width: hit.best ? Metrics.searchAvatar : Metrics.searchArt
+        width: hit.link ? 0 : hit.best ? Metrics.searchAvatar : Metrics.searchArt
         height: width
         radius: hit.person ? width / 2 : Metrics.radiusArtSmall // derived: a circle
         source: hit.art
@@ -88,6 +90,7 @@ Item {
 
         Text {
             width: parent.width
+            visible: !hit.link
             text: hit.title
             elide: Text.ElideRight
             font.pointSize: hit.best ? Type.bestResult : Type.body
@@ -100,7 +103,7 @@ Item {
             text: hit.detail
             elide: Text.ElideRight
             font.pointSize: Type.small
-            color: Theme.color.textSecondary
+            color: hit.link ? Theme.color.accent : Theme.color.textSecondary
         }
     }
 
@@ -118,7 +121,7 @@ Item {
             anchors.right: more.left
             anchors.rightMargin: Metrics.gap6
             anchors.verticalCenter: parent.verticalCenter
-            visible: !hit.best && !hit.header
+            visible: !hit.best && !hit.header && !hit.link
             text: hit.duration
             font.pointSize: Type.small
             font.features: { "tnum": 1 }
@@ -141,7 +144,7 @@ Item {
             id: more
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            visible: !hit.header
+            visible: !hit.header && !hit.link
             size: Metrics.button28
             glyph: hit.endGlyph
             tip: hit.endTip
@@ -158,6 +161,6 @@ Item {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: (mouse) => mouse.button === Qt.RightButton ? hit.menu(mouse.x, mouse.y) : hit.activated()
+        onClicked: (mouse) => mouse.button === Qt.RightButton && !hit.link ? hit.menu(mouse.x, mouse.y) : hit.activated()
     }
 }

@@ -307,21 +307,37 @@ fn read_tracks(catalog: &Catalog, plugins: &Arc<Mutex<Plugins>>, pages: &mut Pag
 /// Fetches covers, within the domains the plugin was approved for.
 pub(super) fn covers(catalog: &Arc<Catalog>) {
     loop {
-        let (image, domains) = {
+        let (image, plugin, known) = {
             let mut inner = catalog.lock();
             loop {
                 if let Some(image) = inner.queue.covers.pop_front() {
                     let plugin = inner.store.cards.values().find(|c| c.image == image).map(|c| c.plugin.clone())
-                        .or_else(|| inner.store.tracks.values().find(|t| t.image == image).map(|t| t.plugin.clone()));
-                    let domains = plugin.and_then(|p| inner.domains.get(&p).cloned());
-                    match domains {
-                        Some(domains) => break (image, domains),
-                        // Not asked yet: the domains are learned on the first call.
-                        None => { inner.queue.covers_queued.remove(&image); }
-                    }
-                    continue;
+                        .or_else(|| inner.store.tracks.values().find(|t| t.image == image).map(|t| t.plugin.clone()))
+                        .or_else(|| inner.images.get(&image).cloned());
+                    let Some(plugin) = plugin else {
+                        inner.queue.covers_queued.remove(&image);
+                        continue;
+                    };
+                    let known = inner.domains.get(&plugin).cloned();
+                    break (image, plugin, known);
                 }
                 inner = catalog.covers_wake.wait(inner).unwrap_or_else(|e| e.into_inner());
+            }
+        };
+        // A picture found by a search comes from a plugin the catalog may not
+        // have browsed yet: its domains are asked of the host, never guessed.
+        let domains = match known {
+            Some(domains) => domains,
+            None => {
+                let host = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).clone();
+                let learned = host.and_then(|host| host.lock().ok().and_then(|host| host.worker_domains(&plugin)));
+                let mut inner = catalog.lock();
+                let Some(domains) = learned else {
+                    inner.queue.covers_queued.remove(&image);
+                    continue;
+                };
+                inner.domains.insert(plugin, domains.clone());
+                domains
             }
         };
         let kept = crate::pictures::keep_approved(&image, &domains);

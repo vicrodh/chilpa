@@ -34,8 +34,20 @@ const PER_SOURCE: usize = 50;
 /// Where a result already on disk came from.
 const LOCAL: &str = "local";
 
-fn searches_source(selected: &str, candidate: &str) -> bool {
-    selected == "all" || selected.is_empty() || selected == candidate
+/// Whether a selection of sources, "all" or a comma-separated list of
+/// "local" and plugin ids, includes this one.
+pub(crate) fn searches_source(selected: &str, candidate: &str) -> bool {
+    selected.is_empty() || selected.split(',').any(|chosen| chosen == "all" || chosen == candidate)
+}
+
+/// How long a source's answer to a text is reused. A source is slow and its
+/// results do not change from one minute to the next.
+const ANSWER_FRESH: Duration = Duration::from_secs(600);
+
+/// Sources' answers by source, text and how many were asked for.
+fn answers() -> &'static Mutex<HashMap<(String, String, usize), (Instant, messages::Results)>> {
+    static ANSWERS: std::sync::OnceLock<Mutex<HashMap<(String, String, usize), (Instant, messages::Results)>>> = std::sync::OnceLock::new();
+    ANSWERS.get_or_init(|| Mutex::new(HashMap::new()))
 }
 
 /// A search result, wherever it came from.
@@ -207,6 +219,7 @@ impl SearchJob {
         let cancelled = Arc::new(AtomicBool::new(false));
         let stopped = cancelled.clone();
         let query = messages::write(&messages::Query::new(&text, limit));
+        let text_asked = text.clone();
         let thread = std::thread::Builder::new()
             .name("chilpa-search".into())
             .spawn(move || {
@@ -219,6 +232,14 @@ impl SearchJob {
                     if !searches_source(&source, &id) { continue; }
                     let delivers =
                         plugins.lock().map(|p| p.delivers_audio(&id)).unwrap_or(true);
+                    // What this source answered to this text a moment ago comes back at once.
+                    let asked = (id.clone(), text_asked.trim().to_lowercase(), limit);
+                    let kept = answers().lock().ok().and_then(|a| a.get(&asked).filter(|(at, _)| at.elapsed() < ANSWER_FRESH).map(|(_, r)| r.clone()));
+                    if let Some(results) = kept {
+                        let reply = SourceReply { source: id, source_name: name, results, problem: String::new(), delivers_audio: delivers };
+                        if tx.send(reply).is_err() { return; }
+                        continue;
+                    }
                     let answer = match plugins.lock() {
                         Ok(mut p) => {
                             if stopped.load(Ordering::Relaxed) { return; }
@@ -231,7 +252,14 @@ impl SearchJob {
                             Ok(r) => SourceReply {
                                 source: id,
                                 source_name: name,
-                                results: r.clean(),
+                                results: {
+                                    let clean = r.clean();
+                                    if let Ok(mut kept) = answers().lock() {
+                                        kept.retain(|_, (at, _)| at.elapsed() < ANSWER_FRESH);
+                                        kept.insert(asked, (Instant::now(), clean.clone()));
+                                    }
+                                    clean
+                                },
                                 problem: String::new(),
                                 delivers_audio: delivers,
                             },
@@ -293,6 +321,8 @@ pub(crate) struct SearchState {
     pub replies: Vec<SourceReply>,
     /// What came out of the library, unmerged.
     pub local: Vec<LibraryTrack>,
+    /// The sources whose results are shown whole, not their first few.
+    pub expanded: std::collections::HashSet<String>,
     /// The fingerprints of what is local, by path.
     pub fingerprints: HashMap<String, Vec<String>>,
     /// Local and remote already joined, which is what the view draws.
@@ -339,6 +369,7 @@ impl Chilpa {
             job: None,
             replies: Vec::new(),
             local,
+            expanded: Default::default(),
             fingerprints,
             hits: Vec::new(),
             changed: false,
@@ -556,6 +587,9 @@ mod tests {
         assert!(searches_source("org.example.first", "org.example.first"));
         assert!(!searches_source("org.example.first", "org.example.second"));
         assert!(!searches_source("removed", "org.example.first"));
+        assert!(searches_source("local,org.example.first", "org.example.first"));
+        assert!(searches_source("local,org.example.first", "local"));
+        assert!(!searches_source("local,org.example.first", "org.example.second"));
     }
 
     fn local(id: i64, title: &str) -> LibraryTrack {

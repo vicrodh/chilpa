@@ -140,7 +140,7 @@ impl qobject::SearchModel {
         let text = self.rust().text.to_string();
         let source = self.rust().source.to_string();
         app::with(|api| api.search_source_catalogs(&text, &source));
-        if text.trim().is_empty() || !matches!(source.as_str(), "all" | "local") {
+        if text.trim().is_empty() || !source.split(',').any(|s| s == "all" || s == "local") {
             self.arrive(generation, Found::default());
             return;
         }
@@ -175,7 +175,7 @@ impl qobject::SearchModel {
 impl cxx_qt::Initialize for qobject::SearchModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().scope = QString::from("all");
-        self.as_mut().rust_mut().source = QString::from("all");
+        self.as_mut().rust_mut().source = QString::from("local");
         self.as_mut().on_source_changed(|m| m.ask()).release();
         self.as_mut().on_text_changed(|m| m.ask()).release();
         self.as_mut().on_scope_changed(|m| m.rebuild()).release();

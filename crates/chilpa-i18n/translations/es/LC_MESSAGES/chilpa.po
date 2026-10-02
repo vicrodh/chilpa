@@ -1625,6 +1625,11 @@ msgstr "Buscando…"
 msgid "See all"
 msgstr "Ver todo"
 
+msgid "See {} more"
+msgid_plural "See {} more"
+msgstr[0] "Ver {} más"
+msgstr[1] "Ver {} más"
+
 msgid "Select"
 msgstr "Seleccionar"
 
