@@ -19,7 +19,10 @@ thread_local! {
 }
 
 /// Runs `f` with the facade, building it the first time it is asked for.
+/// A call that takes long is written down with where it came from.
+#[track_caller]
 pub fn with<R>(f: impl FnOnce(&mut chilpa_api::Chilpa) -> R) -> R {
+    let _stall = chilpa_api::stall::enter(std::panic::Location::caller());
     API.with(|cell| {
         let mut slot = cell.borrow_mut();
         let api = slot.get_or_insert_with(chilpa_api::Chilpa::new);
