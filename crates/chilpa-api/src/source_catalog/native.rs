@@ -271,6 +271,16 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     for image in images {
         catalog.want_cover(&mut inner, &image);
     }
+    drop(inner);
+    // Play is the likely next click: the first track's address is asked
+    // for now, and the plugin keeps it until it expires.
+    if let Some(first) = answer.get("tracks").and_then(Value::as_array).and_then(|t| t.first()).map(|t| text(t, "ref")).filter(|r| !r.is_empty()) {
+        let (natives, plugin) = (natives.clone(), plugin.clone());
+        let _ = std::thread::Builder::new().name("chilpa-preload".into()).spawn(move || {
+            let _ = natives.call(&plugin, "track.resolve", json!({"ref": first, "purpose": "preload",
+                "output": {"max_rate": 192_000, "max_bits": 24}}), ASKED);
+        });
+    }
     Ok(())
 }
 
