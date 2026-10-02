@@ -216,9 +216,15 @@ impl Chilpa {
 
     pub(crate) fn source_album_rows(&mut self, id: i64) -> Vec<TrackRow> {
         let art = self.catalog.art_of_card(id);
-        self.catalog.tracks(id).unwrap_or_default().iter().map(|t| {
+        // A list is numbered by its order, not by each track's place on its record.
+        let list = self.catalog.card(id).is_some_and(|c| c.kind == CardKind::Playlist);
+        self.catalog.tracks(id).unwrap_or_default().iter().enumerate().map(|(at, t)| {
             let own = crate::pictures::kept(&t.image).filter(|_| t.album_id != id);
-            row_of(t, own.unwrap_or_else(|| art.clone()))
+            let mut row = row_of(t, own.unwrap_or_else(|| art.clone()));
+            if list {
+                (row.number, row.disc) = (u16::try_from(at + 1).unwrap_or(u16::MAX), 0);
+            }
+            row
         }).collect()
     }
 
