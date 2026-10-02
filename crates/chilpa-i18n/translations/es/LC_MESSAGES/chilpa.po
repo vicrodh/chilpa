@@ -2766,6 +2766,9 @@ msgstr "la salida no acepta 44 100 Hz de 16 bits, que es lo que trae un CD"
 msgid "the plugin could not be asked"
 msgstr "no se le pudo preguntar al plugin"
 
+msgid "the plugin is not running"
+msgstr "el plugin no se está ejecutando"
+
 msgid "the plugin sandbox could not be started"
 msgstr "no se pudo arrancar el sandbox de plugins"
 

@@ -170,6 +170,52 @@ impl Drop for NativeClient {
     }
 }
 
+/// A process plugin as the registry sees it: listed, approved and watched
+/// like any other. Callers that must not wait for the registry's lock ask
+/// [`NativePlugin::client`] directly, outside it.
+pub struct NativePlugin {
+    manifest: crate::Manifest,
+    client: Arc<NativeClient>,
+}
+
+impl NativePlugin {
+    pub fn new(manifest: crate::Manifest, client: Arc<NativeClient>) -> Self {
+        Self { manifest, client }
+    }
+
+    pub fn client(&self) -> Arc<NativeClient> {
+        self.client.clone()
+    }
+}
+
+impl crate::RuntimePlugin for NativePlugin {
+    fn manifest(&self) -> &crate::Manifest {
+        &self.manifest
+    }
+
+    /// An operation of the shared protocol is a method of the same name.
+    fn call(
+        &mut self,
+        _: &crate::Host,
+        _: &crate::Services,
+        operation: &str,
+        input: &[u8],
+        limits: crate::Limits,
+    ) -> Result<crate::Reply, crate::PluginError> {
+        let params: Value = serde_json::from_slice(input).unwrap_or(Value::Null);
+        match self.client.call(operation, params, limits.timeout) {
+            Ok(result) => Ok(crate::Reply::Ok(serde_json::to_vec(&result).unwrap_or_default())),
+            Err(NativeError::Rpc { code: -32601, .. }) => Err(crate::PluginError::MissingExport(operation.into())),
+            Err(NativeError::Rpc { message, .. }) => Ok(crate::Reply::Error(message)),
+            Err(e) => Err(crate::PluginError::Crashed(e.to_string())),
+        }
+    }
+
+    fn alive(&self) -> bool {
+        self.client.alive()
+    }
+}
+
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
