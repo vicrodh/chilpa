@@ -89,7 +89,15 @@ fn a_file_is_read_whole_across_windows_byte_for_byte() {
     ranged.read_to_end(&mut read).unwrap();
 
     assert!(read == original, "the original bytes, all of them");
-    assert_eq!(server.requests.load(Ordering::Relaxed), 3, "one request per window, none twice");
+    // 512 KiB first, then twice the last, up to the most a window asks for.
+    let (mut at, mut size, mut windows) = (0u64, FIRST, 0);
+    while at < original.len() as u64 {
+        windows += 1;
+        at += size;
+        size = (size * 2).min(WINDOW);
+    }
+    assert_eq!(server.requests.load(Ordering::Relaxed), windows, "one request per window, none twice");
+    assert!(server.asked.lock().unwrap()[0].starts_with(&format!("0-{}", FIRST - 1)), "playing starts on a small first window");
 }
 
 #[test]
