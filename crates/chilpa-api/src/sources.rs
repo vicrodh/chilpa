@@ -422,6 +422,7 @@ impl Chilpa {
             "sections": s.sections,
             "sections_loading": s.sections_pending > 0,
             "starting": self.plugins_starting(),
+            "startup": self.startup_progress().map(|(done, total, name)| serde_json::json!({"done": done, "total": total, "name": name})),
             "panels": panels,
             "source": s.current,
             "importing": s.importing,

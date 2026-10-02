@@ -1,9 +1,9 @@
 //! The desktop shell.
 //!
-//! Rust owns state and layered QML draws it (ADR-001). This is the only crate
-//! that may hold Qt types.
+//! Rust owns state and layered QML draws it (ADR-001). This crate and
+//! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
-mod app;
+use chilpa_qt_sources::app;
 mod bridge;
 mod browse;
 mod format;
@@ -24,6 +24,8 @@ unsafe extern "C" {
     fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
     /// Hands the engine the covers' image provider. See `covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
+    /// Registers the QML module of `chilpa-qt-sources`. See `modules.cpp`.
+    fn chilpa_import_modules();
 }
 
 /// Makes a derivative off the UI thread. The C strings are valid and `out`
@@ -94,6 +96,8 @@ fn main() {
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };
+    // SAFETY: it registers a static plugin, once, before the engine exists.
+    unsafe { chilpa_import_modules() };
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
         // SAFETY: the engine is alive and a QQmlEngine; the provider it is

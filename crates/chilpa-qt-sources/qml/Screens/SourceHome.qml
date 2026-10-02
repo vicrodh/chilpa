@@ -1,8 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.sources
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
 
 // A source's own page (Discover): a shelf for each of its listings, each the

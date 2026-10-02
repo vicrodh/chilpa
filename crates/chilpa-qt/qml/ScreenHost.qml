@@ -1,6 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "Screens"
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Screens"
 
 // The active tab's screen. A synchronous Loader: the screen that leaves is
 // destroyed, not hidden, and the one that arrives is built in one go

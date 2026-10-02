@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../../qml/Screens"
 
 TestCase {

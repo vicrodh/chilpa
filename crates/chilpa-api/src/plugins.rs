@@ -370,14 +370,23 @@ impl Plugins {
     /// It returns how many ended up usable. A folder that does not exist is
     /// not an error: it means there are no plugins.
     pub fn load_all(&mut self) -> usize {
+        self.load_all_with(|_, _, _| {})
+    }
+
+    /// The same, saying before each one how many there are, how many are
+    /// loaded and which comes next, for a start that shows its progress.
+    pub fn load_all_with(&mut self, mut step: impl FnMut(usize, usize, &str)) -> usize {
         let Ok(entries) = std::fs::read_dir(&self.root) else { return 0 };
-        for entry in entries.flatten() {
-            let dir = entry.path();
-            if entry.file_name().to_string_lossy().starts_with('.') || !dir.is_dir() {
-                continue;
-            }
-            self.load_one(&dir);
+        let dirs: Vec<_> = entries.flatten().filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
+            .map(|entry| entry.path()).filter(|dir| dir.is_dir()).collect();
+        for (done, dir) in dirs.iter().enumerate() {
+            let name = std::fs::read_to_string(dir.join("manifest.json")).ok()
+                .and_then(|text| serde_json::from_str::<serde_json::Value>(&text).ok())
+                .and_then(|value| value["name"].as_str().map(str::to_string)).unwrap_or_default();
+            step(done, dirs.len(), &name);
+            self.load_one(dir);
         }
+        step(dirs.len(), dirs.len(), "");
         self.remember_auth();
         self.registry.usable().len()
     }

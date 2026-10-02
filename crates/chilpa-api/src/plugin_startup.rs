@@ -6,6 +6,8 @@ use std::sync::{Arc, Mutex, mpsc};
 pub(crate) struct Startup {
     attempted: bool,
     pending: Option<mpsc::Receiver<Option<Plugins>>>,
+    /// How many plugins there are, how many are loaded, and which is loading.
+    pub(crate) progress: Arc<Mutex<(usize, usize, String)>>,
 }
 impl Startup {
     fn start(&mut self, initialize: impl FnOnce() -> Option<Plugins> + Send + 'static) {
@@ -32,13 +34,23 @@ impl Chilpa {
     pub fn start_plugins(&mut self) {
         if self.plugins.is_some() { return; }
         let root = Self::plugins_dir();
+        let progress = self.plugin_startup.progress.clone();
         self.plugin_startup.start(move || {
             let mut plugins = Plugins::new(root)?;
-            plugins.load_all();
+            plugins.load_all_with(|done, total, name| {
+                if let Ok(mut at) = progress.lock() { *at = (done, total, name.to_string()); }
+            });
             Some(plugins)
         });
     }
     pub(crate) fn plugins_starting(&self) -> bool { self.plugin_startup.pending.is_some() }
+
+    /// While plugins start: how many there are, how many are loaded and the
+    /// name of the one loading, for the window that waits for them.
+    pub(crate) fn startup_progress(&self) -> Option<(usize, usize, String)> {
+        if !self.plugins_starting() { return None; }
+        self.plugin_startup.progress.lock().ok().map(|at| at.clone())
+    }
     pub(crate) fn advance_plugins(&mut self) {
         let Some(result) = self.plugin_startup.take() else { return };
         if let Some(plugins) = result {
