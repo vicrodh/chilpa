@@ -101,7 +101,7 @@ impl Chilpa {
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str(input) else { return };
-        if matches!(action, "install" | "enable" | "disable" | "uninstall" | "grant_network" | "restart") { self.invalidate_source_menus(); }
+        if matches!(action, "install" | "install_native" | "enable" | "disable" | "uninstall" | "grant_network" | "restart") { self.invalidate_source_menus(); }
         if let Some(center) = &self.plugin_center { center.command(action, input); }
     }
 }
@@ -146,6 +146,16 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             plugins.approve(&id)?;
             plugins.reload_one(&id);
             state["proposal"] = Value::Null;
+        }
+        "install_native" => {
+            // Downloaded and checked against the catalog's SHA-256, then put in
+            // place switched off: turning it on is where it is approved.
+            let repo = input["repository"].as_str().unwrap_or("");
+            let entry = repositories.cached(repo)?.into_iter().find(|entry| entry.id == id && entry.adapter == "native")
+                .ok_or("The catalog entry is missing.")?;
+            let package = repositories.stage(repo, id)?;
+            let installed = crate::native_install::install(root, &package, &entry, repo)?;
+            plugins.lock().map_err(|_| "The plugin host is unavailable.")?.reload_one(&installed);
         }
         "restart" => {
             plugins.lock().map_err(|_| "The plugin host is unavailable.")?.reactivate(id);
@@ -225,8 +235,20 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         .filter_map(|plugin| std::fs::read(root.join(plugin.id).join("origin.json")).ok())
         .filter_map(|bytes| serde_json::from_slice::<Value>(&bytes).ok()).collect::<Vec<_>>();
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
+    let mut native_catalog = Vec::new();
     for repository in repositories.compatible() {
         for entry in repositories.cached(&repository.id)? {
+            // A native plugin is offered in its own section, to install or
+            // to update when the repository has a newer version.
+            if entry.adapter == "native" {
+                let installed = crate::native_install::installed_version(root, &entry.id);
+                if installed.as_deref() == Some(entry.version.as_str()) { continue; }
+                let mut row = json!(entry);
+                row["repository_id"] = repository.id.clone().into();
+                row["update"] = installed.is_some().into();
+                native_catalog.push(row);
+                continue;
+            }
             let category = if entry.category.is_empty() { "uncategorized" } else { &entry.category };
             categories.insert(category.to_owned());
             if installed_ids.iter().any(|origin| origin["repository"] == repository.id && origin["catalog_entry"]["id"] == entry.id) { continue; }
@@ -243,6 +265,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
     }
     state["categories"] = json!(categories);
+    state["native_catalog"] = json!(native_catalog);
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);

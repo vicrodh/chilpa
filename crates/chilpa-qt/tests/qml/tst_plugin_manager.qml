@@ -30,6 +30,23 @@ TestCase {
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest"}])
         compare(manager.selected, "")
     }
+    function test_every_native_plugin_shows_and_one_from_a_repository_installs() {
+        const native = (id) => ({id: id, name: id, state: "fine", enabled: true})
+        backend.state = {installed: [native("radio"), native("podcasts"), native("music")], busy: false,
+            native_catalog: [{id: "app.test.one", name: "One", version: "0.2.0", description: "", repository_id: "repo", update: true}]}
+        manager.read()
+        const rows = findChild(manager, "nativeCatalogRow")
+        verify(rows !== null, "a repository's native plugin is offered")
+        let button = null
+        for (let child of rows.children) if (child.text !== undefined && child.clicked !== undefined) button = child
+        compare(button.text, "Update", "a newer version is offered as an update")
+        button.clicked()
+        compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "repo", id: "app.test.one"}])
+        let shown = 0
+        const count = (item) => { for (let child of item.children) { if (child.plugin !== undefined && child.installed === true) ++shown; count(child) } }
+        count(manager)
+        compare(shown, 3, "no installed native plugin is left out")
+    }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})
         compare(backend.calls[backend.calls.length - 1], ["prepare", {repository: "repo", id: "entry"}])

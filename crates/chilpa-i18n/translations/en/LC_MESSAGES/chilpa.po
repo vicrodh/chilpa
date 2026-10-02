@@ -869,6 +869,9 @@ msgstr "Inspection failed"
 msgid "Inspection passed"
 msgstr "Inspection passed"
 
+msgid "Install"
+msgstr ""
+
 msgid "Installed"
 msgstr ""
 
@@ -1939,6 +1942,9 @@ msgid "Unmute"
 msgstr ""
 
 msgid "Up next"
+msgstr ""
+
+msgid "Update"
 msgstr ""
 
 msgid "Updates"

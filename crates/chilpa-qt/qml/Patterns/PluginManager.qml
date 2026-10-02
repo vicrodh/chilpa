@@ -71,29 +71,8 @@ Item {
         id: toolbar
         width: parent.width
         spacing: Metrics.gap12
-        Text { text: I18n.tr("Chilpa Native Plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        ListView {
-            width: parent.width
-            height: Math.min(contentHeight, Metrics.settingsRow * 2) // derived: at most two native rows
-            clip: true
-            model: manager.installedRows.filter(p => !p.origin)
-            ScrollBar.vertical: ScrollBar {}
-            delegate: PluginRow {
-                required property var modelData
-                width: ListView.view.width - Metrics.gap12
-                plugin: modelData
-                installed: true
-                onSwitched: (on) => manager.command(on ? "enable" : "disable", {id: modelData.id})
-            }
-        }
-        Text { text: I18n.tr("Compatible plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        Text {
-            width: parent.width
-            text: I18n.tr("Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior.", I18n.rev)
-            wrapMode: Text.WordWrap
-            color: Theme.color.textSecondary
-            font.pointSize: Type.body
-        }
+        // A repository serves either section: native plugins, or a catalog
+        // of compatible ones; Chilpa tells them apart.
         Row {
             width: parent.width
             spacing: Metrics.gap8
@@ -104,6 +83,52 @@ Item {
             }
             P.PillButton { id: add; text: I18n.tr("Add", I18n.rev); enabled: !manager.view.busy; onClicked: manager.command("add", {url: repository.text}) }
             P.PillButton { id: manage; text: I18n.tr("Manage", I18n.rev); onClicked: repositories.open() }
+        }
+        Text { text: I18n.tr("Chilpa Native Plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+        Repeater {
+            model: manager.installedRows.filter(p => !p.origin)
+            delegate: PluginRow {
+                required property var modelData
+                width: toolbar.width - Metrics.gap12
+                plugin: modelData
+                installed: true
+                onSwitched: (on) => manager.command(on ? "enable" : "disable", {id: modelData.id})
+            }
+        }
+        // What the added repositories offer that is not installed, or is
+        // newer than what is. Installed, it waits switched off.
+        Repeater {
+            model: manager.view.native_catalog || []
+            delegate: Item {
+                required property var modelData
+                objectName: "nativeCatalogRow"
+                width: toolbar.width - Metrics.gap12
+                height: Metrics.settingsRow
+                Column {
+                    anchors.left: parent.left
+                    anchors.right: get.left
+                    anchors.rightMargin: Metrics.gap12
+                    anchors.verticalCenter: parent.verticalCenter
+                    Text { width: parent.width; text: modelData.name + "  " + modelData.version; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body }
+                    Text { width: parent.width; text: modelData.problem || modelData.description; elide: Text.ElideRight; color: modelData.problem ? Theme.color.statusWarning : Theme.color.textSecondary; font.pointSize: Type.meta }
+                }
+                P.PillButton {
+                    id: get
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: modelData.update ? I18n.tr("Update", I18n.rev) : I18n.tr("Install", I18n.rev)
+                    enabled: !manager.view.busy && !modelData.problem
+                    onClicked: manager.command("install_native", {repository: modelData.repository_id, id: modelData.id})
+                }
+            }
+        }
+        Text { text: I18n.tr("Compatible plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+        Text {
+            width: parent.width
+            text: I18n.tr("Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior.", I18n.rev)
+            wrapMode: Text.WordWrap
+            color: Theme.color.textSecondary
+            font.pointSize: Type.body
         }
         Flow {
             width: parent.width
