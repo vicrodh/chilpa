@@ -305,6 +305,8 @@ pub struct Plugins {
     worker_launcher: Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>>,
     pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
     pub(crate) network_requests: crate::worker_services::NetworkRequests,
+    /// Process plugins, reached outside this struct's lock.
+    pub(crate) natives: Arc<crate::natives::Natives>,
     /// When each worker was last brought back on its own, to bound it.
     revived: BTreeMap<String, Vec<std::time::Instant>>,
     /// Counts the times each plugin was loaded. A handle a worker gave out
@@ -333,7 +335,7 @@ impl Plugins {
             .map(|paths| Arc::new(paths) as Arc<dyn chilpa_plugin::bridge::WorkerLauncher>).or(worker_launcher);
         Some(Self { host, registry: Registry::new(), services, approvals, secrets, root, private, worker_launcher,
             layouts: BTreeMap::new(), network_requests: Arc::new(Mutex::new(BTreeMap::new())),
-            revived: BTreeMap::new(), epochs: BTreeMap::new() })
+            natives: Arc::default(), revived: BTreeMap::new(), epochs: BTreeMap::new() })
     }
 
     /// The application supplies a packaged, isolated runtime. Package
@@ -402,8 +404,13 @@ impl Plugins {
             self.layouts.insert(id.clone(), crate::source_layout::Layout::load(&self.root, &id));
             *self.epochs.entry(id).or_default() += 1;
         }
-        if serde_json::from_str::<serde_json::Value>(&manifest).ok()
-            .is_some_and(|value| value["runtime"] == "bridge") {
+        let runtime = serde_json::from_str::<serde_json::Value>(&manifest).ok().map(|value| value["runtime"].clone());
+        if runtime.as_ref().is_some_and(|runtime| runtime == "process") {
+            let approvals = &self.approvals;
+            crate::natives::install(&mut self.registry, &manifest, dir, &self.natives, |manifest| approvals.covers(manifest));
+            return;
+        }
+        if runtime.is_some_and(|runtime| runtime == "bridge") {
             let approvals = &self.approvals;
             crate::worker_install::install(&mut self.registry, &manifest, dir, self.worker_launcher.as_ref(), self.private.as_ref(),
                 self.network_requests.clone(),
@@ -731,12 +738,32 @@ impl Chilpa {
     /// falls back to executing an unrestricted child process.
     pub fn set_worker_launcher(&mut self, launcher: Arc<dyn chilpa_plugin::bridge::WorkerLauncher>) -> bool {
         if self.plugins.is_none() {
-            self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
+            self.plugins = self.new_host();
             self.install_openers();
         }
         let Some(mut plugins) = self.plugins.as_ref().and_then(|plugins| plugins.lock().ok()) else { return false };
         plugins.set_worker_launcher(launcher);
         true
+    }
+
+    /// A sandbox for the plugins folder, sharing its process plugins with
+    /// the facade so they are reached without its lock.
+    fn new_host(&mut self) -> Option<Arc<Mutex<Plugins>>> {
+        let plugins = Plugins::new(Self::plugins_dir())?;
+        self.natives = plugins.natives.clone();
+        Some(Arc::new(Mutex::new(plugins)))
+    }
+
+    /// A process plugin's channel, outside the sandbox lock: any thread can
+    /// call it while another call to it, or to any plugin, is in flight.
+    pub fn native_call(&self, id: &str, method: &str, params: serde_json::Value, timeout: std::time::Duration) -> Result<serde_json::Value, String> {
+        let client = self.natives.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
+        client.call(method, params, timeout).map_err(|e| e.to_string())
+    }
+
+    /// A handle any thread can call a process plugin through.
+    pub fn native_caller(&self) -> NativeCaller {
+        NativeCaller(self.natives.clone())
     }
 
     /// Where the plugins live.
@@ -751,7 +778,7 @@ impl Chilpa {
     pub fn load_plugins(&mut self) -> usize {
         self.invalidate_source_menus();
         if self.plugins.is_none() {
-            self.plugins = Plugins::new(Self::plugins_dir()).map(|p| Arc::new(Mutex::new(p)));
+            self.plugins = self.new_host();
             // The player can now be told where something of a plugin is.
             self.install_openers();
         }
@@ -1020,6 +1047,17 @@ impl Chilpa {
             Some(mut p) => p.call(id, operation, input),
             None => Err(chilpa_i18n::t("the plugin sandbox is not started").into()),
         }
+    }
+}
+
+/// Calls process plugins from any thread, without the facade.
+#[derive(Clone)]
+pub struct NativeCaller(Arc<crate::natives::Natives>);
+
+impl NativeCaller {
+    pub fn call(&self, id: &str, method: &str, params: serde_json::Value, timeout: std::time::Duration) -> Result<serde_json::Value, String> {
+        let client = self.0.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
+        client.call(method, params, timeout).map_err(|e| e.to_string())
     }
 }
 

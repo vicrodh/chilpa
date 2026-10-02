@@ -35,8 +35,8 @@ pub enum Runtime {
     /// Inside, sandboxed. The usual (ADR-007).
     #[default]
     Wasm,
-    /// A separate process, for anything that needs native code. Not
-    /// implemented yet; a manifest asking for it is refused, saying so.
+    /// A separate native process, for anything that needs native code.
+    /// Only a host that can launch one in a sandbox loads it.
     Process,
     /// A host-owned compatibility worker with private storage and mediated
     /// network access. Only an explicitly selected adapter can load it.
@@ -290,7 +290,7 @@ impl Manifest {
                 have: API_VERSION,
             });
         }
-        if self.runtime == Runtime::Process || self.runtime != available {
+        if self.runtime != available {
             return Err(ManifestError::RuntimeNotImplemented(self.runtime));
         }
         if self.has(&Capability::GuestCredentials) && (self.runtime != Runtime::Bridge || !self.can_store()) {

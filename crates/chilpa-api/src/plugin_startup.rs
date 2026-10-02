@@ -54,6 +54,7 @@ impl Chilpa {
     pub(crate) fn advance_plugins(&mut self) {
         let Some(result) = self.plugin_startup.take() else { return };
         if let Some(plugins) = result {
+            self.natives = plugins.natives.clone();
             self.plugins = Some(Arc::new(Mutex::new(plugins)));
             self.install_openers();
         } else { self.now.error = "The plugin host could not start.".into(); }

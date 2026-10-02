@@ -6,7 +6,7 @@
 
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
-pub use plugins::PluginInfo;
+pub use plugins::{NativeCaller, PluginInfo};
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod accounts;
@@ -50,6 +50,7 @@ mod plugin_library;
 mod plugin_center;
 mod plugin_evidence;
 mod plugin_domains;
+mod natives;
 pub use plugin_installation::PreparedPlugin;
 pub use chilpa_plugin::bridge::WorkerLauncher;
 mod quality;
@@ -582,6 +583,8 @@ pub struct Chilpa {
     plugins: Option<std::sync::Arc<std::sync::Mutex<plugins::Plugins>>>,
     plugin_center: Option<plugin_center::PluginCenter>,
     plugin_startup: plugin_startup::Startup,
+    /// Process plugins, reached without the sandbox lock.
+    natives: std::sync::Arc<natives::Natives>,
     /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
     /// The background scan, while it runs.
@@ -676,6 +679,7 @@ impl Chilpa {
             plugins: None,
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
+            natives: Default::default(),
             tap: chilpa_core::tap::Tap::new(),
             scan: None,
             scan_status: ScanStatus::default(),

@@ -2766,6 +2766,9 @@ msgstr ""
 msgid "the plugin could not be asked"
 msgstr ""
 
+msgid "the plugin is not running"
+msgstr ""
+
 msgid "the plugin sandbox could not be started"
 msgstr ""
 
