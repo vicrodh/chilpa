@@ -51,6 +51,7 @@ mod plugin_center;
 mod plugin_evidence;
 mod plugin_domains;
 mod natives;
+pub mod stall;
 pub use plugin_installation::PreparedPlugin;
 pub use chilpa_plugin::bridge::WorkerLauncher;
 mod quality;
