@@ -87,6 +87,72 @@ pub fn launch(paths: &RuntimePaths, guest: &Path, memory_bytes: usize) -> Result
     }))
 }
 
+/// Where a native plugin lives and keeps its things. Chilpa chooses these;
+/// the plugin's manifest never does.
+pub struct NativePaths {
+    /// The plugin's folder, with its `plugin` executable. Read-only inside.
+    pub folder: PathBuf,
+    pub data: PathBuf,
+    pub cache: PathBuf,
+}
+
+/// Starts a native plugin in its own namespaces. It reaches the network on
+/// its own (a plugin we seed, not one from a list), sees `/usr`, the
+/// certificates and the resolver read-only, its folder read-only, and only
+/// its data and cache folders writable. Not the home, not the library.
+pub fn launch_native(
+    paths: &NativePaths,
+    name: &str,
+    memory_bytes: usize,
+    notice: impl Fn(&str, &serde_json::Value) + Send + 'static,
+) -> Result<std::sync::Arc<chilpa_plugin::native::NativeClient>, BridgeError> {
+    if unsafe { libc::geteuid() } == 0 || memory_bytes < 64 * 1024 * 1024 {
+        return Err(BridgeError::Denied);
+    }
+    let folder = canonical_directory(&paths.folder)?;
+    for dir in [&paths.data, &paths.cache] {
+        std::fs::create_dir_all(dir).map_err(|_| BridgeError::Disconnected)?;
+    }
+    let data = canonical_directory(&paths.data)?;
+    let cache = canonical_directory(&paths.cache)?;
+    if !folder.join("plugin").is_file() {
+        return Err(BridgeError::Disconnected);
+    }
+    let mut command = Command::new("/usr/bin/bwrap");
+    command.env_clear().args(["--unshare-all", "--share-net", "--die-with-parent", "--new-session", "--cap-drop", "ALL"])
+        .args(["--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
+            "--symlink", "usr/bin", "/bin", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]);
+    for shared in ["/etc/ssl", "/etc/ca-certificates", "/etc/pki", "/etc/resolv.conf", "/etc/hosts", "/etc/nsswitch.conf"] {
+        command.args(["--ro-bind-try", shared, shared]);
+    }
+    command.arg("--ro-bind").arg(&folder).arg("/plugin")
+        .arg("--bind").arg(&data).arg("/data")
+        .arg("--bind").arg(&cache).arg("/cache")
+        .args(["--chdir", "/data", "--clearenv", "--setenv", "PATH", "/usr/bin", "--setenv", "HOME", "/data",
+            "--setenv", "XDG_CACHE_HOME", "/cache", "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs", "--",
+            "/usr/bin/prlimit"])
+        .arg(format!("--as={memory_bytes}"))
+        .args(["--nofile=256", "--core=0", "--", "/plugin/plugin"])
+        .stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::piped());
+    let mut child = spawn(command).map_err(|_| BridgeError::Disconnected)?;
+    let input = child.stdin.take().ok_or(BridgeError::Disconnected)?;
+    let output = child.stdout.take().ok_or(BridgeError::Disconnected)?;
+    if let Some(errors) = child.stderr.take() {
+        // What the plugin prints goes to the log under its name.
+        let name = name.to_string();
+        let _ = std::thread::Builder::new().name("chilpa-native-err".into()).spawn(move || {
+            use std::io::BufRead;
+            for line in std::io::BufReader::new(errors).lines().map_while(Result::ok) {
+                eprintln!("plugin[{name}]: {line}");
+            }
+        });
+    }
+    Ok(chilpa_plugin::native::NativeClient::start(input, output, move || {
+        let _ = child.kill();
+        let _ = child.wait();
+    }, notice))
+}
+
 /// Starts a worker from the one thread that lives as long as Chilpa.
 ///
 /// `--die-with-parent` is a parent-death signal, and Linux sends it when the
@@ -158,5 +224,32 @@ while(1){
         let start = Instant::now();
         assert_eq!(session.call("hang", json!({}), Duration::from_millis(100), &mut Deny), Err(BridgeError::Timeout));
         assert!(start.elapsed() < Duration::from_secs(2));
+    }
+
+    #[test]
+    fn a_native_plugin_sees_only_its_folders() {
+        use std::os::unix::fs::PermissionsExt;
+        let root = tempfile::tempdir().unwrap();
+        let folder = root.path().join("plugin");
+        std::fs::create_dir(&folder).unwrap();
+        let script = r#"#!/usr/bin/bash
+while IFS= read -r line; do
+  id=$(printf '%s' "$line" | sed -E 's/.*"id":([0-9]+).*/\1/')
+  home=false; [ -e /home ] && home=true
+  data=false; touch /data/written 2>/dev/null && data=true
+  sealed=true; touch /plugin/written 2>/dev/null && sealed=false
+  printf 'checked\n' >&2
+  printf '{"jsonrpc":"2.0","id":%s,"result":{"home":%s,"data":%s,"sealed":%s}}\n' "$id" "$home" "$data" "$sealed"
+done
+"#;
+        std::fs::write(folder.join("plugin"), script).unwrap();
+        std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
+        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache") };
+        let client = launch_native(&paths, "test", 512 * 1024 * 1024, |_, _| {}).unwrap();
+        assert_eq!(client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),
+            json!({"home": false, "data": true, "sealed": true}));
+        assert!(root.path().join("data/written").is_file(), "its data folder is the one Chilpa gave it");
+        client.stop();
+        assert!(!client.alive());
     }
 }
