@@ -122,7 +122,11 @@ pub fn launch_native(
     command.env_clear().args(["--unshare-all", "--share-net", "--die-with-parent", "--new-session", "--cap-drop", "ALL"])
         .args(["--ro-bind", "/usr", "/usr", "--symlink", "usr/lib", "/lib", "--symlink", "usr/lib64", "/lib64",
             "--symlink", "usr/bin", "/bin", "--proc", "/proc", "--dev", "/dev", "--tmpfs", "/tmp"]);
-    for shared in ["/etc/ssl", "/etc/ca-certificates", "/etc/pki", "/etc/resolv.conf", "/etc/hosts", "/etc/nsswitch.conf"] {
+    // The loader's cache and configuration too: a native binary links
+    // libraries that live outside /usr/lib on some systems (libgcc_s under
+    // the compiler's folder), found only through them.
+    for shared in ["/etc/ssl", "/etc/ca-certificates", "/etc/pki", "/etc/resolv.conf", "/etc/hosts", "/etc/nsswitch.conf",
+        "/etc/ld.so.cache", "/etc/ld.so.conf", "/etc/ld.so.conf.d"] {
         command.args(["--ro-bind-try", shared, shared]);
     }
     command.arg("--ro-bind").arg(&folder).arg("/plugin")
