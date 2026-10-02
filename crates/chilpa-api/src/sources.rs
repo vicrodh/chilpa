@@ -1371,11 +1371,17 @@ impl Chilpa {
     /// in queue order. With shuffle on the next one is the player's to pick.
     pub(crate) fn resolve_next_ahead(&mut self) {
         let left = self.now.total_seconds - self.now.seconds;
-        if !self.now.playing || self.shuffle || self.now.total_seconds <= 0.0 || left > 30.0 {
+        if !self.now.playing || self.shuffle || self.now.total_seconds <= 0.0 {
             return;
         }
         let Some(at) = self.queue_paths().iter().position(|p| *p == self.now.path) else { return };
         let Some(next) = self.queue_paths().get(at + 1).filter(|p| of_plugin(p).is_some()).cloned() else { return };
+        // A process plugin keeps an address until it expires, so the next
+        // one is asked for as soon as this one plays; the rest, near its end.
+        let native = of_plugin(&next).is_some_and(|(plugin, _)| self.natives.is_native(&plugin));
+        if left > 30.0 && !native {
+            return;
+        }
         if self.sources.ahead_asked == next {
             return;
         }

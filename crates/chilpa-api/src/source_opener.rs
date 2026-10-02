@@ -86,8 +86,11 @@ impl Openers {
     /// A process plugin gives the address itself, signed and direct: it is
     /// asked without the sandbox lock and its redirects are not walked.
     fn locate_in_native(&self, natives: &std::sync::Arc<crate::natives::Natives>, plugin: &str, reference: &str) -> Result<Located, String> {
+        let started = std::time::Instant::now();
         let answer = natives.call(plugin, "track.resolve", serde_json::json!({"ref": reference, "purpose": "play",
-            "output": {"max_rate": 192_000, "max_bits": 24}}), Duration::from_secs(20))?;
+            "output": {"max_rate": 192_000, "max_bits": 24}}), Duration::from_secs(20));
+        eprintln!("native-resolve: plugin={plugin} ok={} elapsed_ms={}", answer.is_ok(), started.elapsed().as_millis());
+        let answer = answer?;
         let url = answer.get("url").and_then(serde_json::Value::as_str)
             .filter(|url| url.starts_with("https://") || url.starts_with("http://"))
             .ok_or_else(|| chilpa_i18n::t("the source gave no address to play"))?;
