@@ -318,8 +318,7 @@ impl qobject::AlbumGridModel {
             "related" => app::with(|api| api.related_albums(self.rust().key.to_string().parse().unwrap_or_default(), limit)),
             "source" => {
                 let (cards, groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
-                self.as_mut().rust_mut().groups = groups;
-                cards
+                self.as_mut().rust_mut().groups = groups; cards
             }
             "artists" => {
                 // An artist is drawn as a card too: its name where a record's
@@ -393,6 +392,8 @@ impl qobject::AlbumGridModel {
     }
 
     fn show(mut self: Pin<&mut Self>, list: Albums) {
+        // The same records read again change at most their covers: a new revision redraws those, a reset would flash.
+        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) { if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.id == b.id && a.title == b.title) { self.as_mut().rust_mut().list = list; let next = self.rev().wrapping_add(1); return self.set_rev(next); } }
         let opened = self.rust().get(self.rust().expanded, |a| a.id)
             .map(|id| app::with(|api| api.selected_album_version(id)));
         let expanded = match (&list, opened) {
