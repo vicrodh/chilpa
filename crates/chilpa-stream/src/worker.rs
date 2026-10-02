@@ -21,6 +21,15 @@ pub fn worker_url_allowed(url: &str, domains: &[String]) -> bool {
 /// Authentication headers belong to this guest. They are never replaced with
 /// native account credentials. Redirects return to the worker as responses;
 /// every subsequent hop must pass the same domain check.
+/// One agent for every worker request, so its connections are kept and
+/// reused: a plugin asks the same hosts over and over, and a new agent per
+/// request paid DNS, TCP and TLS each time. No cookies are kept in it; the
+/// guest sends its own as headers.
+fn shared_agent() -> &'static ureq::Agent {
+    static AGENT: std::sync::OnceLock<ureq::Agent> = std::sync::OnceLock::new();
+    AGENT.get_or_init(|| ureq::Agent::config_builder().max_redirects(0).http_status_as_error(false).build().new_agent())
+}
+
 pub fn send_worker_request(
     request: &Value,
     domains: &[String],
@@ -48,18 +57,17 @@ pub fn send_worker_request(
     if encoded.len() > 2 * MAX_BODY { return Err(WorkerNetworkError::TooLarge); }
     let body = base64::engine::general_purpose::STANDARD.decode(encoded).map_err(|_| WorkerNetworkError::Invalid)?;
     if body.len() > MAX_BODY { return Err(WorkerNetworkError::TooLarge); }
-    let agent = ureq::Agent::config_builder()
-        .timeout_global(Some(timeout.min(Duration::from_secs(30))))
-        .max_redirects(0).http_status_as_error(false).build().new_agent();
+    let agent = shared_agent();
+    let timeout = Some(timeout.min(Duration::from_secs(30)));
     let reply = if matches!(method, "POST" | "PUT" | "PATCH") {
         let mut builder = match method { "PUT" => agent.put(url), "PATCH" => agent.patch(url), _ => agent.post(url) };
         for (key, value) in &headers { builder = builder.header(*key, *value); }
-        builder.send(body.as_slice())
+        builder.config().timeout_global(timeout).build().send(body.as_slice())
     } else {
         if !body.is_empty() { return Err(WorkerNetworkError::Invalid); }
         let mut builder = match method { "HEAD" => agent.head(url), "DELETE" => agent.delete(url), _ => agent.get(url) };
         for (key, value) in &headers { builder = builder.header(*key, *value); }
-        builder.call()
+        builder.config().timeout_global(timeout).build().call()
     }.map_err(|_| WorkerNetworkError::Transport)?;
     let status = reply.status().as_u16();
     let mut headers: BTreeMap<String, Value> = BTreeMap::new();
