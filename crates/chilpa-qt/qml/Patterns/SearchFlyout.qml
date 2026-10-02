@@ -46,9 +46,16 @@ Popup {
     function choose(row) {
         // The way to more of a source's results stays open, with them.
         const item = list.itemAtIndex(row)
-        if (!(item && item.link))
+        const link = item && item.link
+        if (!link)
             close()
+        // The rows are built again; the list stays where it was read.
+        const at = list.contentY
         search.act(row, "open")
+        if (link) {
+            search.refresh()
+            list.contentY = at
+        }
     }
     // Enter: the row the keyboard is on, or the first result.
     function chooseCurrent() {
