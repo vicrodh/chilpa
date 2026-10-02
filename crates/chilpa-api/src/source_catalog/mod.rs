@@ -112,6 +112,12 @@ fn now() -> u64 {
     crate::now_unix().max(0) as u64
 }
 
+/// Whether a card's tracks can be asked for now: a compatibility source's
+/// needs a live handle, a process plugin's only its identity.
+fn readable(card: &store::Card, natives: Option<&crate::natives::Natives>) -> bool {
+    card.handle.is_some() || natives.is_some_and(|natives| natives.is_native(&card.plugin))
+}
+
 /// The plugin and the address of a listing key.
 pub(crate) fn split(key: &str) -> (&str, &str) {
     key.split_once(' ').unwrap_or((key, ""))
@@ -224,8 +230,9 @@ impl Catalog {
             for image in images {
                 self.want_cover(&mut inner, &image);
             }
+            let natives = self.natives();
             let ahead: Vec<i64> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
-                .filter(|c| c.kind != CardKind::Artist && c.tracks.is_none() && c.handle.is_some())
+                .filter(|c| c.kind != CardKind::Artist && c.tracks.is_none() && readable(c, natives.as_deref()))
                 .take(READ_AHEAD).map(|c| c.id).collect();
             for id in ahead {
                 self.queue(&mut inner, Job::Tracks(id), false);
@@ -279,7 +286,7 @@ impl Catalog {
         let mut inner = self.lock();
         let card = inner.store.cards.get(&id)?.clone();
         let old = card.tracks.is_none() || now().saturating_sub(card.read_at) > TRACKS_FRESH;
-        if old && card.handle.is_some() && !inner.card_errors.contains_key(&id) {
+        if old && readable(&card, self.natives().as_deref()) && !inner.card_errors.contains_key(&id) {
             self.queue(&mut inner, Job::Tracks(id), card.tracks.is_none());
         }
         let ids = card.tracks?;
