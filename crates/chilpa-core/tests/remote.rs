@@ -108,6 +108,7 @@ impl RemoteOpener for Fake {
         // was built.
         let url = if entry.external_id == "closed" { "http://127.0.0.1:1/audio/file".to_string() } else { self.url.clone() };
         Ok(Located {
+            playback: entry.external_id.starts_with("events-").then(|| Arc::new(Recorded(entry.external_id.clone())) as Arc<dyn chilpa_core::playback_events::Observer>),
             request: chilpa_core::RangedRequest { url, headers: vec![("X-Token".into(), "letmein".into())] },
             extension: Some("wav".into()),
             server: "Lab".into(),
@@ -230,4 +231,33 @@ fn a_server_that_went_away_is_named_in_the_error() {
     p.play_all(&[entry("closed")], "fake");
     let events = wait(&p, |e| e.iter().any(|x| matches!(x, PlayerEvent::Failed { .. })));
     assert!(matches!(events.last(), Some(PlayerEvent::Failed { message }) if message.contains("Lab")), "{events:?}");
+}
+
+
+static REPORTS: Mutex<Vec<(String, u64, u32, String)>> = Mutex::new(Vec::new());
+struct Recorded(String);
+impl chilpa_core::playback_events::Observer for Recorded {
+    fn update(&self, frames: u64, rate: u32, _: &'static str, ended: Option<&'static str>) {
+        if let Some(reason) = ended {
+            REPORTS.lock().unwrap().push((self.0.clone(), frames, rate, reason.into()));
+        }
+    }
+}
+
+#[test]
+fn repeated_remote_resources_each_report_their_consumed_audio_once() {
+    fake();
+    let written = Arc::new(AtomicU64::new(0));
+    let mut player = player(written);
+    player.play_all(&[entry("events-repeat"), entry("events-repeat")], "fake");
+    wait(&player, |events| events.iter().any(|e| matches!(e, PlayerEvent::Finished { .. } | PlayerEvent::Failed { .. })));
+    player.shutdown();
+    let reports = REPORTS.lock().unwrap();
+    let reports: Vec<_> = reports.iter().filter(|r| r.0 == "events-repeat").collect();
+    assert_eq!(reports.len(), 2);
+    for report in reports {
+        assert_eq!(report.1, 30_000);
+        assert_eq!(report.2, 44_100);
+        assert_eq!(report.3, "finished");
+    }
 }

@@ -124,6 +124,7 @@ pub struct SourceReply {
     pub source: String,
     pub source_name: String,
     pub results: messages::Results,
+    pub entities: Vec<serde_json::Value>,
     /// Empty if it answered fine.
     pub problem: String,
     /// True if that source can deliver audio. There are services whose API
@@ -138,6 +139,7 @@ impl SourceReply {
             source,
             source_name,
             results: messages::Results::default(),
+            entities: Vec::new(),
             problem,
             delivers_audio: true,
         }
@@ -227,16 +229,27 @@ impl SearchJob {
                 // plugins: a slow one must not leave the window waiting nor
                 // block the rest of the facade.
                 let Ok(who) = plugins.lock().map(|p| p.searchers()) else { return };
+                std::thread::scope(|workers| {
                 for (id, name) in who {
                     if stopped.load(Ordering::Relaxed) { return; }
                     if !searches_source(&source, &id) { continue; }
+                    let natives = plugins.lock().ok().map(|p| p.natives.clone());
+                    if let Some(natives) = natives.filter(|n| n.is_native(&id)) {
+                        let (tx, text, stopped) = (tx.clone(), text_asked.clone(), stopped.clone());
+                        workers.spawn(move || {
+                            if stopped.load(Ordering::Relaxed) { return; }
+                            let reply = crate::source_search::native_reply(&natives, &id, &name, &text, limit);
+                            if !stopped.load(Ordering::Relaxed) { let _ = tx.send(reply); }
+                        });
+                        continue;
+                    }
                     let delivers =
                         plugins.lock().map(|p| p.delivers_audio(&id)).unwrap_or(true);
                     // What this source answered to this text a moment ago comes back at once.
                     let asked = (id.clone(), text_asked.trim().to_lowercase(), limit);
                     let kept = answers().lock().ok().and_then(|a| a.get(&asked).filter(|(at, _)| at.elapsed() < ANSWER_FRESH).map(|(_, r)| r.clone()));
                     if let Some(results) = kept {
-                        let reply = SourceReply { source: id, source_name: name, results, problem: String::new(), delivers_audio: delivers };
+                        let reply = SourceReply { source: id, source_name: name, results, entities: Vec::new(), problem: String::new(), delivers_audio: delivers };
                         if tx.send(reply).is_err() { return; }
                         continue;
                     }
@@ -260,6 +273,7 @@ impl SearchJob {
                                     }
                                     clean
                                 },
+                                entities: Vec::new(),
                                 problem: String::new(),
                                 delivers_audio: delivers,
                             },
@@ -272,6 +286,7 @@ impl SearchJob {
                         return;
                     }
                 }
+                });
             })
             .ok();
         Self { text, replies: rx, thread, cancelled }
@@ -626,6 +641,7 @@ mod tests {
         SourceReply {
             source: source.to_string(),
             source_name: format!("Source {source}"),
+            entities: Vec::new(),
             results: messages::Results { tracks, ..Default::default() },
             problem: String::new(),
             delivers_audio: true,

@@ -25,7 +25,7 @@ use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
 /// What a track is read from after its route has been resolved.
 enum Source {
-    Pcm(Decoded),
+    Pcm(Decoded, Option<std::sync::Arc<dyn crate::playback_events::Observer>>),
     Dop(Box<dyn DsdSource>),
     Native(Box<dyn DsdSource>),
     DsdPcm(DsdPcmConverter),
@@ -55,12 +55,12 @@ fn open_track(
     }
     // A track on a server: the original bytes, read by windows, decoded
     // here like a file on disk (ADR-017).
-    let decoded = match crate::remote::entry(path) {
+    let (decoded, observer) = match crate::remote::entry(path) {
         Some(entry) => crate::remote::open(path, &entry).map_err(unreadable)?,
-        None => Decoded::open(path).map_err(PlayError::Decode)?,
+        None => (Decoded::open(path).map_err(PlayError::Decode)?, None),
     };
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
-    Ok((Source::Pcm(decoded), delivery))
+    Ok((Source::Pcm(decoded, observer), delivery))
 }
 
 /// Sends DSD untouched only to a direct route that takes it as asked: DoP
@@ -818,7 +818,7 @@ where
     // `exclusive` was read when the output was chosen, before the queue.
     let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, volume, .. } = controls;
     let mut results = Vec::new();
-    let mut opened: Option<(StreamFormat, K)> = None;
+    let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
     let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
     let mut index = if requested < queue.len() { requested } else { order.first(queue.len()) };
     // A file that delivers not one frame plus repeat turned on would be a
@@ -891,7 +891,7 @@ where
         };
         unreachable_in_a_row = 0;
         let source_kind = match &source {
-            Source::Pcm(_) => "pcm",
+            Source::Pcm(..) => "pcm",
             Source::Dop(_) => "dop",
             Source::Native(_) => "native-dsd",
             Source::DsdPcm(_) => "dsd-pcm",
@@ -984,7 +984,7 @@ where
                 "sink_opened",
                 format_args!("after={:?} format={:?}", started.elapsed(), delivery.opened),
             );
-            opened = Some((delivery.opened, new));
+            opened = Some((delivery.opened, crate::playback_events::Measured::new(new)));
             packer = DopPacker::new();
         }
         let (_, sink) = opened.as_mut().expect("freshly opened");
@@ -1000,7 +1000,7 @@ where
         let gain = match &source {
             // Never under the bit-perfect policy, whatever the switch says:
             // that policy is the promise that no sample is changed.
-            Source::Pcm(_) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
+            Source::Pcm(..) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
                 let tags = chilpa_tags::read(path).map(|i| i.tags).unwrap_or_default();
                 let (gain_db, peak) = tags.replaygain();
                 normalization_gain(gain_db, peak)
@@ -1009,12 +1009,17 @@ where
         };
         // The volume, the same way and under the same promise.
         let volume = match &source {
-            Source::Pcm(_) | Source::DsdPcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
+            Source::Pcm(..) | Source::DsdPcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
             _ => None,
         };
         if gain != 1.0 || volume.as_ref().is_some_and(|v| v.get() != 1.0) {
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
+        let observer = match &source {
+            Source::Pcm(_, observer) => observer.clone(),
+            _ => None,
+        };
+        sink.begin(observer);
         on_track(index, path, &delivery);
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -1025,7 +1030,7 @@ where
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
         let (outcome, skipped) = match &mut source {
-            Source::Pcm(decoded) => {
+            Source::Pcm(decoded, _) => {
                 let channels = decoded.stream_format().channels;
                 let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
                 let float_trimmer =
@@ -1113,6 +1118,13 @@ where
                 render_started.elapsed()
             ),
         );
+        sink.end(if skipped { "skipped" } else {
+            match &outcome {
+                Outcome::Finished { .. } => "finished",
+                Outcome::Stopped { .. } => "stopped",
+                _ => "error",
+            }
+        });
         let finished_ok = outcome.may_advance_queue();
         ended_by_itself = finished_ok && !skipped;
         skipped_before = skipped;

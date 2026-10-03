@@ -10,6 +10,8 @@ pub(crate) struct PluginCenter {
     foreground: Arc<AtomicBool>,
     library_dirty: Arc<AtomicBool>,
     operation: Arc<Mutex<String>>,
+    removed: Arc<Mutex<Vec<String>>>,
+    refreshed: Arc<Mutex<Vec<String>>>,
 }
 
 impl PluginCenter {
@@ -25,6 +27,10 @@ impl PluginCenter {
         let changed = library_dirty.clone();
         let operation = Arc::new(Mutex::new(String::new()));
         let current = operation.clone();
+        let removed = Arc::new(Mutex::new(Vec::new()));
+        let deleted = removed.clone();
+        let refreshed = Arc::new(Mutex::new(Vec::new()));
+        let reload = refreshed.clone();
         std::thread::spawn(move || {
             let launcher = plugins.lock().ok().and_then(|host| host.compatibility_launcher());
             let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"),
@@ -34,7 +40,9 @@ impl PluginCenter {
             for (action, input) in receiver {
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
-                if result.is_ok() && action == "library_visibility" { changed.store(true, Ordering::Release); }
+                if result.is_ok() && action == "submit" { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
+                if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
+                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {
                     state["validation"] = json!({"id":input["id"],"repository_id":input["repository"],
                         "state":if result.is_ok() {"passed"} else {"failed"},
@@ -58,7 +66,7 @@ impl PluginCenter {
                 active.fetch_sub(1, Ordering::AcqRel);
             }
         });
-        Self { commands, view, busy, foreground, operation, library_dirty }
+        Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed }
     }
     fn command(&self, action: &str, input: Value) {
         let background = action == "tick";
@@ -96,12 +104,20 @@ impl Chilpa {
                 self.plugin_center = Some(center);
             }
         }
+        let refreshed = self.plugin_center.as_ref().map(|c| std::mem::take(&mut *c.refreshed.lock().unwrap())).unwrap_or_default();
+        for id in refreshed { if self.natives.is_native(&id) {
+            for kind in self.natives.library_kinds(&id) { self.catalog.retry(&format!("{id} section:{kind}")); }
+            if self.natives.has_pages(&id) { self.catalog.retry(&format!("{id} native:discover:home")); }
+            self.mark_library_changed();
+        } }
+        let removed = self.plugin_center.as_ref().map(|c| std::mem::take(&mut *c.removed.lock().unwrap())).unwrap_or_default();
+        for id in removed { self.forget_source_preferences(&id); self.purge_queue(|path| crate::source_opener::of_plugin(path).is_some_and(|(plugin, _)| plugin == id)); self.catalog.forget_plugin(&id); self.invalidate_source_menus(); }
         if self.plugin_center.as_ref().is_some_and(|center| center.library_dirty.swap(false, Ordering::AcqRel)) { self.mark_library_changed(); }
         self.plugin_center.as_ref().map(|center| center.snapshot().to_string()).unwrap_or_else(|| "{}".into())
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
         let Ok(input) = serde_json::from_str(input) else { return };
-        if matches!(action, "install" | "install_native" | "enable" | "disable" | "uninstall" | "grant_network" | "restart") { self.invalidate_source_menus(); }
+        if matches!(action, "install" | "install_native" | "install_local" | "enable" | "disable" | "uninstall" | "grant_network" | "restart") { self.invalidate_source_menus(); }
         if let Some(center) = &self.plugin_center { center.command(action, input); }
     }
 }
@@ -154,16 +170,46 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let entry = repositories.cached(repo)?.into_iter().find(|entry| entry.id == id && entry.adapter == "native")
                 .ok_or("The catalog entry is missing.")?;
             let package = repositories.stage(repo, id)?;
+            crate::native_install::check(&package, &entry)?;
+            let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            host.revoke(&entry.id)?;
+            host.reload_one(&entry.id);
             let installed = crate::native_install::install(root, &package, &entry, repo)?;
-            plugins.lock().map_err(|_| "The plugin host is unavailable.")?.reload_one(&installed);
+            host.reload_one(&installed);
+            state["approval"] = permission_review(root, &installed)?;
+        }
+        "install_local" => {
+            let address = input["path"].as_str().unwrap_or("");
+            let path = url::Url::parse(address).ok().and_then(|url| url.to_file_path().ok())
+                .ok_or_else(|| chilpa_i18n::t("Choose a local ZIP file."))?;
+            let package = crate::StagedPackage::local(&root.join(".repositories/staging"), &path)?;
+            let (_, manifest) = crate::native_install::inspect(&package)?;
+            let entry = chilpa_plugin::catalog::CatalogEntry {
+                id: manifest.id.clone(), name: manifest.name.clone(), version: manifest.version.clone(),
+                description: manifest.description.clone(), category: String::new(), author: String::new(),
+                repository: String::new(), package: address.into(),
+                digest: chilpa_plugin::catalog::Digest { algorithm: "sha256".into(), value: package.sha256.clone() },
+                adapter: "native".into(), problem: String::new(),
+            };
+            let mut host = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            // A local replacement needs approval again, even with the same manifest.
+            host.revoke(&manifest.id)?;
+            host.reload_one(&manifest.id);
+            let installed = crate::native_install::install(root, &package, &entry, "local")?;
+            host.reload_one(&installed);
+            state["approval"] = permission_review(root, &installed)?;
+            state["form"] = Value::Null;
         }
         "restart" => {
             plugins.lock().map_err(|_| "The plugin host is unavailable.")?.reactivate(id);
             state["form"] = Value::Null;
         }
+        "review_permissions" => state["approval"] = permission_review(root, id)?,
+        "cancel_permissions" => state["approval"] = Value::Null,
         "enable" | "disable" => {
+            if action == "enable" && input["permission_revision"] != permission_review(root, id)?["revision"] { return Err("Review and accept the plugin permissions before enabling it.".into()); }
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            if action == "enable" { plugins.approve(id)?; } else { plugins.revoke(id)?; }
+            if action == "enable" { plugins.approve(id)?; state["approval"] = Value::Null; } else { plugins.revoke(id)?; }
             plugins.reload_one(id);
             state["form"] = Value::Null;
         }
@@ -175,6 +221,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             if !plugins.uninstall(id) { return Err("The plugin could not be removed.".into()); }
             state["form"] = Value::Null;
             state["settings_id"] = Value::Null;
+            state["approval"] = Value::Null;
         }
         "grant_network" => {
             plugins.lock().map_err(|_| "The plugin host is unavailable.")?.grant_network(id, input["domain"].as_str().unwrap_or(""))?;
@@ -182,7 +229,18 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         }
         "settings" | "submit" | "tick" => {
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
-            if action == "tick" {
+            if plugins.natives.is_native(id) {
+                if action == "tick" { return Ok(()); }
+                if !plugins.enabled(id) { return Err(chilpa_i18n::t("the plugin is not running")); }
+                let natives = plugins.natives.clone();
+                drop(plugins);
+                if action == "settings" { state["form"] = Value::Null; }
+                let method = if action == "submit" { "settings.submit" } else { "settings.open" };
+                let params = if action == "submit" { input["submission"].clone() } else { json!({}) };
+                state["form"] = natives.call(id, method, params, std::time::Duration::from_secs(30))?;
+                state["pages"] = json!([]);
+                state["settings_id"] = id.into();
+            } else if action == "tick" {
                 plugins.call_waiting(id, "tick", b"{}")?;
                 return Ok(());
             } else {
@@ -214,6 +272,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 }
             }
         }
+        "integration" => crate::source_integration::save(root, id, input["field"].as_str().unwrap_or_default(), input["enabled"].as_bool().ok_or("Invalid integration preference.")?)?,
         "library_visibility" => {
             let library = chilpa_core::open_library().map_err(|_| "The library could not be opened.")?;
             let source = library.find_source(crate::source_opener::PROVIDER, id).map_err(|_| "The source could not be read.")?.ok_or("Import a collection first.")?;
@@ -269,19 +328,19 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);
-    let installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugin, enabled, limited_network) }).collect::<Vec<_>>();
+    let installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
     drop(plugins);
     // A catalog snapshot never migrates or maintains the library, nor holds the guest lock during database queries.
     let library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok();
-    state["installed"] = json!(installed.into_iter().map(|(plugin, enabled, limited_network)| {
+    state["installed"] = json!(installed.into_iter().map(|(native, native_settings, plugin, enabled, limited_network)| {
         let origin: Value = std::fs::read(root.join(&plugin.id).join("origin.json")).ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"limited_network":limited_network,"enabled":enabled,"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"description":plugin.description,"state":plugin.state,
+        json!({"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
-            "settings":origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
+            "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
             "light":if !plugin.problem.is_empty() {"red"} else if origin.is_null() {"native"} else if plugin.state == "fine" {"green"} else {"yellow"}})
     }).collect::<Vec<_>>());
     state["installed_catalog"] = json!(state["installed"].as_array().into_iter().flatten().filter(|row| {
@@ -329,18 +388,23 @@ mod tests {
         fn stop(&mut self) {}
     }
     fn wait(center: &PluginCenter) -> Value {
+        let view = wait_finished(center);
+        assert_eq!(view["error"], "", "{view}");
+        view
+    }
+    fn wait_finished(center: &PluginCenter) -> Value {
         let deadline = Instant::now() + Duration::from_secs(10);
         while center.busy.load(Ordering::Acquire) != 0 {
             assert!(Instant::now() < deadline, "manager operation timed out");
             std::thread::sleep(Duration::from_millis(5));
         }
-        let view = center.snapshot(); assert_eq!(view["error"], "", "{view}"); view
+        center.snapshot()
     }
     #[test]
     fn maintenance_is_invisible_and_does_not_drop_a_foreground_action() {
         let (commands, received) = mpsc::sync_channel(2);
         let center = PluginCenter { commands, view: Arc::new(Mutex::new(json!({}))),
-            busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)),
+            busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)), removed: Arc::new(Mutex::new(Vec::new())), refreshed: Arc::new(Mutex::new(Vec::new())),
             operation: Arc::new(Mutex::new(String::new())) };
         center.command("tick", json!({"id":"guest"}));
         assert_eq!(center.snapshot()["busy"], false);
@@ -404,11 +468,60 @@ mod tests {
         assert_eq!(view["installed"][0]["enabled"], true);
         center.command("disable", json!({"id":id}));
         assert_eq!(wait(&center)["installed"][0]["enabled"], false);
-        center.command("enable", json!({"id":id}));
+        center.command("review_permissions", json!({"id":id}));
+        let revision = wait(&center)["approval"]["revision"].clone();
+        center.command("enable", json!({"id":id,"permission_revision":revision}));
         assert_eq!(wait(&center)["installed"][0]["enabled"], true);
         center.command("uninstall", json!({"id":id}));
         assert!(wait(&center)["installed"].as_array().unwrap().is_empty());
         assert!(!root.join(id).exists());
         serving.join().unwrap();
     }
+    #[test]
+    fn a_local_zip_installs_without_a_repository_or_execution_and_rejects_bad_replacements() {
+        let temporary = tempfile::tempdir().unwrap();
+        let root = temporary.path().join("plugins");
+        let host = Arc::new(Mutex::new(Plugins::new(root.clone()).unwrap()));
+        let center = PluginCenter::start(host.clone(), root.clone());
+        let manifest = r#"{"id":"app.test.local","name":"Local","version":"1.0","api_version":1,"kind":"source","runtime":"process","capabilities":[{"type":"register_source"}]}"#;
+        let mut archive = zip::ZipWriter::new(Cursor::new(Vec::new()));
+        for (name, bytes) in [("wrapper/manifest.json", manifest.as_bytes()), ("wrapper/plugin", b"must not run".as_slice())] {
+            archive.start_file(name, zip::write::SimpleFileOptions::default()).unwrap();
+            archive.write_all(bytes).unwrap();
+        }
+        let path = temporary.path().join("local package.zip");
+        std::fs::write(&path, archive.finish().unwrap().into_inner()).unwrap();
+        let address = url::Url::from_file_path(&path).unwrap().to_string();
+        center.command("install_local", json!({"path":address}));
+        let view = wait(&center);
+        assert_eq!(view["error"], "", "{view}");
+        assert_eq!(view["installed"][0]["id"], "app.test.local");
+        assert_eq!(view["installed"][0]["enabled"], false);
+        assert!(view["repositories"].as_array().unwrap().is_empty());
+        assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
+        let source: Value = serde_json::from_slice(&std::fs::read(root.join("app.test.local/source.json")).unwrap()).unwrap();
+        assert_eq!(source["repository"], "local");
+        host.lock().unwrap().approve("app.test.local").unwrap();
+        std::fs::write(&path, b"not a zip").unwrap();
+        center.command("install_local", json!({"path":address}));
+        let view = wait_finished(&center);
+        assert_ne!(view["error"], "");
+        assert!(host.lock().unwrap().enabled("app.test.local"));
+        assert_eq!(std::fs::read(root.join("app.test.local/plugin")).unwrap(), b"must not run");
+        center.command("install_local", json!({"path":"https://example.org/package.zip"}));
+        assert_ne!(wait_finished(&center)["error"], "");
+    }
+
+}
+
+fn permission_review(root: &std::path::Path, id: &str) -> Result<Value, String> {
+    if id.is_empty() || id.contains("..") || !id.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || matches!(b, b'.' | b'-')) { return Err("Invalid plugin id.".into()); }
+    let bytes = std::fs::read(root.join(id).join("manifest.json")).map_err(|e| e.to_string())?;
+    let value: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+    let runtime = match value["runtime"].as_str() { Some("process") => chilpa_plugin::Runtime::Process, Some("bridge") => chilpa_plugin::Runtime::Bridge, _ => chilpa_plugin::Runtime::Wasm };
+    let manifest = chilpa_plugin::Manifest::parse_for_runtime(std::str::from_utf8(&bytes).map_err(|e| e.to_string())?, runtime).map_err(|e| e.to_string())?;
+    use sha2::Digest;
+    Ok(json!({"id":id,"name":manifest.name,"description":value["description"],"version":manifest.version,
+        "permissions":manifest.capabilities.iter().map(|cap| cap.describe()).collect::<Vec<_>>(),
+        "revision":format!("{:x}", sha2::Sha256::digest(&bytes))}))
 }

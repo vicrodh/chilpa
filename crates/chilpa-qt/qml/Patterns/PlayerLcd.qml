@@ -105,7 +105,7 @@ Rectangle {
                 CreditLine {
                     id: artist
                     width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
-                    credit: Player.artist
+                    credit: Player.artist; trackPath: Player.path
                     entry: lcd.onAir
                     font.pointSize: Type.small
                     color: hovered ? Theme.color.textPrimary : Theme.color.textSecondary
@@ -127,15 +127,15 @@ Rectangle {
                     text: Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    color: albumHover.hovered && Player.albumId > 0 ? Theme.color.textPrimary : Theme.color.textSecondary
+                    color: albumHover.hovered && Player.albumId !== 0 ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: albumHover
-                        enabled: Player.albumId > 0
+                        enabled: Player.albumId !== 0
                         cursorShape: Qt.PointingHandCursor
                     }
                     TapHandler {
-                        enabled: Player.albumId > 0
+                        enabled: Player.albumId !== 0
                         onTapped: Navigation.go("album", Player.albumId)
                     }
                 }

@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../qml/Patterns"
+import "../../../chilpa-qt/qml/Patterns"
 
 TestCase {
     name: "PluginManager"
@@ -27,8 +27,58 @@ TestCase {
         const remove = findChild(manager.detailsView, "uninstallPlugin")
         verify(remove.visible)
         remove.clicked()
+        const confirmation = findChild(manager.detailsView, "confirmPluginRemoval")
+        verify(confirmation.opened)
+        confirmation.confirmed()
+        confirmation.close()
         compare(backend.calls[backend.calls.length - 1], ["uninstall", {id: "guest"}])
         compare(manager.selected, "")
+    }
+    function test_permissions_require_explicit_acceptance() {
+        backend.calls = []
+        backend.state = {installed: [], busy: false, approval: {id: "native", name: "Native", description: "Fixture source", permissions: ["Network access"], revision: "fixture-revision"}}
+        manager.read()
+        compare(manager.detailsView.mode, "permissions")
+        compare(backend.calls.length, 0)
+        const accept = findChild(manager.detailsView, "acceptPluginPermissions")
+        verify(accept.visible && accept.enabled)
+        accept.clicked()
+        compare(backend.calls[0], ["enable", {id: "native", permission_revision: "fixture-revision"}])
+        backend.state = {installed: [], busy: false}
+        manager.read()
+        verify(!manager.detailsView.opened)
+    }
+    function test_native_settings_button_opens_its_form_and_submits_login() {
+        const plugin = {id: "native", name: "Native", native: true, settings: true, enabled: true, light: "native"}
+        backend.state = {busy: false, installed: [plugin]}
+        backend.calls = []
+        manager.read()
+        const button = findChild(manager, "pluginSettingsButton")
+        verify(button !== null && button.enabled)
+        button.clicked()
+        compare(manager.selected, "native")
+        compare(backend.calls[0], ["settings", {id: "native"}])
+        backend.state = {busy: false, installed: [plugin], settings_id: "native", form: {revision: 7, values: {}, form: {fields: [], actions: []}}}
+        manager.read()
+        const form = findChild(manager.detailsView, "pluginSettingsForm")
+        verify(form.visible && form.enabled)
+        form.submitted("sign_in", {app_id: "fixture"})
+        compare(backend.calls[backend.calls.length - 1], ["submit", {id: "native", submission: {revision: 7, action: "sign_in", values: {app_id: "fixture"}}}])
+        manager.detailsView.close()
+    }
+    function test_local_install_opens_the_picker_and_waits_while_busy() {
+        backend.state = {busy: false}
+        backend.calls = []
+        manager.read()
+        const button = findChild(manager, "installLocalPlugin")
+        verify(button !== null && button.enabled)
+        button.clicked()
+        compare(backend.calls[0], ["choose_package", {}])
+        backend.state = {busy: true}
+        manager.read()
+        verify(!button.enabled)
+        backend.state = {busy: false}
+        manager.read()
     }
     function test_every_native_plugin_shows_and_one_from_a_repository_installs() {
         const native = (id) => ({id: id, name: id, state: "fine", enabled: true})

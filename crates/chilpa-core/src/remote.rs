@@ -17,6 +17,8 @@ pub struct Located {
     pub extension: Option<String>,
     /// The server's name, as Settings shows it: an error names it.
     pub server: String,
+    /// An observer bound to this exact resource, including preloaded resources.
+    pub playback: Option<Arc<dyn crate::playback_events::Observer>>,
 }
 
 /// What the window shows while it plays. The file's own tags are on the
@@ -60,7 +62,7 @@ pub(crate) fn entry(path: &Path) -> Option<RemoteEntry> {
 }
 
 /// Opens a remote track for the decoder.
-pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<chilpa_decode::Decoded, String> {
+pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<(chilpa_decode::Decoded, Option<Arc<dyn crate::playback_events::Observer>>), String> {
     let Some(opener) = opener() else {
         return Err(chilpa_i18n::t("this track is on a server, and servers are not connected"));
     };
@@ -68,10 +70,10 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<chilpa_decode::De
         let server = located.server;
         let named = |e: String| if server.is_empty() { e } else { chilpa_i18n::t_args("the track on {} could not be read: {}", &[&server, &e]) };
         let file = chilpa_stream::Ranged::open(located.request).map_err(|e| named(e.to_string()))?;
-        chilpa_decode::Decoded::open_remote(file, located.extension.as_deref()).map_err(|e| named(e.to_string()))
+        chilpa_decode::Decoded::open_remote(file, located.extension.as_deref()).map(|decoded| (decoded, located.playback)).map_err(|e| named(e.to_string()))
     });
     match opened {
-        Ok(decoded) => {
+        Ok((decoded, playback)) => {
             if !decoded.codec().is_empty() {
                 let mut codecs = CODECS.lock().unwrap_or_else(|e| e.into_inner());
                 codecs.retain(|(p, _)| p != path);
@@ -88,7 +90,7 @@ pub(crate) fn open(path: &Path, entry: &RemoteEntry) -> Result<chilpa_decode::De
                     opened.remove(0);
                 }
             }
-            Ok(decoded)
+            Ok((decoded, playback))
         }
         Err(why) => {
             opener.failed(entry, &why);

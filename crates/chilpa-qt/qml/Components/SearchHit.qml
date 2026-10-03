@@ -20,6 +20,8 @@ Item {
     required property string duration
     // The row the keyboard is on.
     property bool current: false
+    property string sourceIcon: ""
+    property string sourceName: ""
     // What the row is, drawn over the placeholder while it has no cover.
     property string glyph
     // The button at its end: the menu's, unless the list gives it another.
@@ -80,12 +82,17 @@ Item {
         color: Theme.color.accent
     }
 
+    SourceIcon {
+        anchors.right: tail.left; anchors.rightMargin: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter
+        sourceInfo: ({icon: hit.sourceIcon, label: hit.sourceName})
+        visible: hit.sourceName !== ""; opacity: Metrics.disabledOpacity
+    }
     Column {
         visible: !hit.header
         anchors.left: cover.right
         anchors.leftMargin: hit.best ? Metrics.gap12 : Metrics.gap10
         anchors.right: tail.left
-        anchors.rightMargin: Metrics.gap8
+        anchors.rightMargin: Metrics.gap8 + (hit.sourceName ? Metrics.iconSm + Metrics.gap6 : 0)
         anchors.verticalCenter: parent.verticalCenter
 
         Text {

@@ -12,6 +12,23 @@ TestCase {
 
     NavItem { id: entry; width: 230; text: "Guest"; glyph: Icons.letterG }
 
+    function test_tint_recolors_black_pixels_and_restores_the_original() {
+        if (entry.GraphicsInfo.api === GraphicsInfo.Software) skip("Effects need RHI; run with QT_QUICK_BACKEND=rhi")
+        entry.iconSource = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGD4DwABBAEAX+XDSwAAAABJRU5ErkJggg=="
+        const picture = findChild(entry, "navImage")
+        tryCompare(picture, "status", Image.Ready)
+        const x = Math.round(picture.x + picture.width / 2)
+        const y = Math.round(picture.y + picture.height / 2)
+        entry.tintIcon = true
+        tryCompare(findChild(entry, "navTint"), "visible", true)
+        waitForRendering(entry)
+        tryVerify(() => Qt.colorEqual(grabImage(entry).pixel(x, y), Theme.color.accent))
+        entry.tintIcon = false
+        waitForRendering(entry)
+        tryVerify(() => grabImage(entry).red(x, y) === 0)
+        entry.iconSource = ""
+    }
+
     function test_fallback_letter_exists_and_stays_visible_without_an_image() {
         entry.iconSource = ""
         verify(Icons.letterG.length > 0)

@@ -68,7 +68,7 @@ use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::pin::Pin;
 
-const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration"];
+const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration", "sourceIcon", "sourceName"];
 const USER_ROLE: i32 = 256;
 const LIMIT: usize = 12;
 
@@ -97,6 +97,8 @@ impl qobject::SearchModel {
             2 => text(&row.detail()),
             3 if row.artwork().is_empty() => QVariant::from(&QUrl::default()),
             3 => QVariant::from(&if row.artwork().starts_with("https://") { QUrl::from(row.artwork()) } else { QUrl::from_local_file(&QString::from(row.artwork())) }),
+            5 => text(&row.source_icon()),
+            6 => text(&row.source_name()),
             _ => text(&row.duration()),
         }
     }
@@ -161,8 +163,7 @@ impl qobject::SearchModel {
 
     pub fn refresh(self: Pin<&mut Self>) { self.rebuild(); }
     fn rebuild(mut self: Pin<&mut Self>) {
-        let mut rows = chilpa_api::found_rows(&self.rust().found, &self.rust().scope.to_string());
-        rows.extend(app::with(|api| api.source_found_rows(&self.rust().scope.to_string())));
+        let rows = app::with(|api| api.unified_found_rows(&self.rust().found, &self.rust().scope.to_string()));
         if rows == self.rust().rows { return; }
         let count = rows.iter().filter(|row| row.kind() > 0).count() as i32;
         unsafe { self.as_mut().begin_reset_model() };
@@ -175,7 +176,7 @@ impl qobject::SearchModel {
 impl cxx_qt::Initialize for qobject::SearchModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().rust_mut().scope = QString::from("all");
-        self.as_mut().rust_mut().source = QString::from("local");
+        self.as_mut().rust_mut().source = QString::from("all");
         self.as_mut().on_source_changed(|m| m.ask()).release();
         self.as_mut().on_text_changed(|m| m.ask()).release();
         self.as_mut().on_scope_changed(|m| m.rebuild()).release();

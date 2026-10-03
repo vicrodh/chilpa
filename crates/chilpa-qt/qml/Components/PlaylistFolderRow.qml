@@ -14,6 +14,7 @@ Item {
     required property string folderColor
     required property bool expanded
 
+    property string sourceIcon: ""
     signal toggled()
 
     readonly property color tone: !SettingsModel.folderColors ? Theme.color.textSecondary
@@ -35,9 +36,18 @@ Item {
         id: folderIcon
         x: Metrics.navItemPadding
         anchors.verticalCenter: parent.verticalCenter
+        visible: row.sourceIcon === ""
         glyph: row.expanded ? Icons.folderOpen : Icons.folder
         size: Metrics.iconMd
         color: row.tone
+    }
+    SourceIcon {
+        x: folderIcon.x
+        anchors.verticalCenter: parent.verticalCenter
+        width: Metrics.iconMd
+        height: width
+        visible: row.sourceIcon !== ""
+        sourceInfo: ({icon: row.sourceIcon})
     }
     Text {
         anchors.left: folderIcon.right

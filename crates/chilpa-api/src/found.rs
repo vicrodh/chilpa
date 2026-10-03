@@ -16,6 +16,7 @@ pub enum FoundRow {
     Top(Artist),
     Artist(Artist),
     Album(Album),
+    Playlist(crate::Playlist),
     Track(TrackRow),
     Remote(crate::source_search::RemoteFound),
     /// The way to the rest of a source's results, after its first few:
@@ -42,12 +43,13 @@ impl FoundRow {
     /// result, 2 an artist, 3 a record, 4 a song.
     pub fn kind(&self) -> i32 {
         match self {
-            FoundRow::Remote(row) => if row.collection { 3 } else { 4 },
+            FoundRow::Remote(row) => match row.entity.as_str() { "artist" => 2, "playlist" => 6, _ => if row.collection { 3 } else { 4 } },
             FoundRow::More(..) => 5,
             FoundRow::Header(_) => 0,
             FoundRow::Top(_) => 1,
             FoundRow::Artist(_) => 2,
             FoundRow::Album(_) => 3,
+            FoundRow::Playlist(_) => 6,
             FoundRow::Track(_) => 4,
         }
     }
@@ -59,6 +61,7 @@ impl FoundRow {
             FoundRow::More(..) => "",
             FoundRow::Top(a) | FoundRow::Artist(a) => &a.name,
             FoundRow::Album(a) => &a.title,
+            FoundRow::Playlist(p) => &p.name,
             FoundRow::Track(t) => &t.title,
         }
     }
@@ -66,6 +69,7 @@ impl FoundRow {
     pub fn detail(&self) -> String {
         match self {
             FoundRow::Remote(row) => row.detail.clone(),
+            FoundRow::Playlist(p) => i18n::tf("{} track", "{} tracks", p.track_count as i64, &[&p.track_count.to_string()]),
             FoundRow::More(_, more) => i18n::tf("See {} more", "See {} more", *more as i64, &[&more.to_string()]),
             FoundRow::Header(_) => String::new(),
             FoundRow::Top(a) | FoundRow::Artist(a) => {
@@ -81,6 +85,12 @@ impl FoundRow {
         }
     }
 
+    pub fn source_icon(&self) -> String {
+        match self { Self::Remote(row) => crate::plugin_icons::image_url(&Chilpa::plugins_dir(), &row.source), _ => String::new() }
+    }
+    pub fn source_name(&self) -> String {
+        match self { Self::Remote(row) => row.name.clone(), _ => String::new() }
+    }
     /// Its cover, empty when it has none.
     pub fn artwork(&self) -> &str {
         match self {
@@ -88,6 +98,7 @@ impl FoundRow {
             FoundRow::Header(_) | FoundRow::More(..) => "",
             FoundRow::Top(a) | FoundRow::Artist(a) => &a.artwork_path,
             FoundRow::Album(a) => &a.artwork_path,
+            FoundRow::Playlist(p) => &p.artwork_path,
             FoundRow::Track(t) => &t.artwork_path,
         }
     }
@@ -134,8 +145,9 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
         json!({"act": "mark", "kind": kind, "key": key, "on": !favorite, "text": i18n::t(text)})
     };
     let mut entries = match row {
+        FoundRow::Playlist(_) => return vec![item("open", i18n::mark("Open")), item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))],
         FoundRow::More(..) => return Vec::new(),
-        FoundRow::Remote(row) => return if row.collection { vec![item("open", i18n::mark("Open album"))] } else { vec![item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))] },
+        FoundRow::Remote(row) => return if row.collection { vec![item("open", i18n::mark("Open"))] } else { vec![item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))] },
         FoundRow::Header(_) => return Vec::new(),
         FoundRow::Track(t) => {
             return track_menu(TrackMenuContext {
@@ -185,7 +197,7 @@ impl Chilpa {
             FoundRow::Track(t) => (self.credit_names(&t.artist), false),
             FoundRow::Album(a) => (Vec::new(), favorite("album", &a.id.to_string())),
             FoundRow::Top(a) | FoundRow::Artist(a) => (Vec::new(), favorite("artist", &a.name)),
-            FoundRow::Header(_) | FoundRow::Remote(_) | FoundRow::More(..) => (Vec::new(), false),
+            FoundRow::Header(_) | FoundRow::Remote(_) | FoundRow::More(..) | FoundRow::Playlist(_) => (Vec::new(), false),
         };
         found_menu(row, names, favorite)
     }
@@ -196,6 +208,7 @@ impl Chilpa {
             FoundRow::Header(_) | FoundRow::Remote(_) | FoundRow::More(..) => Vec::new(),
             FoundRow::Track(t) => vec![t.clone()],
             FoundRow::Album(a) => self.album_track_rows(a.id),
+            FoundRow::Playlist(p) => self.playlist_rows(p.id),
             FoundRow::Top(a) | FoundRow::Artist(a) => self.artist_tracks(&a.name, TrackOrder::Artist, 100_000),
         }
     }
@@ -224,6 +237,7 @@ impl Chilpa {
                 self.play_from(&paths, start);
             }
             ("open", FoundRow::Top(a) | FoundRow::Artist(a)) => return Leads::Artist(a.name.clone()),
+            ("open", FoundRow::Playlist(p)) => return Leads::Screen("playlist", p.id),
             ("open", FoundRow::Album(a)) => return Leads::Screen("album", a.id),
             ("tab", FoundRow::Album(a)) => return Leads::Tab("album", a.id),
             ("album", FoundRow::Track(t)) if t.album_id > 0 => return Leads::Screen("album", t.album_id),

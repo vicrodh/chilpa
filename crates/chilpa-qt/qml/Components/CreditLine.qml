@@ -1,11 +1,14 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../Theme"
 
 // A credit as its tag wrote it. It names one artist or several, and a click
 // opens the page of the one under the pointer.
 Text {
     id: line
+    property double albumId: 0
+    property string trackPath: ""
     property string credit
     // When what plays is an entry of a source, the key of its page: a
     // station is not an artist, and a click opens the station.
@@ -29,5 +32,10 @@ Text {
 
     FontMetrics { id: metrics; font: line.font }
     HoverHandler { id: hover; enabled: line.credit !== ""; cursorShape: Qt.PointingHandCursor }
-    TapHandler { enabled: line.credit !== ""; onTapped: (point) => line.entry !== "" ? Navigation.goKey("sourceEntry", line.entry) : Navigation.openCredit(line.credit, line.placeAt(point.position.x)) }
+    TapHandler { enabled: line.credit !== ""; onTapped: (point) => {
+        const route = Sources.artistKey(line.albumId, line.trackPath)
+        if (route) Navigation.goKey("source", route)
+        else if (line.entry !== "") Navigation.goKey("sourceEntry", line.entry)
+        else Navigation.openCredit(line.credit, line.placeAt(point.position.x))
+    } }
 }

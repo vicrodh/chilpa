@@ -27,7 +27,7 @@ Column {
         font.weight: Type.bold
         color: Theme.color.textPrimary
     }
-    CreditLine { width: parent.width; credit: Player.artist; color: Theme.color.accent; font.pointSize: Type.meta }
+    CreditLine { width: parent.width; credit: Player.artist; trackPath: Player.path; color: Theme.color.accent; font.pointSize: Type.meta }
     Text {
         width: parent.width
         text: Player.album

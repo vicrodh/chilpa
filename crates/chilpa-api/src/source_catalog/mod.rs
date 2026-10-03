@@ -23,8 +23,10 @@
 
 mod fetch;
 mod native;
+mod pages;
 pub(crate) mod store;
 mod view;
+mod sorting;
 
 use crate::plugins::Plugins;
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -232,7 +234,7 @@ impl Catalog {
             }
             let natives = self.natives();
             let ahead: Vec<i64> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
-                .filter(|c| c.kind != CardKind::Artist && c.tracks.is_none() && readable(c, natives.as_deref()))
+                .filter(|c| !matches!(c.kind, CardKind::Artist | CardKind::Label) && c.tracks.is_none() && readable(c, natives.as_deref()))
                 .take(READ_AHEAD).map(|c| c.id).collect();
             for id in ahead {
                 self.queue(&mut inner, Job::Tracks(id), false);
@@ -243,6 +245,20 @@ impl Catalog {
 
     /// Asks again for a listing that failed, or that the listener wants
     /// fresh.
+    pub fn expire_personal_pages(&self, plugin: &str) {
+        let mut inner = self.lock();
+        for (key,shelf) in &mut inner.store.shelves { if key.starts_with(&format!("{plugin} native:")) && shelf.document["personal"] == true { shelf.read_at = 1; } }
+        inner.dirty = true;
+        self.changed();
+    }
+
+    pub fn expire_native_pages(&self, plugin: &str) {
+        let mut inner = self.lock();
+        for (key,shelf) in &mut inner.store.shelves { if key.starts_with(&format!("{plugin} native:")) { shelf.read_at = 0; } }
+        inner.dirty = true;
+        self.changed();
+    }
+
     pub fn retry(&self, key: &str) {
         let mut inner = self.lock();
         inner.shelf_errors.remove(key);
@@ -316,12 +332,20 @@ impl Catalog {
     /// Takes in a record or a track a search found, which no listing showed:
     /// the search's handle is good for the worker's current load.
     pub fn adopt(&self, plugin: &str, epoch: Option<u64>, found: &crate::source_search::RemoteFound) -> i64 {
+        if let Some(item) = &found.item {
+            let mut inner = self.lock();
+            let id = if found.collection { inner.store.take_item(plugin, item, now()) } else { inner.store.take_item_track(plugin, item, None, now()) }.unwrap_or_default();
+            inner.dirty = true;
+            drop(inner);
+            self.changed();
+            return id;
+        }
         use chilpa_plugin::messages::{Entry, EntryKind};
         let entry = Entry { id: found.id.clone(), title: found.title.clone(), subtitle: found.detail.clone(),
             image_url: Some(found.art.clone()).filter(|a| !a.is_empty()), duration_ms: found.duration_ms,
             kind: if found.collection { EntryKind::Folder } else { EntryKind::Item }, playable: true, ..Entry::default() };
         let mut document = chilpa_plugin::presentation::SourceDocument::default();
-        let entity = if found.collection { chilpa_plugin::presentation::Entity::Album } else { chilpa_plugin::presentation::Entity::Track };
+        let entity = match found.entity.as_str() { "artist" => chilpa_plugin::presentation::Entity::Artist, "playlist" => chilpa_plugin::presentation::Entity::Playlist, _ => if found.collection { chilpa_plugin::presentation::Entity::Album } else { chilpa_plugin::presentation::Entity::Track } };
         document.presentation.insert(found.id.clone(), chilpa_plugin::presentation::Presentation { entity, ..Default::default() });
         document.listing.entries.push(entry);
         let mut inner = self.lock();
@@ -377,6 +401,22 @@ impl Catalog {
         ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).collect()
     }
 
+    pub fn forget_plugin(&self, plugin: &str) {
+        let mut inner = self.lock();
+        inner.store.forget_plugin(plugin);
+        let cards: HashSet<_> = inner.store.cards.keys().copied().collect();
+        let belongs = |job: &Job| match job { Job::Shelf(key) => key.starts_with(&format!("{plugin} ")), Job::Tracks(id) => !cards.contains(id) };
+        inner.queue.urgent.retain(|job| !belongs(job));
+        inner.queue.later.retain(|job| !belongs(job));
+        inner.queue.queued.retain(|job| !belongs(job));
+        inner.deferred.retain(|d| d.albums.iter().all(|id| cards.contains(id)));
+        inner.domains.remove(plugin);
+        inner.epochs.remove(plugin);
+        fetch::save(&inner.store);
+        inner.dirty = true;
+        drop(inner);
+        self.changed();
+    }
     /// Forgets the handles a plugin gave out, as when its worker restarts.
     /// What was read stays; it is only asked again.
     pub fn forget_handles(&self, plugin: &str) {

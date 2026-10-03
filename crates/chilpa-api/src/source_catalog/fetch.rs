@@ -28,7 +28,7 @@ fn load() -> Store {
     store
 }
 
-fn save(store: &Store) {
+pub(super) fn save(store: &Store) {
     let Ok(text) = serde_json::to_vec(store) else { return };
     let path = file();
     if let Some(dir) = path.parent() {

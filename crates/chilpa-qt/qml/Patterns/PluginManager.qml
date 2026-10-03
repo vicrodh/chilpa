@@ -34,6 +34,8 @@ Item {
             proposalIdentity = identity
             details.domains = ((view.proposal || {}).domains || []).join(", ")
         }
+        if (view.approval && details.mode !== "permissions") { details.plugin = view.approval; details.mode = "permissions"; details.open() }
+        if (!view.approval && details.mode === "permissions") { details.close(); details.mode = "settings" }
         if (filterPending && !view.busy && !settle.running) settle.start()
     }
     function command(action, input) { page.pluginCommand(action, JSON.stringify(input || {})); read() }
@@ -49,7 +51,7 @@ Item {
         if ((view.proposal || {}).catalog_id !== plugin.id || (view.proposal || {}).repository_id !== plugin.repository_id)
             command("prepare", {repository: plugin.repository_id, id: plugin.id})
     }
-    function settings(plugin) { details.mode = "settings"; details.plugin = plugin; selected = plugin.id; details.open(); command("settings", {id: plugin.id}) }
+    function settings(plugin) { details.mode = "settings"; details.tab = "settings"; details.plugin = plugin; selected = plugin.id; details.open(); if (plugin.enabled !== false && (plugin.settings || plugin.origin)) command("settings", {id: plugin.id}) }
     Component.onCompleted: read()
     Timer { interval: Motion.poll; repeat: true; running: manager.visible; onTriggered: manager.read() }
     Timer {
@@ -64,7 +66,7 @@ Item {
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: manager.visible && manager.selected !== "" && !manager.view.maintenance_failed && !manager.view.working && !manager.view.busy && !manager.filterPending
+        running: manager.visible && manager.selected !== "" && !(manager.view.installed || []).some(p => p.id === manager.selected && p.native === true) && !manager.view.maintenance_failed && !manager.view.working && !manager.view.busy && !manager.filterPending
         onTriggered: manager.command("tick", {id: manager.selected})
     }
     Column {
@@ -84,6 +86,12 @@ Item {
             P.PillButton { id: add; text: I18n.tr("Add", I18n.rev); enabled: !manager.view.busy; onClicked: manager.command("add", {url: repository.text}) }
             P.PillButton { id: manage; text: I18n.tr("Manage", I18n.rev); onClicked: repositories.open() }
         }
+        P.PillButton {
+            objectName: "installLocalPlugin"
+            text: I18n.tr("Install from ZIP…", I18n.rev)
+            enabled: !manager.view.busy
+            onClicked: manager.command("choose_package", {})
+        }
         Text { text: I18n.tr("Chilpa Native Plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
         Repeater {
             model: manager.installedRows.filter(p => !p.origin)
@@ -92,7 +100,9 @@ Item {
                 width: toolbar.width - Metrics.gap12
                 plugin: modelData
                 installed: true
-                onSwitched: (on) => manager.command(on ? "enable" : "disable", {id: modelData.id})
+                enabled: !manager.view.busy
+                onSettings: manager.settings(modelData)
+                onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
             }
         }
         // What the added repositories offer that is not installed, or is
@@ -194,7 +204,7 @@ Item {
             enabled: !manager.view.busy && !manager.filterPending
             onInspected: manager.inspect(modelData)
             onSettings: manager.settings(modelData)
-            onSwitched: (on) => manager.command(on ? "enable" : "disable", {id: modelData.id})
+            onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
         }
         Text {
             anchors.centerIn: parent

@@ -445,10 +445,13 @@ impl Chilpa {
 
     /// Those albums, in the order given. By primary key.
     pub fn albums_by_ids(&mut self, ids: &[i64]) -> Vec<Album> {
-        let Some(lib) = self.library() else {
-            return Vec::new();
-        };
-        lib.albums_by_ids(ids).unwrap_or_default().into_iter().map(album_of).collect()
+        let local: Vec<_> = ids.iter().copied().filter(|id| *id >= 0).collect();
+        let mut rows: std::collections::HashMap<_, _> = self.library().map(|lib| lib.albums_by_ids(&local).unwrap_or_default()).unwrap_or_default()
+            .into_iter().map(album_of).map(|album| (album.id, album)).collect();
+        for id in ids.iter().filter(|id| **id < 0) {
+            if let Some(album) = self.source_album(*id) { rows.insert(*id, album); }
+        }
+        ids.iter().filter_map(|id| rows.remove(id)).collect()
     }
 
     /// The queue from what plays on, as rows: what plays first, then what

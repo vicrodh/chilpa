@@ -2,6 +2,7 @@ import QtQuick
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "../Theme"
 import "../Primitives"
 import "../Components"
@@ -18,7 +19,6 @@ Item {
     property string source
     property string membership
     readonly property var about: source ? JSON.parse(Sources.page(source, Library.remoteRev) || "{}") : ({})
-    property string sourceOrder: SettingsModel.kept("ui.source.order")
     property bool rows: SettingsModel.kept("ui.albums.view") === "list"
     property string group: SettingsModel.kept("ui.albums.group")
 
@@ -26,10 +26,10 @@ Item {
         id: all
         kind: page.source ? "source" : "all"
         key: page.source ? page.source + (page.membership ? " " + page.membership : "") : ""
-        order: page.source ? page.sourceOrder : Library.albumOrder
-        group: page.group
+        order: page.source ? sourceControls.sort : Library.albumOrder
+        group: page.source ? sourceControls.grouping : page.group
         filter: find.text
-        contentRev: Library.contentRev + Library.rev + (page.source ? Library.remoteRev + Library.remoteArtRev : 0)
+        contentRev: Library.contentRev + Library.rev + Library.remoteRev + Library.remoteArtRev
         columns: grid.columns
     }
 
@@ -57,6 +57,7 @@ Item {
             anchors.rightMargin: Metrics.gap12
             anchors.baseline: title.baseline
             text: page.about.entity === "playlist" ? I18n.trCount("{} playlist", "{} playlists", all.albums, I18n.rev)
+                : page.about.entity === "label" ? I18n.trCount("{} label", "{} labels", all.albums, I18n.rev)
                 : page.about.entity === "artist" ? I18n.trCount("{} artist", "{} artists", all.albums, I18n.rev) : I18n.trCount("{} album", "{} albums", all.albums, I18n.rev)
             elide: Text.ElideRight
             font.pointSize: Type.meta
@@ -76,16 +77,13 @@ Item {
                 placeholder: I18n.tr("Filter albums", I18n.rev)
                 onEscaped: text = ""
             }
+            SourceLibraryControls { id: sourceControls; visible: !!page.source; source: page.source; entity: page.about.entity || "album" }
             SortButton {
                 id: sort
+                visible: !page.source
                 anchors.verticalCenter: parent.verticalCenter
-                value: page.source ? page.sourceOrder : Library.albumOrder
-                options: page.source ? [
-                    { value: "", text: I18n.tr("As the source lists them", I18n.rev) },
-                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
-                    { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) }
-                ] : [
+                value: Library.albumOrder
+                options: [
                     { value: "artist", text: I18n.tr("Artist", I18n.rev) },
                     { value: "title", text: I18n.tr("Title", I18n.rev) },
                     { value: "year", text: I18n.tr("Year", I18n.rev) },
@@ -93,14 +91,11 @@ Item {
                     { value: "played", text: I18n.tr("Most played", I18n.rev) },
                     { value: "last_played", text: I18n.tr("Recently played", I18n.rev) }
                 ]
-                onPicked: (value) => {
-                    if (!page.source) { Library.albumOrder = value; return }
-                    page.sourceOrder = value
-                    SettingsModel.keep("ui.source.order", value)
-                }
+                onPicked: (value) => Library.albumOrder = value
             }
             SortButton {
                 id: grouping
+                visible: !page.source
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: Icons.stack2
                 value: page.group
@@ -109,10 +104,7 @@ Item {
                     { value: "letter", text: I18n.tr("By letter", I18n.rev) },
                     { value: "artist", text: I18n.tr("By artist", I18n.rev) }
                 ]
-                onPicked: (value) => {
-                    page.group = value
-                    SettingsModel.keep("ui.albums.group", value)
-                }
+                onPicked: (value) => { page.group = value; SettingsModel.keep("ui.albums.group", value) }
             }
             IconButton {
                 id: filterButton
@@ -155,7 +147,7 @@ Item {
         anchors.top: head.bottom
         x: head.x
         spacing: Metrics.gap8
-        visible: memberships.length > 0 || (page.about.tabs || []).length > 0
+        visible: memberships.length > 0 || (page.about.tabs || []).length > 0 || !!page.about.next
         height: visible ? implicitHeight : 0
 
         SourceTabs { model: page.about.tabs || [] }
@@ -166,6 +158,7 @@ Item {
             height: Metrics.iconNav
             color: Theme.color.strokeHairline
         }
+        SourcePaging { about: page.about }
         Repeater {
             model: kinds.memberships
             PillButton {

@@ -26,15 +26,20 @@ fn package_root(package: &StagedPackage) -> Result<PathBuf, String> {
 
 /// The manifest a package brings, checked against the entry that named it.
 pub(crate) fn check(package: &StagedPackage, entry: &CatalogEntry) -> Result<(PathBuf, Manifest), String> {
+    let (root, manifest) = inspect(package)?;
+    if manifest.id != entry.id {
+        return Err("The package is a different plugin than the catalog says.".into());
+    }
+    Ok((root, manifest))
+}
+
+pub(crate) fn inspect(package: &StagedPackage) -> Result<(PathBuf, Manifest), String> {
     let root = package_root(package)?;
     let text = std::fs::read_to_string(root.join("manifest.json")).map_err(|_| "The plugin manifest could not be read.")?;
     let runtime = serde_json::from_str::<serde_json::Value>(&text).ok()
         .map(|value| match value["runtime"].as_str() { Some("process") => Runtime::Process, _ => Runtime::Wasm })
         .ok_or("The plugin manifest is not JSON.")?;
     let manifest = Manifest::parse_for_runtime(&text, runtime).map_err(|error| error.to_string())?;
-    if manifest.id != entry.id {
-        return Err("The package is a different plugin than the catalog says.".into());
-    }
     let program = match runtime { Runtime::Process => "plugin", _ => "plugin.wasm" };
     if !root.join(program).is_file() {
         return Err("The package does not contain the plugin's program.".into());
@@ -53,6 +58,10 @@ pub(crate) fn install(plugins_dir: &Path, package: &StagedPackage, entry: &Catal
     let _ = std::fs::remove_dir_all(&incoming);
     let _ = std::fs::remove_dir_all(&outgoing);
     copy_tree(&root, &incoming).map_err(|_| "The plugin could not be copied into place.")?;
+    if let Some(icon) = crate::plugin_icons::included(&incoming, &manifest.icon) {
+        std::fs::write(incoming.join(crate::plugin_icons::INCLUDED_ICON).with_extension(icon.extension), icon.bytes)
+            .map_err(|_| "The plugin icon could not be installed.")?;
+    }
     #[cfg(unix)]
     if manifest.runtime == Runtime::Process {
         use std::os::unix::fs::PermissionsExt;

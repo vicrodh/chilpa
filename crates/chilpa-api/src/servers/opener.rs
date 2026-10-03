@@ -47,6 +47,7 @@ impl RemoteOpener for Opener {
         let key = self.keys.get(&stored.instance).ok_or_else(|| chilpa_i18n::t_args("sign in to {} again", &[&stored.label]))?;
         let stream = chilpa_servers::stream(&server, &key, &entry.external_id, codec.as_deref(), revision.as_deref());
         Ok(Located {
+            playback: None,
             request: chilpa_core::RangedRequest { url: stream.url, headers: stream.headers },
             extension: stream.extension,
             server: stored.label.clone(),

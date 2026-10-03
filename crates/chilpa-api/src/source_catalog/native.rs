@@ -23,6 +23,13 @@ fn text(item: &Value, key: &str) -> String {
     item.get(key).and_then(Value::as_str).unwrap_or_default().trim().to_string()
 }
 
+fn merge_metadata(target: &mut Value, item: &Value) {
+    if !target.is_object() { *target = json!({}); }
+    if let (Some(target), Some(item)) = (target.as_object_mut(), item.as_object()) {
+        for (key, value) in item { if !value.is_null() { target.insert(key.clone(), value.clone()); } }
+    }
+}
+
 fn number(item: &Value, key: &str) -> Option<u64> {
     item.get(key).and_then(Value::as_u64)
 }
@@ -47,6 +54,7 @@ impl Store {
             "album" => CardKind::Album,
             "playlist" => CardKind::Playlist,
             "artist" => CardKind::Artist,
+            "label" => CardKind::Label,
             _ => return None,
         };
         let reference = text(item, "ref");
@@ -56,6 +64,7 @@ impl Store {
         let id = self.card_id(plugin, &reference);
         let card = self.cards.get_mut(&id).expect("interned");
         card.kind = kind;
+        merge_metadata(&mut card.metadata, item);
         card.title = text(item, "title");
         card.artist = text(item, "artist");
         card.year = number(item, "year").and_then(|y| i32::try_from(y).ok()).or(card.year);
@@ -96,6 +105,7 @@ impl Store {
         let id = self.track_id(&path);
         let track = self.tracks.get_mut(&id).expect("interned");
         track.plugin = plugin.into();
+        merge_metadata(&mut track.metadata, item);
         track.title = text(item, "title");
         track.artist = Some(text(item, "artist")).filter(|a| !a.is_empty())
             .or_else(|| under.filter(|c| c.kind == CardKind::Album).map(|c| c.artist.clone())).unwrap_or_default();
@@ -117,6 +127,9 @@ impl Store {
 pub(super) fn read_shelf(catalog: &Catalog, natives: &Arc<Natives>, key: &str) -> Result<(), String> {
     let (plugin, address) = split(key);
     remember_domains(catalog, natives, plugin);
+    if let Some(reference) = address.strip_prefix("native:") {
+        return super::pages::read(catalog, natives, plugin, reference);
+    }
     if address.is_empty() || address == "home" || address == "root" || address.starts_with("route:discover:") {
         return read_home(catalog, natives, plugin);
     }
@@ -149,6 +162,7 @@ fn read_home(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str) -> Result<
     let stamp = now();
     let mut titles = Vec::new();
     let mut inner = catalog.lock();
+    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
     for (at, found) in shelves.iter().enumerate() {
         let title = text(found, "title");
         let mut shelf = Shelf { title: title.clone(), read_at: stamp, epoch: 1, ..Shelf::default() };
@@ -190,6 +204,7 @@ fn read_library(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &s
     }
     let stamp = now();
     let mut inner = catalog.lock();
+    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
     let mut shelf = Shelf { read_at: stamp, epoch: 1, ..Shelf::default() };
     for item in &items {
         if kind == "tracks" {
@@ -217,6 +232,7 @@ fn read_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &st
     let answer = natives.call(plugin, "artist.get", json!({"ref": reference}), ASKED)?;
     let stamp = now();
     let mut inner = catalog.lock();
+    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
     if let Some(artist) = answer.get("artist") {
         inner.store.take_item(plugin, artist, stamp);
     }
@@ -243,16 +259,17 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     let (method, holder) = match kind {
         CardKind::Album => ("album.get", "album"),
         CardKind::Playlist => ("playlist.get", "playlist"),
-        CardKind::Artist => return Err(chilpa_i18n::t("this part of the source is not there now")),
+        CardKind::Artist | CardKind::Label => ("page.get", "header"),
     };
     let answer = natives.call(&plugin, method, json!({"ref": reference, "offset": 0, "limit": 10_000}), ASKED)?;
     let stamp = now();
     let mut inner = catalog.lock();
+    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
     if let Some(itself) = answer.get(holder) {
         inner.store.take_item(&plugin, itself, stamp);
     }
     let under = inner.store.cards.get(&id).cloned().unwrap_or_default();
-    let tracks: Vec<i64> = answer.get("tracks").and_then(Value::as_array).into_iter().flatten()
+    let tracks: Vec<i64> = playable_rows(&answer).iter()
         .filter_map(|item| inner.store.take_item_track(&plugin, item, Some(&under), stamp)).collect();
     let best = tracks.iter().filter_map(|t| inner.store.tracks.get(t)?.format.clone())
         .max_by_key(|f: &Format| (f.quality().tier.rank(), f.bits, f.rate));
@@ -272,6 +289,9 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
         catalog.want_cover(&mut inner, &image);
     }
     drop(inner);
+    if let Some(itself) = answer.get(holder).filter(|v| v["shelves"].is_array()) {
+        super::pages::ingest_document(catalog, &plugin, &reference, itself);
+    }
     // Play is the likely next click: the first track's address is asked
     // for now, and the plugin keeps it until it expires.
     if let Some(first) = answer.get("tracks").and_then(Value::as_array).and_then(|t| t.first()).map(|t| text(t, "ref")).filter(|r| !r.is_empty()) {
@@ -282,6 +302,10 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
         });
     }
     Ok(())
+}
+
+fn playable_rows(answer: &Value) -> Vec<Value> {
+    answer["tracks"].as_array().cloned().or_else(|| answer["shelves"].as_array()?.iter().find(|s| s["kind"] == "track")?["items"].as_array().cloned()).unwrap_or_default()
 }
 
 /// A process plugin's covers are fetched within the domains its manifest
@@ -295,6 +319,13 @@ fn remember_domains(catalog: &Catalog, natives: &Natives, plugin: &str) {
 mod tests {
     use super::*;
 
+    #[test]
+    fn an_artist_or_label_plays_its_primary_track_section() {
+        let answer = json!({"shelves":[{"kind":"album","items":[{"ref":"album:1"}]},
+            {"kind":"track","items":[{"ref":"track:7"}]},{"kind":"track","items":[{"ref":"track:8"}]}]});
+        assert_eq!(playable_rows(&answer),vec![json!({"ref":"track:7"})]);
+        assert_eq!(playable_rows(&json!({"tracks":[{"ref":"track:9"}]})),vec![json!({"ref":"track:9"})]);
+    }
     #[test]
     fn a_record_and_its_tracks_from_items() {
         let mut store = Store::default();

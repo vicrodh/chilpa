@@ -78,7 +78,7 @@ Item {
             }
             CreditLine {
                 width: Math.min(implicitWidth, parent.width)
-                credit: detail.artist
+                credit: detail.artist; albumId: detail.selectedId
                 font.pointSize: Type.body
                 font.underline: hovered
                 color: Theme.color.accent

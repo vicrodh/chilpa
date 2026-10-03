@@ -538,3 +538,5 @@ condvar
 ser
 # The lossless codec, as symphonia names it.
 wavpack
+
+upc

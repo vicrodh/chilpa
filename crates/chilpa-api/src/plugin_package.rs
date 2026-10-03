@@ -18,6 +18,19 @@ pub struct StagedPackage {
 }
 
 impl StagedPackage {
+    /// I stage a selected local archive with the same extraction limits as a download.
+    pub fn local(parent: &Path, path: &Path) -> Result<Self, String> {
+        let file = std::fs::File::open(path).map_err(|_| chilpa_i18n::t("The plugin ZIP could not be opened."))?;
+        if !file.metadata().map_err(|_| chilpa_i18n::t("The plugin ZIP could not be read."))?.is_file() {
+            return Err(chilpa_i18n::t("Choose a local ZIP file."));
+        }
+        let mut bytes = Vec::new();
+        file.take(MAX_PACKAGE_BYTES as u64 + 1).read_to_end(&mut bytes)
+            .map_err(|_| chilpa_i18n::t("The plugin ZIP could not be read."))?;
+        let digest = Digest { algorithm: "sha256".into(), value: format!("{:x}", Sha256::digest(&bytes)) };
+        Self::unpack(parent, &bytes, &digest)
+    }
+
     pub fn root(&self) -> &Path { self.directory.path() }
     pub fn files(&self) -> &[PathBuf] { &self.files }
 

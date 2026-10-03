@@ -54,7 +54,7 @@ impl Evidence {
 /// Only host operation names and timings enter this bounded diagnostic log.
 pub(crate) fn log_event(root: &Path, action: &str, success: bool, elapsed: std::time::Duration) {
     let action = match action {
-        "add" | "remove_repository" | "refresh_repository" | "prepare" | "install" | "enable" | "disable"
+        "add" | "remove_repository" | "refresh_repository" | "prepare" | "install" | "install_local" | "enable" | "disable"
         | "grant_network" | "icon" | "tint" | "library_visibility" | "restart" | "settings" | "submit" | "tick" | "filter" | "refresh" => action,
         _ => "unknown",
     };

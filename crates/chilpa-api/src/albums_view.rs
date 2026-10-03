@@ -49,6 +49,25 @@ pub fn grid_rows(len: usize, columns: usize, max_rows: usize, groups: &[(usize, 
 }
 
 impl Reader {
+    /// Merge source album identities into the same order and groups as local albums.
+    pub fn albums_view_with_sources(&self, order: &str, group: &str, text: &str, extras: &Filter, remote: Vec<crate::Album>) -> AlbumsFound {
+        if remote.is_empty() { return self.albums_view(order, group, text, extras); }
+        let local = self.albums_view(order, "", text, extras);
+        let mut rows: Vec<_> = local.ids.chunks(500).flat_map(|ids| self.lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect();
+        rows.extend(remote);
+        match order {
+            "title" => rows.sort_by_cached_key(|a| a.title.to_lowercase()),
+            "year" => rows.sort_by_key(|a| std::cmp::Reverse(a.year)),
+            "played" => rows.sort_by_key(|a| std::cmp::Reverse(a.play_count)),
+            "added" | "last_played" => {},
+            _ => rows.sort_by_cached_key(|a| (a.artist.to_lowercase(), a.year, a.title.to_lowercase())),
+        }
+        if !matches!(group, "letter" | "artist") { return AlbumsFound { ids: rows.iter().map(|a| a.id).collect(), groups: Vec::new() }; }
+        arrange(rows.iter().map(|a| (match (group, order) {
+            ("artist", _) => a.artist.trim().into(), (_, "artist") => chilpa_library::letter_of(&a.artist), _ => chilpa_library::letter_of(&a.title),
+        }, a.id)).collect())
+    }
+
     /// The records of the Albums screen. `group` is "letter", "artist" or
     /// nothing. The groups come in their order, and the order asked for is
     /// the order inside each one. The sources, qualities and formats left

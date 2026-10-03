@@ -24,6 +24,7 @@ pub(crate) enum CardKind {
     Album,
     Playlist,
     Artist,
+    Label,
 }
 
 /// A handle into a worker's tree. It is only good while the worker that
@@ -80,6 +81,7 @@ pub(crate) struct Card {
     pub identity: String,
     pub kind: CardKind,
     pub title: String,
+    pub metadata: serde_json::Value,
     pub artist: String,
     pub year: Option<i32>,
     pub genre: String,
@@ -107,6 +109,7 @@ pub(crate) struct Track {
     pub path: String,
     pub plugin: String,
     pub title: String,
+    pub metadata: serde_json::Value,
     pub artist: String,
     pub album: String,
     /// The card it was read under, or zero.
@@ -131,6 +134,7 @@ pub(crate) struct Folder {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Shelf {
+    pub document: serde_json::Value,
     pub title: String,
     pub cards: Vec<i64>,
     pub tracks: Vec<i64>,
@@ -215,6 +219,16 @@ fn http(address: Option<&String>) -> String {
 }
 
 impl Store {
+    pub fn forget_plugin(&mut self, plugin: &str) {
+        self.cards.retain(|_, c| c.plugin != plugin);
+        self.tracks.retain(|_, t| t.plugin != plugin);
+        self.shelves.retain(|key, _| !key.starts_with(&format!("{plugin} ")));
+        self.card_ids.retain(|(p, _), _| p != plugin);
+        self.track_ids.retain(|_, id| self.tracks.contains_key(id));
+        self.drawn.remove(plugin);
+        self.names.remove(plugin);
+    }
+
     /// Rebuilds what is not written down: the indexes by identity.
     pub fn index(&mut self) {
         self.card_ids = self.cards.values().map(|c| ((c.plugin.clone(), c.identity.clone()), c.id)).collect();

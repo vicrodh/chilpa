@@ -18,7 +18,8 @@ QtObject {
     function update(id, name, description, artwork, tags, folder) { created = [name, description, artwork, tags, folder, id]; return !fail }
     function createFolder(name, color) { created = [name, color]; return fail ? 0 : 4 }
     function updateFolder(id, name, color) { created = [name, color, id]; return !fail }
-    function catalogJson(query) { return JSON.stringify({ folders: [], playlists: [] }) }
+    property var catalog: ({folders: [], playlists: []})
+    function catalogJson(query) { return JSON.stringify(catalog) }
     function managerJson(query, filter, order, ascending, folder) {
         return JSON.stringify([{ kind: "Playlist", id: 7, name: "Stored playlist", detail: "", source: "", source_name: "Local", artwork_path: "", covers: [], color: "", track_count: 3, play_count: 0, folder_id: null, local: true, visible_sidebar: true }])
     }

@@ -27,6 +27,9 @@ const RESTART_WAITS: [u64; 4] = [1, 2, 5, 30];
 
 #[derive(Default)]
 pub(crate) struct Natives {
+    lifecycle: Mutex<()>,
+    personal_changed: Mutex<std::collections::HashSet<String>>,
+    reports: std::sync::OnceLock<Arc<crate::native_reporting::Reports>>,
     live: RwLock<HashMap<String, Arc<NativeClient>>>,
     /// What each was started from, to start it again.
     known: Mutex<HashMap<String, Known>>,
@@ -45,6 +48,21 @@ struct Known {
 }
 
 impl Natives {
+    pub(crate) fn history_changed(&self, plugin: &str) { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).insert(plugin.into()); }
+    pub(crate) fn take_history_changes(&self) -> Vec<String> { self.personal_changed.lock().unwrap_or_else(|e| e.into_inner()).drain().collect() }
+
+    pub(crate) fn playback(self: &Arc<Self>, plugin: &str, resolution: &str) -> Option<Arc<dyn chilpa_core::playback_events::Observer>> {
+        if resolution.is_empty() || resolution.len() > 128 { return None; }
+        let supported = self.known.lock().unwrap_or_else(|e| e.into_inner()).get(plugin)
+            .is_some_and(|known| known.capabilities["playback_events"] == 1);
+        if !supported { return None; }
+        Some(self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self))).observer(plugin, resolution))
+    }
+
+    pub(crate) fn flush_playback(&self) {
+        if let Some(reports) = self.reports.get() { reports.flush(); }
+    }
+
     /// The plugin's channel, if it is running. A plugin found ended is
     /// started again on another thread; meanwhile it is not there.
     pub(crate) fn client(self: &Arc<Self>, id: &str) -> Option<Arc<NativeClient>> {
@@ -66,6 +84,19 @@ impl Natives {
         self.live.read().unwrap_or_else(|e| e.into_inner()).contains_key(id)
     }
 
+    pub(crate) fn has_settings(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|known| {
+            known.capabilities["settings"] == true || known.capabilities["auth"] == "browser"
+        })
+    }
+
+    pub(crate) fn library_kinds(&self, id: &str) -> Vec<String> {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|p| p.capabilities["library"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(str::to_owned)).collect()).unwrap_or_default()
+    }
+
+    pub(crate) fn has_pages(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["pages"] == true)
+    }
     pub(crate) fn ids(&self) -> Vec<String> {
         self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
     }
@@ -102,7 +133,7 @@ impl Natives {
         if !kinds.is_empty() {
             sections.insert("library".to_string(), section(chilpa_i18n::mark("Library"), "columns3", "album", 1, "", Vec::new()));
             let tabs = [("albums", chilpa_i18n::mark("Releases"), "album"), ("tracks", chilpa_i18n::mark("Tracks"), "track"),
-                ("artists", chilpa_i18n::mark("Artists"), "artist"), ("playlists", chilpa_i18n::mark("Playlists"), "playlist")];
+                ("artists", chilpa_i18n::mark("Artists"), "artist"), ("labels", chilpa_i18n::mark("Labels"), "label"), ("playlists", chilpa_i18n::mark("Playlists"), "playlist")];
             for (order, (kind, title, entity)) in tabs.into_iter().enumerate() {
                 if kinds.iter().any(|k| k == kind) {
                     sections.insert(kind.to_string(), section(title, "", entity, order as i32 + 2, "library",
@@ -113,12 +144,25 @@ impl Natives {
         Some(Layout { sections })
     }
 
+    pub(crate) fn stop(&self, id: &str) {
+        let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
+        if let Some(client) = self.live.write().unwrap_or_else(|e| e.into_inner()).remove(id) { client.stop(); }
+    }
+    pub(crate) fn forget_reports(&self, id: &str) {
+        if let Some(reports) = self.reports.get() { reports.forget(id); }
+    }
     /// Starts a plugin and greets it. It runs on the caller's thread, which
     /// is never the window's: plugins load on their own thread.
-    fn start(&self, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
+    fn start(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
+        let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+        self.start_locked(manifest, folder)
+    }
+    fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
         let client = launch(manifest, folder)?;
         let greeting = client.call("initialize", json!({
             "protocol": PROTOCOL,
+            "playback_events": 1,
             "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
             "data_dir": "/data",
             "cache_dir": "/cache",
@@ -137,6 +181,7 @@ impl Natives {
             discover, restarts, restarting: false, last_start: Instant::now() });
         drop(known);
         self.live.write().unwrap_or_else(|e| e.into_inner()).insert(id, client.clone());
+        self.reports.get_or_init(|| crate::native_reporting::Reports::start(Arc::downgrade(self)));
         Ok(client)
     }
 
@@ -160,7 +205,9 @@ impl Natives {
         let id = id.to_string();
         let _ = std::thread::Builder::new().name("chilpa-native-restart".into()).spawn(move || {
             std::thread::sleep(Duration::from_secs(wait));
-            let started = me.start(&manifest, &folder);
+            let _guard = me.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+            if !me.known.lock().unwrap_or_else(|e| e.into_inner()).contains_key(&id) { return; }
+            let started = me.start_locked(&manifest, &folder);
             eprintln!("native: plugin={id} restarted ok={}", started.is_ok());
             if let Some(k) = me.known.lock().unwrap_or_else(|e| e.into_inner()).get_mut(&id) {
                 k.restarting = false;

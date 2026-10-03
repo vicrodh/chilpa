@@ -22,9 +22,9 @@ TestCase {
         mouseClick(toggle, toggle.width / 2, toggle.height / 2)
         compare(changes.pop(), true)
     }
-    function test_missing_settings_are_disabled_and_green_is_a_color() {
+    function test_installed_plugins_always_offer_details_and_green_is_a_color() {
         row.plugin = {name: "Guest", enabled: true, state: "fine", light: "green"}
-        compare(findChild(row, "pluginSettingsButton").enabled, false)
+        compare(findChild(row, "pluginSettingsButton").enabled, true)
         compare(findChild(row, "pluginCompatibilityLight").color, Theme.color.statusPositive)
     }
 }

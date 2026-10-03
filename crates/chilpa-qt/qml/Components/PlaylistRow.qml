@@ -25,6 +25,8 @@ Item {
     readonly property var shown: row.artwork !== "" && row.artwork.indexOf("://") < 0 ? [row.artwork] : row.covers
     property bool active: false
     property bool editing: false
+    property string sourceIcon: ""
+    property bool showSourceBadge: false
 
     signal opened()
     signal menu(real x, real y)
@@ -63,12 +65,21 @@ Item {
         }
     }
 
+    SourceIcon {
+        id: sourceBadge
+        anchors.right: parent.right
+        anchors.rightMargin: Metrics.navItemPadding
+        anchors.verticalCenter: parent.verticalCenter
+        visible: row.showSourceBadge && !row.editing
+        sourceInfo: ({icon: row.sourceIcon, label: row.sourceName})
+        opacity: Metrics.disabledOpacity
+    }
     Text {
         visible: !row.editing
         anchors.left: icon.right
         anchors.leftMargin: Metrics.navItemPadding - (icon.width - Metrics.iconMd) / 2 // derived: where the name was
         anchors.right: parent.right
-        anchors.rightMargin: Metrics.navItemPadding
+        anchors.rightMargin: Metrics.navItemPadding + (sourceBadge.visible ? sourceBadge.width + Metrics.gap6 : 0)
         anchors.verticalCenter: parent.verticalCenter
         text: row.name
         elide: Text.ElideRight

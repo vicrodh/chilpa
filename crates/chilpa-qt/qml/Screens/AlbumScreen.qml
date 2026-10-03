@@ -5,6 +5,7 @@ import "../Theme"
 import "../Primitives"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.
@@ -78,6 +79,8 @@ Flickable {
             onArtwork: artwork.show(detail.art)
         }
 
+        SourceRecordDetails { id: sourceDetails; width: parent.width; cardId: detail.selectedId }
+
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
 
         Item {
@@ -123,6 +126,7 @@ Flickable {
             selectionMode: page.selectionMode
         }
 
+        Repeater { model: sourceDetails.info.shelves || []; SourceShelf { required property var modelData; width: column.width; section: modelData } }
         AlbumCarousel {
             width: parent.width
             title: I18n.tr("From same artist", I18n.rev)

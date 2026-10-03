@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../Primitives"
 import "../Theme"
 
@@ -17,6 +18,7 @@ Menu {
     // The artist whose page this is, so "Go to artist" leads nowhere new.
     property string artistPage
     property var actions: []
+    property var nativeInfo: ({})
 
     signal quick(int at)
 
@@ -26,7 +28,8 @@ Menu {
         at = index
         const one = !(AlbumActions.selected(id, AlbumActions.rev) && AlbumActions.selectedCount > 1)
         title = one ? albumTitle : ""
-        const favorite = Ratings.favorite("album", id, Ratings.rev)
+        nativeInfo = id < 0 ? JSON.parse(Sources.card(id, Library.remoteRev) || "{}") : ({})
+        const favorite = nativeInfo.plugin ? nativeInfo.favorite : Ratings.favorite("album", id, Ratings.rev)
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
@@ -42,7 +45,7 @@ Menu {
             { text: I18n.tr("Edit metadata…", I18n.rev), act: "metadata", when: one && id > 0 },
             { separator: true, when: one && id > 0 },
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
-              act: favorite ? "unfavorite" : "favorite", when: one && id > 0 }
+              act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
         actions = all.filter(e => e.when === undefined || e.when)
         entries = actions
@@ -60,10 +63,13 @@ Menu {
         case "open": Navigation.go("album", albumId); break
         case "tab": Navigation.open("album", albumId); break
         case "quick": menu.quick(at); break
-        case "artist": Navigation.openArtist(artist); break
+        case "artist": { const key = Sources.artistKey(albumId, ""); if (key) Navigation.goKey("source", key); else Navigation.openArtist(artist); break }
         case "metadata": Navigation.go("metadata", albumId); break
-        case "favorite": Ratings.setFavorite("album", albumId, true); break
-        case "unfavorite": Ratings.setFavorite("album", albumId, false); break
+        case "favorite":
+        case "unfavorite":
+            if (nativeInfo.plugin) Sources.command("native", nativeInfo.plugin, JSON.stringify({action:"favorite",ref:nativeInfo.ref,on:actions[index].act === "favorite"}))
+            else Ratings.setFavorite("album", albumId, actions[index].act === "favorite")
+            break
         }
     }
 
