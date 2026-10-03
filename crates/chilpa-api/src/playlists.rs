@@ -151,6 +151,7 @@ impl Chilpa {
         let mut host = self.plugins.as_ref().and_then(|p| p.try_lock().ok());
         if let Some(host) = host.as_mut() {
             for (id, name) in host.searchers() {
+                if host.natives.is_native(&id) { continue; }
                 refresh_source_playlists(self.library.as_ref(), host, &id, &name);
             }
         }

@@ -745,10 +745,13 @@ impl qobject::TrackListModel {
                 }
             });
         }
+        let source_artist = app::with(|api| api.source_artist_key(0, &track.path));
         registry::navigation(move |mut nav| match target.as_str() {
+            "artist" if source_artist.is_some() => nav.as_mut().go_key(&QString::from("source"), &QString::from(source_artist.as_deref().unwrap_or_default())),
             "album" => nav.as_mut().go(&QString::from("album"), track.album_id),
             "metadata" => nav.as_mut().go(&QString::from("metadata"), track.album_id),
             "artist" => nav.as_mut().open_credit(&QString::from(&track.artist), 0),
+            one if one.starts_with("artist:") && source_artist.is_some() => nav.as_mut().go_key(&QString::from("source"), &QString::from(source_artist.as_deref().unwrap_or_default())),
             one if one.starts_with("artist:") => nav.as_mut().open_credit(&QString::from(&track.artist), one[7..].parse().unwrap_or(-1)),
             "folder" => {
                 let dir = std::path::Path::new(&track.path).parent().map(|d| d.display().to_string());
@@ -834,8 +837,12 @@ impl qobject::TrackListModel {
                 let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header { .. } => None }).sum::<u64>();
                 (Rows::Loaded(entries), Some(ms))
             }
-            "source" => { let tracks = app::with(|api| api.source_shelf_tracks(&self.rust().key.to_string()));
-                (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(tracks.iter().map(|t| t.duration_ms).sum::<u64>())) }
+            "source" => {
+                let mut entries = app::with(|api| api.source_track_entries(&self.rust().key.to_string()));
+                if self.rust().limit > 0 { entries.truncate(limit); }
+                let duration = entries.iter().filter_map(|e| match e { Entry::Track(t) => Some(t.duration_ms), _ => None }).sum();
+                (Rows::Loaded(entries), Some(duration))
+            }
             "mostPlayed" => {
                 let tracks = app::with(|api| api.most_played_rows(limit));
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), None)

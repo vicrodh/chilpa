@@ -91,6 +91,9 @@ msgstr "API key"
 msgid "Accent"
 msgstr "Acento"
 
+msgid "Accept permissions and enable"
+msgstr "Aceptar permisos y activar"
+
 msgid "Account"
 msgstr "Cuenta"
 
@@ -190,6 +193,9 @@ msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 msgid "Allowed network domains, separated by commas"
 msgstr "Dominios de red permitidos, separados por comas"
 
+msgid "Alphabetical"
+msgstr "Alfabético"
+
 msgid "Already contains {} track"
 msgid_plural "Already contains {} tracks"
 msgstr[0] "Ya contiene {} pista"
@@ -215,6 +221,9 @@ msgstr "Apariencia"
 
 msgid "Appears on"
 msgstr "Aparece en"
+
+msgid "Apply"
+msgstr ""
 
 msgid "Apply system tint to the icon"
 msgstr ""
@@ -245,9 +254,6 @@ msgstr "Artista Z-A"
 
 msgid "Artists"
 msgstr "Artistas"
-
-msgid "As the source lists them"
-msgstr "Como los muestra la fuente"
 
 msgid "Ascending"
 msgstr "Ascendente"
@@ -282,6 +288,9 @@ msgstr "Entre pistas"
 msgid "Bit perfect"
 msgstr "Bit perfect"
 
+msgid "Booklet"
+msgstr ""
+
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
 
@@ -297,11 +306,17 @@ msgstr "Por álbum"
 msgid "By artist"
 msgstr "Por artista"
 
+msgid "By decade"
+msgstr "Por década"
+
 msgid "By letter"
 msgstr "Por letra"
 
 msgid "By name"
 msgstr "Por nombre"
+
+msgid "By year"
+msgstr "Por año"
 
 msgid "CD in {}"
 msgstr "CD en {}"
@@ -347,6 +362,9 @@ msgstr "Elige una carátula"
 
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
+
+msgid "Choose a local ZIP file."
+msgstr "Elige un archivo ZIP local."
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
@@ -494,6 +512,9 @@ msgstr "Personalizado"
 msgid "Custom image"
 msgstr "Imagen personalizada"
 
+msgid "Customize"
+msgstr ""
+
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
 
@@ -541,6 +562,9 @@ msgstr "Fecha"
 
 msgid "Date added"
 msgstr "Fecha de alta"
+
+msgid "Date updated"
+msgstr "Fecha de actualización"
 
 msgid "Default"
 msgstr "Predeterminado"
@@ -848,6 +872,9 @@ msgstr "lo desinstalé, pero manejaba su cuenta por su lado y no contestó cuand
 msgid "Icon"
 msgstr ""
 
+msgid "Include source albums in Albums"
+msgstr "Integrar los álbumes de esta fuente en Álbumes"
+
 msgid "Info: Embedded tags"
 msgstr "Info: etiquetas del archivo"
 
@@ -871,6 +898,12 @@ msgstr "Inspección aprobada"
 
 msgid "Install"
 msgstr "Instalar"
+
+msgid "Install from ZIP…"
+msgstr "Instalar desde ZIP…"
+
+msgid "Install plugin from ZIP"
+msgstr "Instalar plugin desde ZIP"
 
 msgid "Installed"
 msgstr "Instalados"
@@ -901,6 +934,12 @@ msgstr "Quedarse con la actual"
 
 msgid "Keep the queue between sessions"
 msgstr "Conservar la cola entre sesiones"
+
+msgid "Label"
+msgstr "Sello"
+
+msgid "Labels"
+msgstr ""
 
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
@@ -1090,6 +1129,9 @@ msgstr "Más nuevos primero"
 
 msgid "Next"
 msgstr "Siguiente"
+
+msgid "Next page"
+msgstr ""
 
 msgid "No cover"
 msgstr "Sin carátula"
@@ -1286,6 +1328,9 @@ msgstr "En pausa"
 msgid "Performers"
 msgstr "Intérpretes"
 
+msgid "Pin"
+msgstr ""
+
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr "PipeWire ya no tiene ninguna salida llamada \"{}\""
 
@@ -1436,6 +1481,9 @@ msgstr "Calificación"
 msgid "Reactivate"
 msgstr "Reactivar"
 
+msgid "Read more"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr "Leyéndolo de {}…"
 
@@ -1481,6 +1529,12 @@ msgstr "Actualizar ajustes"
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr "Rechazó el inicio de sesión. Sus discos siguen en la lista y no se pueden reproducir."
 
+msgid "Release"
+msgstr "Lanzamiento"
+
+msgid "Release date"
+msgstr "Fecha de lanzamiento"
+
 msgid "Releases"
 msgstr "Lanzamientos"
 
@@ -1501,6 +1555,9 @@ msgstr "Quitar de guardadas"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
+msgstr "¿Eliminar este plugin, su cuenta, ajustes y biblioteca en caché de Chilpa? Esto no elimina tu cuenta ni tus playlists en el servicio."
 
 msgid "Remove this server?"
 msgstr "¿Quitar este servidor?"
@@ -1542,6 +1599,9 @@ msgid "Restart plugin"
 msgstr ""
 
 msgid "Restore default"
+msgstr ""
+
+msgid "Restore defaults"
 msgstr ""
 
 msgid "Restore tabs"
@@ -1654,6 +1714,9 @@ msgstr "Seleccionar pistas"
 msgid "Send listens"
 msgstr "Enviar escuchas"
 
+msgid "Separate source playlists"
+msgstr "Separar las playlists de esta fuente"
+
 msgid "Server added"
 msgstr "Servidor agregado"
 
@@ -1677,6 +1740,9 @@ msgstr "Mostrar en la carpeta"
 
 msgid "Show in sidebar"
 msgstr "Mostrar en el sidebar"
+
+msgid "Show less"
+msgstr ""
 
 msgid "Show the columns"
 msgstr "Mostrar las columnas"
@@ -1728,6 +1794,9 @@ msgstr "Detener después de esta pista"
 
 msgid "Stream address"
 msgstr "Dirección de stream"
+
+msgid "Streaming"
+msgstr "Streaming"
 
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
@@ -1790,6 +1859,12 @@ msgstr "La barra del reproductor mueve el volumen propio de la salida en vez de 
 
 msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "La barra del reproductor se aparta tras diez segundos sin mover el mouse, y cualquier movimiento la trae de vuelta."
+
+msgid "The plugin ZIP could not be opened."
+msgstr "No se pudo abrir el ZIP del plugin."
+
+msgid "The plugin ZIP could not be read."
+msgstr "No se pudo leer el ZIP del plugin."
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
@@ -1899,6 +1974,9 @@ msgstr "Mejor resultado"
 msgid "Track"
 msgstr "Pista"
 
+msgid "Track count"
+msgstr "Número de pistas"
+
 msgid "Track details · {}"
 msgstr "Detalles de la pista · {}"
 
@@ -1932,6 +2010,9 @@ msgstr "Deshacer reemplazo o cierre de queue"
 msgid "Uninstall"
 msgstr "Desinstalar"
 
+msgid "Uninstall plugin"
+msgstr "Desinstalar plugin"
+
 msgid "Uninstall plugin and remove account data"
 msgstr ""
 
@@ -1940,6 +2021,9 @@ msgstr "Calidad desconocida"
 
 msgid "Unmute"
 msgstr "Quitar silencio"
+
+msgid "Unpin"
+msgstr ""
 
 msgid "Up next"
 msgstr "A continuación"
@@ -3131,6 +3215,11 @@ msgstr "{} todavía no está disponible: {}"
 
 msgid "{} is not available. The record will open when it is back."
 msgstr "{} no está disponible. El disco se abrirá cuando regrese."
+
+msgid "{} label"
+msgid_plural "{} labels"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"

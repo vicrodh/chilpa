@@ -22,7 +22,7 @@ Popup {
     property int current: -1
     // The sources a search asks, kept between runs: Local alone to begin with.
     readonly property var chosen: search.source.split(",").filter(s => s !== "")
-    Component.onCompleted: search.source = SettingsModel.kept("ui.search.sources") || "local"
+    Component.onCompleted: search.source = SettingsModel.kept("ui.search.sources") || "all"
     function toggle(id) {
         let now = id === "all" ? (chosen.indexOf("all") >= 0 ? ["local"] : ["all"])
             : chosen.filter(s => s !== "all")
@@ -146,7 +146,8 @@ Popup {
                     { scope: "all", text: I18n.tr("All", I18n.rev) },
                     { scope: "artists", text: I18n.tr("Artists", I18n.rev) },
                     { scope: "albums", text: I18n.tr("Albums", I18n.rev) },
-                    { scope: "songs", text: I18n.tr("Songs", I18n.rev) }
+                    { scope: "songs", text: I18n.tr("Songs", I18n.rev) },
+                    { scope: "playlists", text: I18n.tr("Playlists", I18n.rev) }
                 ]
 
                 Chip {
@@ -168,6 +169,8 @@ Popup {
             model: flyout.search
 
             delegate: SearchHit {
+                required sourceIcon
+                required sourceName
                 width: list.width
                 current: index === flyout.current
                 onActivated: flyout.choose(index)

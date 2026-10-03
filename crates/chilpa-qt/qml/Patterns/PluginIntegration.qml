@@ -19,15 +19,34 @@ Column {
         Toggle { checked: integration.plugin.tint === true; onToggled: (on) => integration.command("tint", {id: integration.plugin.id, enabled: on}) }
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Apply system tint to the icon", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
-    Text { text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
+    Row {
+        spacing: Metrics.gap12
+        Toggle {
+            checked: (integration.plugin.integration || {}).separate_playlists === true
+            onToggled: (on) => integration.command("integration", {id: integration.plugin.id, field: "separate_playlists", enabled: on})
+        }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Separate source playlists", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
+    }
+    Row {
+        visible: integration.plugin.native === true
+        spacing: Metrics.gap12
+        Toggle {
+            checked: (integration.plugin.integration || {}).integrate_albums === true
+            onToggled: (on) => integration.command("integration", {id: integration.plugin.id, field: "integrate_albums", enabled: on})
+        }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Include source albums in Albums", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
+    }
+    Text { visible: integration.plugin.native !== true; text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Text {
         width: parent.width
+        visible: integration.plugin.native !== true
         text: I18n.tr("Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source.", I18n.rev)
         wrapMode: Text.WordWrap
         color: Theme.color.textSecondary
         font.pointSize: Type.small
     }
     Row {
+        visible: integration.plugin.native !== true
         spacing: Metrics.gap12
         Toggle {
             enabled: integration.plugin.library_count > 0

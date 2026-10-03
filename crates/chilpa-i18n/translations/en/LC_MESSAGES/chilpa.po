@@ -91,6 +91,9 @@ msgstr ""
 msgid "Accent"
 msgstr ""
 
+msgid "Accept permissions and enable"
+msgstr "Accept permissions and enable"
+
 msgid "Account"
 msgstr ""
 
@@ -190,6 +193,9 @@ msgstr ""
 msgid "Allowed network domains, separated by commas"
 msgstr "Allowed network domains, separated by commas"
 
+msgid "Alphabetical"
+msgstr "Alphabetical"
+
 msgid "Already contains {} track"
 msgid_plural "Already contains {} tracks"
 msgstr[0] ""
@@ -214,6 +220,9 @@ msgid "Appearance"
 msgstr ""
 
 msgid "Appears on"
+msgstr ""
+
+msgid "Apply"
 msgstr ""
 
 msgid "Apply system tint to the icon"
@@ -244,9 +253,6 @@ msgid "Artist Z-A"
 msgstr ""
 
 msgid "Artists"
-msgstr ""
-
-msgid "As the source lists them"
 msgstr ""
 
 msgid "Ascending"
@@ -282,6 +288,9 @@ msgstr ""
 msgid "Bit perfect"
 msgstr ""
 
+msgid "Booklet"
+msgstr ""
+
 msgid "Browse for a music folder, or type its full path."
 msgstr ""
 
@@ -297,11 +306,17 @@ msgstr ""
 msgid "By artist"
 msgstr ""
 
+msgid "By decade"
+msgstr "By decade"
+
 msgid "By letter"
 msgstr ""
 
 msgid "By name"
 msgstr ""
+
+msgid "By year"
+msgstr "By year"
 
 msgid "CD in {}"
 msgstr ""
@@ -346,6 +361,9 @@ msgid "Choose a cover"
 msgstr ""
 
 msgid "Choose a file…"
+msgstr ""
+
+msgid "Choose a local ZIP file."
 msgstr ""
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
@@ -494,6 +512,9 @@ msgstr ""
 msgid "Custom image"
 msgstr ""
 
+msgid "Customize"
+msgstr ""
+
 msgid "DAC passthrough"
 msgstr ""
 
@@ -541,6 +562,9 @@ msgstr ""
 
 msgid "Date added"
 msgstr ""
+
+msgid "Date updated"
+msgstr "Date updated"
 
 msgid "Default"
 msgstr ""
@@ -848,6 +872,9 @@ msgstr ""
 msgid "Icon"
 msgstr ""
 
+msgid "Include source albums in Albums"
+msgstr "Include source albums in Albums"
+
 msgid "Info: Embedded tags"
 msgstr ""
 
@@ -870,6 +897,12 @@ msgid "Inspection passed"
 msgstr "Inspection passed"
 
 msgid "Install"
+msgstr ""
+
+msgid "Install from ZIP…"
+msgstr ""
+
+msgid "Install plugin from ZIP"
 msgstr ""
 
 msgid "Installed"
@@ -900,6 +933,12 @@ msgid "Keep the current one"
 msgstr ""
 
 msgid "Keep the queue between sessions"
+msgstr ""
+
+msgid "Label"
+msgstr "Label"
+
+msgid "Labels"
 msgstr ""
 
 msgid "Last.fm opens in the browser to allow Chilpa."
@@ -1089,6 +1128,9 @@ msgid "Newest first"
 msgstr ""
 
 msgid "Next"
+msgstr ""
+
+msgid "Next page"
 msgstr ""
 
 msgid "No cover"
@@ -1286,6 +1328,9 @@ msgstr ""
 msgid "Performers"
 msgstr ""
 
+msgid "Pin"
+msgstr ""
+
 msgid "PipeWire has no output called \"{}\" any more"
 msgstr ""
 
@@ -1436,6 +1481,9 @@ msgstr ""
 msgid "Reactivate"
 msgstr ""
 
+msgid "Read more"
+msgstr ""
+
 msgid "Reading it from {}…"
 msgstr ""
 
@@ -1481,6 +1529,12 @@ msgstr "Refresh settings"
 msgid "Refused the sign-in. Its records stay listed and cannot be played."
 msgstr ""
 
+msgid "Release"
+msgstr "Release"
+
+msgid "Release date"
+msgstr "Release date"
+
 msgid "Releases"
 msgstr ""
 
@@ -1501,6 +1555,9 @@ msgstr ""
 
 msgid "Remove from the library"
 msgstr ""
+
+msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
+msgstr "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 
 msgid "Remove this server?"
 msgstr ""
@@ -1542,6 +1599,9 @@ msgid "Restart plugin"
 msgstr ""
 
 msgid "Restore default"
+msgstr ""
+
+msgid "Restore defaults"
 msgstr ""
 
 msgid "Restore tabs"
@@ -1654,6 +1714,9 @@ msgstr ""
 msgid "Send listens"
 msgstr ""
 
+msgid "Separate source playlists"
+msgstr "Separate source playlists"
+
 msgid "Server added"
 msgstr ""
 
@@ -1676,6 +1739,9 @@ msgid "Show in folder"
 msgstr ""
 
 msgid "Show in sidebar"
+msgstr ""
+
+msgid "Show less"
 msgstr ""
 
 msgid "Show the columns"
@@ -1728,6 +1794,9 @@ msgstr ""
 
 msgid "Stream address"
 msgstr ""
+
+msgid "Streaming"
+msgstr "Streaming"
 
 msgid "Studio 24/48"
 msgstr ""
@@ -1789,6 +1858,12 @@ msgid "The player bar moves the output's own volume instead of scaling the sampl
 msgstr ""
 
 msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr ""
+
+msgid "The plugin ZIP could not be opened."
+msgstr ""
+
+msgid "The plugin ZIP could not be read."
 msgstr ""
 
 msgid "The queue in the order its tempo flows best. Off, back to its own."
@@ -1899,6 +1974,9 @@ msgstr ""
 msgid "Track"
 msgstr ""
 
+msgid "Track count"
+msgstr "Track count"
+
 msgid "Track details · {}"
 msgstr ""
 
@@ -1932,6 +2010,9 @@ msgstr ""
 msgid "Uninstall"
 msgstr ""
 
+msgid "Uninstall plugin"
+msgstr "Uninstall plugin"
+
 msgid "Uninstall plugin and remove account data"
 msgstr ""
 
@@ -1939,6 +2020,9 @@ msgid "Unknown quality"
 msgstr ""
 
 msgid "Unmute"
+msgstr ""
+
+msgid "Unpin"
 msgstr ""
 
 msgid "Up next"
@@ -3131,6 +3215,11 @@ msgstr ""
 
 msgid "{} is not available. The record will open when it is back."
 msgstr ""
+
+msgid "{} label"
+msgid_plural "{} labels"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"

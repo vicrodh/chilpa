@@ -18,6 +18,7 @@ pub mod settings;
 pub mod wizard;
 pub mod queue_playback;
 pub mod remote;
+pub mod playback_events;
 pub mod sacd_tracks;
 
 /// What goes out the device, for whoever wants to draw it.

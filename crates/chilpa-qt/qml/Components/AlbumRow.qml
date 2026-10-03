@@ -9,6 +9,7 @@ import "../Primitives"
 Item {
     id: row
 
+    property var sourceInfo: ({})
     property int albumId
     property string title
     property string subtitle
@@ -67,6 +68,10 @@ Item {
         radius: Metrics.radiusArtSmall
         source: row.art
         tint: row.tint
+    }
+    SourceIcon {
+        anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
+        visible: !!row.sourceInfo.icon; sourceInfo: row.sourceInfo; opacity: Metrics.disabledOpacity
     }
     Column {
         anchors.left: cover.right

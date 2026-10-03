@@ -15,7 +15,7 @@ pub(crate) fn album_of(card: &Card) -> Album {
         title: card.title.clone(),
         artist: card.artist.clone(),
         year: card.year,
-        track_count: card.tracks.as_ref().map_or(0, Vec::len),
+        track_count: card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len),
         artwork_path: card.art.clone(),
         play_count: 0,
     }
@@ -72,17 +72,14 @@ impl Chilpa {
                 needle.iter().all(|w| haystack.contains(w.as_str()))
             })
             .collect();
-        match order {
-            "artist" => cards.sort_by_cached_key(|c| (c.artist.to_lowercase(), c.year, c.title.to_lowercase())),
-            "title" => cards.sort_by_cached_key(|c| c.title.to_lowercase()),
-            "year" => cards.sort_by_key(|c| std::cmp::Reverse(c.year)),
-            _ => {}
-        }
-        if !matches!(group, "letter" | "artist") {
+        super::sorting::sort_cards(&mut cards, order);
+        if !matches!(group, "letter" | "artist" | "year" | "decade") {
             return (cards.iter().map(album_of).collect(), Vec::new());
         }
         let named = cards.iter().map(|c| {
-            let label = match (group, order) {
+            let label = match (group, order.split(':').next().unwrap_or_default()) {
+                ("year", _) => c.year.map(|y| y.to_string()).unwrap_or_default(),
+                ("decade", _) => c.year.map(|y| format!("{}s", y.div_euclid(10) * 10)).unwrap_or_default(),
                 ("artist", _) => c.artist.trim().to_string(),
                 (_, "artist") => chilpa_library::letter_of(&c.artist),
                 _ => chilpa_library::letter_of(&c.title),
@@ -113,6 +110,10 @@ impl Chilpa {
         self.source_panels();
         let layout = self.sources.layouts.get(plugin).cloned();
         let name = self.source_name(plugin);
+        if self.natives.has_pages(plugin) && (address.is_empty() || matches!(address, "home" | "root" | "section:discover") || address.starts_with("native:")) {
+            let reference = address.strip_prefix("native:").unwrap_or("discover:home");
+            return self.native_page_view(plugin, reference);
+        }
         if address.is_empty() && self.natives.is_native(plugin) {
             // A process plugin's home is read whole, in one call; each of its
             // shelves is a route, kept between runs with its title.
@@ -208,8 +209,8 @@ impl Chilpa {
     pub fn route_to(&mut self, screen: &str, id: i64) -> Option<crate::navigation::Route> {
         use crate::navigation::{Route, Screen};
         let screen = Screen::from_name(screen)?;
-        match self.catalog.card(id).filter(|c| screen == Screen::Album && c.kind == CardKind::Artist) {
-            Some(card) => Some(Route { screen: Screen::Source, id: 0, key: format!("{} card:{}", card.plugin, card.id) }),
+        match self.catalog.card(id).filter(|c| screen == Screen::Album && matches!(c.kind, CardKind::Artist | CardKind::Label)) {
+            Some(card) => Some(Route { screen: Screen::Source, id: 0, key: if self.natives.has_pages(&card.plugin) { format!("{} native:{}", card.plugin, card.identity) } else { format!("{} card:{}", card.plugin, card.id) } }),
             None => Some(Route { screen, id, key: String::new() }),
         }
     }

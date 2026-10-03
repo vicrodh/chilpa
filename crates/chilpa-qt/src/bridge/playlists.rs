@@ -126,6 +126,10 @@ impl qobject::Playlists {
     }
 
     pub fn open(mut self: Pin<&mut Self>, id: i64) {
+        if id < 0 {
+            registry::navigation(move |nav| nav.go(&QString::from("album"), id));
+            return;
+        }
         let playlist = app::with(|api| api.playlist(id));
         if let Some(playlist) = playlist {
             if !playlist.source.is_empty() {
@@ -239,10 +243,7 @@ impl qobject::Playlists {
     }
 
     pub fn catalog_json(&self, query: &QString) -> QString {
-        let query = query.to_string().to_lowercase();
-        let (mut playlists, folders) = app::with(|api| (api.playlists(), api.playlist_folders()));
-        playlists.retain(|playlist| playlist.visible_sidebar && (query.is_empty() || playlist.name.to_lowercase().contains(&query)));
-        QString::from(&serde_json::json!({"playlists": playlists, "folders": folders}).to_string())
+        QString::from(&app::with(|api| api.sidebar_playlists(&query.to_string())))
     }
 
     pub fn manager_json(&self, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString {

@@ -58,7 +58,7 @@ Item {
         IconButton {
             glyph: Icons.settings
             objectName: "pluginSettingsButton"
-            enabled: row.installed && (row.plugin.settings === true || !!row.plugin.origin)
+            enabled: row.installed
             opacity: enabled ? 1 : Metrics.disabledOpacity
             tip: I18n.tr("Settings", I18n.rev)
             onClicked: row.settings()

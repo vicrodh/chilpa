@@ -9,7 +9,7 @@ import "../Components"
 // make one, a filter, and the list, which scrolls in whatever height is
 // left. A right click offers the playlist's menu; a double click renames it.
 Item {
-    id: section
+    id: section; objectName: "sidebarPlaylists"
 
     PlaylistPicker { id: createPicker }
 
@@ -19,29 +19,43 @@ Item {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
         const result = []
         for (const folder of catalog.folders) {
-            const children = catalog.playlists.filter(p => p.folder_id === folder.id)
+            const children = catalog.playlists.filter(p => p.folder_id === folder.id && !p.separate)
             if (filter.text !== "" || children.length > 0) {
                 result.push({rowKind: 1, playlistId: 0, name: folder.name,
                     tracks: folder.playlist_count, source: "", sourceName: "",
                     local: true, artwork: "", folderId: folder.id,
-                    visibleInSidebar: true, covers: [], folderColor: folder.color,
+                    visibleInSidebar: true, covers: [], folderColor: folder.color, sourceIcon: "", showSourceBadge: false,
                     expanded: filter.text !== "" || !!expanded[folder.id]})
                 if (filter.text !== "" || expanded[folder.id])
                     for (const playlist of children) result.push(playlistRow(playlist))
             }
         }
         for (const playlist of catalog.playlists)
-            if (playlist.folder_id === null) result.push(playlistRow(playlist))
+            if (playlist.folder_id === null && !playlist.separate) result.push(playlistRow(playlist))
+        const sources = [...new Set(catalog.playlists.filter(p => p.separate).map(p => p.source))]
+        for (const source of sources) {
+            const children = catalog.playlists.filter(p => p.source === source)
+            const key = -(sources.indexOf(source) + 1)
+            const first = children[0]
+            result.push({rowKind: 1, playlistId: 0, name: first.provider, tracks: children.length,
+                source: source, sourceName: first.provider, local: false, artwork: "", folderId: key,
+                visibleInSidebar: true, covers: [], folderColor: "", sourceIcon: first.source_icon || "",
+                showSourceBadge: false, expanded: filter.text !== "" || !!expanded[key]})
+            if (filter.text !== "" || expanded[key])
+                for (const playlist of children) result.push(playlistRow(playlist))
+        }
         rows = result
     }
     function playlistRow(p) {
         return {rowKind: 0, playlistId: p.id, name: p.name, tracks: p.track_count,
             source: p.source, sourceName: p.provider, local: p.mixed,
+            sourceIcon: p.source_icon || "", showSourceBadge: !p.mixed && !p.separate,
             artwork: p.artwork_path, folderId: p.folder_id || 0,
             visibleInSidebar: p.visible_sidebar, covers: p.covers, folderColor: "", expanded: false}
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
     Component.onCompleted: reload()
+    Connections { target: Library; function onRemoteRevChanged() { section.reload() } function onRevChanged() { section.reload() } }
     Connections { target: Playlists; function onRevChanged() { section.reload() } }
 
     Item {
@@ -112,6 +126,8 @@ Item {
             required property var covers
             required property string folderColor
             required property bool expanded
+            required property string sourceIcon
+            required property bool showSourceBadge
 
             width: ListView.view.width
             height: Metrics.playlistRowHeight
@@ -126,6 +142,7 @@ Item {
                     name: host.name
                     tracks: host.tracks
                     folderColor: host.folderColor
+                    sourceIcon: host.sourceIcon
                     expanded: host.expanded
                     onToggled: section.toggleFolder(folderId)
                 }
@@ -141,12 +158,14 @@ Item {
                     tracks: host.tracks
                     source: host.source
                     sourceName: host.sourceName
+                    sourceIcon: host.sourceIcon
+                    showSourceBadge: host.showSourceBadge
                     local: host.local
                     artwork: host.artwork
                     folderId: host.folderId
                     visibleInSidebar: host.visibleInSidebar
                     covers: host.covers
-                    active: Navigation.screen === "playlist" && Navigation.routeId === playlistId
+                    active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: Playlists.open(playlistId)
                     onMenu: (left, top) => {
                         if (!local) {

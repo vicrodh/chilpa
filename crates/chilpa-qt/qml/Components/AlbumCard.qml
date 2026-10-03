@@ -10,6 +10,7 @@ import "../Primitives"
 Item {
     id: card
 
+    property var sourceInfo: ({})
     property int albumId
     property string title
     property string subtitle
@@ -89,6 +90,10 @@ Item {
         }
     }
 
+    SourceIcon {
+        anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
+        visible: !!card.sourceInfo.icon; sourceInfo: card.sourceInfo; opacity: Metrics.disabledOpacity
+    }
     Column {
         anchors.top: cover.bottom
         anchors.topMargin: Metrics.cardTextGap

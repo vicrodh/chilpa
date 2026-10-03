@@ -48,9 +48,11 @@ mod plugin_icons;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;
+mod source_integration;
 mod plugin_evidence;
 mod plugin_domains;
 mod natives;
+mod native_reporting;
 mod native_install;
 pub mod stall;
 pub use plugin_installation::PreparedPlugin;
@@ -1394,6 +1396,7 @@ impl Drop for Chilpa {
         if let Some(player) = self.player.as_mut() { player.shutdown(); }
         if self.player.is_some() { self.poll(); }
         self.log_play(true);
+        if let Some(natives) = self.catalog.natives() { natives.flush_playback(); }
     }
 }
 

@@ -6,6 +6,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
+import "../Patterns"
 
 // A folder of a source that holds more than records: the folders under it,
 // its records on the grid every record has, and its tracks on the list
@@ -27,11 +28,14 @@ Flickable {
         key: page.source
         contentRev: Library.remoteRev + Library.remoteArtRev
         columns: grid.columns
+        order: controls.sort
+        group: controls.grouping
+        filter: find.text
     }
     TrackListModel {
         id: tracks
         kind: "source"
-        key: page.source
+        key: [page.source, controls.sort, controls.grouping, find.text].join("\u001f")
         filterRev: Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
     }
@@ -51,6 +55,13 @@ Flickable {
             color: Theme.color.textPrimary
         }
         SourceTabs { model: page.about.tabs || [] }
+        SourcePaging { about: page.about }
+        Flow {
+            width: parent.width
+            spacing: Metrics.gap12
+            SearchField { id: find; width: Metrics.screenSearch; placeholder: I18n.tr("Search", I18n.rev); onEscaped: text = "" }
+            SourceLibraryControls { id: controls; source: page.source; entity: page.about.entity || "track" }
+        }
 
         Flow {
             width: parent.width

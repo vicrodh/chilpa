@@ -6,6 +6,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
+import "../Patterns"
 
 // A page of shelves: a source's own (Discover), or a section's "All" of its
 // tabs. Each shelf is the same carousel of records as a record page's, with a
@@ -15,7 +16,8 @@ Flickable {
 
     // "<plugin>" or "<plugin> section:<name>".
     property string key
-    readonly property var about: JSON.parse(Sources.page(key, Library.remoteRev) || "{}")
+    readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
+    readonly property var about: JSON.parse(document)
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -38,41 +40,17 @@ Flickable {
         }
         SourceTabs { model: page.about.tabs || [] }
 
+        SourceDiscoveryControls { id: discovery; width: parent.width; about: page.about; visible: !!page.about.tab }
+        SourcePageHeader { width: parent.width; info: page.about.header || ({}); visible: !!page.about.header }
         Repeater {
-            model: page.about.shelves || []
-
-            AlbumCarousel {
-                id: shelf
-                required property var modelData
-                width: column.width
-                visible: !modelData.tracks && model.albums > 0
-                round: modelData.round === true
-                title: modelData.title
-                link: I18n.tr("See all", I18n.rev)
-                onLinkClicked: Navigation.goKey("source", modelData.key)
-                model: AlbumGridModel {
-                    kind: "source"
-                    key: shelf.modelData.key
-                    contentRev: Library.remoteRev + Library.remoteArtRev
-                }
-            }
-        }
-
-        Repeater {
-            model: (page.about.shelves || []).filter(s => s.tracks)
-            SectionHeader {
-                required property var modelData
-                width: column.width
-                title: modelData.title
-                link: I18n.tr("See all", I18n.rev)
-                onLinkClicked: Navigation.goKey("source", modelData.key)
-            }
+            model: page.about.tab ? discovery.shown : page.about.shelves || []
+            SourceShelf { required property var modelData; width: column.width; section: modelData }
         }
 
         SourceState {
             width: column.width
             visible: (page.about.shelves || []).length === 0
-            source: page.key.indexOf(" ") < 0 ? page.key + " root" : page.key
+            source: page.about.native_page ? page.about.plugin + " native:" + page.about.reference : (page.key.indexOf(" ") < 0 ? page.key + " root" : page.key)
             about: page.about
         }
     }

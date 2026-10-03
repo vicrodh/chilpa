@@ -50,11 +50,19 @@ Rectangle {
         visible: status === Image.Ready && !item.tintIcon
     }
 
-    MultiEffect {
+    Rectangle {
+        id: tintSurface
         anchors.fill: picture
-        source: picture
-        colorization: 1
-        colorizationColor: Theme.color.accent
+        color: Theme.color.accent
+        visible: false
+        layer.enabled: true
+    }
+    MultiEffect {
+        objectName: "navTint"
+        anchors.fill: picture
+        source: tintSurface
+        maskEnabled: true
+        maskSource: picture
         visible: item.tintIcon && picture.status === Image.Ready
     }
 

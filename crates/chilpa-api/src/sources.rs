@@ -86,6 +86,7 @@ struct Sounding {
 
 /// What a thread asking a plugin brings back.
 enum Answer {
+    Native { source: String, result: Result<serde_json::Value, String> },
     Cover { generation: u64, path: String },
     Collection { serial: u64, result: Result<SourceDocument, String> },
     Library { generation: u64, result: Result<SourceDocument, String> },
@@ -558,6 +559,15 @@ impl Chilpa {
     /// - `retry`: ask again for the listing that failed.
     pub fn sources_command(&mut self, action: &str, id: &str, text: &str) {
         match action {
+            "native" => {
+                let Ok(input) = serde_json::from_str::<serde_json::Value>(text) else { return };
+                if !self.natives.has_pages(id) { return; }
+                let (natives, source, tx) = (self.natives.clone(), id.to_string(), self.sources.tx.clone());
+                std::thread::spawn(move || {
+                    let result = natives.call(&source, "page.action", input, Duration::from_secs(30));
+                    let _ = tx.send(Answer::Native { source, result });
+                });
+            },
             "home" => {
                 self.open_source(id);
                 self.sources.play_after_load = false;
@@ -1065,8 +1075,13 @@ impl Chilpa {
 
     /// Takes in what the plugin threads answered. Called from `poll`.
     pub(crate) fn advance_sources(&mut self) {
+        for plugin in self.natives.take_history_changes() { self.catalog.expire_personal_pages(&plugin); }
         while let Ok(answer) = self.sources.rx.try_recv() {
             match answer {
+                Answer::Native { source, result } => {
+                    if let Err(error) = result { self.now.error = error; }
+                    else { self.catalog.expire_native_pages(&source); for kind in self.natives.library_kinds(&source) { self.catalog.retry(&format!("{source} section:{kind}")); } self.mark_library_changed(); }
+                },
                 Answer::Cover { generation, path } => {
                     if generation == self.sources.generation {
                         if let Some(entry) = self.sources.trail.last_mut().and_then(|c| c.entry.as_mut()) {

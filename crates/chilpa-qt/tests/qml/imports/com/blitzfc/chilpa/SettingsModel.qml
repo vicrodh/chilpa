@@ -7,6 +7,7 @@ QtObject {
     property bool quickViewClick: false
     property string albumHeader: "off"
     property string density: "compact"
+    property bool playlistCollage: false
     property bool folderColors: true
     property string sidebarMode: "expanded"
     property bool middleClickTabs: false

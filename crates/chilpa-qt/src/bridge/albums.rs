@@ -296,9 +296,10 @@ impl qobject::AlbumGridModel {
                 self.as_mut().rust_mut().generation = generation;
                 let (order, group, text) = (self.rust().order.to_string(), self.rust().group.to_string(), self.rust().filter.to_string());
                 let extras = crate::browse::read(|s| s.filter.clone());
+                let remote = app::with(|api| api.integrated_albums(&text, &extras));
                 let thread = self.qt_thread();
                 worker::submit(move |reader| {
-                    let found = reader.albums_view(&order, &group, &text, &extras);
+                    let found = reader.albums_view_with_sources(&order, &group, &text, &extras, remote);
                     let _ = thread.queue(move |model| model.arrive(generation, found));
                 });
                 return;
@@ -317,7 +318,11 @@ impl qobject::AlbumGridModel {
             }
             "related" => app::with(|api| api.related_albums(self.rust().key.to_string().parse().unwrap_or_default(), limit)),
             "source" => {
-                let (cards, groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                let (mut cards, mut groups) = app::with(|api| api.source_shelf(&self.rust().key.to_string(), &self.rust().order.to_string(), &self.rust().group.to_string(), &self.rust().filter.to_string()));
+                if self.rust().limit > 0 {
+                    cards.truncate(limit);
+                    groups.retain(|(at, _)| *at < cards.len());
+                }
                 self.as_mut().rust_mut().groups = groups; cards
             }
             "artists" => {

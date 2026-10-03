@@ -25,7 +25,7 @@ Rectangle {
         function onScreenChanged() { Sources.refresh() }
     }
     // The host is free again each time the catalog finishes asking it.
-    Connections { target: Library; function onRemoteRevChanged() { Sources.refresh() } }
+    Connections { target: Library; function onRemoteRevChanged() { Sources.refresh() } function onRevChanged() { Sources.refresh() } }
 
     radius: Metrics.radiusPanel
     color: Theme.color.surfaceSidebar
@@ -87,8 +87,17 @@ Rectangle {
                     Column {
                         id: group
                         required property var modelData
+                        required property int index
                         width: parent.width
 
+                        Text {
+                            visible: group.index === 6 && !side.collapsed
+                            height: visible ? Metrics.navItemHeight : 0
+                            x: Metrics.navItemPadding
+                            text: I18n.tr("Streaming", I18n.rev)
+                            font.pointSize: Type.small; font.weight: Type.semibold
+                            color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
+                        }
                         NavItem {
                             objectName: group.modelData.key ? "sourceParent" : "navigationParent"
                             width: parent.width

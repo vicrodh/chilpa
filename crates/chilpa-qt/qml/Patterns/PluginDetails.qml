@@ -14,7 +14,7 @@ P.Modal {
     readonly property var validation: manager.view.validation || ({})
     readonly property bool matching: !!validation.id && validation.id === plugin.id && validation.repository_id === plugin.repository_id
     property alias domains: domains.text
-    onClosed: manager.selected = ""
+    onClosed: { manager.selected = ""; if (mode === "permissions" && manager.view.approval) manager.command("cancel_permissions", {}) }
     width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
     height: Math.min(Metrics.panesHeight + Metrics.heroArt, parent ? parent.height - Metrics.modalInsets : Metrics.panesHeight)
     Column {
@@ -60,6 +60,13 @@ P.Modal {
                 wrapMode: Text.WordWrap
                 color: Theme.color.textSecondary
                 font.pointSize: Type.body
+            }
+            Text {
+                width: parent.width
+                visible: details.mode === "permissions"
+                text: (details.plugin.permissions || []).join("\n\n")
+                textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                font.pointSize: Type.body; color: Theme.color.textPrimary
             }
             Column {
                 width: parent.width
@@ -116,7 +123,7 @@ P.Modal {
                 PluginSettingsForm {
                     objectName: "pluginSettingsForm"
                     width: parent.width
-                    visible: !!details.manager.view.form
+                    visible: !!details.manager.view.form && details.manager.view.settings_id === details.plugin.id
                     document: details.manager.settingsDocument
                     enabled: !details.manager.view.busy
                     onSubmitted: (action, values) => details.manager.command("submit", {id: details.plugin.id, submission: {revision: details.manager.view.form.revision, action: action, values: values}})
@@ -152,7 +159,24 @@ P.Modal {
         visible: details.mode === "settings"
         enabled: !details.manager.view.busy
         text: I18n.tr("Uninstall plugin and remove account data", I18n.rev)
-        onClicked: { details.manager.command("uninstall", {id: details.plugin.id}); details.close() }
+        onClicked: removal.open()
+    }
+    P.PillButton {
+        objectName: "acceptPluginPermissions"
+        anchors.bottom: parent.bottom
+        visible: details.mode === "permissions"
+        text: I18n.tr("Accept permissions and enable", I18n.rev)
+        enabled: !details.manager.view.busy && !!details.plugin.revision
+        onClicked: details.manager.command("enable", {id: details.plugin.id, permission_revision: details.plugin.revision})
+    }
+    ConfirmDialog {
+        id: removal
+        objectName: "confirmPluginRemoval"
+        title: I18n.tr("Uninstall plugin", I18n.rev)
+        message: I18n.tr("Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source.", I18n.rev)
+        confirmText: I18n.tr("Uninstall", I18n.rev)
+        destructive: true
+        onConfirmed: { details.manager.command("uninstall", {id: details.plugin.id}); details.close() }
     }
     P.PillButton { id: close; anchors.bottom: parent.bottom; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
 }

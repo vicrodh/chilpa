@@ -346,7 +346,7 @@ impl Plugins {
 
     pub(crate) fn compatibility_launcher(&self) -> Option<Arc<dyn chilpa_plugin::bridge::WorkerLauncher>> { self.worker_launcher.clone() }
     pub(crate) fn reload_one(&mut self, id: &str) {
-        if valid_id(id) { self.load_one(&self.root.join(id)); self.remember_auth(); }
+        if valid_id(id) { self.natives.stop(id); self.load_one(&self.root.join(id)); self.remember_auth(); }
     }
     pub(crate) fn grant_network(&mut self, id: &str, domain: &str) -> Result<(), String> {
         let mut manifest = self.registry.installed().find(|plugin| plugin.id == id)
@@ -588,10 +588,21 @@ impl Plugins {
     /// Takes the plugin's folder away. Returns true if it is gone.
     pub fn uninstall(&mut self, id: &str) -> bool {
         let Some(dir) = valid_id(id).then(|| self.root.join(id)) else { return false };
-        if !dir.exists() {
-            return true;
+        self.natives.stop(id);
+        self.natives.forget_reports(id);
+        self.forget_credential(id);
+        for path in [dir, chilpa_dirs::data().join("plugin-data").join(id), chilpa_dirs::cache().join("plugins").join(id), self.root.join(".worker-private").join(id)] {
+            if path.exists() && std::fs::remove_dir_all(path).is_err() { return false; }
         }
-        if std::fs::remove_dir_all(&dir).is_err() { return false; }
+        for path in [self.root.join(".integration").join(format!("{id}.json")), self.root.join(".icons").join(format!("{id}.png")),
+            self.root.join(".icons").join(format!("{id}.svg")), self.root.join(".icons").join(format!("{id}.tint"))] {
+            if path.exists() && std::fs::remove_file(path).is_err() { return false; }
+        }
+        if let Ok(library) = chilpa_core::open_library() {
+            for (provider, instance) in [(crate::source_opener::PROVIDER, id), (id, "default")] {
+                if let Ok(Some(source)) = library.find_source(provider, instance) { if library.remove_source(source).is_err() { return false; } }
+            }
+        }
         self.registry.remove(id);
         self.layouts.remove(id);
         if let Ok(mut requests) = self.network_requests.lock() { requests.remove(id); }

@@ -95,6 +95,7 @@ impl Openers {
             .filter(|url| url.starts_with("https://") || url.starts_with("http://"))
             .ok_or_else(|| chilpa_i18n::t("the source gave no address to play"))?;
         Ok(Located {
+            playback: answer.get("resolution_id").and_then(serde_json::Value::as_str).and_then(|id| natives.playback(plugin, id)),
             request: chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() },
             extension: answer.pointer("/format/codec").and_then(serde_json::Value::as_str).filter(|c| !c.is_empty() && *c != "unknown").map(str::to_string),
             server: self.catalog.name(plugin).unwrap_or_else(|| plugin.to_string()),
@@ -122,6 +123,7 @@ impl Openers {
             return Err(chilpa_i18n::t("it comes in several parts, which cannot be read as one file"));
         }
         Ok(Located {
+            playback: None,
             request: chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
                 if let Some(host) = url::Url::parse(address).ok().and_then(|url| url.host_str().map(str::to_string)) {
                     if let Ok(mut requests) = requests.lock() {
