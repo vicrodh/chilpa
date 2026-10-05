@@ -107,9 +107,9 @@ impl Chilpa {
         let mut playlists: Vec<Value> = self.playlists().into_iter().map(|p| {
             let mut row = serde_json::to_value(&p).unwrap_or_default();
             if let Some(card) = self.catalog.card(p.id) {
+                row["contain_art"] = card.contain_art().into();
                 row["native_ref"] = card.identity.into();
                 row["native_folder"] = card.metadata["native_folder"].clone();
-                row["contain_art"] = (card.metadata["art_fit"] == "contain").into();
             }
             row["source_icon"] = crate::plugin_icons::image_url(&root, &p.source).into();
             row["separate"] = read(&root, &p.source).separate_playlists.into();

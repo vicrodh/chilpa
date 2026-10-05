@@ -321,7 +321,7 @@ impl Chilpa {
     }
 
     pub(crate) fn source_album_sources(&mut self, id: i64) -> Vec<AlbumSource> {
-        self.catalog.card(id).map(|c| { let mut source = self.source_of(&c.plugin); source.contain_art = c.metadata["art_fit"] == "contain"; vec![source] }).unwrap_or_default()
+        self.catalog.card(id).map(|c| { let mut source = self.source_of(&c.plugin); source.contain_art = c.contain_art(); vec![source] }).unwrap_or_default()
     }
 
     /// A queue entry of a source the catalog knows, as a row.

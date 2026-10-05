@@ -327,6 +327,10 @@ impl Catalog {
         if card.art.is_empty() {
             self.want_cover(&mut inner, &card.image);
         }
+        drop(inner);
+        if card.kind == store::CardKind::Label && card.image.is_empty() && self.natives().is_some_and(|natives| natives.has_pages(&card.plugin)) {
+            self.shelf(&format!("{} native:{}", card.plugin, card.identity));
+        }
         Some(card)
     }
 

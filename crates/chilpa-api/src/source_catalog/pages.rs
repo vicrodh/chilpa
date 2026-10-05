@@ -61,6 +61,9 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
     if let Some(tabs) = document["tabs"].as_array_mut() {
         for tab in tabs { if let Some(reference) = tab["ref"].as_str() { tab["key"] = json!(format!("{plugin} native:{reference}")); } }
     }
+    if document["header"].is_object() {
+        catalog.lock().store.take_item(plugin, &document["header"], now());
+    }
     ingest(catalog, plugin, &key, &document);
  }
 fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
@@ -162,6 +165,7 @@ impl crate::Chilpa {
         let Some(card) = self.catalog.card(id) else { return "{}".into(); };
         if !self.natives.has_pages(&card.plugin) { return "{}".into(); }
         let mut info = card.metadata.clone();
+        if card.contain_art() { info["art_fit"] = json!("contain"); }
         let quality = self.album_card_quality(id);
         info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());
         decorate_header(&self.catalog, &card.plugin, &mut info);
@@ -226,6 +230,28 @@ mod tests {
             assert_eq!(radio.identity, format!("radio:{reference}"));
             assert_eq!(radio.kind, super::super::store::CardKind::Playlist);
         }
+    }
+    #[test]
+    fn a_label_page_enriches_the_existing_image_less_card() {
+        let catalog = Catalog::new();
+        let id = catalog.lock().store.take_item("fixture",&json!({"kind":"label","ref":"label:1","title":"Label"}),1).unwrap();
+        ingest_document(&catalog,"fixture","label:1",&json!({"header":{"kind":"label","ref":"label:1","title":"Label","image":"https://example.org/logo.png"},"shelves":[]}));
+        let card = catalog.card(id).unwrap();
+        assert_eq!(card.image, "https://example.org/logo.png");
+        assert_eq!(catalog.lock().store.cards.len(), 1);
+    }
+    #[test]
+    fn single_playlist_images_fit_even_when_older_plugins_omit_the_hint() {
+        let mut store = super::super::store::Store::default();
+        let mut item = json!({"kind":"playlist","ref":"playlist:1","title":"List","image":"https://example.org/wide.jpg"});
+        let id = store.take_item("fixture",&item,1).unwrap();
+        assert!(store.cards[&id].contain_art());
+        item["art_fit"] = json!("cover");
+        store.take_item("fixture",&item,2);
+        assert!(!store.cards[&id].contain_art());
+        item["kind"] = json!("album"); item["ref"] = json!("album:1"); item.as_object_mut().unwrap().remove("art_fit");
+        let album = store.take_item("fixture",&item,3).unwrap();
+        assert!(!store.cards[&album].contain_art());
     }
     #[test]
     fn playlist_edits_invalidate_only_the_affected_sources_cards() {
