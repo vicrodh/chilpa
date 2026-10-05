@@ -100,6 +100,9 @@ msgstr ""
 msgid "API key"
 msgstr ""
 
+msgid "About"
+msgstr "About"
+
 msgid "Accent"
 msgstr ""
 
@@ -1034,9 +1037,6 @@ msgstr ""
 msgid "Installing plugin…"
 msgstr "Installing plugin…"
 
-msgid "Integration"
-msgstr ""
-
 msgid "Integrations"
 msgstr ""
 
@@ -1619,8 +1619,14 @@ msgstr ""
 msgid "Plex did not accept the session; sign in again"
 msgstr ""
 
+msgid "Plugin Settings"
+msgstr "Plugin Settings"
+
 msgid "Plugin initialized successfully"
 msgstr "Plugin initialized successfully"
+
+msgid "Plugin integration"
+msgstr "Plugin integration"
 
 msgid "Plugin repository URL"
 msgstr "Plugin repository URL"

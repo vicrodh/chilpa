@@ -16,6 +16,34 @@ TestCase {
         function pluginCommand(action, input) { calls = calls.concat([[action, JSON.parse(input)]]) }
     }
     PluginManager { id: manager; width: 600; height: 600; page: backend }
+    function test_metadata_order_buttons_and_modal_tabs() {
+        const plugin = {id: "ordered", name: "Source", version: "2.4", description: "Source description", enabled: true, light: "native", sidebar_position: 1, sidebar_count: 3}
+        backend.state = {installed: [plugin], busy: false}
+        manager.read()
+        const list = findChild(manager, "installedNativePlugins")
+        tryCompare(list, "count", 1)
+        waitForRendering(list)
+        const help = findChild(list, "pluginHelp")
+        verify(help.text.includes("2.4") && help.text.includes("Source description"))
+        findChild(list, "pluginMoveUp").clicked()
+        compare(backend.calls[backend.calls.length - 1], ["sidebar_position", {id: "ordered", position: 0}])
+        manager.settings(plugin)
+        const modal = manager.detailsView
+        const tabs = findChild(modal, "pluginTabs")
+        const about = Array.from(tabs.children).find(item => item.objectName === "pluginTab_about")
+        about.clicked()
+        compare(about.kind, "primary")
+        verify(findChild(modal, "pluginAbout").visible)
+        Array.from(tabs.children).find(item => item.objectName === "pluginTab_integration").clicked()
+        compare(about.kind, "secondary")
+        verify(!findChild(modal, "pluginAbout").visible)
+        const refresh = findChild(modal, "refreshPluginSettings")
+        const uninstall = findChild(modal, "uninstallPlugin")
+        compare(refresh.parent, uninstall.parent)
+        refresh.clicked()
+        compare(backend.calls[backend.calls.length - 1], ["settings", {id: "ordered"}])
+        modal.close()
+    }
     function test_installed_plugins_can_renew_network_permission_or_uninstall() {
         const plugin = {id: "guest", name: "Guest", origin: {}, state: "fine", enabled: true, limited_network: true}
         backend.state = {installed: [plugin], busy: false}
@@ -92,10 +120,11 @@ TestCase {
         compare(button.text, "Update", "a newer version is offered as an update")
         button.clicked()
         compare(backend.calls[backend.calls.length - 1], ["install_native", {repository: "repo", id: "app.test.one"}])
-        let shown = 0
-        const count = (item) => { for (let child of item.children) { if (child.plugin !== undefined && child.installed === true) ++shown; count(child) } }
-        count(manager)
-        compare(shown, 3, "no installed native plugin is left out")
+        const installed = findChild(manager, "installedNativePlugins")
+        tryCompare(installed, "count", 3)
+        installed.positionViewAtEnd()
+        waitForRendering(installed)
+        verify(installed.contentHeight >= installed.height)
     }
     function test_catalog_command_keeps_repository_identity() {
         manager.command("prepare", {repository: "repo", id: "entry"})

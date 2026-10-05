@@ -10,24 +10,55 @@ Item {
     signal inspected()
     signal switched(bool on)
     signal settings()
-    height: Math.max(Metrics.settingsRow, title.implicitHeight + Metrics.gap16)
-    Text {
-        id: title
+    signal moved(int position)
+    height: Math.max(Metrics.settingsRow, identity.implicitHeight + Metrics.gap16)
+    Column {
+        id: identity
         anchors.left: parent.left
         anchors.right: controls.left
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        text: row.plugin.name || ""
-        textFormat: Text.PlainText
-        wrapMode: Text.WordWrap
-        color: Theme.color.textPrimary
-        font.pointSize: Type.body
+        spacing: Metrics.gap4
+        Text {
+            width: parent.width
+            text: row.plugin.name || ""
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.textPrimary
+            font.pointSize: Type.body
+        }
+        Text {
+            objectName: "pluginHelp"
+            width: parent.width
+            text: [row.plugin.version ? I18n.trArgs("Version: {}", [row.plugin.version], I18n.rev) : "", row.plugin.description || ""].filter(Boolean).join(" · ")
+            visible: text !== ""
+            textFormat: Text.PlainText
+            wrapMode: Text.WordWrap
+            color: Theme.color.textSecondary
+            font.pointSize: Type.meta
+        }
     }
     Row {
         id: controls
         anchors.right: parent.right
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap12
+        IconButton {
+            objectName: "pluginMoveUp"
+            visible: row.installed && row.plugin.sidebar_position !== null && row.plugin.sidebar_position !== undefined
+            glyph: Icons.chevronUp
+            tip: I18n.tr("Move up", I18n.rev)
+            enabled: row.plugin.sidebar_position > 0
+            onClicked: row.moved(row.plugin.sidebar_position - 1)
+        }
+        IconButton {
+            objectName: "pluginMoveDown"
+            visible: row.installed && row.plugin.sidebar_position !== null && row.plugin.sidebar_position !== undefined
+            glyph: Icons.chevronDown
+            tip: I18n.tr("Move down", I18n.rev)
+            enabled: row.plugin.sidebar_position < row.plugin.sidebar_count - 1
+            onClicked: row.moved(row.plugin.sidebar_position + 1)
+        }
         Rectangle {
             visible: row.plugin.light !== "native"
             anchors.verticalCenter: parent.verticalCenter

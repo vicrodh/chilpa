@@ -21,6 +21,22 @@ P.Modal {
         id: heading
         width: parent.width
         spacing: Metrics.gap8
+        Flow {
+            objectName: "pluginTabs"
+            width: parent.width
+            spacing: Metrics.gap8
+            visible: details.mode === "settings"
+            Repeater {
+                model: [{id: "about", title: I18n.tr("About", I18n.rev)}, {id: "settings", title: I18n.tr("Plugin Settings", I18n.rev)}, {id: "integration", title: I18n.tr("Plugin integration", I18n.rev)}]
+                P.PillButton {
+                    required property var modelData
+                    objectName: "pluginTab_" + modelData.id
+                    text: modelData.title
+                    kind: details.tab === modelData.id ? "primary" : "secondary"
+                    onClicked: details.tab = modelData.id
+                }
+            }
+        }
         Text { text: details.plugin.name || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
         PluginValidation {
             objectName: "validationStatus"
@@ -43,7 +59,7 @@ P.Modal {
     Flickable {
         anchors.top: heading.bottom
         anchors.topMargin: Metrics.gap12
-        anchors.bottom: close.top
+        anchors.bottom: footer.top
         anchors.bottomMargin: Metrics.gap12
         width: parent.width
         contentHeight: body.height
@@ -54,6 +70,8 @@ P.Modal {
             width: parent.width - Metrics.gap12
             spacing: Metrics.gap12
             Text {
+                objectName: "pluginAbout"
+                visible: details.mode !== "settings" || details.tab === "about"
                 width: parent.width
                 text: [I18n.trArgs("Version: {}", [details.plugin.version || I18n.tr("Not specified", I18n.rev)], I18n.rev),
                     I18n.trArgs("Author: {}", [details.plugin.author || (details.plugin.origin || {}).catalog_entry?.author || I18n.tr("Not specified", I18n.rev)], I18n.rev),
@@ -99,12 +117,6 @@ P.Modal {
                 color: Theme.color.textSecondary
                 font.pointSize: Type.small
             }
-            Row {
-                spacing: Metrics.gap8
-                visible: details.mode === "settings"
-                P.PillButton { text: I18n.tr("Settings", I18n.rev); onClicked: details.tab = "settings" }
-                P.PillButton { text: I18n.tr("Integration", I18n.rev); onClicked: details.tab = "integration" }
-            }
             P.PillButton {
                 visible: details.mode === "settings" && !!details.manager.view.error
                 text: I18n.tr("Restart plugin", I18n.rev)
@@ -121,7 +133,6 @@ P.Modal {
                 width: parent.width
                 visible: details.tab === "settings" && details.manager.selected === details.plugin.id
                 spacing: Metrics.gap8
-                P.PillButton { text: I18n.tr("Refresh settings", I18n.rev); enabled: !details.manager.view.busy; onClicked: details.manager.command("settings", {id: details.plugin.id}) }
                 PluginSettingsForm {
                     objectName: "pluginSettingsForm"
                     width: parent.width
@@ -155,21 +166,40 @@ P.Modal {
             }
         }
     }
-    P.PillButton {
-        objectName: "uninstallPlugin"
+    Item {
+        id: footer
+        width: parent.width
         anchors.bottom: parent.bottom
-        visible: details.mode === "settings"
-        enabled: !details.manager.view.busy
-        text: I18n.tr("Uninstall plugin and remove account data", I18n.rev)
-        onClicked: removal.open()
-    }
-    P.PillButton {
-        objectName: "acceptPluginPermissions"
-        anchors.bottom: parent.bottom
-        visible: details.mode === "permissions"
-        text: I18n.tr("Accept permissions and enable", I18n.rev)
-        enabled: !details.manager.view.busy && !!details.plugin.revision
-        onClicked: details.manager.command("enable", {id: details.plugin.id, permission_revision: details.plugin.revision})
+        height: Math.max(actions.implicitHeight, close.implicitHeight)
+        Flow {
+            id: actions
+            width: parent.width - close.width - Metrics.gap12
+            spacing: Metrics.gap8
+            P.PillButton {
+                objectName: "uninstallPlugin"
+                visible: details.mode === "settings"
+                enabled: !details.manager.view.busy
+                text: I18n.tr("Uninstall plugin and remove account data", I18n.rev)
+                onClicked: removal.open()
+            }
+            P.PillButton {
+                objectName: "refreshPluginSettings"
+                visible: details.mode === "settings"
+                text: I18n.tr("Refresh settings", I18n.rev)
+                glyph: Lucide.refreshCcwDot
+                iconFamily: Lucide.font
+                enabled: !details.manager.view.busy
+                onClicked: details.manager.command("settings", {id: details.plugin.id})
+            }
+            P.PillButton {
+                objectName: "acceptPluginPermissions"
+                visible: details.mode === "permissions"
+                text: I18n.tr("Accept permissions and enable", I18n.rev)
+                enabled: !details.manager.view.busy && !!details.plugin.revision
+                onClicked: details.manager.command("enable", {id: details.plugin.id, permission_revision: details.plugin.revision})
+            }
+        }
+        P.PillButton { id: close; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
     }
     ConfirmDialog {
         id: removal
@@ -180,5 +210,4 @@ P.Modal {
         destructive: true
         onConfirmed: { details.manager.command("uninstall", {id: details.plugin.id}); details.close() }
     }
-    P.PillButton { id: close; anchors.bottom: parent.bottom; anchors.right: parent.right; text: I18n.tr("Close", I18n.rev); onClicked: details.close() }
 }

@@ -100,6 +100,9 @@ msgstr "Plugin de ALSA"
 msgid "API key"
 msgstr "API key"
 
+msgid "About"
+msgstr "Acerca de"
+
 msgid "Accent"
 msgstr "Acento"
 
@@ -1034,9 +1037,6 @@ msgstr "Instalados"
 msgid "Installing plugin…"
 msgstr "Instalando plugin…"
 
-msgid "Integration"
-msgstr ""
-
 msgid "Integrations"
 msgstr "Integraciones"
 
@@ -1619,8 +1619,14 @@ msgstr "Reproducciones"
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
 
+msgid "Plugin Settings"
+msgstr "Ajustes del plugin"
+
 msgid "Plugin initialized successfully"
 msgstr "El plugin se inició correctamente"
+
+msgid "Plugin integration"
+msgstr "Integración del plugin"
 
 msgid "Plugin repository URL"
 msgstr "URL del repositorio de plugins"
