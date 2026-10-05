@@ -19,7 +19,17 @@ ListModel {
     property int steps: 0
     property int selectedCount: 0
     property int movedTo: -1
+    function queueAll() { lastAction = "queue" }
+    function playNextAll() { lastAction = "next" }
+    function playLaterAll(label) { lastAction = "later" }
+    function groupAction(row, action, label) { lastAction = action; lastRow = row }
     function menuJson(row) {
+        if (row < 0) return JSON.stringify([
+            {act:"queue",text:"Add to queue"}, {act:"next",text:"Play next"}, {act:"later",text:"Play later"},
+            {separator:true}, {text:"Extra queues",submenu:true,children:[
+                {act:"buffer:new",text:"Open in new queue"}, {act:"buffer:add:2",text:"Add to queue Other"}, {act:"buffer:replace:2",text:"Replace queue Other"}
+            ]}
+        ])
         return JSON.stringify([
             { act: "play", text: "Play now" },
             { act: "queue", text: "Add to queue" },

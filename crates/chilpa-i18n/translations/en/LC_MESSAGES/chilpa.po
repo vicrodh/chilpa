@@ -1679,6 +1679,9 @@ msgstr ""
 msgid "Queue"
 msgstr ""
 
+msgid "Queue actions"
+msgstr "Queue actions"
+
 msgid "Queue and playlist actions"
 msgstr ""
 

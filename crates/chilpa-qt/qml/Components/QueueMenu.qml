@@ -3,8 +3,8 @@ import com.blitzfc.chilpa
 import "../Primitives"
 import "../Theme"
 
-// The three placements offered by every collection's queue button.
-Menu {
+// Every collection shares placements in the player and the extra queues.
+CascadingMenu {
     id: menu
 
     property TrackListModel model
@@ -28,11 +28,8 @@ Menu {
     }
 
     function showAt(left, top) {
-        entries = [
-            { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
-            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
-            { text: I18n.tr("Play later", I18n.rev), act: "later", glyph: Lucide.listPlus, family: Lucide.font }
-        ].concat(canRemove ? [
+        const icons = {queue: Lucide.listEnd, next: Lucide.listStart, later: Lucide.listPlus}
+        entries = JSON.parse(model.menuJson(-1)).map(entry => Object.assign({}, entry, {glyph: icons[entry.act] || "", family: Lucide.font})).concat(canRemove ? [
             { separator: true },
             { text: I18n.tr("Delete playlist", I18n.rev), act: "remove" }
         ] : [])
@@ -41,11 +38,17 @@ Menu {
         open()
     }
 
-    onChosen: (index) => {
-        const action = entries[index].act
-        if (groupRow >= 0)
+    onActionChosen: entry => {
+        const action = entry.act
+        if (groupRow >= 0) {
             model.groupAction(groupRow, action, activeLabel)
-        else if (action === "queue")
+            if (action.startsWith("buffer:")) { ListenList.refresh(); if (action === "buffer:new") Navigation.go("listenlist", 0) }
+        }
+        else if (action.startsWith("buffer:")) {
+            model.listAction(action, -1, -1)
+            ListenList.refresh()
+            if (action === "buffer:new") Navigation.go("listenlist", 0)
+        } else if (action === "queue")
             model.queueAll()
         else if (action === "next")
             model.playNextAll()

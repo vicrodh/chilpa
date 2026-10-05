@@ -109,6 +109,12 @@ impl Chilpa {
         items.push(item("listen:after", chilpa_i18n::mark("Clear after this track")));
         items
     }
+    pub fn collection_queue_menu(&self) -> Value {
+        let mut entries: Vec<_> = [("queue", chilpa_i18n::mark("Add to queue")), ("next", chilpa_i18n::mark("Play next")), ("later", chilpa_i18n::mark("Play later"))]
+            .into_iter().map(|(act, label)| json!({"act":act,"text":chilpa_i18n::t(label)})).collect();
+        entries.extend(self.listen_targets());
+        json!(entries)
+    }
     pub fn listen_targets(&self) -> Vec<Value> {
         let mut items = vec![json!({"act":"buffer:new", "text":chilpa_i18n::t("Open in new queue")})];
         for b in &self.listen.buffers {
