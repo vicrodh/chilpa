@@ -75,9 +75,10 @@ pub mod qobject {
         #[qproperty(QString, error)]
         /// Bumped when the queue changed: another track, more or fewer queued.
         #[qproperty(i32, queue_rev)]
-        /// The lyrics of what plays, one line per entry, and the line being
-        /// sung (-1 when they carry no timings or none has come yet).
+        /// The lyrics of what plays, one line per entry, the line being sung
+        /// (-1 when untimed or none has come yet), and the whole as JSON.
         #[qproperty(QStringList, lyrics)]
+        #[qproperty(QString, lyrics_json)]
         #[qproperty(i32, lyrics_line)]
         #[qproperty(bool, lyrics_synced)]
         type Player = super::PlayerRust;
@@ -186,6 +187,8 @@ pub struct PlayerRust {
     lyrics: QStringList,
     lyrics_line: i32,
     lyrics_synced: bool,
+    lyrics_json: QString,
+    lyrics_shown: u64,
     /// The file the text properties were last set for.
     shown: String,
     shown_art: String,
@@ -351,19 +354,15 @@ impl qobject::Player {
             self.as_mut().set_quality_long(QString::from(&now.quality.long()));
             self.as_mut().set_quality_tier(now.quality.tier.rank());
             self.as_mut().set_output_format(QString::from(&now.format));
-            let (device, route) = app::with(|api| {
-                let (output, _) = api.chosen_output();
-                let (device, label) = api.output_names(&output);
-                let route = match (api.fidelity_of(&output), api.exclusive()) {
-                    ("exact", _) => api.t("direct"),
-                    ("depends", true) => api.t("exclusive"),
-                    _ => api.t("shared"),
-                };
-                (device, format!("{label} · {route}"))
-            });
+            let (device, route) = app::with(|api| api.output_route());
             self.as_mut().set_device(QString::from(&device));
             self.as_mut().set_route(QString::from(&route));
             self.as_mut().set_path(QString::from(&now.path));
+        }
+        // Lyrics arrive after the track starts, so they have their own turn.
+        if now.lyrics_revision != self.rust().lyrics_shown {
+            self.as_mut().rust_mut().lyrics_shown = now.lyrics_revision;
+            self.as_mut().set_lyrics_json(QString::from(&app::with(|api| api.lyrics_json())));
             let mut lines = QList::<QString>::default();
             for line in &now.lyrics {
                 lines.append(QString::from(line));

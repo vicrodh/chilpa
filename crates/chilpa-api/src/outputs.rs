@@ -198,6 +198,19 @@ impl crate::Chilpa {
         (device.unwrap_or_else(|| output_id.to_string()), stack.unwrap_or_else(|| key.to_string()))
     }
 
+    /// The chosen output as the player shows it: the device, and its stack
+    /// with how the music reaches it ("ALSA (plughw) · direct").
+    pub fn output_route(&self) -> (String, String) {
+        let (output, _) = self.chosen_output();
+        let (device, label) = self.output_names(&output);
+        let route = match (self.fidelity_of(&output), self.exclusive()) {
+            ("exact", _) => chilpa_i18n::t("direct"),
+            ("depends", true) => chilpa_i18n::t("exclusive"),
+            _ => chilpa_i18n::t("shared"),
+        };
+        (device, format!("{label} · {route}"))
+    }
+
     /// What the output's stack promises: "exact", "depends" or "never".
     /// One nobody knows promises nothing.
     pub fn fidelity_of(&self, output_id: &str) -> &'static str {

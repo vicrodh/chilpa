@@ -56,6 +56,7 @@ mod source_integration;
 mod plugin_evidence;
 mod plugin_domains;
 mod natives;
+mod lyrics_service;
 mod native_reporting;
 mod native_install;
 pub mod stall;
@@ -219,8 +220,11 @@ pub struct NowPlaying {
     pub lyrics_line: i32,
     /// True if the lyrics carry timings and can be followed.
     pub lyrics_synced: bool,
-    /// Where it came from: "file", "tags" or empty.
+    /// Where it came from: "file", "tags", the name of the plugin that
+    /// gave them, or empty.
     pub lyrics_source: String,
+    /// Grows when other lyrics arrive; then read [`Chilpa::lyrics_json`].
+    pub lyrics_revision: u64,
     /// The last problem, empty if there is none.
     pub error: String,
     /// True when what plays has no end and cannot be sought, like a radio
@@ -588,6 +592,9 @@ pub struct Chilpa {
     sleep_until: Option<std::time::Instant>,
     /// The lyrics of what is playing, so they are not reread on every tick.
     lyrics: Option<chilpa_lyrics::Document>,
+    /// The thread that finds lyrics, and the track it is finding them for.
+    lyrics_service: Option<lyrics_service::LyricsService>,
+    lyrics_generation: u64,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
     /// must not leave the window waiting.
@@ -689,6 +696,8 @@ impl Chilpa {
             stop_after: None,
             sleep_until: None,
             lyrics: None,
+            lyrics_service: None,
+            lyrics_generation: 0,
             plugins: None,
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
@@ -781,23 +790,6 @@ impl Chilpa {
             return;
         }
         self.now.album_id = self.library().and_then(|library| library.tracks_by_paths(&[path]).ok()).and_then(|mut rows| rows.pop().flatten()).and_then(|track| track.album_id).unwrap_or_default();
-    }
-
-    /// Looks up the lyrics of what is starting to play.
-    ///
-    /// It is read once per track, not on every tick: it is a few kilobytes, but
-    /// opening a file sixty times a minute makes no sense at all.
-    fn load_lyrics(&mut self, path: &std::path::Path) {
-        let found = chilpa_lyrics::local::find(path);
-        self.now.lyrics = found.as_ref().map(|h| h.document.lines.iter().map(|l| l.text.clone()).collect()).unwrap_or_default();
-        self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.document.timing > chilpa_lyrics::Timing::Unsynced);
-        self.now.lyrics_source = match found.as_ref().map(|h| h.origin.provider.as_str()) {
-            Some("file") => chilpa_i18n::t("file"),
-            Some("tags") => chilpa_i18n::t("tags"),
-            _ => String::new(),
-        };
-        self.now.lyrics_line = -1;
-        self.lyrics = found.map(|h| h.document);
     }
 
     /// Which line of the lyrics belongs to that second.
@@ -1181,6 +1173,7 @@ impl Chilpa {
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
+        self.advance_lyrics();
         self.resolve_next_ahead();
         self.keep_place(false);
         self.advance_connect();
@@ -1234,7 +1227,7 @@ impl Chilpa {
                     };
                     let codec = self.remote_codec(&self.now.path.clone());
                     self.now.quality = Quality::of_track(&self.now.path, codec.as_deref(), bits, Some(rate));
-                    self.load_lyrics(&path);
+                    self.load_lyrics(&path, lyrics_service::length_ms(total_frames, opened.sample_rate_hz));
                     self.load_analysis(&path);
                     // The player counts over what it was given; the view
                     // counts over the whole queue.

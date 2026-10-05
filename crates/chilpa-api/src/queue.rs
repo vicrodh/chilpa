@@ -148,7 +148,7 @@ impl Chilpa {
         self.name_from_source(&path);
         self.now.live = self.name_from_entry(&path);
         self.name_from_heard();
-        self.load_lyrics(&path);
+        self.load_lyrics(&path, None);
     }
 
     /// Sets the queue already in `self.queue` going, from that position.
