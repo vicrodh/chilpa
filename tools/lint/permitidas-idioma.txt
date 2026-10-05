@@ -544,3 +544,6 @@ webp
 
 # The image crate resampling filter.
 lanczos
+
+# Lucide refresh-ccw-dot (counterclockwise refresh) glyph.
+ccw

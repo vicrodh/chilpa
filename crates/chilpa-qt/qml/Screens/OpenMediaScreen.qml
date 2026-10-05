@@ -37,6 +37,14 @@ Item {
             PillButton { objectName: "openFolder"; text: I18n.tr("Open a folder…", I18n.rev); glyph: Icons.folderOpen; enabled: !OpenMedia.loading; onClicked: OpenMedia.pick("folder") }
             PillButton { objectName: "openCd"; text: I18n.tr("Open audio CD", I18n.rev); glyph: Icons.disc; enabled: !OpenMedia.loading; onClicked: OpenMedia.pick("cd") }
             PillButton { objectName: "openSacd"; text: I18n.tr("Open SACD…", I18n.rev); glyph: Icons.disc; enabled: !OpenMedia.loading; onClicked: OpenMedia.pick("sacd") }
+            PillButton {
+                objectName: "closeMedia"
+                visible: !!page.document.title
+                text: I18n.tr("Close media", I18n.rev)
+                glyph: Lucide.eject
+                iconFamily: Lucide.font
+                onClicked: { OpenMedia.close(); ListenList.refresh(); Navigation.go("openMedia", 0) }
+            }
         }
         Text {
             width: parent.width
@@ -68,21 +76,13 @@ Item {
                 height: hero.implicitHeight
                 PageHero {
                     id: hero
-                    width: parent.width - close.width - Metrics.gap12
+                    width: parent.width
                     name: page.document.title || ""
                     label: page.document.artist || ""
                     art: OpenMedia.art
                     meta: I18n.trCount("{} track", "{} tracks", page.document.count || 0, I18n.rev)
                     canShuffle: false
                     onPlay: tracks.playAll(false)
-                }
-                IconButton {
-                    id: close
-                    objectName: "closeMedia"
-                    anchors.right: parent.right
-                    glyph: Icons.x
-                    tip: I18n.tr("Close media", I18n.rev)
-                    onClicked: { OpenMedia.close(); ListenList.refresh(); Navigation.go("openMedia", 0) }
                 }
             }
             SearchField {
@@ -96,7 +96,6 @@ Item {
                 height: implicitHeight
                 fitContent: true
                 header: false
-                rich: true
                 showAlbum: false
                 showArt: false
                 showSource: false
