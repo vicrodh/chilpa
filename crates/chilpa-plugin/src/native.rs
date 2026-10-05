@@ -23,8 +23,9 @@ const OUT_QUEUE: usize = 256;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum NativeError {
-    /// The plugin answered with an error of its own.
-    Rpc { code: i64, message: String },
+    /// The plugin answered with an error of its own. `data` is what it
+    /// added, such as how long to wait before asking again.
+    Rpc { code: i64, message: String, data: Option<Value> },
     Timeout,
     /// The process ended, or its pipes did.
     Closed,
@@ -97,6 +98,7 @@ impl NativeClient {
                             Some(error) => Err(NativeError::Rpc {
                                 code: error.get("code").and_then(Value::as_i64).unwrap_or(-32000),
                                 message: error.get("message").and_then(Value::as_str).unwrap_or("").to_string(),
+                                data: error.get("data").cloned(),
                             }),
                             None => Ok(message.get("result").cloned().unwrap_or(Value::Null)),
                         };
@@ -223,7 +225,8 @@ mod tests {
     use std::time::Instant;
 
     /// A plugin on a thread: `slow` answers after 3 s, `echo` at once,
-    /// `fail` with an error, `quit` closes its end.
+    /// `fail` with an error, `busy` with an error that asks for a pause,
+    /// `quit` closes its end.
     fn plugin() -> Arc<NativeClient> {
         let (host, guest) = UnixStream::pair().unwrap();
         let reply_to = guest.try_clone().unwrap();
@@ -243,6 +246,7 @@ mod tests {
                     let answer = match method.as_str() {
                         "slow" => { std::thread::sleep(Duration::from_secs(3)); json!({"jsonrpc": "2.0", "id": id, "result": "slow"}) }
                         "fail" => json!({"jsonrpc": "2.0", "id": id, "error": {"code": 7, "message": "no"}}),
+                        "busy" => json!({"jsonrpc": "2.0", "id": id, "error": {"code": -32000, "message": "busy", "data": {"retry_after_ms": 1500}}}),
                         _ => json!({"jsonrpc": "2.0", "id": id, "result": message["params"]}),
                     };
                     let mut out = reply.lock().unwrap();
@@ -268,9 +272,14 @@ mod tests {
     #[test]
     fn an_error_and_a_timeout_reach_only_their_caller() {
         let client = plugin();
-        assert_eq!(client.call("fail", Value::Null, Duration::from_secs(1)), Err(NativeError::Rpc { code: 7, message: "no".into() }));
+        assert_eq!(client.call("fail", Value::Null, Duration::from_secs(1)), Err(NativeError::Rpc { code: 7, message: "no".into(), data: None }));
         assert_eq!(client.call("slow", Value::Null, Duration::from_millis(100)), Err(NativeError::Timeout));
         assert_eq!(client.call("echo", json!(2), Duration::from_secs(1)).unwrap(), json!(2));
+        assert_eq!(
+            client.call("busy", Value::Null, Duration::from_secs(1)),
+            Err(NativeError::Rpc { code: -32000, message: "busy".into(), data: Some(json!({"retry_after_ms": 1500})) }),
+            "what the plugin added to its error reaches the caller"
+        );
     }
 
     #[test]
