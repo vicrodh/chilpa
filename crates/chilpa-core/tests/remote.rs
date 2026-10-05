@@ -97,10 +97,12 @@ fn serve(file: Vec<u8>) -> (String, Arc<AtomicU64>) {
 struct Fake {
     url: String,
     failed: Mutex<Vec<String>>,
+    located: Mutex<Vec<String>>,
 }
 
 impl RemoteOpener for Fake {
     fn locate(&self, entry: &RemoteEntry) -> Result<Located, String> {
+        self.located.lock().unwrap().push(entry.external_id.clone());
         if entry.external_id == "gone" {
             return Err("the server does not answer".into());
         }
@@ -108,6 +110,7 @@ impl RemoteOpener for Fake {
         // was built.
         let url = if entry.external_id == "closed" { "http://127.0.0.1:1/audio/file".to_string() } else { self.url.clone() };
         Ok(Located {
+            normalization: None,
             playback: entry.external_id.starts_with("events-").then(|| Arc::new(Recorded(entry.external_id.clone())) as Arc<dyn chilpa_core::playback_events::Observer>),
             request: chilpa_core::RangedRequest { url, headers: vec![("X-Token".into(), "letmein".into())] },
             extension: Some("wav".into()),
@@ -118,6 +121,7 @@ impl RemoteOpener for Fake {
         Described {
             tags: chilpa_tags::Tags { title: Some(format!("Song {}", entry.external_id)), ..Default::default() },
             artwork: None,
+            ..Default::default()
         }
     }
     fn failed(&self, entry: &RemoteEntry, why: &str) {
@@ -129,7 +133,7 @@ fn fake() -> (&'static Fake, Arc<AtomicU64>) {
     static FAKE: OnceLock<(&'static Fake, Arc<AtomicU64>)> = OnceLock::new();
     let (fake, authorized) = FAKE.get_or_init(|| {
         let (url, authorized) = serve(wav(30_000));
-        let fake: &'static Fake = Box::leak(Box::new(Fake { url, failed: Mutex::new(Vec::new()) }));
+        let fake: &'static Fake = Box::leak(Box::new(Fake { url, failed: Mutex::new(Vec::new()), located: Mutex::new(Vec::new()) }));
         struct Shared(&'static Fake);
         impl RemoteOpener for Shared {
             fn locate(&self, e: &RemoteEntry) -> Result<Located, String> { self.0.locate(e) }
@@ -259,5 +263,65 @@ fn repeated_remote_resources_each_report_their_consumed_audio_once() {
         assert_eq!(report.1, 30_000);
         assert_eq!(report.2, 44_100);
         assert_eq!(report.3, "finished");
+    }
+}
+
+#[test]
+fn the_next_remote_track_opens_before_the_current_track_renders() {
+    use chilpa_core::queue_playback::{play_queue_with, SharedQueue, Controls};
+    let (fake, _) = fake();
+    let written = Arc::new(AtomicU64::new(0));
+    let caps = DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true };
+    let mut opens = 0;
+    let results = play_queue_with(
+        &SharedQueue::new(vec![entry("preload-first"), entry("preload-next")]),
+        &caps, chilpa_audio::negotiate::Policy::BitPerfect, &Controls::default(),
+        |stream| { opens += 1; Ok(NullSink { stream, written: written.clone() }) },
+        &mut |index, _, _| {
+            if index == 0 {
+                let limit = Instant::now() + Duration::from_secs(3);
+                while !fake.located.lock().unwrap().iter().any(|id| id == "preload-next") && Instant::now() < limit {
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                assert!(fake.located.lock().unwrap().iter().any(|id| id == "preload-next"), "the next remote resource was not prepared during the current track");
+                assert_eq!(written.load(Ordering::Relaxed), 0);
+            }
+        }, &mut |_, _| {},
+    ).unwrap();
+    assert_eq!(results.len(), 2);
+    assert_eq!(opens, 1);
+    assert_eq!(written.load(Ordering::Relaxed), 60_000);
+    assert_eq!(fake.located.lock().unwrap().iter().filter(|id| *id == "preload-next").count(), 1);
+}
+
+#[test]
+fn remote_seeks_during_render_skip_or_repeat_only_the_requested_frames() {
+    use chilpa_core::queue_playback::{play_queue_with, SharedQueue, Controls};
+    use chilpa_audio::seek::SeekSignal;
+    struct Seeking { inner: NullSink, seek: SeekSignal, target: Duration, first: Arc<AtomicU64> }
+    impl AudioSink for Seeking {
+        fn format(&self) -> StreamFormat { self.inner.format() }
+        fn write(&mut self, bytes: &[u8]) -> Result<usize, SinkError> {
+            let frames = self.inner.write(bytes)?;
+            if self.first.load(Ordering::Relaxed) == 0 {
+                self.first.store(frames as u64, Ordering::Relaxed);
+                self.seek.request(self.target);
+            }
+            Ok(frames)
+        }
+        fn close(&mut self) -> Result<(), SinkError> { Ok(()) }
+    }
+    fake();
+    let caps = DeviceCaps { sample_rates: vec![44_100], formats: vec![SampleFormat::S16], channels: vec![2], probed: true };
+    for target in [Duration::ZERO, Duration::from_millis(500)] {
+        let controls = Controls::default();
+        let written = Arc::new(AtomicU64::new(0));
+        let first = Arc::new(AtomicU64::new(0));
+        let results = play_queue_with(&SharedQueue::new(vec![entry("seek-active")]), &caps,
+            chilpa_audio::negotiate::Policy::BitPerfect, &controls,
+            |stream| Ok(Seeking { inner: NullSink { stream, written: written.clone() }, seek: controls.seek.clone(), target, first: first.clone() }),
+            &mut |_, _, _| {}, &mut |_, _| {}).unwrap();
+        assert!(results[0].outcome.may_advance_queue());
+        assert_eq!(written.load(Ordering::Relaxed), first.load(Ordering::Relaxed) + 30_000 - chilpa_audio::seek::frames_at(target, 44_100));
     }
 }

@@ -95,6 +95,9 @@ impl Openers {
             .filter(|url| url.starts_with("https://") || url.starts_with("http://"))
             .ok_or_else(|| chilpa_i18n::t("the source gave no address to play"))?;
         Ok(Located {
+            normalization: answer["normalization"]["gain_db"].as_f64().map(|gain| chilpa_core::remote::Normalization {
+                gain_db: gain as f32, peak: answer["normalization"]["peak"].as_f64().map(|p| p as f32),
+            }).and_then(chilpa_core::remote::Normalization::valid),
             playback: answer.get("resolution_id").and_then(serde_json::Value::as_str).and_then(|id| natives.playback(plugin, id)),
             request: chilpa_core::RangedRequest { url: url.to_string(), headers: Vec::new() },
             extension: answer.pointer("/format/codec").and_then(serde_json::Value::as_str).filter(|c| !c.is_empty() && *c != "unknown").map(str::to_string),
@@ -123,6 +126,7 @@ impl Openers {
             return Err(chilpa_i18n::t("it comes in several parts, which cannot be read as one file"));
         }
         Ok(Located {
+            normalization: None,
             playback: None,
             request: chilpa_core::RangedRequest { url: final_address_with(&url, domains.as_deref(), |address| {
                 if let Some(host) = url::Url::parse(address).ok().and_then(|url| url.host_str().map(str::to_string)) {
@@ -218,14 +222,14 @@ impl RemoteOpener for Openers {
         // What the catalog read of it: its record, its artist and its cover.
         if let Some((track, art)) = self.catalog.track_by_path(&entry.to_entry()) {
             let album_artist = self.catalog.cards(&[track.album_id]).pop().map(|c| c.artist).filter(|a| !a.is_empty());
-            return Described { tags: chilpa_tags::Tags {
+            return Described { duration: Duration::from_millis(track.duration_ms), tags: chilpa_tags::Tags {
                 title: Some(track.title), artists: if track.artist.is_empty() { Vec::new() } else { vec![track.artist] },
                 album: Some(track.album).filter(|a| !a.is_empty()), album_artist,
                 ..Default::default()
             }, artwork: Some(art).filter(|a| !a.is_empty()).map(std::path::PathBuf::from) };
         }
         if let Some((title, artist, album, album_artist, artwork)) = self.with_library(|lib| lib.server_track_card(&entry.to_entry()).ok().flatten()) {
-            return Described { tags: chilpa_tags::Tags {
+            return Described { duration: Duration::ZERO, tags: chilpa_tags::Tags {
                 title: Some(title), artists: if artist.is_empty() { Vec::new() } else { vec![artist] },
                 album: Some(album).filter(|a| !a.is_empty()), album_artist: Some(album_artist).filter(|a| !a.is_empty()),
                 ..Default::default()
@@ -241,7 +245,7 @@ impl RemoteOpener for Openers {
         // Only a picture already on disk: this runs on the player's thread,
         // which does not wait on the network for a cover.
         let artwork = crate::pictures::kept(&heard.image_url).map(std::path::PathBuf::from);
-        Described { tags, artwork }
+        Described { tags, artwork, duration: Duration::from_millis(heard.duration_ms) }
     }
 
     fn failed(&self, entry: &RemoteEntry, why: &str) {
