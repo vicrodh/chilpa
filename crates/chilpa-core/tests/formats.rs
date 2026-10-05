@@ -168,6 +168,7 @@ fn lossy_formats_decode_in_blocks() {
     // stays a known gap, and the test below pins it.
     for (name, args) in [
         ("aac.m4a", ["-c:a", "aac"]),
+        ("adts.aac", ["-c:a", "aac"]),
         ("mp3.mp3", ["-c:a", "mp3"]),
         ("vorbis.ogg", ["-c:a", "libvorbis"]),
     ] {
@@ -193,6 +194,33 @@ fn lossy_formats_decode_in_blocks() {
         let _ = std::fs::remove_file(target);
     }
     let _ = std::fs::remove_file(wav);
+}
+
+#[test]
+fn a_raw_aac_file_is_scanned_with_its_audio_properties() {
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let folder = dir().join("aac-library");
+    std::fs::create_dir_all(&folder).unwrap();
+    let wav = dir().join("ref-aac-library.wav");
+    write_wav(&wav, 16);
+    let target = folder.join("track.AAC");
+    assert!(convert(&wav, &target, &["-c:a", "aac", "-f", "adts"]));
+    let library = chilpa_library::Library::in_memory().unwrap();
+    let report = chilpa_library::scan_root(&library, &folder).unwrap();
+    assert_eq!(report.seen, 1, "raw AAC must not disappear from the library");
+    assert_eq!(report.read, 1);
+    assert_eq!(report.unreadable, 0);
+    assert_eq!(library.track_count(false).unwrap(), 1);
+    let info = chilpa_tags::read(&target).unwrap();
+    assert_eq!(info.sample_rate_hz, Some(RATE));
+    assert_eq!(info.channels, Some(2));
+    assert!((info.duration.as_secs_f64() - 3.0).abs() < 0.5);
+    std::fs::remove_file(target).unwrap();
+    std::fs::remove_file(wav).unwrap();
+    std::fs::remove_dir(folder).unwrap();
 }
 
 #[test]
