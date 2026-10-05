@@ -29,6 +29,46 @@ pub fn header_atmosphere(path: &Path) -> Option<PathBuf> {
     atmosphere_in(&chilpa_dirs::cache().join("atmosphere"), path)
 }
 
+/// A complete cover on a square field blended from its two dominant colors.
+pub fn contained_cover(path: &Path, size: u32) -> Option<PathBuf> {
+    let size = size.clamp(32, 2048);
+    let small = cover_derivative(path, size)?;
+    let directory = chilpa_dirs::cache().join("contained-covers");
+    let output = directory.join(small.file_name()?);
+    if output.is_file() { return Some(output); }
+    let art = image::open(&small).ok()?.to_rgb8();
+    let field = contain_image(&art, size);
+    std::fs::create_dir_all(directory).ok()?;
+    let mut file = tempfile::NamedTempFile::new_in(output.parent()?).ok()?;
+    image::codecs::jpeg::JpegEncoder::new_with_quality(&mut file, QUALITY).encode_image(&field).ok()?;
+    file.persist(&output).ok()?;
+    Some(output)
+}
+
+fn contain_image(art: &image::RgbImage, size: u32) -> image::RgbImage {
+    let sample = image::imageops::thumbnail(art, 64, 64);
+    let mut bins = std::collections::BTreeMap::<[u8;3], (u32,[u32;3])>::new();
+    for pixel in sample.pixels() {
+        let bin = bins.entry([pixel[0]/32,pixel[1]/32,pixel[2]/32]).or_default();
+        bin.0 += 1;
+        for channel in 0..3 { bin.1[channel] += u32::from(pixel[channel]); }
+    }
+    let mut colors: Vec<_> = bins.into_values().collect();
+    colors.sort_by_key(|(count,_)| std::cmp::Reverse(*count));
+    let average = |index: usize| {
+        let (count,sum) = colors.get(index).or_else(|| colors.first()).copied().unwrap_or((1,[0;3]));
+        sum.map(|value| (value / count) as u8)
+    };
+    let (top,bottom) = (average(0),average(1));
+    let mut field = image::RgbImage::from_fn(size,size,|_,y| image::Rgb(std::array::from_fn(|c| {
+        ((u32::from(top[c]) * (size-1-y) + u32::from(bottom[c]) * y) / (size-1)) as u8
+    })));
+    let ratio = size as f64 / f64::from(art.width().max(art.height()).max(1));
+    let fitted = image::imageops::resize(art, (f64::from(art.width())*ratio).round().max(1.0) as u32, (f64::from(art.height())*ratio).round().max(1.0) as u32, image::imageops::FilterType::Lanczos3);
+    image::imageops::overlay(&mut field, &fitted, i64::from((size-fitted.width())/2), i64::from((size-fitted.height())/2));
+    field
+}
+
 fn derivative_in(dir: &Path, path: &Path, size: u32) -> Option<PathBuf> {
     let size = size.clamp(32, 2048);
     // The file's own date is in the name, so a cover replaced on disk gets
@@ -182,5 +222,18 @@ mod tests {
         assert_eq!((image.width(), image.height()), (128, 128));
         assert_eq!(atmosphere_in(&dir.join("cache"), &original).unwrap(), made);
         let _ = std::fs::remove_dir_all(dir);
+    }
+}
+
+#[cfg(test)]
+mod contained_tests {
+    #[test]
+    fn a_wide_picture_preserves_both_edges_and_fills_the_gutter() {
+        let art = image::RgbImage::from_fn(80,40,|x,_| if x<40 {image::Rgb([200,20,20])} else {image::Rgb([20,20,200])});
+        let result = super::contain_image(&art,80);
+        assert_eq!(result.dimensions(),(80,80));
+        assert_eq!(result.get_pixel(0,40),art.get_pixel(0,20));
+        assert_eq!(result.get_pixel(79,40),art.get_pixel(79,20));
+        assert_ne!(result.get_pixel(0,0),result.get_pixel(0,79));
     }
 }
