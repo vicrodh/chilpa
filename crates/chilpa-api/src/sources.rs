@@ -522,6 +522,7 @@ impl Chilpa {
                 .unwrap_or_default(),
             "detail": detail,
         });
+        document["playing_parent"] = self.playing_media_parent().map(|(source, _)| source).unwrap_or_default().into();
         document["playing_entry"] = context.into();
         document["on_air_history"] = serde_json::json!(s.on_air_history);
         document.to_string()
@@ -613,6 +614,7 @@ impl Chilpa {
             "heard" => self.toggle_heard(id),
             "detail" => self.show_detail(text, id),
             "parent" => self.open_episode_parent(),
+            "playing_parent" => { if let Some((source, parent)) = self.playing_media_parent() { self.open_media_parent(source, parent); } },
             "retry" => self.load_listing(),
             "retry_listing" => self.source_retry(id),
             _ => {}

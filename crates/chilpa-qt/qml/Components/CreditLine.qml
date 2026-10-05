@@ -12,6 +12,7 @@ Text {
     property string credit
     // When what plays is an entry of a source, the key of its page: a
     // station is not an artist, and a click opens the station.
+    property string parentSource
     property string entry
     readonly property alias hovered: hover.hovered
 
@@ -33,6 +34,11 @@ Text {
     FontMetrics { id: metrics; font: line.font }
     HoverHandler { id: hover; enabled: line.credit !== ""; cursorShape: Qt.PointingHandCursor }
     TapHandler { enabled: line.credit !== ""; onTapped: (point) => {
+        if (line.parentSource !== "") {
+            Sources.command("playing_parent", "", "")
+            Navigation.goKey("source", line.parentSource)
+            return
+        }
         const route = Sources.artistKey(line.albumId, line.trackPath)
         if (route) Navigation.goKey("source", route)
         else if (line.entry !== "") Navigation.goKey("sourceEntry", line.entry)
