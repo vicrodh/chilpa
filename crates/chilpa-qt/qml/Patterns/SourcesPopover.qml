@@ -9,6 +9,8 @@ import "../Primitives"
 // from the library; tiers and formats use the facade's generic vocabulary.
 Popup {
     id: popover
+    property bool showAlbumLibraries: false
+    property bool showTrackLibraries: false
 
     // A click outside closes it and is nothing else: it is not also a click
     // on what is there.
@@ -123,6 +125,7 @@ Popup {
         }
 
         Rectangle { width: parent.width; height: Metrics.focusRing; color: Theme.color.strokeHairline }
+        SourceAlbumLibraries { width: parent.width; tracks: popover.showTrackLibraries; active: popover.opened && (popover.showAlbumLibraries || popover.showTrackLibraries) }
         Text {
             text: I18n.tr("Quality", I18n.rev)
             font.pointSize: Type.small

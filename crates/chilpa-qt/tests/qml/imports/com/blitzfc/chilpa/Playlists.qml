@@ -6,6 +6,22 @@ QtObject {
     property var created: []
     property string added: ""
     property bool fail: false
+    property var sourceChoices: []
+    property var remoteWrite: []
+    property var remoteState: ({})
+    function sourcesJson(ids) { return JSON.stringify(sourceChoices) }
+    function writeSource(source, id, name, description, tracks, request) {
+        remoteWrite = [source, id, name, description, tracks]
+        remoteState = {request_id: request, pending: true}
+        return !fail
+    }
+    function writeState(source) { return JSON.stringify(remoteState) }
+    function orderFolders(ids) { created = JSON.parse(ids) }
+    function setCustomOrder(ids) { created = JSON.parse(ids) }
+    function moveToFolder(id, folder) { created = [id, folder]; return !fail }
+    function setVisible(id, visible) { created = [id, visible] }
+    function refresh() {}
+
     function pickerJson(ids, query) { return JSON.stringify(rows.filter(r => r.playlist.name.toLowerCase().includes(query.toLowerCase()))) }
     function addTrackIds(id, ids) { added = ids; return JSON.stringify({ added: 0, exact: 1, similar: 1, rejected: fail }) }
     function createFull(name, description, artwork, tags, folder, ids) { created = [name, description, artwork, tags, folder, ids]; return fail ? 0 : 7 }

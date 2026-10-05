@@ -193,7 +193,7 @@ Item {
             clip: true
             model: page.rows
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
             delegate: PlaylistManagerRow {
                 width: GridView.view.cellWidth - Metrics.gap12
                 grid: true
@@ -215,7 +215,7 @@ Item {
             clip: true
             model: page.rows
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
             delegate: PlaylistManagerRow {
                 width: ListView.view.width - Metrics.contentHorizontalMargins
                 grid: false

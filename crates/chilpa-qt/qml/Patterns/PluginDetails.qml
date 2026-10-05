@@ -48,14 +48,16 @@ P.Modal {
         width: parent.width
         contentHeight: body.height
         clip: true
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8;}
         Column {
             id: body
             width: parent.width - Metrics.gap12
             spacing: Metrics.gap12
             Text {
                 width: parent.width
-                text: [details.plugin.version || "", details.plugin.author || (details.plugin.origin || {}).catalog_entry?.author || "", details.plugin.description || "", details.plugin.problem || ""].filter(Boolean).join("\n\n")
+                text: [I18n.trArgs("Version: {}", [details.plugin.version || I18n.tr("Not specified", I18n.rev)], I18n.rev),
+                    I18n.trArgs("Author: {}", [details.plugin.author || (details.plugin.origin || {}).catalog_entry?.author || I18n.tr("Not specified", I18n.rev)], I18n.rev),
+                    details.plugin.description || I18n.tr("Description not provided yet.", I18n.rev), details.plugin.problem || ""].filter(Boolean).join("\n\n")
                 textFormat: Text.PlainText
                 wrapMode: Text.WordWrap
                 color: Theme.color.textSecondary

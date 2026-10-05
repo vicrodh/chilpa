@@ -28,6 +28,7 @@ const RESTART_WAITS: [u64; 4] = [1, 2, 5, 30];
 #[derive(Default)]
 pub(crate) struct Natives {
     lifecycle: Mutex<()>,
+    pub(crate) broker: crate::plugin_broker::Broker,
     personal_changed: Mutex<std::collections::HashSet<String>>,
     reports: std::sync::OnceLock<Arc<crate::native_reporting::Reports>>,
     live: RwLock<HashMap<String, Arc<NativeClient>>>,
@@ -94,13 +95,34 @@ impl Natives {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|p| p.capabilities["library"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(str::to_owned)).collect()).unwrap_or_default()
     }
 
+    pub(crate) fn has_track_quality(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["track_quality"] == true)
+    }
     pub(crate) fn has_pages(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["pages"] == true)
+    }
+    pub(crate) fn edits_playlists(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["playlist_edit"] == true)
     }
     pub(crate) fn ids(&self) -> Vec<String> {
         self.live.read().unwrap_or_else(|e| e.into_inner()).keys().cloned().collect()
     }
+    pub(crate) fn searches(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.capabilities["search"] == true)
+    }
 
+    pub(crate) fn permits(&self, id: &str, capability: &chilpa_plugin::Capability) -> bool {
+        self.is_native(id) && self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.manifest.has(capability))
+    }
+    pub(crate) fn imports_playlists(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.capabilities["playlist_import"] == 1)
+    }
+    pub(crate) fn display_name(&self, id: &str) -> String {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|k| k.manifest.name.clone()).unwrap_or_else(|| id.into())
+    }
+    pub(crate) fn playlist_limit(&self, id: &str) -> usize {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).and_then(|k| k.capabilities["playlist_limit"].as_u64()).unwrap_or(2000).clamp(1, 10000) as usize
+    }
     /// Calls a plugin, or says it is not running.
     pub(crate) fn call(self: &Arc<Self>, id: &str, method: &str, params: Value, timeout: Duration) -> Result<Value, String> {
         let client = self.client(id).ok_or_else(|| chilpa_i18n::t("the plugin is not running"))?;
@@ -123,20 +145,23 @@ impl Natives {
         let known = known.get(id)?;
         let section = |title: &str, icon: &str, entity: &str, order: i32, under: &str, paths: Vec<Route>| Section {
             title: chilpa_i18n::t(title), icon: icon.into(), entity: entity.into(), paths, order, under: under.into() };
+        let navigation = &known.capabilities["navigation"];
+        let title = |key: &str, fallback: &str| navigation[key].as_str()
+            .filter(|value| !value.trim().is_empty()).unwrap_or(fallback).to_string();
         let mut sections = std::collections::BTreeMap::new();
         if known.capabilities.get("home").and_then(Value::as_bool).unwrap_or(false) {
             let routes = known.discover.iter().map(|title| Route { path: vec![title.clone()], membership: String::new() }).collect();
-            sections.insert("discover".to_string(), section(chilpa_i18n::mark("Discover"), "home", "album", 0, "", routes));
+            sections.insert("discover".to_string(), section(&title("discover", chilpa_i18n::mark("Discover")), "home", "album", 0, "", routes));
         }
         let kinds: Vec<String> = known.capabilities.get("library").and_then(Value::as_array).into_iter().flatten()
             .filter_map(Value::as_str).map(str::to_string).collect();
         if !kinds.is_empty() {
-            sections.insert("library".to_string(), section(chilpa_i18n::mark("Library"), "columns3", "album", 1, "", Vec::new()));
+            sections.insert("library".to_string(), section(&title("library", chilpa_i18n::mark("Library")), "columns3", "album", 1, "", Vec::new()));
             let tabs = [("albums", chilpa_i18n::mark("Releases"), "album"), ("tracks", chilpa_i18n::mark("Tracks"), "track"),
                 ("artists", chilpa_i18n::mark("Artists"), "artist"), ("labels", chilpa_i18n::mark("Labels"), "label"), ("playlists", chilpa_i18n::mark("Playlists"), "playlist")];
-            for (order, (kind, title, entity)) in tabs.into_iter().enumerate() {
+            for (order, (kind, fallback, entity)) in tabs.into_iter().enumerate() {
                 if kinds.iter().any(|k| k == kind) {
-                    sections.insert(kind.to_string(), section(title, "", entity, order as i32 + 2, "library",
+                    sections.insert(kind.to_string(), section(&title(kind, fallback), "", entity, order as i32 + 2, "library",
                         vec![Route { path: vec![kind.to_string()], membership: String::new() }]));
                 }
             }
@@ -146,6 +171,7 @@ impl Natives {
 
     pub(crate) fn stop(&self, id: &str) {
         let _guard = self.lifecycle.lock().unwrap_or_else(|e| e.into_inner());
+        self.broker.revoke(id);
         self.known.lock().unwrap_or_else(|e| e.into_inner()).remove(id);
         if let Some(client) = self.live.write().unwrap_or_else(|e| e.into_inner()).remove(id) { client.stop(); }
     }
@@ -159,7 +185,7 @@ impl Natives {
         self.start_locked(manifest, folder)
     }
     fn start_locked(self: &Arc<Self>, manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
-        let client = launch(manifest, folder)?;
+        let client = launch(manifest, folder, Arc::downgrade(self))?;
         let greeting = client.call("initialize", json!({
             "protocol": PROTOCOL,
             "playback_events": 1,
@@ -232,7 +258,7 @@ pub(crate) fn install(
 }
 
 #[cfg(target_os = "linux")]
-fn launch(manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, PluginError> {
+fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
     let id = manifest.id.clone();
     let paths = chilpa_bwrap::NativePaths {
         folder: folder.to_path_buf(),
@@ -241,7 +267,9 @@ fn launch(manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, Plugi
     };
     let name = id.clone();
     chilpa_bwrap::launch_native(&paths, &id, MEMORY, move |method, params| {
-        if method == "log" {
+        if method == "host.request" {
+            if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
+        } else if method == "log" {
             eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
         }
     })
@@ -251,6 +279,6 @@ fn launch(manifest: &Manifest, folder: &Path) -> Result<Arc<NativeClient>, Plugi
 /// Native plugins run only inside the Linux sandbox for now; elsewhere they
 /// are listed with the reason and never started (ADR-010 debt).
 #[cfg(not(target_os = "linux"))]
-fn launch(_: &Manifest, _: &Path) -> Result<Arc<NativeClient>, PluginError> {
+fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
     Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
 }

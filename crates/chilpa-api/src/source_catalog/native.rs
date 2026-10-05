@@ -38,12 +38,13 @@ fn web(item: &Value) -> String {
     Some(text(item, "image")).filter(|a| a.starts_with("https://") || a.starts_with("http://")).unwrap_or_default()
 }
 
-fn format(item: &Value) -> Option<Format> {
+pub(super) fn format(item: &Value) -> Option<Format> {
     let quality = item.get("quality")?;
     let bits = quality.get("bits").and_then(Value::as_u64).and_then(|b| u8::try_from(b).ok()).filter(|b| *b > 0);
     let rate = quality.get("rate").and_then(Value::as_u64).and_then(|r| u32::try_from(r).ok()).filter(|r| *r > 0);
     let codec = quality.get("codec").and_then(Value::as_str).unwrap_or_default().to_ascii_lowercase();
-    (!codec.is_empty() || bits.is_some() || rate.is_some()).then_some(Format { codec, bits, rate })
+    let advertised_hires = quality.get("tier").and_then(Value::as_str) == Some("hi_res");
+    (!codec.is_empty() || bits.is_some() || rate.is_some()).then_some(Format { codec, bits, rate, advertised_hires })
 }
 
 impl Store {
@@ -63,6 +64,10 @@ impl Store {
         }
         let id = self.card_id(plugin, &reference);
         let card = self.cards.get_mut(&id).expect("interned");
+        if kind == CardKind::Playlist && ["updated_at", "tracks", "editable"].iter().any(|key| item.get(key).is_some_and(|value| card.metadata.get(key) != Some(value))) {
+            card.tracks = None;
+            card.read_at = 0;
+        }
         card.kind = kind;
         merge_metadata(&mut card.metadata, item);
         card.title = text(item, "title");
@@ -115,10 +120,13 @@ impl Store {
         track.disc = number(item, "disc_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(0);
         track.number = number(item, "track_number").and_then(|n| u16::try_from(n).ok()).unwrap_or(0);
         track.duration_ms = number(item, "duration_ms").unwrap_or(0);
-        track.format = format(item).or(track.format.take());
+        let incoming = format(item);
+        if !track.format.as_ref().is_some_and(|f| f.rate.is_some() && f.bits.is_some()) || incoming.as_ref().is_some_and(|f| f.rate.is_some() && f.bits.is_some()) {
+            track.format = incoming.or(track.format.take());
+        }
         let image = web(item);
         track.image = if image.is_empty() { under.map(|c| c.image.clone()).unwrap_or_default() } else { image };
-        track.playable = true;
+        track.playable = item["available"].as_bool().unwrap_or(true);
         Some(id)
     }
 }
@@ -127,6 +135,9 @@ impl Store {
 pub(super) fn read_shelf(catalog: &Catalog, natives: &Arc<Natives>, key: &str) -> Result<(), String> {
     let (plugin, address) = split(key);
     remember_domains(catalog, natives, plugin);
+    if let Some(name) = address.strip_prefix("matching-artist-v2:") {
+        return read_matching_artist(catalog, natives, plugin, key, name);
+    }
     if let Some(reference) = address.strip_prefix("native:") {
         return super::pages::read(catalog, natives, plugin, reference);
     }
@@ -192,8 +203,10 @@ fn read_home(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str) -> Result<
 fn read_library(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &str, kind: &str) -> Result<(), String> {
     let kind = if kind == "library" { "albums" } else { kind };
     let mut items = Vec::new();
+    let mut folders = Value::Null;
     for page in 0..PAGES {
         let answer = natives.call(plugin, "library.list", json!({"kind": kind, "offset": page * PAGE, "limit": PAGE}), ASKED)?;
+        if answer["folders"].is_array() { folders = answer["folders"].clone(); }
         let found = answer.get("items").and_then(Value::as_array).cloned().unwrap_or_default();
         let total = number(&answer, "total").unwrap_or(0);
         let short = (found.len() as u64) < PAGE;
@@ -205,7 +218,7 @@ fn read_library(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &s
     let stamp = now();
     let mut inner = catalog.lock();
     if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
-    let mut shelf = Shelf { read_at: stamp, epoch: 1, ..Shelf::default() };
+    let mut shelf = Shelf { read_at: stamp, epoch: 1, document: json!({"folders":folders}), ..Shelf::default() };
     for item in &items {
         if kind == "tracks" {
             shelf.tracks.extend(inner.store.take_item_track(plugin, item, None, stamp));
@@ -251,6 +264,38 @@ fn read_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &st
     Ok(())
 }
 
+fn same_primary_artist(album: &Value, artist: &Value) -> bool {
+    let reference = text(album,"artist_ref");
+    let expected = text(artist,"ref");
+    if !reference.is_empty() && !expected.is_empty() { return reference == expected; }
+    let name = text(album,"artist");
+    !name.trim().is_empty() && name.trim().to_lowercase() == text(artist,"title").trim().to_lowercase()
+}
+
+fn read_matching_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &str, name: &str) -> Result<(), String> {
+    let search = natives.call(plugin, "search", json!({"text":name,"limit":20}), ASKED)?;
+    let artist = search["artists"].as_array().into_iter().flatten()
+        .find(|item| text(item, "title").trim().to_lowercase() == name.trim().to_lowercase());
+    let mut items = Vec::new();
+    if let Some(artist) = artist {
+        let answer = natives.call(plugin, "artist.get", json!({"ref":artist["ref"]}), ASKED)?;
+        items.extend(answer["albums"].as_array().into_iter().flatten().filter(|item| same_primary_artist(item,artist)).cloned());
+        for shelf in answer["shelves"].as_array().into_iter().flatten() {
+            items.extend(shelf["items"].as_array().into_iter().flatten().filter(|item| item["kind"] == "album" && same_primary_artist(item,artist)).cloned());
+        }
+    }
+    let stamp = now();
+    let mut inner = catalog.lock();
+    if !natives.is_native(plugin) { return Err("The plugin was disabled.".into()); }
+    let mut shelf = Shelf { title:name.into(), read_at:stamp, epoch:1, ..Default::default() };
+    let mut seen = std::collections::HashSet::new();
+    for item in items { if let Some(id) = inner.store.take_item(plugin, &item, stamp) { if seen.insert(id) { shelf.cards.push(id); } } }
+    inner.shelf_errors.remove(key);
+    inner.store.shelves.insert(key.into(), shelf);
+    inner.dirty = true;
+    Ok(())
+}
+
 /// A record's or a playlist's tracks, in one call.
 pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) -> Result<(), String> {
     let (plugin, reference, kind) = catalog.lock().store.cards.get(&id).map(|c| (c.plugin.clone(), c.identity.clone(), c.kind))
@@ -280,6 +325,7 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     };
     if let Some(card) = inner.store.cards.get_mut(&id) {
         card.tracks = Some(tracks);
+        card.metadata["available"] = json!(answer["availability"] != "unavailable" && answer[holder]["available"] != false);
         card.read_at = now();
         if card.format.is_none() { card.format = best; }
     }
@@ -291,15 +337,6 @@ pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) ->
     drop(inner);
     if let Some(itself) = answer.get(holder).filter(|v| v["shelves"].is_array()) {
         super::pages::ingest_document(catalog, &plugin, &reference, itself);
-    }
-    // Play is the likely next click: the first track's address is asked
-    // for now, and the plugin keeps it until it expires.
-    if let Some(first) = answer.get("tracks").and_then(Value::as_array).and_then(|t| t.first()).map(|t| text(t, "ref")).filter(|r| !r.is_empty()) {
-        let (natives, plugin) = (natives.clone(), plugin.clone());
-        let _ = std::thread::Builder::new().name("chilpa-preload".into()).spawn(move || {
-            let _ = natives.call(&plugin, "track.resolve", json!({"ref": first, "purpose": "preload",
-                "output": {"max_rate": 192_000, "max_bits": 24}}), ASKED);
-        });
     }
     Ok(())
 }
@@ -320,6 +357,58 @@ mod tests {
     use super::*;
 
     #[test]
+    fn same_artist_excludes_appearances_and_recommendations() {
+        let artist = json!({"ref":"artist:9","title":"The Band"});
+        assert!(same_primary_artist(&json!({"artist_ref":"artist:9","artist":"The Band and Friends"}),&artist));
+        assert!(same_primary_artist(&json!({"artist":" THE BAND "}),&artist));
+        assert!(!same_primary_artist(&json!({"artist_ref":"artist:7","artist":"Unrelated Artist"}),&artist));
+        assert!(!same_primary_artist(&json!({"artist_ref":"artist:7","artist":"The Band"}),&artist));
+        assert!(!same_primary_artist(&json!({"title":"The Band tribute"}),&artist));
+    }
+
+    #[test]
+    fn catalog_refresh_keeps_known_delivery_quality() {
+        let mut store = Store::default();
+        let generic = json!({"ref":"track:1","quality":{"codec":"flac"}});
+        let detailed = json!({"ref":"track:1","quality":{"codec":"wav","bits":24,"rate":96000}});
+        let id = store.take_item_track("p",&detailed,None,1).unwrap();
+        store.take_item_track("p",&generic,None,2);
+        assert_eq!(store.tracks[&id].format.as_ref().unwrap().quality().short(),"WAV 24/96");
+        let updated = json!({"ref":"track:1","quality":{"codec":"wav","bits":16,"rate":44100}});
+        store.take_item_track("p",&updated,None,3);
+        assert_eq!(store.tracks[&id].format.as_ref().unwrap().quality().short(),"WAV 16/44.1");
+    }
+
+    #[test]
+    fn a_changed_playlist_revision_refreshes_entries_without_changing_identity() {
+        let mut store = Store::default();
+        let mut item = json!({"kind":"playlist","ref":"list:1","title":"List","tracks":2,"updated_at":10});
+        let id = store.take_item("fixture", &item, 1).unwrap();
+        store.cards.get_mut(&id).unwrap().tracks = Some(vec![-2,-3]);
+        store.take_item("fixture", &item, 2);
+        assert!(store.cards[&id].tracks.is_some(), "an unchanged listing keeps the tracks");
+        item["updated_at"] = json!(11);
+        assert_eq!(store.take_item("fixture", &item, 3), Some(id));
+        assert!(store.cards[&id].tracks.is_none());
+        store.cards.get_mut(&id).unwrap().tracks = Some(vec![-2,-3]);
+        item["editable"] = json!(true);
+        store.take_item("fixture", &item, 4);
+        assert!(store.cards[&id].tracks.is_none(), "new editing metadata refreshes old membership rows");
+    }
+
+    #[test]
+    fn unavailable_tracks_stay_in_the_listing_and_can_recover() {
+        let mut store = Store::default();
+        let mut item = json!({"ref":"track:1","title":"Song","available":false});
+        let id = store.take_item_track("fixture", &item, None, 1).unwrap();
+        assert!(!store.tracks[&id].playable);
+        assert_eq!(store.tracks[&id].title, "Song");
+        item["available"] = json!(true);
+        assert_eq!(store.take_item_track("fixture", &item, None, 2), Some(id));
+        assert!(store.tracks[&id].playable);
+    }
+
+    #[test]
     fn an_artist_or_label_plays_its_primary_track_section() {
         let answer = json!({"shelves":[{"kind":"album","items":[{"ref":"album:1"}]},
             {"kind":"track","items":[{"ref":"track:7"}]},{"kind":"track","items":[{"ref":"track:8"}]}]});
@@ -335,12 +424,32 @@ mod tests {
         assert_eq!(store.take_item("p", &record, 11), Some(id), "the same ref is the same card");
         let card = store.cards[&id].clone();
         assert_eq!((card.title.as_str(), card.artist.as_str(), card.year), ("Record", "Band", Some(1999)));
-        assert_eq!(card.format, Some(Format { codec: "flac".into(), bits: Some(24), rate: Some(96000) }));
+        assert_eq!(card.format, Some(Format { codec: "flac".into(), bits: Some(24), rate: Some(96000), advertised_hires: false }));
         let track = store.take_item_track("p", &json!({"ref": "track:1", "title": "Song", "duration_ms": 1000, "track_number": 2}), Some(&card), 10).unwrap();
         let track = &store.tracks[&track];
         assert_eq!((track.artist.as_str(), track.album.as_str(), track.album_id, track.number), ("Band", "Record", id, 2));
         assert!(track.playable);
         assert_eq!(track.image, "https://i/l.jpg", "its record's cover");
+    }
+
+    #[test]
+    fn advertised_high_resolution_needs_no_invented_bits_or_rate() {
+        let mut store = Store::default();
+        let id = store.take_item("p", &json!({"kind":"album","ref":"album:1",
+            "quality":{"codec":"flac","tier":"hi_res"}}), 1).unwrap();
+        let quality = store.cards[&id].format.as_ref().unwrap().quality();
+        assert_eq!(quality.tier, crate::quality::Tier::HiRes);
+        assert_eq!(quality.short(), "FLAC Hi-Res");
+        assert_eq!((quality.bits, quality.rate_hz), (None, None));
+        let track = store.take_item_track("p", &json!({"ref":"track:1",
+            "quality":{"codec":"flac","tier":"hi_res"}}), None, 1).unwrap();
+        let catalog = Catalog::new();
+        let path = store.tracks[&track].path.clone();
+        catalog.lock().store = store;
+        catalog.measured(&path, Some("flac"), Some(16), 44100);
+        let quality = catalog.lock().store.tracks[&track].format.as_ref().unwrap().quality();
+        assert_eq!(quality.tier, crate::quality::Tier::Lossless);
+        assert_eq!(quality.short(), "FLAC 16/44.1");
     }
 
     #[test]

@@ -4,11 +4,10 @@ import com.blitzfc.chilpa.sources
 import "Screens"
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Screens"
 
-// The active tab's screen. A synchronous Loader: the screen that leaves is
-// destroyed, not hidden, and the one that arrives is built in one go
-// (frontend ADR-0014, rules 7 and 8). A source the catalog draws opens on
-// the library's screens: its own page, its records on Albums, a folder.
+// I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
+    readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
+    readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
     readonly property var music: Navigation.screen === "source" ? JSON.parse(Sources.page(Navigation.routeKey, Library.remoteRev) || "{}") : ({})
 
     sourceComponent: {
@@ -27,10 +26,11 @@ Loader {
         case "folders": return folders
         case "playlist": return playlist
         case "playlistManager": return playlistManager
+        case "playlistImport": return playlistImport
         case "metadata": return metadata
         case "listenlist": return listenlist
-        case "source": return source
-        case "sourceEntry": return sourceEntry
+        case "source": return medium && sourceDocument.source === Navigation.routeKey ? mediaSource : source
+        case "sourceEntry": return medium ? mediaDetail : sourceEntry
         default: return pending
         }
     }
@@ -46,10 +46,13 @@ Loader {
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
     Component { id: playlist; PlaylistScreen {} }
+    Component { id: playlistImport; PlaylistImportScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }
     Component { id: listenlist; ListenListScreen {} }
     Component { id: metadata; MetadataScreen {} }
     Component { id: source; SourceScreen {} }
+    Component { id: mediaSource; MediaSourceScreen {} }
+    Component { id: mediaDetail; MediaDetailScreen {} }
     Component { id: sourceHome; SourceHome { key: Navigation.routeKey } }
     Component { id: sourceAlbums; AlbumsScreen { source: Navigation.routeKey } }
     Component { id: sourceListing; SourceListing { source: Navigation.routeKey } }

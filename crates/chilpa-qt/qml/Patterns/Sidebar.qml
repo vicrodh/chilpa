@@ -68,7 +68,7 @@ Rectangle {
             contentHeight: navigation.height
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
             Column {
                 id: navigation
@@ -78,11 +78,11 @@ Rectangle {
                     model: [
                         { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
                         { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
-                        { screen: "artists", glyph: Icons.microphone2, text: I18n.tr("Artists", I18n.rev) },
+                        { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
                         { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
                         { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
                         { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
-                    ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: Icons[p.icon] || Icons.letterX, image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
+                    ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
 
                     Column {
                         id: group
@@ -105,7 +105,7 @@ Rectangle {
                             expanded: side.expandedSources[group.modelData.key] === true
                             onExpansionClicked: { const copy = Object.assign({}, side.expandedSources); copy[group.modelData.key] = !expanded; side.expandedSources = copy }
                             text: group.modelData.text
-                            glyph: group.modelData.glyph
+                            glyph: group.modelData.glyph; iconFamily: group.modelData.family || ""
                             tintIcon: group.modelData.tint || false
                             iconSource: group.modelData.image || ""
                             collapsed: side.collapsed

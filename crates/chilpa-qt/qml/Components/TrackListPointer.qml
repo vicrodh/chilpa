@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Primitives"
 
 // The one pointer of a track list: hover and clicks are resolved here, once
 // for the whole list, so a row carries no mouse handling of its own.
@@ -13,6 +14,10 @@ MouseArea {
     property TrackMenu menu
     property CreditLine measure
     cursorShape: Qt.PointingHandCursor
+
+    property Item sourceTip: null
+    onVisibleChanged: if (!visible && sourceTip) { TipState.hide(sourceTip); sourceTip = null }
+    Component.onDestruction: if (sourceTip) TipState.hide(sourceTip)
 
     property int pressedRow: -1
     property real pressedY: 0
@@ -40,6 +45,14 @@ MouseArea {
     function track() {
         rows.hovered = containsMouse ? rowAt(mouseY) : -1
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
+        rows.albumHovered = containsMouse && onAlbum(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
+        const item = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
+        const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.qualityX ? item.sourceBadge : null
+        if (sourceTip !== badge) {
+            if (sourceTip) TipState.hide(sourceTip)
+            sourceTip = badge
+            if (badge) TipState.show(item.sourceName, badge)
+        }
         rows.ratingHovered = ratingAt(rows.hovered, mouseX, mouseY)
         rows.actionHovered = containsMouse ? actionAt(rows.hovered, mouseX, mouseY) : 0
         rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX, mouseY) : 0
@@ -79,6 +92,12 @@ MouseArea {
         if (!item || item.header || item.artist === "" || !host.model.canGo(row, "artist"))
             return false
         return item.containsArtist(x - item.x, y + rows.contentY - item.y)
+    }
+
+    function onAlbum(row, x, y) {
+        const item = row >= 0 ? rows.itemAtIndex(row) : null
+        return item && !item.header && item.album !== "" && host.model.canGo(row, "album")
+            && item.containsAlbum(x - item.x, y + rows.contentY - item.y)
     }
 
     onPressed: (mouse) => {
@@ -147,10 +166,16 @@ MouseArea {
             host.model.go(row, "artist:" + measure.placeAt(label.mapFromItem(pointer, mouse.x, mouse.y).x))
             return
         }
+        if (!toggle && !(mouse.modifiers & Qt.ShiftModifier) && onAlbum(row, mouse.x, mouse.y)) {
+            host.model.go(row, "album")
+            return
+        }
         host.model.select(row, (toggle ? 1 : 0) | (mouse.modifiers & Qt.ShiftModifier ? 2 : 0))
     }
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
+        if (onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
+            return
         // A second quick press on an arrow is one more step, not a play.
         if (row >= 0 && mouse.button === Qt.LeftButton && move(row, mouse.x, mouse.y))
             return

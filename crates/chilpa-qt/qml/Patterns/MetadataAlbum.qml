@@ -43,7 +43,7 @@ Rectangle {
         contentHeight: column.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
         Column {
             id: column

@@ -11,6 +11,7 @@ QtObject {
     property bool rich: false
     property bool showArtist: true
     property bool showAlbum: true
+    property bool showSource: false
     property bool showArt: true
     property bool showPlays: false
     property bool showRating: true
@@ -23,6 +24,7 @@ QtObject {
     readonly property int move: !reorder ? 0 : rich ? Metrics.colMoveRich : Metrics.colMoveCompact
     readonly property real fromAlbum: Math.min(move, unit * albumShare)
     readonly property int art: rich && showArt ? Metrics.colArt : 0
+    readonly property int sourceWidth: showSource ? Metrics.colSource : 0
     readonly property int quality: rich ? Metrics.colQualityRich : Metrics.colQualityCompact
     readonly property int rating: showRating ? Metrics.colRating : 0
     readonly property int plays: showPlays ? (rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact) : 0
@@ -33,7 +35,7 @@ QtObject {
     readonly property real titleShare: 2.4
     readonly property real artistShare: showArtist && !rich ? 1.4 : 0
     readonly property real albumShare: showAlbum ? (rich ? 1.4 : 1.5) : 0
-    readonly property real free: Math.max(0, width - pad * 2 - index - art - quality - rating - plays - time - more) // derived: padding on both sides
+    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - quality - rating - plays - time - more) // derived: padding on both sides
     readonly property real unit: free / (titleShare + artistShare + albumShare)
 
     readonly property real moveX: pad
@@ -45,7 +47,8 @@ QtObject {
     readonly property real artistW: unit * artistShare
     readonly property real albumX: artistX + artistW
     readonly property real albumW: unit * albumShare - fromAlbum
-    readonly property real qualityX: albumX + albumW
+    readonly property real sourceX: albumX + albumW
+    readonly property real qualityX: sourceX + sourceWidth
     readonly property real ratingX: qualityX + quality
     readonly property real playsX: ratingX + rating
     readonly property real timeX: playsX + plays

@@ -16,6 +16,7 @@ Item {
 
     property string sourceIcon: ""
     signal toggled()
+    signal menu(real x, real y)
 
     readonly property color tone: !SettingsModel.folderColors ? Theme.color.textSecondary
         : folderColor === "positive" ? Theme.color.statusPositive
@@ -81,5 +82,6 @@ Item {
     }
     HoverHandler { id: hover }
     HoverHandler { cursorShape: Qt.PointingHandCursor }
-    TapHandler { onTapped: row.toggled() }
+    TapHandler { acceptedButtons: Qt.LeftButton; onTapped: row.toggled() }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: eventPoint => row.menu(eventPoint.position.x, eventPoint.position.y) }
 }

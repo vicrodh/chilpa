@@ -1,11 +1,7 @@
-// hot-path: one per visible track, recycled while the list scrolls.
 import QtQuick
 import "../Theme"
 import "../Primitives"
 
-// A track, or a disc header, in either density (design/03 TrackRow).
-// It reads its roles and the shared column widths; it has no mouse handling
-// of its own: the list resolves hover and clicks for every row at once.
 Item {
     id: row
 
@@ -32,6 +28,8 @@ Item {
     property bool hovered: false
     // Its artist is under the pointer: a click on it opens the artist.
     property bool artistHovered: false
+    property bool albumHovered: false; property string sourceName: ""
+    property var sourceInfo: ({}); readonly property Item sourceBadge: badge
     property bool selectionMode: false
     property int rating: 0
     property int ratingPreview: 0
@@ -57,6 +55,13 @@ Item {
         return !header && label.visible && point.x >= 0 && point.y >= 0
             && point.x < Math.min(label.width, label.contentWidth)
             && point.y < Math.min(label.height, label.contentHeight)
+    }
+
+    function containsAlbum(x, y) {
+        const point = albumLabel.mapFromItem(row, x, y)
+        return !header && albumLabel.visible && point.x >= 0 && point.y >= 0
+            && point.x < Math.min(albumLabel.width, albumLabel.contentWidth)
+            && point.y < albumLabel.height
     }
 
     function ratingAt(x, y) {
@@ -161,6 +166,7 @@ Item {
         }
 
         Text {
+            id: albumLabel
             x: row.cols.albumX
             width: row.cols.albumW - Metrics.gap12
             visible: width > 0
@@ -168,8 +174,11 @@ Item {
             text: row.album
             elide: Text.ElideRight
             font.pointSize: Type.row
-            color: row.playing ? Theme.color.accent : row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            color: row.playing ? Theme.color.accent : row.albumHovered ? Theme.color.textPrimary : row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            font.underline: row.albumHovered
         }
+
+        TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }
 
         Row {
             x: row.cols.qualityX

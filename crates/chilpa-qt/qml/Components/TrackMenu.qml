@@ -14,7 +14,7 @@ CascadingMenu {
         const icons = {
             play: Icons.playerPlayFilled, queue: Lucide.listEnd,
             next: Lucide.listStart, later: Lucide.listPlus,
-            pick: Icons.playlistAdd, album: Icons.disc, artist: Icons.microphone2,
+            pick: Icons.playlistAdd, album: Icons.disc, artist: SourceGlyphs.musicArtist,
             folder: Icons.folder,
             remove: Icons.trash, dequeue: Icons.trash,
             up: Icons.chevronUp, down: Icons.chevronDown
@@ -22,6 +22,7 @@ CascadingMenu {
         entries = JSON.parse(model.menuJson(row)).map(function(entry) {
             entry.glyph = icons[(entry.act || "").split(":")[0]] || ""
             if (["queue", "next", "later"].includes(entry.act)) entry.family = Lucide.font
+            if ((entry.act || "").split(":")[0] === "artist") entry.family = SourceGlyphs.font
             entry.filled = entry.act === "play"
             return entry
         })

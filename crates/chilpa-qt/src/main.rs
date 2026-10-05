@@ -41,6 +41,11 @@ pub unsafe extern "C" fn chilpa_cover(
     write_path(chilpa_api::cover_derivative(std::path::Path::new(path), size), out, capacity)
 }
 #[no_mangle]
+pub unsafe extern "C" fn chilpa_contained_cover(path: *const std::ffi::c_char, size: u32, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
+    let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
+    write_path(chilpa_api::contained_cover(std::path::Path::new(path), size), out, capacity)
+}
+#[no_mangle]
 pub unsafe extern "C" fn chilpa_atmosphere(path: *const std::ffi::c_char, out: *mut std::ffi::c_char, capacity: std::ffi::c_ulong) -> bool {
     let Ok(path) = unsafe { std::ffi::CStr::from_ptr(path) }.to_str() else { return false };
     write_path(chilpa_api::header_atmosphere(std::path::Path::new(path)), out, capacity)

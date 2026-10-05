@@ -126,7 +126,7 @@ Rectangle {
         model: rows
         reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar {}
 
         delegate: FolderTreeRow {
             width: view.width

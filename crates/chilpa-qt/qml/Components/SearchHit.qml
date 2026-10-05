@@ -85,7 +85,7 @@ Item {
     SourceIcon {
         anchors.right: tail.left; anchors.rightMargin: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter
         sourceInfo: ({icon: hit.sourceIcon, label: hit.sourceName})
-        visible: hit.sourceName !== ""; opacity: Metrics.disabledOpacity
+        visible: hit.sourceName !== ""
     }
     Column {
         visible: !hit.header

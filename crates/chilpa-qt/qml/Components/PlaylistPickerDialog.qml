@@ -17,9 +17,24 @@ Modal {
     property var rows: []
     property string notice: ""
     property bool warning: false
+    property string sourceId: ""
+    property string sourceName: ""
+    property var sourceRows: []
+    readonly property bool pending: writer.pending
+    closePolicy: pending ? Popup.NoAutoClose : Popup.CloseOnEscape | Popup.CloseOnPressOutside
+    function remoteWrite(id) { writer.submit(sourceId, id, form.name, form.description, trackIdsJson) }
+    PlaylistSourceWrite {
+        id: writer
+        onFinished: (message, warning) => {
+            dialog.notice = message; dialog.warning = warning
+            if (!warning) dialog.close()
+        }
+    }
 
     function show(idsJson) {
         trackIdsJson = idsJson || "[]"
+        sourceId = ""; sourceName = ""
+        sourceRows = JSON.parse(Playlists.sourcesJson(trackIdsJson))
         creating = trackCount === 0
         search.text = ""
         form.reset()
@@ -30,9 +45,10 @@ Modal {
         Qt.callLater(function() { if (dialog.creating) form.focusInput(); else search.focusInput() })
     }
     function beginCreate() { show("[]") }
-    function reload() { rows = JSON.parse(Playlists.pickerJson(trackIdsJson, search.text)) }
+    function reload() { rows = JSON.parse(Playlists.pickerJson(trackIdsJson, search.text)).filter(row => row.accepts === true) }
     function create() {
-        if (!form.valid) return
+        if (!form.valid || pending) return
+        if (sourceId) { remoteWrite(0); return }
         if (Playlists.createFull(form.name, form.description, form.artwork, form.tags, 0, trackIdsJson) > 0)
             close()
         else {
@@ -41,6 +57,13 @@ Modal {
         }
     }
     function add(id) {
+        if (pending || !rows.some(row => row.playlist.id === id && row.accepts)) return
+        if (id < 0) {
+            const target = rows.find(row => row.playlist.id === id)
+            sourceId = target.playlist.source
+            remoteWrite(id)
+            return
+        }
         const result = JSON.parse(Playlists.addTrackIds(id, trackIdsJson))
         warning = result.similar > 0 || result.rejected
         if (result.rejected) notice = I18n.tr("Could not add tracks to this playlist.", I18n.rev)
@@ -59,6 +82,7 @@ Modal {
     Column {
         anchors.fill: parent
         spacing: Metrics.gap12
+        enabled: !dialog.pending
         Row {
             id: heading
             width: parent.width
@@ -78,7 +102,7 @@ Modal {
             contentHeight: createBody.implicitHeight
             clip: true
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
             Column {
                 id: createBody
                 width: parent.width
@@ -89,15 +113,13 @@ Modal {
                     font.pointSize: Type.meta
                     color: Theme.color.textSecondary
                 }
-                PlaylistForm { id: form; width: parent.width; onAccepted: dialog.create() }
-                Text {
-                    visible: dialog.notice !== ""
-                    width: parent.width
-                    text: dialog.notice
-                    wrapMode: Text.Wrap
-                    font.pointSize: Type.small
-                    color: Theme.color.statusWarning
+                PlaylistSourceChooser {
+                    width: parent.width; sources: dialog.sourceRows
+                    sourceId: dialog.sourceId; sourceName: dialog.sourceName
+                    onPicked: (id, name) => { dialog.sourceId = id; dialog.sourceName = name }
                 }
+                PlaylistForm { id: form; localMetadata: !dialog.sourceId; width: parent.width; onAccepted: dialog.create() }
+                PlaylistNotice { width: parent.width; text: dialog.notice }
                 Row {
                     anchors.right: parent.right
                     spacing: Metrics.gap8
@@ -156,7 +178,7 @@ Modal {
             spacing: Metrics.gap4
             model: dialog.rows
             boundsBehavior: Flickable.StopAtBounds
-            ScrollBar.vertical: ScrollBar {}
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
             delegate: PlaylistTargetRow {
                 required property int index
                 required property var modelData
@@ -169,7 +191,7 @@ Modal {
                 anchors.centerIn: parent
                 width: parent.width
                 visible: dialog.rows.length === 0
-                text: search.text.trim() === "" ? I18n.tr("No playlists yet. Create one to get started.", I18n.rev)
+                text: search.text.trim() === "" ? I18n.tr("No compatible playlists. Create one to get started.", I18n.rev)
                                                : I18n.tr("No playlists match your search.", I18n.rev)
                 wrapMode: Text.Wrap
                 horizontalAlignment: Text.AlignHCenter

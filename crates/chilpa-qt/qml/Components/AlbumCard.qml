@@ -1,5 +1,6 @@
 // hot-path: one per album in a grid, recycled with its row.
 import QtQuick
+import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
@@ -11,6 +12,7 @@ Item {
     id: card
 
     property var sourceInfo: ({})
+    property var qualityInfo: ({})
     property int albumId
     property string title
     property string subtitle
@@ -40,10 +42,10 @@ Item {
 
     ArtTile {
         id: cover
-        width: card.width
-        height: card.width
+        width: card.width; height: card.width
         radius: card.round ? width / 2 : Metrics.radiusCard // derived: a circle
         source: card.art
+        contain: card.sourceInfo.contain_art === true
         tint: card.tint
     }
 
@@ -58,10 +60,8 @@ Item {
     }
 
     Rectangle {
-        x: Metrics.overlayPad
-        y: Metrics.overlayPad
-        width: Metrics.overlayCheck
-        height: Metrics.overlayCheck
+        x: Metrics.overlayPad; y: Metrics.overlayPad
+        width: Metrics.overlayCheck; height: Metrics.overlayCheck
         visible: card.selecting && !hover.hovered
         radius: width / 2 // derived: a circle
         color: Theme.color.overlayScrim
@@ -92,7 +92,7 @@ Item {
 
     SourceIcon {
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
-        visible: !!card.sourceInfo.icon; sourceInfo: card.sourceInfo; opacity: Metrics.disabledOpacity
+        visible: !!card.sourceInfo.icon; sourceInfo: card.sourceInfo
     }
     Column {
         anchors.top: cover.bottom
@@ -100,22 +100,27 @@ Item {
         width: card.width
 
         Text {
-            width: parent.width
+            width: parent.width - (qualityBadge.visible ? qualityBadge.width + Metrics.gap4 : 0)
             text: card.title
             horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
-            elide: Text.ElideRight
-            font.pointSize: Type.body
-            font.weight: Type.medium
-            color: Theme.color.textPrimary
+            elide: Text.ElideRight; font.pointSize: Type.body
+            font.weight: Type.medium; color: Theme.color.textPrimary
         }
         Text {
             width: parent.width
             text: card.subtitle
             horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
-            elide: Text.ElideRight
-            font.pointSize: Type.meta
-            color: Theme.color.textSecondary
+            elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textSecondary
         }
+    }
+
+    QualityIcon {
+        id: qualityBadge; objectName: "albumQualityBadge"
+        anchors.right: parent.right; y: cover.height + Metrics.cardTextGap
+        tier: card.qualityInfo.tier || 0
+        visible: !card.round; opacity: tier > 0 ? 1 : Metrics.disabledOpacity
+        HoverHandler { onHoveredChanged: hovered ? TipState.show(card.qualityInfo.label || I18n.tr("Unknown quality", I18n.rev), qualityBadge) : TipState.hide(qualityBadge) }
+        Component.onDestruction: TipState.hide(qualityBadge)
     }
 
     HoverHandler { id: hover }

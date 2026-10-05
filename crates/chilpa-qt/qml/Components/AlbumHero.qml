@@ -72,7 +72,6 @@ Item {
             opacity: hero.contrasted ? 0.82 : 1
         }
 
-        Item { width: 1; height: Metrics.gap8 }
 
         Flow {
             width: parent.width
@@ -91,7 +90,7 @@ Item {
             }
             MarkButtons {
                 kind: "album"
-                key: hero.detail.selectedId > 0 ? hero.detail.selectedId.toString() : ""
+                key: hero.detail.selectedId !== 0 ? hero.detail.selectedId.toString() : ""
                 contrasted: hero.contrasted
             }
             IconButton {

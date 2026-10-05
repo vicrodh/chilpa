@@ -23,6 +23,7 @@ pub enum Screen {
     Folders,
     Playlist,
     PlaylistManager,
+    PlaylistImport,
     /// The metadata editor, on one record.
     Metadata,
     ListenList,
@@ -48,6 +49,7 @@ impl Screen {
             Screen::Folders => "folders",
             Screen::Playlist => "playlist",
             Screen::PlaylistManager => "playlistManager",
+            Screen::PlaylistImport => "playlistImport",
             Screen::Metadata => "metadata",
             Screen::ListenList => "listenlist",
             Screen::Source => "source",
@@ -56,7 +58,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -244,6 +246,7 @@ impl crate::Chilpa {
             Screen::Album => (self.album(r.id).map(|a| a.title).unwrap_or_default(), "disc"),
             Screen::Playlist => (self.playlist(r.id).map(|p| p.name).unwrap_or_default(), "playlist"),
             Screen::PlaylistManager => (self.t("Playlist manager"), "playlist"),
+            Screen::PlaylistImport => (self.t("Import playlist"), "playlist"),
             Screen::ListenList => (self.t("Queues"), "listDetails"),
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
             Screen::Source | Screen::SourceEntry => {

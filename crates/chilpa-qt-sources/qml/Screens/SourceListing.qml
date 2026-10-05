@@ -20,7 +20,8 @@ Flickable {
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar {}
+    SourcePlaylistEditor { id: playlistEditor }
 
     AlbumGridModel {
         id: cards
@@ -61,6 +62,7 @@ Flickable {
             spacing: Metrics.gap12
             SearchField { id: find; width: Metrics.screenSearch; placeholder: I18n.tr("Search", I18n.rev); onEscaped: text = "" }
             SourceLibraryControls { id: controls; source: page.source; entity: page.about.entity || "track" }
+            PillButton { visible: page.about.playlist_edit === true; text: I18n.tr("New playlist", I18n.rev); onClicked: playlistEditor.begin({plugin:page.about.plugin}, "create") }
         }
 
         Flow {

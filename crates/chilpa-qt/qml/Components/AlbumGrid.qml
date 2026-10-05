@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
@@ -21,6 +22,8 @@ Item {
     property string artistPage
     // Records as rows, one under another, instead of cards side by side.
     property bool list: false
+    property real viewportX: 0
+    property real viewportWidth: width
 
     // A selected cover paints outside its card. Keep that ring inside the
     // scrollable plane on every edge instead of clipping boundary cards.
@@ -68,7 +71,7 @@ Item {
         topMargin: Metrics.cardRing
         bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
         delegate: Item {
             id: row
@@ -143,6 +146,7 @@ Item {
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     year: visible ? grid.model.year(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
+                    qualityInfo: visible && !grid.round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
                     round: grid.round
                     selected: !grid.round && AlbumActions.selected(albumId, AlbumActions.rev)
@@ -164,15 +168,16 @@ Item {
 
             Loader {
                 id: quick
+                objectName: "albumQuickLoader"
 
                 y: row.lead + grid.rowHeight + Metrics.gap8
-                x: Metrics.cardRing
-                width: grid.layoutWidth
+                x: grid.viewportX + Metrics.cardRing
+                width: Math.max(0, grid.viewportWidth - Metrics.cardRing * 2) // derived: the visible content area
                 active: grid.model.expanded >= row.first && grid.model.expanded < row.first + row.span
                 sourceComponent: AlbumQuickView {
                     albumId: grid.model.albumId(grid.model.expanded, grid.model.rev)
                     notchX: grid.list ? Metrics.button32 / 2 // derived: under the row's arrow
-                          : (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 // derived: the card's center
+                          : Math.max(Metrics.gap16, Math.min(width - Metrics.gap16, (grid.model.expanded - row.first + 0.5) * (grid.cardWidth + Metrics.gridGap) - Metrics.gridGap / 2 - grid.viewportX)) // derived: the visible card center
                     onClose: grid.model.expanded = -1
                 }
             }

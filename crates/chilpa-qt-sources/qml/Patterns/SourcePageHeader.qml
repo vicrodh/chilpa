@@ -1,23 +1,103 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 
 Column {
     id: header
     property var info: ({})
-    property bool expanded: false
+    property string tracksKey: ""
+    property bool currentPage: false
+    property bool contrasted: false
+    property bool inlineInformation: false
+    signal information()
+    signal artwork()
+    signal selectToggle()
+    signal context(real left, real top)
+    property bool selecting: false
+    property var record
+    TrackListModel { id: tracks; kind: header.tracksKey ? "source" : ""; key: header.tracksKey; filterRev: Library.remoteRev }
+    readonly property var sourceInfo: (JSON.parse(Sources.snapshot || "{}").panels || []).find(p => p.id === info.plugin) || ({name: info.plugin || ""})
+    function follow(link) {
+        if (/^(album|playlist):/.test(link)) {
+            const id = Sources.referenceCard(info.plugin, link)
+            if (id) Navigation.go("album", id)
+        } else if (/^artist:/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
+        else if (/^https?:\/\//.test(link)) Qt.openUrlExternally(link)
+    }
     spacing: Metrics.gap12
-    Image { width: Metrics.heroArt; height: width; source: header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""; visible: source.toString() !== ""; fillMode: Image.PreserveAspectFit; asynchronous: true }
-    Text { width: parent.width; visible: !!header.info.title; text: header.info.title || ""; font.pointSize: Type.title; font.weight: Type.bold; color: Theme.color.textPrimary }
-    Text { width: parent.width; visible: !!header.info.description; text: header.info.description || ""; textFormat: Text.StyledText; wrapMode: Text.WordWrap; maximumLineCount: header.expanded ? 1000 : 4; elide: Text.ElideRight; font.pointSize: Type.body; color: Theme.color.textSecondary }
-    PillButton { visible: !!header.info.description; text: header.expanded ? I18n.tr("Show less", I18n.rev) : I18n.tr("Read more", I18n.rev); onClicked: header.expanded = !header.expanded }
-    Flow {
-        width: parent.width; spacing: Metrics.gap8; visible: !!header.info.ref && !!header.info.plugin
-        PillButton { text: I18n.tr("Open", I18n.rev); onClicked: Navigation.goKey("source", header.info.plugin + " native:" + header.info.ref) }
-        PillButton { text: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: Sources.command("native",header.info.plugin, JSON.stringify({action:"favorite",ref:header.info.ref,on:!header.info.favorite})) }
-        PillButton { visible: header.info.kind !== "label"; text: I18n.tr("Pin", I18n.rev); onClicked: Sources.command("native",header.info.plugin, JSON.stringify({action:"pin",item:header.info,on:true})) }
-        PillButton { visible: header.info.kind !== "label"; text: I18n.tr("Unpin", I18n.rev); onClicked: Sources.command("native",header.info.plugin, JSON.stringify({action:"pin",item:header.info,on:false})) }
+    property var playbackModel: tracks
+    property double cardId: 0
+    readonly property bool artist: info.kind === "artist"
+    function favorite() { Sources.command("native", info.plugin, JSON.stringify({action:"favorite",ref:info.ref,on:!info.favorite})) }
+    Item {
+        width: parent.width
+        implicitHeight: Math.max(portrait.height, body.height)
+        ArtTile {
+            id: portrait
+            contain: header.info.art_fit === "contain"
+            width: Math.min(Metrics.heroArt, parent.width / 3); height: width // derived: keep room for the text on narrow windows
+            radius: header.artist ? width / 2 : Metrics.radiusCard // derived: circular artist portrait
+            source: header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
+        }
+        Icon {
+            anchors.centerIn: portrait
+            visible: header.artist && !portrait.ready
+            glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font
+            size: Metrics.iconPlay; color: Theme.color.textSecondary
+        }
+        HoverHandler { parent: portrait; cursorShape: Qt.PointingHandCursor }
+        TapHandler { parent: portrait; onTapped: header.artwork() }
+        Column {
+            id: body; anchors.left: portrait.right; anchors.leftMargin: Metrics.heroGap; anchors.right: parent.right; spacing: Metrics.gap8
+            Row {
+                spacing: Metrics.gap6
+                SourceIcon { sourceInfo: ({icon: header.sourceInfo.icon_image || header.sourceInfo.icon || ""}) }
+                Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.meta }
+            }
+            Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary }
+            PillButton { visible: !!header.info.artist_ref; text: header.info.artist || ""; kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.follow(header.info.artist_ref) }
+            Text { width: parent.width; text: [header.info.release_date || "", header.playbackModel.summary || "", header.info.genre || ""].filter(Boolean).join(" · "); wrapMode: Text.Wrap; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            Text { id: description; width: parent.width; visible: !!header.info.description; text: header.info.description || ""; textFormat: Text.StyledText; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pointSize: Type.body; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; onLinkActivated: link => header.follow(link) }
+            PillButton { visible: description.truncated; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "secondary" : "ghost"; onClicked: biography.open() }
+            Row {
+                visible: !!header.info.quality_label; spacing: Metrics.gap6
+                QualityIcon { tier: header.info.quality_tier || 0; anchors.verticalCenter: parent.verticalCenter }
+                Text { text: header.info.quality_label || ""; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            }
+            Flow {
+                width: parent.width; spacing: Metrics.gap8
+                PillButton { visible: header.playbackModel.count > 0; text: I18n.tr("Play", I18n.rev); kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; onClicked: header.playbackModel.playAll(false) }
+                IconButton { visible: header.playbackModel.count > 0; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.arrowsShuffle; tip: I18n.tr("Shuffle", I18n.rev); onClicked: header.playbackModel.playAll(true) }
+                IconButton { visible: !!header.info.ref && header.info.editable !== true; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.heart; checked: header.info.favorite === true; tip: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: header.favorite() }
+                IconButton { round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.infoCircle; tip: I18n.tr("Information", I18n.rev); onClicked: header.inlineInformation ? header.information() : biography.open() }
+                IconButton { visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.checkbox; checked: header.selecting; tip: header.selecting ? I18n.tr("Finish selecting", I18n.rev) : I18n.tr("Select tracks", I18n.rev); onClicked: header.selectToggle() }
+                IconButton {
+                    id: actions; visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.dots; tip: I18n.tr("Album actions", I18n.rev)
+                    onClicked: { const at = actions.mapToItem(header, actions.width - Metrics.menuWidth, actions.height + Metrics.gap4); header.context(at.x, at.y) }
+                }
+                Loader { visible: !!item && item.visible; active: !!header.record; sourceComponent: Component { AlbumVersionSelect { detail: header.record } } }
+                MarkButtons { visible: header.cardId !== 0; kind: "album"; contrasted: header.contrasted; key: String(header.cardId) }
+            }
+        }
+    }
+    Modal {
+        id: biography
+        width: Math.min(Metrics.settingsMaxWidth, parent.width - Metrics.modalInsets)
+        height: Math.min(parent.height - Metrics.modalInsets, Metrics.heroArt * 3) // derived: readable body with room for the title and close action
+        Column {
+            anchors.fill: parent; spacing: Metrics.gap12
+            Text { id: biographyTitle; width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
+            ScrollView {
+                width: parent.width; height: parent.height - biographyTitle.height - attribution.height - closeButton.height - parent.spacing * 3 // derived: the three gaps between four body items
+                clip: true; contentWidth: availableWidth
+                Text { width: parent.width; text: header.info.description || ""; textFormat: Text.StyledText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: link => { biography.close(); header.follow(link) } }
+            }
+            Text { id: attribution; width: parent.width; text: header.info.description_source || header.sourceInfo.name || ""; textFormat: Text.PlainText; font.pointSize: Type.meta; color: Theme.color.textTertiary }
+            PillButton { id: closeButton; text: I18n.tr("Close", I18n.rev); onClicked: biography.close() }
+        }
     }
 }

@@ -1,9 +1,9 @@
 import QtQuick
+import QtQuick.Controls.impl as ControlsImpl
 import "../Theme"
 
-// A source's badge. Its icon is the name of a glyph, which takes `color` like
-// any text, so a theme or a color that moves tints it. An adapter that brings
-// a drawing of its own names a file instead, and that one keeps its colors.
+// Neutral vectors follow the text palette; colored artwork keeps its colors.
+// ColorImage preserves the rasterized alpha, without a threshold mask pass.
 Item {
     id: badge
     property var sourceInfo: ({})
@@ -14,15 +14,14 @@ Item {
     implicitWidth: Metrics.iconSm
     implicitHeight: Metrics.iconSm
 
-    Image {
-        id: image
+    ControlsImpl.ColorImage {
+        id: image; objectName: "sourceImage"
         anchors.fill: parent
+        color: badge.named.indexOf("monochrome=1") >= 0 ? badge.color : "transparent"
         source: badge.drawing ? badge.named : ""
         visible: status === Image.Ready
-        sourceSize.width: width
-        sourceSize.height: height
-        fillMode: Image.PreserveAspectFit
-        asynchronous: true
+        sourceSize.width: width; sourceSize.height: height
+        fillMode: Image.PreserveAspectFit; asynchronous: true
     }
     Icon {
         anchors.centerIn: parent

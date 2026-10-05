@@ -1,5 +1,8 @@
 import QtQuick
 import QtQuick.Effects
+import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "Theme"
 import "Patterns"
 
@@ -18,6 +21,7 @@ Item {
 
     RightPanel {
         id: panel
+        mediaContent: MediaListeningPanel { document: JSON.parse(Sources.snapshot || "{}"); onClosed: SettingsModel.lyricsOpen = false }
         anchors.fill: parent
     }
 }

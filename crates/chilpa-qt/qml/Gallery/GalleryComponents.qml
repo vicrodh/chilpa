@@ -1,17 +1,17 @@
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
 import com.blitzfc.chilpa
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import "../Theme"
 import "../Primitives"
 import "../Components"
 
-GallerySection {
+TitledFlow {
     id: section
     title: "Components"
 
     TrackListModel { id: most; kind: "mostPlayed"; limit: 3; playingPath: Player.path }
     AlbumGridModel { id: added; kind: "recentlyAdded"; limit: 6; maxRows: 1; columns: grid.columns }
+    PlaylistSourceWrite { id: sourceWritePreview }
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
     QtObject {
         id: playlistManager
@@ -28,6 +28,8 @@ GallerySection {
         width: section.width
         spacing: Metrics.gap12
 
+        PlaylistSourceChooser { sources: [{id: "demo", name: "Demo source", accepts: true}] }
+        PlaylistNotice { text: "A source is currently unavailable." }
         Flow {
             width: parent.width
             spacing: Metrics.gap12
@@ -88,6 +90,7 @@ GallerySection {
         }
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
+        TrackSourceLabel { cols: TrackColumns { showSource: true } name: "Local" }
         Repeater {
             // Resting, playing, selection-mode, selected, unavailable and
             // disc-header rows.

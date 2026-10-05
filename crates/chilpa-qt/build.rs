@@ -27,7 +27,7 @@ fn main() {
     // A layer's `qmldir` declares its singletons, the fonts are the icons
     // and the .qsb files are compiled shaders. All of them travel in the same
     // resource tree as the QML.
-    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir"));
+    let mut resources = files("qml", &|p| p.file_name().is_some_and(|n| n == "qmldir") || p.extension().is_some_and(|e| e == "js"));
     resources.extend(files("assets", &|p| p.extension().is_some_and(|e| e == "ttf" || e == "qsb")));
     // Only the files that declare a bridge: `mod.rs` just lists them.
     let bridges = files("src/bridge", &|p| {

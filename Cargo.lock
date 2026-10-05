@@ -428,6 +428,7 @@ dependencies = [
 name = "chilpa-api"
 version = "0.0.0"
 dependencies = [
+ "base64 0.22.1",
  "chilpa-appkit",
  "chilpa-auth",
  "chilpa-bwrap",

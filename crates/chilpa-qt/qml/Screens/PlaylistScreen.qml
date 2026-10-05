@@ -22,13 +22,13 @@ Flickable {
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar {}
 
     TrackListModel {
         id: tracks
         kind: "playlist"
         albumId: page.playlistId
-        filterRev: Playlists.rev + Library.contentRev
+        filterRev: Playlists.rev + Library.contentRev + Library.remoteRev
         playingPath: Player.path
         order: page.order
         ascending: page.ascending

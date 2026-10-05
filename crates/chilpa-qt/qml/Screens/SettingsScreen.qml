@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
@@ -65,7 +66,7 @@ Item {
         model: rows
         bottomMargin: Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar {}
 
         delegate: SettingsRow {
             width: ListView.view.width - Metrics.gap12

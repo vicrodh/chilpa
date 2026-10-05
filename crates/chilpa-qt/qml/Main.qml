@@ -72,6 +72,7 @@ Window {
     Connections {
         target: Library
         function onContentRevChanged() { Ratings.refresh() }
+        function onRemoteRevChanged() { Ratings.refresh() }
     }
 
     Connections {

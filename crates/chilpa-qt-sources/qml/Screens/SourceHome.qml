@@ -22,7 +22,7 @@ Flickable {
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar {}
 
     Column {
         id: column
@@ -32,6 +32,7 @@ Flickable {
         spacing: Metrics.gap16
 
         Text {
+            visible: !page.about.header
             text: page.about.title || ""
             font.pointSize: Type.title
             font.weight: Type.bold
@@ -41,10 +42,10 @@ Flickable {
         SourceTabs { model: page.about.tabs || [] }
 
         SourceDiscoveryControls { id: discovery; width: parent.width; about: page.about; visible: !!page.about.tab }
-        SourcePageHeader { width: parent.width; info: page.about.header || ({}); visible: !!page.about.header }
+        SourcePageHeader { width: parent.width; currentPage: true; tracksKey: ((page.about.shelves || []).find(shelf => shelf.tracks) || {}).key || ""; info: page.about.header || ({}); visible: !!page.about.header }
         Repeater {
             model: page.about.tab ? discovery.shown : page.about.shelves || []
-            SourceShelf { required property var modelData; width: column.width; section: modelData }
+            SourceShelf { required property var modelData; width: column.width; section: modelData; wrap: (page.about.header || {}).kind === "artist" && modelData.kind === "album" }
         }
 
         SourceState {

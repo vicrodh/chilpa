@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
@@ -9,16 +10,17 @@ Column {
     id: shelf
     property var section: ({})
     property string selectedTag: ""
+    property bool wrap: false
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
     spacing: Metrics.gap12
     visible: !!section.error || cards.albums > 0 || tracks.count > 0
-    AlbumGridModel { id: cards; kind: "source"; key: shelf.activeKey; limit: shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; contentRev: Library.remoteRev + Library.remoteArtRev }
+    AlbumGridModel { id: cards; kind: "source"; key: shelf.activeKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; contentRev: Library.remoteRev + Library.remoteArtRev }
     TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? "source" : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.activeKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev }
     SectionHeader {
         width: parent.width; title: shelf.section.title || ""
-        link: I18n.tr("See all", I18n.rev)
-        onLinkClicked: Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
+        link: shelf.wrap ? "" : I18n.tr("See all", I18n.rev)
+        onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
     SourcePageHeader { width: parent.width; info: shelf.section.header || ({}); visible: !!shelf.section.header }
@@ -27,18 +29,19 @@ Column {
         PillButton { text: I18n.tr("All", I18n.rev); onClicked: shelf.selectedTag = "" }
         Repeater { model: shelf.section.tags || []; PillButton { required property var modelData; text: modelData.name; onClicked: shelf.selectedTag = modelData.slug } }
     }
-    SourceLibraryControls { id: sorting; visible: shelf.section.sortable === true; source: shelf.activeKey; entity: shelf.section.kind || "album" }
+    SourceLibraryControls { id: sorting; visible: shelf.section.sortable === true || shelf.wrap; source: shelf.activeKey; entity: shelf.section.kind || "album" }
     Flickable {
         id: rail
         width: parent.width; height: grid.implicitHeight
         visible: cards.albums > 0; contentWidth: grid.width; contentHeight: height
-        flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
+        interactive: !shelf.wrap; flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
         ScrollBar.horizontal: ScrollBar {}
         AlbumGrid {
             id: grid
             // The rail keeps one card row; its width grows by one card and gap per item.
-            width: list ? rail.width : Math.max(rail.width, Math.min(shelf.section.size || 18, (shelf.section.items || []).length || cards.albums) * (Metrics.cardMinWidth + Metrics.gridGap)) // derived: selected card count times the themed card width and gap
+            width: shelf.wrap || list ? rail.width : Math.max(rail.width, Math.min(shelf.section.size || 18, (shelf.section.items || []).length || cards.albums) * (Metrics.cardMinWidth + Metrics.gridGap)) // derived: selected card count times the themed card width and gap
             height: implicitHeight; fitContent: true
+            viewportX: rail.contentX; viewportWidth: rail.width
             round: shelf.section.round === true; list: shelf.section.presentation === "ranked"
             model: cards; onOpen: albumId => Navigation.go("album", albumId)
         }
@@ -50,4 +53,11 @@ Column {
         PillButton { text: I18n.tr("Add to queue", I18n.rev); onClicked: fullTracks.queueAll() }
     }
     TrackList { width: parent.width; height: implicitHeight; fitContent: true; visible: tracks.count > 0; model: tracks }
+    PillButton {
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: shelf.wrap && !!shelf.section.more
+        text: I18n.tr("Load more", I18n.rev)
+        onClicked: Sources.command("section_more", shelf.activeKey, "")
+    }
+
 }

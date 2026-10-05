@@ -6,6 +6,7 @@ import "../Primitives"
 // Shared by creation and editing. Labels remain visible while typing.
 Column {
     id: form
+    property bool localMetadata: true
     property alias name: nameField.text
     property alias description: descriptionField.text
     property alias tags: tagsField.text
@@ -27,10 +28,11 @@ Column {
     }
     Text { text: I18n.tr("Description", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
     TextField { id: descriptionField; width: parent.width; placeholder: I18n.tr("Description", I18n.rev) }
-    Text { text: I18n.tr("Tags, separated by commas", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
-    TextField { id: tagsField; width: parent.width; placeholder: I18n.tr("Tags, separated by commas", I18n.rev) }
-    Text { text: I18n.tr("Custom image", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+    Text { visible: form.localMetadata; text: I18n.tr("Tags, separated by commas", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
+    TextField { id: tagsField; visible: form.localMetadata; width: parent.width; placeholder: I18n.tr("Tags, separated by commas", I18n.rev) }
+    Text { visible: form.localMetadata; text: I18n.tr("Custom image", I18n.rev); font.pointSize: Type.small; color: Theme.color.textSecondary }
     Row {
+        visible: form.localMetadata
         width: parent.width
         spacing: Metrics.gap8
         TextField { id: artworkField; width: parent.width - choose.width - parent.spacing; placeholder: I18n.tr("Custom image", I18n.rev) }

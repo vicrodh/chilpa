@@ -13,6 +13,7 @@
 #include <QtQuick/QQuickImageProvider>
 
 extern "C" bool chilpa_cover(const char *path, unsigned size, char *out, unsigned long capacity);
+extern "C" bool chilpa_contained_cover(const char *path, unsigned size, char *out, unsigned long capacity);
 extern "C" bool chilpa_atmosphere(const char *path, char *out, unsigned long capacity);
 
 namespace {
@@ -20,19 +21,20 @@ namespace {
 class CoverResponse : public QQuickImageResponse, public QRunnable
 {
 public:
-    CoverResponse(const QString &id, bool atmosphere) : m_id(id), m_atmosphere(atmosphere) { setAutoDelete(false); }
+    CoverResponse(const QString &id, int atmosphere) : m_id(id), m_atmosphere(atmosphere) { setAutoDelete(false); }
 
     void run() override
     {
-        const qsizetype slash = m_atmosphere ? -1 : m_id.indexOf(QLatin1Char('/'));
-        const unsigned size = m_atmosphere ? 0 : m_id.left(slash).toUInt();
-        const QString rest = m_atmosphere ? m_id : m_id.mid(slash + 1);
+        const qsizetype slash = m_atmosphere == 1 ? -1 : m_id.indexOf(QLatin1Char('/'));
+        const unsigned size = m_atmosphere == 1 ? 0 : m_id.left(slash).toUInt();
+        const QString rest = m_atmosphere == 1 ? m_id : m_id.mid(slash + 1);
         QUrl url(rest);
         if (!url.isLocalFile())
             url = QUrl(QUrl::fromPercentEncoding(rest.toUtf8()));
         const QByteArray path = url.toLocalFile().toUtf8();
         QByteArray out(4096, '\0');
-        const bool made = m_atmosphere ? chilpa_atmosphere(path.constData(), out.data(), out.size())
+        const bool made = m_atmosphere == 1 ? chilpa_atmosphere(path.constData(), out.data(), out.size())
+                                       : m_atmosphere == 2 ? chilpa_contained_cover(path.constData(), size, out.data(), out.size())
                                        : slash > 0 && size > 0 && chilpa_cover(path.constData(), size, out.data(), out.size());
         if (made)
             m_image = QImage(QString::fromUtf8(out.constData()));
@@ -51,14 +53,14 @@ public:
 
 private:
     QString m_id;
-    bool m_atmosphere;
+    int m_atmosphere;
     QImage m_image;
 };
 
 class CoverProvider : public QQuickAsyncImageProvider
 {
 public:
-    CoverProvider(bool atmosphere = false) : m_atmosphere(atmosphere) { m_pool.setMaxThreadCount(3); }
+    CoverProvider(int atmosphere = 0) : m_atmosphere(atmosphere) { m_pool.setMaxThreadCount(3); }
 
     QQuickImageResponse *requestImageResponse(const QString &id, const QSize &) override
     {
@@ -69,7 +71,7 @@ public:
 
 private:
     QThreadPool m_pool;
-    bool m_atmosphere;
+    int m_atmosphere;
 };
 
 } // namespace
@@ -77,5 +79,6 @@ private:
 extern "C" void chilpa_install_covers(void *engine)
 {
     static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("cover"), new CoverProvider);
-    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("atmosphere"), new CoverProvider(true));
+    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("contained"), new CoverProvider(2));
+    static_cast<QQmlEngine *>(engine)->addImageProvider(QStringLiteral("atmosphere"), new CoverProvider(1));
 }

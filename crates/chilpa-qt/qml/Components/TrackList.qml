@@ -14,6 +14,7 @@ Item {
     property bool rich: SettingsModel.density === "rich"
     property bool showArtist: true
     property bool showAlbum: true
+    property bool showSource: model && model.kind !== "album" && model.kind !== "source"
     property bool showArt: true
     property bool showPlays: false
     property bool showRating: true
@@ -46,6 +47,7 @@ Item {
         rich: list.rich
         showArtist: list.showArtist
         showAlbum: list.showAlbum
+        showSource: list.showSource
         showArt: list.showArt
         showPlays: list.showPlays
         showRating: list.showRating
@@ -69,6 +71,7 @@ Item {
         property int hovered: -1
         // The row whose artist is under the pointer, which a click opens.
         property int artistHovered: -1
+        property int albumHovered: -1
         property int ratingHovered: 0
         // 1 the heart, 2 the menu button, of the row under the pointer.
         property int actionHovered: 0
@@ -87,11 +90,15 @@ Item {
         cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : Math.max(0, height)
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar { policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar { policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
 
         delegate: TrackRow {
+            required property var model
+            sourceName: model.sourceName || ""
+            sourceInfo: JSON.parse(model.sourceInfo || "{}")
+            albumHovered: index === view.albumHovered
             cols: columns
-            canRate: trackId > 0 && available
+            canRate: trackId !== 0
             rating: Ratings.stars("track", trackId, Ratings.rev)
             favorite: trackId > 0 && Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0

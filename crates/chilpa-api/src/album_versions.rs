@@ -16,6 +16,7 @@ pub struct AlbumSource {
     pub label: String,
     pub icon: String,
     pub local: bool,
+    pub contain_art: bool,
 }
 
 #[cfg(test)]
@@ -77,7 +78,7 @@ impl AlbumSource {
     fn of(v: &chilpa_library::store::versions::AlbumVersion) -> Self {
         let label = if !v.source_label.is_empty() { v.source_label.clone() }
             else if v.local { chilpa_i18n::t("Local library") } else { v.source.clone() };
-        Self { key: v.source.clone(), label, icon: v.source_icon.clone(), local: v.local }
+        Self { key: v.source.clone(), label, icon: v.source_icon.clone(), local: v.local, contain_art: false }
     }
 }
 

@@ -12,7 +12,7 @@ Rectangle {
     readonly property var places: [
         { screen: "home", glyph: Icons.home, text: I18n.tr("Home", I18n.rev) },
         { screen: "library", glyph: Icons.columns3, text: I18n.tr("Library", I18n.rev) },
-        { screen: "artists", glyph: Icons.microphone2, text: I18n.tr("Artists", I18n.rev) },
+        { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
         { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
         { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
         { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
@@ -57,7 +57,7 @@ Rectangle {
         y: button.height + Metrics.gap4
         entries: button.places.map((place) => ({
             text: place.text,
-            glyph: place.glyph,
+            glyph: place.glyph, family: place.family || "",
             checked: Navigation.screen === place.screen
         }))
         onChosen: (index) => Navigation.go(button.places[index].screen, 0)

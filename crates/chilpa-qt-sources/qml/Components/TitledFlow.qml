@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 
 // A titled group of pieces in the Gallery.
 Column {

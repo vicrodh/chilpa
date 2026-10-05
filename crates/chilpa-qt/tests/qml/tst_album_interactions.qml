@@ -75,6 +75,23 @@ TestCase {
         compare(artistY(x), -1, "a disc header is never an artist link")
     }
 
+    function test_album_link_and_source_column_in_both_densities() {
+        for (const rich of [false, true]) {
+            columns.rich = rich
+            columns.showSource = true
+            row.sourceName = "Remote source"
+            wait(0)
+            verify(row.containsAlbum(columns.albumX + 2, row.height / 2))
+            verify(!row.containsAlbum(columns.albumX + columns.albumW - 1, row.height / 2))
+            compare(columns.qualityX, columns.sourceX + columns.sourceWidth)
+            verify(columns.sourceWidth > 0)
+            row.rowKind = 1
+            verify(!row.containsAlbum(columns.albumX + 2, row.height / 2))
+            row.rowKind = 0
+        }
+        columns.showSource = false
+    }
+
     function test_version_selector_preserves_source_and_selection() {
         compare(selector.values.length, 2)
         compare(selector.current, 0)

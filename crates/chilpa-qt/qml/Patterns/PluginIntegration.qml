@@ -8,6 +8,14 @@ Column {
     required property var plugin
     signal command(string action, var input)
     spacing: Metrics.gap12
+    Row {
+        spacing: Metrics.gap12
+        visible: integration.plugin.sidebar_position !== null && integration.plugin.sidebar_position !== undefined
+        Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Position in Streaming", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
+        Text { anchors.verticalCenter: parent.verticalCenter; text: String((integration.plugin.sidebar_position || 0) + 1) + " / " + String(integration.plugin.sidebar_count || 0); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+        IconButton { glyph: Icons.chevronUp; tip: I18n.tr("Move up", I18n.rev); enabled: integration.plugin.sidebar_position > 0; onClicked: integration.command("sidebar_position", {id:integration.plugin.id,position:integration.plugin.sidebar_position-1}) }
+        IconButton { glyph: Icons.chevronDown; tip: I18n.tr("Move down", I18n.rev); enabled: integration.plugin.sidebar_position < integration.plugin.sidebar_count-1; onClicked: integration.command("sidebar_position", {id:integration.plugin.id,position:integration.plugin.sidebar_position+1}) }
+    }
     Text { text: I18n.tr("Icon", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Row {
         spacing: Metrics.gap8
@@ -28,13 +36,22 @@ Column {
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Separate source playlists", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
     Row {
-        visible: integration.plugin.native === true
+        visible: (integration.plugin.library_kinds || []).indexOf("albums") >= 0
         spacing: Metrics.gap12
         Toggle {
             checked: (integration.plugin.integration || {}).integrate_albums === true
             onToggled: (on) => integration.command("integration", {id: integration.plugin.id, field: "integrate_albums", enabled: on})
         }
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Include source albums in Albums", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
+    }
+    Row {
+        spacing: Metrics.gap12
+        visible: (integration.plugin.library_kinds || []).indexOf("tracks") >= 0
+        Toggle {
+            checked: (integration.plugin.integration || {}).integrate_tracks === true
+            onToggled: on => integration.command("integration", {id: integration.plugin.id, field: "integrate_tracks", enabled: on})
+        }
+        Text { text: I18n.tr("Show saved tracks in Tracks", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
     Text { visible: integration.plugin.native !== true; text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Text {

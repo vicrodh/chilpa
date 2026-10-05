@@ -8,22 +8,29 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 Column {
     id: details
     property double cardId: 0
+    property var trackModel
+    property bool selecting: false
+    signal artwork()
+    signal selectToggle()
+    signal context(real left, real top)
+    property var record
     readonly property var info: cardId < 0 ? JSON.parse(Sources.card(cardId, Library.remoteRev) || "{}") : ({})
-    readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "")
+    readonly property bool canFavorite: /^(album|playlist|artist):/.test(info.ref || "") && info.editable !== true
     property bool expanded: false
+    readonly property real heroHeight: heading.height
     visible: cardId < 0 && !!info.plugin
     spacing: Metrics.gap8
-    function open(reference) { Navigation.goKey("source", info.plugin + " native:" + reference) }
+    function open(reference) { heading.follow(reference) }
+    onInfoChanged: if (playlistEditor.visible) playlistEditor.info = info
+    SourcePlaylistEditor { id: playlistEditor }
+    SourcePageHeader { id: heading; record: details.record; selecting: details.selecting; onArtwork: details.artwork(); onSelectToggle: details.selectToggle(); onContext: (left, top) => details.context(left, top); width: parent.width; currentPage: true; inlineInformation: true; onInformation: details.expanded = !details.expanded; contrasted: SettingsModel.albumHeader !== "off" && !!details.record && String(details.record.art) !== ""; cardId: details.cardId; playbackModel: details.trackModel || ({count:0,summary:""}); info: Object.assign({}, details.info, {title: details.record ? details.record.title : details.info.title, art: details.record ? details.record.art : details.info.art}) }
     Flow {
         width: parent.width
         spacing: Metrics.gap8
-        PillButton { text: I18n.tr("Information", I18n.rev); onClicked: details.expanded = !details.expanded }
-        PillButton { visible: !!details.info.artist_ref; text: details.info.artist || I18n.tr("Artist", I18n.rev); onClicked: details.open(details.info.artist_ref) }
         PillButton { visible: !!details.info.label_ref; text: details.info.label || I18n.tr("Label", I18n.rev); onClicked: details.open(details.info.label_ref) }
-        PillButton { visible: details.canFavorite; text: details.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: Sources.command("native", details.info.plugin, JSON.stringify({action:"favorite",ref:details.info.ref,on:!details.info.favorite})) }
-        PillButton { text: I18n.tr("Pin", I18n.rev); onClicked: Sources.command("native", details.info.plugin, JSON.stringify({action:"pin",item:details.info,on:true})) }
+        PillButton { visible: details.info.editable === true; text: I18n.tr("Edit playlist", I18n.rev); onClicked: playlistEditor.begin(details.info, "update") }
+        PillButton { visible: details.info.copyable === true; text: I18n.tr("Copy playlist", I18n.rev); onClicked: playlistEditor.begin(details.info, "copy") }
     }
-    PillButton { text: I18n.tr("Unpin", I18n.rev); onClicked: Sources.command("native", details.info.plugin, JSON.stringify({action:"pin",item:details.info,on:false})) }
     Text {
         width: parent.width; visible: details.expanded
         text: [details.info.description || "", details.info.release_date || "", details.info.genre || "", details.info.copyright || "", details.info.upc ? "UPC: " + details.info.upc : ""].filter(Boolean).join("\n\n")

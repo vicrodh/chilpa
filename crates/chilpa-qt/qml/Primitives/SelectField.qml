@@ -78,6 +78,8 @@ Rectangle {
 
     Menu {
         id: menu
+        objectName: "selectOptions"
+        searchable: field.options.length > 5
         widthLimit: field.menuWidthLimit
         y: field.height + Metrics.gap4
         x: field.width - width

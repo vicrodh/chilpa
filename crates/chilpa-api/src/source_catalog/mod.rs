@@ -25,22 +25,21 @@ mod fetch;
 mod native;
 mod pages;
 pub(crate) mod store;
-mod view;
+pub(crate) mod view;
 mod sorting;
 
 use crate::plugins::Plugins;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicI32, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
-use std::time::Instant;
-use store::{CardKind, Store};
+use std::time::{Duration, Instant};
+use store::Store;
 
 /// A listing younger than this is not asked for again.
 const SHELF_FRESH: u64 = 300;
 /// A record's tracks younger than this are not read again.
 const TRACKS_FRESH: u64 = 6 * 3600;
-/// How many records of a listing have their tracks read ahead.
-const READ_AHEAD: usize = 8;
+const BACKGROUND_JOBS: usize = 8;
 /// How many of a listing's loose tracks have their covers fetched.
 const TRACK_COVERS: usize = 200;
 /// How many covers are fetched at once.
@@ -69,18 +68,22 @@ struct Queue {
     queued: HashSet<Job>,
     covers: VecDeque<String>,
     covers_queued: HashSet<String>,
-    /// Covers that could not be fetched this run: not asked for again.
-    covers_failed: HashSet<String>,
+    /// Failed downloads cool down before another visible row can retry.
+    covers_failed: HashMap<String, Instant>,
 }
 
 #[derive(Default)]
 struct Inner {
+    quality_requested: HashMap<i64, Instant>,
+    quality_blocked: HashMap<String, Instant>,
+    quality_running: usize,
     store: Store,
     loaded: bool,
     queue: Queue,
     /// Why the last attempt failed, by listing key or by card.
     shelf_errors: HashMap<String, String>,
     card_errors: HashMap<i64, String>,
+    card_retry_at: HashMap<i64, Instant>,
     /// What is being read right now, so it is not queued twice.
     running: HashSet<Job>,
     deferred: Vec<Deferred>,
@@ -176,7 +179,7 @@ impl Catalog {
     }
 
     fn queue(&self, inner: &mut Inner, job: Job, urgent: bool) {
-        if inner.running.contains(&job) {
+        if matches!(&job, Job::Tracks(id) if inner.card_errors.contains_key(id) && inner.card_retry_at.get(id).is_none_or(|at| at.elapsed() < std::time::Duration::from_secs(30))) || inner.running.contains(&job) {
             return;
         }
         if inner.queue.queued.contains(&job) {
@@ -196,7 +199,7 @@ impl Catalog {
             // What is read ahead is for what was opened last: the oldest
             // guesses go, so someone who opens something waits behind few.
             inner.queue.later.push_back(job);
-            while inner.queue.later.len() > READ_AHEAD {
+            while inner.queue.later.len() > BACKGROUND_JOBS {
                 if let Some(old) = inner.queue.later.pop_front() {
                     inner.queue.queued.remove(&old);
                 }
@@ -206,9 +209,11 @@ impl Catalog {
     }
 
     fn want_cover(&self, inner: &mut Inner, image: &str) {
-        if image.is_empty() || inner.queue.covers_queued.contains(image) || inner.queue.covers_failed.contains(image) {
+        if image.is_empty() || inner.queue.covers_queued.contains(image)
+            || inner.queue.covers_failed.get(image).is_some_and(|at| at.elapsed() < Duration::from_secs(30)) {
             return;
         }
+        inner.queue.covers_failed.remove(image);
         inner.queue.covers_queued.insert(image.to_string());
         inner.queue.covers.push_back(image.to_string());
         self.covers_wake.notify_one();
@@ -232,13 +237,7 @@ impl Catalog {
             for image in images {
                 self.want_cover(&mut inner, &image);
             }
-            let natives = self.natives();
-            let ahead: Vec<i64> = shelf.cards.iter().filter_map(|id| inner.store.cards.get(id))
-                .filter(|c| !matches!(c.kind, CardKind::Artist | CardKind::Label) && c.tracks.is_none() && readable(c, natives.as_deref()))
-                .take(READ_AHEAD).map(|c| c.id).collect();
-            for id in ahead {
-                self.queue(&mut inner, Job::Tracks(id), false);
-            }
+
         }
         shelf
     }
@@ -259,9 +258,28 @@ impl Catalog {
         self.changed();
     }
 
+    pub fn invalidate_native_cards(&self, plugin: &str, references: &[serde_json::Value]) {
+        let mut inner = self.lock();
+        let mut changed = Vec::new();
+        for card in inner.store.cards.values_mut().filter(|c| c.plugin == plugin && references.iter().any(|r| r.as_str() == Some(c.identity.as_str()))) {
+            card.tracks = None;
+            card.read_at = 0;
+            changed.push(card.id);
+        }
+        for id in changed { inner.card_errors.remove(&id); inner.card_retry_at.remove(&id); }
+        inner.dirty = true;
+        self.changed();
+    }
+
     pub fn retry(&self, key: &str) {
         let mut inner = self.lock();
         inner.shelf_errors.remove(key);
+        let cards = inner.store.shelves.get(key).map(|s| s.cards.clone()).unwrap_or_default();
+        for id in cards {
+            inner.card_errors.remove(&id);
+            inner.card_retry_at.remove(&id);
+            if let Some(card) = inner.store.cards.get_mut(&id).filter(|c| c.metadata["available"] == false) { card.tracks = None; }
+        }
         if let Some(shelf) = inner.store.shelves.get_mut(key) {
             shelf.read_at = 0;
         }
@@ -287,6 +305,22 @@ impl Catalog {
         !inner.loaded || inner.running.contains(&job) || inner.queue.queued.contains(&job)
     }
 
+    /// I map transient display ids to stable identities without requesting the network.
+    pub(crate) fn rating_identities(&self) -> Vec<(String, i64, String, String)> {
+        let inner = self.lock();
+        let cards = inner.store.cards.values().filter_map(|card| {
+            let kind = match card.kind { store::CardKind::Album => "album", store::CardKind::Playlist => "playlist", _ => return None };
+            Some((kind.into(), card.id, card.plugin.clone(), card.identity.clone()))
+        });
+        cards.chain(inner.store.tracks.values().map(|track| {
+            // A playlist occurrence identifies an editable row; personal stars identify its song.
+            let identity = track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track")
+                .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
+                .unwrap_or_else(|| track.path.clone());
+            ("track".into(), track.id, track.plugin.clone(), identity)
+        })).collect()
+    }
+
     pub fn card(&self, id: i64) -> Option<store::Card> {
         let mut inner = self.lock();
         let card = inner.store.cards.get(&id).cloned()?;
@@ -302,7 +336,7 @@ impl Catalog {
         let mut inner = self.lock();
         let card = inner.store.cards.get(&id)?.clone();
         let old = card.tracks.is_none() || now().saturating_sub(card.read_at) > TRACKS_FRESH;
-        if old && readable(&card, self.natives().as_deref()) && !inner.card_errors.contains_key(&id) {
+        if old && readable(&card, self.natives().as_deref()) {
             self.queue(&mut inner, Job::Tracks(id), card.tracks.is_none());
         }
         let ids = card.tracks?;
@@ -396,6 +430,17 @@ impl Catalog {
         self.tracks_by_ids(&ids)
     }
 
+    pub fn saved_playlist_cards(&self) -> Vec<store::Card> {
+        let inner = self.lock();
+        let mut cards = Vec::new();
+        for (key, shelf) in &inner.store.shelves {
+            if key.ends_with(" section:playlists") {
+                cards.extend(shelf.cards.iter().filter_map(|id| inner.store.cards.get(id)).cloned());
+            }
+        }
+        cards
+    }
+
     pub fn cards(&self, ids: &[i64]) -> Vec<store::Card> {
         let inner = self.lock();
         ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).collect()
@@ -445,8 +490,35 @@ impl Catalog {
         }
     }
 
-    /// What a track decoded as: its row says that from now on, instead of
-    /// what the source advertised. The codec stays the source's word.
+    /// Read technical metadata for a displayed row without opening audio.
+    pub fn want_quality(self: &Arc<Self>, id: i64) {
+        let Some(natives) = self.natives() else { return };
+        let mut inner = self.lock();
+        let Some(track) = inner.store.tracks.get(&id) else { return };
+        if track.format.as_ref().is_some_and(|f| f.rate.is_some() && (f.bits.is_some() || matches!(f.codec.as_str(),"aac"|"mp3"|"m4a"))) { return; }
+        let (plugin, reference) = (track.plugin.clone(), track.metadata["ref"].as_str().unwrap_or_default().to_string());
+        if reference.is_empty() || !natives.has_track_quality(&plugin) || !natives.is_native(&plugin) || inner.quality_running >= 2 { return; }
+        if inner.quality_blocked.get(&plugin).is_some_and(|at| at.elapsed().as_secs()<60) || inner.quality_requested.get(&id).is_some_and(|at| at.elapsed().as_secs()<300) { return; }
+        inner.quality_requested.retain(|_,at| at.elapsed().as_secs()<300);
+        inner.quality_requested.insert(id,Instant::now()); inner.quality_running += 1;
+        drop(inner);
+        let catalog = self.clone();
+        std::thread::spawn(move || {
+            let result = natives.call(&plugin,"track.quality",serde_json::json!({"ref":reference}),std::time::Duration::from_secs(20));
+            let mut inner = catalog.lock(); inner.quality_running = inner.quality_running.saturating_sub(1);
+            if natives.is_native(&plugin) {
+                match result {
+                    Ok(answer) => if let Some(format) = native::format(&answer) {
+                        if let Some(track) = inner.store.tracks.get_mut(&id) { track.format = Some(format); inner.dirty = true; }
+                    },
+                    Err(_) => { inner.quality_blocked.insert(plugin,Instant::now()); }
+                }
+            }
+            drop(inner); catalog.changed();
+        });
+    }
+
+    /// Keep the format actually decoded instead of a generic catalog label.
     pub fn measured(&self, path: &str, codec: Option<&str>, bits: Option<u8>, rate: u32) {
         let mut inner = self.lock();
         let Some(id) = inner.store.track_by_path(path).map(|t| t.id) else { return };
@@ -458,6 +530,7 @@ impl Catalog {
         }
         format.codec = codec;
         format.bits = bits;
+        format.advertised_hires = false;
         format.rate = Some(rate).filter(|r| *r > 0);
         inner.dirty = true;
         drop(inner);
@@ -501,5 +574,41 @@ impl Catalog {
         let Some(track) = inner.store.track_by_path(path).cloned() else { return };
         let image = inner.store.cards.get(&track.album_id).map(|c| c.image.clone()).filter(|i| !i.is_empty()).unwrap_or(track.image);
         self.want_cover(&mut inner, &image);
+    }
+}
+
+#[cfg(test)]
+mod retry_tests {
+    use super::*;
+    #[test]
+    fn a_failed_search_cover_can_retry_without_restarting_the_application() {
+        let catalog = Catalog::new();
+        let image = "https://images.example.org/cover.jpg";
+        catalog.lock().queue.covers_failed.insert(image.into(), Instant::now());
+        catalog.want_image("example.source", image);
+        assert!(catalog.lock().queue.covers.is_empty());
+        catalog.lock().queue.covers_failed.insert(image.into(), Instant::now() - Duration::from_secs(31));
+        catalog.want_image("example.source", image);
+        assert_eq!(catalog.lock().queue.covers.pop_front().as_deref(), Some(image));
+    }
+    #[test]
+    fn redraws_do_not_repeat_failed_preloads_but_explicit_play_retries() {
+        let catalog = Catalog::new();
+        let key = "app.example.music root";
+        {
+            let mut inner = catalog.lock();
+            inner.loaded = true;
+            inner.store.cards.insert(-1, store::Card { id: -1, handle: Some(store::Handle { epoch: 1, id: "record".into() }), ..Default::default() });
+            inner.store.shelves.insert(key.into(), store::Shelf { cards: vec![-1], read_at: now(), epoch: 1, ..Default::default() });
+            inner.card_errors.insert(-1, "Not found".into());
+        }
+        for _ in 0..20 { catalog.shelf(key); catalog.tracks(-1); }
+        assert!(catalog.lock().queue.queued.is_empty());
+        catalog.defer(vec![-1], "play", false);
+        assert!(catalog.lock().queue.queued.contains(&Job::Tracks(-1)));
+        assert!(catalog.card_error(-1).is_none());
+        catalog.lock().card_errors.insert(-1, "Not found".into());
+        catalog.retry(key);
+        assert!(catalog.card_error(-1).is_none());
     }
 }

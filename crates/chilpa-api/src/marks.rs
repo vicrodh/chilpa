@@ -46,13 +46,33 @@ impl Marks {
 
 impl Chilpa {
     pub fn marks(&mut self) -> Option<Marks> {
-        let ratings = self.ratings()?;
+        let mut ratings = self.ratings()?;
+        let external = self.library()?.external_ratings().ok()?;
+        for (kind, id, source, identity) in self.catalog.rating_identities() {
+            if let Some(stars) = external.get(&(source, kind.clone(), identity)) {
+                match kind.as_str() {
+                    "track" => { ratings.tracks.insert(id, *stars); }
+                    "playlist" => { ratings.playlists.insert(id, *stars); ratings.albums.insert(id, *stars); }
+                    _ => { ratings.albums.insert(id, *stars); }
+                }
+            }
+        }
         let favorites = self.library()?.favorites().ok()?;
         Some(Marks { ratings, favorites })
     }
 
     /// False when the kind takes no stars or they could not be kept.
     pub fn rate_as(&mut self, kind: &str, id: i64, stars: i32) -> bool {
+        if id < 0 {
+            if !(0..=5).contains(&stars) { return false; }
+            let Some((actual, _, source, identity)) = self.catalog.rating_identities().into_iter()
+                .find(|(actual, found, _, _)| *found == id && (actual == kind || kind == "album" && actual == "playlist")) else { return false };
+            let Some(lib) = self.library() else { return false };
+            return match lib.rate_external(&source, &actual, &identity, stars as u8) {
+                Ok(()) => true,
+                Err(error) => { self.now.error = chilpa_i18n::t_args("the rating could not be saved: {}", &[&error.to_string()]); false }
+            };
+        }
         rated(kind, id).is_some_and(|target| self.rate(target, stars))
     }
 
@@ -87,6 +107,53 @@ mod tests {
         let mut api = Chilpa::new();
         api.library = Some(lib);
         api
+    }
+
+    fn remote(api: &Chilpa, source: &str, kind: &str, id: &str) -> i64 {
+        api.catalog.adopt(source, None, &crate::source_search::RemoteFound {
+            source: source.into(), name: "Catalog".into(), id: id.into(), title: "Item".into(),
+            detail: String::new(), art: String::new(), duration_ms: 0,
+            collection: kind != "track", entity: kind.into(), item: None,
+        })
+    }
+
+    #[test]
+    fn external_stars_survive_catalog_eviction_and_never_rate_another_source() {
+        let mut api = api();
+        let first = remote(&api, "test.catalog.one", "album", "7");
+        let other = remote(&api, "test.catalog.two", "album", "7");
+        assert!(first < 0 && other < 0 && first != other);
+        assert!(api.rate_as("album", first, 4));
+        assert_eq!(api.marks().unwrap().stars("album", other), 0);
+        api.catalog.forget_plugin("test.catalog.one");
+        let restored = remote(&api, "test.catalog.one", "album", "7");
+        assert_eq!(api.marks().unwrap().stars("album", restored), 4);
+        assert!(api.rate_as("album", restored, 0));
+        assert_eq!(api.marks().unwrap().stars("album", restored), 0);
+        let playlist = remote(&api, "test.catalog.one", "playlist", "8");
+        assert!(api.rate_as("album", playlist, 3));
+        assert_eq!(api.marks().unwrap().stars("playlist", playlist), 3);
+        assert!(api.same_artist_albums(playlist, 8).is_empty());
+        let track = remote(&api, "test.catalog.one", "track", "9");
+        assert!(api.rate_as("track", track, 5));
+        assert_eq!(api.marks().unwrap().stars("track", track), 5);
+    }
+
+    #[test]
+    fn playlist_occurrences_share_the_song_rating_without_sharing_row_identity() {
+        let mut api = api();
+        let adopt = |reference: &str| api.catalog.adopt("test.catalog.one", None, &crate::source_search::RemoteFound {
+            source: "test.catalog.one".into(), name: "Catalog".into(), id: reference.into(), title: "Song".into(),
+            detail: String::new(), art: String::new(), duration_ms: 0, collection: false, entity: "track".into(),
+            item: Some(serde_json::json!({"kind":"track", "ref":reference, "title":"Song"})),
+        });
+        let song = adopt("track:9");
+        let row = adopt("track:9@playlist:3@entry:2");
+        assert_ne!(song, row);
+        assert!(api.rate_as("track", row, 4));
+        let marks = api.marks().unwrap();
+        assert_eq!(marks.stars("track", song), 4);
+        assert_eq!(marks.stars("track", row), 4);
     }
 
     #[test]

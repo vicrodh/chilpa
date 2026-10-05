@@ -1,2 +1,3 @@
 module com.blitzfc.chilpa.sources
 singleton Sources 1.0 Sources.qml
+singleton PlaylistImport 1.0 PlaylistImport.qml

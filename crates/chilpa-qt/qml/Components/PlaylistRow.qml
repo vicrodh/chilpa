@@ -72,7 +72,6 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         visible: row.showSourceBadge && !row.editing
         sourceInfo: ({icon: row.sourceIcon, label: row.sourceName})
-        opacity: Metrics.disabledOpacity
     }
     Text {
         visible: !row.editing

@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import QtTest
 import com.blitzfc.chilpa
 import "../../qml/Components"
@@ -19,6 +20,8 @@ TestCase {
         Playlists.fail = false
         Playlists.created = []
         Playlists.added = ""
+        Playlists.sourceChoices = []
+        Playlists.remoteWrite = []
         Playlists.rows = [
             { playlist: { id: 1, name: "Evening music", mixed: true, track_count: 8 }, accepts: true, exact: 1, similar: 1 },
             { playlist: { id: 2, name: "Road music", mixed: false, provider: "Server", track_count: 12 }, accepts: false, exact: 0, similar: 0 }
@@ -28,6 +31,26 @@ TestCase {
     function field(dialog) { return findChild(dialog.contentItem, "playlistName") }
     function list() { return findChild(picker.contentItem, "playlistTargets") }
 
+    function test_remote_creation_keeps_selection_and_waits_for_acknowledgement() {
+        Playlists.sourceChoices = [{id: "com.test.source", name: "Cloud", accepts: true}]
+        picker.show("[-7,-8]")
+        picker.creating = true
+        picker.sourceId = "com.test.source"
+        picker.sourceName = "Cloud"
+        field(picker).text = "Cloud list"
+        picker.create()
+        verify(picker.pending)
+        compare(Playlists.remoteWrite[0], "com.test.source")
+        compare(Playlists.remoteWrite[4], "[-7,-8]")
+        compare(Playlists.created.length, 0)
+        Playlists.remoteState = {request_id: Playlists.remoteState.request_id, pending: false,
+            result: {warning: "Created, but adding tracks failed"}}
+        tryCompare(picker, "pending", false)
+        verify(picker.warning)
+        verify(picker.visible)
+        verify(picker.notice.includes("Created"))
+    }
+
     function test_picker_has_width_height_and_target_rows() {
         picker.show("[42,43]")
         tryCompare(picker, "opened", true)
@@ -36,19 +59,35 @@ TestCase {
         const search = findChild(picker.contentItem, "playlistSearch")
         compare(search.width, picker.width - 40)
         verify(list().height > 200)
-        compare(list().count, 2)
+        compare(list().count, 1)
         tryVerify(() => list().itemAtIndex(0) !== null)
         compare(list().itemAtIndex(0).target.playlist.name, "Evening music")
         compare(list().itemAtIndex(0).width, search.width)
         search.text = "ROAD"
-        tryCompare(list(), "count", 1)
+        tryCompare(list(), "count", 0)
         search.text = "not found"
         tryCompare(list(), "count", 0)
         picker.close()
         picker.show("[44]")
         compare(search.text, "")
         compare(picker.trackCount, 1)
-        tryCompare(list(), "count", 2)
+        tryCompare(list(), "count", 1)
+    }
+
+    function test_scrollbar_stays_inside_the_picker_and_follows_visibility() {
+        Playlists.rows = Array.from({length: 40}, (_, i) => ({playlist:{id:i+1,name:"List " + i,mixed:true,track_count:0},accepts:true,exact:0,similar:0}))
+        picker.show("[42]")
+        tryCompare(picker, "opened", true)
+        const view = list()
+        const bar = view.ScrollBar.vertical
+        tryCompare(bar, "parent", view)
+        compare(bar.y, 0)
+        compare(bar.height, view.height)
+        verify(bar.x >= 0 && bar.x + bar.width <= view.width)
+        view.contentY = view.contentHeight - view.height
+        compare(bar.y, 0)
+        picker.creating = true
+        tryCompare(bar, "visible", false)
     }
 
     function test_add_preserves_payload_and_reports_both_memberships() {
@@ -63,8 +102,8 @@ TestCase {
         verify(picker.notice.includes("similar"))
         verify(list().height > 0)
         Playlists.added = ""
-        const disabled = list().itemAtIndex(1)
-        mouseClick(disabled, disabled.width / 2, disabled.height / 2)
+        compare(list().count, 1)
+        picker.add(2)
         compare(Playlists.added, "")
     }
 

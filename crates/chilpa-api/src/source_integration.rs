@@ -9,6 +9,7 @@ use std::path::Path;
 pub(crate) struct Preferences {
     pub separate_playlists: bool,
     pub integrate_albums: bool,
+    pub integrate_tracks: bool,
 }
 
 pub(crate) fn read(root: &Path, id: &str) -> Preferences {
@@ -24,6 +25,7 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
     match field {
         "separate_playlists" => preferences.separate_playlists = enabled,
         "integrate_albums" => preferences.integrate_albums = enabled,
+        "integrate_tracks" => preferences.integrate_tracks = enabled,
         _ => return Err("Unknown integration preference.".into()),
     }
     let directory = root.join(".integration");
@@ -37,6 +39,44 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
 }
 
 impl Chilpa {
+    pub fn request_track_quality(&self, id: i64, path: &str) {
+        if id < 0 { self.catalog.want_quality(id); }
+        else if crate::source_opener::of_plugin(path).is_some() {
+            if let Some((track, _)) = self.catalog.track_by_path(path) { self.catalog.want_quality(track.id); }
+        }
+    }
+    /// Installed native libraries that can contribute saved releases to Albums.
+    pub fn album_libraries(&self) -> String { self.integrated_libraries("albums") }
+    pub fn track_libraries(&self) -> String { self.integrated_libraries("tracks") }
+    fn integrated_libraries(&self, kind: &str) -> String {
+        let root = Self::plugins_dir();
+        let mut rows: Vec<_> = self.natives.ids().into_iter()
+            .filter(|id| self.natives.library_kinds(id).iter().any(|k| k == kind))
+            .map(|id| json!({"name":self.catalog.name(&id).unwrap_or_else(|| id.clone()),
+                "enabled":if kind == "tracks" { read(&root, &id).integrate_tracks } else { read(&root, &id).integrate_albums },"icon":crate::plugin_icons::image_url(&root, &id),"id":id})).collect();
+        rows.sort_by(|a,b| a["name"].as_str().cmp(&b["name"].as_str()));
+        json!(rows).to_string()
+    }
+
+    pub(crate) fn show_album_library(&mut self, id: &str, enabled: bool) {
+        if !self.natives.library_kinds(id).iter().any(|kind| kind == "albums") { return; }
+        if let Err(error) = save(&Self::plugins_dir(), id, "integrate_albums", enabled) { self.now.error = error; return; }
+        if enabled { self.catalog.retry(&format!("{id} section:albums")); }
+        self.mark_library_changed();
+    }
+    pub(crate) fn show_track_library(&mut self, id: &str, enabled: bool) {
+        if !self.natives.library_kinds(id).iter().any(|kind| kind == "tracks") { return; }
+        if let Err(error) = save(&Self::plugins_dir(), id, "integrate_tracks", enabled) { self.now.error = error; return; }
+        if enabled { self.catalog.retry(&format!("{id} section:tracks")); }
+        self.mark_library_changed();
+    }
+    pub fn prepare_track_libraries(&self) {
+        for id in self.natives.ids() {
+            if read(&Self::plugins_dir(), &id).integrate_tracks && self.natives.library_kinds(&id).iter().any(|k| k == "tracks") {
+                self.catalog.shelf(&format!("{id} section:tracks"));
+            }
+        }
+    }
     pub(crate) fn forget_source_preferences(&mut self, id: &str) {
         let mut settings = chilpa_core::settings::load();
         let prefix = format!("ui.source.{id}");
@@ -48,10 +88,10 @@ impl Chilpa {
     pub fn integrated_albums(&mut self, text: &str, filter: &crate::Filter) -> Vec<crate::Album> {
         let root = Self::plugins_dir();
         let mut albums = Vec::new();
-        for panel in self.source_panels() {
-            if self.natives.is_native(&panel.id) && read(&root, &panel.id).integrate_albums {
-                if filter.excluded_sources.contains(&format!("{}:{}", crate::source_opener::PROVIDER, panel.id)) { continue; }
-                albums.extend(self.source_shelf(&format!("{} section:albums", panel.id), "", "", text).0.into_iter().filter(|a| {
+        for id in self.natives.ids() {
+            if self.natives.library_kinds(&id).iter().any(|kind| kind == "albums") && read(&root, &id).integrate_albums {
+                if filter.excluded_sources.contains(&format!("{}:{}", crate::source_opener::PROVIDER, id)) { continue; }
+                albums.extend(self.source_shelf(&format!("{id} section:albums"), "", "", text).0.into_iter().filter(|a| {
                     let quality = self.catalog.card(a.id).and_then(|c| c.format).map(|f| f.quality()).unwrap_or_default();
                     let tier = match quality.tier { crate::quality::Tier::Lossy => "lossy", crate::quality::Tier::Lossless => "lossless", crate::quality::Tier::HiRes => "hires", crate::quality::Tier::Dsd => "dsd", _ => "unknown" };
                     (filter.qualities.is_empty() || filter.qualities.iter().any(|q| q == tier)) && (filter.formats.is_empty() || filter.formats.iter().any(|f| f.eq_ignore_ascii_case(&quality.format)))
@@ -62,26 +102,33 @@ impl Chilpa {
     }
     /// Sidebar lists include native cached library cards without opening their tracks.
     pub fn sidebar_playlists(&mut self, query: &str) -> String {
-        let panels = self.source_panels();
+        self.source_panels();
         let root = Self::plugins_dir();
         let mut playlists: Vec<Value> = self.playlists().into_iter().map(|p| {
             let mut row = serde_json::to_value(&p).unwrap_or_default();
+            if let Some(card) = self.catalog.card(p.id) {
+                row["native_ref"] = card.identity.into();
+                row["native_folder"] = card.metadata["native_folder"].clone();
+                row["contain_art"] = (card.metadata["art_fit"] == "contain").into();
+            }
             row["source_icon"] = crate::plugin_icons::image_url(&root, &p.source).into();
             row["separate"] = read(&root, &p.source).separate_playlists.into();
             row
         }).collect();
-        for panel in panels.into_iter().filter(|p| self.natives.is_native(&p.id)) {
-            let Some(shelf) = self.catalog.shelf(&format!("{} section:playlists", panel.id)) else { continue };
-            let preferences = read(&root, &panel.id);
-            for card in self.catalog.cards(&shelf.cards) {
-                playlists.push(json!({"id":card.id,"name":card.title,"track_count":card.tracks.as_ref().map_or_else(|| card.metadata["tracks"].as_u64().unwrap_or_default() as usize, Vec::len),
-                    "source":panel.id,"provider":panel.name,"mixed":false,"folder_id":null,"visible_sidebar":true,
-                    "artwork_path":card.art,"covers":[],"source_icon":crate::plugin_icons::image_url(&root, &panel.id),
-                    "separate":preferences.separate_playlists}));
-            }
-        }
         let words: Vec<_> = query.to_lowercase().split_whitespace().map(str::to_owned).collect();
         playlists.retain(|p| p["visible_sidebar"] == true && words.iter().all(|word| p["name"].as_str().unwrap_or_default().to_lowercase().contains(word)));
-        json!({"playlists":playlists,"folders":self.playlist_folders()}).to_string()
+        let mut native_folders = Vec::new(); let mut folder_sources = Vec::new();
+        for source in self.natives.ids() {
+            if let Some(shelf) = self.catalog.stored_shelf(&format!("{source} section:playlists")) {
+                if let Some(folders) = shelf.document["folders"].as_array() {
+                    let name = self.catalog.name(&source).unwrap_or_else(|| source.clone());
+                    let icon = crate::plugin_icons::image_url(&root, &source);
+                    let folder_icon = crate::plugin_icons::folder_image_url(&root,&source);
+                    folder_sources.push(json!({"id":source,"name":name,"icon":icon}));
+                    native_folders.extend(folders.iter().map(|folder| { let mut folder = folder.clone(); folder["source"] = source.clone().into(); folder["source_name"] = name.clone().into(); folder["source_icon"] = icon.clone().into(); folder["folder_icon"] = folder_icon.clone().into(); folder }));
+                }
+            }
+        }
+        json!({"playlists":playlists,"folders":self.playlist_folders(),"native_folders":native_folders,"folder_sources":folder_sources}).to_string()
     }
 }

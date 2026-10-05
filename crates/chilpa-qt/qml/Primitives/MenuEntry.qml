@@ -35,7 +35,7 @@ Item {
         visible: !line.separator
         anchors.fill: parent
         radius: Metrics.radiusItem
-        color: hover.hovered && !line.note ? Theme.color.stateHover : "transparent"
+        color: line.entry.focused ? Theme.color.stateSelected : hover.hovered && !line.note ? Theme.color.stateHover : "transparent"
     }
 
     Icon {
