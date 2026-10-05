@@ -2,6 +2,7 @@
 
 use std::{io::{Cursor, Read}, path::{Path, PathBuf}};
 
+pub(crate) const INCLUDED_FOLDER_ICON: &str = ".host-folder-icon.png";
 pub(crate) const INCLUDED_ICON: &str = ".host-icon.png";
 pub(crate) struct IconImage { pub bytes: Vec<u8>, pub extension: &'static str }
 
@@ -18,12 +19,33 @@ pub(crate) fn selected(root: &Path, id: &str) -> Option<PathBuf> {
 
 pub(crate) fn image_url(root: &Path, id: &str) -> String {
     let Some(path) = selected(root, id) else { return String::new() };
-    let Ok(mut url) = url::Url::from_file_path(&path) else { return String::new() };
+    image_path_url(&path)
+}
+
+pub(crate) fn folder_image_url(root: &Path, id: &str) -> String {
+    let path = root.join(id).join(INCLUDED_FOLDER_ICON);
+    [path.clone(),path.with_extension("svg")].into_iter().find(|p|p.is_file()).map(|p|image_path_url(&p)).unwrap_or_default()
+}
+
+fn image_path_url(path: &Path) -> String {
+    let Ok(mut url) = url::Url::from_file_path(path) else { return String::new() };
     if let Some(revision) = path.metadata().ok().and_then(|metadata| metadata.modified().ok())
         .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok()) {
-        url.set_query(Some(&format!("revision={}", revision.as_nanos())));
+        url.set_query(Some(&format!("revision={}&monochrome={}", revision.as_nanos(), u8::from(monochrome(&path, revision.as_nanos())))));
     }
     url.to_string()
+}
+
+/// Cache classification by file revision; rows never parse the same SVG twice.
+fn monochrome(path: &Path, revision: u128) -> bool {
+    use std::sync::{Mutex, OnceLock};
+    static CACHE: OnceLock<Mutex<std::collections::HashMap<PathBuf, (u128, bool)>>> = OnceLock::new();
+    let mut cache = CACHE.get_or_init(Default::default).lock().unwrap_or_else(|e| e.into_inner());
+    if let Some((stamp, value)) = cache.get(path) { if *stamp == revision { return *value; } }
+    let value = path.extension().is_some_and(|ext| ext == "svg")
+        && std::fs::read(path).ok().is_some_and(|bytes| crate::svg_icon::monochrome(&bytes));
+    cache.insert(path.into(), (revision, value));
+    value
 }
 
 pub(crate) fn included(root: &Path, declared: &str) -> Option<IconImage> {

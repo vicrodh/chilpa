@@ -58,6 +58,10 @@ pub(crate) fn install(plugins_dir: &Path, package: &StagedPackage, entry: &Catal
     let _ = std::fs::remove_dir_all(&incoming);
     let _ = std::fs::remove_dir_all(&outgoing);
     copy_tree(&root, &incoming).map_err(|_| "The plugin could not be copied into place.")?;
+    if let Some(icon) = crate::plugin_icons::included(&incoming, &manifest.folder_icon) {
+        std::fs::write(incoming.join(crate::plugin_icons::INCLUDED_FOLDER_ICON).with_extension(icon.extension), icon.bytes)
+            .map_err(|_| "The folder icon could not be saved.")?;
+    }
     if let Some(icon) = crate::plugin_icons::included(&incoming, &manifest.icon) {
         std::fs::write(incoming.join(crate::plugin_icons::INCLUDED_ICON).with_extension(icon.extension), icon.bytes)
             .map_err(|_| "The plugin icon could not be installed.")?;

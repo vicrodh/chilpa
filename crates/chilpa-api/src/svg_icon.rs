@@ -23,9 +23,37 @@ pub(crate) fn validate(bytes: &[u8]) -> Result<(), String> {
     }
     Ok(())
 }
+/// Only a single neutral paint is safe to adapt without changing brand colors.
+pub(crate) fn monochrome(bytes: &[u8]) -> bool {
+    let Ok(text) = std::str::from_utf8(bytes) else { return false };
+    let Ok(document) = roxmltree::Document::parse(text) else { return false };
+    let mut paint = None;
+    for node in document.descendants().filter(|node| node.is_element()) {
+        if matches!(node.tag_name().name(), "linearGradient" | "radialGradient" | "mask") { return false; }
+        for attribute in node.attributes().filter(|a| matches!(a.name(), "fill" | "stroke" | "color")) {
+            let value = attribute.value().trim().to_ascii_lowercase();
+            if value == "none" { continue; }
+            let tone = match value.as_str() {
+                "black" | "#000" | "#000000" | "currentcolor" => 0,
+                "white" | "#fff" | "#ffffff" => 1,
+                _ => return false,
+            };
+            if paint.is_some_and(|previous| previous != tone) { return false; }
+            paint = Some(tone);
+        }
+    }
+    true
+}
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn only_flat_neutral_vectors_adapt_to_the_theme() {
+        assert!(monochrome(br##"<svg fill="none"><path stroke="#000000" d="M0 0L4 4"/></svg>"##));
+        assert!(monochrome(br##"<svg><path fill="#fff"/></svg>"##));
+        for source in [r##"<svg><path fill="#f00"/></svg>"##, r##"<svg fill="#000"><path fill="#fff"/></svg>"##,
+            r##"<svg><defs><linearGradient/></defs></svg>"##] { assert!(!monochrome(source.as_bytes())); }
+    }
     #[test]
     fn vector_paths_and_internal_gradients_are_supported_without_external_resources() {
         assert!(validate(br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 2L22 22"/><defs><linearGradient id="tone"><stop offset="0" stop-color="#fff"/></linearGradient></defs><circle r="2" fill="url(#tone)"/></svg>"##).is_ok());
