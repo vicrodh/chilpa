@@ -24,6 +24,7 @@ QtObject {
         readonly property color textPrimary: ThemeModel.color("text.primary", theme.rev)
         readonly property color textSecondary: ThemeModel.color("text.secondary", theme.rev)
         readonly property color textTertiary: ThemeModel.color("text.tertiary", theme.rev)
+        readonly property color textOnAccentMuted: ThemeModel.color("text.onAccentMuted", theme.rev)
         readonly property color textOnAccent: ThemeModel.color("text.onAccent", theme.rev)
         readonly property color strokeHairline: ThemeModel.color("stroke.hairline", theme.rev)
         readonly property color strokeFrame: ThemeModel.color("stroke.frame", theme.rev)

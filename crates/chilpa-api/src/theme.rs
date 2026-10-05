@@ -45,7 +45,7 @@ pub struct Theme {
 pub const TOKENS: &[&str] = &[
     "surface.window", "surface.sidebar", "surface.raised", "surface.panel", "surface.pane",
     "surface.player", "surface.lcd", "text.primary", "text.secondary", "text.tertiary",
-    "text.onAccent", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
+    "text.onAccent", "text.onAccentMuted", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
     "state.stripe", "fill.field", "row.playing", "row.selected", "accent", "accent.hover",
     "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
     "overlay.button", "overlay.ink", "casting",
@@ -92,6 +92,7 @@ impl Theme {
                 _ => return Err(format!("{key} is neither a color nor a derive rule")),
             }
         }
+        specs.entry("text.onAccentMuted".into()).or_insert_with(|| "derive:text.onAccent@0.82".into());
         let mut shadows = HashMap::new();
         if let Some(all) = root["shadow"].as_object() {
             for (name, layers) in all {
