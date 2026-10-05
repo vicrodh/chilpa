@@ -8,18 +8,19 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 
 Column {
     id: shelf
+    property string modelKind: "source"
     property var section: ({})
     property string selectedTag: ""
     property bool wrap: false
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
     spacing: Metrics.gap12
     visible: !!section.error || cards.albums > 0 || tracks.count > 0
-    AlbumGridModel { id: cards; kind: "source"; key: shelf.activeKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; contentRev: Library.remoteRev + Library.remoteArtRev }
+    AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.activeKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
     TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? "source" : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.activeKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev }
     SectionHeader {
         width: parent.width; title: shelf.section.title || ""
-        link: shelf.wrap ? "" : I18n.tr("See all", I18n.rev)
+        link: shelf.wrap || shelf.modelKind !== "source" ? "" : I18n.tr("See all", I18n.rev)
         onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }

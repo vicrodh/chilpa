@@ -8,10 +8,28 @@ TestCase {
     name: "SourceHeaders"; when:windowShown; visible:true; width:1100; height:800
     SourcePageHeader { id:header; width:parent.width; info:({kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}) }
     SourceShelf { id:shelf; y:header.height; width:parent.width; wrap:true; section:({title:"Releases",key:"fixture native:artist:1|albums",more:"page:2",error:"Loading"}) }
+    function init() { header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3} }
     function findText(item,text) {
         if(item.text===text) return item
         for(const child of item.children || []) { const found=findText(child,text); if(found) return found }
         return null
+    }
+    function test_radio_is_a_header_action_for_albums_and_artists() {
+        const button = findChild(header, "radioAction")
+        header.info = {kind:"album",title:"Album"}
+        verify(!button.visible)
+        header.info = {kind:"album",title:"Album",radio_id:-42}
+        verify(button.visible)
+        compare(button.tip, "Album radio")
+        waitForRendering(header)
+        mouseClick(button)
+        compare(AlbumActions.playedId, -42)
+        header.info = {kind:"artist",title:"Artist",radio_id:-43}
+        compare(button.tip, "Artist radio")
+        waitForRendering(header)
+        mouseClick(button)
+        compare(AlbumActions.playedId, -43)
+        header.info = {kind:"album",title:"Album",quality_label:"WAV 24/96",quality_tier:3}
     }
     function test_technical_quality_is_visible_before_playback() {
         const label=findText(header,"WAV 24/96")

@@ -77,6 +77,24 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
         value["art"] = json!(crate::pictures::kept(image).and_then(|path| url::Url::from_file_path(path).ok()).map(|url| url.to_string()).unwrap_or_default());
     }
 }
+// I keep navigation cards in the catalog while presenting radio as a header action.
+fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut Value, shelves: &Value, mixed_artist: bool) -> Value {
+    let radio = format!("radio:{reference}");
+    let artist = header["artist_ref"].as_str().unwrap_or_default().to_string();
+    let mut rows = Vec::new();
+    for shelf in shelves.as_array().into_iter().flatten() {
+        let items = shelf["items"].as_array();
+        if items.is_some_and(|items| items.len() == 1 && items[0]["ref"] == radio) {
+            if let Some(card) = catalog.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == radio) {
+                header["radio_id"] = json!(card.id);
+                continue;
+            }
+        }
+        if mixed_artist && !artist.is_empty() && shelf["kind"] == "album" && shelf["more"] == artist { continue; }
+        rows.push(shelf.clone());
+    }
+    json!(rows)
+}
 impl crate::Chilpa {
     pub(crate) fn append_native_section(&self, key: &str) {
         let (plugin, reference) = super::split(key);
@@ -151,7 +169,7 @@ impl crate::Chilpa {
         if card.kind == super::store::CardKind::Playlist && info["editable"] == true {
             info["entries"] = json!(self.catalog.tracks(id).unwrap_or_default().iter().map(|t| json!({"ref":t.metadata["ref"],"member":t.metadata["member"],"title":t.title,"artist":t.artist,"available":t.playable})).collect::<Vec<_>>());
         }
-        if card.kind == super::store::CardKind::Album { if let Some(document) = self.catalog.shelf(&format!("{} native:{}", card.plugin, card.identity)) { info["shelves"] = document.document["shelves"].clone(); } }
+        if card.kind == super::store::CardKind::Album { if let Some(document) = self.catalog.shelf(&format!("{} native:{}", card.plugin, card.identity)) { info["shelves"] = page_shelves(&self.catalog, &card.plugin, &card.identity, &mut info, &document.document["shelves"], true); } }
         info.to_string()
     }
     pub fn source_artist_key(&self, album: i64, path: &str) -> Option<String> {
@@ -175,6 +193,8 @@ impl crate::Chilpa {
         document["error"] = json!(self.catalog.shelf_error(&key).unwrap_or_default());
         document["cards"] = json!(shelf.cards.len());
         document["tracks"] = json!(shelf.tracks.len());
+        let shelves = document["shelves"].clone();
+        document["shelves"] = page_shelves(&self.catalog, plugin, reference, &mut document["header"], &shelves, false);
         decorate_header(&self.catalog, plugin, &mut document["header"]);
         if let Some(rows) = document["shelves"].as_array_mut() { for row in rows { decorate_header(&self.catalog, plugin, &mut row["header"]); } }
         let kind = shelf.document["items"].as_array().and_then(|items| items.first()).and_then(|item| item["kind"].as_str()).unwrap_or("album");
@@ -188,6 +208,25 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn radio_moves_to_album_and_artist_headers_without_removing_other_shelves() {
+        for reference in ["album:3", "artist:7"] {
+            let catalog = Catalog::new();
+            let mut header = json!({"ref":reference,"artist_ref":"artist:7"});
+            let shelves = json!([
+                {"id":"artist","kind":"album","more":"artist:7","items":[]},
+                {"id":"related","kind":"album","items":[]},
+                {"id":"radio","kind":"playlist","items":[{"kind":"playlist","ref":format!("radio:{reference}"),"title":"Radio"}]}
+            ]);
+            ingest_document(&catalog,"fixture",reference,&json!({"shelves":shelves}));
+            let rows = page_shelves(&catalog,"fixture",reference,&mut header,&shelves,reference.starts_with("album:"));
+            assert_eq!(rows.as_array().unwrap().len(), if reference.starts_with("album:") { 1 } else { 2 });
+            assert_eq!(rows.as_array().unwrap().last().unwrap()["id"], "related");
+            let radio = catalog.card(header["radio_id"].as_i64().unwrap()).unwrap();
+            assert_eq!(radio.identity, format!("radio:{reference}"));
+            assert_eq!(radio.kind, super::super::store::CardKind::Playlist);
+        }
+    }
     #[test]
     fn playlist_edits_invalidate_only_the_affected_sources_cards() {
         let catalog = Catalog::new();
