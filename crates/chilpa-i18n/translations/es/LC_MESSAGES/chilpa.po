@@ -533,6 +533,18 @@ msgstr "Seguir escuchando"
 msgid "Convert to PCM"
 msgstr "Convertir a PCM"
 
+msgid "Copy"
+msgstr "Copiar"
+
+msgid "Copy URL to clipboard"
+msgstr "Copiar URL al portapapeles"
+
+msgid "Copy album and artist"
+msgstr "Copiar álbum y artista"
+
+msgid "Copy full information"
+msgstr "Copiar información completa"
+
 msgid "Copy playlist"
 msgstr "Copiar playlist"
 
@@ -1484,6 +1496,9 @@ msgstr "Abrir álbum"
 msgid "Open audio CD"
 msgstr "Abrir CD de audio"
 
+msgid "Open in browser"
+msgstr "Abrir en el navegador"
+
 msgid "Open in new queue"
 msgstr "Abrir en una nueva queue"
 
@@ -1495,9 +1510,6 @@ msgstr "Abrirlo otra vez"
 
 msgid "Open its page"
 msgstr "Abrir su página"
-
-msgid "Open label"
-msgstr "Abrir sello"
 
 msgid "Open media"
 msgstr "Abrir medios"

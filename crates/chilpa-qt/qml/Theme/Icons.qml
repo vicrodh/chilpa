@@ -33,6 +33,7 @@ QtObject {
     readonly property string circleCheck: "\uea67"
     readonly property string clearAll: "\uee41"
     readonly property string columns3: "\uf6d6"
+    readonly property string copy: "\uea7a"
     readonly property string deviceDesktop: "\uea89"
     readonly property string deviceMobile: "\uea8a"
     readonly property string deviceSpeaker: "\uea8b"

@@ -533,6 +533,18 @@ msgstr ""
 msgid "Convert to PCM"
 msgstr ""
 
+msgid "Copy"
+msgstr ""
+
+msgid "Copy URL to clipboard"
+msgstr ""
+
+msgid "Copy album and artist"
+msgstr ""
+
+msgid "Copy full information"
+msgstr ""
+
 msgid "Copy playlist"
 msgstr "Copy playlist"
 
@@ -1484,6 +1496,9 @@ msgstr ""
 msgid "Open audio CD"
 msgstr "Open audio CD"
 
+msgid "Open in browser"
+msgstr ""
+
 msgid "Open in new queue"
 msgstr ""
 
@@ -1495,9 +1510,6 @@ msgstr ""
 
 msgid "Open its page"
 msgstr ""
-
-msgid "Open label"
-msgstr "Open label"
 
 msgid "Open media"
 msgstr "Open media"
