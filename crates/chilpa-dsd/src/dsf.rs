@@ -120,15 +120,9 @@ impl DsdSource for DsfReader {
         let mut channels = Vec::with_capacity(self.info.channels as usize);
         for _ in 0..self.info.channels {
             let mut block = vec![0u8; self.block_size];
-            match self.file.read_exact(&mut block) {
-                Ok(()) => {}
-                // A truncated file is not an error: what is there is what is handed over.
-                Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-                    self.remaining_per_channel = 0;
-                    return Ok(None);
-                }
-                Err(e) => return Err(DsdError::Open(e)),
-            }
+            // EOF before the declared samples are read must reach the queue
+            // as a read error, not as a successfully completed track.
+            self.file.read_exact(&mut block)?;
             block.truncate(valid);
             if self.lsb_first {
                 for b in &mut block {

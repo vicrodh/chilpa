@@ -68,6 +68,45 @@ impl AudioSink for Swallow {
 }
 
 #[test]
+fn truncated_dsd_stops_the_queue_in_every_delivery_mode() {
+    let broken = dsf("truncated", 1);
+    let next = dsf("after-truncated", 1);
+    let file = std::fs::OpenOptions::new().write(true).open(&broken).unwrap();
+    file.set_len(file.metadata().unwrap().len() - 1).unwrap();
+    for (mode, format, rate) in [
+        (DsdMode::Pcm, SampleFormat::S24In32, 88_200),
+        (DsdMode::Dop, SampleFormat::S24In32, 176_400),
+        (DsdMode::Native, SampleFormat::DsdU32Be, 88_200),
+    ] {
+        let caps = DeviceCaps {
+            sample_rates: vec![rate], formats: vec![format], channels: vec![2], probed: true,
+        };
+        let controls = Controls::new();
+        controls.dsd_mode.set(mode);
+        controls.direct_dsd.set(true);
+        let mut started = Vec::new();
+        let result = play_queue_with(
+            &SharedQueue::new(vec![broken.clone(), next.clone()]),
+            &caps,
+            Policy::AllowAnything,
+            &controls,
+            |format| Ok(Swallow(format)),
+            &mut |index, _, _| started.push(index),
+            &mut |_, _| {},
+        );
+        let results = result.expect("the queue reports the track outcome");
+        assert_eq!(results.len(), 1);
+        assert!(
+            matches!(results[0].outcome, chilpa_audio::render::Outcome::Unreadable { .. }),
+            "{mode:?}: missing audio must fail playback"
+        );
+        assert_eq!(started, [0], "{mode:?}: the next track must not hide the error");
+    }
+    std::fs::remove_file(broken).unwrap();
+    std::fs::remove_file(next).unwrap();
+}
+
+#[test]
 fn a_dsd_album_plays_past_its_first_track() {
     let tracks = [dsf("one", 1), dsf("two", 1), dsf("three", 1)];
     let opens = Arc::new(Mutex::new(0usize));
