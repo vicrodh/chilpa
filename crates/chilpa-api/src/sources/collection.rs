@@ -74,7 +74,7 @@ impl Chilpa {
         };
         c.document.presentation.extend(document.presentation);
         c.document.listing.entries.extend(document.listing.entries.into_iter().filter(|e| e.kind == EntryKind::Item && e.playable && !e.live));
-        if let Some(cursor) = document.listing.next {
+        if let Some(cursor) = document.listing.next.filter(|_| document.medium.is_empty()) {
             if c.document.listing.entries.len() > 10000 || c.cursors.len() >= 100 || !c.cursors.insert(cursor.clone()) {
                 c.loading = false;
                 c.error = chilpa_i18n::t("This collection exceeds the current page limit.");
@@ -132,6 +132,18 @@ mod tests {
         assert_eq!(snapshot["entries"].as_array().unwrap().len(), 1);
         assert_eq!(snapshot["entries"][0]["duration"], "3:00");
         assert_eq!(snapshot["entries"][0]["presentation"]["track_number"], 1);
+    }
+    #[test]
+    fn a_medium_preview_never_walks_the_whole_directory() {
+        let mut app = Chilpa::default();
+        app.sources.collection = Collection { serial: 4, action: "preview".into(), loading: true, ..Collection::default() };
+        let mut document = page();
+        document.medium = "podcasts".into();
+        document.listing.next = Some("20".into());
+        app.take_collection(4, Ok(document));
+        assert!(!app.sources.collection.loading);
+        assert!(app.sources.collection.cursors.is_empty());
+        assert_eq!(app.sources.collection.document.listing.entries.len(), 1);
     }
     #[test]
     fn preview_errors_stop_loading_and_closing_invalidates_pending_work() {

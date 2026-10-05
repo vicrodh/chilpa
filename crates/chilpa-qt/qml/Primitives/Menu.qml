@@ -1,54 +1,53 @@
 import QtQuick
-import QtQuick.Controls.Basic
+import QtQuick.Controls.Basic as Controls
 import QtQuick.Effects
 import "../Theme"
 
-// A menu of entries (design/03 Menu). Each entry is
-// { text, detail, checked, mark, hint, separator, submenu }: a separator
-// draws a line and nothing else; `mark` is a short badge ("BP") in the accent.
-// Chosen by click; closed by a click outside or Esc.
-Popup {
+// I keep original entry indices when filtering so labels never change identity.
+Controls.Popup {
     id: menu
-
-    // A click outside closes it and is nothing else: it is not also a click
-    // on what is there.
     modal: true
     dim: false
-
     property var entries: []
+    readonly property alias entryItems: list.contentItem.children
     property string title
+    property bool searchable: false
     property real heightLimit: Infinity
-    readonly property alias entryItems: column.children
     property real widthLimit: Metrics.menuMaxWidth
-
     property Item hotRow: null
     readonly property bool hovering: panelHover.hovered || !!(hotRow && hotRow.hovered)
+    readonly property var shown: entries.map((entry, index) => ({entry: entry, original: index})).filter(row => !searchable || !search.text || [row.entry.text, row.entry.detail].join(" ").toLocaleLowerCase().indexOf(search.text.toLocaleLowerCase()) >= 0)
     signal entryHovered(int index, real top)
     signal chosen(int index)
     signal submenu(int index, real top)
-
-    // As wide as its widest entry, between the design's width and a limit;
-    // past the limit an entry is cut and says the rest in a tooltip. Kept
-    // inside the window.
-    property real widest: 0
-
+    property real widest: Metrics.menuWidth
+    TextMetrics { id: textMeasure; font.pointSize: Type.body }
+    onEntriesChanged: measure()
     function measure() {
-        let w = 0
-        for (let i = 0; i < entriesRepeater.count; ++i) {
-            const item = entriesRepeater.itemAt(i)
-            if (item)
-                w = Math.max(w, item.implicitWidth)
+        let width = Metrics.menuWidth
+        for (const entry of entries) {
+            textMeasure.text = [entry.text, entry.detail, entry.mark, entry.hint].filter(Boolean).join(" ")
+            width = Math.max(width, textMeasure.width + Metrics.menuIconColumn + Metrics.gap16 * 4) // derived: icons and row padding
         }
-        widest = Math.max(w, titleLabel.implicitWidth + Metrics.gap16)
+        widest = width
     }
-
-    // The tooltip of the button that opened it would sit over its entries.
-    onAboutToShow: TipState.hide(TipState.target)
-
+    function choose(index, top) {
+        const row = shown[index]
+        if (!row || row.entry.separator || row.entry.note) return
+        if (row.entry.submenu) { submenu(row.original, top); return }
+        close()
+        chosen(row.original)
+    }
+    onAboutToShow: {
+        TipState.hide(TipState.target)
+        search.text = ""
+        list.forceLayout()
+        list.currentIndex = Math.max(0, shown.findIndex(row => row.entry.checked))
+        if (searchable) Qt.callLater(() => search.focusInput())
+    }
     padding: Metrics.gap4
     margins: Metrics.gap10
-    implicitWidth: Math.min(widthLimit, Math.max(Metrics.menuWidth, widest + padding * 2)) // derived: padding on both sides
-
+    implicitWidth: Math.min(widthLimit, widest + padding * 2) // derived: panel padding
     background: Item {
         Hold {}
         HoverHandler { id: panelHover }
@@ -76,60 +75,55 @@ Popup {
         }
     }
 
-    contentItem: Flickable {
-        id: viewport
-        implicitHeight: Math.min(column.implicitHeight, menu.heightLimit - menu.padding * 2) // derived: the useful viewport
-        contentHeight: column.implicitHeight
-        clip: true
-        boundsBehavior: Flickable.StopAtBounds
-        interactive: contentHeight > height
-        ScrollBar.vertical: ScrollBar {}
-
-        Column {
-            id: column
-            width: viewport.width
-
-            Text {
-                id: titleLabel
-                visible: menu.title !== ""
-                width: column.width
-                height: visible ? Metrics.menuItem : 0
-                leftPadding: Metrics.gap10
-                rightPadding: Metrics.gap10
-                verticalAlignment: Text.AlignVCenter
-                text: menu.title
-                elide: Text.ElideRight
-                font.pointSize: Type.small
-                font.weight: Type.semibold
-                color: Theme.color.textTertiary
-                onImplicitWidthChanged: menu.measure()
+    contentItem: Column {
+        readonly property real contentHeight: list.contentHeight
+        property alias contentY: list.contentY
+        spacing: Metrics.gap4
+        Text {
+            visible: menu.title !== ""
+            width: parent.width
+            height: Metrics.menuItem
+            leftPadding: Metrics.gap10
+            verticalAlignment: Text.AlignVCenter
+            text: menu.title
+            elide: Text.ElideRight
+            font.pointSize: Type.small
+            color: Theme.color.textTertiary
+        }
+        SearchField {
+            id: search
+            objectName: "optionSearch"
+            visible: menu.searchable
+            width: parent.width
+            placeholder: Theme.searchLabel
+            onTextChanged: list.currentIndex = 0
+            onStepped: by => { list.currentIndex = Math.max(0, Math.min(list.count - 1, list.currentIndex + by)); list.positionViewAtIndex(list.currentIndex, ListView.Contain) }
+            onAccepted: menu.choose(list.currentIndex, 0)
+            onEscaped: menu.close()
+        }
+        ListView {
+            id: list
+            width: parent.width
+            implicitHeight: Math.min(contentHeight, menu.heightLimit, (menu.Controls.Overlay.overlay ? menu.Controls.Overlay.overlay.height : Metrics.menuMaxWidth) - Metrics.fieldHeightLarge * 3) // derived: space for search and popup margins
+            model: menu.shown
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            Controls.ScrollBar.vertical: Controls.ScrollBar {}
+            delegate: MenuEntry {
+                required property int index
+                required property var modelData
+                width: list.width
+                entry: Object.assign({}, modelData.entry, {focused: menu.searchable && index === list.currentIndex})
+                onHoveredChanged: if (hovered) { menu.hotRow = this; list.currentIndex = index; menu.entryHovered(modelData.original, mapToItem(menu.contentItem, 0, 0).y) }
+                onClicked: menu.choose(index, menu.y + mapToItem(menu.contentItem, 0, 0).y)
             }
-
-            Repeater {
-                id: entriesRepeater
-                model: menu.entries
-                onItemAdded: menu.measure()
-                onItemRemoved: menu.measure()
-
-                MenuEntry {
-                    required property int index
-                    required property var modelData
-                    width: column.width
-                    entry: modelData
-                    onImplicitWidthChanged: menu.measure()
-                    onHoveredChanged: if (hovered) { menu.hotRow = this; menu.entryHovered(index, y - viewport.contentY) }
-                    // Closed before it says what was chosen: what it says can
-                    // rebuild the view the menu lives in.
-                    onClicked: {
-                        if (modelData.submenu) {
-                            menu.submenu(index, menu.y + y - viewport.contentY)
-                            return
-                        }
-                        menu.close()
-                        menu.chosen(index)
-                    }
-                }
-            }
+        }
+        Text {
+            visible: menu.searchable && list.count === 0
+            text: Theme.emptySearchLabel
+            color: Theme.color.textSecondary
+            font.pointSize: Type.body
+            padding: Metrics.gap10
         }
     }
 }

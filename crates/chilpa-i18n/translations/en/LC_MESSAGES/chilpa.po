@@ -52,7 +52,13 @@ msgstr ""
 msgid "(unreadable manifest)"
 msgstr ""
 
+msgid "1. Origin"
+msgstr ""
+
 msgid "16 bit"
+msgstr ""
+
+msgid "2. Destinations"
 msgstr ""
 
 msgid "24 bit in 3 bytes"
@@ -61,10 +67,16 @@ msgstr ""
 msgid "24 bit in 32"
 msgstr ""
 
+msgid "3. Review"
+msgstr ""
+
 msgid "32 bit"
 msgstr ""
 
 msgid "32 bit float"
+msgstr ""
+
+msgid "4. Summary"
 msgstr ""
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
@@ -142,6 +154,9 @@ msgstr ""
 msgid "Added this month"
 msgstr ""
 
+msgid "Adding tracks…"
+msgstr "Adding tracks…"
+
 msgid "Add…"
 msgstr ""
 
@@ -181,7 +196,13 @@ msgstr ""
 msgid "All categories"
 msgstr "All categories"
 
+msgid "All episode types"
+msgstr ""
+
 msgid "All music"
+msgstr ""
+
+msgid "All seasons"
 msgstr ""
 
 msgid "All sources"
@@ -215,6 +236,9 @@ msgstr ""
 
 msgid "Analyzing {} of {} tracks"
 msgstr ""
+
+msgid "Any source — best quality (local mixed playlist)"
+msgstr "Any source — best quality (local mixed playlist)"
 
 msgid "Appearance"
 msgstr ""
@@ -267,6 +291,9 @@ msgstr ""
 msgid "Audio stack"
 msgstr ""
 
+msgid "Author: {}"
+msgstr "Author: {}"
+
 msgid "AutoMix"
 msgstr ""
 
@@ -286,6 +313,9 @@ msgid "Between tracks"
 msgstr ""
 
 msgid "Bit perfect"
+msgstr ""
+
+msgid "Bonus"
 msgstr ""
 
 msgid "Booklet"
@@ -336,7 +366,16 @@ msgstr ""
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr ""
 
+msgid "Catalog error"
+msgstr "Catalog error"
+
 msgid "Catalog number"
+msgstr ""
+
+msgid "Categories"
+msgstr ""
+
+msgid "Chapters"
 msgstr ""
 
 msgid "Checking the account…"
@@ -372,11 +411,17 @@ msgstr ""
 msgid "Choose device"
 msgstr ""
 
+msgid "Choose file…"
+msgstr "Choose file…"
+
 msgid "Choose image"
 msgstr ""
 
 msgid "Choose playlist artwork"
 msgstr ""
+
+msgid "Choose playlist file"
+msgstr "Choose playlist file"
 
 msgid "Choose plugin icon"
 msgstr ""
@@ -473,6 +518,9 @@ msgstr ""
 msgid "Convert to PCM"
 msgstr ""
 
+msgid "Copy playlist"
+msgstr "Copy playlist"
+
 msgid "CoreAudio reports no device that can play"
 msgstr ""
 
@@ -480,6 +528,9 @@ msgid "Could not add tracks to this playlist."
 msgstr ""
 
 msgid "Could not create the playlist. Please try again."
+msgstr ""
+
+msgid "Could not move the playlist."
 msgstr ""
 
 msgid "Could not save the folder. Please try again."
@@ -491,10 +542,10 @@ msgstr ""
 msgid "Counting tracks…"
 msgstr ""
 
-msgid "Cover collage"
+msgid "Countries"
 msgstr ""
 
-msgid "Create"
+msgid "Cover collage"
 msgstr ""
 
 msgid "Create and add"
@@ -505,6 +556,12 @@ msgstr ""
 
 msgid "Create playlist"
 msgstr ""
+
+msgid "Create playlists"
+msgstr "Create playlists"
+
+msgid "Creating playlists…"
+msgstr "Creating playlists…"
 
 msgid "Custom"
 msgstr ""
@@ -572,6 +629,12 @@ msgstr ""
 msgid "Delete"
 msgstr ""
 
+msgid "Delete folder"
+msgstr "Delete folder"
+
+msgid "Delete folder…"
+msgstr "Delete folder…"
+
 msgid "Delete playlist"
 msgstr ""
 
@@ -586,6 +649,12 @@ msgstr ""
 
 msgid "Description"
 msgstr ""
+
+msgid "Description not provided yet."
+msgstr "Description not provided yet."
+
+msgid "Destinations"
+msgstr "Destinations"
 
 msgid "Device"
 msgstr ""
@@ -662,6 +731,9 @@ msgstr ""
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr ""
 
+msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
+msgstr "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
+
 msgid "Earlier tabs"
 msgstr ""
 
@@ -689,6 +761,12 @@ msgstr ""
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
+msgid "Episode notes"
+msgstr ""
+
+msgid "Errors"
+msgstr "Errors"
+
 msgid "Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."
 msgstr ""
 
@@ -708,6 +786,9 @@ msgid "Exclusive mode"
 msgstr ""
 
 msgid "Expand"
+msgstr ""
+
+msgid "Explore"
 msgstr ""
 
 msgid "Extra controls"
@@ -742,6 +823,15 @@ msgstr ""
 
 msgid "Find covers"
 msgstr ""
+
+msgid "Find matches"
+msgstr "Find matches"
+
+msgid "Find playlists"
+msgstr "Find playlists"
+
+msgid "Finding matches…"
+msgstr "Finding matches…"
 
 msgid "Finish selecting"
 msgstr ""
@@ -783,6 +873,12 @@ msgid "Full"
 msgstr ""
 
 msgid "Full atmosphere, artwork colors only, or no derived background."
+msgstr ""
+
+msgid "Full details"
+msgstr ""
+
+msgid "Full episodes"
 msgstr ""
 
 msgid "Gapless"
@@ -833,6 +929,9 @@ msgstr ""
 msgid "Hide the columns"
 msgstr ""
 
+msgid "Hide token"
+msgstr "Hide token"
+
 msgid "Hide when idle"
 msgstr ""
 
@@ -872,6 +971,18 @@ msgstr ""
 msgid "Icon"
 msgstr ""
 
+msgid "Import cancelled"
+msgstr "Import cancelled"
+
+msgid "Import complete"
+msgstr "Import complete"
+
+msgid "Import playlist"
+msgstr "Import playlist"
+
+msgid "In progress"
+msgstr ""
+
 msgid "Include source albums in Albums"
 msgstr "Include source albums in Albums"
 
@@ -898,6 +1009,9 @@ msgstr "Inspection passed"
 
 msgid "Install"
 msgstr ""
+
+msgid "Install and enable a playlist importer in Settings → Plugins."
+msgstr "Install and enable a playlist importer in Settings → Plugins."
 
 msgid "Install from ZIP…"
 msgstr ""
@@ -968,7 +1082,13 @@ msgstr ""
 msgid "List"
 msgstr ""
 
+msgid "Listen live"
+msgstr ""
+
 msgid "Live"
+msgstr ""
+
+msgid "Load more"
 msgstr ""
 
 msgid "Loading the release…"
@@ -980,7 +1100,25 @@ msgstr ""
 msgid "Local"
 msgstr ""
 
+msgid "Local folders organize this sidebar. Native folders are saved in your service account."
+msgstr ""
+
 msgid "Local library"
+msgstr ""
+
+msgid "Local only"
+msgstr "Local only"
+
+msgid "Local — Chilpa"
+msgstr ""
+
+msgid "Local — No folder"
+msgstr ""
+
+msgid "Local — supports mixed sources"
+msgstr "Local — supports mixed sources"
+
+msgid "Local — {}"
 msgstr ""
 
 msgid "Look"
@@ -1019,6 +1157,12 @@ msgstr ""
 msgid "Mark as heard"
 msgstr ""
 
+msgid "Mark as unplayed"
+msgstr ""
+
+msgid "Matched"
+msgstr "Matched"
+
 msgid "Maximize"
 msgstr ""
 
@@ -1041,7 +1185,7 @@ msgid "Missing"
 msgstr ""
 
 msgid "Mixed"
-msgstr ""
+msgstr "Mixed"
 
 msgid "More"
 msgstr ""
@@ -1052,7 +1196,16 @@ msgstr ""
 msgid "Most played"
 msgstr ""
 
+msgid "Move"
+msgstr ""
+
 msgid "Move down"
+msgstr ""
+
+msgid "Move to folder"
+msgstr "Move to folder"
+
+msgid "Move to folder…"
 msgstr ""
 
 msgid "Move to root"
@@ -1088,6 +1241,9 @@ msgstr ""
 msgid "My library"
 msgstr ""
 
+msgid "My stations"
+msgstr ""
+
 msgid "Name"
 msgstr ""
 
@@ -1095,6 +1251,15 @@ msgid "Native DSD"
 msgstr ""
 
 msgid "Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."
+msgstr ""
+
+msgid "Native — {}"
+msgstr ""
+
+msgid "Native — {} — No folder"
+msgstr ""
+
+msgid "Native — {} — {}"
 msgstr ""
 
 msgid "Navigation"
@@ -1111,6 +1276,9 @@ msgstr ""
 
 msgid "New folder"
 msgstr ""
+
+msgid "New import"
+msgstr "New import"
 
 msgid "New playlist"
 msgstr ""
@@ -1133,11 +1301,17 @@ msgstr ""
 msgid "Next page"
 msgstr ""
 
+msgid "No compatible playlists. Create one to get started."
+msgstr "No compatible playlists. Create one to get started."
+
 msgid "No cover"
 msgstr ""
 
 msgid "No devices found"
 msgstr ""
+
+msgid "No folder"
+msgstr "No folder"
 
 msgid "No folders in your local library yet."
 msgstr ""
@@ -1151,6 +1325,9 @@ msgstr ""
 msgid "No lyrics for this track."
 msgstr ""
 
+msgid "No matches"
+msgstr "No matches"
+
 msgid "No matching plugins"
 msgstr "No matching plugins"
 
@@ -1160,13 +1337,10 @@ msgstr ""
 msgid "No playlists yet."
 msgstr ""
 
-msgid "No playlists yet. Create one to get started."
-msgstr ""
-
 msgid "No plugins installed"
 msgstr ""
 
-msgid "No tracks in your local library yet."
+msgid "No tracks in the selected libraries yet."
 msgstr ""
 
 msgid "No tracks match your search."
@@ -1192,6 +1366,9 @@ msgstr "Not inspected"
 
 msgid "Not rated"
 msgstr ""
+
+msgid "Not specified"
+msgstr "Not specified"
 
 msgid "Not through this stack: it mixes by design."
 msgstr ""
@@ -1232,6 +1409,9 @@ msgstr ""
 msgid "Oldest first"
 msgstr ""
 
+msgid "On air"
+msgstr ""
+
 msgid "On the sidebar's destinations."
 msgstr ""
 
@@ -1240,6 +1420,9 @@ msgstr ""
 
 msgid "One track straight into the next. Off, the device plays out and opens again."
 msgstr ""
+
+msgid "Only tracks from this source"
+msgstr "Only tracks from this source"
 
 msgid "Only with exclusive mode on."
 msgstr ""
@@ -1280,6 +1463,9 @@ msgstr ""
 msgid "Open its page"
 msgstr ""
 
+msgid "Open playlist"
+msgstr "Open playlist"
+
 msgid "Open plex.tv/link"
 msgstr ""
 
@@ -1288,6 +1474,9 @@ msgstr ""
 
 msgid "Opens the device and says which formats reach it untouched."
 msgstr ""
+
+msgid "Optional access token for private playlists"
+msgstr "Optional access token for private playlists"
 
 msgid "Original bytes"
 msgstr ""
@@ -1325,10 +1514,10 @@ msgstr ""
 msgid "Paused"
 msgstr ""
 
-msgid "Performers"
+msgid "Pending"
 msgstr ""
 
-msgid "Pin"
+msgid "Performers"
 msgstr ""
 
 msgid "PipeWire has no output called \"{}\" any more"
@@ -1391,8 +1580,20 @@ msgstr ""
 msgid "Playlist name"
 msgstr ""
 
+msgid "Playlist options"
+msgstr "Playlist options"
+
+msgid "Playlist origin"
+msgstr "Playlist origin"
+
+msgid "Playlist preview"
+msgstr "Playlist preview"
+
 msgid "Playlists"
 msgstr ""
+
+msgid "Playlists will be kept at the root."
+msgstr "Playlists will be kept at the root."
 
 msgid "Plays"
 msgstr ""
@@ -1412,6 +1613,9 @@ msgstr "Plugin-reported quality"
 msgid "Plugins"
 msgstr ""
 
+msgid "Position in Streaming"
+msgstr "Position in Streaming"
+
 msgid "Previous"
 msgstr ""
 
@@ -1421,6 +1625,12 @@ msgstr ""
 msgid "Provider identifiers"
 msgstr ""
 
+msgid "Public playlist"
+msgstr "Public playlist"
+
+msgid "Public remote playlists"
+msgstr "Public remote playlists"
+
 msgid "Purchases"
 msgstr ""
 
@@ -1429,6 +1639,9 @@ msgstr ""
 
 msgid "Quality"
 msgstr ""
+
+msgid "Quality unknown"
+msgstr "Quality unknown"
 
 msgid "Quality, format and source filters"
 msgstr ""
@@ -1481,11 +1694,23 @@ msgstr ""
 msgid "Reactivate"
 msgstr ""
 
+msgid "Read a playlist, choose destinations, review matches, then create your playlists."
+msgstr "Read a playlist, choose destinations, review matches, then create your playlists."
+
+msgid "Read less"
+msgstr ""
+
 msgid "Read more"
 msgstr ""
 
+msgid "Read playlist"
+msgstr "Read playlist"
+
 msgid "Reading it from {}…"
 msgstr ""
+
+msgid "Reading playlist…"
+msgstr "Reading playlist…"
 
 msgid "Reading the files…"
 msgstr ""
@@ -1498,6 +1723,9 @@ msgstr ""
 
 msgid "Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."
 msgstr ""
+
+msgid "Ready to review"
+msgstr "Ready to review"
 
 msgid "Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."
 msgstr ""
@@ -1607,6 +1835,12 @@ msgstr ""
 msgid "Restore tabs"
 msgstr ""
 
+msgid "Resume"
+msgstr ""
+
+msgid "Reverse order"
+msgstr "Reverse order"
+
 msgid "Revert"
 msgstr ""
 
@@ -1635,6 +1869,9 @@ msgid "Save"
 msgstr ""
 
 msgid "Save as playlist"
+msgstr ""
+
+msgid "Save stations to find them here."
 msgstr ""
 
 msgid "Save to"
@@ -1683,6 +1920,18 @@ msgid "Search plugins"
 msgstr "Search plugins"
 
 msgid "Search queue"
+msgstr ""
+
+msgid "Search results"
+msgstr ""
+
+msgid "Search shows"
+msgstr ""
+
+msgid "Search stations by name"
+msgstr ""
+
+msgid "Search these episodes"
 msgstr ""
 
 msgid "Searching for devices…"
@@ -1741,7 +1990,10 @@ msgstr ""
 msgid "Show in sidebar"
 msgstr ""
 
-msgid "Show less"
+msgid "Show saved releases in Albums"
+msgstr "Show saved releases in Albums"
+
+msgid "Show saved tracks in Tracks"
 msgstr ""
 
 msgid "Show the columns"
@@ -1749,6 +2001,9 @@ msgstr ""
 
 msgid "Show the sidebar"
 msgstr ""
+
+msgid "Show token"
+msgstr "Show token"
 
 msgid "Shuffle"
 msgstr ""
@@ -1786,6 +2041,9 @@ msgstr ""
 msgid "Starting {}…"
 msgstr ""
 
+msgid "Stations"
+msgstr ""
+
 msgid "Status"
 msgstr ""
 
@@ -1798,10 +2056,25 @@ msgstr ""
 msgid "Streaming"
 msgstr "Streaming"
 
+msgid "Streaming libraries"
+msgstr "Streaming libraries"
+
 msgid "Studio 24/48"
 msgstr ""
 
 msgid "Stumbling"
+msgstr ""
+
+msgid "Subscribe"
+msgstr ""
+
+msgid "Subscribe to a show to find it here."
+msgstr ""
+
+msgid "Subscribed"
+msgstr ""
+
+msgid "Subscriptions"
 msgstr ""
 
 msgid "Sync now"
@@ -1860,6 +2133,9 @@ msgstr ""
 msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr ""
 
+msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
+msgstr "The playlist was created, but some tracks could not be added. Open it before retrying."
+
 msgid "The plugin ZIP could not be opened."
 msgstr ""
 
@@ -1896,7 +2172,13 @@ msgstr ""
 msgid "The service's answer is missing."
 msgstr ""
 
+msgid "The source disconnected. Check the playlist before retrying."
+msgstr "The source disconnected. Check the playlist before retrying."
+
 msgid "Theme"
+msgstr ""
+
+msgid "This chapter format is not supported."
 msgstr ""
 
 msgid "This collection exceeds the current page limit."
@@ -1909,6 +2191,9 @@ msgid "This direct output has no hardware volume control. Use the DAC or amplifi
 msgstr ""
 
 msgid "This entry is no longer at hand. Open it again from its source."
+msgstr ""
+
+msgid "This episode material could not be loaded."
 msgstr ""
 
 msgid "This folder has no tracks."
@@ -1941,7 +2226,13 @@ msgstr ""
 msgid "This section is not built yet."
 msgstr ""
 
+msgid "This source cannot accept these tracks right now."
+msgstr "This source cannot accept these tracks right now."
+
 msgid "This source owns the order."
+msgstr ""
+
+msgid "This transcript format is not supported."
 msgstr ""
 
 msgid "This update asks for additional access."
@@ -1983,13 +2274,25 @@ msgstr ""
 msgid "Track lists"
 msgstr ""
 
+msgid "Track review"
+msgstr "Track review"
+
 msgid "Track {}"
 msgstr ""
 
 msgid "Tracks"
 msgstr ""
 
+msgid "Trailers"
+msgstr ""
+
+msgid "Transcript"
+msgstr ""
+
 msgid "Tree"
+msgstr ""
+
+msgid "Trending shows"
 msgstr ""
 
 msgid "Try again"
@@ -2019,10 +2322,13 @@ msgstr ""
 msgid "Unknown quality"
 msgstr ""
 
+msgid "Unmatched"
+msgstr "Unmatched"
+
 msgid "Unmute"
 msgstr ""
 
-msgid "Unpin"
+msgid "Unplayed"
 msgstr ""
 
 msgid "Up next"
@@ -2045,6 +2351,9 @@ msgstr ""
 
 msgid "Valid"
 msgstr "Valid"
+
+msgid "Version: {}"
+msgstr "Version: {}"
 
 msgid "Volume {}%"
 msgstr ""
@@ -2101,6 +2410,9 @@ msgid "Year (oldest)"
 msgstr ""
 
 msgid "Your account reaches more than one server. Which one?"
+msgstr ""
+
+msgid "Your shows"
 msgstr ""
 
 msgid "a DASH manifest, which Chilpa cannot read yet"
@@ -2225,6 +2537,9 @@ msgstr ""
 
 msgid "could not: {}"
 msgstr ""
+
+msgid "create playlists in destinations you select for an import"
+msgstr "create playlists in destinations you select for an import"
 
 msgid "damaged DSD file: {}"
 msgstr ""
@@ -2480,6 +2795,9 @@ msgstr ""
 
 msgid "reach the internet, only {}"
 msgstr ""
+
+msgid "read catalogs from other enabled plugins, without accessing their credentials"
+msgstr "read catalogs from other enabled plugins, without accessing their credentials"
 
 msgid "read your library, without being able to change it"
 msgstr ""
@@ -2870,6 +3188,9 @@ msgstr ""
 
 msgid "the plugin sandbox is not started"
 msgstr ""
+
+msgid "the queue is empty"
+msgstr "the queue is empty"
 
 msgid "the rates PipeWire's graph may run at could not be read, so nothing can be promised untouched"
 msgstr ""
@@ -3313,6 +3634,9 @@ msgstr ""
 
 msgid "{} was written and does not say what it should in \"{}\"; nothing was replaced"
 msgstr ""
+
+msgid "{} written · {} unmatched · {} duplicates"
+msgstr "{} written · {} unmatched · {} duplicates"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr ""

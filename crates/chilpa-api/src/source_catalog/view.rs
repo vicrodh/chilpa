@@ -53,6 +53,7 @@ impl Chilpa {
             label: if name.is_empty() { plugin.to_string() } else { name },
             icon: crate::plugin_icons::image_url(&Self::plugins_dir(), plugin),
             local: false,
+            contain_art: false,
         }
     }
 
@@ -174,6 +175,8 @@ impl Chilpa {
         let title = named.map(|s| s.title.clone()).filter(|t| !t.is_empty()).unwrap_or(shelf.title.clone());
         serde_json::json!({
             "music": music,
+            "plugin": plugin,
+            "playlist_edit": section_name == "playlists" && self.natives.edits_playlists(plugin),
             "name": name,
             "title": title,
             "loading": self.catalog.loading(&shelf_key),
@@ -281,6 +284,7 @@ impl Chilpa {
     /// its tracks are not there.
     pub(crate) fn source_album_info(&mut self, id: i64) -> String {
         let Some(card) = self.catalog.card(id) else { return String::new() };
+        if card.metadata["available"] == false { return chilpa_i18n::t("This record cannot be played now."); }
         if let Some(error) = self.catalog.card_error(id).filter(|_| card.tracks.is_none()) {
             return error;
         }
@@ -310,7 +314,7 @@ impl Chilpa {
     }
 
     pub(crate) fn source_album_sources(&mut self, id: i64) -> Vec<AlbumSource> {
-        self.catalog.card(id).map(|c| vec![self.source_of(&c.plugin)]).unwrap_or_default()
+        self.catalog.card(id).map(|c| { let mut source = self.source_of(&c.plugin); source.contain_art = c.metadata["art_fit"] == "contain"; vec![source] }).unwrap_or_default()
     }
 
     /// A queue entry of a source the catalog knows, as a row.

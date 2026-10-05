@@ -21,6 +21,7 @@ Row {
     visible: key !== "" && key !== "0"
 
     IconButton {
+        visible: marks.kind === "artist" || Number(marks.key) > 0
         round: true
         glyph: marks.favorite ? Icons.heartFilled : Icons.heart
         filled: marks.favorite
@@ -31,7 +32,7 @@ Row {
         onClicked: Ratings.setFavorite(marks.kind, marks.key, !marks.favorite)
     }
     RatingButton {
-        visible: marks.rates && target > 0
+        visible: marks.rates && Number.isFinite(target) && target !== 0
         kind: marks.kind
         target: marks.rates ? Number(marks.key) : 0
         contrasted: marks.contrasted

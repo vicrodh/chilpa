@@ -31,6 +31,9 @@ mod metadata;
 pub mod navigation;
 mod outputs;
 mod playlists;
+mod playlist_sources;
+mod plugin_broker;
+mod playlist_import;
 mod pictures;
 mod plugins;
 mod plugin_startup;
@@ -45,6 +48,7 @@ mod plugin_inspection;
 pub use plugin_inspection::PluginInspection;
 mod plugin_installation;
 mod plugin_icons;
+mod plugin_sidebar;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;
@@ -602,6 +606,7 @@ pub struct Chilpa {
     search: search::SearchState,
     /// Where the window stands in a source that is browsed.
     sources: sources::SourcesState,
+    playlist_import: playlist_import::State,
     /// The records, lists and tracks of sources, as the library's own.
     catalog: std::sync::Arc<source_catalog::Catalog>,
     /// The account being connected, between the browser opening and the
@@ -692,6 +697,7 @@ impl Chilpa {
             player: None,
             search: search::SearchState::default(),
             sources: sources::SourcesState::default(),
+            playlist_import: playlist_import::State::default(),
             catalog: source_catalog::Catalog::new(),
             connecting: None,
             now: NowPlaying::default(),

@@ -34,6 +34,7 @@ QtObject {
     readonly property int modalInset: 20
     readonly property int modalInsets: 40
     readonly property int gap22: 22
+    readonly property int gap24: 24
 
     // Radii.
     readonly property int radiusPanel: 12
@@ -176,6 +177,7 @@ QtObject {
     readonly property int colIndexRich: 32
     readonly property int colArt: 52
     readonly property int artRow: 40
+    readonly property int colSource: 56
     readonly property int colQualityCompact: 96
     readonly property int colQualityRich: 118
     readonly property int colRating: 82
@@ -252,7 +254,7 @@ QtObject {
     readonly property int crumbHeight: 22
 
     // The search flyout (design/02 8, design/03 SearchFlyout).
-    readonly property int searchFlyout: 600
+    readonly property int searchFlyout: 680
     // The player's options (the player bar's switches).
     readonly property int playbackOptionsWidth: 320
     readonly property int optionRow: 44

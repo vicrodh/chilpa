@@ -57,6 +57,12 @@ impl Chilpa {
             self.natives = plugins.natives.clone();
             self.plugins = Some(Arc::new(Mutex::new(plugins)));
             self.install_openers();
+            for id in self.natives.ids() {
+                if self.natives.library_kinds(&id).iter().any(|kind| kind == "playlists") {
+                    self.catalog.retry(&format!("{id} section:playlists"));
+                }
+            }
+            self.mark_library_changed();
         } else { self.now.error = "The plugin host could not start.".into(); }
     }
 }
@@ -84,4 +90,18 @@ mod tests {
         }
         assert!(startup.pending.is_none());
     }
+    #[test]
+    fn startup_completion_invalidates_the_sidebar_without_playback() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut api = Chilpa::new();
+        api.now = Default::default();
+        api.library_changed();
+        let (tx, rx) = mpsc::channel();
+        api.plugin_startup.pending = Some(rx);
+        tx.send(Plugins::new(directory.path().into())).unwrap();
+        api.advance_plugins();
+        assert!(api.library_changed());
+        assert!(!api.now.playing);
+    }
+
 }

@@ -15,6 +15,11 @@
 //! survives the plugin being reinstalled and lists with the network down.
 
 mod collection;
+mod navigation;
+mod view;
+mod extras;
+#[cfg(test)]
+mod progress_tests;
 
 use crate::source_opener::{entry_of, of_plugin};
 use crate::Chilpa;
@@ -86,7 +91,8 @@ struct Sounding {
 
 /// What a thread asking a plugin brings back.
 enum Answer {
-    Native { source: String, result: Result<serde_json::Value, String> },
+    Extra { generation: u64, id: String, kind: String, result: Result<serde_json::Value, String> },
+    Native { source: String, serial: u64, request: serde_json::Value, result: Result<serde_json::Value, String> },
     Cover { generation: u64, path: String },
     Collection { serial: u64, result: Result<SourceDocument, String> },
     Library { generation: u64, result: Result<SourceDocument, String> },
@@ -102,6 +108,8 @@ enum Answer {
 
 /// Where the window stands in a source, and what it sees there.
 pub(crate) struct SourcesState {
+    pub(crate) native_actions: BTreeMap<String, serde_json::Value>,
+    native_action_serial: u64,
     collection: collection::Collection,
     panels: Vec<Panel>,
     pub(crate) layouts: BTreeMap<String, crate::source_layout::Layout>,
@@ -127,6 +135,10 @@ pub(crate) struct SourcesState {
     title: String,
     entries: Vec<Entry>,
     presentation: BTreeMap<String, Presentation>,
+    medium: String,
+    media_kinds: BTreeMap<String,String>,
+    media_tab: String,
+    attribution: String,
     music: bool,
     sections: Vec<serde_json::Value>,
     section_entries: HashMap<String, Entry>,
@@ -142,12 +154,16 @@ pub(crate) struct SourcesState {
     error: String,
     /// The ids saved from the current source.
     saved: HashSet<String>,
+    saved_cards: Vec<Entry>,
+    extras: serde_json::Value,
+    on_air_history: Vec<serde_json::Value>,
     /// What the listener started or finished from the current source.
     heard: HashMap<String, Heard>,
     /// The entry a page of its own is showing, and whose it is.
     detail: Option<(String, Entry)>,
     /// When the place in what plays was last written down.
     kept_at: Option<Instant>,
+    progress_writer: Option<chilpa_library::store::progress_writer::ProgressWriter>,
     /// True once the last run's station was looked for.
     looked_back: bool,
     /// The servers' opener, for the one opener the player holds.
@@ -170,6 +186,8 @@ impl Default for SourcesState {
     fn default() -> Self {
         let (tx, rx) = mpsc::channel();
         Self {
+            native_actions: BTreeMap::new(),
+            native_action_serial: 0,
             collection: collection::Collection::default(),
             panels: Vec::new(),
             layouts: BTreeMap::new(),
@@ -185,6 +203,10 @@ impl Default for SourcesState {
             title: String::new(),
             entries: Vec::new(),
             presentation: BTreeMap::new(),
+            medium: String::new(),
+            media_kinds: BTreeMap::new(),
+            media_tab: "home".into(),
+            attribution: String::new(),
             music: false,
             sections: Vec::new(),
             section_entries: HashMap::new(),
@@ -199,9 +221,13 @@ impl Default for SourcesState {
             loading: false,
             error: String::new(),
             saved: HashSet::new(),
+            saved_cards: Vec::new(),
+            extras: serde_json::Value::Null,
+            on_air_history: Vec::new(),
             heard: HashMap::new(),
             detail: None,
             kept_at: None,
+            progress_writer: None,
             looked_back: false,
             servers_opener: None,
             openers: None,
@@ -292,7 +318,7 @@ impl Chilpa {
                     let music = worker || layout.is_some();
                     self.catalog.remember_drawn(&id, music);
                     self.catalog.remember_name(&id, &name);
-                    let children = if let Some(layout) = layout {
+                    let children = if let Some(children) = self.sources.media_kinds.get(&id).and_then(|medium| navigation::media_children(medium)) { children } else if let Some(layout) = layout {
                         // Discover is the source's own page; the rest are its sections.
                         layout.ordered().into_iter().filter(|(_, section)| section.under.is_empty()).map(|(key, section)| PanelChild { id: format!("view:{key}"), title: section.title.clone(), icon: section.icon.clone(),
                             route: if key == "discover" { id.clone() } else { format!("{id} section:{key}") } }).collect()
@@ -303,6 +329,8 @@ impl Chilpa {
                     Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, children }
                 }).collect();
         }
+        let order = crate::plugin_sidebar::ordered(&Self::plugins_dir(),self.sources.panels.iter().map(|p|p.id.clone()).collect());
+        self.sources.panels.sort_by_key(|p|order.iter().position(|id|id==&p.id).unwrap_or(usize::MAX));
         self.sources.panels.clone()
     }
 
@@ -313,6 +341,8 @@ impl Chilpa {
         state.panels.clear();
         state.entries.clear();
         state.presentation.clear();
+        state.medium.clear();
+        state.attribution.clear();
         state.trail.clear();
         state.current.clear();
         state.detail = None;
@@ -416,6 +446,7 @@ impl Chilpa {
             card["description"] = entry.description.clone().into();
             card["metadata_loading"] = s.metadata_loading.into();
             card["facts"] = serde_json::json!(entry.facts);
+            card["extras"] = if s.extras["id"] == entry.id { s.extras.clone() } else { serde_json::Value::Null };
             // On a station the title is the song it is playing right now.
             let song = if entry.live && sounds(source, &entry.id) && self.now.title != entry.title {
                 self.now.title.clone()
@@ -426,7 +457,16 @@ impl Chilpa {
             card["art"] = if sounds(source, &entry.id) { self.now.artwork_path.clone() } else { String::new() }.into();
             card
         });
-        serde_json::json!({
+        let playing_entry = s.sounding.as_ref().filter(|sound| sound.url == self.now.path).map(|sound| (sound.source.clone(), sound.entry.clone()))
+            .or_else(|| of_plugin(&self.now.path).and_then(|(source, id)| self.entry_by_id(&id).filter(|(owner, _)| *owner == source)));
+        let context = playing_entry.map(|(source, entry)| {
+            let mut value = self.entry_json(&source, &entry, self.now.playing);
+            value["description"] = entry.description.into();
+            value["song"] = self.now.title.clone().into();
+            value["extras"] = if s.extras["id"] == entry.id { s.extras.clone() } else { serde_json::Value::Null };
+            value
+        });
+        let mut document = serde_json::json!({
             "collection": self.collection_json(),
             "releases": s.trail.last().is_some_and(|crumb| crumb.id == "view:library"),
             "home": s.trail.is_empty() && s.music,
@@ -439,15 +479,21 @@ impl Chilpa {
             "importing": s.importing,
             "imported": s.imported,
             "music": s.music,
-            "navigation_id": s.trail.last().map(|crumb| crumb.id.as_str()).unwrap_or_default(),
+            "medium": s.medium,
+            "attribution": s.attribution,
+            "navigation_id": if s.medium.is_empty() { s.trail.last().map(|crumb| crumb.id.clone()).unwrap_or_default() } else { format!("media:{}",s.media_tab) },
+            "media_tab": s.media_tab,
             "name": self.source_name(&s.current),
             "title": s.title,
             "crumbs": crumbs,
             "columns": columns,
             "explorer": explorer,
             "shortcuts": shortcuts,
+            "saved_entries": s.saved_cards.iter().map(|entry| self.entry_json(&s.current, entry, sounds(&s.current, &entry.id))).collect::<Vec<_>>(),
+            "continue_entries": s.heard.values().filter(|entry| !entry.played && entry.position_ms > 0).cloned().map(from_heard).map(|entry| self.entry_json(&s.current, &entry, sounds(&s.current, &entry.id))).collect::<Vec<_>>(),
             "entries": entries,
             "searchable": !s.search_id.is_empty(),
+            "native_actions": s.native_actions,
             "text": s.text,
             "filter": s.filter,
             "total": s.entries.len(),
@@ -473,60 +519,10 @@ impl Chilpa {
                 .or_else(|| of_plugin(&self.now.path).map(|(plugin, entry)| format!("{plugin} {entry}")))
                 .unwrap_or_default(),
             "detail": detail,
-        })
-        .to_string()
-    }
-
-    /// One entry as the window draws it.
-    fn entry_json(&self, source: &str, e: &Entry, sounding: bool) -> serde_json::Value {
-        let s = &self.sources;
-        let finite = e.kind == EntryKind::Item && !e.live;
-        let heard = s.heard.get(&e.id).filter(|_| source == s.current);
-        let length = heard.map(|h| h.duration_ms).filter(|d| *d > 0).unwrap_or(e.duration_ms);
-        let progress = match heard {
-            Some(h) if h.played => 1.0,
-            Some(h) if length > 0 => (h.position_ms as f64 / length as f64).clamp(0.0, 1.0),
-            _ => 0.0,
-        };
-        let mut meta: Vec<String> = Vec::new();
-        if let Some(day) = e.published_at.and_then(crate::format::day) {
-            meta.push(day);
-        }
-        if finite && length > 0 {
-            meta.push(crate::format::clock(length));
-        }
-        let quality = s.presentation.get(&e.id).filter(|_| source == s.current)
-            .map(|value| value.advertised_quality.label()).unwrap_or_default();
-        serde_json::json!({
-            "id": e.id,
-            "key": format!("{source} {}", e.id),
-            "title": e.title,
-            "subtitle": e.subtitle,
-            "image": e.image_url.clone().unwrap_or_default(),
-            "kind": kind_name(e.kind),
-            "presentation": if source == s.current { s.presentation.get(&e.id) } else { None },
-            "duration_ms": e.duration_ms,
-            "duration": if e.duration_ms > 0 { crate::format::clock(e.duration_ms) } else { String::new() },
-            "quality_label": if quality.is_empty() { quality } else {
-                format!("{}: {quality}", chilpa_i18n::t("Plugin-reported quality"))
-            },
-            "live": e.live,
-            "finite": finite,
-            "meta": meta.join(" · "),
-            "progress": progress,
-            "played": heard.is_some_and(|h| h.played),
-            // How far along it is, in words for its row.
-            "heard": match heard {
-                Some(h) if h.played => chilpa_i18n::t("Heard"),
-                Some(_) if progress > 0.0 => format!("{} %", (progress * 100.0).round() as u32),
-                _ => String::new(),
-            },
-            "playable": e.playable,
-            "whyNot": e.why_not,
-            "saved": if source == s.current { s.saved.contains(&e.id) } else { self.saved_elsewhere(source, &e.id) },
-            "sounding": sounding,
-            "resolving": e.id == s.resolving,
-        })
+        });
+        document["playing_entry"] = context.into();
+        document["on_air_history"] = serde_json::json!(s.on_air_history);
+        document.to_string()
     }
 
     fn saved_elsewhere(&self, source: &str, id: &str) -> bool {
@@ -559,26 +555,40 @@ impl Chilpa {
     /// - `retry`: ask again for the listing that failed.
     pub fn sources_command(&mut self, action: &str, id: &str, text: &str) {
         match action {
+            "media_extra" => self.load_media_extra(id, text),
+            "play_from" => if let Ok(seconds) = text.parse::<f64>() {
+                if seconds.is_finite() && (0.0..=864_000.0).contains(&seconds) { self.play_entry_at(id, Some(Duration::from_secs_f64(seconds))); }
+            },
+            "track_library" => if let Ok(enabled) = text.parse::<bool>() { self.show_track_library(id, enabled); },
+            "album_library" => if let Ok(enabled) = text.parse::<bool>() { self.show_album_library(id, enabled); },
+            "section_more" => self.append_native_section(id),
             "native" => {
                 let Ok(input) = serde_json::from_str::<serde_json::Value>(text) else { return };
-                if !self.natives.has_pages(id) { return; }
+                if !self.natives.has_pages(id) && !(input["action"].as_str().is_some_and(|a| a.starts_with("playlist.")) && self.natives.edits_playlists(id)) { return; }
+                if self.sources.native_actions.get(id).is_some_and(|s| s["pending"] == true) { return; }
+                let request = input["request_id"].clone();
+                self.sources.native_action_serial = self.sources.native_action_serial.wrapping_add(1);
+                let serial = self.sources.native_action_serial;
+                self.sources.native_actions.insert(id.into(), serde_json::json!({"request_id":request,"pending":true,"serial":serial}));
                 let (natives, source, tx) = (self.natives.clone(), id.to_string(), self.sources.tx.clone());
                 std::thread::spawn(move || {
-                    let result = natives.call(&source, "page.action", input, Duration::from_secs(30));
-                    let _ = tx.send(Answer::Native { source, result });
+                    let result = crate::playlist_sources::execute(&natives, &source, input);
+                    let _ = tx.send(Answer::Native { source, serial, request, result });
                 });
             },
             "home" => {
+                if self.sources.media_kinds.contains_key(id) { self.open_media_section(id,"home"); return; }
+                let already_open = self.sources.current == id;
+                self.sources.media_tab = "home".into();
                 self.open_source(id);
                 self.sources.play_after_load = false;
-                self.sources.trail.clear();
-                self.sources.text.clear();
-                self.load_listing();
+                if already_open { self.sources.trail.clear(); self.sources.text.clear(); self.load_listing(); }
             },
             "open" => { self.sources.play_after_load = false; self.open_source(id); },
             "child" => {
                 self.sources.play_after_load = false;
-                if let Some(section) = text.strip_prefix("view:") { self.open_source_layout(id, section); }
+                if let Some(section) = text.strip_prefix("media:") { self.open_media_section(id,section); }
+                else if let Some(section) = text.strip_prefix("view:") { self.open_source_layout(id, section); }
                 else { self.open_source_child(id, text); }
             },
             "enter" => { self.sources.play_after_load = false; self.enter_entry(id); },
@@ -588,7 +598,7 @@ impl Chilpa {
                 self.sources.text.clear();
                 self.load_listing();
             }
-            "search" => { self.sources.play_after_load = false; self.search_source(text); },
+            "search" => { self.sources.media_tab = "search".into(); self.sources.play_after_load = false; self.search_source(text); },
             "filter" => self.sources.filter = text.trim().to_string(),
             "pick" => { self.sources.play_after_load = false; self.pick(id, text); },
             "order" => self.sources.order = id.to_string(),
@@ -633,6 +643,9 @@ impl Chilpa {
             return;
         }
         s.music = false;
+        s.medium = s.media_kinds.get(id).cloned().unwrap_or_default();
+        s.media_tab = "home".into();
+        s.attribution.clear();
         s.current = id.to_string();
         s.trail.clear();
         s.text.clear();
@@ -700,6 +713,8 @@ impl Chilpa {
         if let Some(entry) = s.collection.document.listing.entries.iter().find(|e| e.id == id) {
             return Some((s.collection.source.clone(), entry.clone()));
         }
+        if let Some(entry) = s.saved_cards.iter().find(|entry| entry.id == id) { return Some((s.current.clone(), entry.clone())); }
+        if let Some(entry) = s.heard.get(id) { return Some((s.current.clone(), from_heard(entry.clone()))); }
         s.detail.as_ref().filter(|(_, e)| e.id == id).cloned()
     }
 
@@ -719,9 +734,10 @@ impl Chilpa {
                 self.library()?.heard(source, id).ok()?.map(from_heard)
             });
         self.source_panels();
+        self.sources.extras = serde_json::Value::Null;
         self.sources.detail = known.map(|entry| (source.to_string(), entry));
         self.sources.metadata_loading = false;
-        if source == self.sources.current && self.sources.detail.as_ref().is_some_and(|(_, entry)| entry.playable && !entry.live) {
+        if self.natives.has_pages(source) && source == self.sources.current && self.sources.detail.as_ref().is_some_and(|(_, entry)| entry.playable && !entry.live) {
             self.sources.metadata_loading = true;
             let (generation, id, tx) = (self.sources.generation, id.to_string(), self.sources.tx.clone());
             let input = serde_json::to_vec(&serde_json::json!({"id":id})).unwrap_or_default();
@@ -808,6 +824,7 @@ impl Chilpa {
     fn read_saved(&mut self) {
         let source = self.sources.current.clone();
         let saved = self.library().and_then(|lib| lib.saved_entries(&source).ok()).unwrap_or_default();
+        self.sources.saved_cards = saved.iter().cloned().map(from_saved).collect();
         self.sources.saved = saved.into_iter().map(|e| e.external_id).collect();
         self.sources.heard = self.library().and_then(|lib| lib.heard_of(&source).ok()).unwrap_or_default();
     }
@@ -902,7 +919,9 @@ impl Chilpa {
     /// Plays an item: something live is asked of the plugin and started
     /// when the answer arrives; something with an end goes to the queue as
     /// an entry the player resolves itself, from where the listener left it.
-    fn play_entry(&mut self, id: &str) {
+    fn play_entry(&mut self, id: &str) { self.play_entry_at(id, None); }
+
+    fn play_entry_at(&mut self, id: &str, position: Option<Duration>) {
         let Some((source, entry)) = self.entry_by_id(id) else { return };
         if entry.kind != EntryKind::Item {
             return;
@@ -920,10 +939,10 @@ impl Chilpa {
             return;
         }
         if !entry.live {
-            if source == self.sources.current && !self.sources.presentation.is_empty() { self.play_source_collection(id); return; }
+            if source == self.sources.current && self.sources.medium.is_empty() && !self.sources.presentation.is_empty() { self.play_source_collection(id); return; }
             let Some(path) = self.keep_card(&source, &entry) else { return };
             let heard = self.library().and_then(|lib| lib.heard(&source, &entry.id).ok().flatten());
-            let from = heard.filter(|h| !h.played && h.position_ms > 0).map(|h| Duration::from_millis(h.position_ms));
+            let from = position.or_else(|| heard.filter(|h| !h.played && h.position_ms > 0).map(|h| Duration::from_millis(h.position_ms)));
             let (device, _) = self.chosen_output();
             self.replace_queue(vec![path]);
             self.spawn_from(0, &device, false, from, crate::Relaunch::Track);
@@ -951,6 +970,7 @@ impl Chilpa {
             self.sources.error = chilpa_i18n::t("it could not be saved");
             return;
         }
+        for card in cards { self.sources.heard.entry(card.external_id.clone()).or_insert(card); }
         let paths = entries.iter().map(|entry| entry_of(&source, &entry.id)).collect();
         let (device, bit_perfect) = self.chosen_output();
         self.replace_queue(paths);
@@ -983,6 +1003,7 @@ impl Chilpa {
             self.now.error = chilpa_i18n::t("it could not be saved");
             return None;
         }
+        if source == self.sources.current { self.sources.heard.entry(entry.id.clone()).or_insert(card); }
         if let Some(address) = entry.image_url.clone() {
             crate::pictures::keep_later(address, |_| {});
         }
@@ -1018,11 +1039,16 @@ impl Chilpa {
         }
         let done = total > 0.0 && at >= total - NEAR_THE_END.min(total * 0.05);
         let place = if done { 0 } else { (at * 1000.0) as u64 };
-        let kept = self.library().is_some_and(|lib| lib.set_heard(&source, &id, place, done).is_ok());
+        if self.sources.progress_writer.is_none() {
+            self.sources.progress_writer = self.library.as_ref().and_then(|lib| match lib.progress_writer() {
+                Ok(writer) => writer,
+                Err(error) => { eprintln!("source-progress: worker failed: {error}"); None }
+            });
+        }
+        let kept = self.sources.progress_writer.as_ref().is_some_and(|writer| writer.save(&source, &id, place, done));
+        if !kept { self.sources.progress_writer = None; self.sources.kept_at = None; }
         if kept && source == self.sources.current {
-            if let Some(heard) = self.library().and_then(|lib| lib.heard(&source, &id).ok().flatten()) {
-                self.sources.heard.insert(id, heard);
-            }
+            if let Some(heard) = self.sources.heard.get_mut(&id) { heard.position_ms = place; heard.played = done; }
         }
     }
 
@@ -1071,16 +1097,40 @@ impl Chilpa {
         } else {
             self.sources.saved.insert(id);
         }
+        self.sources.saved_cards.retain(|saved| saved.id != entry.id);
+        if !was { self.sources.saved_cards.insert(0, entry); }
     }
 
     /// Takes in what the plugin threads answered. Called from `poll`.
     pub(crate) fn advance_sources(&mut self) {
+        if self.natives.broker.changed.swap(false, std::sync::atomic::Ordering::AcqRel) { self.refresh_playlist_sources(); self.mark_library_changed(); }
         for plugin in self.natives.take_history_changes() { self.catalog.expire_personal_pages(&plugin); }
         while let Ok(answer) = self.sources.rx.try_recv() {
             match answer {
-                Answer::Native { source, result } => {
-                    if let Err(error) = result { self.now.error = error; }
-                    else { self.catalog.expire_native_pages(&source); for kind in self.natives.library_kinds(&source) { self.catalog.retry(&format!("{source} section:{kind}")); } self.mark_library_changed(); }
+                Answer::Extra { generation, id, kind, result } => {
+                    if generation == self.sources.generation && self.sources.extras["id"] == id && self.sources.extras["kind"] == kind {
+                        self.sources.extras = match result {
+                            Ok(value) => serde_json::json!({"id":id,"kind":kind,"rows":value}),
+                            Err(error) => serde_json::json!({"id":id,"kind":kind,"error":error}),
+                        };
+                    }
+                }
+                Answer::Native { source, serial, request, result } => {
+                    if !self.sources.native_actions.get(&source).is_some_and(|s| s["pending"] == true && s["serial"] == serial) { continue; }
+                    if !self.natives.is_native(&source) { self.sources.native_actions.remove(&source); continue; }
+                    let state = match result {
+                        Err(error) => { self.now.error = error.clone(); serde_json::json!({"request_id":request,"pending":false,"error":error}) }
+                        Ok(value) => {
+                            if value["read_only"] != true {
+                                if let Some(refs) = value["changed_refs"].as_array() { self.catalog.invalidate_native_cards(&source, refs); }
+                                self.catalog.expire_native_pages(&source);
+                                for kind in self.natives.library_kinds(&source) { self.catalog.retry(&format!("{source} section:{kind}")); }
+                                self.mark_library_changed();
+                            }
+                            serde_json::json!({"request_id":request,"pending":false,"result":value})
+                        }
+                    };
+                    self.sources.native_actions.insert(source, state);
                 },
                 Answer::Cover { generation, path } => {
                     if generation == self.sources.generation {
@@ -1216,6 +1266,14 @@ impl Chilpa {
         let Some(sounding) = self.sources.sounding.as_ref().filter(|s| s.url == self.now.path) else {
             return;
         };
+        if !title.trim().is_empty() && title != sounding.entry.title {
+            let key = format!("{} {}", sounding.source, sounding.entry.id);
+            if self.sources.on_air_history.last().is_none_or(|row| row["text"] != title || row["key"] != key) {
+                let seconds = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default().as_secs();
+                self.sources.on_air_history.push(serde_json::json!({"key":key,"text":title,"time":seconds}));
+                if self.sources.on_air_history.len() > 200 { self.sources.on_air_history.remove(0); }
+            }
+        }
         self.now.artwork_path = sounding.picture.clone();
         let Some((artist, song)) = title.split_once(" - ") else { return };
         let (artist, song, title) = (artist.trim().to_string(), song.trim().to_string(), title.to_string());
@@ -1246,10 +1304,12 @@ impl Chilpa {
                 return;
             }
         };
-        self.sources.music |= !document.presentation.is_empty();
+        if !document.medium.is_empty() { self.sources.media_kinds.insert(self.sources.current.clone(),document.medium.clone()); self.sources.medium = document.medium; self.sources.attribution = document.attribution; }
+        self.sources.music |= self.sources.medium.is_empty() && !document.presentation.is_empty();
         if cursor.is_none() { self.sources.presentation.clear(); }
         self.sources.presentation.extend(document.presentation);
-        let listing = document.listing;
+        let mut listing = document.listing;
+        listing.columns.extend(document.facets);
         let at_root = self.sources.trail.is_empty();
         let mut entries = listing.entries;
         if at_root && cursor.is_none() && !listing.columns.is_empty() {
@@ -1294,7 +1354,7 @@ impl Chilpa {
                 .filter(|entry| entry.kind == EntryKind::Folder).take(64).cloned().collect());
         }
         self.sources.next = listing.next;
-        if at_root && cursor.is_none() && !self.sources.presentation.is_empty() { self.load_source_sections(); }
+        if at_root && cursor.is_none() && self.sources.medium.is_empty() && !self.sources.presentation.is_empty() { self.load_source_sections(); }
         if self.sources.play_after_load {
             if self.sources.next.is_some() && self.sources.entries.len() < 10_000 { self.load_more(); }
             else {

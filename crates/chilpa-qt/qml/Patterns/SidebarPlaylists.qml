@@ -4,6 +4,7 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "../Components/PlaylistTree.js" as PlaylistTree
 
 // The sidebar's playlists (design/02 2, item 6): the label with a button to
 // make one, a filter, and the list, which scrolls in whatever height is
@@ -13,45 +14,15 @@ Item {
 
     PlaylistPicker { id: createPicker }
 
+    property string order: SettingsModel.kept("ui.playlists.order") || "name"
+    property bool ascending: SettingsModel.kept("ui.playlists.ascending") !== "false"
+    function setOrder(value) { order = value; SettingsModel.keep("ui.playlists.order", value); reload() }
+    function reverseOrder() { ascending = !ascending; SettingsModel.keep("ui.playlists.ascending", String(ascending)); reload() }
     property var rows: []
     property var expanded: ({})
     function reload() {
         const catalog = JSON.parse(Playlists.catalogJson(filter.text))
-        const result = []
-        for (const folder of catalog.folders) {
-            const children = catalog.playlists.filter(p => p.folder_id === folder.id && !p.separate)
-            if (filter.text !== "" || children.length > 0) {
-                result.push({rowKind: 1, playlistId: 0, name: folder.name,
-                    tracks: folder.playlist_count, source: "", sourceName: "",
-                    local: true, artwork: "", folderId: folder.id,
-                    visibleInSidebar: true, covers: [], folderColor: folder.color, sourceIcon: "", showSourceBadge: false,
-                    expanded: filter.text !== "" || !!expanded[folder.id]})
-                if (filter.text !== "" || expanded[folder.id])
-                    for (const playlist of children) result.push(playlistRow(playlist))
-            }
-        }
-        for (const playlist of catalog.playlists)
-            if (playlist.folder_id === null && !playlist.separate) result.push(playlistRow(playlist))
-        const sources = [...new Set(catalog.playlists.filter(p => p.separate).map(p => p.source))]
-        for (const source of sources) {
-            const children = catalog.playlists.filter(p => p.source === source)
-            const key = -(sources.indexOf(source) + 1)
-            const first = children[0]
-            result.push({rowKind: 1, playlistId: 0, name: first.provider, tracks: children.length,
-                source: source, sourceName: first.provider, local: false, artwork: "", folderId: key,
-                visibleInSidebar: true, covers: [], folderColor: "", sourceIcon: first.source_icon || "",
-                showSourceBadge: false, expanded: filter.text !== "" || !!expanded[key]})
-            if (filter.text !== "" || expanded[key])
-                for (const playlist of children) result.push(playlistRow(playlist))
-        }
-        rows = result
-    }
-    function playlistRow(p) {
-        return {rowKind: 0, playlistId: p.id, name: p.name, tracks: p.track_count,
-            source: p.source, sourceName: p.provider, local: p.mixed,
-            sourceIcon: p.source_icon || "", showSourceBadge: !p.mixed && !p.separate,
-            artwork: p.artwork_path, folderId: p.folder_id || 0,
-            visibleInSidebar: p.visible_sidebar, covers: p.covers, folderColor: "", expanded: false}
+        rows = PlaylistTree.rows(catalog, order, ascending, filter.text, expanded)
     }
     function toggleFolder(id) { expanded[id] = !expanded[id]; reload() }
     Component.onCompleted: reload()
@@ -83,8 +54,8 @@ Item {
             anchors.right: addButton.left
             size: Metrics.button24
             glyph: Icons.dots
-            tip: I18n.tr("Manage playlists", I18n.rev)
-            onClicked: Navigation.go("playlistManager", 0)
+            tip: I18n.tr("Playlist options", I18n.rev)
+            onClicked: actions.head(x, head.height)
         }
     }
 
@@ -108,11 +79,12 @@ Item {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         model: section.rows
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
         delegate: Loader {
             id: host
             required property int index
+            required property int depth
             required property int rowKind
             required property int playlistId
             required property string name
@@ -129,7 +101,8 @@ Item {
             required property string sourceIcon
             required property bool showSourceBadge
 
-            width: ListView.view.width
+            x: depth * Metrics.gap8 // derived: one small inset per folder depth
+            width: ListView.view.width - x
             height: Metrics.playlistRowHeight
             sourceComponent: rowKind === 1 ? folderDelegate : playlistDelegate
 
@@ -144,7 +117,12 @@ Item {
                     folderColor: host.folderColor
                     sourceIcon: host.sourceIcon
                     expanded: host.expanded
-                    onToggled: section.toggleFolder(folderId)
+                    onToggled: section.toggleFolder(section.rows[host.index].expandKey || folderId)
+                    onMenu: (left, top) => {
+                        if (host.folderId < 0 && !section.rows[host.index].nativeRef) return
+                        const at = mapToItem(section, left, top)
+                        actions.row(section.rows[host.index], at.x, at.y)
+                    }
                 }
             }
             Component {
@@ -168,13 +146,8 @@ Item {
                     active: Navigation.screen === (playlistId < 0 ? "album" : "playlist") && Navigation.routeId === playlistId
                     onOpened: Playlists.open(playlistId)
                     onMenu: (left, top) => {
-                        if (!local) {
-                            Playlists.open(playlistId)
-                            return
-                        }
                         const at = row.mapToItem(section, left, top)
-                        actions.row = row
-                        actions.show(playlistId, name, at.x, at.y)
+                        actions.row(section.rows[host.index], at.x, at.y)
                     }
                     onRenamed: (text) => {
                         if (local)
@@ -197,9 +170,9 @@ Item {
         color: Theme.color.textTertiary
     }
 
-    PlaylistMenu {
+    SidebarPlaylistActions {
         id: actions
-        property PlaylistRow row
-        onRename: if (row) row.editing = true
+        sidebar: section
+        onCreatePlaylist: createPicker.beginCreate()
     }
 }

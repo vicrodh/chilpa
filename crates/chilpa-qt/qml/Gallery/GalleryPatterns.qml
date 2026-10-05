@@ -1,3 +1,4 @@
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
@@ -5,7 +6,7 @@ import "../Primitives"
 import "../Components"
 import "../Patterns"
 
-GallerySection {
+TitledFlow {
     id: section
     title: "Patterns"
 
@@ -13,6 +14,7 @@ GallerySection {
     PlaylistPickerDialog { id: pickerDialog }
     PlaylistEditDialog { id: playlistEditor }
     PlaylistFolderDialog { id: folderEditor }
+    SidebarPlaylistActions { id: playlistActions; sidebar: sampleSidebar }
     ServerSetupDialog { id: serverSetup }
     CastPicker { id: castPreview; preview: true }
 
@@ -20,7 +22,7 @@ GallerySection {
     NavMenu {}
     TabStrip { room: Metrics.sidebarWidth }
     Sidebar { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
-    SidebarPlaylists { width: Metrics.sidebarWidth; height: Metrics.panesHeight }
+    SidebarPlaylists { id: sampleSidebar; width: Metrics.sidebarWidth; height: Metrics.panesHeight }
     RightPanel { width: Metrics.rightPanel; height: Metrics.queueMin * 3 } // derived: room for both and the divider
     Row {
         spacing: Metrics.gridGap
@@ -45,6 +47,7 @@ GallerySection {
         PlaylistSelectionBar { width: implicitWidth; model: playlistTracks; playlistName: "Gallery playlist" }
         Row {
             spacing: Metrics.gap8
+            PillButton { text: "Sidebar playlist menu"; onClicked: playlistActions.head(0, height) }
             PillButton { text: "New playlist modal"; onClicked: pickerDialog.beginCreate() }
             PillButton { text: "Folder modal"; onClicked: folderEditor.show(0, "", "accent") }
             PillButton { text: "Edit playlist modal"; enabled: false; onClicked: playlistEditor.show(0) }

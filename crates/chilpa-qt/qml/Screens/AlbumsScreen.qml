@@ -118,6 +118,7 @@ Item {
 
                 SourcesPopover {
                     id: filters
+                    showAlbumLibraries: true
                     x: filterButton.width - width
                     y: filterButton.height + Metrics.gap6
                 }

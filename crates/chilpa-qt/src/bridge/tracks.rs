@@ -155,7 +155,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -338,7 +338,7 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         4 => text(&track.album),
         5 => text(&format::clock(track.duration_ms)),
         6 => QVariant::from(&(track.plays as i32)),
-        7 => text(&track.quality.short()),
+        7 => { app::with(|api| api.request_track_quality(track.id, &track.path)); text(&track.quality.short()) },
         8 => QVariant::from(&track.quality.tier.rank()),
         9 => QVariant::from(&if let Some(key) = list.queue_keys.get(row) { app::with(|api| api.listen_is_playing(key)) } else { !list.playing.is_empty() && track.path == list.playing }),
         10 => QVariant::from(&(if list.queue_keys.is_empty() { list.selected.contains(&track.id) } else { list.anchor == Some(row) })),
@@ -350,6 +350,8 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         }
         16 => QVariant::from(&track.available),
         17 => text(&chilpa_api::group_of(&list.group, track)),
+        18 => text(&app::with(|api| api.track_source_name(&track.path))),
+        19 => text(&app::with(|api| api.track_source_badge(&track.path))),
         _ => QVariant::default(),
     }
 }
@@ -813,6 +815,7 @@ impl qobject::TrackListModel {
         let (id, limit) = (self.rust().album_id, self.rust().limit.max(1) as usize);
         let kind = self.rust().kind.to_string();
         if kind == "tracks" {
+            app::with(|api| api.prepare_track_libraries());
             // Found on the worker; what is shown stays until it is back.
             let (query, extras) = (self.rust().key.to_string(), browse::read(|s| s.filter.clone()));
             let asked = self.rust().asked + 1;

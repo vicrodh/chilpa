@@ -17,11 +17,11 @@ Item {
     property double target: 0
     property bool contrasted: false
 
-    readonly property int value: target > 0 ? Ratings.stars(kind, target, Ratings.rev) : 0
+    readonly property int value: Number.isFinite(target) && target !== 0 ? Ratings.stars(kind, target, Ratings.rev) : 0
 
     implicitWidth: opener.implicitWidth
     implicitHeight: opener.implicitHeight
-    visible: target > 0
+    visible: Number.isFinite(target) && target !== 0
 
     // What it is about changed under it: the flyout was for the other one.
     onTargetChanged: flyout.close()

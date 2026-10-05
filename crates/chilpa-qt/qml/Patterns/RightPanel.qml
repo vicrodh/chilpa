@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../Theme"
 import "../Primitives"
 
@@ -9,6 +10,9 @@ import "../Primitives"
 Rectangle {
     id: card
 
+    property Component mediaContent
+    readonly property var source: JSON.parse(Sources.snapshot || "{}")
+    readonly property bool spoken: !!source.playing_entry && ["radio", "podcasts"].indexOf(source.medium) >= 0
     readonly property bool both: SettingsModel.queueOpen && SettingsModel.lyricsOpen
     // While the divider is dragged: the queue's height, and what it was when
     // the drag started.
@@ -53,8 +57,15 @@ Rectangle {
         }
     }
 
+    Loader {
+        active: card.spoken && SettingsModel.lyricsOpen
+        visible: SettingsModel.lyricsOpen && card.spoken
+        sourceComponent: card.mediaContent
+        y: card.queueHeight; width: parent.width; height: parent.height - y
+    }
+
     LyricsPanel {
-        visible: SettingsModel.lyricsOpen
+        visible: SettingsModel.lyricsOpen && !card.spoken
         y: card.queueHeight
         width: parent.width
         height: parent.height - y

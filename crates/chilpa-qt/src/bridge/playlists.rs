@@ -72,6 +72,10 @@ pub mod qobject {
         #[qinvokable]
         fn ids(self: &Playlists, rev: i32) -> QStringList;
 
+        #[qinvokable] fn sources_json(self: &Playlists, track_ids_json: &QString) -> QString;
+        #[qinvokable] fn write_source(self: Pin<&mut Playlists>, source: &QString, id: i64, name: &QString, description: &QString, track_ids_json: &QString, request: &QString) -> bool;
+        #[qinvokable] fn write_state(self: Pin<&mut Playlists>, source: &QString) -> QString;
+        #[qinvokable] fn order_folders(self: Pin<&mut Playlists>, ids: &QString);
         #[qinvokable] fn catalog_json(self: &Playlists, query: &QString) -> QString;
         #[qinvokable] fn manager_json(self: &Playlists, query: &QString, filter: &QString, order: &QString, ascending: bool, folder_id: i64) -> QString;
         #[qinvokable] fn picker_json(self: &Playlists, track_ids_json: &QString, query: &QString) -> QString;
@@ -81,7 +85,7 @@ pub mod qobject {
         #[qinvokable] fn create_folder(self: Pin<&mut Playlists>, name: &QString, color: &QString) -> i64;
         #[qinvokable] fn update_folder(self: Pin<&mut Playlists>, id: i64, name: &QString, color: &QString) -> bool;
         #[qinvokable] fn remove_folder(self: Pin<&mut Playlists>, id: i64);
-        #[qinvokable] fn move_to_folder(self: Pin<&mut Playlists>, id: i64, folder_id: i64);
+        #[qinvokable] fn move_to_folder(self: Pin<&mut Playlists>, id: i64, folder_id: i64) -> bool;
         #[qinvokable] fn set_visible(self: Pin<&mut Playlists>, id: i64, visible: bool);
         #[qinvokable] fn set_custom_order(self: Pin<&mut Playlists>, ids_json: &QString);
     }
@@ -102,7 +106,7 @@ pub struct PlaylistsRust {
 }
 
 fn paths_of(id: i64) -> Vec<String> {
-    app::with(|api| api.playlist_rows(id)).into_iter().map(|t| t.path).collect()
+    app::with(|api| api.playlist_rows(id)).into_iter().filter(|t| t.available).map(|t| t.path).collect()
 }
 
 impl qobject::Playlists {
@@ -120,6 +124,7 @@ impl qobject::Playlists {
 
     pub fn refresh(mut self: Pin<&mut Self>) {
         app::with(|api| {
+            api.refresh_playlist_sources();
             api.playlists();
         });
         self.as_mut().changed();
@@ -157,6 +162,7 @@ impl qobject::Playlists {
     }
 
     pub fn play(self: Pin<&mut Self>, id: i64, shuffled: bool) {
+        if id < 0 { app::with(|api| api.album_action(&[id], "play", shuffled)); return; }
         let paths = paths_of(id);
         app::with(|api| {
             api.set_shuffle(shuffled);
@@ -166,6 +172,7 @@ impl qobject::Playlists {
     }
 
     pub fn queue(self: Pin<&mut Self>, id: i64) {
+        if id < 0 { app::with(|api| api.album_action(&[id], "queue", false)); return; }
         let paths = paths_of(id);
         app::with(|api| api.enqueue_here(&paths));
     }
@@ -242,6 +249,21 @@ impl qobject::Playlists {
         strings(app::with(|api| api.local_playlists()).into_iter().map(|p| p.id.to_string()))
     }
 
+    pub fn sources_json(&self, track_ids_json: &QString) -> QString {
+        QString::from(&app::with(|api| api.playlist_sources_json(&ids_from_json(track_ids_json))))
+    }
+    pub fn write_source(self: Pin<&mut Self>, source: &QString, id: i64, name: &QString, description: &QString, track_ids_json: &QString, request: &QString) -> bool {
+        app::with(|api| api.write_source_playlist(&source.to_string(), id, &name.to_string(), &description.to_string(), &ids_from_json(track_ids_json), &request.to_string()))
+    }
+    pub fn write_state(mut self: Pin<&mut Self>, source: &QString) -> QString {
+        let state = app::with(|api| api.playlist_write_state(&source.to_string()));
+        if !state.contains("\"pending\":true") { self.as_mut().changed(); }
+        QString::from(&state)
+    }
+    pub fn order_folders(mut self: Pin<&mut Self>, ids: &QString) {
+        if app::with(|api| api.order_playlist_folders(&ids_from_json(ids))) { self.as_mut().changed(); }
+    }
+
     pub fn catalog_json(&self, query: &QString) -> QString {
         QString::from(&app::with(|api| api.sidebar_playlists(&query.to_string())))
     }
@@ -290,7 +312,7 @@ impl qobject::Playlists {
         changed
     }
     pub fn remove_folder(mut self: Pin<&mut Self>, id: i64) { if app::with(|api| api.delete_playlist_folder(id)) { self.as_mut().changed(); } }
-    pub fn move_to_folder(mut self: Pin<&mut Self>, id: i64, folder_id: i64) { if app::with(|api| api.move_playlist_to_folder(id, (folder_id > 0).then_some(folder_id))) { self.as_mut().changed(); } }
+    pub fn move_to_folder(mut self: Pin<&mut Self>, id: i64, folder_id: i64) -> bool { let moved = app::with(|api| api.move_playlist_to_folder(id, (folder_id > 0).then_some(folder_id))); if moved { self.as_mut().changed(); } moved }
     pub fn set_visible(mut self: Pin<&mut Self>, id: i64, visible: bool) { if app::with(|api| api.set_playlist_visible(id, visible)) { self.as_mut().changed(); } }
     pub fn set_custom_order(mut self: Pin<&mut Self>, ids_json: &QString) { let ids = ids_from_json(ids_json); if app::with(|api| api.set_playlist_custom_order(&ids)) { self.as_mut().changed(); } }
 
@@ -309,6 +331,7 @@ impl cxx_qt::Initialize for qobject::Playlists {
     fn initialize(self: Pin<&mut Self>) {
         registry::register_playlists(self.qt_thread());
         app::with(|api| {
+            api.refresh_playlist_sources();
             api.playlists();
         });
     }

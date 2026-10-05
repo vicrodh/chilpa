@@ -41,7 +41,7 @@ pub enum TrackEntry {
     Track(TrackRow),
 }
 
-fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
+pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
     TrackRow {
         quality: Quality::of_track(&t.external_id, t.codec.as_deref(), t.bit_depth, t.sample_rate_hz),
         available: t.available,
@@ -219,11 +219,12 @@ pub struct AlbumDetail {
 /// or a scan writes.
 pub struct Reader {
     pub(crate) lib: chilpa_library::Library,
+    pub(crate) catalog: Option<std::sync::Arc<crate::source_catalog::Catalog>>,
 }
 
 impl Reader {
     pub(crate) fn open(path: &std::path::Path) -> Result<Self, String> {
-        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib })
+        chilpa_library::Library::open_read_only(path).map(|lib| Self { lib, catalog: None })
             .map_err(|e| format!("could not open library reader at {}: {e}", path.display()))
     }
 
@@ -245,7 +246,9 @@ impl Reader {
     /// library resolves without one statement holding thousands of
     /// parameters.
     pub fn paths(&self, ids: &[i64]) -> Vec<String> {
-        ids.chunks(500).flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default()).map(|t| t.external_id).collect()
+        let mut paths: std::collections::HashMap<_, _> = ids.chunks(500).flat_map(|chunk| self.lib.tracks_by_ids(chunk).unwrap_or_default()).map(|t| (t.id, t.external_id)).collect();
+        if let Some(catalog) = &self.catalog { paths.extend(catalog.tracks_by_ids(ids).into_iter().map(|(t, _)| (t.id, t.path))); }
+        ids.iter().filter_map(|id| paths.get(id).cloned()).collect()
     }
 
     /// The artists with something present, by name, with their records,
@@ -431,16 +434,16 @@ impl Chilpa {
     /// A second, read-only connection to an initialized library. Reports
     /// its own open errors: the main connection may still be healthy.
     pub fn reader(&self) -> Option<Reader> {
-        Reader::open(&chilpa_library::Library::default_path()).map_err(|e| eprintln!("chilpa-queries: {e}")).ok()
+        Reader::open(&chilpa_library::Library::default_path()).map(|mut reader| { reader.catalog = Some(self.catalog.clone()); reader }).map_err(|e| eprintln!("chilpa-queries: {e}")).ok()
     }
 
     /// The rows of those ids, in that order. By primary key: the same cost
     /// anywhere in a snapshot.
     pub fn track_rows(&mut self, ids: &[i64]) -> Vec<TrackRow> {
-        let Some(lib) = self.library() else {
-            return Vec::new();
-        };
-        lib.tracks_by_ids(ids).unwrap_or_default().into_iter().map(row_of).collect()
+        let local: Vec<_> = ids.iter().copied().filter(|id| *id >= 0).collect();
+        let mut rows: std::collections::HashMap<_, _> = self.library().map(|lib| lib.tracks_by_ids(&local).unwrap_or_default()).unwrap_or_default().into_iter().map(row_of).map(|t| (t.id, t)).collect();
+        rows.extend(self.catalog.tracks_by_ids(ids).into_iter().map(|(t, art)| (t.id, crate::source_catalog::view::row_of(&t, art))));
+        ids.iter().filter_map(|id| rows.get(id).cloned()).collect()
     }
 
     /// Those albums, in the order given. By primary key.
@@ -481,19 +484,34 @@ impl Chilpa {
     /// A list's tracks, in its order. What the library does not have gets a
     /// row from its name, so a list survives a missing file.
     pub fn playlist_rows(&mut self, playlist_id: i64) -> Vec<TrackRow> {
+        let active_sources: HashSet<_> = self.source_panels().into_iter().map(|panel| panel.id).collect();
         let Some(lib) = self.library() else {
             return Vec::new();
         };
         let entries = lib.playlist_entries(playlist_id).unwrap_or_default();
         let ids: Vec<i64> = entries.iter().filter_map(|e| e.track_id).collect();
         let known: std::collections::HashMap<i64, TrackRow> = lib.tracks_by_ids(&ids).unwrap_or_default().into_iter().map(|t| (t.id, row_of(t))).collect();
-        entries
+        let mut rows: Vec<TrackRow> = entries
             .into_iter()
             .map(|e| match e.track_id.and_then(|id| known.get(&id)) {
                 Some(row) => row.clone(),
                 None => file_row(&e.external_id),
             })
-            .collect()
+            .collect();
+        for row in &mut rows {
+            if let Some((plugin, _)) = crate::source_opener::of_plugin(&row.path) {
+                row.available = self.natives.is_native(&plugin) || active_sources.contains(&plugin);
+                if let Some((track, art)) = self.catalog.track_by_path(&row.path) {
+                    row.available &= track.playable;
+                    row.album_id = track.album_id;
+                    row.disc = track.disc;
+                    row.number = track.number;
+                    if !art.is_empty() { row.artwork_path = art; }
+                    if let Some(format) = track.format { row.quality = format.quality(); }
+                }
+            }
+        }
+        rows
     }
 
     /// One playlist in the requested presentation order. `custom` is its
@@ -526,12 +544,27 @@ impl Chilpa {
     /// Eight records by the same artist, excluding this one and in a stable
     /// shuffled order so the shelf is not merely the discography order.
     pub fn same_artist_albums(&mut self, album_id: i64, limit: usize) -> Vec<Album> {
+        if album_id < 0 && self.catalog.card(album_id).is_some_and(|card| card.kind != crate::source_catalog::store::CardKind::Album) { return Vec::new(); }
         let Some(album) = self.album(album_id) else { return Vec::new() };
-        let mut albums = self.artist_albums(&album.artist);
-        albums.retain(|candidate| candidate.id != album_id);
-        albums.sort_by_key(|candidate| candidate.id.wrapping_mul(1_103_515_245).wrapping_add(album_id) & 0x7fff_ffff);
-        albums.truncate(limit);
-        albums
+        let local: Vec<Album> = self.artist_albums(&album.artist).into_iter().filter(|a| a.artist.trim().to_lowercase() == album.artist.trim().to_lowercase()).collect();
+        let mut groups = vec![local];
+        let mut sources = self.natives.ids(); sources.sort();
+        for source in sources.into_iter().filter(|id| self.natives.searches(id)) {
+            let key = format!("{source} matching-artist-v2:{}", album.artist);
+            if let Some(shelf) = self.catalog.shelf(&key) {
+                groups.push(self.catalog.cards(&shelf.cards).iter().map(crate::source_catalog::view::album_of).collect());
+            }
+        }
+        for group in &mut groups {
+            group.retain(|candidate| candidate.id != album_id);
+            group.sort_by_key(|candidate| candidate.id.wrapping_mul(1_103_515_245).wrapping_add(album_id) & 0x7fff_ffff);
+        }
+        let mut result = Vec::new();
+        for at in 0..groups.iter().map(Vec::len).max().unwrap_or(0) {
+            for group in &groups { if let Some(card) = group.get(at) { if result.len() < limit { result.push(card.clone()); } } }
+            if result.len() >= limit { break; }
+        }
+        result
     }
 
     /// Metadata-near records from the same source. Tempo and rhythmic
@@ -556,7 +589,7 @@ impl Chilpa {
     /// Every file of those records, one record after another, each in disc
     /// order.
     pub fn album_paths(&mut self, ids: &[i64]) -> Vec<String> {
-        ids.iter().flat_map(|id| self.album_track_rows(*id)).map(|t| t.path).collect()
+        ids.iter().flat_map(|id| self.album_track_rows(*id)).filter(|t| t.available).map(|t| t.path).collect()
     }
 
     /// The records by others an artist plays on: the compilations.
@@ -659,6 +692,17 @@ impl Chilpa {
         Some(AlbumDetail { duration_ms: rows.iter().map(|r| r.duration_ms).sum(), discs: discs.len().max(1), quality: best, genre, album })
     }
 
+    /// A badge reads stored metadata; drawing a card never resolves audio.
+    pub fn album_card_quality(&mut self, id: i64) -> crate::Quality {
+        if id < 0 {
+            let Some(card) = self.catalog.card(id) else { return crate::Quality::default() };
+            let known = self.catalog.tracks_by_ids(card.tracks.as_deref().unwrap_or_default()).into_iter().filter_map(|(t,_)| t.format).filter(|f| f.rate.is_some()).map(|f| f.quality()).max_by_key(|q| (q.tier.rank(),q.bits,q.rate_hz));
+            return known.or_else(|| card.format.map(|f| f.quality())).unwrap_or_default();
+        }
+        self.album_track_rows(id).into_iter().map(|r| r.quality)
+            .max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).unwrap_or_default()
+    }
+
     /// The output that is remembered, or the first one there is. The boolean
     /// is retained at this facade boundary until its callers migrate; it is
     /// always false because bit-perfect is a result, not a requested mode.
@@ -717,7 +761,7 @@ mod tests {
                     rusqlite::params![source, format!("/{release}/{number}.flac"), artist, credit, id, bits]).unwrap();
             }
         }
-        let reader = Reader { lib };
+        let reader = Reader { lib, catalog: None };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
             filter.queries[2] = artist.into();
@@ -768,7 +812,7 @@ mod tests {
                 [source],
             )
             .unwrap();
-        let found = Reader { lib }.folder_matches("rock");
+        let found = Reader { lib, catalog: None }.folder_matches("rock");
         let paths: Vec<_> = found.folders.iter().map(|folder| folder.path.as_str()).collect();
         assert_eq!(paths, ["/music/Rock", "/music/Rock/Album"]);
     }

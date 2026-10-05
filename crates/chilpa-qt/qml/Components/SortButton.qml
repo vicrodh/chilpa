@@ -28,6 +28,7 @@ Item {
 
     Menu {
         id: menu
+        searchable: sort.options.length > 5
         y: pill.height + Metrics.gap4
         x: pill.width - width
         entries: sort.options.map((o, i) => ({ text: o.text, checked: i === sort.current }))

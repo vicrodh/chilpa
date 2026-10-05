@@ -41,6 +41,8 @@ pub(crate) struct Format {
     pub codec: String,
     pub bits: Option<u8>,
     pub rate: Option<u32>,
+    #[serde(default)]
+    pub advertised_hires: bool,
 }
 
 impl Format {
@@ -64,11 +66,16 @@ impl Format {
             _ => "",
         };
         let rate = q.sample_rate_hz.filter(|r| *r > 0);
-        (!codec.is_empty() || bits.is_some() || rate.is_some()).then(|| Format { codec: codec.into(), bits, rate })
+        (!codec.is_empty() || bits.is_some() || rate.is_some()).then(|| Format { codec: codec.into(), bits, rate, advertised_hires: false })
     }
 
     pub fn quality(&self) -> crate::quality::Quality {
-        crate::quality::Quality::of_codec(&self.codec, self.bits, self.rate)
+        let mut quality = crate::quality::Quality::of_codec(&self.codec, self.bits, self.rate);
+        if self.advertised_hires && self.bits.is_none() && self.rate.is_none() && quality.tier == crate::quality::Tier::Lossless {
+            quality.tier = crate::quality::Tier::HiRes;
+            quality.format = format!("{} Hi-Res", quality.format);
+        }
+        quality
     }
 }
 

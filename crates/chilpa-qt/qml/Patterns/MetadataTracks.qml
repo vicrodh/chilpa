@@ -79,7 +79,7 @@ Rectangle {
         width: root.table
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
         // By count, not by list: a new view does not rebuild the rows, so the
         // cell being typed in keeps the keyboard.
         model: root.tracks.length

@@ -159,10 +159,11 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().map(playlist_of).collect();
+        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER).map(playlist_of).collect();
         for playlist in &mut playlists {
             playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
         }
+        playlists.extend(self.native_playlist_rows());
         playlists
     }
 
@@ -246,7 +247,13 @@ impl Chilpa {
 
     pub(crate) fn save_paths_as(&mut self, name: &str, paths: &[String]) -> Option<i64> {
         let name = name.trim();
-        if name.is_empty() || paths.is_empty() { return None; }
+        if name.is_empty() { self.now.error = chilpa_i18n::t("a list needs a name"); return None; }
+        if paths.is_empty() { self.now.error = chilpa_i18n::t("the queue is empty"); return None; }
+        for path in paths {
+            if let Some((track, _)) = self.catalog.track_by_path(path) {
+                self.mixed_playlist_entries(&[track.id], true)?;
+            }
+        }
         let lib = self.library()?;
         let source = lib.source_id("local", "default").ok()?;
         let entries: Vec<chilpa_library::PlaylistEntry> = paths.iter().map(|r| entry_of(lib, source, r)).collect();
@@ -260,12 +267,13 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let paths: Vec<String> = lib.playlist_entries(playlist_id).unwrap_or_default().into_iter().map(|e| e.external_id).filter(|r| !r.is_empty()).collect();
+        let _ = lib;
+        let paths: Vec<String> = self.playlist_rows(playlist_id).into_iter().filter(|row| row.available).map(|row| row.path).collect();
         if paths.is_empty() {
             self.now.error = chilpa_i18n::t("that list is empty");
             return Vec::new();
         }
-        let _ = lib.record_playlist_play(playlist_id);
+        if let Some(lib) = self.library() { let _ = lib.record_playlist_play(playlist_id); }
         self.play_tracks(&paths, device, bit_perfect)
     }
 
@@ -310,7 +318,10 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let entries = lib.playlist_entries_for_tracks(track_ids).unwrap_or_default();
+        let _ = lib;
+        let entries = self.mixed_playlist_entries(track_ids, false).unwrap_or_default();
+        let native = self.native_playlist_rows();
+        let Some(lib) = self.library() else { return Vec::new() };
         let words: Vec<String> = query.to_lowercase().split_whitespace().map(str::to_string).collect();
         let mut targets: Vec<_> = lib.playlists()
             .unwrap_or_default()
@@ -326,6 +337,15 @@ impl Chilpa {
                 PlaylistTarget { playlist, exact: membership.exact, similar: membership.similar, accepts }
             })
             .collect();
+        let complete = entries.len() == track_ids.len();
+        for playlist in native {
+            let accepts = complete && playlist.writable && entries.iter().all(|entry| crate::source_opener::of_plugin(&entry.external_id).is_some_and(|(plugin, _)| plugin == playlist.source));
+            if words.iter().all(|word| playlist.name.to_lowercase().contains(word)) {
+                targets.push(PlaylistTarget { playlist, exact: 0, similar: 0, accepts });
+            }
+        }
+        targets.retain(|target| target.playlist.source != crate::source_opener::PROVIDER);
+        if !complete { for target in &mut targets { target.accepts = false; } }
         targets.sort_by_key(|target| target.playlist.name.to_lowercase());
         targets
     }
@@ -338,7 +358,8 @@ impl Chilpa {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
         let playlist = playlist_of(target);
-        let Ok(entries) = lib.playlist_entries_for_tracks(track_ids) else {
+        let _ = lib;
+        let Some(entries) = self.mixed_playlist_entries(track_ids, true) else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
         if entries.len() != track_ids.len() {
@@ -348,6 +369,7 @@ impl Chilpa {
         if !accepts {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         }
+        let Some(lib) = self.library() else { return PlaylistAddResult { rejected: true, ..Default::default() }; };
         let Ok(membership) = lib.playlist_membership(playlist_id, &entries) else {
             return PlaylistAddResult { rejected: true, ..PlaylistAddResult::default() };
         };
@@ -408,16 +430,18 @@ impl Chilpa {
         let Some(lib) = self.library() else {
             return Vec::new();
         };
-        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().map(playlist_of).collect();
+        let mut playlists: Vec<Playlist> = lib.playlists().unwrap_or_default().into_iter().filter(|p| p.provider != crate::source_opener::PROVIDER).map(playlist_of).collect();
         for playlist in &mut playlists {
             playlist.covers = lib.playlist_covers(playlist.id, 4).unwrap_or_default();
         }
+        playlists.extend(self.native_playlist_rows());
         playlists
     }
 
     /// One of our lists, by its id. From the library alone: asking the
     /// sources for theirs to find one of ours would be a network round.
     pub fn playlist(&mut self, playlist_id: i64) -> Option<Playlist> {
+        if playlist_id < 0 { return self.native_playlist_rows().into_iter().find(|p| p.id == playlist_id); }
         let p = self.library()?.playlists().ok()?.into_iter().find(|p| p.id == playlist_id)?;
         Some(playlist_of(p))
     }
@@ -480,15 +504,18 @@ impl Chilpa {
     }
 
     pub fn move_playlist_to_folder(&mut self, id: i64, folder: Option<i64>) -> bool {
+        let Some(id) = self.playlist_storage_id(id) else { return false };
         self.library().is_some_and(|lib| lib.move_playlist_to_folder(id, folder).is_ok())
     }
 
     pub fn set_playlist_visible(&mut self, id: i64, visible: bool) -> bool {
+        let Some(id) = self.playlist_storage_id(id) else { return false };
         self.library().is_some_and(|lib| lib.set_playlist_visible(id, visible).is_ok())
     }
 
     pub fn set_playlist_custom_order(&mut self, ids: &[i64]) -> bool {
-        self.library().is_some_and(|lib| lib.set_playlist_custom_order(ids).is_ok())
+        let ids: Vec<_> = ids.iter().filter_map(|id| self.playlist_storage_id(*id)).collect();
+        self.library().is_some_and(|lib| lib.set_playlist_custom_order(&ids).is_ok())
     }
 
     pub fn count_playlist_play(&mut self, id: i64) {
@@ -536,6 +563,7 @@ pub fn group_moves(rows: &[usize], to: usize) -> Vec<(usize, usize)> {
 /// Refreshes what one source says its lists are, on a host already taken.
 /// A failed refresh changes nothing in the cache.
 fn refresh_source_playlists(library: Option<&chilpa_library::Library>, host: &mut crate::plugins::Plugins, id: &str, name: &str) {
+    if !host.playlists_due(id) { return; }
     let request = messages::write(&messages::Query::new("", messages::MAX_PER_REPLY));
     let Ok(bytes) = host.call_short(id, messages::op::PLAYLISTS, &request) else {
         return;

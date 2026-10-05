@@ -36,7 +36,7 @@ Window {
         anchors.topMargin: Metrics.tabBarHeight
         contentHeight: sections.height + Metrics.contentBottom
         clip: true
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar {}
 
         Column {
             id: sections
@@ -47,8 +47,8 @@ Window {
             GalleryPrimitives { width: parent.width }
             GalleryComponents { width: parent.width }
             GalleryPatterns { id: patterns; width: parent.width }
-            GalleryMetadata { width: parent.width }
-            GalleryPlugins { width: parent.width }
+            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Gallery/GalleryMetadata.qml" }
+            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Gallery/GalleryPlugins.qml" }
         }
     }
 

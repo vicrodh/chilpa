@@ -74,10 +74,66 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     }
     if let Some(image) = value["image"].as_str() {
         catalog.want_image(plugin, image);
-        value["art"] = json!(crate::pictures::kept(image).unwrap_or_default());
+        value["art"] = json!(crate::pictures::kept(image).and_then(|path| url::Url::from_file_path(path).ok()).map(|url| url.to_string()).unwrap_or_default());
     }
 }
 impl crate::Chilpa {
+    pub(crate) fn append_native_section(&self, key: &str) {
+        let (plugin, reference) = super::split(key);
+        let Some(reference) = reference.strip_prefix("native:") else { return };
+        let Some((parent, section)) = reference.split_once('|') else { return };
+        if !self.natives.has_pages(plugin) { return; }
+        let job = super::Job::Shelf(key.into());
+        let current = {
+            let mut inner = self.catalog.lock();
+            if inner.running.contains(&job) { return; }
+            let Some(current) = inner.store.shelves.get(key).cloned() else { return };
+            if current.document["more"].as_str().is_none() { return; }
+            inner.running.insert(job.clone());
+            current
+        };
+        let (catalog, natives, plugin, key, parent, section) = (self.catalog.clone(), self.natives.clone(), plugin.to_string(), key.to_string(), parent.to_string(), section.to_string());
+        std::thread::spawn(move || {
+            let result = natives.call(&plugin, "page.get", json!({"ref":current.document["more"]}), Duration::from_secs(60));
+            let mut child = current.document;
+            let outcome = match result {
+                Ok(answer) if natives.is_native(&plugin) => {
+                    let mut items = child["items"].as_array().cloned().unwrap_or_default();
+                    let mut seen: std::collections::HashSet<_> = items.iter().filter_map(|v| v["ref"].as_str().map(str::to_string)).collect();
+                    items.extend(answer["items"].as_array().into_iter().flatten().filter(|v| v["ref"].as_str().is_some_and(|r| seen.insert(r.into()))).cloned());
+                    child["items"] = json!(items); child["more"] = answer["next"].clone(); child["error"] = json!("");
+                    ingest(&catalog, &plugin, &key, &child);
+                    Ok(())
+                },
+                Ok(_) => Err("The plugin was disabled.".to_string()),
+                Err(error) => Err(error.to_string()),
+            };
+            let mut inner = catalog.lock();
+            inner.running.remove(&job);
+            if let Err(error) = outcome { child["error"] = json!(error); }
+            if let Some(page) = inner.store.shelves.get_mut(&format!("{plugin} native:{parent}")) {
+                if let Some(rows) = page.document["shelves"].as_array_mut() {
+                    if let Some(row) = rows.iter_mut().find(|row| row["id"] == section) {
+                        row["items"] = child["items"].clone(); row["more"] = child["more"].clone(); row["error"] = child["error"].clone();
+                    }
+                }
+            }
+            inner.dirty = true;
+            drop(inner); catalog.changed();
+        });
+    }
+
+    pub fn native_reference_card(&self, plugin: &str, reference: &str) -> i64 {
+        if !self.natives.has_pages(plugin) { return 0; }
+        let Some((kind, id)) = reference.split_once(':') else { return 0 };
+        if !matches!(kind, "album" | "playlist") || id.is_empty() { return 0; }
+        let mut inner = self.catalog.lock();
+        if let Some(card) = inner.store.cards.values().find(|card| card.plugin == plugin && card.identity == reference) { return card.id; }
+        let card = inner.store.take_item(plugin, &json!({"kind":kind,"ref":reference,"title":""}), now()).unwrap_or_default();
+        inner.dirty = true;
+        card
+    }
+
     pub fn native_image(&self, plugin: &str, image: &str) -> String {
         if !self.natives.is_native(plugin) { return String::new(); }
         self.catalog.want_image(plugin, image);
@@ -88,8 +144,13 @@ impl crate::Chilpa {
         let Some(card) = self.catalog.card(id) else { return "{}".into(); };
         if !self.natives.has_pages(&card.plugin) { return "{}".into(); }
         let mut info = card.metadata.clone();
+        let quality = self.album_card_quality(id);
+        info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());
         decorate_header(&self.catalog, &card.plugin, &mut info);
-        info["art"] = json!(self.catalog.art_of_card(id));
+        info["art"] = json!(url::Url::from_file_path(self.catalog.art_of_card(id)).ok().map(|url| url.to_string()).unwrap_or_default());
+        if card.kind == super::store::CardKind::Playlist && info["editable"] == true {
+            info["entries"] = json!(self.catalog.tracks(id).unwrap_or_default().iter().map(|t| json!({"ref":t.metadata["ref"],"member":t.metadata["member"],"title":t.title,"artist":t.artist,"available":t.playable})).collect::<Vec<_>>());
+        }
         if card.kind == super::store::CardKind::Album { if let Some(document) = self.catalog.shelf(&format!("{} native:{}", card.plugin, card.identity)) { info["shelves"] = document.document["shelves"].clone(); } }
         info.to_string()
     }
@@ -127,6 +188,23 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn playlist_edits_invalidate_only_the_affected_sources_cards() {
+        let catalog = Catalog::new();
+        let ids: Vec<_> = ["first", "second"].iter().map(|plugin| {
+            let mut inner = catalog.lock();
+            let id = inner.store.take_item(plugin, &json!({"kind":"playlist","ref":"list:1","title":"List"}), 1).unwrap();
+            let card = inner.store.cards.get_mut(&id).unwrap();
+            card.tracks = Some(vec![]);
+            card.read_at = 42;
+            id
+        }).collect();
+        catalog.invalidate_native_cards("first", &[json!("list:1")]);
+        assert!(catalog.card(ids[0]).unwrap().tracks.is_none());
+        assert_eq!(catalog.card(ids[0]).unwrap().read_at, 0);
+        assert!(catalog.card(ids[1]).unwrap().tracks.is_some());
+        assert_eq!(catalog.card(ids[1]).unwrap().read_at, 42);
+    }
     #[test]
     fn listening_invalidates_only_the_accounts_personal_pages() {
         let catalog = Catalog::new();

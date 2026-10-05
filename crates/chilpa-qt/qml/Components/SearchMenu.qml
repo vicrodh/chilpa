@@ -19,13 +19,14 @@ Menu {
         const icons = {
             play: Icons.playerPlayFilled, queue: Lucide.listEnd,
             next: Lucide.listStart, later: Lucide.listPlus,
-            pick: Icons.playlistAdd, album: Icons.disc, artist: Icons.microphone2,
+            pick: Icons.playlistAdd, album: Icons.disc, artist: SourceGlyphs.musicArtist,
             folder: Icons.folder
         }
         entries = JSON.parse(search.menuJson(row)).map(function(entry) {
             const act = (entry.act || "").split(":")[0]
             entry.glyph = act === "mark" ? (entry.on ? Icons.heart : Icons.heartFilled) : icons[act] || ""
-            if (["queue", "next", "later"].includes(act)) entry.family = Lucide.font
+            if (act === "artist") entry.family = SourceGlyphs.font
+            else if (["queue", "next", "later"].includes(act)) entry.family = Lucide.font
             entry.filled = act === "play" || (act === "mark" && !entry.on)
             return entry
         })

@@ -10,6 +10,8 @@ QtObject {
 
     readonly property int rev: ThemeModel.rev
     readonly property bool dark: ThemeModel.dark
+    readonly property string searchLabel: I18n.tr("Search", I18n.rev)
+    readonly property string emptySearchLabel: I18n.tr("No matches", I18n.rev)
 
     readonly property QtObject color: QtObject {
         readonly property color surfaceWindow: ThemeModel.color("surface.window", theme.rev)

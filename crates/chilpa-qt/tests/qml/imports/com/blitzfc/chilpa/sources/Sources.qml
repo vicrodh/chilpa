@@ -8,6 +8,8 @@ QtObject {
     function art(plugin, image, rev) { return "" }
     function artistKey(id, path) { return "" }
     function card(id, rev) { return "{}" }
+    function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }
+    function trackLibraries(rev) { return JSON.stringify(state.trackLibraries || []) }
     function refresh() {}
     function page(key, rev) { return JSON.stringify({ music: false }) }
     function command(action, id, text) { asked = asked.concat([[action, id, text]]) }

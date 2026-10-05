@@ -27,6 +27,8 @@ pub mod qobject {
         #[qinvokable]
         fn sources(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
+        fn quality(self: &AlbumActions, id: i64, rev: i32) -> QString;
+        #[qinvokable]
         fn selected(self: &AlbumActions, id: i64, rev: i32) -> bool;
         #[qinvokable]
         fn clear_selection(self: Pin<&mut AlbumActions>);
@@ -73,6 +75,12 @@ impl AlbumActionsRust {
 }
 
 impl qobject::AlbumActions {
+    pub fn quality(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
+        app::with(|api| {
+            let quality = api.album_card_quality(id);
+            cxx_qt_lib::QString::from(serde_json::json!({"tier":quality.tier.rank(),"label":quality.long()}).to_string())
+        })
+    }
     pub fn available(&self, id: i64, _rev: i32) -> bool {
         app::with(|api| api.album_available(id))
     }

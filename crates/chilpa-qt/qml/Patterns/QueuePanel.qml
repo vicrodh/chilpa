@@ -48,7 +48,7 @@ Item {
         model: queue
         reuseItems: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
         // The playing row comes first, so its section is the first one.
         section.property: "playing"

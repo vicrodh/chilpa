@@ -27,6 +27,7 @@ Item {
     property bool edged: true
     // Which placeholder color, so a grid of empty covers is not one block.
     property int tint: 0
+    property bool contain: false
 
     // True once there is a picture to draw, so whoever uses the tile can
     // put something of its own over the placeholder.
@@ -50,7 +51,7 @@ Item {
         visible: false
         // A file comes through the covers' provider, made the size it is
         // drawn; anything else as it is.
-        source: root.local ? "image://cover/" + root.decode + "/" + encodeURIComponent(root.source.toString()) : root.source
+        source: root.local ? (root.contain ? "image://contained/" : "image://cover/") + root.decode + "/" + encodeURIComponent(root.source.toString()) : root.source
         asynchronous: true
         retainWhileLoading: true
         fillMode: Image.PreserveAspectCrop

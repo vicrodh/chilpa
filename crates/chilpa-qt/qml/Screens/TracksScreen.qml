@@ -30,7 +30,7 @@ Item {
         id: tracks
         kind: "tracks"
         key: [page.order === "default" ? "" : page.order, page.group, page.typed].join("\u001f")
-        filterRev: Library.rev + Library.contentRev
+        filterRev: Library.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
     }
 
@@ -147,6 +147,7 @@ Item {
 
                 SourcesPopover {
                     id: filters
+                    showTrackLibraries: true
                     x: filterButton.width - width
                     y: filterButton.height + Metrics.gap6
                 }
@@ -174,7 +175,7 @@ Item {
         width: head.width - (strip.visible ? strip.width + Metrics.gap8 : 0)
         bottomInset: Metrics.contentBottom
         header: false
-        rich: true
+        rich: SettingsModel.density === "rich"
         showAlbum: !page.grouped || page.group !== "album"
         selectionMode: page.selectionMode
         model: tracks
@@ -227,7 +228,7 @@ Item {
     Text {
         visible: tracks.count === 0
         anchors.centerIn: list
-        text: page.typed !== "" ? I18n.tr("No tracks match your search.", I18n.rev) : I18n.tr("No tracks in your local library yet.", I18n.rev)
+        text: page.typed !== "" ? I18n.tr("No tracks match your search.", I18n.rev) : I18n.tr("No tracks in the selected libraries yet.", I18n.rev)
         font.pointSize: Type.body
         color: Theme.color.textSecondary
     }

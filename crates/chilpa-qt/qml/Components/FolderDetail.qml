@@ -94,7 +94,7 @@ Item {
         contentWidth: width
         contentHeight: body.height + Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar {}
 
         Column {
             id: body

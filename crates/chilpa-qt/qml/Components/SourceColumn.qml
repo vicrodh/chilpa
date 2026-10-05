@@ -77,7 +77,7 @@ Rectangle {
         clip: true
         model: pane.shown
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
         delegate: PaneRow {
             required property var modelData

@@ -194,7 +194,7 @@ Item {
         clip: true
         reuseItems: true
         model: manager.catalogRows
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8;}
         delegate: PluginRow {
             required property var modelData
             objectName: "catalogPluginRow"

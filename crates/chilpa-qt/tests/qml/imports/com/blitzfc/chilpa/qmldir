@@ -14,4 +14,5 @@ singleton ListenList 1.0 ListenList.qml
 AlbumGridModel 1.0 AlbumGridModel.qml
 
 AlbumDetailModel 1.0 AlbumDetailModel.qml
+singleton AlbumActions 1.0 AlbumActions.qml
 singleton Library 1.0 Library.qml

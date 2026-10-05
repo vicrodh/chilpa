@@ -20,6 +20,7 @@ TestCase {
         Player.position = 9
         Player.duration = 30
         Player.sought = -1
+        Player.albumId = 42
         Player.qualityTier = 2
         Navigation.page = ""
         waitForRendering(lcd)
@@ -77,4 +78,19 @@ TestCase {
         Player.qualityTier = 0
         verify(findChild(lcd, "playbackIndicator").visible)
     }
+    function test_native_track_seek_click_and_drag() {
+        Player.albumId = -3388
+        Player.duration = 180
+        const seek = findChild(lcd, "playerSeek")
+        waitForRendering(seek)
+        mouseClick(seek, seek.width / 4, seek.height / 2)
+        verify(Math.abs(Player.sought - 45) < 1)
+        Player.sought = -1
+        mousePress(seek, seek.width / 4, seek.height / 2)
+        mouseMove(seek, seek.width * 3 / 4, seek.height / 2)
+        compare(Player.sought, -1)
+        mouseRelease(seek, seek.width * 3 / 4, seek.height / 2)
+        verify(Math.abs(Player.sought - 135) < 1)
+    }
+
 }

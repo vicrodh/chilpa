@@ -55,7 +55,7 @@ Column {
         visible: count > 0
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
         model: root.hits.length
         delegate: ReleaseHitRow {
             required property int index

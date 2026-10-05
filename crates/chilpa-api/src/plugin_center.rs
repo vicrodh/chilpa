@@ -42,7 +42,7 @@ impl PluginCenter {
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
                 if result.is_ok() && action == "submit" { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
-                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
+                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {
                     state["validation"] = json!({"id":input["id"],"repository_id":input["repository"],
                         "state":if result.is_ok() {"passed"} else {"failed"},
@@ -111,12 +111,15 @@ impl Chilpa {
             self.mark_library_changed();
         } }
         let removed = self.plugin_center.as_ref().map(|c| std::mem::take(&mut *c.removed.lock().unwrap())).unwrap_or_default();
-        for id in removed { self.forget_source_preferences(&id); self.purge_queue(|path| crate::source_opener::of_plugin(path).is_some_and(|(plugin, _)| plugin == id)); self.catalog.forget_plugin(&id); self.invalidate_source_menus(); }
+        for id in removed { self.sources.native_actions.remove(&id); self.forget_source_preferences(&id); self.purge_queue(|path| crate::source_opener::of_plugin(path).is_some_and(|(plugin, _)| plugin == id)); self.catalog.forget_plugin(&id); self.invalidate_source_menus(); }
         if self.plugin_center.as_ref().is_some_and(|center| center.library_dirty.swap(false, Ordering::AcqRel)) { self.mark_library_changed(); }
         self.plugin_center.as_ref().map(|center| center.snapshot().to_string()).unwrap_or_else(|| "{}".into())
     }
     pub fn plugin_center_command(&mut self, action: &str, input: &str) {
-        let Ok(input) = serde_json::from_str(input) else { return };
+        let Ok(input) = serde_json::from_str::<Value>(input) else { return };
+        if matches!(action, "disable" | "uninstall" | "restart") {
+            if let Some(id) = input["id"].as_str() { self.sources.native_actions.remove(id); }
+        }
         if matches!(action, "install" | "install_native" | "install_local" | "enable" | "disable" | "uninstall" | "grant_network" | "restart") { self.invalidate_source_menus(); }
         if let Some(center) = &self.plugin_center { center.command(action, input); }
     }
@@ -272,6 +275,10 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                 }
             }
         }
+        "sidebar_position" => {
+            let active = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.panels().into_iter().map(|p|p.0).collect();
+            crate::plugin_sidebar::place(root,id,input["position"].as_u64().ok_or("Invalid sidebar position.")? as usize,active)?;
+        },
         "integration" => crate::source_integration::save(root, id, input["field"].as_str().unwrap_or_default(), input["enabled"].as_bool().ok_or("Invalid integration preference.")?)?,
         "library_visibility" => {
             let library = chilpa_core::open_library().map_err(|_| "The library could not be opened.")?;
@@ -328,16 +335,17 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     state["catalog"] = json!(catalog);
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);
-    let installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
+    let sidebar_order = crate::plugin_sidebar::ordered(root,plugins.panels().into_iter().map(|p|p.0).collect());
+    let installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugins.natives.library_kinds(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
     drop(plugins);
     // A catalog snapshot never migrates or maintains the library, nor holds the guest lock during database queries.
     let library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok();
-    state["installed"] = json!(installed.into_iter().map(|(native, native_settings, plugin, enabled, limited_network)| {
+    state["installed"] = json!(installed.into_iter().map(|(native, native_settings, library_kinds, plugin, enabled, limited_network)| {
         let origin: Value = std::fs::read(root.join(&plugin.id).join("origin.json")).ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"description":plugin.description,"state":plugin.state,
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),

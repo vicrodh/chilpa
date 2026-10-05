@@ -96,7 +96,7 @@ impl Asker<'_> {
     /// A listing from its first page, as many pages as allowed.
     fn pages(&mut self, at: &str, most: usize) -> Result<Vec<SourceDocument>, String> {
         let mut documents = vec![self.browse(at, None)?];
-        while documents.len() < most {
+        while documents.len() < most && documents[0].medium.is_empty() {
             let Some(next) = documents.last().and_then(|d| d.listing.next.clone()) else { break };
             documents.push(self.browse(at, Some(next))?);
         }
@@ -169,7 +169,7 @@ fn finish<'a>(catalog: &'a Catalog, job: &Job, outcome: Result<(), String>) -> s
     inner.running.remove(job);
     match (job, outcome) {
         (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
-        (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); }
+        (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); inner.card_retry_at.insert(*id, Instant::now()); }
         _ => {}
     }
     inner
@@ -360,8 +360,10 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
         let domains = match known {
             Some(domains) => domains,
             None => {
-                let host = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).clone();
-                let learned = host.and_then(|host| host.lock().ok().and_then(|host| host.worker_domains(&plugin)));
+                let learned = catalog.natives().filter(|n| n.is_native(&plugin)).map(|n| n.domains(&plugin)).or_else(|| {
+                    let host = catalog.plugins.lock().unwrap_or_else(|e| e.into_inner()).clone();
+                    host.and_then(|host| host.lock().ok().and_then(|host| host.worker_domains(&plugin)))
+                });
                 let mut inner = catalog.lock();
                 let Some(domains) = learned else {
                     inner.queue.covers_queued.remove(&image);
@@ -375,7 +377,7 @@ pub(super) fn covers(catalog: &Arc<Catalog>) {
         let mut inner = catalog.lock();
         inner.queue.covers_queued.remove(&image);
         let Some(path) = kept else {
-            inner.queue.covers_failed.insert(image);
+            inner.queue.covers_failed.insert(image, Instant::now());
             continue;
         };
         for card in inner.store.cards.values_mut().filter(|c| c.image == image) {

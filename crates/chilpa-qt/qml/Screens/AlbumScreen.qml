@@ -13,11 +13,13 @@ Flickable {
     id: page
 
     property bool selectionMode: false
+    function toggleSelection() { selectionMode = !selectionMode; tracks.clearSelection() }
+    function showActions(item, left, top) { const at = item.mapToItem(page, left, top); albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y) }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar {}
 
     AlbumDetailModel {
         id: detail
@@ -36,7 +38,7 @@ Flickable {
         kind: "sameArtist"
         key: detail.selectedId.toString()
         limit: 8
-        contentRev: Library.contentRev
+        contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
     }
     AlbumGridModel {
         id: related
@@ -48,7 +50,7 @@ Flickable {
 
     AlbumHeaderBackground {
         width: page.width
-        height: Metrics.contentTop + Metrics.heroArt + Metrics.gap16
+        height: Metrics.contentTop + (detail.selectedId < 0 ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
         art: detail.art
         mode: SettingsModel.albumHeader
     }
@@ -62,24 +64,24 @@ Flickable {
 
         AlbumHero {
             id: hero
+            visible: detail.selectedId >= 0
             width: parent.width
             detail: detail
             selecting: page.selectionMode
             contrasted: SettingsModel.albumHeader !== "off" && detail.art.toString() !== ""
             onPlay: tracks.playAll(false)
             onShuffle: tracks.playAll(true)
-            onSelectToggle: {
-                page.selectionMode = !page.selectionMode
-                tracks.clearSelection()
-            }
-            onContext: (left, top) => {
-                const at = hero.mapToItem(page, left, top)
-                albumMenu.show(detail.selectedId, detail.title, detail.artist, -1, at.x, at.y)
-            }
+            onSelectToggle: page.toggleSelection()
+            onContext: (left, top) => page.showActions(hero, left, top)
             onArtwork: artwork.show(detail.art)
         }
 
-        SourceRecordDetails { id: sourceDetails; width: parent.width; cardId: detail.selectedId }
+        SourceRecordDetails { id: sourceDetails; width: parent.width; cardId: detail.selectedId; trackModel: tracks; record: detail
+            selecting: page.selectionMode
+            onArtwork: artwork.show(detail.art)
+            onSelectToggle: page.toggleSelection()
+            onContext: (left, top) => page.showActions(sourceDetails, left, top)
+        }
 
         Rectangle { width: parent.width; height: 1; color: Theme.color.strokeHairline }
 

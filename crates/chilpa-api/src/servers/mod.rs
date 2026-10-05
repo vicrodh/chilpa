@@ -366,6 +366,7 @@ impl Chilpa {
     /// Whether that record can be opened now: some track of it plays
     /// (ADR-017). The grid dims the ones that cannot.
     pub fn album_available(&mut self, id: i64) -> bool {
+        if id < 0 { return self.catalog.card(id).is_none_or(|card| card.metadata["available"] != false); }
         self.library().and_then(|lib| lib.unavailable_albums(&[id]).ok()).is_none_or(|out| out.is_empty())
     }
 

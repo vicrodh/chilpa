@@ -16,7 +16,7 @@ Flickable {
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar {}
 
     AlbumGridModel {
         id: records

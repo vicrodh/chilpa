@@ -17,7 +17,7 @@ P.Modal {
         clip: true
         model: dialog.manager.view.repositories || []
         spacing: Metrics.gap12
-        ScrollBar.vertical: ScrollBar {}
+        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8;}
         delegate: Column {
             required property var modelData
             width: ListView.view.width - Metrics.gap12

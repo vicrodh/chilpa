@@ -1,9 +1,11 @@
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
-import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 
-GallerySection {
+TitledFlow {
+    CircleCheck { text: "Selected"; checked: true }
+    ViewportScrollBar { visible: false }
     title: "Primitives"
 
     Row {

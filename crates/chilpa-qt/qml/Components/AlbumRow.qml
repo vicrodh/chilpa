@@ -71,7 +71,7 @@ Item {
     }
     SourceIcon {
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
-        visible: !!row.sourceInfo.icon; sourceInfo: row.sourceInfo; opacity: Metrics.disabledOpacity
+        visible: !!row.sourceInfo.icon; sourceInfo: row.sourceInfo
     }
     Column {
         anchors.left: cover.right

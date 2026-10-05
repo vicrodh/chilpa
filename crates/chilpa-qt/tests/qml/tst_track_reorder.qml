@@ -30,7 +30,7 @@ TestCase {
         tracks.clear()
         for (let i = 1; i <= 3; ++i)
             tracks.append({ trackId: 40 + i, rowKind: 0, number: i, title: "Track " + i, artist: "Band",
-                album: "Album", duration: "3:00", plays: 0, quality: "FLAC", tier: 2,
+                album: "Album", sourceName: "Remote source", duration: "3:00", plays: 0, quality: "FLAC", tier: 2,
                 available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
         tracks.lastAction = ""; tracks.lastRow = -1; tracks.steps = 0; tracks.selectedCount = 0; tracks.movedTo = -1
         wait(30)
@@ -52,6 +52,21 @@ TestCase {
         mouseClick(list, down.x, down.y)
         compare(tracks.lastAction, "down"); compare(tracks.lastRow, 1)
         compare(tracks.steps, 2)
+    }
+    function test_album_name_opens_album_without_playing_or_selecting() {
+        for (const rich of [false, true]) {
+            list.rich = rich
+            wait(30)
+            const item = row(list, 0)
+            compare(item.sourceName, "Remote source")
+            verify(item.cols.sourceWidth > 0)
+            const at = item.mapToItem(list, item.cols.albumX + 2, item.height / 2)
+            mouseClick(list, at.x, at.y)
+            compare(tracks.lastAction, "album")
+            compare(tracks.lastRow, 0)
+            mouseClick(list, at.x, at.y, Qt.LeftButton, Qt.ControlModifier)
+            compare(tracks.lastAction, "select")
+        }
     }
     function test_compact_arrows_sit_side_by_side_before_the_number() { check_arrows() }
     function test_rich_arrows_are_stacked_before_the_number() {
