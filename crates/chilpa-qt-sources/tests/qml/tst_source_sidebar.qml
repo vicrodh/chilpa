@@ -36,7 +36,7 @@ TestCase {
         Playlists.rev++
         wait(20)
         compare(section.rows[0].rowKind, 1)
-        section.toggleFolder(section.rows[0].folderId)
+        section.toggleFolder(section.rows[0].expandKey)
         compare(section.rows.length, 2)
         verify(!section.rows[1].showSourceBadge)
         Playlists.catalog = {folders: [], playlists: []}
