@@ -120,7 +120,71 @@ fn title_key(title: &str) -> String {
     text_key(base)
 }
 
+fn cache_tracks(tx: &rusqlite::Connection, source_id: i64, tracks: &[PlaylistTrackMetadata]) -> rusqlite::Result<Vec<PlaylistEntry>> {
+        let mut entries = Vec::with_capacity(tracks.len());
+        for track in tracks {
+            let album_id: Option<i64> = if track.album.trim().is_empty() {
+                None
+            } else {
+                tx.execute(
+                    "INSERT OR IGNORE INTO albums
+                            (title, album_artist, artwork_path)
+                     VALUES (?1, ?2, ?3)",
+                    params![track.album, track.artist, track.artwork_path],
+                )?;
+                tx.query_row(
+                    "SELECT id FROM albums
+                      WHERE title = ?1 AND album_artist = ?2
+                        AND ifnull(mbid, '') = '' AND folder = ''",
+                    params![track.album, track.artist],
+                    |r| r.get(0),
+                )
+                .optional()?
+            };
+            tx.execute(
+                "INSERT INTO tracks
+                        (source_id, external_id, title, artist, album_id,
+                         duration_ms, sample_rate_hz, bit_depth, channels,
+                         codec, isrc, recording_mbid, present, added_at)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
+                         ?12, 2, ?13)
+                 ON CONFLICT(source_id, external_id) DO UPDATE SET
+                    title = excluded.title,
+                    artist = excluded.artist,
+                    album_id = excluded.album_id,
+                    duration_ms = excluded.duration_ms,
+                    sample_rate_hz = excluded.sample_rate_hz,
+                    bit_depth = excluded.bit_depth,
+                    channels = excluded.channels,
+                    codec = excluded.codec,
+                    isrc = excluded.isrc,
+                    recording_mbid = excluded.recording_mbid,
+                    present = 2",
+                params![source_id, track.external_id, track.title, track.artist, album_id, track.duration_ms as i64, track.sample_rate_hz, track.bit_depth, track.channels, track.codec, track.isrc, track.recording_mbid, now_unix()],
+            )?;
+            let track_id = tx.query_row("SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2", params![source_id, track.external_id], |r| r.get(0))?;
+            entries.push(PlaylistEntry { track_id: Some(track_id), source_id: Some(source_id), external_id: track.external_id.clone() });
+        }
+    Ok(entries)
+}
+
 impl Library {
+    /// Keeps source metadata for mixed playlists without importing it into the library.
+    pub fn cache_playlist_tracks(&self, source_id: i64, tracks: &[PlaylistTrackMetadata]) -> rusqlite::Result<Vec<PlaylistEntry>> {
+        let tx = self.own_transaction()?;
+        let entries = cache_tracks(&tx, source_id, tracks)?;
+        tx.finish()?;
+        Ok(entries)
+    }
+
+    pub fn set_folder_order(&self, ids: &[i64]) -> rusqlite::Result<()> {
+        let tx = self.own_transaction()?;
+        for (position, id) in ids.iter().enumerate() {
+            tx.execute("UPDATE playlist_folders SET position = ?2 WHERE id = ?1", params![id, position as i64])?;
+        }
+        tx.finish()
+    }
+
     /// Creates a playlist, or returns the one that already has that external id.
     ///
     /// An empty `external_id` means the playlist is local: two hand-made lists
@@ -185,50 +249,7 @@ impl Library {
     /// server's tracks come in through its sync, as `present = 1`.
     pub fn sync_source_playlist_tracks(&self, source_id: i64, playlist_id: i64, tracks: &[PlaylistTrackMetadata]) -> rusqlite::Result<()> {
         let tx = self.own_transaction()?;
-        let mut entries = Vec::with_capacity(tracks.len());
-        for track in tracks {
-            let album_id: Option<i64> = if track.album.trim().is_empty() {
-                None
-            } else {
-                tx.execute(
-                    "INSERT OR IGNORE INTO albums
-                            (title, album_artist, artwork_path)
-                     VALUES (?1, ?2, ?3)",
-                    params![track.album, track.artist, track.artwork_path],
-                )?;
-                tx.query_row(
-                    "SELECT id FROM albums
-                      WHERE title = ?1 AND album_artist = ?2
-                        AND ifnull(mbid, '') = '' AND folder = ''",
-                    params![track.album, track.artist],
-                    |r| r.get(0),
-                )
-                .optional()?
-            };
-            tx.execute(
-                "INSERT INTO tracks
-                        (source_id, external_id, title, artist, album_id,
-                         duration_ms, sample_rate_hz, bit_depth, channels,
-                         codec, isrc, recording_mbid, present, added_at)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11,
-                         ?12, 2, ?13)
-                 ON CONFLICT(source_id, external_id) DO UPDATE SET
-                    title = excluded.title,
-                    artist = excluded.artist,
-                    album_id = excluded.album_id,
-                    duration_ms = excluded.duration_ms,
-                    sample_rate_hz = excluded.sample_rate_hz,
-                    bit_depth = excluded.bit_depth,
-                    channels = excluded.channels,
-                    codec = excluded.codec,
-                    isrc = excluded.isrc,
-                    recording_mbid = excluded.recording_mbid,
-                    present = 2",
-                params![source_id, track.external_id, track.title, track.artist, album_id, track.duration_ms as i64, track.sample_rate_hz, track.bit_depth, track.channels, track.codec, track.isrc, track.recording_mbid, now_unix()],
-            )?;
-            let track_id = tx.query_row("SELECT id FROM tracks WHERE source_id = ?1 AND external_id = ?2", params![source_id, track.external_id], |r| r.get(0))?;
-            entries.push(PlaylistEntry { track_id: Some(track_id), source_id: Some(source_id), external_id: track.external_id.clone() });
-        }
+        let entries = cache_tracks(&tx, source_id, tracks)?;
         tx.execute("DELETE FROM playlist_tracks WHERE playlist_id = ?1", params![playlist_id])?;
         for (position, entry) in entries.iter().enumerate() {
             tx.execute(
