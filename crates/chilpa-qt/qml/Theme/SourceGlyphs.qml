@@ -25,4 +25,7 @@ QtObject {
     readonly property string musicbrainz: "\ue009"
     readonly property string discogs: "\ue00a"
     readonly property string gandalf: "\ue00b"
+    readonly property string musicArtist: "\ue00c"
+    readonly property string microphone2: "\ue00d"
+    readonly property string broadcast: "\ue00e"
 }
