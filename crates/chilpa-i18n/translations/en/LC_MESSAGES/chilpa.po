@@ -908,6 +908,9 @@ msgstr ""
 msgid "Go to artist"
 msgstr ""
 
+msgid "Go to podcast"
+msgstr "Go to podcast"
+
 msgid "Go to {}"
 msgstr ""
 

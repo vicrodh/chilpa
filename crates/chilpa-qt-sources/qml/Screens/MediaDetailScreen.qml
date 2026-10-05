@@ -17,12 +17,20 @@ Flickable {
     function open() { const cut = key.indexOf(" "); if (cut >= 0 && Navigation.screen === "sourceEntry") Sources.command("detail", key.slice(cut + 1), key.slice(0, cut)) }
     Component.onCompleted: open()
     onKeyChanged: Qt.callLater(page.open)
-    Timer { interval: Motion.poll; repeat: true; running: page.visible && (page.entry.sounding || page.entry.metadata_loading || (page.entry.extras || {}).loading); onTriggered: Sources.refresh() }
+    Timer { interval: Motion.poll; repeat: true; running: page.visible && !!(page.entry.sounding || page.entry.metadata_loading || (page.entry.extras || {}).loading); onTriggered: Sources.refresh() }
     contentHeight: body.height + Metrics.contentBottom; clip: true
     Controls.ScrollBar.vertical: ViewportScrollBar {}
     Column {
         id: body; x: Metrics.contentX; y: Metrics.contentTop; width: page.width - Metrics.contentX * 2; spacing: Metrics.gap24 // derived: page inset on both sides
-        Text { text: page.entry.name || ""; color: Theme.color.textSecondary; font.pointSize: Type.meta }
+        PillButton {
+            objectName: "episodeParent"
+            visible: !page.radio && !!page.entry.parent
+            text: (page.entry.parent || {}).title || I18n.tr("Go to podcast", I18n.rev)
+            glyph: Icons.chevronLeft
+            kind: "ghost"
+            onClicked: { Sources.command("parent", page.entry.id, page.entry.source); Navigation.goKey("source", page.entry.source) }
+        }
+        Text { visible: page.radio || !page.entry.parent; text: page.entry.name || I18n.tr("Sources", I18n.rev); color: Theme.color.textSecondary; font.pointSize: Type.body }
         Item {
             width: parent.width; height: Math.max(art.height, identity.height)
             MediaArtwork { id: art; width: Math.min(page.radio ? Metrics.pageHero : Metrics.pageHero + Metrics.gap24, body.width / 3); height: width; title: page.entry.title || ""; source: page.entry.image || ""; station: page.radio } // derived: bounded artwork beside the reading column
