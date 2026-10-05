@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(QString, query)]
         #[qproperty(bool, content)]
         #[qproperty(i32, rev)]
+        #[qproperty(i32, content_rev)]
         #[qproperty(bool, loading)]
         #[qproperty(bool, in_library)]
         #[qproperty(i32, folders)]
@@ -117,6 +118,7 @@ pub struct FolderModelRust {
     query: QString,
     content: bool,
     rev: i32,
+    content_rev: i32,
     loading: bool,
     in_library: bool,
     folders: i32,
@@ -294,10 +296,10 @@ impl qobject::FolderModel {
 
 impl cxx_qt::Initialize for qobject::FolderModel {
     fn initialize(mut self: Pin<&mut Self>) {
-        let has_cd = app::with(|api| !api.cd_drives().is_empty());
-        self.as_mut().set_has_cd(has_cd);
+        self.as_mut().set_has_cd(app::with(|api| !api.cd_drives().is_empty()));
         self.as_mut().on_path_changed(|m| m.schedule()).release();
         self.as_mut().on_query_changed(|m| m.schedule()).release();
+        self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut().on_tree_changed(|m| m.schedule()).release();
         self.schedule();
     }

@@ -57,6 +57,7 @@ Rectangle {
     FolderModel {
         id: rows
         tree: true
+        contentRev: Library.contentRev
         query: sought.text
         onRevChanged: view.contentY = Math.max(0, Math.min(tree.heldAt, view.contentHeight - view.height))
     }

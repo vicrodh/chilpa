@@ -21,6 +21,7 @@ Item {
         objectName: "folderContents"
         path: Navigation.routeKey
         content: true
+        contentRev: Library.contentRev
         onFolderOpened: {
             page.flat = false
             SettingsModel.keep("ui.folders.mode", "tree")
