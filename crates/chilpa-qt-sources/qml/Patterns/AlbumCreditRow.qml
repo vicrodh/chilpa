@@ -6,9 +6,10 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 Column {
     id: row
     property var credit: ({})
+    signal follow(var artist)
     property bool expanded: false
     readonly property bool rich: SettingsModel.density === "rich"
-    readonly property bool hasDetails: !!credit.performers || !!credit.copyright || (!rich && !!credit.artist)
+    readonly property bool hasDetails: (credit.participants || []).length > 0 || !!credit.copyright || (!rich && !!credit.artist)
     spacing: Metrics.gap8
     Rectangle {
         width: parent.width; height: Math.max(row.rich ? Metrics.rowRich : Metrics.rowCompact, title.height + (row.rich ? Metrics.gap16 : Metrics.gap4))
@@ -28,10 +29,30 @@ Column {
             onClicked: row.expanded = !row.expanded
         }
     }
-    TextEdit {
-        objectName: "creditText"; width: parent.width; visible: row.expanded && row.hasDetails
-        text: [row.rich ? "" : row.credit.artist || "", row.credit.performers || "", row.credit.copyright || ""].filter(Boolean).join("\n\n")
-        textFormat: TextEdit.PlainText; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
-        color: Theme.color.textSecondary; selectionColor: Theme.color.accent; font.pointSize: Type.body
+    Column {
+        width: parent.width; visible: row.expanded && row.hasDetails; spacing: Metrics.gap8
+        Repeater {
+            model: row.credit.participants || []
+            Column {
+                required property var modelData
+                width: parent.width; spacing: Metrics.gap4
+                Text {
+                    objectName: "creditParticipant"; width: parent.width; text: modelData.name || ""; textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                    color: personHover.hovered ? Theme.color.accentHover : Theme.color.textPrimary; font.pointSize: Type.body; font.weight: Type.medium
+                    HoverHandler { id: personHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler { onTapped: row.follow(modelData) }
+                }
+                TextEdit {
+                    objectName: "creditText"; width: parent.width; visible: text !== ""; text: modelData.roles || ""
+                    textFormat: TextEdit.PlainText; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
+                    color: Theme.color.textSecondary; selectionColor: Theme.color.accent; font.pointSize: Type.body
+                }
+            }
+        }
+        TextEdit {
+            width: parent.width; visible: text !== ""; text: [row.rich ? "" : row.credit.artist || "", row.credit.copyright || ""].filter(Boolean).join("\n\n")
+            textFormat: TextEdit.PlainText; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
+            color: Theme.color.textSecondary; selectionColor: Theme.color.accent; font.pointSize: Type.body
+        }
     }
 }

@@ -15,6 +15,7 @@ calendar
 cast
 check
 checkbox
+copy
 chevron-compact-left
 chevron-compact-right
 chevron-down

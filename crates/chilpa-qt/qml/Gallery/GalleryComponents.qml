@@ -13,6 +13,8 @@ TitledFlow {
     AlbumGridModel { id: added; kind: "recentlyAdded"; limit: 6; maxRows: 1; columns: grid.columns }
     PlaylistSourceWrite { id: sourceWritePreview }
     AlbumDetailModel { id: detail; albumId: added.albumId(0, added.rev) }
+    AlbumArtistLine { document: ({artist_html:"<a href=\"0\">Artist</a>",artist_links:[{target:"artist",key:"Artist"}]}) }
+    Clipboard {}
     QtObject {
         id: playlistManager
         function open(index) {}

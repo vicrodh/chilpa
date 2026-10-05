@@ -55,14 +55,9 @@ Item {
             font.letterSpacing: Type.displayTracking
             color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
-        CreditLine {
-            width: Math.min(implicitWidth, parent.width)
-            credit: hero.detail.artist; albumId: hero.detail.selectedId
-            font.pointSize: Type.body
-            font.weight: Type.medium
-            color: hero.contrasted ? Theme.color.textOnAccent
-                                   : hovered ? Theme.color.accentHover : Theme.color.textPrimary
-            opacity: !hero.contrasted || hovered ? 1 : 0.88
+        AlbumArtistLine {
+            width: parent.width; albumId: hero.detail.selectedId
+            color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
         Text {
             width: parent.width

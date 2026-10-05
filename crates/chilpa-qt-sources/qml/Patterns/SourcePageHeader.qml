@@ -59,7 +59,13 @@ Column {
                 Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.meta }
             }
             Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary }
-            PillButton { visible: !!header.info.artist_ref; text: header.info.artist || ""; kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.follow(header.info.artist_ref) }
+            AlbumArtistLine { width: parent.width; visible: header.cardId !== 0; albumId: header.cardId; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
+            Text {
+                visible: header.cardId === 0 && !!header.info.artist; text: header.info.artist || ""; textFormat: Text.PlainText
+                color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; font.pointSize: Type.body
+                HoverHandler { cursorShape: header.info.artist_ref ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                TapHandler { enabled: !!header.info.artist_ref; onTapped: header.follow(header.info.artist_ref) }
+            }
             Text { width: parent.width; text: [header.info.release_date || "", header.playbackModel.summary || "", header.info.genre || ""].filter(Boolean).join(" · "); wrapMode: Text.Wrap; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
             Text { id: description; width: parent.width; visible: !!header.info.description; text: header.info.description || ""; textFormat: Text.StyledText; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pointSize: Type.body; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; onLinkActivated: link => header.follow(link) }
             PillButton { visible: description.truncated; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.externalInformation ? header.information() : biography.open() }
