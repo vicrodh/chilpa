@@ -173,7 +173,7 @@ impl Chilpa {
                     self.name_from_source(&path);
                     self.name_from_heard();
                     self.catalog_context();
-                    self.load_lyrics(&path);
+                    self.load_lyrics(&path, None);
                 }
                 Event::Status(status) => {
                     if self.casting.loaded {
