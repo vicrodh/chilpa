@@ -17,8 +17,7 @@ pub struct TrackMenuContext {
     pub metadata: bool,
     /// None of the chosen tracks can be played now (ADR-017).
     pub unavailable: bool,
-    /// A source's track, which the library does not hold: no playlist of
-    /// the library can take it.
+    /// A track whose metadata comes from a source catalog.
     pub remote: bool,
 }
 
@@ -47,9 +46,7 @@ pub fn track_menu(context: TrackMenuContext) -> Vec<Value> {
         entries.push(item("later", i18n::mark("Play later")));
     }
     entries.push(json!({"separator": true}));
-    if !context.remote {
-        entries.push(item("pick", i18n::mark("Add to playlist…")));
-    }
+    entries.push(item("pick", i18n::mark("Add to playlist…")));
     let mut navigation = Vec::new();
     if context.count == 1 {
         for (enabled, act, label) in [

@@ -7,8 +7,8 @@
 //! - **Each source arrives when it answers**, with its own time limit. One
 //!   that does not answer is left out and marked; it does not stop the rest.
 //! - **Chilpa orders and groups.** A plugin cannot reorder or hide another's
-//!   results: what is its own is appended at the end, in the order it was
-//!   registered.
+//!   results: I interleave sources before limiting the overview, preserving
+//!   each source's ranking and one top result per source.
 //! - **What is the same song is shown once**, matched by ISRC or MBID,
 //!   saying where else it is. Matching by name is not matching, so it is not
 //!   done.
