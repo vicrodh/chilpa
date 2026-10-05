@@ -17,8 +17,9 @@ Item {
     signal selectToggle()
     signal context(real left, real top)
     signal artwork()
+    signal information()
 
-    implicitHeight: Math.max(Metrics.heroArt, information.implicitHeight)
+    implicitHeight: Math.max(Metrics.heroArt, body.implicitHeight)
 
     ArtTile {
         id: cover
@@ -30,7 +31,7 @@ Item {
     TapHandler { parent: cover; onTapped: hero.artwork() }
 
     Column {
-        id: information
+        id: body
         anchors.left: cover.right
         anchors.leftMargin: Metrics.heroGap
         anchors.right: parent.right
@@ -88,6 +89,7 @@ Item {
                 text: I18n.tr("Shuffle", I18n.rev)
                 onClicked: hero.shuffle()
             }
+            IconButton { objectName: "albumInformation"; glyph: Icons.infoCircle; round: true; tone: hero.contrasted ? "overlay" : "secondary"; tip: I18n.tr("Information", I18n.rev); onClicked: hero.information() }
             MarkButtons {
                 kind: "album"
                 key: hero.detail.selectedId !== 0 ? hero.detail.selectedId.toString() : ""

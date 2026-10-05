@@ -578,6 +578,9 @@ msgstr "Create playlists"
 msgid "Creating playlists…"
 msgstr "Creating playlists…"
 
+msgid "Credits"
+msgstr "Credits"
+
 msgid "Custom"
 msgstr ""
 
@@ -1325,6 +1328,9 @@ msgstr "No compatible playlists. Create one to get started."
 msgid "No cover"
 msgstr ""
 
+msgid "No credits available"
+msgstr "No credits available"
+
 msgid "No devices found"
 msgstr ""
 
@@ -1360,6 +1366,9 @@ msgstr ""
 
 msgid "No plugins installed"
 msgstr ""
+
+msgid "No review available"
+msgstr "No review available"
 
 msgid "No tracks in the selected libraries yet."
 msgstr ""
@@ -1486,6 +1495,9 @@ msgstr ""
 
 msgid "Open its page"
 msgstr ""
+
+msgid "Open label"
+msgstr "Open label"
 
 msgid "Open media"
 msgstr "Open media"
@@ -1879,6 +1891,9 @@ msgstr "Reverse order"
 
 msgid "Revert"
 msgstr ""
+
+msgid "Review"
+msgstr "Review"
 
 msgid "Review the requested permissions before installing."
 msgstr "Review the requested permissions before installing."

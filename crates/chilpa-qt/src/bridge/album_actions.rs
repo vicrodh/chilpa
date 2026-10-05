@@ -24,6 +24,7 @@ pub mod qobject {
         #[qproperty(i32, selected_count)]
         type AlbumActions = super::AlbumActionsRust;
 
+        #[qinvokable] fn information(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
         fn sources(self: &AlbumActions, id: i64, rev: i32) -> QString;
         #[qinvokable]
@@ -88,6 +89,8 @@ impl qobject::AlbumActions {
     pub fn explain(&self, id: i64) {
         app::with(|api| api.explain_unavailable_album(id));
     }
+
+    pub fn information(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString { cxx_qt_lib::QString::from(app::with(|api| api.album_information(id))) }
 
     pub fn sources(&self, id: i64, _rev: i32) -> cxx_qt_lib::QString {
         cxx_qt_lib::QString::from(app::with(|api| serde_json::to_string(&api.album_sources(id)).unwrap_or_default()))

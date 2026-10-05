@@ -43,7 +43,7 @@ Flickable {
 
     AlbumHeaderBackground {
         width: page.width
-        height: Metrics.contentTop + (detail.selectedId < 0 ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
+        height: Metrics.contentTop + (sourceDetails.visible ? sourceDetails.heroHeight : hero.height) + Metrics.gap16
         art: detail.art
         mode: SettingsModel.albumHeader
     }
@@ -57,7 +57,7 @@ Flickable {
 
         AlbumHero {
             id: hero
-            visible: detail.selectedId >= 0
+            visible: !sourceDetails.visible
             width: parent.width
             detail: detail
             selecting: page.selectionMode
@@ -67,11 +67,13 @@ Flickable {
             onSelectToggle: page.toggleSelection()
             onContext: (left, top) => page.showActions(hero, left, top)
             onArtwork: artwork.show(detail.art)
+            onInformation: information.open()
         }
 
         SourceRecordDetails { id: sourceDetails; width: parent.width; cardId: detail.selectedId; trackModel: tracks; record: detail
             selecting: page.selectionMode
             onArtwork: artwork.show(detail.art)
+            onInformation: information.open()
             onSelectToggle: page.toggleSelection()
             onContext: (left, top) => page.showActions(sourceDetails, left, top)
         }
@@ -136,6 +138,7 @@ Flickable {
 
     AlbumMenu { id: albumMenu }
     ArtworkModal { id: artwork }
+    AlbumInfoModal { id: information; albumId: detail.selectedId; art: detail.art; summary: detail.summary }
     PlaylistSelectionBar {
         visible: page.selectionMode && tracks.selectedCount > 0
         z: 2
