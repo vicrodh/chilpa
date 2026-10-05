@@ -110,6 +110,31 @@ fn decode(path: &Path) -> (Vec<i32>, usize, u8) {
     (left, largest, bits)
 }
 
+fn check_lossless_seek(path: &Path, bits: u16) {
+    let mut decoded = Decoded::open(path).unwrap();
+    assert_eq!(decoded.stream_format().channels, 2);
+    for target in [FRAMES / 2, FRAMES - 1, 0, 4097] {
+        let plan = decoded.seek_to_frame(u64::from(target)).unwrap();
+        let mut discard = plan.discard as usize;
+        loop {
+            let Block::Int { data, .. } = decoded.next_block().unwrap().expect("audio after seek") else {
+                panic!("lossless integer audio changed to float");
+            };
+            let frames = data.len() / 2;
+            if discard >= frames {
+                discard -= frames;
+                continue;
+            }
+            let expected = sample(target, bits);
+            assert_eq!(
+                &data[discard * 2..discard * 2 + 2], &[expected, -expected],
+                "{}: both channels after seeking to {target}", path.display()
+            );
+            break;
+        }
+    }
+}
+
 #[test]
 fn lossless_formats_come_out_identical_and_in_blocks() {
     if !have_ffmpeg() {
@@ -131,7 +156,9 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
         ("alac16.m4a", &wav16, &["-c:a", "alac"], &expected16, 16),
         ("alac24.m4a", &wav24, &["-c:a", "alac"], &expected24, 24),
         ("pcm24.wav", &wav24, &["-c:a", "pcm_s24le"], &expected24, 24),
+        ("pcm16.wav", &wav16, &["-c:a", "pcm_s16le"], &expected16, 16),
         ("pcm16.aiff", &wav16, &["-c:a", "pcm_s16be"], &expected16, 16),
+        ("pcm24.aiff", &wav24, &["-c:a", "pcm_s24be"], &expected24, 24),
     ];
 
     for (name, origin, args, expected, expected_bits) in cases {
@@ -148,6 +175,7 @@ fn lossless_formats_come_out_identical_and_in_blocks() {
             largest <= MAX_FRAMES_PER_BLOCK,
             "{name}: a block of {largest} frames; too much is being decoded"
         );
+        check_lossless_seek(&target, u16::from(*expected_bits));
         let _ = std::fs::remove_file(target);
     }
     let _ = std::fs::remove_file(wav16);
@@ -278,4 +306,22 @@ fn opus_is_not_supported_yet_and_says_so_plainly() {
     }
     let _ = std::fs::remove_file(target);
     let _ = std::fs::remove_file(wav);
+}
+
+#[test]
+#[ignore = "the AIFF reader counts the eight SSND header bytes as audio"]
+fn aiff_declares_the_number_of_frames_it_actually_decodes() {
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let wav = dir().join("ref-aiff-duration.wav");
+    let aiff = dir().join("aiff-duration.aiff");
+    write_wav(&wav, 16);
+    assert!(convert(&wav, &aiff, &["-c:a", "pcm_s16be"]));
+    let declared = Decoded::open(&aiff).unwrap().frame_count();
+    let (samples, _, _) = decode(&aiff);
+    std::fs::remove_file(wav).unwrap();
+    std::fs::remove_file(aiff).unwrap();
+    assert_eq!(declared, Some(samples.len() as u64));
 }
