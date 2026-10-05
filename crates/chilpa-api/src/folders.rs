@@ -168,10 +168,29 @@ pub(crate) fn disk_folder(dir: &std::path::Path) -> crate::FolderView {
     }
     folders.sort_by(|a, b| in_natural_order(std::path::Path::new(&a.name), std::path::Path::new(&b.name)));
     files.sort_by(|a, b| in_natural_order(a, b));
-    let tracks: Vec<crate::TrackRow> = chilpa_core::sacd_tracks::expand(&files)
-        .iter()
-        .map(|p| crate::browse::file_row(&p.display().to_string()))
-        .collect();
+    let tracks: Vec<crate::TrackRow> = files.iter().flat_map(|path| {
+        if chilpa_core::sacd_tracks::is_image(path) {
+            image_rows(path)
+        } else {
+            vec![crate::browse::file_row(&path.display().to_string())]
+        }
+    }).collect();
     let total = tracks.len();
     crate::FolderView { folders, tracks, in_library: false, total }
+}
+
+/// Read an image once for the whole list, including metadata and playable
+/// addresses. A virtual track is available when its image can be read.
+pub(crate) fn image_rows(path: &std::path::Path) -> Vec<crate::TrackRow> {
+    chilpa_core::sacd_tracks::disc_images().tracks(path).unwrap_or_default().into_iter().map(|track| {
+        let info = track.info;
+        crate::TrackRow {
+            id: 0, path: track.path, title: info.tags.title.clone().unwrap_or_default(),
+            artist: info.tags.artist_line(), album: info.tags.album.clone().unwrap_or_default(),
+            album_id: 0, disc: info.tags.disc_number.unwrap_or(0),
+            number: info.tags.track_number.unwrap_or(0), duration_ms: info.duration.as_millis() as u64,
+            plays: 0, artwork_path: String::new(), available: true,
+            quality: crate::Quality::of_file(&path.to_string_lossy(), info.bit_depth, info.sample_rate_hz),
+        }
+    }).collect()
 }

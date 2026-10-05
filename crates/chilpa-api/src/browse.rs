@@ -194,6 +194,11 @@ pub struct FolderItem {
 /// A row for a file the library does not have: its name, and what its
 /// extension says.
 pub(crate) fn file_row(path: &str) -> TrackRow {
+    if let Some((image, _)) = chilpa_core::sacd_tracks::parse(std::path::Path::new(path)) {
+        if let Some(row) = crate::folders::image_rows(&image).into_iter().find(|row| row.path == path) {
+            return row;
+        }
+    }
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
@@ -304,6 +309,16 @@ impl Reader {
     /// A folder: the library's roots for an empty path, what the library
     /// has under a folder inside it, or what the disk has in one outside it.
     pub fn folder(&self, dir: &str) -> FolderView {
+        if chilpa_core::sacd_tracks::is_image(std::path::Path::new(dir)) {
+            let mut tracks = crate::folders::image_rows(std::path::Path::new(dir));
+            let paths = tracks.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
+            let known = self.lib.tracks_by_paths(&paths).unwrap_or_default();
+            let in_library = !tracks.is_empty() && known.iter().flatten().count() == tracks.len();
+            for (row, saved) in tracks.iter_mut().zip(known) {
+                if let Some(saved) = saved { *row = row_of(saved); }
+            }
+            return FolderView { total: tracks.len(), folders: Vec::new(), tracks, in_library };
+        }
         let roots = self.lib.roots().unwrap_or_default();
         if dir.is_empty() {
             let folders = roots
@@ -350,7 +365,11 @@ impl Reader {
             }
         }
         for track in view.tracks {
-            let name = std::path::Path::new(&track.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(track.title);
+            let name = if chilpa_core::sacd_tracks::parse(std::path::Path::new(&track.path)).is_some() {
+                format!("{:02}. {}", track.number, track.title)
+            } else {
+                std::path::Path::new(&track.path).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or(track.title)
+            };
             rows.push(FolderItem { name, path: track.path, depth, file: true, ..FolderItem::default() });
         }
     }
@@ -368,7 +387,9 @@ impl Reader {
             let root = root.path;
             paths.insert(root.clone());
             for track in self.lib.folder_paths(&root.to_string_lossy()).unwrap_or_default() {
-                let mut parent = std::path::Path::new(&track).parent();
+                let physical = chilpa_core::sacd_tracks::parse(std::path::Path::new(&track))
+                    .map(|(image, _)| image).unwrap_or_else(|| std::path::PathBuf::from(&track));
+                let mut parent = physical.parent();
                 while let Some(dir) = parent.filter(|dir| dir.starts_with(&root)) {
                     paths.insert(dir.to_path_buf());
                     if dir == root {
@@ -392,6 +413,9 @@ impl Reader {
     /// Every playable file under a folder, in order: the library's for one
     /// inside it, the disk's for one outside.
     pub fn folder_files(&self, dir: &str) -> Vec<String> {
+        if chilpa_core::sacd_tracks::is_image(std::path::Path::new(dir)) {
+            return self.folder(dir).tracks.into_iter().filter(|row| row.available).map(|row| row.path).collect();
+        }
         let roots = self.lib.roots().unwrap_or_default();
         if roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path)) {
             return self.lib.folder_paths(dir).unwrap_or_default();
