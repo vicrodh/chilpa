@@ -578,6 +578,9 @@ msgstr "Crear playlists"
 msgid "Creating playlists…"
 msgstr "Creando playlists…"
 
+msgid "Credits"
+msgstr "Créditos"
+
 msgid "Custom"
 msgstr "Personalizado"
 
@@ -1325,6 +1328,9 @@ msgstr "No hay playlists compatibles. Crea una para comenzar."
 msgid "No cover"
 msgstr "Sin carátula"
 
+msgid "No credits available"
+msgstr "No hay créditos disponibles"
+
 msgid "No devices found"
 msgstr "No se encontraron dispositivos"
 
@@ -1360,6 +1366,9 @@ msgstr "Todavía no hay playlists."
 
 msgid "No plugins installed"
 msgstr "No hay plugins instalados"
+
+msgid "No review available"
+msgstr "No hay reseña disponible"
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
@@ -1486,6 +1495,9 @@ msgstr "Abrirlo otra vez"
 
 msgid "Open its page"
 msgstr "Abrir su página"
+
+msgid "Open label"
+msgstr "Abrir sello"
 
 msgid "Open media"
 msgstr "Abrir medios"
@@ -1879,6 +1891,9 @@ msgstr "Invertir orden"
 
 msgid "Revert"
 msgstr "Revertir"
+
+msgid "Review"
+msgstr "Reseña"
 
 msgid "Review the requested permissions before installing."
 msgstr "Revisa los permisos solicitados antes de instalar."

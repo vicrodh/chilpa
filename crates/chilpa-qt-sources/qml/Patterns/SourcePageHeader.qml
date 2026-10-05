@@ -12,7 +12,7 @@ Column {
     property string tracksKey: ""
     property bool currentPage: false
     property bool contrasted: false
-    property bool inlineInformation: false
+    property bool externalInformation: false
     signal information()
     signal artwork()
     signal selectToggle()
@@ -62,7 +62,7 @@ Column {
             PillButton { visible: !!header.info.artist_ref; text: header.info.artist || ""; kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.follow(header.info.artist_ref) }
             Text { width: parent.width; text: [header.info.release_date || "", header.playbackModel.summary || "", header.info.genre || ""].filter(Boolean).join(" · "); wrapMode: Text.Wrap; font.pointSize: Type.meta; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary }
             Text { id: description; width: parent.width; visible: !!header.info.description; text: header.info.description || ""; textFormat: Text.StyledText; wrapMode: Text.WordWrap; maximumLineCount: 3; elide: Text.ElideRight; font.pointSize: Type.body; color: header.contrasted ? Theme.color.textOnAccent : Theme.color.textSecondary; onLinkActivated: link => header.follow(link) }
-            PillButton { visible: description.truncated; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "secondary" : "ghost"; onClicked: biography.open() }
+            PillButton { visible: description.truncated; text: I18n.tr("Read more", I18n.rev); kind: header.contrasted ? "secondary" : "ghost"; onClicked: header.externalInformation ? header.information() : biography.open() }
             Row {
                 visible: !!header.info.quality_label; spacing: Metrics.gap6
                 QualityIcon { tier: header.info.quality_tier || 0; anchors.verticalCenter: parent.verticalCenter }
@@ -74,7 +74,7 @@ Column {
                 IconButton { visible: header.playbackModel.count > 0; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.arrowsShuffle; tip: I18n.tr("Shuffle", I18n.rev); onClicked: header.playbackModel.playAll(true) }
                 IconButton { objectName: "radioAction"; visible: !!header.info.radio_id; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Lucide.radio; iconFamily: Lucide.font; tip: header.artist ? I18n.tr("Artist radio", I18n.rev) : I18n.tr("Album radio", I18n.rev); onClicked: AlbumActions.play(header.info.radio_id, false) }
                 IconButton { visible: !!header.info.ref && header.info.editable !== true; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.heart; checked: header.info.favorite === true; tip: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: header.favorite() }
-                IconButton { round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.infoCircle; tip: I18n.tr("Information", I18n.rev); onClicked: header.inlineInformation ? header.information() : biography.open() }
+                IconButton { objectName: "albumInformation"; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.infoCircle; tip: I18n.tr("Information", I18n.rev); onClicked: header.externalInformation ? header.information() : biography.open() }
                 IconButton { visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.checkbox; checked: header.selecting; tip: header.selecting ? I18n.tr("Finish selecting", I18n.rev) : I18n.tr("Select tracks", I18n.rev); onClicked: header.selectToggle() }
                 IconButton {
                     id: actions; visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.dots; tip: I18n.tr("Album actions", I18n.rev)

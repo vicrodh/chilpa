@@ -18,6 +18,8 @@ TitledFlow {
     MediaQuickView { width: Metrics.confirmWidth; entry: ({title:"Station",subtitle:"Country · Jazz",playable:true}) }
     MediaShowHeader { width: Metrics.confirmWidth; entry: ({title:"Show",subtitle:"Author",description:"A description of the show."}) }
     SourceDiscoveryControls { width: Metrics.confirmWidth; about: ({plugin:"preview",tab:"home",genres:[],shelves:[{id:"releases",title:"Releases",items:[]}]}) }
+    AlbumInfoModal {}
+    AlbumCreditRow { width: Metrics.confirmWidth; credit: ({title:"Song",artist:"Artist",performers:"Player, Guitar"}) }
     SourceRecordDetails { width: Metrics.confirmWidth }
     SourceAlbumLibraries { width: Metrics.confirmWidth; model: [{id:"preview",name:"Streaming library",enabled:false,icon:""}] }
     SourcePlaylistEditor {}

@@ -3,6 +3,8 @@ import QtQuick
 QtObject {
     property int rev: 0
     property int selectedCount: 0
+    property var informationDocument: ({})
+    function information(id, revision) { return JSON.stringify(informationDocument) }
     function sources(id, revision) { return "[]" }
     function quality(id, revision) { return '{"tier":3,"label":"FLAC 24/96"}' }
     function available(id, revision) { return true }
