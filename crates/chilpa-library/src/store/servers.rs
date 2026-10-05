@@ -443,6 +443,20 @@ impl Library {
     /// What was already sent elsewhere -- a scrobble -- is not retracted,
     /// and nothing is ever asked of the server itself.
     pub fn remove_source(&self, source_id: i64) -> rusqlite::Result<()> {
+        self.remove_source_catalog(source_id, false)
+    }
+
+    /// Uninstall removes the source's catalog, retaining entries saved in other playlists.
+    pub fn remove_plugin_source(&self, source_id: i64) -> rusqlite::Result<()> {
+        self.remove_source_catalog(source_id, true)
+    }
+
+    fn remove_source_catalog(&self, source_id: i64, preserve_playlists: bool) -> rusqlite::Result<()> {
+        let tracks_of = if preserve_playlists {
+            "SELECT id FROM tracks WHERE source_id = ?1 AND id NOT IN
+             (SELECT pt.track_id FROM playlist_tracks pt JOIN playlists p ON p.id = pt.playlist_id
+              WHERE p.source_id <> ?1 AND pt.track_id IS NOT NULL)"
+        } else { TRACKS_OF };
         let tx = self.own_transaction()?;
         let touched: Vec<i64> = {
             let mut stmt = tx.prepare(&format!("SELECT DISTINCT playlist_id FROM ({ENTRIES_IN_OTHERS})"))?;
@@ -450,11 +464,11 @@ impl Library {
             rows.collect::<rusqlite::Result<_>>()?
         };
         let theirs: std::collections::HashSet<i64> = {
-            let mut stmt = tx.prepare(TRACKS_OF)?;
+            let mut stmt = tx.prepare(tracks_of)?;
             let rows = stmt.query_map(params![source_id], |r| r.get(0))?;
             rows.collect::<rusqlite::Result<_>>()?
         };
-        for playlist in touched {
+        for playlist in touched.into_iter().filter(|_| !preserve_playlists) {
             let kept: Vec<PlaylistEntry> = self
                 .playlist_entries(playlist)?
                 .into_iter()
@@ -468,13 +482,13 @@ impl Library {
             rows.collect::<rusqlite::Result<_>>()?
         };
         tx.execute("DELETE FROM playlists WHERE source_id = ?1", params![source_id])?;
-        tx.execute(&format!("DELETE FROM play_events WHERE source_id = ?1 OR track_id IN ({TRACKS_OF})"), params![source_id])?;
+        tx.execute(&format!("DELETE FROM play_events WHERE source_id = ?1 OR track_id IN ({tracks_of})"), params![source_id])?;
         let genres: Vec<i64> = {
-            let mut stmt = tx.prepare(&format!("SELECT DISTINCT genre_id FROM track_genres WHERE track_id IN ({TRACKS_OF})"))?;
+            let mut stmt = tx.prepare(&format!("SELECT DISTINCT genre_id FROM track_genres WHERE track_id IN ({tracks_of})"))?;
             let rows = stmt.query_map(params![source_id], |r| r.get(0))?;
             rows.collect::<rusqlite::Result<_>>()?
         };
-        tx.execute(&format!("DELETE FROM track_genres WHERE track_id IN ({TRACKS_OF})"), params![source_id])?;
+        tx.execute(&format!("DELETE FROM track_genres WHERE track_id IN ({tracks_of})"), params![source_id])?;
         // A genre only its tracks had leaves with them.
         {
             let mut delete = tx.prepare("DELETE FROM genres WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM track_genres WHERE genre_id = ?1)")?;
@@ -482,9 +496,9 @@ impl Library {
                 delete.execute(params![genre])?;
             }
         }
-        tx.execute(&format!("DELETE FROM audio_features WHERE track_id IN ({TRACKS_OF})"), params![source_id])?;
-        tx.execute(&format!("DELETE FROM scanned_files WHERE track_id IN ({TRACKS_OF})"), params![source_id])?;
-        tx.execute("DELETE FROM tracks WHERE source_id = ?1", params![source_id])?;
+        tx.execute(&format!("DELETE FROM audio_features WHERE track_id IN ({tracks_of})"), params![source_id])?;
+        tx.execute(&format!("DELETE FROM scanned_files WHERE track_id IN ({tracks_of})"), params![source_id])?;
+        tx.execute(&format!("DELETE FROM tracks WHERE id IN ({tracks_of})"), params![source_id])?;
         {
             let mut delete = tx.prepare("DELETE FROM albums WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM tracks WHERE album_id = ?1)")?;
             for album in albums {
@@ -492,7 +506,14 @@ impl Library {
             }
         }
         tx.execute("DELETE FROM roots WHERE source_id = ?1", params![source_id])?;
-        tx.execute("DELETE FROM sources WHERE id = ?1", params![source_id])?;
+        if preserve_playlists {
+            tx.execute("UPDATE sources SET reachable = 0 WHERE id = ?1", params![source_id])?;
+            tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
+            tx.execute("DELETE FROM sources WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM tracks WHERE source_id = ?1)
+                AND NOT EXISTS (SELECT 1 FROM playlist_tracks WHERE source_id = ?1)", params![source_id])?;
+        } else {
+            tx.execute("DELETE FROM sources WHERE id = ?1", params![source_id])?;
+        }
         // The credits only it carried name nobody now.
         self.db.execute(
             "DELETE FROM credit_parts WHERE credit NOT IN

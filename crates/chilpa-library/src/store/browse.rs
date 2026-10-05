@@ -530,6 +530,17 @@ impl Library {
         Ok(out)
     }
 
+    /// Dates needed to merge a local snapshot with source library rows.
+    pub fn track_dates(&self, ids: &[i64]) -> rusqlite::Result<std::collections::HashMap<i64, (i32, i64)>> {
+        let mut dates = std::collections::HashMap::new();
+        for chunk in ids.chunks(500) {
+            let marks = vec!["?"; chunk.len()].join(",");
+            let mut stmt = self.db.prepare(&format!("SELECT t.id, COALESCE(a.year, 0), t.added_at FROM tracks t LEFT JOIN albums a ON a.id=t.album_id WHERE t.id IN ({marks})"))?;
+            for row in stmt.query_map(params_from_iter(chunk.iter()), |r| Ok((r.get(0)?, (r.get(1)?,r.get(2)?))))? { let (id, pair) = row?; dates.insert(id, pair); }
+        }
+        Ok(dates)
+    }
+
     /// The rows of those ids, in the order given. By primary key, so it
     /// costs the same for any stretch of a snapshot.
     pub fn tracks_by_ids(&self, ids: &[i64]) -> rusqlite::Result<Vec<BrowseTrack>> {
