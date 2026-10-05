@@ -81,9 +81,15 @@ Modal {
                         width: parent.width; spacing: Metrics.gap8
                         Repeater {
                             model: dialog.info.external_links || []
-                            PillButton {
+                            IconButton {
                                 required property var modelData
-                                text: modelData.name
+                                objectName: "albumExternalLink"
+                                tip: modelData.name
+                                SourceIcon {
+                                    anchors.centerIn: parent; width: Metrics.iconMd; height: width
+                                    monochrome: modelData.name === "Discogs"
+                                    sourceInfo: ({icon: "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme/../../assets/icons/brands/" + ({MusicBrainz:"musicbrainz",Discogs:"discogs","Last.fm":"lastfm"})[modelData.name] + ".svg"})
+                                }
                                 onClicked: {
                                     externalMenu.url = modelData.url
                                     const at = mapToItem(externalMenu.parent, 0, height + Metrics.gap4)

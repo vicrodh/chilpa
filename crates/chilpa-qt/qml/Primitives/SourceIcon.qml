@@ -7,6 +7,7 @@ import "../Theme"
 Item {
     id: badge
     property var sourceInfo: ({})
+    property bool monochrome: false
     property color color: Theme.color.textSecondary
     readonly property string named: badge.sourceInfo.icon || ""
     readonly property bool drawing: named.indexOf("/") >= 0
@@ -17,7 +18,7 @@ Item {
     ControlsImpl.ColorImage {
         id: image; objectName: "sourceImage"
         anchors.fill: parent
-        color: badge.named.indexOf("monochrome=1") >= 0 ? badge.color : "transparent"
+        color: badge.monochrome || badge.named.indexOf("monochrome=1") >= 0 ? badge.color : "transparent"
         source: badge.drawing ? badge.named : ""
         visible: status === Image.Ready
         sourceSize.width: width; sourceSize.height: height
