@@ -147,7 +147,19 @@ pub fn found_menu(row: &FoundRow, names: Vec<String>, favorite: bool) -> Vec<Val
     let mut entries = match row {
         FoundRow::Playlist(_) => return vec![item("open", i18n::mark("Open")), item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))],
         FoundRow::More(..) => return Vec::new(),
-        FoundRow::Remote(row) => return if row.collection { vec![item("open", i18n::mark("Open"))] } else { vec![item("play", i18n::mark("Play now")), item("queue", i18n::mark("Add to queue"))] },
+        FoundRow::Remote(row) => return if row.collection {
+            vec![item("open", i18n::mark("Open"))]
+        } else {
+            let metadata = row.item.as_ref().unwrap_or(&Value::Null);
+            track_menu(TrackMenuContext {
+                count: 1,
+                album: metadata["album_ref"].as_str().is_some_and(|v| !v.is_empty()),
+                artist: metadata["artist_ref"].as_str().is_some_and(|v| !v.is_empty()),
+                unavailable: metadata["available"] == false,
+                remote: true,
+                ..Default::default()
+            })
+        },
         FoundRow::Header(_) => return Vec::new(),
         FoundRow::Track(t) => {
             return track_menu(TrackMenuContext {
@@ -215,6 +227,12 @@ impl Chilpa {
 
     /// The ids of those tracks, for a playlist to take.
     pub fn found_track_ids(&mut self, row: &FoundRow) -> Vec<i64> {
+        if let FoundRow::Remote(found) = row {
+            if !found.collection {
+                let id = self.catalog.adopt(&found.source, None, found);
+                return if id != 0 { vec![id] } else { Vec::new() };
+            }
+        }
         self.found_tracks(row).into_iter().map(|t| t.id).collect()
     }
 

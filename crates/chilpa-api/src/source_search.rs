@@ -6,8 +6,6 @@ pub struct RemoteFound {
     pub detail: String, pub art: String, pub duration_ms: u64, pub collection: bool,
     pub entity: String, pub item: Option<serde_json::Value>,
 }
-/// How many of a source's results the flyout shows before "more".
-
 
 impl Chilpa {
     pub fn search_source_catalogs(&mut self, text: &str, source: &str) {
@@ -56,7 +54,6 @@ impl Chilpa {
                 let wanted = match kind { "artist" => "artists", "album" => "albums", "track" => "songs", "playlist" => "playlists", _ => continue };
                 if scope != "all" && scope != wanted { continue; }
                 let image = item["image"].as_str().unwrap_or_default();
-                self.catalog.want_image(&reply.source, image);
                 group.push(FoundRow::Remote(RemoteFound {
                     source: reply.source.clone(), name: reply.source_name.clone(),
                     id: item["ref"].as_str().unwrap_or_default().into(), title: item["title"].as_str().unwrap_or_default().into(),
@@ -73,6 +70,25 @@ impl Chilpa {
     pub fn unified_found_rows(&mut self, found: &crate::Found, scope: &str) -> Vec<FoundRow> {
         let remote = self.source_found_rows(scope);
         let mut rows = Vec::new();
+        let needle = self.search.text.trim().to_lowercase();
+        let mut sources: Vec<_> = remote.iter().filter_map(|r| match r { FoundRow::Remote(r) => Some(r.source.clone()), _ => None }).collect();
+        sources.sort(); sources.dedup();
+        let mut tops = Vec::new();
+        if scope == "all" && !needle.is_empty() {
+            if crate::search::searches_source(&self.search.source, "local") {
+                if let Some(artist) = found.artists.iter().find(|a| a.name.to_lowercase() == needle) { tops.push(FoundRow::Artist(artist.clone())); }
+            }
+            for source in &sources {
+                let candidates: Vec<_> = remote.iter().filter(|r| matches!(r, FoundRow::Remote(v) if &v.source == source)).collect();
+                let top = candidates.iter().find(|r| matches!(r, FoundRow::Remote(v) if v.item.as_ref().is_some_and(|i| i["top"] == true)))
+                    .or_else(|| candidates.iter().find(|r| r.title().to_lowercase() == needle)).or_else(|| candidates.first());
+                if let Some(top) = top { tops.push((**top).clone()); }
+            }
+        }
+        if !tops.is_empty() {
+            rows.push(FoundRow::Header(chilpa_i18n::t("Top result")));
+            rows.extend(tops.iter().map(|row| match row { FoundRow::Artist(a) => FoundRow::Top(a.clone()), _ => row.clone() }));
+        }
         for (kind, name, key) in [(2, "Artists", "artists"), (3, "Albums", "albums"), (4, "Songs", "songs"), (6, "Playlists", "playlists")] {
             if scope != "all" && scope != key { continue; }
             let mut section: Vec<_> = crate::found_rows(found, key).into_iter().filter(|r| r.kind() == kind).collect();
@@ -80,10 +96,32 @@ impl Chilpa {
                 let words: Vec<_> = self.search.text.to_lowercase().split_whitespace().map(str::to_owned).collect();
                 section.extend(self.local_playlists().into_iter().filter(|p| words.iter().all(|w| p.name.to_lowercase().contains(w))).take(50).map(FoundRow::Playlist));
             }
-            section.extend(remote.iter().filter(|r| r.kind() == kind).cloned());
-            if !section.is_empty() { rows.push(FoundRow::Header(chilpa_i18n::t(name))); rows.extend(section); }
+            let mut groups = vec![section];
+            for source in &sources {
+                groups.push(remote.iter().filter(|r| r.kind() == kind && matches!(r, FoundRow::Remote(v) if &v.source == source)).cloned().collect());
+            }
+            for group in &mut groups { group.retain(|row| !tops.contains(row)); }
+            let represented = groups.iter().filter(|group| !group.is_empty()).count();
+            section = Vec::new();
+            for at in 0..groups.iter().map(Vec::len).max().unwrap_or(0) {
+                for group in &groups { if let Some(row) = group.get(at) { section.push(row.clone()); } }
+            }
+            if !section.is_empty() {
+                rows.push(FoundRow::Header(chilpa_i18n::t(name)));
+                let expansion = format!("section:{key}");
+                let limit = if scope != "all" || self.search.expanded.contains(&expansion) { usize::MAX }
+                    else { (match kind { 2 => 2, 6 => 3, _ => 4 }).max(represented) };
+                let more = section.len().saturating_sub(limit);
+                rows.extend(section.into_iter().take(limit));
+                if more > 0 { rows.push(FoundRow::More(expansion, more)); }
+            }
         }
         rows.extend(remote.into_iter().filter(|r| r.kind() == 0));
+        for row in &rows {
+            if let FoundRow::Remote(row) = row {
+                if let Some(image) = row.item.as_ref().and_then(|i| i["image"].as_str()) { self.catalog.want_image(&row.source, image); }
+            }
+        }
         rows
     }
     pub(crate) fn act_on_remote_found(&mut self, row: &RemoteFound, action: &str) -> Leads {
@@ -94,11 +132,25 @@ impl Chilpa {
         if row.collection {
             // A record found opens on the record page, as a local one does.
             if action == "open" { return Leads::Screen("album", adopted); }
-        } else if matches!(action, "open" | "play" | "queue") {
+        } else if action == "album" {
+            if let Some((track, _)) = self.catalog.tracks_by_ids(&[adopted]).first() {
+                if track.album_id != 0 { return Leads::Screen("album", track.album_id); }
+            }
+        } else if action == "artist" {
+            if let Some(reference) = row.item.as_ref().and_then(|item| item["artist_ref"].as_str()).filter(|v| !v.is_empty()) {
+                return Leads::Source(format!("{} native:{reference}", row.source));
+            }
+        } else if matches!(action, "open" | "play" | "queue" | "next" | "later") {
+            if row.item.as_ref().is_some_and(|item| item["available"] == false) { return Leads::Nowhere; }
             let card = chilpa_library::store::progress::Heard { external_id: row.id.clone(), title: row.title.clone(), subtitle: row.detail.clone(), image_url: row.art.clone(), duration_ms: row.duration_ms, ..Default::default() };
             if let Some(library) = self.library() { let _ = library.remember_heard(&row.source, &card); }
             let path = crate::source_opener::entry_of(&row.source, &row.id);
-            if action == "queue" { self.enqueue_here(&[path]); } else { self.play_from(&[path], 0); }
+            match action {
+                "queue" => self.enqueue_here(&[path]),
+                "next" => self.play_next_here(&[path]),
+                "later" => { self.play_later_here(&[path], &row.title); },
+                _ => self.play_from(&[path], 0),
+            }
         }
         Leads::Nowhere
     }
@@ -111,6 +163,11 @@ pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id
         Ok(value) => {
             for key in ["artists", "albums", "tracks", "playlists"] {
                 reply.entities.extend(value[key].as_array().into_iter().flatten().filter(|item| item["ref"].as_str().is_some_and(|s| !s.is_empty())).cloned());
+            }
+            if let Some(top) = value.get("top").filter(|t| t["ref"].is_string()) {
+                let mut top = top.clone(); top["top"] = serde_json::json!(true);
+                if let Some(item) = reply.entities.iter_mut().find(|i| i["ref"] == top["ref"]) { *item = top; }
+                else { reply.entities.insert(0, top); }
             }
             for item in reply.entities.iter().filter(|item| item["kind"] == "track") {
                 if let Ok(track) = serde_json::from_value(serde_json::json!({"external_id":item["ref"],"title":item["title"],
@@ -127,6 +184,75 @@ pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id
 mod tests {
     use super::*;
     use serde_json::json;
+    #[test]
+    fn remote_track_menu_keeps_queue_actions_and_source_navigation() {
+        let mut api = Chilpa::new();
+        let item = json!({"kind":"track","ref":"track:7","title":"Song","artist":"Band",
+            "album":"Record","album_ref":"album:2","artist_ref":"artist:9"});
+        let remote = RemoteFound { source:"source-a".into(),name:"Source A".into(),id:"track:7".into(),
+            title:"Song".into(),detail:String::new(),art:String::new(),duration_ms:1000,
+            collection:false,entity:"track".into(),item:Some(item) };
+        let row = FoundRow::Remote(remote.clone());
+        let menu = api.found_menu(&row);
+        let actions: Vec<_> = menu.iter().filter_map(|v| v["act"].as_str()).collect();
+        assert_eq!(actions, ["play","queue","next","later","pick","album","artist"]);
+        let ids = api.found_track_ids(&row);
+        assert_eq!(ids.len(), 1);
+        assert!(ids[0] < 0);
+        let Leads::Screen("album", id) = api.act_on_remote_found(&remote, "album") else { panic!("missing album route") };
+        let card = api.catalog.card(id).unwrap();
+        assert_eq!(card.plugin, "source-a");
+        assert_eq!(card.identity, "album:2");
+        assert_eq!(api.act_on_remote_found(&remote, "artist"), Leads::Source("source-a native:artist:9".into()));
+        let mut unavailable = remote.clone();
+        unavailable.item.as_mut().unwrap()["available"] = json!(false);
+        assert!(api.found_menu(&FoundRow::Remote(unavailable)).is_empty());
+        let mut anonymous = remote;
+        anonymous.item = None;
+        let menu = api.found_menu(&FoundRow::Remote(anonymous));
+        let actions: Vec<_> = menu.iter().filter_map(|v| v["act"].as_str()).collect();
+        assert_eq!(actions, ["play","queue","next","later","pick"]);
+    }
+
+    #[test]
+    fn every_source_keeps_its_top_and_overview_place_regardless_of_arrival_order() {
+        let mut api = Chilpa::new();
+        api.search.text = "Band".into(); api.search.source = "all".into();
+        let found = crate::Found { artists:vec![crate::Artist {name:"Band".into(),album_count:1,track_count:2,artwork_path:String::new()}], ..Default::default() };
+        for source in ["source-b", "source-a"] {
+            let mut entities = vec![json!({"kind":"artist","ref":"artist:1","title":"Band","top":source=="source-b"})];
+            for i in 0..12 { entities.push(json!({"kind":"album","ref":format!("album:{i}"),"title":format!("Record {i}"),"artist":"Band"})); }
+            api.search.replies.push(crate::search::SourceReply {source:source.into(),source_name:source.into(),results:Default::default(),entities,problem:String::new(),delivers_audio:true});
+        }
+        let rows = api.unified_found_rows(&found, "all");
+        assert!(matches!(&rows[1], FoundRow::Top(_)));
+        assert!(matches!(&rows[2], FoundRow::Remote(r) if r.source == "source-a" && r.entity == "artist"));
+        assert!(matches!(&rows[3], FoundRow::Remote(r) if r.source == "source-b" && r.entity == "artist"));
+        let albums: Vec<_> = rows.iter().filter_map(|r| match r {FoundRow::Remote(r) if r.entity == "album" => Some(r.source.as_str()), _=>None}).collect();
+        assert_eq!(albums, ["source-a","source-b","source-a","source-b"]);
+        api.search.replies.reverse();
+        assert_eq!(rows, api.unified_found_rows(&found, "all"));
+        api.search.expanded.insert("section:albums".into());
+        let expanded = api.unified_found_rows(&found, "all");
+        assert_eq!(expanded.iter().filter(|r| r.kind() == 3).count(), 24);
+        assert_eq!(expanded.iter().filter(|r| r.title() == "Band").count(), 3);
+    }
+    #[test]
+    fn overview_keeps_top_and_two_artists_with_an_explicit_way_to_more() {
+        let mut api = Chilpa::new();
+        api.search.text = "Band".into();
+        api.search.source = "source-a".into();
+        let artists = (0..12).map(|i| json!({"kind":"artist","ref":format!("artist:{i}"),"title":format!("Band {i}"),"top":i==0})).collect();
+        api.search.replies.push(crate::search::SourceReply { source:"source-a".into(), source_name:"A".into(), results:Default::default(), entities:artists, problem:String::new(), delivers_audio:true });
+        let rows = api.unified_found_rows(&crate::Found::default(), "all");
+        assert_eq!(rows.iter().filter(|row| row.kind() == 2).count(), 3, "top plus two artist rows");
+        assert_eq!(rows[1].title(), "Band 0");
+        let more = rows.iter().position(|row| matches!(row, FoundRow::More(..))).unwrap();
+        api.act_on_found(&rows, more, "open");
+        let expanded = api.unified_found_rows(&crate::Found::default(), "all");
+        assert_eq!(expanded.iter().filter(|row| row.kind() == 2).count(), 12);
+        assert_eq!(expanded.iter().filter(|row| row.title() == "Band 0").count(), 1);
+    }
     #[test]
     fn local_and_remote_playlists_share_a_section_and_obey_source_selection() {
         let mut api = Chilpa::new();
