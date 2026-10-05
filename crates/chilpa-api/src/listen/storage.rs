@@ -8,6 +8,12 @@ impl Chilpa {
         if let Some(b) = self.buffer_snapshot(saved.active) {
             if let Some(at) = saved.buffers.iter_mut().find(|v| v.id == b.id) { *at = b; }
         }
+        if let Some(media) = &self.media {
+            saved.buffers.retain(|b| b.id != media.buffer);
+            if saved.active == media.buffer { saved.active = 0; }
+            if saved.buffers.is_empty() { saved.buffers.push(Buffer::empty(saved.next)); saved.next += 1; }
+            if saved.selected == media.buffer { saved.selected = saved.buffers[0].id; }
+        }
         let Ok(bytes) = serde_json::to_vec(&saved) else { return };
         let path = file();
         let Some(parent) = path.parent() else { return };

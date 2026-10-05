@@ -288,6 +288,9 @@ msgstr "Le pide a PipeWire o a PulseAudio que suelte la tarjeta mientras Chilpa 
 msgid "Audio"
 msgstr "Audio"
 
+msgid "Audio CD"
+msgstr "CD de audio"
+
 msgid "Audio stack"
 msgstr "Pila de audio"
 
@@ -443,6 +446,9 @@ msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
 
 msgid "Close"
 msgstr "Cerrar"
+
+msgid "Close media"
+msgstr "Cerrar medios"
 
 msgid "Close tab"
 msgstr "Cerrar pestaña"
@@ -817,6 +823,9 @@ msgstr "Filtrar artistas"
 
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
+
+msgid "Filter tracks"
+msgstr "Filtrar pistas"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr "Filtra, Enter para buscar, o la URL de un stream"
@@ -1331,6 +1340,9 @@ msgstr "Sin coincidencias"
 msgid "No matching plugins"
 msgstr "No hay plugins que coincidan"
 
+msgid "No playable tracks found."
+msgstr "No se encontraron pistas reproducibles."
+
 msgid "No playlists match your search."
 msgstr "No hay playlists que coincidan con tu búsqueda."
 
@@ -1442,9 +1454,6 @@ msgstr "Abrir SACD…"
 msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
 msgstr ""
 
-msgid "Open a folder"
-msgstr "Abrir una carpeta"
-
 msgid "Open a folder…"
 msgstr "Abrir una carpeta…"
 
@@ -1453,6 +1462,9 @@ msgstr "Abrir la página de la cuenta"
 
 msgid "Open album"
 msgstr "Abrir álbum"
+
+msgid "Open audio CD"
+msgstr "Abrir CD de audio"
 
 msgid "Open in new queue"
 msgstr "Abrir en una nueva queue"
@@ -1465,6 +1477,12 @@ msgstr "Abrirlo otra vez"
 
 msgid "Open its page"
 msgstr "Abrir su página"
+
+msgid "Open media"
+msgstr "Abrir medios"
+
+msgid "Open media without adding it to your library."
+msgstr "Abre medios sin añadirlos a tu biblioteca."
 
 msgid "Open playlist"
 msgstr "Abrir playlist"
@@ -1549,9 +1567,6 @@ msgstr "Reproducir ahora"
 
 msgid "Play on"
 msgstr "Reproducir en"
-
-msgid "Play the CD"
-msgstr "Reproducir el CD"
 
 msgid "Play this group"
 msgstr "Reproducir este grupo"

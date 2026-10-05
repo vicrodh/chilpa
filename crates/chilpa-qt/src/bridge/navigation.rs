@@ -176,6 +176,11 @@ impl qobject::Navigation {
     }
 
     pub fn close(mut self: Pin<&mut Self>, index: i32) {
+        let routes = self.rust().tabs.routes();
+        if routes.get(index.max(0) as usize).is_some_and(|r| r.screen == Screen::OpenMedia)
+            && routes.iter().filter(|r| r.screen == Screen::OpenMedia).count() == 1 {
+            app::with(|api| api.close_media());
+        }
         self.as_mut().rust_mut().tabs.close(index.max(0) as usize);
         self.publish();
     }

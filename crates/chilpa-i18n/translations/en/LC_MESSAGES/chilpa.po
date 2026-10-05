@@ -288,6 +288,9 @@ msgstr ""
 msgid "Audio"
 msgstr ""
 
+msgid "Audio CD"
+msgstr "Audio CD"
+
 msgid "Audio stack"
 msgstr ""
 
@@ -443,6 +446,9 @@ msgstr ""
 
 msgid "Close"
 msgstr ""
+
+msgid "Close media"
+msgstr "Close media"
 
 msgid "Close tab"
 msgstr ""
@@ -817,6 +823,9 @@ msgstr ""
 
 msgid "Filter playlists"
 msgstr ""
+
+msgid "Filter tracks"
+msgstr "Filter tracks"
 
 msgid "Filter, Enter to search, or a stream URL"
 msgstr ""
@@ -1331,6 +1340,9 @@ msgstr "No matches"
 msgid "No matching plugins"
 msgstr "No matching plugins"
 
+msgid "No playable tracks found."
+msgstr "No playable tracks found."
+
 msgid "No playlists match your search."
 msgstr ""
 
@@ -1442,9 +1454,6 @@ msgstr "Open SACD…"
 msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
 msgstr ""
 
-msgid "Open a folder"
-msgstr ""
-
 msgid "Open a folder…"
 msgstr ""
 
@@ -1453,6 +1462,9 @@ msgstr ""
 
 msgid "Open album"
 msgstr ""
+
+msgid "Open audio CD"
+msgstr "Open audio CD"
 
 msgid "Open in new queue"
 msgstr ""
@@ -1465,6 +1477,12 @@ msgstr ""
 
 msgid "Open its page"
 msgstr ""
+
+msgid "Open media"
+msgstr "Open media"
+
+msgid "Open media without adding it to your library."
+msgstr "Open media without adding it to your library."
 
 msgid "Open playlist"
 msgstr "Open playlist"
@@ -1548,9 +1566,6 @@ msgid "Play now"
 msgstr ""
 
 msgid "Play on"
-msgstr ""
-
-msgid "Play the CD"
 msgstr ""
 
 msgid "Play this group"
