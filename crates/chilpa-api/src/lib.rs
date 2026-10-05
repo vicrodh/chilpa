@@ -587,7 +587,7 @@ pub struct Chilpa {
     /// A wall-clock deadline that asks the player to stop from `poll`.
     sleep_until: Option<std::time::Instant>,
     /// The lyrics of what is playing, so they are not reread on every tick.
-    lyrics: Option<chilpa_lyrics::Lyrics>,
+    lyrics: Option<chilpa_lyrics::Document>,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
     /// must not leave the window waiting.
@@ -788,16 +788,16 @@ impl Chilpa {
     /// It is read once per track, not on every tick: it is a few kilobytes, but
     /// opening a file sixty times a minute makes no sense at all.
     fn load_lyrics(&mut self, path: &std::path::Path) {
-        let found = chilpa_lyrics::find(path);
-        self.now.lyrics = found.as_ref().map(|h| h.lyrics.lines.iter().map(|l| l.text.clone()).collect()).unwrap_or_default();
-        self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.lyrics.synced);
-        self.now.lyrics_source = match found.as_ref().map(|h| &h.source) {
-            Some(chilpa_lyrics::Source::Sidecar(_)) => chilpa_i18n::t("file"),
-            Some(chilpa_lyrics::Source::Embedded) => chilpa_i18n::t("tags"),
-            None => String::new(),
+        let found = chilpa_lyrics::local::find(path);
+        self.now.lyrics = found.as_ref().map(|h| h.document.lines.iter().map(|l| l.text.clone()).collect()).unwrap_or_default();
+        self.now.lyrics_synced = found.as_ref().is_some_and(|h| h.document.timing > chilpa_lyrics::Timing::Unsynced);
+        self.now.lyrics_source = match found.as_ref().map(|h| h.origin.provider.as_str()) {
+            Some("file") => chilpa_i18n::t("file"),
+            Some("tags") => chilpa_i18n::t("tags"),
+            _ => String::new(),
         };
         self.now.lyrics_line = -1;
-        self.lyrics = found.map(|h| h.lyrics);
+        self.lyrics = found.map(|h| h.document);
     }
 
     /// Which line of the lyrics belongs to that second.
@@ -805,8 +805,8 @@ impl Chilpa {
         let Some(lyrics) = &self.lyrics else {
             return -1;
         };
-        let ms = (seconds.max(0.0) * 1000.0) as u64;
-        lyrics.line_at(ms).map(|i| i as i32).unwrap_or(-1)
+        let ms = (seconds.max(0.0) * 1000.0).min(u32::MAX as f64) as u32;
+        chilpa_lyrics::timeline::current(lyrics, ms).map(|i| i as i32).unwrap_or(-1)
     }
 
     /// The CD drives on the machine.
