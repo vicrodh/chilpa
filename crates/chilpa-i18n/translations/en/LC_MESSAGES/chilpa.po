@@ -184,6 +184,9 @@ msgstr ""
 msgid "Album page"
 msgstr ""
 
+msgid "Album radio"
+msgstr "Album radio"
+
 msgid "Albums"
 msgstr ""
 
@@ -278,6 +281,9 @@ msgstr ""
 
 msgid "Artist Z-A"
 msgstr ""
+
+msgid "Artist radio"
+msgstr "Artist radio"
 
 msgid "Artists"
 msgstr ""

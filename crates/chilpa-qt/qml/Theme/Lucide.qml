@@ -10,6 +10,7 @@ QtObject {
     readonly property string listEnd: "\ue2df"
     readonly property string listPlus: "\ue23f"
     readonly property string listStart: "\ue2e1"
+    readonly property string radio: "\ue142"
     readonly property string refreshCcwDot: "\ue4b2"
     readonly property string squarePlay: "\ue481"
 }

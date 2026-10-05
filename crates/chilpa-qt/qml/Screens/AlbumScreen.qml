@@ -34,13 +34,6 @@ Flickable {
         playingPath: Player.path
     }
     AlbumGridModel {
-        id: sameArtist
-        kind: "sameArtist"
-        key: detail.selectedId.toString()
-        limit: 8
-        contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
-    }
-    AlbumGridModel {
         id: related
         kind: "related"
         key: detail.selectedId.toString()
@@ -128,12 +121,12 @@ Flickable {
             selectionMode: page.selectionMode
         }
 
-        Repeater { model: sourceDetails.info.shelves || []; SourceShelf { required property var modelData; width: column.width; section: modelData } }
-        AlbumCarousel {
+        SourceShelf {
             width: parent.width
-            title: I18n.tr("From same artist", I18n.rev)
-            model: sameArtist
+            modelKind: "sameArtist"
+            section: ({title: I18n.tr("From same artist", I18n.rev), key: String(detail.selectedId), size: 18})
         }
+        Repeater { model: sourceDetails.info.shelves || []; SourceShelf { required property var modelData; width: column.width; section: modelData } }
         AlbumCarousel {
             width: parent.width
             title: I18n.tr("Similar albums", I18n.rev)
