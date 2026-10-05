@@ -605,6 +605,7 @@ dependencies = [
  "chilpa-tags",
  "rusqlite",
  "serde_json",
+ "tempfile",
 ]
 
 [[package]]

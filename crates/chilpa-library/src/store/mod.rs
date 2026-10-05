@@ -19,6 +19,7 @@ pub mod importing;
 pub mod playlists;
 pub mod plays;
 pub mod progress;
+pub mod progress_writer;
 pub mod listening;
 pub mod ratings;
 pub mod external_ratings;
