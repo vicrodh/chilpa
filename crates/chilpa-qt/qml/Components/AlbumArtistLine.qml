@@ -1,19 +1,23 @@
 import QtQuick
 import com.blitzfc.chilpa
 import "../Theme"
+import "../Theme/TextLinks.js" as TextLinks
 
 Text {
     id: line
     objectName: "albumArtistLine"
     property double albumId: 0
     property var document: albumId ? JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}") : ({})
+    property bool contrasted: false
+    readonly property color restingColor: contrasted ? Theme.color.textOnAccentMuted : color
+    readonly property color activeColor: contrasted ? color : Theme.color.accentHover
     signal followed()
-    text: document.artist_html || ""
-    textFormat: Text.StyledText
+    text: TextLinks.render(document.artist_html, hoveredLink, restingColor, activeColor)
+    textFormat: Text.RichText
     wrapMode: Text.WordWrap
     font.pointSize: Type.body
     color: Theme.color.textSecondary
-    linkColor: hoveredLink ? Theme.color.accentHover : color
+    linkColor: restingColor
     onLinkActivated: link => {
         const artist = (document.artist_links || [])[Number(link)]
         if (artist) { followed(); Navigation.goKey(artist.target, artist.key) }

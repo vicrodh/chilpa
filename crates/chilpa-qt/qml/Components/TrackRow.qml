@@ -175,7 +175,6 @@ Item {
             elide: Text.ElideRight
             font.pointSize: Type.row
             color: row.playing ? Theme.color.accent : row.albumHovered ? Theme.color.textPrimary : row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
-            font.underline: row.albumHovered
         }
 
         TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }

@@ -56,7 +56,7 @@ Item {
             color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
         AlbumArtistLine {
-            width: parent.width; albumId: hero.detail.selectedId
+            width: parent.width; albumId: hero.detail.selectedId; contrasted: hero.contrasted
             color: hero.contrasted ? Theme.color.textOnAccent : Theme.color.textPrimary
         }
         Text {

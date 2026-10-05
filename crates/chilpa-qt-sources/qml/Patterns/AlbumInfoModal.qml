@@ -1,4 +1,5 @@
 import QtQuick
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme/TextLinks.js" as TextLinks
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
@@ -126,7 +127,7 @@ Modal {
                         }
                         TextEdit {
                             id: review; objectName: "albumReview"; visible: dialog.activeTab === 1; width: parent.width
-                            text: dialog.info.description || I18n.tr("No review available", I18n.rev)
+                            text: TextLinks.render(dialog.info.description || I18n.tr("No review available", I18n.rev), "", Theme.color.textPrimary, Theme.color.textPrimary)
                             textFormat: TextEdit.AutoText; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
                             color: Theme.color.textPrimary; selectionColor: Theme.color.accent; font.pointSize: Type.body
                             onLinkActivated: link => { if (/^https?:\/\//.test(link)) Qt.openUrlExternally(link) }
