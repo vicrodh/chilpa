@@ -1,6 +1,7 @@
 //! I own the renderer session here; the window only draws and dispatches.
 mod asset;
 mod end;
+mod reporting;
 mod worker;
 mod picker;
 use crate::{Chilpa, NowPlaying, Repeat, VolumeView};
@@ -23,6 +24,8 @@ impl Casting {
     fn advance(&mut self) { self.generation = self.generation.wrapping_add(1); }
 }
 impl Chilpa {
+    pub(crate) fn shutdown_cast(&mut self) { self.casting.worker.take(); }
+
     pub fn cast_picker(&mut self, open: bool) {
         self.casting.picker = open;
         if open {
@@ -168,6 +171,7 @@ impl Chilpa {
                     self.now.artwork_path = presentation.artwork.map(|p| p.display().to_string()).unwrap_or_default();
                     let path = std::path::PathBuf::from(&self.now.path);
                     self.name_from_source(&path);
+                    self.name_from_heard();
                     self.catalog_context();
                     self.load_lyrics(&path);
                 }

@@ -2,6 +2,7 @@ use chilpa_cast::{media_server::{ExternalAsset, RangeSource}, Error, Metadata};
 use std::{io::{self, Read, Seek, SeekFrom}, path::{Path, PathBuf}, sync::Arc, time::Duration};
 
 pub(super) struct Presentation {
+    pub playback: Option<Arc<dyn chilpa_core::playback_events::Observer>>,
     pub artwork: Option<PathBuf>, pub bits: Option<u8>, pub rate: Option<u32>,
 }
 struct FileSource(PathBuf);
@@ -58,8 +59,8 @@ pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata, Presentati
         let reply = chilpa_core::call_server(&chilpa_core::Call { method: "GET", url: &located.request.url, headers: &headers, body: None, timeout: Duration::from_secs(20), max_bytes: 1 }).map_err(|_| Error::Asset)?;
         let length = reply.headers.iter().find(|(k,_)| k.eq_ignore_ascii_case("content-range")).and_then(|(_,v)| v.strip_prefix("bytes 0-0/")).and_then(|v| v.parse::<u64>().ok()).filter(|n| *n > 0).ok_or(Error::Asset)?;
         if reply.status != 206 || reply.body.len() != 1 { return Err(Error::Asset); }
-        let metadata = Metadata { title: described.tags.title.clone().unwrap_or_default(), artist: described.tags.artist_line(), album: described.tags.album.unwrap_or_default(), duration: 0.0 };
-        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request: located.request, length }) }, metadata, Presentation { artwork: described.artwork, bits: None, rate: None }));
+        let metadata = Metadata { title: described.tags.title.clone().unwrap_or_default(), artist: described.tags.artist_line(), album: described.tags.album.unwrap_or_default(), duration: described.duration.as_secs_f64() };
+        return Ok((ExternalAsset { length, mime: mime.into(), source: Arc::new(ServerSource { request: located.request, length }) }, metadata, Presentation { playback: located.playback, artwork: described.artwork, bits: None, rate: None }));
     }
     let path = Path::new(path);
     let mime = mime(path.extension().and_then(|s| s.to_str()).unwrap_or_default());
@@ -72,6 +73,7 @@ pub(super) fn resolve(path: &str) -> Result<(ExternalAsset, Metadata, Presentati
         album: tags.as_ref().and_then(|t| t.tags.album.clone()).unwrap_or_default(), duration: tags.as_ref().map(|t| t.duration.as_secs_f64()).unwrap_or_default(),
     };
     let presentation = Presentation {
+        playback: None,
         artwork: chilpa_tags::artwork_for(path, &chilpa_core::artwork_cache()),
         bits: tags.as_ref().and_then(|t| t.bit_depth), rate: tags.as_ref().and_then(|t| t.sample_rate_hz),
     };

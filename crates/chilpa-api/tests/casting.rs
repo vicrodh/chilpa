@@ -170,7 +170,9 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
         }
         count
     });
-    chilpa_core::remote::install(Arc::new(Opener(format!("http://{address}/private"), cover.clone())));
+    let reports = Arc::new(Reports::default());
+    chilpa_core::remote::install(Arc::new(Opener(format!("http://{address}/private"), cover.clone(), reports.clone())));
+    { let mut state = renderer.state.lock().unwrap(); state.duration = 0; state.position = 9; }
     let entry = chilpa_models::RemoteEntry::new(chilpa_models::SourceId::new("fixture", "instance"), "track").to_entry();
     api.play_file(std::path::Path::new(&entry), "file:capture", false);
     wait(&mut api, |n| n.title == "Remote fixture" && n.seconds > 0.0);
@@ -179,8 +181,17 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
     assert_eq!(api.now_playing().artwork_path, cover.display().to_string());
     assert_eq!(api.now_playing().artist, "Fixture artist");
     assert_eq!(api.now_playing().album, "Fixture album");
-    renderer.state.lock().unwrap().duration = 30;
-    wait(&mut api, |n| n.total_seconds == 30.0);
+    assert_eq!(api.now_playing().total_seconds, 30.0, "catalog duration enables seeking before the receiver supplies it");
+    assert!(reports.0.lock().unwrap().is_empty(), "loading bytes is not a listen");
+    renderer.state.lock().unwrap().position = 10;
+    wait(&mut api, |_| !reports.0.lock().unwrap().is_empty());
+    api.seek(20.0);
+    wait(&mut api, |n| n.seconds == 20.0 && renderer.state.lock().unwrap().position == 20);
+    api.stop();
+    wait(&mut api, |_| reports.0.lock().unwrap().iter().any(|(_, end)| end.is_some()));
+    let measured = reports.0.lock().unwrap().clone();
+    assert!(measured.last().unwrap().0 <= 1000, "seek positions must not become listening time");
+    assert_eq!(measured.iter().filter(|(_, end)| end.is_some()).count(), 1);
     assert!(origin_thread.join().unwrap() >= 2);
     // I verify original-byte delivery and MIME selection, not decoder support.
     for (extension, mime) in [("AIFF", "audio/aiff"), ("dsf", "audio/x-dsf"), ("dff", "audio/x-dff"),
@@ -209,13 +220,21 @@ fn facade_casts_queue_controls_and_remote_originals_without_local_playback() {
     drop(api); drop(renderer); let _ = std::fs::remove_dir_all(dir);
 }
 
-struct Opener(String, std::path::PathBuf);
+#[derive(Default)]
+struct Reports(Mutex<Vec<(u64, Option<&'static str>)>>);
+impl chilpa_core::playback_events::Observer for Reports {
+    fn update(&self, frames: u64, rate: u32, _: &'static str, reason: Option<&'static str>) {
+        assert_eq!(rate, 1000);
+        self.0.lock().unwrap().push((frames, reason));
+    }
+}
+struct Opener(String, std::path::PathBuf, Arc<Reports>);
 impl chilpa_core::remote::RemoteOpener for Opener {
     fn locate(&self, _: &chilpa_models::RemoteEntry) -> std::result::Result<chilpa_core::remote::Located, String> {
-        Ok(chilpa_core::remote::Located { normalization: None, playback: None, request: chilpa_core::RangedRequest { url: self.0.clone(), headers: vec![("Authorization".into(), "Bearer fixture-only".into())] }, extension: Some("wav".into()), server: "Fixture".into() })
+        Ok(chilpa_core::remote::Located { normalization: None, playback: Some(self.2.clone()), request: chilpa_core::RangedRequest { url: self.0.clone(), headers: vec![("Authorization".into(), "Bearer fixture-only".into())] }, extension: Some("wav".into()), server: "Fixture".into() })
     }
     fn describe(&self, _: &chilpa_models::RemoteEntry) -> chilpa_core::remote::Described {
-        chilpa_core::remote::Described { tags: chilpa_tags::Tags { title: Some("Remote fixture".into()), artists: vec!["Fixture artist".into()], album: Some("Fixture album".into()), ..Default::default() }, artwork: Some(self.1.clone()), ..Default::default() }
+        chilpa_core::remote::Described { tags: chilpa_tags::Tags { title: Some("Remote fixture".into()), artists: vec!["Fixture artist".into()], album: Some("Fixture album".into()), ..Default::default() }, artwork: Some(self.1.clone()), duration: Duration::from_secs(30) }
     }
 }
 

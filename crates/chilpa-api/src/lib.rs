@@ -1111,6 +1111,7 @@ impl Chilpa {
 
     /// Seeks to that second of the playing track.
     pub fn seek(&mut self, seconds: f64) {
+        if !seconds.is_finite() { return; }
         if self.casting.active() { self.cast_seek(seconds); return; }
         if let Some(p) = &self.player {
             let safe = seconds.max(0.0);
@@ -1396,6 +1397,7 @@ impl Drop for Chilpa {
         if let Some(player) = self.player.as_mut() { player.shutdown(); }
         if self.player.is_some() { self.poll(); }
         self.log_play(true);
+        self.shutdown_cast();
         if let Some(natives) = self.catalog.natives() { natives.flush_playback(); }
     }
 }
