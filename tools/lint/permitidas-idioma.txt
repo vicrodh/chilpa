@@ -540,3 +540,7 @@ ser
 wavpack
 
 upc
+webp
+
+# The image crate resampling filter.
+lanczos
