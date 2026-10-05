@@ -48,6 +48,10 @@ pub mod qobject {
         #[qinvokable]
         fn pick(self: Pin<&mut FolderModel>);
         #[qinvokable]
+        fn pick_disc(self: Pin<&mut FolderModel>);
+        #[qsignal]
+        fn folder_opened(self: Pin<&mut FolderModel>);
+        #[qinvokable]
         fn play_cd(self: Pin<&mut FolderModel>);
     }
 
@@ -81,7 +85,7 @@ pub mod qobject {
 use crate::{app, registry, worker};
 use chilpa_api::{FolderItem, FolderView, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::cell::RefCell;
 use std::pin::Pin;
 use std::rc::Rc;
@@ -149,11 +153,7 @@ impl qobject::FolderModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        for (i, name) in ROLES.iter().enumerate() {
-            roles.insert(USER_ROLE + i as i32, QByteArray::from(*name));
-        }
-        roles
+        crate::format::roles(USER_ROLE, ROLES)
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
@@ -208,12 +208,29 @@ impl qobject::FolderModel {
     }
 
     pub fn pick(self: Pin<&mut Self>) {
-        let title = app::t("Open a folder");
+        self.choose(false);
+    }
+
+    pub fn pick_disc(self: Pin<&mut Self>) {
+        self.choose(true);
+    }
+
+    fn choose(self: Pin<&mut Self>, disc: bool) {
+        let title = if disc { app::t("Open SACD…") } else { app::t("Open a folder") };
+        let thread = self.qt_thread();
         std::thread::spawn(move || {
-            let picked = pollster::block_on(rfd::AsyncFileDialog::new().set_title(&title).pick_folder());
-            if let Some(folder) = picked {
-                let path = folder.path().to_string_lossy().into_owned();
-                registry::navigation(move |nav| nav.open_folder(&QString::from(&path)));
+            let dialog = rfd::AsyncFileDialog::new().set_title(&title);
+            let picked = if disc {
+                pollster::block_on(dialog.add_filter("SACD", &["iso", "ISO"]).pick_file())
+            } else {
+                pollster::block_on(dialog.pick_folder())
+            };
+            if let Some(picked) = picked {
+                let path = picked.path().to_string_lossy().into_owned();
+                let _ = thread.queue(move |mut model| {
+                    model.as_mut().folder_opened();
+                    registry::navigation(move |nav| nav.open_folder(&QString::from(&path)));
+                });
             }
         });
     }

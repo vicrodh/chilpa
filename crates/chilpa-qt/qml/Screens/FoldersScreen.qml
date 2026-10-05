@@ -11,15 +11,20 @@ import "../Components"
 Item {
     id: page
 
-    property bool flat: SettingsModel.kept("ui.folders.mode") === "flat"
+    property bool flat: Navigation.routeKey === "" && SettingsModel.kept("ui.folders.mode") === "flat"
     property real rail: Number(SettingsModel.kept("ui.folders.rail")) || Metrics.folderTreeWidth
     // The rail's width when its edge was taken.
     property real taken: 0
 
     FolderModel {
         id: current
+        objectName: "folderContents"
         path: Navigation.routeKey
         content: true
+        onFolderOpened: {
+            page.flat = false
+            SettingsModel.keep("ui.folders.mode", "tree")
+        }
     }
     TrackListModel {
         id: tracks
@@ -67,7 +72,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: page.flat
                 // What the title and the other tools leave, and no less than it takes to type in.
-                width: Math.max(Metrics.folderTreeMin, Math.min(Metrics.screenSearch, head.width - title.width - sort.width - open.width - modes.width - Metrics.folderTreeMin))
+                width: Math.max(Metrics.folderTreeMin, Math.min(Metrics.screenSearch, head.width - title.width - sort.width - open.width - disc.width - modes.width - Metrics.folderTreeMin))
                 placeholder: I18n.tr("Search", I18n.rev)
                 onEscaped: text = ""
             }
@@ -89,6 +94,13 @@ Item {
                 glyph: Icons.folderPlus
                 text: I18n.tr("Open a folder…", I18n.rev)
                 onClicked: current.pick()
+            }
+            PillButton {
+                id: disc
+                objectName: "openSacd"
+                glyph: Icons.disc
+                text: I18n.tr("Open SACD…", I18n.rev)
+                onClicked: current.pickDisc()
             }
             IconButton {
                 anchors.verticalCenter: parent.verticalCenter

@@ -105,7 +105,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::pin::Pin;
 
 const USER_ROLE: i32 = 256;
@@ -264,11 +264,7 @@ impl qobject::AlbumGridModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        roles.insert(USER_ROLE, QByteArray::from("first"));
-        roles.insert(USER_ROLE + 1, QByteArray::from("span"));
-        roles.insert(USER_ROLE + 2, QByteArray::from("group"));
-        roles
+        crate::format::roles(USER_ROLE, &["first", "span", "group"])
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {

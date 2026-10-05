@@ -148,7 +148,7 @@ pub mod qobject {
 use crate::{app, browse, format, registry, worker};
 use chilpa_api::{TrackEntry as Entry, TrackOrder, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::pin::Pin;
@@ -378,11 +378,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        for (i, name) in ROLES.iter().enumerate() {
-            roles.insert(USER_ROLE + i as i32, QByteArray::from(*name));
-        }
-        roles
+        crate::format::roles(USER_ROLE, ROLES)
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {

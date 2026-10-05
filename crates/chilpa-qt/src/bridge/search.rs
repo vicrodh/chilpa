@@ -65,7 +65,7 @@ pub mod qobject {
 use crate::{app, registry, worker};
 use chilpa_api::{Found, FoundRow, Leads};
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QByteArray, QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
 use std::pin::Pin;
 
 const ROLES: &[&str] = &["kind", "title", "detail", "art", "duration", "sourceIcon", "sourceName"];
@@ -104,11 +104,7 @@ impl qobject::SearchModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        let mut roles = QHash::<QHashPair_i32_QByteArray>::default();
-        for (i, name) in ROLES.iter().enumerate() {
-            roles.insert(USER_ROLE + i as i32, QByteArray::from(*name));
-        }
-        roles
+        crate::format::roles(USER_ROLE, ROLES)
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {
