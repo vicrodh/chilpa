@@ -12,3 +12,6 @@ dlna
 musicbrainz
 discogs
 gandalf
+music-artist
+microphone2
+broadcast
