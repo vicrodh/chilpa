@@ -614,6 +614,10 @@ name = "chilpa-lyrics"
 version = "0.0.0"
 dependencies = [
  "lofty",
+ "roxmltree",
+ "rusqlite",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
