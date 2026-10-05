@@ -1679,6 +1679,9 @@ msgstr "En cuarentena"
 msgid "Queue"
 msgstr "Cola"
 
+msgid "Queue actions"
+msgstr "Acciones de cola"
+
 msgid "Queue and playlist actions"
 msgstr "Acciones de cola y playlist"
 

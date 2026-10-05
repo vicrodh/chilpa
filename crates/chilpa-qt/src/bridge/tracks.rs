@@ -441,6 +441,7 @@ impl qobject::TrackListModel {
             "queue" => api.enqueue_here(&paths),
             "next" => api.play_next_here(&paths),
             "later" => { api.play_later_here(&paths, &label.to_string()); }
+            action if action.starts_with("buffer:") => api.listen_paths_action(action, &paths),
             _ => {}
         });
     }
@@ -464,6 +465,7 @@ impl qobject::TrackListModel {
 
     pub fn list_action(mut self: Pin<&mut Self>, action: &QString, row: i32, to: i32) {
         let action = action.to_string();
+        if row < 0 && action.starts_with("buffer:") { self.with_all_paths(move |paths| app::with(|api| api.listen_paths_action(&action, paths))); return; }
         if row < 0 || (action == "move" && to < 0) { return; }
         if action.starts_with("buffer:") {
             if self.in_selection(row) {
@@ -633,6 +635,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn menu_json(&self, row: i32) -> QString {
+        if row < 0 { return QString::from(app::with(|api| api.collection_queue_menu()).to_string()); }
         let this = self.rust();
         let editable = this.kind.to_string() == "playlist" && this.playlist_editable;
         let context = chilpa_api::TrackMenuContext {

@@ -33,6 +33,8 @@ Item {
         playingPath: Player.path
     }
 
+    QueueMenu { id: queueMenu; objectName: "quickQueueMenu"; model: tracks; laterLabel: detail.title }
+
     Rectangle {
         id: panel
         readonly property var albumDetail: detail
@@ -109,10 +111,13 @@ Item {
                 }
                 IconButton {
                     round: true
+                    id: queueButton
+                    objectName: "quickQueueActions"
                     glyph: Lucide.listEnd
                     iconFamily: Lucide.font
-                    tip: I18n.tr("Add to queue", I18n.rev)
-                    onClicked: tracks.queueAll()
+                    tip: I18n.tr("Queue actions", I18n.rev)
+                    enabled: tracks.count > 0
+                    onClicked: { const at = queueButton.mapToItem(quick, 0, queueButton.height + Metrics.gap4); queueMenu.show(at.x, at.y) }
                 }
                 IconButton {
                     round: true
