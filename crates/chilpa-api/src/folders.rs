@@ -2,7 +2,7 @@
 
 /// The extensions Chilpa knows how to open today.
 const EXTENSIONS: &[&str] =
-    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "mp3", "ogg", "oga", "dsf", "dff", "iso"];
+    &["flac", "wav", "aiff", "aif", "m4a", "mp4", "alac", "aac", "mp3", "ogg", "oga", "dsf", "dff", "iso"];
 
 /// A folder's audio files, its subfolders' included, in order.
 ///
@@ -98,14 +98,14 @@ mod tests {
         let mut dir = std::env::temp_dir();
         dir.push("chilpa-api-folder");
         let _ = std::fs::create_dir_all(&dir);
-        for name in ["b.flac", "a.wav", "notes.txt", "c.MP3"] {
+        for name in ["b.flac", "a.wav", "notes.txt", "c.MP3", "d.AAC"] {
             std::fs::write(dir.join(name), b"x").unwrap();
         }
         let found: Vec<String> = audio_files_in(&dir)
             .iter()
             .map(|p| p.file_name().unwrap().to_string_lossy().to_string())
             .collect();
-        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3"], "without the .txt and in order");
+        assert_eq!(found, vec!["a.wav", "b.flac", "c.MP3", "d.AAC"], "without the .txt and in order");
         let _ = std::fs::remove_dir_all(dir);
     }
 
