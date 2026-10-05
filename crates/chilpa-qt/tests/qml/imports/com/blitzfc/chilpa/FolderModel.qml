@@ -8,6 +8,7 @@ ListModel {
     property bool loading: false
     property bool inLibrary: false
     property int rev: 0
+    property int contentRev: 0
     property int folders: 0
     property int tracks: 0
     property int discPicks: 0
