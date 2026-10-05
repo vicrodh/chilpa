@@ -52,6 +52,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
     let mut remote: Option<Box<dyn RemoteTransport>> = None;
     let mut server: Option<MediaServer> = None;
     let mut end: Option<End> = None;
+    let mut listening: Option<super::reporting::Listening> = None;
     let mut resume: Option<(Instant, f64)> = None;
     let mut active_connection = 0;
     let mut generation = 0;
@@ -80,6 +81,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                 sequence = serial;
                 let connecting = matches!(&order, Order::Connect(..));
                 let disruptive = !matches!(&order, Order::Action(_)) || matches!(&order, Order::Action(Action::Stop));
+                if disruptive { listening.take(); }
                 let command = match &order {
                     Order::Connect(..) => "connect", Order::Load(..) => "load", Order::Disconnect => "disconnect",
                     Order::Action(action) => match action {
@@ -118,7 +120,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             // Buffered audio from the previous track must stop even
                             // when resolving the replacement fails.
                             let _ = transport.stop();
-                            let (asset, metadata, presentation) = asset::resolve(&path)?;
+                            let (asset, metadata, mut presentation) = asset::resolve(&path)?;
                             if stamp != latest.load(Ordering::Acquire) { return Ok(()); }
                             let mime = asset.mime.clone();
                             chilpa_core::trace_playback("cast", "asset_ready", format_args!("generation={stamp} mime={mime} bytes={}", asset.length));
@@ -126,6 +128,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                             transport.load(&url, &mime, &metadata)?;
                             chilpa_core::trace_playback("cast", "load_accepted", format_args!("generation={stamp} mime={mime}"));
                             if stamp != latest.load(Ordering::Acquire) { server.revoke(); let _ = transport.stop(); return Ok(()); }
+                            listening = presentation.playback.take().map(super::reporting::Listening::new);
                             end = Some(End::new(metadata.duration));
                             let _ = events.send((connection, stamp, serial, Event::Loaded(metadata, mime, presentation)));
                             // Like the reference player, I let the renderer open the
@@ -145,6 +148,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                                 Action::Seek(position) => {
                                     resume = None;
                                     transport.seek(position)?;
+                                    if let Some(report) = &mut listening { report.seek(); }
                                     if let Some(end) = &mut end { end.seek(); }
                                 }
                                 Action::Volume(value) => transport.volume(value)?,
@@ -192,7 +196,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
             let (_, position) = resume.take().unwrap();
             if let Some(transport) = remote.as_mut() {
                 match transport.seek(position) {
-                    Ok(()) => { if let Some(end) = &mut end { end.seek(); } }
+                    Ok(()) => { if let Some(end) = &mut end { end.seek(); } if let Some(report) = &mut listening { report.seek(); } }
                     Err(error) => { let _ = events.send((active_connection, generation, sequence, Event::ControlFailed(error.to_string()))); }
                 }
             }
@@ -203,9 +207,11 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
             match transport.status() {
                 Ok(status) => {
                     failures = 0;
+                    if let Some(report) = &mut listening { report.tick(&status, Instant::now()); }
                     let finished = end.as_mut().is_some_and(|end| end.tick(&status));
                     let _ = events.send((active_connection, generation, sequence, Event::Status(status)));
                     if finished {
+                        if let Some(mut report) = listening.take() { report.finish("finished"); }
                         end = None;
                         resume = None;
                         if let Some(server) = &server { server.revoke(); }
@@ -215,6 +221,7 @@ fn run(orders: Receiver<Request>, events: Sender<(u64, u64, u64, Event)>, latest
                 Err(error) => {
                     failures += 1;
                     if failures >= 5 {
+                        if let Some(mut report) = listening.take() { report.finish("error"); }
                         end = None;
                         resume = None;
                         server.take();
