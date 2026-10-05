@@ -237,6 +237,8 @@ fn valid_id(id: &str) -> bool {
 /// A plugin, as the view sees it.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PluginInfo {
+    pub version: String,
+    pub author: String,
     pub id: String,
     pub name: String,
     /// What it says it is, in its own words. Empty if it says nothing.
@@ -312,6 +314,7 @@ pub struct Plugins {
     /// Counts the times each plugin was loaded. A handle a worker gave out
     /// is only good for the epoch it was given in.
     epochs: BTreeMap<String, u64>,
+    playlist_reads: BTreeMap<String, (u64, std::time::Instant, bool)>,
 }
 
 /// How many times a dead worker is started again on its own, and within
@@ -335,7 +338,7 @@ impl Plugins {
             .map(|paths| Arc::new(paths) as Arc<dyn chilpa_plugin::bridge::WorkerLauncher>).or(worker_launcher);
         Some(Self { host, registry: Registry::new(), services, approvals, secrets, root, private, worker_launcher,
             layouts: BTreeMap::new(), network_requests: Arc::new(Mutex::new(BTreeMap::new())),
-            natives: Arc::default(), revived: BTreeMap::new(), epochs: BTreeMap::new() })
+            natives: Arc::default(), revived: BTreeMap::new(), epochs: BTreeMap::new(), playlist_reads: BTreeMap::new() })
     }
 
     /// The application supplies a packaged, isolated runtime. Package
@@ -451,6 +454,8 @@ impl Plugins {
             .map(|i| {
                 let state = self.registry.state(&i.id);
                 PluginInfo {
+                    version: i.manifest.as_ref().map(|m| m.version.clone()).unwrap_or_default(),
+                    author: i.manifest.as_ref().map(|m| m.author.clone()).unwrap_or_default(),
                     id: i.id.clone(),
                     name: if i.name.is_empty() { i.id.clone() } else { i.name.clone() },
                     description: i.manifest.as_ref().map(|m| m.description.trim().to_string()).unwrap_or_default(),
@@ -600,7 +605,7 @@ impl Plugins {
         }
         if let Ok(library) = chilpa_core::open_library() {
             for (provider, instance) in [(crate::source_opener::PROVIDER, id), (id, "default")] {
-                if let Ok(Some(source)) = library.find_source(provider, instance) { if library.remove_source(source).is_err() { return false; } }
+                if let Ok(Some(source)) = library.find_source(provider, instance) { if library.remove_plugin_source(source).is_err() { return false; } }
             }
         }
         self.registry.remove(id);
@@ -693,6 +698,9 @@ impl Plugins {
         self.revive_if_dead(id);
         let started = std::time::Instant::now();
         let result = self.registry.call(&self.host, &self.services, id, operation, input, limits);
+        if operation == chilpa_plugin::messages::op::PLAYLISTS && matches!(&result, Err(chilpa_plugin::PluginError::MissingExport(_))) {
+            if let Some(read) = self.playlist_reads.get_mut(id) { read.2 = true; }
+        }
         eprintln!("plugin-call: plugin={id} operation={operation} ok={} elapsed_ms={}", result.is_ok(), started.elapsed().as_millis());
         if result.is_err() && !self.registry.alive(id) {
             // A worker that died on this call is not left dead for the next
@@ -716,6 +724,14 @@ impl Plugins {
             Ok(chilpa_plugin::Reply::Error(e)) => Err(e),
             Err(e) => Err(e.to_string()),
         }
+    }
+
+    /// Sidebar redraws reuse the cache; an absent operation stays absent until reload.
+    pub(crate) fn playlists_due(&mut self, id: &str) -> bool {
+        let epoch = self.epoch(id);
+        if self.playlist_reads.get(id).is_some_and(|(seen, at, absent)| *seen == epoch && (*absent || at.elapsed() < std::time::Duration::from_secs(300))) { return false; }
+        self.playlist_reads.insert(id.into(), (epoch, std::time::Instant::now(), false));
+        true
     }
 
     /// Which load of a plugin is running. It changes whenever its worker is
@@ -1157,4 +1173,21 @@ mod tests {
         assert!(list[0].problem.contains("version"), "{}", list[0].problem);
         let _ = std::fs::remove_dir_all(dir);
     }
+    #[test]
+    fn playlist_refreshes_are_bounded_and_missing_exports_reset_on_reload() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut host = Plugins::new(dir.path().into()).unwrap();
+        let id = "app.example.music";
+        assert!(host.playlists_due(id));
+        assert!(!host.playlists_due(id));
+        host.playlist_reads.get_mut(id).unwrap().1 -= std::time::Duration::from_secs(301);
+        assert!(host.playlists_due(id));
+        let read = host.playlist_reads.get_mut(id).unwrap();
+        read.1 -= std::time::Duration::from_secs(301);
+        read.2 = true;
+        assert!(!host.playlists_due(id));
+        host.epochs.insert(id.into(), 1);
+        assert!(host.playlists_due(id));
+    }
+
 }
