@@ -27,7 +27,7 @@ impl Buffer {
             paths: Vec::new(), removed: Vec::new(), placement: Vec::new(), groups: Vec::new(),
             order: Vec::new(), cursor: 0, seconds: 0.0, shuffle: false, repeat: 0, stop_after: None }
     }
-    fn key(&self, index: usize) -> String { format!("{}:{}:{index}", self.id, self.epoch) }
+    pub(crate) fn key(&self, index: usize) -> String { format!("{}:{}:{index}", self.id, self.epoch) }
     fn live(&self, index: usize) -> bool {
         index < self.paths.len() && !self.removed.get(index).copied().unwrap_or(false)
     }
@@ -39,11 +39,11 @@ pub(super) struct Workspace {
     pub buffers: Vec<Buffer>,
     pub active: u64,
     pub selected: u64,
-    next: u64,
+    pub(crate) next: u64,
     #[serde(skip)]
     pub pending: Option<(u64, usize, f64)>,
     #[serde(skip)]
-    undo: Option<Buffer>,
+    pub(crate) undo: Option<Buffer>,
     #[serde(skip)]
     pub saved_at: Option<std::time::Instant>,
 }
@@ -85,6 +85,9 @@ impl Chilpa {
     pub(crate) fn before_queue_replace(&mut self) {
         if self.listen.active == 0 { self.listen.active = self.listen_create("", &[]); }
         self.capture_buffer();
+        if self.media.as_ref().is_some_and(|m| m.buffer == self.listen.active) {
+            self.listen.active = self.listen_create("", &[]);
+        }
         self.listen.pending = None;
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) {
             self.listen.undo = Some(b.clone());
@@ -182,6 +185,7 @@ impl Chilpa {
             self.listen.active = 0;
         }
         self.listen.buffers.remove(at);
+        if self.media.as_ref().is_some_and(|m| m.buffer == id) { self.media = None; self.listen.undo = None; }
         if self.listen.buffers.is_empty() { self.listen_create("", &[]); }
         if self.listen.selected == id { self.listen.selected = self.listen.buffers[at.min(self.listen.buffers.len()-1)].id; }
         self.persist_buffers();

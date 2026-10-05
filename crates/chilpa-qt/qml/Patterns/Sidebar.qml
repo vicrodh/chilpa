@@ -81,7 +81,8 @@ Rectangle {
                         { screen: "artists", glyph: SourceGlyphs.musicArtist, family: SourceGlyphs.font, text: I18n.tr("Artists", I18n.rev) },
                         { screen: "albums", glyph: Icons.disc, text: I18n.tr("Albums", I18n.rev) },
                         { screen: "tracks", glyph: Icons.music, text: I18n.tr("Tracks", I18n.rev) },
-                        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) }
+                        { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
+                        { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
                     ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
 
                     Column {
@@ -91,7 +92,7 @@ Rectangle {
                         width: parent.width
 
                         Text {
-                            visible: group.index === 6 && !side.collapsed
+                            visible: group.index === 7 && !side.collapsed
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Streaming", I18n.rev)

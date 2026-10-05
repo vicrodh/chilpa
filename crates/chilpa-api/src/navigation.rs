@@ -21,6 +21,7 @@ pub enum Screen {
     LibraryFolders,
     /// The library by folder, or a folder opened from the disk.
     Folders,
+    OpenMedia,
     Playlist,
     PlaylistManager,
     PlaylistImport,
@@ -47,6 +48,7 @@ impl Screen {
             Screen::Settings => "settings",
             Screen::LibraryFolders => "libraryFolders",
             Screen::Folders => "folders",
+            Screen::OpenMedia => "openMedia",
             Screen::Playlist => "playlist",
             Screen::PlaylistManager => "playlistManager",
             Screen::PlaylistImport => "playlistImport",
@@ -58,7 +60,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -243,6 +245,7 @@ impl crate::Chilpa {
                 Some(name) => (name.to_string_lossy().into_owned(), "folder"),
                 None => (self.t("Folders"), "folder"),
             },
+            Screen::OpenMedia => (self.media.as_ref().map(|m| m.media.title.clone()).unwrap_or_else(|| self.t("Open media")), "folderOpen"),
             Screen::Album => (self.album(r.id).map(|a| a.title).unwrap_or_default(), "disc"),
             Screen::Playlist => (self.playlist(r.id).map(|p| p.name).unwrap_or_default(), "playlist"),
             Screen::PlaylistManager => (self.t("Playlist manager"), "playlist"),

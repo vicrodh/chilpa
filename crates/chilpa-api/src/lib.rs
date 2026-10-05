@@ -68,6 +68,7 @@ mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod listen;
+pub mod open_media;
 mod found;
 mod source_search;
 mod source_layout;
@@ -560,6 +561,7 @@ pub struct Chilpa {
     /// Going back does not trim it.
     queue: Vec<String>,
     listen: listen::Workspace,
+    media: Option<open_media::Session>,
     /// Which position of `queue` was the first one handed to the player.
     /// Going back restarts from there, and the position the view sees is
     /// counted over the whole queue.
@@ -671,6 +673,7 @@ impl Chilpa {
             scrobbler: None,
             queue: Vec::new(),
             listen: listen::Workspace::default(),
+            media: None,
             base: 0,
             shuffle: false,
             repeat: Repeat::Off,

@@ -6,6 +6,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Screens"
 
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
+    Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
     readonly property var music: Navigation.screen === "source" ? JSON.parse(Sources.page(Navigation.routeKey, Library.remoteRev) || "{}") : ({})
@@ -24,6 +25,7 @@ Loader {
         case "settings": return settings
         case "libraryFolders": return libraryFolders
         case "folders": return folders
+        case "openMedia": return openMedia
         case "playlist": return playlist
         case "playlistManager": return playlistManager
         case "playlistImport": return playlistImport
@@ -45,6 +47,7 @@ Loader {
     Component { id: settings; SettingsScreen {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
+    Component { id: openMedia; OpenMediaScreen {} }
     Component { id: playlist; PlaylistScreen {} }
     Component { id: playlistImport; PlaylistImportScreen {} }
     Component { id: playlistManager; PlaylistManagerScreen {} }

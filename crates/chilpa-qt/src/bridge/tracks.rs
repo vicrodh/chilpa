@@ -870,6 +870,11 @@ impl qobject::TrackListModel {
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), Some(ms))
             }
+            "openMedia" => {
+                let (rows, keys) = app::with(|api| api.media_rows(&self.rust().key.to_string()));
+                self.as_mut().rust_mut().queue_keys = keys;
+                (Rows::Loaded(rows), None)
+            }
             "queue" | "listenlist" => {
                 let (entries, keys) = app::with(|api| api.listen_rows(id as u64, &self.rust().key.to_string(), kind == "listenlist"));
                 let mut number = 0;

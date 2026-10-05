@@ -32,7 +32,6 @@ pub mod qobject {
         #[qproperty(i32, tracks)]
         /// The folder tree as a list instead of one folder's children.
         #[qproperty(bool, tree)]
-        #[qproperty(bool, has_cd)]
         type FolderModel = super::FolderModelRust;
         #[qinvokable]
         fn play_all(self: Pin<&mut FolderModel>);
@@ -46,14 +45,6 @@ pub mod qobject {
         /// "next", "later" or at the end ("queue").
         #[qinvokable]
         fn act(self: Pin<&mut FolderModel>, path: &QString, action: &QString);
-        #[qinvokable]
-        fn pick(self: Pin<&mut FolderModel>);
-        #[qinvokable]
-        fn pick_disc(self: Pin<&mut FolderModel>);
-        #[qsignal]
-        fn folder_opened(self: Pin<&mut FolderModel>);
-        #[qinvokable]
-        fn play_cd(self: Pin<&mut FolderModel>);
     }
 
     unsafe extern "RustQt" {
@@ -83,7 +74,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for FolderModel {}
 }
 
-use crate::{app, registry, worker};
+use crate::{app, worker};
 use chilpa_api::{FolderItem, FolderView, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
@@ -124,7 +115,6 @@ pub struct FolderModelRust {
     folders: i32,
     tracks: i32,
     tree: bool,
-    has_cd: bool,
     items: Vec<FolderItem>,
     generation: u64,
     pending: bool,
@@ -209,41 +199,6 @@ impl qobject::FolderModel {
         });
     }
 
-    pub fn pick(self: Pin<&mut Self>) {
-        self.choose(false);
-    }
-
-    pub fn pick_disc(self: Pin<&mut Self>) {
-        self.choose(true);
-    }
-
-    fn choose(self: Pin<&mut Self>, disc: bool) {
-        let title = if disc { app::t("Open SACD…") } else { app::t("Open a folder") };
-        let thread = self.qt_thread();
-        std::thread::spawn(move || {
-            let dialog = rfd::AsyncFileDialog::new().set_title(&title);
-            let picked = if disc {
-                pollster::block_on(dialog.add_filter("SACD", &["iso", "ISO"]).pick_file())
-            } else {
-                pollster::block_on(dialog.pick_folder())
-            };
-            if let Some(picked) = picked {
-                let path = picked.path().to_string_lossy().into_owned();
-                let _ = thread.queue(move |mut model| {
-                    model.as_mut().folder_opened();
-                    registry::navigation(move |nav| nav.open_folder(&QString::from(&path)));
-                });
-            }
-        });
-    }
-
-    pub fn play_cd(self: Pin<&mut Self>) {
-        app::with(|api| {
-            let (device, bit_perfect) = api.chosen_output();
-            api.play_cd("", &device, bit_perfect);
-        });
-    }
-
     /// Defers until every QML binding for this turn has arrived.
     fn schedule(mut self: Pin<&mut Self>) {
         if self.rust().pending {
@@ -296,7 +251,6 @@ impl qobject::FolderModel {
 
 impl cxx_qt::Initialize for qobject::FolderModel {
     fn initialize(mut self: Pin<&mut Self>) {
-        self.as_mut().set_has_cd(app::with(|api| !api.cd_drives().is_empty()));
         self.as_mut().on_path_changed(|m| m.schedule()).release();
         self.as_mut().on_query_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();

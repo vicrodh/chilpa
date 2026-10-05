@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../Theme"
 
 // The measuring hooks, inert unless an environment variable asks for them
@@ -87,6 +88,10 @@ Item {
     Component.onCompleted: {
         if (Dev.route === "folders")
             Navigation.openFolder(Dev.routeKey)
+        else if (Dev.route === "openMedia" && Dev.routeKey !== "") {
+            Navigation.go("openMedia", 0)
+            OpenMedia.openPath("sacd", Dev.routeKey)
+        }
         else if (Dev.route === "artist")
             Navigation.openArtist(Dev.routeKey)
         else if (Dev.route === "settings")
