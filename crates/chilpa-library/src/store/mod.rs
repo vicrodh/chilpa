@@ -15,6 +15,7 @@ mod genres;
 mod integrations;
 pub mod find;
 pub mod fingerprints;
+pub mod importing;
 pub mod playlists;
 pub mod plays;
 pub mod progress;
@@ -159,6 +160,15 @@ impl Library {
                 Some(format!("library reader needs schema version {}, found {version}; open the main library first", schema::VERSION)),
             ));
         }
+        Ok(Self { db, versions: Default::default(), related: Default::default() })
+    }
+
+    /// A background writer for an already initialized library, without migrations.
+    pub fn open_existing(path: &Path) -> rusqlite::Result<Self> {
+        let db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE)?;
+        schema::apply_pragmas(&db)?;
+        let version: i64 = db.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version != schema::VERSION { return Err(rusqlite::Error::InvalidQuery); }
         Ok(Self { db, versions: Default::default(), related: Default::default() })
     }
 
