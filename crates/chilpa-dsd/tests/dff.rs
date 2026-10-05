@@ -90,3 +90,19 @@ fn a_dst_compressed_dsdiff_is_refused_with_the_reason() {
     }
     let _ = std::fs::remove_file(path);
 }
+
+#[test]
+fn missing_audio_is_an_error_instead_of_the_end_of_the_track() {
+    let path = write_dff("truncated", 10_000, b"DSD ");
+    let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    // Remove the trailing DIIN chunk (14 bytes) and one byte of audio.
+    file.set_len(file.metadata().unwrap().len() - 15).unwrap();
+    let mut reader = DffReader::open(&path).unwrap();
+    assert!(reader.next_block().unwrap().is_some());
+    assert!(reader.next_block().unwrap().is_some());
+    assert!(
+        matches!(reader.next_block(), Err(DsdError::Open(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof),
+        "missing audio must reach the playback error path"
+    );
+    std::fs::remove_file(path).unwrap();
+}

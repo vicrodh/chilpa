@@ -129,15 +129,9 @@ impl DsdSource for DffReader {
             return Ok(None);
         }
         let mut interleaved = vec![0u8; take];
-        match self.file.read_exact(&mut interleaved) {
-            Ok(()) => {}
-            // Cut short: what is there is what is handed over, as with DSF.
-            Err(e) if e.kind() == std::io::ErrorKind::UnexpectedEof => {
-                self.remaining = 0;
-                return Ok(None);
-            }
-            Err(e) => return Err(DsdError::Open(e)),
-        }
+        // EOF inside the declared audio chunk is a read error. Returning
+        // None here would advance the queue as if all the music had played.
+        self.file.read_exact(&mut interleaved)?;
         self.remaining -= take as u64;
         let mut out = vec![Vec::with_capacity(take / channels); channels];
         for round in interleaved.chunks_exact(channels) {

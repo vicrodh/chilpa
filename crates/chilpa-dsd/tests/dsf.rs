@@ -147,3 +147,18 @@ fn seeking_lands_at_the_start_of_a_block() {
     assert_eq!(channels[0][0], expected.reverse_bits(), "it starts at the right block");
     let _ = std::fs::remove_file(path);
 }
+
+#[test]
+fn missing_audio_is_an_error_instead_of_the_end_of_the_track() {
+    let path = temp_file("truncated");
+    write_dsf(&path, 2, 1, u64::from(BLOCK) * 2 * 8);
+    let file = std::fs::OpenOptions::new().write(true).open(&path).unwrap();
+    file.set_len(file.metadata().unwrap().len() - 1).unwrap();
+    let mut reader = DsfReader::open(&path).unwrap();
+    assert!(reader.next_block().unwrap().is_some(), "the first block is complete");
+    assert!(
+        matches!(reader.next_block(), Err(chilpa_dsd::DsdError::Open(e)) if e.kind() == std::io::ErrorKind::UnexpectedEof),
+        "missing audio must reach the playback error path"
+    );
+    std::fs::remove_file(path).unwrap();
+}
