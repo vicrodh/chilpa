@@ -16,6 +16,7 @@
 
 mod collection;
 mod navigation;
+mod parents;
 mod view;
 mod extras;
 #[cfg(test)]
@@ -443,6 +444,7 @@ impl Chilpa {
             let mut card = self.entry_json(source, entry, sounds(source, &entry.id));
             card["source"] = source.clone().into();
             card["name"] = self.source_name(source).into();
+            card["parent"] = self.episode_parent(source, &entry.id).map(|p| serde_json::json!({"id":p.id,"title":p.title,"source":source})).unwrap_or_default();
             card["description"] = entry.description.clone().into();
             card["metadata_loading"] = s.metadata_loading.into();
             card["facts"] = serde_json::json!(entry.facts);
@@ -610,6 +612,7 @@ impl Chilpa {
             "save" => self.toggle_saved(id),
             "heard" => self.toggle_heard(id),
             "detail" => self.show_detail(text, id),
+            "parent" => self.open_episode_parent(),
             "retry" => self.load_listing(),
             "retry_listing" => self.source_retry(id),
             _ => {}
@@ -1312,6 +1315,7 @@ impl Chilpa {
         listing.columns.extend(document.facets);
         let at_root = self.sources.trail.is_empty();
         let mut entries = listing.entries;
+        self.remember_episode_parents(&entries);
         if at_root && cursor.is_none() && !listing.columns.is_empty() {
             // What a column starts on counts as picked: the root was
             // answered as if it were.
