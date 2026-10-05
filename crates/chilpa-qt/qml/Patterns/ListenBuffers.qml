@@ -10,8 +10,9 @@ Item {
     property var document: ({tabs: [], selected: ""})
     implicitHeight: Metrics.tabHeight
     Flickable {
+        id: viewport
         anchors.left: parent.left
-        anchors.right: add.left
+        width: Math.min(tabs.width, Math.max(0, strip.width - add.width - Metrics.gap4))
         height: parent.height
         contentWidth: tabs.width
         clip: true
@@ -37,7 +38,9 @@ Item {
     }
     IconButton {
         id: add
-        anchors.right: parent.right
+        objectName: "newQueue"
+        anchors.left: viewport.right
+        anchors.leftMargin: Metrics.gap4
         glyph: Icons.plus
         tip: I18n.tr("New queue", I18n.rev)
         onClicked: ListenList.command("new", "", "")

@@ -23,7 +23,7 @@ pub(super) struct Buffer {
 }
 impl Buffer {
     fn empty(id: u64) -> Self {
-        Self { id, name: chilpa_i18n::t_args("Queue {}", &[&id.to_string()]), epoch: 1,
+        Self { id, name: chilpa_i18n::t("Queue"), epoch: 1,
             paths: Vec::new(), removed: Vec::new(), placement: Vec::new(), groups: Vec::new(),
             order: Vec::new(), cursor: 0, seconds: 0.0, shuffle: false, repeat: 0, stop_after: None }
     }
@@ -147,6 +147,14 @@ impl Chilpa {
         self.listen.next += 1;
         let mut b = Buffer::empty(id);
         if !name.trim().is_empty() { b.name = name.trim().to_string(); }
+        else if !self.listen.buffers.is_empty() {
+            let mut number = 2;
+            loop {
+                b.name = chilpa_i18n::t_args("Queue {}", &[&number.to_string()]);
+                if !self.listen.buffers.iter().any(|other| other.name == b.name) { break; }
+                number += 1;
+            }
+        }
         b.paths = paths.iter().filter(|p| !p.is_empty()).cloned().collect();
         b.order = (0..b.paths.len()).collect();
         b.removed = vec![false; b.paths.len()];
