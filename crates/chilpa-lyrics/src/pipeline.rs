@@ -157,7 +157,10 @@ impl Pipeline {
             }
         }
         let need_source = request.source.is_some() && source_known.is_none();
-        let need_providers = identity_known.is_none();
+        // A track that does not say what song it is cannot be looked up by
+        // name: every answer would be a guess.
+        let named = !track.title.trim().is_empty() && !track.artist.trim().is_empty();
+        let need_providers = identity_known.is_none() && named;
         if !need_source && !need_providers {
             let from_source = source_known.flatten();
             let from_providers = identity_known.flatten();
@@ -511,6 +514,16 @@ mod tests {
         p.resolve(&request(None), false);
         p.resolve(&request(None), false);
         assert_eq!(busy.calls(), 1, "it is not asked again during its pause");
+    }
+
+    #[test]
+    fn a_track_without_names_is_not_looked_up_by_name() {
+        let words = Fake::new("words", Timing::Word, Answer::Found(vec![candidate(WORDS, 200_000)]));
+        let p = pipeline(vec![words.clone()]);
+        let mut nameless = request(None);
+        nameless.track.artist = String::new();
+        assert!(p.resolve(&nameless, false).resolved.is_none());
+        assert_eq!(words.calls(), 0);
     }
 
     #[test]
