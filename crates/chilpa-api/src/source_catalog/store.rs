@@ -108,6 +108,15 @@ pub(crate) struct Card {
     pub handle: Option<Handle>,
 }
 
+impl Card {
+    pub fn contain_art(&self) -> bool {
+        match self.metadata["art_fit"].as_str() {
+            Some(fit) => fit == "contain",
+            None => self.kind == CardKind::Playlist && !self.image.is_empty(),
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub(crate) struct Track {
