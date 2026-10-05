@@ -176,7 +176,6 @@ Item {
                 height: visible ? implicitHeight : 0
                 fitContent: true
                 header: false
-                rich: true
                 showAlbum: false
                 showRating: width > Metrics.folderTreeWidth * 2 // derived: the title comes before the stars
                 model: detail.tracks

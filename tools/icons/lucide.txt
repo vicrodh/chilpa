@@ -3,3 +3,5 @@ list-end
 list-plus
 list-start
 square-play
+eject
+refresh-ccw-dot

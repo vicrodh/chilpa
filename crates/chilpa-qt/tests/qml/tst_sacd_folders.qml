@@ -14,6 +14,15 @@ TestCase {
     OpenMediaScreen { id: screen; anchors.fill: parent }
     NavMenu { id: navigation }
 
+    function test_track_rows_follow_global_density() {
+        const view = findChild(screen, "trackListView")
+        verify(view)
+        const list = view.parent
+        SettingsModel.density = "compact"
+        compare(list.rich, false)
+        SettingsModel.density = "rich"
+        compare(list.rich, true)
+    }
     function test_three_open_actions_have_their_own_view() {
         for (const pair of [["openFolder", "folder"], ["openCd", "cd"], ["openSacd", "sacd"]]) {
             const button = findChild(screen, pair[0])
@@ -26,6 +35,8 @@ TestCase {
         OpenMedia.snapshot = JSON.stringify({title: "Temporary album", count: 2})
         const button = findChild(screen, "closeMedia")
         tryCompare(button, "visible", true)
+        waitForRendering(button)
+        compare(button.parent, findChild(screen, "openSacd").parent)
         mouseClick(button)
         compare(OpenMedia.snapshot, "{}")
         compare(OpenMedia.closes, 1)
