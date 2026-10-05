@@ -25,7 +25,7 @@ use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
 /// What a track is read from after its route has been resolved.
 enum Source {
-    Pcm(Decoded, Option<std::sync::Arc<dyn crate::playback_events::Observer>>),
+    Pcm(Decoded, Option<std::sync::Arc<dyn crate::playback_events::Observer>>, Option<crate::remote::Normalization>),
     Dop(Box<dyn DsdSource>),
     Native(Box<dyn DsdSource>),
     DsdPcm(DsdPcmConverter),
@@ -43,6 +43,7 @@ fn open_track(
     policy: Policy,
     dsd_mode: DsdMode,
     direct_dsd: bool,
+    prepared: Option<Result<crate::remote::Opened, String>>,
 ) -> Result<(Source, Delivery), PlayError> {
     let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
@@ -55,12 +56,12 @@ fn open_track(
     }
     // A track on a server: the original bytes, read by windows, decoded
     // here like a file on disk (ADR-017).
-    let (decoded, observer) = match crate::remote::entry(path) {
-        Some(entry) => crate::remote::open(path, &entry).map_err(unreadable)?,
-        None => (Decoded::open(path).map_err(PlayError::Decode)?, None),
+    let (decoded, observer, normalization) = match crate::remote::entry(path) {
+        Some(entry) => prepared.unwrap_or_else(|| crate::remote::open(path, &entry)).map_err(unreadable)?,
+        None => (Decoded::open(path).map_err(PlayError::Decode)?, None, None),
     };
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
-    Ok((Source::Pcm(decoded, observer), delivery))
+    Ok((Source::Pcm(decoded, observer, normalization), delivery))
 }
 
 /// Sends DSD untouched only to a direct route that takes it as asked: DoP
@@ -496,6 +497,14 @@ pub fn normalization_gain(gain_db: Option<f32>, peak: Option<f32>) -> f32 {
     factor
 }
 
+fn normalization_for(remote: Option<crate::remote::Normalization>, local: impl FnOnce() -> (Option<f32>, Option<f32>)) -> f32 {
+    let (gain, peak) = match remote.and_then(crate::remote::Normalization::valid) {
+        Some(data) => (Some(data.gain_db), data.peak),
+        None => local(),
+    };
+    normalization_gain(gain, peak)
+}
+
 impl Default for Controls {
     fn default() -> Self {
         Self {
@@ -828,6 +837,7 @@ where
     // A server that stopped answering: its tracks are passed over and the
     // queue goes on (ADR-017). The last error is kept to say, when nothing
     // at all could play, why; and a full lap of them ends it.
+    let mut preload = crate::remote_preload::Preload::default();
     let mut unreachable_in_a_row = 0usize;
     let mut passed_over: Option<PlayError> = None;
     // The DoP marker of whatever is open. It carries on across tracks that
@@ -860,8 +870,10 @@ where
                 controls.direct_dsd.get()
             ),
         );
+        let prepared = preload.take(path, stop);
+        if stop.is_stopped() { break; }
         let source_started = std::time::Instant::now();
-        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get()) {
+        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get(), prepared) {
             Ok(opened) => opened,
             Err(error) if crate::remote::entry(path).is_some() => {
                 chilpa_audio::diagnostics::trace(
@@ -1001,9 +1013,8 @@ where
             // Never under the bit-perfect policy, whatever the switch says:
             // that policy is the promise that no sample is changed.
             Source::Pcm(..) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
-                let tags = chilpa_tags::read(path).map(|i| i.tags).unwrap_or_default();
-                let (gain_db, peak) = tags.replaygain();
-                normalization_gain(gain_db, peak)
+                let remote = match &source { Source::Pcm(_, _, data) => *data, _ => None };
+                normalization_for(remote, || chilpa_tags::read(path).map(|i| i.tags.replaygain()).unwrap_or_default())
             }
             _ => 1.0,
         };
@@ -1016,10 +1027,16 @@ where
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
         let observer = match &source {
-            Source::Pcm(_, observer) => observer.clone(),
+            Source::Pcm(_, observer, _) => observer.clone(),
             _ => None,
         };
         sink.begin(observer);
+        if gapless.get() {
+            let next = if repeat.get() == Repeat::One { Some(index) } else { order.next(index, queue.len(), repeat.get() == Repeat::All) };
+            if let Some(mut next) = next {
+                if let Some(path) = next_live(queue, order, repeat, &mut next) { preload.request(path); }
+            }
+        }
         on_track(index, path, &delivery);
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -1030,7 +1047,7 @@ where
         // Skipping a track ends the source just like a natural end, so it has
         // to be asked: with repeat-one, skipping advances.
         let (outcome, skipped) = match &mut source {
-            Source::Pcm(decoded, _) => {
+            Source::Pcm(decoded, _, _) => {
                 let channels = decoded.stream_format().channels;
                 let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
                 let float_trimmer =
@@ -1315,4 +1332,14 @@ mod gain_tests {
         scale_int(&mut s, 16, 0.5);
         assert_eq!(s, [500]);
     }
+    #[test]
+    fn provider_gain_replaces_local_metadata_even_when_zero() {
+        for db in [-6.0, 0.0] {
+            let gain = normalization_for(Some(crate::remote::Normalization { gain_db: db, peak: None }), || panic!("local metadata must not be read when the provider supplied gain"));
+            assert_eq!(gain, normalization_gain(Some(db), None));
+        }
+        assert_eq!(normalization_for(None, || (Some(-3.0), None)), normalization_gain(Some(-3.0), None));
+        assert_eq!(normalization_for(Some(crate::remote::Normalization { gain_db: f32::NAN, peak: None }), || (None, None)), 1.0);
+    }
+
 }

@@ -47,6 +47,7 @@ impl RemoteOpener for Opener {
         let key = self.keys.get(&stored.instance).ok_or_else(|| chilpa_i18n::t_args("sign in to {} again", &[&stored.label]))?;
         let stream = chilpa_servers::stream(&server, &key, &entry.external_id, codec.as_deref(), revision.as_deref());
         Ok(Located {
+            normalization: None,
             playback: None,
             request: chilpa_core::RangedRequest { url: stream.url, headers: stream.headers },
             extension: stream.extension,
@@ -64,7 +65,7 @@ impl RemoteOpener for Opener {
             album_artist: Some(album_artist).filter(|a| !a.is_empty()),
             ..Default::default()
         };
-        Described { tags, artwork: artwork.map(std::path::PathBuf::from) }
+        Described { tags, artwork: artwork.map(std::path::PathBuf::from), ..Default::default() }
     }
 
     fn failed(&self, entry: &RemoteEntry, _why: &str) {
