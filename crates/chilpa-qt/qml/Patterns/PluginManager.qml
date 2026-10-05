@@ -93,7 +93,14 @@ Item {
             onClicked: manager.command("choose_package", {})
         }
         Text { text: I18n.tr("Chilpa Native Plugins", I18n.rev); font.pointSize: Type.titleSmall; color: Theme.color.textPrimary }
-        Repeater {
+        ListView {
+            id: nativePlugins
+            objectName: "installedNativePlugins"
+            width: parent.width
+            height: Math.min(contentHeight, manager.height / 3) // derived: reserve room for catalog controls and results
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ScrollBar.vertical: P.ViewportScrollBar {}
             model: manager.installedRows.filter(p => !p.origin)
             delegate: PluginRow {
                 required property var modelData
@@ -101,6 +108,7 @@ Item {
                 plugin: modelData
                 installed: true
                 enabled: !manager.view.busy
+                onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
                 onSettings: manager.settings(modelData)
                 onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
             }
@@ -202,6 +210,7 @@ Item {
             plugin: modelData
             installed: manager.tab === "installed"
             enabled: !manager.view.busy && !manager.filterPending
+            onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
             onInspected: manager.inspect(modelData)
             onSettings: manager.settings(modelData)
             onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})

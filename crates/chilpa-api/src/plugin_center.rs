@@ -336,7 +336,8 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);
     let sidebar_order = crate::plugin_sidebar::ordered(root,plugins.panels().into_iter().map(|p|p.0).collect());
-    let installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugins.natives.library_kinds(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
+    let mut installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugins.natives.library_kinds(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
+    installed.sort_by_key(|(_, _, _, plugin, _, _)| sidebar_order.iter().position(|id| id == &plugin.id).unwrap_or(usize::MAX));
     drop(plugins);
     // A catalog snapshot never migrates or maintains the library, nor holds the guest lock during database queries.
     let library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok();
