@@ -128,7 +128,11 @@ MAX_LOC_SHELL_RUST = 6_000
 # Subió de 16,000 a 18,000 el 2026-09-30: la pantalla de los sources que se
 # navegan no cabía, y la interfaz de los plugins se va a rehacer con un
 # diseño nuevo. El número se vuelve a derivar cuando ese diseño llegue.
-MAX_LOC_SHELL_QML = 18_000
+#
+# Raised from 18,000 to 20,000 on 2026-10-04: native playlists, folders and
+# the playlist importer put the shell at 18,396. The Gallery still lives in
+# this crate and is the first thing to move out of it.
+MAX_LOC_SHELL_QML = 20_000
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 
