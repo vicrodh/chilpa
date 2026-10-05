@@ -212,6 +212,13 @@ impl Chilpa {
     pub fn route_to(&mut self, screen: &str, id: i64) -> Option<crate::navigation::Route> {
         use crate::navigation::{Route, Screen};
         let screen = Screen::from_name(screen)?;
+        if screen == Screen::Album && id < 0 {
+            self.source_panels();
+            if let Some((source, parent)) = self.source_card_parent(id) {
+                self.open_media_parent(source.clone(), parent);
+                return Some(Route { screen: Screen::Source, id: 0, key: source });
+            }
+        }
         match self.catalog.card(id).filter(|c| screen == Screen::Album && matches!(c.kind, CardKind::Artist | CardKind::Label)) {
             Some(card) => Some(Route { screen: Screen::Source, id: 0, key: if self.natives.has_pages(&card.plugin) { format!("{} native:{}", card.plugin, card.identity) } else { format!("{} card:{}", card.plugin, card.id) } }),
             None => Some(Route { screen, id, key: String::new() }),

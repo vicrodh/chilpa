@@ -14,6 +14,7 @@ Rectangle {
     readonly property bool qualityHovered: quality.hovered
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
     // The key of the page of what plays, when it is an entry of a source.
+    readonly property string parentSource: JSON.parse(Sources.snapshot || "{}").playing_parent || ""
     readonly property string onAir: JSON.parse(Sources.snapshot || "{}").onAir || ""
 
     Connections {
@@ -104,9 +105,11 @@ Rectangle {
 
                 CreditLine {
                     id: artist
+                    objectName: "playerArtist"
                     width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
                     credit: Player.artist; trackPath: Player.path
                     entry: lcd.onAir
+                    parentSource: lcd.parentSource
                     font.pointSize: Type.small
                     color: hovered ? Theme.color.textPrimary : Theme.color.textSecondary
                 }
@@ -127,16 +130,19 @@ Rectangle {
                     text: Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small
-                    color: albumHover.hovered && Player.albumId !== 0 ? Theme.color.textPrimary : Theme.color.textSecondary
+                    color: albumHover.hovered && (lcd.parentSource !== "" || Player.albumId !== 0) ? Theme.color.textPrimary : Theme.color.textSecondary
 
                     HoverHandler {
                         id: albumHover
-                        enabled: Player.albumId !== 0
+                        enabled: (lcd.parentSource !== "" || Player.albumId !== 0)
                         cursorShape: Qt.PointingHandCursor
                     }
                     TapHandler {
-                        enabled: Player.albumId !== 0
-                        onTapped: Navigation.go("album", Player.albumId)
+                        enabled: (lcd.parentSource !== "" || Player.albumId !== 0)
+                        onTapped: {
+                            if (lcd.parentSource !== "") { Sources.command("playing_parent", "", ""); Navigation.goKey("source", lcd.parentSource) }
+                            else Navigation.go("album", Player.albumId)
+                        }
                     }
                 }
             }

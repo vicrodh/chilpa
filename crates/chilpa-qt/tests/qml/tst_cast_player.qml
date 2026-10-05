@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.sources
 import "../../qml/Patterns"
 import "../../qml/Theme"
 
@@ -14,6 +15,8 @@ TestCase {
     QualityTooltip { id: tip; visible: lcd.qualityHovered }
 
     function init() {
+        Sources.show({playing_parent: "", onAir: ""})
+        Sources.asked = []
         Cast.active = false
         Cast.destination = "Test receiver"
         Cast.snapshot = "{}"
@@ -61,6 +64,18 @@ TestCase {
         }
         Cast.active = false
         compare(indicator.glyph, Icons.waveSquare)
+    }
+    function test_both_podcast_context_links_open_the_parent() {
+        Sources.show({playing_parent: "fixture-media", onAir: "fixture-media episode"})
+        Player.albumId = 0
+        for (const name of ["playerArtist", "playerAlbum"]) {
+            const link = findChild(lcd, name)
+            waitForRendering(link)
+            mouseClick(link, link.width / 2, link.height / 2)
+            compare(Sources.asked[Sources.asked.length - 1], ["playing_parent", "", ""])
+            compare(Navigation.went, ["source", "fixture-media"])
+            Sources.asked = []
+        }
     }
     function test_seek_works_after_receiver_reports_duration() {
         Cast.active = true
