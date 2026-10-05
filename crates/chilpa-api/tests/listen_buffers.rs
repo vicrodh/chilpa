@@ -149,3 +149,23 @@ fn a_session_comes_back_on_the_track_it_was_closed_on() {
     drop(restored);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+#[test]
+fn closing_every_buffer_starts_a_fresh_queue_name_without_reusing_identity() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] {
+        std::env::set_var(key, dir.path().join(folder));
+    }
+    let mut api = Chilpa::new();
+    let first = api.listen_selected();
+    let second = api.listen_create("", &[]);
+    api.listen_close(first);
+    api.listen_close(second);
+    let fresh = api.listen_selected();
+    assert!(fresh > second, "stale track keys must never target the new queue");
+    assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 1);
+    assert_eq!(state(&api)["name"], chilpa_i18n::t("Queue"));
+    api.listen_create("", &[]);
+    assert_eq!(state(&api)["name"], chilpa_i18n::t_args("Queue {}", &["2"]));
+}

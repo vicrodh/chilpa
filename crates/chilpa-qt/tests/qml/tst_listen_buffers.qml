@@ -16,6 +16,16 @@ TestCase {
         for (const child of item.children || []) found = found.concat(descendants(child))
         return found
     }
+    function test_add_button_follows_the_last_queue_tab() {
+        const add = findChild(page, "newQueue")
+        verify(add)
+        const tabs = descendants(page).filter(item => item.title === "Other · 2")
+        verify(tabs.length > 0)
+        const tab = tabs[0]
+        const edge = tab.mapToItem(add.parent, tab.width, 0)
+        verify(add.x >= edge.x)
+        verify(add.x - edge.x < add.width)
+    }
     function test_tabs_select_without_playing_and_keep_live_player() {
         const other = descendants(page).find(item => item.title === "Other · 2")
         verify(other)
