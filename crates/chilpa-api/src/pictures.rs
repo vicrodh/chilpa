@@ -23,6 +23,7 @@ fn kind(bytes: &[u8]) -> Option<&'static str> {
     match image::guess_format(bytes).ok()? {
         image::ImageFormat::Jpeg => Some("jpg"),
         image::ImageFormat::Png => Some("png"),
+        image::ImageFormat::WebP => Some("webp"),
         _ => None,
     }
 }
@@ -39,7 +40,7 @@ pub(crate) fn kept(address: &str) -> Option<String> {
         return None;
     }
     let (dir, name) = (folder(), name_of(address));
-    ["jpg", "png"]
+    ["jpg", "png", "webp"]
         .into_iter()
         .map(|extension| dir.join(format!("{name}.{extension}")))
         .find(|kept| kept.is_file())
@@ -121,6 +122,15 @@ mod tests {
         assert_eq!(kind(&[0xff, 0xd8, 0xff, 0xe0, 0, 0]), Some("jpg"));
         assert_eq!(kind(b"<svg xmlns=\"http://www.w3.org/2000/svg\"/>"), None);
         assert_eq!(kind(b"<!doctype html>"), None);
+    }
+
+    #[test]
+    fn a_modern_portrait_is_recognized_and_decoded() {
+        let picture = image::DynamicImage::new_rgb8(2, 2);
+        let mut bytes = std::io::Cursor::new(Vec::new());
+        picture.write_to(&mut bytes, image::ImageFormat::WebP).unwrap();
+        assert_eq!(kind(bytes.get_ref()), Some("webp"));
+        assert!(image::load_from_memory(bytes.get_ref()).is_ok());
     }
 
     #[test]
