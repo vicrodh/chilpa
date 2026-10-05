@@ -84,12 +84,22 @@ impl Presentation {
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 pub struct SourceDocument {
     #[serde(flatten)] pub listing: Listing,
+    #[serde(default)] pub medium: String,
+    #[serde(default)] pub attribution: String,
+    #[serde(default)] pub facets: Vec<crate::messages::Column>,
     #[serde(default)] pub presentation: BTreeMap<String, Presentation>,
 }
 
 impl SourceDocument {
     pub fn clean(mut self, cursor: Option<&str>) -> Result<Self, &'static str> {
+        if !["", "radio", "podcasts"].contains(&self.medium.as_str()) || self.attribution.len() > 512 { return Err("Invalid source medium."); }
         if self.presentation.len() > 1000 { return Err("Too many presentation entries."); }
+        if self.facets.len() > 12 { return Err("Too many source facets."); }
+        for facet in &mut self.facets {
+            facet.entries.retain(|entry| entry.usable());
+            facet.entries.truncate(1000);
+            if !facet.usable() { return Err("Invalid source facet."); }
+        }
         self.listing = self.listing.clean(cursor);
         let ids: BTreeSet<_> = self.listing.entries.iter().map(|entry| entry.id.as_str()).collect();
         self.presentation.retain(|id, _| ids.contains(id.as_str()));

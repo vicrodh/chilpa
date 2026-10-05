@@ -40,9 +40,9 @@ impl StagedPackage {
         if !inspection.settings_pages.is_empty() {
             capabilities.push(Capability::GuestCredentials);
         }
-        let manifest = Manifest { id, name: entry.name.clone(), version: metadata.version, api_version: chilpa_plugin::API_VERSION,
+        let manifest = Manifest { id, name: entry.name.clone(), version: metadata.version, author: entry.author.clone(), api_version: chilpa_plugin::API_VERSION,
             kind: if source { Kind::Source } else { Kind::Metadata }, runtime: Runtime::Bridge, auth: None, capabilities,
-            delivers_audio: inspection.features.get("resolve") == Some(&true), description: entry.description.clone(), icon: String::new() };
+            delivers_audio: inspection.features.get("resolve") == Some(&true), description: entry.description.clone(), icon: String::new(), folder_icon: String::new() };
         let encoded = serde_json::to_string(&manifest).map_err(|_| "The plugin descriptor could not be created.")?;
         let manifest = Manifest::parse_for_runtime(&encoded, Runtime::Bridge).map_err(|error| error.to_string())?;
         let origin = json!({"repository":repository,"catalog_entry":entry,"package_sha256":self.sha256,

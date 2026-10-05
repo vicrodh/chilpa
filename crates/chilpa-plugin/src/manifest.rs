@@ -56,6 +56,10 @@ pub enum Capability {
     Storage,
     /// Read the library. Never write it.
     LibraryRead,
+    /// Read catalogs exposed by other enabled plugins through the host.
+    PluginsRead,
+    /// Create and fill playlists in destinations explicitly selected for a job.
+    PlaylistsWrite,
     /// Register a source with its catalogue.
     RegisterSource,
     /// Contribute a panel to the interface, as a descriptor.
@@ -110,6 +114,8 @@ impl Capability {
             Capability::LibraryRead => {
                 chilpa_i18n::t("read your library, without being able to change it")
             }
+            Capability::PluginsRead => chilpa_i18n::t("read catalogs from other enabled plugins, without accessing their credentials"),
+            Capability::PlaylistsWrite => chilpa_i18n::t("create playlists in destinations you select for an import"),
             Capability::RegisterSource => {
                 chilpa_i18n::t("bring catalogue: search for and fetch music")
             }
@@ -146,6 +152,9 @@ pub struct Manifest {
     pub name: String,
     /// Its version, which is its own and matters to us only to show it.
     pub version: String,
+    /// Display attribution supplied by the package.
+    #[serde(default)]
+    pub author: String,
     /// Which version of Chilpa's API it works with.
     pub api_version: u32,
     pub kind: Kind,
@@ -177,6 +186,9 @@ pub struct Manifest {
     /// generic icon.
     #[serde(default)]
     pub icon: String,
+    /// Optional artwork for source-owned playlist folders.
+    #[serde(default)]
+    pub folder_icon: String,
 }
 
 fn yes() -> bool {
