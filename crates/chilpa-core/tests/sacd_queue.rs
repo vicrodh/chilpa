@@ -246,6 +246,10 @@ fn a_sacd_image_in_a_scanned_folder_goes_into_the_library_as_its_tracks() {
     assert_eq!(found[0].title, "This Ain't The Summer Of Love");
     assert_eq!(found[0].album, "Agents Of Fortune");
     assert_eq!(found[0].external_id, format!("sacd:{}#1", iso.display()), "a path the player can open");
+    let folder = dir.to_string_lossy();
+    assert_eq!(lib.folder_track_count(&folder).unwrap(), 2);
+    assert_eq!(lib.folder_children(&folder).unwrap().1.len(), 2);
+    assert_eq!(lib.folder_paths(&folder).unwrap(), [1, 2].map(|n| format!("sacd:{}#{n}", iso.display())));
     let _ = std::fs::remove_dir_all(dir);
 }
 

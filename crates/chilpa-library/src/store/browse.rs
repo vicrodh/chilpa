@@ -217,6 +217,18 @@ fn under(dir: &str) -> (String, String, i64) {
 
 const LOCAL: &str = "t.source_id = (SELECT id FROM sources WHERE provider = 'local' AND instance = 'default')";
 
+/// Folder membership follows the physical file, while playback keeps the
+/// track's own address. Both arms use indexed path ranges.
+fn folder_tracks() -> String {
+    format!("WITH folder_tracks AS (
+        SELECT t.id, t.external_id AS location FROM tracks t
+        WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
+        UNION
+        SELECT t.id, sf.container AS location FROM scanned_files sf JOIN tracks t ON t.id = sf.track_id
+        WHERE {LOCAL} AND t.present = 1 AND sf.container >= ?1 AND sf.container < ?2
+    )")
+}
+
 /// How much a filter leaves.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Totals {
@@ -581,16 +593,15 @@ impl Library {
         let (from, to, cut) = under(dir);
         let base = from.clone();
         let sql = format!(
-            "SELECT substr(t.external_id, ?3, instr(substr(t.external_id, ?3), '/') - 1) AS name,
+            "{} SELECT substr(ft.location, ?3, instr(substr(ft.location, ?3), '/') - 1) AS name,
                     count(*), max(a.artwork_path),
-                    count(DISTINCT CASE WHEN instr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), '/') > 0
-                          THEN substr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), 1,
-                               instr(substr(substr(t.external_id, ?3), instr(substr(t.external_id, ?3), '/') + 1), '/') - 1) END),
+                    count(DISTINCT CASE WHEN instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') > 0
+                          THEN substr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), 1,
+                               instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') - 1) END),
                     count(DISTINCT coalesce(t.album_id, -t.id)), min(t.album_id)
-             FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
-             WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
-               AND instr(substr(t.external_id, ?3), '/') > 0
-             GROUP BY name ORDER BY name COLLATE NOCASE"
+             FROM tracks t JOIN folder_tracks ft ON ft.id = t.id LEFT JOIN albums a ON a.id = t.album_id
+             WHERE instr(substr(ft.location, ?3), '/') > 0
+             GROUP BY name ORDER BY name COLLATE NOCASE", folder_tracks()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let folders = stmt
@@ -610,9 +621,8 @@ impl Library {
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
         let sql = format!(
-            "{ROW} {FROM} WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2
-               AND instr(substr(t.external_id, ?3), '/') = 0
-             ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.external_id"
+            "{} {ROW} {FROM} JOIN folder_tracks ft ON ft.id = t.id WHERE instr(substr(ft.location, ?3), '/') = 0
+             ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.external_id", folder_tracks()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let tracks = stmt.query_map(rusqlite::params![from, to, cut], row)?.collect::<rusqlite::Result<Vec<_>>>()?;
@@ -623,7 +633,7 @@ impl Library {
     pub fn folder_track_count(&self, dir: &str) -> rusqlite::Result<usize> {
         let (from, to, _) = under(dir);
         let sql = format!(
-            "SELECT count(*) FROM tracks t WHERE {LOCAL} AND t.present = 1 AND t.external_id >= ?1 AND t.external_id < ?2"
+            "{} SELECT count(*) FROM folder_tracks", folder_tracks()
         );
         self.db.query_row(&sql, rusqlite::params![from, to], |r| r.get::<_, i64>(0)).map(|n| n as usize)
     }
@@ -633,8 +643,8 @@ impl Library {
     pub fn folder_paths(&self, dir: &str) -> rusqlite::Result<Vec<String>> {
         let (from, to, _) = under(dir);
         let sql = format!(
-            "SELECT t.external_id FROM tracks t WHERE {LOCAL} AND t.present = 1
-               AND t.external_id >= ?1 AND t.external_id < ?2 ORDER BY t.external_id"
+            "{} SELECT t.external_id FROM tracks t JOIN folder_tracks ft ON ft.id = t.id
+             ORDER BY ft.location, coalesce(t.release_disc, t.disc_number), t.track_number, t.external_id", folder_tracks()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let rows = stmt.query_map(rusqlite::params![from, to], |r| r.get(0))?;
