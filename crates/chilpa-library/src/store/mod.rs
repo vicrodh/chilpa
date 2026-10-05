@@ -20,6 +20,7 @@ pub mod plays;
 pub mod progress;
 pub mod listening;
 pub mod ratings;
+pub mod external_ratings;
 pub mod regroup;
 pub mod saved;
 mod related;

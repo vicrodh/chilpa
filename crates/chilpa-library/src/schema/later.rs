@@ -67,3 +67,16 @@ CREATE TABLE source_progress (
     PRIMARY KEY (source, external_id)
 );
 "#;
+
+/// From 31 to 32: personal stars outlive a remote catalog cache or account session.
+pub(super) const MIGRATION_V32: &str = r#"
+CREATE TABLE external_ratings (
+    source TEXT NOT NULL,
+    kind TEXT NOT NULL CHECK(kind IN ('track', 'album', 'playlist')),
+    external_id TEXT NOT NULL,
+    stars INTEGER NOT NULL CHECK(stars BETWEEN 0 AND 5),
+    revision INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    PRIMARY KEY (source, kind, external_id)
+);
+"#;
