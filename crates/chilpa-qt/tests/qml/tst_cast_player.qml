@@ -3,7 +3,7 @@ import QtTest
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "../../qml/Patterns"
-import "../../qml/Theme"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "CastNowPlaying"

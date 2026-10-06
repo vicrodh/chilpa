@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import com.blitzfc.chilpa
 import "../../../chilpa-qt/qml/Patterns"
-import "../../../chilpa-qt/qml/Theme"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "LyricsPanel"

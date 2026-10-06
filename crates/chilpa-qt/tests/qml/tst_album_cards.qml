@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import com.blitzfc.chilpa
 import "../../qml/Components"
-import "../../qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Primitives"
 
 TestCase {
     name: "AlbumCardQualityAndViewport"

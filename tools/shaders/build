@@ -6,7 +6,7 @@
 set -e
 root=$(git rev-parse --show-toplevel)
 qsb=$(command -v qsb || echo /usr/lib64/qt6/bin/qsb)
-for src in "$root"/crates/chilpa-qt/assets/shaders/*.frag; do
+for src in "$root"/crates/chilpa-qt-kit/assets/shaders/*.frag; do
     "$qsb" --glsl "100 es,120,150" --hlsl 50 --msl 12 -o "$src.qsb" "$src"
     echo "shaders: $(basename "$src")"
 done

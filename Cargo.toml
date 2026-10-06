@@ -31,6 +31,7 @@ members = [
     "crates/chilpa-wasapi",
     "crates/chilpa-core",
     "crates/chilpa-api",
+    "crates/chilpa-qt-kit",
     "crates/chilpa-qt-sources",
     "crates/chilpa-qt-controls",
     "crates/chilpa-qt-lyrics",
@@ -74,6 +75,7 @@ chilpa-appkit = { path = "crates/chilpa-appkit" }
 chilpa-wasapi = { path = "crates/chilpa-wasapi" }
 chilpa-core = { path = "crates/chilpa-core" }
 chilpa-api = { path = "crates/chilpa-api" }
+chilpa-qt-kit = { path = "crates/chilpa-qt-kit" }
 chilpa-qt-sources = { path = "crates/chilpa-qt-sources" }
 chilpa-qt-controls = { path = "crates/chilpa-qt-controls" }
 chilpa-qt-lyrics = { path = "crates/chilpa-qt-lyrics" }

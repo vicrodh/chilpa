@@ -2,8 +2,8 @@ import QtQuick
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import com.blitzfc.chilpa.controls
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // The player's "LCD": cover, times, title with its quality, who and from

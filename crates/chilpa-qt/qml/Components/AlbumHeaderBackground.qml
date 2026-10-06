@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // QBZ's album atmosphere: a tiny pre-blurred field is cropped four different
 // ways for Full, drawn once for Colors, then darkened and faded into the page.

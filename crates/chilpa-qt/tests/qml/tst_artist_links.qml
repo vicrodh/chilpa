@@ -1,8 +1,9 @@
 import QtQuick
 import QtTest
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import "../../qml/Components"
-import "../../qml/Theme/TextLinks.js" as TextLinks
+import "../../../chilpa-qt-kit/qml/Theme/TextLinks.js" as TextLinks
 
 TestCase {
     name: "ArtistLinks"; when: windowShown; visible: true; width: 700; height: 200

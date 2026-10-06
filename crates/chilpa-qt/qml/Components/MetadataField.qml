@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Primitives"
-import "../Theme"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // One field of the metadata editor: its name above what it holds, and what
 // the facade says about it -- the tracks disagree ("mixed"), it was changed,

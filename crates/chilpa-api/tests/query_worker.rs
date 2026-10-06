@@ -2,7 +2,7 @@
 //! One test owns the process environment and the worker's singleton.
 
 #[allow(dead_code)]
-#[path = "../../chilpa-qt-sources/src/app.rs"]
+#[path = "../../chilpa-qt-kit/src/app.rs"]
 mod app;
 #[path = "../../chilpa-qt/src/worker.rs"]
 mod worker;

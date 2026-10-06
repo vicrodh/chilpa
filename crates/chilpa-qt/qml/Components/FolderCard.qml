@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A folder inside the one that is open, and said to be one: a folder's mark
 // over a cover of what it holds, its name, and how many folders and tracks

@@ -1,8 +1,9 @@
 // hot-path: one per queued track, recycled while the queue scrolls.
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A track in the side queue (design/03 QueueRow): the grid
 // 12 | 36 | 1fr | auto | 20 -- grip, cover, title and artist, time and the

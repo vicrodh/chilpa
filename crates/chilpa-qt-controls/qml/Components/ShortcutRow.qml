@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // One action and its key. On the sheet it is read; in the editor the key

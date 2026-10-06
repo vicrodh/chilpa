@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // One of the Library screen's four filter columns (design/03 PaneColumn):
 // a header with its count, "All (n)" first, then the entries.

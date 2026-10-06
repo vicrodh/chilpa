@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "../../qml/Components"
-import "../../qml/Theme"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "PluginRow"

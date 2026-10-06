@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 Text {
     property bool warning: true

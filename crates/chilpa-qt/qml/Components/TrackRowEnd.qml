@@ -1,8 +1,9 @@
 // hot-path: one per visible track, recycled while the list scrolls.
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // What a track offers at its end, always in sight: the heart that makes it
 // a favorite and the button that opens its menu. Each is its whole cell, as

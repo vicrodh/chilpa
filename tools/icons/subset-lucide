@@ -12,8 +12,8 @@ from pathlib import Path
 
 ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
 LIST = Path(__file__).resolve().parent / "lucide.txt"
-OUT = ROOT / "crates/chilpa-qt/assets/icons/lucide.ttf"
-QML = ROOT / "crates/chilpa-qt/qml/Theme/Lucide.qml"
+OUT = ROOT / "crates/chilpa-qt-kit/assets/icons/lucide.ttf"
+QML = ROOT / "crates/chilpa-qt-kit/qml/Theme/Lucide.qml"
 
 
 def camel(name: str) -> str:

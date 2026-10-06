@@ -1,10 +1,11 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Patterns"
 

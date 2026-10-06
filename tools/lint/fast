@@ -6,6 +6,7 @@ root=$(git rev-parse --show-toplevel)
 "$root/tools/lint/arquitectura"
 # Settings grow by feature, never in the bridge (frontend ADR-0015).
 "$root/tools/lint/settings-bridge"
+"$root/tools/lint/window-files"
 # The frontend's layers, budgets, tokens and rows (frontend ADR-0002).
 "$root/tools/lint/qml-budget"
 "$root/tools/lint/qml-literals"

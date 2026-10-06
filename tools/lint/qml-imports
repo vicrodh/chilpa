@@ -3,7 +3,10 @@
 
 Theme -> Primitives -> Components -> Patterns -> Screens -> the window. A
 file imports only directories below its own layer, and uses only types from
-its layer or below. Two rules on top of that:
+its layer or below. The kit is the tree every other one stands on, so its
+layers sit below the same layers elsewhere: a feature's components may
+import the kit's components, and nothing in the kit imports another tree.
+Two rules on top of that:
 
 - a screen never uses another screen: each one is a route, composed from
   the layers below;
@@ -19,7 +22,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from qmllib import GALLERY, ORDER, TREES, code_only, files, layer_of, rel, resolve_import  # noqa: E402
+from qmllib import GALLERY, KIT, ORDER, TREES, code_only, files, layer_of, rel, resolve_import, tree_of  # noqa: E402
 
 IMPORT = re.compile(r'^\s*import\s+"([^"]+)"', re.MULTILINE)
 MODULE = re.compile(r"^\s*import\s+([A-Za-z][\w.]*)", re.MULTILINE)
@@ -65,7 +68,11 @@ def main():
             imported_layers.add(to)
             if to == GALLERY or to not in ORDER:
                 errors.append(f"{name}: imports {target}, which is not a layer")
-            elif ORDER[to] >= rank(layer) or (layer == GALLERY and to == "Screens"):
+            elif found[0] != KIT and tree_of(path) == KIT:
+                errors.append(f"{name}: the kit imports {target}; it stands under every other tree")
+            elif ORDER[to] > rank(layer) or (layer == GALLERY and to == "Screens"):
+                errors.append(f"{name}: a {layer} file cannot import {to}")
+            elif ORDER[to] == rank(layer) and not (found[0] == KIT and tree_of(path) != KIT):
                 errors.append(f"{name}: a {layer} file cannot import {to}")
         for module in MODULE.findall(src):
             if layer == "Primitives" and not QT_MODULES.match(module):

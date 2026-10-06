@@ -1,8 +1,9 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // Where the sidebar's destinations go while the sidebar is closed: a button
 // in the tab bar that opens them as a menu under it, the playlists among

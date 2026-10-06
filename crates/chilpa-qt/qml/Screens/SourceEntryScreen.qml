@@ -1,8 +1,9 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // The page of one entry of a source: a station, an episode. What it is,

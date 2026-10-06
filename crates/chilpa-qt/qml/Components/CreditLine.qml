@@ -1,7 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // A credit as its tag wrote it. It names one artist or several, and a click
 // opens the page of the one under the pointer.

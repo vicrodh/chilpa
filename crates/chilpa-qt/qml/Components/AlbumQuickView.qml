@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A record opened under its row without leaving the grid (design/03
 // AlbumQuickView): cover, kind and year, title, artist, the line of facts

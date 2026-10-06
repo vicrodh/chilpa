@@ -1,7 +1,7 @@
 // hot-path: drawn once per playlist row.
 import QtQuick
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A playlist's covers in the space of an icon: with fewer than four, the
 // first one whole; with four, a mosaic of two by two with a seam between

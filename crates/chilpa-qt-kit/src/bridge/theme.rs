@@ -179,6 +179,23 @@ impl qobject::ThemeModel {
 
 impl cxx_qt::Initialize for qobject::ThemeModel {
     fn initialize(self: Pin<&mut Self>) {
-        crate::registry::register_theme(self.qt_thread());
+        let thread = self.qt_thread();
+        THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
+}
+
+thread_local! {
+    /// The theme's thread, for whoever has to ask it something.
+    static THREAD: std::cell::RefCell<Option<cxx_qt::CxxQtThread<qobject::ThemeModel>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Queues `f` on the theme, from another object: the settings page
+/// changing the mode or the accent. Dropped if the theme has not started,
+/// which only happens before the window is up.
+pub fn ask(f: impl FnOnce(Pin<&mut qobject::ThemeModel>) + Send + 'static) {
+    THREAD.with(|slot| {
+        if let Some(thread) = slot.borrow().as_ref() {
+            let _ = thread.queue(f);
+        }
+    });
 }

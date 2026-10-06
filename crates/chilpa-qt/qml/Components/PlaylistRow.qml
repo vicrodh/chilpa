@@ -1,7 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A playlist in the sidebar (design/03 PlaylistRow): its icon and name, the
 // open one marked. While it is renamed the name is a field: Enter keeps the

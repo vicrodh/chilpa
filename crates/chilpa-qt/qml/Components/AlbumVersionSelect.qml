@@ -1,6 +1,6 @@
 import QtQuick
-import "../Primitives"
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 SelectField {
     id: selector

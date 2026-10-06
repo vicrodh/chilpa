@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Primitives"
-import "../Theme"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // One release a search found (MusicBrainz or Discogs): its title and artist,
 // then what tells two pressings apart -- date, country, label, catalog

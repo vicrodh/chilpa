@@ -4,8 +4,8 @@ import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Patterns" as Driving
-import "Theme"
-import "Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of

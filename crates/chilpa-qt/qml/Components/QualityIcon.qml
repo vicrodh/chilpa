@@ -1,7 +1,7 @@
 // hot-path: one per track row.
 import QtQuick
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // The quality tier as one glyph's color (frontend ADR-0012). The tier comes
 // from the engine; this only picks the token for it.

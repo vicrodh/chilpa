@@ -1,5 +1,5 @@
 import QtQuick
-import "Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The edges of a frameless window: dragging one hands the resize to the
 // window system, which keeps its own snapping and limits.

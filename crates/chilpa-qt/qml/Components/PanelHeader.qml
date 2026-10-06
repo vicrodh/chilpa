@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The head of a side panel: its title, a detail next to it and its buttons
 // on the right (design/03, 40 px).

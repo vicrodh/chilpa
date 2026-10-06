@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // The head of an artist's or a playlist's page (design/06): the picture --
 // a round portrait, or a mosaic of four covers -- what it is, its name, what

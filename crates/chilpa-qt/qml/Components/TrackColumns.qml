@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The widths of a track list's columns, computed once and shared by the
 // header and every row, so they cannot disagree (design/03 TrackRow). A

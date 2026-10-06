@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // What follows the pointer while rows are dragged: the track's title over
 // its artist and record, or how many tracks when a selection is dragged,

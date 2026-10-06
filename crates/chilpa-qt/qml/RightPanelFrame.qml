@@ -3,8 +3,8 @@ import QtQuick.Effects
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
-import "Theme"
-import "Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "Patterns"
 
 // The floating right panel over its shadow: the sidebar's twin, from the tab

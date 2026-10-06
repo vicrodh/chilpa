@@ -13,7 +13,6 @@ pub mod facets;
 pub mod folder_list;
 pub mod folder_view;
 pub mod folders;
-pub mod i18n;
 pub mod library;
 pub mod metadata;
 pub mod navigation;
@@ -24,7 +23,6 @@ pub mod search;
 pub mod servers;
 pub mod settings;
 pub mod settings_page;
-pub mod theme;
 pub mod tracks;
 
 mod cast;

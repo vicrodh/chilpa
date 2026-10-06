@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A transient, readable home for problems reported by the engine. Playback
 // errors must never exist only in a log: a silent track needs an explanation.

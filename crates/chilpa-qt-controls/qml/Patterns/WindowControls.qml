@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.controls
 import "../Theme"
 

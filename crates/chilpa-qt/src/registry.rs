@@ -7,12 +7,11 @@
 //! the current call is over. No object holds a pointer to another, and
 //! nothing runs inside another object's method.
 
-use crate::bridge::{album_actions, folders, library, metadata, navigation, player, playlists, settings, theme};
+use crate::bridge::{album_actions, folders, library, metadata, navigation, player, playlists, settings};
 use cxx_qt::CxxQtThread;
 use std::cell::RefCell;
 
 thread_local! {
-    static THEME: RefCell<Option<CxxQtThread<theme::qobject::ThemeModel>>> = const { RefCell::new(None) };
     static SETTINGS: RefCell<Option<CxxQtThread<settings::qobject::SettingsModel>>> = const { RefCell::new(None) };
     static LIBRARY: RefCell<Option<CxxQtThread<library::qobject::Library>>> = const { RefCell::new(None) };
     static FOLDERS: RefCell<Option<CxxQtThread<folders::qobject::LibraryFolders>>> = const { RefCell::new(None) };
@@ -41,7 +40,6 @@ macro_rules! handle {
     };
 }
 
-handle!(register_theme, theme, THEME, theme::qobject::ThemeModel);
 handle!(register_settings, settings, SETTINGS, settings::qobject::SettingsModel);
 handle!(register_library, library, LIBRARY, library::qobject::Library);
 handle!(register_folders, folders, FOLDERS, folders::qobject::LibraryFolders);

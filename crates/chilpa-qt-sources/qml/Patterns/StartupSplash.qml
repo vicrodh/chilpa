@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The window's cover while the plugins start: their pages, search and
 // playback lean on them, so nothing under it is reachable until they are up.

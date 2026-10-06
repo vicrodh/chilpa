@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // Home (design/06): what played last, what came in last, and the most

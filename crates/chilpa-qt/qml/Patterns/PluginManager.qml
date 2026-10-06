@@ -1,9 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "../Theme"
-import "../Primitives" as P
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives" as P
 import "../Components"
 
 Item {
