@@ -16,11 +16,12 @@ pub mod lrc;
 pub mod matching;
 pub mod model;
 pub mod pipeline;
+pub mod service;
 pub mod timeline;
 pub mod ttml;
 pub mod wire;
 
 pub use cache::{Cache, Origin};
 pub use matching::Track;
-pub use model::{Document, Line, Segment, Timing};
+pub use model::{Document, Line, Provenance, Segment, Timing};
 pub use pipeline::{Answer, Limits, Outcome, Pipeline, Provider, Request, Resolved, Source};

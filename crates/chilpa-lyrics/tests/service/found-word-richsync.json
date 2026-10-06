@@ -1,0 +1,89 @@
+{
+ "request": {
+  "schema": 1,
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist",
+   "album": "Example Album",
+   "duration_ms": 7200,
+   "isrc": "QZES72500001"
+  },
+  "preferences": {
+   "minimum_sync": "unsynced",
+   "language": null
+  }
+ },
+ "status": 200,
+ "response": {
+  "schema": 1,
+  "status": "found",
+  "document": {
+   "schema": 1,
+   "timing": "word",
+   "lines": [
+    {
+     "start_ms": 4200,
+     "end_ms": 6800,
+     "text": "Stay until the morning",
+     "segments": [
+      {
+       "text": "Stay",
+       "start_ms": 4200,
+       "end_ms": 4700,
+       "space_after": true
+      },
+      {
+       "text": "until",
+       "start_ms": 4800,
+       "end_ms": 5300,
+       "space_after": true
+      },
+      {
+       "text": "the",
+       "start_ms": 5400,
+       "end_ms": 5700,
+       "space_after": true
+      },
+      {
+       "text": "morning",
+       "start_ms": 5750,
+       "end_ms": 6800,
+       "space_after": false
+      }
+     ]
+    },
+    {
+     "start_ms": 8000,
+     "end_ms": 10500,
+     "text": "Placeholder words",
+     "segments": [
+      {
+       "text": "Placeholder",
+       "start_ms": 8000,
+       "end_ms": 8900,
+       "space_after": true
+      },
+      {
+       "text": "words",
+       "start_ms": 9000,
+       "end_ms": 10500,
+       "space_after": false
+      }
+     ]
+    }
+   ],
+   "language": "en",
+   "source": {
+    "provider": "musixmatch",
+    "name": "Musixmatch",
+    "claim": {
+     "title": "Small Hours",
+     "artist": "Example Artist",
+     "album": "Example Album",
+     "isrc": "QZES72500001",
+     "duration_ms": 7000
+    }
+   }
+  }
+ }
+}

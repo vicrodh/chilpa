@@ -66,6 +66,22 @@ pub struct Document {
     pub layers: Vec<Layer>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub credits: Vec<Credit>,
+    /// Who gave the document, when it says so itself. The lyrics service
+    /// does; a file and a source plugin are known by where they came from.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<Provenance>,
+}
+
+/// Who gave a document, and the recording they gave it for.
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
+pub struct Provenance {
+    /// The provider's id where the document was put together.
+    pub provider: String,
+    /// What the screen shows.
+    pub name: String,
+    /// What the provider said the lyrics are for, to judge them again here.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub claim: Option<crate::matching::Claim>,
 }
 
 impl Default for Timing {

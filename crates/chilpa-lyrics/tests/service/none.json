@@ -1,0 +1,21 @@
+{
+ "request": {
+  "schema": 1,
+  "track": {
+   "title": "Small Hours",
+   "artist": "Example Artist",
+   "album": "Example Album",
+   "duration_ms": 7200,
+   "isrc": "QZES72500001"
+  },
+  "preferences": {
+   "minimum_sync": "unsynced",
+   "language": null
+  }
+ },
+ "status": 200,
+ "response": {
+  "schema": 1,
+  "status": "none"
+ }
+}
