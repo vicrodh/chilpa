@@ -54,6 +54,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
         }
         "library.metaSrc" => vec![("musicbrainz", "MusicBrainz".to_string()), ("discogs", "Discogs".to_string()), ("embedded", chilpa_i18n::t("Embedded tags only"))],
         "audio.dsdMode" => vec![("native", chilpa_i18n::t("Native DSD")), ("dop", chilpa_i18n::t("DSD over PCM (DoP)")), ("pcm", chilpa_i18n::t("Convert to PCM"))],
+        "desktop.trayIcon" => vec![("auto", chilpa_i18n::t("Auto")), ("mono-light", chilpa_i18n::t("Mono light")), ("mono-dark", chilpa_i18n::t("Mono dark")), ("color", chilpa_i18n::t("Color"))],
         _ => Vec::new(),
     }
 }
@@ -77,6 +78,14 @@ impl Chilpa {
             return Some(said);
         }
         self.lyrics_maintenance(key)
+    }
+
+    /// A setting's new value, for the feature it belongs to. Like
+    /// [`Self::maintain`], this asks each feature in turn and keeps no list
+    /// of keys: the window's bridge hands over what it does not know by
+    /// name. `false` for a key nobody takes.
+    pub fn adjust(&mut self, key: &str, value: &str) -> bool {
+        self.tray_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -179,6 +188,24 @@ impl Chilpa {
                 }
             }
             "advanced.hwVolume" => row.value = self.hardware_volume().to_string(),
+            crate::tray::SHOWN => row.value = self.tray_wanted().to_string(),
+            // Nothing to close to, and no glyph to choose, while the icon is off.
+            crate::tray::CLOSE_TO_TRAY => {
+                row.value = self.preference(&row.key).is_none_or(|v| v == "true").to_string();
+                if !self.tray_wanted() {
+                    row.control.clear();
+                }
+            }
+            crate::tray::GLYPH => {
+                for (value, label) in fixed(&row.key) {
+                    row.values.push(value.to_string());
+                    row.options.push(label);
+                }
+                row.value = self.tray_glyph();
+                if !self.tray_wanted() {
+                    row.control.clear();
+                }
+            }
             "audio.reserve" => {
                 let (card, on) = (!self.alsa_plugin().is_empty(), self.reserving());
                 row.value = on.to_string();

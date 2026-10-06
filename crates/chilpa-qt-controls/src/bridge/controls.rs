@@ -28,6 +28,12 @@ pub mod qobject {
         fn mark_loop(self: Pin<&mut Controls>);
         #[qinvokable]
         fn clear_loop(self: Pin<&mut Controls>);
+        /// Whether closing the window should hide it to the tray instead.
+        #[qinvokable]
+        fn closes_to_tray(self: &Controls) -> bool;
+        /// The tray's menu, in the language chosen now.
+        #[qinvokable]
+        fn relabel_tray(self: &Controls);
     }
 }
 use chilpa_qt_kit::app;
@@ -64,5 +70,13 @@ impl qobject::Controls {
     pub fn clear_loop(mut self: Pin<&mut Self>) {
         app::with(|api| api.ab_clear());
         self.as_mut().refresh();
+    }
+
+    pub fn closes_to_tray(&self) -> bool {
+        app::with(|api| api.closes_to_tray())
+    }
+
+    pub fn relabel_tray(&self) {
+        app::with(|api| api.relabel_tray());
     }
 }

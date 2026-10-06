@@ -73,6 +73,9 @@ Item {
         listening = true
         window.contentItem.Keys.pressed.connect(pressed)
     }
+    // The desktop asked Chilpa to quit: the close that follows is not one
+    // to hide from.
+    property bool quitting: false
     // A window knows where it is only where the system tells it.
     readonly property bool knowsPlace: !Qt.platform.pluginName.startsWith("wayland")
 
@@ -112,15 +115,24 @@ Item {
         Hotkeys.refresh()
     }
 
+    function present() {
+        controls.window.show()
+        controls.window.raise()
+        controls.window.requestActivate()
+    }
     Connections {
         target: Player
-        // The desktop's media controls, or Chilpa launched again.
-        function onWindowAsked(quit) {
-            if (quit)
-                return controls.window.close()
-            controls.window.show()
-            controls.window.raise()
-            controls.window.requestActivate()
+        // The desktop's media controls, Chilpa launched again, or the tray:
+        // 0 come to the front, 1 quit, 2 show if hidden and hide if in sight.
+        function onWindowAsked(what) {
+            // A window hidden in the tray has nothing to close: it quits.
+            if (what === 1) {
+                controls.quitting = true
+                return controls.window.visible ? controls.window.close() : Qt.quit()
+            }
+            if (what === 2 && controls.window.visible)
+                return controls.window.hide()
+            controls.present()
         }
         function onPathChanged() { Controls.refresh() }
         // A jump outside the loop, or its track ending, lets it go.
@@ -133,13 +145,21 @@ Item {
         function onXChanged() { settle.restart() }
         function onYChanged() { settle.restart() }
         function onVisibilityChanged() { settle.restart() }
-        function onClosing() { controls.keepPlace() }
+        // Closing keeps Chilpa in the tray when that is wanted, and there
+        // is a tray; the desktop's Quit comes as a close too, and quits.
+        function onClosing(close) {
+            controls.keepPlace()
+            if (controls.quitting || !Controls.closesToTray())
+                return
+            close.accepted = false
+            controls.window.hide()
+        }
     }
     // A resize is many frames; only the one it ends on is kept.
     Timer { id: settle; interval: Sizes.placeSettle; onTriggered: controls.keepPlace() }
     Connections {
         target: I18n
-        function onRevChanged() { Hotkeys.refresh() }
+        function onRevChanged() { Hotkeys.refresh(); Controls.relabelTray() }
     }
     Timer {
         interval: Sizes.second

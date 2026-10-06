@@ -4,6 +4,8 @@ QtObject {
     property string path: "/test.wav"
     property int queueRev: 0
     property bool playing: true
+    // The desktop asks for the window: 0 to the front, 1 quit, 2 toggle.
+    signal windowAsked(int what)
     property bool paused: false
     property bool bitPerfect: false
     property string title: "Fixture track"

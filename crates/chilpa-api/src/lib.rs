@@ -79,6 +79,7 @@ pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod listen;
 pub mod discs;
+pub mod tray;
 pub mod open_media;
 pub mod window_place;
 mod found;
