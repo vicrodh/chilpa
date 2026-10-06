@@ -30,6 +30,10 @@ QtObject {
     readonly property int lyricCarry: 300
     // How long the last line of lyrics lasts when nothing says.
     readonly property int lyricLastLine: 6000
+    // A line of lyrics fading as the sung one comes near or leaves it, and
+    // the lines moving to keep the sung one in the middle.
+    readonly property int lyricDim: reduced ? 0 : 220
+    readonly property int lyricScroll: reduced ? 0 : 260
     // Between one asking and the next for the system's window controls.
     readonly property int systemControlsRetry: 200
 }

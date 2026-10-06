@@ -4,8 +4,9 @@
 //! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
 use chilpa_qt_sources::app;
-// Linked for its QML module: the shortcuts, the timer and the A-B loop.
+// Linked for their QML modules: shortcuts, timer and A-B loop; the lyrics.
 use chilpa_qt_controls as _;
+use chilpa_qt_lyrics as _;
 mod bridge;
 mod browse;
 mod format;
@@ -74,9 +75,7 @@ const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/assets/fonts/Inter.
 
 fn main() {
     // Before anything is opened: a second launch shows the first and ends.
-    if !chilpa_api::Chilpa::only_instance() {
-        return;
-    }
+    if !chilpa_api::Chilpa::only_instance() { return; }
     let mut app = QGuiApplication::new();
     // Named after its desktop entry only when one is installed: a build run
     // from the tree has none, and the portal refused it on every start.

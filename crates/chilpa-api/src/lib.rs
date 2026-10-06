@@ -64,6 +64,8 @@ mod plugin_domains;
 mod natives;
 mod lyrics_client;
 mod lyrics_service;
+mod lyrics_view;
+pub use lyrics_view::lyric_dimming;
 mod native_reporting;
 mod native_install;
 pub mod stall;

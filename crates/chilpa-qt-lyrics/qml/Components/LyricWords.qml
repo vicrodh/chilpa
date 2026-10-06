@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 
 // One line of lyrics, word by word, while it is being sung.
 //

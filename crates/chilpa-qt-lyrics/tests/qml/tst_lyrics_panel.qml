@@ -1,8 +1,8 @@
 import QtQuick
 import QtTest
 import com.blitzfc.chilpa
-import "../../qml/Patterns"
-import "../../qml/Theme"
+import "../../../chilpa-qt/qml/Patterns"
+import "../../../chilpa-qt/qml/Theme"
 
 TestCase {
     name: "LyricsPanel"
@@ -122,6 +122,47 @@ TestCase {
         }
     }
 
+    // Nine lines timed as wholes, a second apart.
+    readonly property string song: JSON.stringify({ status: "found", source: "File", translation: null, document: { schema: 1, timing: "line",
+        lines: ["One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"].map((text, at) => ({ start_ms: at * 1000, text: text })) } })
+
+    function test_the_lines_fade_around_the_sung_one_and_harder_ahead() {
+        show(song, true, 4)
+        compare(row(4).lit, 1, "the sung line whole")
+        verify(row(4).sung && !row(4).past)
+        verify(row(3).past && !row(5).past)
+        verify(row(3).lit < 1 && row(2).lit < row(3).lit, "what went by fades with its distance")
+        verify(row(5).lit < row(3).lit, "what is to come fades harder than what was sung")
+        verify(row(6).lit < row(5).lit)
+        tryCompare(findChild(row(5), "words"), "opacity", row(5).lit)
+        Player.lyricsLine = 5
+        compare(row(5).lit, 1, "its turn came")
+        verify(findChild(row(4), "words").opacity > row(4).lit, "the line that went by fades out, it does not snap")
+        tryCompare(findChild(row(4), "words"), "opacity", row(4).lit)
+    }
+
+    function test_lyrics_that_do_not_follow_the_music_fade_around_nothing() {
+        show(plain, false, -1)
+        compare(row(0).lit, row(1).lit)
+        verify(!row(0).sung && !row(0).past)
+        show(song, true, -1)
+        compare(row(3).lit, 1, "before the first line is sung every line is whole")
+    }
+
+    function test_the_sung_line_sits_in_the_middle() {
+        const list = findChild(panel, "lyricsList")
+        show(song, true, 0)
+        const middle = (item) => item.mapToItem(list, 0, item.height / 2).y
+        tryVerify(() => Math.abs(middle(row(0)) - list.height / 2) < 2, 1000, "even the first line: there is room above it")
+        Player.lyricsLine = 8
+        tryVerify(() => Math.abs(middle(row(8)) - list.height / 2) < 2, 1000, "and the last")
+        options().choose("follow", false)
+        const at = list.contentY
+        Player.lyricsLine = 2
+        wait(Motion.lyricScroll + 60)
+        compare(list.contentY, at, "not followed, it stays where the reader left it")
+    }
+
     function test_plain_lists_still_show_without_the_document() {
         show("", false, -1)
         Player.lyrics = ["Just", "text"]
@@ -230,9 +271,9 @@ TestCase {
     function test_following_the_sung_line_can_be_turned_off() {
         show(lines, true, 0)
         const list = findChild(panel, "lyricsList")
-        compare(list.highlightRangeMode, ListView.ApplyRange, "it follows until told not to")
+        verify(list.following, "it follows until told not to")
         options().choose("follow", false)
-        compare(list.highlightRangeMode, ListView.NoHighlightRange)
+        verify(!list.following)
         compare(SettingsModel.preferences["ui.lyrics.follow"], "false")
     }
 
@@ -251,9 +292,10 @@ TestCase {
         verify(row(1).uppercase)
         options().choose("color", "accent")
         verify(Qt.colorEqual(row(0).sungColor, Theme.color.accent))
-        verify(Qt.colorEqual(row(1).restColor, Theme.color.textTertiary), "strong dimming until chosen otherwise")
+        compare(row(1).dimming, "strong", "strong dimming until chosen otherwise")
+        verify(row(1).lit < 1)
         options().choose("dimming", "off")
-        verify(Qt.colorEqual(row(1).restColor, Theme.color.textPrimary))
+        compare(row(1).lit, 1, "no dimming, every line whole")
         options().choose("translation", "fr")
         compare(SettingsModel.preferences["ui.lyrics.translation"], "fr", "the language goes where the facade reads it")
     }
