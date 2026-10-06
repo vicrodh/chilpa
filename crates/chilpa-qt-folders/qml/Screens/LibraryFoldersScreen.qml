@@ -1,10 +1,13 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.folders
 import com.blitzfc.chilpa.kit
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
+import "../Patterns"
 
 // Settings > Library > Library folders: add a folder by browsing or by its
 // path, see when each was scanned and whether it is there, scan again or

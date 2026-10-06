@@ -14,6 +14,5 @@ AlbumGridModel 1.0 AlbumGridModel.qml
 AlbumDetailModel 1.0 AlbumDetailModel.qml
 singleton AlbumActions 1.0 AlbumActions.qml
 singleton Library 1.0 Library.qml
-FolderModel 1.0 FolderModel.qml
 SettingsPage 1.0 SettingsPage.qml
 FacetModel 1.0 FacetModel.qml

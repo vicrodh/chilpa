@@ -18,14 +18,6 @@ crates/chilpa-qt/qml/Components/ChoiceRow.qml
 crates/chilpa-qt/qml/Components/CreditLine.qml
 crates/chilpa-qt/qml/Components/DragGhost.qml
 crates/chilpa-qt/qml/Components/FilterCrumb.qml
-crates/chilpa-qt/qml/Components/FolderBulkBar.qml
-crates/chilpa-qt/qml/Components/FolderCard.qml
-crates/chilpa-qt/qml/Components/FolderDetail.qml
-crates/chilpa-qt/qml/Components/FolderEntryRow.qml
-crates/chilpa-qt/qml/Components/FolderMenu.qml
-crates/chilpa-qt/qml/Components/FolderRow.qml
-crates/chilpa-qt/qml/Components/FolderTree.qml
-crates/chilpa-qt/qml/Components/FolderTreeRow.qml
 crates/chilpa-qt/qml/Components/LibraryCrumbs.qml
 crates/chilpa-qt/qml/Components/LibraryPanes.qml
 crates/chilpa-qt/qml/Components/LibraryToolbar.qml
@@ -56,7 +48,6 @@ crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml
 crates/chilpa-qt/qml/Components/RatingButton.qml
 crates/chilpa-qt/qml/Components/RatingStars.qml
-crates/chilpa-qt/qml/Components/ScanProgress.qml
 crates/chilpa-qt/qml/Components/SearchHit.qml
 crates/chilpa-qt/qml/Components/SearchMenu.qml
 crates/chilpa-qt/qml/Components/SectionHeader.qml
@@ -116,12 +107,9 @@ crates/chilpa-qt/qml/Screens/AlbumScreen.qml
 crates/chilpa-qt/qml/Screens/AlbumsScreen.qml
 crates/chilpa-qt/qml/Screens/ArtistScreen.qml
 crates/chilpa-qt/qml/Screens/ArtistsScreen.qml
-crates/chilpa-qt/qml/Screens/FoldersScreen.qml
 crates/chilpa-qt/qml/Screens/HomeScreen.qml
-crates/chilpa-qt/qml/Screens/LibraryFoldersScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml
 crates/chilpa-qt/qml/Screens/ListenListScreen.qml
-crates/chilpa-qt/qml/Screens/OpenMediaScreen.qml
 crates/chilpa-qt/qml/Screens/PendingScreen.qml
 crates/chilpa-qt/qml/Screens/PlaylistManagerScreen.qml
 crates/chilpa-qt/qml/Screens/PlaylistScreen.qml
@@ -137,9 +125,6 @@ crates/chilpa-qt/src/bridge/albums.rs
 crates/chilpa-qt/src/bridge/cast.rs
 crates/chilpa-qt/src/bridge/dev.rs
 crates/chilpa-qt/src/bridge/facets.rs
-crates/chilpa-qt/src/bridge/folder_list.rs
-crates/chilpa-qt/src/bridge/folders.rs
-crates/chilpa-qt/src/bridge/folder_view.rs
 crates/chilpa-qt/src/bridge/library.rs
 crates/chilpa-qt/src/bridge/listen_list.rs
 crates/chilpa-qt/src/bridge/mod.rs
@@ -155,9 +140,6 @@ crates/chilpa-qt/src/bridge/tracks.rs
 crates/chilpa-qt/src/browse.rs
 crates/chilpa-qt/src/covers.cpp
 crates/chilpa-qt/src/fonts.cpp
-crates/chilpa-qt/src/format.rs
 crates/chilpa-qt/src/main.rs
 crates/chilpa-qt/src/modules.cpp
-crates/chilpa-qt/src/paths.rs
 crates/chilpa-qt/src/registry.rs
-crates/chilpa-qt/src/worker.rs

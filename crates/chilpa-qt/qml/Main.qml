@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.folders
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Patterns" as Driving

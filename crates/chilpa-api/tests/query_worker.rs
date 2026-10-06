@@ -4,7 +4,7 @@
 #[allow(dead_code)]
 #[path = "../../chilpa-qt-kit/src/app.rs"]
 mod app;
-#[path = "../../chilpa-qt/src/worker.rs"]
+#[path = "../../chilpa-qt-kit/src/worker.rs"]
 mod worker;
 
 use chilpa_api::{Filter, TrackOrder};

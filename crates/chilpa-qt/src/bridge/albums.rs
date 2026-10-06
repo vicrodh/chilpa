@@ -341,7 +341,7 @@ impl qobject::AlbumGridModel {
                 return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
             }
             "folder" => {
-                let ids = crate::bridge::folder_view::album_ids();
+                let ids = chilpa_qt_folders::bridge::folder_view::album_ids();
                 return self.show(Albums::Snapshot { ids, pages: RefCell::default() });
             }
             _ => Vec::new(),

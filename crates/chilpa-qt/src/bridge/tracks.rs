@@ -862,7 +862,7 @@ impl qobject::TrackListModel {
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), (!top).then_some(ms))
             }
             "folder" => {
-                let tracks = super::folder_view::tracks();
+                let tracks = chilpa_qt_folders::bridge::folder_view::tracks();
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.iter().cloned().map(Entry::Track).collect()), Some(ms))
             }

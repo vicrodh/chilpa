@@ -1,9 +1,12 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.folders
 import com.blitzfc.chilpa.kit
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "../Components"
+import "../Patterns"
 
 // Folders, two ways. As a tree: the library's folders on the left, and on
 // the right the one that is open, with the folders inside it and its own
