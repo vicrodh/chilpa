@@ -22,6 +22,14 @@ QtObject {
     readonly property int treeSettle: 180
     // How long the flyout that rates shows what was chosen before it goes.
     readonly property int ratingSettle: 450
+    // Between one word lighting up and the next, on a line of lyrics timed
+    // as a whole.
+    readonly property int lyricStagger: reduced ? 0 : 40
+    // How far the lyrics clock may run ahead of the last position it got:
+    // positions arrive four times a second. Not motion: never reduced.
+    readonly property int lyricCarry: 300
+    // How long the last line of lyrics lasts when nothing says.
+    readonly property int lyricLastLine: 6000
     // Between one asking and the next for the system's window controls.
     readonly property int systemControlsRetry: 200
 }

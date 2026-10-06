@@ -21,6 +21,10 @@ QtObject {
     property real position: 9
     property real duration: 30
     property real sought: -1
+    property var lyrics: []
+    property string lyricsJson: ""
+    property bool lyricsSynced: false
+    property int lyricsLine: -1
     function seek(seconds) { sought = seconds; position = seconds }
     function clock(seconds) { return String(Math.floor(seconds)) }
 }
