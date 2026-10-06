@@ -65,6 +65,20 @@ const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
 
 impl Chilpa {
+    /// Does what a button of Settings asks for, whole, and answers what its
+    /// row says afterwards. `None` for a button nobody here takes.
+    ///
+    /// Each part of Chilpa answers for its own buttons, next to the code
+    /// that does the work, and this only asks them in turn. A new button is
+    /// its entry in the schema and an arm where its feature lives: no list
+    /// of keys grows here, and nothing changes in the window's bridge.
+    pub fn maintain(&mut self, key: &str) -> Option<String> {
+        if let Some(said) = self.library_maintenance(key) {
+            return Some(said);
+        }
+        self.lyrics_maintenance(key)
+    }
+
     /// A toggle's value from its preference, "true" or "false".
     fn pref_on(&self, key: &str, default: bool) -> String {
         self.preference(key).map_or(default, |v| v == "true").to_string()

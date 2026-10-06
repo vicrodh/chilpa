@@ -235,6 +235,28 @@ impl crate::Chilpa {
         self.now.lyrics_line = self.line_at(self.now.seconds);
     }
 
+    /// The lyrics' own buttons in Settings: what each does, and what its
+    /// row says afterwards.
+    pub(crate) fn lyrics_maintenance(&mut self, key: &str) -> Option<String> {
+        (key == "library.lyricsCache").then(|| self.clear_lyrics_cache())
+    }
+
+    /// Forgets every lyric kept on this machine, found or not, and looks
+    /// again for the lyrics of what plays. Answers what to say about it.
+    fn clear_lyrics_cache(&mut self) -> String {
+        // A connection of its own: the lyrics thread keeps the other, and
+        // SQLite has them take turns.
+        let Ok(cache) = Cache::open(&cache_path()) else {
+            return chilpa_i18n::t("The lyrics cache could not be opened.");
+        };
+        let forgotten = cache.clear();
+        drop(cache);
+        if let Some((path, length_ms)) = self.lyrics.asked.clone() {
+            self.load_lyrics(&path, length_ms);
+        }
+        chilpa_i18n::t_args("Cleared: {} lyrics forgotten. They are looked up again as tracks play.", &[&forgotten.to_string()])
+    }
+
     /// The lyrics of what is playing, whole, as JSON. Empty when nothing
     /// that could have lyrics plays; `{"status":"searching"}` while they
     /// are looked for; `{"status":"none"}` when there are none; and found,

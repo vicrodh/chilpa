@@ -175,6 +175,16 @@ impl Chilpa {
         }
     }
 
+    /// The library's own buttons in Settings: what each does, and what its
+    /// row says afterwards.
+    pub(crate) fn library_maintenance(&mut self, key: &str) -> Option<String> {
+        match key {
+            "library.repair" if self.repair_library() => Some(chilpa_i18n::t("Repaired. Nothing was lost.")),
+            "library.repair" => Some(self.now.error.clone()),
+            _ => None,
+        }
+    }
+
     /// Rebuilds what is derived: the counts and the search index.
     ///
     /// The tracks and the play log are not touched, because they are what

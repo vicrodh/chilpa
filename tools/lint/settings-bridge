@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+"""The window's bridge learns no new setting.
+
+Settings are going to be several times what they are. If each one costs an
+arm in the bridge's `set` or `press`, the bridge is the monolith again: one
+file that knows every key of every feature. So a new setting does not go
+there. Its feature takes it in the facade, next to the code that does the
+work, and the bridge hands it over without knowing its name (frontend
+ADR-0015).
+
+The keys the bridge named when this lock was written are in
+`settings-bridge-keys.txt`. That list only shrinks: a key that is not in it
+fails here, and so does an entry the bridge no longer names, so the list
+never keeps a key somebody already moved out.
+"""
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
+BRIDGE = ROOT / "crates/chilpa-qt/src/bridge/settings_page.rs"
+ALLOWED = Path(__file__).resolve().parent / "settings-bridge-keys.txt"
+# A setting's key: a section and a name, dotted, as a string of its own.
+KEY = re.compile(r'"([a-z]+(?:\.[A-Za-z]+)+)"')
+
+
+def main():
+    code = "\n".join(line for line in BRIDGE.read_text().splitlines() if not line.lstrip().startswith("//"))
+    named = set(KEY.findall(code))
+    allowed = {line.strip() for line in ALLOWED.read_text().splitlines() if line.strip() and not line.startswith("#")}
+    errors = [f"{BRIDGE.relative_to(ROOT)}: `{key}` is new here. The bridge learns no new setting: its feature takes it in the facade (frontend ADR-0015)." for key in sorted(named - allowed)]
+    errors += [f"{ALLOWED.relative_to(ROOT)}: `{key}` is no longer named by the bridge; take it off the list." for key in sorted(allowed - named)]
+    if errors:
+        print("\n".join(errors), file=sys.stderr)
+        print(f"settings-bridge: {len(errors)} error(s)", file=sys.stderr)
+        sys.exit(1)
+    print(f"settings-bridge: the bridge names {len(named)} settings and none is new")
+
+
+if __name__ == "__main__":
+    main()

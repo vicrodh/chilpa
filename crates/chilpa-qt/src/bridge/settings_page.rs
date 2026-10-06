@@ -364,10 +364,6 @@ impl qobject::SettingsPage {
                 registry::folders(|folders| folders.rescan_all());
                 return;
             }
-            "library.repair" => {
-                let said = if app::with(|api| api.repair_library()) { app::t("Repaired. Nothing was lost.") } else { app::with(|api| api.now_playing().error.clone()) };
-                self.as_mut().rust_mut().said = Some(("library.repair".into(), said));
-            }
             "library.analysis" => {
                 let running = app::with(|api| api.analysis_status().running);
                 if running {
@@ -379,7 +375,11 @@ impl qobject::SettingsPage {
                 self.as_mut().reload();
                 return;
             }
-            _ => return,
+            // Any other button is the facade's; a new one needs nothing here.
+            pressed => {
+                let Some(said) = app::with(|api| api.maintain(pressed)) else { return };
+                self.as_mut().rust_mut().said = Some((pressed.into(), said));
+            }
         }
         self.reload();
     }

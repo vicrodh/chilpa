@@ -453,10 +453,16 @@ msgstr ""
 msgid "Clear after this track"
 msgstr ""
 
+msgid "Clear lyrics cache"
+msgstr ""
+
 msgid "Clear queue"
 msgstr ""
 
 msgid "Clear the selection"
+msgstr ""
+
+msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
 msgstr ""
 
 msgid "Click tracks to select them; Shift selects a range."
@@ -909,6 +915,9 @@ msgid "Font"
 msgstr ""
 
 msgid "For a long while"
+msgstr ""
+
+msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
 msgstr ""
 
 msgid "Format"
@@ -2263,6 +2272,9 @@ msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
 msgid "The line being sung stays in view."
+msgstr ""
+
+msgid "The lyrics cache could not be opened."
 msgstr ""
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
