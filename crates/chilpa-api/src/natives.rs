@@ -98,6 +98,9 @@ impl Natives {
     pub(crate) fn has_track_quality(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["track_quality"] == true)
     }
+    pub(crate) fn has_favorites(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["favorites"] == true)
+    }
     pub(crate) fn has_pages(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|p| p.capabilities["pages"] == true)
     }

@@ -12,6 +12,8 @@ use chilpa_library::store::ratings::{RatingTarget, Ratings};
 pub struct Marks {
     ratings: Ratings,
     favorites: Favorites,
+    /// The tracks of sources that can be marked, and the ones that are.
+    source_tracks: (std::collections::HashSet<i64>, std::collections::HashSet<i64>),
 }
 
 fn rated(kind: &str, id: i64) -> Option<RatingTarget> {
@@ -40,7 +42,19 @@ impl Marks {
     }
 
     pub fn favorite(&self, kind: &str, key: &str) -> bool {
+        if let Some(id) = Some(kind).filter(|kind| *kind == "track").and_then(|_| key.parse::<i64>().ok()).filter(|id| *id < 0) {
+            return self.source_tracks.1.contains(&id);
+        }
         marked(kind, key).is_some_and(|target| self.favorites.has(target))
+    }
+
+    /// Whether that can be a favorite at all: what the library holds, and a
+    /// source's track when its source keeps favorites.
+    pub fn markable(&self, kind: &str, key: &str) -> bool {
+        match key.parse::<i64>() {
+            Ok(id) if id < 0 => kind == "track" && self.source_tracks.0.contains(&id),
+            _ => marked(kind, key).is_some(),
+        }
     }
 }
 
@@ -58,7 +72,7 @@ impl Chilpa {
             }
         }
         let favorites = self.library()?.favorites().ok()?;
-        Some(Marks { ratings, favorites })
+        Some(Marks { ratings, favorites, source_tracks: self.source_track_marks() })
     }
 
     /// False when the kind takes no stars or they could not be kept.
@@ -76,8 +90,25 @@ impl Chilpa {
         rated(kind, id).is_some_and(|target| self.rate(target, stars))
     }
 
+    /// Marks what plays as a favorite, or takes the mark off. False when
+    /// nothing plays or it is not something that can be marked.
+    pub fn like_playing(&mut self) -> bool {
+        if !self.now.playing {
+            return false;
+        }
+        let path = self.now.path.clone();
+        let Some(id) = self.rows_for_paths(&[path]).first().map(|track| track.id).filter(|id| *id != 0) else { return false };
+        let key = id.to_string();
+        let Some(marks) = self.marks().filter(|marks| marks.markable("track", &key)) else { return false };
+        self.set_tracks_favorite(&[id], !marks.favorite("track", &key))
+    }
+
     /// False when the kind is unknown or the mark could not be kept.
     pub fn set_favorite(&mut self, kind: &str, key: &str, on: bool) -> bool {
+        // A track of a source is kept by its source.
+        if let Some(id) = key.parse::<i64>().ok().filter(|id| kind == "track" && *id < 0) {
+            return self.set_tracks_favorite(&[id], on);
+        }
         let Some(target) = marked(kind, key) else { return false };
         let Some(lib) = self.library() else { return false };
         match lib.set_favorite(target, on) {

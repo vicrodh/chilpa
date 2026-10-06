@@ -387,6 +387,14 @@ impl Chilpa {
     }
 
     pub fn set_tracks_favorite(&mut self, track_ids: &[i64], favorite: bool) -> bool {
+        let (remote, local): (Vec<i64>, Vec<i64>) = track_ids.iter().partition(|id| **id < 0);
+        if !remote.is_empty() {
+            self.set_source_tracks_favorite(&remote, favorite);
+        }
+        if local.is_empty() {
+            return !remote.is_empty();
+        }
+        let track_ids = &local[..];
         self.library().is_some_and(|lib| lib.set_track_favorites(track_ids, favorite).is_ok())
     }
 

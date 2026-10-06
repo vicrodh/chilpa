@@ -178,6 +178,21 @@ impl Catalog {
         self.content_rev.fetch_add(1, Ordering::Relaxed);
     }
 
+    /// Says that what the lists show of a source changed, from outside.
+    pub(crate) fn touch(&self) {
+        self.changed();
+    }
+
+    /// What the source calls each track of a listing.
+    pub(crate) fn rating_identities_of(&self, key: &str) -> Vec<String> {
+        let inner = self.lock();
+        let Some(shelf) = inner.store.shelves.get(key) else { return Vec::new() };
+        shelf.tracks.iter().filter_map(|id| inner.store.tracks.get(id))
+            .filter_map(|track| track.metadata["ref"].as_str().filter(|_| track.metadata["kind"] == "track"))
+            .map(|reference| reference.split_once("@playlist:").map_or(reference, |(song, _)| song).to_string())
+            .collect()
+    }
+
     fn queue(&self, inner: &mut Inner, job: Job, urgent: bool) {
         if matches!(&job, Job::Tracks(id) if inner.card_errors.contains_key(id) && inner.card_retry_at.get(id).is_none_or(|at| at.elapsed() < std::time::Duration::from_secs(30))) || inner.running.contains(&job) {
             return;
