@@ -23,6 +23,7 @@ CRATES = {
     "chilpa-qt-controls": "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/",
     "chilpa-qt-lyrics": "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/",
     "chilpa-qt-metadata": "qrc:/qt/qml/com/blitzfc/chilpa/metadata/qml/",
+    "chilpa-qt-gallery": "qrc:/qt/qml/com/blitzfc/chilpa/gallery/qml/",
 }
 
 with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:

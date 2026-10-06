@@ -2,6 +2,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
 
 TitledFlow {
     CircleCheck { text: "Selected"; checked: true }

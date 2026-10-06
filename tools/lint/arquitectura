@@ -97,7 +97,7 @@ ALLOWED = {
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
     "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
-    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata"},
+    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery"},
     # La segunda mitad del shell: lo que traen los sources, como su propio
     # módulo de QML. Cada crate del shell tiene sus propios topes.
     # What every shell crate stands on: the facade they share, the theme, the
@@ -109,12 +109,14 @@ ALLOWED = {
     "chilpa-qt-controls": {"chilpa-api", "chilpa-qt-kit"},
     # How the lyrics are drawn: the lines and how they fade around the sung one.
     "chilpa-qt-lyrics": {"chilpa-api"},
+    # The second window that shows every piece; for whoever builds Chilpa.
+    "chilpa-qt-gallery": set(),
     # The metadata editor: its screen and its bridge.
     "chilpa-qt-metadata": {"chilpa-api", "chilpa-qt-kit"},
 }
 
 # Los únicos crates que pueden tener tipos de Qt.
-SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata"}
+SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500
@@ -131,7 +133,10 @@ MAX_LOC_FILE = 1500
 # ellos. Lo que tiene que atrapar es lo otro: filtrar, ordenar, encolar o
 # resolver del lado del shell es lógica que pertenece al núcleo (ADR-001), y
 # eso se ve como crecimiento que no corresponde a un modelo nuevo.
-MAX_LOC_SHELL_RUST = 6_000
+# A ratchet since the window began to be split into crates (2026-10-06): the
+# cap follows the window down and is never raised again. When a crate nears
+# it, a view leaves for a crate of its own.
+MAX_LOC_SHELL_RUST = 5_700
 
 # El QML tiene sus propios presupuestos por archivo, más estrictos que los de
 # aquí, verificados por su propio CI. Este número no los reemplaza: es el techo
@@ -145,7 +150,12 @@ MAX_LOC_SHELL_RUST = 6_000
 # Raised from 18,000 to 20,000 on 2026-10-04: native playlists, folders and
 # the playlist importer put the shell at 18,396. The Gallery still lives in
 # this crate and is the first thing to move out of it.
-MAX_LOC_SHELL_QML = 20_000
+#
+# Back to 16,000 on 2026-10-06: the kit, the metadata editor, the Gallery,
+# the lyric lines and the controls left for crates of their own and the
+# window stands at 15,701. It only goes down from here: the next stop is
+# the 10,000 that ADR-001 set for a crate of the interface.
+MAX_LOC_SHELL_QML = 16_000
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 

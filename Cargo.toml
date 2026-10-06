@@ -34,6 +34,7 @@ members = [
     "crates/chilpa-qt-kit",
     "crates/chilpa-qt-sources",
     "crates/chilpa-qt-controls",
+    "crates/chilpa-qt-gallery",
     "crates/chilpa-qt-lyrics",
     "crates/chilpa-qt-metadata",
     "crates/chilpa-qt",
@@ -79,6 +80,7 @@ chilpa-api = { path = "crates/chilpa-api" }
 chilpa-qt-kit = { path = "crates/chilpa-qt-kit" }
 chilpa-qt-sources = { path = "crates/chilpa-qt-sources" }
 chilpa-qt-controls = { path = "crates/chilpa-qt-controls" }
+chilpa-qt-gallery = { path = "crates/chilpa-qt-gallery" }
 chilpa-qt-lyrics = { path = "crates/chilpa-qt-lyrics" }
 chilpa-qt-metadata = { path = "crates/chilpa-qt-metadata" }
 # The messages Chilpa and a plugin exchange. They live in the sdk branch of the

@@ -7,6 +7,7 @@ use chilpa_qt_kit::app;
 // Linked for their QML modules, which `modules.cpp` registers: a crate
 // nothing here names is left out of the binary, and its module with it.
 use chilpa_qt_controls as _;
+use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;
 use chilpa_qt_sources as _;
 mod bridge;
@@ -112,13 +113,13 @@ fn main() {
 
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
-    let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };
+    let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "gallery/qml/Gallery/Gallery.qml" } else { "qml/Main.qml" };
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
         // SAFETY: the engine is alive and a QQmlEngine; the provider it is
         // given is its own from then on.
         unsafe { chilpa_install_covers(engine.as_mut().get_unchecked_mut() as *mut QQmlApplicationEngine as *mut std::ffi::c_void) };
-        engine.load(&QUrl::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/qml/{root}")));
+        engine.load(&QUrl::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/{root}")));
     }
     if let Some(app) = app.as_mut() {
         app.exec();

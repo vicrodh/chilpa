@@ -81,10 +81,6 @@ crates/chilpa-qt/qml/Components/TrackRowMove.qml
 crates/chilpa-qt/qml/Components/TrackRow.qml
 crates/chilpa-qt/qml/Components/TrackSourceLabel.qml
 crates/chilpa-qt/qml/Components/VolumeControl.qml
-crates/chilpa-qt/qml/Gallery/GalleryComponents.qml
-crates/chilpa-qt/qml/Gallery/GalleryPatterns.qml
-crates/chilpa-qt/qml/Gallery/GalleryPrimitives.qml
-crates/chilpa-qt/qml/Gallery/Gallery.qml
 crates/chilpa-qt/qml/Main.qml
 crates/chilpa-qt/qml/Patterns/CastPicker.qml
 crates/chilpa-qt/qml/Patterns/DevHooks.qml
