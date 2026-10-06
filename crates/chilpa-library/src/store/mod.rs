@@ -205,6 +205,14 @@ impl Library {
 
     /// The source's id, creating it if needed.
     pub fn source_id(&self, provider: &str, instance: &str) -> rusqlite::Result<i64> {
+        // Asked on the window's thread at every track start. A source that
+        // is already there is only read, and a read never waits: writing
+        // first made this wait for whoever else was writing, a scan or a
+        // sync, for as long as the lock allows.
+        let known = self.db.query_row("SELECT id FROM sources WHERE provider = ?1 AND instance = ?2", params![provider, instance], |r| r.get(0)).optional()?;
+        if let Some(id) = known {
+            return Ok(id);
+        }
         // What is not the local library and was not added as a server is a
         // service: browsed, never kept as mine (ADR-017).
         self.db.execute(
