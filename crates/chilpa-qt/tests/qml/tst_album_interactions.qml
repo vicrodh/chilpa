@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import "../../qml/Components"
 import "../../../chilpa-qt-kit/qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "AlbumInteractions"
@@ -90,6 +91,41 @@ TestCase {
             row.rowKind = 0
         }
         columns.showSource = false
+    }
+
+    // A header is a divider, with the group's cover when it has one, or it
+    // stands for a record among several, with its cover and its artist.
+    function test_a_header_is_a_divider_or_stands_for_a_record() {
+        row.rowKind = 1
+        row.headerLabel = "Disc 2 \u2014 Live"
+        row.headerMeta = "9 songs"
+        row.art = ""
+        wait(0)
+        const head = findChild(row, "groupHeader")
+        verify(head, "a header row builds its header")
+        verify(row.header && !row.record)
+        compare(row.height, Metrics.rowGroup)
+        verify(!head.record && !head.covered)
+        compare(head.label, "Disc 2 \u2014 Live")
+        row.art = "file:///covers/disc-2.jpg"
+        wait(0)
+        verify(head.covered, "a disc with its own cover shows it")
+
+        row.rowKind = 2
+        row.headerLabel = "Box \u2014 Live"
+        row.headerMeta = "1990 \u00b7 Disc 2 \u00b7 9 tracks"
+        wait(0)
+        verify(row.header && row.record)
+        compare(row.height, Metrics.rowRecord)
+        const record = findChild(row, "groupHeader")
+        verify(record.record)
+        compare(record.artist, row.artist)
+        verify(record.width < row.width - columns.more, "it leaves room for the group's actions")
+
+        row.rowKind = 0
+        row.art = ""
+        wait(0)
+        compare(findChild(row, "groupHeader"), null, "a track builds no header")
     }
 
     // The fixed columns close the row in one order everywhere: time, stars,

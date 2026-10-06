@@ -1,6 +1,7 @@
 import QtQuick
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
 
 Item {
     id: row
@@ -42,7 +43,9 @@ Item {
     // Its heart and its menu button, which the list resolves the clicks of.
     readonly property TrackRowEnd end: rowEnd
 
-    readonly property bool header: rowKind === 1
+    // A header: a divider (1), or one that stands for a record (2).
+    readonly property bool header: rowKind !== 0
+    readonly property bool record: rowKind === 2
     readonly property bool rich: cols.rich
 
     // The label that shows its artist, for the list to tell which one of
@@ -72,7 +75,7 @@ Item {
     }
 
     width: cols.width
-    height: header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
+    height: record ? Metrics.rowRecord : header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
     opacity: available ? 1 : Metrics.disabledOpacity
 
     ListRowSurface {
@@ -85,15 +88,13 @@ Item {
         emphasized: row.playing && row.rich
     }
 
-    Row {
-        visible: row.header
+    // Only a header builds one; it stops short of the group's own actions.
+    Loader {
+        active: row.header
         x: row.cols.indexX
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: Metrics.gap8
-
-        Icon { glyph: Icons.disc; size: Metrics.iconMd; color: Theme.color.accent }
-        Text { text: row.headerLabel; font.pointSize: Type.meta; font.weight: Type.semibold; color: Theme.color.textPrimary }
-        Text { text: row.headerMeta; font.pointSize: Type.meta; color: Theme.color.textTertiary }
+        width: row.width - x - row.cols.more - Metrics.gap16 // derived: what the actions take
+        height: parent.height
+        sourceComponent: TrackGroupHeader { objectName: "groupHeader"; of: row }
     }
 
     Item {

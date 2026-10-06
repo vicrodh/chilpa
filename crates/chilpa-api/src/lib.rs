@@ -78,6 +78,7 @@ mod ratings;
 pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod listen;
+pub mod discs;
 pub mod open_media;
 pub mod window_place;
 mod found;
@@ -104,7 +105,7 @@ mod volume;
 pub use volume::VolumeView;
 pub use metadata::view::MetadataView;
 
-pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
+pub use browse::{filter_facets, select_facets, select_tracks, AlbumDetail, FacetEntry, Facets, Filter, FolderItem, FolderView, Found, GroupHeader, Reader, Snapshot, Totals, TrackEntry, TrackOrder, TrackRow};
 mod album_versions;
 mod album_information;
 pub use album_versions::{AlbumSource, AlbumVersion};
