@@ -91,7 +91,7 @@ Item {
             Navigation.openFolder(Dev.routeKey)
         else if (Dev.route === "openMedia" && Dev.routeKey !== "") {
             Navigation.go("openMedia", 0)
-            OpenMedia.openPath("sacd", Dev.routeKey)
+            OpenMedia.openPath(Dev.routeKey.toLowerCase().endsWith(".iso") ? "sacd" : "folder", Dev.routeKey)
         }
         else if (Dev.route === "artist")
             Navigation.openArtist(Dev.routeKey)

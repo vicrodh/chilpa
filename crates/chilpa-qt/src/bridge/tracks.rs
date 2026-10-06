@@ -875,6 +875,9 @@ impl qobject::TrackListModel {
             }
             "openMedia" => {
                 let (rows, keys) = app::with(|api| api.media_rows(&self.rust().key.to_string()));
+                // Each disc counts from one: a header is the row with no key.
+                let mut number = 0;
+                self.as_mut().rust_mut().queue_numbers = keys.iter().map(|key| { number = if key.is_empty() { 0 } else { number + 1 }; number }).collect();
                 self.as_mut().rust_mut().queue_keys = keys;
                 (Rows::Loaded(rows), None)
             }
