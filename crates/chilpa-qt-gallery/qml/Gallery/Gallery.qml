@@ -2,9 +2,10 @@ import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.kit
+import com.blitzfc.chilpa.gallery
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "../Patterns"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Patterns"
 
 // Every primitive, component and pattern, in its states, in the theme
 // chosen at the top: the registry of design/03 made visible. A piece that
@@ -48,10 +49,15 @@ Window {
             GalleryPrimitives { width: parent.width }
             GalleryComponents { width: parent.width }
             GalleryPatterns { id: patterns; width: parent.width }
-            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/metadata/qml/Gallery/GalleryMetadata.qml" }
-            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Gallery/GalleryPlugins.qml" }
-            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Gallery/GalleryControls.qml" }
-            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/Gallery/GalleryLyrics.qml" }
+            // The pages the other shell crates bring.
+            Repeater {
+                model: GalleryPages.pages()
+                Loader {
+                    required property string modelData
+                    width: sections.width
+                    source: modelData
+                }
+            }
         }
     }
 

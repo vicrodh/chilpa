@@ -3,7 +3,8 @@ import QtQuick
 import com.blitzfc.chilpa
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "../Components"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 
 TitledFlow {
     id: section

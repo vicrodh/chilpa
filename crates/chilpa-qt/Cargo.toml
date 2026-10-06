@@ -10,6 +10,7 @@ chilpa-api.workspace = true
 chilpa-qt-kit.workspace = true
 chilpa-qt-sources.workspace = true
 chilpa-qt-controls.workspace = true
+chilpa-qt-gallery.workspace = true
 chilpa-qt-lyrics.workspace = true
 chilpa-qt-metadata.workspace = true
 cxx = "1"
