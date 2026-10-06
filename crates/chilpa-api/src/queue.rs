@@ -453,6 +453,19 @@ impl Chilpa {
         self.sleep_until.map(|deadline| deadline.saturating_duration_since(std::time::Instant::now()))
     }
 
+    /// The timer as the listener set it, in minutes: from one minute to a
+    /// whole day. Setting it again replaces the one running.
+    pub fn sleep_in_minutes(&mut self, minutes: i32) {
+        if minutes > 0 {
+            self.set_sleep_timer(Some(std::time::Duration::from_secs(u64::from(minutes.clamp(1, 24 * 60) as u32) * 60)));
+        }
+    }
+
+    /// What is left of the timer, ready to show: empty when it is off.
+    pub fn sleep_left(&self) -> String {
+        self.sleep_timer_remaining().map(|left| sleep_left(left.as_secs())).unwrap_or_default()
+    }
+
     /// Adds tracks to the end of the queue. If nothing is playing, it starts.
     ///
     /// Queueing does not cut off what is playing: the queue grows behind it
@@ -907,5 +920,32 @@ impl Chilpa {
         self.replace_queue(tracks.iter().map(|p| p.display().to_string()).collect());
         self.spawn(0, device, bit_perfect);
         available.into_iter().map(|t| t.title).collect()
+    }
+}
+
+/// What is left of a sleep timer, short: hours and minutes, then minutes,
+/// with seconds only under five minutes.
+fn sleep_left(seconds: u64) -> String {
+    let (hours, minutes, rest) = (seconds / 3600, seconds % 3600 / 60, seconds % 60);
+    if hours > 0 {
+        format!("{hours}h {minutes}m")
+    } else if minutes > 0 && rest > 0 && minutes < 5 {
+        format!("{minutes}m {rest}s")
+    } else if minutes > 0 {
+        format!("{minutes}m")
+    } else {
+        format!("{rest}s")
+    }
+}
+
+#[cfg(test)]
+mod sleep_tests {
+    use super::sleep_left;
+
+    #[test]
+    fn what_is_left_is_said_short() {
+        for (seconds, said) in [(0, "0s"), (45, "45s"), (125, "2m 5s"), (120, "2m"), (305, "5m"), (599, "9m"), (3725, "1h 2m"), (3600, "1h 0m")] {
+            assert_eq!(sleep_left(seconds), said, "{seconds} s");
+        }
     }
 }
