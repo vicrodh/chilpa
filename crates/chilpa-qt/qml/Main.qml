@@ -3,6 +3,7 @@ import QtQuick.Effects
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Patterns" as Controls
 import "Theme"
 import "Primitives"
 import "Patterns"
@@ -142,7 +143,7 @@ Window {
         window: window
     }
 
-    Shortcuts {}
+    Controls.WindowControls { window: window }
 
     // The folders object watches the scans Settings starts, so it exists from
     // the start and not from the first time its page opens.

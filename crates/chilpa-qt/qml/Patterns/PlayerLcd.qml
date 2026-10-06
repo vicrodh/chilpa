@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
+import com.blitzfc.chilpa.controls
 import "../Theme"
 import "../Primitives"
 import "../Components"
@@ -160,6 +161,8 @@ Rectangle {
         position: Player.position
         duration: Player.duration
         bubbleText: Player.clock(hoverSeconds)
+        loopStart: Controls.loopState > 0 ? Controls.loopStart : -1
+        loopEnd: Controls.loopState > 1 ? Controls.loopEnd : -1
         onSeek: (seconds) => Player.seek(seconds)
     }
 }

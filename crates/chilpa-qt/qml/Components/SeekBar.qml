@@ -14,6 +14,10 @@ Item {
     // The time at the pointer or the drag, as the owner writes it.
     property string bubbleText
 
+    // The A-B loop's marks, in seconds; negative while not set.
+    property real loopStart: -1
+    property real loopEnd: -1
+
     signal seek(real seconds)
 
     readonly property bool active: area.containsMouse || area.pressed
@@ -37,6 +41,27 @@ Item {
             height: parent.height
             radius: parent.radius
             color: bar.active ? Theme.color.accent : Theme.color.textSecondary
+        }
+        // The loop's stretch once it has an end, and a tick at each mark.
+        Rectangle {
+            visible: bar.loopEnd > bar.loopStart && bar.duration > 0
+            x: parent.width * bar.loopStart / Math.max(bar.duration, 1)
+            width: Math.max(Metrics.gap2, parent.width * (bar.loopEnd - bar.loopStart) / Math.max(bar.duration, 1))
+            height: parent.height
+            color: Theme.color.accent
+            opacity: Metrics.notchSoft
+        }
+        Repeater {
+            model: bar.duration > 0 ? [bar.loopStart, bar.loopEnd].filter(at => at >= 0) : []
+            Rectangle {
+                required property real modelData
+                objectName: "loopMark"
+                x: track.width * modelData / bar.duration - width / 2 // derived: centered on the mark
+                anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.gap2
+                height: Metrics.gap10
+                color: Theme.color.accent
+            }
         }
     }
 

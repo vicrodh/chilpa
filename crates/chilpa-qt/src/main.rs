@@ -4,6 +4,8 @@
 //! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
 use chilpa_qt_sources::app;
+// Linked for its QML module: the shortcuts, the timer and the A-B loop.
+use chilpa_qt_controls as _;
 mod bridge;
 mod browse;
 mod format;
@@ -24,7 +26,7 @@ unsafe extern "C" {
     fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
     /// Hands the engine the covers' image provider. See `covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
-    /// Registers the QML module of `chilpa-qt-sources`. See `modules.cpp`.
+    /// Registers the QML modules of the other shell crates. See `modules.cpp`.
     fn chilpa_import_modules();
 }
 

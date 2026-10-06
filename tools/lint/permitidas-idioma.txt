@@ -566,3 +566,7 @@ st
 trackid
 zbus
 zvariant
+alt
+keymap
+keymaps
+keycap

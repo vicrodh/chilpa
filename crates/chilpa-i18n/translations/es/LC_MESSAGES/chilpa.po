@@ -52,11 +52,17 @@ msgstr "\"{}\" no quiso arrancar ({})"
 msgid "(unreadable manifest)"
 msgstr "(manifest ilegible)"
 
+msgid "1 hr"
+msgstr "1 h"
+
 msgid "1. Origin"
 msgstr "1. Origen"
 
 msgid "16 bit"
 msgstr "16 bits"
+
+msgid "2 hr"
+msgstr "2 h"
 
 msgid "2. Destinations"
 msgstr "2. Destinos"
@@ -67,8 +73,14 @@ msgstr "24 bits en 3 bytes"
 msgid "24 bit in 32"
 msgstr "24 bits en 32"
 
+msgid "3 hr"
+msgstr "3 h"
+
 msgid "3. Review"
 msgstr "3. Revisión"
+
+msgid "30 min"
+msgstr "30 min"
 
 msgid "32 bit"
 msgstr "32 bits"
@@ -78,6 +90,9 @@ msgstr "flotante de 32"
 
 msgid "4. Summary"
 msgstr "4. Resumen"
+
+msgid "5 hr"
+msgstr "5 h"
 
 msgid "A JACK graph runs at one rate and every program in it runs at that rate -- this one is at {} Hz. A track recorded at any other rate is resampled before Chilpa has any say, and no setting here changes it. JACK is for routing audio between programs; for a file delivered to a DAC untouched, choose the card itself."
 msgstr "Un grafo de JACK corre a una sola frecuencia y todos los programas dentro corren a esa -- este va a {} Hz. Una pista grabada a cualquier otra se remuestrea antes de que Chilpa tenga voz, y ningún ajuste aquí lo cambia. JACK es para enrutar audio entre programas; para entregarle un archivo a un DAC sin tocarlo, elige la tarjeta directo."
@@ -93,6 +108,9 @@ msgstr "Lo pone un sidecar, no el archivo"
 
 msgid "A track counts once half of it has played, or four minutes. Listens made offline are sent later."
 msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que escuches sin conexión se envía después."
+
+msgid "A-B loop"
+msgstr "Bucle A-B"
 
 msgid "ALSA plugin"
 msgstr "Plugin de ALSA"
@@ -227,6 +245,9 @@ msgid "Already contains {} track"
 msgid_plural "Already contains {} tracks"
 msgstr[0] "Ya contiene {} pista"
 msgstr[1] "Ya contiene {} pistas"
+
+msgid "Already used by {}"
+msgstr "Ya lo usa {}"
 
 msgid "Also write the other tag layers"
 msgstr "Escribir también en las otras capas de tags"
@@ -378,6 +399,9 @@ msgstr "Tranquilo"
 msgid "Cancel"
 msgstr "Cancelar"
 
+msgid "Cancel Timer"
+msgstr "Cancelar temporizador"
+
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
 
@@ -453,6 +477,9 @@ msgstr "Vaciar"
 msgid "Clear after this track"
 msgstr "Vaciar después de esta pista"
 
+msgid "Clear loop"
+msgstr "Quitar bucle"
+
 msgid "Clear lyrics cache"
 msgstr "Vaciar caché de letras"
 
@@ -470,6 +497,12 @@ msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
 
 msgid "Close"
 msgstr "Cerrar"
+
+msgid "Close / Dismiss"
+msgstr "Cerrar / Descartar"
+
+msgid "Close Tab"
+msgstr "Cerrar pestaña"
 
 msgid "Close media"
 msgstr "Cerrar medios"
@@ -619,6 +652,15 @@ msgstr "Imagen personalizada"
 
 msgid "Customize"
 msgstr ""
+
+msgid "Customize Shortcuts"
+msgstr "Personalizar atajos"
+
+msgid "Custom…"
+msgstr "Personalizado…"
+
+msgid "Cycle Repeat"
+msgstr "Cambiar repetición"
 
 msgid "DAC passthrough"
 msgstr "Paso directo al DAC"
@@ -962,6 +1004,12 @@ msgstr "Géneros"
 msgid "German"
 msgstr "Alemán"
 
+msgid "Go Back"
+msgstr "Atrás"
+
+msgid "Go Forward"
+msgstr "Adelante"
+
 msgid "Go to album"
 msgstr "Ir al disco"
 
@@ -1109,6 +1157,9 @@ msgstr "Integraciones"
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
 
+msgid "Interface"
+msgstr "Interfaz"
+
 msgid "Italian"
 msgstr "Italiano"
 
@@ -1130,6 +1181,12 @@ msgstr "Quedarse con la actual"
 msgid "Keep the queue between sessions"
 msgstr "Conservar la cola entre sesiones"
 
+msgid "Keyboard Shortcuts"
+msgstr "Atajos de teclado"
+
+msgid "Keymap"
+msgstr "Mapa de teclas"
+
 msgid "Label"
 msgstr "Sello"
 
@@ -1141,6 +1198,9 @@ msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
 
 msgid "Later tabs"
 msgstr "Pestañas siguientes"
+
+msgid "Letters"
+msgstr "Letras"
 
 msgid "Library"
 msgstr "Biblioteca"
@@ -1159,6 +1219,9 @@ msgstr "Selección de la biblioteca"
 
 msgid "Light"
 msgstr "Claro"
+
+msgid "Like Track"
+msgstr "Marcar como favorita"
 
 msgid "List"
 msgstr "Lista"
@@ -1331,6 +1394,9 @@ msgstr "Pista en MusicBrainz"
 msgid "Mute"
 msgstr "Silenciar"
 
+msgid "Mute / Unmute"
+msgstr "Silenciar / Activar sonido"
+
 msgid "My library"
 msgstr "Mi biblioteca"
 
@@ -1367,6 +1433,9 @@ msgstr "Reproducción en red"
 msgid "Never played"
 msgstr "Nunca escuchadas"
 
+msgid "New Tab"
+msgstr "Nueva pestaña"
+
 msgid "New folder"
 msgstr "Nuevo folder"
 
@@ -1390,6 +1459,9 @@ msgstr "Más nuevos primero"
 
 msgid "Next"
 msgstr "Siguiente"
+
+msgid "Next Track"
+msgstr "Pista siguiente"
 
 msgid "Next page"
 msgstr ""
@@ -1646,6 +1718,9 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Play"
 msgstr "Reproducir"
 
+msgid "Play / Pause"
+msgstr "Reproducir / Pausar"
+
 msgid "Play count"
 msgstr "Reproducciones"
 
@@ -1736,8 +1811,14 @@ msgstr "Portugués"
 msgid "Position in Streaming"
 msgstr "Posición en Streaming"
 
+msgid "Press keys…"
+msgstr "Presiona las teclas…"
+
 msgid "Previous"
 msgstr "Anterior"
+
+msgid "Previous Track"
+msgstr "Pista anterior"
 
 msgid "Processed"
 msgstr "Procesado"
@@ -1946,11 +2027,14 @@ msgstr "Volver a escanear"
 msgid "Reset"
 msgstr "Restablecer"
 
+msgid "Reset All to Defaults"
+msgstr "Restablecer todos"
+
 msgid "Restart plugin"
 msgstr ""
 
 msgid "Restore default"
-msgstr ""
+msgstr "Restaurar predeterminado"
 
 msgid "Restore defaults"
 msgstr ""
@@ -2077,6 +2161,12 @@ msgid_plural "See {} more"
 msgstr[0] "Ver {} más"
 msgstr[1] "Ver {} más"
 
+msgid "Seek Back"
+msgstr "Retroceder"
+
+msgid "Seek Forward"
+msgstr "Avanzar"
+
 msgid "Select"
 msgstr "Seleccionar"
 
@@ -2101,11 +2191,23 @@ msgstr "Servidor agregado"
 msgid "Servers"
 msgstr "Servidores"
 
+msgid "Set Timer"
+msgstr "Activar temporizador"
+
+msgid "Set loop end (B)"
+msgstr "Marcar fin (B)"
+
+msgid "Set loop start (A)"
+msgstr "Marcar inicio (A)"
+
 msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."
 msgstr "Pone el grafo de PipeWire a la frecuencia de cada pista mientras Chilpa tiene la salida para él solo, así el DAC recibe la frecuencia que trae el archivo. La frecuencia regresa cuando Chilpa se detiene."
 
 msgid "Settings"
 msgstr "Ajustes"
+
+msgid "Show Shortcuts"
+msgstr "Mostrar atajos"
 
 msgid "Show each playlist folder in its chosen color."
 msgstr "Muestra cada folder de playlists con el color elegido."
@@ -2190,6 +2292,12 @@ msgstr "Estado"
 
 msgid "Stop after this track"
 msgstr "Detener después de esta pista"
+
+msgid "Stop playback after:"
+msgstr "Detener la reproducción en:"
+
+msgid "Stops in"
+msgstr "Se detiene en"
 
 msgid "Stream address"
 msgstr "Dirección de stream"
@@ -2397,6 +2505,9 @@ msgstr "Esta actualización solicita acceso adicional."
 msgid "Time"
 msgstr "Duración"
 
+msgid "Timer"
+msgstr "Temporizador"
+
 msgid "Title"
 msgstr "Título"
 
@@ -2408,6 +2519,12 @@ msgstr "Título Z-A"
 
 msgid "To move to"
 msgstr "Para moverse"
+
+msgid "Toggle Shuffle"
+msgstr "Alternar aleatorio"
+
+msgid "Toggle Sidebar"
+msgstr "Alternar barra lateral"
 
 msgid "Token"
 msgstr "Token"
@@ -2516,6 +2633,12 @@ msgstr "Válidos"
 
 msgid "Version: {}"
 msgstr "Versión: {}"
+
+msgid "Volume Down"
+msgstr "Bajar volumen"
+
+msgid "Volume Up"
+msgstr "Subir volumen"
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"
@@ -2873,6 +2996,9 @@ msgstr "se están guardando metadatos; escanea cuando termine"
 
 msgid "microphone"
 msgstr "micrófono"
+
+msgid "min"
+msgstr "min"
 
 msgid "mono"
 msgstr "mono"
@@ -3708,6 +3834,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} escucha pendiente de enviar"
 msgstr[1] "{} escuchas pendientes de enviar"
+
+msgid "{} modified"
+msgstr "{} modificados"
 
 msgid "{} no longer accepts the account; connect again"
 msgstr "{} ya no acepta la cuenta; vuelve a conectar"
