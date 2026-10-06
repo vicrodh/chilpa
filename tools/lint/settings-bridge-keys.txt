@@ -1,0 +1,35 @@
+# The settings the window's bridge named on 2026-10-06, when the lock was
+# written (frontend ADR-0015). This list only shrinks: a key leaves it when
+# its feature takes it in the facade. tools/lint/settings-bridge reads it.
+advanced.hwVolume
+appearance.accent
+appearance.albumHeader
+appearance.density
+appearance.font
+appearance.theme
+audio.alsaPlugin
+audio.backend
+audio.device
+audio.dsdMode
+audio.exclusive
+audio.forceRate
+audio.reserve
+audio.wizard
+integrations.lastfm.account
+integrations.lastfm.enabled
+integrations.listenbrainz.account
+integrations.listenbrainz.enabled
+library.analysis
+library.folders
+library.metaSrc
+library.rescan
+navigation.albumClick
+navigation.folderColors
+navigation.newtab
+navigation.playlistArtwork
+navigation.restoreTabs
+playback.autoHide
+playback.extra
+playback.gapless
+playback.keepQueue
+playback.normalize

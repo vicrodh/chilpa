@@ -453,11 +453,17 @@ msgstr "Vaciar"
 msgid "Clear after this track"
 msgstr "Vaciar después de esta pista"
 
+msgid "Clear lyrics cache"
+msgstr "Vaciar caché de letras"
+
 msgid "Clear queue"
 msgstr "Vaciar queue"
 
 msgid "Clear the selection"
 msgstr "Quitar la selección"
+
+msgid "Cleared: {} lyrics forgotten. They are looked up again as tracks play."
+msgstr "Listo: se olvidaron {} letras. Se vuelven a buscar al reproducir."
 
 msgid "Click tracks to select them; Shift selects a range."
 msgstr "Haz clic en las pistas para seleccionarlas; Shift selecciona un rango."
@@ -910,6 +916,9 @@ msgstr "Fuente"
 
 msgid "For a long while"
 msgstr "Para un rato largo"
+
+msgid "Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."
+msgstr "Olvida las letras encontradas hasta ahora y las pistas que se sabía que no tienen. Se vuelven a buscar al reproducir."
 
 msgid "Format"
 msgstr "Formato"
@@ -2264,6 +2273,9 @@ msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
 msgid "The line being sung stays in view."
 msgstr "La línea que se canta se mantiene a la vista."
+
+msgid "The lyrics cache could not be opened."
+msgstr "No se pudo abrir la caché de letras."
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."

@@ -181,7 +181,13 @@ pub const SECTIONS: &[Section] = &[
                     Control::Select,
                 )],
             },
-            Group { title: Chilpa::mark("Maintenance"), settings: &[action("library.repair", Chilpa::mark("Repair the library"), Chilpa::mark("Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."), Control::Button, Chilpa::mark("Repair"))] },
+            Group {
+                title: Chilpa::mark("Maintenance"),
+                settings: &[
+                    action("library.repair", Chilpa::mark("Repair the library"), Chilpa::mark("Rebuilds the counts and the search index from the tracks and the play log. Nothing is lost."), Control::Button, Chilpa::mark("Repair")),
+                    action("library.lyricsCache", Chilpa::mark("Clear lyrics cache"), Chilpa::mark("Forgets the lyrics found so far, and the tracks known to have none. They are looked up again as tracks play."), Control::Button, Chilpa::mark("Clear")),
+                ],
+            },
             Group { title: Chilpa::mark("Analysis"), settings: &[action("library.analysis", Chilpa::mark("Analyze the library"), Chilpa::mark("Reads tempo, musical key and loudness in the background. AutoMix appears when enough tracks have tempo."), Control::Progress, Chilpa::mark("Analyze"))] },
         ],
     },

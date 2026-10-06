@@ -227,6 +227,20 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("still there");
     assert_eq!(service.asked_about("Remote Song"), 1, "found lyrics are remembered");
 
+    // Clearing the cache from Settings forgets them, and what plays is
+    // looked up again at once.
+    let said_after = chilpa.maintain("library.lyricsCache").expect("the lyrics take their own button");
+    assert!(said_after.contains('1'), "it says how many it forgot: {said_after}");
+    assert!(chilpa.maintain("library.nobodys").is_none(), "a button nobody takes is said to be nobody's");
+    let deadline = Instant::now() + long;
+    while service.asked_about("Remote Song") < 2 {
+        chilpa.poll();
+        assert!(Instant::now() < deadline, "the lyrics of what plays were not looked up again");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("found again");
+    assert_eq!(service.asked_about("Remote Song"), 2, "and remembered again");
+
     // A track skipped before its lyrics arrive never shows them on the next.
     let slow = song(&music, "Slow Song");
     let quick = song(&music, "Quick Song");

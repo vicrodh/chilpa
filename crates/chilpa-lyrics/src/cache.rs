@@ -192,6 +192,12 @@ impl Cache {
         self.write(&source_key(plugin, reference), track, None, None);
     }
 
+    /// Forgets everything: every lyric found and every "none". Says how
+    /// many rows went.
+    pub fn clear(&self) -> usize {
+        self.db.execute("DELETE FROM lyrics", []).unwrap_or(0)
+    }
+
     /// Forgets everything a plugin gave, for when it is removed or its
     /// account is closed.
     pub fn forget_provider(&self, plugin: &str) {
@@ -391,5 +397,20 @@ mod tests {
         let cache = Cache::open(&path).unwrap();
         assert_eq!(cache.rows(), 0);
         let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn clearing_forgets_what_was_found_and_what_was_not() {
+        let cache = Cache::in_memory().unwrap();
+        let origin = Origin { provider: "somewhere".into(), name: "Somewhere".into() };
+        let found = Track { title: "One".into(), artist: "Someone".into(), duration_ms: Some(200_000), ..Track::default() };
+        let missing = Track { title: "Two".into(), artist: "Someone".into(), duration_ms: Some(180_000), ..Track::default() };
+        let claim = Claim { title: Some("One".into()), artist: Some("Someone".into()), duration_ms: Some(200_000), ..Claim::default() };
+        cache.put(&found, &claim, &lrc::parse("[00:01.00]A line"), &origin, None);
+        cache.put_none(&missing);
+        assert_eq!(cache.clear(), 2);
+        assert!(cache.get(&found).is_none());
+        assert!(cache.get(&missing).is_none(), "a remembered \"none\" goes too: it is asked again");
+        assert_eq!(cache.clear(), 0);
     }
 }
