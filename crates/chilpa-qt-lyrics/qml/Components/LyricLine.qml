@@ -1,28 +1,38 @@
 import QtQuick
-import "../Theme"
+import com.blitzfc.chilpa.lyrics
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 
 // One line of lyrics as the panel shows it: its words, word by word while
-// it is sung, and under them its translation when one is shown. A click on
-// a line that has a time goes to that time.
+// it is sung, and under them its translation when one is shown. The lines
+// around the sung one fade the further they are from it, and each fades in
+// as its turn comes and out once it went by. A click on a line that has a
+// time goes to that time.
 Column {
     id: row
 
     // The line as the lyrics document has it, or only its text.
     property var line: ({})
-    // The lyrics follow the music, and this is the line being sung.
+    // The lyrics follow the music; then its place among the lines and the
+    // place of the line being sung, or -1 while none is.
     property bool synced: false
-    property bool sung: false
+    property int position: -1
+    property int current: -1
+    readonly property bool sung: synced && position >= 0 && position === current
+    readonly property bool past: synced && current >= 0 && position < current
     // The moment of the track and where the line ends, for the sung line.
     property real nowMs: 0
     property real endMs: 0
     property string translation
-    // How it is drawn: its size, the color of what is sung and of the rest,
-    // capitals, and whether the sung line fills word by word.
+    // How it is drawn: its size, the color of what is sung, how much the
+    // other lines fade ("off", "soft" or "strong"), capitals, and whether
+    // the sung line fills word by word.
     property real size: Type.lyric
     property color sungColor: Theme.color.textPrimary
-    property color restColor: Theme.color.textTertiary
+    property string dimming: "strong"
     property bool uppercase: false
     property bool wordByWord: true
+    // How lit it is, from 0 to 1.
+    readonly property real lit: LyricsView.dim(dimming, synced, position, current)
 
     signal sought(real ms)
 
@@ -33,8 +43,12 @@ Column {
     spacing: Metrics.gap2
 
     Loader {
+        objectName: "words"
         width: row.width
+        opacity: row.lit
         sourceComponent: row.sung && row.wordByWord && !row.whole ? words : plain
+
+        Behavior on opacity { NumberAnimation { duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
 
         Component {
             id: plain
@@ -44,7 +58,7 @@ Column {
                 font.pointSize: row.size
                 font.weight: Type.bold
                 font.capitalization: row.uppercase ? Font.AllUppercase : Font.MixedCase
-                color: !row.synced ? Theme.color.textPrimary : row.sung ? row.sungColor : row.restColor
+                color: row.sung ? row.sungColor : row.past ? Theme.color.textTertiary : Theme.color.textSecondary
             }
         }
         Component {
@@ -57,21 +71,24 @@ Column {
                 font.pointSize: row.size
                 font.capitalization: row.uppercase ? Font.AllUppercase : Font.MixedCase
                 sungColor: row.sungColor
-                restColor: row.restColor
+                restColor: Theme.color.textSecondary
             }
         }
     }
 
-    // The translation follows its line and is never set in capitals: it
-    // was written by somebody else.
+    // The translation follows its line, a little fainter, and is never set
+    // in capitals: it was written by somebody else.
     Text {
         objectName: "translation"
         visible: row.translation !== ""
         width: row.width
+        opacity: row.lit * (row.past ? 1 : 0.7)
         text: row.translation
         wrapMode: Text.Wrap
         font.pointSize: row.size * Type.lyricTranslation // derived: a share of the line's size
-        color: row.sung || !row.synced ? Theme.color.textSecondary : Theme.color.textTertiary
+        color: row.past ? Theme.color.textTertiary : Theme.color.textSecondary
+
+        Behavior on opacity { NumberAnimation { duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
     }
 
     HoverHandler { enabled: row.timed; cursorShape: Qt.PointingHandCursor }

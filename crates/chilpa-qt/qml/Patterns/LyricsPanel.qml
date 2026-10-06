@@ -3,13 +3,15 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/Components" as Lines
 
 // The lyrics of what plays. The header says the track and opens how they
 // are read; the body says where the search stands or shows the lines; the
 // foot says who gave them.
 //
-// Synced lyrics keep the line being sung in view and lit, and a click on a
-// line goes to it. The sung line is drawn word by word: timed words fill as
+// Synced lyrics keep the line being sung in the middle and lit, with the
+// lines around it fading the further they are, and a click on a line goes
+// to it. The sung line is drawn word by word: timed words fill as
 // they are sung, and a line timed as a whole lights up word after word.
 // Every other line is one plain text, so a long song costs one item per
 // line. A translation, when the lyrics carry one, is offered by a button
@@ -40,8 +42,6 @@ Item {
         : options.size === "xl" ? Type.lyricXLarge : Type.lyric
     readonly property color sungColor: options.color === "" ? Theme.color.textPrimary
         : options.color === "accent" ? Theme.color.accent : options.color
-    readonly property color restColor: options.dimming === "off" ? Theme.color.textPrimary
-        : options.dimming === "soft" ? Theme.color.textSecondary : Theme.color.textTertiary
 
     function read(json) {
         if (!json)
@@ -127,44 +127,28 @@ Item {
         }
     }
 
-    ListView {
+    Lines.LyricLines {
         id: list
         objectName: "lyricsList"
-        readonly property bool following: Player.lyricsSynced && options.follow
         anchors.top: head.bottom
         anchors.bottom: foot.top
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: Metrics.gap16
         anchors.rightMargin: Metrics.gap16
-        clip: true
-        model: panel.lines.length > 0 ? panel.lines : Player.lyrics
-        spacing: Metrics.gap8
-        currentIndex: Player.lyricsSynced ? Player.lyricsLine : -1
-        highlightFollowsCurrentItem: following
-        highlightRangeMode: following ? ListView.ApplyRange : ListView.NoHighlightRange
-        preferredHighlightBegin: height / 3 // derived: the sung line a third of the way down
-        preferredHighlightEnd: height / 3 + Metrics.shelfHeader // derived: one line's room
-        highlightMoveDuration: Motion.panel
-        boundsBehavior: Flickable.StopAtBounds
-
-        delegate: LyricLine {
-            required property int index
-            required property var modelData
-            width: ListView.view.width
-            line: modelData
-            synced: Player.lyricsSynced
-            sung: Player.lyricsSynced && index === Player.lyricsLine
-            nowMs: sung ? panel.nowMs : 0
-            endMs: sung ? panel.lineEnd(index) : 0
-            translation: panel.translating && panel.translation ? (panel.translation[index] || "") : ""
-            size: panel.size
-            sungColor: panel.sungColor
-            restColor: panel.restColor
-            uppercase: options.uppercase
-            wordByWord: !options.lite
-            onSought: (ms) => Player.seek(ms / 1000)
-        }
+        lines: panel.lines.length > 0 ? panel.lines : Player.lyrics
+        synced: Player.lyricsSynced
+        current: Player.lyricsSynced ? Player.lyricsLine : -1
+        follow: options.follow
+        nowMs: panel.nowMs
+        sungEnd: panel.lineEnd(Player.lyricsLine)
+        translation: panel.translating ? panel.translation : null
+        size: panel.size
+        sungColor: panel.sungColor
+        dimming: options.dimming
+        uppercase: options.uppercase
+        lite: options.lite
+        onSought: (ms) => Player.seek(ms / 1000)
     }
 
     // Over the lines, only while the lyrics carry a translation.
