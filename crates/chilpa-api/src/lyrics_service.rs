@@ -5,15 +5,15 @@
 //! later tick. When tracks are skipped faster than lyrics are found, only
 //! the last one is looked for: the ones in between are no longer playing.
 //!
-//! Three things reach the pipeline from here: the lyrics service, asked
-//! over HTTP for any track ([`crate::lyrics_client`]); a source that
-//! declares `track_lyrics`, which answers `track.lyrics` for its own; and,
-//! for now, a lyrics plugin answering `lyrics.find`. The plugins go through
-//! [`Natives::call_raw`], so the pause one asks for in its error is kept.
+//! Two things reach the pipeline from here: the lyrics service, asked over
+//! HTTP for any track ([`crate::lyrics_client`]), and a source that declares
+//! `track_lyrics`, which answers `track.lyrics` for its own. The source goes
+//! through [`Natives::call_raw`], so the pause it asks for in its error is
+//! kept. No plugin is asked to find lyrics by name.
 
 use crate::natives::Natives;
-use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Provider, Request, Resolved, Source};
-use chilpa_lyrics::{wire, Cache, Timing, Track};
+use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Remote, Request, Resolved, Source};
+use chilpa_lyrics::{wire, Cache, Track};
 use chilpa_plugin::native::NativeError;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::mpsc::{self, Sender};
@@ -29,7 +29,6 @@ fn cache_path() -> std::path::PathBuf {
 struct Job {
     generation: u64,
     request: Request,
-    providers: Vec<Arc<dyn Provider>>,
 }
 
 /// The lyrics thread, seen from the facade.
@@ -39,8 +38,6 @@ pub(crate) struct LyricsService {
     /// are dropped.
     wanted: Arc<AtomicU64>,
     delivered: Arc<Mutex<Option<(u64, Option<Resolved>)>>>,
-    /// The lyrics service, asked for what neither the file nor its source has.
-    remote: Arc<dyn Provider>,
 }
 
 impl LyricsService {
@@ -53,7 +50,10 @@ impl LyricsService {
             // A cache that cannot open on disk still works in memory: the
             // lyrics are found again next run, nothing worse.
             let Some(cache) = Cache::open(&cache_path()).or_else(|_| Cache::in_memory()).ok() else { return };
-            let pipeline = Pipeline::new(cache, Limits::default());
+            // The lyrics service, asked for what neither the file nor its
+            // source has.
+            let remote: Arc<dyn Remote> = Arc::new(crate::lyrics_client::LyricsServiceClient::new());
+            let pipeline = Pipeline::new(cache, Some(remote), Limits::default());
             while let Ok(mut job) = rx.recv() {
                 while let Ok(newer) = rx.try_recv() {
                     job = newer;
@@ -61,7 +61,6 @@ impl LyricsService {
                 if job.generation != thread_wanted.load(Ordering::SeqCst) {
                     continue;
                 }
-                pipeline.set_providers(job.providers.clone());
                 let outcome = pipeline.resolve(&job.request, false);
                 let deliver = |resolved: Option<Resolved>| {
                     if job.generation == thread_wanted.load(Ordering::SeqCst) {
@@ -71,7 +70,8 @@ impl LyricsService {
                 deliver(outcome.resolved.clone());
                 if outcome.refresh {
                     // What the cache had is old: it was shown, and now the
-                    // plugins are asked again. Better lyrics replace it.
+                    // source and the service are asked again. What they
+                    // say now replaces it.
                     let again = pipeline.resolve(&job.request, true);
                     if again.resolved.is_some() && again.resolved != outcome.resolved {
                         deliver(again.resolved);
@@ -82,7 +82,7 @@ impl LyricsService {
         if let Err(e) = spawned {
             eprintln!("lyrics: the thread did not start: {e}");
         }
-        LyricsService { jobs, wanted, delivered, remote: Arc::new(crate::lyrics_client::LyricsServiceClient::new()) }
+        LyricsService { jobs, wanted, delivered }
     }
 
     /// Asks for the lyrics of a track. `generation` grows with every track
@@ -99,14 +99,7 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let mut providers: Vec<Arc<dyn Provider>> = vec![self.remote.clone()];
-        providers.extend(
-            natives
-                .lyrics_providers()
-                .into_iter()
-                .map(|(id, name, timing)| Arc::new(NativeProvider { natives: natives.clone(), id, name, best: timing_of(&timing) }) as Arc<dyn Provider>),
-        );
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source }, providers });
+        let _ = self.jobs.send(Job { generation, request: Request { track, path, source } });
     }
 
     /// The answer for that generation, once, when it has arrived. `Some(None)`
@@ -125,7 +118,7 @@ impl crate::Chilpa {
     ///
     /// The lyrics thread looks for them, in the order `chilpa_lyrics::pipeline`
     /// describes: what came with the file, the cache, the source and the
-    /// lyrics plugins. Playback does not wait; they show when they arrive.
+    /// lyrics service. Playback does not wait; they show when they arrive.
     /// A station has no lyrics to look for.
     pub(crate) fn load_lyrics(&mut self, path: &std::path::Path, length_ms: Option<u32>) {
         self.now.lyrics.clear();
@@ -200,15 +193,6 @@ pub(crate) fn length_ms(frames: Option<u64>, rate: u32) -> Option<u32> {
     }
 }
 
-fn timing_of(name: &str) -> Timing {
-    match name {
-        "syllable" => Timing::Syllable,
-        "word" => Timing::Word,
-        "unsynced" => Timing::Unsynced,
-        _ => Timing::Line,
-    }
-}
-
 /// What a plugin's failure means to the pipeline: a failure, with the pause
 /// it asked for when it asked for one.
 fn failed(error: NativeError) -> Answer {
@@ -217,36 +201,6 @@ fn failed(error: NativeError) -> Answer {
         _ => None,
     };
     Answer::Failed { retry_after, message: error.to_string() }
-}
-
-/// A lyrics plugin, reached through its process.
-struct NativeProvider {
-    natives: Arc<Natives>,
-    id: String,
-    name: String,
-    best: Timing,
-}
-
-impl Provider for NativeProvider {
-    fn id(&self) -> &str {
-        &self.id
-    }
-    fn name(&self) -> &str {
-        &self.name
-    }
-    fn best(&self) -> Timing {
-        self.best
-    }
-    fn find(&self, track: &Track, timeout: Duration) -> Answer {
-        match self.natives.call_raw(&self.id, "lyrics.find", wire::find_params(track), timeout) {
-            Ok(answer) => match wire::read_find(&answer) {
-                Ok(Some(candidates)) => Answer::Found(candidates),
-                Ok(None) => Answer::None,
-                Err(message) => Answer::Failed { retry_after: None, message },
-            },
-            Err(error) => failed(error),
-        }
-    }
 }
 
 /// A source that has lyrics for its own tracks.
@@ -291,11 +245,5 @@ mod tests {
         assert_eq!(length_ms(Some(441_000), 44_100), Some(10_000));
         assert_eq!(length_ms(Some(441_000), 0), None);
         assert_eq!(length_ms(None, 44_100), None);
-    }
-
-    #[test]
-    fn a_timing_nobody_knows_is_read_as_lines() {
-        assert_eq!(timing_of("word"), Timing::Word);
-        assert_eq!(timing_of("karaoke"), Timing::Line);
     }
 }

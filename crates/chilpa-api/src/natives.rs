@@ -134,19 +134,6 @@ impl Natives {
         let client = self.client(id).ok_or(chilpa_plugin::native::NativeError::Closed)?;
         client.call(method, params, timeout)
     }
-    /// The plugins whose job is lyrics: id, name and the finest timing they
-    /// say they bring, in order of id so the order does not change between
-    /// runs.
-    pub(crate) fn lyrics_providers(&self) -> Vec<(String, String, String)> {
-        let known = self.known.lock().unwrap_or_else(|e| e.into_inner());
-        let mut out: Vec<(String, String, String)> = known
-            .iter()
-            .filter(|(_, k)| k.manifest.kind == chilpa_plugin::manifest::Kind::Lyrics && k.capabilities["lyrics"] == 1)
-            .map(|(id, k)| (id.clone(), k.manifest.name.clone(), k.capabilities["lyrics_timing"].as_str().unwrap_or("line").to_string()))
-            .collect();
-        out.sort();
-        out
-    }
     /// A source that has lyrics for its own tracks.
     pub(crate) fn has_track_lyrics(&self, id: &str) -> bool {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).is_some_and(|k| k.capabilities["track_lyrics"] == 1)

@@ -6,10 +6,10 @@
 //! reached and what runs there is the service's business; it can change
 //! without a new Chilpa.
 //!
-//! The pipeline sees it as one more provider, the one that can bring the
-//! finest timing there is.
+//! The pipeline sees it as its [`Remote`]: whoever answers for a track with
+//! no lyrics of its own.
 
-use chilpa_lyrics::pipeline::{Answer, Provider};
+use chilpa_lyrics::pipeline::{Answer, Remote};
 use chilpa_lyrics::{service, Timing, Track};
 use serde_json::{json, Value};
 use std::time::Duration;
@@ -33,7 +33,7 @@ impl LyricsServiceClient {
     }
 }
 
-impl Provider for LyricsServiceClient {
+impl Remote for LyricsServiceClient {
     fn id(&self) -> &str {
         "lyrics-service"
     }
@@ -43,11 +43,7 @@ impl Provider for LyricsServiceClient {
         "Chilpa"
     }
 
-    fn best(&self) -> Timing {
-        Timing::Syllable
-    }
-
-    fn find(&self, track: &Track, _timeout: Duration) -> Answer {
+    fn resolve(&self, track: &Track, _timeout: Duration) -> Answer {
         let request = json!({
             "url": format!("{}{}", self.origin, service::RESOLVE_PATH),
             "method": "POST",
@@ -113,7 +109,7 @@ mod tests {
     #[test]
     fn it_asks_the_contracts_question_and_reads_the_lyrics() {
         let (origin, asked) = serve(WORDS);
-        let answer = LyricsServiceClient::at(&origin).find(&track(), Duration::from_secs(5));
+        let answer = LyricsServiceClient::at(&origin).resolve(&track(), Duration::from_secs(5));
         let (line, agent, body) = asked.recv().unwrap();
         assert_eq!(line, "POST /v1/lyrics/resolve");
         assert!(agent.starts_with("Chilpa"), "the service only serves Chilpa: {agent}");
@@ -127,20 +123,20 @@ mod tests {
     #[test]
     fn none_is_none() {
         let (origin, _asked) = serve(NONE);
-        assert_eq!(LyricsServiceClient::at(&origin).find(&track(), Duration::from_secs(5)), Answer::None);
+        assert_eq!(LyricsServiceClient::at(&origin).resolve(&track(), Duration::from_secs(5)), Answer::None);
     }
 
     #[test]
     fn a_service_that_fails_is_a_failure_and_never_none() {
         let (origin, _asked) = serve(FAILED);
-        let answer = LyricsServiceClient::at(&origin).find(&track(), Duration::from_secs(5));
+        let answer = LyricsServiceClient::at(&origin).resolve(&track(), Duration::from_secs(5));
         assert!(matches!(answer, Answer::Failed { .. }), "{answer:?}");
     }
 
     #[test]
     fn a_service_that_is_not_there_is_a_failure() {
         let closed = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap();
-        let answer = LyricsServiceClient::at(&format!("http://{closed}")).find(&track(), Duration::from_secs(5));
+        let answer = LyricsServiceClient::at(&format!("http://{closed}")).resolve(&track(), Duration::from_secs(5));
         assert!(matches!(answer, Answer::Failed { retry_after: None, .. }), "{answer:?}");
     }
 }

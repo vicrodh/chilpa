@@ -33,7 +33,8 @@ pub const FORGET_AFTER: Duration = Duration::from_secs(60 * 60 * 24 * 180);
 /// Where a row came from, so the screen can say it.
 #[derive(Clone, PartialEq, Eq, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Origin {
-    /// A plugin id, or `file` and `tags` for what came with the track.
+    /// A source plugin's id, the id the lyrics service gives whoever it got
+    /// them from, or `file` and `tags` for what came with the track.
     pub provider: String,
     /// What the screen shows.
     pub name: String,
