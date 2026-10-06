@@ -100,6 +100,28 @@ TestCase {
         compare(panel.nowMs, held, "a paused track does not move")
     }
 
+    function test_a_line_breaks_in_the_same_places_sung_or_not() {
+        const parts = "Realize you are living in the golden years and never look back again".split(" ")
+        const long = JSON.stringify({ status: "found", source: "Somewhere", translation: null, document: { schema: 1, timing: "word", lines: [
+            { start_ms: 1000, end_ms: 1000 + parts.length * 500, text: parts.join(" "),
+              segments: parts.map((w, i) => ({ text: w, start_ms: 1000 + i * 500, end_ms: 1500 + i * 500, space_after: i + 1 < parts.length })) },
+            { start_ms: 60000, text: "Next" } ] } })
+        for (const size of ["m", "xl"]) {
+            options().choose("size", size)
+            show(long, true, 1)
+            const plain = row(0).height
+            verify(plain > row(1).height, "long enough to wrap")
+            Player.lyricsLine = 0
+            const sung = findChild(panel, "sungLine")
+            verify(sung, "now it is the line being sung")
+            compare(row(0).height, plain, "lit, it takes the room it took: no word moved to another row")
+            compare(sung.spot(0).x, 0)
+            const last = sung.spot(parts.length - 1)
+            verify(last.y > 0, "the last word sits on a row below the first")
+            verify(last.x < sung.width, "and inside the line")
+        }
+    }
+
     function test_plain_lists_still_show_without_the_document() {
         show("", false, -1)
         Player.lyrics = ["Just", "text"]
