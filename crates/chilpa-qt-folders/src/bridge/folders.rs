@@ -62,7 +62,8 @@ pub mod qobject {
     impl cxx_qt::Initialize for LibraryFolders {}
 }
 
-use crate::{app, paths, registry};
+use chilpa_api::paths;
+use chilpa_qt_kit::app;
 use chilpa_api::LibraryFolder;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::QString;
@@ -128,7 +129,7 @@ impl qobject::LibraryFolders {
         let path = path.to_string();
         if app::with(|api| api.forget_folder(&path)) {
             self.as_mut().refresh();
-            registry::library(|library| library.content_changed());
+            app::with(|api| api.mark_library_changed());
         }
     }
 
@@ -190,7 +191,7 @@ impl qobject::LibraryFolders {
         self.as_mut().set_progress(1.0);
         self.as_mut().set_scanning(false);
         self.as_mut().refresh();
-        registry::library(|library| library.content_changed());
+        app::with(|api| api.mark_library_changed());
     }
 
     fn refresh(mut self: Pin<&mut Self>) {
@@ -205,7 +206,24 @@ impl qobject::LibraryFolders {
 
 impl cxx_qt::Initialize for qobject::LibraryFolders {
     fn initialize(mut self: Pin<&mut Self>) {
-        registry::register_folders(self.qt_thread());
+        let thread = self.qt_thread();
+        THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
         self.as_mut().refresh();
     }
+}
+
+thread_local! {
+    /// The folders' thread, for whoever has to ask them something.
+    static THREAD: RefCell<Option<cxx_qt::CxxQtThread<qobject::LibraryFolders>>> = const { RefCell::new(None) };
+}
+
+/// Queues `f` on the library's folders, from another object: the settings
+/// page asking for a rescan. Dropped if they have not started, which only
+/// happens before the window is up.
+pub fn ask(f: impl FnOnce(Pin<&mut qobject::LibraryFolders>) + Send + 'static) {
+    THREAD.with(|slot| {
+        if let Some(thread) = slot.borrow().as_ref() {
+            let _ = thread.queue(f);
+        }
+    });
 }

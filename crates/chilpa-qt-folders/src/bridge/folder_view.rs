@@ -74,7 +74,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for FolderModel {}
 }
 
-use crate::{app, worker};
+use chilpa_qt_kit::{app, worker};
 use chilpa_api::{FolderItem, FolderView, TrackRow};
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
@@ -145,7 +145,7 @@ impl qobject::FolderModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        crate::format::roles(USER_ROLE, ROLES)
+        chilpa_qt_kit::format::roles(USER_ROLE, ROLES)
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {

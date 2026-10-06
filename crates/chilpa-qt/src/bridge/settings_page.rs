@@ -361,7 +361,7 @@ impl qobject::SettingsPage {
                 self.as_mut().watch_accounts();
             }
             "library.rescan" => {
-                registry::folders(|folders| folders.rescan_all());
+                chilpa_qt_folders::bridge::folders::ask(|folders| folders.rescan_all());
                 return;
             }
             "library.analysis" => {

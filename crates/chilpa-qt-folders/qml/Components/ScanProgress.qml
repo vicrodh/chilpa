@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.folders
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // How a scan is going, or what the last one found: a line of text over a

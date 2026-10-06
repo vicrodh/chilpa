@@ -84,7 +84,7 @@ impl qobject::FolderListModel {
     }
 
     pub fn role_names(&self) -> QHash<QHashPair_i32_QByteArray> {
-        crate::format::roles(USER_ROLE, ROLES)
+        chilpa_qt_kit::format::roles(USER_ROLE, ROLES)
     }
 
     pub fn row_count(&self, _parent: &QModelIndex) -> i32 {

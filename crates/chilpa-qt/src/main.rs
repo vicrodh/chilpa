@@ -3,7 +3,7 @@
 //! Rust owns state and layered QML draws it (ADR-001). This crate and
 //! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
-use chilpa_qt_kit::app;
+use chilpa_qt_kit::{app, format, worker};
 // Linked for their QML modules, which `modules.cpp` registers: a crate
 // nothing here names is left out of the binary, and its module with it.
 use chilpa_qt_controls as _;
@@ -12,10 +12,7 @@ use chilpa_qt_lyrics as _;
 use chilpa_qt_sources as _;
 mod bridge;
 mod browse;
-mod format;
-mod paths;
 mod registry;
-mod worker;
 use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 // Only Linux has a desktop file to be named after, and only there is the
 // name what makes the window pick up its icon.

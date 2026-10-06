@@ -1,9 +1,12 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.folders
 import com.blitzfc.chilpa.kit
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
+import "../Components"
 
 // The folder that is open: what it is called and how much it holds, the
 // folders inside it, the records inside it, and its own tracks. A folder

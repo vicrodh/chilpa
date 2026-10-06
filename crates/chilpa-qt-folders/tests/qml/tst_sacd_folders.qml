@@ -2,8 +2,10 @@ import QtQuick
 import QtTest
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
+import com.blitzfc.chilpa.folders
 import "../../qml/Screens"
 import "../../qml/Patterns"
+import "../../../chilpa-qt/qml/Patterns"
 
 TestCase {
     name: "OpenMediaNavigation"

@@ -97,7 +97,7 @@ ALLOWED = {
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
     "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
-    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery"},
+    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders"},
     # La segunda mitad del shell: lo que traen los sources, como su propio
     # módulo de QML. Cada crate del shell tiene sus propios topes.
     # What every shell crate stands on: the facade they share, the theme, the
@@ -109,6 +109,8 @@ ALLOWED = {
     "chilpa-qt-controls": {"chilpa-api", "chilpa-qt-kit"},
     # How the lyrics are drawn: the lines and how they fade around the sung one.
     "chilpa-qt-lyrics": {"chilpa-api"},
+    # Folders: the library's folders, browsing by folder, media opened without importing.
+    "chilpa-qt-folders": {"chilpa-api", "chilpa-qt-kit"},
     # The second window that shows every piece; for whoever builds Chilpa.
     "chilpa-qt-gallery": set(),
     # The metadata editor: its screen and its bridge.
@@ -116,7 +118,7 @@ ALLOWED = {
 }
 
 # Los únicos crates que pueden tener tipos de Qt.
-SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery"}
+SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500
@@ -136,7 +138,9 @@ MAX_LOC_FILE = 1500
 # A ratchet since the window began to be split into crates (2026-10-06): the
 # cap follows the window down and is never raised again. When a crate nears
 # it, a view leaves for a crate of its own.
-MAX_LOC_SHELL_RUST = 5_700
+#
+# 5,100 the same day: the folders' three bridges left with their screens.
+MAX_LOC_SHELL_RUST = 5_100
 
 # El QML tiene sus propios presupuestos por archivo, más estrictos que los de
 # aquí, verificados por su propio CI. Este número no los reemplaza: es el techo
@@ -158,7 +162,10 @@ MAX_LOC_SHELL_RUST = 5_700
 #
 # 15,000 the same day: the plugin manager's pieces went to the sources'
 # crate, where the rest of the plugins' interface already was.
-MAX_LOC_SHELL_QML = 15_000
+#
+# 13,800 the same day: Folders, Open media and the library's folders left
+# for a crate of their own.
+MAX_LOC_SHELL_QML = 13_800
 
 CODE_SUFFIXES = {".rs", ".qml", ".cpp", ".h", ".hpp", ".py", ".sh"}
 
