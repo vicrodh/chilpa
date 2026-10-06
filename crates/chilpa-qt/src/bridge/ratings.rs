@@ -20,6 +20,8 @@ pub mod qobject {
         #[qinvokable]
         fn favorite(self: &Ratings, kind: &QString, key: &QString, rev: i32) -> bool;
         #[qinvokable]
+        fn markable(self: &Ratings, kind: &QString, key: &QString, rev: i32) -> bool;
+        #[qinvokable]
         fn set_favorite(self: Pin<&mut Ratings>, kind: &QString, key: &QString, on: bool);
         #[qinvokable]
         fn refresh(self: Pin<&mut Ratings>);
@@ -47,6 +49,9 @@ impl qobject::Ratings {
     }
     pub fn favorite(&self, kind: &QString, key: &QString, _rev: i32) -> bool {
         self.rust().values.favorite(&kind.to_string(), &key.to_string())
+    }
+    pub fn markable(&self, kind: &QString, key: &QString, _rev: i32) -> bool {
+        self.rust().values.markable(&kind.to_string(), &key.to_string())
     }
     pub fn set_favorite(self: Pin<&mut Self>, kind: &QString, key: &QString, on: bool) {
         if app::with(|api| api.set_favorite(&kind.to_string(), &key.to_string(), on)) { self.refresh(); }

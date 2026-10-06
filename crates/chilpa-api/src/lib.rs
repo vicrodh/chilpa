@@ -82,6 +82,7 @@ pub use track_menu::{track_can_go, track_menu, TrackMenuContext};
 mod scrobble;
 mod search;
 mod source_opener;
+mod source_favorites;
 mod sources;
 mod servers;
 pub mod settings_rows;
@@ -594,6 +595,7 @@ pub struct Chilpa {
     sleep_until: Option<std::time::Instant>,
     /// The lyrics of what is playing, and the thread that finds them.
     lyrics: lyrics_service::Lyrics,
+    source_favorites: source_favorites::SourceFavorites,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
     /// must not leave the window waiting.
@@ -695,6 +697,7 @@ impl Chilpa {
             stop_after: None,
             sleep_until: None,
             lyrics: Default::default(),
+            source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
@@ -1133,6 +1136,7 @@ impl Chilpa {
             self.sleep_until = None;
             self.stop();
         }
+        self.advance_source_favorites();
         self.advance_plugins();
         self.advance_search();
         self.advance_sources();

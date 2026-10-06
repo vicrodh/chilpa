@@ -17,7 +17,7 @@ Item {
     // 1 the heart, 2 the menu button, 0 neither: the one under the pointer.
     property int hovered: 0
 
-    readonly property bool canMark: trackId > 0
+    readonly property bool canMark: Ratings.markable("track", trackId, Ratings.rev)
 
     // The action at that point of the row's end.
     function actionAt(x, y) {

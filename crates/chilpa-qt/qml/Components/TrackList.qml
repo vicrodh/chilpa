@@ -131,7 +131,7 @@ Item {
             cols: columns
             canRate: trackId !== 0
             rating: Ratings.stars("track", trackId, Ratings.rev)
-            favorite: trackId > 0 && Ratings.favorite("track", trackId, Ratings.rev)
+            favorite: Ratings.favorite("track", trackId, Ratings.rev)
             ratingPreview: index === view.hovered ? view.ratingHovered : 0
             hovered: index === view.hovered
             actionHovered: index === view.hovered ? view.actionHovered : 0
