@@ -35,7 +35,7 @@ Popup {
     readonly property var first: ({ follow: true, size: "m", translation: "auto", color: "", uppercase: false, lite: false, dimming: "strong" })
     readonly property var sizes: ["s", "m", "l", "xl"]
     readonly property var dimmingLevels: ["off", "soft", "strong"]
-    readonly property var languages: ["auto", "en", "es", "fr", "de", "it", "pt", "nl", "ja", "ru"]
+    readonly property var languages: ["auto", "en", "es", "fr", "de", "it", "pt", "nl", "ja", "zh", "ru"]
 
     function kept(name, fallback) {
         return SettingsModel.kept("ui.lyrics." + name) || fallback
@@ -122,7 +122,7 @@ Popup {
                 values: flyout.languages
                 options: [I18n.tr("Auto (app language)", I18n.rev), I18n.tr("English", I18n.rev), I18n.tr("Spanish", I18n.rev),
                     I18n.tr("French", I18n.rev), I18n.tr("German", I18n.rev), I18n.tr("Italian", I18n.rev), I18n.tr("Portuguese", I18n.rev),
-                    I18n.tr("Dutch", I18n.rev), I18n.tr("Japanese", I18n.rev), I18n.tr("Russian", I18n.rev)]
+                    I18n.tr("Dutch", I18n.rev), I18n.tr("Japanese", I18n.rev), I18n.tr("Chinese", I18n.rev), I18n.tr("Russian", I18n.rev)]
                 value: flyout.translation
                 menuWidthLimit: Metrics.lyricsOptions
                 onPicked: (value) => flyout.choose("translation", value)

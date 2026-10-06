@@ -411,6 +411,9 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
+msgid "Chinese"
+msgstr "Chino"
+
 msgid "Choose"
 msgstr "Elegir"
 

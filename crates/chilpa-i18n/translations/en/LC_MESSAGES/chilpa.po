@@ -411,6 +411,9 @@ msgstr ""
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
+msgid "Chinese"
+msgstr ""
+
 msgid "Choose"
 msgstr ""
 

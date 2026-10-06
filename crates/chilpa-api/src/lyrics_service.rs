@@ -240,7 +240,8 @@ impl crate::Chilpa {
     /// are looked for; `{"status":"none"}` when there are none; and found,
     /// `{"status":"found","source","document","translation"}`: who gave
     /// them, the document with its lines, words and times, and the position
-    /// in its layers of the translation to offer, or null. Read it again
+    /// in its layers of the translation in the reader's language, or null
+    /// when it carries none. Read it again
     /// when `lyrics_revision` changes.
     pub fn lyrics_json(&self) -> String {
         match (self.lyrics.state, &self.lyrics.document) {
@@ -250,7 +251,7 @@ impl crate::Chilpa {
                 "status": "found",
                 "source": self.now.lyrics_source,
                 "document": document,
-                "translation": document.translation_for(Some(&self.translation_language())),
+                "translation": document.translation_for(&self.translation_language()),
             })
             .to_string(),
             (State::None | State::Found, _) => serde_json::json!({ "status": "none" }).to_string(),
