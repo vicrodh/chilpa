@@ -13,13 +13,24 @@ Item {
     implicitHeight: Metrics.panelHeader
 
     Row {
+        id: said
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap12
+        anchors.right: tools.left
+        anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap8
 
-        Text { text: head.title; font.pointSize: Type.body; font.weight: Type.heading; color: Theme.color.textPrimary }
-        Text { text: head.detail; font.pointSize: Type.small; color: Theme.color.textTertiary; anchors.baseline: parent.children[0].baseline }
+        Text { id: name; text: head.title; font.pointSize: Type.body; font.weight: Type.heading; color: Theme.color.textPrimary }
+        // A long detail ends in an ellipsis before the buttons.
+        Text {
+            width: Math.max(0, said.width - name.width - said.spacing) // derived: what the title leaves
+            text: head.detail
+            elide: Text.ElideRight
+            font.pointSize: Type.small
+            color: Theme.color.textTertiary
+            anchors.baseline: name.baseline
+        }
     }
 
     Row {

@@ -298,6 +298,10 @@ QtObject {
     readonly property int listenWide: 900
     readonly property int queueMin: 250
     readonly property int lyricsMin: 110
+    // The lyrics' options: the flyout under the panel's header and the
+    // field its language is chosen in.
+    readonly property int lyricsOptions: 288
+    readonly property int lyricsLanguage: 148
     readonly property int queueRow: 46
     readonly property int queueNowRow: 48
     readonly property int queueArt: 36

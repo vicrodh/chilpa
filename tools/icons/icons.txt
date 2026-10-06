@@ -93,6 +93,7 @@ filled:star
 
 device-speaker
 device-tv
+language
 
 letter-a
 letter-b

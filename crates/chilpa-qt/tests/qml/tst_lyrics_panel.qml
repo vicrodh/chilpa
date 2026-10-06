@@ -14,26 +14,49 @@ TestCase {
     LyricsPanel { id: panel; width: 400; height: 580 }
 
     // Two lines timed by word, the first with a word split in syllables.
-    readonly property string words: JSON.stringify({ source: "LRCLIB", document: { schema: 1, timing: "syllable", lines: [
+    readonly property string words: JSON.stringify({ status: "found", source: "LRCLIB", translation: null, document: { schema: 1, timing: "syllable", lines: [
         { start_ms: 1000, end_ms: 3000, text: "Hello world", segments: [
             { text: "Hel", start_ms: 1000, end_ms: 1500, space_after: false },
             { text: "lo", start_ms: 1500, end_ms: 2000, space_after: true },
             { text: "world", start_ms: 2000, end_ms: 3000, space_after: false } ] },
         { start_ms: 4000, text: "Again" } ] } })
-    readonly property string lines: JSON.stringify({ source: "File", document: { schema: 1, timing: "line", lines: [
+    readonly property string lines: JSON.stringify({ status: "found", source: "File", translation: null, document: { schema: 1, timing: "line", lines: [
         { start_ms: 1000, text: "One two three" }, { start_ms: 5000, text: "Four" } ] } })
+    // The same two lines with a romanization and, second, a translation.
+    readonly property string translated: JSON.stringify({ status: "found", source: "Somewhere", translation: 1, document: { schema: 1, timing: "line", lines: [
+        { start_ms: 1000, text: "One two three" }, { start_ms: 5000, text: "Four" } ], layers: [
+        { kind: "romanization", language: "und-Latn", lines: [{ line: 0, text: "wan tu suri" }] },
+        { kind: "translation", language: "es", lines: [{ line: 0, text: "Uno dos tres" }, { line: 1, text: "Cuatro" }] } ] } })
+    readonly property string plain: JSON.stringify({ status: "found", source: "tags", translation: null, document: { schema: 1, timing: "unsynced", lines: [
+        { text: "No times here" }, { text: "Nor here" } ] } })
 
     function show(json, synced, line) {
         Player.lyricsJson = json
-        Player.lyrics = json ? JSON.parse(json).document.lines.map(l => l.text) : []
+        const said = json ? JSON.parse(json) : null
+        Player.lyrics = said && said.document ? said.document.lines.map(l => l.text) : []
         Player.lyricsSynced = synced
         Player.lyricsLine = line
+    }
+
+    function options() {
+        return findChild(panel, "lyricsOptions")
+    }
+
+    function row(index) {
+        const list = findChild(panel, "lyricsList")
+        list.forceLayout()
+        return list.itemAtIndex(index)
     }
 
     function init() {
         Player.playing = true
         Player.paused = false
         Player.position = 0
+        Player.sought = -1
+        Player.title = "Fixture track"
+        Player.artist = "Fixture artist"
+        SettingsModel.preferences = ({})
+        options().reset()
         show("", false, -1)
     }
 
@@ -77,9 +100,7 @@ TestCase {
         compare(panel.nowMs, held, "a paused track does not move")
     }
 
-    function test_the_source_is_said_and_plain_lists_still_show() {
-        show(words, true, 0)
-        compare(panel.lyrics.source, "LRCLIB")
+    function test_plain_lists_still_show_without_the_document() {
         show("", false, -1)
         Player.lyrics = ["Just", "text"]
         verify(!findChild(panel, "sungLine"), "without the document every line is plain")
@@ -92,5 +113,138 @@ TestCase {
         compare(panel.lineEnd(1), 4000 + Motion.lyricLastLine, "the last one, a few seconds")
         show(lines, true, 0)
         compare(panel.lineEnd(0), 5000, "until the next")
+    }
+
+    function test_the_header_says_what_plays() {
+        compare(panel.playing, "Fixture track — Fixture artist")
+        Player.artist = ""
+        compare(panel.playing, "Fixture track", "a track nobody signs is only its title")
+        Player.title = ""
+        compare(panel.playing, "")
+    }
+
+    function test_it_says_it_is_looking_and_then_that_there_are_none() {
+        const state = findChild(panel, "lyricsState")
+        show("", false, -1)
+        Player.playing = false
+        verify(state.visible)
+        compare(state.text, "Lyrics show here while a track plays.")
+        Player.playing = true
+        show(JSON.stringify({ status: "searching" }), false, -1)
+        compare(state.text, "Looking for lyrics…")
+        show(JSON.stringify({ status: "none" }), false, -1)
+        compare(state.text, "No lyrics for this track.")
+        show(lines, true, 0)
+        verify(!state.visible, "with lyrics there is nothing else to say")
+    }
+
+    function test_the_source_is_said_at_the_foot() {
+        const source = findChild(panel, "lyricsSource")
+        verify(!source.visible, "nothing to credit without lyrics")
+        show(words, true, 0)
+        verify(source.visible)
+        compare(findChild(panel, "lyricsSourceName").text, "LRCLIB")
+        show(JSON.stringify({ status: "none" }), false, -1)
+        verify(!source.visible)
+    }
+
+    function test_a_translation_is_offered_only_when_there_is_one() {
+        const button = findChild(panel, "translateButton")
+        show(lines, true, 0)
+        verify(!button.visible, "lyrics without a translation offer none")
+        show(translated, true, 0)
+        verify(button.visible)
+        compare(row(1).translation, "", "and it waits to be asked for")
+        mouseClick(button)
+        verify(panel.translating)
+        compare(row(0).translation, "Uno dos tres", "the translation, not the romanization")
+        compare(row(1).translation, "Cuatro")
+        verify(findChild(row(1), "translation").visible)
+        mouseClick(button)
+        compare(row(1).translation, "")
+    }
+
+    function test_the_translation_is_put_away_with_its_track() {
+        show(translated, true, 0)
+        mouseClick(findChild(panel, "translateButton"))
+        verify(panel.translating)
+        show(JSON.stringify({ status: "searching" }), false, -1)
+        verify(!panel.translating, "the next track starts as it was written")
+    }
+
+    function test_a_click_on_a_line_goes_there() {
+        show(lines, true, 0)
+        mouseClick(row(1))
+        compare(Player.sought, 5, "the second line starts at five seconds")
+        show(plain, false, -1)
+        Player.sought = -1
+        mouseClick(row(1))
+        compare(Player.sought, -1, "a line without a time goes nowhere")
+    }
+
+    function test_the_options_open_from_the_header() {
+        const button = findChild(panel, "lyricsOptionsButton")
+        verify(!options().opened)
+        mouseClick(button)
+        tryVerify(() => options().opened)
+        options().close()
+        tryVerify(() => !options().opened)
+    }
+
+    function test_the_size_is_chosen_and_kept() {
+        show(lines, true, 0)
+        compare(panel.size, Type.lyric, "medium until something else is chosen")
+        options().choose("size", "xl")
+        compare(panel.size, Type.lyricXLarge)
+        compare(SettingsModel.preferences["ui.lyrics.size"], "xl")
+        compare(row(1).size, Type.lyricXLarge)
+        options().choose("size", "s")
+        compare(panel.size, Type.lyricSmall)
+        options().reset()
+        compare(panel.size, Type.lyric)
+        compare(SettingsModel.preferences["ui.lyrics.size"], "m")
+    }
+
+    function test_following_the_sung_line_can_be_turned_off() {
+        show(lines, true, 0)
+        const list = findChild(panel, "lyricsList")
+        compare(list.highlightRangeMode, ListView.ApplyRange, "it follows until told not to")
+        options().choose("follow", false)
+        compare(list.highlightRangeMode, ListView.NoHighlightRange)
+        compare(SettingsModel.preferences["ui.lyrics.follow"], "false")
+    }
+
+    function test_the_lite_fill_lights_the_line_whole() {
+        show(words, true, 0)
+        verify(findChild(panel, "sungLine"))
+        options().choose("lite", true)
+        verify(!findChild(panel, "sungLine"), "no word by word, and no clock to run it")
+        verify(row(0).sung)
+    }
+
+    function test_capitals_color_and_dimming_reach_the_lines() {
+        show(lines, true, 0)
+        verify(!row(1).uppercase)
+        options().choose("uppercase", true)
+        verify(row(1).uppercase)
+        options().choose("color", "accent")
+        verify(Qt.colorEqual(row(0).sungColor, Theme.color.accent))
+        verify(Qt.colorEqual(row(1).restColor, Theme.color.textTertiary), "strong dimming until chosen otherwise")
+        options().choose("dimming", "off")
+        verify(Qt.colorEqual(row(1).restColor, Theme.color.textPrimary))
+        options().choose("translation", "fr")
+        compare(SettingsModel.preferences["ui.lyrics.translation"], "fr", "the language goes where the facade reads it")
+    }
+
+    function test_the_lyrics_are_copied_and_it_is_said() {
+        show(lines, true, 0)
+        compare(options().text, "One two three\nFour")
+        const notice = findChild(panel, "lyricsNotice")
+        verify(!notice.visible)
+        options().copy()
+        verify(notice.visible)
+        compare(notice.text, "Lyrics copied")
+        show("", false, -1)
+        verify(!options().canCopy, "nothing to copy without lyrics")
     }
 }

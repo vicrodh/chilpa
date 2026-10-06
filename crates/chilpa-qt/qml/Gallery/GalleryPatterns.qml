@@ -29,6 +29,7 @@ TitledFlow {
         QueuePanel { width: Metrics.rightPanel; height: Metrics.queueMin }
         SourcesPopover {}
         LyricsPanel { width: Metrics.rightPanel; height: Metrics.queueMin }
+        LyricsOptions {}
     }
     Column {
         width: section.width - Metrics.sidebarWidth - Metrics.gridGap

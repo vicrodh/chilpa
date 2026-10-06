@@ -147,6 +147,13 @@ TitledFlow {
         QueueRow { width: Metrics.rightPanel; index: 1; title: "Rivers"; artist: "Mora Vale"; duration: "5:48"; playing: false; art: "" }
         LyricWords { width: Metrics.rightPanel; nowMs: 1700; endMs: 3000; line: ({ text: "Faded lines", start_ms: 1000, segments: [{ text: "Fa", start_ms: 1000, end_ms: 1400, space_after: false }, { text: "ded", start_ms: 1400, end_ms: 2000, space_after: true }, { text: "lines", start_ms: 2000, end_ms: 3000, space_after: false }] }) }
         LyricWords { width: Metrics.rightPanel; line: ({ text: "Rivers run under the bridge", start_ms: 0 }) }
+        LyricLine { width: Metrics.rightPanel; synced: true; sung: true; nowMs: 1700; endMs: 3000; translation: "The same line, translated"; sungColor: Theme.color.accent; line: ({ text: "Faded lines", start_ms: 1000, segments: [{ text: "Faded", start_ms: 1000, end_ms: 2000, space_after: true }, { text: "lines", start_ms: 2000, end_ms: 3000, space_after: false }] }) }
+        LyricLine { width: Metrics.rightPanel; synced: true; size: Type.lyricSmall; uppercase: true; line: ({ text: "Rivers run under the bridge", start_ms: 4000 }) }
+        ChoiceRow {
+            width: Metrics.rightPanel
+            title: "Size"
+            SegmentedControl { options: [{ text: "S" }, { text: "M" }, { text: "L" }]; current: 1 }
+        }
         SettingsPage { id: audio; section: "appearance" }
         Repeater {
             model: audio

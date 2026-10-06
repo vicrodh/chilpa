@@ -306,6 +306,12 @@ msgstr "Pila de audio"
 msgid "Author: {}"
 msgstr "Autor: {}"
 
+msgid "Auto (app language)"
+msgstr "Automático (idioma de la app)"
+
+msgid "Auto-follow"
+msgstr "Seguir la letra"
+
 msgid "AutoMix"
 msgstr "AutoMix"
 
@@ -545,6 +551,9 @@ msgstr "Copiar álbum y artista"
 msgid "Copy full information"
 msgstr "Copiar información completa"
 
+msgid "Copy lyrics"
+msgstr "Copiar letra"
+
 msgid "Copy playlist"
 msgstr "Copiar playlist"
 
@@ -704,6 +713,9 @@ msgstr "Diagnosticar la salida"
 msgid "Diagnosis"
 msgstr "Diagnóstico"
 
+msgid "Dimming"
+msgstr "Atenuado"
+
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
 msgstr "ALSA directo no escala las muestras. Usa el DAC o amplificador, o activa el volumen de hardware en Settings › Advanced."
 
@@ -737,6 +749,9 @@ msgstr "Desconectado"
 msgid "Discover"
 msgstr "Descubrir"
 
+msgid "Display settings"
+msgstr "Opciones de visualización"
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
 
@@ -757,6 +772,9 @@ msgstr "Duración (más largas)"
 
 msgid "Duration (shortest)"
 msgstr "Duración (más cortas)"
+
+msgid "Dutch"
+msgstr "Neerlandés"
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo entonces reemplaza al original. Hace falta tanto espacio libre como ocupa el disco. Lo que se escribe no se puede deshacer."
@@ -790,6 +808,9 @@ msgstr "Folders vacíos"
 
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
+
+msgid "English"
+msgstr "Inglés"
 
 msgid "Episode notes"
 msgstr "Notas del episodio"
@@ -896,6 +917,9 @@ msgstr "Adelante"
 msgid "Forward 10 seconds"
 msgstr "Adelante 10 segundos"
 
+msgid "French"
+msgstr "Francés"
+
 msgid "From same artist"
 msgstr "Del mismo artista"
 
@@ -922,6 +946,9 @@ msgstr "Género"
 
 msgid "Genres"
 msgstr "Géneros"
+
+msgid "German"
+msgstr "Alemán"
 
 msgid "Go to album"
 msgstr "Ir al disco"
@@ -967,6 +994,9 @@ msgstr "Ocultar las columnas"
 
 msgid "Hide token"
 msgstr "Ocultar token"
+
+msgid "Hide translation"
+msgstr "Ocultar traducción"
 
 msgid "Hide when idle"
 msgstr "Ocultar si no hay actividad"
@@ -1067,6 +1097,9 @@ msgstr "Integraciones"
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se aplica la próxima vez que abras Chilpa."
 
+msgid "Italian"
+msgstr "Italiano"
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr "Se está leyendo su música; aparece en la biblioteca conforme llega."
 
@@ -1075,6 +1108,9 @@ msgstr "Su música se une a tu biblioteca, junto con tus propios archivos."
 
 msgid "Its page, or its quick view under the row."
 msgstr "Su página, o su vista rápida bajo la fila."
+
+msgid "Japanese"
+msgstr "Japonés"
 
 msgid "Keep the current one"
 msgstr "Quedarse con la actual"
@@ -1117,6 +1153,9 @@ msgstr "Lista"
 
 msgid "Listen live"
 msgstr "Escuchar en vivo"
+
+msgid "Lite fill"
+msgstr "Relleno ligero"
 
 msgid "Live"
 msgstr "En vivo"
@@ -1166,6 +1205,9 @@ msgstr "Buscar"
 msgid "Looking for files…"
 msgstr "Buscando archivos…"
 
+msgid "Looking for lyrics…"
+msgstr "Buscando la letra…"
+
 msgid "Lossless"
 msgstr "Sin pérdida"
 
@@ -1175,11 +1217,14 @@ msgstr "Con pérdida"
 msgid "Lyrics"
 msgstr "Letra"
 
-msgid "Lyrics from {}"
-msgstr "Fuente de la letra: {}"
+msgid "Lyrics copied"
+msgstr "Letra copiada"
 
 msgid "Lyrics show here while a track plays."
 msgstr "La letra aparece aquí mientras suena una pista."
+
+msgid "Lyrics source:"
+msgstr "Fuente de la letra:"
 
 msgid "Maintenance"
 msgstr "Mantenimiento"
@@ -1673,6 +1718,9 @@ msgstr "Calidad declarada por el plugin"
 msgid "Plugins"
 msgstr "Plugins"
 
+msgid "Portuguese"
+msgstr "Portugués"
+
 msgid "Position in Streaming"
 msgstr "Posición en Streaming"
 
@@ -1922,6 +1970,9 @@ msgstr "Filas amplias"
 msgid "Route"
 msgstr "Ruta"
 
+msgid "Russian"
+msgstr "Ruso"
+
 msgid "SACDMTOC was not found"
 msgstr "no se encontró SACDMTOC"
 
@@ -2071,6 +2122,9 @@ msgstr "Mostrar la barra lateral"
 msgid "Show token"
 msgstr "Mostrar token"
 
+msgid "Show translation"
+msgstr "Mostrar traducción"
+
 msgid "Shuffle"
 msgstr "Aleatorio"
 
@@ -2089,6 +2143,12 @@ msgstr "Sesión cerrada"
 msgid "Similar albums"
 msgstr "Álbumes similares"
 
+msgid "Size"
+msgstr "Tamaño"
+
+msgid "Soft"
+msgstr "Suave"
+
 msgid "Songs"
 msgstr "Canciones"
 
@@ -2100,6 +2160,9 @@ msgstr "Fuentes"
 
 msgid "Sources and quality"
 msgstr "Fuentes y calidad"
+
+msgid "Spanish"
+msgstr "Español"
 
 msgid "Starting plugins…"
 msgstr "Iniciando plugins…"
@@ -2125,6 +2188,9 @@ msgstr "Streaming"
 msgid "Streaming libraries"
 msgstr "Bibliotecas de streaming"
 
+msgid "Strong"
+msgstr "Fuerte"
+
 msgid "Studio 24/48"
 msgstr "Estudio 24/48"
 
@@ -2142,6 +2208,9 @@ msgstr "Suscrito"
 
 msgid "Subscriptions"
 msgstr "Suscripciones"
+
+msgid "Sung line"
+msgstr "Línea cantada"
 
 msgid "Sync now"
 msgstr "Sincronizar ahora"
@@ -2189,6 +2258,9 @@ msgstr "La conexión no está cifrada."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
+
+msgid "The line being sung stays in view."
+msgstr "La línea que se canta se mantiene a la vista."
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."
@@ -2240,6 +2312,9 @@ msgstr "Falta la respuesta del servicio."
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "La fuente se desconectó. Revisa la playlist antes de reintentarlo."
+
+msgid "The sung line lights up whole. Saves CPU."
+msgstr "La línea cantada se ilumina completa. Ahorra CPU."
 
 msgid "Theme"
 msgstr "Tema"
@@ -2355,6 +2430,9 @@ msgstr "Avances"
 msgid "Transcript"
 msgstr "Transcripción"
 
+msgid "Translation"
+msgstr "Traducción"
+
 msgid "Tree"
 msgstr "Árbol"
 
@@ -2405,6 +2483,9 @@ msgstr "Actualizar"
 
 msgid "Updates"
 msgstr "Actualizaciones"
+
+msgid "Uppercase"
+msgstr "Mayúsculas"
 
 msgid "Use Quick Connect"
 msgstr "Usar Quick Connect"
