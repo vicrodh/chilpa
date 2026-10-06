@@ -4,9 +4,11 @@
 //! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
 use chilpa_qt_kit::app;
-// Linked for their QML modules: shortcuts, timer and A-B loop; the lyrics.
+// Linked for their QML modules, which `modules.cpp` registers: a crate
+// nothing here names is left out of the binary, and its module with it.
 use chilpa_qt_controls as _;
 use chilpa_qt_lyrics as _;
+use chilpa_qt_sources as _;
 mod bridge;
 mod browse;
 mod format;
