@@ -41,5 +41,11 @@ pub enum MediaEvent {
     /// A volume from 0.0 to 1.0.
     SetVolume(f64),
     Raise,
+    /// The tray icon was clicked: the window shows if it was hidden, and
+    /// hides if it was in sight.
+    ToggleWindow,
+    /// The wheel turned over the tray icon, that many notches up (or down,
+    /// negative): a step of volume each.
+    VolumeBy(i32),
     Quit,
 }

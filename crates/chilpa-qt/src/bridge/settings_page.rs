@@ -292,7 +292,14 @@ impl qobject::SettingsPage {
                 self.watch_accounts();
                 return;
             }
-            _ => return,
+            // A key the bridge does not know is its feature's: the facade
+            // asks around (frontend ADR-0015).
+            _ => {
+                if app::with(|api| api.adjust(&key, &value)) {
+                    self.as_mut().reload();
+                }
+                return;
+            }
         }
         // Another output or policy can have a volume of its own or not.
         if key.starts_with("audio.") {

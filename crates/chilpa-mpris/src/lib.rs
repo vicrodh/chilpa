@@ -1,6 +1,6 @@
 //! Chilpa on a Linux desktop's session bus: the MPRIS media controls, the
-//! lock that keeps the machine awake while music plays, and the name that
-//! makes a second launch hand over to the first.
+//! tray icon, the lock that keeps the machine awake while music plays, and
+//! the name that makes a second launch hand over to the first.
 //!
 //! Nothing here knows the player: it is told what plays and says what was
 //! asked. The facade does the rest.
@@ -9,6 +9,7 @@
 mod inhibit;
 pub mod instance;
 mod server;
+pub mod tray;
 mod types;
 
 pub use server::{spawn, Handle};

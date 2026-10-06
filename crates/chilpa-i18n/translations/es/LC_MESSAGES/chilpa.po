@@ -327,8 +327,14 @@ msgstr "Pila de audio"
 msgid "Author: {}"
 msgstr "Autor: {}"
 
+msgid "Auto"
+msgstr "Automático"
+
 msgid "Auto (app language)"
 msgstr "Automático (idioma de la app)"
+
+msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
+msgstr "Automático sigue los colores del escritorio: el glifo claro en un panel oscuro, el oscuro en un panel claro."
 
 msgid "Auto-follow"
 msgstr "Seguir la letra"
@@ -435,6 +441,9 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
+msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
+msgstr "El icono de Chilpa en el panel: un clic muestra u oculta la ventana, el botón central reproduce o pausa, la rueda mueve el volumen."
+
 msgid "Chinese"
 msgstr "Chino"
 
@@ -510,6 +519,12 @@ msgstr "Cerrar medios"
 msgid "Close tab"
 msgstr "Cerrar pestaña"
 
+msgid "Close to tray"
+msgstr "Cerrar a la bandeja"
+
+msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
+msgstr "Al cerrar la ventana, Chilpa sigue sonando en la bandeja en vez de salir."
+
 msgid "Collapse"
 msgstr ""
 
@@ -518,6 +533,9 @@ msgstr "Contraer todo"
 
 msgid "Collapse sidebar"
 msgstr "Contraer barra lateral"
+
+msgid "Color"
+msgstr "Color"
 
 msgid "Colors"
 msgstr "Colores"
@@ -742,6 +760,9 @@ msgstr "Descripción"
 
 msgid "Description not provided yet."
 msgstr "Descripción pendiente."
+
+msgid "Desktop"
+msgstr "Escritorio"
 
 msgid "Destinations"
 msgstr "Destinos"
@@ -1343,6 +1364,12 @@ msgstr "No está"
 msgid "Mixed"
 msgstr "Varios valores"
 
+msgid "Mono dark"
+msgstr "Mono oscuro"
+
+msgid "Mono light"
+msgstr "Mono claro"
+
 msgid "More"
 msgstr "Más"
 
@@ -1369,6 +1396,9 @@ msgstr "Mover a la raíz"
 
 msgid "Move up"
 msgstr "Subir"
+
+msgid "Music player\nNothing playing"
+msgstr "Reproductor de música\nNada en reproducción"
 
 msgid "Music services"
 msgstr "Servicios de música"
@@ -1739,6 +1769,9 @@ msgstr "Reproducir en"
 msgid "Play this group"
 msgstr "Reproducir este grupo"
 
+msgid "Play/Pause"
+msgstr "Reproducir/Pausar"
+
 msgid "Playback"
 msgstr "Reproducción"
 
@@ -1885,6 +1918,9 @@ msgstr "Vista rápida"
 
 msgid "Quit"
 msgstr "Salir"
+
+msgid "Quit Chilpa"
+msgstr "Salir de Chilpa"
 
 msgid "Radio"
 msgstr "Radio"
@@ -2114,6 +2150,9 @@ msgstr "Escaneando…"
 msgid "Scrobble"
 msgstr "Registrar escuchas"
 
+msgid "Scroll to adjust volume"
+msgstr "Rueda para ajustar el volumen"
+
 msgid "Search"
 msgstr "Buscar"
 
@@ -2238,6 +2277,9 @@ msgstr "Mostrar token"
 
 msgid "Show translation"
 msgstr "Mostrar traducción"
+
+msgid "Show/Hide Window"
+msgstr "Mostrar/Ocultar ventana"
 
 msgid "Shuffle"
 msgstr "Aleatorio"
@@ -2565,6 +2607,12 @@ msgstr "Transcripción"
 msgid "Translation"
 msgstr "Traducción"
 
+msgid "Tray glyph"
+msgstr "Glifo de la bandeja"
+
+msgid "Tray icon"
+msgstr "Icono en la bandeja"
+
 msgid "Tree"
 msgstr "Árbol"
 
@@ -2792,6 +2840,9 @@ msgstr "ser un plugin de otro tipo: {}"
 
 msgid "bring catalogue: search for and fetch music"
 msgstr "aportar catálogo: buscar y traer música"
+
+msgid "by {}"
+msgstr "de {}"
 
 msgid "calling \"{}\", which did not load"
 msgstr "llamar a \"{}\", que no cargó"

@@ -33,6 +33,7 @@ TestCase {
         if (made)
             made.destroy()
         made = null
+        Controls.trayClose = false
         other.hide()
         other.width = 700
         other.height = 500
@@ -79,5 +80,36 @@ TestCase {
         compare(WindowPlace.kept[0][1], 760)
         wait(Sizes.placeSettle)
         compare(WindowPlace.kept.length, 1, "and not again when the wait ends")
+    }
+
+    // With a tray to go to, closing hides the window instead; the desktop's
+    // own Quit still closes it.
+    property var accepted: null
+    function test_closing_hides_to_the_tray_when_that_is_wanted() {
+        open(0, 0, false)
+        Controls.trayClose = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        other.close()
+        compare(test.accepted, false, "the close was refused")
+        verify(!other.visible, "and the window hid")
+        compare(WindowPlace.kept.length, 1, "its place was kept all the same")
+
+        other.show()
+        test.accepted = null
+        made.quitting = true
+        other.close()
+        compare(test.accepted, true, "a quit is not hidden from")
+    }
+
+    // The tray icon's click shows a hidden window and hides one in sight.
+    function test_the_tray_toggles_the_window() {
+        open(0, 0, false)
+        verify(other.visible)
+        Player.windowAsked(2)
+        verify(!other.visible)
+        Player.windowAsked(2)
+        verify(other.visible)
+        Player.windowAsked(0)
+        verify(other.visible)
     }
 }

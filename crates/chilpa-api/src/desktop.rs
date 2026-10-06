@@ -1,9 +1,10 @@
-//! The desktop around the window: its media controls and the launch of a
-//! second Chilpa.
+//! The desktop around the window: its media controls, its tray icon and
+//! the launch of a second Chilpa.
 //!
-//! What plays goes out to the desktop's widget and media keys, and what
-//! they ask comes back, on every poll. The window is asked only for what
-//! the facade cannot do: show itself, and close.
+//! What plays goes out to the desktop's widget, its media keys and the
+//! tray's tooltip, and what they ask comes back, on every poll. The window
+//! is asked only for what the facade cannot do: show itself, hide, and
+//! close.
 
 use crate::Chilpa;
 #[cfg(target_os = "linux")]
@@ -20,6 +21,8 @@ pub enum WindowRequest {
     /// Come to the front: the widget was clicked, or Chilpa was launched
     /// again.
     Raise,
+    /// Show if hidden, hide if in sight: the tray icon was clicked.
+    Toggle,
     Quit,
 }
 
@@ -27,6 +30,14 @@ pub enum WindowRequest {
 pub(crate) struct Desktop {
     #[cfg(target_os = "linux")]
     link: Option<(chilpa_mpris::Handle, async_channel::Receiver<MediaEvent>)>,
+    /// Where the tray sends what it is asked, the same way as the controls.
+    #[cfg(target_os = "linux")]
+    tell: Option<async_channel::Sender<MediaEvent>>,
+    #[cfg(target_os = "linux")]
+    tray: Option<chilpa_mpris::tray::Handle>,
+    /// What the tray's tooltip was last told.
+    #[cfg(target_os = "linux")]
+    tray_said: (String, String),
     /// What the desktop was last told, to tell it only what changed.
     #[cfg(target_os = "linux")]
     told: (Option<TrackMeta>, Option<PlaybackStatus>),
@@ -70,15 +81,71 @@ impl Chilpa {
         true
     }
 
-    /// Puts Chilpa on the desktop's media controls, where there are any.
+    /// Puts Chilpa on the desktop's media controls, where there are any,
+    /// and its icon on the panel, if that is wanted.
     pub fn start_media_controls(&mut self) {
         #[cfg(target_os = "linux")]
         {
             let (tx, rx) = async_channel::unbounded();
+            let tell = tx.clone();
             let handle = chilpa_mpris::spawn(move |event| {
-                let _ = tx.try_send(event);
+                let _ = tell.try_send(event);
             });
             self.desktop.link = handle.map(|handle| (handle, rx));
+            self.desktop.tell = Some(tx);
+            if self.tray_wanted() {
+                self.start_tray();
+            }
+        }
+    }
+
+    /// Whether the icon is on the panel now.
+    pub fn tray_present(&self) -> bool {
+        #[cfg(target_os = "linux")]
+        return self.desktop.tray.is_some();
+        #[cfg(not(target_os = "linux"))]
+        false
+    }
+
+    /// Puts the icon on the panel, if it is not there already.
+    pub(crate) fn start_tray(&mut self) {
+        #[cfg(target_os = "linux")]
+        {
+            if self.desktop.tray.is_some() {
+                return;
+            }
+            let Some(tell) = self.desktop.tell.clone() else { return };
+            let glyph = crate::tray::glyph_of(&self.tray_glyph(), chilpa_mpris::tray::prefers_dark());
+            let said = crate::tray::said(self.now.playing.then_some(&self.now), self.now.playing && !self.now.paused);
+            let labels = tray_labels();
+            self.desktop.tray = chilpa_mpris::tray::spawn(glyph, labels, chilpa_mpris::tray::Said { title: said.0.clone(), lines: said.1.clone() }, move |event| {
+                let _ = tell.try_send(event);
+            });
+            self.desktop.tray_said = said;
+        }
+    }
+
+    /// Takes the icon off the panel.
+    pub(crate) fn stop_tray(&mut self) {
+        #[cfg(target_os = "linux")]
+        {
+            self.desktop.tray = None;
+        }
+    }
+
+    /// Shows the glyph the preference asks for now.
+    pub(crate) fn recolor_tray(&mut self) {
+        #[cfg(target_os = "linux")]
+        if let Some(tray) = &self.desktop.tray {
+            tray.recolor(crate::tray::glyph_of(&self.tray_glyph(), chilpa_mpris::tray::prefers_dark()));
+        }
+    }
+
+    /// The tray's menu in the language of the moment.
+    pub fn relabel_tray(&mut self) {
+        #[cfg(target_os = "linux")]
+        if let Some(tray) = &self.desktop.tray {
+            tray.relabel(tray_labels());
         }
     }
 
@@ -124,6 +191,13 @@ impl Chilpa {
             } else if status == PlaybackStatus::Playing {
                 handle.set_position(position);
             }
+            if let Some(tray) = &self.desktop.tray {
+                let said = crate::tray::said(self.now.playing.then_some(&self.now), status == PlaybackStatus::Playing);
+                if said != self.desktop.tray_said {
+                    tray.say(chilpa_mpris::tray::Said { title: said.0.clone(), lines: said.1.clone() });
+                    self.desktop.tray_said = said;
+                }
+            }
         }
     }
 
@@ -147,6 +221,11 @@ impl Chilpa {
             MediaEvent::SetPosition(micros) => self.desktop_seek(micros as f64 / 1e6),
             MediaEvent::SetVolume(volume) => self.set_player_volume((volume.clamp(0.0, 1.0) * 100.0).round() as u8),
             MediaEvent::Raise => self.desktop.requests.push_back(WindowRequest::Raise),
+            MediaEvent::ToggleWindow => self.desktop.requests.push_back(WindowRequest::Toggle),
+            MediaEvent::VolumeBy(notches) => {
+                let now = self.player_volume().percent;
+                self.set_player_volume(crate::tray::volume_after(now, notches));
+            }
             MediaEvent::Quit => self.desktop.requests.push_back(WindowRequest::Quit),
         }
     }
@@ -158,6 +237,18 @@ impl Chilpa {
         if self.now.total_seconds > 0.0 {
             self.seek(to.clamp(0.0, self.now.total_seconds));
         }
+    }
+}
+
+/// The tray's menu, as it reads now.
+#[cfg(target_os = "linux")]
+fn tray_labels() -> chilpa_mpris::tray::Labels {
+    chilpa_mpris::tray::Labels {
+        play_pause: chilpa_i18n::t("Play/Pause"),
+        next: chilpa_i18n::t("Next Track"),
+        previous: chilpa_i18n::t("Previous Track"),
+        show_hide: chilpa_i18n::t("Show/Hide Window"),
+        quit: chilpa_i18n::t("Quit Chilpa"),
     }
 }
 

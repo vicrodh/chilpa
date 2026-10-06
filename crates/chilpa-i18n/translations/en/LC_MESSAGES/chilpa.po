@@ -327,7 +327,13 @@ msgstr ""
 msgid "Author: {}"
 msgstr "Author: {}"
 
+msgid "Auto"
+msgstr ""
+
 msgid "Auto (app language)"
+msgstr ""
+
+msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
 msgstr ""
 
 msgid "Auto-follow"
@@ -435,6 +441,9 @@ msgstr ""
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
+msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
+msgstr ""
+
 msgid "Chinese"
 msgstr ""
 
@@ -510,6 +519,12 @@ msgstr "Close media"
 msgid "Close tab"
 msgstr ""
 
+msgid "Close to tray"
+msgstr ""
+
+msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
+msgstr ""
+
 msgid "Collapse"
 msgstr ""
 
@@ -517,6 +532,9 @@ msgid "Collapse all"
 msgstr ""
 
 msgid "Collapse sidebar"
+msgstr ""
+
+msgid "Color"
 msgstr ""
 
 msgid "Colors"
@@ -742,6 +760,9 @@ msgstr ""
 
 msgid "Description not provided yet."
 msgstr "Description not provided yet."
+
+msgid "Desktop"
+msgstr ""
 
 msgid "Destinations"
 msgstr "Destinations"
@@ -1343,6 +1364,12 @@ msgstr ""
 msgid "Mixed"
 msgstr "Mixed"
 
+msgid "Mono dark"
+msgstr ""
+
+msgid "Mono light"
+msgstr ""
+
 msgid "More"
 msgstr ""
 
@@ -1368,6 +1395,9 @@ msgid "Move to root"
 msgstr ""
 
 msgid "Move up"
+msgstr ""
+
+msgid "Music player\nNothing playing"
 msgstr ""
 
 msgid "Music services"
@@ -1739,6 +1769,9 @@ msgstr ""
 msgid "Play this group"
 msgstr ""
 
+msgid "Play/Pause"
+msgstr ""
+
 msgid "Playback"
 msgstr ""
 
@@ -1884,6 +1917,9 @@ msgid "Quick view"
 msgstr ""
 
 msgid "Quit"
+msgstr ""
+
+msgid "Quit Chilpa"
 msgstr ""
 
 msgid "Radio"
@@ -2114,6 +2150,9 @@ msgstr ""
 msgid "Scrobble"
 msgstr ""
 
+msgid "Scroll to adjust volume"
+msgstr ""
+
 msgid "Search"
 msgstr ""
 
@@ -2237,6 +2276,9 @@ msgid "Show token"
 msgstr "Show token"
 
 msgid "Show translation"
+msgstr ""
+
+msgid "Show/Hide Window"
 msgstr ""
 
 msgid "Shuffle"
@@ -2565,6 +2607,12 @@ msgstr ""
 msgid "Translation"
 msgstr ""
 
+msgid "Tray glyph"
+msgstr ""
+
+msgid "Tray icon"
+msgstr ""
+
 msgid "Tree"
 msgstr ""
 
@@ -2791,6 +2839,9 @@ msgid "be a plugin of another kind: {}"
 msgstr ""
 
 msgid "bring catalogue: search for and fetch music"
+msgstr ""
+
+msgid "by {}"
 msgstr ""
 
 msgid "calling \"{}\", which did not load"
