@@ -1,0 +1,2 @@
+module com.blitzfc.chilpa.metadata
+singleton MetadataEditor 1.0 MetadataEditor.qml

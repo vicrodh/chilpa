@@ -11,6 +11,7 @@ chilpa-qt-kit.workspace = true
 chilpa-qt-sources.workspace = true
 chilpa-qt-controls.workspace = true
 chilpa-qt-lyrics.workspace = true
+chilpa-qt-metadata.workspace = true
 cxx = "1"
 cxx-qt = "0.7"
 cxx-qt-lib = { version = "0.7", features = ["qt_full"] }

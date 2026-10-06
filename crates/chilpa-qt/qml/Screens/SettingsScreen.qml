@@ -5,6 +5,7 @@ import com.blitzfc.chilpa
 import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 

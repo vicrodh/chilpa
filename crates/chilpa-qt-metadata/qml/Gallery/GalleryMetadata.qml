@@ -1,10 +1,11 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
 import com.blitzfc.chilpa
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Patterns"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Patterns"
+import "../Components"
+import "../Patterns"
 
 // The metadata editor's pieces, fed a view shaped like the facade's, with
 // a field in each state: changed, mixed, laid over by a sidecar, invalid.
