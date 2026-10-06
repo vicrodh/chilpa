@@ -9,6 +9,7 @@ pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::{NativeCaller, PluginInfo};
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
+mod ab_loop;
 mod accounts;
 mod casting;
 pub use chilpa_cast::{Device as CastDevice, Kind as CastKind};
@@ -598,6 +599,7 @@ pub struct Chilpa {
     /// The lyrics of what is playing, and the thread that finds them.
     lyrics: lyrics_service::Lyrics,
     desktop: desktop::Desktop,
+    ab_loop: Option<ab_loop::AbLoop>,
     source_favorites: source_favorites::SourceFavorites,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
@@ -701,6 +703,7 @@ impl Chilpa {
             sleep_until: None,
             lyrics: Default::default(),
             desktop: Default::default(),
+            ab_loop: None,
             source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,
@@ -1086,6 +1089,7 @@ impl Chilpa {
     pub fn seek(&mut self, seconds: f64) {
         if !seconds.is_finite() { return; }
         self.desktop.seeked = Some(seconds);
+        self.ab_jumped(seconds);
         if self.casting.active() { self.cast_seek(seconds); return; }
         if let Some(p) = &self.player {
             let safe = seconds.max(0.0);
@@ -1137,10 +1141,14 @@ impl Chilpa {
     /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
+        // The timer pauses what plays and leaves the queue where it is.
         if self.sleep_until.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
             self.sleep_until = None;
-            self.stop();
+            if self.now.playing && !self.now.paused {
+                self.set_paused(true);
+            }
         }
+        self.advance_ab();
         self.advance_desktop();
         self.advance_source_favorites();
         self.advance_plugins();
