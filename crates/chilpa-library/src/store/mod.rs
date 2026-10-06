@@ -32,7 +32,7 @@ mod compilations;
 pub(crate) mod releases;
 pub mod versions;
 
-pub use albums::{AlbumSort, StoredAlbum, StoredArtist};
+pub use albums::{AlbumDisc, AlbumSort, StoredAlbum, StoredArtist};
 pub use artists::{is_various, ArtistRole};
 pub use edit::{AlbumEdit, EditTrack, Edited, Put, TrackEdit};
 pub use browse::{letter_of, BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};

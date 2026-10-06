@@ -120,6 +120,18 @@ impl AlbumSort {
     }
 }
 
+/// One disc of a record, by what its first track says.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct AlbumDisc {
+    pub number: u16,
+    /// Where its first track is.
+    pub path: String,
+    /// The cover its files gave; empty when they gave none.
+    pub artwork: String,
+    /// The album its tags name, which a box may give each disc its own.
+    pub tagged: String,
+}
+
 impl Library {
     /// The albums, sorted by artist and title, with their track count.
     ///
@@ -427,6 +439,29 @@ impl Library {
     }
 
     /// An album's tracks, in the record's order.
+    /// What each disc of a record says of itself: where its first track
+    /// is, the cover its own files gave when they were scanned, and the
+    /// album its tags name. In disc order; a track that names no disc is
+    /// of the first.
+    pub fn album_discs(&self, album_id: i64) -> rusqlite::Result<Vec<AlbumDisc>> {
+        let mut stmt = self.db.prepare(
+            "SELECT max(coalesce(disc_number, 1), 1), external_id, coalesce(release_artwork, ''), album_title
+             FROM tracks WHERE album_id = ?1
+             ORDER BY 1, present DESC, track_number, external_id",
+        )?;
+        let rows = stmt.query_map(params![album_id], |r| {
+            Ok(AlbumDisc { number: r.get(0)?, path: r.get(1)?, artwork: r.get(2)?, tagged: r.get(3)? })
+        })?;
+        let mut discs: Vec<AlbumDisc> = Vec::new();
+        for disc in rows {
+            let disc = disc?;
+            if discs.last().is_none_or(|last| last.number != disc.number) {
+                discs.push(disc);
+            }
+        }
+        Ok(discs)
+    }
+
     pub fn album_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
