@@ -591,11 +591,8 @@ pub struct Chilpa {
     stop_after: Option<usize>,
     /// A wall-clock deadline that asks the player to stop from `poll`.
     sleep_until: Option<std::time::Instant>,
-    /// The lyrics of what is playing, so they are not reread on every tick.
-    lyrics: Option<chilpa_lyrics::Document>,
-    /// The thread that finds lyrics, and the track it is finding them for.
-    lyrics_service: Option<lyrics_service::LyricsService>,
-    lyrics_generation: u64,
+    /// The lyrics of what is playing, and the thread that finds them.
+    lyrics: lyrics_service::Lyrics,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
     /// must not leave the window waiting.
@@ -696,9 +693,7 @@ impl Chilpa {
             restored_at: None,
             stop_after: None,
             sleep_until: None,
-            lyrics: None,
-            lyrics_service: None,
-            lyrics_generation: 0,
+            lyrics: Default::default(),
             plugins: None,
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
@@ -795,7 +790,7 @@ impl Chilpa {
 
     /// Which line of the lyrics belongs to that second.
     fn line_at(&self, seconds: f64) -> i32 {
-        let Some(lyrics) = &self.lyrics else {
+        let Some(lyrics) = &self.lyrics.document else {
             return -1;
         };
         let ms = (seconds.max(0.0) * 1000.0).min(u32::MAX as f64) as u32;
@@ -951,6 +946,7 @@ impl Chilpa {
         let mut s = chilpa_core::settings::load();
         s.window.insert(key.to_string(), value.to_string());
         let _ = chilpa_core::settings::save(&s);
+        self.lyrics_preference_changed(key);
     }
 
     /// Remembers the last folder opened.

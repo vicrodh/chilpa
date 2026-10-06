@@ -42,8 +42,9 @@ pub const MAX_ANSWER: usize = 1024 * 1024;
 const MAX_PAUSE: Duration = Duration::from_secs(3600);
 
 /// The question for a track: everything known about it, and nothing made up.
-/// What is unknown is left out.
-pub fn request(track: &Track, minimum: Timing) -> Value {
+/// What is unknown is left out. `language` is the one a translation is
+/// wanted in, when one is.
+pub fn request(track: &Track, minimum: Timing, language: Option<&str>) -> Value {
     let mut identity = Map::new();
     identity.insert("title".into(), json!(track.title));
     identity.insert("artist".into(), json!(track.artist));
@@ -61,7 +62,7 @@ pub fn request(track: &Track, minimum: Timing) -> Value {
     json!({
         "schema": SCHEMA,
         "track": identity,
-        "preferences": { "minimum_sync": minimum, "language": null },
+        "preferences": { "minimum_sync": minimum, "language": language },
     })
 }
 
@@ -183,7 +184,7 @@ mod tests {
 
     #[test]
     fn the_question_is_the_one_the_service_reads() {
-        assert_eq!(request(&small(), Timing::Unsynced), golden(WORDS_FROM_A_SYNC).request);
+        assert_eq!(request(&small(), Timing::Unsynced, None), golden(WORDS_FROM_A_SYNC).request);
         let wasted = Track {
             title: "Wasted Years".into(),
             artist: "Iron Maiden".into(),
@@ -192,16 +193,16 @@ mod tests {
             isrc: None,
             mbid: None,
         };
-        assert_eq!(request(&wasted, Timing::Unsynced), golden(LINE).request);
+        assert_eq!(request(&wasted, Timing::Unsynced, None), golden(LINE).request);
     }
 
     #[test]
     fn what_is_unknown_is_left_out_of_the_question() {
         let bare = Track { title: "Song".into(), artist: "Someone".into(), album: Some("  ".into()), duration_ms: Some(0), ..Track::default() };
-        assert_eq!(request(&bare, Timing::Word)["track"], json!({"title": "Song", "artist": "Someone"}));
-        assert_eq!(request(&bare, Timing::Word)["preferences"]["minimum_sync"], "word");
+        assert_eq!(request(&bare, Timing::Word, None)["track"], json!({"title": "Song", "artist": "Someone"}));
+        assert_eq!(request(&bare, Timing::Word, Some("es"))["preferences"], json!({"minimum_sync": "word", "language": "es"}));
         let known = Track { mbid: Some("b1a9c0e9-d987-4042-ae91-78d6a3267d69".into()), ..small() };
-        assert_eq!(request(&known, Timing::Unsynced)["track"]["mbid"], "b1a9c0e9-d987-4042-ae91-78d6a3267d69");
+        assert_eq!(request(&known, Timing::Unsynced, None)["track"]["mbid"], "b1a9c0e9-d987-4042-ae91-78d6a3267d69");
     }
 
     #[test]
