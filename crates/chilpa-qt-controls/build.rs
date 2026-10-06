@@ -1,6 +1,6 @@
 //! The ways to drive the player besides its own buttons, as their own QML
 //! module (`com.blitzfc.chilpa.controls`): the keyboard shortcuts, the timer
-//! that pauses playback and the A-B loop. Each shell crate stays inside the
+//! that stops playback and the A-B loop. Each shell crate stays inside the
 //! shell's budgets (ADR-001).
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
 use std::path::{Path, PathBuf};

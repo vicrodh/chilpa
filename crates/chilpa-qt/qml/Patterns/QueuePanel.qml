@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.controls
-import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Components" as Controls
+import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Components" as Parts
 import "../Theme"
 import "../Primitives"
 import "../Components"
@@ -94,7 +94,7 @@ Item {
         onSave: Playlists.saveQueue(I18n.trArgs("Queue · {}", [Qt.locale().toString(new Date(), Locale.ShortFormat)], I18n.rev))
     }
 
-    Controls.SleepTimer { id: sleep }
+    Parts.SleepTimer { id: sleep; parent: foot; anchors.centerIn: undefined; x: foot.width - width - Metrics.gap6; y: -height - Metrics.gap6 }
 
     TrackMenu {
         id: menu
