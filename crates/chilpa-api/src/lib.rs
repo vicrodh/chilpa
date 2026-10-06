@@ -56,6 +56,7 @@ mod source_integration;
 mod plugin_evidence;
 mod plugin_domains;
 mod natives;
+mod lyrics_client;
 mod lyrics_service;
 mod native_reporting;
 mod native_install;

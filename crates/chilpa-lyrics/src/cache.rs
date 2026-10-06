@@ -287,7 +287,7 @@ mod tests {
     use crate::lrc;
 
     fn track() -> Track {
-        Track { title: "Wasted Years".into(), artist: "Iron Maiden".into(), album: None, duration_ms: Some(306_000), isrc: None }
+        Track { title: "Wasted Years".into(), artist: "Iron Maiden".into(), album: None, duration_ms: Some(306_000), isrc: None, mbid: None }
     }
 
     fn claim() -> Claim {

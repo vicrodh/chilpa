@@ -5,11 +5,11 @@
 //! later tick. When tracks are skipped faster than lyrics are found, only
 //! the last one is looked for: the ones in between are no longer playing.
 //!
-//! The plugins reach the pipeline through two adapters: a lyrics plugin
-//! answers `lyrics.find` for any track, and a source that declares
-//! `track_lyrics` answers `track.lyrics` for its own. Both go through
-//! [`Natives::call_raw`], so the pause a plugin asks for in its error is
-//! kept.
+//! Three things reach the pipeline from here: the lyrics service, asked
+//! over HTTP for any track ([`crate::lyrics_client`]); a source that
+//! declares `track_lyrics`, which answers `track.lyrics` for its own; and,
+//! for now, a lyrics plugin answering `lyrics.find`. The plugins go through
+//! [`Natives::call_raw`], so the pause one asks for in its error is kept.
 
 use crate::natives::Natives;
 use chilpa_lyrics::pipeline::{Answer, Limits, Pipeline, Provider, Request, Resolved, Source};
@@ -39,11 +39,12 @@ pub(crate) struct LyricsService {
     /// are dropped.
     wanted: Arc<AtomicU64>,
     delivered: Arc<Mutex<Option<(u64, Option<Resolved>)>>>,
-    natives: Arc<Natives>,
+    /// The lyrics service, asked for what neither the file nor its source has.
+    remote: Arc<dyn Provider>,
 }
 
 impl LyricsService {
-    pub(crate) fn start(natives: Arc<Natives>) -> LyricsService {
+    pub(crate) fn start() -> LyricsService {
         let (jobs, rx) = mpsc::channel::<Job>();
         let wanted = Arc::new(AtomicU64::new(0));
         let delivered: Arc<Mutex<Option<(u64, Option<Resolved>)>>> = Arc::new(Mutex::new(None));
@@ -81,25 +82,30 @@ impl LyricsService {
         if let Err(e) = spawned {
             eprintln!("lyrics: the thread did not start: {e}");
         }
-        LyricsService { jobs, wanted, delivered, natives }
+        LyricsService { jobs, wanted, delivered, remote: Arc::new(crate::lyrics_client::LyricsServiceClient::new()) }
     }
 
     /// Asks for the lyrics of a track. `generation` grows with every track
     /// that starts; [`LyricsService::take`] gives back the answer for it.
-    pub(crate) fn request(&self, generation: u64, track: Track, path: Option<std::path::PathBuf>, source: Option<(String, String)>) {
+    ///
+    /// The plugins are the ones running now, handed in with every request:
+    /// the first track can start before they do, and whoever kept the
+    /// plugins of that moment would never ask a source for its lyrics.
+    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, track: Track, path: Option<std::path::PathBuf>, source: Option<(String, String)>) {
         self.wanted.store(generation, Ordering::SeqCst);
         let source = source
-            .filter(|(id, _)| self.natives.has_track_lyrics(id))
+            .filter(|(id, _)| natives.has_track_lyrics(id))
             .map(|(id, reference)| {
-                let name = self.natives.display_name(&id);
-                (Arc::new(NativeSource { natives: self.natives.clone(), id, name }) as Arc<dyn Source>, reference)
+                let name = natives.display_name(&id);
+                (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let providers: Vec<Arc<dyn Provider>> = self
-            .natives
-            .lyrics_providers()
-            .into_iter()
-            .map(|(id, name, timing)| Arc::new(NativeProvider { natives: self.natives.clone(), id, name, best: timing_of(&timing) }) as Arc<dyn Provider>)
-            .collect();
+        let mut providers: Vec<Arc<dyn Provider>> = vec![self.remote.clone()];
+        providers.extend(
+            natives
+                .lyrics_providers()
+                .into_iter()
+                .map(|(id, name, timing)| Arc::new(NativeProvider { natives: natives.clone(), id, name, best: timing_of(&timing) }) as Arc<dyn Provider>),
+        );
         let _ = self.jobs.send(Job { generation, request: Request { track, path, source }, providers });
     }
 
@@ -135,12 +141,15 @@ impl crate::Chilpa {
         let source = crate::source_opener::of_plugin(&self.now.path);
         // The ISRC the scan read from the tags, when the file is in the
         // library: with it, lyrics for another recording cannot get through.
-        let isrc = match source {
-            None => self.library().and_then(|library| {
-                let row = library.tracks_by_paths(&[path.display().to_string()]).ok()?.pop().flatten()?;
-                library.fingerprints_for(&[row.id]).ok()?.remove(&row.id)?.0
-            }),
-            Some(_) => None,
+        let (isrc, mbid) = match source {
+            None => self
+                .library()
+                .and_then(|library| {
+                    let row = library.tracks_by_paths(&[path.display().to_string()]).ok()?.pop().flatten()?;
+                    library.fingerprints_for(&[row.id]).ok()?.remove(&row.id)
+                })
+                .unwrap_or_default(),
+            Some(_) => (None, None),
         };
         let track = chilpa_lyrics::Track {
             title: self.now.title.clone(),
@@ -148,11 +157,11 @@ impl crate::Chilpa {
             album: Some(self.now.album.clone()).filter(|a| !a.trim().is_empty()),
             duration_ms: length_ms.or_else(|| (self.now.total_seconds > 0.0).then(|| (self.now.total_seconds * 1000.0).min(f64::from(u32::MAX)) as u32)),
             isrc,
+            mbid,
         };
         let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
-        let natives = self.natives.clone();
-        let service = self.lyrics_service.get_or_insert_with(|| LyricsService::start(natives));
-        service.request(self.lyrics_generation, track, file, source);
+        let service = self.lyrics_service.get_or_insert_with(LyricsService::start);
+        service.request(&self.natives, self.lyrics_generation, track, file, source);
     }
 
     /// Shows the lyrics the lyrics thread found for what is playing.

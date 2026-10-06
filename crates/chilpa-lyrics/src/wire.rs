@@ -221,6 +221,7 @@ mod tests {
             album: None,
             duration_ms: Some(200_000),
             isrc: None,
+            mbid: None,
         }
     }
 

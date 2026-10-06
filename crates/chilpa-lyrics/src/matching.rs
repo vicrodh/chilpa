@@ -19,6 +19,7 @@
 //! milliseconds are rounding, a few seconds are another edit.
 
 use crate::model::{Document, Timing};
+use serde::{Deserialize, Serialize};
 
 /// What is known about the track that is playing.
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
@@ -28,15 +29,22 @@ pub struct Track {
     pub album: Option<String>,
     pub duration_ms: Option<u32>,
     pub isrc: Option<String>,
+    /// The MusicBrainz recording, when the tags name it.
+    pub mbid: Option<String>,
 }
 
 /// What a candidate says it is.
-#[derive(Clone, PartialEq, Eq, Debug, Default)]
+#[derive(Clone, PartialEq, Eq, Debug, Default, Serialize, Deserialize)]
 pub struct Claim {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub title: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub artist: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub album: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub duration_ms: Option<u32>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub isrc: Option<String>,
 }
 
@@ -256,6 +264,7 @@ mod tests {
             album: Some("Somewhere in Time".into()),
             duration_ms: Some(306_000),
             isrc: None,
+            mbid: None,
         }
     }
 

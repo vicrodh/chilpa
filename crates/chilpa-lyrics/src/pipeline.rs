@@ -14,17 +14,16 @@
 //! 3. **The source and the providers at the same time.** A source that has
 //!    no lyrics does not add its wait to the providers'.
 //!
-//! Who wins between them: **the source's lyrics**, because they are for
-//! exactly that track. Unless a provider brings a strictly finer timing
-//! (words against lines, lines against plain text) for a confirmed match:
-//! the same ISRC, or both lengths known and within two seconds.
+//! Who wins between them: **the source's lyrics, always.** They are for
+//! exactly that track. What a provider brings only shows when the source
+//! has none, fails or does not answer in time, however finely it is timed.
 //!
 //! Among providers, candidates that are not the same song are dropped
 //! ([`crate::matching`]); the finest timing wins, then the best score.
 //! Waiting stops when nothing still pending could change the winner.
 
 use crate::cache::{Cache, Hit, Origin};
-use crate::matching::{judge, Claim, Track, Verdict, TIMED_TOLERANCE_MS};
+use crate::matching::{judge, Track, Verdict};
 use crate::model::{Document, Timing};
 use crate::wire::Candidate;
 use std::collections::HashMap;
@@ -164,7 +163,7 @@ impl Pipeline {
         if !need_source && !need_providers {
             let from_source = source_known.flatten();
             let from_providers = identity_known.flatten();
-            return Outcome { resolved: choose(track, from_source, from_providers.map(|r| (r, true))), refresh: stale };
+            return Outcome { resolved: choose(from_source, from_providers), refresh: stale };
         }
 
         let asked = self.ask(request, need_source, need_providers);
@@ -184,22 +183,19 @@ impl Pipeline {
                 _ => {}
             }
         }
-        let mut from_providers = identity_known.flatten().map(|r| (r, true));
+        let mut from_providers = identity_known.flatten();
         if need_providers {
             match &asked.best {
                 Some(best) => {
                     let raw = best.candidate.raw.as_ref().map(|(f, t)| (f.as_str(), t.as_str()));
                     cache.put(track, &best.candidate.claim, &best.candidate.document, &best.origin, raw);
-                    from_providers = Some((
-                        Resolved { document: best.candidate.document.clone(), origin: best.origin.clone() },
-                        confirmed(track, &best.candidate.claim, best.verdict),
-                    ));
+                    from_providers = Some(Resolved { document: best.candidate.document.clone(), origin: best.origin.clone() });
                 }
                 None if asked.all_answered && asked.providers > 0 => cache.put_none(track),
                 None => {}
             }
         }
-        Outcome { resolved: choose(track, from_source, from_providers), refresh: false }
+        Outcome { resolved: choose(from_source, from_providers), refresh: false }
     }
 
     /// Asks the source and the providers at once, and waits as long as an
@@ -246,6 +242,11 @@ impl Pipeline {
         let mut pending: Vec<bool> = vec![true; providers.len()];
         let mut asked = Asked { providers: providers.len(), all_answered: !skipped, ..Asked::default() };
         while source_pending || pending.iter().any(|p| *p) {
+            // The source has lyrics for its own track: they win, and nobody
+            // else is waited for.
+            if matches!(asked.source, Some(Ok(Some(_)))) {
+                break;
+            }
             // Nothing pending can change the winner: stop waiting.
             if !source_pending {
                 if let Some(best) = &asked.best {
@@ -276,7 +277,12 @@ impl Pipeline {
                                 if !verdict.accepted() {
                                     continue;
                                 }
-                                let origin = Origin { provider: provider.id().to_string(), name: provider.name().to_string() };
+                                // A document that says who gave it is shown under
+                                // that name, not under whoever passed it on.
+                                let origin = match &candidate.document.source {
+                                    Some(source) => Origin { provider: source.provider.clone(), name: source.name.clone() },
+                                    None => Origin { provider: provider.id().to_string(), name: provider.name().to_string() },
+                                };
                                 let better = asked.best.as_ref().is_none_or(|b| {
                                     (candidate.document.timing, verdict.score()) > (b.candidate.document.timing, b.verdict.score())
                                 });
@@ -317,28 +323,16 @@ struct Best {
     origin: Origin,
 }
 
-/// A provider's lyrics are confirmed for the track: the same recording by
-/// ISRC, or both lengths known and within two seconds.
-fn confirmed(track: &Track, claim: &Claim, verdict: Verdict) -> bool {
-    verdict == Verdict::Exact
-        || track.duration_ms.zip(claim.duration_ms).is_some_and(|(a, b)| a.abs_diff(b) <= TIMED_TOLERANCE_MS)
-}
-
-/// The source's lyrics win, unless the provider's are strictly finer and
-/// confirmed for the track.
-fn choose(_track: &Track, source: Option<Resolved>, provider: Option<(Resolved, bool)>) -> Option<Resolved> {
-    match (source, provider) {
-        (Some(s), Some((p, true))) if p.document.timing > s.document.timing => Some(p),
-        (Some(s), _) => Some(s),
-        (None, Some((p, _))) => Some(p),
-        (None, None) => None,
-    }
+/// The source's lyrics win. A provider's show only when the source has none.
+fn choose(source: Option<Resolved>, provider: Option<Resolved>) -> Option<Resolved> {
+    source.or(provider)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::lrc;
+    use crate::matching::Claim;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     struct Fake {
@@ -393,7 +387,7 @@ mod tests {
     }
 
     fn track() -> Track {
-        Track { title: "Song".into(), artist: "Someone".into(), album: None, duration_ms: Some(200_000), isrc: None }
+        Track { title: "Song".into(), artist: "Someone".into(), album: None, duration_ms: Some(200_000), isrc: None, mbid: None }
     }
 
     fn candidate(lrc_text: &str, duration_ms: u32) -> Candidate {
@@ -441,29 +435,53 @@ mod tests {
     }
 
     #[test]
-    fn the_source_wins_ties_and_finer_lyrics_beat_it_only_when_confirmed() {
+    fn the_source_wins_whatever_the_providers_bring() {
         let source = Fake::new("source", Timing::Line, Answer::Found(vec![candidate(LINES, 200_000)]));
-        let words = Fake::new("words", Timing::Word, Answer::Found(vec![candidate(WORDS, 200_300)]));
+        let words = Fake::new("words", Timing::Word, Answer::Found(vec![candidate(WORDS, 200_000)]));
         let p = pipeline(vec![words]);
-        assert_eq!(origin(&p.resolve(&request(Some(source.clone())), false)), "words", "words beat lines when the length agrees");
+        assert_eq!(origin(&p.resolve(&request(Some(source)), false)), "source", "finer lyrics for the same length still lose to the source's");
 
+        let plain = Fake::new("source", Timing::Unsynced, Answer::Found(vec![candidate(PLAIN, 200_000)]));
         let lines = Fake::new("lines", Timing::Line, Answer::Found(vec![candidate(LINES, 200_000)]));
         let p = pipeline(vec![lines]);
-        assert_eq!(origin(&p.resolve(&request(Some(source.clone())), false)), "source", "a tie goes to the source");
-
-        let mut unknown_length = candidate(WORDS, 0);
-        unknown_length.claim.duration_ms = None;
-        let unconfirmed = Fake::new("unconfirmed", Timing::Word, Answer::Found(vec![unknown_length]));
-        let p = pipeline(vec![unconfirmed]);
-        assert_eq!(origin(&p.resolve(&request(Some(source)), false)), "source", "finer, but not confirmed for this track");
+        assert_eq!(origin(&p.resolve(&request(Some(plain)), false)), "source", "even when the source only has the words");
     }
 
     #[test]
-    fn plain_lyrics_from_the_source_lose_to_confirmed_timed_ones() {
-        let source = Fake::new("source", Timing::Unsynced, Answer::Found(vec![candidate(PLAIN, 200_000)]));
-        let lines = Fake::new("lines", Timing::Line, Answer::Found(vec![candidate(LINES, 200_000)]));
-        let p = pipeline(vec![lines]);
-        assert_eq!(origin(&p.resolve(&request(Some(source)), false)), "lines");
+    fn a_source_with_lyrics_is_not_kept_waiting_for_the_providers() {
+        let source = Fake::new("source", Timing::Line, Answer::Found(vec![candidate(LINES, 200_000)]));
+        let slow = Fake::slow("slow", Timing::Word, Duration::from_millis(500), Answer::Found(vec![candidate(WORDS, 200_000)]));
+        let p = pipeline(vec![slow]);
+        let started = Instant::now();
+        assert_eq!(origin(&p.resolve(&request(Some(source)), false)), "source");
+        assert!(started.elapsed() < Duration::from_millis(300), "the source answered; nobody else can win");
+    }
+
+    #[test]
+    fn a_source_that_fails_or_is_late_falls_back() {
+        let lines = || Fake::new("lines", Timing::Line, Answer::Found(vec![candidate(LINES, 200_000)]));
+        let failing = Fake::new("source", Timing::Word, Answer::Failed { retry_after: None, message: "no session".into() });
+        let p = pipeline(vec![lines()]);
+        assert_eq!(origin(&p.resolve(&request(Some(failing.clone())), false)), "lines");
+        p.resolve(&request(Some(failing.clone())), false);
+        assert_eq!(failing.calls(), 2, "a source that failed is asked again next time");
+
+        let late = Fake::slow("source", Timing::Word, Duration::from_millis(2_000), Answer::Found(vec![candidate(WORDS, 200_000)]));
+        let p = pipeline(vec![lines()]);
+        let started = Instant::now();
+        assert_eq!(origin(&p.resolve(&request(Some(late)), false)), "lines");
+        assert!(started.elapsed() < Duration::from_millis(1_500), "its time ran out and the lookup did not wait for it");
+    }
+
+    #[test]
+    fn a_document_that_says_who_gave_it_is_shown_under_that_name() {
+        let mut named = candidate(WORDS, 200_000);
+        named.document.source = Some(crate::model::Provenance { provider: "somewhere".into(), name: "Somewhere".into(), claim: None });
+        let service = Fake::new("service", Timing::Syllable, Answer::Found(vec![named]));
+        let p = pipeline(vec![service]);
+        let outcome = p.resolve(&request(None), false);
+        let origin = &outcome.resolved.as_ref().unwrap().origin;
+        assert_eq!((origin.provider.as_str(), origin.name.as_str()), ("somewhere", "Somewhere"));
     }
 
     #[test]
