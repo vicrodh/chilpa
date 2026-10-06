@@ -198,17 +198,14 @@ impl Document {
         Document { schema: SCHEMA, ..Document::default() }
     }
 
-    /// The translation for somebody who reads `language`: one in that
-    /// language when there is one, else the first there is. A position in
-    /// [`Document::layers`].
-    pub fn translation_for(&self, language: Option<&str>) -> Option<usize> {
+    /// The translation for somebody who reads `language`, whatever its
+    /// region: a position in [`Document::layers`]. A translation into
+    /// another language is not offered in its place: it would be a button
+    /// that shows words the reader did not ask for.
+    pub fn translation_for(&self, language: &str) -> Option<usize> {
         let primary = |code: &str| code.split(['-', '_']).next().unwrap_or_default().to_ascii_lowercase();
-        let translations = || self.layers.iter().enumerate().filter(|(_, layer)| layer.kind == LayerKind::Translation);
-        language
-            .map(primary)
-            .and_then(|wanted| translations().find(|(_, layer)| primary(&layer.language) == wanted))
-            .or_else(|| translations().next())
-            .map(|(position, _)| position)
+        let wanted = primary(language);
+        self.layers.iter().position(|layer| layer.kind == LayerKind::Translation && !wanted.is_empty() && primary(&layer.language) == wanted)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -446,7 +443,7 @@ mod tests {
     }
 
     #[test]
-    fn the_translation_shown_is_the_readers_when_there_is_one() {
+    fn the_translation_offered_is_the_one_in_the_readers_language() {
         let layer = |kind, language: &str| Layer { kind, language: language.into(), provider: None, lines: vec![LayerLine { line: 0, text: "x".into(), segments: vec![] }] };
         let doc = Document {
             lines: vec![Line { start_ms: Some(0), text: "One".into(), ..Line::default() }],
@@ -454,10 +451,11 @@ mod tests {
             ..Document::new()
         }
         .finish();
-        assert_eq!(doc.translation_for(Some("es")), Some(2), "the reader's language, whatever its region");
-        assert_eq!(doc.translation_for(Some("fr")), Some(1), "else the first translation there is");
-        assert_eq!(doc.translation_for(None), Some(1));
-        assert_eq!(Document::new().translation_for(Some("es")), None);
+        assert_eq!(doc.translation_for("es"), Some(2), "the reader's language, whatever its region");
+        assert_eq!(doc.translation_for("ZH-Hans"), Some(1));
+        assert_eq!(doc.translation_for("fr"), None, "another language is not offered in its place");
+        assert_eq!(doc.translation_for("ja"), None, "a romanization is not a translation");
+        assert_eq!(doc.translation_for(""), None);
     }
 
     #[test]

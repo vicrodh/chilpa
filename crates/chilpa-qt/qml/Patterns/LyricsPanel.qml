@@ -203,6 +203,7 @@ Item {
         anchors.bottom: parent.bottom
         anchors.leftMargin: Metrics.gap16
         anchors.rightMargin: Metrics.gap16
+        topPadding: source.visible || notice.visible ? Metrics.gap6 : 0
         bottomPadding: source.visible || notice.visible ? Metrics.gap8 : 0
         spacing: Metrics.gap4
 
