@@ -50,8 +50,6 @@ crates/chilpa-qt/qml/Components/PlaylistSourceChooser.qml
 crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
 crates/chilpa-qt/qml/Components/PlaylistTargetRow.qml
 crates/chilpa-qt/qml/Components/PlaylistTree.js
-crates/chilpa-qt/qml/Components/PluginRow.qml
-crates/chilpa-qt/qml/Components/PluginValidation.qml
 crates/chilpa-qt/qml/Components/QualityIcon.qml
 crates/chilpa-qt/qml/Components/QueueFooter.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
@@ -95,11 +93,6 @@ crates/chilpa-qt/qml/Patterns/PlayerLcd.qml
 crates/chilpa-qt/qml/Patterns/PlaylistEditDialog.qml
 crates/chilpa-qt/qml/Patterns/PlaylistFolderDialog.qml
 crates/chilpa-qt/qml/Patterns/PlaylistSelectionBar.qml
-crates/chilpa-qt/qml/Patterns/PluginDetails.qml
-crates/chilpa-qt/qml/Patterns/PluginIntegration.qml
-crates/chilpa-qt/qml/Patterns/PluginManager.qml
-crates/chilpa-qt/qml/Patterns/PluginRepositories.qml
-crates/chilpa-qt/qml/Patterns/PluginSettingsForm.qml
 crates/chilpa-qt/qml/Patterns/QualityTooltip.qml
 crates/chilpa-qt/qml/Patterns/QueuePanel.qml
 crates/chilpa-qt/qml/Patterns/RightPanel.qml
