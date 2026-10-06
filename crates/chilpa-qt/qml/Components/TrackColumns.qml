@@ -29,13 +29,15 @@ QtObject {
     readonly property int rating: showRating ? Metrics.colRating : 0
     readonly property int plays: showPlays ? (rich ? Metrics.colPlaysRich : Metrics.colPlaysCompact) : 0
     readonly property int time: rich ? Metrics.colTimeRich : Metrics.colTimeCompact
+    // The time ends flush right; what follows it keeps its distance.
+    readonly property int afterTime: Metrics.gap16
     readonly property int more: Metrics.colMore
 
     // The flexible columns share what is left, in the design's proportions.
     readonly property real titleShare: 2.4
     readonly property real artistShare: showArtist && !rich ? 1.4 : 0
     readonly property real albumShare: showAlbum ? (rich ? 1.4 : 1.5) : 0
-    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - quality - rating - plays - time - more) // derived: padding on both sides
+    readonly property real free: Math.max(0, width - pad * 2 - index - art - sourceWidth - quality - rating - plays - time - afterTime - more) // derived: padding on both sides
     readonly property real unit: free / (titleShare + artistShare + albumShare)
 
     readonly property real moveX: pad
@@ -48,9 +50,11 @@ QtObject {
     readonly property real albumX: artistX + artistW
     readonly property real albumW: unit * albumShare - fromAlbum
     readonly property real sourceX: albumX + albumW
-    readonly property real qualityX: sourceX + sourceWidth
-    readonly property real ratingX: qualityX + quality
-    readonly property real playsX: ratingX + rating
+    // The row closes in one order everywhere: time, stars, format, and
+    // then the heart and the menu.
+    readonly property real playsX: sourceX + sourceWidth
     readonly property real timeX: playsX + plays
-    readonly property real moreX: timeX + time
+    readonly property real ratingX: timeX + time + afterTime
+    readonly property real qualityX: ratingX + rating
+    readonly property real moreX: qualityX + quality
 }
