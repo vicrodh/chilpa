@@ -88,12 +88,26 @@ impl Chilpa {
             "duration_ms": tracks.iter().map(|t| t.duration_ms).sum::<u64>()}).to_string()
     }
 
+    /// The media's tracks as its page lists them, each with its key in the
+    /// media's own queue. A record of several discs gets a header before
+    /// each, as its page in the library would; a header has no key.
     pub fn media_rows(&self, query: &str) -> (Vec<TrackEntry>, Vec<String>) {
         let Some(session) = &self.media else { return Default::default() };
         let Some(buffer) = self.listen.buffers.iter().find(|b| b.id == session.buffer) else { return Default::default() };
+        let tracks = &session.media.tracks;
+        // Loose files of several records are no record: their disc numbers
+        // do not group them.
+        let record = tracks.iter().all(|track| track.album == tracks[0].album);
+        let headers = record && crate::browse::several_discs(tracks);
         let query = query.trim().to_lowercase();
-        session.media.tracks.iter().enumerate()
+        let (rows, mut keys): (Vec<_>, std::collections::VecDeque<_>) = tracks.iter().enumerate()
             .filter(|(_, row)| format!("{} {} {}", row.title, row.artist, row.album).to_lowercase().contains(&query))
-            .map(|(index, row)| (TrackEntry::Track(row.clone()), buffer.key(index))).unzip()
+            .map(|(index, row)| (row.clone(), buffer.key(index))).unzip();
+        let entries = crate::browse::with_disc_headers(rows, headers);
+        let keys = entries.iter().map(|entry| match entry {
+            TrackEntry::Header { .. } => String::new(),
+            TrackEntry::Track(_) => keys.pop_front().unwrap_or_default(),
+        }).collect();
+        (entries, keys)
     }
 }

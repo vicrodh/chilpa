@@ -193,6 +193,36 @@ pub struct FolderItem {
 
 /// A row for a file the library does not have: its name, and what its
 /// extension says.
+/// Whether those tracks, in disc order, span more than one disc.
+pub(crate) fn several_discs(rows: &[TrackRow]) -> bool {
+    let mut discs: Vec<u16> = rows.iter().map(|track| track.disc.max(1)).collect();
+    discs.dedup();
+    discs.len() > 1
+}
+
+/// Those tracks, in disc order, with a header before each disc when asked
+/// for: its number and how many of its songs follow.
+pub(crate) fn with_disc_headers(rows: Vec<TrackRow>, headers: bool) -> Vec<TrackEntry> {
+    if !headers {
+        return rows.into_iter().map(TrackEntry::Track).collect();
+    }
+    let mut entries = Vec::with_capacity(rows.len() + 2);
+    let mut current = None;
+    for (index, track) in rows.iter().enumerate() {
+        let disc = track.disc.max(1);
+        if current != Some(disc) {
+            current = Some(disc);
+            let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == disc).count();
+            entries.push(TrackEntry::Header {
+                label: chilpa_i18n::t_args("Disc {}", &[&disc.to_string()]),
+                meta: chilpa_i18n::tf("{} song", "{} songs", songs as i64, &[&songs.to_string()]),
+            });
+        }
+        entries.push(TrackEntry::Track(track.clone()));
+    }
+    entries
+}
+
 pub(crate) fn file_row(path: &str) -> TrackRow {
     if let Some((image, _)) = chilpa_core::sacd_tracks::parse(std::path::Path::new(path)) {
         if let Some(row) = crate::folders::image_rows(&image).into_iter().find(|row| row.path == path) {
@@ -652,27 +682,8 @@ impl Chilpa {
     /// Album tracks with a header for every disc when there is more than one.
     pub fn album_track_entries(&mut self, album_id: i64) -> Vec<TrackEntry> {
         let rows = self.album_track_rows(album_id);
-        let mut discs: Vec<u16> = rows.iter().map(|track| track.disc.max(1)).collect();
-        discs.dedup();
-        if discs.len() < 2 {
-            return rows.into_iter().map(TrackEntry::Track).collect();
-        }
-        let mut entries = Vec::with_capacity(rows.len() + discs.len());
-        let mut current = None;
-        for (index, track) in rows.iter().enumerate() {
-            let disc = track.disc.max(1);
-            if current != Some(disc) {
-                current = Some(disc);
-                let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == disc).count();
-                let count = songs.to_string();
-                entries.push(TrackEntry::Header {
-                    label: self.t_args("Disc {}", &[&disc.to_string()]),
-                    meta: self.tf("{} song", "{} songs", songs as i64, &[&count]),
-                });
-            }
-            entries.push(TrackEntry::Track(track.clone()));
-        }
-        entries
+        let several = several_discs(&rows);
+        with_disc_headers(rows, several)
     }
 
     /// The most played tracks. What never played is not "most played".
