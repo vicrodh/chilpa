@@ -102,6 +102,8 @@ Item {
                 showAlbum: false
                 showArt: false
                 showSource: false
+                // Nothing here is in the library: there is nothing to rate.
+                showRating: false
                 model: tracks
             }
         }

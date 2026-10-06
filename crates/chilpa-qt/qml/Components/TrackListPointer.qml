@@ -47,7 +47,7 @@ MouseArea {
         rows.artistHovered = containsMouse && onArtist(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         rows.albumHovered = containsMouse && onAlbum(rows.hovered, mouseX, mouseY) ? rows.hovered : -1
         const item = rows.hovered >= 0 ? rows.itemAtIndex(rows.hovered) : null
-        const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.qualityX ? item.sourceBadge : null
+        const badge = item && !item.header && cols.sourceWidth > 0 && mouseX >= cols.sourceX && mouseX < cols.sourceX + cols.sourceWidth ? item.sourceBadge : null
         if (sourceTip !== badge) {
             if (sourceTip) TipState.hide(sourceTip)
             sourceTip = badge

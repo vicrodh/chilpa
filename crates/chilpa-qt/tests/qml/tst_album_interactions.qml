@@ -83,13 +83,36 @@ TestCase {
             wait(0)
             verify(row.containsAlbum(columns.albumX + 2, row.height / 2))
             verify(!row.containsAlbum(columns.albumX + columns.albumW - 1, row.height / 2))
-            compare(columns.qualityX, columns.sourceX + columns.sourceWidth)
+            compare(columns.playsX, columns.sourceX + columns.sourceWidth)
             verify(columns.sourceWidth > 0)
             row.rowKind = 1
             verify(!row.containsAlbum(columns.albumX + 2, row.height / 2))
             row.rowKind = 0
         }
         columns.showSource = false
+    }
+
+    // The fixed columns close the row in one order everywhere: time, stars,
+    // format, and then the heart and the menu.
+    function test_a_row_ends_with_time_rating_format_and_its_actions() {
+        for (const rich of [false, true]) {
+            columns.rich = rich
+            columns.showSource = true
+            columns.showPlays = true
+            wait(0)
+            compare(columns.timeX, columns.playsX + columns.plays)
+            verify(columns.ratingX > columns.timeX + columns.time, "the stars do not touch the time")
+            compare(columns.qualityX, columns.ratingX + columns.rating)
+            compare(columns.moreX, columns.qualityX + columns.quality)
+            compare(columns.moreX + columns.more, columns.width - columns.pad)
+            columns.showRating = false
+            wait(0)
+            verify(columns.qualityX > columns.timeX + columns.time, "without stars the format follows the time")
+            compare(columns.qualityX, columns.ratingX)
+            columns.showRating = true
+        }
+        columns.showSource = false
+        columns.showPlays = false
     }
 
     function test_version_selector_preserves_source_and_selection() {
