@@ -14,7 +14,6 @@ pub mod folder_list;
 pub mod folder_view;
 pub mod folders;
 pub mod library;
-pub mod metadata;
 pub mod navigation;
 pub mod player;
 pub mod playlists;

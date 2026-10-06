@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.metadata
 import com.blitzfc.chilpa.kit
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"

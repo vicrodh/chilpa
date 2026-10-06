@@ -56,7 +56,7 @@ pub mod qobject {
     impl cxx_qt::Initialize for MetadataEditor {}
 }
 
-use crate::{app, registry};
+use chilpa_qt_kit::app;
 use cxx_qt::{CxxQtType as _, Threading as _};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
@@ -135,8 +135,9 @@ impl qobject::MetadataEditor {
         self.as_mut().set_busy(state == "opening" || saving || waiting);
         self.as_mut().set_rev(rev);
         if was_saving && !saving {
-            // What a save left changes what every list shows.
-            registry::library(|library| library.content_changed());
+            // What a save left changes what every list shows: the facade
+            // says so to whoever draws them.
+            app::with(|api| api.mark_library_changed());
         }
         if !open {
             if let Some(active) = self.as_mut().rust_mut().polling.take() {
@@ -160,6 +161,23 @@ impl qobject::MetadataEditor {
 
 impl cxx_qt::Initialize for qobject::MetadataEditor {
     fn initialize(self: Pin<&mut Self>) {
-        registry::register_metadata(self.qt_thread());
+        let thread = self.qt_thread();
+        THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
+}
+
+thread_local! {
+    /// The editor's thread, for whoever has to ask it something.
+    static THREAD: std::cell::RefCell<Option<cxx_qt::CxxQtThread<qobject::MetadataEditor>>> = const { std::cell::RefCell::new(None) };
+}
+
+/// Queues `f` on the editor, from another object: a list of tracks opening
+/// it on one of them. Dropped if the editor has not started, which only
+/// happens before the window is up.
+pub fn ask(f: impl FnOnce(Pin<&mut qobject::MetadataEditor>) + Send + 'static) {
+    THREAD.with(|slot| {
+        if let Some(thread) = slot.borrow().as_ref() {
+            let _ = thread.queue(f);
+        }
+    });
 }

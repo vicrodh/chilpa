@@ -3,6 +3,7 @@ import QtQuick
 QtObject {
     property string page: ""
     property int selectedId: 0
+    property int routeId: 0
     property string routeKey: "radio"
     property string screen: "source"
     property var went: []

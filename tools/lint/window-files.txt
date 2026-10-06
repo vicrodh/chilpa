@@ -15,7 +15,6 @@ crates/chilpa-qt/qml/Components/AlphaStrip.qml
 crates/chilpa-qt/qml/Components/ArtworkModal.qml
 crates/chilpa-qt/qml/Components/CascadingMenu.qml
 crates/chilpa-qt/qml/Components/ChoiceRow.qml
-crates/chilpa-qt/qml/Components/CoverCandidate.qml
 crates/chilpa-qt/qml/Components/CreditLine.qml
 crates/chilpa-qt/qml/Components/DragGhost.qml
 crates/chilpa-qt/qml/Components/FilterCrumb.qml
@@ -31,8 +30,6 @@ crates/chilpa-qt/qml/Components/LibraryCrumbs.qml
 crates/chilpa-qt/qml/Components/LibraryPanes.qml
 crates/chilpa-qt/qml/Components/LibraryToolbar.qml
 crates/chilpa-qt/qml/Components/MarkButtons.qml
-crates/chilpa-qt/qml/Components/MetadataField.qml
-crates/chilpa-qt/qml/Components/MetadataTrackRow.qml
 crates/chilpa-qt/qml/Components/NavItem.qml
 crates/chilpa-qt/qml/Components/OptionRow.qml
 crates/chilpa-qt/qml/Components/PageHero.qml
@@ -61,7 +58,6 @@ crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml
 crates/chilpa-qt/qml/Components/RatingButton.qml
 crates/chilpa-qt/qml/Components/RatingStars.qml
-crates/chilpa-qt/qml/Components/ReleaseHitRow.qml
 crates/chilpa-qt/qml/Components/ScanProgress.qml
 crates/chilpa-qt/qml/Components/SearchHit.qml
 crates/chilpa-qt/qml/Components/SearchMenu.qml
@@ -91,17 +87,11 @@ crates/chilpa-qt/qml/Gallery/GalleryPrimitives.qml
 crates/chilpa-qt/qml/Gallery/Gallery.qml
 crates/chilpa-qt/qml/Main.qml
 crates/chilpa-qt/qml/Patterns/CastPicker.qml
-crates/chilpa-qt/qml/Patterns/ConfirmDialog.qml
 crates/chilpa-qt/qml/Patterns/DevHooks.qml
 crates/chilpa-qt/qml/Patterns/ListenBuffers.qml
 crates/chilpa-qt/qml/Patterns/ListenNow.qml
 crates/chilpa-qt/qml/Patterns/LyricsOptions.qml
 crates/chilpa-qt/qml/Patterns/LyricsPanel.qml
-crates/chilpa-qt/qml/Patterns/MetadataAlbum.qml
-crates/chilpa-qt/qml/Patterns/MetadataArtwork.qml
-crates/chilpa-qt/qml/Patterns/MetadataHeader.qml
-crates/chilpa-qt/qml/Patterns/MetadataLookup.qml
-crates/chilpa-qt/qml/Patterns/MetadataTracks.qml
 crates/chilpa-qt/qml/Patterns/NavMenu.qml
 crates/chilpa-qt/qml/Patterns/PlaybackOptions.qml
 crates/chilpa-qt/qml/Patterns/PlayerBar.qml
@@ -142,7 +132,6 @@ crates/chilpa-qt/qml/Screens/HomeScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryFoldersScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml
 crates/chilpa-qt/qml/Screens/ListenListScreen.qml
-crates/chilpa-qt/qml/Screens/MetadataScreen.qml
 crates/chilpa-qt/qml/Screens/OpenMediaScreen.qml
 crates/chilpa-qt/qml/Screens/PendingScreen.qml
 crates/chilpa-qt/qml/Screens/PlaylistManagerScreen.qml
@@ -164,7 +153,6 @@ crates/chilpa-qt/src/bridge/folders.rs
 crates/chilpa-qt/src/bridge/folder_view.rs
 crates/chilpa-qt/src/bridge/library.rs
 crates/chilpa-qt/src/bridge/listen_list.rs
-crates/chilpa-qt/src/bridge/metadata.rs
 crates/chilpa-qt/src/bridge/mod.rs
 crates/chilpa-qt/src/bridge/navigation.rs
 crates/chilpa-qt/src/bridge/player.rs

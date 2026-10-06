@@ -20,11 +20,12 @@ KIT = ROOT / "crates/chilpa-qt-kit/qml"
 # The shell is several QML trees with the same layers: the kit, the window's,
 # and one per feature crate. They import each other's lower layers by their
 # resource path, which `resolve_import` maps back.
-TREES = [KIT, QML, ROOT / "crates/chilpa-qt-sources/qml", ROOT / "crates/chilpa-qt-controls/qml", ROOT / "crates/chilpa-qt-lyrics/qml"]
+TREES = [KIT, QML, ROOT / "crates/chilpa-qt-sources/qml", ROOT / "crates/chilpa-qt-controls/qml", ROOT / "crates/chilpa-qt-lyrics/qml",
+         ROOT / "crates/chilpa-qt-metadata/qml"]
 # Where each tree sits in the binary's resources, for imports across them.
 RESOURCES = {"qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/": TREES[0], "qrc:/qt/qml/com/blitzfc/chilpa/qml/": TREES[1],
              "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/": TREES[2], "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/": TREES[3],
-             "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/": TREES[4]}
+             "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/": TREES[4], "qrc:/qt/qml/com/blitzfc/chilpa/metadata/qml/": TREES[5]}
 
 ORDER = {"Theme": 0, "Primitives": 1, "Components": 2, "Patterns": 3, "Screens": 4, "Main": 5}
 # The Gallery is a second window that shows every piece; it sits beside the

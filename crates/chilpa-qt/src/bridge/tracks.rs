@@ -734,7 +734,7 @@ impl qobject::TrackListModel {
         if target == "metadata" {
             // The editor opens on this track before its screen shows.
             let (album, id) = (track.album_id, track.id);
-            registry::metadata(move |editor| {
+            chilpa_qt_metadata::bridge::metadata::ask(move |editor| {
                 // A record already open keeps what was typed into it; the
                 // screen asks before another's changes are lost.
                 let kept = app::with(|api| {
