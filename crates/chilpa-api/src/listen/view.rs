@@ -48,7 +48,7 @@ impl Chilpa {
                     else { chilpa_i18n::t("Saved position") }
                 } else { chilpa_i18n::t("Up next") };
             if full && query.is_empty() && section != phase {
-                rows.push(TrackEntry::Header { label: phase.clone(), meta: String::new() }); keys.push(String::new()); section = phase;
+                rows.push(TrackEntry::header(phase.clone(), String::new())); keys.push(String::new()); section = phase;
             }
             rows.push(TrackEntry::Track(track)); keys.push(b.key(index));
         }

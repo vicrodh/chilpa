@@ -1,5 +1,5 @@
 //! A record of several discs opened from Open media shows a header before
-//! each disc, as its page in the library does.
+//! each disc: the record it is of, which disc, and how many tracks.
 use chilpa_api::{open_media, Chilpa, TrackEntry};
 
 /// A second of silence, 16 bits, mono, with no tags.
@@ -27,7 +27,7 @@ fn wave(path: &std::path::Path) {
 fn shown(rows: &[TrackEntry]) -> Vec<String> {
     rows.iter()
         .map(|row| match row {
-            TrackEntry::Header { label, meta } => format!("[{label} | {meta}]"),
+            TrackEntry::Header(header) => format!("[{} | {}]", header.label, header.meta),
             TrackEntry::Track(track) => track.title.clone(),
         })
         .collect()
@@ -60,14 +60,15 @@ fn opened_media_of_several_discs_has_a_header_before_each() {
     api.use_output("file:capture", false);
     api.open_media(media);
     let (rows, keys) = api.media_rows("");
-    assert_eq!(shown(&rows), ["[Disc 1 | 3 songs]", "One", "Two", "Three", "[Disc 2 | 2 songs]", "Four", "Five"]);
+    assert_eq!(shown(&rows), ["[Two discs | Disc 1 \u{b7} 3 tracks]", "One", "Two", "Three", "[Two discs | Disc 2 \u{b7} 2 tracks]", "Four", "Five"]);
+    assert!(rows.iter().all(|row| !matches!(row, TrackEntry::Header(header) if !header.record)), "each stands for a record's disc");
     // A header has no key; every track keeps its own.
     assert_eq!(keys.len(), rows.len());
     assert_eq!(keys.iter().map(String::is_empty).collect::<Vec<_>>(), [true, false, false, false, true, false, false]);
 
     // The filter keeps the disc of what it leaves.
     let (rows, keys) = api.media_rows("four");
-    assert_eq!(shown(&rows), ["[Disc 2 | 1 song]", "Four"]);
+    assert_eq!(shown(&rows), ["[Two discs | Disc 2 \u{b7} 1 track]", "Four"]);
     assert_eq!(keys.len(), 2);
 
     // A track still plays from its row.
@@ -75,7 +76,7 @@ fn opened_media_of_several_discs_has_a_header_before_each() {
     assert!(api.listen_row_action(&keys[5], "play", ""));
 
     // One disc alone carries no header.
-    api.open_media(open_media::OpenedMedia { title: "One disc".into(), tracks: single });
+    api.open_media(open_media::OpenedMedia { title: "One disc".into(), tracks: single, about: Vec::new() });
     let (rows, keys) = api.media_rows("");
     assert_eq!(shown(&rows), ["One", "Two", "Three"]);
     assert!(keys.iter().all(|key| !key.is_empty()));

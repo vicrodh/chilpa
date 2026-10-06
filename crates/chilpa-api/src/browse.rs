@@ -37,8 +37,29 @@ pub struct TrackRow {
 /// same list contract can represent discs, acts or scenes.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TrackEntry {
-    Header { label: String, meta: String },
+    Header(GroupHeader),
     Track(TrackRow),
+}
+
+impl TrackEntry {
+    /// A header that only names its group.
+    pub fn header(label: String, meta: String) -> Self {
+        Self::Header(GroupHeader { label, meta, ..GroupHeader::default() })
+    }
+}
+
+/// What a header says of the rows under it.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct GroupHeader {
+    pub label: String,
+    pub meta: String,
+    /// The group's own cover; empty when it has none worth showing.
+    pub art: String,
+    /// Whose it is, for a header that stands for a record.
+    pub artist: String,
+    /// It stands for a record, or one disc of it, among several in a list:
+    /// it is drawn with its cover, title and artist, not as a divider.
+    pub record: bool,
 }
 
 pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
@@ -193,36 +214,6 @@ pub struct FolderItem {
 
 /// A row for a file the library does not have: its name, and what its
 /// extension says.
-/// Whether those tracks, in disc order, span more than one disc.
-pub(crate) fn several_discs(rows: &[TrackRow]) -> bool {
-    let mut discs: Vec<u16> = rows.iter().map(|track| track.disc.max(1)).collect();
-    discs.dedup();
-    discs.len() > 1
-}
-
-/// Those tracks, in disc order, with a header before each disc when asked
-/// for: its number and how many of its songs follow.
-pub(crate) fn with_disc_headers(rows: Vec<TrackRow>, headers: bool) -> Vec<TrackEntry> {
-    if !headers {
-        return rows.into_iter().map(TrackEntry::Track).collect();
-    }
-    let mut entries = Vec::with_capacity(rows.len() + 2);
-    let mut current = None;
-    for (index, track) in rows.iter().enumerate() {
-        let disc = track.disc.max(1);
-        if current != Some(disc) {
-            current = Some(disc);
-            let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == disc).count();
-            entries.push(TrackEntry::Header {
-                label: chilpa_i18n::t_args("Disc {}", &[&disc.to_string()]),
-                meta: chilpa_i18n::tf("{} song", "{} songs", songs as i64, &[&songs.to_string()]),
-            });
-        }
-        entries.push(TrackEntry::Track(track.clone()));
-    }
-    entries
-}
-
 pub(crate) fn file_row(path: &str) -> TrackRow {
     if let Some((image, _)) = chilpa_core::sacd_tracks::parse(std::path::Path::new(path)) {
         if let Some(row) = crate::folders::image_rows(&image).into_iter().find(|row| row.path == path) {
@@ -679,11 +670,24 @@ impl Chilpa {
         lib.browse_tracks(&f, TrackOrder::Disc, 10_000).unwrap_or_default().into_iter().map(row_of).collect()
     }
 
-    /// Album tracks with a header for every disc when there is more than one.
+    /// Album tracks with a header for every disc when there is more than
+    /// one: its number, and the name and the cover its own files give it.
     pub fn album_track_entries(&mut self, album_id: i64) -> Vec<TrackEntry> {
+        use crate::discs::{named, only_distinct_art, several, with_headers, Disc};
         let rows = self.album_track_rows(album_id);
-        let several = several_discs(&rows);
-        with_disc_headers(rows, several)
+        if rows.is_empty() || !several(&rows) {
+            return rows.into_iter().map(TrackEntry::Track).collect();
+        }
+        // What the library kept of each disc when it read its files. A
+        // source's record has none: its discs keep their bare number.
+        let said = if album_id > 0 { self.library().and_then(|lib| lib.album_discs(album_id).ok()).unwrap_or_default() } else { Vec::new() };
+        let mut discs: Vec<Disc> = said.iter().map(|disc| Disc {
+            number: disc.number,
+            title: named(&disc.path, &disc.tagged, &rows[0].album),
+            art: disc.artwork.clone(),
+        }).collect();
+        only_distinct_art(&mut discs);
+        with_headers(rows, &discs)
     }
 
     /// The most played tracks. What never played is not "most played".

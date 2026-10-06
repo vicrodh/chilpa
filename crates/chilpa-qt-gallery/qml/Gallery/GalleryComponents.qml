@@ -97,6 +97,10 @@ TitledFlow {
         TrackColumns { id: rowCols; width: section.width }
         TrackHeader { cols: rowCols }
         TrackSourceLabel { cols: TrackColumns { showSource: true } name: "Local" }
+        // A divider with nothing of its own, and the header of a record
+        // among several.
+        TrackGroupHeader { width: section.width; label: "Disc 2 \u2014 Live"; meta: "9 songs" }
+        TrackGroupHeader { width: section.width; record: true; label: "Low Orbit \u2014 Live"; artist: "Mora Vale"; meta: "2019 \u00b7 Disc 2 \u00b7 9 tracks" }
         Repeater {
             // Resting, playing, selection-mode, selected, unavailable and
             // disc-header rows.

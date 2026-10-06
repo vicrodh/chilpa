@@ -170,6 +170,12 @@ QtObject {
     readonly property int rowRich: 56
     readonly property int rowHeader: 24
     readonly property int rowGroup: 34
+    // A header that stands for a record among several: its cover and
+    // three lines beside it.
+    readonly property int rowRecord: 72
+    readonly property int artRecord: 56
+    // The cover a disc's divider carries when its box gives each its own.
+    readonly property int artGroup: 28
     readonly property int rowPadCompact: 10
     readonly property int rowPadRich: 8
     readonly property int colGrip: 18

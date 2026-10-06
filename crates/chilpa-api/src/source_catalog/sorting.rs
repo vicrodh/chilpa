@@ -60,7 +60,7 @@ impl crate::Chilpa {
         for row in rows {
             let label = crate::group_of(group, &row);
             if previous.as_ref().is_none_or(|old| !old.eq_ignore_ascii_case(&label)) {
-                result.push(crate::TrackEntry::Header { label: label.clone(), meta: String::new() });
+                result.push(crate::TrackEntry::header(label.clone(), String::new()));
                 previous = Some(label);
             }
             result.push(crate::TrackEntry::Track(row));

@@ -1,10 +1,16 @@
 //! Temporary media stays outside the library and owns its listening buffer.
+use crate::discs::{block_header, block_of, record_folder, About};
 use crate::{Chilpa, TrackEntry, TrackRow};
-use std::path::Path;
+use chilpa_library::album_folder::without_disc;
+use std::collections::{BTreeMap, VecDeque};
+use std::path::{Path, PathBuf};
 
 pub struct OpenedMedia {
     pub title: String,
     pub tracks: Vec<TrackRow>,
+    /// What each track's file says besides its row, in the tracks' order.
+    /// Media built by hand may carry none.
+    pub about: Vec<About>,
 }
 
 pub(crate) struct Session {
@@ -12,24 +18,37 @@ pub(crate) struct Session {
     pub media: OpenedMedia,
 }
 
+/// The cover in a folder, looked for once per folder.
+fn cover_in(folder: PathBuf, seen: &mut BTreeMap<PathBuf, String>) -> String {
+    seen.entry(folder).or_insert_with_key(|folder| {
+        chilpa_tags::cover_beside(&folder.join("_")).map(|p| p.display().to_string()).unwrap_or_default()
+    }).clone()
+}
+
 /// Read metadata away from the GUI thread without importing anything.
 pub fn read(kind: &str, path: &str) -> Result<OpenedMedia, String> {
     let path = Path::new(path);
-    let mut tracks = if kind == "cd" {
+    let mut found: Vec<(TrackRow, About)> = if kind == "cd" {
         if path.as_os_str().is_empty() { return Err(chilpa_i18n::t("I did not find a CD drive")); }
         let mut row = crate::browse::file_row("");
         row.path = format!("cdda:{}", path.display());
         row.title = chilpa_i18n::t("Audio CD");
         row.available = true;
         row.quality = crate::Quality::of_file("disc.wav", Some(16), Some(44_100));
-        vec![row]
+        vec![(row, About::default())]
     } else {
         let files = if kind == "sacd" { vec![path.to_path_buf()] } else { crate::folders::audio_files_in(path) };
         let mut rows = Vec::new();
+        let mut covers = BTreeMap::new();
         for file in files {
+            let folder = file.parent().unwrap_or(Path::new("")).to_path_buf();
+            // A track's cover, from the nearest outwards: its own file, its
+            // disc's folder, its record's.
             let art = chilpa_tags::artwork_for(&file, &chilpa_dirs::cache().join("artwork"))
-                .map(|p| p.display().to_string()).unwrap_or_default();
-            let mut found = if chilpa_core::sacd_tracks::is_image(&file) {
+                .map(|p| p.display().to_string())
+                .unwrap_or_else(|| cover_in(PathBuf::from(record_folder(&file.to_string_lossy())), &mut covers));
+            let mut about = About { own_cover: cover_in(folder, &mut covers), ..About::default() };
+            let mut read = if chilpa_core::sacd_tracks::is_image(&file) {
                 crate::folders::image_rows(&file)
             } else {
                 let Ok(info) = chilpa_tags::read(&file) else { continue };
@@ -41,20 +60,29 @@ pub fn read(kind: &str, path: &str) -> Result<OpenedMedia, String> {
                 row.disc = info.tags.disc_number.unwrap_or(0);
                 row.duration_ms = info.duration.as_millis() as u64;
                 row.quality = crate::Quality::of_file(&file.to_string_lossy(), info.bit_depth, info.sample_rate_hz);
+                about.album_artist = info.tags.album_artist.clone().unwrap_or_default().trim().to_owned();
+                about.year = info.tags.year();
                 vec![row]
             };
-            for row in &mut found { row.artwork_path = art.clone(); }
-            rows.extend(found);
+            for row in &mut read { row.artwork_path = art.clone(); }
+            rows.extend(read.into_iter().map(|row| (row, about.clone())));
         }
         rows
     };
-    if tracks.is_empty() { return Err(chilpa_i18n::t("No playable tracks found.")); }
-    tracks.sort_by(|a, b| (&a.album, a.disc, a.number).cmp(&(&b.album, b.disc, b.number)));
-    let album = &tracks[0].album;
-    let title = if !album.is_empty() && tracks.iter().all(|t| &t.album == album) { album.clone() }
+    if found.is_empty() { return Err(chilpa_i18n::t("No playable tracks found.")); }
+    // By record, then by disc as a number, then as the disc orders them: a
+    // box keeps its discs together and in order whatever each is called.
+    found.sort_by_cached_key(|(row, _)| {
+        let (folder, record, disc) = block_of(row);
+        (record, folder, disc, row.number)
+    });
+    let (tracks, about): (Vec<_>, Vec<_>) = found.into_iter().unzip();
+    // The media is a record when every track agrees on which, discs aside.
+    let record = without_disc(&tracks[0].album);
+    let title = if !record.is_empty() && tracks.iter().all(|t| without_disc(&t.album).to_lowercase() == record.to_lowercase()) { record }
         else if kind == "cd" { chilpa_i18n::t("Audio CD") }
         else { path.file_name().unwrap_or_default().to_string_lossy().into_owned() };
-    Ok(OpenedMedia { title, tracks })
+    Ok(OpenedMedia { title, tracks, about })
 }
 
 impl Chilpa {
@@ -89,25 +117,31 @@ impl Chilpa {
     }
 
     /// The media's tracks as its page lists them, each with its key in the
-    /// media's own queue. A record of several discs gets a header before
-    /// each, as its page in the library would; a header has no key.
+    /// media's own queue. Media of several records, or of a record of
+    /// several discs, gets a header before each: its cover, its title and
+    /// its artist. A header has no key.
     pub fn media_rows(&self, query: &str) -> (Vec<TrackEntry>, Vec<String>) {
         let Some(session) = &self.media else { return Default::default() };
         let Some(buffer) = self.listen.buffers.iter().find(|b| b.id == session.buffer) else { return Default::default() };
-        let tracks = &session.media.tracks;
-        // Loose files of several records are no record: their disc numbers
-        // do not group them.
-        let record = tracks.iter().all(|track| track.album == tracks[0].album);
-        let headers = record && crate::browse::several_discs(tracks);
+        let (tracks, about) = (&session.media.tracks, &session.media.about);
+        let blocks: Vec<_> = tracks.iter().map(block_of).collect();
+        // One block is the page's own header; it is not said twice.
+        let several = blocks.windows(2).any(|pair| pair[0] != pair[1]);
+        let disc_said = tracks.iter().any(|track| track.disc.max(1) != tracks[0].disc.max(1));
         let query = query.trim().to_lowercase();
-        let (rows, mut keys): (Vec<_>, std::collections::VecDeque<_>) = tracks.iter().enumerate()
-            .filter(|(_, row)| format!("{} {} {}", row.title, row.artist, row.album).to_lowercase().contains(&query))
-            .map(|(index, row)| (row.clone(), buffer.key(index))).unzip();
-        let entries = crate::browse::with_disc_headers(rows, headers);
-        let keys = entries.iter().map(|entry| match entry {
-            TrackEntry::Header { .. } => String::new(),
-            TrackEntry::Track(_) => keys.pop_front().unwrap_or_default(),
-        }).collect();
-        (entries, keys)
+        let shown: Vec<usize> = (0..tracks.len())
+            .filter(|i| format!("{} {} {}", tracks[*i].title, tracks[*i].artist, tracks[*i].album).to_lowercase().contains(&query))
+            .collect();
+        let (mut entries, mut keys) = (Vec::new(), VecDeque::new());
+        for (at, &i) in shown.iter().enumerate() {
+            if several && (at == 0 || blocks[shown[at - 1]] != blocks[i]) {
+                let count = shown[at..].iter().take_while(|j| blocks[**j] == blocks[i]).count();
+                entries.push(TrackEntry::Header(block_header(&tracks[i], about.get(i), count, disc_said)));
+                keys.push_back(String::new());
+            }
+            entries.push(TrackEntry::Track(tracks[i].clone()));
+            keys.push_back(buffer.key(i));
+        }
+        (entries, keys.into())
     }
 }

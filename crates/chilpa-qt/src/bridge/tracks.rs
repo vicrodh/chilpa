@@ -216,7 +216,7 @@ pub struct TrackListRust {
 
 /// A row, either loaded or read from the snapshot's page.
 enum At<'a> {
-    Header(&'a str, &'a str),
+    Header(&'a chilpa_api::GroupHeader),
     Track(Rc<Vec<TrackRow>>, usize),
     Loaded(&'a TrackRow),
 }
@@ -232,7 +232,7 @@ impl TrackListRust {
     fn at(&self, row: usize) -> Option<At<'_>> {
         match &self.rows {
             Rows::Loaded(v) => match v.get(row)? {
-                Entry::Header { label, meta } => Some(At::Header(label, meta)),
+                Entry::Header(header) => Some(At::Header(header)),
                 Entry::Track(t) => Some(At::Loaded(t)),
             },
             Rows::Snapshot { ids, pages } => {
@@ -297,12 +297,12 @@ impl TrackListRust {
         let Rows::Loaded(entries) = &self.rows else {
             return Vec::new();
         };
-        if !matches!(entries.get(row), Some(Entry::Header { .. })) {
+        if !matches!(entries.get(row), Some(Entry::Header(_))) {
             return Vec::new();
         }
-        entries[row + 1..].iter().take_while(|entry| !matches!(entry, Entry::Header { .. })).filter_map(|entry| match entry {
+        entries[row + 1..].iter().take_while(|entry| !matches!(entry, Entry::Header(_))).filter_map(|entry| match entry {
             Entry::Track(track) => Some(track.path.clone()),
-            Entry::Header { .. } => None,
+            Entry::Header(_) => None,
         }).collect()
     }
 }
@@ -312,13 +312,16 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
         return QVariant::default();
     };
     let track = match &at {
-        At::Header(label, meta) => {
+        // A divider is kind 1; a header that stands for a record, with
+        // its cover and its artist, is kind 2.
+        At::Header(header) => {
             return match role - USER_ROLE {
-                0 => QVariant::from(&1i32),
-                11 => QVariant::from(&QString::from(*label)),
-                12 => QVariant::from(&QString::from(*meta)),
+                0 => QVariant::from(&if header.record { 2i32 } else { 1i32 }),
+                3 => QVariant::from(&QString::from(&header.artist)),
+                11 => QVariant::from(&QString::from(&header.label)),
+                12 => QVariant::from(&QString::from(&header.meta)),
                 13 => QVariant::from(&0i64),
-                15 => QVariant::from(&QUrl::default()),
+                15 => QVariant::from(&if header.art.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&header.art)) }),
                 16 => QVariant::from(&true),
                 _ => QVariant::default(),
             };
@@ -836,7 +839,7 @@ impl qobject::TrackListModel {
         let (rows, length) = match kind.as_str() {
             "album" if id != 0 => {
                 let entries = app::with(|api| api.album_track_entries(id));
-                let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header { .. } => None }).sum::<u64>();
+                let ms = entries.iter().filter_map(|entry| match entry { Entry::Track(track) => Some(track.duration_ms), Entry::Header(_) => None }).sum::<u64>();
                 (Rows::Loaded(entries), Some(ms))
             }
             "source" => {
