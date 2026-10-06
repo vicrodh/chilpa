@@ -11,6 +11,10 @@ pub const OPEN_MIN: f64 = 212.0;
 pub const MAX_SHARE: f64 = 0.40;
 pub const COLLAPSE_BELOW: f64 = 150.0;
 pub const CLOSE_BELOW: f64 = 28.0;
+/// The right panel's own width, and the one point a drag of it snaps to.
+pub const PANEL_DEFAULT: f64 = 300.0;
+/// How near its own width a dragged right panel has to be to take it.
+pub const PANEL_SNAP: f64 = 14.0;
 
 /// The mode and, when open, the width a drag released at `width` leaves.
 pub fn settle(width: f64, window_width: f64) -> (&'static str, i32) {
@@ -24,9 +28,40 @@ pub fn settle(width: f64, window_width: f64) -> (&'static str, i32) {
     }
 }
 
+/// The width a right panel dragged to `width` has.
+///
+/// It is free between the sidebar's minimum and 40 % of the window, the
+/// same room an open sidebar has, and next to its own width it takes that
+/// width: the one point it snaps to. It has no column of icons to collapse
+/// to and a drag does not close it; it is open at some width, or closed
+/// from its buttons.
+pub fn settle_panel(width: f64, window_width: f64) -> i32 {
+    let max = (window_width * MAX_SHARE).max(OPEN_MIN);
+    let width = if (width - PANEL_DEFAULT).abs() <= PANEL_SNAP { PANEL_DEFAULT } else { width };
+    width.clamp(OPEN_MIN, max).round() as i32
+}
+
 #[cfg(test)]
 mod tests {
-    use super::settle;
+    use super::{settle, settle_panel};
+
+    #[test]
+    fn the_right_panel_is_free_between_the_sidebars_limits() {
+        assert_eq!(settle_panel(250.0, 1280.0), 250);
+        assert_eq!(settle_panel(420.0, 1280.0), 420);
+        assert_eq!(settle_panel(900.0, 1280.0), 512, "40 % of 1280");
+        assert_eq!(settle_panel(100.0, 1280.0), 212, "never narrower than an open sidebar, and never closed by a drag");
+        assert_eq!(settle_panel(0.0, 1280.0), 212);
+    }
+
+    #[test]
+    fn the_right_panel_snaps_only_to_its_own_width() {
+        assert_eq!(settle_panel(290.0, 1280.0), 300);
+        assert_eq!(settle_panel(314.0, 1280.0), 300);
+        assert_eq!(settle_panel(315.0, 1280.0), 315, "past the snap it is free again");
+        assert_eq!(settle_panel(285.0, 1280.0), 285);
+        assert_eq!(settle_panel(300.0, 600.0), 240, "a small window gives it less than its own width");
+    }
 
     #[test]
     fn a_drag_to_the_left_snaps_to_collapsed_then_closed() {

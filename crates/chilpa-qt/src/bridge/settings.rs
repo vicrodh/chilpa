@@ -73,6 +73,11 @@ pub mod qobject {
         /// minimum and 40 % of the window.
         #[qinvokable]
         fn sidebar_width_at(self: &SettingsModel, width: f64, window_width: f64) -> i32;
+
+        /// The width the right panel has dragged to `width`: free in the
+        /// sidebar's own room, snapping only to its default.
+        #[qinvokable]
+        fn panel_width_at(self: &SettingsModel, width: f64, window_width: f64) -> i32;
     }
 
     impl cxx_qt::Threading for SettingsModel {}
@@ -130,6 +135,10 @@ impl qobject::SettingsModel {
 
     pub fn sidebar_width_at(&self, width: f64, window_width: f64) -> i32 {
         chilpa_api::sidebar::settle(width, window_width).1
+    }
+
+    pub fn panel_width_at(&self, width: f64, window_width: f64) -> i32 {
+        chilpa_api::sidebar::settle_panel(width, window_width)
     }
 
     pub fn place_sidebar(mut self: Pin<&mut Self>, width: f64, window_width: f64) {

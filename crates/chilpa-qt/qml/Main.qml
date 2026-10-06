@@ -65,7 +65,7 @@ Window {
         visible: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
         x: window.width - width - Metrics.spaceWindow
         y: Metrics.tabBarHeight
-        width: Metrics.rightPanel
+        width: shown
         height: window.height - y - Metrics.spaceWindow
     }
 
