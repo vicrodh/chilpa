@@ -5,6 +5,7 @@ import com.blitzfc.chilpa
 import "../Theme"
 import "../Primitives"
 import "../Components"
+import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Components" as Controls
 
 // How the queue plays, from the player bar: gapless, one loudness for every
 // track, and the mix by tempo -- the switches Settings has.
@@ -75,6 +76,10 @@ Popup {
                 : I18n.tr("The queue in the order its tempo flows best. Off, back to its own.", I18n.rev)
             checked: Player.automix
             onToggled: (on) => Player.chooseAutomix(on)
+        }
+        Controls.LoopRow {
+            visible: !Cast.active && Player.duration > 0
+            width: parent.width
         }
     }
 }

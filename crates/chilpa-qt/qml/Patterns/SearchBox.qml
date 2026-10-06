@@ -1,5 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.controls
 import "../Theme"
 import "../Primitives"
 
@@ -7,7 +8,7 @@ import "../Primitives"
 // typing opens the results where the owner puts them -- beside the sidebar,
 // or under the tab bar's field when the sidebar is closed. Compact, there is
 // no field to type in and the results bring their own (a collapsed sidebar).
-// Ctrl+K reaches it while it is the active one.
+// Its shortcut reaches it while it is the active one.
 Item {
     id: box
 
@@ -30,10 +31,9 @@ Item {
 
     SearchModel { id: search }
 
-    Shortcut {
-        enabled: box.active
-        sequence: "Ctrl+K"
-        onActivated: box.focusSearch()
+    Connections {
+        target: Hotkeys
+        function onSearchAsked() { if (box.active) box.focusSearch() }
     }
 
     SearchField {

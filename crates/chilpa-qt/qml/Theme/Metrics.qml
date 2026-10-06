@@ -315,6 +315,12 @@ QtObject {
     readonly property int settingsRow: 54
     readonly property int settingsGroup: 44
     readonly property int settingsMaxWidth: 880
+    // The sheet of keyboard shortcuts and its editor at their widest, the
+    // room they leave around themselves, and the sleep timer's popover.
+    readonly property int shortcutsSheet: 980
+    readonly property int shortcutsEditor: 1080
+    readonly property int shortcutsAround: 80
+    readonly property int sleepTimer: 220
     readonly property int folderRow: 48
     readonly property int folderDateWidth: 130
     readonly property int folderStatusWidth: 70

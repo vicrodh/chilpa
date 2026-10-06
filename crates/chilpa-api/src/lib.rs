@@ -26,6 +26,8 @@ mod queries;
 pub use queries::QueryWorker;
 mod covers;
 mod folders;
+mod hotkeys;
+pub use hotkeys::Pressed;
 pub mod format;
 pub mod paths;
 mod library;
@@ -600,6 +602,7 @@ pub struct Chilpa {
     lyrics: lyrics_service::Lyrics,
     desktop: desktop::Desktop,
     ab_loop: Option<ab_loop::AbLoop>,
+    keys: Option<hotkeys::Keys>,
     source_favorites: source_favorites::SourceFavorites,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
@@ -704,6 +707,7 @@ impl Chilpa {
             lyrics: Default::default(),
             desktop: Default::default(),
             ab_loop: None,
+            keys: None,
             source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,

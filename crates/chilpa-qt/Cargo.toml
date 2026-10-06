@@ -8,6 +8,7 @@ rust-version.workspace = true
 [dependencies]
 chilpa-api.workspace = true
 chilpa-qt-sources.workspace = true
+chilpa-qt-controls.workspace = true
 cxx = "1"
 cxx-qt = "0.7"
 cxx-qt-lib = { version = "0.7", features = ["qt_full"] }

@@ -49,6 +49,7 @@ Window {
             GalleryPatterns { id: patterns; width: parent.width }
             Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Gallery/GalleryMetadata.qml" }
             Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Gallery/GalleryPlugins.qml" }
+            Loader { width: parent.width; source: "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Gallery/GalleryControls.qml" }
         }
     }
 
