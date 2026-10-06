@@ -1,4 +1,4 @@
-//! The timer that pauses playback and the A-B loop, as the queue's foot,
+//! The timer that stops playback and the A-B loop, as the queue's foot,
 //! the playback options and the seek bar read them.
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -20,7 +20,7 @@ pub mod qobject {
         type Controls = super::ControlsRust;
         #[qinvokable]
         fn refresh(self: Pin<&mut Controls>);
-        /// Pauses playback after that many minutes; zero turns the timer off.
+        /// Stops playback after that many minutes; zero turns the timer off.
         #[qinvokable]
         fn sleep_in(self: Pin<&mut Controls>, minutes: i32);
         /// The start of the loop, then its end, then lets it go.

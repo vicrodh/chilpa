@@ -5,7 +5,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
 import "../Theme"
 
-// The timer that pauses playback after a while. Off, it offers how long;
+// The timer that stops playback after a while. Off, it offers how long;
 // running, it says what is left and how to call it off. Setting it again
 // replaces the one running.
 Modal {

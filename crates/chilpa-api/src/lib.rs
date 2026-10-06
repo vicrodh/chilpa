@@ -1145,12 +1145,9 @@ impl Chilpa {
     /// Collects whatever has happened and updates the state the view sees.
     pub fn poll(&mut self) -> &NowPlaying {
         use chilpa_core::player::PlayerEvent;
-        // The timer pauses what plays and leaves the queue where it is.
         if self.sleep_until.is_some_and(|deadline| std::time::Instant::now() >= deadline) {
             self.sleep_until = None;
-            if self.now.playing && !self.now.paused {
-                self.set_paused(true);
-            }
+            self.stop();
         }
         self.advance_ab();
         self.advance_desktop();

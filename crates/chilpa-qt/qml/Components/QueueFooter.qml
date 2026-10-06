@@ -4,7 +4,7 @@ import "../Theme"
 import "../Primitives"
 
 // The foot of the side queue (design/03 QueueFooter): empty it, keep it as
-// a playlist and, on the right, the timer that pauses playback, which says
+// a playlist and, on the right, the timer that stops playback, which says
 // what is left while it runs.
 Item {
     id: foot
