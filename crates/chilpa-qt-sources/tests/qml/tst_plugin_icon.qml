@@ -4,6 +4,7 @@ import com.blitzfc.chilpa
 import com.blitzfc.chilpa.kit
 import "../../../chilpa-qt-kit/qml/Primitives"
 import "../../qml/Components"
+import "../../../chilpa-qt/qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {

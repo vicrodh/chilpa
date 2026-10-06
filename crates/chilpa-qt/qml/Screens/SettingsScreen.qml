@@ -8,6 +8,7 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 
 // Settings (design/06 Settings): the sections on the left, the chosen one's
 // rows on the right. Every row comes from the schema in Rust.

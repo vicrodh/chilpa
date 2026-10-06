@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../../chilpa-qt/qml/Patterns"
+import "../../qml/Patterns"
 
 TestCase {
     name: "PluginManager"
