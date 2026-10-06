@@ -34,7 +34,12 @@ while IFS= read -r line; do
       *'"method":"track.resolve"'*) answer '{"url":"@ORIGIN@/audio.wav","format":{"codec":"wav"}}' ;;
       *'"method":"track.lyrics"'*)
         case "$line" in
-          *'"ref":"track:found"'*) answer '{"status":"found","lyrics":{"format":"lrc","text":"[00:00.05]From the source"},"fingerprint":{"duration_ms":100}}' ;;
+          *'"ref":"track:found"'*)
+            if [[ "$line" == *'"language":"fr"'* ]]; then
+              answer '{"status":"found","lyrics":{"format":"document","document":{"schema":1,"timing":"line","lines":[{"start_ms":50,"text":"From the source"}],"layers":[{"kind":"translation","language":"fr","lines":[{"line":0,"text":"De la source"}]}]}},"fingerprint":{"duration_ms":100}}'
+            else
+              answer '{"status":"found","lyrics":{"format":"lrc","text":"[00:00.05]From the source"},"fingerprint":{"duration_ms":100}}'
+            fi ;;
           *'"ref":"track:none"'*) answer '{"status":"none"}' ;;
           *) printf '{"jsonrpc":"2.0","id":%s,"error":{"code":-32000,"message":"The session ended"}}\n' "$id" ;;
         esac ;;
@@ -91,15 +96,19 @@ fn song(dir: &Path, title: &str) -> String {
     path.display().to_string()
 }
 
-/// The stand-in service: the titles it was asked about, in order.
+/// The stand-in service: the questions it was asked, in order.
 struct Service {
     origin: String,
-    asked: Arc<Mutex<Vec<String>>>,
+    asked: Arc<Mutex<Vec<Value>>>,
 }
 
 impl Service {
     fn asked_about(&self, title: &str) -> usize {
-        self.asked.lock().unwrap().iter().filter(|t| t.as_str() == title).count()
+        self.asked.lock().unwrap().iter().filter(|q| q["track"]["title"] == title).count()
+    }
+
+    fn question_about(&self, title: &str) -> Value {
+        self.asked.lock().unwrap().iter().find(|q| q["track"]["title"] == title).cloned().unwrap_or_default()
     }
 }
 
@@ -130,7 +139,7 @@ fn serve() -> Service {
                 let _ = request.as_reader().read_to_string(&mut body);
                 let question: Value = serde_json::from_str(&body).unwrap_or_default();
                 let title = question["track"]["title"].as_str().unwrap_or_default().to_string();
-                asked.lock().unwrap().push(title.clone());
+                asked.lock().unwrap().push(question.clone());
                 let (status, answer) = if title.starts_with("Slow") {
                     std::thread::sleep(Duration::from_millis(1_200));
                     (200, found(&question))
@@ -183,11 +192,15 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     let service = serve();
     std::env::set_var("XDG_DATA_HOME", dir.join("data"));
     std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
+    // The test changes a preference: it must not be the one of whoever runs it.
+    std::env::set_var("XDG_CONFIG_HOME", dir.join("config"));
     std::env::set_var("CHILPA_LYRICS_SERVICE", &service.origin);
     let music = dir.join("music");
     let long = Duration::from_secs(10);
 
     let mut chilpa = chilpa_api::Chilpa::new();
+    let said = |chilpa: &chilpa_api::Chilpa| serde_json::from_str::<Value>(&chilpa.lyrics_json()).unwrap_or_default();
+    assert_eq!(chilpa.lyrics_json(), "", "with nothing playing there is nothing to say about lyrics");
 
     // What came with the file wins, and nobody is asked.
     let local = song(&music, "Local Song");
@@ -203,6 +216,13 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     assert_eq!(text, "From the service for Remote Song");
     assert_eq!(source, "Fixture Lyrics", "the screen says who the service says gave them");
     assert_eq!(service.asked_about("Remote Song"), 1);
+    let question = service.question_about("Remote Song");
+    assert_eq!(question["track"]["artist"], "Someone");
+    assert_eq!(question["track"]["duration_ms"], 100, "the length goes with the names");
+    assert!(question["preferences"]["language"].is_string(), "and the language a translation is wanted in");
+    assert_eq!(said(&chilpa)["status"], "found");
+    assert_eq!(said(&chilpa)["source"], "Fixture Lyrics");
+    assert_eq!(said(&chilpa)["translation"], Value::Null, "these lyrics carry no translation");
     // The second time they come from Chilpa's own cache.
     lyrics_of(&mut chilpa, &remote, "Remote Song", long).expect("still there");
     assert_eq!(service.asked_about("Remote Song"), 1, "found lyrics are remembered");
@@ -232,6 +252,7 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
         for expected in [1, twice] {
             assert!(lyrics_of(&mut chilpa, &path, title, Duration::from_millis(900)).is_none(), "{title} has no lyrics to show");
             assert_eq!(service.asked_about(title), expected, "{title}");
+            assert_eq!(said(&chilpa)["status"], "none", "{title}: the window is told the search ended with nothing");
         }
     }
 
@@ -268,6 +289,35 @@ fn lyrics_come_from_the_file_the_source_or_the_service_in_that_order() {
     let (text, source) = lyrics_of(&mut chilpa, &path_of("Source Found"), "Source Found", long).expect("the source's lyrics");
     assert_eq!(text, "From the source");
     assert_eq!(source, "Sung Source");
+    assert_eq!(said(&chilpa)["translation"], Value::Null);
+
+    // Another language for the translation asks the source again, and the
+    // translation it gives is the one offered.
+    chilpa.remember_preference("ui.lyrics.translation", "fr");
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        let now = said(&chilpa);
+        if now["translation"] == 0 {
+            assert_eq!(now["document"]["layers"][0]["lines"][0]["text"], "De la source");
+            break;
+        }
+        assert!(Instant::now() < deadline, "the translation never arrived: {now}");
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    // Back to the window's own language, and the source is asked once more;
+    // the next track waits for that answer so it is not taken for its own.
+    chilpa.remember_preference("ui.lyrics.translation", "auto");
+    let deadline = Instant::now() + long;
+    loop {
+        chilpa.poll();
+        let now = said(&chilpa);
+        if now["status"] == "found" && now["translation"].is_null() {
+            break;
+        }
+        assert!(Instant::now() < deadline, "the lyrics never came back in the first language: {now}");
+        std::thread::sleep(Duration::from_millis(20));
+    }
 
     // The source has none: the service's show.
     let (text, source) = lyrics_of(&mut chilpa, &path_of("Source None"), "Source None", long).expect("the service's lyrics");

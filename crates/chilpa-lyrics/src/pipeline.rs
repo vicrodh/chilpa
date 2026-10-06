@@ -46,14 +46,16 @@ pub trait Remote: Send + Sync {
     fn id(&self) -> &str;
     /// Shown for a document that does not say who gave it.
     fn name(&self) -> &str;
-    fn resolve(&self, track: &Track, timeout: Duration) -> Answer;
+    fn resolve(&self, track: &Track, language: Option<&str>, timeout: Duration) -> Answer;
 }
 
 /// A plugin that plays music and may have lyrics for its own tracks.
 pub trait Source: Send + Sync {
     fn id(&self) -> &str;
     fn name(&self) -> &str;
-    fn lyrics(&self, reference: &str, track: &Track, timeout: Duration) -> Answer;
+    /// `language` is the one a translation is wanted in next to the
+    /// original, when one is.
+    fn lyrics(&self, reference: &str, track: &Track, language: Option<&str>, timeout: Duration) -> Answer;
 }
 
 /// How long the source and the service are waited for.
@@ -77,6 +79,8 @@ pub struct Request {
     pub path: Option<PathBuf>,
     /// The source and the track's reference in it, when it comes from one.
     pub source: Option<(Arc<dyn Source>, String)>,
+    /// The language a translation is wanted in, when the reader wants one.
+    pub language: Option<String>,
 }
 
 /// Lyrics found, and who gave them.
@@ -124,6 +128,12 @@ impl Pipeline {
             }
         }
         let track = &request.track;
+        // What a source gave is kept under the language it was asked in: a
+        // translation into another one is another answer.
+        let kept = |reference: &str| match &request.language {
+            Some(language) => format!("{reference}\u{1f}{language}"),
+            None => reference.to_string(),
+        };
 
         // What the cache knows, for the source and by identity.
         let mut source_known: Option<Option<Resolved>> = None;
@@ -132,7 +142,7 @@ impl Pipeline {
         if !fresh {
             let cache = self.cache.lock().unwrap_or_else(|e| e.into_inner());
             if let Some((source, reference)) = &request.source {
-                match cache.get_from_source(source.id(), reference, track) {
+                match cache.get_from_source(source.id(), &kept(reference), track) {
                     Some(Hit::Found { document, origin, stale: old }) => {
                         stale |= old;
                         source_known = Some(Some(Resolved { document, origin }));
@@ -172,10 +182,10 @@ impl Pipeline {
                 Some(Ok(Some(candidate))) => {
                     let origin = Origin { provider: source.id().to_string(), name: source.name().to_string() };
                     let raw = candidate.raw.as_ref().map(|(f, t)| (f.as_str(), t.as_str()));
-                    cache.put_from_source(source.id(), reference, track, &candidate.document, &origin, raw);
+                    cache.put_from_source(source.id(), &kept(reference), track, &candidate.document, &origin, raw);
                     from_source = Some(Resolved { document: candidate.document.clone(), origin });
                 }
-                Some(Ok(None)) => cache.put_none_from_source(source.id(), reference, track),
+                Some(Ok(None)) => cache.put_none_from_source(source.id(), &kept(reference), track),
                 _ => {}
             }
         }
@@ -209,17 +219,17 @@ impl Pipeline {
         let started = Instant::now();
         let mut source_until = None;
         if let (true, Some((source, reference))) = (need_source, &request.source) {
-            let (tx, source, reference, track, limit) = (tx.clone(), source.clone(), reference.clone(), request.track.clone(), self.limits.source);
+            let (tx, source, reference, track, language, limit) = (tx.clone(), source.clone(), reference.clone(), request.track.clone(), request.language.clone(), self.limits.source);
             std::thread::spawn(move || {
-                let _ = tx.send(Message::Source(source.lyrics(&reference, &track, limit)));
+                let _ = tx.send(Message::Source(source.lyrics(&reference, &track, language.as_deref(), limit)));
             });
             source_until = Some(started + self.limits.source);
         }
         let mut remote_until = None;
         if let Some(remote) = remote {
-            let (tx, remote, track, limit) = (tx.clone(), remote.clone(), request.track.clone(), self.limits.remote);
+            let (tx, remote, track, language, limit) = (tx.clone(), remote.clone(), request.track.clone(), request.language.clone(), self.limits.remote);
             std::thread::spawn(move || {
-                let _ = tx.send(Message::Remote(remote.resolve(&track, limit)));
+                let _ = tx.send(Message::Remote(remote.resolve(&track, language.as_deref(), limit)));
             });
             remote_until = Some(started + self.limits.remote);
         }
@@ -347,7 +357,7 @@ mod tests {
         fn name(&self) -> &str {
             self.id
         }
-        fn resolve(&self, _: &Track, _: Duration) -> Answer {
+        fn resolve(&self, _: &Track, _: Option<&str>, _: Duration) -> Answer {
             self.answer()
         }
     }
@@ -359,7 +369,7 @@ mod tests {
         fn name(&self) -> &str {
             self.id
         }
-        fn lyrics(&self, _: &str, _: &Track, _: Duration) -> Answer {
+        fn lyrics(&self, _: &str, _: &Track, _: Option<&str>, _: Duration) -> Answer {
             self.answer()
         }
     }
@@ -389,7 +399,7 @@ mod tests {
     }
 
     fn request(source: Option<Arc<Fake>>) -> Request {
-        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())) }
+        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None }
     }
 
     fn origin(outcome: &Outcome) -> &str {
@@ -520,6 +530,18 @@ mod tests {
     }
 
     #[test]
+    fn a_translation_into_another_language_is_another_answer() {
+        let source = Fake::new("source", found(LINES));
+        let p = pipeline(Fake::new("service", Answer::None));
+        let asked = |language: &str| Request { language: Some(language.into()), ..request(Some(source.clone())) };
+        p.resolve(&asked("es"), false);
+        p.resolve(&asked("es"), false);
+        assert_eq!(source.calls(), 1, "the same language comes from the cache");
+        p.resolve(&asked("fr"), false);
+        assert_eq!(source.calls(), 2, "another language is asked for");
+    }
+
+    #[test]
     fn a_service_that_asks_for_a_pause_gets_it() {
         let busy = Fake::new("busy", Answer::Failed { retry_after: Some(Duration::from_secs(60)), message: "429".into() });
         let p = pipeline(busy.clone());
@@ -555,7 +577,7 @@ mod tests {
         std::fs::write(dir.join("song.lrc"), "Plain words next door\n").unwrap();
         let service = Fake::new("service", found(WORDS));
         let p = pipeline(service.clone());
-        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None }, false);
+        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None }, false);
         assert_eq!(origin(&outcome), "file");
         assert_eq!(service.calls(), 0, "nobody is asked when the file has lyrics, however fine the service's are");
         let _ = std::fs::remove_dir_all(dir);

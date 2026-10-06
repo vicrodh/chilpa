@@ -26,6 +26,35 @@ fn cache_path() -> std::path::PathBuf {
     chilpa_dirs::cache().join("lyrics").join("v1.db")
 }
 
+/// The preference that says which language a translation is wanted in:
+/// empty or "auto" for the window's own, else a language code.
+pub(crate) const TRANSLATION_LANGUAGE: &str = "ui.lyrics.translation";
+
+/// Where the lyrics of what plays stand, for the window to say so.
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub(crate) enum State {
+    /// Nothing is playing that could have lyrics.
+    #[default]
+    Idle,
+    Searching,
+    None,
+    Found,
+}
+
+/// The lyrics of what is playing, as the facade keeps them.
+#[derive(Default)]
+pub(crate) struct Lyrics {
+    /// The document, so it is not reread on every tick.
+    pub(crate) document: Option<chilpa_lyrics::Document>,
+    /// The thread that finds lyrics, and the track it is finding them for.
+    service: Option<LyricsService>,
+    generation: u64,
+    state: State,
+    /// What the last lookup was for, to look again when the language of
+    /// the translation changes.
+    asked: Option<(std::path::PathBuf, Option<u32>)>,
+}
+
 struct Job {
     generation: u64,
     request: Request,
@@ -91,7 +120,8 @@ impl LyricsService {
     /// The plugins are the ones running now, handed in with every request:
     /// the first track can start before they do, and whoever kept the
     /// plugins of that moment would never ask a source for its lyrics.
-    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, track: Track, path: Option<std::path::PathBuf>, source: Option<(String, String)>) {
+    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>)) {
+        let (track, path, source, language) = request;
         self.wanted.store(generation, Ordering::SeqCst);
         let source = source
             .filter(|(id, _)| natives.has_track_lyrics(id))
@@ -99,7 +129,7 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source } });
+        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language } });
     }
 
     /// The answer for that generation, once, when it has arrived. `Some(None)`
@@ -126,8 +156,10 @@ impl crate::Chilpa {
         self.now.lyrics_source.clear();
         self.now.lyrics_line = -1;
         self.now.lyrics_revision += 1;
-        self.lyrics = None;
-        self.lyrics_generation += 1;
+        self.lyrics.document = None;
+        self.lyrics.generation += 1;
+        self.lyrics.asked = Some((path.to_path_buf(), length_ms));
+        self.lyrics.state = if self.now.live { State::Idle } else { State::Searching };
         if self.now.live {
             return;
         }
@@ -153,14 +185,45 @@ impl crate::Chilpa {
             mbid,
         };
         let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
-        let service = self.lyrics_service.get_or_insert_with(LyricsService::start);
-        service.request(&self.natives, self.lyrics_generation, track, file, source);
+        let language = self.translation_language();
+        let generation = self.lyrics.generation;
+        let service = self.lyrics.service.get_or_insert_with(LyricsService::start);
+        service.request(&self.natives, generation, (track, file, source, Some(language)));
+    }
+
+    /// The language a translation is wanted in: the one chosen for lyrics,
+    /// or the window's own. Its primary subtag only: "es", not "es-MX".
+    fn translation_language(&self) -> String {
+        let chosen = self.preference(TRANSLATION_LANGUAGE).filter(|c| !c.is_empty() && c != "auto");
+        let code = chosen.unwrap_or_else(|| chilpa_i18n::current_language().to_string());
+        code.split(['-', '_']).next().unwrap_or_default().to_ascii_lowercase()
+    }
+
+    /// A preference of the lyrics changed. Another language for the
+    /// translation asks the track's source again, which is who translates;
+    /// for any other track it only changes which translation is offered.
+    pub(crate) fn lyrics_preference_changed(&mut self, key: &str) {
+        if key != TRANSLATION_LANGUAGE {
+            return;
+        }
+        match self.lyrics.asked.clone() {
+            Some((path, length_ms)) if crate::source_opener::of_plugin(&self.now.path).is_some() => self.load_lyrics(&path, length_ms),
+            _ => self.now.lyrics_revision += 1,
+        }
     }
 
     /// Shows the lyrics the lyrics thread found for what is playing.
     pub(crate) fn advance_lyrics(&mut self) {
-        let Some(service) = &self.lyrics_service else { return };
-        let Some(Some(found)) = service.take(self.lyrics_generation) else { return };
+        let Some(service) = &self.lyrics.service else { return };
+        let Some(answer) = service.take(self.lyrics.generation) else { return };
+        self.now.lyrics_revision += 1;
+        let Some(found) = answer else {
+            // It arrived and there are none: the window stops saying it is
+            // looking.
+            self.lyrics.state = State::None;
+            return;
+        };
+        self.lyrics.state = State::Found;
         self.now.lyrics = found.document.lines.iter().map(|l| l.text.clone()).collect();
         self.now.lyrics_synced = found.document.timing > chilpa_lyrics::Timing::Unsynced;
         self.now.lyrics_source = match found.origin.provider.as_str() {
@@ -168,20 +231,30 @@ impl crate::Chilpa {
             "tags" => chilpa_i18n::t("tags"),
             _ => found.origin.name.clone(),
         };
-        self.lyrics = Some(found.document);
-        self.now.lyrics_revision += 1;
+        self.lyrics.document = Some(found.document);
         self.now.lyrics_line = self.line_at(self.now.seconds);
     }
 
-    /// The lyrics of what is playing, whole, as JSON: `{"source", "document"}`,
-    /// the document with its lines, words, times and how finely it is timed,
-    /// for a view that follows them word by word. Empty when there are none.
-    /// Read it again when `lyrics_revision` changes.
+    /// The lyrics of what is playing, whole, as JSON. Empty when nothing
+    /// that could have lyrics plays; `{"status":"searching"}` while they
+    /// are looked for; `{"status":"none"}` when there are none; and found,
+    /// `{"status":"found","source","document","translation"}`: who gave
+    /// them, the document with its lines, words and times, and the position
+    /// in its layers of the translation to offer, or null. Read it again
+    /// when `lyrics_revision` changes.
     pub fn lyrics_json(&self) -> String {
-        self.lyrics
-            .as_ref()
-            .map(|document| serde_json::json!({ "source": self.now.lyrics_source, "document": document }).to_string())
-            .unwrap_or_default()
+        match (self.lyrics.state, &self.lyrics.document) {
+            (State::Idle, _) => String::new(),
+            (State::Searching, _) => serde_json::json!({ "status": "searching" }).to_string(),
+            (State::Found, Some(document)) => serde_json::json!({
+                "status": "found",
+                "source": self.now.lyrics_source,
+                "document": document,
+                "translation": document.translation_for(Some(&self.translation_language())),
+            })
+            .to_string(),
+            (State::None | State::Found, _) => serde_json::json!({ "status": "none" }).to_string(),
+        }
     }
 }
 
@@ -217,8 +290,8 @@ impl Source for NativeSource {
     fn name(&self) -> &str {
         &self.name
     }
-    fn lyrics(&self, reference: &str, track: &Track, timeout: Duration) -> Answer {
-        match self.natives.call_raw(&self.id, "track.lyrics", wire::source_params(reference), timeout) {
+    fn lyrics(&self, reference: &str, track: &Track, language: Option<&str>, timeout: Duration) -> Answer {
+        match self.natives.call_raw(&self.id, "track.lyrics", wire::source_params(reference, language), timeout) {
             Ok(answer) => match wire::read_source(&answer, track) {
                 Ok(Some(candidate)) => Answer::Found(vec![candidate]),
                 Ok(None) => Answer::None,

@@ -32,9 +32,13 @@ pub struct Candidate {
     pub raw: Option<(String, String)>,
 }
 
-/// The parameters of `track.lyrics`.
-pub fn source_params(reference: &str) -> Value {
-    json!({ "ref": reference })
+/// The parameters of `track.lyrics`: the track, and the language a
+/// translation is wanted in next to the original, when one is.
+pub fn source_params(reference: &str, language: Option<&str>) -> Value {
+    match language {
+        Some(language) => json!({ "ref": reference, "language": language }),
+        None => json!({ "ref": reference }),
+    }
 }
 
 /// Reads the answer to `track.lyrics`. `Ok(None)` is "none".
@@ -169,6 +173,12 @@ mod tests {
         assert_eq!(document.lines[1].end_ms, None, "an end nobody stated stays unknown");
         assert_eq!(document.layers[0].lines.len(), 2);
         assert_eq!(document.credits[0].name, "A Writer");
+    }
+
+    #[test]
+    fn a_translation_is_asked_for_only_when_one_is_wanted() {
+        assert_eq!(source_params("track:7", None), json!({"ref": "track:7"}));
+        assert_eq!(source_params("track:7", Some("es")), json!({"ref": "track:7", "language": "es"}));
     }
 
     #[test]

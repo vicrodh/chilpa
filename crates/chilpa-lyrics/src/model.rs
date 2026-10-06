@@ -198,6 +198,19 @@ impl Document {
         Document { schema: SCHEMA, ..Document::default() }
     }
 
+    /// The translation for somebody who reads `language`: one in that
+    /// language when there is one, else the first there is. A position in
+    /// [`Document::layers`].
+    pub fn translation_for(&self, language: Option<&str>) -> Option<usize> {
+        let primary = |code: &str| code.split(['-', '_']).next().unwrap_or_default().to_ascii_lowercase();
+        let translations = || self.layers.iter().enumerate().filter(|(_, layer)| layer.kind == LayerKind::Translation);
+        language
+            .map(primary)
+            .and_then(|wanted| translations().find(|(_, layer)| primary(&layer.language) == wanted))
+            .or_else(|| translations().next())
+            .map(|(position, _)| position)
+    }
+
     pub fn is_empty(&self) -> bool {
         self.lines.iter().all(|l| l.text.trim().is_empty() && l.segments.is_empty())
     }
@@ -430,6 +443,21 @@ mod tests {
         }
         .finish();
         assert_eq!(doc.layers[0].lines.len(), 1);
+    }
+
+    #[test]
+    fn the_translation_shown_is_the_readers_when_there_is_one() {
+        let layer = |kind, language: &str| Layer { kind, language: language.into(), provider: None, lines: vec![LayerLine { line: 0, text: "x".into(), segments: vec![] }] };
+        let doc = Document {
+            lines: vec![Line { start_ms: Some(0), text: "One".into(), ..Line::default() }],
+            layers: vec![layer(LayerKind::Romanization, "ja-Latn"), layer(LayerKind::Translation, "zh"), layer(LayerKind::Translation, "es-MX")],
+            ..Document::new()
+        }
+        .finish();
+        assert_eq!(doc.translation_for(Some("es")), Some(2), "the reader's language, whatever its region");
+        assert_eq!(doc.translation_for(Some("fr")), Some(1), "else the first translation there is");
+        assert_eq!(doc.translation_for(None), Some(1));
+        assert_eq!(Document::new().translation_for(Some("es")), None);
     }
 
     #[test]
