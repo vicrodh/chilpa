@@ -500,7 +500,9 @@ impl Chilpa {
             .zip(known)
             .map(|(path, row)| match row {
                 Some(t) => row_of(t),
-                None => self.source_row(&path).unwrap_or_else(|| file_row(&path)),
+                // A source's track, then one of the media open right now,
+                // which was read when it was opened; only then its name.
+                None => self.source_row(&path).or_else(|| self.media_row(&path)).unwrap_or_else(|| file_row(&path)),
             })
             .collect()
     }
