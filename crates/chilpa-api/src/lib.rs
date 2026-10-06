@@ -31,6 +31,7 @@ mod metadata;
 pub mod navigation;
 mod outputs;
 mod playlists;
+mod preferences;
 mod playlist_sources;
 mod plugin_broker;
 mod playlist_import;
@@ -920,40 +921,6 @@ impl Chilpa {
     /// Both at once: a count and its holes.
     pub fn tf(&self, singular: &str, plural: &str, n: i64, args: &[&str]) -> String {
         chilpa_i18n::tf(singular, plural, n, args)
-    }
-
-    /// Remembers the chosen window layout.
-    pub fn remember_layout(&mut self, layout: &str) {
-        let mut s = chilpa_core::settings::load();
-        s.layout = layout.to_string();
-        let _ = chilpa_core::settings::save(&s);
-    }
-
-    /// A preference the window keeps for itself, by its dotted key
-    /// (`appearance.density`). `None` when it was never chosen, so the
-    /// window's own default applies.
-    pub fn preference(&self, key: &str) -> Option<String> {
-        chilpa_core::settings::load().window.get(key).cloned()
-    }
-
-    /// Remembers one of the window's preferences. The key has to be dotted:
-    /// a plain word is one of the engine's own and is not the window's to
-    /// write.
-    pub fn remember_preference(&mut self, key: &str, value: &str) {
-        if !key.contains('.') {
-            return;
-        }
-        let mut s = chilpa_core::settings::load();
-        s.window.insert(key.to_string(), value.to_string());
-        let _ = chilpa_core::settings::save(&s);
-        self.lyrics_preference_changed(key);
-    }
-
-    /// Remembers the last folder opened.
-    pub fn remember_folder(&mut self, folder: &str) {
-        let mut s = chilpa_core::settings::load();
-        s.last_folder = folder.to_string();
-        let _ = chilpa_core::settings::save(&s);
     }
 
     /// Starts a file playing. It returns immediately: whatever happens next
