@@ -1175,6 +1175,9 @@ msgstr ""
 msgid "Lyrics"
 msgstr ""
 
+msgid "Lyrics from {}"
+msgstr ""
+
 msgid "Lyrics show here while a track plays."
 msgstr ""
 

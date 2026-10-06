@@ -1175,6 +1175,9 @@ msgstr "Con pérdida"
 msgid "Lyrics"
 msgstr "Letra"
 
+msgid "Lyrics from {}"
+msgstr "Fuente de la letra: {}"
+
 msgid "Lyrics show here while a track plays."
 msgstr "La letra aparece aquí mientras suena una pista."
 
