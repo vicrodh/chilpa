@@ -73,6 +73,12 @@ impl Chilpa {
         }
     }
 
+    /// A track of the media open now, as it was read when it was opened:
+    /// its queue shows what its page shows.
+    pub(crate) fn media_row(&self, path: &str) -> Option<TrackRow> {
+        self.media.as_ref()?.media.tracks.iter().find(|track| track.path == path).cloned()
+    }
+
     pub fn media_json(&self) -> String {
         let Some(session) = &self.media else { return "{}".into() };
         let tracks = &session.media.tracks;
