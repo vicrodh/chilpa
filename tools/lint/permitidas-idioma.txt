@@ -552,3 +552,17 @@ ccw
 # timing of lyrics that carry none.
 ttml
 unsynced
+# The session bus and MPRIS: names of crates, of D-Bus and of its spec.
+mpris
+conn
+ev
+fdo
+fullscreen
+dest
+iface
+backoff
+seeked
+st
+trackid
+zbus
+zvariant

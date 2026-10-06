@@ -65,12 +65,16 @@ fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capa
 
 /// The desktop entry the window is named after, where there is one.
 #[cfg(target_os = "linux")]
-const DESKTOP_ENTRY: &std::ffi::CStr = c"com.blitzfc.chilpa";
+const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 
 /// Where Inter lives in the resources.
 const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/assets/fonts/Inter.ttf";
 
 fn main() {
+    // Before anything is opened: a second launch shows the first and ends.
+    if !chilpa_api::Chilpa::only_instance() {
+        return;
+    }
     let mut app = QGuiApplication::new();
     // Named after its desktop entry only when one is installed: a build run
     // from the tree has none, and the portal refused it on every start.
@@ -96,6 +100,7 @@ fn main() {
         api.start_scrobbling();
         // My servers: their tracks play, sync and are watched (ADR-017).
         api.start_servers();
+        api.start_media_controls();
     });
 
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
