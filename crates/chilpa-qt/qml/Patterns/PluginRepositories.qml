@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives" as P
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives" as P
 
 P.Modal {
     id: dialog

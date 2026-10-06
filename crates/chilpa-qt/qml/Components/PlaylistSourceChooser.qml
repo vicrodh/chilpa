@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 PillButton {
     id: chooser

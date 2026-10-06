@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "../../qml/Components"
-import "../../qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Primitives"
 
 TestCase {
     name: "AlbumInteractions"

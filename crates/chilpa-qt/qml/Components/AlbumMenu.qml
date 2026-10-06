@@ -1,8 +1,9 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "../Primitives"
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // What a record offers from its menu (design/04, Album): play it or queue
 // it -- or the whole selection when it is part of one -- add it to a

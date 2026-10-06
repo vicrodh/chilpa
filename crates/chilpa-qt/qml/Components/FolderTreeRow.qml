@@ -1,8 +1,8 @@
 // hot-path: one per row of the folder tree, recycled while it scrolls.
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // One row of the folder tree: a folder with its arrow, or a file, as deep
 // as it is. The arrow opens and closes; the rest of the row is the list's.

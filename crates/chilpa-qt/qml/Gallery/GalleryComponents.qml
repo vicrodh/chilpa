@@ -1,8 +1,8 @@
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 
 TitledFlow {

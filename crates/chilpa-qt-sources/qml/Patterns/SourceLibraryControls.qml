@@ -1,7 +1,8 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 
 Row {

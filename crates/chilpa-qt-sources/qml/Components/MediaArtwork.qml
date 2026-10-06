@@ -1,5 +1,5 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 Rectangle {
     id: tile

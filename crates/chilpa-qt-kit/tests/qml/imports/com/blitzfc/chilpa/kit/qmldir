@@ -1,0 +1,3 @@
+module com.blitzfc.chilpa.kit
+singleton ThemeModel 1.0 ThemeModel.qml
+singleton I18n 1.0 I18n.qml

@@ -1,8 +1,9 @@
 // hot-path: one per visible track of a list kept in its own order.
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // Moving a track up or down in a list kept in its own order, before the
 // track's number and always in sight: one arrow over the other in a rich

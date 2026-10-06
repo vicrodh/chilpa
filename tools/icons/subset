@@ -6,8 +6,8 @@ colored like text and costs what a letter costs. No SVG is decoded per icon
 and no effect recolors one. The full fonts carry 5,000 icons (1.8 MB); the
 window uses a few dozen, and this keeps only those.
 
-Writes the two subset fonts to crates/chilpa-qt/assets/icons/ and the glyph
-map to crates/chilpa-qt/qml/Theme/Icons.qml, where each icon is a typed
+Writes the two subset fonts to crates/chilpa-qt-kit/assets/icons/ and the glyph
+map to crates/chilpa-qt-kit/qml/Theme/Icons.qml, where each icon is a typed
 property: `Icons.playerPlayFilled`.
 
 Usage: tools/icons/subset <path to an unpacked @tabler/icons-webfont>
@@ -25,8 +25,8 @@ except ImportError:
 
 ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
 LIST = Path(__file__).resolve().parent / "icons.txt"
-OUT = ROOT / "crates/chilpa-qt/assets/icons"
-QML = ROOT / "crates/chilpa-qt/qml/Theme/Icons.qml"
+OUT = ROOT / "crates/chilpa-qt-kit/assets/icons"
+QML = ROOT / "crates/chilpa-qt-kit/qml/Theme/Icons.qml"
 FONTS = {"outline": "tabler-icons", "filled": "tabler-icons-filled"}
 
 

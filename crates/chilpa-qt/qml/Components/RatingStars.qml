@@ -1,5 +1,5 @@
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // Five stars without five controls: two glyph runs and one hit target keep
 // the rating cheap enough for every visible track row.

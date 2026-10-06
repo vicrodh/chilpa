@@ -1,6 +1,6 @@
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
 import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Patterns"
 

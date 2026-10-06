@@ -1,3 +1,3 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 CircleCheck {}

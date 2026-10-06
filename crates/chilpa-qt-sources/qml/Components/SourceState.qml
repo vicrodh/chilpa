@@ -1,8 +1,9 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // What a source's listing says while it has nothing to show: that it is on
 // its way, that it failed and can be asked again, or that it is empty.

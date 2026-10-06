@@ -2,8 +2,9 @@ import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // One compact speaker in the player bar opens the complete volume control
 // upward. A direct route with no knob to move stays locked and explains why.

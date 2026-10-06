@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A tab: icon, title and its own close button (design/02 3). A middle click
 // closes it too.

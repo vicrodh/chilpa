@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // A destination whose screen is not built yet. It says so plainly instead
 // of showing a page that looks finished and does nothing.

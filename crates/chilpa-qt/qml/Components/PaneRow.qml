@@ -1,6 +1,6 @@
 // hot-path: one per entry of a filter column, recycled while it scrolls.
 import QtQuick
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // An entry of a Library filter column: its label, and its count or year.
 Item {

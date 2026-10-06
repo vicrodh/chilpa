@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../../chilpa-qt/qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Primitives"
 
 TestCase {
     name: "RichSelect"

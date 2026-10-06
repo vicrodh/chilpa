@@ -1,7 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Theme/TextLinks.js" as TextLinks
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
 
 Text {
     id: line

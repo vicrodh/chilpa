@@ -1,5 +1,5 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The lines of the lyrics. While they follow the music the line being sung
 // is kept in the middle, with the room above the first line and under the

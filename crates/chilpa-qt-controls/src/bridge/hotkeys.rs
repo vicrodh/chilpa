@@ -30,7 +30,7 @@ pub mod qobject {
     }
 }
 use chilpa_api::Pressed;
-use chilpa_qt_sources::app;
+use chilpa_qt_kit::app;
 use cxx_qt_lib::QString;
 use std::pin::Pin;
 

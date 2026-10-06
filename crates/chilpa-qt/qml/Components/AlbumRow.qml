@@ -1,7 +1,7 @@
 // hot-path: one per record in a list of records, recycled while it scrolls.
 import QtQuick
-import "../Theme"
-import "../Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 
 // A record as a row: an arrow that opens its quick view under it, its cover,
 // its title and who made it, and its year. A click anywhere but the arrow

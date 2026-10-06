@@ -2,7 +2,7 @@ import QtQuick
 import QtTest
 import com.blitzfc.chilpa
 import "../../qml/Components"
-import "../../qml/Theme"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "TrackListPlace"

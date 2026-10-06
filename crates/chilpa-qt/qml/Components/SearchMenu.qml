@@ -1,7 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Primitives"
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // What a search result offers from its menu. The entries and what each
 // does come from the facade; here they get their icons and are dispatched.

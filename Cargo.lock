@@ -692,6 +692,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-controls",
+ "chilpa-qt-kit",
  "chilpa-qt-lyrics",
  "chilpa-qt-sources",
  "cxx",
@@ -708,7 +709,18 @@ name = "chilpa-qt-controls"
 version = "0.0.0"
 dependencies = [
  "chilpa-api",
- "chilpa-qt-sources",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+]
+
+[[package]]
+name = "chilpa-qt-kit"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
  "cxx",
  "cxx-qt",
  "cxx-qt-build",
@@ -731,6 +743,7 @@ name = "chilpa-qt-sources"
 version = "0.0.0"
 dependencies = [
  "chilpa-api",
+ "chilpa-qt-kit",
  "cxx",
  "cxx-qt",
  "cxx-qt-build",

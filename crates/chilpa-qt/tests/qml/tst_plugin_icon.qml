@@ -1,9 +1,10 @@
 import QtQuick
 import QtTest
 import com.blitzfc.chilpa
-import "../../qml/Primitives"
+import com.blitzfc.chilpa.kit
+import "../../../chilpa-qt-kit/qml/Primitives"
 import "../../qml/Components"
-import "../../qml/Theme"
+import "../../../chilpa-qt-kit/qml/Theme"
 
 TestCase {
     name: "PluginIcon"

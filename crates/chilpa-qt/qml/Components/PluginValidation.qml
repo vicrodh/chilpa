@@ -1,6 +1,7 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 Column {
     id: status

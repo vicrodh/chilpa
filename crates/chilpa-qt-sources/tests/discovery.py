@@ -17,7 +17,7 @@ with tempfile.TemporaryDirectory(prefix="chilpa-discovery-") as directory:
     with (module / "qmldir").open("a") as stream: stream.write("\nsingleton AlbumActions 1.0 AlbumActions.qml\n")
     for package, target in [("chilpa-qt", "host"),("chilpa-qt-sources", "sources")]:
         shutil.copytree(root / "crates" / package / "qml", stage / target)
-    shutil.copytree(root / "crates/chilpa-qt/assets", stage / "assets")
+    shutil.copytree(root / "crates/chilpa-qt-kit/assets", stage / "assets")
     for path in stage.rglob("*.qml"):
         text = path.read_text().replace("qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/", (stage / "sources").as_uri()+"/").replace("qrc:/qt/qml/com/blitzfc/chilpa/qml/", (stage / "host").as_uri()+"/")
         path.write_text(text)

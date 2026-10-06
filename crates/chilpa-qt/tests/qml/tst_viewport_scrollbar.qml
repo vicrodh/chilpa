@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtTest
-import "../../qml/Primitives"
+import "../../../chilpa-qt-kit/qml/Primitives"
 
 TestCase {
     name: "ViewportScrollbar"

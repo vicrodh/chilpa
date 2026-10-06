@@ -1,8 +1,7 @@
 //! What sources bring to the window: their pages, the start that waits for
-//! them, and searching them. The window's crate depends on this one; the
-//! facade both talk to is held here, in [`app`], so there is one.
+//! them, and searching them. The window's crate depends on this one.
 
-pub mod app;
+pub(crate) use chilpa_qt_kit::app;
 pub mod bridge {
     pub mod sources;
     pub mod importer;

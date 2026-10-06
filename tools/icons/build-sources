@@ -19,8 +19,8 @@ ROOT = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_outp
 HERE = Path(__file__).resolve().parent
 LIST = HERE / "sources.txt"
 DRAWINGS = HERE / "sources"
-OUT = ROOT / "crates/chilpa-qt/assets/icons/sources.ttf"
-QML = ROOT / "crates/chilpa-qt/qml/Theme/SourceGlyphs.qml"
+OUT = ROOT / "crates/chilpa-qt-kit/assets/icons/sources.ttf"
+QML = ROOT / "crates/chilpa-qt-kit/qml/Theme/SourceGlyphs.qml"
 FIRST = 0xE000
 EM = 1000
 # The drawing fills this much of the em square, centered: Tabler's glyphs

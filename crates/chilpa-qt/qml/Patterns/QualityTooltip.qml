@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
-import "../Theme"
-import "../Primitives"
+import com.blitzfc.chilpa.kit
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // What plays and how it goes out (frontend ADR-0012): the tier, whether the

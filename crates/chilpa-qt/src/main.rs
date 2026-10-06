@@ -3,7 +3,7 @@
 //! Rust owns state and layered QML draws it (ADR-001). This crate and
 //! `chilpa-qt-sources` are the only ones that may hold Qt types.
 
-use chilpa_qt_sources::app;
+use chilpa_qt_kit::app;
 // Linked for their QML modules: shortcuts, timer and A-B loop; the lyrics.
 use chilpa_qt_controls as _;
 use chilpa_qt_lyrics as _;
@@ -71,7 +71,7 @@ fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capa
 const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 
 /// Where Inter lives in the resources.
-const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/assets/fonts/Inter.ttf";
+const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/kit/assets/fonts/Inter.ttf";
 
 fn main() {
     // Before anything is opened: a second launch shows the first and ends.
@@ -83,6 +83,10 @@ fn main() {
     if unsafe { chilpa_has_desktop_entry(DESKTOP_ENTRY.as_ptr()) } {
         QGuiApplication::set_desktop_file_name(&QString::from(DESKTOP_ENTRY.to_str().unwrap_or_default()));
     }
+
+    // SAFETY: it registers static plugins, once, before the engine exists
+    // and before anything reads their resources: the font is the kit's.
+    unsafe { chilpa_import_modules() };
 
     // Inter unless the system's font was chosen: the design needs real
     // weights, and plenty of desktops set a font with one face that Qt does
@@ -107,8 +111,6 @@ fn main() {
     // CHILPA_GALLERY opens the Gallery instead of the window: every piece of
     // the interface in its states, in either theme.
     let root = if std::env::var_os("CHILPA_GALLERY").is_some() { "Gallery/Gallery.qml" } else { "Main.qml" };
-    // SAFETY: it registers a static plugin, once, before the engine exists.
-    unsafe { chilpa_import_modules() };
     let mut engine = QQmlApplicationEngine::new();
     if let Some(mut engine) = engine.as_mut() {
         // SAFETY: the engine is alive and a QQmlEngine; the provider it is

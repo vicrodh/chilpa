@@ -1,8 +1,9 @@
 import QtQuick
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.kit
 import com.blitzfc.chilpa.controls
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Primitives"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "../Theme"
 
 // The timer that stops playback after a while. Off, it offers how long;

@@ -1,6 +1,6 @@
 import QtQuick
 import com.blitzfc.chilpa
-import "../Theme"
+import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // The letters beside a grouped list: "#" and A to Z, always the twenty-seven.
 // One that starts no group is dimmed and does nothing; the others jump to

@@ -238,7 +238,7 @@ impl qobject::SettingsPage {
             "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
             "appearance.theme" => {
                 app::with(|api| api.remember_preference(&key, &value));
-                registry::theme(move |theme| theme.choose_mode(QString::from(&value)));
+                chilpa_qt_kit::bridge::theme::ask(move |theme| theme.choose_mode(QString::from(&value)));
             }
             "appearance.density" => {
                 app::with(|api| api.remember_preference(&key, &value));
@@ -249,7 +249,7 @@ impl qobject::SettingsPage {
                 app::with(|api| api.remember_preference(&key, &value));
                 registry::settings(move |s| s.set_album_header(QString::from(&value)));
             }
-            "appearance.accent" => registry::theme(move |theme| theme.choose_accent(&QString::from(&value))),
+            "appearance.accent" => chilpa_qt_kit::bridge::theme::ask(move |theme| theme.choose_accent(&QString::from(&value))),
             "playback.gapless" => {
                 app::with(|api| api.set_gapless(value == "true"));
                 registry::player(|p| p.read_switches());
