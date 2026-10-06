@@ -41,6 +41,37 @@ Item {
 
     implicitHeight: (header ? Metrics.rowHeader : 0) + view.contentHeight
 
+    // Where the list was when its model is read again: the row at the top
+    // and how far into it. A view goes back to its top on a reset, and a
+    // queue is read again on every change; the same list stays where it was.
+    property var place: null
+    function identity() { return model ? model.kind + "\n" + model.albumId + "\n" + model.key : "" }
+    function keepPlace() {
+        const row = view.indexAt(0, view.contentY)
+        const item = view.itemAtIndex(row)
+        place = item ? { list: identity(), row: row, into: view.contentY - item.y } : null
+    }
+    function restorePlace() {
+        const was = place
+        place = null
+        if (!was || was.list !== identity() || view.count === 0)
+            return
+        view.forceLayout()
+        if (was.row >= view.count) {
+            view.positionViewAtEnd()
+            return
+        }
+        view.positionViewAtIndex(was.row, ListView.Beginning)
+        view.contentY += was.into
+        view.returnToBounds()
+    }
+    Connections {
+        target: list.model
+        function onModelAboutToBeReset() { list.keepPlace() }
+        // After the view has taken the reset in.
+        function onModelReset() { Qt.callLater(list.restorePlace) }
+    }
+
     TrackColumns {
         id: columns
         width: list.width
