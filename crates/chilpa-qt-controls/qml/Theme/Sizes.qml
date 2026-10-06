@@ -11,6 +11,8 @@ QtObject {
     readonly property int keycapMin: 120
     // The countdown of the timer is read again this often.
     readonly property int second: 1000
+    // The window is still this long before its place is written down.
+    readonly property int placeSettle: 400
     // What cannot be used right now.
     readonly property real idle: 0.3
 }

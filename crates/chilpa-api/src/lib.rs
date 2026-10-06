@@ -79,6 +79,7 @@ pub use ratings::{RatingTarget, Ratings};
 mod queue;
 mod listen;
 pub mod open_media;
+pub mod window_place;
 mod found;
 mod source_search;
 mod source_layout;

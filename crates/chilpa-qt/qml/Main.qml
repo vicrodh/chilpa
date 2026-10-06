@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import com.blitzfc.chilpa
+import com.blitzfc.chilpa.controls
 import com.blitzfc.chilpa.folders
 import com.blitzfc.chilpa.sources
 import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
@@ -21,11 +22,12 @@ Window {
     // unless one of them is opened in the meantime.
     property bool panelAside: false
 
-    width: Metrics.windowWidth
-    height: Metrics.windowHeight
+    // As big as it was left, and maximized if it was (design/04 Window).
+    width: WindowPlace.width
+    height: WindowPlace.height
     minimumWidth: Metrics.windowMinWidth
     minimumHeight: Metrics.windowMinHeight
-    visible: true
+    visibility: WindowPlace.maximized ? Window.Maximized : Window.Windowed
     // A Mac's window keeps its frame, and with it the system's controls.
     flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
         : Qt.Window | Qt.FramelessWindowHint
@@ -112,7 +114,6 @@ Window {
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: window.height - height - (selection.visible ? Metrics.toastWithSelectionBottom : Metrics.toastBottom)
     }
-
 
     // Above the content and the tab bar, so its grip is never covered.
     SidebarFrame {
