@@ -1,7 +1,7 @@
 //! One shape for a track's lyrics, whoever supplied them.
 //!
 //! A file next to the track, the tags, a source that has lyrics for its own
-//! tracks and a lyrics provider all end up here. Three rules hold it:
+//! tracks and the lyrics service all end up here. Three rules hold it:
 //!
 //! - **It keeps what the source said, and nothing it did not.** An end time
 //!   the source did not state stays `None`; whoever draws the lyrics decides

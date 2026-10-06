@@ -22,8 +22,6 @@ pub enum Kind {
     Source,
     /// It fills in metadata for what is already there.
     Metadata,
-    /// It fetches lyrics.
-    Lyrics,
     /// It reports what was listened to, to a service.
     Scrobbler,
 }
@@ -487,6 +485,13 @@ mod tests {
             ]
         }"#
         .to_string()
+    }
+
+    #[test]
+    fn lyrics_are_not_a_kind_of_plugin() {
+        // Lyrics are Chilpa's own. A manifest that asks to be a lyrics
+        // plugin is not understood, so it does not load.
+        assert!(Manifest::parse(&base().replace(r#""kind": "source""#, r#""kind": "lyrics""#)).is_err());
     }
 
     #[test]
