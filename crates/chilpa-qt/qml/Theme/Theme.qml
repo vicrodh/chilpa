@@ -12,6 +12,9 @@ QtObject {
     readonly property bool dark: ThemeModel.dark
     readonly property string searchLabel: I18n.tr("Search", I18n.rev)
     readonly property string emptySearchLabel: I18n.tr("No matches", I18n.rev)
+    // What the sung line of lyrics can be tinted with, after the text's own
+    // color and the accent: the design's four accents (design/05).
+    readonly property var lyricColors: ["#A3161F", "#D8323A", "#3DAEE9", "#5C6166"]
 
     readonly property QtObject color: QtObject {
         readonly property color surfaceWindow: ThemeModel.color("surface.window", theme.rev)

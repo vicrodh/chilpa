@@ -26,6 +26,12 @@ QtObject {
     readonly property real label: 11 * pointsPerPixel
     readonly property real micro: 10.5 * pointsPerPixel
     readonly property real lyric: 18 * pointsPerPixel
+    // The other sizes lyrics can be read at, chosen in the panel's options.
+    readonly property real lyricSmall: 15 * pointsPerPixel
+    readonly property real lyricLarge: 22 * pointsPerPixel
+    readonly property real lyricXLarge: 26 * pointsPerPixel
+    // A translation under its line, as a share of the line's own size.
+    readonly property real lyricTranslation: 0.72
 
     // Weights. The design's 650 falls between DemiBold and Bold; the font
     // database picks the nearest face the system has.

@@ -50,6 +50,7 @@ QtObject {
     readonly property string hierarchy2: "\uee9d"
     readonly property string home: "\ueac1"
     readonly property string infoCircle: "\ueac5"
+    readonly property string language: "\uebbe"
     readonly property string layoutBottombarExpand: "\uf28c"
     readonly property string layoutGrid: "\uedba"
     readonly property string layoutList: "\uec14"

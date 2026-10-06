@@ -19,6 +19,9 @@ Flow {
     // The moment of the track, in milliseconds.
     property real nowMs: 0
     property alias font: metrics.font
+    // The color of what has been sung, and of what has not yet.
+    property color sungColor: Theme.color.textPrimary
+    property color restColor: Theme.color.textTertiary
     // The room a space takes in this font, between two words.
     readonly property real space: metrics.advanceWidth(" ")
 
@@ -91,7 +94,7 @@ Flow {
                 id: base
                 text: word.modelData.text
                 font: metrics.font
-                color: Theme.color.textTertiary
+                color: words.restColor
             }
             Item {
                 clip: true
@@ -101,7 +104,7 @@ Flow {
                 Text {
                     text: word.modelData.text
                     font: metrics.font
-                    color: Theme.color.textPrimary
+                    color: words.sungColor
                 }
             }
 

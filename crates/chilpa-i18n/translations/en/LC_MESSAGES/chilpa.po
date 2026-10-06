@@ -306,6 +306,12 @@ msgstr ""
 msgid "Author: {}"
 msgstr "Author: {}"
 
+msgid "Auto (app language)"
+msgstr ""
+
+msgid "Auto-follow"
+msgstr ""
+
 msgid "AutoMix"
 msgstr ""
 
@@ -545,6 +551,9 @@ msgstr ""
 msgid "Copy full information"
 msgstr ""
 
+msgid "Copy lyrics"
+msgstr ""
+
 msgid "Copy playlist"
 msgstr "Copy playlist"
 
@@ -704,6 +713,9 @@ msgstr ""
 msgid "Diagnosis"
 msgstr ""
 
+msgid "Dimming"
+msgstr ""
+
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
 msgstr ""
 
@@ -737,6 +749,9 @@ msgstr ""
 msgid "Discover"
 msgstr ""
 
+msgid "Display settings"
+msgstr ""
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr ""
 
@@ -756,6 +771,9 @@ msgid "Duration (longest)"
 msgstr ""
 
 msgid "Duration (shortest)"
+msgstr ""
+
+msgid "Dutch"
 msgstr ""
 
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
@@ -789,6 +807,9 @@ msgid "Empty folders"
 msgstr ""
 
 msgid "Empty. Add tracks from any list with a right click."
+msgstr ""
+
+msgid "English"
 msgstr ""
 
 msgid "Episode notes"
@@ -896,6 +917,9 @@ msgstr ""
 msgid "Forward 10 seconds"
 msgstr ""
 
+msgid "French"
+msgstr ""
+
 msgid "From same artist"
 msgstr ""
 
@@ -921,6 +945,9 @@ msgid "Genre"
 msgstr ""
 
 msgid "Genres"
+msgstr ""
+
+msgid "German"
 msgstr ""
 
 msgid "Go to album"
@@ -967,6 +994,9 @@ msgstr ""
 
 msgid "Hide token"
 msgstr "Hide token"
+
+msgid "Hide translation"
+msgstr ""
 
 msgid "Hide when idle"
 msgstr ""
@@ -1067,6 +1097,9 @@ msgstr ""
 msgid "Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."
 msgstr ""
 
+msgid "Italian"
+msgstr ""
+
 msgid "Its music is being read; it appears in the library as it arrives."
 msgstr ""
 
@@ -1074,6 +1107,9 @@ msgid "Its music joins your library, listed with your own files."
 msgstr ""
 
 msgid "Its page, or its quick view under the row."
+msgstr ""
+
+msgid "Japanese"
 msgstr ""
 
 msgid "Keep the current one"
@@ -1116,6 +1152,9 @@ msgid "List"
 msgstr ""
 
 msgid "Listen live"
+msgstr ""
+
+msgid "Lite fill"
 msgstr ""
 
 msgid "Live"
@@ -1166,6 +1205,9 @@ msgstr ""
 msgid "Looking for files…"
 msgstr ""
 
+msgid "Looking for lyrics…"
+msgstr ""
+
 msgid "Lossless"
 msgstr ""
 
@@ -1175,10 +1217,13 @@ msgstr ""
 msgid "Lyrics"
 msgstr ""
 
-msgid "Lyrics from {}"
+msgid "Lyrics copied"
 msgstr ""
 
 msgid "Lyrics show here while a track plays."
+msgstr ""
+
+msgid "Lyrics source:"
 msgstr ""
 
 msgid "Maintenance"
@@ -1673,6 +1718,9 @@ msgstr "Plugin-reported quality"
 msgid "Plugins"
 msgstr ""
 
+msgid "Portuguese"
+msgstr ""
+
 msgid "Position in Streaming"
 msgstr "Position in Streaming"
 
@@ -1922,6 +1970,9 @@ msgstr ""
 msgid "Route"
 msgstr ""
 
+msgid "Russian"
+msgstr ""
+
 msgid "SACDMTOC was not found"
 msgstr ""
 
@@ -2071,6 +2122,9 @@ msgstr ""
 msgid "Show token"
 msgstr "Show token"
 
+msgid "Show translation"
+msgstr ""
+
 msgid "Shuffle"
 msgstr ""
 
@@ -2089,6 +2143,12 @@ msgstr ""
 msgid "Similar albums"
 msgstr ""
 
+msgid "Size"
+msgstr ""
+
+msgid "Soft"
+msgstr ""
+
 msgid "Songs"
 msgstr ""
 
@@ -2099,6 +2159,9 @@ msgid "Sources"
 msgstr ""
 
 msgid "Sources and quality"
+msgstr ""
+
+msgid "Spanish"
 msgstr ""
 
 msgid "Starting plugins…"
@@ -2125,6 +2188,9 @@ msgstr "Streaming"
 msgid "Streaming libraries"
 msgstr "Streaming libraries"
 
+msgid "Strong"
+msgstr ""
+
 msgid "Studio 24/48"
 msgstr ""
 
@@ -2141,6 +2207,9 @@ msgid "Subscribed"
 msgstr ""
 
 msgid "Subscriptions"
+msgstr ""
+
+msgid "Sung line"
 msgstr ""
 
 msgid "Sync now"
@@ -2188,6 +2257,9 @@ msgid "The connection is not encrypted."
 msgstr ""
 
 msgid "The first follows the theme: crimson in light, red in dark."
+msgstr ""
+
+msgid "The line being sung stays in view."
 msgstr ""
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
@@ -2240,6 +2312,9 @@ msgstr ""
 
 msgid "The source disconnected. Check the playlist before retrying."
 msgstr "The source disconnected. Check the playlist before retrying."
+
+msgid "The sung line lights up whole. Saves CPU."
+msgstr ""
 
 msgid "Theme"
 msgstr ""
@@ -2355,6 +2430,9 @@ msgstr ""
 msgid "Transcript"
 msgstr ""
 
+msgid "Translation"
+msgstr ""
+
 msgid "Tree"
 msgstr ""
 
@@ -2404,6 +2482,9 @@ msgid "Update"
 msgstr ""
 
 msgid "Updates"
+msgstr ""
+
+msgid "Uppercase"
 msgstr ""
 
 msgid "Use Quick Connect"
