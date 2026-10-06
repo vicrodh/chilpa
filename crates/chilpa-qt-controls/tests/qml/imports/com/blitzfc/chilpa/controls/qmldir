@@ -1,3 +1,4 @@
 module com.blitzfc.chilpa.controls
 singleton Controls 1.0 Controls.qml
 singleton Hotkeys 1.0 Hotkeys.qml
+singleton WindowPlace 1.0 WindowPlace.qml

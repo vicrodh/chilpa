@@ -7,7 +7,8 @@ import "../Theme"
 // What drives the player besides its own buttons, held once by the window:
 // every key nothing else took is asked about here and its action run, the
 // timer and the A-B loop are kept current for whoever shows them, and what
-// the desktop asks of the window is done.
+// the desktop asks of the window is done. And the window is put back where
+// it was left, and says where it is once it settles.
 Item {
     id: controls
 
@@ -72,8 +73,40 @@ Item {
         listening = true
         window.contentItem.Keys.pressed.connect(pressed)
     }
+    // A window knows where it is only where the system tells it.
+    readonly property bool knowsPlace: !Qt.platform.pluginName.startsWith("wayland")
+
+    function frame() {
+        return window.visibility === Window.Windowed ? "floating"
+             : window.visibility === Window.Maximized ? "maximized" : "away"
+    }
+    function keepPlace() {
+        settle.stop()
+        WindowPlace.keep(frame(), window.width, window.height, window.x, window.y, knowsPlace)
+    }
+    // A place kept from a screen that is no longer there is not gone back to.
+    function onScreen(left, top) {
+        return Qt.application.screens.some(s => left >= s.virtualX && left < s.virtualX + s.width
+                                                && top >= s.virtualY && top < s.virtualY + s.height)
+    }
+    // Its size and whether it is maximized are the window's own bindings;
+    // its place is put here, before it shows, and a size kept from a larger
+    // screen is brought down to this one.
+    function restorePlace() {
+        const screen = window.screen
+        if (screen && window.width > screen.desktopAvailableWidth)
+            window.width = Math.max(window.minimumWidth, screen.desktopAvailableWidth)
+        if (screen && window.height > screen.desktopAvailableHeight)
+            window.height = Math.max(window.minimumHeight, screen.desktopAvailableHeight)
+        if (knowsPlace && WindowPlace.placed && onScreen(WindowPlace.left, WindowPlace.top)) {
+            window.x = WindowPlace.left
+            window.y = WindowPlace.top
+        }
+    }
+
     onWindowChanged: listen()
     Component.onCompleted: {
+        restorePlace()
         listen()
         Controls.refresh()
         Hotkeys.refresh()
@@ -93,6 +126,17 @@ Item {
         // A jump outside the loop, or its track ending, lets it go.
         function onPositionChanged() { if (Controls.loopState > 0) Controls.refresh() }
     }
+    Connections {
+        target: controls.window
+        function onWidthChanged() { settle.restart() }
+        function onHeightChanged() { settle.restart() }
+        function onXChanged() { settle.restart() }
+        function onYChanged() { settle.restart() }
+        function onVisibilityChanged() { settle.restart() }
+        function onClosing() { controls.keepPlace() }
+    }
+    // A resize is many frames; only the one it ends on is kept.
+    Timer { id: settle; interval: Sizes.placeSettle; onTriggered: controls.keepPlace() }
     Connections {
         target: I18n
         function onRevChanged() { Hotkeys.refresh() }
