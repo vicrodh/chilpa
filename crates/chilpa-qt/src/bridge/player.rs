@@ -133,6 +133,11 @@ pub mod qobject {
 
         #[qinvokable]
         fn cycle_repeat(self: Pin<&mut Player>);
+
+        /// The desktop asks for the window: to come to the front, or to close.
+        #[qsignal]
+        #[cxx_name = "windowAsked"]
+        fn window_asked(self: Pin<&mut Player>, quit: bool);
     }
 
     impl cxx_qt::Threading for Player {}
@@ -328,6 +333,7 @@ impl qobject::Player {
     fn tick(mut self: Pin<&mut Self>) {
         let (now, changed, casting, remote) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions()));
         crate::registry::library(move |mut l| { l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
+        if let Some(asked) = app::with(|api| api.window_request()) { self.as_mut().window_asked(asked == chilpa_api::WindowRequest::Quit); }
         if casting || casting != self.rust().casting { self.as_mut().read_volume(); }
         self.as_mut().rust_mut().casting = casting;
         // A sync, a server or a folder came or went underneath the lists.

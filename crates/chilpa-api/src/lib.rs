@@ -15,6 +15,8 @@ pub use chilpa_cast::{Device as CastDevice, Kind as CastKind};
 mod approvals;
 mod browse;
 mod credits;
+mod desktop;
+pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
 pub use albums_view::{grid_rows, AlbumsFound, GridRow};
@@ -595,6 +597,7 @@ pub struct Chilpa {
     sleep_until: Option<std::time::Instant>,
     /// The lyrics of what is playing, and the thread that finds them.
     lyrics: lyrics_service::Lyrics,
+    desktop: desktop::Desktop,
     source_favorites: source_favorites::SourceFavorites,
     /// The plugin sandbox, built the first time it is asked for. It is
     /// shared because search queries it from its own thread: a slow source
@@ -697,6 +700,7 @@ impl Chilpa {
             stop_after: None,
             sleep_until: None,
             lyrics: Default::default(),
+            desktop: Default::default(),
             source_favorites: Default::default(),
             plugins: None,
             plugin_center: None,
@@ -1081,6 +1085,7 @@ impl Chilpa {
     /// Seeks to that second of the playing track.
     pub fn seek(&mut self, seconds: f64) {
         if !seconds.is_finite() { return; }
+        self.desktop.seeked = Some(seconds);
         if self.casting.active() { self.cast_seek(seconds); return; }
         if let Some(p) = &self.player {
             let safe = seconds.max(0.0);
@@ -1136,6 +1141,7 @@ impl Chilpa {
             self.sleep_until = None;
             self.stop();
         }
+        self.advance_desktop();
         self.advance_source_favorites();
         self.advance_plugins();
         self.advance_search();
