@@ -287,6 +287,8 @@ fn scan(
     report.sidecars_unreadable = homes.record(lib, now)?;
     report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
     lib.assemble_local_releases()?;
+    // Once the parts are one record, its discs can be compared.
+    own_disc_covers(lib, root, cache)?;
     // What came in can be the artist a joined credit was waiting for.
     lib.match_credits()?;
     lib.db
@@ -399,6 +401,67 @@ impl Found<'_> {
 struct Moved {
     row_id: i64,
     track_id: i64,
+}
+
+/// A disc with a cover in its own folder says so, and discs whose covers
+/// are the same picture say that too.
+///
+/// A track's cover is kept as its record's was when the track was read,
+/// and a record's is its first disc's: the tracks of the other discs of a
+/// record in several folders, and every track read before each disc's
+/// cover was kept, hold a cover that sits in another disc's folder. Their
+/// files did not change, so no scan reads them again; their folder is
+/// looked at instead. A cover taken out of a file is left alone: it may
+/// well be the disc's own.
+///
+/// Then the discs of one record are compared. A set that copies one cover
+/// into every disc's folder has one cover, not several, and its discs are
+/// given the same one, so nothing shows it once per disc. Two files of the
+/// same size are taken for the same picture; nothing is opened.
+fn own_disc_covers(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Result<()> {
+    let under = format!("{}/%", root.display().to_string().trim_end_matches('/'));
+    // Only a record of several parts can hold another part's cover.
+    let parts: Vec<(String, Option<String>, i64)> = {
+        let mut stmt = lib.db.prepare(
+            "SELECT t.release_part, min(t.release_artwork), t.album_id FROM tracks t JOIN sources s ON s.id = t.source_id
+             WHERE s.provider = 'local' AND t.present = 1 AND t.release_part LIKE ?1 AND t.album_id IN
+               (SELECT album_id FROM tracks WHERE present = 1 GROUP BY album_id HAVING count(DISTINCT release_part) > 1)
+             GROUP BY t.album_id, t.release_part ORDER BY t.album_id, t.release_part",
+        )?;
+        let rows = stmt.query_map(params![under], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+        rows.collect::<rusqlite::Result<_>>()?
+    };
+    // The covers a record's parts have so far.
+    let mut records: std::collections::BTreeMap<i64, Vec<(u64, String)>> = Default::default();
+    for (part, kept, album) in parts {
+        let folder = Path::new(&part);
+        // A disc image is its own part; its folder is the image's.
+        let folder = if folder.is_file() { folder.parent().unwrap_or(folder) } else { folder };
+        let from_a_file = kept.as_deref().is_some_and(|k| cache.is_some_and(|cache| Path::new(k).starts_with(cache)));
+        let in_its_folder = kept.as_deref().is_some_and(|k| Path::new(k).parent() == Some(folder));
+        let own = if from_a_file || in_its_folder {
+            kept.clone()
+        } else {
+            chilpa_tags::cover_beside(&folder.join("_")).map(|own| own.display().to_string()).or_else(|| kept.clone())
+        };
+        let Some(own) = own else { continue };
+        let Ok(size) = std::fs::metadata(&own).map(|meta| meta.len()) else { continue };
+        let siblings = records.entry(album).or_default();
+        let cover = match siblings.iter().find(|(other, _)| *other == size) {
+            Some((_, same)) => same.clone(),
+            None => {
+                siblings.push((size, own.clone()));
+                own
+            }
+        };
+        if kept.as_deref() != Some(cover.as_str()) {
+            lib.db.execute(
+                "UPDATE tracks SET release_artwork = ?2 WHERE release_part = ?1 AND release_artwork IS NOT ?2",
+                params![part, cover],
+            )?;
+        }
+    }
+    Ok(())
 }
 
 fn evidence_read(lib: &Library, track: Option<i64>) -> bool {
@@ -552,7 +615,8 @@ fn save_track(
 /// Gives the album a cover if it does not have one yet.
 ///
 /// The file's own first; failing that, the one next to it in the folder,
-/// which is how half the libraries in the world keep their covers.
+/// which is how half the libraries in the world keep their covers; and for
+/// a disc of a set that has none, the one its set keeps in the folder above.
 fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite::Result<()> {
     let has: Option<String> = lib
         .db
@@ -561,7 +625,8 @@ fn save_cover(lib: &Library, album: i64, path: &Path, cache: &Path) -> rusqlite:
     if has.is_some() {
         return Ok(());
     }
-    let cover = chilpa_tags::artwork_for(path, cache);
+    let cover = chilpa_tags::artwork_for(path, cache)
+        .or_else(|| chilpa_tags::cover_beside(&Path::new(&crate::album_folder::album_folder(path)).join("_")));
     if let Some(cover) = cover {
         lib.db.execute(
             "UPDATE albums SET artwork_path = ?2 WHERE id = ?1",

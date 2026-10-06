@@ -73,6 +73,64 @@ fn is_disc_folder(dir: &Path) -> bool {
     disc_folder(dir).is_some_and(|disc| !disc.needs_confirmation)
 }
 
+/// The name a disc's folder gives the disc: "Disc 2 - Live" names it "Live".
+///
+/// A box that names its discs usually says so here, and a tag cannot
+/// contradict it. The disc has to lead and a separator has to follow it
+/// with a space on one side: "Now 75 - CD1" and "CD-Rom Favourites" are
+/// titles of records, not discs with a name.
+pub fn disc_title(dir: &Path) -> Option<String> {
+    let name = dir.file_name()?.to_str()?.trim();
+    let (head, tail) = name.char_indices().find_map(|(at, c)| {
+        if !matches!(c, '-' | '\u{2013}' | '\u{2014}' | ':') {
+            return None;
+        }
+        let after = at + c.len_utf8();
+        let spaced = name[..at].ends_with(char::is_whitespace) || name[after..].starts_with(char::is_whitespace);
+        spaced.then(|| (name[..at].trim(), name[after..].trim()))
+    })?;
+    let disc = disc_folder(Path::new(head))?;
+    // The head is the disc and nothing else: its own tail would be a second name.
+    let bare = !disc.needs_confirmation && head.chars().last().is_some_and(|c| c.is_ascii_digit());
+    (bare && !tail.is_empty()).then(|| tail.to_owned())
+}
+
+/// A record's title without the disc it ends in: "Box (Disc 2)", "Box -
+/// CD 2" and "Box Disc2" are all "Box". What is left tells a tag that
+/// names its disc from one that only numbers it.
+pub fn without_disc(title: &str) -> String {
+    let trimmed = title.trim();
+    for (open, close) in [('(', ')'), ('[', ']')] {
+        if let (true, Some(start)) = (trimmed.ends_with(close), trimmed.rfind(open)) {
+            if is_disc_designator(trimmed[start + 1..trimmed.len() - 1].trim()) {
+                return trimmed[..start].trim().to_owned();
+            }
+        }
+    }
+    let tokens: Vec<&str> = trimmed.split_whitespace().filter(|t| !matches!(*t, "-" | "\u{2013}" | "\u{2014}")).collect();
+    if let [rest @ .., word, number] = tokens.as_slice() {
+        let marker = matches!(word.to_lowercase().as_str(), "disc" | "disk" | "cd");
+        // "Disc 2" alone is left with nothing: it never was a title.
+        if marker && number.chars().all(|c| c.is_ascii_digit()) {
+            return rest.join(" ");
+        }
+    }
+    if let [rest @ .., last] = tokens.as_slice() {
+        if !rest.is_empty() && is_disc_designator(last) {
+            return rest.join(" ");
+        }
+    }
+    trimmed.to_owned()
+}
+
+/// "Disc 2", "disc02", "CD-3": a disc word and its number, nothing else.
+fn is_disc_designator(value: &str) -> bool {
+    let cleaned: String = value.to_lowercase().chars().filter(char::is_ascii_alphanumeric).collect();
+    ["disc", "disk", "cd"].into_iter().any(|word| {
+        cleaned.strip_prefix(word).is_some_and(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()))
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,6 +157,42 @@ mod tests {
             let path = format!("/music/{name}/01.flac");
             assert_eq!(folder(&path), format!("/music/{name}"), "{name}");
         }
+    }
+
+    #[test]
+    fn a_disc_folder_can_name_its_disc() {
+        for (name, title) in [
+            ("Disc 01 - TV Series Soundtrack #01", "TV Series Soundtrack #01"),
+            ("CD1 - Bonus Material", "Bonus Material"),
+            ("Disc 2 \u{2013} Live", "Live"),
+            ("Disc 3: The Remixes", "The Remixes"),
+            ("cd 04 - instrumentals", "instrumentals"),
+        ] {
+            assert_eq!(disc_title(Path::new(&format!("/music/Box/{name}"))).as_deref(), Some(title), "{name}");
+        }
+    }
+
+    #[test]
+    fn a_folder_that_only_numbers_its_disc_names_nothing() {
+        for name in ["Disc 1", "CD2", "Disc 1 -", "Now 75 - CD1", "CD-Rom Favourites", "Disc Jockey Anthems",
+            "Greatest Hits - Disc 1 of 2 Collection", "Match of the Day - The Album CD1", "Abbey Road", "CD 1 Mono - Live"] {
+            assert_eq!(disc_title(Path::new(&format!("/music/{name}"))), None, "{name}");
+        }
+    }
+
+    #[test]
+    fn a_title_loses_the_disc_it_ends_in() {
+        for title in ["Box (Disc 2)", "Box [CD2]", "Box - Disc 2", "Box \u{2013} CD 2", "Box Disc2", "Box disk 03", " Box (disc 1) "] {
+            assert_eq!(without_disc(title), "Box", "{title}");
+        }
+    }
+
+    #[test]
+    fn a_title_that_is_not_numbering_a_disc_stays_whole() {
+        for title in ["Box", "CD1", "Discovery", "Box (Live)", "Greatest Hits 2", "Box (2008)", "Rheingold"] {
+            assert_eq!(without_disc(title), title, "{title}");
+        }
+        assert_eq!(without_disc("Disc 2"), "", "a disc and its number are no title at all");
     }
 
     #[test]

@@ -695,3 +695,67 @@ fn a_subfolder_that_cannot_be_opened_is_away_not_emptied() {
     assert_eq!(unreachable(&lib), 0);
     std::fs::remove_dir_all(dir).unwrap();
 }
+
+/// One track of a set, in the folder of its disc.
+fn disc_track(dir: &std::path::Path, folder: &str, disc: u32) -> bool {
+    std::fs::create_dir_all(dir.join(folder)).is_ok()
+        && Command::new("ffmpeg")
+            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "flac"])
+            .args(["-metadata", "title=Track", "-metadata", "artist=Artist", "-metadata", "album=Set"])
+            .args(["-metadata", &format!("disc={disc}"), "-metadata", "track=1"])
+            .arg(dir.join(folder).join("01.flac"))
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+}
+
+#[test]
+fn a_disc_with_its_own_cover_says_so_though_it_was_read_before() {
+    let dir = std::env::temp_dir().join("chilpa-scan-disc-covers");
+    let _ = std::fs::remove_dir_all(&dir);
+    if !have_ffmpeg() || !disc_track(&dir, "CD1", 1) || !disc_track(&dir, "CD2", 2) || !disc_track(&dir, "CD3", 3) {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    // Two discs carry a cover of their own; the third has none.
+    let covers = [dir.join("CD1/cover.jpg"), dir.join("CD2/cover.jpg")];
+    std::fs::write(&covers[0], b"not a real jpeg, but it exists").unwrap();
+    std::fs::write(&covers[1], b"another one, of another size").unwrap();
+    let lib = Library::in_memory().unwrap();
+    let cache = std::env::temp_dir().join("chilpa-scan-cache");
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    let album = lib.albums(10, 0).unwrap();
+    assert_eq!(album.len(), 1, "the three discs are one record");
+    let said = |lib: &Library| -> Vec<(u16, String)> {
+        lib.album_discs(album[0].id).unwrap().into_iter().map(|disc| (disc.number, disc.artwork)).collect()
+    };
+    let own = vec![(1, covers[0].display().to_string()), (2, covers[1].display().to_string()), (3, String::new())];
+    assert_eq!(said(&lib), own);
+
+    // As a library read before each disc's cover was kept: every track
+    // holds its record's, which is the first disc's.
+    lib.connection().execute("UPDATE tracks SET release_artwork = ?1", [covers[0].display().to_string()]).unwrap();
+    let report = chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    assert_eq!(report.read, 0, "no file changed, so none is read again");
+    let again = said(&lib);
+    assert_eq!(again[..2], own[..2], "each disc with a cover of its own holds it again");
+    assert_eq!(again[2].1, covers[0].display().to_string(), "a disc with none keeps what it had");
+
+    // A cover taken out of a file is the disc's own for all anybody knows.
+    let embedded = cache.join("embedded-of-disc-2.jpg").display().to_string();
+    lib.connection().execute("UPDATE tracks SET release_artwork = ?1 WHERE disc_number = 2", [&embedded]).unwrap();
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    assert_eq!(said(&lib)[1].1, embedded);
+
+    // A set that copies one cover into every disc has one cover: its discs
+    // say the same one.
+    std::fs::copy(&covers[0], dir.join("CD3/cover.jpg")).unwrap();
+    lib.connection().execute("UPDATE tracks SET release_artwork = ?1 WHERE disc_number = 2", [covers[1].display().to_string()]).unwrap();
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    let copied = said(&lib);
+    assert_eq!(copied[2].1, covers[0].display().to_string(), "the third disc's copy is the first disc's cover");
+    assert_eq!(copied[1].1, covers[1].display().to_string());
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    assert_eq!(said(&lib), copied, "and it stays so");
+    let _ = std::fs::remove_dir_all(dir);
+}
