@@ -1,4 +1,3 @@
-
 # abreviaturas, jerga de audio y nombres que vienen de Rust o de Qt.
 aac
 acq
@@ -70,7 +69,6 @@ ti
 tran
 usb
 virt
-
 # Palabras que ningún diccionario conoce, revisadas una por una el
 # 2026-09-24. Antes pasaban en silencio, y por ese hueco vivieron aquí
 # `capturador`, `inodo`, `puntajes` y `remuestrear`: el candado pedía que
@@ -367,8 +365,6 @@ writeln
 xrun
 xruns
 yoe
-
-
 # Grafías británicas. El repo escribe en inglés británico y en_US las
 # rechaza, así que sin esto un nombre de prueba con una de ellas se reporta
 # como idioma desconocido. En prosa nunca se notó porque este candado solo
@@ -401,7 +397,6 @@ splitn
 rgb
 sm
 xs
-
 # Qt Quick API names: SizeVerCursor, SizeHorCursor, SizeBDiagCursor, Flickable.
 diag
 flickable
@@ -484,7 +479,6 @@ addr
 dlna
 gandalf
 typeof
-
 chromecast
 didl
 roxmltree
@@ -498,7 +492,6 @@ varint
 vendored
 val
 schannel
-
 cancelled
 getrandom
 mipmap
@@ -506,12 +499,9 @@ superview
 appkit
 objc
 oled
-
 # Tabler device-tv icon.
 tv
-
 listenlist
-
 # The ssh host alias and the account of the git server the plugin protocol
 # crate comes from.
 forgejo
@@ -530,7 +520,6 @@ de
 feff
 musicservices
 uncategorized
-
 svg
 # Rust's condition variable.
 condvar
@@ -538,16 +527,12 @@ condvar
 ser
 # The lossless codec, as symphonia names it.
 wavpack
-
 upc
 webp
-
 # The image crate resampling filter.
 lanczos
-
 # Lucide refresh-ccw-dot (counterclockwise refresh) glyph.
 ccw
-
 # Timed Text Markup Language, the W3C format lyrics come in, and the
 # timing of lyrics that carry none.
 ttml
@@ -570,5 +555,19 @@ alt
 keymap
 keymaps
 keycap
-rfind
+gettid
 ksni
+prio
+realtime
+rfind
+rlim
+rlimit
+rr
+rttime
+sched
+setpriority
+setrlimit
+setscheduler
+sw
+param
+sys

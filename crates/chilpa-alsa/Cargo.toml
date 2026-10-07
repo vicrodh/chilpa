@@ -11,6 +11,9 @@ alsa = "0.12"
 # publishing the reservation object while Chilpa holds it.
 dbus = "0.9"
 dbus-crossroads = "0.5"
+# The thread that feeds the device asks the scheduler to put it first
+# (sched_setscheduler, RLIMIT_RTTIME for RealtimeKit).
+libc = "0.2"
 
 [dependencies]
 # Why a device could not be opened is read by the user.

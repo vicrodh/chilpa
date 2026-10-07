@@ -524,13 +524,13 @@ fn play(
             return play_cd(first, device, exclusive, &caps, controls, open, events);
         }
     }
-    let results = crate::queue_playback::play_queue_with(
+    let results = crate::queue_playback::play_queue_told(
         queue,
         &caps,
         policy,
         controls,
         |format| open(device, format, exclusive),
-        &mut |index, path, delivery| {
+        &mut |index, path, delivery, about| {
             chilpa_audio::diagnostics::trace(
                 "player",
                 "track_started",
@@ -586,21 +586,19 @@ fn play(
                 });
                 return;
             }
-            let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
-            let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
+            // What the track says of itself was read as it was opened, and
+            // ahead of its turn when it was opened ahead: nothing is read
+            // from the file here, while the device waits for its first block.
             // A DSD track is named by its source rate. Its frame count follows
             // what actually opened: DoP carries sixteen bits per PCM frame;
             // converted DSD counts ordinary PCM frames.
-            let dsd = crate::dsd_playback::is_dsd_file(path)
-                .then(|| crate::dsd_playback::open_dsd_file(path).ok())
-                .flatten()
-                .map(|reader| reader.info().clone());
-            let total_frames = match &dsd {
+            let dsd = &about.dsd;
+            let total_frames = match dsd {
                 Some(info) => Some(
                     info.samples.saturating_mul(u64::from(delivery.opened.sample_rate_hz))
                         / u64::from(info.dsd_rate_hz),
                 ),
-                None => chilpa_decode::Decoded::open(path).ok().and_then(|d| d.frame_count()),
+                None => about.frames,
             };
             let _ = events.send(PlayerEvent::Started {
                 path: path.to_path_buf(),
@@ -609,8 +607,8 @@ fn play(
                 bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
                 bit_perfect: delivery.nothing_was_converted() && exact_path,
                 total_frames,
-                tags,
-                artwork,
+                tags: about.tags.clone(),
+                artwork: about.artwork.clone(),
                 index: index,
                 queue_len: total,
                 dsd_multiple: dsd.as_ref().map(|info| info.multiple()),

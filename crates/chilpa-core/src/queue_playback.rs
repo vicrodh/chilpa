@@ -24,11 +24,34 @@ use chilpa_audio::dop::DopPacker;
 use chilpa_dsd::{DsdPcmConverter, DsdSource, DEFAULT_GAIN_DB};
 
 /// What a track is read from after its route has been resolved.
-enum Source {
+pub(crate) enum Source {
     Pcm(Decoded, Option<std::sync::Arc<dyn crate::playback_events::Observer>>, Option<crate::remote::Normalization>),
     Dop(Box<dyn DsdSource>),
     Native(Box<dyn DsdSource>),
     DsdPcm(DsdPcmConverter),
+}
+
+/// What a track says of itself, read once as it is opened and handed over
+/// when it starts: its tags, its cover and how long it is. Read along with
+/// the track, and ahead of it when the track is opened ahead, so that
+/// nothing is read from the file while the device waits for its first
+/// block. A track of a disc image or of a server says it another way, and
+/// carries none of this.
+#[derive(Clone, Debug, Default)]
+pub struct TrackAbout {
+    pub tags: Option<chilpa_tags::Tags>,
+    pub artwork: Option<PathBuf>,
+    /// How many frames the decoder counts, at the file's own rate.
+    pub frames: Option<u64>,
+    /// What a DSD file is: its rate and its length in one-bit samples.
+    pub dsd: Option<chilpa_dsd::DsdInfo>,
+}
+
+/// A track opened and ready to play.
+pub(crate) struct Opened {
+    pub source: Source,
+    pub delivery: Delivery,
+    pub about: TrackAbout,
 }
 
 /// Opens a track by what it is, and negotiates what it asks for.
@@ -37,31 +60,51 @@ enum Source {
 /// queue of DSF files played its first file and stopped, because nothing
 /// took the queue on from there. It goes through the queue like any track
 /// now, as DoP only on an eligible direct route and as PCM everywhere else.
-fn open_track(
+pub(crate) fn open_track(
     path: &Path,
     caps: &DeviceCaps,
     policy: Policy,
     dsd_mode: DsdMode,
     direct_dsd: bool,
-    prepared: Option<Result<crate::remote::Opened, String>>,
-) -> Result<(Source, Delivery), PlayError> {
+) -> Result<Opened, PlayError> {
     let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
         let reader = crate::sacd_tracks::open(&image, number).map_err(unreadable)?;
-        return dsd_track(Box::new(reader), caps, dsd_mode, direct_dsd);
+        let (source, delivery) = dsd_track(Box::new(reader), caps, dsd_mode, direct_dsd)?;
+        return Ok(Opened { source, delivery, about: TrackAbout::default() });
     }
     if is_dsd_file(path) {
         let reader = open_dsd_file(path).map_err(|e| unreadable(e.to_string()))?;
-        return dsd_track(reader, caps, dsd_mode, direct_dsd);
+        let dsd = Some(reader.info().clone());
+        let (tags, artwork) = said_by(path);
+        let (source, delivery) = dsd_track(reader, caps, dsd_mode, direct_dsd)?;
+        return Ok(Opened { source, delivery, about: TrackAbout { tags, artwork, frames: None, dsd } });
     }
     // A track on a server: the original bytes, read by windows, decoded
     // here like a file on disk (ADR-017).
-    let (decoded, observer, normalization) = match crate::remote::entry(path) {
-        Some(entry) => prepared.unwrap_or_else(|| crate::remote::open(path, &entry)).map_err(unreadable)?,
-        None => (Decoded::open(path).map_err(PlayError::Decode)?, None, None),
+    let (decoded, observer, normalization, about) = match crate::remote::entry(path) {
+        Some(entry) => {
+            let (decoded, observer, normalization) = crate::remote::open(path, &entry).map_err(unreadable)?;
+            (decoded, observer, normalization, TrackAbout::default())
+        }
+        None => {
+            let decoded = Decoded::open(path).map_err(PlayError::Decode)?;
+            let (tags, artwork) = said_by(path);
+            let about = TrackAbout { tags, artwork, frames: decoded.frame_count(), dsd: None };
+            (decoded, None, None, about)
+        }
     };
     let delivery = negotiate(decoded.stream_format(), caps, policy).map_err(PlayError::Negotiation)?;
-    Ok((Source::Pcm(decoded, observer, normalization), delivery))
+    Ok(Opened { source: Source::Pcm(decoded, observer, normalization), delivery, about })
+}
+
+/// The tags a file carries and its cover, with the time they take.
+fn said_by(path: &Path) -> (Option<chilpa_tags::Tags>, Option<PathBuf>) {
+    let started = std::time::Instant::now();
+    let tags = chilpa_tags::read(path).ok().map(|info| info.tags);
+    let artwork = chilpa_tags::artwork_for(path, &crate::artwork_cache());
+    chilpa_audio::diagnostics::trace("queue", "about_read", format_args!("after={:?} path={path:?}", started.elapsed()));
+    (tags, artwork)
 }
 
 /// Sends DSD untouched only to a direct route that takes it as asked: DoP
@@ -599,6 +642,8 @@ struct TrackFrames<'a> {
     /// Where to go back to after a long pause let the device go, in frames
     /// of the track: what was heard.
     rewind_to: Option<u64>,
+    /// What had been delivered when the last seek was worked out.
+    moved_at: u64,
     /// What every sample is multiplied by: 1.0 unless normalizing.
     gain: f32,
     /// The player bar's volume, when it may touch the samples at all.
@@ -606,8 +651,16 @@ struct TrackFrames<'a> {
 }
 
 impl FrameSource for TrackFrames<'_> {
+    fn ended_early(&self) -> bool {
+        self.skipped
+    }
+
     fn moved(&mut self) -> bool {
         std::mem::take(&mut self.moved)
+    }
+
+    fn heard_at_move(&self) -> Option<u64> {
+        Some(self.moved_at)
     }
 
     /// What was heard is the renderer's last count plus where the last seek
@@ -621,6 +674,12 @@ impl FrameSource for TrackFrames<'_> {
 
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         loop {
+            // Read ahead, the track ends before the device finishes it; a
+            // seek, or a pause let go, in those last seconds goes back into
+            // them.
+            if (self.rewind_to.is_some() || self.seek.asked()) && !self.skipped {
+                self.exhausted = false;
+            }
             if self.exhausted {
                 return Ok(None);
             }
@@ -648,6 +707,7 @@ impl FrameSource for TrackFrames<'_> {
                             frame as i64 - delivered as i64,
                             std::sync::atomic::Ordering::Relaxed,
                         );
+                        self.moved_at = delivered;
                     }
                     // A container that cannot seek goes on playing from
                     // where it was, instead of dropping the track.
@@ -757,6 +817,10 @@ struct DsdPcmFrames<'a> {
 }
 
 impl FrameSource for DsdPcmFrames<'_> {
+    fn ended_early(&self) -> bool {
+        self.skipped
+    }
+
     fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
         if self.skip.take() {
             self.skipped = true;
@@ -816,8 +880,26 @@ pub fn play_queue_with<F, K>(
     caps: &DeviceCaps,
     policy: Policy,
     controls: &Controls,
-    mut open_sink: F,
+    open_sink: F,
     on_track: &mut dyn FnMut(usize, &Path, &Delivery),
+    on_progress: &mut dyn FnMut(usize, Progress),
+) -> Result<Vec<TrackResult>, PlayError>
+where
+    F: FnMut(StreamFormat) -> Result<K, SinkError>,
+    K: AudioSink,
+{
+    play_queue_told(queue, caps, policy, controls, open_sink, &mut |index, path, delivery, _| on_track(index, path, delivery), on_progress)
+}
+
+/// The same, with what each track says of itself as it starts.
+#[allow(clippy::too_many_arguments)]
+pub fn play_queue_told<F, K>(
+    queue: &SharedQueue,
+    caps: &DeviceCaps,
+    policy: Policy,
+    controls: &Controls,
+    mut open_sink: F,
+    on_track: &mut dyn FnMut(usize, &Path, &Delivery, &TrackAbout),
     on_progress: &mut dyn FnMut(usize, Progress),
 ) -> Result<Vec<TrackResult>, PlayError>
 where
@@ -837,7 +919,7 @@ where
     // A server that stopped answering: its tracks are passed over and the
     // queue goes on (ADR-017). The last error is kept to say, when nothing
     // at all could play, why; and a full lap of them ends it.
-    let mut preload = crate::remote_preload::Preload::default();
+    let mut preload = crate::preload::Preload::default();
     let mut unreachable_in_a_row = 0usize;
     let mut passed_over: Option<PlayError> = None;
     // The DoP marker of whatever is open. It carries on across tracks that
@@ -873,7 +955,9 @@ where
         let prepared = preload.take(path, stop);
         if stop.is_stopped() { break; }
         let source_started = std::time::Instant::now();
-        let (mut source, mut delivery) = match open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get(), prepared) {
+        let ahead = prepared.is_some();
+        let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get()));
+        let Opened { mut source, mut delivery, about } = match ready {
             Ok(opened) => opened,
             Err(error) if crate::remote::entry(path).is_some() => {
                 chilpa_audio::diagnostics::trace(
@@ -912,7 +996,7 @@ where
             "queue",
             "source_opened",
             format_args!(
-                "after={:?} kind={source_kind} requested={:?} opened={:?} transforms={:?}",
+                "after={:?} ahead={ahead} kind={source_kind} requested={:?} opened={:?} transforms={:?}",
                 source_started.elapsed(),
                 delivery.requested,
                 delivery.opened,
@@ -1014,7 +1098,7 @@ where
             // that policy is the promise that no sample is changed.
             Source::Pcm(..) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
                 let remote = match &source { Source::Pcm(_, _, data) => *data, _ => None };
-                normalization_for(remote, || chilpa_tags::read(path).map(|i| i.tags.replaygain()).unwrap_or_default())
+                normalization_for(remote, || about.tags.as_ref().map(|tags| tags.replaygain()).unwrap_or_default())
             }
             _ => 1.0,
         };
@@ -1034,10 +1118,13 @@ where
         if gapless.get() {
             let next = if repeat.get() == Repeat::One { Some(index) } else { order.next(index, queue.len(), repeat.get() == Repeat::All) };
             if let Some(mut next) = next {
-                if let Some(path) = next_live(queue, order, repeat, &mut next) { preload.request(path); }
+                if let Some(path) = next_live(queue, order, repeat, &mut next) {
+                    let (caps, dsd_mode, direct_dsd) = (caps.clone(), controls.dsd_mode.get(), controls.direct_dsd.get());
+                    preload.request(path, move |path| open_track(path, &caps, policy, dsd_mode, direct_dsd));
+                }
             }
         }
-        on_track(index, path, &delivery);
+        on_track(index, path, &delivery, &about);
         chilpa_audio::diagnostics::trace(
             "queue",
             "render_started",
@@ -1068,6 +1155,7 @@ where
                     base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                     rewind_to: None,
+                    moved_at: 0,
                     gain,
                     volume,
                 };

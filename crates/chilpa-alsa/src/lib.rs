@@ -7,6 +7,7 @@
 
 pub mod backends;
 pub mod devices;
+pub mod realtime;
 pub mod reserve;
 pub mod volume;
 
@@ -157,6 +158,8 @@ impl AlsaSink {
             "sink_open_started",
             format_args!("device={device:?} stream={stream:?} named={named}"),
         );
+        // The thread that opens the device is the one that feeds it.
+        realtime::elevate();
         let reservation = reserve::hold(device)?;
         chilpa_audio::diagnostics::trace(
             "alsa",
@@ -187,9 +190,34 @@ impl AlsaSink {
             // title of the next track. A device that cannot keep this little
             // gets the nearest it can; this is not worth refusing one over.
             let _ = params.set_buffer_time_near(500_000, ValueOr::Nearest);
+            // Four periods to the buffer: the device wakes the writer every
+            // quarter of it, as mpd sets it.
+            let _ = params.set_periods_near(4, ValueOr::Nearest);
             pcm.hw_params(&params).map_err(backend)?;
             let rate = params.get_rate().map_err(backend)?;
             let channels = params.get_channels().map_err(backend)? as u16;
+            let (buffer, period) = (params.get_buffer_size().map_err(backend)?, params.get_period_size().map_err(backend)?);
+            // The stream starts once the buffer is nearly full, not at the
+            // first block: started at the first block, the next had to
+            // arrive within that block's length, and a device that needs
+            // no more than a third of a second at DSD256 ran dry on the
+            // way out of every seek. The same after every recovery, since
+            // the thresholds survive a prepare.
+            {
+                let sw = pcm.sw_params_current().map_err(backend)?;
+                sw.set_start_threshold((buffer - period).max(1)).map_err(backend)?;
+                sw.set_avail_min(period).map_err(backend)?;
+                pcm.sw_params(&sw).map_err(backend)?;
+            }
+            chilpa_audio::diagnostics::trace(
+                "alsa",
+                "params",
+                format_args!(
+                    "device={device:?} buffer_frames={buffer} buffer_ms={} period_frames={period} start_threshold={}",
+                    buffer as u64 * 1000 / u64::from(rate.max(1)),
+                    (buffer - period).max(1)
+                ),
+            );
             if rate != stream.sample_rate_hz || channels != stream.channels {
                 return Err(SinkError::Backend(chilpa_i18n::t_args(
                     "the device opened {} Hz and {} channels, not {} Hz and {}",
@@ -208,6 +236,13 @@ impl AlsaSink {
     /// The open PCM, or the error for a device let go.
     fn pcm(&self) -> Result<&PCM, SinkError> {
         self.pcm.as_ref().ok_or(SinkError::Closed)
+    }
+}
+
+impl Drop for AlsaSink {
+    /// A sink let go without being closed gives the thread back all the same.
+    fn drop(&mut self) {
+        realtime::relax();
     }
 }
 
@@ -255,6 +290,8 @@ impl AudioSink for AlsaSink {
             "close_started",
             format_args!("device={:?} stream={:?} pcm_open={}", self.device, self.stream, self.pcm.is_some()),
         );
+        // The thread goes back among the others with the device.
+        realtime::relax();
         if let Some(pcm) = self.pcm.take() {
             pcm.drop().map_err(backend)?;
         }

@@ -58,7 +58,9 @@ impl std::fmt::Display for CdError {
 }
 
 /// A disc drive.
-pub trait CdDevice {
+/// A drive. It is read on a thread of its own, ahead of the device that
+/// plays, so it has to be able to move there.
+pub trait CdDevice: Send {
     /// Reads the raw TOC: the entries and the lead-out.
     fn read_toc(&mut self) -> Result<(Vec<TocEntry>, u32), CdError>;
 

@@ -79,8 +79,9 @@ impl DsdInfo {
     }
 }
 
-/// An open DSD source.
-pub trait DsdSource {
+/// An open DSD source. It is read on a thread of its own, ahead of the
+/// device, so it has to be able to move there.
+pub trait DsdSource: Send {
     fn info(&self) -> &DsdInfo;
 
     /// The next block: one byte vector per channel, all the same length, with
