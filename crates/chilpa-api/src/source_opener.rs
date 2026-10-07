@@ -28,6 +28,11 @@ pub(crate) fn entry_of(plugin: &str, external_id: &str) -> String {
     RemoteEntry::new(SourceId::new(PROVIDER, plugin), external_id).to_entry()
 }
 
+/// Whether a queue entry is a plugin's track.
+pub fn on_a_source(path: &str) -> bool {
+    of_plugin(path).is_some()
+}
+
 /// The plugin and the id of a queue entry, when it is a plugin's.
 pub(crate) fn of_plugin(path: &str) -> Option<(String, String)> {
     let entry = RemoteEntry::parse(path)?;

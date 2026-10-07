@@ -51,6 +51,9 @@ const ACTION_PATIENCE: std::time::Duration = std::time::Duration::from_secs(60);
 enum Job {
     Shelf(String),
     Tracks(i64),
+    /// One track by its queue entry: a list holds it, but no page of its
+    /// source was ever read, so the catalog knows nothing of it.
+    Track(String),
 }
 
 /// Something asked of records whose tracks were not read yet.
@@ -84,6 +87,8 @@ struct Inner {
     shelf_errors: HashMap<String, String>,
     card_errors: HashMap<i64, String>,
     card_retry_at: HashMap<i64, Instant>,
+    /// When a track asked for by its entry could not be read.
+    track_failed_at: HashMap<String, Instant>,
     /// What is being read right now, so it is not queued twice.
     running: HashSet<Job>,
     deferred: Vec<Deferred>,
@@ -469,7 +474,11 @@ impl Catalog {
         let mut inner = self.lock();
         inner.store.forget_plugin(plugin);
         let cards: HashSet<_> = inner.store.cards.keys().copied().collect();
-        let belongs = |job: &Job| match job { Job::Shelf(key) => key.starts_with(&format!("{plugin} ")), Job::Tracks(id) => !cards.contains(id) };
+        let belongs = |job: &Job| match job {
+            Job::Shelf(key) => key.starts_with(&format!("{plugin} ")),
+            Job::Tracks(id) => !cards.contains(id),
+            Job::Track(path) => crate::source_opener::of_plugin(path).is_some_and(|(p, _)| p == plugin),
+        };
         inner.queue.urgent.retain(|job| !belongs(job));
         inner.queue.later.retain(|job| !belongs(job));
         inner.queue.queued.retain(|job| !belongs(job));
@@ -581,6 +590,21 @@ impl Catalog {
             inner.images.insert(image.to_string(), plugin.to_string());
         }
         self.want_cover(&mut inner, image);
+    }
+
+    /// Asks for a source's track a list shows and the catalog does not know
+    /// (it came into a list of mine without any page of its source being
+    /// read): its title, record and artist arrive with the next change.
+    pub fn want_track(&self, path: &str) {
+        let Some((plugin, _)) = crate::source_opener::of_plugin(path) else { return };
+        let mut inner = self.lock();
+        if inner.store.track_by_path(path).is_some() || !self.natives().is_some_and(|n| n.is_native(&plugin)) {
+            return;
+        }
+        if inner.track_failed_at.get(path).is_some_and(|at| at.elapsed() < Duration::from_secs(60)) {
+            return;
+        }
+        self.queue(&mut inner, Job::Track(path.to_string()), true);
     }
 
     /// Asks for a track's cover when a list shows it without one: a track

@@ -522,8 +522,9 @@ impl Chilpa {
             .map(|(path, row)| match row {
                 Some(t) => row_of(t),
                 // A source's track, then one of the media open right now,
-                // which was read when it was opened; only then its name.
-                None => self.source_row(&path).or_else(|| self.media_row(&path)).unwrap_or_else(|| file_row(&path)),
+                // which was read when it was opened; only then its name,
+                // while the source is asked for the track.
+                None => self.source_row(&path).or_else(|| self.media_row(&path)).unwrap_or_else(|| { self.catalog.want_track(&path); file_row(&path) }),
             })
             .collect()
     }
@@ -555,6 +556,13 @@ impl Chilpa {
                     row.number = track.number;
                     if art.is_empty() { self.catalog.want_art_of(&row.path); } else { row.artwork_path = art; }
                     if let Some(format) = track.format { row.quality = format.quality(); }
+                } else {
+                    // The library's row for a source's track (cached when a
+                    // list was imported or synced) has a record of its own
+                    // making, which is no page to open: the source is asked
+                    // for the track, and its record comes with the answer.
+                    row.album_id = 0;
+                    self.catalog.want_track(&row.path);
                 }
             }
         }

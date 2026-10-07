@@ -137,6 +137,7 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
                 let outcome = match &job {
                     Job::Shelf(key) => super::native::read_shelf(&catalog, &natives, key),
                     Job::Tracks(id) => super::native::read_tracks(&catalog, &natives, *id),
+                    Job::Track(path) => super::native::read_track(&catalog, &natives, path),
                 };
                 eprintln!("source-catalog: job={job:?} native ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
                 drop(finish(&catalog, &job, outcome));
@@ -148,6 +149,8 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
         let outcome = match &job {
             Job::Shelf(key) => read_shelf(catalog, &plugins, &mut pages, key, 0),
             Job::Tracks(id) => read_tracks(catalog, &plugins, &mut pages, *id),
+            // Only a process plugin answers for one track.
+            Job::Track(_) => Ok(()),
         };
         eprintln!("source-catalog: job={job:?} ok={} elapsed_ms={}", outcome.is_ok(), started.elapsed().as_millis());
         let mut inner = finish(catalog, &job, outcome);
@@ -170,6 +173,7 @@ fn finish<'a>(catalog: &'a Catalog, job: &Job, outcome: Result<(), String>) -> s
     match (job, outcome) {
         (Job::Shelf(key), Err(e)) => { inner.shelf_errors.insert(key.clone(), e); }
         (Job::Tracks(id), Err(e)) => { inner.card_errors.insert(*id, e); inner.card_retry_at.insert(*id, Instant::now()); }
+        (Job::Track(path), Err(_)) => { inner.track_failed_at.insert(path.clone(), Instant::now()); }
         _ => {}
     }
     inner
@@ -180,6 +184,7 @@ fn native_of(catalog: &Catalog, job: &Job) -> Option<Arc<crate::natives::Natives
     let plugin = match job {
         Job::Shelf(key) => split(key).0.to_string(),
         Job::Tracks(id) => catalog.lock().store.cards.get(id)?.plugin.clone(),
+        Job::Track(path) => crate::source_opener::of_plugin(path)?.0,
     };
     catalog.natives().filter(|natives| natives.is_native(&plugin))
 }
