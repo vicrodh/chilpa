@@ -553,7 +553,7 @@ impl Chilpa {
                     row.album_id = track.album_id;
                     row.disc = track.disc;
                     row.number = track.number;
-                    if !art.is_empty() { row.artwork_path = art; }
+                    if art.is_empty() { self.catalog.want_art_of(&row.path); } else { row.artwork_path = art; }
                     if let Some(format) = track.format { row.quality = format.quality(); }
                 }
             }

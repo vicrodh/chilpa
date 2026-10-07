@@ -583,6 +583,16 @@ impl Catalog {
         self.want_cover(&mut inner, image);
     }
 
+    /// Asks for a track's cover when a list shows it without one: a track
+    /// that came by search or radio, or into a list, was never on a shelf
+    /// that asked for its record's cover.
+    pub fn want_art_of(&self, path: &str) {
+        let mut inner = self.lock();
+        let Some(track) = inner.store.track_by_path(path).cloned() else { return };
+        let image = inner.store.cards.get(&track.album_id).map(|c| c.image.clone()).filter(|i| !i.is_empty()).unwrap_or(track.image);
+        self.want_cover(&mut inner, &image);
+    }
+
     /// Asks for the cover of what started playing, once per entry.
     pub fn want_track_cover(&self, path: &str) {
         let mut inner = self.lock();
