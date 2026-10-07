@@ -55,10 +55,13 @@ Column {
         PillButton { text: I18n.tr("Add to queue", I18n.rev); onClicked: fullTracks.queueAll() }
     }
     TrackList { width: parent.width; height: implicitHeight; fitContent: true; visible: tracks.count > 0; model: tracks }
+    // More of the shelf comes in under what is there; while it is on its
+    // way the button says so and takes no second click.
     PillButton {
         anchors.horizontalCenter: parent.horizontalCenter
-        visible: shelf.wrap && !!shelf.section.more
-        text: I18n.tr("Load more", I18n.rev)
+        visible: shelf.wrap && (!!shelf.section.more || shelf.section.loading === true)
+        enabled: shelf.section.loading !== true
+        text: shelf.section.loading === true ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Load more", I18n.rev)
         onClicked: Sources.command("section_more", shelf.activeKey, "")
     }
 

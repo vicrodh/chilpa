@@ -12,6 +12,9 @@ Item {
     id: grid
 
     property AlbumGridModel model
+    // When the model last grew at the end: the cards that came then fade in.
+    property real freshAt: 0
+    Connections { target: grid.model; function onFreshChanged() { if (grid.model.fresh >= 0) grid.freshAt = Date.now() } }
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
     // Artists: round portraits, the name centered (design/03 ArtistCard).
@@ -149,6 +152,8 @@ Item {
                     qualityInfo: visible && !grid.round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
                     round: grid.round
+                    fresh: grid.model && grid.model.fresh >= 0 && at >= grid.model.fresh
+                    freshAt: grid.freshAt
                     selected: !grid.round && AlbumActions.selected(albumId, AlbumActions.rev)
                     selecting: !grid.round && AlbumActions.selectedCount > 0
                     expanded: grid.model.expanded === at

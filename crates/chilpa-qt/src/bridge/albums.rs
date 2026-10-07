@@ -22,6 +22,8 @@ pub mod qobject {
         type QString = cxx_qt_lib::QString;
         include!("cxx-qt-lib/qurl.h");
         type QUrl = cxx_qt_lib::QUrl;
+        include!("cxx-qt-lib/qvector.h");
+        type QVector_i32 = cxx_qt_lib::QVector<i32>;
     }
     #[auto_cxx_name]
     extern "RustQt" {
@@ -56,6 +58,9 @@ pub mod qobject {
         #[qproperty(QString, filter)]
         /// The card whose quick view is open, or -1: one per grid.
         #[qproperty(i32, expanded)]
+        /// The first card of what was just added to the end, or -1: a list
+        /// that grew keeps its cards and only takes the new ones in.
+        #[qproperty(i32, fresh)]
         type AlbumGridModel = super::AlbumGridRust;
         #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -82,6 +87,18 @@ pub mod qobject {
         #[inherit]
         #[cxx_name = "endResetModel"]
         unsafe fn end_reset_model(self: Pin<&mut AlbumGridModel>);
+        #[inherit]
+        #[cxx_name = "beginInsertRows"]
+        unsafe fn begin_insert_rows(self: Pin<&mut AlbumGridModel>, parent: &QModelIndex, first: i32, last: i32);
+        #[inherit]
+        #[cxx_name = "endInsertRows"]
+        unsafe fn end_insert_rows(self: Pin<&mut AlbumGridModel>);
+        #[inherit]
+        #[qsignal]
+        #[cxx_name = "dataChanged"]
+        fn data_changed(self: Pin<&mut AlbumGridModel>, top_left: &QModelIndex, bottom_right: &QModelIndex, roles: &QVector_i32);
+        #[inherit]
+        fn index(self: &AlbumGridModel, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
     unsafe extern "RustQt" {
         #[qinvokable]
@@ -105,7 +122,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use std::rc::Rc;
 use cxx_qt::{CxxQtType as _, Threading as _};
-use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant};
+use cxx_qt_lib::{QHash, QHashPair_i32_QByteArray, QModelIndex, QString, QUrl, QVariant, QVector};
 use std::pin::Pin;
 
 const USER_ROLE: i32 = 256;
@@ -179,6 +196,7 @@ pub struct AlbumGridRust {
     content_rev: i32,
     filter: QString,
     expanded: i32,
+    fresh: i32,
     anchor: Option<i32>,
     /// The artists of "artists", kept so the filter needs no query.
     artists: Vec<chilpa_api::Artist>,
@@ -395,6 +413,16 @@ impl qobject::AlbumGridModel {
     fn show(mut self: Pin<&mut Self>, list: Albums) {
         // The same records read again change at most their covers: a new revision redraws those, a reset would flash.
         if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) { if old.len() == new.len() && old.iter().zip(new).all(|(a, b)| a.id == b.id && a.title == b.title) { self.as_mut().rust_mut().list = list; let next = self.rev().wrapping_add(1); return self.set_rev(next); } }
+        // The same records with more after them: a shelf's "Load more". The
+        // rows stay and the new ones come in under them, so nothing on
+        // screen moves.
+        if let (Albums::Loaded(old), Albums::Loaded(new)) = (&self.rust().list, &list) {
+            if new.len() > old.len() && self.rust().groups.is_empty() && old.iter().zip(new).all(|(a, b)| a.id == b.id) {
+                let from = old.len();
+                return self.grow(list, from);
+            }
+        }
+        self.as_mut().set_fresh(-1);
         let opened = self.rust().get(self.rust().expanded, |a| a.id)
             .map(|id| app::with(|api| api.selected_album_version(id)));
         let expanded = match (&list, opened) {
@@ -408,6 +436,34 @@ impl qobject::AlbumGridModel {
         self.as_mut().set_expanded(expanded);
         self.as_mut().split_rows();
         self.as_mut().set_albums(count);
+        let next = self.rev().wrapping_add(1);
+        self.as_mut().set_rev(next);
+    }
+
+    /// Takes in records added to the end of the list shown: the rows that
+    /// were there keep their items, the last of them may fill up, and the
+    /// rest are inserted after it.
+    fn grow(mut self: Pin<&mut Self>, list: Albums, from: usize) {
+        let count = list.len() as i32;
+        self.as_mut().rust_mut().list = list;
+        let rows = self.rust().laid_out();
+        let before = self.rust().rows.len();
+        let filled = before > 0 && rows.get(before - 1).map(|row| row.span) != self.rust().rows.get(before - 1).map(|row| row.span);
+        let parent = QModelIndex::default();
+        if rows.len() > before {
+            // SAFETY: the insertion is begun and ended around the swap, as Qt asks.
+            unsafe { self.as_mut().begin_insert_rows(&parent, before as i32, rows.len() as i32 - 1) };
+            self.as_mut().rust_mut().rows = rows;
+            unsafe { self.as_mut().end_insert_rows() };
+        } else {
+            self.as_mut().rust_mut().rows = rows;
+        }
+        if filled {
+            let last = self.index(before as i32 - 1, 0, &parent);
+            self.as_mut().data_changed(&last, &last, &QVector::<i32>::default());
+        }
+        self.as_mut().set_albums(count);
+        self.as_mut().set_fresh(from as i32);
         let next = self.rev().wrapping_add(1);
         self.as_mut().set_rev(next);
     }
@@ -426,6 +482,7 @@ impl qobject::AlbumGridModel {
 impl cxx_qt::Initialize for qobject::AlbumGridModel {
     fn initialize(mut self: Pin<&mut Self>) {
         self.as_mut().set_expanded(-1);
+        self.as_mut().set_fresh(-1);
         self.as_mut().on_kind_changed(|m| m.schedule()).release();
         self.as_mut().on_key_changed(|m| m.schedule()).release();
         self.as_mut().on_order_changed(|m| m.schedule()).release();

@@ -6,6 +6,8 @@ import QtQuick
 QtObject {
     readonly property int menuLeave: 350
     readonly property int listenRefresh: 400
+    // Cards that came with a "Load more" fade in while they are this fresh.
+    readonly property int arrival: 1500
     property bool reduced: false
 
     readonly property int fast: reduced ? 0 : 120
