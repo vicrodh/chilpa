@@ -186,7 +186,10 @@ impl Cushion {
             if let Some((block, moved)) = ahead.blocks.pop_front() {
                 ahead.bytes -= block.len();
                 self.changed.notify_all();
-                if let Some(since) = starved {
+                // A wait worth writing down: a device that takes samples
+                // faster than the file gives them waits a little at every
+                // block, and that is not the cushion running dry.
+                if let Some(since) = starved.filter(|since| since.elapsed() >= SLOW_READ) {
                     crate::diagnostics::trace("render", "ahead_empty", format_args!("waited={:?}", since.elapsed()));
                 }
                 return Ok(Some((block, moved)));
