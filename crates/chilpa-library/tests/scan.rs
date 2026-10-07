@@ -759,3 +759,92 @@ fn a_disc_with_its_own_cover_says_so_though_it_was_read_before() {
     assert_eq!(said(&lib), copied, "and it stays so");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+/// A FLAC file with no tags at all: what ffmpeg writes with its own
+/// metadata turned off.
+fn untagged_file(target: &std::path::Path) -> bool {
+    let _ = std::fs::create_dir_all(target.parent().unwrap());
+    Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1"])
+        .args(["-map_metadata", "-1", "-fflags", "+bitexact", "-c:a", "flac"])
+        .arg(target)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+#[test]
+fn untagged_files_take_their_record_from_their_folders() {
+    // 23 files of a record with tags nobody could read came in under their
+    // names and with no record: on no album screen.
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let root = std::env::temp_dir().join("chilpa-scan-from-path");
+    let _ = std::fs::remove_dir_all(&root);
+    let record = root.join("G").join("George Harrison").join("1970 - All Things Must Pass");
+    for name in ["01 - I'd Have You Anytime.flac", "02 - My Sweet Lord.flac"] {
+        assert!(untagged_file(&record.join(name)));
+    }
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &root).unwrap();
+    let albums = lib.albums(10, 0).unwrap();
+    assert_eq!(albums.len(), 1, "one record: {:?}", albums.iter().map(|a| &a.title).collect::<Vec<_>>());
+    assert_eq!(albums[0].title, "All Things Must Pass");
+    assert_eq!(albums[0].album_artist, "George Harrison");
+    assert_eq!(albums[0].year, Some(1970));
+    let tracks = lib.album_tracks(albums[0].id).unwrap();
+    let named: Vec<(Option<u16>, &str, &str)> = tracks.iter().map(|t| (t.track_number, t.title.as_str(), t.artist.as_str())).collect();
+    assert_eq!(named, [(Some(1), "I'd Have You Anytime", "George Harrison"), (Some(2), "My Sweet Lord", "George Harrison")]);
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn an_untagged_file_joins_the_record_its_tagged_neighbours_share() {
+    // Four bonus tracks of a box with no tags, in the folder of the sixteen
+    // that have them: they belong to that record, whichever is read first.
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let root = std::env::temp_dir().join("chilpa-scan-neighbours");
+    let _ = std::fs::remove_dir_all(&root);
+    let record = root.join("C").join("The Cure").join("(1992) Wish [FLAC 16-44]");
+    assert!(untagged_file(&record.join("01. The Cure - Wendy Time (Demo).flac")), "read before the tagged one");
+    assert!(tagged_file(&record.join("02. Open.flac"), "Open", "The Cure", "Wish (Deluxe Edition)", Some("The Cure")));
+    assert!(untagged_file(&record.join("03. The Cure - High (Higher Mix).flac")), "read after it");
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &root).unwrap();
+    let albums = lib.albums(10, 0).unwrap();
+    assert_eq!(albums.iter().map(|a| a.title.as_str()).collect::<Vec<_>>(), ["Wish (Deluxe Edition)"], "one record, the tagged one's");
+    let titles: Vec<String> = lib.album_tracks(albums[0].id).unwrap().into_iter().map(|t| t.title).collect();
+    assert_eq!(titles, ["Wendy Time (Demo)", "Open", "High (Higher Mix)"]);
+    assert_eq!(albums[0].year, Some(1992), "the tags gave no year; the folder does");
+    let _ = std::fs::remove_dir_all(root);
+}
+
+#[test]
+fn a_track_that_came_in_without_a_record_is_read_again() {
+    // What earlier scans left without a record is not "unchanged": the next
+    // scan reads it again and gives it one.
+    if !have_ffmpeg() {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let root = std::env::temp_dir().join("chilpa-scan-orphan");
+    let _ = std::fs::remove_dir_all(&root);
+    let record = root.join("Q").join("Queen").join("1975 - A Night at the Opera");
+    assert!(untagged_file(&record.join("01 - Death on Two Legs.flac")));
+    assert!(untagged_file(&record.join("02 - Lazing on a Sunday Afternoon.flac")));
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &root).unwrap();
+    // As an earlier version left them.
+    lib.connection().execute("UPDATE tracks SET album_id = NULL WHERE external_id LIKE '%01 - Death%'", []).unwrap();
+    let again = scan_root(&lib, &root).unwrap();
+    assert_eq!((again.read, again.unchanged), (1, 1), "the orphan is read, the other is not");
+    let albums = lib.albums(10, 0).unwrap();
+    assert_eq!(albums.len(), 1);
+    assert_eq!(lib.album_tracks(albums[0].id).unwrap().len(), 2, "both on the record again");
+    let _ = std::fs::remove_dir_all(root);
+}

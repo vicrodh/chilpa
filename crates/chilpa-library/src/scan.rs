@@ -12,7 +12,7 @@
 use crate::store::Library;
 use crate::scan_sidecar::{overlaid, Homes, Seen};
 use crate::sidecar::Home;
-use rusqlite::params;
+use rusqlite::{params, OptionalExtension};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -149,6 +149,8 @@ fn scan(
 
     let now = now_unix();
     let (files, blocked) = walk(root, containers);
+    // The tracks whose record was named by their folder this time.
+    let mut from_place: Vec<i64> = Vec::new();
 
     // Committing once per file costs more than writing the file's row. Every
     // statement outside a transaction is its own commit, and a file takes
@@ -225,7 +227,10 @@ fn scan(
         if let Some((m, s, track)) = &known {
             // A sidecar that changed makes its folder's files worth reading
             // again, though none of them did.
-            if *m == mtime && *s == size && track.is_some() && !stale && evidence_read(lib, *track) {
+            // A track that came in without a record is read again, when its
+            // folders can name one now; a loose file at the root cannot.
+            let settled = has_album(lib, *track) || crate::from_path::from_path(file, Some(root)).album.is_none();
+            if *m == mtime && *s == size && track.is_some() && !stale && evidence_read(lib, *track) && settled {
                 // Same as last time: neither read nor rewritten.
                 report.unchanged += 1;
                 lib.db.execute(
@@ -267,7 +272,10 @@ fn scan(
             }
         }
 
-        let track_id = save_file(lib, source, file, now, cache, &home, homes.of(lib, &home, &path))?;
+        let (track_id, guessed) = save_file(lib, source, file, root, now, cache, &home, homes.of(lib, &home, &path))?;
+        if guessed {
+            from_place.push(track_id);
+        }
         lib.db.execute(
             "INSERT INTO scanned_files (root_id, path, mtime, size, inode, track_id, scanned_at)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
@@ -286,6 +294,7 @@ fn scan(
     // missing, never deleted.
     report.sidecars_unreadable = homes.record(lib, now)?;
     report.missing = mark_missing(lib, root_id, &readable, &blocked)?;
+    join_tagged_neighbours(lib, &from_place)?;
     lib.assemble_local_releases()?;
     // Once the parts are one record, its discs can be compared.
     own_disc_covers(lib, root, cache)?;
@@ -366,13 +375,14 @@ impl Found<'_> {
             report.seen += 1;
             let seen = homes.of(lib, &home, &container);
             let info = overlaid(Some(track.info.clone()), seen, &home.key(&track.path));
-            let track_id = save_track(
+            let (track_id, _) = save_track(
                 lib,
                 self.source,
                 &track.path,
                 info.as_ref(),
                 &name,
                 file,
+                None,
                 self.now,
                 self.cache,
             )?;
@@ -501,26 +511,34 @@ fn moved_here(
     Ok(None)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn save_file(
     lib: &Library,
     source: i64,
     path: &Path,
+    root: &Path,
     now: i64,
     cache: Option<&Path>,
     home: &Home,
     seen: &Seen,
-) -> rusqlite::Result<i64> {
+) -> rusqlite::Result<(i64, bool)> {
     let external_id = path.display().to_string();
     let info = overlaid(chilpa_tags::read(path).ok(), seen, &home.key(&external_id));
     let name = path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default();
-    let track_id = save_track(lib, source, &external_id, info.as_ref(), &name, path, now, cache)?;
-    seen.cover_onto(lib, home, track_id)?;
-    Ok(track_id)
+    let saved = save_track(lib, source, &external_id, info.as_ref(), &name, path, Some(root), now, cache)?;
+    seen.cover_onto(lib, home, saved.0)?;
+    Ok(saved)
 }
 
 /// A track into the library: its row, its album and its genres, and the
 /// album's cover out of `cover_from` when the album has none yet. `name` is
 /// the title when the tags carry none.
+///
+/// With `root`, a file whose tags leave out its record joins the one its
+/// tagged neighbours in the folder share, or failing that takes the one its
+/// folders name (`from_path`), and its number and title from its name: a
+/// track with no record is on no record's screen. The second value says the
+/// record was named by the folder.
 #[allow(clippy::too_many_arguments)]
 fn save_track(
     lib: &Library,
@@ -529,10 +547,40 @@ fn save_track(
     info: Option<&chilpa_tags::FileInfo>,
     name: &str,
     cover_from: &Path,
+    root: Option<&Path>,
     now: i64,
     cache: Option<&Path>,
-) -> rusqlite::Result<i64> {
-    let tags = info.map(|i| i.tags.clone()).unwrap_or_default();
+) -> rusqlite::Result<(i64, bool)> {
+    let mut tags = info.map(|i| i.tags.clone()).unwrap_or_default();
+    let mut joined = None;
+    let mut from_folder = false;
+    if let Some(root) = root {
+        let place = crate::from_path::from_path(Path::new(external_id), Some(root));
+        if tags.album.is_none() {
+            joined = neighbours_album(lib, source, external_id, None)?;
+            match &joined {
+                Some((_, title, artist)) => {
+                    tags.album = Some(title.clone());
+                    tags.album_artist = tags.album_artist.take().or_else(|| artist.clone());
+                }
+                None => {
+                    from_folder = place.album.is_some();
+                    tags.album = place.album.clone();
+                    tags.album_artist = tags.album_artist.take().or_else(|| place.album_artist.clone());
+                }
+            }
+        }
+        // A year left blank in the tags is the one the folder says.
+        if tags.year().is_none() {
+            tags.date = place.year.map(|year| year.to_string()).or(tags.date.take());
+        }
+        tags.title = tags.title.take().or_else(|| place.title.clone());
+        tags.track_number = tags.track_number.or(place.track);
+        tags.disc_number = tags.disc_number.or(place.disc);
+        if tags.artists.is_empty() {
+            tags.artists = place.artist.clone().or_else(|| tags.album_artist.clone()).into_iter().collect();
+        }
+    }
     let title = tags.title.clone().unwrap_or_else(|| name.to_string());
     let artist = tags.artist_line();
     // A file with a field for each artist says who they are.
@@ -551,9 +599,10 @@ fn save_track(
             let existing: Option<i64> = lib.db.query_row(
                 "SELECT album_id FROM tracks WHERE source_id = ?1 AND external_id = ?2",
                 params![source, external_id], |r| r.get(0)).ok().flatten();
-            let id = match existing {
-                Some(id) => id,
-                None => lib.local_edition(source, album_title, named.unwrap_or(&artist), &location, tags.year())?,
+            let id = match (existing, &joined) {
+                (Some(id), _) => id,
+                (None, Some((id, _, _))) => *id,
+                (None, None) => lib.local_edition(source, album_title, named.unwrap_or(&artist), &location, tags.year())?,
             };
             // The album's cover comes from the first file that carries one.
             if let Some(cache) = cache {
@@ -608,7 +657,53 @@ fn save_track(
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;
-    Ok(track_id)
+    Ok((track_id, from_folder))
+}
+
+/// The record the other files of `external_id`'s folder share, when they
+/// all share one -- leaving out `except` -- with its title and album
+/// artist. A folder of loose tracks from several records names none.
+fn neighbours_album(lib: &Library, source: i64, external_id: &str, except: Option<i64>) -> rusqlite::Result<Option<(i64, String, Option<String>)>> {
+    let Some(dir) = Path::new(external_id).parent().map(|d| format!("{}/", d.display())) else { return Ok(None) };
+    let mut stmt = lib.db.prepare_cached(
+        "SELECT DISTINCT t.album_id, a.title, a.album_artist FROM tracks t JOIN albums a ON a.id = t.album_id
+          WHERE t.source_id = ?1 AND t.external_id != ?2 AND t.album_id IS NOT ?4
+            AND substr(t.external_id, 1, length(?3)) = ?3
+            AND instr(substr(t.external_id, length(?3) + 1), '/') = 0
+          LIMIT 2",
+    )?;
+    let found: Vec<(i64, String, Option<String>)> = stmt
+        .query_map(params![source, external_id, dir, except], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?
+        .collect::<rusqlite::Result<_>>()?;
+    Ok(if found.len() == 1 { found.into_iter().next() } else { None })
+}
+
+/// Tracks whose folder named their record, moved to the record their tagged
+/// neighbours share when the neighbours came later in the same scan: files
+/// are read in name order, and "05" can come before the "06" that carries
+/// the tags. The record the folder named is left empty and goes with the
+/// releases' clean-up.
+fn join_tagged_neighbours(lib: &Library, guessed: &[i64]) -> rusqlite::Result<()> {
+    for track in guessed {
+        let row: Option<(String, i64, Option<i64>)> = lib
+            .db
+            .query_row("SELECT external_id, source_id, album_id FROM tracks WHERE id = ?1", params![track], |r| {
+                Ok((r.get(0)?, r.get(1)?, r.get(2)?))
+            })
+            .optional()?;
+        let Some((path, source, own)) = row else { continue };
+        let Some((album, title, artist)) = neighbours_album(lib, source, &path, own)? else { continue };
+        lib.db.execute(
+            "UPDATE tracks SET album_id = ?2, album_title = ?3, album_credit = ?4 WHERE id = ?1",
+            params![track, album, title, artist.unwrap_or_default()],
+        )?;
+    }
+    Ok(())
+}
+
+/// Whether a track has a record: one that came in without is read again.
+fn has_album(lib: &Library, track: Option<i64>) -> bool {
+    lib.db.query_row("SELECT album_id IS NOT NULL FROM tracks WHERE id = ?1", [track], |r| r.get(0)).unwrap_or(true)
 }
 
 

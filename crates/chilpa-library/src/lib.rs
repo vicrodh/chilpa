@@ -7,6 +7,7 @@
 //! deleted all its tracks.
 
 pub mod album_folder;
+pub mod from_path;
 pub mod playlist;
 pub mod scan;
 mod scan_sidecar;
