@@ -14,6 +14,8 @@ QtObject {
     // Pages by key, as a test sets them.
     property var pages: ({})
     function page(key, rev) { return pages[key] || JSON.stringify({ music: false }) }
+    property var networks: ({})
+    function network(name, rev) { return networks[name] || JSON.stringify({ loading: false }) }
     function command(action, id, text) { asked = asked.concat([[action, id, text]]) }
     function show(change) { state = Object.assign({}, state, change); revision += 1 }
 }

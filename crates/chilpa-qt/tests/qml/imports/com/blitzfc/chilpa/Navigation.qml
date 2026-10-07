@@ -11,4 +11,5 @@ QtObject {
     function go(target, id) { page = target; selectedId = id }
     function creditStops(credit) { return "" }
     function openCredit(credit, index) {}
+    function openArtist(name) { went = ["artist", name] }
 }

@@ -120,6 +120,14 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
                 continue;
             }
         }
+        // An artist's mix, when the source makes one, sits with the radio.
+        if shelf["id"] == "mix" && items.is_some_and(|items| items.len() == 1) {
+            let identity = items.and_then(|i| i[0]["ref"].as_str()).unwrap_or_default().to_string();
+            if let Some(card) = catalog.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == identity) {
+                header["mix_id"] = json!(card.id);
+                continue;
+            }
+        }
         if mixed_artist && !artist.is_empty() && shelf["kind"] == "album" && shelf["more"] == artist { continue; }
         rows.push(shelf);
     }
@@ -232,6 +240,9 @@ impl crate::Chilpa {
         document["entity"] = json!(kind);
         document["round"] = json!(kind == "artist");
         document["albumsOnly"] = json!(shelf.tracks.is_empty());
+        if document["header"]["kind"] == "artist" {
+            crate::artist_page::shape(&mut document);
+        }
         document.to_string()
     }
 }

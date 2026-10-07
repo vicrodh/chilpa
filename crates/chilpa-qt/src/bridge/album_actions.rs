@@ -43,6 +43,9 @@ pub mod qobject {
         /// a group with that label.
         #[qinvokable]
         fn play_later(self: &AlbumActions, id: i64, label: &QString);
+        /// Plays these records, in this order, as a JSON list of ids.
+        #[qinvokable]
+        fn play_many(self: &AlbumActions, ids_json: &QString, shuffled: bool);
         /// The extra queues a record can go to, as menu entries.
         #[qinvokable]
         fn listen_targets_json(self: &AlbumActions) -> QString;
@@ -142,6 +145,10 @@ impl qobject::AlbumActions {
     pub fn play(&self, id: i64, shuffled: bool) { self.act(id, "play", shuffled) }
     pub fn play_next(&self, id: i64) { self.act(id, "next", false) }
     pub fn queue(&self, id: i64) { self.act(id, "queue", false) }
+    pub fn play_many(&self, ids_json: &cxx_qt_lib::QString, shuffled: bool) {
+        let ids: Vec<i64> = serde_json::from_str(&ids_json.to_string()).unwrap_or_default();
+        if !ids.is_empty() { app::with(|api| api.album_action(&ids, "play", shuffled)); }
+    }
     pub fn play_later(&self, id: i64, label: &cxx_qt_lib::QString) {
         let ids = self.rust().targets(id);
         app::with(|api| api.album_later(&ids, &label.to_string()));

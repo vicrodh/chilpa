@@ -27,6 +27,10 @@ TitledFlow {
     SourceFolderEditor {}
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }
     SourcePageHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography"}) }
+    ArtistHeader { width: Metrics.confirmWidth; info: ({title:"Artist",description:"Biography",roles:["Composer"],radio_id:-1}) }
+    JumpBar { width: Metrics.confirmWidth; entries: [{id:"about",title:"About"},{id:"tracks",title:"Popular Tracks"}]; active: "about" }
+    ArtistTracks { width: Metrics.confirmWidth; section: ({title:"Popular Tracks",role:"popular",key:""}) }
+    ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourcePaging { about: ({plugin:"preview",next:"next"}) }
     SourceLibraryControls { source: "preview section:albums" }

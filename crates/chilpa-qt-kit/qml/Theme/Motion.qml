@@ -8,6 +8,8 @@ QtObject {
     readonly property int listenRefresh: 400
     // Cards that came with a "Load more" fade in while they are this fresh.
     readonly property int arrival: 1500
+    // The Network sidebar sliding open or shut.
+    readonly property int networkSlide: 160
     property bool reduced: false
 
     readonly property int fast: reduced ? 0 : 120

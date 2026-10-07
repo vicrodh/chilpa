@@ -861,9 +861,13 @@ impl qobject::TrackListModel {
                 let top = kind == "artistTop";
                 let (order, count) = if top { (TrackOrder::Plays, 10) } else { (TrackOrder::Artist, 100_000) };
                 let mut tracks = app::with(|api| api.artist_tracks(&name, order, count));
-                // What never played is not "most played".
+                // What never played is not "most played"; an artist nothing
+                // of whom played yet shows its first tracks instead.
                 if top {
                     tracks.retain(|t| t.plays > 0);
+                    if tracks.is_empty() {
+                        tracks = app::with(|api| api.artist_tracks(&name, TrackOrder::Artist, 10));
+                    }
                 }
                 let ms = tracks.iter().map(|t| t.duration_ms).sum::<u64>();
                 (Rows::Loaded(tracks.into_iter().map(Entry::Track).collect()), (!top).then_some(ms))

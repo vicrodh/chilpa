@@ -105,6 +105,12 @@ impl Chilpa {
     /// its records have, and whether it is a source the catalog draws.
     pub fn source_page(&mut self, key: &str) -> String {
         let (plugin, rest) = split(key);
+        // The library's artist is drawn as a source's page would be.
+        if plugin == "local" {
+            if let Some(name) = rest.strip_prefix("artist:") {
+                return self.artist_document(name);
+            }
+        }
         let address = rest.split(' ').next().unwrap_or_default();
         let music = self.source_draws_music(plugin);
         // The facade's copy: the host is often busy answering the catalog.

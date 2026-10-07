@@ -34,6 +34,10 @@ pub mod qobject {
         fn track_libraries(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn page(self: &Sources, key: &QString, rev: i32) -> QString;
+        /// What MusicBrainz and Last.fm know of an artist by name, for the
+        /// page's Network sidebar; `loading` until it is read.
+        #[qinvokable]
+        fn network(self: &Sources, name: &QString, rev: i32) -> QString;
     }
 }
 use cxx_qt_lib::{QString, QUrl};
@@ -59,6 +63,7 @@ impl qobject::Sources {
     pub fn track_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.track_libraries())) }
     pub fn album_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.album_libraries())) }
     pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
+    pub fn network(&self, name: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_network(&name.to_string()))) }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, id: &QString, text: &QString) {
         crate::app::with(|api| api.sources_command(&action.to_string(), &id.to_string(), &text.to_string()));
         self.as_mut().refresh();

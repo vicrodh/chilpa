@@ -41,4 +41,21 @@ ListModel {
     }
     function chosenTrackIdsJson(row) { return "[42,43]" }
     function playLater(row, label) { lastAction = "later"; lastRow = row }
+    function playAll(shuffled) { lastAction = shuffled ? "shuffle" : "playAll" }
+    function selectAll() {}
+    function clearSelection() {}
+    function selectedTrackIdsJson() { return "[42,43]" }
+    // A key that ends in "|tracks" (a page's tracks shelf) holds eight
+    // rows, cut to `limit`.
+    onKeyChanged: fill()
+    onLimitChanged: fill()
+    Component.onCompleted: fill()
+    function fill() {
+        const wanted = key.endsWith("|tracks") ? 8 : 0
+        const count = limit > 0 ? Math.min(limit, wanted) : wanted
+        clear()
+        for (let i = 0; i < count; i++)
+            append({ trackId: i + 1, rowKind: 0, number: i + 1, title: "Track " + i, artist: "Band", album: "Record", sourceName: "", duration: "3:00", plays: 0,
+                quality: "FLAC", tier: 2, available: true, playing: false, selected: false, headerLabel: "", headerMeta: "", art: "" })
+    }
 }

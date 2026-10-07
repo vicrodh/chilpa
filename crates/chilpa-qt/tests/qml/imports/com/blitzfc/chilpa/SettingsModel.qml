@@ -6,6 +6,7 @@ QtObject {
     function keep(key, value) { preferences[key] = value }
     function panelWidthAt(width, windowWidth) { return width }
     property bool quickViewClick: false
+    property bool lyricsOpen: false
     property string albumHeader: "off"
     property string density: "compact"
     property bool playlistCollage: false

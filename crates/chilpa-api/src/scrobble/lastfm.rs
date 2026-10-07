@@ -111,6 +111,30 @@ pub(crate) fn track_cover(artist: &str, title: &str) -> Option<String> {
     largest_image(&reply)
 }
 
+/// What Last.fm says of an artist: a short biography, where it came from,
+/// and the artists it holds similar, most alike first. `None` when it does
+/// not know the artist or the network is not there.
+pub(crate) fn artist_info(name: &str) -> Option<ArtistInfo> {
+    let mut params = Map::new();
+    params.insert("artist".into(), json!(name));
+    params.insert("autocorrect".into(), json!("1"));
+    let reply = call("artist.getInfo", params).ok()?;
+    let artist = reply.get("artist")?;
+    let summary = artist.pointer("/bio/summary").and_then(Value::as_str).unwrap_or_default();
+    // The summary ends in an anchor back to Last.fm; the text is what is
+    // before it.
+    let bio = summary.split("<a ").next().unwrap_or_default().trim().to_string();
+    let similar = artist.pointer("/similar/artist").and_then(Value::as_array).into_iter().flatten()
+        .filter_map(|a| a["name"].as_str()).map(str::to_string).collect();
+    Some(ArtistInfo { bio, similar, url: artist["url"].as_str().unwrap_or_default().to_string() })
+}
+
+pub(crate) struct ArtistInfo {
+    pub bio: String,
+    pub similar: Vec<String>,
+    pub url: String,
+}
+
 /// The last image of the album a `track.getInfo` reply carries: they come
 /// from small to large. An empty address is how Last.fm says "none".
 fn largest_image(reply: &Value) -> Option<String> {

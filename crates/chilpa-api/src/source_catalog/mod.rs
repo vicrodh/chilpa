@@ -179,7 +179,7 @@ impl Catalog {
         (self.content_rev.load(Ordering::Relaxed), self.art_rev.load(Ordering::Relaxed))
     }
 
-    fn changed(&self) {
+    pub(crate) fn changed(&self) {
         self.content_rev.fetch_add(1, Ordering::Relaxed);
     }
 
