@@ -18,12 +18,15 @@ Column {
     // No sort, no play and no Load more: the page's folded "Other".
     property bool plain: false
     readonly property string activeKey: (section.tags || []).find(t => t.slug === selectedTag)?.key || section.key || ""
+    // What the models read by: the shelf's key, or what the document says
+    // when the model is the library's (an artist's name).
+    readonly property string modelKey: section.model_key || activeKey
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
     visible: shown
-    AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.activeKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.activeKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev; playingPath: Player.path }
+    AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
+    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev }
     SectionHeader {
         width: parent.width; title: shelf.section.title || ""

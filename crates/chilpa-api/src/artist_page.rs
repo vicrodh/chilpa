@@ -249,7 +249,9 @@ impl crate::Chilpa {
         let labels: Vec<String> = Vec::new();
         let similar: Vec<Value> = known.similar.iter().take(12).cloned().collect::<Vec<_>>().into_iter()
             .map(|n| { let local = self.has_artist(&n); json!({"kind": "artist", "title": n, "local": local}) }).collect();
-        let shelf = |id: &str, kind: &str, model: &str, items: Value| json!({"id": id, "kind": kind, "model": model, "key": name, "items": items});
+        // `model` names the window's model for the library ("artist",
+        // "artistTop"...), which reads by the artist's name: `model_key`.
+        let shelf = |id: &str, kind: &str, model: &str, items: Value| json!({"id": id, "kind": kind, "model": model, "model_key": name, "items": items});
         let mut shelves = vec![
             shelf("tracks", "track", "artistTop", json!([])),
             shelf("latest", "album", "artistLatest", json!([])),
