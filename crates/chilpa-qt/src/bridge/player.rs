@@ -139,6 +139,11 @@ pub mod qobject {
         #[cxx_name = "windowAsked"]
         /// 0 to come to the front, 1 to quit, 2 to show if hidden and hide if in sight.
         fn window_asked(self: Pin<&mut Player>, what: i32);
+        /// Chilpa quits, the way the desktop asks it to. `Qt.quit()` is not
+        /// that: it closes the window first, and a window that keeps Chilpa
+        /// in the tray turns it down.
+        #[qinvokable]
+        fn quit(self: Pin<&mut Player>);
     }
 
     impl cxx_qt::Threading for Player {}
@@ -203,6 +208,10 @@ pub struct PlayerRust {
 }
 
 impl qobject::Player {
+    pub fn quit(self: Pin<&mut Self>) {
+        self.window_asked(1);
+    }
+
     pub fn choose_gapless(mut self: Pin<&mut Self>, on: bool) {
         app::with(|api| api.set_gapless(on));
         self.as_mut().read_switches();

@@ -56,7 +56,7 @@ Item {
         case "nav.settings": Navigation.openSection(""); break
         case "nav.newTab": Navigation.open("library", 0); break
         case "nav.closeTab": Navigation.close(Navigation.active); break
-        case "nav.quit": Qt.quit(); break
+        case "nav.quit": Player.quit(); break
         case "ui.sidebar": SettingsModel.sidebarMode = sidebarTurns[SettingsModel.sidebarMode] || "open"; break
         case "ui.queue": SettingsModel.queueOpen = !SettingsModel.queueOpen; break
         case "ui.lyrics": SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen; break
