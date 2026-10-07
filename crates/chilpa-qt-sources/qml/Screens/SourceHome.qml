@@ -18,6 +18,19 @@ Flickable {
     property string key
     readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
+    readonly property var shelves: about.tab ? discovery.shown : about.shelves || []
+    // The shelves by key, changed only when a shelf comes or goes: a page
+    // read again, or a shelf that loaded more, keeps every shelf's item on
+    // screen where it was, and only what changed is drawn again.
+    property var shelfKeys: []
+    onShelvesChanged: {
+        const keys = shelves.map(shelf => shelf.key || shelf.id)
+        if (keys.join("\n") !== shelfKeys.join("\n"))
+            shelfKeys = keys
+    }
+    // The first list is there before any change can say so.
+    Component.onCompleted: shelvesChanged()
+    function shelf(key) { return shelves.find(s => (s.key || s.id) === key) || ({}) }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -44,8 +57,8 @@ Flickable {
         SourceDiscoveryControls { id: discovery; width: parent.width; about: page.about; visible: !!page.about.tab }
         SourcePageHeader { width: parent.width; currentPage: true; tracksKey: ((page.about.shelves || []).find(shelf => shelf.tracks) || {}).key || ""; info: page.about.header || ({}); visible: !!page.about.header }
         Repeater {
-            model: page.about.tab ? discovery.shown : page.about.shelves || []
-            SourceShelf { required property var modelData; width: column.width; section: modelData; wrap: (page.about.header || {}).kind === "artist" && modelData.kind === "album" }
+            model: page.shelfKeys
+            SourceShelf { required property string modelData; width: column.width; section: page.shelf(modelData); wrap: (page.about.header || {}).kind === "artist" && section.kind === "album" }
         }
 
         SourceState {

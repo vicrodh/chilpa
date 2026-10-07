@@ -32,6 +32,15 @@ Item {
     // not answer (ADR-017). Dimmed, and no overlay: a click says why.
     property bool available: true
 
+    // It came in with a "Load more", at that moment: it fades in while
+    // that is recent, and a recycled card that comes to stand for one later
+    // does not.
+    property bool fresh: false
+    property real freshAt: 0
+    onFreshChanged: if (fresh && Date.now() - freshAt < Motion.arrival) arrival.restart()
+    Component.onCompleted: if (fresh && Date.now() - freshAt < Motion.arrival) arrival.restart()
+    NumberAnimation { id: arrival; target: card; property: "opacity"; from: 0; to: card.available ? 1 : Metrics.disabledOpacity; duration: Motion.base; easing.type: Easing.OutCubic }
+
     // A click outside the overlay's buttons, with the modifiers held: 1 for
     // Ctrl or Cmd, 2 for Shift.
     signal clicked(int modifiers)

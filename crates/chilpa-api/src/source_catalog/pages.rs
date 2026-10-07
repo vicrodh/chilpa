@@ -51,6 +51,13 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
                 ingest(catalog, plugin, &tracks_key, &json!({"title":shelf["title"],"items":shelf["extra_tracks"]}));
                 shelf["tracks_key"] = json!(tracks_key);
             }
+            // A shelf that loaded more keeps it: a page read again brings
+            // its first page, and if that is still the start of what was
+            // loaded, the loaded rest stays, with where it goes on from.
+            if let Some(kept) = loaded_beyond(catalog, &child, shelf) {
+                shelf["items"] = kept.0;
+                shelf["more"] = kept.1;
+            }
             ingest(catalog, plugin, &child, shelf);
             shelf["key"] = json!(child);
             shelf["tracks"] = json!(shelf["kind"] == "track");
@@ -81,11 +88,31 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     }
 }
 // I keep navigation cards in the catalog while presenting radio as a header action.
+/// What a shelf had loaded beyond the first page of a fresh read of its
+/// document, when that first page is still the start of it: the whole
+/// list and the reference it goes on from. `None` when nothing was loaded
+/// beyond it, or the page changed.
+fn loaded_beyond(catalog: &Catalog, child: &str, fresh: &Value) -> Option<(Value, Value)> {
+    let inner = catalog.lock();
+    let kept = &inner.store.shelves.get(child)?.document;
+    let (kept_items, fresh_items) = (kept["items"].as_array()?, fresh["items"].as_array()?);
+    if kept_items.len() <= fresh_items.len() || fresh_items.is_empty() {
+        return None;
+    }
+    let same_start = fresh_items.iter().zip(kept_items).all(|(a, b)| a["ref"] == b["ref"]);
+    same_start.then(|| (kept["items"].clone(), kept["more"].clone()))
+}
+
 fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut Value, shelves: &Value, mixed_artist: bool) -> Value {
     let radio = format!("radio:{reference}");
     let artist = header["artist_ref"].as_str().unwrap_or_default().to_string();
     let mut rows = Vec::new();
+    let page_key = format!("{plugin} native:{reference}");
     for shelf in shelves.as_array().into_iter().flatten() {
+        let mut shelf = shelf.clone();
+        // Its "Load more" is on its way: the button says so and waits.
+        let child = format!("{page_key}|{}", shelf["id"].as_str().unwrap_or_default());
+        shelf["loading"] = json!(catalog.lock().running.contains(&super::Job::Shelf(child)));
         let items = shelf["items"].as_array();
         if items.is_some_and(|items| items.len() == 1 && items[0]["ref"] == radio) {
             if let Some(card) = catalog.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == radio) {
@@ -94,7 +121,7 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
             }
         }
         if mixed_artist && !artist.is_empty() && shelf["kind"] == "album" && shelf["more"] == artist { continue; }
-        rows.push(shelf.clone());
+        rows.push(shelf);
     }
     json!(rows)
 }
@@ -231,6 +258,41 @@ mod tests {
             assert_eq!(radio.kind, super::super::store::CardKind::Playlist);
         }
     }
+    /// What a shelf loaded beyond its first page stays when the page is read
+    /// again and still starts the same way; a page that changed its start
+    /// is taken as it comes. And a shelf whose "Load more" is on its way
+    /// says so to the window.
+    #[test]
+    fn a_shelf_keeps_what_it_loaded_across_a_rereading() {
+        let catalog = Catalog::new();
+        let record = |n: u32| json!({"kind":"album","ref":format!("album:{n}"),"title":format!("Record {n}")});
+        let first = json!({"shelves":[{"id":"album","kind":"album","items":[record(1),record(2)],"more":"artist:7:album:2"}]});
+        ingest_document(&catalog,"fixture","artist:7",&first);
+        // The "Load more" answer, as append_native_section leaves the shelf.
+        let child = "fixture native:artist:7|album";
+        let loaded = json!({"id":"album","kind":"album","items":[record(1),record(2),record(3),record(4)],"more":"artist:7:album:4"});
+        ingest(&catalog,"fixture",child,&loaded);
+
+        ingest_document(&catalog,"fixture","artist:7",&first);
+        let kept = catalog.lock().store.shelves[child].document.clone();
+        assert_eq!(kept["items"].as_array().unwrap().len(), 4, "the loaded records stay");
+        assert_eq!(kept["more"], "artist:7:album:4", "and so does where it goes on from");
+        let page = catalog.lock().store.shelves["fixture native:artist:7"].document.clone();
+        assert_eq!(page["shelves"][0]["items"].as_array().unwrap().len(), 4, "the page's own row says the same");
+
+        let changed = json!({"shelves":[{"id":"album","kind":"album","items":[record(9),record(2)],"more":"artist:7:album:2"}]});
+        ingest_document(&catalog,"fixture","artist:7",&changed);
+        let kept = catalog.lock().store.shelves[child].document.clone();
+        assert_eq!(kept["items"].as_array().unwrap().len(), 2, "a page that starts differently is taken whole");
+
+        let mut header = json!({"ref":"artist:7"});
+        let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
+        assert_eq!(rows[0]["loading"], false);
+        catalog.lock().running.insert(super::super::Job::Shelf(child.into()));
+        let rows = page_shelves(&catalog,"fixture","artist:7",&mut header,&changed["shelves"],false);
+        assert_eq!(rows[0]["loading"], true, "its load more is on its way");
+    }
+
     #[test]
     fn a_label_page_enriches_the_existing_image_less_card() {
         let catalog = Catalog::new();

@@ -3,6 +3,7 @@ import QtTest
 import com.blitzfc.chilpa
 import com.blitzfc.chilpa.sources
 import "../../qml/Patterns"
+import "../../qml/Screens"
 
 TestCase {
     name: "SourceHeaders"; when:windowShown; visible:true; width:1100; height:800
@@ -44,5 +45,46 @@ TestCase {
         verify(button.y>findText(shelf,"Loading").y)
         button.clicked()
         compare(Sources.asked[Sources.asked.length-1],["section_more",shelf.activeKey,""])
+    }
+    // While more is on its way the button says so and takes no click.
+    function test_more_on_its_way_says_so() {
+        const was = shelf.section
+        shelf.section = Object.assign({}, was, { loading: true })
+        const button = findText(shelf, "Loading…")
+        verify(button && button.visible)
+        verify(!button.enabled)
+        shelf.section = was
+        verify(findText(shelf, "Load more").enabled)
+    }
+    // A page read again with the same shelves keeps each shelf's item on
+    // screen; only a shelf that comes or goes is built or dropped.
+    Component { id: homeMaker; SourceHome { width: 1100; height: 600; key: "fixture native:artist:1" } }
+    function shelvesOf(item) {
+        let out = []
+        for (const child of item.children || []) {
+            if (child.hasOwnProperty("activeKey")) out.push(child)
+            out = out.concat(shelvesOf(child))
+        }
+        return out
+    }
+    function test_a_page_read_again_keeps_its_shelves() {
+        const page = (n) => JSON.stringify({ music: true, title: "Artist", header: { kind: "artist", title: "Artist" }, shelves: [
+            { id: "album", key: "fixture native:artist:1|album", title: "Albums", kind: "album", items: Array.from({ length: n }, (_, i) => ({ ref: "album:" + i })), more: "x" },
+            { id: "similar", key: "fixture native:artist:1|similar", title: "Similar", kind: "artist", items: [] }
+        ] })
+        Sources.pages = { "fixture native:artist:1": page(2) }
+        // Made with its page already there: the shelves show without a change.
+        const home = createTemporaryObject(homeMaker, this)
+        waitForRendering(home)
+        const before = shelvesOf(home)
+        compare(before.length, 2)
+        compare(before[0].section.items.length, 2)
+        Sources.pages = { "fixture native:artist:1": page(4) }
+        Library.remoteRev++
+        waitForRendering(home)
+        const after = shelvesOf(home)
+        compare(after.length, 2)
+        verify(after[0] === before[0] && after[1] === before[1], "the same shelves stand")
+        compare(after[0].section.items.length, 4, "with what came")
     }
 }
