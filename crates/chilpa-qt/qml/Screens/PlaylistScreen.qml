@@ -29,7 +29,8 @@ Flickable {
         id: tracks
         kind: "playlist"
         albumId: page.playlistId
-        filterRev: Playlists.rev + Library.contentRev + Library.remoteRev
+        // A source track's cover arrives after the list is drawn.
+        filterRev: Playlists.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
         order: page.order
         ascending: page.ascending

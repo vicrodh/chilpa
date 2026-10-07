@@ -327,6 +327,7 @@ impl Chilpa {
     /// A queue entry of a source the catalog knows, as a row.
     pub(crate) fn source_row(&self, path: &str) -> Option<TrackRow> {
         let (track, art) = self.catalog.track_by_path(path)?;
+        if art.is_empty() { self.catalog.want_art_of(path); }
         Some(row_of(&track, art))
     }
 
