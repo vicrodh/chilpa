@@ -39,6 +39,22 @@ TestCase {
         menu.close()
         records.expanded = -1
     }
+    // A record's menu offers every placement a track's does, and the extra
+    // queues, which act on the record.
+    function test_record_menu_offers_every_placement_and_the_extra_queues() {
+        const menu = findChild(grid, "albumMenu")
+        menu.show(7, "Record", "Artist", 0, 10, 10)
+        tryCompare(menu, "visible", true)
+        compare(menu.entries.slice(1, 4).map(entry => entry.act), ["queue", "next", "later"])
+        menu.actionChosen(menu.entries[3])
+        compare(AlbumActions.lastAction, "later:7:Record")
+        const extra = menu.entries[menu.entries.length - 1]
+        verify(extra.submenu)
+        compare(extra.children.length, 3)
+        menu.actionChosen(extra.children[1])
+        compare(AlbumActions.lastAction, "buffer:add:2:7")
+        menu.close()
+    }
     function test_quality_is_visible_without_card_hover_and_has_a_tooltip() {
         const badge = findChild(card, "albumQualityBadge")
         verify(badge.visible)

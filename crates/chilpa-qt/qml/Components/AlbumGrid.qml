@@ -191,6 +191,7 @@ Item {
 
     AlbumMenu {
         id: albumMenu
+        objectName: "albumMenu"
 
         canExpand: true
         artistPage: grid.artistPage

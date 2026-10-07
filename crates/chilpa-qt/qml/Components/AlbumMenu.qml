@@ -6,10 +6,11 @@ import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
 
 // What a record offers from its menu (design/04, Album): play it or queue
-// it -- or the whole selection when it is part of one -- add it to a
-// playlist, open it here or in a new tab, its quick view where a grid can
-// open one, its artist unless that is the page it is on, and its favorite.
-Menu {
+// it, now, next, later or in an extra queue -- or the whole selection when
+// it is part of one -- add it to a playlist, open it here or in a new tab,
+// its quick view where a grid can open one, its artist unless that is the
+// page it is on, and its favorite.
+CascadingMenu {
     id: menu
 
     property int albumId
@@ -34,8 +35,9 @@ Menu {
         const all = [
             { text: I18n.trCount("{} record", "{} records", AlbumActions.selectedCount, I18n.rev), note: true, when: !one },
             { text: I18n.tr("Play now", I18n.rev), act: "play", glyph: Icons.playerPlayFilled, filled: true },
-            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
             { text: I18n.tr("Add to queue", I18n.rev), act: "queue", glyph: Lucide.listEnd, family: Lucide.font },
+            { text: I18n.tr("Play next", I18n.rev), act: "next", glyph: Lucide.listStart, family: Lucide.font },
+            { text: I18n.tr("Play later", I18n.rev), act: "later", glyph: Lucide.listPlus, family: Lucide.font },
             // A source's record (a negative id) is not the library's to edit or mark.
             { text: I18n.tr("Add to playlist…", I18n.rev), act: "pick", glyph: Icons.playlistAdd, when: id > 0 },
             { separator: true, when: one },
@@ -48,17 +50,21 @@ Menu {
             { text: favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev),
               act: favorite ? "unfavorite" : "favorite", when: one && (id > 0 || nativeInfo.plugin && /^(album|artist|label|playlist):/.test(nativeInfo.ref || "")) }
         ]
-        actions = all.filter(e => e.when === undefined || e.when)
+        // The extra queues come from the facade, as they do for a track.
+        actions = all.filter(e => e.when === undefined || e.when).concat(JSON.parse(AlbumActions.listenTargetsJson()))
         entries = actions
         x = left
         y = top
         open()
     }
 
-    onChosen: (index) => {
-        switch (actions[index].act) {
+    onActionChosen: (entry) => {
+        const act = entry.act || ""
+        if (act.startsWith("buffer:")) { AlbumActions.listAction(albumId, act); ListenList.refresh(); if (act === "buffer:new") Navigation.go("listenlist", 0); return }
+        switch (act) {
         case "play": AlbumActions.play(albumId, false); break
         case "next": AlbumActions.playNext(albumId); break
+        case "later": AlbumActions.playLater(albumId, title); break
         case "queue": AlbumActions.queue(albumId); break
         case "pick": picker.trackIdsJson = AlbumActions.trackIdsJson(albumId); picker.show(x, y); break
         case "open": Navigation.go("album", albumId); break
@@ -68,8 +74,8 @@ Menu {
         case "metadata": Navigation.go("metadata", albumId); break
         case "favorite":
         case "unfavorite":
-            if (nativeInfo.plugin) Sources.command("native", nativeInfo.plugin, JSON.stringify({action:"favorite",ref:nativeInfo.ref,on:actions[index].act === "favorite"}))
-            else Ratings.setFavorite("album", albumId, actions[index].act === "favorite")
+            if (nativeInfo.plugin) Sources.command("native", nativeInfo.plugin, JSON.stringify({action:"favorite",ref:nativeInfo.ref,on:act === "favorite"}))
+            else Ratings.setFavorite("album", albumId, act === "favorite")
             break
         }
     }
