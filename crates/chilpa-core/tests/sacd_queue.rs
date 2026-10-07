@@ -208,6 +208,51 @@ fn one_track_of_a_sacd_image_plays_on_its_own() {
     let _ = std::fs::remove_file(iso);
 }
 
+/// How long a track runs, in milliseconds, by what the player says when it
+/// starts: its frames over the rate that opened. What the bar shows and
+/// what the lyrics are looked up with.
+fn length_when_played(path: &PathBuf, mode: chilpa_core::queue_playback::DsdMode, format: SampleFormat, rate: u32) -> u64 {
+    let player = Player::spawn(
+        Box::new(move |_| Ok(DeviceCaps { sample_rates: vec![rate], formats: vec![format], channels: vec![2], probed: true })),
+        Box::new(|_, format, _| Ok(Box::new(Swallow(format)) as Box<dyn AudioSink + Send>)),
+    );
+    player.set_dsd_mode(mode);
+    player.play_all(std::slice::from_ref(path), "alsa:hw:0,0");
+    let limit = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < limit {
+        for event in player.poll() {
+            match event {
+                PlayerEvent::Started { opened, total_frames, .. } => {
+                    assert_eq!(opened.sample_rate_hz, rate, "{mode:?} opened as asked");
+                    return total_frames.expect("a disc's track says how long it is") * 1000 / u64::from(rate);
+                }
+                PlayerEvent::Failed { message } => panic!("{mode:?}: {message}"),
+                _ => {}
+            }
+        }
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    panic!("{mode:?}: it never started")
+}
+
+#[test]
+fn a_disc_track_lasts_the_same_however_it_is_carried() {
+    // Two disc frames of 1/75 s: 26 ms. Played native, the track used to be
+    // counted in DoP frames over native's half rate, twice as long -- and
+    // the lyrics were looked up with that length and not found.
+    use chilpa_core::queue_playback::DsdMode;
+    let iso = image("length");
+    let second = PathBuf::from(format!("sacd:{}#2", iso.display()));
+    for (mode, format, rate) in [
+        (DsdMode::Dop, SampleFormat::S24In32, 176_400),
+        (DsdMode::Native, SampleFormat::DsdU32Be, 88_200),
+        (DsdMode::Pcm, SampleFormat::S24In32, 88_200),
+    ] {
+        assert_eq!(length_when_played(&second, mode, format, rate), 26, "{mode:?}");
+    }
+    let _ = std::fs::remove_file(iso);
+}
+
 #[test]
 fn a_track_that_breaks_halfway_stops_the_queue_and_says_why() {
     // A sector in the middle of the first track that no longer adds up. The

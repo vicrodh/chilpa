@@ -82,11 +82,13 @@ pub fn disc_images() -> std::sync::Arc<dyn chilpa_library::scan::Containers + Se
 }
 
 /// What the disc says about one of its tracks, as tags, and how long the
-/// track runs in DoP frames: sixteen of its one-bit samples each.
+/// track runs in one-bit samples per channel at DSD64. How many frames that
+/// is depends on what opened -- DoP, native or PCM -- and the player counts
+/// it from there (`dsd_playback::frames_opened`).
 pub(crate) fn about(image: &Path, number: u8) -> Option<(chilpa_tags::Tags, u64)> {
     let disc = chilpa_sacd::open(image).ok()?;
     let track = disc.area.tracks.iter().find(|t| t.number == number)?;
-    Some((tags(&disc.area, track, image), dop_frames(track)))
+    Some((tags(&disc.area, track, image), one_bit_samples(track)))
 }
 
 /// A track's title as its disc gives it, when the path names a track of an
@@ -105,8 +107,9 @@ pub(crate) fn open(image: &Path, number: u8) -> Result<chilpa_sacd::SacdTrackRea
     chilpa_sacd::SacdTrackReader::open(disc, &track).map_err(|e| e.to_string())
 }
 
-fn dop_frames(track: &chilpa_sacd::SacdTrack) -> u64 {
-    u64::from(track.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75) / 16
+/// A disc counts time in frames of 1/75 s.
+fn one_bit_samples(track: &chilpa_sacd::SacdTrack) -> u64 {
+    u64::from(track.duration_frames) * u64::from(chilpa_sacd::DSD64_HZ / 75)
 }
 
 /// The disc's names for a track. Where the disc says nothing, the track is
