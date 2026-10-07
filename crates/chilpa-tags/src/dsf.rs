@@ -11,7 +11,7 @@
 //! without looking for audio once it is told not to read properties.
 
 use crate::{Opened, TagError};
-use lofty::config::ParseOptions;
+use lofty::config::{ParseOptions, ParsingMode};
 use lofty::file::{FileType, TaggedFileExt};
 use lofty::probe::Probe;
 use std::io::{Cursor, Read, Seek, SeekFrom};
@@ -70,11 +70,15 @@ fn tag_at(file: &mut std::fs::File, at: u64) -> Option<lofty::tag::Tag> {
 }
 
 /// An ID3v2 tag on its own, as lofty reads one: dressed as an MPEG file with
-/// nothing after it, and told not to look for the audio.
+/// nothing after it, and told not to look for the audio. A frame lofty
+/// cannot parse fails the whole tag in its default mode; read again,
+/// relaxed, only that frame is lost.
 pub(crate) fn id3(bytes: Vec<u8>) -> Option<lofty::tag::Tag> {
-    let options = ParseOptions::new().read_properties(false);
-    let mut tagged =
-        Probe::new(Cursor::new(bytes)).options(options).set_file_type(FileType::Mpeg).read().ok()?;
+    let read = |mode: ParsingMode| {
+        let options = ParseOptions::new().read_properties(false).parsing_mode(mode);
+        Probe::new(Cursor::new(bytes.as_slice())).options(options).set_file_type(FileType::Mpeg).read().ok()
+    };
+    let mut tagged = read(ParsingMode::BestAttempt).or_else(|| read(ParsingMode::Relaxed))?;
     let primary = tagged.primary_tag_type();
     tagged.remove(primary).or_else(|| {
         let first = tagged.first_tag()?.tag_type();

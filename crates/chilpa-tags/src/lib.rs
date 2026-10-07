@@ -119,10 +119,19 @@ fn open(path: &Path) -> Result<Opened, TagError> {
     if dff::is_dff(path) {
         return dff::open(path);
     }
-    let mut file = Probe::open(path)
-        .map_err(|e| TagError::Unreadable(e.to_string()))?
-        .read()
-        .map_err(|e| TagError::Unreadable(e.to_string()))?;
+    // A tag lofty cannot parse takes the whole file down with it in its
+    // default mode -- a year of four blanks, as KORG AudioGate writes, is
+    // enough -- and the file came in under its name. Read again, relaxed,
+    // the frame that is wrong is left out and the rest is kept.
+    let probe = |mode: lofty::config::ParsingMode| {
+        Probe::open(path)
+            .map_err(|e| TagError::Unreadable(e.to_string()))?
+            .options(lofty::config::ParseOptions::new().parsing_mode(mode))
+            .read()
+            .map_err(|e| TagError::Unreadable(e.to_string()))
+    };
+    let mut file = probe(lofty::config::ParsingMode::BestAttempt)
+        .or_else(|_| probe(lofty::config::ParsingMode::Relaxed))?;
     let properties = file.properties();
     let (duration, sample_rate_hz, bit_depth, channels) = (
         properties.duration(),

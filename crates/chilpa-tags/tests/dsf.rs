@@ -20,6 +20,11 @@ fn dsf(name: &str, seconds: u32, tag: Option<&Tag>) -> PathBuf {
     if let Some(tag) = tag {
         tag.dump_to(&mut id3, WriteOptions::default()).unwrap();
     }
+    dsf_with(name, seconds, id3)
+}
+
+/// The same file with `id3` written as it is, for tags lofty would not write.
+fn dsf_with(name: &str, seconds: u32, id3: Vec<u8>) -> PathBuf {
     let channels = 2u32;
     let samples = u64::from(RATE) * u64::from(seconds);
     let block = 4096u32;
@@ -106,4 +111,43 @@ fn a_dsf_file_gives_up_its_cover() {
     assert_eq!(std::fs::read(&written).unwrap(), cover);
     let _ = std::fs::remove_file(path);
     let _ = std::fs::remove_dir_all(cache);
+}
+
+/// An ID3v2.3 tag as KORG AudioGate writes it: text frames in Latin-1, and
+/// the year, the date and the time as four blanks each.
+fn korg_tag() -> Vec<u8> {
+    let frame = |id: &[u8; 4], text: &str| {
+        let mut out = id.to_vec();
+        out.extend_from_slice(&(text.len() as u32 + 1).to_be_bytes());
+        out.extend_from_slice(&[0, 0, 0]);
+        out.extend_from_slice(text.as_bytes());
+        out
+    };
+    let mut frames = Vec::new();
+    frames.extend(frame(b"TALB", "All Things Must Pass, 1970"));
+    frames.extend(frame(b"TPE1", "George Harrison"));
+    frames.extend(frame(b"TIT2", "My Sweet Lord"));
+    frames.extend(frame(b"TCON", "Rock, Pop Rock"));
+    frames.extend(frame(b"TYER", "    "));
+    frames.extend(frame(b"TDAT", "    "));
+    frames.extend(frame(b"TIME", "    "));
+    let size = frames.len() as u32;
+    let syncsafe = [(size >> 21) as u8 & 0x7f, (size >> 14) as u8 & 0x7f, (size >> 7) as u8 & 0x7f, size as u8 & 0x7f];
+    let mut tag = b"ID3\x03\x00\x00".to_vec();
+    tag.extend_from_slice(&syncsafe);
+    tag.extend(frames);
+    tag
+}
+
+#[test]
+fn a_tag_with_a_blank_year_keeps_everything_else() {
+    // lofty refused the whole tag over the year, and the album came in as
+    // 23 files named by their file names, with no album to be found under.
+    let path = dsf_with("korg", 1, korg_tag());
+    let info = read(&path).expect("the file can be read");
+    assert_eq!(info.tags.title.as_deref(), Some("My Sweet Lord"));
+    assert_eq!(info.tags.album.as_deref(), Some("All Things Must Pass, 1970"));
+    assert_eq!(info.tags.artists, ["George Harrison"]);
+    assert_eq!(info.tags.year(), None, "a year of blanks is no year");
+    let _ = std::fs::remove_file(path);
 }
