@@ -12,5 +12,10 @@ QtObject {
     property double playedId: 0
     function play(id, shuffled) { playedId = id }
     function queue(id) {}
+    function playNext(id) { lastAction = "next:" + id }
+    function playLater(id, label) { lastAction = "later:" + id + ":" + label }
+    property string lastAction: ""
+    function listenTargetsJson() { return JSON.stringify([{separator:true},{text:"Extra queues",submenu:true,children:[{act:"buffer:new",text:"Open in new queue"},{act:"buffer:add:2",text:"Add to queue Two"},{act:"buffer:replace:2",text:"Replace queue Two"}]}]) }
+    function listAction(id, action) { lastAction = action + ":" + id }
     function trackIdsJson(id) { return "[]" }
 }

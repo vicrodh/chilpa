@@ -353,11 +353,37 @@ impl Chilpa {
         }
     }
 
+    /// Puts records after what is queued next, as one group with that
+    /// label; a source's record whose tracks were never read waits for them.
+    pub fn album_later(&mut self, ids: &[i64], label: &str) {
+        if ids.iter().any(|id| *id < 0 && self.catalog.tracks(*id).is_none()) {
+            self.catalog.defer(ids.to_vec(), "later", false);
+            return;
+        }
+        let paths = self.album_paths(ids);
+        self.play_later_here(&paths, label);
+    }
+
+    /// Sends records to an extra queue, by the `buffer:…` actions the menu
+    /// offers; a source's record whose tracks were never read waits for them.
+    pub fn album_listen_action(&mut self, ids: &[i64], action: &str) {
+        if ids.iter().any(|id| *id < 0 && self.catalog.tracks(*id).is_none()) {
+            self.catalog.defer(ids.to_vec(), action, false);
+            return;
+        }
+        let paths = self.album_paths(ids);
+        self.listen_paths_action(action, &paths);
+    }
+
     /// Runs what waited for a record's tracks, and puts a cover that came
     /// late on what plays. Called from `poll`.
     pub(crate) fn advance_catalog(&mut self) {
         for deferred in self.catalog.ready() {
-            self.album_action(&deferred.albums, &deferred.act, deferred.shuffled);
+            match deferred.act.as_str() {
+                "later" => self.album_later(&deferred.albums, ""),
+                act if act.starts_with("buffer:") => self.album_listen_action(&deferred.albums, act),
+                act => self.album_action(&deferred.albums, act, deferred.shuffled),
+            }
         }
         // A queue restored before the catalog was read from disk is named
         // once it is.

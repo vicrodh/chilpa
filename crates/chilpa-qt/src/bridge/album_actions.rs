@@ -39,6 +39,16 @@ pub mod qobject {
         fn play_next(self: &AlbumActions, id: i64);
         #[qinvokable]
         fn queue(self: &AlbumActions, id: i64);
+        /// Puts the record, or the selection, after what is queued next, as
+        /// a group with that label.
+        #[qinvokable]
+        fn play_later(self: &AlbumActions, id: i64, label: &QString);
+        /// The extra queues a record can go to, as menu entries.
+        #[qinvokable]
+        fn listen_targets_json(self: &AlbumActions) -> QString;
+        /// Sends the record, or the selection, to an extra queue (`buffer:…`).
+        #[qinvokable]
+        fn list_action(self: &AlbumActions, id: i64, action: &QString);
         #[qinvokable]
         fn track_ids_json(self: &AlbumActions, id: i64) -> QString;
         /// Whether the record opens: some track of it plays now (ADR-017).
@@ -132,6 +142,17 @@ impl qobject::AlbumActions {
     pub fn play(&self, id: i64, shuffled: bool) { self.act(id, "play", shuffled) }
     pub fn play_next(&self, id: i64) { self.act(id, "next", false) }
     pub fn queue(&self, id: i64) { self.act(id, "queue", false) }
+    pub fn play_later(&self, id: i64, label: &cxx_qt_lib::QString) {
+        let ids = self.rust().targets(id);
+        app::with(|api| api.album_later(&ids, &label.to_string()));
+    }
+    pub fn listen_targets_json(&self) -> cxx_qt_lib::QString {
+        cxx_qt_lib::QString::from(serde_json::to_string(&app::with(|api| api.listen_targets())).unwrap_or_default())
+    }
+    pub fn list_action(&self, id: i64, action: &cxx_qt_lib::QString) {
+        let ids = self.rust().targets(id);
+        app::with(|api| api.album_listen_action(&ids, &action.to_string()));
+    }
 
     pub fn track_ids_json(&self, id: i64) -> cxx_qt_lib::QString {
         let ids: Vec<i64> = self.rust().targets(id).into_iter().flat_map(|album| app::with(|api| api.album_track_rows(album))).map(|track| track.id).collect();
