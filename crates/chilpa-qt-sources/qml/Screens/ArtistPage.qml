@@ -107,7 +107,7 @@ Item {
             readonly property bool shown: one.albums > 0
             spacing: Metrics.gap12
             visible: shown
-            AlbumGridModel { id: one; kind: latest.section.model || "source"; key: latest.section.key || ""; limit: 1; columns: 1; contentRev: Library.remoteRev + Library.remoteArtRev }
+            AlbumGridModel { id: one; kind: latest.section.model || "source"; key: latest.section.model_key || latest.section.key || ""; limit: 1; columns: 1; contentRev: Library.remoteRev + Library.remoteArtRev }
             Text { text: latest.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }
             AlbumCard {
                 width: Metrics.latestCard
