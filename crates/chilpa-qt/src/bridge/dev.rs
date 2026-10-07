@@ -9,7 +9,8 @@
 //! `CHILPA_SHOT=<file.png>` saves the window once it has settled and quits,
 //! so a screen can be looked at without a display. `CHILPA_ROUTE` opens a
 //! screen at start ("album:7"), for the same reason, and
-//! `CHILPA_PLAY_ALBUM=<id>` starts a record playing once the window is up,
+//! `CHILPA_PLAY_ALBUM=<id>[:<track index>]` starts a record playing once
+//! the window is up,
 //! and `CHILPA_ADD_FOLDER=<path>` adds a folder to the library and scans it.
 
 #[cxx_qt::bridge]
@@ -140,7 +141,11 @@ impl Drop for DevRust {
 
 impl cxx_qt::Initialize for qobject::Dev {
     fn initialize(self: Pin<&mut Self>) {
-        let Some(id) = std::env::var("CHILPA_PLAY_ALBUM").ok().and_then(|v| v.parse::<i64>().ok()) else {
+        // "<album id>" plays it from its first track; "<album id>:<n>" from
+        // its n-th, counted from zero.
+        let asked = std::env::var("CHILPA_PLAY_ALBUM").unwrap_or_default();
+        let (id, start) = asked.split_once(':').unwrap_or((&asked, "0"));
+        let (Ok(id), Ok(start)) = (id.parse::<i64>(), start.parse::<usize>()) else {
             return;
         };
         let thread = self.qt_thread();
@@ -149,7 +154,7 @@ impl cxx_qt::Initialize for qobject::Dev {
             let _ = thread.queue(move |_| {
                 crate::app::with(|api| {
                     let paths: Vec<String> = api.album_track_rows(id).into_iter().map(|t| t.path).collect();
-                    api.play_from(&paths, 0);
+                    api.play_from(&paths, start);
                 });
             });
         });
