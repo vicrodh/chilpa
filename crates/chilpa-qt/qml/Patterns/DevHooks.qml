@@ -36,7 +36,7 @@ Item {
     NumberAnimation {
         id: sweep
         property: "contentY"
-        onFinished: Qt.quit()
+        onFinished: Player.quit()
     }
 
     Timer {
@@ -45,7 +45,7 @@ Item {
         onTriggered: {
             const view = hooks.longest(hooks.window.contentItem, null)
             if (!view)
-                return Qt.quit()
+                return Player.quit()
             const distance = Math.min(view.contentHeight - view.height, Dev.scroll * Metrics.scrollTestSeconds)
             sweep.target = view
             sweep.from = 0
@@ -81,7 +81,7 @@ Item {
             hooks.window.contentItem.grabToImage(function(result) {
                 result.saveToFile(Dev.shot)
                 if (!sweep.running)
-                    Qt.quit()
+                    Player.quit()
             })
         }
     }

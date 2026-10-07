@@ -101,6 +101,17 @@ TestCase {
         compare(test.accepted, true, "a quit is not hidden from")
     }
 
+    // Quit asked from inside Chilpa goes the desktop's way: the window
+    // closes for real instead of hiding to the tray.
+    function test_quit_from_inside_closes_through_the_tray() {
+        open(0, 0, false)
+        Controls.trayClose = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        made.run("nav.quit")
+        compare(test.accepted, true, "the window closed")
+    }
+
     // The tray icon's click shows a hidden window and hides one in sight.
     function test_the_tray_toggles_the_window() {
         open(0, 0, false)

@@ -152,7 +152,7 @@ Item {
                 ]
                 onChosen: (index) => index === 0 ? Navigation.openSection("")
                     : index === 1 ? Navigation.go("libraryFolders", 0)
-                    : Qt.quit()
+                    : Player.quit()
             }
         }
 
