@@ -297,6 +297,23 @@ fn read_matching_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str,
 }
 
 /// A record's or a playlist's tracks, in one call.
+/// One track by its entry, from `track.get`: the item a shelf would carry,
+/// taken in with its record, so a list of mine can name it, show its cover
+/// and lead to its record and artist.
+pub(super) fn read_track(catalog: &Catalog, natives: &Arc<Natives>, path: &str) -> Result<(), String> {
+    let (plugin, reference) = crate::source_opener::of_plugin(path).ok_or_else(|| "not a source's track".to_string())?;
+    remember_domains(catalog, natives, &plugin);
+    let answer = natives.call(&plugin, "track.get", json!({"ref": reference}), ASKED)?;
+    let item = answer.get("track").filter(|t| t.is_object()).unwrap_or(&answer);
+    if item["ref"].as_str().is_none() { return Err("the source said nothing of the track".into()); }
+    let stamp = now();
+    let mut inner = catalog.lock();
+    if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
+    inner.store.take_item_track(&plugin, item, None, stamp);
+    inner.dirty = true;
+    Ok(())
+}
+
 pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) -> Result<(), String> {
     let (plugin, reference, kind) = catalog.lock().store.cards.get(&id).map(|c| (c.plugin.clone(), c.identity.clone(), c.kind))
         .ok_or_else(|| chilpa_i18n::t("this part of the source is not there now"))?;

@@ -6,7 +6,8 @@ const PEER: &str = r#"#!/usr/bin/python3
 import json,sys
 for line in sys.stdin:
     q=json.loads(line);m=q.get('method');p=q.get('params',{})
-    if m=='initialize': r={'protocol':1,'capabilities':{'search':True,'playlist_edit':True}}
+    if m=='initialize': r={'protocol':1,'capabilities':{'search':True,'playlist_edit':True,'pages':True}}
+    elif m=='track.get': r={'track':{'kind':'track','ref':'track:1','title':'First','artist':'Band','artist_ref':'artist:9','album':'Record','album_ref':'album:5','image':'https://example.org/record.jpg'}}
     elif m=='search': r={'tracks':[{'kind':'track','ref':'track:1','title':'First','artist':'Band','isrc':'ABC','quality':{'codec':'flac','bits':24,'rate':96000},'access_token':'private','url':'signed'}]}
     elif m=='page.action' and p.get('action')=='playlist.create': r={'item':{'ref':'playlist:new'}}
     else: r={}
@@ -155,6 +156,24 @@ fn a_plugin_can_read_peer_metadata_only_after_permission_and_cannot_write_withou
         let entries = library.playlist_entries(local.id).unwrap();
         assert_eq!(entries.len(), 1);
         assert!(entries[0].external_id.contains("com.test.peer"));
+
+        // The imported row is a source's track no page ever showed: its
+        // record of the library's own making is no page to open, and the
+        // source is asked for the track, whose record and artist then are.
+        let rows = api.playlist_rows(local.id);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].album_id, 0, "{:?}", rows[0]);
+        assert!(api.source_artist_key(0, &rows[0].path).is_none());
+        let deadline = std::time::Instant::now() + Duration::from_secs(15);
+        let rows = loop {
+            api.poll();
+            let rows = api.playlist_rows(local.id);
+            if rows[0].album_id < 0 { break rows; }
+            assert!(std::time::Instant::now() < deadline, "the source was not asked for the track: {:?}", rows[0]);
+            std::thread::sleep(Duration::from_millis(20));
+        };
+        assert_eq!(rows[0].album, "Record");
+        assert_eq!(api.source_artist_key(0, &rows[0].path).as_deref(), Some("com.test.peer native:artist:9"));
     }
 }
 

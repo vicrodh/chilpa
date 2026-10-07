@@ -98,6 +98,7 @@ mod servers;
 pub mod settings_rows;
 pub mod settings_schema;
 pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
+pub use source_opener::on_a_source;
 pub use settings_rows::{RowNotes, SettingsRow};
 pub mod sidebar;
 pub mod theme;
