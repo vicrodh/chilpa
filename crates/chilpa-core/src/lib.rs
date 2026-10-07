@@ -18,7 +18,7 @@ pub mod settings;
 pub mod wizard;
 pub mod queue_playback;
 pub mod remote;
-mod remote_preload;
+mod preload;
 pub mod playback_events;
 pub mod sacd_tracks;
 

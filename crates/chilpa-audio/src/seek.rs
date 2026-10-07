@@ -101,6 +101,11 @@ impl SeekSignal {
     }
 
     /// Takes the pending seek, if there is one.
+    /// Whether a seek waits to be taken.
+    pub fn asked(&self) -> bool {
+        self.0.lock().map(|s| s.is_some()).unwrap_or(false)
+    }
+
     pub fn take(&self) -> Option<Duration> {
         self.0.lock().ok().and_then(|mut g| g.take())
     }

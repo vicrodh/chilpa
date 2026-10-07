@@ -3537,6 +3537,9 @@ msgstr "no se pudieron leer las frecuencias a las que puede correr el grafo de P
 msgid "the rating could not be saved: {}"
 msgstr "No se pudo guardar la valoración: {}"
 
+msgid "the read-ahead thread could not start"
+msgstr "el hilo de lectura adelantada no pudo arrancar"
+
 msgid "the record has no artist"
 msgstr "el disco no tiene artista"
 

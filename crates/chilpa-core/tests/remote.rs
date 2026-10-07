@@ -306,6 +306,11 @@ fn remote_seeks_during_render_skip_or_repeat_only_the_requested_frames() {
             if self.first.load(Ordering::Relaxed) == 0 {
                 self.first.store(frames as u64, Ordering::Relaxed);
                 self.seek.request(self.target);
+                // The source is read ahead on its own thread: it takes the
+                // seek at its next read, and only what it read before then
+                // and the loop had already taken goes out from the old
+                // place. A moment is enough for it to take the seek first.
+                std::thread::sleep(Duration::from_millis(100));
             }
             Ok(frames)
         }

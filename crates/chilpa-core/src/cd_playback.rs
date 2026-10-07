@@ -82,6 +82,10 @@ struct LaidOut<'r, 'd> {
 }
 
 impl FrameSource for LaidOut<'_, '_> {
+    fn ended_early(&self) -> bool {
+        self.skipped
+    }
+
     fn moved(&mut self) -> bool {
         std::mem::take(&mut self.moved)
     }

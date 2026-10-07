@@ -101,6 +101,8 @@ pub(crate) struct NativeFrames<'a> {
     pub(crate) skipped: bool,
     discard: usize,
     moved: bool,
+    /// What had been delivered when the last seek was worked out.
+    moved_at: u64,
     pub(crate) base: std::sync::Arc<std::sync::atomic::AtomicI64>,
     pub(crate) delivered: std::sync::Arc<std::sync::atomic::AtomicU64>,
 }
@@ -118,6 +120,7 @@ impl<'a> NativeFrames<'a> {
             skipped: false,
             discard: 0,
             moved: false,
+            moved_at: 0,
             base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
             delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
@@ -157,11 +160,19 @@ impl<'a> NativeFrames<'a> {
         self.moved = true;
         let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
         self.base.store((at / 32) as i64 - delivered as i64, std::sync::atomic::Ordering::Relaxed);
+        self.moved_at = delivered;
         Ok(())
     }
 }
 
 impl FrameSource for NativeFrames<'_> {
+    fn ended_early(&self) -> bool {
+        self.skipped
+    }
+    fn heard_at_move(&self) -> Option<u64> {
+        Some(self.moved_at)
+    }
+
     fn moved(&mut self) -> bool {
         std::mem::take(&mut self.moved)
     }
@@ -244,6 +255,8 @@ pub(crate) struct DopFrames<'a> {
     discard: usize,
     /// Set by a seek that landed, until the renderer has heard of it.
     moved: bool,
+    /// What had been delivered when the last seek was worked out.
+    moved_at: u64,
     /// What to add to the DoP frames delivered to get the position in the
     /// track: where the last seek went less what had been delivered by then.
     pub(crate) base: std::sync::Arc<std::sync::atomic::AtomicI64>,
@@ -264,6 +277,7 @@ impl<'a> DopFrames<'a> {
             skipped: false,
             discard: 0,
             moved: false,
+            moved_at: 0,
             base: std::sync::Arc::new(std::sync::atomic::AtomicI64::new(0)),
             delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
         }
@@ -279,6 +293,13 @@ impl<'a> DopFrames<'a> {
 }
 
 impl FrameSource for DopFrames<'_> {
+    fn ended_early(&self) -> bool {
+        self.skipped
+    }
+    fn heard_at_move(&self) -> Option<u64> {
+        Some(self.moved_at)
+    }
+
     fn moved(&mut self) -> bool {
         std::mem::take(&mut self.moved)
     }
@@ -348,6 +369,7 @@ impl DopFrames<'_> {
         self.moved = true;
         let delivered = self.delivered.load(std::sync::atomic::Ordering::Relaxed);
         self.base.store((at / 16) as i64 - delivered as i64, std::sync::atomic::Ordering::Relaxed);
+        self.moved_at = delivered;
         Ok(())
     }
 }

@@ -3537,6 +3537,9 @@ msgstr ""
 msgid "the rating could not be saved: {}"
 msgstr ""
 
+msgid "the read-ahead thread could not start"
+msgstr ""
+
 msgid "the record has no artist"
 msgstr ""
 
