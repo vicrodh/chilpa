@@ -8,6 +8,7 @@
 //! handed in by whoever calls. So every test here runs without going out,
 //! against answers that were saved from the real thing.
 
+pub mod artist;
 pub mod cover_art;
 pub mod discogs;
 pub mod http;

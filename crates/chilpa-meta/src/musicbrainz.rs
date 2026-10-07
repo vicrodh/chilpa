@@ -49,7 +49,7 @@ pub fn release_url(id: &str) -> Result<String, Failure> {
 
 /// Asks, waiting out what MusicBrainz says to wait out: three tries for a
 /// "too many requests", two for a silence.
-fn get(net: &Net, url: &str) -> Result<Value, Failure> {
+pub(crate) fn get(net: &Net, url: &str) -> Result<Value, Failure> {
     let mut silences = 0;
     let mut refusals = 0;
     loop {

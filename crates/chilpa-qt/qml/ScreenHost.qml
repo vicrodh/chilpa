@@ -15,7 +15,7 @@ Loader {
 
     sourceComponent: {
         if (music.music === true)
-            return music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
+            return music.artist === true ? sourceArtist : music.shelves !== undefined ? sourceHome : music.albumsOnly === false ? sourceListing : sourceAlbums
         switch (Navigation.screen) {
         case "home": return home
         case "library": return library
@@ -45,7 +45,8 @@ Loader {
     Component { id: albums; AlbumsScreen {} }
     Component { id: tracks; TracksScreen {} }
     Component { id: artists; ArtistsScreen {} }
-    Component { id: artist; ArtistScreen {} }
+    // The library's artist is drawn by the same page as a source's.
+    Component { id: artist; ArtistPage { key: "local artist:" + Navigation.routeKey } }
     Component { id: settings; SettingsScreen {} }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
@@ -59,6 +60,7 @@ Loader {
     Component { id: mediaSource; MediaSourceScreen {} }
     Component { id: mediaDetail; MediaDetailScreen {} }
     Component { id: sourceHome; SourceHome { key: Navigation.routeKey } }
+    Component { id: sourceArtist; ArtistPage { key: Navigation.routeKey } }
     Component { id: sourceAlbums; AlbumsScreen { source: Navigation.routeKey } }
     Component { id: sourceListing; SourceListing { source: Navigation.routeKey } }
     Component { id: sourceEntry; SourceEntryScreen {} }

@@ -97,6 +97,7 @@ mod sources;
 mod servers;
 pub mod settings_rows;
 pub mod settings_schema;
+mod artist_page;
 pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
 pub use source_opener::on_a_source;
 pub use settings_rows::{RowNotes, SettingsRow};
@@ -634,6 +635,8 @@ pub struct Chilpa {
     playlist_import: playlist_import::State,
     /// The records, lists and tracks of sources, as the library's own.
     catalog: std::sync::Arc<source_catalog::Catalog>,
+    /// What MusicBrainz and Last.fm know of the artists whose pages opened.
+    artist_network: artist_page::Network,
     /// The account being connected, between the browser opening and the
     /// user coming back.
     connecting: Option<plugins::Connecting>,
@@ -689,6 +692,7 @@ impl Chilpa {
         chilpa_core::backends::set_reserving(on(outputs::RESERVE));
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
         chilpa_core::backends::warm_up();
+        let catalog = source_catalog::Catalog::new();
         let mut chilpa = Self {
             core: chilpa_core::Core::new(),
             library: None,
@@ -728,7 +732,8 @@ impl Chilpa {
             search: search::SearchState::default(),
             sources: sources::SourcesState::default(),
             playlist_import: playlist_import::State::default(),
-            catalog: source_catalog::Catalog::new(),
+            artist_network: artist_page::Network::new(catalog.clone()),
+            catalog,
             connecting: None,
             now: NowPlaying::default(),
             sample_rate: 0,

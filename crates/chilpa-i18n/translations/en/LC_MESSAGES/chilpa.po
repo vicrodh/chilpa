@@ -151,6 +151,12 @@ msgstr ""
 msgid "Add a server"
 msgstr ""
 
+msgid "Add all to playlist…"
+msgstr ""
+
+msgid "Add all to queue"
+msgstr ""
+
 msgid "Add server"
 msgstr ""
 
@@ -270,7 +276,7 @@ msgstr "Any source — best quality (local mixed playlist)"
 msgid "Appearance"
 msgstr ""
 
-msgid "Appears on"
+msgid "Appears On"
 msgstr ""
 
 msgid "Apply"
@@ -294,6 +300,9 @@ msgstr ""
 msgid "Approve permissions and install"
 msgstr "Approve permissions and install"
 
+msgid "Apr"
+msgstr ""
+
 msgid "Artist"
 msgstr ""
 
@@ -301,6 +310,9 @@ msgid "Artist A-Z"
 msgstr ""
 
 msgid "Artist Z-A"
+msgstr ""
+
+msgid "Artist mix"
 msgstr ""
 
 msgid "Artist radio"
@@ -324,6 +336,9 @@ msgstr "Audio CD"
 msgid "Audio stack"
 msgstr ""
 
+msgid "Aug"
+msgstr ""
+
 msgid "Author: {}"
 msgstr "Author: {}"
 
@@ -343,6 +358,12 @@ msgid "AutoMix"
 msgstr ""
 
 msgid "Awaiting approval"
+msgstr ""
+
+msgid "BORN"
+msgstr ""
+
+msgid "BORN IN"
 msgstr ""
 
 msgid "BP marks an output that takes the samples untouched."
@@ -525,6 +546,9 @@ msgstr ""
 msgid "Closing the window keeps Chilpa playing in the tray instead of quitting."
 msgstr ""
 
+msgid "Collaborators"
+msgstr ""
+
 msgid "Collapse"
 msgstr ""
 
@@ -559,6 +583,12 @@ msgid "Compilation"
 msgstr ""
 
 msgid "Compilation (various artists)"
+msgstr ""
+
+msgid "Compilations"
+msgstr ""
+
+msgid "Composer"
 msgstr ""
 
 msgid "Composers"
@@ -662,6 +692,9 @@ msgstr "Creating playlists…"
 msgid "Credits"
 msgstr "Credits"
 
+msgid "Critics' Picks"
+msgstr ""
+
 msgid "Custom"
 msgstr ""
 
@@ -681,6 +714,12 @@ msgid "Cycle Repeat"
 msgstr ""
 
 msgid "DAC passthrough"
+msgstr ""
+
+msgid "DIED"
+msgstr ""
+
+msgid "DISBANDED"
 msgstr ""
 
 msgid "DLNA / UPnP and Chromecast"
@@ -730,6 +769,9 @@ msgstr ""
 
 msgid "Date updated"
 msgstr "Date updated"
+
+msgid "Dec"
+msgstr ""
 
 msgid "Default"
 msgstr ""
@@ -848,6 +890,9 @@ msgstr ""
 msgid "Dutch"
 msgstr ""
 
+msgid "EPs & Singles"
+msgstr ""
+
 msgid "Each file is copied, the copy is written and read back, and only then does it replace the original. It needs as much free space as the record takes. What is written cannot be undone."
 msgstr ""
 
@@ -920,7 +965,16 @@ msgstr ""
 msgid "Extra queues"
 msgstr ""
 
+msgid "FOUNDED"
+msgstr ""
+
+msgid "FOUNDED IN"
+msgstr ""
+
 msgid "Favorites"
+msgstr ""
+
+msgid "Feb"
 msgstr ""
 
 msgid "Fetching the cover…"
@@ -972,6 +1026,9 @@ msgid "Folder name"
 msgstr ""
 
 msgid "Folders"
+msgstr ""
+
+msgid "Follow"
 msgstr ""
 
 msgid "Font"
@@ -1064,6 +1121,9 @@ msgstr ""
 msgid "Hi-Res Lossless"
 msgstr ""
 
+msgid "Hide"
+msgstr ""
+
 msgid "Hide from sidebar"
 msgstr ""
 
@@ -1115,6 +1175,9 @@ msgstr ""
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
 msgstr ""
 
+msgid "INFLUENCES"
+msgstr ""
+
 msgid "Icon"
 msgstr ""
 
@@ -1132,6 +1195,9 @@ msgstr ""
 
 msgid "Include source albums in Albums"
 msgstr "Include source albums in Albums"
+
+msgid "Influences"
+msgstr ""
 
 msgid "Info: Embedded tags"
 msgstr ""
@@ -1193,7 +1259,19 @@ msgstr ""
 msgid "Its page, or its quick view under the row."
 msgstr ""
 
+msgid "JUMP TO"
+msgstr ""
+
+msgid "Jan"
+msgstr ""
+
 msgid "Japanese"
+msgstr ""
+
+msgid "Jul"
+msgstr ""
+
+msgid "Jun"
 msgstr ""
 
 msgid "Keep the current one"
@@ -1208,6 +1286,9 @@ msgstr ""
 msgid "Keymap"
 msgstr ""
 
+msgid "LABELS"
+msgstr ""
+
 msgid "Label"
 msgstr "Label"
 
@@ -1218,6 +1299,9 @@ msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr ""
 
 msgid "Later tabs"
+msgstr ""
+
+msgid "Latest release"
 msgstr ""
 
 msgid "Letters"
@@ -1242,6 +1326,9 @@ msgid "Light"
 msgstr ""
 
 msgid "Like Track"
+msgstr ""
+
+msgid "Links"
 msgstr ""
 
 msgid "List"
@@ -1322,6 +1409,9 @@ msgstr ""
 msgid "Lyrics source:"
 msgstr ""
 
+msgid "Magazine"
+msgstr ""
+
 msgid "Maintenance"
 msgstr ""
 
@@ -1329,6 +1419,9 @@ msgid "Manage"
 msgstr ""
 
 msgid "Manage playlists"
+msgstr ""
+
+msgid "Mar"
 msgstr ""
 
 msgid "Mark as heard"
@@ -1344,6 +1437,15 @@ msgid "Maximize"
 msgstr ""
 
 msgid "Maximum 32/384"
+msgstr ""
+
+msgid "May"
+msgstr ""
+
+msgid "Member Of"
+msgstr ""
+
+msgid "Members & Former"
 msgstr ""
 
 msgid "Menu"
@@ -1454,6 +1556,9 @@ msgstr ""
 msgid "Navigation"
 msgstr ""
 
+msgid "Network"
+msgstr ""
+
 msgid "Network access, including authentication, artwork and audio servers discovered by the plugin"
 msgstr ""
 
@@ -1520,6 +1625,9 @@ msgstr ""
 msgid "No grouping"
 msgstr ""
 
+msgid "No label info"
+msgstr ""
+
 msgid "No lyrics for this track."
 msgstr ""
 
@@ -1544,6 +1652,9 @@ msgstr ""
 msgid "No review available"
 msgstr "No review available"
 
+msgid "No stories for this artist"
+msgstr ""
+
 msgid "No tracks in the selected libraries yet."
 msgstr ""
 
@@ -1558,6 +1669,9 @@ msgstr ""
 
 msgid "Not compatible"
 msgstr "Not compatible"
+
+msgid "Not for me"
+msgstr ""
 
 msgid "Not heard first"
 msgstr ""
@@ -1598,6 +1712,9 @@ msgstr ""
 msgid "Nothing saved yet."
 msgstr ""
 
+msgid "Nov"
+msgstr ""
+
 msgid "Now playing"
 msgstr ""
 
@@ -1605,6 +1722,9 @@ msgid "Now playing: {}"
 msgstr ""
 
 msgid "Number of tracks"
+msgstr ""
+
+msgid "Oct"
 msgstr ""
 
 msgid "Off"
@@ -1751,6 +1871,15 @@ msgstr ""
 msgid "Play / Pause"
 msgstr ""
 
+msgid "Play all"
+msgstr ""
+
+msgid "Play all later"
+msgstr ""
+
+msgid "Play all next"
+msgstr ""
+
 msgid "Play count"
 msgstr ""
 
@@ -1764,6 +1893,9 @@ msgid "Play now"
 msgstr ""
 
 msgid "Play on"
+msgstr ""
+
+msgid "Play random"
 msgstr ""
 
 msgid "Play this group"
@@ -1836,6 +1968,9 @@ msgid "Plugin-reported quality"
 msgstr "Plugin-reported quality"
 
 msgid "Plugins"
+msgstr ""
+
+msgid "Popular Tracks"
 msgstr ""
 
 msgid "Portuguese"
@@ -1920,6 +2055,9 @@ msgid "Quit"
 msgstr ""
 
 msgid "Quit Chilpa"
+msgstr ""
+
+msgid "RELATIONSHIPS"
 msgstr ""
 
 msgid "Radio"
@@ -2114,6 +2252,9 @@ msgstr ""
 msgid "SACDTRL2 is missing"
 msgstr ""
 
+msgid "SIMILAR ARTISTS"
+msgstr ""
+
 msgid "Save"
 msgstr ""
 
@@ -2186,6 +2327,9 @@ msgstr ""
 msgid "Search these episodes"
 msgstr ""
 
+msgid "Search this page…"
+msgstr ""
+
 msgid "Searching for devices…"
 msgstr ""
 
@@ -2221,6 +2365,9 @@ msgstr ""
 msgid "Send listens"
 msgstr ""
 
+msgid "Sep"
+msgstr ""
+
 msgid "Separate source playlists"
 msgstr "Separate source playlists"
 
@@ -2243,6 +2390,9 @@ msgid "Sets PipeWire's graph to each track's rate while Chilpa has the output al
 msgstr ""
 
 msgid "Settings"
+msgstr ""
+
+msgid "Show"
 msgstr ""
 
 msgid "Show Shortcuts"
@@ -2284,6 +2434,9 @@ msgstr ""
 msgid "Shuffle"
 msgstr ""
 
+msgid "Shuffle all"
+msgstr ""
+
 msgid "Sidecar"
 msgstr ""
 
@@ -2299,6 +2452,9 @@ msgstr ""
 msgid "Similar albums"
 msgstr ""
 
+msgid "Similar artists"
+msgstr ""
+
 msgid "Size"
 msgstr ""
 
@@ -2309,6 +2465,9 @@ msgid "Songs"
 msgstr ""
 
 msgid "Source"
+msgstr ""
+
+msgid "Source: {}"
 msgstr ""
 
 msgid "Sources"
@@ -2634,6 +2793,9 @@ msgstr "Uncategorized"
 msgid "Undo queue replacement or closing"
 msgstr ""
 
+msgid "Unfollow"
+msgstr ""
+
 msgid "Uninstall"
 msgstr ""
 
@@ -2658,7 +2820,13 @@ msgstr ""
 msgid "Up next"
 msgstr ""
 
+msgid "Upcoming"
+msgstr ""
+
 msgid "Update"
+msgstr ""
+
+msgid "Updated {}"
 msgstr ""
 
 msgid "Updates"
@@ -2681,6 +2849,9 @@ msgstr "Valid"
 
 msgid "Version: {}"
 msgstr "Version: {}"
+
+msgid "View less"
+msgstr ""
 
 msgid "Volume Down"
 msgstr ""
@@ -2731,6 +2902,9 @@ msgid "Write into the files"
 msgstr ""
 
 msgid "Write to a file"
+msgstr ""
+
+msgid "YOU MAY ALSO LIKE"
 msgstr ""
 
 msgid "Year"
@@ -3121,6 +3295,9 @@ msgid "plughw converts whatever the card does not take -- the rate, the sample f
 msgstr ""
 
 msgid "plughw: converts what it refuses"
+msgstr ""
+
+msgid "present"
 msgstr ""
 
 msgid "put a panel of its own in the window"
@@ -3982,6 +4159,12 @@ msgstr ""
 
 msgid "{} written · {} unmatched · {} duplicates"
 msgstr "{} written · {} unmatched · {} duplicates"
+
+msgid "{} {}"
+msgstr ""
+
+msgid "{} {} {}"
+msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr ""

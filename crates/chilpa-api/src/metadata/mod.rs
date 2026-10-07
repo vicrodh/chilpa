@@ -14,7 +14,7 @@ mod draft;
 mod fields;
 mod save;
 pub mod view;
-mod worker;
+pub(crate) mod worker;
 
 use crate::Chilpa;
 use chilpa_meta::{Hit, Provider, Release};

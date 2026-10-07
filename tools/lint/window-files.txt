@@ -105,7 +105,6 @@ crates/chilpa-qt/qml/RightPanelFrame.qml
 crates/chilpa-qt/qml/ScreenHost.qml
 crates/chilpa-qt/qml/Screens/AlbumScreen.qml
 crates/chilpa-qt/qml/Screens/AlbumsScreen.qml
-crates/chilpa-qt/qml/Screens/ArtistScreen.qml
 crates/chilpa-qt/qml/Screens/ArtistsScreen.qml
 crates/chilpa-qt/qml/Screens/HomeScreen.qml
 crates/chilpa-qt/qml/Screens/LibraryScreen.qml

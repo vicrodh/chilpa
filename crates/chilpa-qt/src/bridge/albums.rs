@@ -326,6 +326,11 @@ impl qobject::AlbumGridModel {
                 let name = self.rust().key.to_string();
                 app::with(|api| api.artist_release_cards(&name, true))
             }
+            // The artist's newest record, for the page's "Latest release".
+            "artistLatest" => {
+                let name = self.rust().key.to_string();
+                app::with(|api| api.artist_release_cards(&name, false)).into_iter().take(1).collect()
+            }
             "sameArtist" => {
                 let id = self.rust().key.to_string().parse().unwrap_or_default();
                 app::with(|api| api.same_artist_albums(id, limit))

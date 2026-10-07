@@ -369,4 +369,23 @@ QtObject {
     readonly property int metadataHitsShown: 5
     readonly property int metadataColumnMin: 340
     readonly property int confirmWidth: 440
+
+    // The artist page (ui/design: artist). The portrait, the one card of
+    // the latest release, the Network sidebar and its rows, the jump bar,
+    // and how much is shown before "Load more".
+    readonly property int artistPortrait: 200
+    readonly property int latestCard: 200
+    readonly property int networkPanel: 300
+    readonly property int networkPad: 14
+    readonly property int networkRow: 28
+    readonly property int networkTab: 44
+    readonly property int networkPreview: 12
+    readonly property int networkNarrow: 1366
+    readonly property int jumpBar: 44
+    readonly property int jumpOffset: 48
+    readonly property int bioChars: 360
+    readonly property int previewRows: 5
+    readonly property int blockGap: 32
+    readonly property int networkValue: 150
+    readonly property int storyArt: 72
 }
