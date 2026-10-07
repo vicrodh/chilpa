@@ -27,7 +27,7 @@ from qmllib import GALLERY, KIT, ORDER, TREES, code_only, files, layer_of, rel, 
 IMPORT = re.compile(r'^\s*import\s+"([^"]+)"', re.MULTILINE)
 MODULE = re.compile(r"^\s*import\s+([A-Za-z][\w.]*)", re.MULTILINE)
 USE = re.compile(r"\b([A-Z][A-Za-z0-9_]*)\s*\{")
-RUST_MODULE = "com.blitzfc.chilpa"
+RUST_MODULE = "app.chilpa"
 # What a primitive may import: Qt only.
 QT_MODULES = re.compile(r"^(QtQuick|QtQml)(\.|$)")
 IN_GALLERY = ("Primitives", "Components", "Patterns")

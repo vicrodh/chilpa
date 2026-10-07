@@ -9,11 +9,11 @@ with tempfile.TemporaryDirectory(prefix="chilpa-source-controls-") as directory:
     stage = pathlib.Path(directory)
     # Only resource imports change; I test the production component itself.
     source = (root / "crates/chilpa-qt-sources/qml/Patterns/SourceLibraryControls.qml").read_text()
-    source = source.replace("qrc:/qt/qml/com/blitzfc/chilpa/qml/", (root / "crates/chilpa-qt/qml").as_uri() + "/")
+    source = source.replace("qrc:/qt/qml/app/chilpa/qml/", (root / "crates/chilpa-qt/qml").as_uri() + "/")
     (stage / "SourceLibraryControls.qml").write_text(source)
     (stage / "tst_controls.qml").write_text('''import QtQuick
 import QtTest
-import com.blitzfc.chilpa
+import app.chilpa
 import "."
 TestCase {
     name: "SourceLibraryControls"; when: windowShown

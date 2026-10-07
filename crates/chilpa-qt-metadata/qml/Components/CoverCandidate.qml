@@ -1,7 +1,7 @@
 import QtQuick
-import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // A cover the metadata editor found: its preview, kept on disk by the
 // editor, and what it belongs to. A click chooses it. `candidate` is one

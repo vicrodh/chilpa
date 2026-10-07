@@ -1,6 +1,6 @@
 // hot-path: shown in the row that plays.
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // Three bars in the accent (design/03 PlayingIndicator). Still, for now:
 // an animation per playing row is a cost to measure first.

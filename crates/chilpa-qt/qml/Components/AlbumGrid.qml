@@ -1,8 +1,8 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // Every grid of records in the window (frontend ADR-0002 4): a list of
 // rows, each laying out a fixed number of cards, so recycling a row only

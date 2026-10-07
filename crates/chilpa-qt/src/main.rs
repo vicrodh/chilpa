@@ -71,7 +71,7 @@ fn write_path(made: Option<std::path::PathBuf>, out: *mut std::ffi::c_char, capa
 const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 
 /// Where Inter lives in the resources.
-const INTER: &std::ffi::CStr = c":/qt/qml/com/blitzfc/chilpa/kit/assets/fonts/Inter.ttf";
+const INTER: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/Inter.ttf";
 
 fn main() {
     // Before anything is opened: a second launch shows the first and ends.
@@ -116,7 +116,7 @@ fn main() {
         // SAFETY: the engine is alive and a QQmlEngine; the provider it is
         // given is its own from then on.
         unsafe { chilpa_install_covers(engine.as_mut().get_unchecked_mut() as *mut QQmlApplicationEngine as *mut std::ffi::c_void) };
-        engine.load(&QUrl::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/{root}")));
+        engine.load(&QUrl::from(&format!("qrc:/qt/qml/app/chilpa/{root}")));
     }
     if let Some(app) = app.as_mut() {
         app.exec();

@@ -1,12 +1,12 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Patterns"
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // A record (design/06 Album): its header, the bar with discs and where the
 // information comes from, and its tracks with a header per disc.

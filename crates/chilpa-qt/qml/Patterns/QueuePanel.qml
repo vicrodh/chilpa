@@ -1,11 +1,11 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.controls
-import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Components" as Parts
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // The active queue drives local playback, casting and ListenList.

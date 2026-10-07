@@ -1,4 +1,4 @@
-//! The Gallery, as its own QML module (`com.blitzfc.chilpa.gallery`): the
+//! The Gallery, as its own QML module (`app.chilpa.gallery`): the
 //! second window that shows every piece of the interface in its states. It
 //! is for whoever builds Chilpa, so it does not weigh on the window's
 //! crate (ADR-001).
@@ -33,7 +33,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.gallery",
+            uri: "app.chilpa.gallery",
             rust_files: &bridges,
             qml_files: &qml,
             ..Default::default()

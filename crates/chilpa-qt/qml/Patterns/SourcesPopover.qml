@@ -1,10 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // Library Explorer's provenance and encoded-file filters. Sources are read
 // from the library; tiers and formats use the facade's generic vocabulary.

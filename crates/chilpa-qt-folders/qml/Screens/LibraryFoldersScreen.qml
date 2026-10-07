@@ -1,11 +1,11 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.folders
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
+import app.chilpa
+import app.chilpa.folders
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
 

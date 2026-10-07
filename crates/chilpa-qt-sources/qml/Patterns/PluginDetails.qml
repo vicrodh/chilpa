@@ -1,11 +1,11 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives" as P
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as P
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 
 P.Modal {
     id: details

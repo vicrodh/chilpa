@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.sources
+import app.chilpa
+import app.chilpa.sources
 import "../../qml/Screens"
 
 // The artist page draws the facade's shaped document: the blocks in their

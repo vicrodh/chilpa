@@ -1,7 +1,7 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.folders
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import app.chilpa.folders
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // How a scan is going, or what the last one found: a line of text over a
 // thin bar that fills while it reads.

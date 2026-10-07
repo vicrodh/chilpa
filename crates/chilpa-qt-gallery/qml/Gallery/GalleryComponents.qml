@@ -1,13 +1,13 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.folders
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/folders/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/folders/qml/Patterns"
+import app.chilpa
+import app.chilpa.folders
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/folders/qml/Components"
+import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 
 TitledFlow {
     id: section

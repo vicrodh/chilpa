@@ -1,7 +1,7 @@
 pragma Singleton
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
+import app.chilpa
+import app.chilpa.kit
 
 // The active theme's colors as typed properties (design/01-tokens.md).
 // Each one asks Rust once; `rev` makes them all ask again when the theme,

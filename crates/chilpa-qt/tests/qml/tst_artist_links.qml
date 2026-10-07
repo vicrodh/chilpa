@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
+import app.chilpa
+import app.chilpa.kit
 import "../../qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme/TextLinks.js" as TextLinks
 

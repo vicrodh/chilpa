@@ -1,6 +1,6 @@
 import QtQuick
-import com.blitzfc.chilpa.lyrics
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa.lyrics
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // One line of lyrics as the panel shows it: its words, word by word while
 // it is sung, and under them its translation when one is shown. The lines

@@ -1,9 +1,9 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 
 TitledFlow {
     title: "Plugins"

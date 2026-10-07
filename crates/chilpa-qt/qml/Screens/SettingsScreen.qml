@@ -1,14 +1,14 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Patterns"
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // Settings (design/06 Settings): the sections on the left, the chosen one's
 // rows on the right. Every row comes from the schema in Rust.

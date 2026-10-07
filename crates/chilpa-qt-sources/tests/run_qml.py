@@ -17,14 +17,14 @@ import tempfile
 root = pathlib.Path(__file__).resolve().parents[3]
 # Each shell crate and where its QML sits in the binary's resources.
 CRATES = {
-    "chilpa-qt-kit": "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/",
-    "chilpa-qt": "qrc:/qt/qml/com/blitzfc/chilpa/qml/",
-    "chilpa-qt-sources": "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/",
-    "chilpa-qt-controls": "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/",
-    "chilpa-qt-lyrics": "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/",
-    "chilpa-qt-metadata": "qrc:/qt/qml/com/blitzfc/chilpa/metadata/qml/",
-    "chilpa-qt-gallery": "qrc:/qt/qml/com/blitzfc/chilpa/gallery/qml/",
-    "chilpa-qt-folders": "qrc:/qt/qml/com/blitzfc/chilpa/folders/qml/",
+    "chilpa-qt-kit": "qrc:/qt/qml/app/chilpa/kit/qml/",
+    "chilpa-qt": "qrc:/qt/qml/app/chilpa/qml/",
+    "chilpa-qt-sources": "qrc:/qt/qml/app/chilpa/sources/qml/",
+    "chilpa-qt-controls": "qrc:/qt/qml/app/chilpa/controls/qml/",
+    "chilpa-qt-lyrics": "qrc:/qt/qml/app/chilpa/lyrics/qml/",
+    "chilpa-qt-metadata": "qrc:/qt/qml/app/chilpa/metadata/qml/",
+    "chilpa-qt-gallery": "qrc:/qt/qml/app/chilpa/gallery/qml/",
+    "chilpa-qt-folders": "qrc:/qt/qml/app/chilpa/folders/qml/",
 }
 
 with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:

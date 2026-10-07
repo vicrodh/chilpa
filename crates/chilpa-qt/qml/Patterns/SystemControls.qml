@@ -1,7 +1,7 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // On a Mac the window keeps the system's three controls, which float over
 // the tab bar's left. Nothing is drawn here: this says how much of the bar

@@ -1,10 +1,10 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/lyrics/qml/Components" as Lines
+import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components" as Lines
 
 // The lyrics of what plays. The header says the track and opens how they
 // are read; the body says where the search stands or shows the lines; the

@@ -1,7 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // I keep the pair open across the overlap and while either panel is hovered.
 Menu {

@@ -1,5 +1,5 @@
 //! The metadata editor, as its own QML module
-//! (`com.blitzfc.chilpa.metadata`): its screen, its regions, its fields and
+//! (`app.chilpa.metadata`): its screen, its regions, its fields and
 //! the bridge to the facade's editor. Each shell crate stays inside the
 //! shell's budgets (ADR-001).
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
@@ -33,7 +33,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.metadata",
+            uri: "app.chilpa.metadata",
             rust_files: &bridges,
             qml_files: &qml,
             ..Default::default()

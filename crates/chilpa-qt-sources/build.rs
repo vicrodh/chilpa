@@ -1,5 +1,5 @@
 //! The second half of the window's shell: what sources bring to it, as its
-//! own QML module (`com.blitzfc.chilpa.sources`), so the window's crate and
+//! own QML module (`app.chilpa.sources`), so the window's crate and
 //! this one each stay inside the shell's budgets (ADR-001).
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
 use std::path::{Path, PathBuf};
@@ -32,7 +32,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.sources",
+            uri: "app.chilpa.sources",
             rust_files: &bridges,
             qml_files: &qml,
             ..Default::default()

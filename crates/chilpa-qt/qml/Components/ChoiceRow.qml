@@ -1,5 +1,5 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // A choice with its name: the name on the left, and on the right whatever
 // it is chosen with -- a segmented control, a field, a row of swatches. The

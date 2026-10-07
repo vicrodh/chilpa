@@ -1,5 +1,5 @@
 //! What every shell crate stands on, as its own QML module
-//! (`com.blitzfc.chilpa.kit`): the theme with its fonts, icons and shaders,
+//! (`app.chilpa.kit`): the theme with its fonts, icons and shaders,
 //! the primitives, the translations, and the one facade they all talk to.
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
 use std::path::{Path, PathBuf};
@@ -38,7 +38,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.kit",
+            uri: "app.chilpa.kit",
             rust_files: &bridges,
             qml_files: &qml,
             qrc_files: &resources,

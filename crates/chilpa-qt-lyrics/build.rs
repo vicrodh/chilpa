@@ -1,5 +1,5 @@
 //! How the lyrics are drawn, as their own QML module
-//! (`com.blitzfc.chilpa.lyrics`): the lines, the one being sung word by
+//! (`app.chilpa.lyrics`): the lines, the one being sung word by
 //! word, and how the others fade around it. Each shell crate stays inside
 //! the shell's budgets (ADR-001).
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
@@ -33,7 +33,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.lyrics",
+            uri: "app.chilpa.lyrics",
             rust_files: &bridges,
             qml_files: &qml,
             ..Default::default()

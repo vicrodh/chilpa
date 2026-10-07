@@ -1,13 +1,13 @@
 import QtQuick
 import QtQuick.Effects
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.controls
-import com.blitzfc.chilpa.folders
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Patterns"
-import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Patterns" as Driving
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.controls
+import app.chilpa.folders
+import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "Patterns"
 
 // The window (design/02): the floating sidebar, the tab bar, the screen of
