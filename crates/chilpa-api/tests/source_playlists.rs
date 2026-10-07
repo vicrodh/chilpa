@@ -68,6 +68,9 @@ fn a_sources_lists_show_up_and_open_into_the_results() {
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     std::env::set_var("XDG_DATA_HOME", dir.join("data"));
+    // The catalog's store too: this machine's cache holds the lists of
+    // real sources, and the test counts lists.
+    std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
 
     let root = chilpa_api::Chilpa::plugins_dir();
     std::fs::create_dir_all(&root).unwrap();
