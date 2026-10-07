@@ -52,6 +52,18 @@ impl std::fmt::Display for DsdPlayError {
 }
 
 /// True if the file is DSD by its extension: DSF or DSDIFF.
+
+/// How many frames of what opened a DSD track of `samples` one-bit samples
+/// per channel runs: DoP carries sixteen per frame, native U32 thirty-two,
+/// native U8 eight, and PCM counts its own frames -- all of it is the
+/// opened rate times the track's seconds.
+pub(crate) fn frames_opened(samples: u64, dsd_rate_hz: u32, opened_rate_hz: u32) -> u64 {
+    if dsd_rate_hz == 0 {
+        return 0;
+    }
+    samples.saturating_mul(u64::from(opened_rate_hz)) / u64::from(dsd_rate_hz)
+}
+
 pub(crate) fn is_dsd_file(path: &Path) -> bool {
     path.extension()
         .and_then(|e| e.to_str())

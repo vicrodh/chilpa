@@ -554,7 +554,11 @@ fn play(
                     channels: delivery.requested.channels,
                     bits: Some(1),
                     bit_perfect: delivery.nothing_was_converted() && exact_path,
-                    total_frames: about.as_ref().map(|(_, frames)| *frames),
+                    // Counted in what opened: a disc played native runs
+                    // half the frames of DoP, and was shown twice as long.
+                    total_frames: about.as_ref().map(|(_, samples)| {
+                        crate::dsd_playback::frames_opened(*samples, chilpa_sacd::DSD64_HZ, delivery.opened.sample_rate_hz)
+                    }),
                     tags: about.map(|(tags, _)| tags),
                     artwork: chilpa_tags::artwork_for(&image, &crate::artwork_cache()),
                     index,
@@ -594,10 +598,7 @@ fn play(
             // converted DSD counts ordinary PCM frames.
             let dsd = &about.dsd;
             let total_frames = match dsd {
-                Some(info) => Some(
-                    info.samples.saturating_mul(u64::from(delivery.opened.sample_rate_hz))
-                        / u64::from(info.dsd_rate_hz),
-                ),
+                Some(info) => Some(crate::dsd_playback::frames_opened(info.samples, info.dsd_rate_hz, delivery.opened.sample_rate_hz)),
                 None => about.frames,
             };
             let _ = events.send(PlayerEvent::Started {
