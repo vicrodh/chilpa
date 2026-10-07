@@ -1,7 +1,7 @@
 import QtQuick
-import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // Context rules come from the facade; QML only decorates and dispatches.
 CascadingMenu {

@@ -1,4 +1,4 @@
-//! Folders, as their own QML module (`com.blitzfc.chilpa.folders`): the
+//! Folders, as their own QML module (`app.chilpa.folders`): the
 //! library's folders and their scan, the folders screen with its tree, and
 //! the screen of media opened without importing it. Each shell crate stays
 //! inside the shell's budgets (ADR-001).
@@ -33,7 +33,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.folders",
+            uri: "app.chilpa.folders",
             rust_files: &bridges,
             qml_files: &qml,
             ..Default::default()

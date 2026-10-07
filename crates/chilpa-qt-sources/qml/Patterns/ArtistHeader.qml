@@ -1,11 +1,11 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme/TextLinks.js" as TextLinks
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The top of an artist's page, as QBZ lays it out: a round portrait, the
 // name, what the artist does, a biography cut at 360 characters with

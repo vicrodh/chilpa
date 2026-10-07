@@ -1,8 +1,8 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // One row of the search flyout (design/03 SearchFlyout): a section label,
 // the top result -- a large portrait and a play button -- or an artist, a

@@ -1,9 +1,9 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // What a record offers from its menu (design/04, Album): play it or queue
 // it, now, next, later or in an extra queue -- or the whole selection when

@@ -1,6 +1,6 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // What the place a source's listing stands in is: a show above its
 // episodes, with its picture, whose it is, what it is about and what its

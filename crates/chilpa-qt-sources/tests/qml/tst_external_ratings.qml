@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import com.blitzfc.chilpa
+import app.chilpa
 import "../../../chilpa-qt/qml/Components"
 
 TestCase {

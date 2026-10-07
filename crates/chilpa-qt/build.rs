@@ -47,7 +47,7 @@ fn main() {
         .qt_module("Quick")
         .qt_module("QuickControls2")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa",
+            uri: "app.chilpa",
             rust_files: &bridges,
             qml_files: &qml,
             qrc_files: &resources,

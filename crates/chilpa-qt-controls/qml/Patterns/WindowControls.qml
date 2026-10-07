@@ -1,7 +1,7 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.controls
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.controls
 import "../Theme"
 
 // What drives the player besides its own buttons, held once by the window:

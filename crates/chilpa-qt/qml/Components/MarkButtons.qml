@@ -1,8 +1,8 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The listener's marks on what a page is about: the heart that makes it a
 // favorite and, where it takes stars, the button that rates it.

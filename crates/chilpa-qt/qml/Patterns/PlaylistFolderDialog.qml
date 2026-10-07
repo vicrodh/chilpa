@@ -1,2 +1,2 @@
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Components" as Sources
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as Sources
 Sources.SourceFolderEditor {}

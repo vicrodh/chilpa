@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Effects
-import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "Patterns"
 
 // The floating sidebar and the grip on its right edge (design/02 2, ADR-0011).

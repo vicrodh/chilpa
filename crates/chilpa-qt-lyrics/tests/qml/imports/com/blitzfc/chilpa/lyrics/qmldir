@@ -1,2 +1,0 @@
-module com.blitzfc.chilpa.lyrics
-singleton LyricsView 1.0 LyricsView.qml

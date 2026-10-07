@@ -1,8 +1,8 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.sources
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.sources
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The right panel (design/02 5, frontend ADR-0011): the queue and the
 // lyrics share one card. With both open a divider splits them anywhere

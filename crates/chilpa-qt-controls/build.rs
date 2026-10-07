@@ -1,5 +1,5 @@
 //! The ways to drive the player besides its own buttons, as their own QML
-//! module (`com.blitzfc.chilpa.controls`): the keyboard shortcuts, the timer
+//! module (`app.chilpa.controls`): the keyboard shortcuts, the timer
 //! that stops playback and the A-B loop. Each shell crate stays inside the
 //! shell's budgets (ADR-001).
 use cxx_qt_build::{CxxQtBuilder, Interface, QmlModule};
@@ -35,7 +35,7 @@ fn main() {
         .qt_module("Qml")
         .qt_module("Quick")
         .qml_module(QmlModule {
-            uri: "com.blitzfc.chilpa.controls",
+            uri: "app.chilpa.controls",
             rust_files: &bridges,
             qml_files: &qml,
             qrc_files: &resources,

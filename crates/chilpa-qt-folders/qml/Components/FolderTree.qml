@@ -1,10 +1,10 @@
 import QtQuick
 import QtQuick.Controls.Basic
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.folders
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.folders
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The library's folders as a tree: one list of rows, each as deep as it is,
 // so closing a branch takes its rows out and leaves nothing behind. It has

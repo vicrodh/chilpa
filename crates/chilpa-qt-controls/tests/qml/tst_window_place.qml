@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.controls
+import app.chilpa
+import app.chilpa.controls
 import "../../qml/Patterns"
 import "../../qml/Theme"
 

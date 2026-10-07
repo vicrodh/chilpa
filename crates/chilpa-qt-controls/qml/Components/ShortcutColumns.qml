@@ -1,6 +1,6 @@
 import QtQuick
-import com.blitzfc.chilpa.controls
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // Every shortcut, by group, in three columns that fill one after another.
 // It scrolls when the window is too short for it.

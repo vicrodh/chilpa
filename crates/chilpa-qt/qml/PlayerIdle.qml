@@ -1,6 +1,6 @@
 import QtQuick
-import com.blitzfc.chilpa
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // The player bar's auto-hide (Settings > Playback > Hide when idle), as a
 // Plasma panel's: once the pointer has been off the bar for a while the whole

@@ -1,9 +1,9 @@
 // hot-path: one per album in a grid, recycled with its row.
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // A record: its cover, its title and a subtitle (design/03 AlbumCard). The
 // hover overlay is built only for the card under the pointer. A selected

@@ -1,9 +1,9 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import com.blitzfc.chilpa.controls
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The A-B loop among the playback options: one button that marks where the
 // stretch starts, then where it ends, and another that lets it go.

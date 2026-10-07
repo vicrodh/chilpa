@@ -1,0 +1,2 @@
+module app.chilpa.lyrics
+singleton LyricsView 1.0 LyricsView.qml

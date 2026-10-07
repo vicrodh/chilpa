@@ -1,9 +1,9 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // A block of tracks on an artist's page: Popular Tracks, or Appears On
 // when the source lists it as tracks. Five rows first and "Load more"

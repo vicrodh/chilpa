@@ -1,5 +1,5 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
 
 // A shortcut as one key cap: the whole combination in one chip, in a

@@ -97,7 +97,6 @@ avg
 backend
 backends
 biquad
-blitzfc
 bluetooth
 bool
 bp

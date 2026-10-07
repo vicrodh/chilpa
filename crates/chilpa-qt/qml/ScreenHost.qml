@@ -1,10 +1,10 @@
 import QtQuick
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.sources
+import app.chilpa
+import app.chilpa.sources
 import "Screens"
-import "qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/Screens"
-import "qrc:/qt/qml/com/blitzfc/chilpa/metadata/qml/Screens"
-import "qrc:/qt/qml/com/blitzfc/chilpa/folders/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {

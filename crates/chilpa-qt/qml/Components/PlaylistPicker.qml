@@ -1,5 +1,5 @@
 import QtQuick
-import com.blitzfc.chilpa
+import app.chilpa
 // A lightweight host adapter for the application-wide picker dialog. Menus
 // give it the exact library track ids they carry; the dialog outlives them.
 //

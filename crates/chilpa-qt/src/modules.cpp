@@ -4,21 +4,21 @@
 
 #include <QtCore/QtPlugin>
 
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_kit_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_sources_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_controls_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_folders_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_gallery_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_lyrics_plugin();
-extern const QStaticPlugin qt_static_plugin_com_blitzfc_chilpa_metadata_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_kit_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_sources_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_controls_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_folders_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_gallery_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_lyrics_plugin();
+extern const QStaticPlugin qt_static_plugin_app_chilpa_metadata_plugin();
 
 extern "C" void chilpa_import_modules()
 {
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_kit_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_sources_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_controls_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_folders_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_gallery_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_lyrics_plugin());
-    qRegisterStaticPluginFunction(qt_static_plugin_com_blitzfc_chilpa_metadata_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_kit_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_sources_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_controls_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_folders_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_gallery_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_lyrics_plugin());
+    qRegisterStaticPluginFunction(qt_static_plugin_app_chilpa_metadata_plugin());
 }

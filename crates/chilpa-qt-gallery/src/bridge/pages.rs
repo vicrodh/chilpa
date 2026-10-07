@@ -37,7 +37,7 @@ impl qobject::GalleryPages {
     pub fn pages(&self) -> QStringList {
         let mut pages = QList::<QString>::default();
         for (module, page) in PAGES {
-            pages.append(QString::from(&format!("qrc:/qt/qml/com/blitzfc/chilpa/{module}/qml/Gallery/{page}.qml")));
+            pages.append(QString::from(&format!("qrc:/qt/qml/app/chilpa/{module}/qml/Gallery/{page}.qml")));
         }
         QStringList::from(&pages)
     }

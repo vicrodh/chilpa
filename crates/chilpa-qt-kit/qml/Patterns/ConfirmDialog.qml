@@ -1,5 +1,5 @@
 import QtQuick
-import com.blitzfc.chilpa.kit
+import app.chilpa.kit
 import "../Theme"
 import "../Primitives"
 

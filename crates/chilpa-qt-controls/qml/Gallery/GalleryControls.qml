@@ -1,7 +1,7 @@
 import QtQuick
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
 

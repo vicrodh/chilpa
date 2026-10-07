@@ -9,22 +9,22 @@ root = pathlib.Path(__file__).resolve().parents[3]
 with tempfile.TemporaryDirectory(prefix="chilpa-discovery-") as directory:
     stage = pathlib.Path(directory)
     shutil.copytree(root / "crates/chilpa-qt/tests/qml/imports", stage / "imports")
-    mock = stage / "imports/com/blitzfc/chilpa/sources/Sources.qml"
+    mock = stage / "imports/app/chilpa/sources/Sources.qml"
     mock.write_text(mock.read_text().replace('return "{}"', 'return JSON.stringify({plugin:"fixture",kind:"album",ref:"album:1",title:"Record",artist_ref:"artist:7",label_ref:"label:9",favorite:false})'))
     mock.write_text(mock.read_text().replace('function artistKey(id, path) { return "" }', 'function artistKey(id, path) { return "fixture native:artist:7" }'))
-    module = stage / "imports/com/blitzfc/chilpa"
+    module = stage / "imports/app/chilpa"
     (module / "AlbumActions.qml").write_text('pragma Singleton\nimport QtQuick\nQtObject { property int rev: 0; property int selectedCount: 0; function selected(id, rev) { return false } }\n')
     with (module / "qmldir").open("a") as stream: stream.write("\nsingleton AlbumActions 1.0 AlbumActions.qml\n")
     for package, target in [("chilpa-qt", "host"),("chilpa-qt-sources", "sources")]:
         shutil.copytree(root / "crates" / package / "qml", stage / target)
     shutil.copytree(root / "crates/chilpa-qt-kit/assets", stage / "assets")
     for path in stage.rglob("*.qml"):
-        text = path.read_text().replace("qrc:/qt/qml/com/blitzfc/chilpa/sources/qml/", (stage / "sources").as_uri()+"/").replace("qrc:/qt/qml/com/blitzfc/chilpa/qml/", (stage / "host").as_uri()+"/")
+        text = path.read_text().replace("qrc:/qt/qml/app/chilpa/sources/qml/", (stage / "sources").as_uri()+"/").replace("qrc:/qt/qml/app/chilpa/qml/", (stage / "host").as_uri()+"/")
         path.write_text(text)
     (stage / "tst_discovery.qml").write_text('''import QtQuick
 import QtTest
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.sources
+import app.chilpa
+import app.chilpa.sources
 import "sources/Patterns"
 import "host/Components"
 TestCase {

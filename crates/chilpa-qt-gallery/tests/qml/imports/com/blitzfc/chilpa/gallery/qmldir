@@ -1,2 +1,0 @@
-module com.blitzfc.chilpa.gallery
-singleton GalleryPages 1.0 GalleryPages.qml

@@ -1,12 +1,12 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtQuick.Effects
-import com.blitzfc.chilpa
-import com.blitzfc.chilpa.kit
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Theme"
-import "qrc:/qt/qml/com/blitzfc/chilpa/kit/qml/Primitives"
+import app.chilpa
+import app.chilpa.kit
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-import "qrc:/qt/qml/com/blitzfc/chilpa/controls/qml/Components" as Parts
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 
 // How the queue plays, from the player bar: gapless, one loudness for every
 // track, and the mix by tempo -- the switches Settings has.
