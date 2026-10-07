@@ -24,6 +24,17 @@ fn chunk(id: &[u8; 4], payload: &[u8]) -> Vec<u8> {
 /// A two channel DSDIFF holding `seconds` of DSD silence, with `tag` in an
 /// `ID3 ` chunk after the samples, or with no tag.
 fn dff(name: &str, seconds: u32, tag: Option<&Tag>) -> PathBuf {
+    let mut extra = Vec::new();
+    if let Some(tag) = tag {
+        let mut id3 = Vec::new();
+        tag.dump_to(&mut id3, WriteOptions::default()).unwrap();
+        extra.extend(chunk(b"ID3 ", &id3));
+    }
+    dff_with(name, seconds, extra)
+}
+
+/// The same file with `extra` chunks after the samples.
+fn dff_with(name: &str, seconds: u32, extra: Vec<u8>) -> PathBuf {
     let mut prop = b"SND ".to_vec();
     prop.extend(chunk(b"FS  ", &RATE.to_be_bytes()));
     let mut channel_ids = 2u16.to_be_bytes().to_vec();
@@ -35,11 +46,7 @@ fn dff(name: &str, seconds: u32, tag: Option<&Tag>) -> PathBuf {
     form.extend(chunk(b"FVER", &0x0105_0000u32.to_be_bytes()));
     form.extend(chunk(b"PROP", &prop));
     form.extend(chunk(b"DSD ", &vec![0x69; bytes]));
-    if let Some(tag) = tag {
-        let mut id3 = Vec::new();
-        tag.dump_to(&mut id3, WriteOptions::default()).unwrap();
-        form.extend(chunk(b"ID3 ", &id3));
-    }
+    form.extend(extra);
     let path = std::env::temp_dir().join(format!("chilpa-tags-{name}.dff"));
     std::fs::write(&path, chunk(b"FRM8", &form)).unwrap();
     path
@@ -67,5 +74,23 @@ fn a_dsdiff_file_without_tags_still_has_its_length() {
     let info = read(&path).expect("a DSDIFF file without tags can be read");
     assert_eq!(info.tags.title, None);
     assert_eq!(info.duration.as_secs(), 2);
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_dsdiff_file_without_id3_says_its_artist_and_title_the_formats_way() {
+    // A count, then the text: what `DIAR` and `DITI` hold.
+    let text = |s: &str| {
+        let mut out = (s.len() as u32).to_be_bytes().to_vec();
+        out.extend_from_slice(s.as_bytes());
+        out
+    };
+    let mut extra = chunk(b"DIAR", &text("Paul McCartney & Wings"));
+    extra.extend(chunk(b"DITI", &text("Band On The Run")));
+    let path = dff_with("comments", 1, extra);
+    let info = read(&path).expect("the file can be read");
+    assert_eq!(info.tags.artists, ["Paul McCartney & Wings"]);
+    assert_eq!(info.tags.title.as_deref(), Some("Band On The Run"));
+    assert_eq!(info.tags.album, None, "the format names no album");
     let _ = std::fs::remove_file(path);
 }
