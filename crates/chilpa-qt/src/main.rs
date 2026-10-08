@@ -6,6 +6,7 @@
 use chilpa_qt_kit::{app, format, worker};
 // Linked for their QML modules, which `modules.cpp` registers: a crate
 // nothing here names is left out of the binary, and its module with it.
+use chilpa_qt_ambient as _;
 use chilpa_qt_controls as _;
 use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;
