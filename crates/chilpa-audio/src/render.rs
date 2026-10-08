@@ -47,6 +47,7 @@ pub trait FrameSource {
     fn heard_at_move(&self) -> Option<u64> {
         None
     }
+    fn position_at_move(&self) -> Option<u64> { None }
 }
 
 /// How far the loop reads ahead of the device: two seconds of what the
@@ -70,7 +71,7 @@ const SLOW_READ: std::time::Duration = std::time::Duration::from_millis(100);
 /// source moved, when the source counts that: what the loop wrote after
 /// that, from the old place, is not where the music is.
 struct Ahead {
-    blocks: std::collections::VecDeque<(Vec<u8>, Option<Option<u64>>)>,
+    blocks: std::collections::VecDeque<(Vec<u8>, Option<(Option<u64>, Option<u64>)>)>,
     bytes: usize,
     /// How the source ended, once it has: `Ok` when it was over, `Err` with
     /// the reason when it could not be read on.
@@ -149,7 +150,7 @@ impl Cushion {
             let mut ahead = self.lock();
             match read {
                 Ok(Some(block)) => {
-                    let moved = source.moved().then(|| source.heard_at_move());
+                    let moved = source.moved().then(|| (source.heard_at_move(), source.position_at_move()));
                     if moved.is_some() {
                         ahead.blocks.clear();
                         ahead.bytes = 0;
@@ -179,7 +180,7 @@ impl Cushion {
     /// the track, how much had been heard when the source moved; `Ok(None)`
     /// once the source is over, `Err` when it could not be read on. Waits
     /// for one, minding the stop.
-    fn take(&self, stop: &StopSignal) -> Result<Option<(Vec<u8>, Option<Option<u64>>)>, String> {
+    fn take(&self, stop: &StopSignal) -> Result<Option<(Vec<u8>, Option<(Option<u64>, Option<u64>)>)>, String> {
         let mut ahead = self.lock();
         let mut starved: Option<std::time::Instant> = None;
         loop {
@@ -390,7 +391,7 @@ fn deliver<K: AudioSink>(
         // From somewhere else in the track: what the device holds is from
         // before, and it goes; so does what went out from before since the
         // source moved, which was heard but is not where the music is.
-        if let Some(heard_at_move) = moved {
+        if let Some((heard_at_move, position)) = moved {
             let held = sink.held();
             let stale = heard_at_move.map_or(0, |at| frames.saturating_sub(thrown_away + held).saturating_sub(at));
             crate::diagnostics::trace(
@@ -403,6 +404,7 @@ fn deliver<K: AudioSink>(
                 crate::diagnostics::trace("render", "flush_failed", format_args!("error={error}"));
                 return Outcome::Failed { frames, error };
             }
+            sink.position_changed(position);
         }
         let mut offset = 0;
         let mut warned = false;
@@ -971,7 +973,7 @@ mod tests {
 
     /// Reads the whole source ahead, the device taking nothing meanwhile,
     /// and hands back what is left to take.
-    fn read_whole<S: FrameSource + Send>(source: &mut S) -> Vec<Result<Option<(Vec<u8>, Option<Option<u64>>)>, String>> {
+    fn read_whole<S: FrameSource + Send>(source: &mut S) -> Vec<Result<Option<(Vec<u8>, Option<(Option<u64>, Option<u64>)>)>, String>> {
         let cushion = Cushion::new(1 << 20);
         let stop = StopSignal::new();
         std::thread::scope(|threads| {

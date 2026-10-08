@@ -60,6 +60,9 @@ impl SinkError {
 
 /// An open output device.
 pub trait AudioSink {
+    /// I announce the source cursor after a seek, without counting it as audio.
+    fn position_changed(&mut self, _position: Option<u64>) {}
+
     /// The format it actually ended up open at.
     fn format(&self) -> StreamFormat;
 

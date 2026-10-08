@@ -23,13 +23,13 @@ impl Listening {
         }
         self.previous = Some((now, position, status.state == State::Playing));
         if self.seconds > 0.0 {
-            self.observer.update((self.seconds * 1000.0) as u64, 1000,
-                if status.state == State::Paused { "paused" } else { "playing" }, None);
+            self.observer.update_at((self.seconds * 1000.0) as u64, 1000,
+                if status.state == State::Paused { "paused" } else { "playing" }, None, Some((position * 1000.0) as u64));
         }
     }
     pub fn finish(&mut self, reason: &'static str) {
         if !self.ended && self.seconds > 0.0 {
-            self.observer.update((self.seconds * 1000.0) as u64, 1000, "playing", Some(reason));
+            self.observer.update_at((self.seconds * 1000.0) as u64, 1000, "playing", Some(reason), self.previous.map(|(_, p, _)| (p * 1000.0) as u64));
         }
         self.ended = true;
     }
