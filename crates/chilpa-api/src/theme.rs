@@ -50,7 +50,7 @@ pub const TOKENS: &[&str] = &[
     "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
     "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
-    "ambient.sidebar", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil",
+    "ambient.sidebar", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil", "ambient.bar", "ambient.panel",
     "mini.edge", "mini.capsuleEdge", "mini.separator", "mini.hover", "mini.capsuleHover", "mini.coverFill",
     "mini.rowActive", "mini.danger", "mini.onBackdrop", "mini.glyphOnBackdrop", "mini.seekOnBackdrop", "mini.footer",
 ];
@@ -333,8 +333,11 @@ mod tests {
             let (sidebar, ambient) = (theme.color("surface.sidebar").unwrap(), theme.color("ambient.sidebar").unwrap());
             assert_eq!((ambient.r, ambient.g, ambient.b), (sidebar.r, sidebar.g, sidebar.b), "{id}");
             assert!(close(ambient.a, 0.50), "{id}");
+            assert!(close(theme.color("ambient.player").unwrap().a, 0.40), "{id}");
             assert!(close(theme.color("ambient.content").unwrap().a, 0.22), "{id}");
             assert!(close(theme.color("ambient.raised").unwrap().a, 0.50), "{id}");
+            assert!(close(theme.color("ambient.bar").unwrap().a, 0.60), "{id}: a bar that sticks over scrolling rows");
+            assert!(close(theme.color("ambient.panel").unwrap().a, 0.50), "{id}");
             assert!(close(theme.color("ambient.frost").unwrap().a, 0.10), "{id}");
             let veil = theme.color("ambient.veil").unwrap();
             assert!(veil.r == 0.0 && veil.g == 0.0 && veil.b == 0.0, "{id}");

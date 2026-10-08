@@ -6,3 +6,4 @@ square-play
 eject
 refresh-ccw-dot
 radio
+proportions

@@ -66,6 +66,8 @@ QtObject {
         readonly property color ambientRaised: ThemeModel.color("ambient.raised", theme.rev)
         readonly property color ambientFrost: ThemeModel.color("ambient.frost", theme.rev)
         readonly property color ambientVeil: ThemeModel.color("ambient.veil", theme.rev)
+        readonly property color ambientBar: ThemeModel.color("ambient.bar", theme.rev)
+        readonly property color ambientPanel: ThemeModel.color("ambient.panel", theme.rev)
         // The mini player's card: its edges, fills and separators at the
         // alpha tiers QBZ draws them, white on a dark theme and black on a
         // light one, and the two that read over its backdrop.

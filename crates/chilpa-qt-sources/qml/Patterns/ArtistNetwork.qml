@@ -37,7 +37,7 @@ Rectangle {
     width: open ? Metrics.networkPanel : 0
     Behavior on width { NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
     clip: true
-    color: Theme.color.surfacePanel
+    color: Theme.ambient ? Theme.color.ambientPanel : Theme.color.surfacePanel
     Rectangle { anchors.left: parent.left; width: Metrics.hairline; height: parent.height; color: Theme.color.strokeHairline }
 
     function openArtist(item) {
