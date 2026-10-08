@@ -261,6 +261,9 @@ msgstr "Ya lo usa {}"
 msgid "Also write the other tag layers"
 msgstr "Escribir también en las otras capas de tags"
 
+msgid "Ambient"
+msgstr "Ambiente"
+
 msgid "Analysis"
 msgstr "Análisis"
 
@@ -272,6 +275,9 @@ msgstr "Analizar la biblioteca"
 
 msgid "Analyzing {} of {} tracks"
 msgstr "Analizando {} de {} pistas"
+
+msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
+msgstr "Fondo animado con los colores de la portada detrás de toda la app. Usa bastantes recursos: va por la GPU."
 
 msgid "Any quality"
 msgstr "Cualquier calidad"
@@ -381,11 +387,20 @@ msgstr "Atrás"
 msgid "Back 10 seconds"
 msgstr "Atrás 10 segundos"
 
+msgid "Background"
+msgstr "Fondo"
+
+msgid "Background image"
+msgstr "Imagen de fondo"
+
 msgid "Between tracks"
 msgstr "Entre pistas"
 
 msgid "Bit perfect"
 msgstr "Bit perfect"
+
+msgid "Blurred art"
+msgstr "Portada difuminada"
 
 msgid "Bonus"
 msgstr "Extras"
@@ -497,6 +512,9 @@ msgstr "Elegir archivo…"
 
 msgid "Choose image"
 msgstr ""
+
+msgid "Choose image…"
+msgstr "Elegir imagen…"
 
 msgid "Choose playlist artwork"
 msgstr "Elegir imagen de la playlist"
@@ -896,6 +914,9 @@ msgstr "Duración (más cortas)"
 msgid "Dutch"
 msgstr "Neerlandés"
 
+msgid "Dynamic background"
+msgstr "Fondo dinámico"
+
 msgid "EPs & Singles"
 msgstr "EPs y sencillos"
 
@@ -1175,6 +1196,9 @@ msgstr "Historial"
 msgid "Home"
 msgstr "Inicio"
 
+msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
+msgstr "Cuánto se difumina el fondo de pantalla detrás de la ventana: 0% lo deja nítido, 100% es el máximo."
+
 msgid "I did not find a CD drive"
 msgstr "no encontré una unidad de CD"
 
@@ -1192,6 +1216,9 @@ msgstr "INFLUENCIAS"
 
 msgid "Icon"
 msgstr ""
+
+msgid "Images"
+msgstr "Imágenes"
 
 msgid "Import cancelled"
 msgstr "Importación cancelada"
@@ -2658,6 +2685,9 @@ msgstr "La fuente se desconectó. Revisa la playlist antes de reintentarlo."
 msgid "The sung line lights up whole. Saves CPU."
 msgstr "La línea cantada se ilumina completa. Ahorra CPU."
 
+msgid "The system wallpaper. Choose an image of your own instead."
+msgstr "El fondo de pantalla del sistema. Elige una imagen tuya en su lugar."
+
 msgid "Theme"
 msgstr "Tema"
 
@@ -2856,6 +2886,9 @@ msgstr "Mayúsculas"
 msgid "Use Quick Connect"
 msgstr "Usar Quick Connect"
 
+msgid "Use the default"
+msgstr "Usar el predeterminado"
+
 msgid "Use the playlist icon or a cover collage."
 msgstr "Usa el icono de playlist o un collage de portadas."
 
@@ -2868,6 +2901,9 @@ msgstr "Válidos"
 msgid "Version: {}"
 msgstr "Versión: {}"
 
+msgid "View"
+msgstr "Vista"
+
 msgid "View less"
 msgstr "Ver menos"
 
@@ -2879,6 +2915,15 @@ msgstr "Subir volumen"
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"
+
+msgid "Wallpaper"
+msgstr "Fondo de pantalla"
+
+msgid "Wallpaper blur"
+msgstr ""
+
+msgid "Wallpaper, blurred"
+msgstr "Fondo de pantalla, difuminado"
 
 msgid "What you play most"
 msgstr "Lo que más escuchas"

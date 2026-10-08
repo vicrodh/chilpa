@@ -32,7 +32,7 @@ Item {
         id: panel
         anchors.fill: parent
         radius: Metrics.radiusCard
-        color: tab.active ? Theme.color.surfaceRaised : area.containsMouse ? Theme.color.stateHover : "transparent"
+        color: tab.active ? (Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfaceRaised) : area.containsMouse ? Theme.color.stateHover : "transparent"
 
         Edge { visible: tab.active }
     }

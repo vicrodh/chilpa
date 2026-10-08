@@ -73,6 +73,17 @@ Item {
         listening = true
         window.contentItem.Keys.pressed.connect(pressed)
     }
+
+    // Browser-style side buttons follow the active tab's own history. On the
+    // window's root, beneath everything: no control takes those two buttons,
+    // so they arrive here, and nothing laid over the window hides the
+    // cursors or the hover of what is under it.
+    // no cursor: only the mouse's side buttons
+    TapHandler {
+        parent: controls.window ? controls.window.contentItem : null
+        acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        onTapped: (point, button) => button === Qt.BackButton ? Navigation.back() : Navigation.forward()
+    }
     // The desktop asked Chilpa to quit: the close that follows is not one
     // to hide from.
     property bool quitting: false
