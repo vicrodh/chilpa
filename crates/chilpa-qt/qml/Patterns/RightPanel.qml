@@ -31,7 +31,8 @@ Rectangle {
     }
 
     radius: Metrics.radiusPanel
-    color: Theme.color.surfaceSidebar
+    // Half alpha over the dynamic background, so the field shows through.
+    color: Theme.ambient ? Theme.color.ambientSidebar : Theme.color.surfaceSidebar
 
     Edge {}
 

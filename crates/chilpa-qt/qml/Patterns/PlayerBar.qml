@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.ambient
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -63,7 +64,8 @@ Item {
         id: panel
         anchors.fill: parent
         radius: Metrics.radiusPlayer
-        color: Theme.color.surfacePlayer
+        // Half alpha over the dynamic background, so the field shows through.
+        color: Theme.ambient ? Theme.color.ambientPlayer : Theme.color.surfacePlayer
 
         Edge {}
     }
@@ -144,6 +146,30 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap4
 
+        // How the window looks: today the background behind it; the other
+        // views of the player join this menu as they come.
+        IconButton {
+            id: viewButton
+            anchors.verticalCenter: parent.verticalCenter
+            tip: I18n.tr("View", I18n.rev)
+            glyph: Icons.stack2
+            checked: viewMenu.opened || Ambient.mode > 0
+            onClicked: viewMenu.opened ? viewMenu.close() : viewMenu.show()
+
+            CascadingMenu {
+                id: viewMenu
+                x: viewButton.width - width
+                y: -height - Metrics.gap10
+                readonly property var backgrounds: [I18n.tr("Off", I18n.rev), I18n.tr("Ambient", I18n.rev), I18n.tr("Blurred art", I18n.rev),
+                    I18n.tr("Wallpaper", I18n.rev), I18n.tr("Wallpaper, blurred", I18n.rev)]
+                function show() {
+                    entries = [{ text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
+                        children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
+                    open()
+                }
+                onActionChosen: (entry) => { if (entry.act.startsWith("background:")) Ambient.choose(Number(entry.act.split(":")[1])) }
+            }
+        }
         VolumeControl {
             anchors.verticalCenter: parent.verticalCenter
             visible: bar.width >= Metrics.playerNoVolume

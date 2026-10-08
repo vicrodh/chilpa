@@ -9,6 +9,12 @@ import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
+    // The ratings the screens show follow the library as it changes.
+    Connections {
+        target: Library
+        function onContentRevChanged() { Ratings.refresh() }
+        function onRemoteRevChanged() { Ratings.refresh() }
+    }
     readonly property var sourceDocument: JSON.parse(Sources.snapshot || "{}")
     readonly property bool medium: ["radio", "podcasts"].indexOf(sourceDocument.medium) >= 0
     readonly property var music: Navigation.screen === "source" ? JSON.parse(Sources.page(Navigation.routeKey, Library.remoteRev) || "{}") : ({})

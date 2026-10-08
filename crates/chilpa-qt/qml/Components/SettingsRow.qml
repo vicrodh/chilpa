@@ -90,6 +90,8 @@ Item {
             : row.control === "swatches" ? swatches
             : row.control === "progress" ? progress
             : row.control === "status" ? status
+            : row.control === "slider" ? slider
+            : row.control === "file" ? file
             : null
     }
 
@@ -130,22 +132,10 @@ Item {
     }
     Component {
         id: secret
-        Row {
-            spacing: Metrics.gap8
-            TextField {
-                id: field
-                anchors.verticalCenter: parent.verticalCenter
-                secret: true
-                placeholder: I18n.tr("Token", I18n.rev)
-                onAccepted: if (text.trim() !== "") send.clicked()
-            }
-            PillButton {
-                id: send
-                anchors.verticalCenter: parent.verticalCenter
-                text: row.action
-                enabled: field.text.trim() !== ""
-                onClicked: row.page.set(row.key, field.text)
-            }
+        SecretField {
+            placeholder: I18n.tr("Token", I18n.rev)
+            action: row.action
+            onSent: (text) => row.page.set(row.key, text)
         }
     }
     // Opens the page in the browser, once when it appears -- the person
@@ -170,29 +160,10 @@ Item {
     }
     Component {
         id: progress
-        Row {
-            spacing: Metrics.gap12
-
-            Rectangle {
-                visible: row.value !== ""
-                anchors.verticalCenter: parent.verticalCenter
-                width: Metrics.settingsNav
-                height: Metrics.progress
-                radius: height
-                color: Theme.color.strokeHairline
-
-                Rectangle {
-                    width: parent.width * Math.max(0, Math.min(1, Number(row.value)))
-                    height: parent.height
-                    radius: parent.radius
-                    color: Theme.color.accent
-                }
-            }
-            PillButton {
-                anchors.verticalCenter: parent.verticalCenter
-                text: row.action
-                onClicked: row.page.press(row.key)
-            }
+        ProgressField {
+            progress: row.value
+            action: row.action
+            onAsked: row.page.press(row.key)
         }
     }
     Component {
@@ -205,6 +176,34 @@ Item {
             options: row.options
             values: row.optionValues
             onPicked: (value) => row.page.set(row.key, value)
+        }
+    }
+    // A level from 0 to 100: whoever shows it follows the drag through
+    // Prefs.preview, and the value is kept when the pointer lets go.
+    Component {
+        id: slider
+        LevelField {
+            value: Number(row.value)
+            shown: Prefs.previewKey === row.key ? Prefs.previewValue : row.value
+            tip: row.title
+            onMoved: (level) => Prefs.preview(row.key, String(level))
+            onReleased: (level) => {
+                Prefs.preview("", "")
+                row.page.set(row.key, String(level))
+            }
+        }
+    }
+    // A file chosen from a dialog; with one chosen, a way back to none.
+    Component {
+        id: file
+        FileField {
+            action: row.action
+            value: row.value
+            title: row.title
+            clearTip: I18n.tr("Use the default", I18n.rev)
+            filters: [I18n.tr("Images", I18n.rev) + " (*.png *.jpg *.jpeg *.webp *.bmp)"]
+            onPicked: (path) => row.page.set(row.key, path)
+            onCleared: row.page.set(row.key, "")
         }
     }
     Component {

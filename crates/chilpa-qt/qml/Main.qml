@@ -6,6 +6,7 @@ import app.chilpa.folders
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
+import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "Patterns"
@@ -34,6 +35,12 @@ Window {
     color: Theme.color.surfaceWindow
     title: "Chilpa"
 
+    // The dynamic background, under everything (design/01 1.6).
+    Backdrop.AppBackground {
+        anchors.fill: parent
+        plane: Qt.rect(host.x, host.y, host.width, host.height)
+    }
+
     // The screen scrolls under nothing but the player: it is cut at the
     // tab bar, which stays on top of it.
     ScreenHost {
@@ -45,8 +52,10 @@ Window {
         clip: true
     }
 
-    // The content is a plane like the panels beside it.
+    // The content is a plane like the panels beside it. Under the dynamic
+    // background the field shows through its corners instead.
     PlaneCorners {
+        visible: !Theme.ambient
         x: host.x
         y: host.y
         width: host.width
@@ -71,12 +80,6 @@ Window {
         y: Metrics.tabBarHeight
         width: shown
         height: window.height - y - Metrics.spaceWindow
-    }
-
-    Connections {
-        target: Library
-        function onContentRevChanged() { Ratings.refresh() }
-        function onRemoteRevChanged() { Ratings.refresh() }
     }
 
     Connections {
@@ -124,17 +127,6 @@ Window {
     }
 
     Tooltip {}
-
-    // Browser-style side buttons follow the active tab's own history. On the
-    // window's root, beneath everything: no control takes those two buttons,
-    // so they arrive here, and nothing laid over the window hides the
-    // cursors or the hover of what is under it.
-    // no cursor: only the mouse's side buttons
-    TapHandler {
-        parent: window.contentItem
-        acceptedButtons: Qt.BackButton | Qt.ForwardButton
-        onTapped: (point, button) => button === Qt.BackButton ? Navigation.back() : Navigation.forward()
-    }
 
     WindowGrips {
         anchors.fill: parent

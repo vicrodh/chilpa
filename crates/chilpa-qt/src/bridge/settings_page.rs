@@ -293,9 +293,11 @@ impl qobject::SettingsPage {
                 return;
             }
             // A key the bridge does not know is its feature's: the facade
-            // asks around (frontend ADR-0015).
+            // asks around (frontend ADR-0015), and whoever shows the feature
+            // is told that something was kept, without the key.
             _ => {
                 if app::with(|api| api.adjust(&key, &value)) {
+                    chilpa_qt_kit::bridge::prefs::changed();
                     self.as_mut().reload();
                 }
                 return;

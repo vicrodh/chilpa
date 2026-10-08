@@ -261,6 +261,9 @@ msgstr ""
 msgid "Also write the other tag layers"
 msgstr ""
 
+msgid "Ambient"
+msgstr ""
+
 msgid "Analysis"
 msgstr ""
 
@@ -271,6 +274,9 @@ msgid "Analyze the library"
 msgstr ""
 
 msgid "Analyzing {} of {} tracks"
+msgstr ""
+
+msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr ""
 
 msgid "Any quality"
@@ -381,10 +387,19 @@ msgstr ""
 msgid "Back 10 seconds"
 msgstr ""
 
+msgid "Background"
+msgstr ""
+
+msgid "Background image"
+msgstr ""
+
 msgid "Between tracks"
 msgstr ""
 
 msgid "Bit perfect"
+msgstr ""
+
+msgid "Blurred art"
 msgstr ""
 
 msgid "Bonus"
@@ -496,6 +511,9 @@ msgid "Choose file…"
 msgstr "Choose file…"
 
 msgid "Choose image"
+msgstr ""
+
+msgid "Choose image…"
 msgstr ""
 
 msgid "Choose playlist artwork"
@@ -896,6 +914,9 @@ msgstr ""
 msgid "Dutch"
 msgstr ""
 
+msgid "Dynamic background"
+msgstr ""
+
 msgid "EPs & Singles"
 msgstr ""
 
@@ -1175,6 +1196,9 @@ msgstr ""
 msgid "Home"
 msgstr ""
 
+msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
+msgstr ""
+
 msgid "I did not find a CD drive"
 msgstr ""
 
@@ -1191,6 +1215,9 @@ msgid "INFLUENCES"
 msgstr ""
 
 msgid "Icon"
+msgstr ""
+
+msgid "Images"
 msgstr ""
 
 msgid "Import cancelled"
@@ -2658,6 +2685,9 @@ msgstr "The source disconnected. Check the playlist before retrying."
 msgid "The sung line lights up whole. Saves CPU."
 msgstr ""
 
+msgid "The system wallpaper. Choose an image of your own instead."
+msgstr ""
+
 msgid "Theme"
 msgstr ""
 
@@ -2856,6 +2886,9 @@ msgstr ""
 msgid "Use Quick Connect"
 msgstr ""
 
+msgid "Use the default"
+msgstr ""
+
 msgid "Use the playlist icon or a cover collage."
 msgstr ""
 
@@ -2868,6 +2901,9 @@ msgstr "Valid"
 msgid "Version: {}"
 msgstr "Version: {}"
 
+msgid "View"
+msgstr ""
+
 msgid "View less"
 msgstr ""
 
@@ -2878,6 +2914,15 @@ msgid "Volume Up"
 msgstr ""
 
 msgid "Volume {}%"
+msgstr ""
+
+msgid "Wallpaper"
+msgstr ""
+
+msgid "Wallpaper blur"
+msgstr ""
+
+msgid "Wallpaper, blurred"
 msgstr ""
 
 msgid "What you play most"

@@ -11,7 +11,8 @@ Item {
 
     readonly property string field: art.toString() === "" ? ""
         : "image://atmosphere/" + encodeURIComponent(art.toString())
-    readonly property bool active: mode !== "off" && field !== ""
+    // The dynamic background and this one are complementary, never both.
+    readonly property bool active: mode !== "off" && field !== "" && !Theme.ambient
     readonly property real tau: 6.283185
     readonly property var layers: [
         { growW: 520, growH: 420, baseX: -260, baseY: -210,
