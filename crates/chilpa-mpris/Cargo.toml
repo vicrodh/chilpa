@@ -18,3 +18,9 @@ pollster = "0.4"
 ksni = { version = "0.3", default-features = false, features = ["blocking", "async-io"] }
 # To turn the tray's PNGs into the pixmaps the panel takes.
 image = { version = "0.25", default-features = false, features = ["png"] }
+# Where this process's windows sit on a Plasma Wayland desktop, for the
+# wallpaper background (wayland_window.rs): a second client connection,
+# reading org_kde_plasma_window_management.
+wayland-client = "0.31"
+wayland-protocols-plasma = { version = "0.3", features = ["client"] }
+log = "0.4"

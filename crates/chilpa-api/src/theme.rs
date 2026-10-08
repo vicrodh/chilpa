@@ -50,7 +50,14 @@ pub const TOKENS: &[&str] = &[
     "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
     "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
+    "ambient.sidebar", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil",
 ];
+
+/// How far the two weaker text tokens move toward `text.primary` while the
+/// dynamic background shows through a light theme: the field sits at mid
+/// luminance, where a light theme's grey ramp loses its contrast floor. A
+/// dark theme keeps its values.
+const AMBIENT_HARDENING: [(&str, f64); 2] = [("text.secondary", 0.40), ("text.tertiary", 0.50)];
 
 /// The themes that ship inside the binary.
 pub const BUILT_IN: &[(&str, &str)] = &[
@@ -141,6 +148,17 @@ impl Theme {
         self.resolve(token, 0)
     }
 
+    /// The token as it reads with the dynamic background on or off: under
+    /// it, a light theme hardens its weaker text toward `text.primary`.
+    pub fn color_under(&self, token: &str, ambient: bool) -> Option<Rgba> {
+        let color = self.color(token)?;
+        if !ambient || self.dark {
+            return Some(color);
+        }
+        let Some((_, amount)) = AMBIENT_HARDENING.iter().find(|(t, _)| *t == token) else { return Some(color) };
+        Some(toward(color, self.color("text.primary")?, *amount))
+    }
+
     fn resolve(&self, token: &str, depth: u8) -> Option<Rgba> {
         if token == "accent" {
             if let Some(accent) = self.accent {
@@ -199,6 +217,12 @@ pub fn parse_color(text: &str) -> Option<Rgba> {
     let parts: Vec<f64> = inner.split(',').map(|p| p.trim().parse().ok()).collect::<Option<_>>()?;
     let [r, g, b, a] = parts[..] else { return None };
     Some(Rgba { r: r / 255.0, g: g / 255.0, b: b / 255.0, a })
+}
+
+/// Mixes `c` toward `to` by `amount` on each channel, keeping `c`'s alpha.
+fn toward(c: Rgba, to: Rgba, amount: f64) -> Rgba {
+    let mix = |from: f64, target: f64| from + (target - from) * amount;
+    Rgba { r: mix(c.r, to.r), g: mix(c.g, to.g), b: mix(c.b, to.b), a: c.a }
 }
 
 /// Moves the HSL lightness by `amount`, keeping hue, saturation and alpha.
@@ -283,6 +307,36 @@ mod tests {
         assert!(close(c.g, 38.0 / 255.0) && close(c.a, 0.10));
         assert!(parse_color("#12345").is_none());
         assert!(parse_color("crimson").is_none(), "named colors are not tokens");
+    }
+
+    #[test]
+    fn under_the_background_a_light_theme_hardens_its_weak_text_and_a_dark_one_does_not() {
+        let light = Theme::built_in("breeze-light");
+        let (secondary, primary) = (light.color("text.secondary").unwrap(), light.color("text.primary").unwrap());
+        let hardened = light.color_under("text.secondary", true).unwrap();
+        assert!(close(hardened.r, secondary.r + (primary.r - secondary.r) * 0.40));
+        let tertiary = light.color("text.tertiary").unwrap();
+        let hardened = light.color_under("text.tertiary", true).unwrap();
+        assert!(close(hardened.g, tertiary.g + (primary.g - tertiary.g) * 0.50));
+        assert_eq!(light.color_under("text.secondary", false), Some(secondary), "off, nothing moves");
+        assert_eq!(light.color_under("accent", true), light.color("accent"), "only the two weak text tokens");
+        let dark = Theme::built_in("breeze-dark");
+        assert_eq!(dark.color_under("text.secondary", true), dark.color("text.secondary"));
+    }
+
+    #[test]
+    fn the_ambient_tokens_are_the_surfaces_at_their_alpha() {
+        for id in ["breeze-light", "breeze-dark", "dark-oled"] {
+            let theme = Theme::built_in(id);
+            let (sidebar, ambient) = (theme.color("surface.sidebar").unwrap(), theme.color("ambient.sidebar").unwrap());
+            assert_eq!((ambient.r, ambient.g, ambient.b), (sidebar.r, sidebar.g, sidebar.b), "{id}");
+            assert!(close(ambient.a, 0.50), "{id}");
+            assert!(close(theme.color("ambient.content").unwrap().a, 0.22), "{id}");
+            assert!(close(theme.color("ambient.raised").unwrap().a, 0.50), "{id}");
+            assert!(close(theme.color("ambient.frost").unwrap().a, 0.10), "{id}");
+            let veil = theme.color("ambient.veil").unwrap();
+            assert!(veil.r == 0.0 && veil.g == 0.0 && veil.b == 0.0, "{id}");
+        }
     }
 
     #[test]

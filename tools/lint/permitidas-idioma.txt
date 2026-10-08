@@ -574,3 +574,10 @@ mbids
 korg
 neighbours
 syncsafe
+tex
+wayland
+hsl
+rgb
+kde
+bmp
+wl

@@ -36,6 +36,12 @@
     "albumHeader.dim": "rgba(0,0,0,0.24)",
     "albumHeader.top": "#66000000",
     "albumHeader.bottom": "#80000000",
+    "ambient.sidebar": "derive:surface.sidebar@0.50",
+    "ambient.player": "derive:surface.player@0.50",
+    "ambient.content": "derive:surface.window@0.22",
+    "ambient.raised": "derive:surface.raised@0.50",
+    "ambient.frost": "rgba(255,255,255,0.10)",
+    "ambient.veil": "#000000",
     "art.placeholder": ["#1A1A1A", "#141414", "#202020", "#101010", "#1C1C1C", "#242424"]
   },
   "shadow": {

@@ -26,10 +26,16 @@ const NAME: &str = "chilpa";
 /// - Android: the app's private directory, which the shell hands over in
 ///   `CHILPA_HOME` because there is no `$HOME` worth the name
 pub fn config() -> PathBuf {
+    config_base().join(NAME)
+}
+
+/// The directory settings go under, before Chilpa's own folder: where the
+/// desktop keeps its configuration too (KDE's `plasma-org.kde.plasma.
+/// desktop-appletsrc` sits here on Linux). Same bases as [`config`].
+pub fn config_base() -> PathBuf {
     from_env("XDG_CONFIG_HOME")
         .or_else(platform_config)
         .unwrap_or_else(std::env::temp_dir)
-        .join(NAME)
 }
 
 /// Where the library, the plugins and anything else that must survive go.
@@ -151,6 +157,15 @@ mod tests {
         std::env::set_var("XDG_CONFIG_HOME", "");
         assert_ne!(config(), PathBuf::from("/chilpa"));
         assert!(config().ends_with("chilpa"));
+        std::env::remove_var("XDG_CONFIG_HOME");
+    }
+
+    #[test]
+    fn the_config_is_the_desktops_base_plus_our_folder() {
+        let _looking = LOOKING.lock();
+        std::env::set_var("XDG_CONFIG_HOME", "/somewhere/config");
+        assert_eq!(config_base(), PathBuf::from("/somewhere/config"));
+        assert_eq!(config(), config_base().join("chilpa"));
         std::env::remove_var("XDG_CONFIG_HOME");
     }
 

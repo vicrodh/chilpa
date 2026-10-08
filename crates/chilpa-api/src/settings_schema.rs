@@ -31,6 +31,12 @@ pub enum Control {
     Progress,
     /// A state pill whose menu contains the actions valid in that state.
     Status,
+    /// A level from 0 to 100, shown live while it is dragged and kept when
+    /// it is let go.
+    Slider,
+    /// A file chosen from a dialog, and a way to choose none again: its
+    /// label is the setting's `action`.
+    File,
 }
 
 impl Control {
@@ -46,6 +52,8 @@ impl Control {
             Control::Swatches => "swatches",
             Control::Progress => "progress",
             Control::Status => "status",
+            Control::Slider => "slider",
+            Control::File => "file",
         }
     }
 }
@@ -135,6 +143,13 @@ pub const SECTIONS: &[Section] = &[
                 setting("appearance.density", Chilpa::mark("Track lists"), Chilpa::mark("Compact rows like a spreadsheet, or rich rows with the cover."), Control::Segmented),
                 setting("appearance.font", Chilpa::mark("Font"), Chilpa::mark("Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."), Control::Segmented),
                 setting("appearance.albumHeader", Chilpa::mark("Album header"), Chilpa::mark("Full atmosphere, artwork colors only, or no derived background."), Control::Segmented),
+            ],
+        }, Group {
+            title: Chilpa::mark("Background"),
+            settings: &[
+                setting(crate::ambient::MODE, Chilpa::mark("Dynamic background"), Chilpa::mark("Animated album-art background behind the whole app. High resource use: GPU accelerated."), Control::Select),
+                action(crate::ambient::IMAGE, Chilpa::mark("Background image"), Chilpa::mark("The system wallpaper. Choose an image of your own instead."), Control::File, Chilpa::mark("Choose image…")),
+                setting(crate::ambient::BLUR, Chilpa::mark("Wallpaper blur"), Chilpa::mark("How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."), Control::Slider),
             ],
         }],
     },
@@ -295,8 +310,9 @@ mod tests {
     #[test]
     fn a_button_says_what_it_does() {
         for set in SECTIONS.iter().flat_map(|s| s.groups).flat_map(|g| g.settings) {
-            // A secret is a field and the button that sends it.
-            let pressable = matches!(set.control, Control::Button | Control::Link | Control::Secret);
+            // A secret is a field and the button that sends it; a progress
+            // and a file carry the button that starts or chooses.
+            let pressable = matches!(set.control, Control::Button | Control::Link | Control::Secret | Control::Progress | Control::File);
             assert_eq!(pressable, !set.action.is_empty(), "{}", set.key);
         }
     }
