@@ -46,8 +46,17 @@ impl Chilpa {
         let Ok(bytes) = std::fs::read(file()) else { return false };
         let Ok(saved) = serde_json::from_slice::<Workspace>(&bytes) else { return false };
         if !valid(&saved) { return false; }
+        let legacy = serde_json::from_slice::<serde_json::Value>(&bytes).ok();
         self.listen = saved;
         for b in &mut self.listen.buffers {
+            let explicit = legacy.as_ref().and_then(|v| v["buffers"].as_array())
+                .and_then(|rows| rows.iter().find(|row| row["id"].as_u64() == Some(b.id)))
+                .is_some_and(|row| row.get("renamed").is_some());
+            if !explicit {
+                let automatic = ["Queue", "Cola", "Buffer"].iter().any(|prefix| b.name == *prefix
+                    || b.name.strip_prefix(&format!("{prefix} ")).is_some_and(|n| n.parse::<u64>().is_ok()));
+                b.renamed = !automatic;
+            }
             if b.name == format!("Buffer {}", b.id) { b.name = chilpa_i18n::t_args("Queue {}", &[&b.id.to_string()]); }
         }
         if let Some(b) = self.listen.buffers.iter().find(|b| b.id == self.listen.active).cloned() {

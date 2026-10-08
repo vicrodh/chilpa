@@ -43,6 +43,19 @@ fn buffers_keep_occurrences_and_only_the_activated_one_reaches_the_player() {
         let path = dir.join(name); wave(&path); path.to_string_lossy().into_owned()
     }).collect();
     let mut api = Chilpa::new();
+    // A single queue still offers creating another; unavailable selections do not.
+    assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 1);
+    let available = api.track_queue_menu(chilpa_api::TrackMenuContext { count: 1, ..Default::default() });
+    let extra = available.iter().find(|entry| entry["submenu"] == true).unwrap();
+    assert_ne!(extra["enabled"], false);
+    assert_eq!(extra["children"][0]["act"], "buffer:new");
+    assert!(extra["children"].as_array().unwrap().iter().all(|entry| entry["enabled"] != false));
+    for count in [1, 3] {
+        let unavailable = api.track_queue_menu(chilpa_api::TrackMenuContext { count, unavailable: true, editable: true, ..Default::default() });
+        assert!(!unavailable.iter().any(|entry| entry["submenu"] == true));
+        assert_eq!(unavailable.len(), 1);
+        assert_eq!(unavailable[0]["act"], "remove");
+    }
     api.use_output("file:capture", false);
     let a = api.listen_create("Jazz", &[paths[0].clone(), paths[1].clone(), paths[0].clone()]);
     let b = api.listen_create("Tests", &[paths[2].clone()]);
@@ -165,7 +178,39 @@ fn closing_every_buffer_starts_a_fresh_queue_name_without_reusing_identity() {
     let fresh = api.listen_selected();
     assert!(fresh > second, "stale track keys must never target the new queue");
     assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 1);
-    assert_eq!(state(&api)["name"], chilpa_i18n::t("Queue"));
+    assert_eq!(state(&api)["name"], chilpa_i18n::t("Now playing"));
+    api.listen_rename(fresh, "My queue");
+    assert_eq!(state(&api)["name"], "My queue");
+    drop(api);
+    let mut api = Chilpa::new();
+    assert_eq!(state(&api)["name"], "My queue");
     api.listen_create("", &[]);
     assert_eq!(state(&api)["name"], chilpa_i18n::t_args("Queue {}", &["2"]));
+}
+
+#[test]
+fn shuffle_starts_at_the_front_and_retains_every_occurrence() {
+    let _env = ENV.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    let dir = std::env::temp_dir().join(format!("chilpa-shuffle-start-{}", std::process::id()));
+    std::fs::create_dir_all(&dir).unwrap();
+    std::env::set_var("XDG_DATA_HOME", dir.join("data"));
+    std::env::set_var("XDG_CONFIG_HOME", dir.join("config"));
+    std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
+    let file = dir.join("track.wav"); wave(&file);
+    let mut api = Chilpa::new();
+    api.use_output("file:capture", false);
+    for count in [22, 40] {
+        let paths = vec![file.to_string_lossy().into_owned(); count];
+        api.play_list(&paths, true);
+        api.set_paused(true);
+        assert_eq!(api.queue_paths().len(), count);
+        let order = api.queue_order();
+        assert_eq!(order.len(), count, "a fresh shuffle has no played prefix");
+        assert_eq!(order[0], api.now_playing().index);
+        let mut sorted = order; sorted.sort_unstable();
+        assert_eq!(sorted, (0..count).collect::<Vec<_>>());
+    }
+    api.stop();
+    drop(api);
+    let _ = std::fs::remove_dir_all(dir);
 }

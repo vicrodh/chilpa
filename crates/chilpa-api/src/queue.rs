@@ -38,18 +38,28 @@ fn queue_session_path() -> std::path::PathBuf {
 
 impl Chilpa {
     pub(crate) fn replace_queue(&mut self, queue: Vec<String>) {
+        self.replace_queue_from(queue, Some(0));
+    }
+
+    pub(crate) fn replace_queue_from(&mut self, queue: Vec<String>, start: Option<usize>) -> usize {
         self.before_queue_replace();
         self.set_stop_after(None);
         self.queue = queue;
+        self.queue_origins = vec![self.browse_origin.clone(); self.queue.len()];
         self.casting.order.clear();
         self.queue_placement = vec![QueuePlacement::Original; self.queue.len()];
         self.queue_groups.clear();
         self.removed = vec![false; self.queue.len()];
         self.restored_at = None;
-        let order = if self.shuffle { chilpa_core::queue_playback::shuffled(self.queue.len(), crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
+        let mut order = if self.shuffle { chilpa_core::queue_playback::shuffled(self.queue.len(), crate::now_unix() as u64) } else { (0..self.queue.len()).collect() };
+        let first = start.unwrap_or_else(|| order.first().copied().unwrap_or(0));
+        if self.shuffle {
+            if let Some(at) = order.iter().position(|&index| index == first) { order.swap(0, at); }
+        }
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         if let Some(p) = &self.player { p.set_order(order.clone(), self.queue.len()); }
         self.casting.order = order;
+        first
     }
 
     /// Queue persistence is on unless explicitly disabled in Settings.
@@ -82,7 +92,7 @@ impl Chilpa {
         }
         self.queue = saved.entries.iter().map(|entry| entry.path.clone()).collect();
         if self.queue.iter().any(|path| path.is_empty()) {
-            self.queue.clear();
+            self.queue.clear(); self.queue_origins.clear();
             return;
         }
         self.queue_placement = saved
@@ -363,6 +373,8 @@ impl Chilpa {
         let playing = self.player.is_some() && !self.now.paused;
         let keeps_current = self.queue.get(self.now.index).is_some_and(|path| !gone(path));
         let seconds = if keeps_current { self.now.seconds.max(0.0) } else { 0.0 };
+        let kept_origins: Vec<_> = self.queue_order().into_iter().filter(|&i| !gone(&self.queue[i]))
+            .map(|i| self.queue_origins.get(i).cloned().flatten()).collect();
         let kept: Vec<(String, QueuePlacement, Option<QueueGroup>)> = self
             .queue_order()
             .into_iter()
@@ -389,6 +401,7 @@ impl Chilpa {
         }
         self.queue_groups = groups.into_values().collect();
         self.queue_placement = kept.iter().map(|(_, placement, _)| *placement).collect();
+        self.queue_origins = kept_origins;
         self.queue = kept.into_iter().map(|(path, _, _)| path).collect();
         self.removed = vec![false; self.queue.len()];
         self.now = NowPlaying {
@@ -412,7 +425,7 @@ impl Chilpa {
         self.stop();
         self.set_stop_after(None);
         self.sleep_until = None;
-        self.queue.clear();
+        self.queue.clear(); self.queue_origins.clear();
         self.removed.clear();
         self.queue_placement.clear();
         self.queue_groups.clear();
@@ -492,6 +505,8 @@ impl Chilpa {
             else { order.iter().position(|&i| i == self.now.index).map_or(order.len(), |i| i + 1) };
         while placement == QueuePlacement::Later && at < order.len()
             && matches!(self.queue_placement.get(order[at]), Some(QueuePlacement::Next | QueuePlacement::Later)) { at += 1; }
+        self.queue_origins.resize(first, None);
+        self.queue_origins.extend(std::iter::repeat_n(self.browse_origin.clone(), tracks.len()));
         self.queue.extend(tracks.iter().map(|p| p.display().to_string()));
         self.queue_placement.resize(self.queue.len(), placement);
         self.removed.resize(self.queue.len(), false);

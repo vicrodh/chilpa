@@ -9,8 +9,12 @@ use serde::{Deserialize, Serialize};
 pub(super) struct Buffer {
     pub id: u64,
     pub name: String,
+    #[serde(default)]
+    pub renamed: bool,
     pub epoch: u64,
     pub paths: Vec<String>,
+    #[serde(default)]
+    pub origins: Vec<Option<crate::queue_origin::QueueOrigin>>,
     pub removed: Vec<bool>,
     pub placement: Vec<QueuePlacement>,
     pub groups: Vec<QueueGroup>,
@@ -23,8 +27,8 @@ pub(super) struct Buffer {
 }
 impl Buffer {
     fn empty(id: u64) -> Self {
-        Self { id, name: chilpa_i18n::t("Queue"), epoch: 1,
-            paths: Vec::new(), removed: Vec::new(), placement: Vec::new(), groups: Vec::new(),
+        Self { id, name: chilpa_i18n::t("Queue"), renamed: false, epoch: 1,
+            paths: Vec::new(), origins: Vec::new(), removed: Vec::new(), placement: Vec::new(), groups: Vec::new(),
             order: Vec::new(), cursor: 0, seconds: 0.0, shuffle: false, repeat: 0, stop_after: None }
     }
     pub(crate) fn key(&self, index: usize) -> String { format!("{}:{}:{index}", self.id, self.epoch) }
@@ -68,7 +72,7 @@ impl Chilpa {
     fn buffer_snapshot(&self, id: u64) -> Option<Buffer> {
         let mut b = self.listen.buffers.iter().find(|b| b.id == id)?.clone();
         if id == self.listen.active {
-            b.paths = self.queue.clone(); b.removed = self.removed.clone();
+            b.paths = self.queue.clone(); b.origins = self.queue_origins.clone(); b.removed = self.removed.clone();
             b.placement = self.queue_placement.clone(); b.groups = self.queue_groups.clone();
             b.order = self.full_queue_order(); b.cursor = self.now.index;
             b.seconds = self.now.seconds.max(0.0); b.shuffle = self.shuffle;
@@ -91,13 +95,13 @@ impl Chilpa {
         self.listen.pending = None;
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) {
             self.listen.undo = Some(b.clone());
-            b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear();
+            b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear(); b.origins.clear();
         }
         if let Some(p) = &self.player { p.clear_order(); }
     }
     fn install_buffer(&mut self, b: &Buffer) {
         self.listen.active = b.id;
-        self.queue = b.paths.clone(); self.removed = b.removed.clone();
+        self.queue = b.paths.clone(); self.queue_origins = b.origins.clone(); self.queue_origins.resize(self.queue.len(), None); self.removed = b.removed.clone();
         self.queue_placement = b.placement.clone(); self.queue_groups = b.groups.clone();
         self.next_queue_group = b.groups.iter().map(|g| g.key).max().unwrap_or(0) + 1;
         self.base = 0; self.shuffle = b.shuffle;
@@ -149,7 +153,7 @@ impl Chilpa {
         let id = self.listen.next;
         self.listen.next += 1;
         let mut b = Buffer::empty(id);
-        if !name.trim().is_empty() { b.name = name.trim().to_string(); }
+        if !name.trim().is_empty() { b.name = name.trim().to_string(); b.renamed = true; }
         else if !self.listen.buffers.is_empty() {
             let mut number = 2;
             loop {
@@ -159,6 +163,7 @@ impl Chilpa {
             }
         }
         b.paths = paths.iter().filter(|p| !p.is_empty()).cloned().collect();
+        b.origins = vec![self.browse_origin.clone(); b.paths.len()];
         b.order = (0..b.paths.len()).collect();
         b.removed = vec![false; b.paths.len()];
         b.placement = vec![QueuePlacement::Original; b.paths.len()];
@@ -170,7 +175,7 @@ impl Chilpa {
     }
     pub fn listen_rename(&mut self, id: u64, name: &str) {
         if name.trim().is_empty() { return; }
-        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == id) { b.name = name.trim().to_string(); }
+        if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == id) { b.name = name.trim().to_string(); b.renamed = true; }
         self.persist_buffers();
     }
     pub fn listen_close(&mut self, id: u64) {
@@ -179,7 +184,7 @@ impl Chilpa {
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
         self.listen.undo = Some(self.listen.buffers[at].clone());
         if id == self.listen.active {
-            self.stop(); self.queue.clear(); self.removed.clear(); self.queue_groups.clear();
+            self.stop(); self.queue.clear(); self.queue_origins.clear(); self.removed.clear(); self.queue_groups.clear();
             self.queue_placement.clear(); self.now = NowPlaying::default();
             // The output stays empty; another tab never starts by closing this one.
             self.listen.active = 0;
@@ -195,17 +200,17 @@ impl Chilpa {
         if self.listen.pending.is_some_and(|p| p.0 == id) { self.listen.pending = None; }
         let Some(mut b) = self.buffer_snapshot(id) else { return };
         self.listen.undo = Some(b.clone());
-        b.epoch += 1; b.paths = paths.to_vec(); b.removed = vec![false; paths.len()];
+        b.epoch += 1; b.paths = paths.to_vec(); b.origins = vec![self.browse_origin.clone(); paths.len()]; b.removed = vec![false; paths.len()];
         b.order = (0..paths.len()).collect(); b.groups.clear(); b.placement = vec![QueuePlacement::Original; paths.len()];
         b.cursor = 0; b.seconds = 0.0; b.stop_after = None;
         if self.listen.active == id {
-            self.stop(); self.listen.active = 0; self.queue.clear(); self.now = NowPlaying::default();
+            self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear(); self.now = NowPlaying::default();
         }
         self.store_buffer(b); self.persist_buffers();
     }
     pub fn listen_undo(&mut self) {
         let Some(b) = self.listen.undo.take() else { return };
-        if self.listen.active == b.id { self.stop(); self.listen.active = 0; self.queue.clear(); self.now = NowPlaying::default(); }
+        if self.listen.active == b.id { self.stop(); self.listen.active = 0; self.queue.clear(); self.queue_origins.clear(); self.now = NowPlaying::default(); }
         self.listen.selected = b.id;
         if self.listen.buffers.iter().any(|v| v.id == b.id) { self.store_buffer(b); }
         else { self.listen.buffers.push(b); }
@@ -215,7 +220,8 @@ impl Chilpa {
     pub fn listen_add(&mut self, id: u64, paths: &[String]) {
         if id == self.listen.active && self.now.playing { self.enqueue_here(paths); }
         else if let Some(mut b) = self.buffer_snapshot(id) {
-            let start = b.paths.len(); b.paths.extend_from_slice(paths);
+            let start = b.paths.len(); b.origins.resize(start, None); b.paths.extend_from_slice(paths);
+            b.origins.resize(b.paths.len(), self.browse_origin.clone());
             b.order.extend(start..b.paths.len()); b.removed.resize(b.paths.len(), false);
             b.placement.resize(b.paths.len(), QueuePlacement::Original);
             self.store_buffer(b.clone());

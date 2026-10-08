@@ -4,6 +4,9 @@ use serde_json::{json, Value};
 use std::hash::{Hash, Hasher};
 
 impl Chilpa {
+    fn buffer_name(&self, b: &Buffer) -> String {
+        if self.listen.buffers.len() == 1 && !b.renamed { chilpa_i18n::t("Now playing") } else { b.name.clone() }
+    }
     pub(crate) fn listen_key(&self, index: usize) -> String {
         self.listen.buffers.iter().find(|b| b.id == self.listen.active).map(|b| b.key(index)).unwrap_or_default()
     }
@@ -17,7 +20,7 @@ impl Chilpa {
             let mut b = self.buffer_snapshot(item.id)?;
             b.seconds = 0.0;
             serde_json::to_string(&b).unwrap_or_default().hash(&mut hash);
-            Some(json!({"id": b.id.to_string(), "name": b.name,
+            Some(json!({"id": b.id.to_string(), "name": self.buffer_name(&b),
                 "count": b.order.iter().filter(|&&i| b.live(i)).count(),
                 "playing": b.id == self.listen.active && self.now.playing,
                 "paused": self.now.paused}))
@@ -26,7 +29,7 @@ impl Chilpa {
         let b = self.buffer_snapshot(self.listen.selected);
         json!({"tabs": tabs, "selected": self.listen.selected.to_string(),
             "active": self.listen.active.to_string(), "revision": hash.finish().to_string(),
-            "name": b.as_ref().map(|b| &b.name), "undo": self.listen.undo.is_some(),
+            "name": b.as_ref().map(|b| self.buffer_name(b)), "undo": self.listen.undo.is_some(),
             "pending": self.listen.pending.is_some(), "error": self.now.error}).to_string()
     }
     pub fn listen_rows(&mut self, id: u64, query: &str, full: bool) -> (Vec<TrackEntry>, Vec<String>) {
@@ -114,6 +117,13 @@ impl Chilpa {
             .into_iter().map(|(act, label)| json!({"act":act,"text":chilpa_i18n::t(label)})).collect();
         entries.extend(self.listen_targets());
         json!(entries)
+    }
+    /// Queue destinations follow the availability of the entire selection.
+    pub fn track_queue_menu(&self, context: crate::TrackMenuContext) -> Vec<Value> {
+        let available = context.count > 0 && !context.unavailable;
+        let mut entries = crate::track_menu(context);
+        if available { entries.extend(self.listen_targets()); }
+        entries
     }
     pub fn listen_targets(&self) -> Vec<Value> {
         let mut items = vec![json!({"act":"buffer:new", "text":chilpa_i18n::t("Open in new queue")})];

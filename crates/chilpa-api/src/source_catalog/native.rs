@@ -100,7 +100,7 @@ impl Store {
                 let album = text(item, "album_ref");
                 (!album.is_empty()).then(|| {
                     let record = json!({"kind": "album", "ref": album, "title": item.get("album"), "artist": item.get("artist"),
-                        "image": item.get("image"), "year": item.get("year")});
+                        "image": item.get("image"), "year": item.get("year"), "artist_ref": item.get("artist_ref")});
                     // A record already read keeps what it said of itself.
                     if self.has_read(plugin, &album) { self.card_id(plugin, &album) } else { self.take_item(plugin, &record, now).unwrap_or_default() }
                 })
@@ -135,7 +135,7 @@ impl Store {
 pub(super) fn read_shelf(catalog: &Catalog, natives: &Arc<Natives>, key: &str) -> Result<(), String> {
     let (plugin, address) = split(key);
     remember_domains(catalog, natives, plugin);
-    if let Some(name) = address.strip_prefix("matching-artist-v2:") {
+    if let Some(name) = address.strip_prefix("matching-artist-v3:").or_else(|| address.strip_prefix("matching-artist-v2:")) {
         return read_matching_artist(catalog, natives, plugin, key, name);
     }
     if let Some(reference) = address.strip_prefix("native:") {
@@ -276,6 +276,16 @@ fn read_matching_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str,
     let search = natives.call(plugin, "search", json!({"text":name,"limit":20}), ASKED)?;
     let artist = search["artists"].as_array().into_iter().flatten()
         .find(|item| text(item, "title").trim().to_lowercase() == name.trim().to_lowercase());
+    if natives.has_pages(plugin) {
+        if let Some(reference) = artist.and_then(|a| a["ref"].as_str()) {
+            super::pages::read(catalog, natives, plugin, reference)?;
+            let mut inner = catalog.lock();
+            inner.store.shelves.insert(key.into(), Shelf { title: name.into(), read_at: now(), epoch: 1,
+                document: json!({"resolved_ref": reference}), ..Default::default() });
+            inner.shelf_errors.remove(key); inner.dirty = true;
+            return Ok(());
+        }
+    }
     let mut items = Vec::new();
     if let Some(artist) = artist {
         let answer = natives.call(plugin, "artist.get", json!({"ref":artist["ref"]}), ASKED)?;
@@ -473,10 +483,11 @@ mod tests {
     fn a_track_on_its_own_still_leads_to_its_record() {
         let mut store = Store::default();
         let track = store.take_item_track("p", &json!({"ref": "track:1", "title": "Song", "artist": "Band",
-            "album": "Record", "album_ref": "album:x1", "image": "https://i/s.jpg"}), None, 10).unwrap();
+            "album": "Record", "album_ref": "album:x1", "artist_ref": "artist:9", "image": "https://i/s.jpg"}), None, 10).unwrap();
         let album = store.tracks[&track].album_id;
         assert!(album < 0, "a card was made for its record");
         assert_eq!(store.cards[&album].title, "Record");
         assert_eq!(store.cards[&album].identity, "album:x1");
+        assert_eq!(store.cards[&album].metadata["artist_ref"], "artist:9");
     }
 }

@@ -216,7 +216,7 @@ pub struct SearchJob {
 
 impl SearchJob {
     /// Fires the query only at the selected searchable sources.
-    pub fn start_in(plugins: Arc<Mutex<plugins::Plugins>>, text: String, limit: usize, source: String) -> Self {
+    pub fn start_in(plugins: Arc<Mutex<plugins::Plugins>>, text: String, limit: usize, source: String, quality: String) -> Self {
         let (tx, rx) = std::sync::mpsc::channel();
         let cancelled = Arc::new(AtomicBool::new(false));
         let stopped = cancelled.clone();
@@ -236,13 +236,15 @@ impl SearchJob {
                     let natives = plugins.lock().ok().map(|p| p.natives.clone());
                     if let Some(natives) = natives.filter(|n| n.is_native(&id)) {
                         let (tx, text, stopped) = (tx.clone(), text_asked.clone(), stopped.clone());
+                        let quality = quality.clone();
                         workers.spawn(move || {
                             if stopped.load(Ordering::Relaxed) { return; }
-                            let reply = crate::source_search::native_reply(&natives, &id, &name, &text, limit);
+                            let reply = crate::source_search::native_reply(&natives, &id, &name, &text, limit, &quality);
                             if !stopped.load(Ordering::Relaxed) { let _ = tx.send(reply); }
                         });
                         continue;
                     }
+                    if !quality.is_empty() { continue; }
                     let delivers =
                         plugins.lock().map(|p| p.delivers_audio(&id)).unwrap_or(true);
                     // What this source answered to this text a moment ago comes back at once.
@@ -326,6 +328,7 @@ pub(crate) struct SearchState {
     /// What the user has typed now.
     pub text: String,
     pub source: String,
+    pub quality_filter: String,
     /// When they last typed.
     pub keystroke: Option<Instant>,
     /// When the sources were last asked.
@@ -379,6 +382,7 @@ impl Chilpa {
         self.search = SearchState {
             text,
             source: source.into(),
+            quality_filter: String::new(),
             keystroke: Some(Instant::now()),
             last_query: self.search.last_query,
             job: None,
@@ -555,7 +559,7 @@ impl Chilpa {
             return;
         }
         self.search.last_query = Some(Instant::now());
-        self.search.job = Some(SearchJob::start_in(plugins, self.search.text.clone(), PER_SOURCE, self.search.source.clone()));
+        self.search.job = Some(SearchJob::start_in(plugins, self.search.text.clone(), PER_SOURCE, self.search.source.clone(), self.search.quality_filter.clone()));
     }
 
     fn rebuild_hits(&mut self) {

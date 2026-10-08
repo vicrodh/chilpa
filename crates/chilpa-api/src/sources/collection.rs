@@ -102,7 +102,7 @@ impl Chilpa {
         match action.as_str() {
             "queue_collection" => { self.enqueue(&paths, &device, exact); },
             "next_collection" => self.play_next(&paths, &device, exact),
-            _ => { self.replace_queue(paths); self.spawn_from(index, &device, exact, None, crate::Relaunch::Track); },
+            _ => { self.replace_queue_from(paths, Some(index)); self.spawn_from(index, &device, exact, None, crate::Relaunch::Track); },
         }
     }
 }

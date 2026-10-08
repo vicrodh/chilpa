@@ -240,6 +240,9 @@ impl Chilpa {
     /// it leads. "open" is the row's own click: an artist's page, a
     /// record's page, and a song plays with the songs listed after it.
     pub fn act_on_found(&mut self, rows: &[FoundRow], at: usize, act: &str) -> Leads {
+        self.with_queue_origin(self.search_origin(), |app| app.act_on_found_inner(rows, at, act))
+    }
+    fn act_on_found_inner(&mut self, rows: &[FoundRow], at: usize, act: &str) -> Leads {
         let Some(row) = rows.get(at) else { return Leads::Nowhere };
         if let FoundRow::Remote(row) = row { return self.act_on_remote_found(row, act); }
         if let FoundRow::More(source, _) = row {
