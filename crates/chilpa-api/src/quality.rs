@@ -51,6 +51,7 @@ impl Quality {
             .unwrap_or_default();
         let (format, lossy) = match ext.as_str() {
             "flac" => ("FLAC", false),
+            "alac" => ("ALAC", false),
             // One container, two codecs: only the lossless one states bits.
             "m4a" | "mp4" if bits.is_some() => ("ALAC", false),
             "m4a" | "mp4" | "aac" => ("AAC", true),
@@ -98,7 +99,7 @@ impl Quality {
     pub fn of_codec(codec: &str, bits: Option<u8>, rate_hz: Option<u32>) -> Quality {
         let ext = match codec {
             "flac" => "flac",
-            "alac" => "m4a",
+            "alac" => "alac",
             "aac" => "aac",
             "mp3" => "mp3",
             "vorbis" | "ogg" => "ogg",
@@ -173,6 +174,16 @@ mod tests {
     fn a_codec_names_the_format_of_what_has_no_file_name() {
         assert_eq!(Quality::of_codec("flac", Some(16), Some(44_100)).brief(), "FLAC 16-44.1");
         assert_eq!(Quality::of_codec("flac", Some(24), Some(96_000)).long(), "FLAC · 24-bit / 96 kHz");
+    }
+
+    #[test]
+    fn an_explicit_alac_codec_does_not_require_known_resolution() {
+        let q = Quality::of_codec("alac", None, None);
+        assert_eq!((q.short(), q.tier, q.bits, q.rate_hz), ("ALAC".into(), Tier::Lossless, None, None));
+        let q = Quality::of_codec("alac", None, Some(96_000));
+        assert_eq!((q.format.as_str(), q.tier, q.bits, q.rate_hz), ("ALAC", Tier::HiRes, None, Some(96_000)));
+        assert_eq!(Quality::of_codec("alac", Some(24), Some(48_000)).short(), "ALAC 24/48");
+        assert_eq!(Quality::of_codec("aac", None, None).tier, Tier::Lossy);
     }
 
     #[test]
