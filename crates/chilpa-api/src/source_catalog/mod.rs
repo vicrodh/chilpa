@@ -161,6 +161,7 @@ impl Catalog {
         *self.plugins.lock().unwrap_or_else(|e| e.into_inner()) = plugins;
         *self.natives.lock().unwrap_or_else(|e| e.into_inner()) = Some(natives);
         self.wake.notify_all();
+        self.prefetch_homes();
         let mut started = self.started.lock().unwrap_or_else(|e| e.into_inner());
         if std::mem::replace(&mut *started, true) {
             return;
@@ -240,6 +241,16 @@ impl Catalog {
         inner.queue.covers_queued.insert(image.to_string());
         inner.queue.covers.push_back(image.to_string());
         self.covers_wake.notify_one();
+    }
+
+    /// I warm homes after either startup dependency becomes ready: plugins
+    /// may finish before or after the disk catalog, including a later attach.
+    pub(crate) fn prefetch_homes(&self) {
+        if let Some(natives) = self.natives() {
+            for plugin in natives.ids().into_iter().filter(|id| natives.has_pages(id)) {
+                self.prefetch_shelf(&format!("{plugin} native:discover:home"));
+            }
+        }
     }
 
     /// I warm homes behind pages the listener has already opened.

@@ -809,13 +809,15 @@ impl Chilpa {
             // The player can now be told where something of a plugin is.
             self.install_openers();
         }
-        match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
+        let loaded = match self.plugins.as_ref().and_then(|p| p.lock().ok()) {
             Some(mut p) => p.load_all(),
             None => {
                 self.now.error = chilpa_i18n::t("the plugin sandbox could not be started").into();
                 0
             }
-        }
+        };
+        self.catalog.prefetch_homes();
+        loaded
     }
 
     /// The installed plugins, loaded or not.

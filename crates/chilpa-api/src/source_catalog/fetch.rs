@@ -124,11 +124,7 @@ pub(super) fn run(catalog: &Arc<Catalog>) {
         inner.loaded = true;
     }
     catalog.changed();
-    if let Some(natives) = catalog.natives() {
-        for plugin in natives.ids().into_iter().filter(|id| natives.has_pages(id)) {
-            catalog.prefetch_shelf(&format!("{plugin} native:discover:home"));
-        }
-    }
+    catalog.prefetch_homes();
     let mut pages = Pages::default();
     let mut saved = Instant::now();
     loop {
