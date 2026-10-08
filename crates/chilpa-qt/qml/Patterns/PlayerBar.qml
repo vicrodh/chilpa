@@ -3,6 +3,7 @@ import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.ambient
+import app.chilpa.mini
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -163,11 +164,17 @@ Item {
                 readonly property var backgrounds: [I18n.tr("Off", I18n.rev), I18n.tr("Ambient", I18n.rev), I18n.tr("Blurred art", I18n.rev),
                     I18n.tr("Wallpaper", I18n.rev), I18n.tr("Wallpaper, blurred", I18n.rev)]
                 function show() {
-                    entries = [{ text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
+                    entries = [{ text: I18n.tr("Mini player", I18n.rev), glyph: Icons.pictureInPicture, act: "mini" }, { separator: true },
+                        { text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
                         children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
                     open()
                 }
-                onActionChosen: (entry) => { if (entry.act.startsWith("background:")) Ambient.choose(Number(entry.act.split(":")[1])) }
+                onActionChosen: (entry) => {
+                    if (entry.act === "mini")
+                        Mini.enter()
+                    else if (entry.act.startsWith("background:"))
+                        Ambient.choose(Number(entry.act.split(":")[1]))
+                }
             }
         }
         VolumeControl {
