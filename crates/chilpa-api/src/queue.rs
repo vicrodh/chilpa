@@ -833,11 +833,14 @@ impl Chilpa {
     /// the playing track ends: shuffling does not cut the audio.
     pub fn set_shuffle(&mut self, shuffle: bool) {
         self.shuffle = shuffle;
-        if self.casting.active() { self.cast_order(); }
         // Shuffling and the mix are two orders: one replaces the other.
         self.mix = false;
-        let order = if shuffle { chilpa_core::queue_playback::shuffled_now(self.queue.len()) }
+        let mut order = if shuffle { chilpa_core::queue_playback::shuffled_now(self.queue.len()) }
             else { (0..self.queue.len()).collect() };
+        if shuffle {
+            if let Some(at) = order.iter().position(|&index| index == self.now.index) { order.swap(0, at); }
+        }
+        self.casting.order = order.clone();
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) { b.order = order.clone(); }
         if let Some(p) = &self.player { p.set_order(order, self.queue.len()); }
     }

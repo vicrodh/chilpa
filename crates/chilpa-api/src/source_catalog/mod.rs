@@ -117,6 +117,7 @@ pub(crate) struct Catalog {
     content_rev: AtomicI32,
     art_rev: AtomicI32,
     started: Mutex<bool>,
+    page_reads: Mutex<HashMap<String, Arc<Mutex<()>>>>,
 }
 
 fn now() -> u64 {
@@ -145,6 +146,7 @@ impl Catalog {
             content_rev: AtomicI32::new(0),
             art_rev: AtomicI32::new(0),
             started: Mutex::new(false),
+            page_reads: Mutex::new(HashMap::new()),
         })
     }
 
@@ -240,8 +242,16 @@ impl Catalog {
         self.covers_wake.notify_one();
     }
 
-    /// A listing as it is known now, asking for it when it is missing or
-    /// stale. Its covers and the first records' tracks are asked for too.
+    /// I warm homes behind pages the listener has already opened.
+    pub(super) fn prefetch_shelf(&self, key: &str) {
+        let mut inner = self.lock();
+        if inner.loaded && inner.store.shelves.get(key).is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) > SHELF_FRESH)
+            && !inner.shelf_errors.contains_key(key) {
+            self.queue(&mut inner, Job::Shelf(key.to_string()), false);
+        }
+    }
+
+    /// A listing as it is known now, asking for it when it is missing or stale.
     pub fn shelf(&self, key: &str) -> Option<store::Shelf> {
         let mut inner = self.lock();
         let shelf = inner.store.shelves.get(key).cloned();
@@ -634,6 +644,27 @@ impl Catalog {
 #[cfg(test)]
 mod retry_tests {
     use super::*;
+    #[test]
+    fn opening_a_prefetched_home_promotes_one_job_and_keeps_cached_content() {
+        let catalog = Catalog::new();
+        let key = "fixture native:discover:home";
+        catalog.lock().loaded = true;
+        catalog.lock().store.shelves.insert(key.into(), store::Shelf {
+            title: "Home".into(), read_at: now().saturating_sub(SHELF_FRESH + 1), epoch: 1, ..Default::default()
+        });
+        catalog.prefetch_shelf(key);
+        catalog.prefetch_shelf(key);
+        assert_eq!(catalog.lock().queue.later.len(), 1);
+        assert_eq!(catalog.shelf(key).unwrap().title, "Home");
+        assert!(catalog.lock().queue.later.is_empty());
+        assert_eq!(catalog.lock().queue.urgent.len(), 1);
+        assert_eq!(catalog.lock().queue.queued.len(), 1);
+        let fresh = "fixture native:discover:fresh";
+        catalog.lock().store.shelves.insert(fresh.into(), store::Shelf { read_at: now(), epoch: 1, ..Default::default() });
+        catalog.prefetch_shelf(fresh);
+        assert_eq!(catalog.lock().queue.queued.len(), 1);
+    }
+
     #[test]
     fn a_failed_search_cover_can_retry_without_restarting_the_application() {
         let catalog = Catalog::new();

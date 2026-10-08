@@ -209,6 +209,18 @@ fn shuffle_starts_at_the_front_and_retains_every_occurrence() {
         assert_eq!(order[0], api.now_playing().index);
         let mut sorted = order; sorted.sort_unstable();
         assert_eq!(sorted, (0..count).collect::<Vec<_>>());
+        for _ in 0..8 {
+            let current = api.now_playing().index;
+            api.set_shuffle(true);
+            let order = api.queue_order();
+            assert_eq!(order.len(), count, "toggling shuffle must not create a played prefix");
+            assert_eq!(order[0], current);
+            let id = state(&api)["active"].as_str().unwrap().parse().unwrap();
+            let sidebar = api.listen_rows(id, "", false).1;
+            let full = keys(&mut api, id);
+            assert_eq!(sidebar, full, "both queue views keep the current occurrence first");
+            assert!(api.listen_is_playing(&full[0]));
+        }
     }
     api.stop();
     drop(api);
