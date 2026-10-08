@@ -121,3 +121,8 @@ letter-w
 letter-x
 letter-y
 letter-z
+photo
+arrows-maximize
+pin
+arrows-move
+picture-in-picture

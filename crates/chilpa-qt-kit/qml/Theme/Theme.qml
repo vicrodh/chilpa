@@ -66,6 +66,21 @@ QtObject {
         readonly property color ambientRaised: ThemeModel.color("ambient.raised", theme.rev)
         readonly property color ambientFrost: ThemeModel.color("ambient.frost", theme.rev)
         readonly property color ambientVeil: ThemeModel.color("ambient.veil", theme.rev)
+        // The mini player's card: its edges, fills and separators at the
+        // alpha tiers QBZ draws them, white on a dark theme and black on a
+        // light one, and the two that read over its backdrop.
+        readonly property color miniEdge: ThemeModel.color("mini.edge", theme.rev)
+        readonly property color miniCapsuleEdge: ThemeModel.color("mini.capsuleEdge", theme.rev)
+        readonly property color miniSeparator: ThemeModel.color("mini.separator", theme.rev)
+        readonly property color miniHover: ThemeModel.color("mini.hover", theme.rev)
+        readonly property color miniCapsuleHover: ThemeModel.color("mini.capsuleHover", theme.rev)
+        readonly property color miniCoverFill: ThemeModel.color("mini.coverFill", theme.rev)
+        readonly property color miniRowActive: ThemeModel.color("mini.rowActive", theme.rev)
+        readonly property color miniDanger: ThemeModel.color("mini.danger", theme.rev)
+        readonly property color miniOnBackdrop: ThemeModel.color("mini.onBackdrop", theme.rev)
+        readonly property color miniGlyphOnBackdrop: ThemeModel.color("mini.glyphOnBackdrop", theme.rev)
+        readonly property color miniSeekOnBackdrop: ThemeModel.color("mini.seekOnBackdrop", theme.rev)
+        readonly property color miniFooter: ThemeModel.color("mini.footer", theme.rev)
 
         // The one elevation, in two layers, and the soft one for panels.
         readonly property color shadowElevated: ThemeModel.shadowColor("elevated", 0, theme.rev)
