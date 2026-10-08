@@ -21,7 +21,7 @@ Column {
     signal context(real left, real top)
     property bool selecting: false
     property var record
-    TrackListModel { id: tracks; kind: header.tracksKey ? "source" : ""; key: header.tracksKey; filterRev: Library.remoteRev }
+    TrackListModel { id: tracks; kind: header.tracksKey ? "source" : ""; key: header.tracksKey; filterRev: Library.remoteRev + Library.remoteArtRev }
     readonly property var sourceInfo: (JSON.parse(Sources.snapshot || "{}").panels || []).find(p => p.id === info.plugin) || ({name: info.plugin || ""})
     function follow(link) {
         if (/^(album|playlist):/.test(link)) {
@@ -82,7 +82,17 @@ Column {
                 PillButton { visible: header.playbackModel.count > 0; text: I18n.tr("Play", I18n.rev); kind: "primary"; glyph: Icons.playerPlayFilled; filled: true; onClicked: header.playbackModel.playAll(false) }
                 IconButton { visible: header.playbackModel.count > 0; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.arrowsShuffle; tip: I18n.tr("Shuffle", I18n.rev); onClicked: header.playbackModel.playAll(true) }
                 IconButton { objectName: "radioAction"; visible: !!header.info.radio_id; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Lucide.radio; iconFamily: Lucide.font; tip: header.artist ? I18n.tr("Artist radio", I18n.rev) : I18n.tr("Album radio", I18n.rev); onClicked: AlbumActions.play(header.info.radio_id, false) }
-                IconButton { visible: !!header.info.ref && header.info.editable !== true; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.heart; checked: header.info.favorite === true; tip: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: header.favorite() }
+                IconButton { visible: !!header.info.ref && header.info.editable !== true && header.info.favorite_supported !== false; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.heart; checked: header.info.favorite === true; tip: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: header.favorite() }
+                IconButton {
+                    objectName: "sourceLibraryMembership"
+                    visible: header.info.library_supported === true
+                    round: true
+                    tone: header.contrasted ? "overlay" : "secondary"
+                    glyph: Icons.books
+                    checked: header.info.in_library === true
+                    tip: header.info.in_library ? I18n.tr("Remove from library", I18n.rev) : I18n.tr("Add to library", I18n.rev)
+                    onClicked: Sources.command("native", header.info.plugin, JSON.stringify({action:"library",ref:header.info.ref,on:!header.info.in_library}))
+                }
                 IconButton { objectName: "albumInformation"; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.infoCircle; tip: I18n.tr("Information", I18n.rev); onClicked: header.externalInformation ? header.information() : biography.open() }
                 IconButton { visible: !!header.record; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.checkbox; checked: header.selecting; tip: header.selecting ? I18n.tr("Finish selecting", I18n.rev) : I18n.tr("Select tracks", I18n.rev); onClicked: header.selectToggle() }
                 IconButton {

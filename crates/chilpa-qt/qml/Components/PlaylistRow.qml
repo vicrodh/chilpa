@@ -52,10 +52,16 @@ Item {
 
         Icon {
             anchors.centerIn: parent
-            visible: !collage.active
+            visible: !collage.active && (row.local || !row.sourceIcon)
             glyph: row.local ? Icons.playlist : Icons.server
             size: Metrics.iconMd
             color: Theme.color.textSecondary
+        }
+        SourceIcon {
+            anchors.centerIn: parent
+            width: Metrics.iconMd; height: Metrics.iconMd
+            visible: !collage.active && !row.local && !!row.sourceIcon
+            sourceInfo: ({icon: row.sourceIcon, label: row.sourceName})
         }
         Loader {
             id: collage

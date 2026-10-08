@@ -37,6 +37,18 @@ Item {
         function onSearchAsked() { if (box.active) box.focusSearch() }
     }
 
+    Connections {
+        target: Navigation
+        function onSearchOriginRequested(query, source) {
+            if (!box.active) return
+            search.source = source || "all"
+            search.text = query
+            field.text = query
+            flyout.ownInput = box.compact
+            flyout.open()
+        }
+    }
+
     SearchField {
         id: field
         anchors.fill: parent

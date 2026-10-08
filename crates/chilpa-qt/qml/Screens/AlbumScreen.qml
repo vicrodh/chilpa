@@ -31,7 +31,7 @@ Flickable {
         id: tracks
         kind: "album"
         albumId: detail.selectedId
-        filterRev: Library.contentRev + Library.remoteRev
+        filterRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev
         playingPath: Player.path
     }
     AlbumGridModel {
@@ -117,9 +117,9 @@ Flickable {
             width: parent.width
             height: implicitHeight
             fitContent: true
-            showArtist: false
-            showAlbum: false
-            showArt: false
+            showArtist: sourceDetails.info.kind === "playlist"
+            showAlbum: sourceDetails.info.kind === "playlist"
+            showArt: sourceDetails.info.kind === "playlist"
             model: tracks
             selectionMode: page.selectionMode
         }

@@ -38,7 +38,7 @@ Rectangle {
     Behavior on width { NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
     clip: true
     color: Theme.color.surfacePanel
-    Rectangle { anchors.left: parent.left; width: Metrics.dividerHeight; height: parent.height; color: Theme.color.strokeHairline }
+    Rectangle { anchors.left: parent.left; width: Metrics.hairline; height: parent.height; color: Theme.color.strokeHairline }
 
     function openArtist(item) {
         if (item.ref && panel.plugin) Navigation.goKey("source", panel.plugin + " native:" + item.ref)
@@ -48,7 +48,7 @@ Rectangle {
     // best match by name.
     function openByName(name) {
         if (panel.local) Navigation.openArtist(name)
-        else if (panel.plugin) Navigation.goKey("source", panel.plugin + " matching-artist-v2:" + name)
+        else if (panel.plugin) Navigation.goKey("source", panel.plugin + " matching-artist-v3:" + name)
     }
 
     component Heading: Text {
@@ -131,7 +131,7 @@ Rectangle {
             }
         }
         IconButton { anchors.right: parent.right; anchors.rightMargin: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter; size: Metrics.button28; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: panel.closed() }
-        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.dividerHeight; color: Theme.color.strokeHairline }
+        Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     }
     Flickable {
         anchors.top: tabs.bottom; anchors.bottom: parent.bottom; width: parent.width

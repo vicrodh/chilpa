@@ -163,6 +163,9 @@ msgstr ""
 msgid "Add to favorites"
 msgstr ""
 
+msgid "Add to library"
+msgstr "Add to library"
+
 msgid "Add to playlist"
 msgstr ""
 
@@ -269,6 +272,9 @@ msgstr ""
 
 msgid "Analyzing {} of {} tracks"
 msgstr ""
+
+msgid "Any quality"
+msgstr "Any quality"
 
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "Any source — best quality (local mixed playlist)"
@@ -1097,6 +1103,9 @@ msgstr ""
 msgid "Go to podcast"
 msgstr "Go to podcast"
 
+msgid "Go to source"
+msgstr "Go to source"
+
 msgid "Go to {}"
 msgstr ""
 
@@ -1120,6 +1129,9 @@ msgstr ""
 
 msgid "Hi-Res Lossless"
 msgstr ""
+
+msgid "Hi-Res only"
+msgstr "Hi-Res only"
 
 msgid "Hide"
 msgstr ""
@@ -1393,6 +1405,9 @@ msgstr ""
 
 msgid "Lossless"
 msgstr ""
+
+msgid "Lossless only"
+msgstr "Lossless only"
 
 msgid "Lossy"
 msgstr ""
@@ -2149,6 +2164,9 @@ msgstr ""
 
 msgid "Remove from favorites"
 msgstr ""
+
+msgid "Remove from library"
+msgstr "Remove from library"
 
 msgid "Remove from playlist"
 msgstr ""

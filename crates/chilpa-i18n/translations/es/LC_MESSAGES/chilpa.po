@@ -163,6 +163,9 @@ msgstr "Agregar servidor"
 msgid "Add to favorites"
 msgstr "Agregar a favoritos"
 
+msgid "Add to library"
+msgstr "Añadir a la biblioteca"
+
 msgid "Add to playlist"
 msgstr "Agregar a playlist"
 
@@ -269,6 +272,9 @@ msgstr "Analizar la biblioteca"
 
 msgid "Analyzing {} of {} tracks"
 msgstr "Analizando {} de {} pistas"
+
+msgid "Any quality"
+msgstr "Cualquier calidad"
 
 msgid "Any source — best quality (local mixed playlist)"
 msgstr "Cualquier fuente — mejor calidad (playlist local mixta)"
@@ -1097,6 +1103,9 @@ msgstr "Ir al artista"
 msgid "Go to podcast"
 msgstr "Ir al podcast"
 
+msgid "Go to source"
+msgstr "Ir al origen"
+
 msgid "Go to {}"
 msgstr "Ir a {}"
 
@@ -1120,6 +1129,9 @@ msgstr "Alta resolución"
 
 msgid "Hi-Res Lossless"
 msgstr "Alta resolución sin pérdida"
+
+msgid "Hi-Res only"
+msgstr "Solo Hi-Res"
 
 msgid "Hide"
 msgstr "Ocultar"
@@ -1393,6 +1405,9 @@ msgstr "Buscando la letra…"
 
 msgid "Lossless"
 msgstr "Sin pérdida"
+
+msgid "Lossless only"
+msgstr "Solo lossless"
 
 msgid "Lossy"
 msgstr "Con pérdida"
@@ -2149,6 +2164,9 @@ msgstr "Quitar"
 
 msgid "Remove from favorites"
 msgstr "Quitar de favoritos"
+
+msgid "Remove from library"
+msgstr "Quitar de la biblioteca"
 
 msgid "Remove from playlist"
 msgstr "Quitar de la playlist"
