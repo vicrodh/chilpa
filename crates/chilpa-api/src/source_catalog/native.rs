@@ -314,14 +314,23 @@ pub(super) fn read_track(catalog: &Catalog, natives: &Arc<Natives>, path: &str) 
     let (plugin, reference) = crate::source_opener::of_plugin(path).ok_or_else(|| "not a source's track".to_string())?;
     remember_domains(catalog, natives, &plugin);
     let answer = natives.call(&plugin, "track.get", json!({"ref": reference}), ASKED)?;
-    let item = answer.get("track").filter(|t| t.is_object()).unwrap_or(&answer);
-    if item["ref"].as_str().is_none() { return Err("the source said nothing of the track".into()); }
+    let item = requested_track(&answer, &reference)?;
     let stamp = now();
     let mut inner = catalog.lock();
     if !natives.is_native(&plugin) { return Err("The plugin was disabled.".into()); }
-    inner.store.take_item_track(&plugin, item, None, stamp);
+    inner.store.take_item_track(&plugin, &item, None, stamp);
     inner.dirty = true;
     Ok(())
+}
+
+fn requested_track(answer: &Value, reference: &str) -> Result<Value, String> {
+    let mut item = answer.get("track").filter(|t| t.is_object()).unwrap_or(answer).clone();
+    if item["ref"].as_str().is_none_or(str::is_empty) {
+        return Err("the source said nothing of the track".into());
+    }
+    // I retain the requested occurrence, including its opaque playback context.
+    item["ref"] = json!(reference);
+    Ok(item)
 }
 
 pub(super) fn read_tracks(catalog: &Catalog, natives: &Arc<Natives>, id: i64) -> Result<(), String> {
@@ -382,6 +391,22 @@ fn remember_domains(catalog: &Catalog, natives: &Natives, plugin: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn restored_occurrences_keep_the_requested_path_after_metadata_recovery() {
+        let reference = "track:7@context:9";
+        let answer = json!({"track":{"ref":"track:7","title":"Song","kind":"track"}});
+        let item = requested_track(&answer, reference).unwrap();
+        let mut store = Store::default();
+        store.take_item_track("fixture", &item, None, 1).unwrap();
+        let path = crate::source_opener::entry_of("fixture", reference);
+        assert_eq!(store.track_by_path(&path).unwrap().title, "Song");
+        let mut restored: Store = serde_json::from_value(serde_json::to_value(store).unwrap()).unwrap();
+        restored.index();
+        assert_eq!(restored.track_by_path(&path).unwrap().metadata["ref"], reference);
+        assert!(requested_track(&json!({"ref":""}), reference).is_err());
+        assert!(requested_track(&json!({}), reference).is_err());
+    }
 
     #[test]
     fn same_artist_excludes_appearances_and_recommendations() {

@@ -18,12 +18,18 @@ fn ingest(catalog: &Catalog, plugin: &str, key: &str, value: &Value) {
 }
 pub(super) fn read(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, reference: &str) -> Result<(), String> {
     let parent = reference.split('|').next().unwrap_or(reference);
+    let reading = catalog.page_reads.lock().unwrap_or_else(|e| e.into_inner())
+        .entry(format!("{plugin} native:{parent}")).or_default().clone();
+    let _one = reading.lock().unwrap_or_else(|e| e.into_inner());
     let current = catalog.stored_shelf(&format!("{plugin} native:{reference}"));
-    if reference != parent && current.as_ref().is_some_and(|s| s.epoch > 0 && s.read_at > 0 && now().saturating_sub(s.read_at) < 30) { return Ok(()); }
+    if current.as_ref().is_some_and(|s| s.epoch > 0 && s.read_at > 0 && now().saturating_sub(s.read_at) < 30) { return Ok(()); }
     let refresh = current.is_some_and(|s| s.read_at == 0);
     let answer = natives.call(plugin, "page.get", json!({"ref":parent,"refresh":refresh}), Duration::from_secs(90))?;
     if !natives.is_native(plugin) { return Err("The plugin was disabled.".into()); }
     ingest_document(catalog, plugin, parent, &answer);
+    if catalog.stored_shelf(&format!("{plugin} native:{reference}")).is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) >= 30) {
+        return Err(chilpa_i18n::t("this part of the source is not there now"));
+    }
     Ok(())
 }
 pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, answer: &Value) {
@@ -250,6 +256,17 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn overlapping_home_reads_reuse_the_document_without_a_live_plugin() {
+        let catalog = Catalog::new();
+        let natives = Arc::new(Natives::default());
+        ingest_document(&catalog, "fixture", "discover:home", &json!({"title":"Home","shelves":[{"id":"recent","items":[]}]}));
+        assert!(read(&catalog, &natives, "fixture", "discover:home").is_ok());
+        assert!(read(&catalog, &natives, "fixture", "discover:home|recent").is_ok());
+        catalog.lock().store.shelves.get_mut("fixture native:discover:home").unwrap().read_at = 0;
+        assert!(read(&catalog, &natives, "fixture", "discover:home").is_err(), "explicit refresh must reach the plugin");
+    }
+
     #[test]
     fn radio_moves_to_album_and_artist_headers_without_removing_other_shelves() {
         for reference in ["album:3", "artist:7"] {
