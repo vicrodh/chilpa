@@ -9,6 +9,8 @@ Item {
     id: line
 
     property var entry: ({})
+    enabled: entry.enabled !== false
+    opacity: enabled ? 1 : Metrics.disabledOpacity
 
     signal clicked()
     readonly property bool hovered: hover.hovered

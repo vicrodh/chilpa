@@ -360,13 +360,13 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
 }
 
 /// Adds files to the end of the queue, on the output in use.
-fn enqueue(paths: &[String]) {
-    app::with(|api| api.enqueue_here(paths));
+fn enqueue(api: &mut chilpa_api::Chilpa, paths: &[String]) {
+    api.enqueue_here(paths);
 }
 
 /// Puts files right after what is playing, on the output in use.
-fn next(paths: &[String]) {
-    app::with(|api| api.play_next_here(paths));
+fn next(api: &mut chilpa_api::Chilpa, paths: &[String]) {
+    api.play_next_here(paths);
 }
 
 fn summary(tracks: usize, ms: u64) -> String {
@@ -410,9 +410,10 @@ impl qobject::TrackListModel {
                 // own, so it runs on the worker and plays when it is back.
                 let ids = ids.ids.clone();
                 let thread = self.qt_thread();
+                let origin = app::with(|api| api.browse_origin());
                 worker::submit(move |reader| {
                     let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| app::with(|api| api.play_from(&paths, row)));
+                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| api.play_from(&paths, row))));
                 });
             }
         }
@@ -427,11 +428,7 @@ impl qobject::TrackListModel {
 
     pub fn play_later_all(self: Pin<&mut Self>, label: &QString) {
         let label = label.to_string();
-        self.with_all_paths(move |paths| {
-            app::with(|api| {
-                api.play_later_here(paths, &label);
-            })
-        });
+        self.with_all_paths(move |api, paths| { api.play_later_here(paths, &label); });
     }
 
     pub fn group_action(self: Pin<&mut Self>, row: i32, action: &QString, label: &QString) {
@@ -449,18 +446,19 @@ impl qobject::TrackListModel {
         });
     }
 
-    fn with_all_paths(&self, then: impl FnOnce(&[String]) + Send + 'static) {
+    fn with_all_paths(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
         match &self.rust().rows {
             Rows::Loaded(_) => {
                 let paths: Vec<String> = self.rust().loaded_tracks().iter().map(|t| t.path.clone()).collect();
-                then(&paths);
+                app::with(|api| then(api, &paths));
             }
             Rows::Snapshot { ids, .. } => {
                 let ids = ids.ids.clone();
                 let thread = self.qt_thread();
+                let origin = app::with(|api| api.browse_origin());
                 worker::submit(move |reader| {
                     let paths = reader.paths(&ids);
-                    let _ = thread.queue(move |_| then(&paths));
+                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| then(api, &paths))));
                 });
             }
         }
@@ -468,11 +466,11 @@ impl qobject::TrackListModel {
 
     pub fn list_action(mut self: Pin<&mut Self>, action: &QString, row: i32, to: i32) {
         let action = action.to_string();
-        if row < 0 && action.starts_with("buffer:") { self.with_all_paths(move |paths| app::with(|api| api.listen_paths_action(&action, paths))); return; }
+        if row < 0 && action.starts_with("buffer:") { self.with_all_paths(move |api, paths| api.listen_paths_action(&action, paths)); return; }
         if row < 0 || (action == "move" && to < 0) { return; }
         if action.starts_with("buffer:") {
             if self.in_selection(row) {
-                self.with_selection(move |paths| app::with(|api| api.listen_paths_action(&action, paths)));
+                self.with_selection(move |api, paths| api.listen_paths_action(&action, paths));
             } else if let Some(track) = self.rust().track(row.max(0) as usize) {
                 app::with(|api| api.listen_paths_action(&action, &[track.path]));
             }
@@ -484,8 +482,7 @@ impl qobject::TrackListModel {
     }
 
     pub fn play_all(self: Pin<&mut Self>, shuffled: bool) {
-        app::with(|api| api.set_shuffle(shuffled));
-        self.play(0);
+        self.with_all_paths(move |api, paths| api.play_list(paths, shuffled));
     }
 
     pub fn select(mut self: Pin<&mut Self>, row: i32, modifiers: i32) {
@@ -501,7 +498,7 @@ impl qobject::TrackListModel {
     pub fn queue(self: Pin<&mut Self>, row: i32) {
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
-                enqueue(&[track.path]);
+                app::with(|api| enqueue(api, &[track.path]));
             }
             return;
         }
@@ -513,13 +510,13 @@ impl qobject::TrackListModel {
             self.play(row);
             return;
         }
-        self.with_selection(|paths| app::with(|api| api.play_from(paths, 0)));
+        self.with_selection(|api, paths| api.play_from(paths, 0));
     }
 
     pub fn play_next(self: Pin<&mut Self>, row: i32) {
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
-                next(&[track.path]);
+                app::with(|api| next(api, &[track.path]));
             }
             return;
         }
@@ -532,12 +529,12 @@ impl qobject::TrackListModel {
             label = self.rust().track(row.max(0) as usize).map(|track| track.album).unwrap_or_default();
             if label.is_empty() { label = app::t("Play later"); }
         }
-        let later = move |paths: &[String]| {
-            app::with(|api| api.play_later_here(paths, &label));
+        let later = move |api: &mut chilpa_api::Chilpa, paths: &[String]| {
+            api.play_later_here(paths, &label);
         };
         if !self.in_selection(row) {
             if let Some(track) = self.rust().track(row.max(0) as usize) {
-                later(&[track.path]);
+                app::with(|api| later(api, &[track.path]));
             }
             return;
         }
@@ -657,12 +654,12 @@ impl qobject::TrackListModel {
             // that cannot play among several leaves only what removes it.
             unavailable: self.acts_on_unavailable(row),
         };
-        let mut entries = chilpa_api::track_menu(context);
+        let mut entries = app::with(|api| api.track_queue_menu(context));
         if let Some(key) = this.queue_keys.get(row.max(0) as usize) {
             entries.retain(|e| !matches!(e["act"].as_str(), Some("play" | "dequeue")));
             let mut queue = app::with(|api| api.listen_menu(key));
             queue.extend(entries); entries = queue;
-        } else if row >= 0 { entries.extend(app::with(|api| api.listen_targets())); }
+        }
         QString::from(serde_json::to_string(&entries).unwrap_or_default())
     }
 
@@ -693,19 +690,20 @@ impl qobject::TrackListModel {
 
     /// The selected files, in list order -- which the selection does not
     /// keep -- handed to `then` on the window's thread.
-    fn with_selection(&self, then: impl FnOnce(&[String]) + Send + 'static) {
+    fn with_selection(&self, then: impl FnOnce(&mut chilpa_api::Chilpa, &[String]) + Send + 'static) {
         let this = self.rust();
         match &this.rows {
             Rows::Loaded(_) => {
                 let paths: Vec<String> = this.loaded_tracks().iter().filter(|t| this.selected.contains(&t.id)).map(|t| t.path.clone()).collect();
-                then(&paths);
+                app::with(|api| then(api, &paths));
             }
             Rows::Snapshot { ids, .. } => {
                 let chosen: Vec<i64> = ids.ids.iter().copied().filter(|id| this.selected.contains(id)).collect();
                 let thread = self.qt_thread();
+                let origin = app::with(|api| api.browse_origin());
                 worker::submit(move |reader| {
                     let paths = reader.paths(&chosen);
-                    let _ = thread.queue(move |_| then(&paths));
+                    let _ = thread.queue(move |_| app::with(|api| api.with_queue_origin(origin, |api| then(api, &paths))));
                 });
             }
         }
@@ -715,7 +713,10 @@ impl qobject::TrackListModel {
         let Some(track) = self.rust().track(row.max(0) as usize) else {
             return false;
         };
-        chilpa_api::track_can_go(&track, &self.rust().kind.to_string(), &self.rust().key.to_string(), &target.to_string())
+        let kind = self.rust().kind.to_string();
+        // A source playlist uses the record screen, but each song has its own album.
+        let context = if kind == "album" && track.album_id != self.rust().album_id { "collection" } else { &kind };
+        chilpa_api::track_can_go(&track, context, &self.rust().key.to_string(), &target.to_string())
     }
 
     pub fn letters(&self, _rev: i32) -> QString {

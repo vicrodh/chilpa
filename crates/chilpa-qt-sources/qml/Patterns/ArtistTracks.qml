@@ -20,8 +20,8 @@ Column {
     readonly property bool shown: tracks.count > 0
     spacing: Metrics.gap12
     visible: shown
-    TrackListModel { id: tracks; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; limit: block.preview; filterRev: Library.remoteRev }
-    TrackListModel { id: all; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; filterRev: Library.remoteRev }
+    TrackListModel { id: tracks; playingPath: Player.path; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; limit: block.preview; filterRev: Library.remoteRev + Library.remoteArtRev }
+    TrackListModel { id: all; kind: block.modelKind; key: block.section.model_key || block.section.key || ""; filterRev: Library.remoteRev + Library.remoteArtRev }
     Item {
         width: parent.width; height: Metrics.shelfHeader
         Text { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: block.section.title || ""; textFormat: Text.PlainText; font.pointSize: Type.section; font.weight: Type.heading; font.letterSpacing: Type.sectionTracking; color: Theme.color.textPrimary }

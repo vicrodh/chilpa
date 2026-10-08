@@ -1,5 +1,6 @@
 import QtQuick
 import app.chilpa
+import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -52,6 +53,7 @@ Rectangle {
     }
 
     Text {
+        id: remaining
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
@@ -63,10 +65,14 @@ Rectangle {
     }
 
     Column {
+        id: labels
         // The seek hit area overlaps the lower text edge; links keep priority.
         z: 1
-        anchors.centerIn: parent
-        width: parent.width - (cover.width + Metrics.gap16) * 2 - elapsed.implicitWidth * 2 // derived: room for the cover and the times on both sides
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.left: elapsed.visible ? elapsed.right : cover.right
+        anchors.leftMargin: Metrics.gap12
+        anchors.right: remaining.visible ? remaining.left : parent.right
+        anchors.rightMargin: Metrics.gap12
         spacing: Metrics.gap2
 
         Row {
@@ -74,7 +80,7 @@ Rectangle {
             spacing: Metrics.gap6
 
             Text {
-                width: Math.min(implicitWidth, lcd.width / 2) // derived: at most half the LCD
+                width: Math.min(implicitWidth, Math.max(0, labels.width - (indicator.visible ? indicator.width + Metrics.gap6 : 0))) // derived: reserve the quality icon inside the text area
                 text: Player.title
                 elide: Text.ElideRight
                 font.pointSize: Type.row
@@ -83,6 +89,7 @@ Rectangle {
             }
 
             QualityIcon {
+                id: indicator
                 objectName: "playbackIndicator"
                 anchors.verticalCenter: parent.verticalCenter
                 tier: Player.qualityTier
@@ -99,15 +106,29 @@ Rectangle {
             id: context
             width: parent.width
             height: Math.max(artist.implicitHeight, album.implicitHeight)
+            readonly property real textWidth: Math.max(0, width - (origin.visible ? origin.width + Metrics.gap6 : 0))
 
             Row {
                 anchors.centerIn: parent
+                height: parent.height
                 spacing: Metrics.gap6
+
+                IconButton {
+                    id: origin
+                    objectName: "playerOrigin"
+                    visible: Player.origin !== ""
+                    size: Metrics.button26
+                    anchors.verticalCenter: parent.verticalCenter
+                    glyph: Icons.stack2
+                    tip: I18n.tr("Go to source", I18n.rev)
+                    onClicked: Navigation.goOrigin(Player.origin)
+                }
 
                 CreditLine {
                     id: artist
+                    anchors.verticalCenter: parent.verticalCenter
                     objectName: "playerArtist"
-                    width: Player.album === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
+                    width: Player.album === "" ? Math.min(implicitWidth, context.textWidth) : Math.min(implicitWidth, (context.textWidth - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
                     credit: Player.artist; trackPath: Player.path
                     entry: lcd.onAir
                     parentSource: lcd.parentSource
@@ -117,6 +138,7 @@ Rectangle {
 
                 Text {
                     id: separator
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: Player.artist !== "" && Player.album !== ""
                     text: "—"
                     font.pointSize: Type.small
@@ -125,9 +147,10 @@ Rectangle {
 
                 Text {
                     id: album
+                    anchors.verticalCenter: parent.verticalCenter
                     objectName: "playerAlbum"
                     visible: Player.album !== ""
-                    width: Player.artist === "" ? Math.min(implicitWidth, context.width) : Math.min(implicitWidth, (context.width - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
+                    width: Player.artist === "" ? Math.min(implicitWidth, context.textWidth) : Math.min(implicitWidth, (context.textWidth - separator.implicitWidth - Metrics.gap12) / 2) // derived: share the available context row
                     text: Player.album
                     elide: Text.ElideRight
                     font.pointSize: Type.small

@@ -130,6 +130,7 @@ QtObject {
     // How many times their placing is asked before giving up.
     readonly property int systemControlsTries: 25
     readonly property int dividerHeight: 18
+    readonly property int hairline: 1
 
     // Player bar (02-layout.md 7).
     readonly property int playerHeight: 70

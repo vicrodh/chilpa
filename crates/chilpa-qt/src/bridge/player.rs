@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(QString, title)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
+        #[qproperty(QString, origin)]
         #[qproperty(i64, album_id)]
         #[qproperty(QUrl, art)]
         /// The file playing; lists compare it to mark their row.
@@ -174,6 +175,7 @@ pub struct PlayerRust {
     title: QString,
     artist: QString,
     album: QString,
+    origin: QString,
     album_id: i64,
     art: QUrl,
     path: QString,
@@ -341,6 +343,7 @@ impl qobject::Player {
 
     /// Collects the engine's events. The tick thread queues it.
     fn tick(mut self: Pin<&mut Self>) {
+        self.as_mut().set_origin(QString::from(&app::with(|api| api.playing_origin_json())));
         let (now, changed, casting, remote) = app::with(|api| (api.poll().clone(), api.library_changed(), api.cast_destination().is_some(), api.source_revisions()));
         crate::registry::library(move |mut l| { l.as_mut().set_remote_rev(remote.0); l.set_remote_art_rev(remote.1); });
         if let Some(asked) = app::with(|api| api.window_request()) {

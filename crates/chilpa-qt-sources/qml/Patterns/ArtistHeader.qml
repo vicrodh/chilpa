@@ -74,7 +74,7 @@ Item {
         Flow {
             width: parent.width; spacing: Metrics.gap12
             IconButton {
-                objectName: "followAction"; round: true; size: Metrics.button32; glyph: Icons.heart; filled: header.favorite; checked: header.favorite
+                objectName: "followAction"; round: true; size: Metrics.button32; glyph: header.favorite ? Icons.heartFilled : Icons.heart; filled: header.favorite; checked: header.favorite
                 tip: header.favorite ? I18n.tr("Unfollow", I18n.rev) : I18n.tr("Follow", I18n.rev)
                 onClicked: header.local ? Ratings.setFavorite("artist", header.info.title || "", !header.favorite)
                     : Sources.command("native", header.info.plugin, JSON.stringify({action:"favorite",ref:header.info.ref,on:!header.favorite}))

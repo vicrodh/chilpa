@@ -26,8 +26,8 @@ Column {
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
     visible: shown
     AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
-    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev; playingPath: Player.path }
-    TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev }
+    TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
+    TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev + Library.remoteArtRev }
     SectionHeader {
         width: parent.width; title: shelf.section.title || ""
         link: shelf.wrap || shelf.modelKind !== "source" ? "" : I18n.tr("See all", I18n.rev)

@@ -160,6 +160,21 @@ Popup {
             }
         }
 
+        Row {
+            spacing: Metrics.gap6
+            Repeater {
+                model: [{value: "", label: I18n.tr("Any quality", I18n.rev)},
+                    {value: "lossless", label: I18n.tr("Lossless only", I18n.rev)},
+                    {value: "hi_res", label: I18n.tr("Hi-Res only", I18n.rev)}]
+                Chip {
+                    required property var modelData
+                    text: modelData.label
+                    active: flyout.search.qualityFilter === modelData.value
+                    onClicked: flyout.search.qualityFilter = modelData.value
+                }
+            }
+        }
+
         ListView {
             id: list
             width: parent.width

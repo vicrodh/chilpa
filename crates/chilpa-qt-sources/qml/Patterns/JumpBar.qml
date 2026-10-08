@@ -15,7 +15,7 @@ Rectangle {
     signal jump(string id)
     height: Metrics.jumpBar
     color: Theme.color.surfaceWindow
-    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.dividerHeight; color: Theme.color.strokeHairline }
+    Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     Row {
         anchors.left: parent.left; anchors.right: field.left; anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap16; clip: true

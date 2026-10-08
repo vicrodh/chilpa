@@ -65,7 +65,7 @@ Item {
 
     Flickable {
         id: flick
-        anchors.left: parent.left; anchors.right: panel.left; anchors.top: parent.top; anchors.bottom: parent.bottom
+        anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
         contentWidth: width; contentHeight: column.height + Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds; clip: true
         ScrollBar.vertical: ViewportScrollBar { policy: page.networkOpen ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
@@ -85,7 +85,7 @@ Item {
                     required property string modelData
                     readonly property var section: page.shelf(modelData)
                     readonly property string role: section.role || "shelf"
-                    width: column.width
+                    width: column.width - panel.width
                     // Each block says whether it has anything to show; its
                     // own visibility would read back the Loader's.
                     visible: item ? item.shown === true : false

@@ -34,6 +34,12 @@ pub mod qobject {
         #[qproperty(QString, route_key)]
         type Navigation = super::NavigationRust;
 
+        #[qinvokable]
+        fn go_origin(self: Pin<&mut Navigation>, origin: &QString);
+
+        #[qsignal]
+        fn search_origin_requested(self: Pin<&mut Navigation>, query: QString, source: QString);
+
         /// Opens a folder in the Folders screen, inside the active tab. An
         /// empty path is the top: the library's folders.
         #[qinvokable]
@@ -112,6 +118,16 @@ fn route(screen: &QString, id: i64) -> Option<Route> {
 }
 
 impl qobject::Navigation {
+    pub fn go_origin(mut self: Pin<&mut Self>, origin: &QString) {
+        let Ok(origin) = serde_json::from_str::<chilpa_api::queue_origin::QueueOrigin>(&origin.to_string()) else { return; };
+        if origin.screen == "search" {
+            self.search_origin_requested(QString::from(&origin.query), QString::from(&origin.source));
+        } else if let Some(route) = origin.route() {
+            self.as_mut().rust_mut().tabs.go(route);
+            self.publish();
+        }
+    }
+
     pub fn go(mut self: Pin<&mut Self>, screen: &QString, id: i64) {
         if let Some(to) = route(screen, id) {
             self.as_mut().rust_mut().tabs.go(to);
@@ -219,7 +235,7 @@ impl qobject::Navigation {
         self.as_mut().set_section(QString::from(section));
         self.as_mut().set_route_key(QString::from(&now.key));
         self.as_mut().set_screen(QString::from(now.screen.name()));
-        app::with(|api| api.keep_tabs(&tabs));
+        app::with(|api| { api.set_browse_route(&now); api.keep_tabs(&tabs); });
     }
 }
 

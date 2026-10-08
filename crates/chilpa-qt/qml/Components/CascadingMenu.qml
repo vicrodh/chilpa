@@ -12,6 +12,7 @@ Menu {
     readonly property bool pairHovered: hovering || branch.hovering
     property int branchIndex: -1
     function showBranch(index, top) {
+        if (!entries[index] || entries[index].enabled === false) return
         const children = entries[index].children
         if (!children || !children.length) return
         branch.entries = children

@@ -64,6 +64,23 @@ TestCase {
         tryCompare(menu,"visible",false)
         compare(outsideClicks,0)
     }
+    function test_disabled_entries_ignore_pointer_and_direct_activation() {
+        const original = menu.entries
+        menu.entries = [{text:"Unavailable queue",act:"disabled",enabled:false},{text:"Extra queues",submenu:true,enabled:false,children:[{text:"New queue",act:"new"}]}]
+        menu.x=100; menu.y=100; menu.open()
+        tryCompare(menu,"opened",true)
+        const item=menu.entryItems.find(i => i.entry && i.entry.act==="disabled")
+        waitForRendering(item)
+        compare(item.enabled,false)
+        mouseClick(item,item.width/2,item.height/2)
+        menu.choose(0,0)
+        menu.choose(1,0)
+        compare(chosen.count,0)
+        const branch=findChild(menu,"menuBranch")
+        compare(branch.opened,false)
+        menu.close()
+        menu.entries=original
+    }
     Component { id: tallMenu; CascadingMenu {} }
     function test_long_branch_fits_at_bottom_edge() {
         const children=[]

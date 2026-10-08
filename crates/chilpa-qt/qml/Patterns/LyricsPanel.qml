@@ -28,6 +28,8 @@ Item {
     readonly property var lyrics: read(Player.lyricsJson)
     readonly property bool found: lyrics !== null && !!lyrics.document
     readonly property var lines: found ? lyrics.document.lines : []
+    readonly property bool waitingForLyrics: Player.lyricsSynced && options.follow && lines.length > 0
+        && lines[0].start_ms !== undefined && nowMs < lines[0].start_ms
     readonly property bool wordTimed: found && (lyrics.document.timing === "word" || lyrics.document.timing === "syllable")
     readonly property string playing: Player.artist === "" || Player.title === "" ? Player.title : Player.title + " — " + Player.artist
 
@@ -131,6 +133,7 @@ Item {
     Lines.LyricLines {
         id: list
         objectName: "lyricsList"
+        visible: !panel.waitingForLyrics
         anchors.top: head.bottom
         anchors.bottom: foot.top
         anchors.left: parent.left
@@ -150,6 +153,17 @@ Item {
         uppercase: options.uppercase
         lite: options.lite
         onSought: (ms) => Player.seek(ms / 1000)
+    }
+
+    Image {
+        objectName: "lyricsPrelude"
+        anchors.centerIn: list
+        width: Math.min(list.width, list.height) / 3 // derived: a quiet mark inside the lyric viewport
+        height: width
+        source: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png"
+        fillMode: Image.PreserveAspectFit
+        opacity: 0.25 // requested: one quarter visible
+        visible: panel.waitingForLyrics
     }
 
     // Over the lines, only while the lyrics carry a translation.
