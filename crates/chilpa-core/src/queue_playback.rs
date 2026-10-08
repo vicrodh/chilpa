@@ -662,6 +662,9 @@ impl FrameSource for TrackFrames<'_> {
     fn heard_at_move(&self) -> Option<u64> {
         Some(self.moved_at)
     }
+    fn position_at_move(&self) -> Option<u64> {
+        Some((self.base.load(std::sync::atomic::Ordering::Relaxed) + self.moved_at as i64).max(0) as u64)
+    }
 
     /// What was heard is the renderer's last count plus where the last seek
     /// landed; going back there is a seek like any other.

@@ -5,12 +5,16 @@ use std::{cell::RefCell, collections::VecDeque, sync::Arc};
 /// Implementations enqueue in memory only: no disk, network or plugin calls.
 pub trait Observer: Send + Sync {
     fn update(&self, frames: u64, rate: u32, state: &'static str, ended: Option<&'static str>);
+    fn update_at(&self, frames: u64, rate: u32, state: &'static str, ended: Option<&'static str>, _position: Option<u64>) {
+        self.update(frames, rate, state, ended);
+    }
 }
 
 struct Segment {
     observer: Option<Arc<dyn Observer>>,
     pending: u64,
     played: u64,
+    position: Option<u64>,
     ended: Option<&'static str>,
 }
 
@@ -26,11 +30,12 @@ impl Meter {
             let taken = consumed.min(segment.pending);
             segment.pending -= taken;
             segment.played += taken;
+            segment.position = segment.position.map(|p| p.saturating_add(taken));
             consumed -= taken;
             if segment.played > 0 {
                 if let Some(observer) = &segment.observer {
-                    observer.update(segment.played, rate, state,
-                        segment.ended.filter(|_| segment.pending == 0));
+                    observer.update_at(segment.played, rate, state,
+                        segment.ended.filter(|_| segment.pending == 0), segment.position);
                 }
             }
             // Do not announce a later occurrence ahead of an unconsumed tail.
@@ -73,10 +78,10 @@ impl<K: AudioSink> Measured<K> {
             // An unobserved local track may still have a gapless tail.
             let held = self.inner.held();
             if held > 0 {
-                self.meter.get_mut().segments.push_back(Segment { observer: None, pending: held, played: 0, ended: Some("finished") });
+                self.meter.get_mut().segments.push_back(Segment { observer: None, pending: held, played: 0, position: None, ended: Some("finished") });
             }
         }
-        self.meter.get_mut().segments.push_back(Segment { observer, pending: 0, played: 0, ended: None });
+        self.meter.get_mut().segments.push_back(Segment { observer, pending: 0, played: 0, position: Some(0), ended: None });
     }
     pub(crate) fn end(&mut self, reason: &'static str) {
         self.sample("playing");
@@ -90,6 +95,10 @@ impl<K: AudioSink> Measured<K> {
     }
 }
 impl<K: AudioSink> AudioSink for Measured<K> {
+    fn position_changed(&mut self, position: Option<u64>) {
+        if let Some(segment) = self.meter.get_mut().segments.back_mut() { segment.position = position; }
+        self.inner.position_changed(position);
+    }
     fn format(&self) -> StreamFormat { self.inner.format() }
     fn held(&self) -> u64 {
         let held = self.inner.held();
@@ -162,6 +171,30 @@ mod tests {
     use super::*;
     use std::sync::Mutex;
     use chilpa_audio::format::SampleFormat;
+    #[test]
+    fn seeking_moves_the_media_cursor_without_creating_listening_time() {
+        #[derive(Default)]
+        struct Positions(Mutex<Vec<(u64, Option<u64>)>>);
+        impl Observer for Positions {
+            fn update(&self, _: u64, _: u32, _: &'static str, _: Option<&'static str>) {}
+            fn update_at(&self, frames: u64, _: u32, _: &'static str, _: Option<&'static str>, position: Option<u64>) {
+                self.0.lock().unwrap().push((frames, position));
+            }
+        }
+        let observer = Arc::new(Positions::default());
+        let mut sink = Measured::new(Sink { held: 0, fail: false });
+        sink.begin(Some(observer.clone()));
+        sink.write(&[0; 400]).unwrap();
+        sink.inner.held = 100;
+        sink.sample("playing");
+        sink.flush().unwrap();
+        sink.inner.held = 0;
+        sink.position_changed(Some(80_000));
+        sink.write(&[0; 200]).unwrap();
+        sink.inner.held = 0;
+        sink.sample("playing");
+        assert_eq!(observer.0.lock().unwrap().last(), Some(&(200, Some(80_100))));
+    }
     #[derive(Default)]
     struct Recorder(Mutex<Vec<(u64, String, Option<String>)>>);
     impl Observer for Recorder {

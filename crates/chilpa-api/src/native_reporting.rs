@@ -172,8 +172,13 @@ struct Observed { played_ms: u64, state: &'static str, sequence: u64, ended: boo
 struct Playback { reports: Arc<Reports>, plugin: String, resolution: String, id: String, cancelled: Arc<AtomicBool>, state: Mutex<Observed> }
 impl Observer for Playback {
     fn update(&self, frames: u64, rate: u32, state: &'static str, ended: Option<&'static str>) {
+        self.update_at(frames, rate, state, ended, None);
+    }
+    fn update_at(&self, frames: u64, rate: u32, state: &'static str, ended: Option<&'static str>, position: Option<u64>) {
         if frames == 0 || rate == 0 || self.reports.blocked || self.cancelled.load(Ordering::Acquire) { return; }
         let played_ms = frames.saturating_mul(1000) / u64::from(rate);
+        let position_ms = position.map(|p| p.saturating_mul(1000) / u64::from(rate));
+        let observed_at_ms = SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_millis() as u64;
         let mut observed = self.state.lock().unwrap_or_else(|e| e.into_inner());
         if observed.ended { return; }
         if observed.started_at == 0 {
@@ -187,10 +192,12 @@ impl Observer for Playback {
         observed.sequence += 1;
         observed.ended = ended.is_some();
         let latest = json!({"kind": if ended.is_some() {"ended"} else {"progress"}, "playback_id":self.id,
-            "sequence":observed.sequence, "played_ms":observed.played_ms, "state":state, "reason":ended});
+            "sequence":observed.sequence, "played_ms":observed.played_ms, "state":state, "reason":ended,
+            "position_ms":position_ms, "observed_at_ms":observed_at_ms});
         let entry = entries.entry(self.id.clone()).or_insert_with(|| Entry {
             cancelled: self.cancelled.clone(), plugin: self.plugin.clone(), start: json!({"kind":"started", "playback_id":self.id,
-                "resolution_id":self.resolution, "started_at":observed.started_at}), latest: Value::Null,
+                "resolution_id":self.resolution, "started_at":observed.started_at,
+                "position_ms":position_ms.map(|p| p.saturating_sub(played_ms))}), latest: Value::Null,
             start_acknowledged: false, ack_sequence: 0, in_flight: None });
         entry.latest = latest;
         self.reports.changed();
