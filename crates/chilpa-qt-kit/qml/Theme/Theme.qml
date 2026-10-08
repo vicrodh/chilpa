@@ -11,6 +11,9 @@ QtObject {
 
     readonly property int rev: ThemeModel.rev
     readonly property bool dark: ThemeModel.dark
+    // The dynamic background shows through the chrome: every surface that
+    // goes translucent under it reads this one predicate.
+    readonly property bool ambient: ThemeModel.ambient
     readonly property string searchLabel: I18n.tr("Search", I18n.rev)
     readonly property string emptySearchLabel: I18n.tr("No matches", I18n.rev)
     // What the sung line of lyrics can be tinted with, after the text's own
@@ -54,6 +57,15 @@ QtObject {
         readonly property color albumHeaderDim: ThemeModel.color("albumHeader.dim", theme.rev)
         readonly property color albumHeaderTop: ThemeModel.color("albumHeader.top", theme.rev)
         readonly property color albumHeaderBottom: ThemeModel.color("albumHeader.bottom", theme.rev)
+        // The chrome under the dynamic background: the panels and the
+        // player at half alpha, the content plane frosted with its hairline,
+        // the raised fills at half alpha, and the veil over the field.
+        readonly property color ambientSidebar: ThemeModel.color("ambient.sidebar", theme.rev)
+        readonly property color ambientPlayer: ThemeModel.color("ambient.player", theme.rev)
+        readonly property color ambientContent: ThemeModel.color("ambient.content", theme.rev)
+        readonly property color ambientRaised: ThemeModel.color("ambient.raised", theme.rev)
+        readonly property color ambientFrost: ThemeModel.color("ambient.frost", theme.rev)
+        readonly property color ambientVeil: ThemeModel.color("ambient.veil", theme.rev)
 
         // The one elevation, in two layers, and the soft one for panels.
         readonly property color shadowElevated: ThemeModel.shadowColor("elevated", 0, theme.rev)

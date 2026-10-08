@@ -46,7 +46,7 @@ Rectangle {
                     id: segmentPanel
                     anchors.fill: parent
                     radius: Metrics.radiusItem
-                    color: segment.active ? Theme.color.surfaceRaised : "transparent"
+                    color: segment.active ? (Theme.ambient ? Theme.color.ambientRaised : Theme.color.surfaceRaised) : "transparent"
 
                     Edge { visible: segment.active }
                 }

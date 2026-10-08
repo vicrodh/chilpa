@@ -8,5 +8,7 @@ pub mod format;
 pub mod worker;
 pub mod bridge {
     pub mod i18n;
+    pub mod prefs;
+    pub mod pulse;
     pub mod theme;
 }

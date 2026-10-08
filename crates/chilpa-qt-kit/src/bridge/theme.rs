@@ -26,6 +26,9 @@ pub mod qobject {
         #[qproperty(QString, mode, READ = mode, WRITE = choose_mode, NOTIFY = mode_changed)]
         /// What the desktop asks for; QML binds it to the style hints.
         #[qproperty(bool, system_dark, READ = system_dark, WRITE = follow_system, NOTIFY = system_dark_changed)]
+        /// True while the dynamic background shows through the chrome: the
+        /// one predicate every surface that goes translucent reads.
+        #[qproperty(bool, ambient, READ = ambient, WRITE = set_ambient, NOTIFY = ambient_changed)]
         type ThemeModel = super::ThemeModelRust;
 
         #[qinvokable]
@@ -63,6 +66,14 @@ pub mod qobject {
         #[qsignal]
         #[cxx_name = "systemDarkChanged"]
         fn system_dark_changed(self: Pin<&mut ThemeModel>);
+
+        #[cxx_name = "ambient"]
+        fn ambient(self: &ThemeModel) -> bool;
+        #[cxx_name = "setAmbient"]
+        fn set_ambient(self: Pin<&mut ThemeModel>, on: bool);
+        #[qsignal]
+        #[cxx_name = "ambientChanged"]
+        fn ambient_changed(self: Pin<&mut ThemeModel>);
     }
 
     impl cxx_qt::Threading for ThemeModel {}
@@ -83,6 +94,7 @@ pub struct ThemeModelRust {
     dark: bool,
     mode: QString,
     system_dark: bool,
+    ambient: bool,
     theme: Theme,
 }
 
@@ -92,7 +104,7 @@ impl Default for ThemeModelRust {
         let mode = mode.unwrap_or_else(|| "system".to_string());
         let mut theme = Theme::built_in(for_choice(&mode, false));
         theme.set_accent(accent.as_deref().and_then(parse_color));
-        Self { rev: 0, dark: theme.dark, mode: QString::from(&mode), system_dark: false, theme }
+        Self { rev: 0, dark: theme.dark, mode: QString::from(&mode), system_dark: false, ambient: false, theme }
     }
 }
 
@@ -105,7 +117,22 @@ impl qobject::ThemeModel {
         // Every token is checked when the theme loads, so a miss here is a
         // typo in Theme.qml: it shows as a transparent area, and the theme
         // test lists the names that exist.
-        self.theme.color(&token.to_string()).map(qcolor).unwrap_or_default()
+        self.theme.color_under(&token.to_string(), self.rust().ambient).map(qcolor).unwrap_or_default()
+    }
+
+    pub fn ambient(&self) -> bool {
+        self.rust().ambient
+    }
+
+    /// The background came on or went off: the text tokens a light theme
+    /// hardens under it are read again.
+    pub fn set_ambient(mut self: Pin<&mut Self>, on: bool) {
+        if on == self.rust().ambient {
+            return;
+        }
+        self.as_mut().rust_mut().ambient = on;
+        self.as_mut().ambient_changed();
+        self.bump();
     }
 
     pub fn center_window_controls(&self, middle: f64) -> bool {
