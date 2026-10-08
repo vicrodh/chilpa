@@ -38,13 +38,20 @@ pub struct RowNotes<'a> {
 }
 
 /// The options of a segmented or select setting, as (value, label).
-fn fixed(key: &str) -> Vec<(&'static str, String)> {
+pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
     // Each label is spelled out as a `chilpa_i18n::t` call so the extractor
     // finds it.
     match key {
         "appearance.theme" => {
             vec![("light", chilpa_i18n::t("Light")), ("dark", chilpa_i18n::t("Dark")), ("oled", chilpa_i18n::t("Dark OLED")), ("system", chilpa_i18n::t("System"))]
         }
+        crate::ambient::MODE => vec![
+            ("off", chilpa_i18n::t("Off")),
+            ("ambient", chilpa_i18n::t("Ambient")),
+            ("blurred", chilpa_i18n::t("Blurred art")),
+            ("wallpaper", chilpa_i18n::t("Wallpaper")),
+            ("wallpaper-blurred", chilpa_i18n::t("Wallpaper, blurred")),
+        ],
         "appearance.density" => vec![("compact", chilpa_i18n::t("Compact")), ("rich", chilpa_i18n::t("Rich"))],
         "appearance.font" => vec![("inter", "Inter".to_string()), ("system", chilpa_i18n::t("System"))],
         "appearance.albumHeader" => vec![("full", chilpa_i18n::t("Full")), ("colors", chilpa_i18n::t("Colors")), ("off", chilpa_i18n::t("Off"))],
@@ -63,7 +70,7 @@ fn fixed(key: &str) -> Vec<(&'static str, String)> {
 /// The accents offered (design/05): the theme's own, then four.
 const ACCENTS: &[&str] = &["", "#A3161F", "#D8323A", "#3DAEE9", "#5C6166"];
 
-const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
+const DEFAULTS: &[(&str, &str)] = &[("appearance.theme", "system"), ("appearance.density", "compact"), ("appearance.font", "inter"), ("appearance.albumHeader", "full"), (crate::ambient::MODE, "off"), ("navigation.albumClick", "page"), ("navigation.playlistArtwork", "icon"), ("library.metaSrc", "musicbrainz")];
 
 impl Chilpa {
     /// Does what a button of Settings asks for, whole, and answers what its
@@ -85,7 +92,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        self.tray_setting(key, value)
+        self.tray_setting(key, value) || self.ambient_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -188,6 +195,7 @@ impl Chilpa {
                 }
             }
             "advanced.hwVolume" => row.value = self.hardware_volume().to_string(),
+            crate::ambient::MODE | crate::ambient::IMAGE | crate::ambient::BLUR => self.ambient_row(row),
             crate::tray::SHOWN => row.value = self.tray_wanted().to_string(),
             // Nothing to close to, and no glyph to choose, while the icon is off.
             crate::tray::CLOSE_TO_TRAY => {

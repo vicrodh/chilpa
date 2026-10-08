@@ -11,6 +11,7 @@ pub mod instance;
 mod server;
 pub mod tray;
 mod types;
+pub mod wayland_window;
 
 pub use server::{spawn, Handle};
 pub use types::{MediaEvent, PlaybackStatus, TrackMeta};
