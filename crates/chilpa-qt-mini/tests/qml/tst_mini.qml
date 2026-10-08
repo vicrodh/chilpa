@@ -32,6 +32,7 @@ TestCase {
         height: (card.surfaceId === 0 ? Card.heightMicro : card.surfaceId === 1 ? Card.heightCompact : Card.heightExpanded) - Card.gutter * 2
         hostWindow: host
     }
+    MiniWindow { id: win }
 
     function init() {
         host.moves = 0
@@ -151,6 +152,23 @@ TestCase {
         Mini.open = true
         ThemeModel.ambient = false
         verify(!card.backdropOn, "no background means the opaque theme is back")
+    }
+
+    // Closing the window from the desktop leaves the mini player; once it
+    // has been left, the close is the app quitting and goes through.
+    function test_closing_the_window_leaves_the_mini_player_and_a_quit_goes_through() {
+        let accepted = null
+        win.closing.connect(function (close) { accepted = close.accepted })
+        win.show()
+        tryVerify(() => win.visible)
+        win.close()
+        compare(accepted, false, "the window stays: the mini player was left instead")
+        compare(Mini.exits, 1)
+        Mini.open = false
+        accepted = null
+        win.close()
+        compare(accepted, true, "left already, the window closes")
+        tryVerify(() => !win.visible)
     }
 
     function test_lyrics_without_lines_say_so() {

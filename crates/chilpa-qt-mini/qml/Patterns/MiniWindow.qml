@@ -40,7 +40,11 @@ Window {
     minimumHeight: winHeight
     maximumHeight: winHeight
 
+    // Once the mini player has been left, a close is the app quitting,
+    // which closes every window first and gives up if one refuses.
     onClosing: (close) => {
+        if (!Mini.open)
+            return
         close.accepted = false
         Mini.exit()
     }
