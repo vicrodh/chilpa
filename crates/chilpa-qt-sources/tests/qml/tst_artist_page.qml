@@ -73,7 +73,7 @@ TestCase {
         mouseClick(row)
         compare(Navigation.went, ["source", "fixture native:artist:2"])
         mouseClick(findText(page, "Judas Priest"))
-        compare(Navigation.went, ["source", "fixture matching-artist-v2:Judas Priest"])
+        compare(Navigation.went, ["source", "fixture matching-artist-v3:Judas Priest"])
     }
 
     function test_play_and_the_menu_act_on_every_popular_track() {

@@ -153,8 +153,11 @@ Item {
             id: viewButton
             anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("View", I18n.rev)
-            glyph: Icons.stack2
-            checked: viewMenu.opened || Ambient.mode > 0
+            glyph: Lucide.proportions
+            iconFamily: Lucide.font
+            // It opens a menu of several choices: lit only while that menu
+            // is open, never for the choice in force.
+            checked: viewMenu.opened
             onClicked: viewMenu.opened ? viewMenu.close() : viewMenu.show()
 
             CascadingMenu {

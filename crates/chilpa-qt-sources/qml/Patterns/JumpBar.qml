@@ -14,7 +14,8 @@ Rectangle {
     property alias search: field.text
     signal jump(string id)
     height: Metrics.jumpBar
-    color: Theme.color.surfaceWindow
+    // Under the dynamic background it lets the field through, as QBZ's does.
+    color: Theme.ambient ? Theme.color.ambientBar : Theme.color.surfaceWindow
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     Row {
         anchors.left: parent.left; anchors.right: field.left; anchors.rightMargin: Metrics.gap12
