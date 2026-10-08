@@ -112,6 +112,20 @@ TestCase {
         compare(test.accepted, true, "the window closed")
     }
 
+    // Behind the mini player a quit goes through it: a quit closes every
+    // window first, and the mini player's refuses while it is open.
+    function test_a_quit_behind_the_mini_player_goes_through_it() {
+        open(0, 0, false)
+        let asked = 0
+        made.quitMini.connect(function () { asked += 1 })
+        made.miniOpen = true
+        other.hide()
+        Player.windowAsked(1)
+        compare(asked, 1, "the mini player was asked to close the app")
+        verify(made.quitting, "and the close that follows is a quit")
+        verify(!other.visible, "the window itself was left alone")
+    }
+
     // The tray icon's click shows a hidden window and hides one in sight.
     function test_the_tray_toggles_the_window() {
         open(0, 0, false)

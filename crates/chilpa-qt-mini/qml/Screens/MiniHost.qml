@@ -87,6 +87,7 @@ Item {
         ignoreUnknownSignals: true
         function onMiniAsked() { Mini.toggle() }
         function onPresentMini() { host.present() }
+        function onQuitMini() { Mini.closeApp() }
     }
     // The development hooks' frame recorder counts this window's frames
     // too, so a measurement of the mini player measures the mini player.

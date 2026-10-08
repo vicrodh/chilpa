@@ -19,6 +19,7 @@ Item {
     property bool miniOpen: false
     signal miniAsked()
     signal presentMini()
+    signal quitMini()
 
     readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
 
@@ -143,8 +144,13 @@ Item {
         // 0 come to the front, 1 quit, 2 show if hidden and hide if in sight.
         function onWindowAsked(what) {
             // A window hidden in the tray has nothing to close: it quits.
+            // Behind the mini player it quits through it: a quit closes
+            // every window first, and the mini player's refuses to close
+            // while it is open.
             if (what === 1) {
                 controls.quitting = true
+                if (controls.miniOpen)
+                    return controls.quitMini()
                 return controls.window.visible ? controls.window.close() : Qt.quit()
             }
             if (controls.miniOpen)
