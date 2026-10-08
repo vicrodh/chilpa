@@ -23,7 +23,7 @@ pub mod playback_events;
 pub mod sacd_tracks;
 
 /// What goes out the device, for whoever wants to draw it.
-pub use chilpa_audio::{spectrum, tap};
+pub use chilpa_audio::{spectrum, tap, visualizer};
 
 /// Adds a facade event to the playback lifecycle trace.
 pub fn trace_playback(scope: &str, event: &str, details: std::fmt::Arguments<'_>) {

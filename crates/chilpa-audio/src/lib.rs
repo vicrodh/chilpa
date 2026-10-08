@@ -23,6 +23,7 @@ pub mod seek;
 pub mod sink;
 pub mod spectrum;
 pub mod tap;
+pub mod visualizer;
 
 pub use capture::{CaptureSink, CAPTURE_ID};
 pub use format::{SampleFormat, StreamFormat};

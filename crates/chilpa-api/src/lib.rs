@@ -83,6 +83,7 @@ pub mod discs;
 pub mod tray;
 pub mod ambient;
 pub mod mini;
+pub mod visualizer;
 pub mod wallpaper;
 pub mod open_media;
 pub mod window_place;
@@ -627,6 +628,7 @@ pub struct Chilpa {
     natives: std::sync::Arc<natives::Natives>,
     /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
+    visualizer: visualizer::Visualizer,
     /// The background scan, while it runs.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -699,6 +701,7 @@ impl Chilpa {
         chilpa_core::backends::set_forcing_rate(on(outputs::FORCE_RATE));
         chilpa_core::backends::warm_up();
         let catalog = source_catalog::Catalog::new();
+        let tap = chilpa_core::tap::Tap::new();
         let mut chilpa = Self {
             core: chilpa_core::Core::new(),
             library: None,
@@ -731,7 +734,8 @@ impl Chilpa {
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
             natives: Default::default(),
-            tap: chilpa_core::tap::Tap::new(),
+            visualizer: visualizer::Visualizer::new(tap.clone()),
+            tap,
             scan: None,
             scan_status: ScanStatus::default(),
             analysis: None,
@@ -1184,6 +1188,8 @@ impl Chilpa {
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }
+        // Nothing playing is nothing to draw: the visualizer parks.
+        self.visualizer.set_paused(!self.now.playing || self.now.paused);
         let mut started = false;
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {
