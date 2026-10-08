@@ -581,3 +581,5 @@ rgb
 kde
 bmp
 wl
+bezier
+pinnable

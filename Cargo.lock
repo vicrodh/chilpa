@@ -704,6 +704,7 @@ dependencies = [
  "chilpa-qt-kit",
  "chilpa-qt-lyrics",
  "chilpa-qt-metadata",
+ "chilpa-qt-mini",
  "chilpa-qt-sources",
  "cxx",
  "cxx-qt",
@@ -797,6 +798,18 @@ dependencies = [
  "pollster",
  "rfd",
  "serde_json",
+]
+
+[[package]]
+name = "chilpa-qt-mini"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
 ]
 
 [[package]]

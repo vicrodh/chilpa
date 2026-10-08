@@ -1,0 +1,2 @@
+module app.chilpa.mini
+singleton Mini 1.0 Mini.qml

@@ -15,3 +15,4 @@ Chilpa
 # A typographic separator, with no language-specific reading.
 —
 60
+Chilpa Mini Player
