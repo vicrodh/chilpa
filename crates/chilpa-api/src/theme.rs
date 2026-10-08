@@ -51,6 +51,8 @@ pub const TOKENS: &[&str] = &[
     "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
     "ambient.sidebar", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil",
+    "mini.edge", "mini.capsuleEdge", "mini.separator", "mini.hover", "mini.capsuleHover", "mini.coverFill",
+    "mini.rowActive", "mini.danger", "mini.onBackdrop", "mini.glyphOnBackdrop", "mini.seekOnBackdrop", "mini.footer",
 ];
 
 /// How far the two weaker text tokens move toward `text.primary` while the

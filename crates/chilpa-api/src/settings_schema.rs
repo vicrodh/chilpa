@@ -151,6 +151,9 @@ pub const SECTIONS: &[Section] = &[
                 action(crate::ambient::IMAGE, Chilpa::mark("Background image"), Chilpa::mark("The system wallpaper. Choose an image of your own instead."), Control::File, Chilpa::mark("Choose image…")),
                 setting(crate::ambient::BLUR, Chilpa::mark("Wallpaper blur"), Chilpa::mark("How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."), Control::Slider),
             ],
+        }, Group {
+            title: Chilpa::mark("Mini player"),
+            settings: &[setting(crate::mini::DEFAULT_VIEW, Chilpa::mark("Mini player default view"), Chilpa::mark("The view the mini player opens with. Remember keeps the one it was last on."), Control::Select)],
         }],
     },
     Section {
