@@ -42,6 +42,18 @@
     "ambient.raised": "derive:surface.raised@0.50",
     "ambient.frost": "rgba(252,252,252,0.10)",
     "ambient.veil": "#000000",
+    "mini.edge": "rgba(255,255,255,0.10)",
+    "mini.capsuleEdge": "rgba(255,255,255,0.20)",
+    "mini.separator": "rgba(255,255,255,0.15)",
+    "mini.hover": "rgba(255,255,255,0.08)",
+    "mini.capsuleHover": "rgba(255,255,255,0.12)",
+    "mini.coverFill": "rgba(255,255,255,0.08)",
+    "mini.rowActive": "derive:accent@0.10",
+    "mini.danger": "rgba(239,68,68,0.80)",
+    "mini.onBackdrop": "rgba(255,255,255,0.88)",
+    "mini.glyphOnBackdrop": "#FFFFFF",
+    "mini.seekOnBackdrop": "rgba(255,255,255,0.25)",
+    "mini.footer": "derive:surface.panel@0.20",
     "art.placeholder": ["#31363B", "#2A2E32", "#3A3F44", "#25292C", "#353A3F", "#40454A"]
   },
   "shadow": {

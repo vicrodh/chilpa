@@ -42,6 +42,18 @@
     "ambient.raised": "derive:surface.raised@0.50",
     "ambient.frost": "rgba(35,38,41,0.10)",
     "ambient.veil": "#000000",
+    "mini.edge": "rgba(0,0,0,0.10)",
+    "mini.capsuleEdge": "rgba(0,0,0,0.20)",
+    "mini.separator": "rgba(0,0,0,0.15)",
+    "mini.hover": "rgba(0,0,0,0.08)",
+    "mini.capsuleHover": "rgba(0,0,0,0.12)",
+    "mini.coverFill": "rgba(0,0,0,0.08)",
+    "mini.rowActive": "derive:accent@0.10",
+    "mini.danger": "rgba(239,68,68,0.80)",
+    "mini.onBackdrop": "rgba(255,255,255,0.88)",
+    "mini.glyphOnBackdrop": "#FFFFFF",
+    "mini.seekOnBackdrop": "rgba(255,255,255,0.25)",
+    "mini.footer": "derive:surface.panel@0.20",
     "art.placeholder": ["#E3E5E7", "#D6D9DC", "#ECEEEF", "#CDD1D5", "#E0E2E4", "#C4C9CD"]
   },
   "shadow": {

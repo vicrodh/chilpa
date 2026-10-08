@@ -57,6 +57,15 @@ impl Keymap {
     }
 }
 
+/// Where a key is pressed: the window, or the mini player's own window.
+/// An action answers in one of them, or in both.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Scope {
+    Window,
+    Mini,
+    Both,
+}
+
 #[derive(Debug)]
 struct Action {
     id: &'static str,
@@ -65,6 +74,7 @@ struct Action {
     default: &'static str,
     /// Its key in the letters keymap, when it differs.
     letters: &'static str,
+    scope: Scope,
 }
 
 impl Action {
@@ -74,27 +84,33 @@ impl Action {
 }
 
 const fn action(id: &'static str, label: &'static str, group: &'static str, default: &'static str, letters: &'static str) -> Action {
-    Action { id, label, group, default, letters }
+    Action { id, label, group, default, letters, scope: Scope::Window }
+}
+
+/// The same action, answering somewhere else than the window alone.
+const fn reaching(scope: Scope, a: Action) -> Action {
+    Action { scope, ..a }
 }
 
 const PLAYBACK: &str = i18n::mark("Playback");
 const NAVIGATION: &str = i18n::mark("Navigation");
 const INTERFACE: &str = i18n::mark("Interface");
+const MINI: &str = i18n::mark("Mini player");
 /// The groups, in the order the sheet shows them.
-const GROUPS: [&str; 3] = [PLAYBACK, NAVIGATION, INTERFACE];
+const GROUPS: [&str; 4] = [PLAYBACK, NAVIGATION, INTERFACE, MINI];
 
 const ACTIONS: &[Action] = &[
-    action("playback.toggle", i18n::mark("Play / Pause"), PLAYBACK, "Space", ""),
-    action("playback.next", i18n::mark("Next Track"), PLAYBACK, "Ctrl+ArrowRight", "n"),
-    action("playback.prev", i18n::mark("Previous Track"), PLAYBACK, "Ctrl+ArrowLeft", "p"),
-    action("playback.volumeUp", i18n::mark("Volume Up"), PLAYBACK, "Ctrl+ArrowUp", "Shift+K"),
-    action("playback.volumeDown", i18n::mark("Volume Down"), PLAYBACK, "Ctrl+ArrowDown", "Shift+J"),
-    action("playback.mute", i18n::mark("Mute / Unmute"), PLAYBACK, "m", ""),
-    action("playback.shuffle", i18n::mark("Toggle Shuffle"), PLAYBACK, "Ctrl+s", "s"),
-    action("playback.repeat", i18n::mark("Cycle Repeat"), PLAYBACK, "Ctrl+r", "r"),
-    action("playback.favorite", i18n::mark("Like Track"), PLAYBACK, "Alt+Shift+B", "f"),
-    action("playback.seekForward", i18n::mark("Seek Forward"), PLAYBACK, "Ctrl+Shift+ArrowRight", "l"),
-    action("playback.seekBack", i18n::mark("Seek Back"), PLAYBACK, "Ctrl+Shift+ArrowLeft", "h"),
+    reaching(Scope::Both, action("playback.toggle", i18n::mark("Play / Pause"), PLAYBACK, "Space", "")),
+    reaching(Scope::Both, action("playback.next", i18n::mark("Next Track"), PLAYBACK, "Ctrl+ArrowRight", "n")),
+    reaching(Scope::Both, action("playback.prev", i18n::mark("Previous Track"), PLAYBACK, "Ctrl+ArrowLeft", "p")),
+    reaching(Scope::Both, action("playback.volumeUp", i18n::mark("Volume Up"), PLAYBACK, "Ctrl+ArrowUp", "Shift+K")),
+    reaching(Scope::Both, action("playback.volumeDown", i18n::mark("Volume Down"), PLAYBACK, "Ctrl+ArrowDown", "Shift+J")),
+    reaching(Scope::Both, action("playback.mute", i18n::mark("Mute / Unmute"), PLAYBACK, "m", "")),
+    reaching(Scope::Both, action("playback.shuffle", i18n::mark("Toggle Shuffle"), PLAYBACK, "Ctrl+s", "s")),
+    reaching(Scope::Both, action("playback.repeat", i18n::mark("Cycle Repeat"), PLAYBACK, "Ctrl+r", "r")),
+    reaching(Scope::Both, action("playback.favorite", i18n::mark("Like Track"), PLAYBACK, "Alt+Shift+B", "f")),
+    reaching(Scope::Both, action("playback.seekForward", i18n::mark("Seek Forward"), PLAYBACK, "Ctrl+Shift+ArrowRight", "l")),
+    reaching(Scope::Both, action("playback.seekBack", i18n::mark("Seek Back"), PLAYBACK, "Ctrl+Shift+ArrowLeft", "h")),
     action("nav.back", i18n::mark("Go Back"), NAVIGATION, "Alt+ArrowLeft", "Ctrl+o"),
     action("nav.forward", i18n::mark("Go Forward"), NAVIGATION, "Alt+ArrowRight", "Ctrl+i"),
     action("nav.search", i18n::mark("Search"), NAVIGATION, "Ctrl+k", "/"),
@@ -105,8 +121,15 @@ const ACTIONS: &[Action] = &[
     action("ui.sidebar", i18n::mark("Toggle Sidebar"), INTERFACE, "Shift+S", ""),
     action("ui.queue", i18n::mark("Queue"), INTERFACE, "q", ""),
     action("ui.lyrics", i18n::mark("Lyrics"), INTERFACE, "Shift+L", ""),
-    action("ui.escape", i18n::mark("Close / Dismiss"), INTERFACE, "Escape", ""),
+    reaching(Scope::Both, action("ui.escape", i18n::mark("Close / Dismiss"), INTERFACE, "Escape", "")),
     action("ui.showShortcuts", i18n::mark("Show Shortcuts"), INTERFACE, "?", ""),
+    reaching(Scope::Both, action("ui.miniPlayer", i18n::mark("Toggle Mini Player"), INTERFACE, "Shift+M", "")),
+    // The mini player's own window: its five surfaces on the digits.
+    reaching(Scope::Mini, action("mini.micro", i18n::mark("Micro view"), MINI, "1", "")),
+    reaching(Scope::Mini, action("mini.compact", i18n::mark("Compact view"), MINI, "2", "")),
+    reaching(Scope::Mini, action("mini.artwork", i18n::mark("Artwork view"), MINI, "3", "")),
+    reaching(Scope::Mini, action("mini.queue", i18n::mark("Queue view"), MINI, "4", "")),
+    reaching(Scope::Mini, action("mini.lyrics", i18n::mark("Lyrics view"), MINI, "5", "")),
 ];
 
 /// The actions a key still reaches while a text field has the keyboard,
@@ -288,14 +311,20 @@ impl Keys {
         self.taken_by = "";
     }
 
-    /// What a key comes to. `typing` says a text field has the keyboard.
-    fn pressed(&self, key: i32, modifiers: i32, text: &str, typing: bool) -> Pressed {
+    /// What a key comes to where it was pressed. `typing` says a text
+    /// field has the keyboard. An action that answers elsewhere passes, so
+    /// the window never runs the mini player's keys and the mini player
+    /// never runs the window's.
+    fn pressed_in(&self, scope: Scope, key: i32, modifiers: i32, text: &str, typing: bool) -> Pressed {
         let ctrl = modifiers & (qt::CONTROL | qt::META) != 0;
         if typing && (!ctrl || matches!(key, 0x41 | 0x43 | 0x56 | 0x58 | 0x59 | 0x5a)) {
             return Pressed::Pass;
         }
         let Some(a) = shortcut(key, modifiers, text).and_then(|shortcut| self.action_for(&shortcut)) else { return Pressed::Pass };
         if typing && !THROUGH_TEXT.contains(&a.id) {
+            return Pressed::Pass;
+        }
+        if a.scope != Scope::Both && a.scope != scope {
             return Pressed::Pass;
         }
         Pressed::Run(a.id)
@@ -341,13 +370,18 @@ impl Chilpa {
     /// A key pressed in the window, as Qt names it. While a key is being
     /// changed every key belongs to that change.
     pub fn key_pressed(&mut self, key: i32, modifiers: i32, text: &str, typing: bool) -> Pressed {
+        self.key_pressed_in(Scope::Window, key, modifiers, text, typing)
+    }
+
+    /// A key pressed in one of the windows.
+    pub fn key_pressed_in(&mut self, scope: Scope, key: i32, modifiers: i32, text: &str, typing: bool) -> Pressed {
         if !self.keys().recording.is_empty() {
             if self.keys().capture(key, modifiers, text) {
                 self.keep_keys();
             }
             return Pressed::Taken;
         }
-        self.keys().pressed(key, modifiers, text, typing)
+        self.keys().pressed_in(scope, key, modifiers, text, typing)
     }
 
     /// The shortcuts as the sheet and the editor show them.
@@ -425,22 +459,36 @@ mod tests {
     #[test]
     fn keys_reach_their_actions_and_text_fields_keep_theirs() {
         let keys = Keys::default();
-        assert_eq!(keys.pressed(qt::SPACE, 0, " ", false), Pressed::Run("playback.toggle"));
-        assert_eq!(keys.pressed(qt::SPACE, 0, " ", true), Pressed::Pass, "a space typed is a space");
-        assert_eq!(keys.pressed(0x4b, qt::CONTROL, "", true), Pressed::Run("nav.search"), "search is reached from a field");
-        assert_eq!(keys.pressed(S, qt::CONTROL, "", true), Pressed::Pass, "shuffle is not");
-        assert_eq!(keys.pressed(0x41, qt::CONTROL, "", true), Pressed::Pass, "select all is the field's");
-        assert_eq!(keys.pressed(0x5a, 0, "z", false), Pressed::Pass, "no action has it");
+        assert_eq!(keys.pressed_in(Scope::Window, qt::SPACE, 0, " ", false), Pressed::Run("playback.toggle"));
+        assert_eq!(keys.pressed_in(Scope::Window, qt::SPACE, 0, " ", true), Pressed::Pass, "a space typed is a space");
+        assert_eq!(keys.pressed_in(Scope::Window, 0x4b, qt::CONTROL, "", true), Pressed::Run("nav.search"), "search is reached from a field");
+        assert_eq!(keys.pressed_in(Scope::Window, S, qt::CONTROL, "", true), Pressed::Pass, "shuffle is not");
+        assert_eq!(keys.pressed_in(Scope::Window, 0x41, qt::CONTROL, "", true), Pressed::Pass, "select all is the field's");
+        assert_eq!(keys.pressed_in(Scope::Window, 0x5a, 0, "z", false), Pressed::Pass, "no action has it");
+    }
+
+    #[test]
+    fn the_mini_players_keys_answer_in_its_window_and_the_toggle_in_both() {
+        let keys = Keys::default();
+        assert_eq!(keys.pressed_in(Scope::Mini, 0x31, 0, "1", false), Pressed::Run("mini.micro"));
+        assert_eq!(keys.pressed_in(Scope::Window, 0x31, 0, "1", false), Pressed::Pass, "never in the window");
+        assert_eq!(keys.pressed_in(Scope::Mini, 0x4d, qt::SHIFT, "M", false), Pressed::Run("ui.miniPlayer"));
+        assert_eq!(keys.pressed_in(Scope::Window, 0x4d, qt::SHIFT, "M", false), Pressed::Run("ui.miniPlayer"));
+        assert_eq!(keys.pressed_in(Scope::Mini, qt::SPACE, 0, " ", false), Pressed::Run("playback.toggle"), "playback reaches the mini");
+        assert_eq!(keys.pressed_in(Scope::Mini, qt::ESCAPE, 0, "", false), Pressed::Run("ui.escape"));
+        assert_eq!(keys.pressed_in(Scope::Mini, 0x4b, qt::CONTROL, "", false), Pressed::Pass, "search is the window's");
+        let keys = Keys { keymap: Keymap::Letters, ..Keys::default() };
+        assert_eq!(keys.pressed_in(Scope::Mini, 0x35, 0, "5", false), Pressed::Run("mini.lyrics"), "the digits are free in the letters keymap too");
     }
 
     #[test]
     fn the_letters_keymap_puts_actions_on_single_keys() {
         let keys = Keys { keymap: Keymap::Letters, ..Keys::default() };
-        assert_eq!(keys.pressed(0x4e, 0, "n", false), Pressed::Run("playback.next"));
-        assert_eq!(keys.pressed(0x4e, 0, "n", true), Pressed::Pass);
-        assert_eq!(keys.pressed(0x2f, 0, "/", false), Pressed::Run("nav.search"));
-        assert_eq!(keys.pressed(qt::RIGHT, qt::CONTROL, "", false), Pressed::Pass, "its default key is no longer its key");
-        assert_eq!(keys.pressed(qt::SPACE, 0, " ", false), Pressed::Run("playback.toggle"), "what it does not change stays");
+        assert_eq!(keys.pressed_in(Scope::Window, 0x4e, 0, "n", false), Pressed::Run("playback.next"));
+        assert_eq!(keys.pressed_in(Scope::Window, 0x4e, 0, "n", true), Pressed::Pass);
+        assert_eq!(keys.pressed_in(Scope::Window, 0x2f, 0, "/", false), Pressed::Run("nav.search"));
+        assert_eq!(keys.pressed_in(Scope::Window, qt::RIGHT, qt::CONTROL, "", false), Pressed::Pass, "its default key is no longer its key");
+        assert_eq!(keys.pressed_in(Scope::Window, qt::SPACE, 0, " ", false), Pressed::Run("playback.toggle"), "what it does not change stays");
     }
 
     #[test]
