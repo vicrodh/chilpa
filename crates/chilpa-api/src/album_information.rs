@@ -85,7 +85,7 @@ fn person(name: &str, reference: &str, info: &Value) -> Value {
     let plugin = info["plugin"].as_str().unwrap_or("");
     let key = if plugin.is_empty() { name.to_string() }
         else if !reference.is_empty() { format!("{plugin} native:{reference}") }
-        else { format!("{plugin} matching-artist-v2:{name}") };
+        else { format!("{plugin} matching-artist-v3:{name}") };
     json!({"name":name.trim(),"target":if plugin.is_empty() { "artist" } else { "source" },"key":key})
 }
 fn add_artist(artists: &mut Vec<Value>, artist: Value) {
@@ -147,7 +147,7 @@ mod tests {
         assert_eq!(credits[1]["name"], "Jean-Michel");
         assert_eq!(credits[1]["roles"], "Mixing Engineer");
         assert_eq!(credits[2]["roles"], "Background Vocalist, Guitar");
-        assert_eq!(credits[2]["key"], "fixture matching-artist-v2:Player");
+        assert_eq!(credits[2]["key"], "fixture matching-artist-v3:Player");
     }
     #[test]
     fn compilation_artists_exclude_placeholders_and_escape_markup() {

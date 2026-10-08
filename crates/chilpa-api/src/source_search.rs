@@ -9,8 +9,11 @@ pub struct RemoteFound {
 
 impl Chilpa {
     pub fn search_source_catalogs(&mut self, text: &str, source: &str) {
+        self.search_source_catalogs_filtered(text, source, "");
+    }
+    pub fn search_source_catalogs_filtered(&mut self, text: &str, source: &str, quality: &str) {
         self.search = crate::search::SearchState {
-            text: text.trim().into(), source: source.into(), keystroke: Some(std::time::Instant::now()),
+            text: text.trim().into(), source: source.into(), quality_filter: if matches!(quality, "hi_res" | "lossless") { quality.into() } else { String::new() }, keystroke: Some(std::time::Instant::now()),
             last_query: self.search.last_query, playing: self.search.playing.take(), ..Default::default()
         };
     }
@@ -68,6 +71,14 @@ impl Chilpa {
         rows
     }
     pub fn unified_found_rows(&mut self, found: &crate::Found, scope: &str) -> Vec<FoundRow> {
+        let filter = self.search.quality_filter.clone();
+        let mut found = found.clone();
+        if !filter.is_empty() {
+            found.artists.clear();
+            found.tracks.retain(|t| accepts_quality(&filter, t.quality.tier));
+            found.albums.retain(|a| self.album_detail(a.id).is_some_and(|d| accepts_quality(&filter, d.quality.tier)));
+        }
+        let found = &found;
         let remote = self.source_found_rows(scope);
         let mut rows = Vec::new();
         let needle = self.search.text.trim().to_lowercase();
@@ -92,7 +103,7 @@ impl Chilpa {
         for (kind, name, key) in [(2, "Artists", "artists"), (3, "Albums", "albums"), (4, "Songs", "songs"), (6, "Playlists", "playlists")] {
             if scope != "all" && scope != key { continue; }
             let mut section: Vec<_> = crate::found_rows(found, key).into_iter().filter(|r| r.kind() == kind).collect();
-            if kind == 6 && crate::search::searches_source(&self.search.source, "local") && !self.search.text.trim().is_empty() {
+            if filter.is_empty() && kind == 6 && crate::search::searches_source(&self.search.source, "local") && !self.search.text.trim().is_empty() {
                 let words: Vec<_> = self.search.text.to_lowercase().split_whitespace().map(str::to_owned).collect();
                 section.extend(self.local_playlists().into_iter().filter(|p| words.iter().all(|w| p.name.to_lowercase().contains(w))).take(50).map(FoundRow::Playlist));
             }
@@ -157,9 +168,9 @@ impl Chilpa {
 }
 
 /// Native search uses the native protocol and releases the compatibility host lock.
-pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id: &str, name: &str, text: &str, limit: usize) -> crate::search::SourceReply {
+pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id: &str, name: &str, text: &str, limit: usize, quality: &str) -> crate::search::SourceReply {
     let mut reply = crate::search::SourceReply { source: id.into(), source_name: name.into(), results: Default::default(), entities: Vec::new(), problem: String::new(), delivers_audio: true };
-    match natives.call(id, "search", serde_json::json!({"text":text,"limit":limit}), std::time::Duration::from_secs(30)) {
+    match natives.call(id, "search", serde_json::json!({"text":text,"limit":limit,"filters":{"quality":quality}}), std::time::Duration::from_secs(30)) {
         Ok(value) => {
             for key in ["artists", "albums", "tracks", "playlists"] {
                 reply.entities.extend(value[key].as_array().into_iter().flatten().filter(|item| item["ref"].as_str().is_some_and(|s| !s.is_empty())).cloned());
@@ -169,6 +180,7 @@ pub(crate) fn native_reply(natives: &std::sync::Arc<crate::natives::Natives>, id
                 if let Some(item) = reply.entities.iter_mut().find(|i| i["ref"] == top["ref"]) { *item = top; }
                 else { reply.entities.insert(0, top); }
             }
+            if !quality.is_empty() { reply.entities.retain(|item| accepts_item(quality, item)); }
             for item in reply.entities.iter().filter(|item| item["kind"] == "track") {
                 if let Ok(track) = serde_json::from_value(serde_json::json!({"external_id":item["ref"],"title":item["title"],
                     "artist":item["artist"].as_str().unwrap_or_default(),"album":item["album"].as_str().unwrap_or_default(),
@@ -280,4 +292,18 @@ mod tests {
         assert_eq!(api.route_to("album", id).unwrap().key, format!("source-a card:{id}"));
         assert_eq!(api.unified_found_rows(&found, "artists").len(), 3);
     }
+}
+
+fn accepts_quality(filter: &str, tier: crate::quality::Tier) -> bool {
+    match filter {
+        "hi_res" => matches!(tier, crate::quality::Tier::HiRes | crate::quality::Tier::Dsd),
+        "lossless" => matches!(tier, crate::quality::Tier::Lossless | crate::quality::Tier::HiRes | crate::quality::Tier::Dsd),
+        _ => true,
+    }
+}
+fn accepts_item(filter: &str, item: &serde_json::Value) -> bool {
+    if !matches!(item["kind"].as_str(), Some("track" | "album")) { return false; }
+    let q = &item["quality"];
+    let quality = crate::quality::Quality::of_codec(q["codec"].as_str().unwrap_or_default(), q["bits"].as_u64().and_then(|n| u8::try_from(n).ok()), q["rate"].as_u64().and_then(|n| u32::try_from(n).ok()));
+    accepts_quality(filter, quality.tier) || q["tier"] == "hi_res"
 }

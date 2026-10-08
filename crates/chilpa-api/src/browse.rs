@@ -605,7 +605,7 @@ impl Chilpa {
         let mut groups = vec![local];
         let mut sources = self.natives.ids(); sources.sort();
         for source in sources.into_iter().filter(|id| self.natives.searches(id)) {
-            let key = format!("{source} matching-artist-v2:{}", album.artist);
+            let key = format!("{source} matching-artist-v3:{}", album.artist);
             if let Some(shelf) = self.catalog.shelf(&key) {
                 groups.push(self.catalog.cards(&shelf.cards).iter().map(crate::source_catalog::view::album_of).collect());
             }
@@ -763,6 +763,15 @@ impl Chilpa {
 
     /// Plays those files as the queue, starting at `start`. What comes before
     /// it stays in the queue, so going back reaches it.
+    pub fn play_list(&mut self, paths: &[String], shuffled: bool) {
+        let kept = self.playable(paths);
+        if kept.is_empty() { return; }
+        self.shuffle = shuffled;
+        let first = self.replace_queue_from(kept, None);
+        let (device, exact) = self.chosen_output();
+        self.spawn(first, &device, exact);
+    }
+
     pub fn play_from(&mut self, paths: &[String], start: usize) {
         if start >= paths.len() {
             return;
@@ -778,7 +787,7 @@ impl Chilpa {
             return;
         };
         let (device, bit_perfect) = self.chosen_output();
-        self.replace_queue(kept);
+        self.replace_queue_from(kept, Some(start));
         self.spawn(start, &device, bit_perfect);
     }
 }

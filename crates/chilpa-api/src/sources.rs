@@ -978,7 +978,7 @@ impl Chilpa {
         for card in cards { self.sources.heard.entry(card.external_id.clone()).or_insert(card); }
         let paths = entries.iter().map(|entry| entry_of(&source, &entry.id)).collect();
         let (device, bit_perfect) = self.chosen_output();
-        self.replace_queue(paths);
+        self.replace_queue_from(paths, Some(index));
         self.spawn_from(index, &device, bit_perfect, None, crate::Relaunch::Track);
     }
 

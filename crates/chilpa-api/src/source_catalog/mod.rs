@@ -61,6 +61,7 @@ pub(crate) struct Deferred {
     pub albums: Vec<i64>,
     pub act: String,
     pub shuffled: bool,
+    pub origin: Option<crate::queue_origin::QueueOrigin>,
     asked: Instant,
 }
 
@@ -418,7 +419,7 @@ impl Catalog {
     }
 
     /// Waits for records' tracks, then does what was asked with them.
-    pub fn defer(&self, albums: Vec<i64>, act: &str, shuffled: bool) {
+    pub fn defer(&self, albums: Vec<i64>, act: &str, shuffled: bool, origin: Option<crate::queue_origin::QueueOrigin>) {
         let mut inner = self.lock();
         for id in &albums {
             if inner.store.cards.get(id).is_some_and(|c| c.tracks.is_none()) {
@@ -427,7 +428,7 @@ impl Catalog {
             }
         }
         inner.deferred.retain(|d| d.act != act || d.albums != albums);
-        inner.deferred.push(Deferred { albums, act: act.into(), shuffled, asked: Instant::now() });
+        inner.deferred.push(Deferred { albums, act: act.into(), shuffled, origin, asked: Instant::now() });
     }
 
     /// The deferred actions whose records are all read now. Those that
@@ -657,7 +658,7 @@ mod retry_tests {
         }
         for _ in 0..20 { catalog.shelf(key); catalog.tracks(-1); }
         assert!(catalog.lock().queue.queued.is_empty());
-        catalog.defer(vec![-1], "play", false);
+        catalog.defer(vec![-1], "play", false, None);
         assert!(catalog.lock().queue.queued.contains(&Job::Tracks(-1)));
         assert!(catalog.card_error(-1).is_none());
         catalog.lock().card_errors.insert(-1, "Not found".into());

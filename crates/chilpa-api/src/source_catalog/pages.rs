@@ -77,7 +77,7 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     if !value.is_object() { return; }
     value["plugin"] = json!(plugin);
     let kind = value["kind"].as_str().unwrap_or_default();
-    if matches!(kind,"album" | "artist" | "playlist" | "label") {
+    if !value["favorite"].is_boolean() && matches!(kind,"album" | "artist" | "playlist" | "label") {
         if let Some(shelf) = catalog.shelf(&format!("{plugin} section:{kind}s")) {
             value["favorite"] = json!(catalog.cards(&shelf.cards).iter().any(|c| c.identity == value["ref"].as_str().unwrap_or_default()));
         }

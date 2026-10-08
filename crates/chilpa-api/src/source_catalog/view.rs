@@ -62,7 +62,7 @@ impl Chilpa {
     /// in a membership ("favorites") after a second space.
     pub fn source_shelf(&mut self, key: &str, order: &str, group: &str, filter: &str) -> (Vec<Album>, Vec<(usize, String)>) {
         let (plugin, rest) = split(key);
-        let (address, membership) = rest.split_once(' ').unwrap_or((rest, ""));
+        let (address, membership) = if rest.starts_with("matching-artist-") { (rest, "") } else { rest.split_once(' ').unwrap_or((rest, "")) };
         let shelf_key = format!("{plugin} {address}");
         let Some(shelf) = self.catalog.shelf(&shelf_key) else { return (Vec::new(), Vec::new()) };
         let needle = words(filter);
@@ -95,7 +95,7 @@ impl Chilpa {
     /// The tracks a listing holds, in its order.
     pub fn source_shelf_tracks(&mut self, key: &str) -> Vec<TrackRow> {
         let (plugin, rest) = split(key);
-        let address = rest.split(' ').next().unwrap_or_default();
+        let address = if rest.starts_with("matching-artist-") { rest } else { rest.split(' ').next().unwrap_or_default() };
         self.catalog.shelf(&format!("{plugin} {address}"));
         self.catalog.shelf_tracks(&format!("{plugin} {address}")).into_iter().map(|(t, art)| row_of(&t, art)).collect()
     }
@@ -111,7 +111,13 @@ impl Chilpa {
                 return self.artist_document(name);
             }
         }
-        let address = rest.split(' ').next().unwrap_or_default();
+        if rest.starts_with("matching-artist-v3:") || rest.starts_with("matching-artist-v2:") {
+            let key = format!("{plugin} {rest}");
+            if let Some(reference) = self.catalog.shelf(&key).and_then(|s| s.document["resolved_ref"].as_str().map(str::to_owned)) {
+                return self.native_page_view(plugin, &reference);
+            }
+        }
+        let address = if rest.starts_with("matching-artist-") { rest } else { rest.split(' ').next().unwrap_or_default() };
         let music = self.source_draws_music(plugin);
         // The facade's copy: the host is often busy answering the catalog.
         self.source_panels();
@@ -202,7 +208,7 @@ impl Chilpa {
     /// title it was read with.
     pub(crate) fn source_listing_title(&mut self, key: &str) -> Option<String> {
         let (plugin, rest) = split(key);
-        let address = rest.split(' ').next().unwrap_or_default();
+        let address = if rest.starts_with("matching-artist-") { rest } else { rest.split(' ').next().unwrap_or_default() };
         if let Some(name) = address.strip_prefix("section:") {
             self.source_panels();
             let layout = self.sources.layouts.get(plugin).cloned();
@@ -233,7 +239,7 @@ impl Chilpa {
 
     pub(crate) fn source_retry(&mut self, key: &str) {
         let (plugin, rest) = split(key);
-        let address = rest.split(' ').next().unwrap_or_default();
+        let address = if rest.starts_with("matching-artist-") { rest } else { rest.split(' ').next().unwrap_or_default() };
         self.catalog.retry(&format!("{plugin} {address}"));
     }
 
@@ -346,14 +352,13 @@ impl Chilpa {
     pub fn album_action(&mut self, ids: &[i64], act: &str, shuffled: bool) {
         let waiting = ids.iter().any(|id| *id < 0 && self.catalog.tracks(*id).is_none());
         if waiting {
-            self.catalog.defer(ids.to_vec(), act, shuffled);
+            self.catalog.defer(ids.to_vec(), act, shuffled, self.browse_origin());
             return;
         }
         let paths = self.album_paths(ids);
         match act {
             "play" => {
-                self.set_shuffle(shuffled);
-                self.play_from(&paths, 0);
+                self.play_list(&paths, shuffled);
             }
             "next" => self.play_next_here(&paths),
             _ => self.enqueue_here(&paths),
@@ -364,7 +369,7 @@ impl Chilpa {
     /// label; a source's record whose tracks were never read waits for them.
     pub fn album_later(&mut self, ids: &[i64], label: &str) {
         if ids.iter().any(|id| *id < 0 && self.catalog.tracks(*id).is_none()) {
-            self.catalog.defer(ids.to_vec(), "later", false);
+            self.catalog.defer(ids.to_vec(), "later", false, self.browse_origin());
             return;
         }
         let paths = self.album_paths(ids);
@@ -375,7 +380,7 @@ impl Chilpa {
     /// offers; a source's record whose tracks were never read waits for them.
     pub fn album_listen_action(&mut self, ids: &[i64], action: &str) {
         if ids.iter().any(|id| *id < 0 && self.catalog.tracks(*id).is_none()) {
-            self.catalog.defer(ids.to_vec(), action, false);
+            self.catalog.defer(ids.to_vec(), action, false, self.browse_origin());
             return;
         }
         let paths = self.album_paths(ids);
@@ -386,11 +391,11 @@ impl Chilpa {
     /// late on what plays. Called from `poll`.
     pub(crate) fn advance_catalog(&mut self) {
         for deferred in self.catalog.ready() {
-            match deferred.act.as_str() {
-                "later" => self.album_later(&deferred.albums, ""),
-                act if act.starts_with("buffer:") => self.album_listen_action(&deferred.albums, act),
-                act => self.album_action(&deferred.albums, act, deferred.shuffled),
-            }
+            self.with_queue_origin(deferred.origin, |app| match deferred.act.as_str() {
+                "later" => app.album_later(&deferred.albums, ""),
+                act if act.starts_with("buffer:") => app.album_listen_action(&deferred.albums, act),
+                act => app.album_action(&deferred.albums, act, deferred.shuffled),
+            });
         }
         // A queue restored before the catalog was read from disk is named
         // once it is.

@@ -332,3 +332,37 @@ fn the_upcoming_queue_and_its_groups_survive_a_session() {
     assert!(empty.queue_paths().is_empty(), "clearing also clears the saved session");
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn queue_origins_survive_restart_for_duplicate_paths_and_insertions() {
+    use chilpa_api::{navigation::{Route, Screen}, queue_origin::QueueOrigin};
+    let dir = folder("origins");
+    other_library(&dir);
+    let path = wave(&dir, "same.wav", 4_410_000).display().to_string();
+    let album = QueueOrigin { screen: "album".into(), id: 42, ..Default::default() };
+    let search = QueueOrigin { screen: "search".into(), query: "Exact artist".into(), source: "one,two".into(), ..Default::default() };
+    {
+        let mut app = chilpa_api::Chilpa::new();
+        app.set_browse_route(&Route { screen: Screen::Album, id: 42, key: String::new() });
+        app.play_tracks(&[path.clone()], OUTPUT, true);
+        app.set_paused(true);
+        app.with_queue_origin(Some(search.clone()), |app| app.play_next_here(&[path.clone()]));
+        app.set_browse_route(&Route { screen: Screen::Playlist, id: 9, key: String::new() });
+        app.enqueue_here(&[path.clone()]);
+    }
+    let saved = dir.join("data/chilpa/listenlist.json");
+    let document: serde_json::Value = serde_json::from_slice(&std::fs::read(saved).unwrap()).unwrap();
+    let active = document["active"].as_u64().unwrap();
+    let buffer = document["buffers"].as_array().unwrap().iter().find(|b| b["id"] == active).unwrap();
+    assert_eq!(buffer["paths"].as_array().unwrap().len(), 3);
+    assert_eq!(buffer["origins"][0], serde_json::to_value(&album).unwrap());
+    assert_eq!(buffer["origins"][1], serde_json::to_value(&search).unwrap());
+    assert_eq!(buffer["origins"][2]["screen"], "playlist");
+    assert_eq!(buffer["origins"][2]["id"], 9);
+    let mut restored = chilpa_api::Chilpa::new();
+    assert!(restored.now_playing().paused);
+    assert_eq!(serde_json::from_str::<QueueOrigin>(&restored.playing_origin_json()).unwrap(), album);
+    restored.clear_queue();
+    drop(restored);
+    let _ = std::fs::remove_dir_all(dir);
+}

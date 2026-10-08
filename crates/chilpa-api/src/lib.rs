@@ -34,6 +34,7 @@ mod library;
 pub mod listening;
 mod metadata;
 pub mod navigation;
+pub mod queue_origin;
 mod outputs;
 mod playlists;
 mod preferences;
@@ -580,6 +581,8 @@ pub struct Chilpa {
     /// The current queue's paths, whole and in the order they were queued.
     /// Going back does not trim it.
     queue: Vec<String>,
+    queue_origins: Vec<Option<queue_origin::QueueOrigin>>,
+    browse_origin: Option<queue_origin::QueueOrigin>,
     listen: listen::Workspace,
     media: Option<open_media::Session>,
     /// Which position of `queue` was the first one handed to the player.
@@ -699,6 +702,8 @@ impl Chilpa {
             in_progress: None,
             scrobbler: None,
             queue: Vec::new(),
+            queue_origins: Vec::new(),
+            browse_origin: None,
             listen: listen::Workspace::default(),
             media: None,
             base: 0,
