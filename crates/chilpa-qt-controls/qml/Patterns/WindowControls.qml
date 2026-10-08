@@ -14,6 +14,11 @@ Item {
 
     // The window whose keys these are.
     required property var window
+    // The mini player, when the window has one: its key opens and closes
+    // it, and the desktop's asks for the window go to it while it is up.
+    property bool miniOpen: false
+    signal miniAsked()
+    signal presentMini()
 
     readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
 
@@ -62,6 +67,7 @@ Item {
         case "ui.lyrics": SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen; break
         case "ui.escape": if (SettingsModel.queueOpen) SettingsModel.queueOpen = false; break
         case "ui.showShortcuts": sheet.open(); break
+        case "ui.miniPlayer": miniAsked(); break
         }
     }
 
@@ -141,6 +147,8 @@ Item {
                 controls.quitting = true
                 return controls.window.visible ? controls.window.close() : Qt.quit()
             }
+            if (controls.miniOpen)
+                return controls.presentMini()
             if (what === 2 && controls.window.visible)
                 return controls.window.hide()
             controls.present()
