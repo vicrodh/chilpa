@@ -333,6 +333,12 @@ msgstr "Artist radio"
 msgid "Artists"
 msgstr ""
 
+msgid "Artwork"
+msgstr ""
+
+msgid "Artwork view"
+msgstr ""
+
 msgid "Ascending"
 msgstr ""
 
@@ -595,6 +601,9 @@ msgid "Compact rows"
 msgstr ""
 
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
+msgstr ""
+
+msgid "Compact view"
 msgstr ""
 
 msgid "Compatibility is not fully verified"
@@ -1451,6 +1460,9 @@ msgstr ""
 msgid "Lyrics source:"
 msgstr ""
 
+msgid "Lyrics view"
+msgstr ""
+
 msgid "Magazine"
 msgstr ""
 
@@ -1496,7 +1508,19 @@ msgstr ""
 msgid "Metadata"
 msgstr ""
 
+msgid "Micro"
+msgstr ""
+
+msgid "Micro view"
+msgstr ""
+
 msgid "Middle click opens a new tab"
+msgstr ""
+
+msgid "Mini player"
+msgstr ""
+
+msgid "Mini player default view"
 msgstr ""
 
 msgid "Minimize"
@@ -1670,6 +1694,9 @@ msgstr ""
 msgid "No label info"
 msgstr ""
 
+msgid "No lyrics"
+msgstr ""
+
 msgid "No lyrics for this track."
 msgstr ""
 
@@ -1695,6 +1722,9 @@ msgid "No review available"
 msgstr "No review available"
 
 msgid "No stories for this artist"
+msgstr ""
+
+msgid "No track playing"
 msgstr ""
 
 msgid "No tracks in the selected libraries yet."
@@ -2069,6 +2099,9 @@ msgstr "Queue actions"
 msgid "Queue and playlist actions"
 msgstr ""
 
+msgid "Queue is empty"
+msgstr ""
+
 msgid "Queue name"
 msgstr ""
 
@@ -2076,6 +2109,9 @@ msgid "Queue options"
 msgstr ""
 
 msgid "Queue this group"
+msgstr ""
+
+msgid "Queue view"
 msgstr ""
 
 msgid "Queue {}"
@@ -2184,6 +2220,9 @@ msgid "Release date"
 msgstr "Release date"
 
 msgid "Releases"
+msgstr ""
+
+msgid "Remember"
 msgstr ""
 
 msgid "Remove"
@@ -2688,6 +2727,9 @@ msgstr ""
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr ""
 
+msgid "The view the mini player opens with. Remember keeps the one it was last on."
+msgstr ""
+
 msgid "Theme"
 msgstr ""
 
@@ -2767,6 +2809,9 @@ msgid "Title Z-A"
 msgstr ""
 
 msgid "To move to"
+msgstr ""
+
+msgid "Toggle Mini Player"
 msgstr ""
 
 msgid "Toggle Shuffle"

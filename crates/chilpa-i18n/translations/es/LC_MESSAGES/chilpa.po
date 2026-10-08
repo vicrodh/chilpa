@@ -333,6 +333,12 @@ msgstr "Radio del artista"
 msgid "Artists"
 msgstr "Artistas"
 
+msgid "Artwork"
+msgstr "Portada"
+
+msgid "Artwork view"
+msgstr "Vista de portada"
+
 msgid "Ascending"
 msgstr "Ascendente"
 
@@ -596,6 +602,9 @@ msgstr "Filas compactas"
 
 msgid "Compact rows like a spreadsheet, or rich rows with the cover."
 msgstr "Filas compactas como una hoja de cálculo, o filas amplias con la portada."
+
+msgid "Compact view"
+msgstr "Vista compacta"
 
 msgid "Compatibility is not fully verified"
 msgstr "La compatibilidad no está completamente verificada"
@@ -1451,6 +1460,9 @@ msgstr "La letra aparece aquí mientras suena una pista."
 msgid "Lyrics source:"
 msgstr "Fuente de la letra:"
 
+msgid "Lyrics view"
+msgstr "Vista de letras"
+
 msgid "Magazine"
 msgstr "Revista"
 
@@ -1496,8 +1508,20 @@ msgstr "Menú"
 msgid "Metadata"
 msgstr "Metadatos"
 
+msgid "Micro"
+msgstr "Micro"
+
+msgid "Micro view"
+msgstr "Vista micro"
+
 msgid "Middle click opens a new tab"
 msgstr "El clic medio abre una pestaña nueva"
+
+msgid "Mini player"
+msgstr "Mini reproductor"
+
+msgid "Mini player default view"
+msgstr "Vista inicial del mini reproductor"
 
 msgid "Minimize"
 msgstr "Minimizar"
@@ -1670,6 +1694,9 @@ msgstr "Sin agrupar"
 msgid "No label info"
 msgstr "Sin datos de sello"
 
+msgid "No lyrics"
+msgstr "Sin letra"
+
 msgid "No lyrics for this track."
 msgstr "Esta pista no tiene letra."
 
@@ -1696,6 +1723,9 @@ msgstr "No hay reseña disponible"
 
 msgid "No stories for this artist"
 msgstr "No hay historias de este artista"
+
+msgid "No track playing"
+msgstr "Nada en reproducción"
 
 msgid "No tracks in the selected libraries yet."
 msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
@@ -2069,6 +2099,9 @@ msgstr "Acciones de cola"
 msgid "Queue and playlist actions"
 msgstr "Acciones de cola y playlist"
 
+msgid "Queue is empty"
+msgstr "La cola está vacía"
+
 msgid "Queue name"
 msgstr "Nombre de la queue"
 
@@ -2077,6 +2110,9 @@ msgstr "Opciones de cola"
 
 msgid "Queue this group"
 msgstr "Acciones de cola para este grupo"
+
+msgid "Queue view"
+msgstr "Vista de cola"
 
 msgid "Queue {}"
 msgstr "Queue {}"
@@ -2185,6 +2221,9 @@ msgstr "Fecha de lanzamiento"
 
 msgid "Releases"
 msgstr "Lanzamientos"
+
+msgid "Remember"
+msgstr "Recordar"
 
 msgid "Remove"
 msgstr "Quitar"
@@ -2688,6 +2727,9 @@ msgstr "La línea cantada se ilumina completa. Ahorra CPU."
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr "El fondo de pantalla del sistema. Elige una imagen tuya en su lugar."
 
+msgid "The view the mini player opens with. Remember keeps the one it was last on."
+msgstr "La vista con la que abre el mini reproductor. Recordar conserva la última que tuvo."
+
 msgid "Theme"
 msgstr "Tema"
 
@@ -2768,6 +2810,9 @@ msgstr "Título Z-A"
 
 msgid "To move to"
 msgstr "Para moverse"
+
+msgid "Toggle Mini Player"
+msgstr "Mostrar u ocultar el mini reproductor"
 
 msgid "Toggle Shuffle"
 msgstr "Alternar aleatorio"

@@ -31,5 +31,22 @@ QtObject {
     property bool lyricsSynced: false
     property int lyricsLine: -1
     function seek(seconds) { sought = seconds; position = seconds }
+    property bool shuffle: false
+    property int repeat: 0
+    property int volume: 50
+    property bool muted: false
+    property bool volumeLocked: false
+    property string volumeNote: ""
+    property int toggles: 0
+    property int nexts: 0
+    property int previouses: 0
+    function toggle() { toggles += 1; paused = !paused }
+    function next() { nexts += 1 }
+    function previous() { previouses += 1 }
+    function toggleShuffle() { shuffle = !shuffle }
+    function cycleRepeat() { repeat = (repeat + 1) % 3 }
+    function chooseVolume(percent) { volume = percent }
+    function chooseMuted(on) { muted = on }
+    function nudge(seconds) { seek(position + seconds) }
     function clock(seconds) { return String(Math.floor(seconds)) }
 }
