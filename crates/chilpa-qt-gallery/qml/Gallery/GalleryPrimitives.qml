@@ -66,6 +66,10 @@ TitledFlow {
         TextField { placeholder: "Token"; secret: true }
         Swatches { colors: ["", Theme.color.accentHover, Theme.color.textSecondary]; values: ["a", "b", "c"]; value: "b" }
         LevelSlider { value: 60 }
+        LevelField { value: 75 }
+        FileField { action: "Choose image…"; value: "/pictures/wall.png"; clearTip: "Use the default" }
+        SecretField { placeholder: "Token"; action: "Connect" }
+        ProgressField { progress: "0.4"; action: "Analyze" }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
         SourceIcon { sourceInfo: ({ local: true }) }

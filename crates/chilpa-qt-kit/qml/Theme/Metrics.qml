@@ -36,6 +36,16 @@ QtObject {
     readonly property int gap22: 22
     readonly property int gap24: 24
 
+    // The dynamic background (01-tokens 1.6, as QBZ draws it): the dark veil
+    // over the field, and the light theme's veil, a notch stronger.
+    readonly property real ambientDim: 0.35
+    readonly property real ambientVeilLight: 0.55 // derived: min(0.72, ambientDim + 0.2)
+    // The wallpaper mode's blur, in MultiEffect's pixels at blur 1.0, and
+    // how far a compositor's rectangle may differ from the window's size
+    // and still be it.
+    readonly property int wallpaperBlurMax: 64
+    readonly property int wallpaperWindowTolerance: 64
+
     // Radii.
     readonly property int radiusPanel: 12
     readonly property int radiusPlayer: 14
@@ -322,6 +332,8 @@ QtObject {
     readonly property int settingsRow: 54
     readonly property int settingsGroup: 44
     readonly property int settingsMaxWidth: 880
+    // The percentage beside a settings slider.
+    readonly property int settingsPercent: 40
     // The sheet of keyboard shortcuts and its editor at their widest, the
     // room they leave around themselves, and the sleep timer's popover.
     readonly property int shortcutsSheet: 980

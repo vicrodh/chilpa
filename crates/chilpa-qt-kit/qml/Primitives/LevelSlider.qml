@@ -11,6 +11,8 @@ Item {
     property bool vertical: false
 
     signal moved(int value)
+    // The pointer let go: where the level settled, for whoever keeps it.
+    signal released(int value)
 
     readonly property bool active: area.containsMouse || area.pressed
 
@@ -65,6 +67,7 @@ Item {
             if (pressed)
                 slider.moved(at(mouse.x, mouse.y))
         }
+        onReleased: (mouse) => slider.released(at(mouse.x, mouse.y))
         onWheel: (wheel) => slider.moved(Math.max(0, Math.min(100, slider.value + (wheel.angleDelta.y > 0 ? Metrics.volumeStep : -Metrics.volumeStep))))
         onContainsMouseChanged: containsMouse && slider.tip !== "" ? TipState.show(slider.tip, slider) : TipState.hide(slider)
     }
