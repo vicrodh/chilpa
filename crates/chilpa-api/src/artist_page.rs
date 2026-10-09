@@ -246,8 +246,9 @@ impl crate::Chilpa {
         let art = chosen.or_else(|| records.first().or(guest.first()).map(|a| a.artwork_path.clone())).filter(|a| !a.is_empty())
             .and_then(|path| url::Url::from_file_path(path).ok()).map(|u| u.to_string()).unwrap_or_default();
         let known = self.artist_network.of(name, &[]);
-        // The library keeps no label on a record: the sidebar says so.
-        let labels: Vec<String> = Vec::new();
+        // The labels its records' tracks name, which the sidebar lists.
+        let ids: Vec<i64> = records.iter().map(|a| a.id).collect();
+        let labels = self.library().and_then(|lib| lib.albums_labels(&ids).ok()).unwrap_or_default();
         let similar: Vec<Value> = known.similar.iter().take(12).cloned().collect::<Vec<_>>().into_iter()
             .map(|n| { let local = self.has_artist(&n); json!({"kind": "artist", "title": n, "local": local}) }).collect();
         // `model` names the window's model for the library ("artist",
