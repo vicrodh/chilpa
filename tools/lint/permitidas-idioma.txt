@@ -585,3 +585,8 @@ wl
 bezier
 pinnable
 unpark
+monday
+friday
+sunday
+february
+december
