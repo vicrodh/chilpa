@@ -19,6 +19,10 @@ pub mod qobject {
         /// "-" when it was taken and there is nothing to run.
         #[qinvokable]
         fn pressed(self: Pin<&mut Hotkeys>, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString;
+        /// The same, for a key pressed in a named scope: "window", "mini"
+        /// or "immersive" (the overlay answers the window's keys too).
+        #[qinvokable]
+        fn pressed_in(self: Pin<&mut Hotkeys>, scope: &QString, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString;
         #[qinvokable]
         fn command(self: Pin<&mut Hotkeys>, action: &QString, argument: &QString);
         /// Marks what plays as a favorite, or takes the mark off.
@@ -29,7 +33,7 @@ pub mod qobject {
         fn search_asked(self: Pin<&mut Hotkeys>);
     }
 }
-use chilpa_api::Pressed;
+use chilpa_api::{Pressed, Scope};
 use chilpa_qt_kit::app;
 use cxx_qt_lib::QString;
 use std::pin::Pin;
@@ -45,8 +49,13 @@ impl qobject::Hotkeys {
         self.set_snapshot(QString::from(&snapshot));
     }
 
-    pub fn pressed(mut self: Pin<&mut Self>, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
-        match app::with(|api| api.key_pressed(key, modifiers, &text.to_string(), typing)) {
+    pub fn pressed(self: Pin<&mut Self>, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
+        self.pressed_in(&QString::from("window"), key, modifiers, text, typing)
+    }
+
+    pub fn pressed_in(mut self: Pin<&mut Self>, scope: &QString, key: i32, modifiers: i32, text: &QString, typing: bool) -> QString {
+        let scope = Scope::named(&scope.to_string());
+        match app::with(|api| api.key_pressed_in(scope, key, modifiers, &text.to_string(), typing)) {
             Pressed::Pass => QString::default(),
             Pressed::Taken => {
                 self.as_mut().refresh();
