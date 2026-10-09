@@ -1,6 +1,7 @@
 //! What the search box finds as someone types: the artists and the records
 //! whose names hold every word typed, and the songs the search index ranks
-//! best.
+//! best. A record is also found by who composed its tracks, and a song by
+//! who composed it, after the ones the index ranks.
 //!
 //! Artists include the credits on individual files, so a compilation stays
 //! discoverable through every performer. Songs go through the full-text
@@ -79,7 +80,10 @@ impl Library {
         let mut album_clause = String::new();
         for w in &words {
             album_clause.push_str(" AND (a.title LIKE ? ESCAPE '\\' OR a.id IN
-                (SELECT album_id FROM album_artist_rollup WHERE artist LIKE ? ESCAPE '\\'))");
+                (SELECT album_id FROM album_artist_rollup WHERE artist LIKE ? ESCAPE '\\') OR a.id IN
+                (SELECT t.album_id FROM tracks t JOIN track_composers tc ON tc.track_id = t.id
+                 JOIN composers c ON c.id = tc.composer_id WHERE t.present = 1 AND c.name LIKE ? ESCAPE '\\'))");
+            args.push(Box::new(w.clone()));
             args.push(Box::new(w.clone()));
             args.push(Box::new(w.clone()));
         }
@@ -107,9 +111,24 @@ impl Library {
              ORDER BY s.rank
              LIMIT ?2",
         )?;
-        let tracks = stmt
+        let mut tracks = stmt
             .query_map(rusqlite::params![query, limit as i64, CONSIDERED as i64], |r| r.get(0))?
             .collect::<rusqlite::Result<Vec<i64>>>()?;
+        if tracks.len() < limit && !words.is_empty() {
+            // The songs whose composers say every word, after the ranked ones.
+            let clause = vec!["EXISTS (SELECT 1 FROM track_composers tc JOIN composers c ON c.id = tc.composer_id
+                WHERE tc.track_id = t.id AND c.name LIKE ? ESCAPE '\\')"; words.len()].join(" AND ");
+            let sql = format!("SELECT t.id FROM tracks t WHERE t.present = 1 AND t.album_id IS NOT NULL AND {clause}
+                ORDER BY t.album_id, t.disc_number, t.track_number LIMIT ?");
+            let mut args: Vec<Box<dyn ToSql>> = words.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>).collect();
+            args.push(Box::new(limit as i64));
+            let composed = self.db.prepare(&sql)?.query_map(params_from_iter(args.iter()), |r| r.get(0))?.collect::<rusqlite::Result<Vec<i64>>>()?;
+            for id in composed {
+                if tracks.len() < limit && !tracks.contains(&id) {
+                    tracks.push(id);
+                }
+            }
+        }
 
         Ok(Found { artists, albums, tracks })
     }
@@ -176,6 +195,17 @@ mod tests {
         let lib = shelf();
         let found = lib.find("or", 10).unwrap();
         assert_eq!(found.albums[0], 1, "Low Orbit has a word starting with it; Moraine only holds it");
+    }
+
+    #[test]
+    fn a_record_and_its_songs_are_found_by_who_composed_them() {
+        let lib = shelf();
+        lib.set_track_composers(30, &["John Cage".to_string()]).unwrap();
+        let found = lib.find("cage", 10).unwrap();
+        assert_eq!(found.albums, [3], "Moraine, by a track's composer");
+        assert_eq!(found.tracks, [30]);
+        assert!(lib.find("cage okafor", 10).unwrap().albums.contains(&3), "a composer and the artist, one word each");
+        assert!(lib.find("bach", 10).unwrap().albums.is_empty());
     }
 
     #[test]
