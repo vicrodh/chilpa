@@ -144,6 +144,8 @@ QtObject {
 
     // Player bar (02-layout.md 7).
     readonly property int playerHeight: 70
+    // Standing tall with the waveform: half as much again, upward.
+    readonly property int playerHeightTall: 105
     readonly property int playerBottom: spaceWindow
     // The same margin as the sidebars'.
     // How long the mouse is still before the bar steps away, when asked to.
@@ -152,6 +154,9 @@ QtObject {
     readonly property int playerPadRight: 12
     // Tall enough for the seek bar to stay clear of who plays and the record.
     readonly property int lcdHeight: 54
+    // The band the waveform takes under the texts when the bar stands tall.
+    readonly property int waveformBand: 35
+    readonly property int lcdHeightTall: 89
     readonly property int lcdArt: 44
     readonly property int progress: 2
     readonly property int progressHover: 4

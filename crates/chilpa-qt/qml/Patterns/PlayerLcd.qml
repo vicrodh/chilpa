@@ -6,6 +6,7 @@ import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/waveform/qml/Components" as Wave
 
 // The player's "LCD": cover, times, title with its quality, who and from
 // what, and the progress along its lower edge, which seeks.
@@ -13,6 +14,9 @@ Rectangle {
     id: lcd
 
     property bool showTimes: true
+    // Standing tall: no times, the texts in the band above and the waveform
+    // seek in the band below (the owner, 2026-10-08 night).
+    property bool tall: false
     readonly property bool qualityHovered: quality.hovered
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
     // The key of the page of what plays, when it is an entry of a source.
@@ -24,7 +28,7 @@ Rectangle {
         function onPathChanged() { Sources.refresh() }
     }
 
-    height: Metrics.lcdHeight
+    height: tall ? Metrics.lcdHeightTall : Metrics.lcdHeight
     radius: Metrics.radiusLcd
     color: Theme.color.surfaceLcd
 
@@ -34,6 +38,7 @@ Rectangle {
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap4
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: lcd.tall ? -Metrics.waveformBand / 2 : 0 // derived: centered in the band above the waveform
         width: Metrics.lcdArt
         height: Metrics.lcdArt
         radius: Metrics.radiusArtSmall
@@ -45,7 +50,7 @@ Rectangle {
         anchors.left: cover.right
         anchors.leftMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        visible: lcd.showTimes && Player.playing
+        visible: lcd.showTimes && !lcd.tall && Player.playing
         text: Player.elapsed
         font.pointSize: Type.micro
         font.features: { "tnum": 1 }
@@ -57,7 +62,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        visible: lcd.showTimes && Player.playing && !Player.live
+        visible: lcd.showTimes && !lcd.tall && Player.playing && !Player.live
         text: Player.remaining
         font.pointSize: Type.micro
         font.features: { "tnum": 1 }
@@ -69,6 +74,7 @@ Rectangle {
         // The seek hit area overlaps the lower text edge; links keep priority.
         z: 1
         anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: lcd.tall ? -Metrics.waveformBand / 2 : 0 // derived: centered in the band above the waveform
         anchors.left: elapsed.visible ? elapsed.right : cover.right
         anchors.leftMargin: Metrics.gap12
         anchors.right: remaining.visible ? remaining.left : parent.right
@@ -175,12 +181,29 @@ Rectangle {
 
     SeekBar {
         objectName: "playerSeek"
-        visible: !Player.live
+        visible: !Player.live && !lcd.tall
         anchors.bottom: parent.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: lcd.radius
         anchors.rightMargin: lcd.radius
+        position: Player.position
+        duration: Player.duration
+        bubbleText: Player.clock(hoverSeconds)
+        loopStart: Controls.loopState > 0 ? Controls.loopStart : -1
+        loopEnd: Controls.loopState > 1 ? Controls.loopEnd : -1
+        onSeek: (seconds) => Player.seek(seconds)
+    }
+    Wave.WaveformSeek {
+        objectName: "playerWaveform"
+        visible: lcd.tall && !Player.live
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: Metrics.gap4
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.leftMargin: lcd.radius
+        anchors.rightMargin: lcd.radius
+        height: Metrics.waveformBand - Metrics.gap6 // derived: the band less its air
         position: Player.position
         duration: Player.duration
         bubbleText: Player.clock(hoverSeconds)
