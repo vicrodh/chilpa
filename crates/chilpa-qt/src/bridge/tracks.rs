@@ -893,8 +893,9 @@ impl qobject::TrackListModel {
                 self.as_mut().rust_mut().queue_keys = keys;
                 (Rows::Loaded(rows), None)
             }
-            "queue" | "listenlist" => {
-                let (entries, keys) = app::with(|api| api.listen_rows(id as u64, &self.rust().key.to_string(), kind == "listenlist"));
+            "queue" | "listenlist" | "history" => {
+                let query = self.rust().key.to_string();
+                let (entries, keys) = app::with(|api| if kind == "history" { api.listen_history(&query) } else { api.listen_rows(id as u64, &query, kind == "listenlist") });
                 let mut number = 0;
                 self.as_mut().rust_mut().queue_numbers = keys.iter().map(|key| { if !key.is_empty() { number += 1; } number }).collect();
                 self.as_mut().rust_mut().queue_keys = keys;
