@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
 import "../Theme"
+import "../Components"
 
 // What drives the player besides its own buttons, held once by the window:
 // every key nothing else took is asked about here and its action run, the
@@ -66,7 +67,7 @@ Item {
         case "nav.settings": Navigation.openSection(""); break
         case "nav.newTab": Navigation.open("library", 0); break
         case "nav.closeTab": Navigation.close(Navigation.active); break
-        case "nav.quit": Player.quit(); break
+        case "nav.quit": controls.requestQuit(); break
         case "ui.sidebar": SettingsModel.sidebarMode = sidebarTurns[SettingsModel.sidebarMode] || "open"; break
         case "ui.queue": SettingsModel.queueOpen = !SettingsModel.queueOpen; break
         case "ui.lyrics": SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen; break
@@ -142,6 +143,28 @@ Item {
         Hotkeys.refresh()
     }
 
+    // Quitting asks first, as QBZ's does, unless "Don't ask again" was
+    // chosen: the window's Quit, Ctrl+Q, the tray's Quit and a close that
+    // does not hide to the tray. The desktop's media controls quit at once.
+    function requestQuit() {
+        if (controls.quitting || question.opened)
+            return
+        if (!Controls.confirmsQuit())
+            return controls.finishQuit()
+        if (!controls.window.visible || controls.window.visibility === Window.Minimized)
+            controls.present()
+        question.ask()
+    }
+    // A hidden window has nothing to close: it quits. Behind the mini player
+    // it quits through it: a quit closes every window first, and the mini
+    // player's refuses to close while it is open.
+    function finishQuit() {
+        controls.quitting = true
+        if (controls.miniOpen)
+            return controls.quitMini()
+        return controls.window.visible ? controls.window.close() : Qt.quit()
+    }
+
     function present() {
         controls.window.show()
         controls.window.raise()
@@ -150,18 +173,13 @@ Item {
     Connections {
         target: Player
         // The desktop's media controls, Chilpa launched again, or the tray:
-        // 0 come to the front, 1 quit, 2 show if hidden and hide if in sight.
+        // 0 come to the front, 1 quit, 2 show if hidden and hide if in sight,
+        // 3 quit after asking (the tray's Quit).
         function onWindowAsked(what) {
-            // A window hidden in the tray has nothing to close: it quits.
-            // Behind the mini player it quits through it: a quit closes
-            // every window first, and the mini player's refuses to close
-            // while it is open.
-            if (what === 1) {
-                controls.quitting = true
-                if (controls.miniOpen)
-                    return controls.quitMini()
-                return controls.window.visible ? controls.window.close() : Qt.quit()
-            }
+            if (what === 1)
+                return controls.finishQuit()
+            if (what === 3)
+                return controls.requestQuit()
             if (controls.miniOpen)
                 return controls.presentMini()
             if (what === 2 && controls.window.visible)
@@ -180,13 +198,20 @@ Item {
         function onYChanged() { settle.restart() }
         function onVisibilityChanged() { settle.restart() }
         // Closing keeps Chilpa in the tray when that is wanted, and there
-        // is a tray; the desktop's Quit comes as a close too, and quits.
+        // is a tray; otherwise it is quitting, which asks first. A quit
+        // already answered closes.
         function onClosing(close) {
             controls.keepPlace()
-            if (controls.quitting || !Controls.closesToTray())
+            if (controls.quitting)
                 return
+            if (!Controls.closesToTray() && !Controls.confirmsQuit()) {
+                controls.quitting = true
+                return
+            }
             close.accepted = false
-            controls.window.hide()
+            if (Controls.closesToTray())
+                return controls.window.hide()
+            controls.requestQuit()
         }
     }
     // A resize is many frames; only the one it ends on is kept.
@@ -200,6 +225,15 @@ Item {
         repeat: true
         running: Controls.sleepLeft !== ""
         onTriggered: Controls.refresh()
+    }
+
+    QuitQuestion {
+        id: question
+        onQuit: (stopAsking) => {
+            if (stopAsking)
+                Controls.stopConfirmingQuit()
+            controls.finishQuit()
+        }
     }
 
     ShortcutsSheet {
