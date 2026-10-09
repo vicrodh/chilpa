@@ -42,7 +42,7 @@ done
         std::thread::sleep(Duration::from_millis(20));
     }
     for (filter, expected) in [("hi_res", vec!["High"]), ("lossless", vec!["High", "CD"])] {
-        api.search_source_catalogs_filtered("music", "com.test.search", filter);
+        api.search_source_catalogs_filtered("music", "com.test.search", filter, false);
         let end = Instant::now() + Duration::from_secs(10);
         loop {
             api.poll();
