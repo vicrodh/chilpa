@@ -146,6 +146,9 @@ QtObject {
     readonly property int playerHeight: 70
     // Standing tall with the waveform: half as much again, upward.
     readonly property int playerHeightTall: 105
+    // How tall the bar stands now: the bar writes it, and whatever must stay
+    // clear of it reads it here instead of asking the bar.
+    property int playerSpace: playerHeight
     readonly property int playerBottom: spaceWindow
     // The same margin as the sidebars'.
     // How long the mouse is still before the bar steps away, when asked to.

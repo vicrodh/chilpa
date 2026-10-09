@@ -300,3 +300,13 @@ mod tests {
         assert!(result.unwrap_err().contains("not granted"));
     }
 }
+
+impl crate::Chilpa {
+    /// Who serves what plays, by name: a source plugin by its own, a
+    /// server by the name it was given, or empty for the library's files.
+    pub fn playing_source_name(&mut self) -> String {
+        let path = self.now.path.clone();
+        if let Some((instance, _)) = of_plugin(&path) {
+            return self.natives.display_name(&instance);
+        }
+}

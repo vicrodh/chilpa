@@ -38,6 +38,7 @@ Item {
     // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open
     implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
+    Binding { target: Metrics; property: "playerSpace"; value: bar.implicitHeight }
 
     // The pointer is over the bar: it does not step away from under it.
     readonly property bool pointed: area.containsMouse
