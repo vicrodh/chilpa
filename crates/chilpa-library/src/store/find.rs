@@ -116,8 +116,10 @@ impl Library {
             .collect::<rusqlite::Result<Vec<i64>>>()?;
         if tracks.len() < limit && !words.is_empty() {
             // The songs whose composers say every word, after the ranked ones.
-            let clause = vec!["EXISTS (SELECT 1 FROM track_composers tc JOIN composers c ON c.id = tc.composer_id
-                WHERE tc.track_id = t.id AND c.name LIKE ? ESCAPE '\\')"; words.len()].join(" AND ");
+            // From the composers, a small table, to their tracks: a scan of
+            // every track with a probe each costs what a library is large.
+            let clause = vec!["t.id IN (SELECT tc.track_id FROM composers c JOIN track_composers tc ON tc.composer_id = c.id
+                WHERE c.name LIKE ? ESCAPE '\\')"; words.len()].join(" AND ");
             let sql = format!("SELECT t.id FROM tracks t WHERE t.present = 1 AND t.album_id IS NOT NULL AND {clause}
                 ORDER BY t.album_id, t.disc_number, t.track_number LIMIT ?");
             let mut args: Vec<Box<dyn ToSql>> = words.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>).collect();
