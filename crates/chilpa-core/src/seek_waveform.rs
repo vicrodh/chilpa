@@ -1,8 +1,9 @@
 //! The seek bar's waveform of a file, read in the background: a second
 //! decoder over the same file, as fast as it decodes, apart from the one
 //! that plays. A local file is done in seconds; the document grows under
-//! the view meanwhile. A DSD file goes through the DSD-to-PCM converter,
-//! the one playback uses when the device takes no DSD.
+//! the view meanwhile. A DSD file, or a track of an SACD image, goes
+//! through the DSD-to-PCM converter, the one playback uses when the device
+//! takes no DSD.
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -18,8 +19,13 @@ const PUBLISH_EVERY: Duration = Duration::from_millis(100);
 /// the last one complete. It stops where `stop` says so, and says why
 /// when the file cannot be read or has no known length.
 pub fn analyze_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Snapshot)) -> Result<(), String> {
+    if let Some((image, number)) = crate::sacd_tracks::parse(path) {
+        let reader = crate::sacd_tracks::open(&image, number).map_err(|e| e.to_string())?;
+        return analyze_dsd(Box::new(reader), stop, publish);
+    }
     if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("dsf") || e.eq_ignore_ascii_case("dff")) {
-        return analyze_dsd_file(path, stop, publish);
+        let source = crate::dsd_playback::open_dsd_file(path).map_err(|e| e.to_string())?;
+        return analyze_dsd(source, stop, publish);
     }
     let mut decoded = Decoded::open(path).map_err(|e| e.to_string())?;
     let format = decoded.stream_format();
@@ -61,10 +67,9 @@ pub fn analyze_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Sna
     Ok(())
 }
 
-/// The same for a DSD file: converted to PCM block by block, as playback
-/// converts it, and read for its loudness like any other.
-fn analyze_dsd_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Snapshot)) -> Result<(), String> {
-    let source = crate::dsd_playback::open_dsd_file(path).map_err(|e| e.to_string())?;
+/// The same for a DSD source: converted to PCM block by block, as
+/// playback converts it, and read for its swings like any other.
+fn analyze_dsd(source: Box<dyn chilpa_dsd::DsdSource>, stop: &AtomicBool, publish: &mut dyn FnMut(&Snapshot)) -> Result<(), String> {
     let mut converter = chilpa_dsd::DsdPcmConverter::new(source, 0.0).map_err(|e| e.to_string())?;
     let channels = usize::from(converter.channels().max(1));
     let mut accumulator = Accumulator::new(converter.channels(), converter.total_frames());
