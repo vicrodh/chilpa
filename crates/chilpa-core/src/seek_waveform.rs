@@ -129,8 +129,9 @@ mod tests {
         let last = seen.last().expect("at least the complete document");
         assert!(last.complete);
         assert_eq!(last.analyzed, BINS as u16);
-        assert_eq!(last.bins[BINS - 1], 255, "the loud half fills the height");
-        assert!(last.bins[0] > 20 && last.bins[0] < 50, "the quiet half is an eighth: {}", last.bins[0]);
+        assert_eq!(last.highs[BINS - 1], 255, "the loud half fills the height");
+        assert!(last.highs[0] > 20 && last.highs[0] < 50, "the quiet half is an eighth: {}", last.highs[0]);
+        assert!(last.lows.iter().all(|v| *v == 0), "a positive constant never swings down");
     }
 
     #[test]

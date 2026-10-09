@@ -46,16 +46,25 @@ impl Store {
         Some(format!("local-{:016x}-{}-{}", fnv(&head), meta.len(), modified))
     }
 
-    fn get(&self, key: &str) -> Option<[u8; BINS]> {
+    /// The two swings, highs then lows; a file of another size is from an
+    /// earlier shape of the document and is read again.
+    fn get(&self, key: &str) -> Option<([u8; BINS], [u8; BINS])> {
         let bytes = std::fs::read(self.dir.join(key)).ok()?;
-        bytes.try_into().ok()
+        if bytes.len() != BINS * 2 {
+            return None;
+        }
+        let (highs, lows) = bytes.split_at(BINS);
+        Some((highs.try_into().ok()?, lows.try_into().ok()?))
     }
 
-    fn set(&self, key: &str, bins: &[u8; BINS]) {
+    fn set(&self, key: &str, highs: &[u8; BINS], lows: &[u8; BINS]) {
         if std::fs::create_dir_all(&self.dir).is_err() {
             return;
         }
-        let _ = std::fs::write(self.dir.join(key), bins);
+        let mut bytes = Vec::with_capacity(BINS * 2);
+        bytes.extend_from_slice(highs);
+        bytes.extend_from_slice(lows);
+        let _ = std::fs::write(self.dir.join(key), bytes);
     }
 }
 
@@ -111,9 +120,9 @@ impl SeekWaveform {
             return;
         }
         let key = Store::key(path);
-        if let Some(bins) = key.as_deref().and_then(|k| self.store.get(k)) {
+        if let Some((highs, lows)) = key.as_deref().and_then(|k| self.store.get(k)) {
             *self.shared.lock().unwrap_or_else(|e| e.into_inner()) =
-                Snapshot { revision: 1, bins, analyzed: BINS as u16, complete: true };
+                Snapshot { revision: 1, highs, lows, analyzed: BINS as u16, complete: true };
             return;
         }
         if !Path::new(path).is_file() {
@@ -127,7 +136,7 @@ impl SeekWaveform {
             let outcome = analyze_file(&file, &flag, &mut |snapshot| {
                 if snapshot.complete {
                     if let Some(k) = key.as_deref() {
-                        store.set(k, &snapshot.bins);
+                        store.set(k, &snapshot.highs, &snapshot.lows);
                     }
                 }
                 if !flag.load(Ordering::Relaxed) {
@@ -154,13 +163,14 @@ impl SeekWaveform {
         snapshot
     }
 
-    /// The document reduced to `count` columns for the view.
-    pub fn columns(&self, count: usize) -> Vec<f32> {
+    /// The document reduced to `count` columns for the view, the upward
+    /// swings and the downward ones.
+    pub fn columns(&self, count: usize) -> (Vec<f32>, Vec<f32>) {
         let snapshot = self.snapshot();
         if snapshot.analyzed == 0 {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
-        columns(&snapshot.bins, count)
+        columns(&snapshot.highs, &snapshot.lows, count)
     }
 }
 
@@ -194,7 +204,7 @@ impl Live {
         let snapshot = growing.accumulator.snapshot(growing.revision);
         if snapshot.complete {
             if let Some(key) = growing.key.as_deref() {
-                self.store.set(key, &snapshot.bins);
+                self.store.set(key, &snapshot.highs, &snapshot.lows);
             }
         }
         *self.shared.lock().unwrap_or_else(|e| e.into_inner()) = snapshot;
@@ -270,7 +280,7 @@ impl crate::Chilpa {
         self.seek_waveform.snapshot()
     }
 
-    pub fn seek_waveform_columns(&self, count: usize) -> Vec<f32> {
+    pub fn seek_waveform_columns(&self, count: usize) -> (Vec<f32>, Vec<f32>) {
         self.seek_waveform.columns(count)
     }
 }
@@ -298,10 +308,12 @@ mod tests {
     fn a_document_on_disk_comes_back_whole() {
         let dir = std::env::temp_dir().join(format!("chilpa-waveform-store-{}", std::process::id()));
         let store = Store { dir };
-        let mut bins = [0u8; BINS];
-        bins[7] = 200;
-        store.set("local-test", &bins);
-        assert_eq!(store.get("local-test"), Some(bins));
+        let mut highs = [0u8; BINS];
+        let mut lows = [0u8; BINS];
+        highs[7] = 200;
+        lows[9] = 90;
+        store.set("local-test", &highs, &lows);
+        assert_eq!(store.get("local-test"), Some((highs, lows)));
         assert_eq!(store.get("local-missing"), None);
     }
 
@@ -310,6 +322,6 @@ mod tests {
         let mut waveform = SeekWaveform::default();
         waveform.follow("");
         assert_eq!(waveform.snapshot().analyzed, 0);
-        assert!(waveform.columns(64).is_empty());
+        assert!(waveform.columns(64).0.is_empty());
     }
 }
