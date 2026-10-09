@@ -59,7 +59,7 @@ use cxx_qt_lib::QList;
 use std::pin::Pin;
 
 /// The most columns a view can ask for: one per bin.
-const COLUMNS_MAX: i32 = 512;
+const COLUMNS_MAX: i32 = chilpa_api::seek_waveform::BINS as i32;
 
 #[derive(Default)]
 pub struct WaveformRust {
