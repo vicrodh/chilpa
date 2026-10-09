@@ -5,30 +5,40 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// One listen: when it started, the record's cover, the track and whose
-// and from which record, how much of it was heard, and how it sounded --
-// its format, a mark when it was bit-perfect -- or that it was skipped.
-// A click opens its record.
+// One listen in the history's fixed columns: when it started, the track
+// (with its record's cover and two lines when rich, one line when
+// compact), whether it was skipped, its format and a mark when it was
+// bit-perfect. A click opens its record.
 Item {
     id: row
 
     // {clock, title, artist, album, played, length, skipped, bit_perfect, quality, art, album_id}
     property var listen: ({})
     property int index: 0
+    property bool rich: true
 
     signal opened(int album)
 
-    height: Charts.historyRow
+    height: rich ? Charts.historyRow : Metrics.rowCompact
 
     ListRowSurface {
         anchors.fill: parent
         rowIndex: row.index
-        radius: Metrics.radiusRow
+        radius: row.rich ? Metrics.radiusRow : 0
         hovered: area.containsMouse
+    }
+    // Under the cells, so the skip's tip still finds the pointer.
+    MouseArea {
+        id: area
+        anchors.fill: parent
+        hoverEnabled: true
+        acceptedButtons: Qt.LeftButton
+        cursorShape: (row.listen.album_id || 0) > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
+        onClicked: if ((row.listen.album_id || 0) > 0) row.opened(row.listen.album_id)
     }
     Text {
         id: clock
-        x: Metrics.gap12
+        x: Charts.historyInset
         width: Charts.timeColumn
         anchors.verticalCenter: parent.verticalCenter
         text: row.listen.clock || ""
@@ -40,83 +50,92 @@ Item {
         id: cover
         anchors.left: clock.right
         anchors.verticalCenter: parent.verticalCenter
-        width: Charts.historyCover
+        visible: row.rich
+        width: row.rich ? Charts.historyCover : 0
         height: Charts.historyCover
-        path: row.listen.art || ""
+        path: row.rich ? row.listen.art || "" : ""
         radius: Metrics.radiusItem
         tint: row.index
     }
-    Column {
+    Item {
+        id: track
+        objectName: "historyTrack"
         anchors.left: cover.right
-        anchors.leftMargin: Metrics.gap12
-        anchors.right: played.left
+        anchors.leftMargin: row.rich ? Metrics.gap12 : 0
+        anchors.right: skipped.left
         anchors.rightMargin: Metrics.gap12
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: Metrics.gap2
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
 
         Text {
-            width: parent.width
+            id: title
+            y: row.rich ? parent.height / 2 - height - Metrics.gap2 / 2 : (parent.height - height) / 2 // derived: two lines around the middle
+            // Measured apart: bound to its own implicit width, an elided
+            // text loops.
+            width: row.rich ? parent.width : Math.min(Math.ceil(measure.advanceWidth(text)), parent.width * Charts.historyTitleShare)
             text: row.listen.title || ""
             elide: Text.ElideRight
             font.pointSize: Type.row
             font.weight: Type.medium
             color: Theme.color.textPrimary
         }
+        FontMetrics {
+            id: measure
+            font: title.font
+        }
         Text {
-            width: parent.width
+            x: row.rich ? 0 : title.width + Metrics.gap8
+            y: row.rich ? parent.height / 2 + Metrics.gap2 / 2 : (parent.height - height) / 2 // derived: two lines around the middle
+            width: parent.width - x
             text: [row.listen.artist, row.listen.album].filter(part => part).join(" — ")
             elide: Text.ElideRight
             font.pointSize: Type.small
             color: Theme.color.textSecondary
         }
     }
-    Text {
-        id: played
+    Item {
+        id: skipped
         anchors.right: quality.left
-        anchors.rightMargin: Metrics.gap12
-        anchors.verticalCenter: parent.verticalCenter
-        width: Charts.playedColumn
-        horizontalAlignment: Text.AlignRight
-        text: row.listen.length ? row.listen.played + " / " + row.listen.length : row.listen.played || ""
-        font.pointSize: Type.small
-        font.features: { "tnum": 1 }
-        color: Theme.color.textTertiary
-    }
-    Row {
-        id: quality
-        anchors.right: parent.right
-        anchors.rightMargin: Metrics.gap12
-        anchors.verticalCenter: parent.verticalCenter
-        // As wide as the column, or as what it holds when a skip widens it.
-        width: Math.max(Charts.qualityColumn, implicitWidth)
-        layoutDirection: Qt.RightToLeft
-        spacing: Metrics.gap6
+        width: Charts.skippedColumn
+        height: parent.height
 
         Chip {
+            id: chip
             anchors.verticalCenter: parent.verticalCenter
             visible: row.listen.skipped === true
             text: I18n.tr("Skipped", I18n.rev)
         }
+        HoverHandler {
+            enabled: chip.visible
+            onHoveredChanged: hovered ? TipState.show(I18n.trArgs("Heard {} of {}", [row.listen.played || "", row.listen.length || "?"], I18n.rev), chip)
+                                      : TipState.hide(chip)
+        }
+    }
+    Text {
+        id: quality
+        objectName: "historyQuality"
+        anchors.right: perfect.left
+        anchors.verticalCenter: parent.verticalCenter
+        width: Charts.qualityColumn
+        text: row.listen.quality || ""
+        elide: Text.ElideRight
+        font.pointSize: Type.small
+        font.features: { "tnum": 1 }
+        color: Theme.color.textSecondary
+    }
+    Item {
+        id: perfect
+        anchors.right: parent.right
+        anchors.rightMargin: Charts.historyInset
+        width: Charts.perfectColumn
+        height: parent.height
+
         Icon {
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.centerIn: parent
             visible: row.listen.bit_perfect === true
             glyph: Icons.circleCheck
             size: Metrics.iconSm
             color: Theme.color.statusPositive
         }
-        Text {
-            anchors.verticalCenter: parent.verticalCenter
-            text: row.listen.quality || ""
-            font.pointSize: Type.small
-            font.features: { "tnum": 1 }
-            color: Theme.color.textSecondary
-        }
-    }
-    MouseArea {
-        id: area
-        anchors.fill: parent
-        hoverEnabled: true
-        cursorShape: (row.listen.album_id || 0) > 0 ? Qt.PointingHandCursor : Qt.ArrowCursor
-        onClicked: if ((row.listen.album_id || 0) > 0) row.opened(row.listen.album_id)
     }
 }

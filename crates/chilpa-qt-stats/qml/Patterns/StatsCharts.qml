@@ -12,7 +12,6 @@ Flow {
     property var report: ({})
     readonly property int across: Math.max(1, Math.min(2, Math.floor((width + spacing) / (Charts.chartMin + spacing))))
     readonly property real card: (width - (across - 1) * spacing) / across
-    readonly property var days: [I18n.tr("Mon", I18n.rev), I18n.tr("Tue", I18n.rev), I18n.tr("Wed", I18n.rev), I18n.tr("Thu", I18n.rev), I18n.tr("Fri", I18n.rev), I18n.tr("Sat", I18n.rev), I18n.tr("Sun", I18n.rev)]
 
     spacing: Metrics.gap16
 
@@ -35,7 +34,8 @@ Flow {
 
         ColumnBars {
             anchors.fill: parent
-            points: (charts.report.weekdays || []).map((plays, day) => ({ label: charts.days[day], value: plays }))
+            // From the first day of the week, as the language starts it.
+            points: (charts.report.weekdays || []).map(day => ({ label: day.label, value: day.plays }))
         }
     }
     StatsCard {

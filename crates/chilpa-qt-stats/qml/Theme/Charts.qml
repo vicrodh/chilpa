@@ -37,12 +37,20 @@ QtObject {
     // A fact.
     readonly property int factMin: 200
     readonly property int factTall: 96
-    // The history: a row, the day above its rows, the pager's buttons.
+    // The history: a rich row, the day above its rows (lower over compact
+    // rows), its fixed columns and the pager's buttons.
     readonly property int historyRow: 56
     readonly property int historyCover: 40
+    readonly property int historyInset: Metrics.gap12
+    readonly property int historySearch: 260
     readonly property int dayHeader: 44
+    readonly property int dayHeaderCompact: 32
     readonly property int timeColumn: 56
-    readonly property int playedColumn: 92
-    readonly property int qualityColumn: 120
+    readonly property int skippedColumn: 96
+    readonly property int qualityColumn: 80
+    readonly property int perfectColumn: 36
+    // A compact row's title takes at most this much of its column, and its
+    // artist and record the rest.
+    readonly property real historyTitleShare: 0.55
     readonly property int pagerButton: 32
 }

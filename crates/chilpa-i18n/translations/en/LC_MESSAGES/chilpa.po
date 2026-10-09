@@ -408,6 +408,9 @@ msgstr ""
 msgid "BORN IN"
 msgstr ""
 
+msgid "BP"
+msgstr ""
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr ""
 
@@ -868,6 +871,9 @@ msgstr ""
 msgid "Date updated"
 msgstr "Date updated"
 
+msgid "Day"
+msgstr ""
+
 msgid "Days of the week"
 msgstr ""
 
@@ -1081,6 +1087,12 @@ msgstr ""
 msgid "Explore"
 msgstr ""
 
+msgid "Export"
+msgstr ""
+
+msgid "Export listening history"
+msgstr ""
+
 msgid "Extra controls"
 msgstr ""
 
@@ -1249,6 +1261,9 @@ msgstr ""
 msgid "Heard"
 msgstr ""
 
+msgid "Heard {} of {}"
+msgstr ""
+
 msgid "Hi-Res"
 msgstr ""
 
@@ -1322,6 +1337,9 @@ msgid "INFLUENCES"
 msgstr ""
 
 msgid "Icon"
+msgstr ""
+
+msgid "Image saved"
 msgstr ""
 
 msgid "Images"
@@ -1465,6 +1483,9 @@ msgstr ""
 msgid "Latest release"
 msgstr ""
 
+msgid "Length"
+msgstr ""
+
 msgid "Letters"
 msgstr ""
 
@@ -1502,6 +1523,9 @@ msgid "Listening clock"
 msgstr ""
 
 msgid "Listening history"
+msgstr ""
+
+msgid "Listening history (CSV)"
 msgstr ""
 
 msgid "Listening stats"
@@ -1801,7 +1825,13 @@ msgstr ""
 msgid "Next Track"
 msgstr ""
 
+msgid "Next month"
+msgstr ""
+
 msgid "Next page"
+msgstr ""
+
+msgid "No"
 msgstr ""
 
 msgid "No compatible playlists. Create one to get started."
@@ -1832,6 +1862,9 @@ msgid "No grouping"
 msgstr ""
 
 msgid "No label info"
+msgstr ""
+
+msgid "No listens match."
 msgstr ""
 
 msgid "No lyrics"
@@ -2239,6 +2272,9 @@ msgstr ""
 msgid "Previous Track"
 msgstr ""
 
+msgid "Previous month"
+msgstr ""
+
 msgid "Previous page"
 msgstr ""
 
@@ -2551,6 +2587,9 @@ msgstr ""
 msgid "Save"
 msgstr ""
 
+msgid "Save as an image"
+msgstr ""
+
 msgid "Save as playlist"
 msgstr ""
 
@@ -2602,6 +2641,9 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
+msgid "Search listens"
+msgstr ""
+
 msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
 msgstr ""
 
@@ -2642,9 +2684,6 @@ msgid "Searching…"
 msgstr ""
 
 msgid "See all"
-msgstr ""
-
-msgid "See your listening history"
 msgstr ""
 
 msgid "See {} more"
@@ -2942,6 +2981,9 @@ msgstr ""
 msgid "The line being sung stays in view."
 msgstr ""
 
+msgid "The listening history could not be saved"
+msgstr ""
+
 msgid "The lyrics cache could not be opened."
 msgstr ""
 
@@ -3035,6 +3077,9 @@ msgstr ""
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr ""
 
+msgid "This month vs Last month"
+msgstr ""
+
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr ""
 
@@ -3071,6 +3116,15 @@ msgstr ""
 msgid "This update asks for additional access."
 msgstr ""
 
+msgid "This view as an image (PNG)"
+msgstr ""
+
+msgid "This week vs Last week"
+msgstr ""
+
+msgid "This year vs Last year"
+msgstr ""
+
 msgid "Thu"
 msgstr ""
 
@@ -3090,6 +3144,9 @@ msgid "To move to"
 msgstr ""
 
 msgid "Today"
+msgstr ""
+
+msgid "Today vs Yesterday"
 msgstr ""
 
 msgid "Toggle Immersive View"
@@ -3342,6 +3399,9 @@ msgid "Year (newest)"
 msgstr ""
 
 msgid "Year (oldest)"
+msgstr ""
+
+msgid "Yes"
 msgstr ""
 
 msgid "Yesterday"
@@ -4397,6 +4457,9 @@ msgstr ""
 msgid "virtual"
 msgstr ""
 
+msgid "vs {}"
+msgstr ""
+
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr ""
 
@@ -4503,6 +4566,11 @@ msgstr[1] ""
 
 msgid "{} listen"
 msgid_plural "{} listens"
+msgstr[0] ""
+msgstr[1] ""
+
+msgid "{} listen saved"
+msgid_plural "{} listens saved"
 msgstr[0] ""
 msgstr[1] ""
 

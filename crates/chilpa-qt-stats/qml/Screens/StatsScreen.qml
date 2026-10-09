@@ -9,29 +9,66 @@ import "../Theme"
 import "../Patterns"
 
 // Listening stats (borradores/listening-stats-v1-2026-10-09), with
-// Last.fm's weekly report as the model: a week, a month, a year or all of
-// it, the arrows walking to the periods before; the period against the
-// one before it, its artists, records and tracks, when and what it was,
-// and a few facts. The history, listen by listen, is a page of its own.
+// Last.fm's weekly report as the model: the day, the week, the month or
+// the year that holds a chosen date, or all of it, against the one of its
+// kind before; its artists, records and tracks, when and what it was, and
+// a few facts. The history, listen by listen, is a page of its own; the
+// history goes out as CSV and the report as a picture.
 Flickable {
     id: page
 
-    readonly property var periods: ["week", "month", "year", "all"]
-    property string period: periods.indexOf(SettingsModel.kept("ui.stats.period")) >= 0 ? SettingsModel.kept("ui.stats.period") : "week"
-    property int back: 0
-    readonly property var report: JSON.parse(Stats.report(period, back, I18n.rev) || "{}")
+    readonly property var kinds: ["day", "week", "month", "year", "all"]
+    property string kind: kinds.indexOf(SettingsModel.kept("ui.stats.period")) >= 0 ? SettingsModel.kept("ui.stats.period") : "week"
+    // The chosen date; empty is today.
+    property string anchor
+    readonly property var report: JSON.parse(Stats.report(kind, anchor, Qt.locale().firstDayOfWeek, I18n.rev) || "{}")
     readonly property real wide: Math.min(width - 2 * Metrics.contentX, Charts.widest) // derived: padding on both sides
+    // While the report is drawn into a picture: its caption and its ground.
+    property bool picturing: false
 
-    function choose(index) {
-        period = periods[index]
-        back = 0
-        SettingsModel.keep("ui.stats.period", period)
+    function choose(next) {
+        kind = next
+        SettingsModel.keep("ui.stats.period", kind)
+    }
+    // The caption and the ground change the board's size, so the picture
+    // waits for the frame that has laid them out.
+    function picture() {
+        picturing = true
+        shot.armed = true
     }
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
     ScrollBar.vertical: ViewportScrollBar {}
+
+    Connections {
+        target: Stats
+        function onSaved(note) {
+            head.note = note
+            forget.restart()
+        }
+    }
+    Connections {
+        id: shot
+        property bool armed: false
+        target: page.Window.window
+        enabled: armed
+        function onFrameSwapped() {
+            shot.armed = false
+            const to = Stats.picturePath()
+            board.grabToImage(function(result) {
+                page.picturing = false
+                if (result.saveToFile(to))
+                    Stats.savePicture(to, page.report.range || "")
+            })
+        }
+    }
+    Timer {
+        id: forget
+        interval: Motion.toast
+        onTriggered: head.note = ""
+    }
 
     Column {
         id: column
@@ -40,84 +77,72 @@ Flickable {
         width: page.wide
         spacing: Metrics.gap16
 
+        StatsHead {
+            id: head
+            objectName: "statsHead"
+            width: parent.width
+            report: page.report
+            kind: page.kind
+            onKindChosen: (next) => page.choose(next)
+            onDayChosen: (date) => page.anchor = date
+            onHistoryAsked: Navigation.go("listeningHistory", 0)
+            onTableAsked: Stats.exportHistory()
+            onPictureAsked: page.picture()
+        }
+        // What the picture holds: the report, and while it is taken, a
+        // caption over it and the window's ground around it.
         Item {
+            id: board
+            readonly property int pad: page.picturing ? Metrics.gap24 : 0
             width: parent.width
-            height: Metrics.shelfHeader
+            height: content.height + 2 * pad // derived: the ground on both sides
 
-            Text {
-                id: title
-                anchors.verticalCenter: parent.verticalCenter
-                text: I18n.tr("Listening stats", I18n.rev)
-                font.pointSize: Type.title
-                font.weight: Type.bold
-                font.letterSpacing: Type.titleTracking
-                color: Theme.color.textPrimary
+            Rectangle {
+                anchors.fill: parent
+                visible: page.picturing
+                color: Theme.color.surfaceWindow
             }
-            Text {
-                objectName: "statsRange"
-                anchors.left: title.right
-                anchors.leftMargin: Metrics.gap12
-                anchors.right: tools.left
-                anchors.rightMargin: Metrics.gap12
-                anchors.baseline: title.baseline
-                text: page.report.range || ""
-                elide: Text.ElideRight
-                font.pointSize: Type.body
-                color: Theme.color.textSecondary
-            }
-            Row {
-                id: tools
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Metrics.gap8
+            Column {
+                id: content
+                x: board.pad
+                y: board.pad
+                width: board.width - 2 * board.pad // derived: the ground on both sides
+                spacing: Metrics.gap16
 
-                IconButton {
-                    objectName: "statsEarlier"
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: page.period !== "all"
-                    glyph: Icons.chevronLeft
-                    tip: I18n.tr("Earlier", I18n.rev)
-                    onClicked: page.back += 1
+                Column {
+                    visible: page.picturing
+                    spacing: Metrics.gap4
+
+                    Text {
+                        text: I18n.tr("Listening stats", I18n.rev)
+                        font.pointSize: Type.title
+                        font.weight: Type.bold
+                        font.letterSpacing: Type.titleTracking
+                        color: Theme.color.textPrimary
+                    }
+                    Text {
+                        text: [page.report.range, page.kind === "all" ? "" : page.report.comparison].filter(part => part).join(" · ")
+                        font.pointSize: Type.body
+                        color: Theme.color.textSecondary
+                    }
                 }
-                IconButton {
-                    objectName: "statsLater"
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: page.period !== "all"
-                    enabled: page.back > 0
-                    glyph: Icons.chevronRight
-                    tip: I18n.tr("Later", I18n.rev)
-                    onClicked: page.back -= 1
+                StatsHero {
+                    width: parent.width
+                    report: page.report
                 }
-                SegmentedControl {
-                    objectName: "statsPeriod"
-                    anchors.verticalCenter: parent.verticalCenter
-                    options: [{ text: I18n.tr("Week", I18n.rev) }, { text: I18n.tr("Month", I18n.rev) }, { text: I18n.tr("Year", I18n.rev) }, { text: I18n.tr("All time", I18n.rev) }]
-                    current: page.periods.indexOf(page.period)
-                    onActivated: (index) => page.choose(index)
+                StatsTops {
+                    width: parent.width
+                    report: page.report
+                }
+                StatsCharts {
+                    width: parent.width
+                    report: page.report
+                }
+                StatsFacts {
+                    width: parent.width
+                    report: page.report
                 }
             }
-        }
-        StatsHero {
-            width: parent.width
-            report: page.report
-        }
-        StatsTops {
-            width: parent.width
-            report: page.report
-        }
-        StatsCharts {
-            width: parent.width
-            report: page.report
-        }
-        StatsFacts {
-            width: parent.width
-            report: page.report
-        }
-        PillButton {
-            objectName: "openHistory"
-            glyph: Icons.history
-            text: I18n.tr("See your listening history", I18n.rev)
-            onClicked: Navigation.go("listeningHistory", 0)
         }
     }
 }
