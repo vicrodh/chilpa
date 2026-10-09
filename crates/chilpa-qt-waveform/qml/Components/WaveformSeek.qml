@@ -6,8 +6,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// The seek bar as a waveform: a bar every two pixels, how far the track
-// swings there, mirrored about a rail, dense as a QuickLook player's; the bars
+// The seek bar as a waveform: a bar per pixel from the track's downward
+// peak to its upward one there, over a rail, dense as Nulloy's; the bars
 // already played in the accent, the ones the document covers in the
 // secondary text color, the rest as hairlines. It seeks as the thin bar does: a click goes there, a
 // drag follows the pointer and goes where it is let go, with the time
@@ -32,6 +32,8 @@ Item {
 
     readonly property int columns: Math.max(Bars.columnsMin, Math.min(Bars.columnsMax, Math.ceil(width / Bars.pixelsPerColumn)))
     readonly property var values: Waveform.values
+    readonly property var lows: Waveform.lows
+    readonly property color shade: Theme.ambient ? Theme.color.ambientPlayer : Theme.color.surfacePlayer
     readonly property real played: duration > 0 ? Math.min(1, shown / duration) : 0
     readonly property real slot: width / Math.max(1, columns)
     readonly property real barWide: Math.max(Metrics.hairline, Math.floor(slot))
@@ -54,21 +56,33 @@ Item {
     }
     Repeater {
         id: bars
-        model: bar.values.length === bar.columns ? bar.columns : 0
+        model: bar.values.length === bar.columns && bar.lows.length === bar.columns ? bar.columns : 0
         Rectangle {
             id: column
             required property int index
             objectName: "waveformBar"
             readonly property real value: Math.min(1, Math.max(0, bar.values[index]))
+            readonly property real low: Math.min(1, Math.max(0, bar.lows[index]))
             readonly property real reach: Math.min(bar.halfTall, Bars.barLeast / 2 + value * Math.max(0, bar.halfTall - Bars.barLeast / 2)) // derived: the least bar and the rest by the value
+            readonly property real drop: Math.min(bar.halfTall, Bars.barLeast / 2 + low * Math.max(0, bar.halfTall - Bars.barLeast / 2)) // derived: the same, downward
             readonly property bool sung: (index + 1) / bar.columns <= bar.played
             readonly property bool known: index / bar.columns < Waveform.analyzed
             x: bar.slot * index
+            y: bar.height / 2 - reach // derived: from the rail up to the upward peak
             width: bar.barWide
-            height: reach * 2 // derived: mirrored about the rail
-            anchors.verticalCenter: parent.verticalCenter
-            visible: value > 0.0005
+            height: reach + drop // derived: the upward peak and the downward one
+            visible: value > 0.0005 || low > 0.0005
             color: sung ? Theme.color.accent : (known ? Theme.color.textSecondary : Theme.color.strokeHairline)
+        }
+    }
+    // The shade: the surface fading out toward the rail, over the bars.
+    Rectangle {
+        anchors.fill: parent
+        opacity: Bars.shadeOpacity
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: bar.shade }
+            GradientStop { position: 0.5; color: "transparent" }
+            GradientStop { position: 1.0; color: bar.shade }
         }
     }
     // The loop's stretch once it has an end, and a tick at each mark.

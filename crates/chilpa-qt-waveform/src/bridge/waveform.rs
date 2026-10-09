@@ -20,9 +20,11 @@ pub mod qobject {
         #[qproperty(bool, open, READ = open, WRITE = turn, NOTIFY = open_changed)]
         /// How many columns the view has room for; the values follow it.
         #[qproperty(i32, columns, READ = columns, WRITE = fit, NOTIFY = columns_changed)]
-        /// One value per column, 0 to 1, the loudest column at 1; empty
-        /// while there is no document.
+        /// One value per column, 0 to 1, the loudest column of either list
+        /// at 1: the upward swings and the downward ones; empty while there
+        /// is no document.
         #[qproperty(QList_f32, values)]
+        #[qproperty(QList_f32, lows)]
         /// How much of the track the document covers, 0 to 1, and whether
         /// it covers all of it.
         #[qproperty(f64, analyzed)]
@@ -58,15 +60,24 @@ use cxx_qt::CxxQtType as _;
 use cxx_qt_lib::QList;
 use std::pin::Pin;
 
-/// The most columns a view can ask for (the owner, 2026-10-09: 512, two
-/// pixels a bar).
-const COLUMNS_MAX: i32 = 512;
+/// The most columns a view can ask for: one per bin.
+const COLUMNS_MAX: i32 = chilpa_api::seek_waveform::BINS as i32;
+
+fn list_of(values: &[f32]) -> QList<f32> {
+    let mut list = QList::<f32>::default();
+    list.reserve(values.len() as isize);
+    for v in values {
+        list.append(*v);
+    }
+    list
+}
 
 #[derive(Default)]
 pub struct WaveformRust {
     open: bool,
     columns: i32,
     values: QList<f32>,
+    lows: QList<f32>,
     analyzed: f64,
     complete: bool,
     /// The document's revision the values were reduced from.
@@ -114,13 +125,9 @@ impl qobject::Waveform {
             let values = (force || snapshot.revision != seen).then(|| api.seek_waveform_columns(count.max(0) as usize));
             (snapshot, values)
         });
-        if let Some(values) = values {
-            let mut list = QList::<f32>::default();
-            list.reserve(values.len() as isize);
-            for v in values {
-                list.append(v);
-            }
-            self.as_mut().set_values(list);
+        if let Some((up, down)) = values {
+            self.as_mut().set_values(list_of(&up));
+            self.as_mut().set_lows(list_of(&down));
             self.as_mut().rust_mut().seen = snapshot.revision;
         }
         let analyzed = f64::from(snapshot.analyzed) / chilpa_api::seek_waveform::BINS as f64;

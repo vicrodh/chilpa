@@ -42,6 +42,7 @@ TestCase {
         Waveform.analyzed = 0.5
         Waveform.complete = false
         Waveform.values = fill(bar.columns, 0.8)
+        Waveform.lows = fill(bar.columns, 0.4)
         waitForRendering(bar)
     }
 
@@ -69,10 +70,12 @@ TestCase {
         compare(bars[bar.columns - 1].color, Theme.color.strokeHairline, "the rest is not yet")
         verify(bars[1].x > bars[0].x && bars[1].x - bars[0].x <= Bars.pixelsPerColumn + 1, "one slot apart")
         verify(bars[0].height > Bars.barLeast && bars[0].height <= bar.height, "a bar within the height: " + bars[0].height)
+        verify(bar.height / 2 - bars[0].y > bars[0].y + bars[0].height - bar.height / 2, "it swings further up than down")
     }
 
     function test_no_document_draws_no_bars() {
         Waveform.values = []
+        Waveform.lows = []
         waitForRendering(bar)
         let count = 0
         for (let i = 0; i < bar.children.length; ++i)

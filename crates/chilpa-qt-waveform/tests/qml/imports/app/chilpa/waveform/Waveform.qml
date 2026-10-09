@@ -6,6 +6,7 @@ QtObject {
     property bool open: false
     property int columns: 0
     property var values: []
+    property var lows: []
     property real analyzed: 0
     property bool complete: false
     property int refreshes: 0
