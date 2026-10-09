@@ -408,6 +408,9 @@ msgstr "NACIÓ"
 msgid "BORN IN"
 msgstr "NACIÓ EN"
 
+msgid "BP"
+msgstr "BP"
+
 msgid "BP marks an output that takes the samples untouched."
 msgstr "BP marca una salida que recibe las muestras intactas."
 
@@ -868,6 +871,9 @@ msgstr "Fecha de alta"
 msgid "Date updated"
 msgstr "Fecha de actualización"
 
+msgid "Day"
+msgstr "Día"
+
 msgid "Days of the week"
 msgstr "Días de la semana"
 
@@ -1081,6 +1087,12 @@ msgstr ""
 msgid "Explore"
 msgstr "Explorar"
 
+msgid "Export"
+msgstr "Exportar"
+
+msgid "Export listening history"
+msgstr "Exportar el historial de escucha"
+
 msgid "Extra controls"
 msgstr "Controles extra"
 
@@ -1249,6 +1261,9 @@ msgstr "Volumen de hardware"
 msgid "Heard"
 msgstr "Escuchado"
 
+msgid "Heard {} of {}"
+msgstr "Se escuchó {} de {}"
+
 msgid "Hi-Res"
 msgstr "Alta resolución"
 
@@ -1323,6 +1338,9 @@ msgstr "INFLUENCIAS"
 
 msgid "Icon"
 msgstr ""
+
+msgid "Image saved"
+msgstr "Imagen guardada"
 
 msgid "Images"
 msgstr "Imágenes"
@@ -1465,6 +1483,9 @@ msgstr "Pestañas siguientes"
 msgid "Latest release"
 msgstr "Último lanzamiento"
 
+msgid "Length"
+msgstr "Duración"
+
 msgid "Letters"
 msgstr "Letras"
 
@@ -1503,6 +1524,9 @@ msgstr "Reloj de escucha"
 
 msgid "Listening history"
 msgstr "Historial de escucha"
+
+msgid "Listening history (CSV)"
+msgstr "Historial de escucha (CSV)"
 
 msgid "Listening stats"
 msgstr "Estadísticas de escucha"
@@ -1801,8 +1825,14 @@ msgstr "Siguiente"
 msgid "Next Track"
 msgstr "Pista siguiente"
 
+msgid "Next month"
+msgstr "Mes siguiente"
+
 msgid "Next page"
 msgstr "Página siguiente"
+
+msgid "No"
+msgstr "No"
 
 msgid "No compatible playlists. Create one to get started."
 msgstr "No hay playlists compatibles. Crea una para comenzar."
@@ -1833,6 +1863,9 @@ msgstr "Sin agrupar"
 
 msgid "No label info"
 msgstr "Sin datos de sello"
+
+msgid "No listens match."
+msgstr "Ninguna escucha coincide."
 
 msgid "No lyrics"
 msgstr "Sin letra"
@@ -2239,6 +2272,9 @@ msgstr "Anterior"
 msgid "Previous Track"
 msgstr "Pista anterior"
 
+msgid "Previous month"
+msgstr "Mes anterior"
+
 msgid "Previous page"
 msgstr "Página anterior"
 
@@ -2551,6 +2587,9 @@ msgstr "sáb"
 msgid "Save"
 msgstr "Guardar"
 
+msgid "Save as an image"
+msgstr "Guardar como imagen"
+
 msgid "Save as playlist"
 msgstr "Guardar como playlist"
 
@@ -2602,6 +2641,9 @@ msgstr "Buscar"
 msgid "Search folders"
 msgstr "Buscar carpetas"
 
+msgid "Search listens"
+msgstr "Buscar escuchas"
+
 msgid "Search only while the picker is open. Disconnecting stops the receiver and leaves local playback stopped."
 msgstr "Busca solo mientras el selector está abierto. Al desconectar se detiene el receptor y la reproducción local permanece detenida."
 
@@ -2643,9 +2685,6 @@ msgstr "Buscando…"
 
 msgid "See all"
 msgstr "Ver todo"
-
-msgid "See your listening history"
-msgstr "Ver tu historial de escucha"
 
 msgid "See {} more"
 msgid_plural "See {} more"
@@ -2942,6 +2981,9 @@ msgstr "La imagen es demasiado grande"
 msgid "The line being sung stays in view."
 msgstr "La línea que se canta se mantiene a la vista."
 
+msgid "The listening history could not be saved"
+msgstr "No se pudo guardar el historial de escucha"
+
 msgid "The lyrics cache could not be opened."
 msgstr "No se pudo abrir la caché de letras."
 
@@ -3035,6 +3077,9 @@ msgstr "Esta carpeta no tiene pistas."
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
 
+msgid "This month vs Last month"
+msgstr "Este mes vs el mes pasado"
+
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
 
@@ -3071,6 +3116,15 @@ msgstr "Este formato de transcripción no es compatible."
 msgid "This update asks for additional access."
 msgstr "Esta actualización solicita acceso adicional."
 
+msgid "This view as an image (PNG)"
+msgstr "Esta vista como imagen (PNG)"
+
+msgid "This week vs Last week"
+msgstr "Esta semana vs la semana pasada"
+
+msgid "This year vs Last year"
+msgstr "Este año vs el año pasado"
+
 msgid "Thu"
 msgstr "jue"
 
@@ -3091,6 +3145,9 @@ msgstr "Para moverse"
 
 msgid "Today"
 msgstr "Hoy"
+
+msgid "Today vs Yesterday"
+msgstr "Hoy vs ayer"
 
 msgid "Toggle Immersive View"
 msgstr "Mostrar u ocultar el modo inmersivo"
@@ -3343,6 +3400,9 @@ msgstr "Año (más reciente)"
 
 msgid "Year (oldest)"
 msgstr "Año (más antiguo)"
+
+msgid "Yes"
+msgstr "Sí"
 
 msgid "Yesterday"
 msgstr "Ayer"
@@ -4397,6 +4457,9 @@ msgstr "hasta {} bits"
 msgid "virtual"
 msgstr "virtual"
 
+msgid "vs {}"
+msgstr "vs {}"
+
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "lo que se guardó no se pudo anotar en la biblioteca: {}; vuelve a escanear para verlo"
 
@@ -4505,6 +4568,11 @@ msgid "{} listen"
 msgid_plural "{} listens"
 msgstr[0] "{} escucha"
 msgstr[1] "{} escuchas"
+
+msgid "{} listen saved"
+msgid_plural "{} listens saved"
+msgstr[0] "{} escucha guardada"
+msgstr[1] "{} escuchas guardadas"
 
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
