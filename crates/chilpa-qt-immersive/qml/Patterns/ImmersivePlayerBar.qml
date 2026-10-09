@@ -18,6 +18,8 @@ Item {
     id: root
     property real viewportWide: Stage.barWide
     property bool shaders: true
+    // What lies under the bar, for the blur; the view hands its stage in.
+    property Item beneath: null
     signal wakeAsked()
     signal exitAsked()
     implicitWidth: bar.width
@@ -36,12 +38,44 @@ Item {
         layer.enabled: root.shaders
         layer.effect: MultiEffect { blurEnabled: true; blurMax: Stage.blurReach; blur: 0.5 }
     }
+    // The glass: what lies beneath, blurred into the bar's shape, under a
+    // fill of the stage's black at the alpha the owner tunes. Both live
+    // only while the bar shows, so a hidden bar costs nothing.
+    Item {
+        width: bar.width
+        height: bar.height
+        visible: Immersive.barBlur && root.beneath !== null && root.shaders && root.opacity > 0
+        ShaderEffectSource {
+            id: beneath
+            visible: false
+            live: true
+            sourceItem: root.beneath
+            sourceRect: Qt.rect(root.x, root.y, bar.width, bar.height)
+        }
+        Rectangle { id: barMask; anchors.fill: parent; radius: Stage.barRound; visible: false; layer.enabled: true }
+        MultiEffect {
+            anchors.fill: parent
+            source: beneath
+            blurEnabled: true
+            blurMax: Stage.blurReach
+            blur: 1
+            maskEnabled: true
+            maskSource: barMask
+        }
+    }
+    Rectangle {
+        width: bar.width
+        height: bar.height
+        radius: Stage.barRound
+        color: Theme.color.immersiveStage
+        opacity: Immersive.barAlpha
+    }
     Rectangle {
         id: bar
         width: Math.min(root.viewportWide - Stage.barLess, Stage.barWide)
         height: Stage.barTall
         radius: Stage.barRound
-        color: Theme.color.immersiveGlass
+        color: "transparent"
         border.width: Metrics.hairline
         border.color: Theme.color.immersiveGlassEdge
 

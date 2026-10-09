@@ -69,20 +69,6 @@ Item {
     }
     Timer { id: grab; interval: Stage.focusDelay; onTriggered: view.forceActiveFocus() }
 
-    Rectangle { anchors.fill: parent; color: Theme.color.immersiveStage }
-
-    // The cover's atmosphere, drifting while it plays; off under the
-    // scopes, the rings and any scene.
-    Fields.AtmosphereField {
-        anchors.fill: parent
-        visible: view.sceneOff && !(view.focusMode && (view.mode === 7 || view.mode === 8 || view.mode === 9))
-        source: view.atmosphere
-        fallbackSource: Player.art
-        animated: visible && view.playing && Immersive.open
-        dim: Stage.atmosphereDim
-    }
-
-    // Nothing under the view gets a click, a wheel or a hover.
     MouseArea {
         anchors.fill: parent
         acceptedButtons: Qt.AllButtons
@@ -95,21 +81,6 @@ Item {
         onWheel: (wheel) => wheel.accepted = true
     }
 
-    // The chrome hides six seconds after the pointer last moved, unless it
-    // rests on the header, the bar or the card, or the search shows.
-    property bool chromeVisible: true
-    property point lastHover: Qt.point(-1, -1)
-    function overChrome(item) {
-        if (!item.visible)
-            return false
-        const p = item.mapFromItem(view, hover.point.position.x, hover.point.position.y)
-        return p.x >= 0 && p.y >= 0 && p.x <= item.width && p.y <= item.height
-    }
-    readonly property bool pointerInChrome: hover.hovered && (overChrome(header) || overChrome(playerBar) || overChrome(songCard))
-    function wake() {
-        chromeVisible = true
-        hideTimer.restart()
-    }
     HoverHandler {
         id: hover
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
@@ -138,44 +109,79 @@ Item {
         live: Immersive.open && view.sceneOff && ((view.focusMode && view.mode === 4) || (!view.focusMode && (view.splitPanel === 0 || view.splitPanel === 5)))
     }
 
-    AlbumReactivePanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 0; shaders: view.shaders }
-    StaticPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 1; shaders: view.shaders }
-    Loader { anchors.fill: parent; active: view.sceneOff && view.focusMode && view.mode === 2; visible: active; sourceComponent: CoverFlowPanel { shaders: view.shaders } }
-    SpectrumPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 3; shaders: view.shaders }
-    LyricsFocusPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 4; feed: lyricsFeed }
-    Loader { anchors.fill: parent; active: view.sceneOff && view.focusMode && view.mode === 5; visible: active; sourceComponent: QueueTabsPanel { centered: false } }
-    WaveBedPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 6 }
-    ReactiveRingsPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 9 }
-    Loader {
+    // Nothing under the view gets a click, a wheel or a hover.
+    // The chrome hides six seconds after the pointer last moved, unless it
+    // rests on the header, the bar or the card, or the search shows.
+    property bool chromeVisible: true
+    property point lastHover: Qt.point(-1, -1)
+    function overChrome(item) {
+        if (!item.visible)
+            return false
+        const p = item.mapFromItem(view, hover.point.position.x, hover.point.position.y)
+        return p.x >= 0 && p.y >= 0 && p.x <= item.width && p.y <= item.height
+    }
+    readonly property bool pointerInChrome: hover.hovered && (overChrome(header) || overChrome(playerBar) || overChrome(songCard))
+    function wake() {
+        chromeVisible = true
+        hideTimer.restart()
+    }
+    // Everything under the chrome, as one item the bar can blur.
+    Item {
+        id: stage
         anchors.fill: parent
-        active: view.sceneOff && !view.focusMode && (view.splitPanel === 0 || view.splitPanel === 3)
-        visible: active
-        sourceComponent: SplitLayout { shaders: view.shaders; feed: lyricsFeed }
-    }
-    Loader {
-        anchors.fill: parent
-        active: view.sceneOff && !view.focusMode && (view.splitPanel === 4 || view.splitPanel === 5)
-        visible: active
-        sourceComponent: ReactiveSplitPanel { lyricsMode: view.splitPanel === 5; shaders: view.shaders; feed: lyricsFeed }
-    }
+        Rectangle { anchors.fill: parent; color: Theme.color.immersiveStage }
 
-    SongCard {
-        id: songCard
-        anchors.right: parent.right
-        anchors.bottom: parent.bottom
-        anchors.rightMargin: Stage.cardEdge
-        anchors.bottomMargin: Stage.cardEdge
-        shaders: view.shaders
-        visible: (!view.sceneOff || (view.focusMode && (view.mode === 4 || view.mode === 6 || view.mode === 7 || view.mode === 8 || view.mode === 9))) && Player.path !== ""
-    }
+        // The cover's atmosphere, drifting while it plays; off under the
+        // scopes, the rings and any scene.
+        Fields.AtmosphereField {
+            anchors.fill: parent
+            visible: view.sceneOff && !(view.focusMode && (view.mode === 7 || view.mode === 8 || view.mode === 9))
+            source: view.atmosphere
+            fallbackSource: Player.art
+            animated: visible && view.playing && Immersive.open
+            dim: Stage.atmosphereDim
+        }
 
+        AlbumReactivePanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 0; shaders: view.shaders }
+        StaticPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 1; shaders: view.shaders }
+        Loader { anchors.fill: parent; active: view.sceneOff && view.focusMode && view.mode === 2; visible: active; sourceComponent: CoverFlowPanel { shaders: view.shaders } }
+        SpectrumPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 3; shaders: view.shaders }
+        LyricsFocusPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 4; feed: lyricsFeed }
+        Loader { anchors.fill: parent; active: view.sceneOff && view.focusMode && view.mode === 5; visible: active; sourceComponent: QueueTabsPanel { centered: false } }
+        WaveBedPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 6 }
+        ReactiveRingsPanel { anchors.fill: parent; visible: view.sceneOff && view.focusMode && view.mode === 9 }
+        Loader {
+            anchors.fill: parent
+            active: view.sceneOff && !view.focusMode && (view.splitPanel === 0 || view.splitPanel === 3)
+            visible: active
+            sourceComponent: SplitLayout { shaders: view.shaders; feed: lyricsFeed }
+        }
+        Loader {
+            anchors.fill: parent
+            active: view.sceneOff && !view.focusMode && (view.splitPanel === 4 || view.splitPanel === 5)
+            visible: active
+            sourceComponent: ReactiveSplitPanel { lyricsMode: view.splitPanel === 5; shaders: view.shaders; feed: lyricsFeed }
+        }
+
+        SongCard {
+            id: songCard
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            anchors.rightMargin: Stage.cardEdge
+            anchors.bottomMargin: Stage.cardEdge
+            shaders: view.shaders
+            visible: (!view.sceneOff || (view.focusMode && (view.mode === 4 || view.mode === 6 || view.mode === 7 || view.mode === 8 || view.mode === 9))) && Player.path !== ""
+        }
+
+    }
     ImmersivePlayerBar {
         id: playerBar
         objectName: "immersiveBar"
         anchors.horizontalCenter: parent.horizontalCenter
-        y: view.height - Stage.barTall - Stage.barBottom // derived: the bar's height and its margin above the bottom
+        y: view.height - Stage.barTall - Immersive.barBottom // derived: the bar's height and its margin above the bottom
         viewportWide: view.width
         shaders: view.shaders
+        beneath: stage
         opacity: view.chromeVisible ? 1 : 0
         Behavior on opacity { NumberAnimation { duration: Motion.reduced ? 0 : Stage.chromeFade } }
         enabled: view.chromeVisible

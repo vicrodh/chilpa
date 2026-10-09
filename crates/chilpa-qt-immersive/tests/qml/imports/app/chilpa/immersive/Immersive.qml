@@ -11,6 +11,9 @@ QtObject {
     property bool accelerated: true
     property string searchAction: "replace"
     property bool devOpen: false
+    property int barBottom: 16
+    property real barAlpha: 0.8
+    property bool barBlur: false
     property bool markable: true
     property bool favorite: false
     property int likes: 0
