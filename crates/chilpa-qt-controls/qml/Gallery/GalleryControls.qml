@@ -16,5 +16,6 @@ TitledFlow {
     ShortcutsSheet {}
     ShortcutsEditor {}
     SleepTimer {}
+    QuitQuestion {}
     WindowControls { window: Window.window }
 }

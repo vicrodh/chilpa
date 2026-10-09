@@ -13,6 +13,8 @@ import "qrc:/qt/qml/app/chilpa/about/qml/Components"
 // click maximizes it.
 Item {
     id: bar
+    // The menu's Quit, which the window's controls ask about first.
+    signal quitAsked()
 
     // What the system's own controls take of the bar's left, on a Mac.
     property real controlsRoom: 0
@@ -150,12 +152,16 @@ Item {
                     { text: I18n.tr("Library folders", I18n.rev) },
                     { text: I18n.tr("About Chilpa", I18n.rev) },
                     { separator: true },
+                    // Close is the window's (the tray keeps Chilpa, or it asks
+                    // to quit); Quit is the app's, as in QBZ's menu.
+                    { text: I18n.tr("Close", I18n.rev) },
                     { text: I18n.tr("Quit", I18n.rev), hint: "Ctrl+Q" }
                 ]
                 onChosen: (index) => index === 0 ? Navigation.openSection("")
                     : index === 1 ? Navigation.go("libraryFolders", 0)
                     : index === 2 ? about.open()
-                    : Player.quit()
+                    : index === 4 ? bar.Window.window.close()
+                    : bar.quitAsked()
             }
             AboutModal { id: about }
         }

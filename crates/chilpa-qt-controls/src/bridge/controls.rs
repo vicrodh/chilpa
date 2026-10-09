@@ -31,6 +31,12 @@ pub mod qobject {
         /// Whether closing the window should hide it to the tray instead.
         #[qinvokable]
         fn closes_to_tray(self: &Controls) -> bool;
+        /// Whether quitting asks first.
+        #[qinvokable]
+        fn confirms_quit(self: &Controls) -> bool;
+        /// The question's "Don't ask again".
+        #[qinvokable]
+        fn stop_confirming_quit(self: &Controls);
         /// The tray's menu, in the language chosen now.
         #[qinvokable]
         fn relabel_tray(self: &Controls);
@@ -70,6 +76,14 @@ impl qobject::Controls {
     pub fn clear_loop(mut self: Pin<&mut Self>) {
         app::with(|api| api.ab_clear());
         self.as_mut().refresh();
+    }
+
+    pub fn confirms_quit(&self) -> bool {
+        app::with(|api| api.confirms_quit())
+    }
+
+    pub fn stop_confirming_quit(&self) {
+        app::with(|api| api.stop_confirming_quit())
     }
 
     pub fn closes_to_tray(&self) -> bool {

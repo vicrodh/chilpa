@@ -69,6 +69,7 @@ Window {
         x: Metrics.spaceWindow
         width: window.width - Metrics.spaceWindow * 2 // derived: a margin on each side
         controlsRoom: systemControls.room
+        onQuitAsked: driving.requestQuit()
     }
 
     SystemControls {

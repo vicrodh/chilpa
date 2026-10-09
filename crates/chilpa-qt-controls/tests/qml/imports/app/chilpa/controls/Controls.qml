@@ -15,4 +15,10 @@ QtObject {
     property int relabeled: 0
     function closesToTray() { return trayClose }
     function relabelTray() { relabeled++ }
+    // Whether quitting asks first, as a test states it, and how often the
+    // question's "Don't ask again" was taken.
+    property bool askQuit: false
+    property int stoppedAsking: 0
+    function confirmsQuit() { return askQuit }
+    function stopConfirmingQuit() { askQuit = false; stoppedAsking++ }
 }

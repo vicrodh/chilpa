@@ -34,6 +34,8 @@ TestCase {
             made.destroy()
         made = null
         Controls.trayClose = false
+        Controls.askQuit = false
+        Controls.stoppedAsking = 0
         other.hide()
         other.width = 700
         other.height = 500
@@ -124,6 +126,47 @@ TestCase {
         compare(asked, 1, "the mini player was asked to close the app")
         verify(made.quitting, "and the close that follows is a quit")
         verify(!other.visible, "the window itself was left alone")
+    }
+
+    // Quitting asks first, as QBZ's does: the window's close when there is
+    // no tray to hide to, the menu's Quit and the tray's. Cancel keeps it.
+    function test_quitting_asks_first_and_cancel_keeps_the_window() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        other.close()
+        compare(test.accepted, false, "the close waits for the answer")
+        const keep = findChild(made, "keepOpen")
+        tryVerify(() => keep && keep.visible)
+        mouseClick(keep)
+        verify(other.visible, "Cancel keeps Chilpa open")
+        verify(!made.quitting)
+    }
+
+    function test_quit_answered_closes_and_can_stop_asking() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        Player.windowAsked(3)
+        const check = findChild(made, "stopAskingQuit")
+        const quit = findChild(made, "quitNow")
+        tryVerify(() => quit && quit.visible, 1000, "the tray's Quit asks")
+        check.checked = true
+        test.accepted = null
+        mouseClick(quit)
+        compare(test.accepted, true, "the window closed")
+        compare(Controls.stoppedAsking, 1, "and it will not ask again")
+    }
+
+    function test_the_desktops_media_controls_quit_without_asking() {
+        open(0, 0, false)
+        Controls.askQuit = true
+        other.closing.connect(function (close) { test.accepted = close.accepted })
+        test.accepted = null
+        Player.windowAsked(1)
+        compare(test.accepted, true)
+        verify(!findChild(made, "quitNow").visible)
     }
 
     // The tray icon's click shows a hidden window and hides one in sight.
