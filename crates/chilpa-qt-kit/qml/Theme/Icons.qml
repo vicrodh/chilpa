@@ -45,6 +45,7 @@ QtObject {
     readonly property string disc: "\uea90"
     readonly property string dots: "\uea95"
     readonly property string dotsVertical: "\uea94"
+    readonly property string download: "\uea96"
     readonly property string externalLink: "\uea99"
     readonly property string eye: "\uea9a"
     readonly property string filter: "\ueaa5"
