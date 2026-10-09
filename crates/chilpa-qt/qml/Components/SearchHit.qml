@@ -83,17 +83,12 @@ Item {
         color: Theme.color.accent
     }
 
-    SourceIcon {
-        anchors.right: tail.left; anchors.rightMargin: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter
-        sourceInfo: ({icon: hit.sourceIcon, label: hit.sourceName})
-        visible: hit.sourceName !== ""
-    }
     Column {
         visible: !hit.header
         anchors.left: cover.right
         anchors.leftMargin: hit.best ? Metrics.gap12 : Metrics.gap10
         anchors.right: tail.left
-        anchors.rightMargin: Metrics.gap8 + (hit.sourceName ? Metrics.iconSm + Metrics.gap6 : 0)
+        anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
@@ -120,13 +115,20 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap8
         anchors.verticalCenter: parent.verticalCenter
-        width: more.width + Metrics.gap6 + (hit.best ? Metrics.button32 : time.implicitWidth)
+        // From the right: the menu, the source, the time (the owner, 2026-10-09).
+        width: more.width + Metrics.gap6 + (source.visible ? source.width + Metrics.gap6 : 0) + (hit.best ? Metrics.button32 : time.implicitWidth) // derived: what the tail holds
         height: parent.height
         z: 1
 
+        SourceIcon {
+            id: source
+            anchors.right: more.left; anchors.rightMargin: Metrics.gap6; anchors.verticalCenter: parent.verticalCenter
+            sourceInfo: ({icon: hit.sourceIcon, label: hit.sourceName})
+            visible: hit.sourceName !== ""
+        }
         Text {
             id: time
-            anchors.right: more.left
+            anchors.right: source.visible ? source.left : more.left
             anchors.rightMargin: Metrics.gap6
             anchors.verticalCenter: parent.verticalCenter
             visible: !hit.best && !hit.header && !hit.link
@@ -136,7 +138,7 @@ Item {
             color: Theme.color.textTertiary
         }
         IconButton {
-            anchors.right: more.left
+            anchors.right: source.visible ? source.left : more.left
             anchors.rightMargin: Metrics.gap6
             anchors.verticalCenter: parent.verticalCenter
             visible: hit.best
