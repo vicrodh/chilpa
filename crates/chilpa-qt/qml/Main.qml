@@ -8,6 +8,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Patterns" as Driving
 import "qrc:/qt/qml/app/chilpa/ambient/qml/Patterns" as Backdrop
 import "qrc:/qt/qml/app/chilpa/mini/qml/Screens" as Mini
+import "qrc:/qt/qml/app/chilpa/immersive/qml/Screens" as Overlay
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "Patterns"
@@ -140,6 +141,7 @@ Window {
 
     Driving.WindowControls { id: driving; window: window }
     Mini.MiniHost { window: window; controls: driving }
+    Overlay.ImmersiveView { anchors.fill: parent; z: 6; window: window; controls: driving }
 
     // The folders object watches the scans Settings starts, so it exists from
     // the start and not from the first time its page opens.
