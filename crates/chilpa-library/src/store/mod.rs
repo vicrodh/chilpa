@@ -287,6 +287,26 @@ impl Library {
         tx.finish()
     }
 
+    /// Who wrote a track's music, each apart, replacing what it had: a
+    /// value with several names in it is split at ";" and "/", never at a
+    /// comma, which joins one person's names as often as it separates two
+    /// people. Inside somebody else's transaction, theirs makes it atomic.
+    pub fn set_track_composers(&self, track_id: i64, composers: &[String]) -> rusqlite::Result<()> {
+        let tx = self.own_transaction()?;
+        tx.execute("DELETE FROM track_composers WHERE track_id = ?1", params![track_id])?;
+        {
+            let mut insert = tx.prepare("INSERT OR IGNORE INTO composers (name) VALUES (?1)")?;
+            let mut find = tx.prepare("SELECT id FROM composers WHERE name = ?1")?;
+            let mut link = tx.prepare("INSERT OR IGNORE INTO track_composers (track_id, composer_id) VALUES (?1, ?2)")?;
+            for name in split_composers(composers) {
+                insert.execute(params![name])?;
+                let id: i64 = find.query_row(params![name], |r| r.get(0))?;
+                link.execute(params![track_id, id])?;
+            }
+        }
+        tx.finish()
+    }
+
     /// Files again the genres stored as an earlier reading left them
     /// ("Rock; Blues", "Pop, Rock", a catalog's page pasted whole), one
     /// genre each as `split_genres` reads them now, and moves their tracks
@@ -766,8 +786,41 @@ mod repair_tests {
     }
 }
 
+/// Composers, each once, from values that may hold several names: split at
+/// ";", "/" and line breaks, and kept apart at commas.
+pub fn split_composers(values: &[String]) -> Vec<String> {
+    let mut out: Vec<String> = Vec::new();
+    for value in values {
+        for name in value.split([';', '/', '\0', '\n', '\r']) {
+            let name = name.trim();
+            if !name.is_empty() && !out.iter().any(|n| n.eq_ignore_ascii_case(name)) {
+                out.push(name.to_string());
+            }
+        }
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn composers_are_split_at_semicolons_and_slashes_and_kept_at_commas() {
+        let said = vec!["Lennon, McCartney; Martin".to_string(), "Bach / bach".to_string()];
+        assert_eq!(split_composers(&said), ["Lennon, McCartney", "Martin", "Bach"]);
+    }
+
+    #[test]
+    fn a_track_s_composers_are_replaced_not_added_to() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db.execute("INSERT INTO tracks (id, source_id, external_id, title, added_at) VALUES (1, ?1, '/a.flac', 'A', 1)", params![source]).unwrap();
+        lib.set_track_composers(1, &["Bach; Händel".to_string()]).unwrap();
+        lib.set_track_composers(1, &["Bach".to_string()]).unwrap();
+        let names: Vec<String> = lib.db.prepare("SELECT c.name FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = 1").unwrap()
+            .query_map([], |r| r.get(0)).unwrap().collect::<Result<_, _>>().unwrap();
+        assert_eq!(names, ["Bach"]);
+    }
+
     use super::*;
     use fixtures::*;
 

@@ -23,6 +23,7 @@ pub struct TrackEdit {
     pub disc_number: Put<Option<u16>>,
     pub recording_mbid: Put<Option<String>>,
     pub genres: Put<Vec<String>>,
+    pub composers: Put<Vec<String>>,
 }
 
 impl TrackEdit {
@@ -36,6 +37,7 @@ impl TrackEdit {
             disc_number: Put::Keep,
             recording_mbid: Put::Keep,
             genres: Put::Keep,
+            composers: Put::Keep,
         }
     }
 }
@@ -48,6 +50,8 @@ pub struct AlbumEdit {
     pub title: String,
     pub album_artist: String,
     pub year: Put<Option<i32>>,
+    /// The label every track the edit reached is on; `None` clears it.
+    pub label: Put<Option<String>>,
     /// Where its cover is, on disk.
     pub artwork: Put<String>,
     /// The tracks the edit reached. A track of the record that is not here
@@ -211,6 +215,9 @@ impl Library {
 
         for track in &edit.tracks {
             tx.execute("UPDATE tracks SET album_title = ?2 WHERE id = ?1", params![track.id, title])?;
+            if let Put::Set(label) = &edit.label {
+                tx.execute("UPDATE tracks SET label = ?2 WHERE id = ?1", params![track.id, label])?;
+            }
             if artist != old_artist {
                 tx.execute("UPDATE tracks SET album_credit = ?2 WHERE id = ?1", params![track.id, artist])?;
             }
@@ -238,6 +245,9 @@ impl Library {
             if let Put::Set(genres) = &track.genres {
                 // Inside this transaction it takes no other of its own.
                 self.set_track_genres(track.id, genres)?;
+            }
+            if let Put::Set(composers) = &track.composers {
+                self.set_track_composers(track.id, composers)?;
             }
         }
 
@@ -299,6 +309,7 @@ mod tests {
             title: title.to_string(),
             album_artist: "Someone".to_string(),
             year: Put::Keep,
+            label: Put::Keep,
             artwork: Put::Keep,
             tracks: tracks.iter().map(|id| TrackEdit::none(*id)).collect(),
         }

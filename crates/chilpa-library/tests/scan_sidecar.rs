@@ -334,6 +334,7 @@ fn a_scan_after_an_edit_changes_nothing() {
         title: "Sidecar album".into(),
         album_artist: "Sidecar artist".into(),
         year: Put::Keep,
+        label: Put::Keep,
         artwork: Put::Keep,
         tracks: vec![first, second],
     })

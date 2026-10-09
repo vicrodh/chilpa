@@ -489,6 +489,7 @@ impl Library {
             rows.collect::<rusqlite::Result<_>>()?
         };
         tx.execute(&format!("DELETE FROM track_genres WHERE track_id IN ({tracks_of})"), params![source_id])?;
+        tx.execute(&format!("DELETE FROM track_composers WHERE track_id IN ({tracks_of})"), params![source_id])?;
         // A genre only its tracks had leaves with them.
         {
             let mut delete = tx.prepare("DELETE FROM genres WHERE id = ?1 AND NOT EXISTS (SELECT 1 FROM track_genres WHERE genre_id = ?1)")?;

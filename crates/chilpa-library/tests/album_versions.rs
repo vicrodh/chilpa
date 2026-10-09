@@ -54,16 +54,16 @@ fn header_search_all_means_only_matching_albums_and_tracks() {
         track(&lib, id, id, source, &format!("/v{id}/1.flac"), 16, 44100);
     }
     let mut filter = Filter::default();
-    filter.queries[3] = "load".into();
+    filter.queries[5] = "load".into();
     let found = lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap();
     assert_eq!(found.totals.albums, 3);
     assert_eq!(found.totals.tracks, 3);
     assert!(!found.ids.contains(&4));
-    filter.choose(3, &[]);
+    filter.choose(5, &[]);
     assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().totals.albums, 3);
-    filter.queries[3] = "nothing matches".into();
+    filter.queries[5] = "nothing matches".into();
     assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().totals.tracks, 0);
-    filter.queries[3].clear();
+    filter.queries[5].clear();
     assert_eq!(lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap().totals.albums, 4);
 }
 
@@ -167,7 +167,7 @@ fn inspect_a_disposable_library_copy() {
     }
     for artist in ["Claire", "Megumi Hayashibara", "Amano & Kosei", "林原めぐみ"] {
         let mut filter = Filter::default();
-        filter.queries[2] = artist.into();
+        filter.queries[4] = artist.into();
         let started = std::time::Instant::now();
         let snapshot = lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap();
         eprintln!("member {artist}: {} albums, {} tracks, {:?}", snapshot.album_ids.len(), snapshot.ids.len(), started.elapsed());
@@ -188,7 +188,7 @@ fn inspect_a_disposable_library_copy() {
     }
     for query in ["coda", "load", "a hard day's night"] {
         let mut filter = Filter::default();
-        filter.queries[3] = query.into();
+        filter.queries[5] = query.into();
         let snapshot = lib.grouped_snapshot(&filter, TrackOrder::Album).unwrap();
         eprintln!("{query}: {:?}", snapshot.totals);
         assert_eq!(snapshot.totals.albums, if query == "load" { 3 } else { 1 });
