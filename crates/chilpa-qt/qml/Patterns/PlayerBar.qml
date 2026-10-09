@@ -6,6 +6,7 @@ import app.chilpa.ambient
 import app.chilpa.controls
 import app.chilpa.mini
 import app.chilpa.immersive
+import app.chilpa.waveform
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -32,7 +33,9 @@ Item {
 
     CastPicker { id: castPicker }
     Timer { interval: Motion.refresh; repeat: true; running: true; triggeredOnStart: true; onTriggered: Cast.refresh() }
-    implicitHeight: Metrics.playerHeight
+    // Standing tall with the waveform seek under the texts (the owner, 2026-10-08 night).
+    readonly property bool tall: Waveform.open
+    implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
 
     // The pointer is over the bar: it does not step away from under it.
     readonly property bool pointed: area.containsMouse
@@ -236,20 +239,18 @@ Item {
             checked: SettingsModel.queueOpen && !bar.panelAside
             onClicked: bar.panelAside ? bar.reveal("queue") : SettingsModel.queueOpen = !SettingsModel.queueOpen
         }
-        // A toggle that only flips its caret for now: what it unfolds is
-        // the owner's to say (2026-10-08 night).
+        // The caret: up, the bar stands tall with the waveform seek.
         IconButton {
-            id: unfold
             objectName: "playerUnfold"
-            property bool up: false
-            tip: I18n.tr("More", I18n.rev)
-            glyph: up ? Icons.chevronDown : Icons.chevronUp
-            onClicked: up = !up
+            tip: Waveform.open ? I18n.tr("Plain seek bar", I18n.rev) : I18n.tr("Waveform", I18n.rev)
+            glyph: Waveform.open ? Icons.chevronDown : Icons.chevronUp
+            onClicked: Waveform.open = !Waveform.open
         }
     }
 
     PlayerLcd {
         id: lcd
+        tall: bar.tall
         anchors.left: transport.right
         anchors.leftMargin: Metrics.gap10
         anchors.right: actions.left
