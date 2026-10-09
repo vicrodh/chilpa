@@ -102,7 +102,7 @@ mod tests {
             assert_eq!(lib.album_ids_matching(AlbumSort::Title, artist).unwrap(), [1]);
             assert_eq!(lib.find(artist, 20).unwrap().albums, [1]);
             let mut typed = Filter::default();
-            typed.queries[2] = artist.into();
+            typed.queries[4] = artist.into();
             assert_eq!(lib.grouped_snapshot(&typed, TrackOrder::Album).unwrap().ids.len(), 2);
         }
         lib.set_group_album_versions(false).unwrap();

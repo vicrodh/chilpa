@@ -21,11 +21,12 @@ use crate::store::Library;
 use rusqlite::types::ToSql;
 use rusqlite::params_from_iter;
 
-/// What the four columns have chosen. `None` is "All".
+/// What the six columns have chosen: year, genre, label, composer,
+/// artist and record. `None` is "All".
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
     /// Header searches participate in the result, even with All selected.
-    pub queries: [String; 4],
+    pub queries: [String; 6],
     pub year: Option<i32>,
     pub genre: Option<String>,
     /// An album credit or any artist contributing to the album.
@@ -35,6 +36,8 @@ pub struct Filter {
     /// callers that open one artist or album directly.
     pub years: Vec<i32>,
     pub genres: Vec<String>,
+    pub labels: Vec<String>,
+    pub composers: Vec<String>,
     pub artists: Vec<String>,
     pub albums: Vec<i64>,
     /// Source keys are `provider:instance`; exclusions keep empty as "all".
@@ -59,12 +62,16 @@ impl Filter {
         match at {
             0 => { self.year = None; self.years = keys.iter().filter_map(|key| key.parse().ok()).collect(); }
             1 => { self.genre = None; self.genres = keys.to_vec(); }
-            2 => { self.artist = None; self.artists = keys.to_vec(); }
+            2 => self.labels = keys.to_vec(),
+            3 => self.composers = keys.to_vec(),
+            4 => { self.artist = None; self.artists = keys.to_vec(); }
             _ => { self.album = None; self.albums = keys.iter().filter_map(|key| key.parse().ok()).collect(); }
         }
         if at < 1 { self.genre = None; self.genres.clear(); }
-        if at < 2 { self.artist = None; self.artists.clear(); }
-        if at < 3 { self.album = None; self.albums.clear(); }
+        if at < 2 { self.labels.clear(); }
+        if at < 3 { self.composers.clear(); }
+        if at < 4 { self.artist = None; self.artists.clear(); }
+        if at < 5 { self.album = None; self.albums.clear(); }
     }
 
     pub fn toggle_extra(&mut self, kind: &str, key: &str) {
@@ -176,6 +183,8 @@ pub struct BrowseTrack {
     /// The codec the file's source says it is, for a track whose name has no
     /// extension: a server's.
     pub codec: Option<String>,
+    /// Who wrote it, joined with commas; empty when nobody is named.
+    pub composers: String,
 }
 
 /// One entry of a facet column: what it is called, how many albums it
@@ -248,7 +257,8 @@ pub struct Snapshot {
 
 const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
-            COALESCE(r.plays, 0) AS plays, a.artwork_path, (t.present = 1 AND t.reachable = 1), t.codec";
+            COALESCE(r.plays, 0) AS plays, a.artwork_path, (t.present = 1 AND t.reachable = 1), t.codec,
+            (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id)";
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -267,6 +277,7 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         artwork_path: r.get(12)?,
         available: r.get::<_, i64>(13)? == 1,
         codec: r.get(14)?,
+        composers: r.get::<_, Option<String>>(15)?.unwrap_or_default(),
     })
 }
 
@@ -289,7 +300,9 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
         sql.push_str(match column {
             0 => " AND CAST(a.year AS TEXT) LIKE ? ESCAPE '\\'",
             1 => " AND EXISTS (SELECT 1 FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE tq.track_id = t.id AND gq.name LIKE ? ESCAPE '\\')",
-            2 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
+            2 => " AND t.label LIKE ? ESCAPE '\\'",
+            3 => " AND EXISTS (SELECT 1 FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cq.track_id = t.id AND cc.name LIKE ? ESCAPE '\\')",
+            4 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
                 WHERE artist LIKE ? ESCAPE '\\')",
             _ => " AND a.title LIKE ? ESCAPE '\\'",
         });
@@ -307,6 +320,14 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     if !genres.is_empty() {
         sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_genres tg JOIN genres g ON g.id = tg.genre_id WHERE tg.track_id = t.id AND g.name IN ({}))", marks(genres.len())));
         args.extend(genres.into_iter().map(|v| Box::new(v) as Box<dyn ToSql>));
+    }
+    if !f.labels.is_empty() {
+        sql.push_str(&format!(" AND t.label COLLATE NOCASE IN ({})", marks(f.labels.len())));
+        args.extend(f.labels.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
+    }
+    if !f.composers.is_empty() {
+        sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_composers tcf JOIN composers cf ON cf.id = tcf.composer_id WHERE tcf.track_id = t.id AND cf.name IN ({}))", marks(f.composers.len())));
+        args.extend(f.composers.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
     }
     let mut artists = f.artists.clone();
     if let Some(artist) = f.artist.as_ref().filter(|artist| !artists.iter().any(|v| v.eq_ignore_ascii_case(artist))) { artists.push(artist.clone()); }
@@ -415,6 +436,8 @@ impl Library {
         left.queries[1..].fill(String::new());
         left.genre = None;
         left.genres.clear();
+        left.labels.clear();
+        left.composers.clear();
         left.artist = None;
         left.artists.clear();
         left.album = None;
@@ -429,10 +452,39 @@ impl Library {
         self.named_facet(&sql, args)
     }
 
-    /// Album credits and contributing artists the year and genre leave.
+    /// The labels the year and genre leave, by name.
+    pub fn facet_labels(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut left = f.clone();
+        left.choose(2, &[]);
+        left.queries[2..].fill(String::new());
+        let (filter, args) = clause(&left);
+        let sql = format!(
+            "SELECT min(t.label), count(DISTINCT a.id) {FROM}
+             {filter} AND t.label IS NOT NULL AND t.label <> ''
+             GROUP BY t.label COLLATE NOCASE ORDER BY 1 COLLATE NOCASE"
+        );
+        self.named_facet(&sql, args)
+    }
+
+    /// The composers the year, genre and label leave, by name.
+    pub fn facet_composers(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut left = f.clone();
+        left.choose(3, &[]);
+        left.queries[3..].fill(String::new());
+        let (filter, args) = clause(&left);
+        let sql = format!(
+            "SELECT c.name, count(DISTINCT a.id) {FROM}
+             JOIN track_composers tc ON tc.track_id = t.id
+             JOIN composers c ON c.id = tc.composer_id
+             {filter} GROUP BY c.name ORDER BY c.name COLLATE NOCASE"
+        );
+        self.named_facet(&sql, args)
+    }
+
+    /// Album credits and contributing artists the columns to their left leave.
     pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
-        left.queries[2..].fill(String::new());
+        left.queries[4..].fill(String::new());
         left.artist = None;
         left.artists.clear();
         left.album = None;
@@ -453,7 +505,7 @@ impl Library {
     /// The albums the other three leave, in shelf order, with their year.
     pub fn facet_albums(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = Filter { album: None, albums: Vec::new(), ..f.clone() };
-        left.queries[3].clear();
+        left.queries[5].clear();
         let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
@@ -663,6 +715,20 @@ impl Library {
     }
 
     /// The genre most of an album's tracks carry, if any carries one.
+    /// The label most of a record's tracks name, if any does.
+    pub fn album_label(&self, album_id: i64) -> rusqlite::Result<Option<String>> {
+        use rusqlite::OptionalExtension;
+        self.db
+            .query_row(
+                "SELECT min(label) FROM tracks
+                 WHERE album_id = ?1 AND present = 1 AND label IS NOT NULL AND label <> ''
+                 GROUP BY label COLLATE NOCASE ORDER BY count(*) DESC, 1 LIMIT 1",
+                [album_id],
+                |r| r.get(0),
+            )
+            .optional()
+    }
+
     pub fn album_genre(&self, album_id: i64) -> rusqlite::Result<Option<String>> {
         use rusqlite::OptionalExtension;
         self.db

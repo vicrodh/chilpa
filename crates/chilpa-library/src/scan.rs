@@ -618,14 +618,15 @@ fn save_track(
         "INSERT INTO tracks
            (source_id, external_id, title, artist, album_id, track_number, disc_number,
             duration_ms, sample_rate_hz, bit_depth, channels, isrc, recording_mbid,
-            present, added_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 1, ?14)
+            present, added_at, label)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 1, ?14, ?15)
          ON CONFLICT(source_id, external_id) DO UPDATE SET
            title = excluded.title, artist = excluded.artist, album_id = excluded.album_id,
            track_number = excluded.track_number, disc_number = excluded.disc_number,
            duration_ms = excluded.duration_ms, sample_rate_hz = excluded.sample_rate_hz,
            bit_depth = excluded.bit_depth, channels = excluded.channels,
-           isrc = excluded.isrc, recording_mbid = excluded.recording_mbid, present = 1",
+           isrc = excluded.isrc, recording_mbid = excluded.recording_mbid, present = 1,
+           label = excluded.label",
         params![
             source,
             external_id,
@@ -640,7 +641,8 @@ fn save_track(
             info.and_then(|i| i.channels),
             tags.isrc,
             tags.musicbrainz_recording_id,
-            now
+            now,
+            tags.label
         ],
     )?;
     let track_id: i64 = lib.db.query_row(
@@ -657,6 +659,7 @@ fn save_track(
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;
+    lib.set_track_composers(track_id, &tags.composers)?;
     Ok((track_id, from_folder))
 }
 

@@ -10,7 +10,7 @@ pub const FORMAT: &str = "chilpa-sidecar";
 pub const VERSION: u32 = 1;
 
 /// An album's fields, by the names the editor gives them, in its order.
-pub const ALBUM_FIELDS: [&str; 11] = [
+pub const ALBUM_FIELDS: [&str; 12] = [
     "title",
     "album_artist",
     "album_artists",
@@ -18,6 +18,7 @@ pub const ALBUM_FIELDS: [&str; 11] = [
     "date",
     "genres",
     "catalog_number",
+    "label",
     "musicbrainz_release_id",
     "musicbrainz_release_group_id",
     "musicbrainz_album_artist_ids",
@@ -241,6 +242,7 @@ pub struct Album {
     pub date: Override<String>,
     pub genres: Override<Vec<String>>,
     pub catalog_number: Override<String>,
+    pub label: Override<String>,
     pub musicbrainz_release_id: Override<String>,
     pub musicbrainz_release_group_id: Override<String>,
     pub musicbrainz_album_artist_ids: Override<Vec<String>>,
@@ -252,11 +254,12 @@ pub struct Album {
 }
 
 impl Album {
-    const TEXTS: [&'static str; 8] = [
+    const TEXTS: [&'static str; 9] = [
         "title",
         "album_artist",
         "date",
         "catalog_number",
+        "label",
         "musicbrainz_release_id",
         "musicbrainz_release_group_id",
         "discogs_release_id",
@@ -270,6 +273,7 @@ impl Album {
             "album_artist" => &self.album_artist,
             "date" => &self.date,
             "catalog_number" => &self.catalog_number,
+            "label" => &self.label,
             "musicbrainz_release_id" => &self.musicbrainz_release_id,
             "musicbrainz_release_group_id" => &self.musicbrainz_release_group_id,
             "discogs_release_id" => &self.discogs_release_id,
@@ -284,6 +288,7 @@ impl Album {
             "album_artist" => &mut self.album_artist,
             "date" => &mut self.date,
             "catalog_number" => &mut self.catalog_number,
+            "label" => &mut self.label,
             "musicbrainz_release_id" => &mut self.musicbrainz_release_id,
             "musicbrainz_release_group_id" => &mut self.musicbrainz_release_group_id,
             "discogs_release_id" => &mut self.discogs_release_id,

@@ -80,3 +80,27 @@ CREATE TABLE external_ratings (
     PRIMARY KEY (source, kind, external_id)
 );
 "#;
+
+/// From 32 to 33: who wrote each track and the label it came out on, for
+/// the album page and the library's columns. Composers go in their own
+/// table, as genres do: a track has several. Every file is read again at
+/// the next scan, since nothing read so far kept either.
+pub(super) const MIGRATION_V33: &str = r#"
+CREATE TABLE composers (
+    id   INTEGER PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+
+CREATE TABLE track_composers (
+    track_id    INTEGER NOT NULL REFERENCES tracks(id),
+    composer_id INTEGER NOT NULL REFERENCES composers(id),
+    PRIMARY KEY (track_id, composer_id)
+);
+
+CREATE INDEX track_composers_composer ON track_composers(composer_id);
+
+ALTER TABLE tracks ADD COLUMN label TEXT;
+CREATE INDEX tracks_label ON tracks(label COLLATE NOCASE) WHERE label IS NOT NULL;
+
+UPDATE tracks SET release_evidence_read = 0;
+"#;
