@@ -29,8 +29,9 @@ Column {
     TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
     TrackListModel { id: fullTracks; kind: tracks.kind; key: tracks.key; filterRev: Library.remoteRev + Library.remoteArtRev }
     SectionHeader {
+        objectName: "shelfHeader"
         width: parent.width; title: shelf.section.title || ""
-        link: shelf.wrap || shelf.modelKind !== "source" ? "" : I18n.tr("See all", I18n.rev)
+        link: shelf.wrap || shelf.modelKind !== "source" || !shelf.section.more || !shelf.section.more_key ? "" : I18n.tr("See all", I18n.rev)
         onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
