@@ -256,6 +256,9 @@ msgstr "Todas las temporadas"
 msgid "All sources"
 msgstr ""
 
+msgid "All time"
+msgstr "Todo"
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
 
@@ -426,6 +429,9 @@ msgstr "Entre pistas"
 msgid "Bit perfect"
 msgstr "Bit perfect"
 
+msgid "Bit-perfect"
+msgstr "Bit-perfect"
+
 msgid "Blurred art"
 msgstr "Portada difuminada"
 
@@ -449,6 +455,14 @@ msgstr "Información del build"
 
 msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
 msgstr "Hecho con Rust y Qt, y movido por Symphonia y Lofty. Gracias a MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide e Inter."
+
+msgid "Busiest day"
+msgstr "El día con más escuchas"
+
+msgid "Busiest day, {} play"
+msgid_plural "Busiest day, {} plays"
+msgstr[0] "El día con más escuchas, {} reproducción"
+msgstr[1] "El día con más escuchas, {} reproducciones"
 
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr "Botones para ir diez segundos atrás o adelante, y el bucle A-B."
@@ -854,8 +868,14 @@ msgstr "Fecha de alta"
 msgid "Date updated"
 msgstr "Fecha de actualización"
 
+msgid "Days of the week"
+msgstr "Días de la semana"
+
 msgid "Dec"
 msgstr "diciembre"
+
+msgid "Decades"
+msgstr "Décadas"
 
 msgid "Default"
 msgstr "Predeterminado"
@@ -991,6 +1011,9 @@ msgstr "Cada archivo se copia, la copia se escribe y se vuelve a leer, y solo en
 
 msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 msgstr "Cada destino seleccionado crea su propia playlist. Las playlists mixtas se guardan en Chilpa y pueden contener pistas de cualquier fuente conectada."
+
+msgid "Earlier"
+msgstr "Antes"
 
 msgid "Earlier tabs"
 msgstr "Pestañas anteriores"
@@ -1153,6 +1176,9 @@ msgstr "Adelante 10 segundos"
 
 msgid "French"
 msgstr "Francés"
+
+msgid "Fri"
+msgstr "vie"
 
 msgid "From same artist"
 msgstr "Del mismo artista"
@@ -1430,6 +1456,9 @@ msgstr ""
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
 
+msgid "Later"
+msgstr "Después"
+
 msgid "Later tabs"
 msgstr "Pestañas siguientes"
 
@@ -1469,11 +1498,17 @@ msgstr "Lista"
 msgid "Listen live"
 msgstr "Escuchar en vivo"
 
+msgid "Listening clock"
+msgstr "Reloj de escucha"
+
 msgid "Listening history"
 msgstr "Historial de escucha"
 
 msgid "Listening stats"
 msgstr "Estadísticas de escucha"
+
+msgid "Listening time"
+msgstr "Tiempo de escucha"
 
 msgid "Lite fill"
 msgstr "Relleno ligero"
@@ -1622,17 +1657,26 @@ msgstr "No está"
 msgid "Mixed"
 msgstr "Varios valores"
 
+msgid "Mon"
+msgstr "lun"
+
 msgid "Mono dark"
 msgstr "Mono oscuro"
 
 msgid "Mono light"
 msgstr "Mono claro"
 
+msgid "Month"
+msgstr "Mes"
+
 msgid "More"
 msgstr "Más"
 
 msgid "More actions"
 msgstr "Más acciones"
+
+msgid "Most at {}:00"
+msgstr "Más a las {}:00"
 
 msgid "Most played"
 msgstr "Lo más escuchado"
@@ -1758,7 +1802,7 @@ msgid "Next Track"
 msgstr "Pista siguiente"
 
 msgid "Next page"
-msgstr ""
+msgstr "Página siguiente"
 
 msgid "No compatible playlists. Create one to get started."
 msgstr "No hay playlists compatibles. Crea una para comenzar."
@@ -1780,6 +1824,9 @@ msgstr "Todavía no hay carpetas en tu biblioteca local."
 
 msgid "No folders match your search."
 msgstr "Ninguna carpeta coincide con tu búsqueda."
+
+msgid "No genres in this period."
+msgstr "No hay géneros en este periodo."
 
 msgid "No grouping"
 msgstr "Sin agrupar"
@@ -1877,8 +1924,14 @@ msgstr "Todavía no hay nada aquí: agrega una carpeta a la biblioteca y sus dis
 msgid "Nothing here."
 msgstr "Aquí no hay nada."
 
+msgid "Nothing in this period."
+msgstr "Nada en este periodo."
+
 msgid "Nothing played yet"
 msgstr "Todavía no ha sonado nada"
+
+msgid "Nothing played yet."
+msgstr "Todavía no hay escuchas."
 
 msgid "Nothing queued."
 msgstr "No hay nada en la cola."
@@ -2144,6 +2197,9 @@ msgstr "Las playlists se conservarán en la raíz."
 msgid "Plays"
 msgstr "Reproducciones"
 
+msgid "Plays a day"
+msgstr "Reproducciones al día"
+
 msgid "Plex did not accept the session; sign in again"
 msgstr "Plex no aceptó la sesión; vuelve a iniciar sesión"
 
@@ -2182,6 +2238,9 @@ msgstr "Anterior"
 
 msgid "Previous Track"
 msgstr "Pista anterior"
+
+msgid "Previous page"
+msgstr "Página anterior"
 
 msgid "Processed"
 msgstr "Procesado"
@@ -2486,6 +2545,9 @@ msgstr "ARTISTAS SIMILARES"
 msgid "SPLIT"
 msgstr "DIVIDIDO"
 
+msgid "Sat"
+msgstr "sáb"
+
 msgid "Save"
 msgstr "Guardar"
 
@@ -2581,6 +2643,9 @@ msgstr "Buscando…"
 
 msgid "See all"
 msgstr "Ver todo"
+
+msgid "See your listening history"
+msgstr "Ver tu historial de escucha"
 
 msgid "See {} more"
 msgid_plural "See {} more"
@@ -2710,8 +2775,17 @@ msgstr "Álbumes similares"
 msgid "Similar artists"
 msgstr "Artistas similares"
 
+msgid "Since {}"
+msgstr "Desde {}"
+
 msgid "Size"
 msgstr "Tamaño"
+
+msgid "Skipped"
+msgstr "Saltada"
+
+msgid "Skips"
+msgstr "Saltadas"
 
 msgid "Sleep timer"
 msgstr "Temporizador"
@@ -2796,6 +2870,9 @@ msgstr "Suscrito"
 
 msgid "Subscriptions"
 msgstr "Suscripciones"
+
+msgid "Sun"
+msgstr "dom"
 
 msgid "Sung line"
 msgstr "Línea cantada"
@@ -2994,6 +3071,9 @@ msgstr "Este formato de transcripción no es compatible."
 msgid "This update asks for additional access."
 msgstr "Esta actualización solicita acceso adicional."
 
+msgid "Thu"
+msgstr "jue"
+
 msgid "Time"
 msgstr "Duración"
 
@@ -3008,6 +3088,9 @@ msgstr "Título Z-A"
 
 msgid "To move to"
 msgstr "Para moverse"
+
+msgid "Today"
+msgstr "Hoy"
 
 msgid "Toggle Immersive View"
 msgstr "Mostrar u ocultar el modo inmersivo"
@@ -3077,6 +3160,9 @@ msgstr "Programas en tendencia"
 
 msgid "Try again"
 msgstr "Reintentar"
+
+msgid "Tue"
+msgstr "mar"
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr "Escribe este código en plex.tv/link, con tu cuenta de Plex abierta."
@@ -3195,6 +3281,12 @@ msgstr "Forma de onda"
 msgid "Website"
 msgstr "Sitio web"
 
+msgid "Wed"
+msgstr "mié"
+
+msgid "Week"
+msgstr "Semana"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Lo que hace Enter con un resultado de la búsqueda del modo inmersivo. Desactivada apaga la búsqueda."
 
@@ -3251,6 +3343,9 @@ msgstr "Año (más reciente)"
 
 msgid "Year (oldest)"
 msgstr "Año (más antiguo)"
+
+msgid "Yesterday"
+msgstr "Ayer"
 
 msgid "Your account reaches more than one server. Which one?"
 msgstr "Tu cuenta alcanza más de un servidor. ¿Cuál?"
@@ -3656,6 +3751,9 @@ msgstr "leer catálogos de otros plugins activos sin acceder a sus credenciales"
 
 msgid "read your library, without being able to change it"
 msgstr "leer tu biblioteca, sin poder cambiarla"
+
+msgid "results"
+msgstr "resultados"
 
 msgid "run through a different plugin runtime"
 msgstr "ejecutarse mediante otro entorno de plugins"
@@ -4403,6 +4501,11 @@ msgid_plural "{} labels"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} listen"
+msgid_plural "{} listens"
+msgstr[0] "{} escucha"
+msgstr[1] "{} escuchas"
+
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} escucha pendiente de enviar"
@@ -4507,6 +4610,12 @@ msgstr "{} de {}"
 
 msgid "{} {} {}"
 msgstr "{} de {} de {}"
+
+msgid "{} · {}"
+msgstr "{} · {}"
+
+msgid "{}s"
+msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
