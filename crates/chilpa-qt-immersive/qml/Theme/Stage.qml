@@ -75,7 +75,6 @@ QtObject {
     readonly property int barLess: 32
     readonly property int barTall: 90
     readonly property int barRound: 16
-    readonly property int barBottom: 24
     readonly property int barShadow: 32
     readonly property int barShadowDrop: 8
     readonly property int ghostSide: 28

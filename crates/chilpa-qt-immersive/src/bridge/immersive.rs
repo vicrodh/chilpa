@@ -40,6 +40,14 @@ pub mod qobject {
         /// Whether a development hook (`CHILPA_IMMERSIVE=1`) asks the
         /// overlay to open at start.
         #[qproperty(bool, dev_open)]
+        /// The bar's margin above the bottom, the alpha of its fill and
+        /// whether it blurs what lies under it: 16, 0.80 and on, which the
+        /// owner compares against QBZ's 24, 0.50 and flat through
+        /// `CHILPA_IMMERSIVE_BAR_BOTTOM`, `CHILPA_IMMERSIVE_BAR_ALPHA` and
+        /// `CHILPA_IMMERSIVE_BAR_BLUR=0`.
+        #[qproperty(i32, bar_bottom)]
+        #[qproperty(f64, bar_alpha)]
+        #[qproperty(bool, bar_blur)]
         /// Whether what plays can be marked as a favorite, and whether it
         /// is: read again on `refreshFavorite`.
         #[qproperty(bool, markable)]
@@ -103,8 +111,16 @@ pub struct ImmersiveRust {
     accelerated: bool,
     search_action: QString,
     dev_open: bool,
+    bar_bottom: i32,
+    bar_alpha: f64,
+    bar_blur: bool,
     markable: bool,
     favorite: bool,
+}
+
+/// A number from the environment, or the default when unset or unreadable.
+fn knob<T: std::str::FromStr>(name: &str, default: T) -> T {
+    std::env::var(name).ok().and_then(|v| v.trim().parse().ok()).unwrap_or(default)
 }
 
 impl Default for ImmersiveRust {
@@ -118,6 +134,9 @@ impl Default for ImmersiveRust {
             accelerated: true,
             search_action: QString::from("replace"),
             dev_open: false,
+            bar_bottom: knob("CHILPA_IMMERSIVE_BAR_BOTTOM", 16),
+            bar_alpha: knob("CHILPA_IMMERSIVE_BAR_ALPHA", 0.80_f64).clamp(0.0, 1.0),
+            bar_blur: std::env::var("CHILPA_IMMERSIVE_BAR_BLUR").map_or(true, |v| v.trim() != "0"),
             markable: false,
             favorite: false,
         }
