@@ -9,6 +9,11 @@ text around it, so a theme, a hover or a color that moves tints it and nothing
 is drawn twice. Each drawing is one color and any size; it is fitted to the
 em square here. A drawing made of strokes is turned into outlines first,
 because a glyph has no strokes.
+
+A line of sources.txt can name a group after the glyph. The glyphs of one
+group are layers of one picture: they are fitted by the box of all of them
+together, so drawn on top of each other they line up, and each can take a
+color of its own.
 """
 import subprocess
 import sys
@@ -38,16 +43,24 @@ font.descent = 0
 font.fontname = "ChilpaSources"
 font.familyname = "Chilpa Sources"
 font.fullname = "Chilpa Sources"
+glyphs = []
 for place, item in enumerate(sys.argv[5:]):
-    name, path = item.split("=", 1)
+    name, path, group = (item.split("=", 2) + [""])[:3]
     glyph = font.createChar(first + place, name)
     glyph.importOutlines(path)
     glyph.removeOverlap()
     glyph.correctDirection()
     left, bottom, right, top = glyph.boundingBox()
-    wide, tall = right - left, top - bottom
-    if wide <= 0 or tall <= 0:
+    if right - left <= 0 or top - bottom <= 0:
         sys.exit("build-sources: %s has no outline" % name)
+    glyphs.append((glyph, ("group", group) if group else ("own", name), (left, bottom, right, top)))
+boxes = {}
+for glyph, key, box in glyphs:
+    seen = boxes.get(key, box)
+    boxes[key] = (min(seen[0], box[0]), min(seen[1], box[1]), max(seen[2], box[2]), max(seen[3], box[3]))
+for glyph, key, _ in glyphs:
+    left, bottom, right, top = boxes[key]
+    wide, tall = right - left, top - bottom
     scale = em * fill / max(wide, tall)
     glyph.transform(psMat.translate(-left - wide / 2, -bottom - tall / 2))
     glyph.transform(psMat.scale(scale))
@@ -76,13 +89,15 @@ def outlined(drawing: Path, into: Path) -> Path:
 def main() -> None:
     if len(sys.argv) != 1:
         sys.exit(__doc__)
-    wanted = [line.strip() for line in LIST.read_text().splitlines() if line.strip() and not line.startswith("#")]
+    lines = [line.split() for line in LIST.read_text().splitlines() if line.strip() and not line.startswith("#")]
+    wanted = [words[0] for words in lines]
+    groups = {words[0]: words[1] if len(words) > 1 else "" for words in lines}
     missing = [name for name in wanted if not (DRAWINGS / f"{name}.svg").exists()]
     if missing:
         sys.exit(f"build-sources: missing {', '.join(missing)}")
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as scratch:
-        items = [f"{name}={outlined(DRAWINGS / f'{name}.svg', Path(scratch))}" for name in wanted]
+        items = [f"{name}={outlined(DRAWINGS / f'{name}.svg', Path(scratch))}={groups[name]}" for name in wanted]
         script = Path(scratch) / "forge.py"
         script.write_text(FORGE)
         subprocess.run(["fontforge", "-lang=py", "-script", str(script), str(OUT), str(EM), str(FILL), str(FIRST), *items], check=True)

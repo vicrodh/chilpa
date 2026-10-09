@@ -13,6 +13,7 @@ TitledFlow {
     ShortcutRow { width: Metrics.confirmWidth; editing: true; recording: true; tried: "Q"; takenBy: "Queue"; entry: ({ id: "playback.mute", label: "Mute / Unmute", shortcut: "M", modified: true }) }
     ShortcutColumns { width: Metrics.settingsMaxWidth; keys: ({ col1: [{ label: "Playback", rows: [{ id: "playback.toggle", label: "Play / Pause", shortcut: "Space", modified: false }] }] }) }
     LoopRow { width: Metrics.playbackOptionsWidth }
+    LoopButton {}
     ShortcutsSheet {}
     ShortcutsEditor {}
     SleepTimer {}

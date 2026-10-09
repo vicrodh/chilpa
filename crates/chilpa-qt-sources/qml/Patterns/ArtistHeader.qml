@@ -119,7 +119,7 @@ Item {
                 }
             }
             IconButton {
-                objectName: "networkAction"; round: true; size: Metrics.button32; glyph: Icons.hierarchy2; checked: header.networkOpen
+                objectName: "networkAction"; round: true; size: Metrics.button32; glyph: SourceGlyphs.spiderWeb; iconFamily: SourceGlyphs.font; checked: header.networkOpen
                 tip: I18n.tr("Network", I18n.rev); onClicked: header.toggleNetwork()
             }
             // The artist's own links (site, social), when the source has

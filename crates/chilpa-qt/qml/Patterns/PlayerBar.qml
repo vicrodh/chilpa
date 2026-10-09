@@ -10,6 +10,7 @@ import app.chilpa.waveform
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 import "qrc:/qt/qml/app/chilpa/waveform/qml/Components" as Wave
 
 // The floating player (design/02 7): transport, the "LCD" with what plays,
@@ -117,7 +118,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: SettingsModel.extraControls
             tip: I18n.tr("Back 10 seconds", I18n.rev)
-            glyph: Icons.rewindBackward10
+            glyph: SourceGlyphs.backTen
+            iconFamily: SourceGlyphs.font
             size: Metrics.button26
             onClicked: Player.nudge(-10)
         }
@@ -153,22 +155,15 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: SettingsModel.extraControls
             tip: I18n.tr("Forward 10 seconds", I18n.rev)
-            glyph: Icons.rewindForward10
+            glyph: SourceGlyphs.forwardTen
+            iconFamily: SourceGlyphs.font
             size: Metrics.button26
             onClicked: Player.nudge(10)
         }
-        // The A-B loop beside the transport, with the extra controls: A sets
-        // the start, B the end, and the loop lit lets it go (the owner,
-        // 2026-10-08 night; the same three steps as the playback options').
-        IconButton {
-            objectName: "playerLoop"
+        // The A-B loop beside the transport, with the extra controls.
+        Parts.LoopButton {
             anchors.verticalCenter: parent.verticalCenter
             visible: SettingsModel.extraControls && !Cast.active
-            enabled: Player.duration > 0
-            tip: Controls.loopState === 0 ? I18n.tr("Set loop start (A)", I18n.rev) : Controls.loopState === 1 ? I18n.tr("Set loop end (B)", I18n.rev) : I18n.tr("Clear loop", I18n.rev)
-            glyph: Controls.loopState === 0 ? Icons.letterA : Controls.loopState === 1 ? Icons.letterB : Icons.repeat
-            checked: Controls.loopState === 2
-            onClicked: Controls.loopState < 2 ? Controls.markLoop() : Controls.clearLoop()
         }
         IconButton {
             anchors.verticalCenter: parent.verticalCenter
