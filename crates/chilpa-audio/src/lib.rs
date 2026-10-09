@@ -20,6 +20,7 @@ pub mod negotiate;
 pub mod pack;
 pub mod render;
 pub mod seek;
+pub mod seek_waveform;
 pub mod sink;
 pub mod spectrum;
 pub mod tap;
