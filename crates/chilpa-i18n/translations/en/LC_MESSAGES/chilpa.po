@@ -423,7 +423,7 @@ msgstr ""
 msgid "Browse…"
 msgstr ""
 
-msgid "Buttons to go back or forward ten seconds."
+msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr ""
 
 msgid "By album"

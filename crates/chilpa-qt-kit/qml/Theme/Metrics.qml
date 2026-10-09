@@ -144,12 +144,10 @@ QtObject {
 
     // Player bar (02-layout.md 7).
     readonly property int playerHeight: 70
-    // The same margin as the sidebars'.
     readonly property int playerBottom: spaceWindow
+    // The same margin as the sidebars'.
     // How long the mouse is still before the bar steps away, when asked to.
     readonly property int playerIdle: 10000
-    readonly property int playerMaxWidth: 980
-    readonly property int playerInset: 16
     readonly property int playerPadLeft: 14
     readonly property int playerPadRight: 12
     // Tall enough for the seek bar to stay clear of who plays and the record.

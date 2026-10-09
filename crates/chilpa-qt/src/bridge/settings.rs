@@ -187,7 +187,7 @@ impl cxx_qt::Initialize for qobject::SettingsModel {
             this.panes_open = panes.as_deref() != Some("false");
             this.panes_height = panes_height.and_then(|h| h.parse().ok()).unwrap_or(0);
             this.library_view = QString::from(view.as_deref().unwrap_or("tracks"));
-            this.extra_controls = extra.as_deref() == Some("true");
+            this.extra_controls = extra.as_deref() != Some("false");
             this.hide_player = app::with(|api| api.preference("playback.autoHide")).as_deref() == Some("true");
             this.middle_click_tabs = middle.as_deref() != Some("false");
             this.quick_view_click = click.as_deref() == Some("quick");

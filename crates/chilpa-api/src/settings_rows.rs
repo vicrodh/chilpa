@@ -292,7 +292,8 @@ impl Chilpa {
                 row.options = row.values.clone();
                 row.value = self.preference("appearance.accent").unwrap_or_default();
             }
-            "playback.extra" | "playback.autoHide" => row.value = self.pref_on(&row.key, false),
+            "playback.extra" => row.value = self.pref_on(&row.key, true),
+            "playback.autoHide" => row.value = self.pref_on(&row.key, false),
             "playback.gapless" => row.value = self.gapless().to_string(),
             "playback.normalize" => row.value = self.normalize().to_string(),
             "playback.keepQueue" => row.value = self.keep_queue().to_string(),

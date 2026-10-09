@@ -161,12 +161,13 @@ Item {
     }
     readonly property string search: bar.search
     // Under the jump bar, parked at its height once the bar sticks: a card
-    // with the side panels' corners and margin (the owner, 2026-10-08).
+    // with the side panels' corners and margin, ending a gap above the
+    // player bar instead of behind it (the owner, 2026-10-08).
     ArtistNetwork {
         id: panel
         anchors.right: parent.right
         anchors.rightMargin: Metrics.spaceWindow
-        y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - Metrics.spaceWindow
+        y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - Metrics.playerHeight - Metrics.spaceWindow * 2 // derived: the bar, its gap below and the gap between
         open: page.networkOpen; document: page.about; network: page.network
         onClosed: page.networkOpen = false
     }

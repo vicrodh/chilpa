@@ -41,7 +41,7 @@ pub mod qobject {
         /// overlay to open at start.
         #[qproperty(bool, dev_open)]
         /// The bar's margin above the bottom, the alpha of its fill and
-        /// whether it blurs what lies under it: 16, 0.80 and on, which the
+        /// whether it blurs what lies under it: 16, 0.85 and on, which the
         /// owner compares against QBZ's 24, 0.50 and flat through
         /// `CHILPA_IMMERSIVE_BAR_BOTTOM`, `CHILPA_IMMERSIVE_BAR_ALPHA` and
         /// `CHILPA_IMMERSIVE_BAR_BLUR=0`.
@@ -135,7 +135,7 @@ impl Default for ImmersiveRust {
             search_action: QString::from("replace"),
             dev_open: false,
             bar_bottom: knob("CHILPA_IMMERSIVE_BAR_BOTTOM", 16),
-            bar_alpha: knob("CHILPA_IMMERSIVE_BAR_ALPHA", 0.80_f64).clamp(0.0, 1.0),
+            bar_alpha: knob("CHILPA_IMMERSIVE_BAR_ALPHA", 0.85_f64).clamp(0.0, 1.0),
             bar_blur: std::env::var("CHILPA_IMMERSIVE_BAR_BLUR").map_or(true, |v| v.trim() != "0"),
             markable: false,
             favorite: false,

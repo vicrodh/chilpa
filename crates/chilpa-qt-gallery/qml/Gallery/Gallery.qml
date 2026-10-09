@@ -74,7 +74,7 @@ Window {
             spacing: Metrics.gap10
 
             QualityTooltip { anchors.horizontalCenter: parent.horizontalCenter }
-            PlayerBar { width: Math.min(window.width - Metrics.contentX * 2, Metrics.playerMaxWidth) } // derived: inset on each side
+            PlayerBar { width: window.width - Metrics.contentX * 2 } // derived: inset on each side
         }
     }
 

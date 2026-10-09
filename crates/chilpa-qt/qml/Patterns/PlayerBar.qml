@@ -3,6 +3,7 @@ import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.ambient
+import app.chilpa.controls
 import app.chilpa.mini
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -131,6 +132,19 @@ Item {
             size: Metrics.button26
             onClicked: Player.nudge(10)
         }
+        // The A-B loop beside the transport, with the extra controls: A sets
+        // the start, B the end, and the loop lit lets it go (the owner,
+        // 2026-10-08 night; the same three steps as the playback options').
+        IconButton {
+            objectName: "playerLoop"
+            anchors.verticalCenter: parent.verticalCenter
+            visible: SettingsModel.extraControls && !Cast.active
+            enabled: Player.duration > 0
+            tip: Controls.loopState === 0 ? I18n.tr("Set loop start (A)", I18n.rev) : Controls.loopState === 1 ? I18n.tr("Set loop end (B)", I18n.rev) : I18n.tr("Clear loop", I18n.rev)
+            glyph: Controls.loopState === 0 ? Icons.letterA : Controls.loopState === 1 ? Icons.letterB : Icons.repeat
+            checked: Controls.loopState === 2
+            onClicked: Controls.loopState < 2 ? Controls.markLoop() : Controls.clearLoop()
+        }
         IconButton {
             anchors.verticalCenter: parent.verticalCenter
             tip: I18n.tr("Repeat", I18n.rev)
@@ -221,6 +235,16 @@ Item {
             glyph: Icons.listDetails
             checked: SettingsModel.queueOpen && !bar.panelAside
             onClicked: bar.panelAside ? bar.reveal("queue") : SettingsModel.queueOpen = !SettingsModel.queueOpen
+        }
+        // A toggle that only flips its caret for now: what it unfolds is
+        // the owner's to say (2026-10-08 night).
+        IconButton {
+            id: unfold
+            objectName: "playerUnfold"
+            property bool up: false
+            tip: I18n.tr("More", I18n.rev)
+            glyph: up ? Icons.chevronDown : Icons.chevronUp
+            onClicked: up = !up
         }
     }
 
