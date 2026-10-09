@@ -9,7 +9,7 @@
 //! bin. The view reduces the bins to the columns it has room for with
 //! [`columns`].
 
-pub const BINS: usize = 512;
+pub const BINS: usize = 2048;
 /// The most frames looked at per bin; a bin with more is strided.
 const FRAMES_PER_BIN_LIMIT: u64 = 4096;
 /// What a growing document is scaled against.
@@ -17,6 +17,18 @@ const GROWING_REFERENCE: f32 = 0.25;
 /// How the peaks are lifted before they are drawn: quiet passages stay
 /// visible without the loud ones flattening.
 const GAMMA: f32 = 0.72;
+
+/// Where a player hands the frames it decodes, with their position, so a
+/// track that cannot be read apart from playing it still gets its
+/// document as it goes.
+pub trait Feed: Send + Sync {
+    /// A track starts: `total_frames` unknown means no document.
+    fn begin(&self, path: &std::path::Path, channels: u16, total_frames: Option<u64>);
+    fn feed_float(&self, start_frame: u64, samples: &[f32]);
+    fn feed_int(&self, start_frame: u64, samples: &[i32], bits: u8);
+    /// The track is over, finished or not.
+    fn end(&self);
+}
 
 /// The document as the view reads it.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -141,8 +153,9 @@ impl Accumulator {
 }
 
 /// The bins reduced to the `count` columns a view draws: the peak of the
-/// bins each column covers, lifted by a gamma, smoothed twice with its
-/// neighbors and scaled so the loudest column fills the height.
+/// bins each column covers, lifted by a gamma and scaled so the loudest
+/// column fills the height. Nothing is smoothed: a column per pixel wants
+/// the grain (the owner, 2026-10-09).
 pub fn columns(bins: &[u8; BINS], count: usize) -> Vec<f32> {
     if count < 2 {
         return Vec::new();
@@ -155,15 +168,6 @@ pub fn columns(bins: &[u8; BINS], count: usize) -> Vec<f32> {
             (f32::from(peak) / 255.0).powf(GAMMA)
         })
         .collect();
-    let mut scratch = vec![0.0f32; count];
-    for _ in 0..2 {
-        scratch[0] = values[0];
-        scratch[count - 1] = values[count - 1];
-        for index in 1..count - 1 {
-            scratch[index] = values[index - 1] * 0.20 + values[index] * 0.60 + values[index + 1] * 0.20;
-        }
-        std::mem::swap(&mut values, &mut scratch);
-    }
     let loudest = values.iter().copied().fold(0.0f32, f32::max);
     if loudest > 0.0005 {
         for value in &mut values {
@@ -179,23 +183,24 @@ mod tests {
 
     #[test]
     fn frames_by_position_leave_holes_where_nothing_was_fed() {
-        let mut accumulator = Accumulator::new(1, 512);
-        accumulator.feed_float(0, &[0.5; 128]);
-        accumulator.feed_float(384, &[0.5; 128]);
-        assert!(accumulator.counts[..128].iter().all(|c| *c > 0));
-        assert!(accumulator.counts[128..384].iter().all(|c| *c == 0));
-        assert!(accumulator.counts[384..].iter().all(|c| *c > 0));
-        assert_eq!(accumulator.analyzed(), 256);
+        let mut accumulator = Accumulator::new(1, BINS as u64);
+        let quarter = BINS / 4;
+        accumulator.feed_float(0, &vec![0.5; quarter]);
+        accumulator.feed_float((3 * quarter) as u64, &vec![0.5; quarter]);
+        assert!(accumulator.counts[..quarter].iter().all(|c| *c > 0));
+        assert!(accumulator.counts[quarter..3 * quarter].iter().all(|c| *c == 0));
+        assert!(accumulator.counts[3 * quarter..].iter().all(|c| *c > 0));
+        assert_eq!(accumulator.analyzed(), (BINS / 2) as u16);
         assert!(!accumulator.complete(), "a document with holes is not the whole track");
     }
 
     #[test]
     fn both_channels_count_and_opposite_phases_do_not_cancel() {
-        let mut same = Accumulator::new(2, 512);
-        let mut opposite = Accumulator::new(2, 512);
+        let mut same = Accumulator::new(2, BINS as u64);
+        let mut opposite = Accumulator::new(2, BINS as u64);
         let mut in_phase = Vec::new();
         let mut out_of_phase = Vec::new();
-        for _ in 0..512 {
+        for _ in 0..BINS {
             in_phase.extend_from_slice(&[0.5, 0.5]);
             out_of_phase.extend_from_slice(&[0.5, -0.5]);
         }
@@ -208,30 +213,30 @@ mod tests {
 
     #[test]
     fn a_growing_document_keeps_its_earlier_bins_when_a_louder_passage_arrives() {
-        let mut accumulator = Accumulator::new(1, 512);
+        let mut accumulator = Accumulator::new(1, BINS as u64);
         accumulator.feed_float(0, &[0.125; 128]);
         let before = accumulator.bins()[0];
-        accumulator.feed_float(128, &[0.9; 128]);
+        accumulator.feed_float(128, &vec![0.9; BINS - 128]);
         assert_eq!(accumulator.bins()[0], before);
     }
 
     #[test]
     fn a_finished_document_is_scaled_to_its_loudest_bin() {
-        let mut accumulator = Accumulator::new(1, 512);
-        accumulator.feed_float(0, &[0.1; 256]);
-        accumulator.feed_float(256, &[0.2; 256]);
+        let mut accumulator = Accumulator::new(1, BINS as u64);
+        accumulator.feed_float(0, &vec![0.1; BINS / 2]);
+        accumulator.feed_float((BINS / 2) as u64, &vec![0.2; BINS / 2]);
         assert!(accumulator.complete());
         let bins = accumulator.bins();
-        assert_eq!(bins[511], 255);
+        assert_eq!(bins[BINS - 1], 255);
         assert_eq!(bins[0], 128, "half as loud as the loudest: {}", bins[0]);
     }
 
     #[test]
     fn integers_are_read_against_their_full_scale() {
-        let mut sixteen = Accumulator::new(1, 512);
-        sixteen.feed_int(0, &[i32::from(i16::MAX); 512], 16);
-        let mut twenty_four = Accumulator::new(1, 512);
-        twenty_four.feed_int(0, &[(1 << 23) - 1; 512], 24);
+        let mut sixteen = Accumulator::new(1, BINS as u64);
+        sixteen.feed_int(0, &vec![i32::from(i16::MAX); BINS], 16);
+        let mut twenty_four = Accumulator::new(1, BINS as u64);
+        twenty_four.feed_int(0, &vec![(1 << 23) - 1; BINS], 24);
         assert_eq!(sixteen.bins()[0], 255);
         assert_eq!(twenty_four.bins()[0], 255);
     }
@@ -259,7 +264,8 @@ mod tests {
         assert_eq!(values.len(), 64);
         let loudest = values.iter().copied().fold(0.0f32, f32::max);
         assert!((loudest - 1.0).abs() < 1e-6);
-        assert!(values[1] > values[20], "the loud bin lifts its column, smoothed into its neighbors");
+        assert!(values[0] > values[20], "the loud bin lifts its column and no other");
+        assert_eq!(values[20], 0.0);
         assert!(columns(&bins, 1).is_empty());
     }
 }

@@ -7,8 +7,7 @@ use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::{Duration, Instant};
 
-use chilpa_audio::seek_waveform::Accumulator;
-pub use chilpa_audio::seek_waveform::{columns, Snapshot, BINS};
+pub use chilpa_audio::seek_waveform::{columns, Accumulator, Feed, Snapshot, BINS};
 use chilpa_decode::{Block, Decoded};
 
 /// How often a growing document is handed out.

@@ -237,10 +237,12 @@ impl Chilpa {
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
         let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
-        let tap = self.tap.clone();
-        let player = self
-            .player
-            .get_or_insert_with(move || chilpa_core::spawn_player_with(tap));
+        let (tap, feed) = (self.tap.clone(), self.seek_waveform.feed());
+        let player = self.player.get_or_insert_with(move || {
+            let player = chilpa_core::spawn_player_with(tap);
+            player.set_waveform_feed(feed);
+            player
+        });
         player.set_repeat(repeat);
         player.set_gapless(gapless);
         player.set_normalize(normalize);

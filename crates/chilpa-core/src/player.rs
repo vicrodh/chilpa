@@ -342,6 +342,14 @@ impl Player {
         self.controls.volume.set(factor);
     }
 
+    /// Where the frames decoded for each track go, for the seek bar's
+    /// waveform.
+    pub fn set_waveform_feed(&self, feed: std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>) {
+        if let Ok(mut slot) = self.controls.waveform.lock() {
+            *slot = Some(feed);
+        }
+    }
+
     pub fn volume(&self) -> f32 {
         self.controls.volume.get()
     }
