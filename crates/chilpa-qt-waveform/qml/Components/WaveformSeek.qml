@@ -6,8 +6,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// The seek bar as a waveform: a bar per pixel, how loud the track is
-// there, mirrored about a rail, dense as a QuickLook player's; the bars
+// The seek bar as a waveform: a bar every two pixels, how far the track
+// swings there, mirrored about a rail, dense as a QuickLook player's; the bars
 // already played in the accent, the ones the document covers in the
 // secondary text color, the rest as hairlines. It seeks as the thin bar does: a click goes there, a
 // drag follows the pointer and goes where it is let go, with the time
