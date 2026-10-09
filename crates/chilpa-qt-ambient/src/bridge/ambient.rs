@@ -32,6 +32,14 @@ pub mod qobject {
         #[qproperty(QColor, primary)]
         #[qproperty(QColor, secondary)]
         #[qproperty(QColor, accent)]
+        /// The halo behind the cover in the immersive view, with its alpha.
+        #[qproperty(QColor, glow)]
+        /// The cover's primary lifted to read over the field, the brightest
+        /// of the three for a scope's trace, and the six colors the rings
+        /// cycle through, as a JSON list of hex strings.
+        #[qproperty(QColor, lifted)]
+        #[qproperty(QColor, brightest)]
+        #[qproperty(QString, ring_ramp_json)]
         /// The wallpaper and its atmosphere as file URLs; empty until a
         /// mode that paints them resolves one.
         #[qproperty(QString, wallpaper_url)]
@@ -96,11 +104,20 @@ pub struct AmbientRust {
     primary: QColor,
     secondary: QColor,
     accent: QColor,
+    glow: QColor,
+    lifted: QColor,
+    brightest: QColor,
+    ring_ramp_json: QString,
     wallpaper_url: QString,
     wallpaper_atmosphere_url: QString,
     wallpaper_windows_json: QString,
     wallpaper_blur: f32,
     background_image: QString,
+}
+
+/// The rings' ramp of 48 colors as JSON, for the QML that walks it.
+fn palette_json(triad: &Triad) -> QString {
+    QString::from(&chilpa_api::immersive::ring_ramp_json(&triad.primary, &triad.accent, &triad.secondary, 8))
 }
 
 fn qcolor(hex: &str) -> QColor {
@@ -116,6 +133,10 @@ impl Default for AmbientRust {
             primary: qcolor(&triad.primary),
             secondary: qcolor(&triad.secondary),
             accent: qcolor(&triad.accent),
+            glow: qcolor(&triad.glow),
+            lifted: qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)),
+            brightest: qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])),
+            ring_ramp_json: palette_json(&triad),
             wallpaper_url: QString::default(),
             wallpaper_atmosphere_url: QString::default(),
             wallpaper_windows_json: QString::from("[]"),
@@ -166,6 +187,10 @@ impl qobject::Ambient {
                 this.as_mut().set_primary(qcolor(&triad.primary));
                 this.as_mut().set_secondary(qcolor(&triad.secondary));
                 this.as_mut().set_accent(qcolor(&triad.accent));
+                this.as_mut().set_glow(qcolor(&triad.glow));
+                this.as_mut().set_lifted(qcolor(&chilpa_api::immersive::lifted_accent(&triad.primary)));
+                this.as_mut().set_brightest(qcolor(&chilpa_api::immersive::brightest([&triad.primary, &triad.secondary, &triad.accent])));
+                this.as_mut().set_ring_ramp_json(palette_json(&triad));
             });
         });
     }
