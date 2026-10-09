@@ -87,7 +87,8 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter
-        width: Charts.qualityColumn
+        // As wide as the column, or as what it holds when a skip widens it.
+        width: Math.max(Charts.qualityColumn, implicitWidth)
         layoutDirection: Qt.RightToLeft
         spacing: Metrics.gap6
 

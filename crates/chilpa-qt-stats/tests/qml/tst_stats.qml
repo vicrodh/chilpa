@@ -2,6 +2,7 @@ import QtQuick
 import QtTest
 import app.chilpa
 import app.chilpa.stats
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Screens"
 import "../../qml/Components"
 
@@ -52,6 +53,7 @@ TestCase {
         compare(findChild(page, "historyTotal").text, "130 listens")
         const pager = findChild(page, "historyPager")
         compare(pager.pages, 7)
+        verify(pager.mapToItem(page, 0, pager.height).y <= page.height - Metrics.playerSpace, "the pager stays clear of the player bar")
         compare(pager.shown, [1, 2, 0, 7], "the first, its neighbour, a gap and the last")
         mouseClick(findChild(pager, "page2"))
         compare(page.at, 2)

@@ -117,7 +117,8 @@ Item {
         x: head.x
         width: head.width
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Metrics.gap16
+        // Clear of the player bar, as tall as it stands (ListenList's).
+        anchors.bottomMargin: Metrics.playerSpace + Metrics.playerBottom + Metrics.gap16
         height: Charts.pagerButton
 
         Pager {
