@@ -16,6 +16,17 @@ Rectangle {
 
     Behavior on color { ColorAnimation { duration: Motion.base } }
 
+    // Tab reaches it, and Space or Enter flips it, as QBZ's; taking the key
+    // keeps Space from the window's play and pause.
+    activeFocusOnTab: enabled
+    Keys.onPressed: (event) => {
+        if (toggle.enabled && !event.isAutoRepeat && (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+            toggle.toggled(!toggle.checked)
+            event.accepted = true
+        }
+    }
+    FocusRing { onAccent: toggle.checked }
+
     Rectangle {
         x: toggle.checked ? toggle.width - width - Metrics.toggleInset : Metrics.toggleInset
         anchors.verticalCenter: parent.verticalCenter

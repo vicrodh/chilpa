@@ -53,6 +53,16 @@ Rectangle {
         }
     }
 
+    // Tab reaches it, and Space or Enter presses it, as QBZ's buttons.
+    activeFocusOnTab: enabled
+    Keys.onPressed: (event) => {
+        if (root.enabled && !event.isAutoRepeat && (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
+            root.clicked()
+            event.accepted = true
+        }
+    }
+    FocusRing { onAccent: root.primary }
+
     MouseArea {
         id: area
         cursorShape: Qt.PointingHandCursor

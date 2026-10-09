@@ -51,10 +51,17 @@ Rectangle {
         font.pointSize: Type.body
         color: Theme.color.textPrimary
         selectionColor: Theme.color.rowSelected
+        // In the Tab order as it is drawn. Escape empties it and gives the
+        // keyboard back, as QBZ's search boxes, and says so.
+        activeFocusOnTab: root.enabled
         onAccepted: root.accepted()
         Keys.onUpPressed: root.stepped(-1)
         Keys.onDownPressed: root.stepped(1)
-        Keys.onEscapePressed: root.escaped()
+        Keys.onEscapePressed: {
+            input.text = ""
+            root.escaped()
+            root.release()
+        }
 
         Text {
             anchors.fill: parent

@@ -17,6 +17,19 @@ Rectangle {
     radius: Metrics.radiusCard
     color: Theme.color.fillField
 
+    // Tab reaches it, and Left and Right move the choice.
+    activeFocusOnTab: enabled
+    Keys.onPressed: (event) => {
+        const step = event.key === Qt.Key_Left ? -1 : event.key === Qt.Key_Right ? 1 : 0
+        if (!root.enabled || event.isAutoRepeat || step === 0)
+            return
+        const next = Math.max(0, Math.min(root.options.length - 1, root.current + step))
+        if (next !== root.current)
+            root.activated(next)
+        event.accepted = true
+    }
+    FocusRing {}
+
     Row {
         id: row
         anchors.centerIn: parent
