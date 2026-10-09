@@ -36,7 +36,7 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
     let key = format!("{plugin} native:{reference}");
     let mut document = answer.clone();
     let personal = document["personal"] == true;
-    if let Some(shelves) = document["shelves"].as_array_mut() {
+    if let Some(shelves) = document.get_mut("shelves").and_then(Value::as_array_mut) {
         for shelf in shelves {
             shelf["personal"] = json!(personal);
             let id = shelf["id"].as_str().unwrap_or_default();
@@ -246,10 +246,11 @@ impl crate::Chilpa {
         document["error"] = json!(self.catalog.shelf_error(&key).unwrap_or_default());
         document["cards"] = json!(shelf.cards.len());
         document["tracks"] = json!(shelf.tracks.len());
-        if document.get("shelves").is_some() {
+        if document["shelves"].is_array() {
             let shelves = document["shelves"].clone();
             document["shelves"] = page_shelves(&self.catalog, plugin, reference, &mut document["header"], &shelves, false);
         }
+        if !document["shelves"].is_array() { document.as_object_mut().unwrap().remove("shelves"); }
         decorate_header(&self.catalog, plugin, &mut document["header"]);
         if let Some(rows) = document.get_mut("shelves").and_then(Value::as_array_mut) { for row in rows { decorate_header(&self.catalog, plugin, &mut row["header"]); } }
         let kind = shelf.document["items"].as_array().and_then(|items| items.first()).and_then(|item| item["kind"].as_str()).unwrap_or("album");
@@ -284,6 +285,20 @@ mod tests {
             assert_eq!(listing["next"], "browse:next");
             assert_eq!(listing["albumsOnly"], kind != "track");
             assert_eq!(listing[if kind == "track" { "tracks" } else { "cards" }], 1);
+        }
+    }
+
+    #[test]
+    fn direct_listing_responses_and_cached_null_shelves_keep_their_items() {
+        let mut app = crate::Chilpa::new();
+        for cached_null in [false, true] {
+            let mut page = json!({"title":"More records","items":[{"kind":"album","ref":"album:1","title":"One"}]});
+            if cached_null { page["shelves"] = Value::Null; }
+            ingest_document(&app.catalog, "fixture", "browse:records", &page);
+            let listing: Value = serde_json::from_str(&app.native_page_view("fixture", "browse:records")).unwrap();
+            assert!(listing.get("shelves").is_none());
+            assert_eq!(listing["cards"], 1);
+            assert_eq!(listing["albumsOnly"], true);
         }
     }
 
