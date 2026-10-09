@@ -8,6 +8,11 @@ use std::sync::{Arc, Mutex};
 
 pub use chilpa_core::seek_waveform::{Snapshot, BINS};
 use chilpa_core::seek_waveform::{analyze_file, columns};
+use chilpa_audio_feed::{Accumulator, Feed};
+
+mod chilpa_audio_feed {
+    pub use chilpa_core::seek_waveform::{Accumulator, Feed};
+}
 
 /// Whether the player bar stands tall with the waveform.
 pub const OPEN: &str = "playback.waveform";
@@ -71,6 +76,9 @@ impl Drop for Job {
 
 pub struct SeekWaveform {
     store: Arc<Store>,
+    /// What the player hands over as it decodes: the document of a track
+    /// that cannot be read apart from playing it.
+    live: Arc<Live>,
     /// Counts the tracks followed, so a revision never repeats across two
     /// documents and a reader comparing revisions always sees the change.
     epoch: u64,
@@ -82,7 +90,9 @@ pub struct SeekWaveform {
 
 impl Default for SeekWaveform {
     fn default() -> Self {
-        Self { store: Arc::new(Store::new()), epoch: 0, path: String::new(), shared: Arc::new(Mutex::new(Snapshot::default())), job: None }
+        let (store, shared) = (Arc::new(Store::new()), Arc::new(Mutex::new(Snapshot::default())));
+        let live = Arc::new(Live { store: Arc::clone(&store), shared: Arc::clone(&shared), growing: Mutex::new(None) });
+        Self { store, live, epoch: 0, path: String::new(), shared, job: None }
     }
 }
 
@@ -107,8 +117,8 @@ impl SeekWaveform {
             return;
         }
         if !Path::new(path).is_file() {
-            // A stream has no second reader yet: the owner decides how it
-            // gets one (contract, Q1).
+            // A stream is read as it plays, by the player's feed, and kept
+            // for the next time (the owner, 2026-10-09).
             return;
         }
         let stop = Arc::new(AtomicBool::new(false));
@@ -133,6 +143,11 @@ impl SeekWaveform {
         }
     }
 
+    /// Where the player hands its frames.
+    pub fn feed(&self) -> Arc<dyn Feed> {
+        Arc::clone(&self.live) as Arc<dyn Feed>
+    }
+
     pub fn snapshot(&self) -> Snapshot {
         let mut snapshot = self.shared.lock().unwrap_or_else(|e| e.into_inner()).clone();
         snapshot.revision |= self.epoch << 32;
@@ -146,6 +161,91 @@ impl SeekWaveform {
             return Vec::new();
         }
         columns(&snapshot.bins, count)
+    }
+}
+
+/// The document of what plays, gathered from the frames the player
+/// decodes, for a track with no file to read apart from playing it. A
+/// local file is read whole by its own pass instead, and a document kept
+/// on disk is not gathered again.
+struct Live {
+    store: Arc<Store>,
+    shared: Arc<Mutex<Snapshot>>,
+    growing: Mutex<Option<Growing>>,
+}
+
+struct Growing {
+    key: Option<String>,
+    accumulator: Accumulator,
+    revision: u64,
+    last: std::time::Instant,
+}
+
+/// How often a growing document is handed to the view.
+const PUBLISH_EVERY: std::time::Duration = std::time::Duration::from_millis(100);
+
+impl Live {
+    fn publish(&self, growing: &mut Growing, force: bool) {
+        if !force && growing.last.elapsed() < PUBLISH_EVERY {
+            return;
+        }
+        growing.revision += 1;
+        growing.last = std::time::Instant::now();
+        let snapshot = growing.accumulator.snapshot(growing.revision);
+        if snapshot.complete {
+            if let Some(key) = growing.key.as_deref() {
+                self.store.set(key, &snapshot.bins);
+            }
+        }
+        *self.shared.lock().unwrap_or_else(|e| e.into_inner()) = snapshot;
+    }
+
+    fn with_growing(&self, run: impl FnOnce(&Self, &mut Growing)) {
+        let mut slot = self.growing.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(growing) = slot.as_mut() {
+            if !growing.accumulator.complete() {
+                run(self, growing);
+            }
+        }
+    }
+}
+
+impl Feed for Live {
+    fn begin(&self, path: &Path, channels: u16, total_frames: Option<u64>) {
+        let mut slot = self.growing.lock().unwrap_or_else(|e| e.into_inner());
+        *slot = None;
+        let Some(total) = total_frames else { return };
+        if path.is_file() {
+            return;
+        }
+        let key = Store::key(&path.to_string_lossy());
+        if key.as_deref().is_some_and(|k| self.store.get(k).is_some()) {
+            return;
+        }
+        *slot = Some(Growing { key, accumulator: Accumulator::new(channels, total), revision: 0, last: std::time::Instant::now() });
+    }
+
+    fn feed_float(&self, start_frame: u64, samples: &[f32]) {
+        self.with_growing(|live, growing| {
+            growing.accumulator.feed_float(start_frame, samples);
+            live.publish(growing, growing.accumulator.complete());
+        });
+    }
+
+    fn feed_int(&self, start_frame: u64, samples: &[i32], bits: u8) {
+        self.with_growing(|live, growing| {
+            growing.accumulator.feed_int(start_frame, samples, bits);
+            live.publish(growing, growing.accumulator.complete());
+        });
+    }
+
+    fn end(&self) {
+        let mut slot = self.growing.lock().unwrap_or_else(|e| e.into_inner());
+        if let Some(mut growing) = slot.take() {
+            if !growing.accumulator.complete() {
+                self.publish(&mut growing, true);
+            }
+        }
     }
 }
 

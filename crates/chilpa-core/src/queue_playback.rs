@@ -489,6 +489,9 @@ pub struct Controls {
     /// lease to that request instead of returning the card to the sound
     /// server for a few milliseconds and taking it straight back.
     pub handoff: Switch,
+    /// Where the frames decoded for a track go, with their position, for
+    /// the seek bar's waveform; nobody listening, nothing is handed over.
+    pub waveform: std::sync::Arc<std::sync::Mutex<Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>>>,
 }
 
 /// A factor shared with whoever drives the queue, read every block.
@@ -648,6 +651,10 @@ struct TrackFrames<'a> {
     gain: f32,
     /// The player bar's volume, when it may touch the samples at all.
     volume: Option<Level>,
+    /// Where the decoded frames go for the waveform, and the position in
+    /// the track of the next frame the decoder hands out.
+    feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
+    decoded_at: u64,
 }
 
 impl FrameSource for TrackFrames<'_> {
@@ -711,6 +718,7 @@ impl FrameSource for TrackFrames<'_> {
                             std::sync::atomic::Ordering::Relaxed,
                         );
                         self.moved_at = delivered;
+                        self.decoded_at = frame;
                     }
                     // A container that cannot seek goes on playing from
                     // where it was, instead of dropping the track.
@@ -728,6 +736,10 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
+                    if let Some(feed) = &self.feed {
+                        feed.feed_int(self.decoded_at, &frames, bits);
+                    }
+                    self.decoded_at += (frames.len() / channels) as u64;
                     let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
                     if gain != 1.0 {
                         scale_int(&mut frames, bits, gain);
@@ -749,6 +761,10 @@ impl FrameSource for TrackFrames<'_> {
                     if frames.is_empty() {
                         continue;
                     }
+                    if let Some(feed) = &self.feed {
+                        feed.feed_float(self.decoded_at, &frames);
+                    }
+                    self.decoded_at += (frames.len() / channels) as u64;
                     let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
                     if gain != 1.0 {
                         frames.iter_mut().for_each(|v| *v *= gain);
@@ -1139,6 +1155,10 @@ where
         let (outcome, skipped) = match &mut source {
             Source::Pcm(decoded, _, _) => {
                 let channels = decoded.stream_format().channels;
+                let feed = controls.waveform.lock().map(|f| f.clone()).unwrap_or_default();
+                if let Some(feed) = &feed {
+                    feed.begin(path, channels, decoded.frame_count());
+                }
                 let trimmer = Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
                 let float_trimmer =
                     Trimmer::new(decoded.encoder_delay(), decoded.encoder_padding(), channels);
@@ -1161,6 +1181,8 @@ where
                     moved_at: 0,
                     gain,
                     volume,
+                    feed: feed.clone(),
+                    decoded_at: 0,
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
@@ -1170,6 +1192,9 @@ where
                         let at = f as i64 + base.load(std::sync::atomic::Ordering::Relaxed);
                         on_progress(index, Progress { position: at.max(0) as u64, delivered: f })
                     });
+                if let Some(feed) = &feed {
+                    feed.end();
+                }
                 (outcome, frames.skipped)
             }
             Source::Dop(reader) => {
