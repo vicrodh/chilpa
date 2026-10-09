@@ -152,18 +152,21 @@ Item {
     }
     JumpBar {
         id: bar
-        x: flick.x + Metrics.contentX; width: column.width
+        x: flick.x; width: flick.width
         y: Math.max(column.y + jumpSlot.y - flick.contentY, 0)
+        pinned: y <= 0
         entries: page.about.jump || []
         active: page.activeJump
         onJump: (id) => page.jump(id)
     }
     readonly property string search: bar.search
-    // Under the jump bar, and parked at its height once the bar sticks.
+    // Under the jump bar, parked at its height once the bar sticks: a card
+    // with the side panels' corners and margin (the owner, 2026-10-08).
     ArtistNetwork {
         id: panel
         anchors.right: parent.right
-        y: bar.y + bar.height; height: page.height - y
+        anchors.rightMargin: Metrics.spaceWindow
+        y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - Metrics.spaceWindow
         open: page.networkOpen; document: page.about; network: page.network
         onClosed: page.networkOpen = false
     }

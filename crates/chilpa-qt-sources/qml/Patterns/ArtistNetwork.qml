@@ -37,8 +37,9 @@ Rectangle {
     width: open ? Metrics.networkPanel : 0
     Behavior on width { NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
     clip: true
+    radius: Metrics.radiusPanel
     color: Theme.ambient ? Theme.color.ambientPanel : Theme.color.surfacePanel
-    Rectangle { anchors.left: parent.left; width: Metrics.hairline; height: parent.height; color: Theme.color.strokeHairline }
+    Edge {}
 
     function openArtist(item) {
         if (item.ref && panel.plugin) Navigation.goKey("source", panel.plugin + " native:" + item.ref)
