@@ -38,6 +38,7 @@ jis
 kcfstringencodingutf8
 kr
 len
+lightbox
 linux
 lnam
 mpeg

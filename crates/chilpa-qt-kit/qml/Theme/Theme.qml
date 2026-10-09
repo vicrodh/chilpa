@@ -51,6 +51,8 @@ QtObject {
         readonly property color statusWarning: ThemeModel.color("status.warning", theme.rev)
         readonly property color statusNegative: ThemeModel.color("status.negative", theme.rev)
         readonly property color overlayScrim: ThemeModel.color("overlay.scrim", theme.rev)
+        // The veil under a cover shown whole (QBZ's lightbox, #bf000000).
+        readonly property color lightboxScrim: ThemeModel.color("lightbox.scrim", theme.rev)
         readonly property color overlayButton: ThemeModel.color("overlay.button", theme.rev)
         readonly property color overlayInk: ThemeModel.color("overlay.ink", theme.rev)
         readonly property color albumHeaderBase: ThemeModel.color("albumHeader.base", theme.rev)
