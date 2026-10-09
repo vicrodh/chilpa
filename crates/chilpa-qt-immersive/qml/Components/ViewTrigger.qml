@@ -30,6 +30,12 @@ Rectangle {
             x: modelData.at
             width: modelData.wide
             height: trigger.height
+            // The wash follows the capsule's ends: a rectangular clip would
+            // leave its corners square (the owner, 2026-10-08).
+            topLeftRadius: modelData.act === "previous" ? trigger.radius : 0
+            bottomLeftRadius: modelData.act === "previous" ? trigger.radius : 0
+            topRightRadius: modelData.act === "next" ? trigger.radius : 0
+            bottomRightRadius: modelData.act === "next" ? trigger.radius : 0
             color: area.containsMouse ? Theme.color.immersiveGlassHover : "transparent"
             Text {
                 anchors.centerIn: parent

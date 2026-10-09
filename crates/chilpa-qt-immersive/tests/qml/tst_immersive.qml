@@ -88,6 +88,27 @@ TestCase {
         verify(Math.abs(Player.sought - 15) < 2, "to the middle: " + Player.sought)
     }
 
+    function test_the_bars_menu_leaves_the_view_and_dies_with_it() {
+        const more = findChild(view, "immersiveMore")
+        verify(more !== null)
+        mouseClick(more, more.width / 2, more.height / 2)
+        const menu = findChild(view, "immersiveExitMenu")
+        verify(menu !== null)
+        tryVerify(() => menu.opened, 1000, "the menu opens")
+        const row = findChild(view, "immersiveExitRow")
+        verify(row !== null)
+        verify(row.height > 0, "the row has a height to click: " + row.height)
+        mouseClick(row, row.width / 2, row.height / 2)
+        compare(Immersive.open, false, "Exit Immersive leaves")
+        tryVerify(() => !menu.visible, 1000, "and the menu goes with the view")
+        Immersive.open = true
+        waitForRendering(view)
+        mouseClick(more, more.width / 2, more.height / 2)
+        tryVerify(() => menu.opened, 1000)
+        Immersive.open = false
+        tryVerify(() => !menu.visible, 1000, "an Escape-style exit closes it too")
+    }
+
     function test_the_header_walks_the_views() {
         const header = findChild(view, "immersiveHeader")
         verify(header !== null)

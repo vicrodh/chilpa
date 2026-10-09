@@ -123,6 +123,7 @@ Item {
         }
         Rectangle {
             id: more
+            objectName: "immersiveMore"
             x: bar.width - Stage.moreFromRight
             y: Stage.ghostTop
             width: Stage.ghostSide
@@ -148,8 +149,11 @@ Item {
                 }
             }
         }
+        // A popup lives in the window's overlay, over the view: it closes
+        // with the bar, or it would outlive an Escape (the owner, 2026-10-08).
         Popup {
             id: exitMenu
+            objectName: "immersiveExitMenu"
             parent: more
             x: more.width - width
             y: -height - Stage.menuRowPad
@@ -163,8 +167,11 @@ Item {
                 border.width: Metrics.hairline
                 border.color: Theme.color.immersiveGlassEdge
             }
+            // The popup sizes itself from the content's implicit height: a
+            // plain height left it, and its mouse area, at zero.
             contentItem: Rectangle {
-                height: Stage.menuRowTall
+                objectName: "immersiveExitRow"
+                implicitHeight: Stage.menuRowTall
                 radius: Stage.menuRowRound
                 color: exitArea.containsMouse ? Theme.color.immersiveRowHover : "transparent"
                 Row {
@@ -186,6 +193,12 @@ Item {
                     }
                 }
             }
+        }
+
+        Connections {
+            target: root
+            function onVisibleChanged() { if (!root.visible) exitMenu.close() }
+            function onEnabledChanged() { if (!root.enabled) exitMenu.close() }
         }
 
         TinyBar {
