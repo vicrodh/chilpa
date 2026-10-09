@@ -85,13 +85,14 @@ Item {
         color: Theme.color.textTertiary
     }
 
-    QueueFooter {
+    Parts.QueueFooter {
         id: foot
         anchors.bottom: parent.bottom
         width: parent.width
         onClear: Player.clearQueue()
         sleepLeft: Controls.sleepLeft
         onTimer: sleep.open()
+        onSearched: (text) => queue.key = text
         onSave: Playlists.saveQueue(I18n.trArgs("Queue · {}", [Qt.locale().toString(new Date(), Locale.ShortFormat)], I18n.rev))
     }
 

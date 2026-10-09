@@ -2707,6 +2707,9 @@ msgstr "Artistas similares"
 msgid "Size"
 msgstr "Tamaño"
 
+msgid "Sleep timer"
+msgstr "Temporizador"
+
 msgid "Soft"
 msgstr "Suave"
 
@@ -2754,6 +2757,9 @@ msgstr "Detener la reproducción en:"
 
 msgid "Stops in"
 msgstr "Se detiene en"
+
+msgid "Stops in {}"
+msgstr "Se detiene en {}"
 
 msgid "Stream address"
 msgstr "Dirección de stream"
@@ -2984,9 +2990,6 @@ msgstr "Esta actualización solicita acceso adicional."
 
 msgid "Time"
 msgstr "Duración"
-
-msgid "Timer"
-msgstr "Temporizador"
 
 msgid "Title"
 msgstr "Título"

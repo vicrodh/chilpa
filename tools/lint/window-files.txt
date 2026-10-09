@@ -41,7 +41,6 @@ crates/chilpa-qt/qml/Components/PlaylistSourceWrite.qml
 crates/chilpa-qt/qml/Components/PlaylistTargetRow.qml
 crates/chilpa-qt/qml/Components/PlaylistTree.js
 crates/chilpa-qt/qml/Components/QualityIcon.qml
-crates/chilpa-qt/qml/Components/QueueFooter.qml
 crates/chilpa-qt/qml/Components/QueueMenu.qml
 crates/chilpa-qt/qml/Components/QueueRow.qml
 crates/chilpa-qt/qml/Components/RatingButton.qml

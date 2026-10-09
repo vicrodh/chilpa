@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.controls
 import "../../../chilpa-qt/qml/Components"
 import "../../../chilpa-qt/qml/Patterns"
+import "../../qml/Components"
 
 // Where the window shows the A-B loop and the timer: the seek bar and the
 // foot of the queue.
@@ -17,6 +18,7 @@ TestCase {
     SeekBar { id: bar; width: 400; duration: 200; position: 10 }
     QueueFooter { id: foot; y: 60; width: 400 }
     SignalSpy { id: asked; target: foot; signalName: "timer" }
+    SignalSpy { id: searched; target: foot; signalName: "searched" }
     QueuePanel { id: panel; x: 420; y: 300; width: 300; height: 200 }
 
     function marks() {
@@ -42,9 +44,11 @@ TestCase {
     function test_the_queue_panel_reads_the_timer_and_opens_it_over_its_foot() {
         const button = findChild(panel, "queueTimer")
         Controls.sleepLeft = "12m"
-        compare(button.text, "12m", "what the timer says reaches the foot")
+        compare(button.tone, "accent", "a running timer lights the clock")
+        compare(button.tip, "Stops in 12m", "and says what is left")
         Controls.sleepLeft = ""
-        compare(button.text, "Timer")
+        compare(button.tone, "secondary")
+        compare(button.tip, "Sleep timer")
         mouseClick(button)
         const timer = findChild(panel, "sleepTimer")
         tryVerify(() => timer.opened)
@@ -55,10 +59,27 @@ TestCase {
 
     function test_the_foot_of_the_queue_shows_what_is_left_of_the_timer() {
         const button = findChild(foot, "queueTimer")
-        compare(button.text, "Timer")
+        compare(button.tip, "Sleep timer")
         foot.sleepLeft = "29m"
-        compare(button.text, "29m")
+        compare(button.tip, "Stops in 29m")
         mouseClick(button)
         compare(asked.count, 1)
+        foot.sleepLeft = ""
+    }
+
+    function test_the_search_opens_over_the_actions_and_folds_back() {
+        const open = findChild(foot, "queueSearchOpen"), field = findChild(foot, "queueSearch")
+        compare(field.visible, false, "folded: only the magnifier")
+        mouseClick(open)
+        verify(foot.searching)
+        tryCompare(field, "width", foot.width - 12, 1000, "it opens to the left over the actions")
+        tryVerify(() => field.editing, 1000, "and takes the keyboard")
+        keyClick(Qt.Key_I)
+        compare(searched.count, 1)
+        compare(searched.signalArguments[0][0], "i")
+        keyClick(Qt.Key_Escape)
+        verify(!foot.searching, "Escape folds it back")
+        compare(searched.signalArguments[searched.count - 1][0], "", "and empties the search")
+        tryCompare(field, "visible", false, 1000)
     }
 }
