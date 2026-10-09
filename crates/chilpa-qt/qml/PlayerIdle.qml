@@ -23,7 +23,7 @@ Item {
     height: 0
 
     // Where the pointer brings the bar back: the strip the bar sits in.
-    readonly property real edge: target.height - Metrics.playerHeight - Metrics.playerBottom * 2 // derived: the bar's own strip
+    readonly property real edge: target.height - Metrics.playerSpace - Metrics.playerBottom * 2 // derived: the bar's own strip
 
     onHoldingChanged: if (!holding) wait.restart()
 

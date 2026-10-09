@@ -523,9 +523,21 @@ impl Chilpa {
             "detail": detail,
         });
         document["playing_parent"] = self.playing_media_parent().map(|(source, _)| source).unwrap_or_default().into();
+        document["playing_source"] = self.playing_source_name().into();
         document["playing_entry"] = context.into();
         document["on_air_history"] = serde_json::json!(s.on_air_history);
         document.to_string()
+    }
+        let Some(entry) = chilpa_models::RemoteEntry::parse(&path) else { return String::new() };
+        let id: Option<i64> = entry.source.instance.parse().ok();
+        self.servers()
+            .into_iter()
+            .find(|row| Some(row.id) == id && row.provider == entry.source.provider)
+            .map(|row| row.name)
+            .unwrap_or_else(|| {
+                let mut chars = entry.source.provider.chars();
+                chars.next().map(|c| c.to_uppercase().collect::<String>() + chars.as_str()).unwrap_or_default()
+            })
     }
 
     fn saved_elsewhere(&self, source: &str, id: &str) -> bool {

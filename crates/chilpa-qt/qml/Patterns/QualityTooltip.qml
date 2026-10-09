@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -12,6 +13,8 @@ import "../Components"
 Item {
     id: tip
     readonly property var castState: JSON.parse(Cast.snapshot || "{}")
+    // Who serves what plays: the library, or a server or source by name.
+    readonly property string sourceName: JSON.parse(Sources.snapshot || "{}").playing_source || I18n.tr("Local", I18n.rev)
 
     width: Metrics.qualityTooltipWidth
     height: lines.implicitHeight + Metrics.gap12 * 2 // derived: padding above and below
@@ -96,7 +99,8 @@ Item {
 
         Repeater {
             model: [
-                { label: I18n.tr("Source", I18n.rev), value: Player.qualityLong },
+                { label: I18n.tr("Source", I18n.rev), value: tip.sourceName },
+                { label: I18n.tr("Format", I18n.rev), value: Player.qualityLong },
                 { label: I18n.tr("Output", I18n.rev), value: Cast.active ? I18n.tr("Original bytes", I18n.rev) : Player.outputFormat },
                 { label: I18n.tr("Device", I18n.rev), value: Cast.active ? Cast.destination : Player.device },
                 { label: I18n.tr("Route", I18n.rev), value: Cast.active ? tip.castState.protocol || "" : Player.route }

@@ -111,7 +111,8 @@ Item {
         anchors.top: reopen.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Metrics.playerHeight + Metrics.playerBottom * 2 // derived: clear of the player bar
+        anchors.bottomMargin: Metrics.playerSpace + Metrics.playerBottom * 2 // derived: clear of the player bar, as tall as it stands
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
         width: page.contentWidth
         visible: page.doc.state === "ready" || page.doc.state === "saving"
         enabled: page.doc.state === "ready"

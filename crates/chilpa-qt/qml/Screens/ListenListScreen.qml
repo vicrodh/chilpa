@@ -38,7 +38,8 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: Metrics.contentTop
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: Metrics.playerHeight + Metrics.playerBottom + Metrics.gap16
+        anchors.bottomMargin: Metrics.playerSpace + Metrics.playerBottom + Metrics.gap16
+        Behavior on anchors.bottomMargin { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
         Text {
             id: title
             text: I18n.tr("Queues", I18n.rev)
