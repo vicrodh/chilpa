@@ -152,6 +152,7 @@ Item {
         }
         IconButton {
             id: more
+            objectName: "hitMenu"
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             visible: !hit.header && !hit.link
