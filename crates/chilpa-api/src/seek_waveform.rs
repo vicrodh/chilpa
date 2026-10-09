@@ -34,6 +34,11 @@ impl Store {
         if let Some((instance, id)) = crate::source_opener::of_plugin(path) {
             return Some(format!("source-{:016x}", fnv(format!("{instance}:{id}").as_bytes())));
         }
+        // A track of an SACD image: the image's content and the track's
+        // number.
+        if let Some((image, number)) = chilpa_core::sacd_tracks::parse(Path::new(path)) {
+            return Self::key(&image.to_string_lossy()).map(|k| format!("{k}-t{number}"));
+        }
         let file = Path::new(path);
         let meta = std::fs::metadata(file).ok()?;
         if !meta.is_file() {
@@ -71,6 +76,12 @@ impl Store {
 /// FNV-1a, 64 bits: a compact fingerprint without a new dependency.
 fn fnv(bytes: &[u8]) -> u64 {
     bytes.iter().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3))
+}
+
+/// Whether a track can be read apart from playing it: a file on disk, or
+/// a track of an SACD image on disk.
+fn readable_apart(path: &Path) -> bool {
+    path.is_file() || chilpa_core::sacd_tracks::parse(path).is_some()
 }
 
 struct Job {
@@ -125,7 +136,7 @@ impl SeekWaveform {
                 Snapshot { revision: 1, highs, lows, analyzed: BINS as u16, complete: true };
             return;
         }
-        if !Path::new(path).is_file() {
+        if !readable_apart(Path::new(path)) {
             // A stream is read as it plays, by the player's feed, and kept
             // for the next time (the owner, 2026-10-09).
             return;
@@ -225,7 +236,7 @@ impl Feed for Live {
         let mut slot = self.growing.lock().unwrap_or_else(|e| e.into_inner());
         *slot = None;
         let Some(total) = total_frames else { return };
-        if path.is_file() {
+        if readable_apart(path) {
             return;
         }
         let key = Store::key(&path.to_string_lossy());
