@@ -20,6 +20,10 @@ Item {
     signal miniAsked()
     signal presentMini()
     signal quitMini()
+    // The immersive view over the window: while it is open the keys
+    // answer in its scope, which is the window's plus its own.
+    property bool immersiveOpen: false
+    signal immersiveAsked()
 
     readonly property var sidebarTurns: ({ open: "collapsed", collapsed: "closed", closed: "open" })
 
@@ -30,7 +34,7 @@ Item {
     }
 
     function pressed(event) {
-        const action = Hotkeys.pressed(event.key, event.modifiers, event.text, typing())
+        const action = Hotkeys.pressedIn(controls.immersiveOpen ? "immersive" : "window", event.key, event.modifiers, event.text, typing())
         if (action === "")
             return
         event.accepted = true
@@ -69,6 +73,11 @@ Item {
         case "ui.escape": if (SettingsModel.queueOpen) SettingsModel.queueOpen = false; break
         case "ui.showShortcuts": sheet.open(); break
         case "ui.miniPlayer": miniAsked(); break
+        case "ui.focusMode": immersiveAsked(); break
+        case "focus.seekForward": Player.nudge(5); break
+        case "focus.seekBack": Player.nudge(-5); break
+        case "focus.seekForwardLong": Player.nudge(10); break
+        case "focus.seekBackLong": Player.nudge(-10); break
         }
     }
 
