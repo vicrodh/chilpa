@@ -26,6 +26,10 @@ Item {
     // The color of what has been sung, and of what has not yet.
     property color sungColor: Theme.color.textPrimary
     property color restColor: Theme.color.textTertiary
+    // Centered words and a raised shadow under them, for a line alone
+    // over a cover.
+    property bool centered: false
+    property color shadowColor: "transparent"
 
     readonly property bool timed: (line.segments || []).some(s => !s.background)
     readonly property var groups: timed ? grouped(line.segments, endMs) : untimed(line.text || "")
@@ -99,9 +103,12 @@ Item {
         width: words.width
         text: words.text
         wrapMode: Text.Wrap
+        horizontalAlignment: words.centered ? Text.AlignHCenter : Text.AlignLeft
         font.pointSize: Type.lyric
         font.weight: Type.bold
         color: words.restColor
+        style: words.shadowColor.a > 0 ? Text.Raised : Text.Normal
+        styleColor: words.shadowColor
     }
     // A Text does not say where its words ended up; a text field laid out
     // the same way does. It is never drawn.
@@ -114,6 +121,7 @@ Item {
         text: words.text
         textFormat: TextEdit.PlainText
         wrapMode: TextEdit.Wrap
+        horizontalAlignment: words.centered ? TextEdit.AlignHCenter : TextEdit.AlignLeft
         font: base.font
     }
 

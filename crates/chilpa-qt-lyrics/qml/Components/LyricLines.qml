@@ -21,6 +21,8 @@ ListView {
     property var translation: null
     property real size: Type.lyric
     property color sungColor: Theme.color.textPrimary
+    property color dimColor: Theme.color.textSecondary
+    property color pastColor: Theme.color.textTertiary
     property string dimming: "strong"
     property bool uppercase: false
     property bool lite: false
@@ -87,6 +89,8 @@ ListView {
         translation: view.translation ? (view.translation[index] || "") : ""
         size: view.size
         sungColor: view.sungColor
+        dimColor: view.dimColor
+        pastColor: view.pastColor
         dimming: view.dimming
         uppercase: view.uppercase
         wordByWord: !view.lite
