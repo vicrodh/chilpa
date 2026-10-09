@@ -94,8 +94,6 @@ crates/chilpa-qt/qml/Patterns/ServerSetupDialog.qml
 crates/chilpa-qt/qml/Patterns/SidebarPlaylistActions.qml
 crates/chilpa-qt/qml/Patterns/SidebarPlaylists.qml
 crates/chilpa-qt/qml/Patterns/Sidebar.qml
-crates/chilpa-qt/qml/Patterns/SourceAlbumLibraries.qml
-crates/chilpa-qt/qml/Patterns/SourcesPopover.qml
 crates/chilpa-qt/qml/Patterns/SystemControls.qml
 crates/chilpa-qt/qml/Patterns/TabBar.qml
 crates/chilpa-qt/qml/Patterns/TabStrip.qml

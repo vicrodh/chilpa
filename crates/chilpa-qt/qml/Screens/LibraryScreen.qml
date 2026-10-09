@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // Library (design/02 9, design/06): the four filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
