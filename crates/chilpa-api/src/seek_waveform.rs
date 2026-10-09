@@ -6,8 +6,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
-pub use chilpa_core::seek_waveform::Snapshot;
-use chilpa_core::seek_waveform::{analyze_file, columns, BINS};
+pub use chilpa_core::seek_waveform::{Snapshot, BINS};
+use chilpa_core::seek_waveform::{analyze_file, columns};
 
 /// Whether the player bar stands tall with the waveform.
 pub const OPEN: &str = "playback.waveform";

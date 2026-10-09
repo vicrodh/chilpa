@@ -84,7 +84,7 @@ pub mod tray;
 pub mod ambient;
 pub mod immersive;
 pub mod mini;
-mod seek_waveform;
+pub mod seek_waveform;
 pub mod visualizer;
 pub mod wallpaper;
 pub mod open_media;
