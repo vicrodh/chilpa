@@ -48,6 +48,12 @@ pub trait FrameSource {
         None
     }
     fn position_at_move(&self) -> Option<u64> { None }
+
+    /// How far ahead of the device it wants to be read: [`AHEAD`] by
+    /// default. A track read over the network asks for [`NETWORK_AHEAD`].
+    fn ahead(&self) -> std::time::Duration {
+        AHEAD
+    }
 }
 
 /// How far the loop reads ahead of the device: two seconds of what the
@@ -61,6 +67,13 @@ pub trait FrameSource {
 /// between the file and the device. The source is read on a thread of its
 /// own, two seconds ahead, and the loop takes its blocks from there.
 pub const AHEAD: std::time::Duration = std::time::Duration::from_secs(2);
+
+/// The cushion of a track read over the network: ten seconds. A source can
+/// take seconds to answer one read -- a plugin that serves its stream from
+/// its own process while it also opens the next track -- and two seconds
+/// ran a 192 kHz stream dry on a 3 s read (the owner's trace, 2026-10-09).
+/// At 192 kHz in 32-bit stereo it holds 15 MB.
+pub const NETWORK_AHEAD: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// A read that takes this long is written down: it is what the cushion is
 /// for, and the log should say when it was needed.
@@ -329,7 +342,7 @@ where
 {
     let format = sink.format();
     let frame_bytes = format.frame_bytes();
-    let fill = frame_bytes * format.sample_rate_hz as usize * AHEAD.as_millis() as usize / 1000;
+    let fill = frame_bytes * format.sample_rate_hz as usize * source.ahead().as_millis() as usize / 1000;
     let cushion = Cushion::new(fill.max(frame_bytes));
     let started = std::time::Instant::now();
     std::thread::scope(|threads| {
@@ -885,9 +898,14 @@ mod tests {
         given: usize,
         stalls_at: usize,
         stall: Duration,
+        ahead: Duration,
     }
 
     impl FrameSource for Stalling {
+        fn ahead(&self) -> Duration {
+            self.ahead
+        }
+
         fn next_block(&mut self) -> Result<Option<Vec<u8>>, String> {
             if self.given >= self.blocks {
                 return Ok(None);
@@ -937,12 +955,25 @@ mod tests {
         // 8,000 frames a second, 400 frames a block: 50 ms each, and the
         // cushion holds two seconds of them. The stall comes once the
         // cushion is full.
-        let mut source = Stalling { blocks: 80, frames: 400, given: 0, stalls_at: 60, stall: Duration::from_millis(600) };
+        let mut source = Stalling { blocks: 80, frames: 400, given: 0, stalls_at: 60, stall: Duration::from_millis(600), ahead: AHEAD };
         let mut sink = Paced { rate: 8_000, last: None, longest_wait: Duration::ZERO, writes: 0 };
         let out = render(&mut source, &mut sink, &StopSignal::new());
         assert_eq!(out, Outcome::Finished { frames: 80 * 400 });
         assert_eq!(sink.writes, 80);
         assert!(sink.longest_wait < Duration::from_millis(300), "the device waited {:?} on a 600 ms stall", sink.longest_wait);
+    }
+
+    /// The cushion is as deep as the source asks: one that asks for 300 ms
+    /// is read 300 ms ahead, so a 600 ms stall reaches the device. A track
+    /// over the network asks for ten seconds the same way.
+    #[test]
+    fn the_cushion_is_as_deep_as_the_source_asks() {
+        let mut source = Stalling { blocks: 40, frames: 400, given: 0, stalls_at: 30, stall: Duration::from_millis(600), ahead: Duration::from_millis(300) };
+        let mut sink = Paced { rate: 8_000, last: None, longest_wait: Duration::ZERO, writes: 0 };
+        let out = render(&mut source, &mut sink, &StopSignal::new());
+        assert_eq!(out, Outcome::Finished { frames: 40 * 400 });
+        assert!(sink.longest_wait >= Duration::from_millis(200), "a 300 ms cushion hid a 600 ms stall: the device waited {:?}", sink.longest_wait);
+        assert!(NETWORK_AHEAD > AHEAD);
     }
 
     /// Blocks numbered as they are read, the fifth of which comes from a

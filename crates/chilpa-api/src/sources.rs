@@ -1459,10 +1459,13 @@ impl Chilpa {
         }
         let Some(at) = self.queue_paths().iter().position(|p| *p == self.now.path) else { return };
         let Some(next) = self.queue_paths().get(at + 1).filter(|p| of_plugin(p).is_some()).cloned() else { return };
-        // A process plugin keeps an address until it expires, so the next
-        // one is asked for as soon as this one plays; the rest, near its end.
-        let native = of_plugin(&next).is_some_and(|(plugin, _)| self.natives.is_native(&plugin));
-        if left > 30.0 && !native {
+        // With gapless on, the player opens the next track itself, and over
+        // the network once this one has played a while; asking here too was a
+        // second resolve of the same track at the same moment, which a
+        // plugin serving this one's stream answered at its expense (the
+        // owner's trace, 2026-10-09). Without gapless it is asked near the
+        // end, for every source.
+        if self.gapless() || left > 30.0 {
             return;
         }
         if self.sources.ahead_asked == next {

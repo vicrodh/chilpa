@@ -656,11 +656,17 @@ struct TrackFrames<'a> {
     /// the track of the next frame the decoder hands out.
     feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
     decoded_at: u64,
+    /// How far ahead it is read: further for a track over the network.
+    ahead: std::time::Duration,
 }
 
 impl FrameSource for TrackFrames<'_> {
     fn ended_early(&self) -> bool {
         self.skipped
+    }
+
+    fn ahead(&self) -> std::time::Duration {
+        self.ahead
     }
 
     fn moved(&mut self) -> bool {
@@ -1143,15 +1149,26 @@ where
             _ => None,
         };
         sink.begin(observer);
+        // The next track, opened ahead for gapless: a file at once, a track
+        // over the network once this one has played a while (`Preload::at`).
         if gapless.get() {
             let next = if repeat.get() == Repeat::One { Some(index) } else { order.next(index, queue.len(), repeat.get() == Repeat::All) };
             if let Some(mut next) = next {
                 if let Some(path) = next_live(queue, order, repeat, &mut next) {
+                    let length = match &source {
+                        Source::Pcm(decoded, _, _) => decoded.frame_count().map(|frames| frames as f64 / f64::from(decoded.stream_format().sample_rate_hz.max(1))),
+                        _ => None,
+                    };
+                    let at = crate::preload::at(crate::remote::entry(&path).is_some(), delivery.opened.sample_rate_hz, length);
                     let (caps, dsd_mode, direct_dsd) = (caps.clone(), controls.dsd_mode.get(), controls.direct_dsd.get());
-                    preload.request(path, move |path| open_track(path, &caps, policy, dsd_mode, direct_dsd));
+                    preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct_dsd));
                 }
             }
         }
+        let on_progress = &mut |index: usize, progress: Progress| {
+            preload.reached(progress.delivered);
+            on_progress(index, progress)
+        };
         on_track(index, path, &delivery, &about);
         chilpa_audio::diagnostics::trace(
             "queue",
@@ -1192,6 +1209,7 @@ where
                     volume,
                     feed: feed.clone(),
                     decoded_at: 0,
+                    ahead: if crate::remote::entry(path).is_some() { chilpa_audio::render::NETWORK_AHEAD } else { chilpa_audio::render::AHEAD },
                 };
                 let base = std::sync::Arc::clone(&frames.base);
                 let delivered = std::sync::Arc::clone(&frames.delivered);
