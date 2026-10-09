@@ -23,7 +23,7 @@ Item {
     // recent first.
     TrackListModel { id: ahead; kind: "queue"; filterRev: Player.queueRev + ListenList.revision; playingPath: Player.path }
     TrackListModel { id: behind; kind: "history"; filterRev: Player.queueRev + ListenList.revision; playingPath: Player.path }
-    Timer { interval: Motion.listenRefresh; repeat: true; running: panel.visible; onTriggered: { ahead.refresh(); behind.refresh() } }
+    Timer { interval: Motion.listenRefresh; repeat: true; running: panel.visible; onTriggered: ListenList.refresh() }
 
     // The slide: a new track lands from the right, so every cover starts
     // one slot to the right and eases into place.
