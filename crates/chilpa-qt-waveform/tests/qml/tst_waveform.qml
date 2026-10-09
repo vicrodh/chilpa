@@ -48,7 +48,7 @@ TestCase {
     function test_the_width_sets_the_columns_and_the_bridge_hears_it() {
         compare(bar.columns, Math.ceil(600 / Bars.pixelsPerColumn))
         compare(Waveform.columns, bar.columns)
-        bar.width = 200
+        bar.width = 30
         compare(bar.columns, Bars.columnsMin, "never fewer than the least")
         compare(Waveform.columns, Bars.columnsMin)
         bar.width = 600
@@ -67,7 +67,7 @@ TestCase {
         compare(bars[0].color, Theme.color.accent, "the first quarter is played")
         compare(bars[Math.floor(bar.columns * 0.4)].color, Theme.color.textSecondary, "the first half is known")
         compare(bars[bar.columns - 1].color, Theme.color.strokeHairline, "the rest is not yet")
-        verify(bars[1].x > bars[0].x && bars[1].x - bars[0].x < Bars.pixelsPerColumn * 2, "one slot apart")
+        verify(bars[1].x > bars[0].x && bars[1].x - bars[0].x <= Bars.pixelsPerColumn + 1, "one slot apart")
         verify(bars[0].height > Bars.barLeast && bars[0].height <= bar.height, "a bar within the height: " + bars[0].height)
     }
 

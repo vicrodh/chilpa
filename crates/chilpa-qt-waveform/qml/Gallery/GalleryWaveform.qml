@@ -17,6 +17,7 @@ Rectangle {
         x: Metrics.contentX
         y: Metrics.contentX
         spacing: Metrics.contentX
+        WaveformBand { width: gallery.sampleWide; height: Metrics.waveformBand }
         WaveformSeek { width: gallery.sampleWide; height: Metrics.waveformBand; position: gallery.sampleWide / 4; duration: gallery.sampleWide; bubbleText: "1:10" } // derived: a quarter of the way
         WaveformSeek { width: gallery.sampleWide / 2; height: Metrics.waveformBand; position: gallery.sampleWide / 8; duration: gallery.sampleWide; loopStart: gallery.sampleWide / 4; loopEnd: gallery.sampleWide / 2 } // derived: half the sample, a loop over its second quarter
     }
