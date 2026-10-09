@@ -3,7 +3,7 @@
 mod query;
 use super::Library;
 pub use query::{
-    ListenBucket, ListenDimension, ListenFilter, ListenMetrics, ListenOrder, TimeBasis,
+    HistoryEntry, ListenBucket, ListenDimension, ListenFilter, ListenMetrics, ListenOrder, TimeBasis,
 };
 use rusqlite::{params, OptionalExtension};
 
