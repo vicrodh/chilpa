@@ -63,7 +63,21 @@ impl Keymap {
 pub enum Scope {
     Window,
     Mini,
+    /// The immersive view over the window: it answers the window's keys
+    /// and a few of its own.
+    Immersive,
     Both,
+}
+
+impl Scope {
+    /// The scope a window names: "mini", "immersive", or the window.
+    pub fn named(name: &str) -> Scope {
+        match name {
+            "mini" => Scope::Mini,
+            "immersive" => Scope::Immersive,
+            _ => Scope::Window,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -96,8 +110,9 @@ const PLAYBACK: &str = i18n::mark("Playback");
 const NAVIGATION: &str = i18n::mark("Navigation");
 const INTERFACE: &str = i18n::mark("Interface");
 const MINI: &str = i18n::mark("Mini player");
+const IMMERSIVE: &str = i18n::mark("Immersive view");
 /// The groups, in the order the sheet shows them.
-const GROUPS: [&str; 4] = [PLAYBACK, NAVIGATION, INTERFACE, MINI];
+const GROUPS: [&str; 5] = [PLAYBACK, NAVIGATION, INTERFACE, MINI, IMMERSIVE];
 
 const ACTIONS: &[Action] = &[
     reaching(Scope::Both, action("playback.toggle", i18n::mark("Play / Pause"), PLAYBACK, "Space", "")),
@@ -130,6 +145,12 @@ const ACTIONS: &[Action] = &[
     reaching(Scope::Mini, action("mini.artwork", i18n::mark("Artwork view"), MINI, "3", "")),
     reaching(Scope::Mini, action("mini.queue", i18n::mark("Queue view"), MINI, "4", "")),
     reaching(Scope::Mini, action("mini.lyrics", i18n::mark("Lyrics view"), MINI, "5", "")),
+    reaching(Scope::Both, action("ui.focusMode", i18n::mark("Toggle Immersive View"), INTERFACE, "Shift+I", "")),
+    // The immersive view's own: the arrows seek while it is open.
+    reaching(Scope::Immersive, action("focus.seekForward", i18n::mark("Seek Forward 5 s"), IMMERSIVE, "ArrowRight", "")),
+    reaching(Scope::Immersive, action("focus.seekBack", i18n::mark("Seek Back 5 s"), IMMERSIVE, "ArrowLeft", "")),
+    reaching(Scope::Immersive, action("focus.seekForwardLong", i18n::mark("Seek Forward 10 s"), IMMERSIVE, "Shift+ArrowRight", "")),
+    reaching(Scope::Immersive, action("focus.seekBackLong", i18n::mark("Seek Back 10 s"), IMMERSIVE, "Shift+ArrowLeft", "")),
 ];
 
 /// The actions a key still reaches while a text field has the keyboard,
@@ -324,7 +345,9 @@ impl Keys {
         if typing && !THROUGH_TEXT.contains(&a.id) {
             return Pressed::Pass;
         }
-        if a.scope != Scope::Both && a.scope != scope {
+        // The immersive view sits over the window and answers its keys too.
+        let reaches = a.scope == Scope::Both || a.scope == scope || (scope == Scope::Immersive && a.scope == Scope::Window);
+        if !reaches {
             return Pressed::Pass;
         }
         Pressed::Run(a.id)
@@ -479,6 +502,21 @@ mod tests {
         assert_eq!(keys.pressed_in(Scope::Mini, 0x4b, qt::CONTROL, "", false), Pressed::Pass, "search is the window's");
         let keys = Keys { keymap: Keymap::Letters, ..Keys::default() };
         assert_eq!(keys.pressed_in(Scope::Mini, 0x35, 0, "5", false), Pressed::Run("mini.lyrics"), "the digits are free in the letters keymap too");
+    }
+
+    #[test]
+    fn the_immersive_view_answers_the_windows_keys_and_its_own_arrows() {
+        let keys = Keys::default();
+        assert_eq!(keys.pressed_in(Scope::Immersive, qt::RIGHT, 0, "", false), Pressed::Run("focus.seekForward"));
+        assert_eq!(keys.pressed_in(Scope::Immersive, qt::LEFT, qt::SHIFT, "", false), Pressed::Run("focus.seekBackLong"));
+        assert_eq!(keys.pressed_in(Scope::Window, qt::RIGHT, 0, "", false), Pressed::Pass, "the arrows seek only over the overlay");
+        assert_eq!(keys.pressed_in(Scope::Mini, qt::RIGHT, 0, "", false), Pressed::Pass);
+        assert_eq!(keys.pressed_in(Scope::Immersive, 0x4b, qt::CONTROL, "", false), Pressed::Run("nav.search"), "the window's keys reach it");
+        assert_eq!(keys.pressed_in(Scope::Immersive, 0x31, 0, "1", false), Pressed::Pass, "the mini player's do not");
+        assert_eq!(keys.pressed_in(Scope::Immersive, 0x49, qt::SHIFT, "I", false), Pressed::Run("ui.focusMode"));
+        assert_eq!(keys.pressed_in(Scope::Mini, 0x49, qt::SHIFT, "I", false), Pressed::Run("ui.focusMode"), "the toggle answers everywhere");
+        assert_eq!(Scope::named("immersive"), Scope::Immersive);
+        assert_eq!(Scope::named("elsewhere"), Scope::Window);
     }
 
     #[test]

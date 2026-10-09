@@ -92,6 +92,21 @@ impl Chilpa {
 
     /// Marks what plays as a favorite, or takes the mark off. False when
     /// nothing plays or it is not something that can be marked.
+    /// Whether what plays can be marked, and whether it is, for a heart
+    /// over it: (markable, favorite).
+    pub fn playing_favorite(&mut self) -> (bool, bool) {
+        if self.now.path.is_empty() {
+            return (false, false);
+        }
+        let path = self.now.path.clone();
+        let Some(id) = self.rows_for_paths(&[path]).first().map(|track| track.id).filter(|id| *id != 0) else { return (false, false) };
+        let key = id.to_string();
+        match self.marks() {
+            Some(marks) if marks.markable("track", &key) => (true, marks.favorite("track", &key)),
+            _ => (false, false),
+        }
+    }
+
     pub fn like_playing(&mut self) -> bool {
         if !self.now.playing {
             return false;

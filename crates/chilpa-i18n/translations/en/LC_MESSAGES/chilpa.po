@@ -196,6 +196,9 @@ msgstr ""
 msgid "Album"
 msgstr ""
 
+msgid "Album Reactive"
+msgstr ""
+
 msgid "Album actions"
 msgstr ""
 
@@ -707,6 +710,9 @@ msgstr ""
 msgid "Cover collage"
 msgstr ""
 
+msgid "Coverflow"
+msgstr ""
+
 msgid "Create and add"
 msgstr ""
 
@@ -866,6 +872,9 @@ msgstr ""
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
 msgstr ""
 
+msgid "Disabled"
+msgstr ""
+
 msgid "Disc"
 msgstr ""
 
@@ -965,6 +974,9 @@ msgstr ""
 msgid "English"
 msgstr ""
 
+msgid "Enter"
+msgstr ""
+
 msgid "Episode notes"
 msgstr ""
 
@@ -989,6 +1001,9 @@ msgstr ""
 msgid "Exclusive mode"
 msgstr ""
 
+msgid "Exit Immersive"
+msgstr ""
+
 msgid "Expand"
 msgstr ""
 
@@ -999,6 +1014,9 @@ msgid "Extra controls"
 msgstr ""
 
 msgid "Extra queues"
+msgstr ""
+
+msgid "FOCUS"
 msgstr ""
 
 msgid "FOUNDED"
@@ -1139,6 +1157,9 @@ msgstr "Go to source"
 msgid "Go to {}"
 msgstr ""
 
+msgid "Goniometer"
+msgstr ""
+
 msgid "Grid"
 msgstr ""
 
@@ -1227,6 +1248,18 @@ msgid "Icon"
 msgstr ""
 
 msgid "Images"
+msgstr ""
+
+msgid "Immersive"
+msgstr ""
+
+msgid "Immersive default view"
+msgstr ""
+
+msgid "Immersive search"
+msgstr ""
+
+msgid "Immersive view"
 msgstr ""
 
 msgid "Import cancelled"
@@ -1601,6 +1634,9 @@ msgstr ""
 msgid "My stations"
 msgstr ""
 
+msgid "NOW PLAYING"
+msgstr ""
+
 msgid "Name"
 msgstr ""
 
@@ -1718,6 +1754,9 @@ msgstr ""
 msgid "No plugins installed"
 msgstr ""
 
+msgid "No results for"
+msgstr ""
+
 msgid "No review available"
 msgstr "No review available"
 
@@ -1778,6 +1817,9 @@ msgstr ""
 msgid "Nothing here."
 msgstr ""
 
+msgid "Nothing played yet"
+msgstr ""
+
 msgid "Nothing queued."
 msgstr ""
 
@@ -1785,6 +1827,9 @@ msgid "Nothing saved yet."
 msgstr ""
 
 msgid "Nov"
+msgstr ""
+
+msgid "Now Playing"
 msgstr ""
 
 msgid "Now playing"
@@ -1895,6 +1940,9 @@ msgstr ""
 msgid "Original files"
 msgstr ""
 
+msgid "Oscilloscope"
+msgstr ""
+
 msgid "Other"
 msgstr "Other"
 
@@ -1950,6 +1998,9 @@ msgid "Play all later"
 msgstr ""
 
 msgid "Play all next"
+msgstr ""
+
+msgid "Play an album or track to get started"
 msgstr ""
 
 msgid "Play count"
@@ -2135,6 +2186,9 @@ msgstr ""
 msgid "Quit Chilpa"
 msgstr ""
 
+msgid "RECENTLY PLAYED"
+msgstr ""
+
 msgid "RELATIONSHIPS"
 msgstr ""
 
@@ -2148,6 +2202,9 @@ msgid "Rating"
 msgstr ""
 
 msgid "Reactivate"
+msgstr ""
+
+msgid "Reactive Rings"
 msgstr ""
 
 msgid "Read a playlist, choose destinations, review matches, then create your playlists."
@@ -2273,6 +2330,9 @@ msgstr ""
 msgid "Repeat"
 msgstr ""
 
+msgid "Replace current queue"
+msgstr ""
+
 msgid "Replace queue {}"
 msgstr ""
 
@@ -2337,6 +2397,9 @@ msgid "SACDTRL2 is missing"
 msgstr ""
 
 msgid "SIMILAR ARTISTS"
+msgstr ""
+
+msgid "SPLIT"
 msgstr ""
 
 msgid "Save"
@@ -2431,7 +2494,19 @@ msgstr[1] ""
 msgid "Seek Back"
 msgstr ""
 
+msgid "Seek Back 10 s"
+msgstr ""
+
+msgid "Seek Back 5 s"
+msgstr ""
+
 msgid "Seek Forward"
+msgstr ""
+
+msgid "Seek Forward 10 s"
+msgstr ""
+
+msgid "Seek Forward 5 s"
 msgstr ""
 
 msgid "Select"
@@ -2563,10 +2638,16 @@ msgstr ""
 msgid "Spanish"
 msgstr ""
 
+msgid "Spectrum"
+msgstr ""
+
 msgid "Starting plugins…"
 msgstr ""
 
 msgid "Starting {}…"
+msgstr ""
+
+msgid "Static"
 msgstr ""
 
 msgid "Stations"
@@ -2727,6 +2808,9 @@ msgstr ""
 msgid "The system wallpaper. Choose an image of your own instead."
 msgstr ""
 
+msgid "The view the immersive view opens with. Remember keeps the one it was last on."
+msgstr ""
+
 msgid "The view the mini player opens with. Remember keeps the one it was last on."
 msgstr ""
 
@@ -2811,6 +2895,9 @@ msgstr ""
 msgid "To move to"
 msgstr ""
 
+msgid "Toggle Immersive View"
+msgstr ""
+
 msgid "Toggle Mini Player"
 msgstr ""
 
@@ -2850,6 +2937,9 @@ msgstr ""
 msgid "Tracks"
 msgstr ""
 
+msgid "Tracks you play will appear here"
+msgstr ""
+
 msgid "Trailers"
 msgstr ""
 
@@ -2878,6 +2968,9 @@ msgid "Type this code at plex.tv/link, signed in to your Plex account."
 msgstr ""
 
 msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
+msgstr ""
+
+msgid "UP NEXT"
 msgstr ""
 
 msgid "Uncategorized"
@@ -2970,6 +3063,12 @@ msgstr ""
 msgid "Wallpaper, blurred"
 msgstr ""
 
+msgid "Wave Bed"
+msgstr ""
+
+msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
+msgstr ""
+
 msgid "What you play most"
 msgstr ""
 
@@ -3025,6 +3124,9 @@ msgid "Year (oldest)"
 msgstr ""
 
 msgid "Your account reaches more than one server. Which one?"
+msgstr ""
+
+msgid "Your queue is empty"
 msgstr ""
 
 msgid "Your shows"
