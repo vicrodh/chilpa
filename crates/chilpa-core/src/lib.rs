@@ -21,6 +21,7 @@ pub mod remote;
 mod preload;
 pub mod playback_events;
 pub mod sacd_tracks;
+pub mod seek_waveform;
 
 /// What goes out the device, for whoever wants to draw it.
 pub use chilpa_audio::{spectrum, tap, visualizer};
