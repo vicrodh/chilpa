@@ -1,4 +1,6 @@
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+// Qt 6.10 brings a SearchField of its own with QtQuick.Controls; this is the kit's.
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives" as Kit
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
@@ -52,7 +54,7 @@ Item {
         color: Theme.color.textPrimary
     }
 
-    SearchField {
+    Kit.SearchField {
         id: search
         objectName: "settingsSearch"
         x: Metrics.contentX
