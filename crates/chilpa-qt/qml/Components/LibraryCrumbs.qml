@@ -9,7 +9,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
     id: crumbs
 
-    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.artist !== "" || Library.album !== "" || Library.extraFiltered
+    readonly property bool filtered: Library.year !== "" || Library.genre !== "" || Library.label !== "" || Library.composer !== "" || Library.artist !== "" || Library.album !== "" || Library.extraFiltered
 
     Row {
         anchors.verticalCenter: parent.verticalCenter
@@ -34,6 +34,8 @@ Item {
             model: [
                 { column: "year", name: I18n.tr("Year", I18n.rev), value: Library.year },
                 { column: "genre", name: I18n.tr("Genre", I18n.rev), value: Library.genre },
+                { column: "label", name: I18n.tr("Label", I18n.rev), value: Library.label },
+                { column: "composer", name: I18n.tr("Composer", I18n.rev), value: Library.composer },
                 { column: "artist", name: I18n.tr("Artist", I18n.rev), value: Library.artist },
                 { column: "album", name: I18n.tr("Album", I18n.rev), value: Library.album }
             ]

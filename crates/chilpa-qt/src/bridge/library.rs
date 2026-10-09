@@ -24,6 +24,7 @@ pub mod qobject {
         #[qproperty(QString, summary)]
         #[qproperty(QString, year)]
         #[qproperty(QString, genre)]
+        #[qproperty(QString, label)] #[qproperty(QString, composer)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
@@ -87,6 +88,8 @@ pub struct LibraryRust {
     summary: QString,
     year: QString,
     genre: QString,
+    label: QString,
+    composer: QString,
     artist: QString,
     album: QString,
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
@@ -102,7 +105,7 @@ pub struct LibraryRust {
 
 const ORDER_KEY: &str = "ui.library.order";
 
-const ORDER: [&str; 4] = ["year", "genre", "artist", "album"];
+const ORDER: [&str; 6] = ["year", "genre", "label", "composer", "artist", "album"];
 
 fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
     let mut list = QList::<QString>::default();
@@ -111,6 +114,8 @@ fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
 }
 
 impl qobject::Library {
+    const SETTERS: [fn(Pin<&mut Self>, QString); 6] = [Self::set_year, Self::set_genre, Self::set_label, Self::set_composer, Self::set_artist, Self::set_album];
+
     pub fn group_artist_albums(mut self: Pin<&mut Self>, on: bool) {
         if app::with(|api| api.set_group_artist_versions(on)) {
             self.as_mut().set_artist_group_versions(on);
@@ -148,32 +153,17 @@ impl qobject::Library {
     pub fn choose_keys(mut self: Pin<&mut Self>, keys: Vec<String>, labels: Vec<String>, at: usize) {
         browse::write(|state| state.filter.choose(at, &keys));
         let shown = QString::from(&labels.join(", "));
-        let empty = QString::default;
-        match at {
-            0 => {
-                self.as_mut().set_year(shown);
-                self.as_mut().set_genre(empty());
-                self.as_mut().set_artist(empty());
-                self.as_mut().set_album(empty());
-            }
-            1 => {
-                self.as_mut().set_genre(shown);
-                self.as_mut().set_artist(empty());
-                self.as_mut().set_album(empty());
-            }
-            2 => {
-                self.as_mut().set_artist(shown);
-                self.as_mut().set_album(empty());
-            }
-            _ => self.as_mut().set_album(shown),
+        // The column chosen shows its choice; every one to its right is cleared.
+        for (column, set) in Self::SETTERS.iter().enumerate().skip(at.min(Self::SETTERS.len() - 1)) {
+            set(self.as_mut(), if column == at { shown.clone() } else { QString::default() });
         }
         self.refresh();
     }
 
     pub fn clear(mut self: Pin<&mut Self>) {
         browse::write(|s| s.filter = Filter::default());
-        self.as_mut().set_queries(strings([String::new(), String::new(), String::new(), String::new()]));
-        for set in [Self::set_year, Self::set_genre, Self::set_artist, Self::set_album] {
+        self.as_mut().set_queries(strings(vec![String::new(); ORDER.len()]));
+        for set in Self::SETTERS {
             set(self.as_mut(), QString::default());
         }
         self.as_mut().set_excluded_sources(QStringList::default());

@@ -12,6 +12,11 @@ Popup {
     id: popover
     property bool showAlbumLibraries: false
     property bool showTrackLibraries: false
+    // The Library screen's filter columns that are on, or null where the
+    // screen has none; a toggle asks the screen to turn one on or off.
+    property var panes: null
+    signal paneToggled(string column)
+    readonly property real half: (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
     // on what is there.
@@ -51,135 +56,189 @@ Popup {
     contentItem: Column {
         spacing: Metrics.gap8
 
-        Item {
-            width: parent.width
-            height: Metrics.sourceFilterRow
-            Text {
-                anchors.left: parent.left
-                anchors.right: grouping.left
-                anchors.rightMargin: Metrics.gap8
-                anchors.verticalCenter: parent.verticalCenter
-                text: I18n.tr("Group album versions", I18n.rev)
-                font.pointSize: Type.body
-                elide: Text.ElideRight
-                color: Theme.color.textPrimary
-            }
-            Toggle {
-                id: grouping
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                checked: Library.groupVersions
-                onToggled: Library.groupAlbums(!Library.groupVersions)
-            }
-        }
+        // Two columns side by side, so the popover grows across and not down
+        // (the owner, 2026-10-09): where the tracks come from on the left;
+        // the columns shown, the quality and the format on the right.
+        Row {
+            spacing: Metrics.gap16
 
-        Text {
-            text: I18n.tr("Sources", I18n.rev)
-            font.pointSize: Type.small
-            font.weight: Type.semibold
-            color: Theme.color.textTertiary
-        }
-        Repeater {
-            model: Library.sourceKeys.length
-
-            Item {
-                required property int index
-                width: parent.width
-                height: Metrics.sourceFilterRow
-                readonly property string sourceKey: Library.sourceKeys[index]
-
-                SourceIcon {
-                    id: sourceIcon
-                    anchors.left: parent.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: Metrics.iconNav
-                    height: Metrics.iconNav
-                    sourceInfo: ({ icon: Library.sourceIcons[index] || "", local: sourceKey === "local:default" })
-                }
-                Column {
-                    anchors.left: sourceIcon.right
-                    anchors.leftMargin: Metrics.gap10
-                    anchors.right: sourceToggle.left
-                    anchors.rightMargin: Metrics.gap10
-                    anchors.verticalCenter: parent.verticalCenter
+            Column {
+                width: popover.half
+                spacing: Metrics.gap8
+                Item {
+                    width: parent.width
+                    height: Metrics.sourceFilterRow
                     Text {
-                        width: parent.width
-                        text: sourceKey === "local:default" ? I18n.tr("Local library", I18n.rev) : (Library.sourceLabels[index] || "")
-                        elide: Text.ElideRight
+                        anchors.left: parent.left
+                        anchors.right: grouping.left
+                        anchors.rightMargin: Metrics.gap8
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("Group album versions", I18n.rev)
                         font.pointSize: Type.body
+                        elide: Text.ElideRight
                         color: Theme.color.textPrimary
                     }
-                    Text {
-                        text: I18n.trCount("{} track", "{} tracks", Number(Library.sourceCounts[index]), I18n.rev)
-                        font.pointSize: Type.micro
-                        color: Theme.color.textTertiary
+                    Toggle {
+                        id: grouping
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: Library.groupVersions
+                        onToggled: Library.groupAlbums(!Library.groupVersions)
                     }
                 }
-                Toggle {
-                    id: sourceToggle
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: Library.excludedSources.indexOf(sourceKey) < 0
-                    onToggled: Library.toggleFilter("source", sourceKey)
+
+                Text {
+                    text: I18n.tr("Sources", I18n.rev)
+                    font.pointSize: Type.small
+                    font.weight: Type.semibold
+                    color: Theme.color.textTertiary
                 }
+                Repeater {
+                    model: Library.sourceKeys.length
+
+                    Item {
+                        required property int index
+                        width: parent.width
+                        height: Metrics.sourceFilterRow
+                        readonly property string sourceKey: Library.sourceKeys[index]
+
+                        SourceIcon {
+                            id: sourceIcon
+                            anchors.left: parent.left
+                            anchors.verticalCenter: parent.verticalCenter
+                            width: Metrics.iconNav
+                            height: Metrics.iconNav
+                            sourceInfo: ({ icon: Library.sourceIcons[index] || "", local: sourceKey === "local:default" })
+                        }
+                        Column {
+                            anchors.left: sourceIcon.right
+                            anchors.leftMargin: Metrics.gap10
+                            anchors.right: sourceToggle.left
+                            anchors.rightMargin: Metrics.gap10
+                            anchors.verticalCenter: parent.verticalCenter
+                            Text {
+                                width: parent.width
+                                text: sourceKey === "local:default" ? I18n.tr("Local library", I18n.rev) : (Library.sourceLabels[index] || "")
+                                elide: Text.ElideRight
+                                font.pointSize: Type.body
+                                color: Theme.color.textPrimary
+                            }
+                            Text {
+                                text: I18n.trCount("{} track", "{} tracks", Number(Library.sourceCounts[index]), I18n.rev)
+                                font.pointSize: Type.micro
+                                color: Theme.color.textTertiary
+                            }
+                        }
+                        Toggle {
+                            id: sourceToggle
+                            anchors.right: parent.right
+                            anchors.verticalCenter: parent.verticalCenter
+                            checked: Library.excludedSources.indexOf(sourceKey) < 0
+                            onToggled: Library.toggleFilter("source", sourceKey)
+                        }
+                    }
+                }
+
+                Rectangle { width: parent.width; height: Metrics.focusRing; color: Theme.color.strokeHairline }
+                SourceAlbumLibraries { width: parent.width; tracks: popover.showTrackLibraries; active: popover.opened && (popover.showAlbumLibraries || popover.showTrackLibraries) }
             }
-        }
-
-        Rectangle { width: parent.width; height: Metrics.focusRing; color: Theme.color.strokeHairline }
-        SourceAlbumLibraries { width: parent.width; tracks: popover.showTrackLibraries; active: popover.opened && (popover.showAlbumLibraries || popover.showTrackLibraries) }
-        Text {
-            text: I18n.tr("Quality", I18n.rev)
-            font.pointSize: Type.small
-            font.weight: Type.semibold
-            color: Theme.color.textTertiary
-        }
-        Flow {
-            width: parent.width
-            height: childrenRect.height
-            spacing: Metrics.gap6
-
-            Repeater {
-                model: [
-                    { key: "lossy", label: I18n.tr("Lossy", I18n.rev) },
-                    { key: "lossless", label: I18n.tr("Lossless", I18n.rev) },
-                    { key: "hires", label: I18n.tr("Hi-Res", I18n.rev) },
-                    { key: "dsd", label: "DSD" }
-                ]
-                Chip {
-                    required property var modelData
-                    text: modelData.label
-                    active: Library.qualities.indexOf(modelData.key) >= 0
-                    onClicked: Library.toggleFilter("quality", modelData.key)
+            Column {
+                width: popover.half
+                spacing: Metrics.gap8
+                Column {
+                    visible: popover.panes !== null
+                    width: parent.width
+                    spacing: Metrics.gap8
+                    Text {
+                        text: I18n.tr("Columns", I18n.rev)
+                        font.pointSize: Type.small
+                        font.weight: Type.semibold
+                        color: Theme.color.textTertiary
+                    }
+                    Repeater {
+                        model: [
+                            { column: "year", label: I18n.tr("Year", I18n.rev) },
+                            { column: "genre", label: I18n.tr("Genre", I18n.rev) },
+                            { column: "label", label: I18n.tr("Label", I18n.rev) },
+                            { column: "composer", label: I18n.tr("Composer", I18n.rev) }
+                        ]
+                        Item {
+                            required property var modelData
+                            width: parent.width
+                            height: Metrics.sourceFilterRow
+                            Text {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: modelData.label
+                                font.pointSize: Type.body
+                                color: Theme.color.textPrimary
+                            }
+                            Toggle {
+                                objectName: "paneToggle-" + modelData.column
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                checked: popover.panes !== null && popover.panes.indexOf(modelData.column) >= 0
+                                onToggled: popover.paneToggled(modelData.column)
+                            }
+                        }
+                    }
                 }
-            }
-        }
-
-        Text {
-            text: I18n.tr("Format", I18n.rev)
-            font.pointSize: Type.small
-            font.weight: Type.semibold
-            color: Theme.color.textTertiary
-        }
-        Flow {
-            width: parent.width
-            height: childrenRect.height
-            spacing: Metrics.gap6
-
-            Repeater {
-                model: [
-                    { key: "flac", label: "FLAC" }, { key: "alac", label: "ALAC" },
-                    { key: "aac", label: "AAC" }, { key: "mp3", label: "MP3" },
-                    { key: "ogg", label: "Ogg" }, { key: "opus", label: "Opus" },
-                    { key: "wav", label: "WAV" }, { key: "aiff", label: "AIFF" },
-                    { key: "wavpack", label: "WavPack" }, { key: "ape", label: "APE" },
-                    { key: "dsd", label: "DSD" }
-                ]
-                Chip {
-                    required property var modelData
-                    text: modelData.label
-                    active: Library.formats.indexOf(modelData.key) >= 0
-                    onClicked: Library.toggleFilter("format", modelData.key)
+                Text {
+                    text: I18n.tr("Quality", I18n.rev)
+                    font.pointSize: Type.small
+                    font.weight: Type.semibold
+                    color: Theme.color.textTertiary
                 }
+                Flow {
+                    width: parent.width
+                    height: childrenRect.height
+                    spacing: Metrics.gap6
+
+                    Repeater {
+                        model: [
+                            { key: "lossy", label: I18n.tr("Lossy", I18n.rev) },
+                            { key: "lossless", label: I18n.tr("Lossless", I18n.rev) },
+                            { key: "hires", label: I18n.tr("Hi-Res", I18n.rev) },
+                            { key: "dsd", label: "DSD" }
+                        ]
+                        Chip {
+                            required property var modelData
+                            text: modelData.label
+                            active: Library.qualities.indexOf(modelData.key) >= 0
+                            onClicked: Library.toggleFilter("quality", modelData.key)
+                        }
+                    }
+                }
+
+                Text {
+                    text: I18n.tr("Format", I18n.rev)
+                    font.pointSize: Type.small
+                    font.weight: Type.semibold
+                    color: Theme.color.textTertiary
+                }
+                Flow {
+                    width: parent.width
+                    height: childrenRect.height
+                    spacing: Metrics.gap6
+
+                    Repeater {
+                        model: [
+                            { key: "flac", label: "FLAC" }, { key: "alac", label: "ALAC" },
+                            { key: "aac", label: "AAC" }, { key: "mp3", label: "MP3" },
+                            { key: "ogg", label: "Ogg" }, { key: "opus", label: "Opus" },
+                            { key: "wav", label: "WAV" }, { key: "aiff", label: "AIFF" },
+                            { key: "wavpack", label: "WavPack" }, { key: "ape", label: "APE" },
+                            { key: "dsd", label: "DSD" }
+                        ]
+                        Chip {
+                            required property var modelData
+                            text: modelData.label
+                            active: Library.formats.indexOf(modelData.key) >= 0
+                            onClicked: Library.toggleFilter("format", modelData.key)
+                        }
+                    }
+                }
+
             }
         }
 

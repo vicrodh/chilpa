@@ -4,7 +4,7 @@ import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// One of the Library screen's four filter columns (design/03 PaneColumn):
+// One of the Library screen's filter columns (design/03 PaneColumn):
 // a header with its count, "All (n)" first, then the entries.
 Rectangle {
     id: pane
@@ -40,7 +40,7 @@ Rectangle {
 
         TextInput {
             id: input
-            text: Library.queries[["year", "genre", "artist", "album"].indexOf(pane.column)] ?? ""
+            text: Library.queries[["year", "genre", "label", "composer", "artist", "album"].indexOf(pane.column)] ?? ""
             onTextEdited: Library.searchColumn(pane.column, text)
             anchors.left: lens.right
             anchors.leftMargin: Metrics.gap6

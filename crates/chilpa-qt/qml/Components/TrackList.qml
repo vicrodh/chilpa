@@ -126,6 +126,7 @@ Item {
         delegate: TrackRow {
             required property var model
             sourceName: model.sourceName || ""
+            composer: model.composer || ""
             sourceInfo: JSON.parse(model.sourceInfo || "{}")
             albumHovered: index === view.albumHovered
             cols: columns

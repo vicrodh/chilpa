@@ -40,6 +40,7 @@ Item {
         case "date": return I18n.tr("Date", I18n.rev)
         case "genres": return I18n.tr("Genres", I18n.rev)
         case "catalog_number": return I18n.tr("Catalog number", I18n.rev)
+        case "label": return I18n.tr("Label", I18n.rev)
         case "musicbrainz_release_id": return I18n.tr("MusicBrainz release", I18n.rev)
         case "musicbrainz_release_group_id": return I18n.tr("MusicBrainz release group", I18n.rev)
         case "musicbrainz_album_artist_ids": return I18n.tr("MusicBrainz album artists", I18n.rev)
