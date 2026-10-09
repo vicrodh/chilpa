@@ -6,7 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 
-Column {
+Item {
     id: controls
     property var about: ({})
     readonly property string preference: "ui.source." + (about.plugin || "") + ".discover." + (about.tab || "home")
@@ -19,7 +19,8 @@ Column {
         return kept.concat(available.filter(s => !kept.some(p => p.id === s.id)))
     }
     readonly property var shown: sections.filter(s => s.enabled !== false)
-    spacing: Metrics.gap8
+    implicitWidth: buttons.implicitWidth
+    implicitHeight: buttons.implicitHeight
     function restore() {
         try { preferences = JSON.parse(SettingsModel.kept(preference) || "[]") } catch (_) { preferences = [] }
         selectedGenres = (about.genre_filter || "").split(",").filter(Boolean)
@@ -39,25 +40,73 @@ Column {
         preferences = rows; SettingsModel.keep(preference, JSON.stringify(rows))
     }
     Row {
-        spacing: Metrics.gap8
-        PillButton { text: I18n.tr("Genres", I18n.rev); onClicked: controls.filtering = !controls.filtering }
-        PillButton { text: I18n.tr("Customize", I18n.rev); onClicked: customization.open() }
+        id: buttons
+        spacing: Metrics.gap6
+        PillButton {
+            id: genresButton
+            objectName: "discoveryGenres"
+            visible: (controls.about.genres || []).length > 0
+            text: I18n.tr("Genres", I18n.rev) + (controls.selectedGenres.length ? " (" + controls.selectedGenres.length + ")" : "")
+            glyph: SourceGlyphs.listFilter; iconFamily: SourceGlyphs.font
+            kind: controls.selectedGenres.length ? "primary" : "secondary"
+            onClicked: genres.opened ? genres.close() : genres.open()
+        }
+        IconButton {
+            objectName: "discoveryCustomize"
+            size: Metrics.button32; round: true
+            glyph: SourceGlyphs.homeGear; iconFamily: SourceGlyphs.font
+            tip: I18n.tr("Customize", I18n.rev)
+            onClicked: customization.open()
+        }
     }
-    Flow {
-        width: parent.width; visible: controls.filtering; spacing: Metrics.gap8
-        Repeater {
-            model: controls.about.genres || []
-            PillButton {
-                required property var modelData
-                text: (controls.selectedGenres.includes(String(modelData.id)) ? "✓ " : "") + modelData.name
-                onClicked: {
-                    const id = String(modelData.id)
-                    controls.selectedGenres = controls.selectedGenres.includes(id) ? controls.selectedGenres.filter(g => g !== id) : controls.selectedGenres.concat([id])
+    Popup {
+        id: genres
+        objectName: "discoveryGenrePopup"
+        x: controls.width - width
+        y: controls.height + Metrics.gap8
+        width: Math.min(Metrics.sourcesPopoverWidth, Overlay.overlay ? Overlay.overlay.width - Metrics.modalInsets : Metrics.sourcesPopoverWidth)
+        height: Math.min(implicitHeight, Overlay.overlay ? Overlay.overlay.height - Metrics.modalInsets : implicitHeight)
+        padding: Metrics.gap16
+        modal: true; dim: false; focus: true
+        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
+        background: Rectangle { radius: Metrics.radiusPanel; color: Theme.color.surfaceRaised; Edge {} }
+        onOpened: genreSearch.text = ""
+        contentItem: Column {
+            spacing: Metrics.gap12
+            Row {
+                width: parent.width
+                Text { width: parent.width - closeGenres.width; text: I18n.tr("Genres", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.section }
+                IconButton { id: closeGenres; glyph: Icons.x; tip: I18n.tr("Close", I18n.rev); onClicked: genres.close() }
+            }
+            SearchField { id: genreSearch; width: parent.width; placeholder: I18n.tr("Search", I18n.rev); onEscaped: text = "" }
+            Flickable {
+                width: parent.width
+                height: Math.min(genreChoices.implicitHeight, Metrics.heroArt)
+                contentHeight: genreChoices.implicitHeight; clip: true
+                ScrollBar.vertical: ViewportScrollBar {}
+                Flow {
+                    id: genreChoices
+                    width: parent.width; spacing: Metrics.gap8
+                    Repeater {
+                        model: (controls.about.genres || []).filter(g => g.name.toLowerCase().includes(genreSearch.text.toLowerCase()))
+                        PillButton {
+                            required property var modelData
+                            text: modelData.name
+                            kind: controls.selectedGenres.includes(String(modelData.id)) ? "primary" : "secondary"
+                            onClicked: {
+                                const id = String(modelData.id)
+                                controls.selectedGenres = controls.selectedGenres.includes(id) ? controls.selectedGenres.filter(g => g !== id) : controls.selectedGenres.concat([id])
+                            }
+                        }
+                    }
                 }
             }
+            Row {
+                spacing: Metrics.gap8
+                PillButton { text: I18n.tr("Apply", I18n.rev); kind: "primary"; onClicked: { genres.close(); Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) } }
+                PillButton { text: I18n.tr("Clear", I18n.rev); onClicked: controls.selectedGenres = [] }
+            }
         }
-        PillButton { text: I18n.tr("Apply", I18n.rev); onClicked: Navigation.goKey("source", controls.about.plugin + " native:discover:" + controls.about.tab + ":" + controls.selectedGenres.join(",")) }
-        PillButton { text: I18n.tr("Clear", I18n.rev); onClicked: controls.selectedGenres = [] }
     }
     Modal {
         id: customization

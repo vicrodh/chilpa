@@ -52,9 +52,17 @@ Flickable {
             font.letterSpacing: Type.titleTracking
             color: Theme.color.textPrimary
         }
-        SourceTabs { model: page.about.tabs || [] }
-
-        SourceDiscoveryControls { id: discovery; width: parent.width; about: page.about; visible: !!page.about.tab }
+        Item {
+            width: parent.width
+            height: Math.max(tabs.height, discovery.visible ? discovery.height : 0)
+            Flickable {
+                anchors.left: parent.left; anchors.right: discovery.left; anchors.rightMargin: Metrics.gap12
+                height: tabs.height; contentWidth: tabs.width; clip: true
+                flickableDirection: Flickable.HorizontalFlick
+                SourceTabs { id: tabs; model: page.about.tabs || [] }
+            }
+            SourceDiscoveryControls { id: discovery; anchors.right: parent.right; about: page.about; visible: !!page.about.tab }
+        }
         SourcePageHeader { width: parent.width; currentPage: true; tracksKey: ((page.about.shelves || []).find(shelf => shelf.tracks) || {}).key || ""; info: page.about.header || ({}); visible: !!page.about.header }
         Repeater {
             model: page.shelfKeys
