@@ -96,11 +96,11 @@ Window {
         z: 3
         panelAside: window.panelAside
         onShowPanel: window.panelAside = false
-        // An inset asked for by CHILPA_PLAYER_INSET wins, with no cap, so the
-        // owner can compare it against the plane; else the window's rule.
-        width: Dev.playerInset >= 0 ? host.width - Dev.playerInset * 2 : Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
-        x: host.x + (host.width - width) / 2 // derived: centered over the content
-        y: idle.away ? window.height : window.height - height - Metrics.playerBottom
+        // The plane's width less the window's gap on each side, and its
+        // bottom that gap above the plane's (the owner, 2026-10-08 night).
+        width: host.width - Metrics.spaceWindow * 2 // derived: the gap on each side
+        x: host.x + Metrics.spaceWindow
+        y: idle.away ? window.height : host.y + host.height - height - Metrics.spaceWindow
         Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
     }
 

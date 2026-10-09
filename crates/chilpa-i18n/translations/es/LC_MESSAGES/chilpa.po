@@ -423,8 +423,8 @@ msgstr "Busca una carpeta de música o escribe su ruta completa."
 msgid "Browse…"
 msgstr "Buscar…"
 
-msgid "Buttons to go back or forward ten seconds."
-msgstr "Botones para regresar o adelantar diez segundos."
+msgid "Buttons to go back or forward ten seconds, and the A-B loop."
+msgstr "Botones para ir diez segundos atrás o adelante, y el bucle A-B."
 
 msgid "By album"
 msgstr "Por álbum"

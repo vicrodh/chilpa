@@ -125,7 +125,7 @@ pub const SECTIONS: &[Section] = &[
             Group {
                 title: Chilpa::mark("Player bar"),
                 settings: &[
-                    setting("playback.extra", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds."), Control::Toggle),
+                    setting("playback.extra", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds, and the A-B loop."), Control::Toggle),
                     setting("playback.autoHide", Chilpa::mark("Hide when idle"), Chilpa::mark("The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."), Control::Toggle),
                 ],
             },
