@@ -28,6 +28,9 @@ pub enum Screen {
     /// The metadata editor, on one record.
     Metadata,
     ListenList,
+    /// What was listened to, a period at a time, and the history whole.
+    Stats,
+    ListeningHistory,
     /// A plugin's own tree, browsed. The route's key is the plugin's id.
     Source,
     /// The page of one entry of a source: a station, an episode. The key
@@ -54,13 +57,15 @@ impl Screen {
             Screen::PlaylistImport => "playlistImport",
             Screen::Metadata => "metadata",
             Screen::ListenList => "listenlist",
+            Screen::Stats => "stats",
+            Screen::ListeningHistory => "listeningHistory",
             Screen::Source => "source",
             Screen::SourceEntry => "sourceEntry",
         }
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -252,6 +257,8 @@ impl crate::Chilpa {
             Screen::PlaylistImport => (self.t("Import playlist"), "playlist"),
             Screen::ListenList => (self.t("Queues"), "listDetails"),
             Screen::Metadata => (self.t("Edit metadata"), "listDetails"),
+            Screen::Stats => (self.t("Listening stats"), "chartBar"),
+            Screen::ListeningHistory => (self.t("Listening history"), "history"),
             Screen::Source | Screen::SourceEntry => {
                 let (plugin, entry) = r.key.split_once(' ').unwrap_or((r.key.as_str(), ""));
                 let panel = self.source_panels().into_iter().find(|p| p.id == plugin).unwrap_or_default();

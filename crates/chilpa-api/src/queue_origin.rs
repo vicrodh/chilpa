@@ -40,7 +40,7 @@ impl Chilpa {
     }
     pub fn browse_origin(&self) -> Option<QueueOrigin> { self.browse_origin.clone() }
     fn origin_for_route(&self, route: &Route) -> Option<QueueOrigin> {
-        if matches!(route.screen, Screen::ListenList | Screen::Settings | Screen::Metadata | Screen::PlaylistManager | Screen::PlaylistImport) { return None; }
+        if matches!(route.screen, Screen::ListenList | Screen::Settings | Screen::Metadata | Screen::PlaylistManager | Screen::PlaylistImport | Screen::Stats | Screen::ListeningHistory) { return None; }
         let mut origin = QueueOrigin { screen: route.screen.name().into(), id: route.id, key: route.key.clone(), ..Default::default() };
         if route.id < 0 && matches!(route.screen, Screen::Album | Screen::Playlist) {
             let card = self.catalog.card(route.id)?;

@@ -1469,6 +1469,12 @@ msgstr "Lista"
 msgid "Listen live"
 msgstr "Escuchar en vivo"
 
+msgid "Listening history"
+msgstr "Historial de escucha"
+
+msgid "Listening stats"
+msgstr "Estadísticas de escucha"
+
 msgid "Lite fill"
 msgstr "Relleno ligero"
 
