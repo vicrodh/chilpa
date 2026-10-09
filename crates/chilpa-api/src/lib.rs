@@ -40,6 +40,7 @@ pub mod queue_origin;
 mod outputs;
 mod playlists;
 mod preferences;
+mod play_indicator;
 mod playlist_sources;
 mod plugin_broker;
 mod playlist_import;

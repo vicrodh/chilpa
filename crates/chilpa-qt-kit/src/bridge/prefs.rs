@@ -26,6 +26,8 @@ pub mod qobject {
         /// empty when none is.
         #[qproperty(QString, preview_key)]
         #[qproperty(QString, preview_value)]
+        /// Whether the playing row's mark is the moving bars.
+        #[qproperty(bool, animated_indicator)]
         type Prefs = super::PrefsRust;
 
         /// A control shows `value` for `key` before keeping it. Empty
@@ -47,6 +49,7 @@ pub struct PrefsRust {
     rev: i32,
     preview_key: QString,
     preview_value: QString,
+    animated_indicator: bool,
 }
 
 impl qobject::Prefs {
@@ -57,7 +60,9 @@ impl qobject::Prefs {
 }
 
 impl cxx_qt::Initialize for qobject::Prefs {
-    fn initialize(self: Pin<&mut Self>) {
+    fn initialize(mut self: Pin<&mut Self>) {
+        let animated = crate::app::with(|api| api.play_indicator_animated());
+        self.as_mut().set_animated_indicator(animated);
         let thread = self.qt_thread();
         THREAD.with(|slot| *slot.borrow_mut() = Some(thread));
     }
@@ -75,6 +80,8 @@ pub fn changed() {
             let _ = thread.queue(|mut prefs| {
                 let next = prefs.rev().wrapping_add(1);
                 prefs.as_mut().set_rev(next);
+                let animated = crate::app::with(|api| api.play_indicator_animated());
+                prefs.as_mut().set_animated_indicator(animated);
             });
         }
     });

@@ -115,7 +115,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value)
+        self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -294,6 +294,7 @@ impl Chilpa {
                 row.value = self.preference("appearance.accent").unwrap_or_default();
             }
             "playback.extra" => row.value = self.pref_on(&row.key, true),
+            crate::play_indicator::ANIMATED => row.value = self.play_indicator_animated().to_string(),
             "playback.autoHide" => row.value = self.pref_on(&row.key, false),
             "playback.gapless" => row.value = self.gapless().to_string(),
             "playback.normalize" => row.value = self.normalize().to_string(),

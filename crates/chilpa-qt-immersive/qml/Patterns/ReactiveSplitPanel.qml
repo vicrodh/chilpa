@@ -6,6 +6,7 @@ import app.chilpa.ambient
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/lyrics/qml/Components"
 import "../Components"
 import "../Primitives"
@@ -77,7 +78,7 @@ Item {
                 anchors.bottom: parent.bottom
                 width: Math.max(Stage.cineWaveBarMin, slot * Stage.cineWaveBarShare)
                 height: Math.max(Stage.waveMinTall, wave.at(index) * (waveform.height - Metrics.hairline))
-                radius: Math.min(Stage.eqBar, width / 2) // derived: rounded ends
+                radius: Math.min(Metrics.eqBar, width / 2) // derived: rounded ends
                 color: panel.accent
                 opacity: index % 5 === 0 ? 1 : 0.82
             }
@@ -179,7 +180,7 @@ Item {
                     Item {
                         visible: Player.playing && !Player.paused
                         width: parent.width
-                        height: visible ? Stage.eqTall * Stage.cineNowScale : 0
+                        height: visible ? Metrics.eqTall * Stage.cineNowScale : 0
                         Row {
                             anchors.left: parent.left
                             anchors.verticalCenter: parent.verticalCenter

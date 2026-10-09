@@ -291,6 +291,9 @@ msgstr ""
 msgid "Analyzing {} of {} tracks"
 msgstr ""
 
+msgid "Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."
+msgstr ""
+
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr ""
 
@@ -2061,6 +2064,9 @@ msgid "Play an album or track to get started"
 msgstr ""
 
 msgid "Play count"
+msgstr ""
+
+msgid "Play indicator animation"
 msgstr ""
 
 msgid "Play later"

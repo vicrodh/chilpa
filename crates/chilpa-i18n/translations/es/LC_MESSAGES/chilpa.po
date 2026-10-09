@@ -291,6 +291,9 @@ msgstr "Analizar la biblioteca"
 msgid "Analyzing {} of {} tracks"
 msgstr "Analizando {} de {} pistas"
 
+msgid "Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."
+msgstr "Anima la marca de la pista que suena con barras de ecualizador. Apagada por defecto: una marca fija con un borde de acento, más ligera para el CPU."
+
 msgid "Animated album-art background behind the whole app. High resource use: GPU accelerated."
 msgstr "Fondo animado con los colores de la portada detrás de toda la app. Usa bastantes recursos: va por la GPU."
 
@@ -2062,6 +2065,9 @@ msgstr "Reproduce un álbum o una pista para empezar"
 
 msgid "Play count"
 msgstr "Reproducciones"
+
+msgid "Play indicator animation"
+msgstr "Animación del indicador de reproducción"
 
 msgid "Play later"
 msgstr "Reproducir más tarde"

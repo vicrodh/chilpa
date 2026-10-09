@@ -1,7 +1,9 @@
 // hot-path: one per visible track, recycled while the list scrolls.
 import QtQuick
+import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // What a track row starts with: the arrows of a list kept in its own
 // order, and then its number, the mark of the one playing, or the check of
@@ -37,6 +39,7 @@ Item {
         x: lead.width - Metrics.gap8 - width
         anchors.verticalCenter: parent.verticalCenter
         visible: !lead.selectionMode && lead.playing
+        running: Player.playing && !Player.paused
     }
 
     Icon {

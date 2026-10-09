@@ -4,12 +4,14 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // A track in the side queue (design/03 QueueRow): the grid
 // 12 | 36 | 1fr | auto | 20 -- grip, cover, title and artist, time and the
 // item's menu. The grip's column is kept and its glyph is not drawn until
 // the queue can be reordered by dragging. The one that plays is 48 high,
-// in accent, with the playing bars where the time goes. A double click
+// raised, with the playing bars where the time goes; its words keep their
+// colours, as in QBZ, so they read over the dynamic background. A double click
 // plays from here; the menu, or a right click, has the rest.
 Item {
     id: row
@@ -58,7 +60,7 @@ Item {
             elide: Text.ElideRight
             font.pointSize: Type.row
             font.weight: Type.medium
-            color: row.playing ? Theme.color.accent : Theme.color.textPrimary
+            color: Theme.color.textPrimary
         }
         Text {
             width: parent.width
@@ -86,6 +88,7 @@ Item {
         anchors.rightMargin: Metrics.gap10
         anchors.verticalCenter: parent.verticalCenter
         visible: row.playing
+        running: Player.playing && !Player.paused
     }
 
     IconButton {

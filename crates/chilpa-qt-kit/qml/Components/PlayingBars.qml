@@ -1,6 +1,5 @@
 import QtQuick
 import app.chilpa.kit
-import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
 
 // The "now playing" sign: four bars of 3 px in an 18 by 14 box, each a
@@ -12,8 +11,8 @@ Item {
     property real barScale: 1
     property bool active: true
     property real t: 0
-    width: Stage.eqWide * barScale
-    height: Stage.eqTall * barScale
+    width: Metrics.eqWide * barScale
+    height: Metrics.eqTall * barScale
     implicitWidth: width
     implicitHeight: height
 
@@ -35,7 +34,7 @@ Item {
     Connections {
         target: bars.moving ? Pulse : null
         function onMsChanged() {
-            bars.t = (bars.t + Pulse.period / Stage.eqLoop) % 1
+            bars.t = (bars.t + Pulse.period / Metrics.eqLoop) % 1
         }
     }
     function wave(phase) {
@@ -46,8 +45,8 @@ Item {
         model: [{ at: 0, base: 0.6, phase: 0 }, { at: 1, base: 1, phase: 0.25 }, { at: 2, base: 0.4, phase: 0.125 }, { at: 3, base: 0.8, phase: 0.375 }]
         Rectangle {
             required property var modelData
-            x: modelData.at * Stage.eqStep * bars.barScale
-            width: Stage.eqBar * bars.barScale
+            x: modelData.at * Metrics.eqStep * bars.barScale
+            width: Metrics.eqBar * bars.barScale
             y: bars.height - height
             height: bars.height * modelData.base * bars.wave(modelData.phase)
             radius: bars.barScale
