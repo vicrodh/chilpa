@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "../Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // Tracks: every track of the library in one list, found by what is typed,
 // in an order, and grouped or not. Grouped, its headers say the record, the

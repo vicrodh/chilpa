@@ -23,6 +23,7 @@ TitledFlow {
     AlbumCreditRow { width: Metrics.confirmWidth; credit: ({title:"Song",artist:"Artist",performers:"Player, Guitar"}) }
     SourceRecordDetails { width: Metrics.confirmWidth }
     SourceAlbumLibraries { width: Metrics.confirmWidth; model: [{id:"preview",name:"Streaming library",enabled:false,icon:""}] }
+    SourcesPopover {}
     SourcePlaylistEditor {}
     SourceFolderEditor {}
     SourcePlaylistRows { width: Metrics.confirmWidth; rows: [{title:"Song",artist:"Artist",member:"1"}] }
