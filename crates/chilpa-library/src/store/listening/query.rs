@@ -167,6 +167,15 @@ pub struct HistoryEntry {
     pub artwork_path: Option<String>,
 }
 
+/// The history's names: as the listen recorded them, else as the library has
+/// them now.
+const TITLE: &str = "coalesce(nullif(c.title, ''), t.title, '')";
+const ARTIST: &str = "coalesce(nullif(c.artist, ''), t.artist, '')";
+const ALBUM: &str = "coalesce(nullif(c.album, ''), a.title, '')";
+const JOINS: &str = "LEFT JOIN play_context c ON c.event_id = p.id
+             LEFT JOIN tracks t ON t.id = p.track_id
+             LEFT JOIN albums a ON a.id = coalesce(t.album_id, c.album_id)";
+
 impl Library {
     /// How many artists and how many records the period's listens name.
     pub fn listening_counts(&self, filter: &ListenFilter) -> rusqlite::Result<(u64, u64)> {
@@ -179,41 +188,50 @@ impl Library {
     }
 
     /// The listens of the period, newest first, `limit` of them after the
-    /// first `skip`, and how many there are in all.
-    pub fn listening_history(&self, filter: &ListenFilter, skip: usize, limit: usize) -> rusqlite::Result<(Vec<HistoryEntry>, u64)> {
+    /// first `skip`, and how many there are in all. With `search`, only the
+    /// listens whose track, artist or record, as the listen named them,
+    /// hold every word of it.
+    pub fn listening_history(&self, filter: &ListenFilter, search: &str, skip: usize, limit: usize) -> rusqlite::Result<(Vec<HistoryEntry>, u64)> {
+        use rusqlite::types::Value;
         offset(filter)?;
         // Only the bounds the filter has, so the time index can be used.
         let mut conditions = vec!["1".to_string()];
-        let mut values: Vec<i64> = Vec::new();
+        let mut values: Vec<Value> = Vec::new();
         for (bound, sql) in [(filter.from, "p.started_at >= ?"), (filter.until, "p.started_at < ?"), (filter.source_id, "p.source_id = ?")] {
             if let Some(value) = bound {
                 conditions.push(sql.to_string());
-                values.push(value);
+                values.push(Value::Integer(value));
+            }
+        }
+        let words = crate::store::find::patterns(search);
+        for word in &words {
+            conditions.push(format!("({TITLE} LIKE ? ESCAPE '\\' OR {ARTIST} LIKE ? ESCAPE '\\' OR {ALBUM} LIKE ? ESCAPE '\\')"));
+            for _ in 0..3 {
+                values.push(Value::Text(word.clone()));
             }
         }
         let clause = conditions.join(" AND ");
+        // The names live in the context and the library; a count without a
+        // search needs neither.
+        let joined = if words.is_empty() { "" } else { JOINS };
         let total: i64 = self.db.query_row(
-            &format!("SELECT count(*) FROM play_events p WHERE {clause}"),
+            &format!("SELECT count(*) FROM play_events p {joined} WHERE {clause}"),
             rusqlite::params_from_iter(values.iter()),
             |r| r.get(0),
         )?;
         let sql = format!(
             concat!("SELECT p.id, p.started_at,
                 strftime('%Y-%m-%d %H:%M', p.started_at + coalesce(c.utc_offset_seconds, unixepoch(p.started_at, 'unixepoch', 'localtime') - p.started_at), 'unixepoch'),
-                coalesce(nullif(c.title, ''), t.title, ''), coalesce(nullif(c.artist, ''), t.artist, ''),
-                coalesce(nullif(c.album, ''), a.title, ''), p.played_ms, p.duration_ms, p.skipped, p.bit_perfect,
+                {TITLE}, {ARTIST}, {ALBUM}, p.played_ms, p.duration_ms, p.skipped, p.bit_perfect,
                 p.sample_rate_hz, p.bit_depth, p.track_id, a.id, p.source_id, ", album_art!("a"), "
-             FROM play_events p
-             LEFT JOIN play_context c ON c.event_id = p.id
-             LEFT JOIN tracks t ON t.id = p.track_id
-             LEFT JOIN albums a ON a.id = coalesce(t.album_id, c.album_id)
+             FROM play_events p {JOINS}
              WHERE {clause}
              ORDER BY p.started_at DESC, p.id DESC
              LIMIT ? OFFSET ?"),
-            clause = clause
+            clause = clause, TITLE = TITLE, ARTIST = ARTIST, ALBUM = ALBUM, JOINS = JOINS
         );
-        values.push(limit.min(1000) as i64);
-        values.push(skip as i64);
+        values.push(Value::Integer(limit.min(1000) as i64));
+        values.push(Value::Integer(skip as i64));
         let rows = self.db.prepare(&sql)?.query_map(
             rusqlite::params_from_iter(values.iter()),
             |r| Ok(HistoryEntry {
@@ -236,6 +254,12 @@ impl Library {
             }),
         )?.collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((rows, total.max(0) as u64))
+    }
+
+    /// Where a local date, "2026-10-09", began, in Unix seconds: the
+    /// midnight of that day where the listens were heard.
+    pub fn local_date_start(&self, date: &str) -> rusqlite::Result<i64> {
+        self.db.query_row("SELECT unixepoch(?1, 'utc')", [date], |r| r.get(0))
     }
 
     /// Where the local day began `days_ago` days back from today, in Unix
