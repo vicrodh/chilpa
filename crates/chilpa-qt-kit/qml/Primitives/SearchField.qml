@@ -15,6 +15,8 @@ Rectangle {
     // Up and Down, for a list of results to follow; Esc.
     signal stepped(int by)
     signal escaped()
+    // The clear button was pressed.
+    signal cleared()
 
     function focusInput() {
         input.forceActiveFocus()
@@ -100,7 +102,10 @@ Rectangle {
             MouseArea {
                 cursorShape: Qt.PointingHandCursor
                 anchors.fill: parent
-                onClicked: input.text = ""
+                onClicked: {
+                    input.text = ""
+                    root.cleared()
+                }
             }
         }
     }

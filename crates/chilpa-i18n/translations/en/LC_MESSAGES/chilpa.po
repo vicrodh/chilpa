@@ -2707,6 +2707,9 @@ msgstr ""
 msgid "Size"
 msgstr ""
 
+msgid "Sleep timer"
+msgstr ""
+
 msgid "Soft"
 msgstr ""
 
@@ -2753,6 +2756,9 @@ msgid "Stop playback after:"
 msgstr ""
 
 msgid "Stops in"
+msgstr ""
+
+msgid "Stops in {}"
 msgstr ""
 
 msgid "Stream address"
@@ -2983,9 +2989,6 @@ msgid "This update asks for additional access."
 msgstr ""
 
 msgid "Time"
-msgstr ""
-
-msgid "Timer"
 msgstr ""
 
 msgid "Title"

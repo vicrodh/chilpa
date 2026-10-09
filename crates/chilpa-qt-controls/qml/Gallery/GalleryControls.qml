@@ -14,6 +14,7 @@ TitledFlow {
     ShortcutColumns { width: Metrics.settingsMaxWidth; keys: ({ col1: [{ label: "Playback", rows: [{ id: "playback.toggle", label: "Play / Pause", shortcut: "Space", modified: false }] }] }) }
     LoopRow { width: Metrics.playbackOptionsWidth }
     LoopButton {}
+    QueueFooter { width: Metrics.rightPanel }
     ShortcutsSheet {}
     ShortcutsEditor {}
     SleepTimer {}
