@@ -7,6 +7,9 @@ use crate::{Chilpa, NowPlaying};
 pub const SHOWN: &str = "desktop.tray";
 /// Closing the window keeps Chilpa playing in the tray instead of quitting.
 pub const CLOSE_TO_TRAY: &str = "desktop.closeToTray";
+/// Quitting from the window, its menu, Ctrl+Q or the tray asks first, as
+/// QBZ's does; the question's "Don't ask again" turns it off.
+pub const CONFIRM_QUIT: &str = "desktop.confirmQuit";
 /// Which glyph: "auto" follows the desktop's colours, "mono-light" is the
 /// light glyph for a dark panel, "mono-dark" the dark glyph for a light
 /// panel, "color" the symbol in its own colours.
@@ -62,6 +65,16 @@ impl Chilpa {
         self.preference(CLOSE_TO_TRAY).is_none_or(|v| v == "true") && self.tray_present()
     }
 
+    /// Whether quitting asks first.
+    pub fn confirms_quit(&self) -> bool {
+        self.preference(CONFIRM_QUIT).is_none_or(|v| v == "true")
+    }
+
+    /// Quitting stops asking: the question's "Don't ask again".
+    pub fn stop_confirming_quit(&mut self) {
+        self.remember_preference(CONFIRM_QUIT, "false");
+    }
+
     /// The glyph preference, one of [`GLYPHS`].
     pub fn tray_glyph(&self) -> String {
         self.preference(GLYPH).filter(|v| GLYPHS.contains(&v.as_str())).unwrap_or_else(|| GLYPHS[0].to_owned())
@@ -74,7 +87,7 @@ impl Chilpa {
                 self.remember_preference(key, &(value == "true").to_string());
                 if value == "true" { self.start_tray() } else { self.stop_tray() }
             }
-            CLOSE_TO_TRAY => self.remember_preference(key, &(value == "true").to_string()),
+            CLOSE_TO_TRAY | CONFIRM_QUIT => self.remember_preference(key, &(value == "true").to_string()),
             GLYPH => {
                 let glyph = if GLYPHS.contains(&value) { value } else { GLYPHS[0] };
                 self.remember_preference(key, glyph);

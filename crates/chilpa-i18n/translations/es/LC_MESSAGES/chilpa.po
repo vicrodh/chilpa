@@ -357,6 +357,9 @@ msgstr "Vista de portada"
 msgid "Ascending"
 msgstr "Ascendente"
 
+msgid "Ask before quitting"
+msgstr "Preguntar antes de salir"
+
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr "Le pide a PipeWire o a PulseAudio que suelte la tarjeta mientras Chilpa toca en ella, y se la regresa cuando Chilpa se detiene o se pausa un buen rato."
 
@@ -949,6 +952,9 @@ msgstr "Opciones de visualización"
 
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
+
+msgid "Don't ask again"
+msgstr "No volver a preguntar"
 
 msgid "Done"
 msgstr "Listo"
@@ -2084,6 +2090,9 @@ msgstr "Reproducción"
 msgid "Playback options"
 msgstr "Opciones de reproducción"
 
+msgid "Playback stops and the window closes."
+msgstr "La reproducción se detiene y la ventana se cierra."
+
 msgid "Player bar"
 msgstr "Barra del reproductor"
 
@@ -2236,6 +2245,12 @@ msgstr "Salir"
 
 msgid "Quit Chilpa"
 msgstr "Salir de Chilpa"
+
+msgid "Quit Chilpa?"
+msgstr "¿Salir de Chilpa?"
+
+msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
+msgstr "Salir desde la ventana, su menú, Ctrl+Q o la bandeja pregunta antes."
 
 msgid "RECENTLY PLAYED"
 msgstr "REPRODUCIDO RECIENTEMENTE"

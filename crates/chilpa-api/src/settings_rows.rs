@@ -222,6 +222,7 @@ impl Chilpa {
             crate::mini::DEFAULT_VIEW => self.mini_row(row),
             crate::immersive::DEFAULT_VIEW | crate::immersive::SEARCH_ACTION => self.immersive_row(row),
             crate::tray::SHOWN => row.value = self.tray_wanted().to_string(),
+            crate::tray::CONFIRM_QUIT => row.value = self.confirms_quit().to_string(),
             // Nothing to close to, and no glyph to choose, while the icon is off.
             crate::tray::CLOSE_TO_TRAY => {
                 row.value = self.preference(&row.key).is_none_or(|v| v == "true").to_string();
