@@ -95,6 +95,8 @@ QtObject {
     readonly property int focusRing: 2
     // How far outside a slider its focus ring sits (QBZ's QbzSlider).
     readonly property int focusRingGap: 3
+    // The role of a settings row's key in its model (Qt.UserRole + 1).
+    readonly property int settingsKeyRole: 257
     readonly property int tooltipDelay: 600
     readonly property int toastMinWidth: 280
     readonly property int toastMaxWidth: 560

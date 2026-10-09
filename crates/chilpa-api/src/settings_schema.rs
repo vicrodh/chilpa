@@ -294,6 +294,69 @@ pub fn section(id: &str) -> &'static Section {
     SECTIONS.iter().find(|s| s.id == id).unwrap_or(&SECTIONS[0])
 }
 
+/// A setting found by what it says, for the search in Settings.
+#[derive(Debug, serde::Serialize)]
+pub struct FoundSetting {
+    pub section: &'static str,
+    pub key: &'static str,
+    pub title: String,
+    pub description: String,
+    /// Where it lives: the section and the group, as Settings names them.
+    pub place: String,
+}
+
+/// A text as it is matched: lower case, without the accents of the
+/// languages Chilpa speaks, so "naive" finds "Naïve".
+fn folded(text: &str) -> String {
+    text.chars().flat_map(char::to_lowercase).map(|c| match c {
+        'á' | 'à' | 'ä' | 'â' | 'ã' => 'a',
+        'é' | 'è' | 'ë' | 'ê' => 'e',
+        'í' | 'ì' | 'ï' | 'î' => 'i',
+        'ó' | 'ò' | 'ö' | 'ô' | 'õ' => 'o',
+        'ú' | 'ù' | 'ü' | 'û' => 'u',
+        'ñ' => 'n',
+        'ç' => 'c',
+        other => other,
+    }).collect()
+}
+
+impl Chilpa {
+    /// The settings that say every word typed, in the language shown or in
+    /// English, in the order Settings shows them: those whose title, group
+    /// or section say it first, then those whose description does.
+    pub fn settings_find(&self, text: &str, limit: usize) -> Vec<FoundSetting> {
+        let words: Vec<String> = folded(text).split_whitespace().map(str::to_string).collect();
+        if words.is_empty() {
+            return Vec::new();
+        }
+        let (mut named, mut described) = (Vec::new(), Vec::new());
+        for section in SECTIONS {
+            for group in section.groups {
+                for setting in group.settings {
+                    let title = self.t(setting.title);
+                    let description = self.t(setting.description);
+                    let place = format!("{} › {}", self.t(section.label), self.t(group.title));
+                    let head = folded(&[title.as_str(), place.as_str(), setting.title, group.title, section.label].join(" "));
+                    let all = format!("{head} {} {}", folded(&description), folded(setting.description));
+                    if !words.iter().all(|word| all.contains(word.as_str())) {
+                        continue;
+                    }
+                    let found = FoundSetting { section: section.id, key: setting.key, title, description, place };
+                    if words.iter().all(|word| head.contains(word.as_str())) { named.push(found) } else { described.push(found) }
+                }
+            }
+        }
+        named.extend(described);
+        named.truncate(limit);
+        named
+    }
+
+    /// `settings_find` as the window reads it.
+    pub fn settings_find_json(&self, text: &str) -> String {
+        serde_json::to_string(&self.settings_find(text, 40)).unwrap_or_else(|_| "[]".into())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -324,6 +387,21 @@ mod tests {
             let pressable = matches!(set.control, Control::Button | Control::Link | Control::Secret | Control::Progress | Control::File);
             assert_eq!(pressable, !set.action.is_empty(), "{}", set.key);
         }
+    }
+
+    #[test]
+    fn a_setting_is_found_by_its_words_titles_first_and_without_accents() {
+        let api = Chilpa::new();
+        let found = api.settings_find("exclusive", 10);
+        assert_eq!(found.first().map(|f| f.key), Some("audio.exclusive"));
+        assert!(found.iter().all(|f| f.section == "audio" || !f.description.is_empty()));
+        assert!(api.settings_find("  ", 10).is_empty());
+        assert!(api.settings_find("exclusive nowhere-at-all", 10).is_empty(), "every word has to be said");
+        assert_eq!(folded("Naïve Ü Ñ Ç"), "naive u n c");
+        let says: Vec<bool> = api.settings_find("output", 40).iter().map(|f| folded(&f.title).contains("output") || folded(&f.place).contains("output")).collect();
+        let mut ordered = says.clone();
+        ordered.sort_by(|a, b| b.cmp(a));
+        assert_eq!(says, ordered, "what says it in its name comes first");
     }
 
     #[test]

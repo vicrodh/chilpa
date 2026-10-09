@@ -1802,6 +1802,9 @@ msgstr ""
 msgid "No review available"
 msgstr "No review available"
 
+msgid "No setting says that"
+msgstr ""
+
 msgid "No stories for this artist"
 msgstr ""
 
@@ -2526,6 +2529,9 @@ msgid "Search queue"
 msgstr ""
 
 msgid "Search results"
+msgstr ""
+
+msgid "Search settings"
 msgstr ""
 
 msgid "Search shows"
