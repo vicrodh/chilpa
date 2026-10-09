@@ -84,6 +84,7 @@ pub mod tray;
 pub mod ambient;
 pub mod immersive;
 pub mod mini;
+mod seek_waveform;
 pub mod visualizer;
 pub mod wallpaper;
 pub mod open_media;
@@ -630,6 +631,7 @@ pub struct Chilpa {
     /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
     visualizer: visualizer::Visualizer,
+    seek_waveform: seek_waveform::SeekWaveform,
     /// The background scan, while it runs.
     scan: Option<chilpa_library::ScanJob>,
     scan_status: ScanStatus,
@@ -736,6 +738,7 @@ impl Chilpa {
             plugin_startup: plugin_startup::Startup::default(),
             natives: Default::default(),
             visualizer: visualizer::Visualizer::new(tap.clone()),
+            seek_waveform: seek_waveform::SeekWaveform::default(),
             tap,
             scan: None,
             scan_status: ScanStatus::default(),
@@ -1189,8 +1192,7 @@ impl Chilpa {
         if let Some(player) = &self.player {
             self.now.paused = player.is_paused();
         }
-        // Nothing playing is nothing to draw: the visualizer parks.
-        self.visualizer.set_paused(!self.now.playing || self.now.paused);
+        self.follow_playing_documents();
         let mut started = false;
         let events = self.player.as_ref().map(|p| p.poll()).unwrap_or_default();
         for event in events {

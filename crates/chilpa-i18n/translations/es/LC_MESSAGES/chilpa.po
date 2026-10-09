@@ -1985,6 +1985,9 @@ msgstr "PipeWire deja pasar las muestras intactas solo cuando le da la salida a 
 msgid "PipeWire's graph only runs at {} Hz, so {} Hz would be resampled; add it to default.clock.allowed-rates, or choose the card itself"
 msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearía; agrégala a default.clock.allowed-rates, o elige la tarjeta directo"
 
+msgid "Plain seek bar"
+msgstr "Barra de avance simple"
+
 msgid "Play"
 msgstr "Reproducir"
 
@@ -3066,6 +3069,9 @@ msgstr "Fondo de pantalla, difuminado"
 msgid "Wave Bed"
 msgstr "Lecho de ondas"
 
+msgid "Waveform"
+msgstr "Forma de onda"
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Lo que hace Enter con un resultado de la búsqueda del modo inmersivo. Desactivada apaga la búsqueda."
 
@@ -3848,6 +3854,9 @@ msgstr "la imagen es más corta que su tabla maestra"
 
 msgid "the image reads as both a 2048 and a 2064-byte dump"
 msgstr "la imagen se lee igual como volcado de sectores de 2048 y de 2064 bytes"
+
+msgid "the length of the track is not known"
+msgstr "no se conoce la duración de la pista"
 
 msgid "the library could not be checked: {}"
 msgstr "no se pudo revisar la biblioteca: {}"
