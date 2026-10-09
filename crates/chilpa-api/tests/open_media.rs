@@ -51,4 +51,5 @@ fn temporary_media_owns_its_queue_and_does_not_survive_closing() {
     assert_eq!(api.queue_paths(), paths, "closing media preserves later playback from elsewhere");
     let state: serde_json::Value = serde_json::from_str(&api.listen_json()).unwrap();
     assert!(state["tabs"].as_array().unwrap().iter().any(|t| t["id"] == other.to_string()));
+    assert_eq!(state["tabs"].as_array().unwrap().len(), 2, "playing over the media's queue goes to the queue in view, not a new one");
 }
