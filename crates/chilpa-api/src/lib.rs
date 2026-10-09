@@ -33,6 +33,7 @@ pub use hotkeys::{Pressed, Scope};
 pub mod format;
 pub mod paths;
 mod library;
+mod listening_stats;
 pub mod listening;
 mod metadata;
 pub mod navigation;

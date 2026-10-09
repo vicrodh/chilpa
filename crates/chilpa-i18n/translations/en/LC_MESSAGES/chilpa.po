@@ -1469,6 +1469,12 @@ msgstr ""
 msgid "Listen live"
 msgstr ""
 
+msgid "Listening history"
+msgstr ""
+
+msgid "Listening stats"
+msgstr ""
+
 msgid "Lite fill"
 msgstr ""
 

@@ -53,6 +53,13 @@ QtObject {
         readonly property color overlayScrim: ThemeModel.color("overlay.scrim", theme.rev)
         // The veil under a cover shown whole (QBZ's lightbox, #bf000000).
         readonly property color lightboxScrim: ThemeModel.color("lightbox.scrim", theme.rev)
+        // Listening stats: the band of the period's number, a colour for each
+        // of artists, records and tracks, and the bars of the period before.
+        readonly property color statsHero: ThemeModel.color("stats.hero", theme.rev)
+        readonly property color statsArtists: ThemeModel.color("stats.artists", theme.rev)
+        readonly property color statsAlbums: ThemeModel.color("stats.albums", theme.rev)
+        readonly property color statsTracks: ThemeModel.color("stats.tracks", theme.rev)
+        readonly property color statsPrevious: ThemeModel.color("stats.previous", theme.rev)
         readonly property color overlayButton: ThemeModel.color("overlay.button", theme.rev)
         readonly property color overlayInk: ThemeModel.color("overlay.ink", theme.rev)
         readonly property color albumHeaderBase: ThemeModel.color("albumHeader.base", theme.rev)
