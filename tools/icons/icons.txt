@@ -31,6 +31,7 @@ device-mobile
 disc
 dots
 dots-vertical
+download
 filter
 folder
 folder-open

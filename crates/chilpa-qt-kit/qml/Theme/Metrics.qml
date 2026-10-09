@@ -88,6 +88,9 @@ QtObject {
     readonly property int menuIconColumn: 18
     readonly property int menuItem: 30
     readonly property int menuItemTall: 44
+    // The date picker: its month of days, and each day.
+    readonly property int datePickerWide: 252
+    readonly property int datePickerDay: 32
     readonly property int toggleWidth: 38
     readonly property int toggleHeight: 22
     readonly property int toggleKnob: 16
