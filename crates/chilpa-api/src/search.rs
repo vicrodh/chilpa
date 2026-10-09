@@ -329,6 +329,8 @@ pub(crate) struct SearchState {
     pub text: String,
     pub source: String,
     pub quality_filter: String,
+    /// Whether what a file or a source calls explicit is left out.
+    pub hide_explicit: bool,
     /// When they last typed.
     pub keystroke: Option<Instant>,
     /// When the sources were last asked.
@@ -383,6 +385,7 @@ impl Chilpa {
             text,
             source: source.into(),
             quality_filter: String::new(),
+            hide_explicit: false,
             keystroke: Some(Instant::now()),
             last_query: self.search.last_query,
             job: None,

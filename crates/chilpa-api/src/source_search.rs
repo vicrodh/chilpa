@@ -1,6 +1,6 @@
 //! Remote results use the same flyout as the library and keep opaque identities.
 use crate::{Chilpa, FoundRow, Leads};
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct RemoteFound {
     pub source: String, pub name: String, pub id: String, pub title: String,
     pub detail: String, pub art: String, pub duration_ms: u64, pub collection: bool,
@@ -9,11 +9,11 @@ pub struct RemoteFound {
 
 impl Chilpa {
     pub fn search_source_catalogs(&mut self, text: &str, source: &str) {
-        self.search_source_catalogs_filtered(text, source, "");
+        self.search_source_catalogs_filtered(text, source, "", false);
     }
-    pub fn search_source_catalogs_filtered(&mut self, text: &str, source: &str, quality: &str) {
+    pub fn search_source_catalogs_filtered(&mut self, text: &str, source: &str, quality: &str, hide_explicit: bool) {
         self.search = crate::search::SearchState {
-            text: text.trim().into(), source: source.into(), quality_filter: if matches!(quality, "hi_res" | "lossless") { quality.into() } else { String::new() }, keystroke: Some(std::time::Instant::now()),
+            text: text.trim().into(), source: source.into(), quality_filter: if matches!(quality, "hi_res" | "lossless") { quality.into() } else { String::new() }, hide_explicit, keystroke: Some(std::time::Instant::now()),
             last_query: self.search.last_query, playing: self.search.playing.take(), ..Default::default()
         };
     }
@@ -81,8 +81,18 @@ impl Chilpa {
             found.tracks.retain(|t| accepts_quality(&filter, t.quality.tier));
             found.albums.retain(|a| self.album_detail(a.id).is_some_and(|d| accepts_quality(&filter, d.quality.tier)));
         }
+        let hide_explicit = self.search.hide_explicit;
+        if hide_explicit {
+            if let Some(lib) = self.library() {
+                let tracks = lib.explicit_tracks(&found.tracks.iter().map(|t| t.id).collect::<Vec<_>>()).unwrap_or_default();
+                let albums = lib.explicit_albums(&found.albums.iter().map(|a| a.id).collect::<Vec<_>>()).unwrap_or_default();
+                found.tracks.retain(|t| !tracks.contains(&t.id));
+                found.albums.retain(|a| !albums.contains(&a.id));
+            }
+        }
         let found = &found;
-        let remote = self.source_found_rows(scope);
+        let mut remote = self.source_found_rows(scope);
+        remote.retain(|row| keeps_explicit(row, hide_explicit));
         let mut rows = Vec::new();
         let needle = self.search.text.trim().to_lowercase();
         let mut sources: Vec<_> = remote.iter().filter_map(|r| match r { FoundRow::Remote(r) => Some(r.source.clone()), _ => None }).collect();
@@ -200,6 +210,15 @@ mod tests {
     use super::*;
     use serde_json::json;
     #[test]
+    fn hidden_explicit_results_are_the_ones_a_source_marks() {
+        let row = |explicit: Option<bool>| FoundRow::Remote(RemoteFound { item: Some(match explicit { Some(on) => json!({"explicit": on}), None => json!({}) }), ..Default::default() });
+        assert!(keeps_explicit(&row(Some(true)), false), "nothing is hidden unless asked");
+        assert!(!keeps_explicit(&row(Some(true)), true));
+        assert!(keeps_explicit(&row(Some(false)), true));
+        assert!(keeps_explicit(&row(None), true), "a source that says nothing is not guessed at");
+        assert!(keeps_explicit(&FoundRow::Header("Songs".into()), true));
+    }
+    #[test]
     fn remote_track_menu_keeps_queue_actions_and_source_navigation() {
         let mut api = Chilpa::new();
         let item = json!({"kind":"track","ref":"track:7","title":"Song","artist":"Band",
@@ -295,6 +314,12 @@ mod tests {
         assert_eq!(api.route_to("album", id).unwrap().key, format!("source-a card:{id}"));
         assert_eq!(api.unified_found_rows(&found, "artists").len(), 3);
     }
+}
+
+/// Whether a source's row stays when explicit results are hidden: a source
+/// says it with `explicit` on the item.
+fn keeps_explicit(row: &FoundRow, hide_explicit: bool) -> bool {
+    !hide_explicit || !matches!(row, FoundRow::Remote(found) if found.item.as_ref().is_some_and(|item| item["explicit"] == true))
 }
 
 fn accepts_quality(filter: &str, tier: crate::quality::Tier) -> bool {

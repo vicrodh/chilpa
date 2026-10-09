@@ -23,6 +23,7 @@ pub mod qobject {
         #[qproperty(QString, scope)]
         #[qproperty(QString, source)]
         #[qproperty(QString, quality_filter)]
+        #[qproperty(bool, hide_explicit)]
         #[qproperty(i32, count)]
         type SearchModel = super::SearchRust;
 
@@ -79,6 +80,7 @@ pub struct SearchRust {
     scope: QString,
     source: QString,
     quality_filter: QString,
+    hide_explicit: bool,
     count: i32,
     found: Found,
     rows: Vec<FoundRow>,
@@ -139,7 +141,7 @@ impl qobject::SearchModel {
         self.as_mut().rust_mut().generation = generation;
         let text = self.rust().text.to_string();
         let source = self.rust().source.to_string();
-        app::with(|api| api.search_source_catalogs_filtered(&text, &source, &self.rust().quality_filter.to_string()));
+        app::with(|api| api.search_source_catalogs_filtered(&text, &source, &self.rust().quality_filter.to_string(), self.rust().hide_explicit));
         if text.trim().is_empty() || !source.split(',').any(|s| s == "all" || s == "local") {
             self.arrive(generation, Found::default());
             return;
@@ -178,6 +180,7 @@ impl cxx_qt::Initialize for qobject::SearchModel {
         self.as_mut().on_source_changed(|m| m.ask()).release();
         self.as_mut().on_text_changed(|m| m.ask()).release();
         self.as_mut().on_quality_filter_changed(|m| m.ask()).release();
+        self.as_mut().on_hide_explicit_changed(|m| m.ask()).release();
         self.as_mut().on_scope_changed(|m| m.rebuild()).release();
     }
 }
