@@ -23,6 +23,8 @@ pub struct Snapshot {
     pub date: Option<String>,
     pub genres: Vec<String>,
     pub catalog_number: Option<String>,
+    /// The record label, or the publisher where the file names no label.
+    pub label: Option<String>,
     pub track_number: Option<u32>,
     pub disc_number: Option<u32>,
     pub composers: Vec<String>,
@@ -78,6 +80,7 @@ pub(crate) fn of_tag(tag: &Tag) -> Snapshot {
             .or_else(|| value(tag, ItemKey::Year)),
         genres,
         catalog_number: value(tag, ItemKey::CatalogNumber),
+        label: value(tag, ItemKey::Label).or_else(|| value(tag, ItemKey::Publisher)),
         track_number: tag.track(),
         disc_number: tag.disk(),
         composers: values(tag, ItemKey::Composer),

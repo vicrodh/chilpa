@@ -70,6 +70,7 @@ pub struct FileChanges {
     pub date: Change<String>,
     pub genres: Change<Vec<String>>,
     pub catalog_number: Change<String>,
+    pub label: Change<String>,
     pub track_number: Change<u32>,
     pub disc_number: Change<u32>,
     pub composers: Change<Vec<String>>,
@@ -86,9 +87,10 @@ pub struct FileChanges {
 /// The fields that hold one text, by the name the editor gives them and the
 /// key they are written under. Title, album and artist are not here: they
 /// go through the tag's own accessors.
-const TEXTS: [(&str, ItemKey); 6] = [
+const TEXTS: [(&str, ItemKey); 7] = [
     ("album_artist", ItemKey::AlbumArtist),
     ("catalog_number", ItemKey::CatalogNumber),
+    ("label", ItemKey::Label),
     ("musicbrainz_release_id", ItemKey::MusicBrainzReleaseId),
     ("musicbrainz_release_group_id", ItemKey::MusicBrainzReleaseGroupId),
     ("musicbrainz_recording_id", ItemKey::MusicBrainzRecordingId),
@@ -124,6 +126,7 @@ impl FileChanges {
             date: Change::Keep,
             genres: Change::Keep,
             catalog_number: Change::Keep,
+            label: Change::Keep,
             track_number: Change::Keep,
             disc_number: Change::Keep,
             composers: Change::Keep,
@@ -156,6 +159,7 @@ impl FileChanges {
         match name {
             "album_artist" => &self.album_artist,
             "catalog_number" => &self.catalog_number,
+            "label" => &self.label,
             "musicbrainz_release_id" => &self.musicbrainz_release_id,
             "musicbrainz_release_group_id" => &self.musicbrainz_release_group_id,
             "musicbrainz_recording_id" => &self.musicbrainz_recording_id,
@@ -397,6 +401,7 @@ fn said_text<'a>(said: &'a Snapshot, name: &str) -> Option<&'a str> {
     match name {
         "album_artist" => said.album_artist.as_deref(),
         "catalog_number" => said.catalog_number.as_deref(),
+        "label" => said.label.as_deref(),
         "musicbrainz_release_id" => said.musicbrainz_release_id.as_deref(),
         "musicbrainz_release_group_id" => said.musicbrainz_release_group_id.as_deref(),
         "musicbrainz_recording_id" => said.musicbrainz_recording_id.as_deref(),
