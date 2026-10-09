@@ -47,7 +47,11 @@ Item {
         visible: Immersive.barBlur && root.beneath !== null && root.shaders && root.opacity > 0
         ShaderEffectSource {
             id: beneath
+            // Hidden, but sized: the texture takes the item's size, and a
+            // hidden item with none renders nothing.
             visible: false
+            width: bar.width
+            height: bar.height
             live: true
             sourceItem: root.beneath
             sourceRect: Qt.rect(root.x, root.y, bar.width, bar.height)
