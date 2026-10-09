@@ -122,7 +122,7 @@ impl qobject::Navigation {
         let Ok(origin) = serde_json::from_str::<chilpa_api::queue_origin::QueueOrigin>(&origin.to_string()) else { return; };
         if origin.screen == "search" {
             self.search_origin_requested(QString::from(&origin.query), QString::from(&origin.source));
-        } else if let Some(route) = origin.route() {
+        } else if let Some(route) = app::with(|api| api.route_to_origin(&origin)) {
             self.as_mut().rust_mut().tabs.go(route);
             self.publish();
         }
