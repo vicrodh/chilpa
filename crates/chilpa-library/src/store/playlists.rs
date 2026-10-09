@@ -426,11 +426,11 @@ impl Library {
     /// to `n`: what its mosaic shows.
     pub fn playlist_covers(&self, playlist_id: i64, n: usize) -> rusqlite::Result<Vec<String>> {
         let mut stmt = self.db.prepare(
-            "SELECT a.artwork_path FROM playlist_tracks pt
+            concat!("SELECT ", album_art!("a"), " FROM playlist_tracks pt
              JOIN tracks t ON t.id = pt.track_id
              JOIN albums a ON a.id = t.album_id
-             WHERE pt.playlist_id = ?1 AND a.artwork_path IS NOT NULL
-             GROUP BY a.id ORDER BY min(pt.position) LIMIT ?2",
+             WHERE pt.playlist_id = ?1 AND ", album_art!("a"), " IS NOT NULL
+             GROUP BY a.id ORDER BY min(pt.position) LIMIT ?2"),
         )?;
         let rows = stmt.query_map(params![playlist_id, n as i64], |r| r.get(0))?;
         rows.collect()

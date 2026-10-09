@@ -4,7 +4,18 @@
 //! analysis extracts, the play log, and the fingerprints used to match.
 //! What stays here is the connection, sources and roots, genres and search.
 
+/// A record's cover as SQL over the albums alias given: the one the listener
+/// chose over the one its files bring. Only what is shown takes it; what a
+/// scan derives never sees the chosen one, so taking it away brings the
+/// original back exactly.
+macro_rules! album_art {
+    ($a:literal) => {
+        concat!("coalesce((SELECT aw.path FROM album_artwork aw WHERE aw.album_id = ", $a, ".id), ", $a, ".artwork_path)")
+    };
+}
+
 pub mod albums;
+pub mod artwork;
 pub mod artists;
 pub mod browse;
 pub mod credits;

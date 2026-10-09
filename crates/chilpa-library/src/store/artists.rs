@@ -69,15 +69,15 @@ impl Library {
     pub fn artists_by_role(&self, role: ArtistRole) -> rusqlite::Result<Vec<StoredArtist>> {
         let sql = match role {
             ArtistRole::Album => {
-                "SELECT a.id, coalesce(p.name, trim(a.album_artist)), r.present_tracks, a.artwork_path, a.album_artist
+                concat!("SELECT a.id, coalesce(p.name, trim(a.album_artist)), r.present_tracks, ", album_art!("a"), ", a.album_artist
                  FROM albums a
                  JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
                  LEFT JOIN credit_parts p ON p.credit = trim(a.album_artist)
-                 WHERE trim(a.album_artist) <> ''"
+                 WHERE trim(a.album_artist) <> ''")
             }
             ArtistRole::Any => {
-                "SELECT m.album_id, m.artist, m.tracks, a.artwork_path, a.album_artist
-                 FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id"
+                concat!("SELECT m.album_id, m.artist, m.tracks, ", album_art!("a"), ", a.album_artist
+                 FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id")
             }
         };
         let mut found: BTreeMap<String, Entry> = BTreeMap::new();

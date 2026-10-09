@@ -255,10 +255,10 @@ pub struct Snapshot {
     pub totals: Totals,
 }
 
-const ROW: &str = "SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
+const ROW: &str = concat!("SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
-            COALESCE(r.plays, 0) AS plays, a.artwork_path, (t.present = 1 AND t.reachable = 1), t.codec,
-            (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id)";
+            COALESCE(r.plays, 0) AS plays, ", album_art!("a"), ", (t.present = 1 AND t.reachable = 1), t.codec,
+            (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id)");
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -645,15 +645,15 @@ impl Library {
         let (from, to, cut) = under(dir);
         let base = from.clone();
         let sql = format!(
-            "{} SELECT substr(ft.location, ?3, instr(substr(ft.location, ?3), '/') - 1) AS name,
-                    count(*), max(a.artwork_path),
+            concat!("{} SELECT substr(ft.location, ?3, instr(substr(ft.location, ?3), '/') - 1) AS name,
+                    count(*), max(", album_art!("a"), "),
                     count(DISTINCT CASE WHEN instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') > 0
                           THEN substr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), 1,
                                instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') - 1) END),
                     count(DISTINCT coalesce(t.album_id, -t.id)), min(t.album_id)
              FROM tracks t JOIN folder_tracks ft ON ft.id = t.id LEFT JOIN albums a ON a.id = t.album_id
              WHERE instr(substr(ft.location, ?3), '/') > 0
-             GROUP BY name ORDER BY name COLLATE NOCASE", folder_tracks()
+             GROUP BY name ORDER BY name COLLATE NOCASE"), folder_tracks()
         );
         let mut stmt = self.db.prepare(&sql)?;
         let folders = stmt

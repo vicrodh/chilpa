@@ -139,12 +139,12 @@ impl Library {
     /// library again, and that was the audit's high finding.
         pub fn albums(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredAlbum>> {
         let mut stmt = self.db.prepare(
-            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, count(t.id)
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
              FROM albums a
              JOIN tracks t ON t.album_id = a.id AND t.present = 1
              GROUP BY a.id
              ORDER BY a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE
-             LIMIT ?1 OFFSET ?2",
+             LIMIT ?1 OFFSET ?2"),
         )?;
         let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
             Ok(StoredAlbum {
@@ -197,7 +197,7 @@ impl Library {
     /// compilations they are on -- newest first, with their play counts.
     pub fn albums_appearing(&self, artist: &str) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let mut stmt = self.db.prepare(
-            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, r.present_tracks, r.plays
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
              FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
              WHERE a.album_artist <> ?1 COLLATE NOCASE
@@ -207,7 +207,7 @@ impl Library {
                            (t.artist = ?1 COLLATE NOCASE OR t.album_credit = ?1 COLLATE NOCASE
                             OR EXISTS (SELECT 1 FROM credit_parts p
                                        WHERE p.name = ?1 AND p.credit IN (trim(t.artist), trim(t.album_credit)))))
-             ORDER BY a.year DESC, a.title COLLATE NOCASE",
+             ORDER BY a.year DESC, a.title COLLATE NOCASE"),
         )?;
         let rows = stmt.query_map(params![artist], |r| {
             Ok((
@@ -241,7 +241,7 @@ impl Library {
         // The filter goes as a parameter, never interpolated: a name with
         // quotes in it has no business breaking a query.
         let sql = format!(
-            "WITH page AS MATERIALIZED (
+            concat!("WITH page AS MATERIALIZED (
                  SELECT a.id AS id
                  FROM albums a
                  JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
@@ -250,13 +250,13 @@ impl Library {
                  ORDER BY {}
                  LIMIT ?1 OFFSET ?2
              )
-             SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
+             SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ",
                     r.present_tracks,
                     r.plays
              FROM page g
              JOIN albums a ON a.id = g.id
              JOIN album_rollup r ON r.album_id = a.id
-             ORDER BY {}",
+             ORDER BY {}"),
             order.order_by(),
             order.order_by()
         );
@@ -323,9 +323,10 @@ impl Library {
         }
         let marks = vec!["?"; ids.len()].join(",");
         let sql = format!(
-            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, r.present_tracks, r.plays
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
              FROM albums a JOIN album_rollup r ON r.album_id = a.id
-             WHERE a.id IN ({marks})"
+             WHERE a.id IN ({marks})"),
+            marks = marks
         );
         let mut stmt = self.db.prepare(&sql)?;
         let found: std::collections::HashMap<i64, (StoredAlbum, usize)> = stmt
@@ -389,11 +390,11 @@ impl Library {
     /// can be played, not what was once there.
     pub fn artists(&self, limit: usize, offset: usize) -> rusqlite::Result<Vec<StoredArtist>> {
         let mut stmt = self.db.prepare(
-            "SELECT min(m.artist), count(m.album_id), sum(m.tracks), max(a.artwork_path)
+            concat!("SELECT min(m.artist), count(m.album_id), sum(m.tracks), max(", album_art!("a"), ")
              FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id
              GROUP BY m.artist COLLATE NOCASE
              ORDER BY m.artist COLLATE NOCASE
-             LIMIT ?1 OFFSET ?2",
+             LIMIT ?1 OFFSET ?2"),
         )?;
         let rows = stmt.query_map(params![limit as i64, offset as i64], |r| {
             Ok(StoredArtist {
@@ -411,11 +412,11 @@ impl Library {
         let album = self
             .db
             .query_row(
-                "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path, count(t.id)
+                concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
                  FROM albums a
                  JOIN tracks t ON t.album_id = a.id AND t.present = 1
                  WHERE a.id = ?1
-                 GROUP BY a.id",
+                 GROUP BY a.id"),
                 params![album_id],
                 |r| {
                     Ok(StoredAlbum {
@@ -481,7 +482,7 @@ impl Library {
     /// event log, not from a counter somebody has to maintain by hand.
     pub fn most_played_albums(&self, limit: usize) -> rusqlite::Result<Vec<(StoredAlbum, usize)>> {
         let mut stmt = self.db.prepare(
-            "SELECT a.id, a.title, a.album_artist, a.year, a.artwork_path,
+            concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ",
                     count(DISTINCT t.id), count(p.id)
              FROM albums a
              JOIN tracks t ON t.album_id = a.id
@@ -489,7 +490,7 @@ impl Library {
                   AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms)
              GROUP BY a.id
              ORDER BY count(p.id) DESC, a.title COLLATE NOCASE
-             LIMIT ?1",
+             LIMIT ?1"),
         )?;
         let rows = stmt.query_map(params![limit as i64], |r| {
             Ok((
