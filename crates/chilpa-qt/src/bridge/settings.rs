@@ -61,6 +61,10 @@ pub mod qobject {
         #[qinvokable]
         fn keep(self: &SettingsModel, key: &QString, value: &QString);
 
+        /// The settings that say what was typed, for Settings' search.
+        #[qinvokable]
+        fn find(self: &SettingsModel, text: &QString, rev: i32) -> QString;
+
         #[qinvokable]
         fn place_sidebar(self: Pin<&mut SettingsModel>, width: f64, window_width: f64);
 
@@ -151,6 +155,8 @@ impl qobject::SettingsModel {
 }
 
 impl qobject::SettingsModel {
+    pub fn find(&self, text: &QString, _rev: i32) -> QString { QString::from(&app::with(|api| api.settings_find_json(&text.to_string()))) }
+
     pub fn kept(&self, key: &QString) -> QString {
         QString::from(&app::with(|api| api.preference(&key.to_string())).unwrap_or_default())
     }
