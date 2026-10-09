@@ -61,6 +61,7 @@ Rectangle {
             MetadataField { width: parent.width; field: root.field("album_artists"); onEdited: (n, v) => root.edit(n, v) }
             MetadataField { width: parent.width; field: root.field("compilation"); onEdited: (n, v) => root.edit(n, v) }
             MetadataField { width: parent.width; field: root.field("genres"); onEdited: (n, v) => root.edit(n, v) }
+            MetadataField { width: parent.width; field: root.field("label"); onEdited: (n, v) => root.edit(n, v) }
             Row {
                 width: parent.width
                 spacing: Metrics.gap8
