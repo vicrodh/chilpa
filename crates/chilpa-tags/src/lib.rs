@@ -52,6 +52,10 @@ pub struct Tags {
     pub album_artist: Option<String>,
     /// Every genre, without joining them into one string.
     pub genres: Vec<String>,
+    /// Who wrote the music, each value as the file keeps it.
+    pub composers: Vec<String>,
+    /// The record label, or the publisher where the file names no label.
+    pub label: Option<String>,
     /// The date as it comes: it may be `2019` or `2019-03-15`.
     pub date: Option<String>,
     pub track_number: Option<u16>,
@@ -188,6 +192,13 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
                 all
             }
         },
+        composers: several(ItemKey::Composer),
+        label: tag
+            .get_string(ItemKey::Label)
+            .or_else(|| tag.get_string(ItemKey::Publisher))
+            .map(str::trim)
+            .filter(|label| !label.is_empty())
+            .map(str::to_string),
         date: tag
             .get_string(ItemKey::RecordingDate)
             .or_else(|| tag.get_string(ItemKey::ReleaseDate))
