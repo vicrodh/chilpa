@@ -216,6 +216,9 @@ impl crate::Chilpa {
         info["quality_label"] = json!(quality.short()); info["quality_tier"] = json!(quality.tier.rank());
         decorate_header(&self.catalog, &card.plugin, &mut info);
         info["art"] = json!(url::Url::from_file_path(self.catalog.art_of_card(id)).ok().map(|url| url.to_string()).unwrap_or_default());
+        if let Some(url) = self.catalog.chosen_art(id).and_then(|path| url::Url::from_file_path(path).ok()) {
+            info["chosen_art"] = json!(url.to_string());
+        }
         if card.kind == super::store::CardKind::Playlist && info["editable"] == true {
             info["entries"] = json!(self.catalog.tracks(id).unwrap_or_default().iter().map(|t| json!({"ref":t.metadata["ref"],"member":t.metadata["member"],"title":t.title,"artist":t.artist,"available":t.playable})).collect::<Vec<_>>());
         }

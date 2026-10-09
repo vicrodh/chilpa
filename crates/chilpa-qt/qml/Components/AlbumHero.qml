@@ -18,6 +18,8 @@ Item {
     signal selectToggle()
     signal context(real left, real top)
     signal artwork()
+    // A right click on the cover, where the pointer is in the hero.
+    signal artworkMenu(real left, real top)
     signal information()
 
     implicitHeight: Math.max(Metrics.heroArt, body.implicitHeight)
@@ -30,6 +32,7 @@ Item {
     }
     HoverHandler { id: coverHover; parent: cover; cursorShape: Qt.PointingHandCursor }
     TapHandler { parent: cover; onTapped: hero.artwork() }
+    TapHandler { parent: cover; acceptedButtons: Qt.RightButton; onTapped: (point) => { const at = cover.mapToItem(hero, point.position.x, point.position.y); hero.artworkMenu(at.x, at.y) } }
 
     Column {
         id: body

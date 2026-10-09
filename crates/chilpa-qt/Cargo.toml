@@ -14,6 +14,7 @@ chilpa-qt-ambient.workspace = true
 chilpa-qt-mini.workspace = true
 chilpa-qt-immersive.workspace = true
 chilpa-qt-waveform.workspace = true
+chilpa-qt-artwork.workspace = true
 chilpa-qt-folders.workspace = true
 chilpa-qt-gallery.workspace = true
 chilpa-qt-lyrics.workspace = true

@@ -85,8 +85,6 @@ TitledFlow {
             { id: 1, label: "Local · FLAC 24/96 · 13 tracks", source: { local: true } },
             { id: 2, label: "Server · FLAC 16/44.1 · 13 tracks", source: { local: false } }
         ]), selectedId: 1, selectVersion: function(value) {} }) }
-        ArtworkModal { id: artworkModal }
-        PillButton { text: "Open artwork"; onClicked: artworkModal.show(detail.art) }
         PageHero { width: parent.width; label: "Artist"; round: true; name: "Mora Vale"; meta: "8 records" }
         PageHero { width: parent.width; label: "Playlist"; name: "Road Trip 2026"; meta: "19 songs"; covers: ["", "", "", ""]; canQueue: true }
         Row {

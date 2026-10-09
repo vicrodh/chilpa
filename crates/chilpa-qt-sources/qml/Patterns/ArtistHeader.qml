@@ -4,8 +4,10 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
 
 // The top of an artist's page, as QBZ lays it out: a round portrait, the
 // name, what the artist does, a biography cut at 360 characters with
@@ -37,8 +39,34 @@ Item {
         id: portrait
         width: Math.min(Metrics.artistPortrait, header.width / 3); height: width // derived: room for the text on narrow windows
         radius: width / 2 // derived: a circle
-        source: header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
+        // The picture the listener chose for the artist wins over the one
+        // the source or the records bring.
+        readonly property url chosen: Artwork.artist(header.info.title || "", Artwork.rev)
+        source: chosen.toString() !== "" ? chosen : header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
     }
+    // As QBZ's portrait: a click shows it whole, a right click its menu.
+    HoverHandler { parent: portrait; cursorShape: portrait.ready ? Qt.PointingHandCursor : Qt.ArrowCursor }
+    TapHandler { parent: portrait; onTapped: if (portrait.ready) lightbox.show(portrait.source) }
+    TapHandler {
+        parent: portrait
+        acceptedButtons: Qt.RightButton
+        onTapped: (point) => {
+            const at = portrait.mapToItem(header, point.position.x, point.position.y)
+            portraitMenu.custom = portrait.chosen.toString() !== ""
+            portraitMenu.showing = portrait.ready
+            portraitMenu.address = /^https?:\/\//.test(header.info.image || "") ? header.info.image : ""
+            portraitMenu.popupAt(at.x, at.y)
+        }
+    }
+    CoverMenu {
+        id: portraitMenu
+        kind: "artist"
+        onChoose: Artwork.chooseArtist(header.info.title || "")
+        onForget: Artwork.forgetArtist(header.info.title || "")
+        onView: lightbox.show(portrait.source)
+        onSave: Artwork.saveArtist(header.info.title || "", portrait.source)
+    }
+    CoverLightbox { id: lightbox }
     Icon {
         anchors.centerIn: portrait
         visible: !portrait.ready
