@@ -569,6 +569,7 @@ impl Default for Controls {
             dsd_mode: DsdModeChoice::default(),
             direct_dsd: Switch::new(false),
             handoff: Switch::new(false),
+            waveform: std::sync::Arc::new(std::sync::Mutex::new(None)),
         }
     }
 }
@@ -833,6 +834,10 @@ struct DsdPcmFrames<'a> {
     skipped: bool,
     gain: f32,
     volume: Option<Level>,
+    /// Where the converted frames go for the waveform, and how many have
+    /// gone: this route cannot seek, so they count from the start.
+    feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
+    decoded_at: u64,
 }
 
 impl FrameSource for DsdPcmFrames<'_> {
@@ -851,6 +856,10 @@ impl FrameSource for DsdPcmFrames<'_> {
         let Some(mut samples) = self.converter.next_block().map_err(|e| e.to_string())? else {
             return Ok(None);
         };
+        if let Some(feed) = &self.feed {
+            feed.feed_float(self.decoded_at, &samples);
+        }
+        self.decoded_at += (samples.len() / usize::from(self.converter.channels().max(1))) as u64;
         let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
         if gain != 1.0 {
             samples.iter_mut().for_each(|sample| *sample *= gain);
@@ -1222,6 +1231,10 @@ where
                 (outcome, frames.skipped)
             }
             Source::DsdPcm(converter) => {
+                let feed = controls.waveform.lock().map(|f| f.clone()).unwrap_or_default();
+                if let Some(feed) = &feed {
+                    feed.begin(path, converter.channels(), Some(converter.total_frames()));
+                }
                 let mut frames = DsdPcmFrames {
                     converter,
                     opened: delivery.opened,
@@ -1230,6 +1243,8 @@ where
                     skipped: false,
                     gain,
                     volume,
+                    feed: feed.clone(),
+                    decoded_at: 0,
                 };
                 let outcome = chilpa_audio::render::render_paused(
                     &mut frames,
@@ -1240,6 +1255,9 @@ where
                         on_progress(index, Progress { position, delivered: position })
                     },
                 );
+                if let Some(feed) = &feed {
+                    feed.end();
+                }
                 (outcome, frames.skipped)
             }
         };

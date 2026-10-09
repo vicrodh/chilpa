@@ -216,7 +216,7 @@ mod tests {
         let mut accumulator = Accumulator::new(1, BINS as u64);
         accumulator.feed_float(0, &[0.125; 128]);
         let before = accumulator.bins()[0];
-        accumulator.feed_float(128, &vec![0.9; BINS - 128]);
+        accumulator.feed_float(128, &[0.9; 128]);
         assert_eq!(accumulator.bins()[0], before);
     }
 
