@@ -154,6 +154,12 @@ pub const SECTIONS: &[Section] = &[
         }, Group {
             title: Chilpa::mark("Mini player"),
             settings: &[setting(crate::mini::DEFAULT_VIEW, Chilpa::mark("Mini player default view"), Chilpa::mark("The view the mini player opens with. Remember keeps the one it was last on."), Control::Select)],
+        }, Group {
+            title: Chilpa::mark("Immersive view"),
+            settings: &[
+                setting(crate::immersive::DEFAULT_VIEW, Chilpa::mark("Immersive default view"), Chilpa::mark("The view the immersive view opens with. Remember keeps the one it was last on."), Control::Select),
+                setting(crate::immersive::SEARCH_ACTION, Chilpa::mark("Immersive search"), Chilpa::mark("What Enter does with a result of the immersive view's search. Disabled turns the search off."), Control::Select),
+            ],
         }],
     },
     Section {

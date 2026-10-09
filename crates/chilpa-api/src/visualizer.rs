@@ -359,7 +359,7 @@ impl Pack {
         let beat_above = ((self.beat - self.beat_floor).max(0.0) / (1.0 - self.beat_floor).max(0.15)).clamp(0.0, 1.0);
         let e = &self.energy;
         format!(
-            "{{\"phase\":{},\"beat\":{},\"beatAc\":{},\"level\":{},\"levelSmooth\":{},\"transient\":{},\
+            "{{\"phase\":{},\"beat\":{},\"beatAbove\":{},\"level\":{},\"levelSmooth\":{},\"transient\":{},\
              \"energyLo\":[{},{},{},{}],\"energyHi\":[{},{},0,0],\"bandsLo\":[{},{},{},{}],\"bandsHi\":[{},{},{},{}]}}",
             self.phase, self.beat, beat_above, level, self.level_smooth, self.transient,
             e[0], e[1], e[2], e[3], e[4], self.spectral_peak,
@@ -370,7 +370,7 @@ impl Pack {
 
 impl crate::Chilpa {
     /// The visualizer's handle, for the window's drain.
-    pub fn handle(&self) -> Visualizer {
+    pub fn visualizer(&self) -> Visualizer {
         self.visualizer.clone()
     }
 }

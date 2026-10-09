@@ -57,6 +57,22 @@ impl Chilpa {
         }
         (rows, keys)
     }
+    /// What the active buffer played before the cursor, most recent first
+    /// and without headers: the history tab of a queue view.
+    pub fn listen_history(&mut self, query: &str) -> (Vec<TrackEntry>, Vec<String>) {
+        let Some(b) = self.buffer_snapshot(self.listen.active) else { return Default::default() };
+        let current = b.order.iter().position(|&i| i == b.cursor).unwrap_or(0);
+        let indices: Vec<_> = b.order.iter().enumerate().filter(|&(position, &i)| b.live(i) && position < current).map(|(_, &i)| i).rev().collect();
+        let paths: Vec<_> = indices.iter().map(|&i| b.paths[i].clone()).collect();
+        let tracks = self.rows_for_paths(&paths);
+        let query = query.trim().to_lowercase();
+        let (mut rows, mut keys) = (Vec::new(), Vec::new());
+        for (index, track) in indices.into_iter().zip(tracks) {
+            if !query.is_empty() && !format!("{} {} {}", track.title, track.artist, track.album).to_lowercase().contains(&query) { continue; }
+            rows.push(TrackEntry::Track(track)); keys.push(b.key(index));
+        }
+        (rows, keys)
+    }
     fn locate(&self, key: &str) -> Option<(Buffer, usize)> {
         let id = key.split(':').next()?.parse().ok()?;
         let b = self.buffer_snapshot(id)?;

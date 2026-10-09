@@ -71,6 +71,9 @@ impl Chilpa {
         rows
     }
     pub fn unified_found_rows(&mut self, found: &crate::Found, scope: &str) -> Vec<FoundRow> {
+        if scope == "immersive" {
+            return self.immersive_found_rows(found);
+        }
         let filter = self.search.quality_filter.clone();
         let mut found = found.clone();
         if !filter.is_empty() {

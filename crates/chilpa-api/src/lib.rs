@@ -82,6 +82,7 @@ mod listen;
 pub mod discs;
 pub mod tray;
 pub mod ambient;
+pub mod immersive;
 pub mod mini;
 pub mod visualizer;
 pub mod wallpaper;

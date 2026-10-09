@@ -34,14 +34,22 @@ pub struct Triad {
     pub primary: String,
     pub secondary: String,
     pub accent: String,
+    /// The halo behind the cover in the immersive view: its most
+    /// saturated color that is neither dark nor pale, with its alpha.
+    pub glow: String,
 }
 
-/// Until a cover yields colors: teal, purple and a lighter teal.
+/// Until a cover yields colors: teal, purple and a lighter teal, and a
+/// soft blue halo.
 impl Default for Triad {
     fn default() -> Self {
-        Self { primary: "#00dcc8".into(), secondary: "#9632ff".into(), accent: "#3fd9c8".into() }
+        Self { primary: "#00dcc8".into(), secondary: "#9632ff".into(), accent: "#3fd9c8".into(), glow: GLOW_DEFAULT.into() }
     }
 }
+
+/// The halo with nothing better: blue at 0x59 of alpha, alpha last as the
+/// theme parses colors.
+pub const GLOW_DEFAULT: &str = "#6464ff59";
 
 /// The last cover read, so a track played again costs nothing.
 static LAST: Mutex<Option<(PathBuf, Option<SystemTime>, Triad)>> = Mutex::new(None);
@@ -59,12 +67,13 @@ pub fn triad_of(path: &Path) -> Option<Triad> {
     let source = image::ImageReader::open(path).ok()?.with_guessed_format().ok()?.decode().ok()?.into_rgba8();
     let tiny = image::imageops::resize(&source, 16, 16, image::imageops::FilterType::Triangle);
     let (primary, secondary) = spectrum_colors(&tiny);
-    let triad = Triad { primary: hex(primary), secondary: hex(secondary), accent: hex(lyrics_accent_color(&tiny)) };
+    let halo = image::imageops::resize(&source, 8, 8, image::imageops::FilterType::Triangle);
+    let triad = Triad { primary: hex(primary), secondary: hex(secondary), accent: hex(lyrics_accent_color(&tiny)), glow: glow_hex(glow_color(&halo)) };
     *LAST.lock().unwrap_or_else(|e| e.into_inner()) = Some((path.to_path_buf(), modified, triad.clone()));
     Some(triad)
 }
 
-fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
+pub(crate) fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
     let (r, g, b) = (f32::from(r) / 255.0, f32::from(g) / 255.0, f32::from(b) / 255.0);
     let max = r.max(g).max(b);
     let min = r.min(g).min(b);
@@ -84,7 +93,7 @@ fn rgb_to_hsl(r: u8, g: u8, b: u8) -> (f32, f32, f32) {
     (h.rem_euclid(360.0), s, l)
 }
 
-fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
+pub(crate) fn hsl_to_rgb(h: f32, s: f32, l: f32) -> (u8, u8, u8) {
     let c = (1.0 - (2.0 * l - 1.0).abs()) * s;
     let sector = h.rem_euclid(360.0) / 60.0;
     let x = c * (1.0 - (sector.rem_euclid(2.0) - 1.0).abs());
@@ -184,7 +193,37 @@ fn lyrics_accent_color(img: &image::RgbaImage) -> (u8, u8, u8) {
     hsl_to_rgb((hue_of(best_i) + 180.0).rem_euclid(360.0), 0.85, 0.62)
 }
 
-fn hex(c: (u8, u8, u8)) -> String {
+/// The most saturated sample of the eight by eight cover whose lightness
+/// sits between 50 and 220 of 255, as QBZ picks the halo; blue when none
+/// qualifies. Its own saturation, on the 0 to 255 scale: not `rgb_to_hsl`.
+fn glow_color(tiny: &image::RgbaImage) -> (u8, u8, u8) {
+    let mut best_saturation = 0.0f32;
+    let mut best = (100u8, 100u8, 255u8);
+    for pixel in tiny.pixels() {
+        let (r, g, b) = (f32::from(pixel[0]), f32::from(pixel[1]), f32::from(pixel[2]));
+        let (max, min) = (r.max(g).max(b), r.min(g).min(b));
+        let lightness = (max + min) / 2.0;
+        let saturation = if (max - min).abs() < f32::EPSILON {
+            0.0
+        } else if lightness > 127.0 {
+            (max - min) / (510.0 - max - min).max(1.0)
+        } else {
+            (max - min) / (max + min).max(1.0)
+        };
+        if lightness > 50.0 && lightness < 220.0 && saturation > best_saturation {
+            best_saturation = saturation;
+            best = (pixel[0], pixel[1], pixel[2]);
+        }
+    }
+    best
+}
+
+/// The halo's color with its alpha of 0x59 last, as the theme parses it.
+fn glow_hex(c: (u8, u8, u8)) -> String {
+    format!("#{:02x}{:02x}{:02x}59", c.0, c.1, c.2)
+}
+
+pub(crate) fn hex(c: (u8, u8, u8)) -> String {
     format!("#{:02x}{:02x}{:02x}", c.0, c.1, c.2)
 }
 
@@ -259,6 +298,24 @@ impl Chilpa {
 mod tests {
     use super::*;
 
+    fn picture(pixels: &[(u8, u8, u8)]) -> image::RgbaImage {
+        let mut img = image::RgbaImage::new(8, 8);
+        for (i, pixel) in img.pixels_mut().enumerate() {
+            let (r, g, b) = pixels[i % pixels.len()];
+            *pixel = image::Rgba([r, g, b, 255]);
+        }
+        img
+    }
+
+    #[test]
+    fn the_halo_is_the_most_saturated_color_that_is_neither_dark_nor_pale() {
+        let img = picture(&[(200, 30, 30), (120, 120, 120), (10, 10, 10), (250, 250, 250), (90, 90, 140)]);
+        assert_eq!(glow_color(&img), (200, 30, 30));
+        assert_eq!(glow_color(&picture(&[(0, 0, 0), (255, 255, 255)])), (100, 100, 255), "nothing qualifies: blue");
+        assert_eq!(glow_hex((200, 30, 30)), "#c81e1e59");
+        assert_eq!(Triad::default().glow, GLOW_DEFAULT);
+    }
+
     fn img_from(pixels: &[(u8, u8, u8)]) -> image::RgbaImage {
         let mut img = image::RgbaImage::new(16, 16);
         for (i, pixel) in img.pixels_mut().enumerate() {
@@ -285,7 +342,7 @@ mod tests {
         assert_eq!(primary, (0, 220, 200));
         assert_eq!(secondary, (150, 50, 255));
         assert_eq!(lyrics_accent_color(&img), (0x3f, 0xd9, 0xc8));
-        assert_eq!(Triad::default(), Triad { primary: hex(primary), secondary: hex(secondary), accent: hex((0x3f, 0xd9, 0xc8)) });
+        assert_eq!(Triad::default(), Triad { primary: hex(primary), secondary: hex(secondary), accent: hex((0x3f, 0xd9, 0xc8)), glow: GLOW_DEFAULT.into() });
     }
 
     #[test]
