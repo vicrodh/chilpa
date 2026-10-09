@@ -88,7 +88,7 @@ pub(crate) fn shape(document: &mut Value) {
 
 /// How a month is named in a date of birth; the day and the year are
 /// numbers.
-const MONTHS: [&str; 12] = [
+pub(crate) const MONTHS: [&str; 12] = [
     i18n::mark("Jan"), i18n::mark("Feb"), i18n::mark("Mar"), i18n::mark("Apr"), i18n::mark("May"), i18n::mark("Jun"),
     i18n::mark("Jul"), i18n::mark("Aug"), i18n::mark("Sep"), i18n::mark("Oct"), i18n::mark("Nov"), i18n::mark("Dec"),
 ];

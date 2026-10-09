@@ -1,0 +1,2 @@
+module app.chilpa.stats.Theme
+singleton Charts 1.0 Charts.qml
