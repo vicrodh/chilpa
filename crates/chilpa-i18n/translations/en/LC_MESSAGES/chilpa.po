@@ -121,6 +121,9 @@ msgstr ""
 msgid "About"
 msgstr "About"
 
+msgid "About Chilpa"
+msgstr ""
+
 msgid "Accent"
 msgstr ""
 
@@ -134,6 +137,9 @@ msgid "Account connected."
 msgstr ""
 
 msgid "Account not connected."
+msgstr ""
+
+msgid "Acknowledgments"
 msgstr ""
 
 msgid "Active"
@@ -429,6 +435,15 @@ msgstr ""
 msgid "Browse…"
 msgstr ""
 
+msgid "Build"
+msgstr ""
+
+msgid "Build info"
+msgstr ""
+
+msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
+msgstr ""
+
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr ""
 
@@ -505,6 +520,9 @@ msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
+msgstr ""
+
+msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
 msgstr ""
 
 msgid "Chinese"
@@ -2009,6 +2027,9 @@ msgstr ""
 msgid "Plain seek bar"
 msgstr ""
 
+msgid "Platform"
+msgstr ""
+
 msgid "Play"
 msgstr ""
 
@@ -3090,6 +3111,9 @@ msgstr ""
 msgid "Valid"
 msgstr "Valid"
 
+msgid "Version"
+msgstr ""
+
 msgid "Version: {}"
 msgstr "Version: {}"
 
@@ -3127,6 +3151,9 @@ msgid "Wave Bed"
 msgstr ""
 
 msgid "Waveform"
+msgstr ""
+
+msgid "Website"
 msgstr ""
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."

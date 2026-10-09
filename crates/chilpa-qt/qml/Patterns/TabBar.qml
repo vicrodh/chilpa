@@ -4,6 +4,7 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/about/qml/Components"
 
 // The strip above everything (design/02 3): history and the sidebar's
 // button at the window's left, after the room macOS wants for its own
@@ -147,13 +148,16 @@ Item {
                 entries: [
                     { text: I18n.tr("Settings", I18n.rev), hint: "Ctrl+," },
                     { text: I18n.tr("Library folders", I18n.rev) },
+                    { text: I18n.tr("About Chilpa", I18n.rev) },
                     { separator: true },
                     { text: I18n.tr("Quit", I18n.rev), hint: "Ctrl+Q" }
                 ]
                 onChosen: (index) => index === 0 ? Navigation.openSection("")
                     : index === 1 ? Navigation.go("libraryFolders", 0)
+                    : index === 2 ? about.open()
                     : Player.quit()
             }
+            AboutModal { id: about }
         }
 
         Rectangle {
