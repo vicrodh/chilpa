@@ -97,7 +97,7 @@ ALLOWED = {
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
     "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
-    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini"},
+    "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-immersive"},
     # La segunda mitad del shell: lo que traen los sources, como su propio
     # módulo de QML. Cada crate del shell tiene sus propios topes.
     # What every shell crate stands on: the facade they share, the theme, the
@@ -118,10 +118,11 @@ ALLOWED = {
     # The dynamic background: the field, the blurred cover, the wallpaper.
     "chilpa-qt-ambient": {"chilpa-api", "chilpa-qt-kit"},
     "chilpa-qt-mini": {"chilpa-api", "chilpa-qt-kit"},
+    "chilpa-qt-immersive": {"chilpa-api", "chilpa-qt-kit"},
 }
 
 # Los únicos crates que pueden tener tipos de Qt.
-SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini"}
+SHELLS = {"chilpa-qt", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-immersive"}
 QT_RE = re.compile(r"\bcxx[-_]qt\b|\bQString\b|\bQObject\b|\bQVariant\b")
 
 MAX_LOC_FILE = 1500
