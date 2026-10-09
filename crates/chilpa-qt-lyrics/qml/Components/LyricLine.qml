@@ -28,9 +28,17 @@ Column {
     // the sung line fills word by word.
     property real size: Type.lyric
     property color sungColor: Theme.color.textPrimary
+    // The lines around the sung one, and the part of it not yet sung; the
+    // ones already sung. The theme's by default, fixed whites over a field.
+    property color dimColor: Theme.color.textSecondary
+    property color pastColor: Theme.color.textTertiary
     property string dimming: "strong"
     property bool uppercase: false
     property bool wordByWord: true
+    // Centered lines and a raised shadow under them, for a line alone over
+    // a cover; off, the panel's left alignment and no shadow.
+    property bool centered: false
+    property color shadowColor: "transparent"
     // How lit it is, from 0 to 1.
     readonly property real lit: LyricsView.dim(dimming, synced, position, current)
 
@@ -55,10 +63,13 @@ Column {
             Text {
                 text: row.text
                 wrapMode: Text.Wrap
+                horizontalAlignment: row.centered ? Text.AlignHCenter : Text.AlignLeft
                 font.pointSize: row.size
                 font.weight: Type.bold
                 font.capitalization: row.uppercase ? Font.AllUppercase : Font.MixedCase
-                color: row.sung ? row.sungColor : row.past ? Theme.color.textTertiary : Theme.color.textSecondary
+                color: row.sung ? row.sungColor : row.past ? row.pastColor : row.dimColor
+                style: row.shadowColor.a > 0 ? Text.Raised : Text.Normal
+                styleColor: row.shadowColor
             }
         }
         Component {
@@ -71,7 +82,9 @@ Column {
                 font.pointSize: row.size
                 font.capitalization: row.uppercase ? Font.AllUppercase : Font.MixedCase
                 sungColor: row.sungColor
-                restColor: Theme.color.textSecondary
+                restColor: row.dimColor
+                centered: row.centered
+                shadowColor: row.shadowColor
             }
         }
     }
@@ -85,8 +98,9 @@ Column {
         opacity: row.lit * (row.past ? 1 : 0.7)
         text: row.translation
         wrapMode: Text.Wrap
+        horizontalAlignment: row.centered ? Text.AlignHCenter : Text.AlignLeft
         font.pointSize: row.size * Type.lyricTranslation // derived: a share of the line's size
-        color: row.past ? Theme.color.textTertiary : Theme.color.textSecondary
+        color: row.past ? row.pastColor : row.dimColor
 
         Behavior on opacity { NumberAnimation { duration: Motion.lyricDim; easing.type: Easing.OutQuad } }
     }
