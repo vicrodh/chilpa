@@ -157,6 +157,12 @@ msgstr "Agregar todas a una playlist…"
 msgid "Add all to queue"
 msgstr "Agregar todas a la cola"
 
+msgid "Add cover"
+msgstr "Agregar carátula"
+
+msgid "Add image"
+msgstr "Agregar imagen"
+
 msgid "Add server"
 msgstr "Agregar servidor"
 
@@ -474,6 +480,12 @@ msgstr "Número de catálogo"
 msgid "Categories"
 msgstr "Categorías"
 
+msgid "Change cover"
+msgstr "Cambiar carátula"
+
+msgid "Change image"
+msgstr "Cambiar imagen"
+
 msgid "Chapters"
 msgstr "Capítulos"
 
@@ -512,6 +524,9 @@ msgstr "Elige un archivo ZIP local."
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
+
+msgid "Choose an image"
+msgstr "Elige una imagen"
 
 msgid "Choose device"
 msgstr "Elegir dispositivo"
@@ -694,6 +709,9 @@ msgstr "No se pudieron agregar las pistas a esta playlist."
 
 msgid "Could not create the playlist. Please try again."
 msgstr "No se pudo crear la playlist. Inténtalo de nuevo."
+
+msgid "Could not load the image"
+msgstr "No se pudo cargar la imagen"
 
 msgid "Could not move the playlist."
 msgstr "No se pudo mover la playlist."
@@ -2291,6 +2309,9 @@ msgstr "Recordar"
 msgid "Remove"
 msgstr "Quitar"
 
+msgid "Remove cover"
+msgstr "Quitar carátula"
+
 msgid "Remove from favorites"
 msgstr "Quitar de favoritos"
 
@@ -2308,6 +2329,9 @@ msgstr "Quitar de guardadas"
 
 msgid "Remove from the library"
 msgstr "Quitar de la biblioteca"
+
+msgid "Remove image"
+msgstr "Quitar imagen"
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
 msgstr "¿Eliminar este plugin, su cuenta, ajustes y biblioteca en caché de Chilpa? Esto no elimina tu cuenta ni tus playlists en el servicio."
@@ -2414,8 +2438,17 @@ msgstr "Guardar"
 msgid "Save as playlist"
 msgstr "Guardar como playlist"
 
+msgid "Save as…"
+msgstr "Guardar como…"
+
 msgid "Save stations to find them here."
 msgstr "Guarda estaciones para encontrarlas aquí."
+
+msgid "Save the cover"
+msgstr "Guardar la carátula"
+
+msgid "Save the image"
+msgstr "Guardar la imagen"
 
 msgid "Save to"
 msgstr "Guardar en"
@@ -3062,6 +3095,12 @@ msgstr "Versión: {}"
 
 msgid "View"
 msgstr "Vista"
+
+msgid "View cover"
+msgstr "Ver carátula"
+
+msgid "View image"
+msgstr "Ver imagen"
 
 msgid "View less"
 msgstr "Ver menos"

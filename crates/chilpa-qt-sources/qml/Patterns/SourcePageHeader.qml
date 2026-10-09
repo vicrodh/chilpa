@@ -17,6 +17,8 @@ Column {
     property bool externalInformation: false
     signal information()
     signal artwork()
+    // A right click on the cover, where the pointer is in the header.
+    signal artworkMenu(real left, real top)
     signal selectToggle()
     signal context(real left, real top)
     property bool selecting: false
@@ -43,7 +45,8 @@ Column {
             contain: header.info.art_fit === "contain"
             width: Math.min(Metrics.heroArt, parent.width / 3); height: width // derived: keep room for the text on narrow windows
             radius: header.artist ? width / 2 : Metrics.radiusCard // derived: circular artist portrait
-            source: header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || ""
+            // A cover the listener chose wins over the one the source has.
+            source: header.info.chosen_art || (header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || "")
         }
         Icon {
             anchors.centerIn: portrait
@@ -53,6 +56,7 @@ Column {
         }
         HoverHandler { parent: portrait; cursorShape: Qt.PointingHandCursor }
         TapHandler { parent: portrait; onTapped: header.artwork() }
+        TapHandler { parent: portrait; acceptedButtons: Qt.RightButton; onTapped: (point) => { const at = portrait.mapToItem(header, point.position.x, point.position.y); header.artworkMenu(at.x, at.y) } }
         Column {
             id: body; anchors.left: portrait.right; anchors.leftMargin: Metrics.heroGap; anchors.right: parent.right; spacing: Metrics.gap8
             Row {

@@ -698,6 +698,7 @@ version = "0.0.0"
 dependencies = [
  "chilpa-api",
  "chilpa-qt-ambient",
+ "chilpa-qt-artwork",
  "chilpa-qt-controls",
  "chilpa-qt-folders",
  "chilpa-qt-gallery",
@@ -727,6 +728,20 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+]
+
+[[package]]
+name = "chilpa-qt-artwork"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "pollster",
+ "rfd",
 ]
 
 [[package]]

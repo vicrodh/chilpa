@@ -157,6 +157,12 @@ msgstr ""
 msgid "Add all to queue"
 msgstr ""
 
+msgid "Add cover"
+msgstr ""
+
+msgid "Add image"
+msgstr ""
+
 msgid "Add server"
 msgstr ""
 
@@ -474,6 +480,12 @@ msgstr ""
 msgid "Categories"
 msgstr ""
 
+msgid "Change cover"
+msgstr ""
+
+msgid "Change image"
+msgstr ""
+
 msgid "Chapters"
 msgstr ""
 
@@ -511,6 +523,9 @@ msgid "Choose a local ZIP file."
 msgstr ""
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
+msgstr ""
+
+msgid "Choose an image"
 msgstr ""
 
 msgid "Choose device"
@@ -693,6 +708,9 @@ msgid "Could not add tracks to this playlist."
 msgstr ""
 
 msgid "Could not create the playlist. Please try again."
+msgstr ""
+
+msgid "Could not load the image"
 msgstr ""
 
 msgid "Could not move the playlist."
@@ -2291,6 +2309,9 @@ msgstr ""
 msgid "Remove"
 msgstr ""
 
+msgid "Remove cover"
+msgstr ""
+
 msgid "Remove from favorites"
 msgstr ""
 
@@ -2307,6 +2328,9 @@ msgid "Remove from saved"
 msgstr ""
 
 msgid "Remove from the library"
+msgstr ""
+
+msgid "Remove image"
 msgstr ""
 
 msgid "Remove this plugin, its account, settings and cached library from Chilpa? This does not delete your account or playlists at the source."
@@ -2414,7 +2438,16 @@ msgstr ""
 msgid "Save as playlist"
 msgstr ""
 
+msgid "Save as…"
+msgstr ""
+
 msgid "Save stations to find them here."
+msgstr ""
+
+msgid "Save the cover"
+msgstr ""
+
+msgid "Save the image"
 msgstr ""
 
 msgid "Save to"
@@ -3061,6 +3094,12 @@ msgid "Version: {}"
 msgstr "Version: {}"
 
 msgid "View"
+msgstr ""
+
+msgid "View cover"
+msgstr ""
+
+msgid "View image"
 msgstr ""
 
 msgid "View less"

@@ -10,6 +10,7 @@ use chilpa_qt_ambient as _;
 use chilpa_qt_mini as _;
 use chilpa_qt_immersive as _;
 use chilpa_qt_waveform as _;
+use chilpa_qt_artwork as _;
 use chilpa_qt_controls as _;
 use chilpa_qt_gallery as _;
 use chilpa_qt_lyrics as _;

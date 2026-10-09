@@ -163,6 +163,9 @@ QtObject {
     // The player bar's cover, grown on hover (the owner, 2026-10-09).
     readonly property int artPreview: 400
     readonly property int artPreviewFrame: 6
+    // A cover shown whole takes its own proportion inside this share of the
+    // window (QBZ's lightbox).
+    readonly property real lightboxShare: 0.9
     readonly property int progress: 2
     readonly property int progressHover: 4
     readonly property int seekKnob: 10
@@ -259,8 +262,6 @@ QtObject {
     readonly property int shelfLimit: 12
     readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
-    readonly property int artworkModal: 680
-    readonly property int artworkModalGutter: 64
     readonly property int pageHero: 168
     readonly property int playlistFilter: 26
     readonly property int playlistIndent: 22
