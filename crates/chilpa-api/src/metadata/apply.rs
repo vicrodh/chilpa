@@ -71,6 +71,7 @@ pub(crate) fn apply(draft: &mut Draft, release: &Release, spelled: &dyn Fn(&str)
         ("album_artists", names(&release.credits)),
         ("genres", join(&genres)),
         ("catalog_number", release.catalog_number.clone()),
+        ("label", release.label.clone()),
     ];
     if fields::is_date(&release.date) {
         album.push(("date", release.date.clone()));

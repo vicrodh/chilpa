@@ -117,6 +117,7 @@ impl Chilpa {
         let songs = self.tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
         let mut meta = Vec::new();
         if !detail.genre.is_empty() { meta.push(detail.genre.clone()); }
+        if !detail.label.is_empty() { meta.push(detail.label.clone()); }
         meta.extend([songs.clone(), length.to_owned()]);
         let quality = detail.quality.long();
         if !quality.is_empty() { meta.push(quality); }

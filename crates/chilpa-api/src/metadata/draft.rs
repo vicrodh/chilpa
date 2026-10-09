@@ -159,6 +159,7 @@ fn album_file(field: &Field, read: &Read, track: &EditTrack, album: &StoredAlbum
         "genres" if read.known => join(&chilpa_library::split_genres(&said.genres)),
         "genres" => join(&track.genres),
         "catalog_number" => said.catalog_number.clone().unwrap_or_default(),
+        "label" => said.label.clone().unwrap_or_default(),
         "musicbrainz_release_id" => said.musicbrainz_release_id.clone().unwrap_or_default(),
         "musicbrainz_release_group_id" => said.musicbrainz_release_group_id.clone().unwrap_or_default(),
         "musicbrainz_album_artist_ids" => join(&said.musicbrainz_album_artist_ids),

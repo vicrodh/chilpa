@@ -189,7 +189,7 @@ pub(crate) fn image_rows(path: &std::path::Path) -> Vec<crate::TrackRow> {
             artist: info.tags.artist_line(), album: info.tags.album.clone().unwrap_or_default(),
             album_id: 0, disc: info.tags.disc_number.unwrap_or(0),
             number: info.tags.track_number.unwrap_or(0), duration_ms: info.duration.as_millis() as u64,
-            plays: 0, artwork_path: String::new(), available: true,
+            plays: 0, artwork_path: String::new(), available: true, composer: String::new(),
             quality: crate::Quality::of_file(&path.to_string_lossy(), info.bit_depth, info.sample_rate_hz),
         }
     }).collect()

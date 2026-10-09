@@ -100,6 +100,7 @@ fn put(changes: &mut FileChanges, of_the_record: bool, name: &str, value: &str) 
         (true, "date") => changes.date = text(),
         (true, "genres") => changes.genres = list(),
         (true, "catalog_number") => changes.catalog_number = text(),
+        (true, "label") => changes.label = text(),
         (true, "musicbrainz_release_id") => changes.musicbrainz_release_id = text(),
         (true, "musicbrainz_release_group_id") => changes.musicbrainz_release_group_id = text(),
         (true, "musicbrainz_album_artist_ids") => changes.musicbrainz_album_artist_ids = list(),
@@ -323,12 +324,14 @@ pub(crate) fn project(draft: &Draft, reached: &[i64], cover: &str) -> AlbumEdit 
 
     let genres = draft.album_cell("genres");
     let date = draft.album_cell("date");
+    let label = draft.album_cell("label");
     let tracks = draft
         .rows
         .iter()
         .filter(|row| reached.contains(&row.track.id))
         .map(|row| {
             let recording = track_cell(row, "musicbrainz_recording_id");
+            let composers = track_cell(row, "composers");
             TrackEdit {
                 id: row.track.id,
                 title: set(&track_cell(row, "title")),
@@ -337,6 +340,7 @@ pub(crate) fn project(draft: &Draft, reached: &[i64], cover: &str) -> AlbumEdit 
                 disc_number: number(&track_cell(row, "disc_number")),
                 recording_mbid: if went(&recording) { Put::Set((!recording.now.is_empty()).then(|| recording.now.clone())) } else { Put::Keep },
                 genres: if went(genres) { Put::Set(split(&genres.now)) } else { Put::Keep },
+                composers: if went(&composers) { Put::Set(split(&composers.now)) } else { Put::Keep },
             }
         })
         .collect();
@@ -345,6 +349,7 @@ pub(crate) fn project(draft: &Draft, reached: &[i64], cover: &str) -> AlbumEdit 
         title: draft.album_cell("title").now.clone(),
         album_artist: draft.album_cell("album_artist").now.clone(),
         year: if went(date) { Put::Set(fields::year_of(&date.now)) } else { Put::Keep },
+        label: if went(label) { Put::Set((!label.now.trim().is_empty()).then(|| label.now.trim().to_string())) } else { Put::Keep },
         artwork: if cover.is_empty() { Put::Keep } else { Put::Set(cover.to_string()) },
         tracks,
     }
