@@ -121,6 +121,9 @@ Item {
             glyph: SourceGlyphs.backTen
             iconFamily: SourceGlyphs.font
             size: Metrics.button26
+            // The ring and its "10" fill their glyph edge to edge; at the
+            // small size of the buttons around them the digits get lost.
+            iconSize: Metrics.iconNav
             onClicked: Player.nudge(-10)
         }
         IconButton {
@@ -158,6 +161,7 @@ Item {
             glyph: SourceGlyphs.forwardTen
             iconFamily: SourceGlyphs.font
             size: Metrics.button26
+            iconSize: Metrics.iconNav
             onClicked: Player.nudge(10)
         }
         // The A-B loop beside the transport, with the extra controls.
