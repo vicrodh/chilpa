@@ -127,3 +127,11 @@ CREATE TABLE remote_artwork (
     PRIMARY KEY (origin, identity)
 );
 "#;
+
+/// What a track's parental advisory says: 1 explicit, 0 clean, NULL nothing.
+/// The next scan reads the tags again to learn it.
+pub(super) const MIGRATION_V35: &str = r#"
+ALTER TABLE tracks ADD COLUMN explicit INTEGER;
+
+UPDATE tracks SET release_evidence_read = 0;
+"#;

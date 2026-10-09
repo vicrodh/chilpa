@@ -618,15 +618,15 @@ fn save_track(
         "INSERT INTO tracks
            (source_id, external_id, title, artist, album_id, track_number, disc_number,
             duration_ms, sample_rate_hz, bit_depth, channels, isrc, recording_mbid,
-            present, added_at, label)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 1, ?14, ?15)
+            present, added_at, label, explicit)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, 1, ?14, ?15, ?16)
          ON CONFLICT(source_id, external_id) DO UPDATE SET
            title = excluded.title, artist = excluded.artist, album_id = excluded.album_id,
            track_number = excluded.track_number, disc_number = excluded.disc_number,
            duration_ms = excluded.duration_ms, sample_rate_hz = excluded.sample_rate_hz,
            bit_depth = excluded.bit_depth, channels = excluded.channels,
            isrc = excluded.isrc, recording_mbid = excluded.recording_mbid, present = 1,
-           label = excluded.label",
+           label = excluded.label, explicit = excluded.explicit",
         params![
             source,
             external_id,
@@ -642,7 +642,8 @@ fn save_track(
             tags.isrc,
             tags.musicbrainz_recording_id,
             now,
-            tags.label
+            tags.label,
+            tags.explicit
         ],
     )?;
     let track_id: i64 = lib.db.query_row(

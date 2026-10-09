@@ -56,6 +56,8 @@ pub struct Tags {
     pub composers: Vec<String>,
     /// The record label, or the publisher where the file names no label.
     pub label: Option<String>,
+    /// What the file's parental advisory says: explicit, clean, or nothing.
+    pub explicit: Option<bool>,
     /// The date as it comes: it may be `2019` or `2019-03-15`.
     pub date: Option<String>,
     pub track_number: Option<u16>,
@@ -199,6 +201,7 @@ pub fn read(path: &Path) -> Result<FileInfo, TagError> {
             .map(str::trim)
             .filter(|label| !label.is_empty())
             .map(str::to_string),
+        explicit: tag.get_string(ItemKey::ParentalAdvisory).and_then(advisory),
         date: tag
             .get_string(ItemKey::RecordingDate)
             .or_else(|| tag.get_string(ItemKey::ReleaseDate))
@@ -348,6 +351,16 @@ pub fn track_from_file(path: &Path, id: TrackRef) -> Result<Track, TagError> {
     Ok(track)
 }
 
+/// An advisory as the stores write it (`ITUNESADVISORY`, MP4's `rtng`):
+/// 1 or 4 is explicit, 2 is clean, and 0 or anything else says nothing.
+pub fn advisory(value: &str) -> Option<bool> {
+    match value.trim().to_ascii_lowercase().as_str() {
+        "1" | "4" | "explicit" => Some(true),
+        "2" | "clean" => Some(false),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -394,6 +407,16 @@ mod tests {
         assert_eq!(number(" 0.987654 "), Some(0.987654));
         assert_eq!(number("loud"), None);
         assert_eq!(number("inf"), None);
+    }
+
+    #[test]
+    fn an_advisory_is_explicit_clean_or_silent() {
+        assert_eq!(advisory("1"), Some(true));
+        assert_eq!(advisory(" 4 "), Some(true));
+        assert_eq!(advisory("Explicit"), Some(true));
+        assert_eq!(advisory("2"), Some(false));
+        assert_eq!(advisory("0"), None);
+        assert_eq!(advisory(""), None);
     }
 
     #[test]

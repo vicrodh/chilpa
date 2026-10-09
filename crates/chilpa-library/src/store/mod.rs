@@ -16,6 +16,7 @@ macro_rules! album_art {
 
 pub mod albums;
 pub mod artwork;
+pub mod advisory;
 pub mod artists;
 pub mod browse;
 pub mod credits;
