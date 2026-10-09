@@ -150,6 +150,7 @@ Item {
                 entries: [
                     { text: I18n.tr("Settings", I18n.rev), hint: "Ctrl+," },
                     { text: I18n.tr("Library folders", I18n.rev) },
+                    { text: I18n.tr("Listening stats", I18n.rev) },
                     { text: I18n.tr("About Chilpa", I18n.rev) },
                     { separator: true },
                     // Close is the window's (the tray keeps Chilpa, or it asks
@@ -159,8 +160,9 @@ Item {
                 ]
                 onChosen: (index) => index === 0 ? Navigation.openSection("")
                     : index === 1 ? Navigation.go("libraryFolders", 0)
-                    : index === 2 ? about.open()
-                    : index === 4 ? bar.Window.window.close()
+                    : index === 2 ? Navigation.go("stats", 0)
+                    : index === 3 ? about.open()
+                    : index === 5 ? bar.Window.window.close()
                     : bar.quitAsked()
             }
             AboutModal { id: about }

@@ -5,6 +5,7 @@ import "Screens"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
@@ -39,6 +40,8 @@ Loader {
         case "playlistImport": return playlistImport
         case "metadata": return metadata
         case "listenlist": return listenlist
+        case "stats": return stats
+        case "listeningHistory": return listeningHistory
         case "source": return medium && sourceDocument.source === Navigation.routeKey ? mediaSource : source
         case "sourceEntry": return medium ? mediaDetail : sourceEntry
         default: return pending
@@ -62,6 +65,8 @@ Loader {
     Component { id: playlistManager; PlaylistManagerScreen {} }
     Component { id: listenlist; ListenListScreen {} }
     Component { id: metadata; MetadataScreen {} }
+    Component { id: stats; StatsScreen {} }
+    Component { id: listeningHistory; HistoryScreen {} }
     Component { id: source; SourceScreen {} }
     Component { id: mediaSource; MediaSourceScreen {} }
     Component { id: mediaDetail; MediaDetailScreen {} }

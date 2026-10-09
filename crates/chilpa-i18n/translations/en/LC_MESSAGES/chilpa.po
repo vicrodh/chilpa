@@ -256,6 +256,9 @@ msgstr ""
 msgid "All sources"
 msgstr ""
 
+msgid "All time"
+msgstr ""
+
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr ""
 
@@ -426,6 +429,9 @@ msgstr ""
 msgid "Bit perfect"
 msgstr ""
 
+msgid "Bit-perfect"
+msgstr ""
+
 msgid "Blurred art"
 msgstr ""
 
@@ -449,6 +455,14 @@ msgstr ""
 
 msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
 msgstr ""
+
+msgid "Busiest day"
+msgstr ""
+
+msgid "Busiest day, {} play"
+msgid_plural "Busiest day, {} plays"
+msgstr[0] ""
+msgstr[1] ""
 
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr ""
@@ -854,7 +868,13 @@ msgstr ""
 msgid "Date updated"
 msgstr "Date updated"
 
+msgid "Days of the week"
+msgstr ""
+
 msgid "Dec"
+msgstr ""
+
+msgid "Decades"
 msgstr ""
 
 msgid "Default"
@@ -991,6 +1011,9 @@ msgstr ""
 
 msgid "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
 msgstr "Each selected destination creates its own playlist. Mixed playlists stay in Chilpa and can contain tracks from every connected source."
+
+msgid "Earlier"
+msgstr ""
 
 msgid "Earlier tabs"
 msgstr ""
@@ -1152,6 +1175,9 @@ msgid "Forward 10 seconds"
 msgstr ""
 
 msgid "French"
+msgstr ""
+
+msgid "Fri"
 msgstr ""
 
 msgid "From same artist"
@@ -1430,6 +1456,9 @@ msgstr ""
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr ""
 
+msgid "Later"
+msgstr ""
+
 msgid "Later tabs"
 msgstr ""
 
@@ -1469,10 +1498,16 @@ msgstr ""
 msgid "Listen live"
 msgstr ""
 
+msgid "Listening clock"
+msgstr ""
+
 msgid "Listening history"
 msgstr ""
 
 msgid "Listening stats"
+msgstr ""
+
+msgid "Listening time"
 msgstr ""
 
 msgid "Lite fill"
@@ -1622,16 +1657,25 @@ msgstr ""
 msgid "Mixed"
 msgstr "Mixed"
 
+msgid "Mon"
+msgstr ""
+
 msgid "Mono dark"
 msgstr ""
 
 msgid "Mono light"
 msgstr ""
 
+msgid "Month"
+msgstr ""
+
 msgid "More"
 msgstr ""
 
 msgid "More actions"
+msgstr ""
+
+msgid "Most at {}:00"
 msgstr ""
 
 msgid "Most played"
@@ -1781,6 +1825,9 @@ msgstr ""
 msgid "No folders match your search."
 msgstr ""
 
+msgid "No genres in this period."
+msgstr ""
+
 msgid "No grouping"
 msgstr ""
 
@@ -1877,7 +1924,13 @@ msgstr ""
 msgid "Nothing here."
 msgstr ""
 
+msgid "Nothing in this period."
+msgstr ""
+
 msgid "Nothing played yet"
+msgstr ""
+
+msgid "Nothing played yet."
 msgstr ""
 
 msgid "Nothing queued."
@@ -2144,6 +2197,9 @@ msgstr "Playlists will be kept at the root."
 msgid "Plays"
 msgstr ""
 
+msgid "Plays a day"
+msgstr ""
+
 msgid "Plex did not accept the session; sign in again"
 msgstr ""
 
@@ -2181,6 +2237,9 @@ msgid "Previous"
 msgstr ""
 
 msgid "Previous Track"
+msgstr ""
+
+msgid "Previous page"
 msgstr ""
 
 msgid "Processed"
@@ -2486,6 +2545,9 @@ msgstr ""
 msgid "SPLIT"
 msgstr ""
 
+msgid "Sat"
+msgstr ""
+
 msgid "Save"
 msgstr ""
 
@@ -2580,6 +2642,9 @@ msgid "Searching…"
 msgstr ""
 
 msgid "See all"
+msgstr ""
+
+msgid "See your listening history"
 msgstr ""
 
 msgid "See {} more"
@@ -2710,7 +2775,16 @@ msgstr ""
 msgid "Similar artists"
 msgstr ""
 
+msgid "Since {}"
+msgstr ""
+
 msgid "Size"
+msgstr ""
+
+msgid "Skipped"
+msgstr ""
+
+msgid "Skips"
 msgstr ""
 
 msgid "Sleep timer"
@@ -2795,6 +2869,9 @@ msgid "Subscribed"
 msgstr ""
 
 msgid "Subscriptions"
+msgstr ""
+
+msgid "Sun"
 msgstr ""
 
 msgid "Sung line"
@@ -2994,6 +3071,9 @@ msgstr ""
 msgid "This update asks for additional access."
 msgstr ""
 
+msgid "Thu"
+msgstr ""
+
 msgid "Time"
 msgstr ""
 
@@ -3007,6 +3087,9 @@ msgid "Title Z-A"
 msgstr ""
 
 msgid "To move to"
+msgstr ""
+
+msgid "Today"
 msgstr ""
 
 msgid "Toggle Immersive View"
@@ -3076,6 +3159,9 @@ msgid "Trending shows"
 msgstr ""
 
 msgid "Try again"
+msgstr ""
+
+msgid "Tue"
 msgstr ""
 
 msgid "Type this code at plex.tv/link, signed in to your Plex account."
@@ -3195,6 +3281,12 @@ msgstr ""
 msgid "Website"
 msgstr ""
 
+msgid "Wed"
+msgstr ""
+
+msgid "Week"
+msgstr ""
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr ""
 
@@ -3250,6 +3342,9 @@ msgid "Year (newest)"
 msgstr ""
 
 msgid "Year (oldest)"
+msgstr ""
+
+msgid "Yesterday"
 msgstr ""
 
 msgid "Your account reaches more than one server. Which one?"
@@ -3655,6 +3750,9 @@ msgid "read catalogs from other enabled plugins, without accessing their credent
 msgstr "read catalogs from other enabled plugins, without accessing their credentials"
 
 msgid "read your library, without being able to change it"
+msgstr ""
+
+msgid "results"
 msgstr ""
 
 msgid "run through a different plugin runtime"
@@ -4403,6 +4501,11 @@ msgid_plural "{} labels"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} listen"
+msgid_plural "{} listens"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] ""
@@ -4506,6 +4609,12 @@ msgid "{} {}"
 msgstr ""
 
 msgid "{} {} {}"
+msgstr ""
+
+msgid "{} · {}"
+msgstr ""
+
+msgid "{}s"
 msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
