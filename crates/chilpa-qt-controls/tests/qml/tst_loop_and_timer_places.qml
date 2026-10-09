@@ -74,6 +74,7 @@ TestCase {
         verify(foot.searching)
         tryCompare(field, "width", foot.width - 12, 1000, "it opens to the left over the actions")
         tryVerify(() => field.editing, 1000, "and takes the keyboard")
+        tryCompare(findChild(foot, "queueActions"), "opacity", 0, 1000, "the actions fade out under it")
         keyClick(Qt.Key_I)
         compare(searched.count, 1)
         compare(searched.signalArguments[0][0], "i")
