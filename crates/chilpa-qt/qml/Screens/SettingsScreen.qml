@@ -21,20 +21,37 @@ Item {
     // The setting a search went to: its section opens, its row comes into
     // view and lights up for a moment.
     property string focusKey: ""
+    property int focusRow: -1
     function go(setting) {
         search.text = ""
         page.focusKey = setting.key
+        page.focusRow = -1
+        flash.target = null
         Navigation.openSection(setting.section)
-        Qt.callLater(page.reveal)
+        seeking.tries = 0
+        seeking.restart()
     }
-    function reveal() {
-        for (let i = 0; i < list.count; i++) {
-            if (rows.data(rows.index(i, 0), Metrics.settingsKeyRole) !== page.focusKey)
-                continue
-            list.positionViewAtIndex(i, ListView.Center)
-            flash.target = list.itemAtIndex(i)
-            fade.restart()
-            return
+    // The section's rows arrive after it opens, and a row's item after the
+    // list has laid it out: both are looked for again for a moment.
+    Timer {
+        id: seeking
+        property int tries: 0
+        interval: Motion.fast
+        repeat: true
+        onTriggered: {
+            tries += 1
+            for (let i = 0; i < list.count && page.focusRow < 0; i++)
+                if (rows.data(rows.index(i, 0), Metrics.settingsKeyRole) === page.focusKey)
+                    page.focusRow = i
+            if (page.focusRow >= 0) {
+                list.positionViewAtIndex(page.focusRow, ListView.Center)
+                flash.target = list.itemAtIndex(page.focusRow)
+            }
+            if (flash.target || tries >= Metrics.settingsSeekTries) {
+                stop()
+                if (flash.target)
+                    fade.restart()
+            }
         }
     }
 
