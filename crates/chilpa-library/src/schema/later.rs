@@ -104,3 +104,26 @@ CREATE INDEX tracks_label ON tracks(label COLLATE NOCASE) WHERE label IS NOT NUL
 
 UPDATE tracks SET release_evidence_read = 0;
 "#;
+
+/// The covers and pictures the listener chose. A record's goes with it; an
+/// artist's is by name folded to lower case, like a favorite; a record of a
+/// plugin's is by the plugin and the identity it says is stable. Each names
+/// a file the facade keeps.
+pub(super) const MIGRATION_V34: &str = r#"
+CREATE TABLE album_artwork (
+    album_id INTEGER PRIMARY KEY REFERENCES albums(id) ON DELETE CASCADE,
+    path     TEXT NOT NULL
+);
+
+CREATE TABLE artist_artwork (
+    folded TEXT PRIMARY KEY,
+    path   TEXT NOT NULL
+);
+
+CREATE TABLE remote_artwork (
+    origin   TEXT NOT NULL,
+    identity TEXT NOT NULL,
+    path     TEXT NOT NULL,
+    PRIMARY KEY (origin, identity)
+);
+"#;

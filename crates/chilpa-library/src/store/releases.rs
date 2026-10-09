@@ -69,6 +69,7 @@ impl Library {
             for target in targets {
                 if old != target {
                     changed |= super::ratings::merge_album_rating(&tx, *old, *target)? > 0;
+                    changed |= super::artwork::carry_album_artwork(&tx, *old, *target)? > 0;
                     changed |= tx.execute("INSERT OR IGNORE INTO album_favorites(album_id, added_at)
                         SELECT ?2, added_at FROM album_favorites WHERE album_id = ?1", params![old, target])? > 0;
                 }

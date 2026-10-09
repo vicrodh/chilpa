@@ -54,13 +54,14 @@ impl Library {
         args.extend(starts.iter().map(|w| Box::new(w.clone()) as Box<dyn ToSql>));
         args.push(Box::new(limit as i64));
         let sql = format!(
-            "SELECT min(m.artist), count(a.id), sum(m.tracks), max(a.artwork_path)
+            concat!("SELECT min(m.artist), count(a.id), sum(m.tracks), max(", album_art!("a"), ")
              FROM albums a JOIN album_artist_rollup m ON m.album_id = a.id
              WHERE 1 {artist_clause}
              GROUP BY m.artist COLLATE NOCASE
              ORDER BY max({}) DESC, count(a.id) DESC, m.artist COLLATE NOCASE
-             LIMIT ?",
-            score("m.artist")
+             LIMIT ?"),
+            score("m.artist"),
+            artist_clause = artist_clause
         );
         let mut stmt = self.db.prepare(&sql)?;
         let artists = stmt

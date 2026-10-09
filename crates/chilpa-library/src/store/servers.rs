@@ -387,9 +387,9 @@ impl Library {
     pub fn server_track_card(&self, entry: &str) -> rusqlite::Result<Option<(String, String, String, String, Option<String>)>> {
         self.db
             .query_row(
-                "SELECT t.title, t.artist, coalesce(a.title, ''), coalesce(a.album_artist, ''), a.artwork_path
+                concat!("SELECT t.title, t.artist, coalesce(a.title, ''), coalesce(a.album_artist, ''), ", album_art!("a"), "
                  FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
-                 WHERE t.external_id = ?1",
+                 WHERE t.external_id = ?1"),
                 params![entry],
                 |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)),
             )
