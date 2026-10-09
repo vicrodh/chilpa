@@ -326,15 +326,15 @@ fn the_history_goes_newest_first_a_page_at_a_time_and_says_its_total() {
         lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
     }
     let filter = ListenFilter::default();
-    let (first, total) = lib.listening_history(&filter, 0, 2).unwrap();
+    let (first, total) = lib.listening_history(&filter, "", 0, 2).unwrap();
     assert_eq!(total, 3);
     assert_eq!(first.iter().map(|e| e.started_at).collect::<Vec<_>>(), [10800, 7200]);
     assert_eq!(first[0].title, "One");
     assert_eq!(first[0].local_time, "1970-01-01 03:00", "where it was heard");
-    let (rest, _) = lib.listening_history(&filter, 2, 2).unwrap();
+    let (rest, _) = lib.listening_history(&filter, "", 2, 2).unwrap();
     assert_eq!(rest.iter().map(|e| e.started_at).collect::<Vec<_>>(), [3600]);
     let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
-    assert_eq!(lib.listening_history(&late, 0, 10).unwrap().1, 2);
+    assert_eq!(lib.listening_history(&late, "", 0, 10).unwrap().1, 2);
 }
 
 #[test]
@@ -361,4 +361,27 @@ fn local_days_end_today_and_start_at_a_local_midnight() {
     let start = lib.local_day_start(0).unwrap();
     let now: i64 = lib.db.query_row("SELECT unixepoch('now')", [], |r| r.get(0)).unwrap();
     assert!(start <= now && now - start < 86_400 + 3_600);
+}
+
+#[test]
+fn the_history_finds_every_word_in_a_track_its_artist_or_its_record() {
+    let lib = fixture();
+    for (at, track) in [(3600, 1), (7200, 2), (10800, 1)] {
+        lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
+    }
+    let filter = ListenFilter::default();
+    let (found, total) = lib.listening_history(&filter, "singer b", 0, 10).unwrap();
+    assert_eq!((total, found.len()), (1, 1));
+    assert_eq!(found[0].title, "Two");
+    assert_eq!(lib.listening_history(&filter, "one compilation", 0, 10).unwrap().1, 2, "words across the track and its record");
+    assert_eq!(lib.listening_history(&filter, "nothing", 0, 10).unwrap().1, 0);
+    let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
+    assert_eq!(lib.listening_history(&late, "one", 0, 10).unwrap().1, 1, "the search keeps the period's bounds");
+}
+
+#[test]
+fn a_local_date_starts_at_its_own_midnight() {
+    let lib = fixture();
+    let today: String = lib.db.query_row("SELECT date('now', 'localtime')", [], |r| r.get(0)).unwrap();
+    assert_eq!(lib.local_date_start(&today).unwrap(), lib.local_day_start(0).unwrap());
 }
