@@ -4,6 +4,7 @@ import app.chilpa.kit
 import app.chilpa.ambient
 import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Primitives"
 import "../Theme"
 
@@ -27,7 +28,7 @@ Column {
             id: row
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Stage.menuApart
-            height: Stage.eqTall
+            height: Metrics.eqTall
             PlayingBars {
                 tint: meta.accent
                 active: Immersive.open

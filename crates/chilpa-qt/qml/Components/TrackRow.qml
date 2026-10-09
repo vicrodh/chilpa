@@ -1,4 +1,5 @@
 import QtQuick
+import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
@@ -85,9 +86,9 @@ Item {
         rowIndex: row.index
         radius: row.rich ? Metrics.radiusCard : Metrics.radiusRow
         visible: !row.header
-        hovered: row.hovered
-        selected: row.selected
+        hovered: row.hovered; selected: row.selected
         emphasized: row.playing && row.rich
+        edge: row.playing && !Prefs.animatedIndicator
     }
 
     // Only a header builds one; it stops short of the group's own actions.
@@ -143,7 +144,6 @@ Item {
                 credit: row.composer
                 titleSize: row.rich ? Type.bodyLarge : Type.row
                 titleWeight: row.rich ? Type.medium : Type.regular
-                titleColor: row.playing ? Theme.color.accent : Theme.color.textPrimary
             }
             Text {
                 id: richArtist
@@ -165,7 +165,7 @@ Item {
             text: row.artist
             elide: Text.ElideRight
             font.pointSize: Type.row
-            color: row.playing ? Theme.color.accent : Theme.color.textPrimary
+            color: Theme.color.textPrimary
         }
 
         Text {
@@ -177,7 +177,7 @@ Item {
             text: row.album
             elide: Text.ElideRight
             font.pointSize: Type.row
-            color: row.playing ? Theme.color.accent : row.albumHovered ? Theme.color.textPrimary : row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            color: row.albumHovered || !row.rich ? Theme.color.textPrimary : Theme.color.textSecondary
         }
 
         TrackSourceLabel { id: badge; cols: row.cols; name: row.sourceName; sourceInfo: row.sourceInfo; anchors.verticalCenter: parent.verticalCenter }
@@ -231,7 +231,7 @@ Item {
             horizontalAlignment: Text.AlignRight
             font.pointSize: Type.row
             font.features: { "tnum": 1 }
-            color: row.playing ? Theme.color.accent : row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
+            color: row.rich ? Theme.color.textSecondary : Theme.color.textPrimary
         }
     }
 }

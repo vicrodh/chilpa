@@ -168,7 +168,7 @@ Rectangle {
             height: diameter
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: -Stage.eqBar
+                anchors.margins: -Metrics.eqBar
                 radius: width / 2 // derived: a ring
                 color: "transparent"
                 border.width: pulseRing.ring ? pulseRing.ring.stroke + Stage.metaApart : 0
@@ -199,7 +199,7 @@ Rectangle {
             height: diameter
             Rectangle {
                 anchors.fill: parent
-                anchors.margins: -(Stage.eqBar + band.energy * Stage.eqStep)
+                anchors.margins: -(Metrics.eqBar + band.energy * Metrics.eqStep)
                 radius: width / 2 // derived: a ring
                 color: "transparent"
                 border.width: Stage.ringsHalo + band.energy * Stage.ringsHaloGain

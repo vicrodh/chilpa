@@ -232,6 +232,17 @@ QtObject {
     readonly property int colTimeRich: 48
     readonly property int playingBarWidth: 2
     readonly property int playingBox: 12
+    // The playing row's edge mark, as QBZ draws it: 3 px, 2 in from the
+    // row's start and 7 short of its top and bottom.
+    readonly property int playingEdge: 3
+    readonly property int playingEdgeInset: 7
+    // The moving bars: four of 3 px every 5 px in an 18 by 14 box, on an
+    // 800 ms loop.
+    readonly property int eqWide: 18
+    readonly property int eqTall: 14
+    readonly property int eqBar: 3
+    readonly property int eqStep: 5
+    readonly property int eqLoop: 800
     // Enough to build every row of a list that grows instead of scrolling.
     readonly property int fitContentBuffer: 100000
 

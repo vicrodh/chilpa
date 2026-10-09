@@ -143,6 +143,7 @@ pub const SECTIONS: &[Section] = &[
                 setting("appearance.density", Chilpa::mark("Track lists"), Chilpa::mark("Compact rows like a spreadsheet, or rich rows with the cover."), Control::Segmented),
                 setting("appearance.font", Chilpa::mark("Font"), Chilpa::mark("Inter ships with Chilpa and has every weight the design uses. Takes effect the next time Chilpa starts."), Control::Segmented),
                 setting("appearance.albumHeader", Chilpa::mark("Album header"), Chilpa::mark("Full atmosphere, artwork colors only, or no derived background."), Control::Segmented),
+                setting(crate::play_indicator::ANIMATED, Chilpa::mark("Play indicator animation"), Chilpa::mark("Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."), Control::Toggle),
             ],
         }, Group {
             title: Chilpa::mark("Background"),

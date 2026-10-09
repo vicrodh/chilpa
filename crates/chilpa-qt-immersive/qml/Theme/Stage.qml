@@ -128,11 +128,6 @@ QtObject {
     readonly property real metaAlbumText: 14 * Type.pointsPerPixel
     readonly property int metaBadgeTop: 12
     readonly property int metaNowBelow: 8
-    readonly property int eqWide: 18
-    readonly property int eqTall: 14
-    readonly property int eqBar: 3
-    readonly property int eqStep: 5
-    readonly property int eqLoop: 800
     readonly property real nowText: 12 * Type.pointsPerPixel
     readonly property real nowTracking: 0.5
 
