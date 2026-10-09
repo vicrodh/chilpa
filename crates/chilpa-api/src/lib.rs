@@ -24,6 +24,7 @@ pub use albums_view::{grid_rows, AlbumsFound, GridRow};
 pub use tracks_view::{group_of, FoundTracks, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;
+mod chosen_artwork;
 mod covers;
 mod folders;
 mod hotkeys;
@@ -673,6 +674,8 @@ pub struct Chilpa {
     /// the library they were read at.
     credits: std::collections::HashMap<String, Vec<String>>,
     credits_read_at: (i64, u64),
+    /// The covers and pictures the listener chose, and the one over what plays.
+    artwork: chosen_artwork::State,
 }
 
 /// Why the player was told to stop, when it was us who told it.
@@ -760,40 +763,20 @@ impl Chilpa {
             casting: casting::Casting::default(),
             credits: Default::default(),
             credits_read_at: (0, 0),
+            artwork: Default::default(),
         };
         if !chilpa.restore_buffers() { chilpa.restore_queue_session(); }
         chilpa
-    }
-
-    /// Whether the machine's outputs changed since this was last asked.
-    ///
-    /// The window calls it on its timer so that plugging a DAC in makes it
-    /// appear without anybody pressing anything. It is cheap on purpose: the
-    /// stacks that can answer without opening or asking over a socket hand
-    /// back something short, and only when that moves does the window go and
-    /// rebuild the list.
-    ///
-    /// The first call is always false. There is nothing to have changed from
-    /// yet, and answering true would make the window rebuild the list one
-    /// tick after it had just built it.
-    pub fn outputs_changed(&mut self) -> bool {
-        let now = chilpa_core::backends::generation();
-        if self.outputs_generation.is_empty() {
-            self.outputs_generation = now;
-            return false;
-        }
-        if now == self.outputs_generation {
-            return false;
-        }
-        self.outputs_generation = now;
-        true
     }
 
     /// The library, opened the first time it is used.
     pub(crate) fn library(&mut self) -> Option<&chilpa_library::Library> {
         if self.library.is_none() {
             match chilpa_core::open_library() {
-                Ok(lib) => self.library = Some(lib),
+                Ok(lib) => {
+                    self.library = Some(lib);
+                    self.load_chosen_remote_art();
+                }
                 Err(e) => {
                     self.now.error = chilpa_i18n::t_args("the library could not be opened: {}", &[&e.to_string()]);
                     return None;
@@ -1371,8 +1354,7 @@ impl Chilpa {
         // level the player holds, not the settings: this runs every tick.
         let gain = self.player.as_ref().map_or(1.0, |p| p.volume());
         self.mark_scaled(gain);
-        self.finish_buffer_switch();
-        self.persist_progress(started);
+        self.finish_tick(started);
         &self.now
     }
 

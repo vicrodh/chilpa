@@ -242,7 +242,8 @@ impl crate::Chilpa {
     pub fn artist_document(&mut self, name: &str) -> String {
         let records = self.artist_release_cards(name, false);
         let guest = self.artist_release_cards(name, true);
-        let art = records.first().or(guest.first()).map(|a| a.artwork_path.clone()).filter(|a| !a.is_empty())
+        let chosen = Some(self.artist_art(name)).filter(|a| !a.is_empty());
+        let art = chosen.or_else(|| records.first().or(guest.first()).map(|a| a.artwork_path.clone())).filter(|a| !a.is_empty())
             .and_then(|path| url::Url::from_file_path(path).ok()).map(|u| u.to_string()).unwrap_or_default();
         let known = self.artist_network.of(name, &[]);
         // The library keeps no label on a record: the sidebar says so.

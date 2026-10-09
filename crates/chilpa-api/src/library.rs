@@ -347,15 +347,11 @@ impl Chilpa {
     /// The library's artists.
     pub fn artists(&mut self, limit: usize, offset: usize) -> Vec<Artist> {
         let Some(lib) = self.library() else { return Vec::new() };
+        let pictures = lib.artist_pictures().unwrap_or_default();
         lib.presented_artists(limit, offset)
             .unwrap_or_default()
             .into_iter()
-            .map(|a| Artist {
-                name: a.name,
-                album_count: a.album_count,
-                track_count: a.track_count,
-                artwork_path: a.artwork_path.unwrap_or_default(),
-            })
+            .map(|a| crate::browse::artist_of(a, &pictures))
             .collect()
     }
 
