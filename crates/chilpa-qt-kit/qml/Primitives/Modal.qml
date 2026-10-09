@@ -20,6 +20,9 @@ Popup {
         implicitWidth: inset.implicitWidth + Metrics.modalInsets
         implicitHeight: inset.implicitHeight + Metrics.modalInsets
 
+        // A press in the modal outside its field takes the keyboard from it.
+        FocusRelease {}
+
         Item {
             id: inset
             x: Metrics.modalInset

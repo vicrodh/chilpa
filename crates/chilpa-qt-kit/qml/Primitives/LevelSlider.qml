@@ -50,6 +50,27 @@ Item {
         color: Theme.color.accent
     }
 
+    // Tab reaches it; the arrows move it a step, Home and End to its ends,
+    // as QBZ's slider.
+    activeFocusOnTab: enabled
+    Keys.onPressed: (event) => {
+        if (!slider.enabled || event.isAutoRepeat)
+            return
+        let to
+        switch (event.key) {
+        case Qt.Key_Left: case Qt.Key_Down: to = slider.value - 1; break
+        case Qt.Key_Right: case Qt.Key_Up: to = slider.value + 1; break
+        case Qt.Key_Home: to = 0; break
+        case Qt.Key_End: to = 100; break
+        default: return
+        }
+        const level = Math.max(0, Math.min(100, to))
+        slider.moved(level)
+        slider.released(level)
+        event.accepted = true
+    }
+    FocusRing { gap: Metrics.focusRingGap }
+
     MouseArea {
         id: area
         cursorShape: Qt.PointingHandCursor

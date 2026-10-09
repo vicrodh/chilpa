@@ -64,6 +64,8 @@ TitledFlow {
         Chip { text: "All"; active: true }
         Chip { text: "Songs" }
         TextField { placeholder: "Token"; secret: true }
+        Rectangle { width: Metrics.selectWidth; height: Metrics.fieldHeight; radius: Metrics.radiusControl; color: Theme.color.fillField; FocusRing { visible: true } }
+        Item { width: Metrics.selectWidth; height: Metrics.fieldHeight; FocusRelease {} }
         Swatches { colors: ["", Theme.color.accentHover, Theme.color.textSecondary]; values: ["a", "b", "c"]; value: "b" }
         LevelSlider { value: 60 }
         LevelField { value: 75 }

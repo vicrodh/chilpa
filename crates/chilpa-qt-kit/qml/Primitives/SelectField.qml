@@ -63,6 +63,23 @@ Rectangle {
         size: Metrics.iconSm
     }
 
+    // Tab reaches it, Space or Enter opens it, and Up and Down step through
+    // the options without opening it, as QBZ's select.
+    activeFocusOnTab: enabled
+    Keys.onPressed: (event) => {
+        if (!field.enabled || event.isAutoRepeat)
+            return
+        const step = event.key === Qt.Key_Up ? -1 : event.key === Qt.Key_Down ? 1 : 0
+        if (event.key === Qt.Key_Space || event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+            menu.opened ? menu.close() : menu.open()
+        else if (step !== 0 && field.values.length > 0)
+            field.picked(field.values[Math.max(0, Math.min(field.values.length - 1, field.current + step))])
+        else
+            return
+        event.accepted = true
+    }
+    FocusRing {}
+
     MouseArea {
         id: area
         cursorShape: Qt.PointingHandCursor

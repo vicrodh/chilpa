@@ -41,6 +41,10 @@ Rectangle {
         verticalAlignment: TextInput.AlignVCenter
         clip: true
         echoMode: root.secret ? TextInput.Password : TextInput.Normal
+        // In the Tab order as it is drawn; Qt leaves a TextInput out of it.
+        // Losing the keyboard commits (`editingFinished`), as Enter does, and
+        // Escape goes on to whatever holds the field, as QBZ's form fields.
+        activeFocusOnTab: root.enabled
         font.pointSize: Type.body
         color: Theme.color.textPrimary
         selectionColor: Theme.color.rowSelected
