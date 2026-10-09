@@ -30,6 +30,8 @@ Item {
     // Its artist is under the pointer: a click on it opens the artist.
     property bool artistHovered: false
     property bool albumHovered: false; property string sourceName: ""
+    // Who wrote it, quiet after the title; empty when nobody is named.
+    property string composer: ""
     property var sourceInfo: ({}); readonly property Item sourceBadge: badge
     property bool selectionMode: false
     property int rating: 0
@@ -135,13 +137,13 @@ Item {
             width: row.cols.titleW - Metrics.gap12
             anchors.verticalCenter: parent.verticalCenter
 
-            Text {
+            CreditedTitle {
                 width: parent.width
-                text: row.title
-                elide: Text.ElideRight
-                font.pointSize: row.rich ? Type.bodyLarge : Type.row
-                font.weight: row.rich ? Type.medium : Type.regular
-                color: row.playing ? Theme.color.accent : Theme.color.textPrimary
+                title: row.title
+                credit: row.composer
+                titleSize: row.rich ? Type.bodyLarge : Type.row
+                titleWeight: row.rich ? Type.medium : Type.regular
+                titleColor: row.playing ? Theme.color.accent : Theme.color.textPrimary
             }
             Text {
                 id: richArtist

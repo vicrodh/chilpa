@@ -7,12 +7,22 @@ import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
-// Library (design/02 9, design/06): the four filter columns in cascade and
+// Library (design/02 9, design/06): the filter columns in cascade and
 // the records they leave, as cards or as rows. A fixed layout with no scroll of
 // its own: only the columns and the result scroll.
 Item {
     id: page
 
+    // The filter columns turned on in the sources popover, kept.
+    property var panes: (SettingsModel.kept("ui.library.panes") || "year,genre").split(",").filter(c => c !== "")
+    function togglePane(column) {
+        const on = page.panes.indexOf(column) < 0
+        page.panes = on ? page.panes.concat([column]) : page.panes.filter(c => c !== column)
+        SettingsModel.keep("ui.library.panes", page.panes.join(","))
+        // A column turned off does not narrow what it no longer shows.
+        if (!on)
+            Library.choose(column, "", "")
+    }
     // The columns' height while their grip is dragged, or -1.
     property real dragged: -1
     // The columns' height when the grip was pressed.
@@ -74,6 +84,8 @@ Item {
                     id: sources
                     x: sourceButton.width - width
                     y: sourceButton.height + Metrics.gap6
+                    panes: page.panes
+                    onPaneToggled: (column) => page.togglePane(column)
                 }
             }
             SortButton {
@@ -116,6 +128,7 @@ Item {
         width: head.width
         height: page.panesHeight
         visible: SettingsModel.panesOpen
+        shown: page.panes
     }
 
     ResizeHandle {

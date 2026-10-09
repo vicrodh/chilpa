@@ -91,6 +91,7 @@ TitledFlow {
         radius: Metrics.radiusMenu
         color: Theme.color.surfaceRaised
         Edge {}
+        CreditedTitle { width: Metrics.searchFlyout; title: "Nocturne in E-flat major"; credit: "Frédéric Chopin" }
         Column {
             id: entries
             width: parent.width
