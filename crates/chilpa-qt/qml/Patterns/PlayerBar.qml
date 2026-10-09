@@ -10,6 +10,7 @@ import app.chilpa.waveform
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/waveform/qml/Components" as Wave
 
 // The floating player (design/02 7): transport, the "LCD" with what plays,
 // and the actions for the active output.
@@ -33,7 +34,8 @@ Item {
 
     CastPicker { id: castPicker }
     Timer { interval: Motion.refresh; repeat: true; running: true; triggeredOnStart: true; onTriggered: Cast.refresh() }
-    // Standing tall with the waveform seek under the texts (the owner, 2026-10-08 night).
+    // Standing tall with the waveform seek in a band above everything else,
+    // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open
     implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
 
@@ -76,11 +78,30 @@ Item {
         Edge {}
     }
 
+    // The bar as it always was: the band above does not move it.
+    Item {
+        id: body
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        height: Metrics.playerHeight
+    }
+    Wave.WaveformBand {
+        objectName: "playerBand"
+        visible: bar.tall
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.leftMargin: Metrics.playerPadLeft
+        anchors.rightMargin: Metrics.playerPadRight
+        height: Metrics.waveformBand
+    }
+
     Row {
         id: transport
         anchors.left: parent.left
         anchors.leftMargin: Metrics.playerPadLeft
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenter: body.verticalCenter
         spacing: Metrics.gap4
 
         IconButton {
@@ -162,7 +183,7 @@ Item {
         id: actions
         anchors.right: parent.right
         anchors.rightMargin: Metrics.playerPadRight
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenter: body.verticalCenter
         spacing: Metrics.gap4
 
         // How the window looks: today the background behind it; the other
@@ -255,7 +276,7 @@ Item {
         anchors.leftMargin: Metrics.gap10
         anchors.right: actions.left
         anchors.rightMargin: Metrics.gap10
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenter: body.verticalCenter
         showTimes: bar.width >= Metrics.playerNoTimes
     }
 

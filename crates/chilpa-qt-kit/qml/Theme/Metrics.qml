@@ -154,9 +154,8 @@ QtObject {
     readonly property int playerPadRight: 12
     // Tall enough for the seek bar to stay clear of who plays and the record.
     readonly property int lcdHeight: 54
-    // The band the waveform takes under the texts when the bar stands tall.
+    // The band the waveform takes above the rest when the bar stands tall.
     readonly property int waveformBand: 35
-    readonly property int lcdHeightTall: 89
     readonly property int lcdArt: 44
     readonly property int progress: 2
     readonly property int progressHover: 4

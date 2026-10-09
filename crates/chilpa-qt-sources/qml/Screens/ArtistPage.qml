@@ -3,6 +3,7 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.waveform
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
@@ -167,7 +168,8 @@ Item {
         id: panel
         anchors.right: parent.right
         anchors.rightMargin: Metrics.spaceWindow
-        y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - Metrics.playerHeight - Metrics.spaceWindow * 2 // derived: the bar, its gap below and the gap between
+        y: bar.y + bar.height + Metrics.spaceWindow; height: page.height - y - (Waveform.open ? Metrics.playerHeightTall : Metrics.playerHeight) - Metrics.spaceWindow * 2 // derived: the bar as tall as it stands, its gap below and the gap between
+        Behavior on height { NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
         open: page.networkOpen; document: page.about; network: page.network
         onClosed: page.networkOpen = false
     }

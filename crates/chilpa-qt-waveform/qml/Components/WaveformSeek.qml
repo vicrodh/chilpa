@@ -6,10 +6,10 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Theme"
 
-// The seek bar as a waveform: one rounded bar per column, how loud the
-// track is there, mirrored about a rail; the bars already played in the
-// accent, the ones the document covers in the secondary text color, the
-// rest as hairlines. It seeks as the thin bar does: a click goes there, a
+// The seek bar as a waveform: a bar per pixel, how loud the track is
+// there, mirrored about a rail, dense as a QuickLook player's; the bars
+// already played in the accent, the ones the document covers in the
+// secondary text color, the rest as hairlines. It seeks as the thin bar does: a click goes there, a
 // drag follows the pointer and goes where it is let go, with the time
 // under the pointer in a bubble, and the A-B loop's marks over it. The
 // values come from the bridge for the columns this width has room for.
@@ -33,10 +33,8 @@ Item {
     readonly property int columns: Math.max(Bars.columnsMin, Math.min(Bars.columnsMax, Math.ceil(width / Bars.pixelsPerColumn)))
     readonly property var values: Waveform.values
     readonly property real played: duration > 0 ? Math.min(1, shown / duration) : 0
-    readonly property int breaks: Math.floor((columns - 1) / Bars.groupOf)
-    readonly property real groupGap: Math.min(Bars.gapMax, Math.max(Bars.gapMin, width / Math.max(1, columns) * Bars.gapShare))
-    readonly property real slot: Math.max(1, width - breaks * groupGap) / Math.max(1, columns)
-    readonly property real barWide: Math.min(Bars.barMax, Math.max(Bars.barMin, slot * Bars.barShare))
+    readonly property real slot: width / Math.max(1, columns)
+    readonly property real barWide: Math.max(Metrics.hairline, Math.floor(slot))
     readonly property real halfTall: Math.max(1, height * Bars.halfShare)
 
     onColumnsChanged: Waveform.columns = columns
@@ -65,11 +63,10 @@ Item {
             readonly property real reach: Math.min(bar.halfTall, Bars.barLeast / 2 + value * Math.max(0, bar.halfTall - Bars.barLeast / 2)) // derived: the least bar and the rest by the value
             readonly property bool sung: (index + 1) / bar.columns <= bar.played
             readonly property bool known: index / bar.columns < Waveform.analyzed
-            x: bar.slot * index + bar.groupGap * Math.floor(index / Bars.groupOf) + (bar.slot - bar.barWide) / 2 // derived: its slot, the group gaps before it, centered
+            x: bar.slot * index
             width: bar.barWide
             height: reach * 2 // derived: mirrored about the rail
             anchors.verticalCenter: parent.verticalCenter
-            radius: width / 2 // derived: round ends
             visible: value > 0.0005
             color: sung ? Theme.color.accent : (known ? Theme.color.textSecondary : Theme.color.strokeHairline)
         }
