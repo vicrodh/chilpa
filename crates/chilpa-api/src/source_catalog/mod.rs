@@ -363,6 +363,10 @@ impl Catalog {
         })).collect()
     }
 
+    pub(crate) fn card_by_identity(&self, plugin: &str, reference: &str) -> Option<store::Card> {
+        self.lock().store.cards.values().find(|card| card.plugin == plugin && card.identity == reference).cloned()
+    }
+
     pub fn card(&self, id: i64) -> Option<store::Card> {
         let mut inner = self.lock();
         let card = inner.store.cards.get(&id).cloned()?;
