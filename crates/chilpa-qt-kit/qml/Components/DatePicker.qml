@@ -37,6 +37,8 @@ Controls.Popup {
 
     modal: true
     dim: false
+    // So Escape reaches it and closes it.
+    focus: true
     padding: Metrics.gap12
     onAboutToShow: show(selected)
 
@@ -103,6 +105,9 @@ Controls.Popup {
             id: grid
             objectName: "pickerDays"
             width: Metrics.datePickerWide
+            // The grid shares its own height among the six weeks it always
+            // shows; its days do not size it.
+            height: Metrics.datePickerDay * 6 // derived: six weeks
             month: picker.month
             year: picker.year
             locale: Qt.locale()
