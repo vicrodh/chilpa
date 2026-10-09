@@ -50,7 +50,9 @@ Window {
         x: window.contentLeft
         y: Metrics.tabBarHeight
         width: (right.visible ? right.x : window.width) - Metrics.spaceWindow - x // derived: the window's margin on the right too
-        height: window.height - y
+        // Under the dynamic background the plane is a card that ends at the
+        // window's margin, so the screens end there too.
+        height: window.height - y - (Theme.ambient ? Metrics.spaceWindow : 0)
         clip: true
     }
 
@@ -94,7 +96,9 @@ Window {
         z: 3
         panelAside: window.panelAside
         onShowPanel: window.panelAside = false
-        width: Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
+        // An inset asked for by CHILPA_PLAYER_INSET wins, with no cap, so the
+        // owner can compare it against the plane; else the window's rule.
+        width: Dev.playerInset >= 0 ? host.width - Dev.playerInset * 2 : Math.min(Metrics.playerMaxWidth, host.width - Metrics.playerInset * 2) // derived: an inset on each side
         x: host.x + (host.width - width) / 2 // derived: centered over the content
         y: idle.away ? window.height : window.height - height - Metrics.playerBottom
         Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }

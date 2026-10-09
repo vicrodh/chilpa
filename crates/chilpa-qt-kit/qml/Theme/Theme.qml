@@ -64,6 +64,7 @@ QtObject {
         readonly property color ambientPlayer: ThemeModel.color("ambient.player", theme.rev)
         readonly property color ambientContent: ThemeModel.color("ambient.content", theme.rev)
         readonly property color ambientRaised: ThemeModel.color("ambient.raised", theme.rev)
+        readonly property color ambientFrost: ThemeModel.color("ambient.frost", theme.rev)
         readonly property color ambientVeil: ThemeModel.color("ambient.veil", theme.rev)
         readonly property color ambientBar: ThemeModel.color("ambient.bar", theme.rev)
         readonly property color ambientPanel: ThemeModel.color("ambient.panel", theme.rev)
