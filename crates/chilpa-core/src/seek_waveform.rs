@@ -1,7 +1,8 @@
 //! The seek bar's waveform of a file, read in the background: a second
 //! decoder over the same file, as fast as it decodes, apart from the one
 //! that plays. A local file is done in seconds; the document grows under
-//! the view meanwhile.
+//! the view meanwhile. A DSD file goes through the DSD-to-PCM converter,
+//! the one playback uses when the device takes no DSD.
 
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -17,6 +18,9 @@ const PUBLISH_EVERY: Duration = Duration::from_millis(100);
 /// the last one complete. It stops where `stop` says so, and says why
 /// when the file cannot be read or has no known length.
 pub fn analyze_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Snapshot)) -> Result<(), String> {
+    if path.extension().is_some_and(|e| e.eq_ignore_ascii_case("dsf") || e.eq_ignore_ascii_case("dff")) {
+        return analyze_dsd_file(path, stop, publish);
+    }
     let mut decoded = Decoded::open(path).map_err(|e| e.to_string())?;
     let format = decoded.stream_format();
     let total = decoded.frame_count().ok_or_else(|| chilpa_i18n::t("the length of the track is not known"))?;
@@ -43,6 +47,35 @@ pub fn analyze_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Sna
             }
         };
         at += frames as u64;
+        if accumulator.complete() {
+            break;
+        }
+        if last.elapsed() >= PUBLISH_EVERY {
+            revision += 1;
+            publish(&accumulator.snapshot(revision));
+            last = Instant::now();
+        }
+    }
+    accumulator.finish();
+    publish(&accumulator.snapshot(revision + 1));
+    Ok(())
+}
+
+/// The same for a DSD file: converted to PCM block by block, as playback
+/// converts it, and read for its loudness like any other.
+fn analyze_dsd_file(path: &Path, stop: &AtomicBool, publish: &mut dyn FnMut(&Snapshot)) -> Result<(), String> {
+    let source = crate::dsd_playback::open_dsd_file(path).map_err(|e| e.to_string())?;
+    let mut converter = chilpa_dsd::DsdPcmConverter::new(source, 0.0).map_err(|e| e.to_string())?;
+    let channels = usize::from(converter.channels().max(1));
+    let mut accumulator = Accumulator::new(converter.channels(), converter.total_frames());
+    let (mut at, mut revision, mut last) = (0u64, 0u64, Instant::now());
+    loop {
+        if stop.load(Ordering::Relaxed) {
+            return Ok(());
+        }
+        let Some(samples) = converter.next_block().map_err(|e| e.to_string())? else { break };
+        accumulator.feed_float(at, &samples);
+        at += (samples.len() / channels) as u64;
         if accumulator.complete() {
             break;
         }
