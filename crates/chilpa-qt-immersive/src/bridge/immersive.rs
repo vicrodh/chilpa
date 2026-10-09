@@ -61,6 +61,10 @@ pub mod qobject {
         /// restores what is remembered over it.
         #[qinvokable]
         fn open_from_menu(self: Pin<&mut Immersive>);
+        /// Opens the overlay on a given view, over whatever is remembered:
+        /// the player bar's cover opens it on Now Playing.
+        #[qinvokable]
+        fn open_view(self: Pin<&mut Immersive>, view_mode: i32, mode: i32, split_panel: i32);
         /// The only way the view changes: kept for the next open while the
         /// default is "remember".
         #[qinvokable]
@@ -179,6 +183,11 @@ impl qobject::Immersive {
     pub fn open_from_menu(mut self: Pin<&mut Self>) {
         self.as_mut().set_mode(0);
         self.turn(true);
+    }
+
+    pub fn open_view(mut self: Pin<&mut Self>, view_mode: i32, mode: i32, split_panel: i32) {
+        self.as_mut().turn(true);
+        self.set_view(view_mode, mode, split_panel);
     }
 
     pub fn set_view(mut self: Pin<&mut Self>, view_mode: i32, mode: i32, split_panel: i32) {

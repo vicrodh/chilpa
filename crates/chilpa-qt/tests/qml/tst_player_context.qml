@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.immersive
 import "../../qml/Patterns"
 
 TestCase {
@@ -10,6 +11,27 @@ TestCase {
     width: 900
     height: 500
     PlayerLcd { id: lcd; width: 700 }
+    function test_the_cover_grows_on_hover_and_opens_now_playing_on_a_click() {
+        lcd.width = 700
+        lcd.y = 460
+        waitForRendering(lcd)
+        const cover = findChild(lcd, "playerCover")
+        const preview = findChild(lcd, "playerCoverPreview")
+        verify(cover !== null && preview !== null)
+        verify(!preview.visible, "nothing over the bar at rest")
+        mouseMove(cover, cover.width / 2, cover.height / 2)
+        tryVerify(() => preview.visible, 1000, "hovered, the cover grows")
+        compare(preview.width, 412, "400 and its frame")
+        mouseMove(lcd, lcd.width - 4, lcd.height / 2)
+        tryVerify(() => !preview.visible, 1000, "and leaves with the pointer")
+        Immersive.open = false
+        mouseClick(cover, cover.width / 2, cover.height / 2)
+        compare(Immersive.open, true, "a click opens the immersive view")
+        compare(Immersive.viewMode, 1)
+        compare(Immersive.splitPanel, 4, "on Now Playing")
+        Immersive.open = false
+        lcd.y = 0
+    }
     LyricsPanel { id: lyrics; width: 260; height: 400; y: 80 }
     function test_origin_aligns_with_both_context_labels() {
         for (const width of [400, 700]) {

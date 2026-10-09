@@ -160,6 +160,9 @@ QtObject {
     // The band the waveform takes above the rest when the bar stands tall.
     readonly property int waveformBand: 35
     readonly property int lcdArt: 44
+    // The player bar's cover, grown on hover (the owner, 2026-10-09).
+    readonly property int artPreview: 400
+    readonly property int artPreviewFrame: 6
     readonly property int progress: 2
     readonly property int progressHover: 4
     readonly property int seekKnob: 10
