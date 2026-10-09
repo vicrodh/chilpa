@@ -226,3 +226,33 @@ fn shuffle_starts_at_the_front_and_retains_every_occurrence() {
     drop(api);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn playing_with_no_queue_playing_uses_the_queue_in_view_instead_of_a_new_one() {
+    let _env = ENV.lock().unwrap_or_else(|p| p.into_inner());
+    let dir = tempfile::tempdir().unwrap();
+    for (key, folder) in [("XDG_DATA_HOME", "data"), ("XDG_CONFIG_HOME", "config"), ("XDG_CACHE_HOME", "cache")] {
+        std::env::set_var(key, dir.path().join(folder));
+    }
+    let paths: Vec<_> = ["a.wav", "b.wav"].into_iter().map(|name| {
+        let path = dir.path().join(name); wave(&path); path.to_string_lossy().into_owned()
+    }).collect();
+    let mut api = Chilpa::new();
+    api.use_output("file:capture", false);
+    api.play_tracks(&paths[..1], "file:capture", false);
+    api.set_paused(true);
+    let only = api.listen_selected();
+    // Clearing the playing queue leaves nothing playing, and a session can
+    // close that way.
+    api.listen_command("clear", &only.to_string(), "");
+    assert_eq!(state(&api)["active"], "0");
+    drop(api);
+    let mut api = Chilpa::new();
+    api.use_output("file:capture", false);
+    api.play_tracks(&paths[1..], "file:capture", false);
+    api.set_paused(true);
+    assert_eq!(state(&api)["tabs"].as_array().unwrap().len(), 1, "a queue is made only when asked for: {}", api.listen_json());
+    assert_eq!(state(&api)["active"], only.to_string());
+    assert_eq!(api.queue_paths(), &paths[1..]);
+    api.stop();
+}

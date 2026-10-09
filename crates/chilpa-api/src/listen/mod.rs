@@ -87,10 +87,11 @@ impl Chilpa {
         if let Some(at) = self.listen.buffers.iter_mut().find(|b| b.id == buffer.id) { *at = buffer; }
     }
     pub(crate) fn before_queue_replace(&mut self) {
-        if self.listen.active == 0 { self.listen.active = self.listen_create("", &[]); }
         self.capture_buffer();
-        if self.media.as_ref().is_some_and(|m| m.buffer == self.listen.active) {
-            self.listen.active = self.listen_create("", &[]);
+        let media = self.media.as_ref().map(|m| m.buffer);
+        if self.listen.active == 0 || Some(self.listen.active) == media {
+            self.listen.active = self.queue_for_playback(media);
+            self.listen.selected = self.listen.active;
         }
         self.listen.pending = None;
         if let Some(b) = self.listen.buffers.iter_mut().find(|b| b.id == self.listen.active) {
@@ -98,6 +99,20 @@ impl Chilpa {
             b.epoch = b.epoch.wrapping_add(1); b.order.clear(); b.paths.clear(); b.origins.clear();
         }
         if let Some(p) = &self.player { p.clear_order(); }
+    }
+    /// Where playback goes when nothing is playing, or when what plays is
+    /// the opened media's queue: the queue in view, else the first that is
+    /// not the media's. A queue is made only when the + asks for one, and
+    /// here only when the media's is all there is.
+    fn queue_for_playback(&mut self, media: Option<u64>) -> u64 {
+        let usable = |id: u64| Some(id) != media;
+        if usable(self.listen.selected) && self.listen.buffers.iter().any(|b| b.id == self.listen.selected) {
+            return self.listen.selected;
+        }
+        match self.listen.buffers.iter().find(|b| usable(b.id)) {
+            Some(b) => b.id,
+            None => self.listen_create("", &[]),
+        }
     }
     fn install_buffer(&mut self, b: &Buffer) {
         self.listen.active = b.id;
