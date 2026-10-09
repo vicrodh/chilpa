@@ -24,6 +24,7 @@ QtObject {
     property int cycles: 0
     function toggle() { open = !open }
     function openFromMenu() { mode = 0; open = true }
+    function openView(viewMode, mode, splitPanel) { open = true; setView(viewMode, mode, splitPanel) }
     function setView(viewMode, mode, splitPanel) { this.viewMode = viewMode; this.mode = mode; this.splitPanel = splitPanel; views.push([viewMode, mode, splitPanel]) }
     function chooseScene(scene) { this.scene = scene; scenes.push(scene) }
     function cycleScene() { cycles += 1; scene = scene === 0 ? 1 : 0 }

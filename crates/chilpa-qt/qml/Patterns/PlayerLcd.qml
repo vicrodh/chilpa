@@ -3,8 +3,10 @@ import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import app.chilpa.controls
+import app.chilpa.immersive
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 
 // The player's "LCD": cover, times, title with its quality, who and from
@@ -41,6 +43,16 @@ Rectangle {
         height: Metrics.lcdArt
         radius: Metrics.radiusArtSmall
         source: Player.art
+        // Hovered, it grows into a 400 preview; clicked, the immersive view
+        // opens on Now Playing (the owner, 2026-10-09).
+        HoverHandler { id: coverHover; cursorShape: Player.path !== "" ? Qt.PointingHandCursor : Qt.ArrowCursor }
+        TapHandler { enabled: Player.path !== ""; onTapped: Immersive.openView(1, 0, 4) }
+    }
+    ArtPreview {
+        objectName: "playerCoverPreview"
+        target: cover
+        source: Player.art
+        shown: coverHover.hovered && Player.path !== ""
     }
 
     Text {
