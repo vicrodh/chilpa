@@ -28,7 +28,7 @@ Item {
         Qt.callLater(page.reveal)
     }
     function reveal() {
-        for (let i = 0; i < rows.rowCount(); i++) {
+        for (let i = 0; i < list.count; i++) {
             if (rows.data(rows.index(i, 0), Metrics.settingsKeyRole) !== page.focusKey)
                 continue
             list.positionViewAtIndex(i, ListView.Center)
