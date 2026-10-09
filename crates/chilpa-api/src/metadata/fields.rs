@@ -37,7 +37,7 @@ const fn field(name: &'static str, kind: Kind, required: bool) -> Field {
 }
 
 /// A record's fields, in the order they are shown.
-pub(crate) const ALBUM: [Field; 11] = [
+pub(crate) const ALBUM: [Field; 12] = [
     field("title", Kind::Text(512), true),
     field("album_artist", Kind::Text(512), true),
     field("album_artists", Kind::List, false),
@@ -45,6 +45,7 @@ pub(crate) const ALBUM: [Field; 11] = [
     field("date", Kind::Date, false),
     field("genres", Kind::List, false),
     field("catalog_number", Kind::Text(128), false),
+    field("label", Kind::Text(256), false),
     field("musicbrainz_release_id", Kind::Uuid, false),
     field("musicbrainz_release_group_id", Kind::Uuid, false),
     field("musicbrainz_album_artist_ids", Kind::UuidList, false),

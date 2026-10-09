@@ -597,6 +597,9 @@ msgstr "Color"
 msgid "Colors"
 msgstr "Colores"
 
+msgid "Columns"
+msgstr "Columnas"
+
 msgid "Compact"
 msgstr "Compacta"
 

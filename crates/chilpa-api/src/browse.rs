@@ -31,6 +31,8 @@ pub struct TrackRow {
     /// It can be played now. A row that cannot is dimmed, does not play,
     /// and offers only to be taken out of an editable playlist (ADR-017).
     pub available: bool,
+    /// Who wrote it, joined with commas; empty when nobody is named.
+    pub composer: String,
 }
 
 /// One row in a grouped track list. Headers are explicit boundaries, so the
@@ -77,6 +79,7 @@ pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
         duration_ms: t.duration_ms,
         plays: t.plays,
         artwork_path: t.artwork_path.unwrap_or_default(),
+        composer: t.composers,
     }
 }
 
@@ -84,12 +87,14 @@ pub(crate) fn album_of((a, listens): (chilpa_library::StoredAlbum, usize)) -> Al
     Album { id: a.id, title: a.title, artist: a.album_artist, year: a.year, track_count: a.track_count, artwork_path: a.artwork_path.unwrap_or_default(), play_count: listens }
 }
 
-/// The four facet columns, each narrowed by the ones to its left.
+/// The facet columns, each narrowed by the ones to its left.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Facets {
     pub sources: Vec<FacetEntry>,
     pub years: Vec<FacetEntry>,
     pub genres: Vec<FacetEntry>,
+    pub labels: Vec<FacetEntry>,
+    pub composers: Vec<FacetEntry>,
     pub artists: Vec<FacetEntry>,
     pub albums: Vec<FacetEntry>,
 }
@@ -223,7 +228,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available }
+    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new() }
 }
 
 /// A record as its page shows it.
@@ -232,6 +237,8 @@ pub struct AlbumDetail {
     pub album: Album,
     /// The genre most of its tracks carry; empty if none does.
     pub genre: String,
+    /// The label most of its tracks name; empty if none does.
+    pub label: String,
     pub duration_ms: u64,
     /// How many discs it spans; one when the files do not say.
     pub discs: usize,
@@ -449,15 +456,15 @@ impl Reader {
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
     pub fn facets(&self, f: &Filter) -> Facets {
-        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[3].trim().to_lowercase());
+        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[5].trim().to_lowercase());
         let ids: Vec<i64> = albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
         albums.retain(|a| a.key.parse().is_ok_and(|id| chosen.contains(&id)));
         let mut artists = self.lib.facet_artists(f).unwrap_or_default();
         if self.lib.group_album_versions() {
             let mut left = f.clone();
-            left.choose(2, &[]);
-            left.queries[2..].fill(String::new());
+            left.choose(4, &[]);
+            left.queries[4..].fill(String::new());
             let ids = self.lib.facet_albums(&left).unwrap_or_default().iter().filter_map(|a| a.key.parse().ok()).collect::<Vec<_>>();
             if let Ok(catalog) = self.lib.version_catalog() {
                 let mut groups = std::collections::HashMap::<String, HashSet<String>>::new();
@@ -471,7 +478,11 @@ impl Reader {
                 for artist in &mut artists { artist.albums = groups.get(&artist.label.to_lowercase()).map_or(0, HashSet::len); }
             }
         }
-        Facets { sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(), genres: self.lib.facet_genres(f).unwrap_or_default(), artists, albums }
+        Facets {
+            sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(),
+            genres: self.lib.facet_genres(f).unwrap_or_default(), labels: self.lib.facet_labels(f).unwrap_or_default(),
+            composers: self.lib.facet_composers(f).unwrap_or_default(), artists, albums,
+        }
     }
 }
 
@@ -735,10 +746,11 @@ impl Chilpa {
         let album = self.album(album_id)?;
         let rows = self.album_track_rows(album_id);
         let genre = self.library()?.album_genre(album_id).ok().flatten().unwrap_or_default();
+        let label = self.library()?.album_label(album_id).ok().flatten().unwrap_or_default();
         let mut discs: Vec<u16> = rows.iter().map(|r| r.disc.max(1)).collect();
         discs.dedup();
         let best = rows.iter().map(|r| &r.quality).max_by_key(|q| (q.tier.rank(), q.bits, q.rate_hz)).cloned().unwrap_or_default();
-        Some(AlbumDetail { duration_ms: rows.iter().map(|r| r.duration_ms).sum(), discs: discs.len().max(1), quality: best, genre, album })
+        Some(AlbumDetail { duration_ms: rows.iter().map(|r| r.duration_ms).sum(), discs: discs.len().max(1), quality: best, genre, label, album })
     }
 
     /// A badge reads stored metadata; drawing a card never resolves audio.
@@ -822,12 +834,12 @@ mod tests {
         let reader = Reader { lib, catalog: None };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
-            filter.queries[2] = artist.into();
+            filter.queries[4] = artist.into();
             let facets = reader.facets(&filter);
             assert_eq!(facets.artists.iter().find(|a| a.label == artist).unwrap().albums, 1);
             assert_eq!(facets.albums.len(), 1);
             assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
-            filter.queries[2].clear();
+            filter.queries[4].clear();
             filter.artists = vec![artist.into()];
             assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
             assert_eq!(reader.artists("all").iter().find(|a| a.name == artist).unwrap().album_count, 1);

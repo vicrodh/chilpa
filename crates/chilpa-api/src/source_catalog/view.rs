@@ -36,6 +36,7 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,
+        composer: String::new(),
     }
 }
 
@@ -295,6 +296,7 @@ impl Chilpa {
             discs: discs.len().max(1),
             quality: best,
             genre: card.genre.clone(),
+            label: String::new(),
             album: album_of(&card),
         })
     }
