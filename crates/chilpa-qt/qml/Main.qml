@@ -79,10 +79,9 @@ Window {
     RightPanelFrame {
         id: right
         z: 2
-        visible: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
+        open: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
         x: window.width - width - Metrics.spaceWindow
         y: Metrics.tabBarHeight
-        width: shown
         height: window.height - y - Metrics.spaceWindow
     }
 

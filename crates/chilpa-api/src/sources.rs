@@ -369,6 +369,7 @@ impl Chilpa {
     pub fn sources_json(&mut self) -> String {
         self.advance_plugins();
         let panels = self.source_panels();
+        let playing_source = self.playing_source_name();
         let s = &self.sources;
         let on_air = s.sounding.as_ref().filter(|p| self.now.playing && self.now.path == p.url);
         let playing = of_plugin(&self.now.path).filter(|_| self.now.playing);
@@ -523,7 +524,7 @@ impl Chilpa {
             "detail": detail,
         });
         document["playing_parent"] = self.playing_media_parent().map(|(source, _)| source).unwrap_or_default().into();
-        document["playing_source"] = self.playing_source_name().into();
+        document["playing_source"] = playing_source.into();
         document["playing_entry"] = context.into();
         document["on_air_history"] = serde_json::json!(s.on_air_history);
         document.to_string()

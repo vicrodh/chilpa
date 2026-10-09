@@ -1,5 +1,8 @@
-//! The seek bar's waveform: how loud a track is along its length, in a
-//! fixed number of bins, from whatever decodes it.
+//! The seek bar's waveform: how far a track swings along its length, in
+//! a fixed number of bins, from whatever decodes it. Each bin keeps its
+//! peak, which is what gives the dense grain of a QuickLook player's
+//! waveform (the owner, 2026-10-09; see audiowaveform, which keeps peaks
+//! too).
 //!
 //! Frames come in with their absolute position in the track, so a pass
 //! that skips, seeks or stops early leaves holes where it did not look
@@ -12,8 +15,9 @@
 pub const BINS: usize = 2048;
 /// The most frames looked at per bin; a bin with more is strided.
 const FRAMES_PER_BIN_LIMIT: u64 = 4096;
-/// What a growing document is scaled against.
-const GROWING_REFERENCE: f32 = 0.25;
+/// What a growing document is scaled against: most music peaks near
+/// full scale, so the painted bins seldom move when the whole is known.
+const GROWING_REFERENCE: f32 = 0.9;
 /// How the peaks are lifted before they are drawn: quiet passages stay
 /// visible without the loud ones flattening.
 const GAMMA: f32 = 0.72;
@@ -51,7 +55,7 @@ impl Default for Snapshot {
 pub struct Accumulator {
     total_frames: u64,
     channels: usize,
-    squares: [f64; BINS],
+    peaks: [f32; BINS],
     counts: [u32; BINS],
     analyzed: u16,
     complete: bool,
@@ -62,7 +66,7 @@ impl Accumulator {
         Self {
             total_frames,
             channels: usize::from(channels.max(1)),
-            squares: [0.0; BINS],
+            peaks: [0.0; BINS],
             counts: [0; BINS],
             analyzed: 0,
             complete: false,
@@ -82,28 +86,21 @@ impl Accumulator {
         let channels = self.channels;
         self.feed_with(start_frame, samples.len() / channels, |frame| {
             let base = frame * channels;
-            samples[base..base + channels].iter().map(|s| f64::from(*s) * f64::from(*s)).sum::<f64>() / channels as f64
+            samples[base..base + channels].iter().fold(0.0f32, |peak, s| peak.max(s.abs()))
         });
     }
 
     /// Interleaved integers, right-justified, with `bits` useful ones.
     pub fn feed_int(&mut self, start_frame: u64, samples: &[i32], bits: u8) {
         let channels = self.channels;
-        let full = f64::from(1u32 << (bits.clamp(2, 32) - 1));
+        let full = (1u32 << (bits.clamp(2, 32) - 1)) as f32;
         self.feed_with(start_frame, samples.len() / channels, |frame| {
             let base = frame * channels;
-            samples[base..base + channels]
-                .iter()
-                .map(|s| {
-                    let v = f64::from(*s) / full;
-                    v * v
-                })
-                .sum::<f64>()
-                / channels as f64
+            samples[base..base + channels].iter().fold(0.0f32, |peak, s| peak.max((*s as f32).abs() / full))
         });
     }
 
-    fn feed_with(&mut self, start_frame: u64, frames: usize, square: impl Fn(usize) -> f64) {
+    fn feed_with(&mut self, start_frame: u64, frames: usize, swing: impl Fn(usize) -> f32) {
         if self.complete || self.total_frames == 0 || frames == 0 {
             return;
         }
@@ -115,7 +112,7 @@ impl Accumulator {
                 continue;
             }
             let bin = ((u128::from(absolute) * BINS as u128) / u128::from(self.total_frames)) as usize;
-            self.squares[bin] += square(frame);
+            self.peaks[bin] = self.peaks[bin].max(swing(frame));
             if self.counts[bin] == 0 {
                 self.analyzed = self.analyzed.saturating_add(1);
             }
@@ -135,16 +132,9 @@ impl Accumulator {
     /// The bins as they stand: scaled to the loudest once complete, to the
     /// fixed reference while growing.
     pub fn bins(&self) -> [u8; BINS] {
-        let mut rms = [0.0f32; BINS];
-        let mut peak = 0.0f32;
-        for (index, out) in rms.iter_mut().enumerate() {
-            if self.counts[index] > 0 {
-                *out = (self.squares[index] / f64::from(self.counts[index])).sqrt() as f32;
-                peak = peak.max(*out);
-            }
-        }
-        let reference = if self.complete && peak > f32::EPSILON { peak } else { GROWING_REFERENCE };
-        rms.map(|value| ((value / reference).clamp(0.0, 1.0) * 255.0).round() as u8)
+        let loudest = self.peaks.iter().copied().fold(0.0f32, f32::max);
+        let reference = if self.complete && loudest > f32::EPSILON { loudest } else { GROWING_REFERENCE };
+        self.peaks.map(|value| ((value / reference).clamp(0.0, 1.0) * 255.0).round() as u8)
     }
 
     pub fn snapshot(&self, revision: u64) -> Snapshot {
@@ -206,8 +196,8 @@ mod tests {
         }
         same.feed_float(0, &in_phase);
         opposite.feed_float(0, &out_of_phase);
-        assert!(same.squares.iter().all(|v| (*v - 0.25).abs() < 1e-9));
-        assert!(opposite.squares.iter().all(|v| (*v - 0.25).abs() < 1e-9));
+        assert!(same.peaks.iter().all(|v| (*v - 0.5).abs() < 1e-6));
+        assert!(opposite.peaks.iter().all(|v| (*v - 0.5).abs() < 1e-6));
         assert!(same.complete(), "every bin saw a frame");
     }
 

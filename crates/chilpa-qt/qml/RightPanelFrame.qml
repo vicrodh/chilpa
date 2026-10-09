@@ -15,6 +15,14 @@ import "Patterns"
 Item {
     id: frame
 
+    // Whether it is asked for: it slides in from the edge and out again,
+    // the way QBZ's panels do; a drag of its grip follows the pointer
+    // without the slide.
+    property bool open: false
+    visible: width > 0
+    clip: true
+    width: open ? shown : 0
+    Behavior on width { enabled: frame.dragged < 0; NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
     // The width being dragged, or -1 when nothing is.
     property real dragged: -1
     property real grabbed: 0

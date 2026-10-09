@@ -26,7 +26,10 @@ Item {
     readonly property string mode: dragging ? SettingsModel.sidebarModeAt(dragged, window.width) : SettingsModel.sidebarMode
     readonly property int openWidth: dragging ? SettingsModel.sidebarWidthAt(dragged, window.width)
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
-    readonly property int shown: mode === "closed" ? 0 : mode === "collapsed" ? Metrics.sidebarCollapsed : openWidth
+    // The width it shows, sliding between its modes the way QBZ's does; a
+    // drag follows the pointer without the slide.
+    property int shown: mode === "closed" ? 0 : mode === "collapsed" ? Metrics.sidebarCollapsed : openWidth
+    Behavior on shown { enabled: !frame.dragging; NumberAnimation { duration: Motion.networkSlide; easing.type: Easing.InOutQuad } }
     readonly property int settled: SettingsModel.sidebarMode === "closed" ? 0
         : SettingsModel.sidebarMode === "collapsed" ? Metrics.sidebarCollapsed
         : SettingsModel.sidebarWidth > 0 ? SettingsModel.sidebarWidth : Metrics.sidebarWidth
