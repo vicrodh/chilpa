@@ -40,12 +40,18 @@ Column {
         PillButton { text: I18n.tr("All", I18n.rev); onClicked: shelf.selectedTag = "" }
         Repeater { model: shelf.section.tags || []; PillButton { required property var modelData; text: modelData.name; onClicked: shelf.selectedTag = modelData.slug } }
     }
-    Row {
-        visible: !shelf.plain && (shelf.section.sortable === true || shelf.wrap); spacing: Metrics.gap8
+    Item {
+        visible: !shelf.plain && (shelf.section.sortable === true || shelf.wrap)
+        width: parent.width; height: Math.max(sorting.height, plays.height)
         SourceLibraryControls { id: sorting; anchors.verticalCenter: parent.verticalCenter; source: shelf.activeKey; entity: shelf.section.kind || "album" }
-        // Every record of the section, in its order, or one at random.
-        PillButton { visible: shelf.wrap && cards.albums > 0; anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Play all", I18n.rev); glyph: Icons.playerPlayFilled; filled: true; onClicked: AlbumActions.playMany(shelf.albumIds(), false) }
-        PillButton { visible: shelf.wrap && cards.albums > 1; anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Play random", I18n.rev); glyph: Icons.arrowsShuffle; onClicked: AlbumActions.play(cards.albumId(Math.floor(Math.random() * cards.albums), cards.rev), false) }
+        // Every record of the section, in its order, or one at random: two
+        // round buttons at the row's end (the owner, 2026-10-09).
+        Row {
+            id: plays
+            anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap8
+            IconButton { objectName: "shelfPlayAll"; visible: shelf.wrap && cards.albums > 0; round: true; size: Metrics.button32; glyph: Icons.playerPlayFilled; filled: true; tip: I18n.tr("Play all", I18n.rev); onClicked: AlbumActions.playMany(shelf.albumIds(), false) }
+            IconButton { objectName: "shelfPlayRandom"; visible: shelf.wrap && cards.albums > 1; round: true; size: Metrics.button32; glyph: Icons.arrowsShuffle; tip: I18n.tr("Play random", I18n.rev); onClicked: AlbumActions.play(cards.albumId(Math.floor(Math.random() * cards.albums), cards.rev), false) }
+        }
     }
     Flickable {
         id: rail
