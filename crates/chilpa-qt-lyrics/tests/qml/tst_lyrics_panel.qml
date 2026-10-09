@@ -212,6 +212,8 @@ TestCase {
     }
 
     function test_a_translation_is_offered_only_when_there_is_one() {
+        // Past the first line: before it, the prelude stands in for the lines.
+        Player.position = 30
         const button = findChild(panel, "translateButton")
         show(lines, true, 0)
         verify(!button.visible, "lyrics without a translation offer none")
@@ -236,6 +238,7 @@ TestCase {
     }
 
     function test_a_click_on_a_line_goes_there() {
+        Player.position = 30
         show(lines, true, 0)
         mouseClick(row(1))
         compare(Player.sought, 5, "the second line starts at five seconds")
