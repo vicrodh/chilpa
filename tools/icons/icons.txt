@@ -126,3 +126,7 @@ arrows-maximize
 pin
 arrows-move
 picture-in-picture
+photo-plus
+eye
+external-link
+cloud-download
