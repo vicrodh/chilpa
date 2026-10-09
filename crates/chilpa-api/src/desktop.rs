@@ -24,6 +24,8 @@ pub enum WindowRequest {
     /// Show if hidden, hide if in sight: the tray icon was clicked.
     Toggle,
     Quit,
+    /// Quit, asking first when that is wanted: the tray's Quit.
+    QuitAsked,
 }
 
 #[derive(Default)]
@@ -227,6 +229,7 @@ impl Chilpa {
                 self.set_player_volume(crate::tray::volume_after(now, notches));
             }
             MediaEvent::Quit => self.desktop.requests.push_back(WindowRequest::Quit),
+            MediaEvent::QuitAsked => self.desktop.requests.push_back(WindowRequest::QuitAsked),
         }
     }
 

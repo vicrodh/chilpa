@@ -171,6 +171,7 @@ pub const SECTIONS: &[Section] = &[
             settings: &[
                 setting("desktop.tray", Chilpa::mark("Tray icon"), Chilpa::mark("Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."), Control::Toggle),
                 setting("desktop.closeToTray", Chilpa::mark("Close to tray"), Chilpa::mark("Closing the window keeps Chilpa playing in the tray instead of quitting."), Control::Toggle),
+                setting("desktop.confirmQuit", Chilpa::mark("Ask before quitting"), Chilpa::mark("Quitting from the window, its menu, Ctrl+Q or the tray asks first."), Control::Toggle),
                 setting("desktop.trayIcon", Chilpa::mark("Tray glyph"), Chilpa::mark("Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."), Control::Select),
             ],
         }],

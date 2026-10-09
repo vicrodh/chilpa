@@ -357,6 +357,9 @@ msgstr ""
 msgid "Ascending"
 msgstr ""
 
+msgid "Ask before quitting"
+msgstr ""
+
 msgid "Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."
 msgstr ""
 
@@ -948,6 +951,9 @@ msgid "Display settings"
 msgstr ""
 
 msgid "Does not answer. Its records stay listed and cannot be played."
+msgstr ""
+
+msgid "Don't ask again"
 msgstr ""
 
 msgid "Done"
@@ -2084,6 +2090,9 @@ msgstr ""
 msgid "Playback options"
 msgstr ""
 
+msgid "Playback stops and the window closes."
+msgstr ""
+
 msgid "Player bar"
 msgstr ""
 
@@ -2235,6 +2244,12 @@ msgid "Quit"
 msgstr ""
 
 msgid "Quit Chilpa"
+msgstr ""
+
+msgid "Quit Chilpa?"
+msgstr ""
+
+msgid "Quitting from the window, its menu, Ctrl+Q or the tray asks first."
 msgstr ""
 
 msgid "RECENTLY PLAYED"

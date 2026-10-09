@@ -166,7 +166,7 @@ impl Tray for Item {
             MenuItem::Separator,
             entry(&self.labels.show_hide, MediaEvent::ToggleWindow),
             MenuItem::Separator,
-            entry(&self.labels.quit, MediaEvent::Quit),
+            entry(&self.labels.quit, MediaEvent::QuitAsked),
         ]
     }
 }

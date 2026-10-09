@@ -47,5 +47,8 @@ pub enum MediaEvent {
     /// The wheel turned over the tray icon, that many notches up (or down,
     /// negative): a step of volume each.
     VolumeBy(i32),
+    /// The desktop's media controls asked Chilpa to quit: it does.
     Quit,
+    /// The tray's Quit: the window asks first, as its own Quit does.
+    QuitAsked,
 }
