@@ -26,3 +26,5 @@ trash-list
 add-to-list
 infinity
 clock
+home-gear
+list-filter

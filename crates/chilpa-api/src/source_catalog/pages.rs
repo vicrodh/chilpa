@@ -246,14 +246,19 @@ impl crate::Chilpa {
         document["error"] = json!(self.catalog.shelf_error(&key).unwrap_or_default());
         document["cards"] = json!(shelf.cards.len());
         document["tracks"] = json!(shelf.tracks.len());
-        let shelves = document["shelves"].clone();
-        document["shelves"] = page_shelves(&self.catalog, plugin, reference, &mut document["header"], &shelves, false);
+        if document.get("shelves").is_some() {
+            let shelves = document["shelves"].clone();
+            document["shelves"] = page_shelves(&self.catalog, plugin, reference, &mut document["header"], &shelves, false);
+        }
         decorate_header(&self.catalog, plugin, &mut document["header"]);
-        if let Some(rows) = document["shelves"].as_array_mut() { for row in rows { decorate_header(&self.catalog, plugin, &mut row["header"]); } }
+        if let Some(rows) = document.get_mut("shelves").and_then(Value::as_array_mut) { for row in rows { decorate_header(&self.catalog, plugin, &mut row["header"]); } }
         let kind = shelf.document["items"].as_array().and_then(|items| items.first()).and_then(|item| item["kind"].as_str()).unwrap_or("album");
         document["entity"] = json!(kind);
         document["round"] = json!(kind == "artist");
         document["albumsOnly"] = json!(shelf.tracks.is_empty());
+        if document.get("shelves").is_none() && document["more"].is_string() && document["next"].is_null() {
+            document["next"] = document["more"].clone();
+        }
         if document["header"]["kind"] == "artist" {
             crate::artist_page::shape(&mut document);
         }
@@ -264,6 +269,24 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn see_all_keeps_a_shelf_as_a_listing_instead_of_an_empty_home() {
+        let mut app = crate::Chilpa::new();
+        for kind in ["album", "playlist", "track"] {
+            let page = json!({"title":"Home","shelves":[{"id":"recent","title":"Recent","kind":kind,"more":"browse:next",
+                "items":[{"kind":kind,"ref":format!("{kind}:1"),"title":"One"}]}]});
+            ingest_document(&app.catalog, "fixture", "discover:home", &page);
+            let home: Value = serde_json::from_str(&app.native_page_view("fixture", "discover:home")).unwrap();
+            assert!(home["shelves"].is_array());
+            let listing: Value = serde_json::from_str(&app.native_page_view("fixture", "discover:home|recent")).unwrap();
+            assert!(listing.get("shelves").is_none(), "a shelf must open its records or tracks view");
+            assert_eq!(listing["title"], "Recent");
+            assert_eq!(listing["next"], "browse:next");
+            assert_eq!(listing["albumsOnly"], kind != "track");
+            assert_eq!(listing[if kind == "track" { "tracks" } else { "cards" }], 1);
+        }
+    }
+
     #[test]
     fn overlapping_home_reads_reuse_the_document_without_a_live_plugin() {
         let catalog = Catalog::new();
