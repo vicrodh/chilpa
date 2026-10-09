@@ -30,6 +30,7 @@
     "status.warning": "#FBBF24",
     "status.negative": "#EF4444",
     "overlay.scrim": "rgba(0,0,0,0.50)",
+    "lightbox.scrim": "rgba(0,0,0,0.75)",
     "overlay.button": "rgba(255,255,255,0.94)",
     "overlay.ink": "#0A0A0A",
     "albumHeader.base": "#000000",

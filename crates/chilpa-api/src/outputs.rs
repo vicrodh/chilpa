@@ -40,6 +40,30 @@ fn own_stack(output_id: &str) -> &str {
 }
 
 impl crate::Chilpa {
+    /// Whether the machine's outputs changed since this was last asked.
+    ///
+    /// The window calls it on its timer so that plugging a DAC in makes it
+    /// appear without anybody pressing anything. It is cheap on purpose: the
+    /// stacks that can answer without opening or asking over a socket hand
+    /// back something short, and only when that moves does the window go and
+    /// rebuild the list.
+    ///
+    /// The first call is always false. There is nothing to have changed from
+    /// yet, and answering true would make the window rebuild the list one
+    /// tick after it had just built it.
+    pub fn outputs_changed(&mut self) -> bool {
+        let now = chilpa_core::backends::generation();
+        if self.outputs_generation.is_empty() {
+            self.outputs_generation = now;
+            return false;
+        }
+        if now == self.outputs_generation {
+            return false;
+        }
+        self.outputs_generation = now;
+        true
+    }
+
     /// Moves to another output under the policy already chosen.
     pub fn use_output_as_chosen(&mut self, output: &str) {
         let (_, bit_perfect) = self.chosen_output();

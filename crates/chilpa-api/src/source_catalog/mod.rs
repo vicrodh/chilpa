@@ -369,7 +369,8 @@ impl Catalog {
 
     pub fn card(&self, id: i64) -> Option<store::Card> {
         let mut inner = self.lock();
-        let card = inner.store.cards.get(&id).cloned()?;
+        let mut card = inner.store.cards.get(&id).cloned()?;
+        card.art = inner.store.shown_art(&card);
         if card.art.is_empty() {
             self.want_cover(&mut inner, &card.image);
         }
@@ -410,7 +411,8 @@ impl Catalog {
     }
 
     pub fn art_of_card(&self, id: i64) -> String {
-        self.lock().store.cards.get(&id).map(|c| c.art.clone()).unwrap_or_default()
+        let inner = self.lock();
+        inner.store.cards.get(&id).map(|c| inner.store.shown_art(c)).unwrap_or_default()
     }
 
     /// Takes in a record or a track a search found, which no listing showed:
@@ -493,7 +495,31 @@ impl Catalog {
 
     pub fn cards(&self, ids: &[i64]) -> Vec<store::Card> {
         let inner = self.lock();
-        ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).collect()
+        ids.iter().filter_map(|id| inner.store.cards.get(id).cloned()).map(|mut card| { card.art = inner.store.shown_art(&card); card }).collect()
+    }
+
+    /// Shows these covers the listener chose over the fetched ones, by
+    /// plugin and identity.
+    pub(crate) fn choose_art(&self, chosen: HashMap<(String, String), String>) {
+        self.lock().store.chosen = chosen;
+        self.art_rev.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// The plugin and identity of a record, which a chosen cover is kept by.
+    pub(crate) fn identity_of(&self, id: i64) -> Option<(String, String)> {
+        self.lock().store.cards.get(&id).map(|c| (c.plugin.clone(), c.identity.clone()))
+    }
+
+    /// The cover chosen for a record of a plugin, if one was.
+    pub(crate) fn chosen_art(&self, id: i64) -> Option<String> {
+        let inner = self.lock();
+        let card = inner.store.cards.get(&id)?;
+        inner.store.chosen.get(&(card.plugin.clone(), card.identity.clone())).cloned()
+    }
+
+    /// The address a record's cover came from, for opening it in a browser.
+    pub(crate) fn image_of(&self, id: i64) -> String {
+        self.lock().store.cards.get(&id).map(|c| c.image.clone()).filter(|i| i.starts_with("http")).unwrap_or_default()
     }
 
     pub fn forget_plugin(&self, plugin: &str) {

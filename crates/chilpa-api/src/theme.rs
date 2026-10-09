@@ -47,7 +47,7 @@ pub const TOKENS: &[&str] = &[
     "surface.player", "surface.lcd", "text.primary", "text.secondary", "text.tertiary",
     "text.onAccent", "text.onAccentMuted", "stroke.hairline", "stroke.frame", "state.hover", "state.selected",
     "state.stripe", "fill.field", "row.playing", "row.selected", "accent", "accent.hover",
-    "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim",
+    "accent.pressed", "status.positive", "status.warning", "status.negative", "overlay.scrim", "lightbox.scrim",
     "overlay.button", "overlay.ink", "casting",
     "albumHeader.base", "albumHeader.dim", "albumHeader.top", "albumHeader.bottom",
     "ambient.sidebar", "ambient.playerBase", "ambient.player", "ambient.content", "ambient.raised", "ambient.frost", "ambient.veil", "ambient.bar", "ambient.panel",

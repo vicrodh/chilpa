@@ -92,6 +92,11 @@ fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
         catalog.want_image(plugin, image);
         value["art"] = json!(crate::pictures::kept(image).and_then(|path| url::Url::from_file_path(path).ok()).map(|url| url.to_string()).unwrap_or_default());
     }
+    // A record whose cover the listener chose shows that one in its header.
+    let chosen = value["ref"].as_str().and_then(|reference| catalog.lock().store.chosen.get(&(plugin.to_string(), reference.to_string())).cloned());
+    if let Some(url) = chosen.and_then(|path| url::Url::from_file_path(path).ok()) {
+        value["chosen_art"] = json!(url.to_string());
+    }
 }
 // I keep navigation cards in the catalog while presenting radio as a header action.
 /// What a shelf had loaded beyond the first page of a fresh read of its

@@ -184,8 +184,11 @@ pub struct Found {
     pub tracks: Vec<TrackRow>,
 }
 
-fn artist_of(a: chilpa_library::StoredArtist) -> crate::Artist {
-    crate::Artist { name: a.name, album_count: a.album_count, track_count: a.track_count, artwork_path: a.artwork_path.unwrap_or_default() }
+/// An artist's row, with the picture the listener chose for them if there
+/// is one, over the cover of a record of theirs.
+pub(crate) fn artist_of(a: chilpa_library::StoredArtist, pictures: &chilpa_library::store::artwork::ArtistPictures) -> crate::Artist {
+    let artwork_path = pictures.of(&a.name).map(str::to_string).or(a.artwork_path).unwrap_or_default();
+    crate::Artist { name: a.name, album_count: a.album_count, track_count: a.track_count, artwork_path }
 }
 
 /// A folder as the Folders screen shows it.
@@ -289,14 +292,16 @@ impl Reader {
     /// on a track; anything else leaves who a record is credited to.
     pub fn artists(&self, role: &str) -> Vec<crate::Artist> {
         let role = chilpa_library::ArtistRole::from_name(role);
-        self.lib.artists_by_role(role).unwrap_or_default().into_iter().map(artist_of).collect()
+        let pictures = self.lib.artist_pictures().unwrap_or_default();
+        self.lib.artists_by_role(role).unwrap_or_default().into_iter().map(|a| artist_of(a, &pictures)).collect()
     }
 
     /// What the search box finds for `text`: artists, records and songs, up
     /// to `limit` of each, best first.
     pub fn find(&self, text: &str, limit: usize) -> Found {
         let found = self.lib.find(text, limit).unwrap_or_default();
-        Found { artists: found.artists.into_iter().map(artist_of).collect(), albums: self.lib.albums_by_ids(&found.albums).unwrap_or_default().into_iter().map(album_of).collect(), tracks: self.lib.tracks_by_ids(&found.tracks).unwrap_or_default().into_iter().map(row_of).collect() }
+        let pictures = self.lib.artist_pictures().unwrap_or_default();
+        Found { artists: found.artists.into_iter().map(|a| artist_of(a, &pictures)).collect(), albums: self.lib.albums_by_ids(&found.albums).unwrap_or_default().into_iter().map(album_of).collect(), tracks: self.lib.tracks_by_ids(&found.tracks).unwrap_or_default().into_iter().map(row_of).collect() }
     }
 
     /// Our own lists, newest first, for the sidebar. A source's lists are

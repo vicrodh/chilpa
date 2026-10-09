@@ -2736,6 +2736,9 @@ msgstr ""
 msgid "That answer does not belong to this window."
 msgstr ""
 
+msgid "That file is not a JPEG, PNG or WebP image"
+msgstr ""
+
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr ""
 
@@ -2749,6 +2752,18 @@ msgid "The connection is not encrypted."
 msgstr ""
 
 msgid "The first follows the theme: crimson in light, red in dark."
+msgstr ""
+
+msgid "The image could not be kept"
+msgstr ""
+
+msgid "The image could not be read"
+msgstr ""
+
+msgid "The image could not be saved"
+msgstr ""
+
+msgid "The image is too large"
 msgstr ""
 
 msgid "The line being sung stays in view."

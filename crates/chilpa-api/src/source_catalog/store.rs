@@ -181,6 +181,10 @@ pub(crate) struct Store {
     card_ids: HashMap<(String, String), i64>,
     #[serde(skip)]
     track_ids: HashMap<String, i64>,
+    /// The covers the listener chose for records, by plugin and identity.
+    /// The library keeps them; this is what is shown.
+    #[serde(skip)]
+    pub chosen: HashMap<(String, String), String>,
 }
 
 /// What a listing turned into: the ids it holds, in its order.
@@ -354,9 +358,15 @@ impl Store {
         id
     }
 
+    /// A card's cover as shown: the one the listener chose, over the one
+    /// fetched.
+    pub fn shown_art(&self, card: &Card) -> String {
+        self.chosen.get(&(card.plugin.clone(), card.identity.clone())).cloned().unwrap_or_else(|| card.art.clone())
+    }
+
     /// The cover on disk for a track: its record's, when it has one.
     pub fn art_of(&self, track: &Track) -> String {
-        self.cards.get(&track.album_id).map(|c| c.art.clone()).filter(|a| !a.is_empty())
+        self.cards.get(&track.album_id).map(|c| self.shown_art(c)).filter(|a| !a.is_empty())
             .or_else(|| crate::pictures::kept(&track.image)).unwrap_or_default()
     }
 
