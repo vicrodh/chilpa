@@ -1,30 +1,23 @@
 //! Listening stats as the window shows them: a period's report against the
 //! one before it, and the history a page at a time
-//! (borradores/listening-stats-v1-2026-10-09).
+//! (borradores/listening-stats-v1-2026-10-09, and its calendar periods of
+//! 2026-10-09).
 //!
-//! A period is a number of local days that ends today, or the whole log;
-//! `back` walks to the periods before it. Everything comes from the play
-//! log through the library's listening queries.
+//! A period is the day, the week, the month or the year that holds a chosen
+//! date, or the whole log, and it is compared with the one of its kind just
+//! before. Everything comes from the play log through the library's
+//! listening queries.
 
-use chilpa_library::store::listening::{ListenBucket, ListenDimension, ListenFilter, ListenOrder};
 use chilpa_i18n as i18n;
+use chilpa_library::store::listening::{ListenBucket, ListenDimension, ListenFilter, ListenOrder};
 use chilpa_library::Library;
 use serde_json::{json, Value};
 
 use crate::artist_page::MONTHS;
-
-/// How many days a period holds; `None` is all of it.
-fn days_of(period: &str) -> Option<i64> {
-    match period {
-        "week" => Some(7),
-        "month" => Some(30),
-        "year" => Some(365),
-        _ => None,
-    }
-}
+use crate::listening_period::{self as period, Kind, Period};
 
 /// A sample rate in kHz as a quality line says it: 44.1, 96.
-fn khz(rate: u32) -> String {
+pub(crate) fn khz(rate: u32) -> String {
     let k = f64::from(rate) / 1000.0;
     if k.fract() == 0.0 { format!("{}", k as u32) } else { format!("{k:.1}") }
 }
@@ -40,22 +33,7 @@ const WEEKDAYS: [&str; 7] = [
 /// A local date, "2026-10-09" (or the start of a local time), as its year,
 /// month and day.
 fn civil(day: &str) -> Option<(i64, u32, u32)> {
-    let year = day.get(..4)?.parse().ok()?;
-    let month: u32 = day.get(5..7)?.parse().ok()?;
-    let date: u32 = day.get(8..10)?.parse().ok()?;
-    ((1..=12).contains(&month) && (1..=31).contains(&date)).then_some((year, month, date))
-}
-
-/// The day of the week of a date, Monday 0: its days since 1970 by the
-/// usual era arithmetic, and 1970-01-01 was a Thursday.
-fn weekday(year: i64, month: u32, day: u32) -> usize {
-    let year = if month <= 2 { year - 1 } else { year };
-    let era = year.div_euclid(400);
-    let yoe = year - era * 400;
-    let mp = (i64::from(month) + 9) % 12;
-    let doy = (153 * mp + 2) / 5 + i64::from(day) - 1;
-    let days = era * 146_097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719_468;
-    (days + 3).rem_euclid(7) as usize
+    period::parse(day).map(period::civil_from_days)
 }
 
 fn month_name(month: u32) -> String {
@@ -74,9 +52,9 @@ fn date(day: &str, with_year: bool) -> String {
 }
 
 /// "Sat 4 Oct", or "Sat 4 Oct 2026".
-fn day_label(day: &str, with_year: bool) -> String {
-    match civil(day) {
-        Some((year, month, date_of)) => format!("{} {}", i18n::t(WEEKDAYS[weekday(year, month, date_of)]), date(day, with_year)),
+pub(crate) fn day_label(day: &str, with_year: bool) -> String {
+    match period::parse(day) {
+        Some(days) => format!("{} {}", i18n::t(WEEKDAYS[period::weekday(days)]), date(day, with_year)),
         None => day.to_string(),
     }
 }
@@ -99,6 +77,19 @@ fn range_label(first: &str, last: &str) -> String {
     }
 }
 
+/// How a period reads: "Fri 9 Oct 2026", "4–10 Oct 2026", "Oct 2026",
+/// "2026".
+fn period_label(p: &Period) -> String {
+    let first = period::iso(p.first);
+    match p.kind {
+        Kind::Day => day_label(&first, true),
+        Kind::Week => range_label(&first, &period::iso(p.end - 1)),
+        Kind::Month => month_label(&first[..7]),
+        Kind::Year => first[..4].to_string(),
+        Kind::All => String::new(),
+    }
+}
+
 /// A bucket as the report's rows carry it.
 fn plays_of(buckets: &[ListenBucket]) -> std::collections::HashMap<String, u64> {
     buckets.iter().filter_map(|b| b.key.clone().map(|k| (k, b.metrics.plays))).collect()
@@ -114,25 +105,26 @@ fn change(now: u64, before: u64) -> Value {
     }
 }
 
-/// The series the hero draws: one bar a day for a week or a month, one a
-/// month for a year or the whole log, each beside the bar of the period
-/// before.
-fn series(lib: &Library, days: Option<i64>, back: i64, now: &ListenFilter, before: &ListenFilter) -> Vec<Value> {
-    let monthly = !matches!(days, Some(7) | Some(30));
-    let dimension = if monthly { ListenDimension::Month } else { ListenDimension::Day };
+/// The series the hero draws, each bar beside the bar of the same place in
+/// the period before: one an hour for a day, one a day for a week or a
+/// month, one a month for a year or the whole log.
+fn series(lib: &Library, this: &Period, previous: &Period, now: &ListenFilter, before: &ListenFilter) -> Vec<Value> {
+    let dimension = match this.kind {
+        Kind::Day => ListenDimension::Hour,
+        Kind::Week | Kind::Month => ListenDimension::Day,
+        Kind::Year | Kind::All => ListenDimension::Month,
+    };
     let ours = plays_of(&lib.listening_buckets(now, dimension, ListenOrder::Key, 1000).unwrap_or_default());
     let theirs = plays_of(&lib.listening_buckets(before, dimension, ListenOrder::Key, 1000).unwrap_or_default());
-    let keys = |offset: i64, count: i64| -> Vec<String> {
-        let mut found = lib.local_days(offset, count).unwrap_or_default();
-        if monthly {
-            found = found.into_iter().map(|d| d.chars().take(7).collect()).collect();
-            found.dedup();
+    let months = |p: &Period| -> Vec<String> { (1..=12).map(|m| format!("{}-{m:02}", &period::iso(p.first)[..4])).collect() };
+    let (mine, earlier): (Vec<String>, Vec<String>) = match this.kind {
+        Kind::Day => {
+            let hours: Vec<String> = (0..24).map(|h| format!("{h:02}")).collect();
+            (hours.clone(), hours)
         }
-        found
-    };
-    let (mine, previous) = match days {
-        Some(n) => (keys(n * back + n - 1, n), keys(n * (back + 1) + n - 1, n)),
-        None => {
+        Kind::Week | Kind::Month => (this.days(), previous.days()),
+        Kind::Year => (months(this), months(previous)),
+        Kind::All => {
             let mut all: Vec<String> = ours.keys().cloned().collect();
             all.sort();
             (all, Vec::new())
@@ -141,43 +133,44 @@ fn series(lib: &Library, days: Option<i64>, back: i64, now: &ListenFilter, befor
     mine.iter()
         .enumerate()
         .map(|(i, key)| {
-            let prev = previous.get(i).and_then(|k| theirs.get(k)).copied().unwrap_or(0);
-            let (label, tip) = if monthly {
-                (civil(&format!("{key}-01")).map(|(_, m, _)| month_name(m)).unwrap_or_default(), month_label(key))
-            } else if days == Some(7) {
-                (civil(key).map(|(y, m, d)| i18n::t(WEEKDAYS[weekday(y, m, d)])).unwrap_or_default(), day_label(key, false))
-            } else {
-                (civil(key).map(|(_, _, d)| d.to_string()).unwrap_or_default(), day_label(key, false))
+            let prev = earlier.get(i).and_then(|k| theirs.get(k)).copied().unwrap_or(0);
+            let (label, tip) = match this.kind {
+                Kind::Day => (key.parse::<u32>().map(|h| h.to_string()).unwrap_or_default(), format!("{key}:00")),
+                Kind::Week => (period::parse(key).map(|d| i18n::t(WEEKDAYS[period::weekday(d)])).unwrap_or_default(), day_label(key, false)),
+                Kind::Month => (civil(key).map(|(_, _, d)| d.to_string()).unwrap_or_default(), day_label(key, false)),
+                Kind::Year | Kind::All => (civil(&format!("{key}-01")).map(|(_, m, _)| month_name(m)).unwrap_or_default(), month_label(key)),
             };
-            json!({"key": key, "plays": ours.get(key).copied().unwrap_or(0), "prev": prev, "monthly": monthly, "label": label, "tip": tip})
+            json!({"key": key, "plays": ours.get(key).copied().unwrap_or(0), "prev": prev, "label": label, "tip": tip})
         })
         .collect()
 }
 
 impl crate::Chilpa {
-    /// The report of a period: "week", "month", "year" or "all", `back`
-    /// periods before the one that ends today.
-    pub fn stats_report_json(&mut self, period: &str, back: i64) -> String {
+    /// The report of the period of `kind` ("day", "week", "month", "year"
+    /// or "all") that holds `anchor`, a local date ("2026-10-09"; empty or
+    /// in the future is today), with weeks starting on `first_day` as Qt
+    /// counts it, Monday 1 to Sunday 7.
+    pub fn stats_report_json(&mut self, kind: &str, anchor: &str, first_day: i64) -> String {
         let Some(lib) = self.library() else { return "{}".into() };
-        let days = days_of(period);
-        let back = if days.is_some() { back.max(0) } else { 0 };
-        let (now, before) = match days {
-            Some(n) => {
-                let from = lib.local_day_start(n * back + n - 1).ok();
-                let until = lib.local_day_start(n * back - 1).ok();
-                let earlier = lib.local_day_start(n * (back + 1) + n - 1).ok();
-                (ListenFilter { from, until, ..ListenFilter::default() }, ListenFilter { from: earlier, until: from, ..ListenFilter::default() })
-            }
-            None => (ListenFilter::default(), ListenFilter { from: Some(0), until: Some(1), ..ListenFilter::default() }),
+        let kind = Kind::of(kind);
+        let week_start = (first_day - 1).rem_euclid(7) as usize;
+        let today = lib.local_days(0, 1).ok().and_then(|days| days.first().and_then(|d| period::parse(d))).unwrap_or(0);
+        let day = period::parse(anchor).filter(|&d| d <= today).unwrap_or(today);
+        let this = Period::holding(kind, day, week_start);
+        let previous = this.before(week_start);
+        let bounds = |p: &Period| ListenFilter {
+            from: lib.local_date_start(&period::iso(p.first)).ok(),
+            until: lib.local_date_start(&period::iso(p.end)).ok(),
+            ..ListenFilter::default()
+        };
+        let (now, before) = match kind {
+            Kind::All => (ListenFilter::default(), ListenFilter { from: Some(0), until: Some(1), ..ListenFilter::default() }),
+            _ => (bounds(&this), bounds(&previous)),
         };
         let summary = lib.listening_summary(&now).unwrap_or_default();
-        let previous = lib.listening_summary(&before).unwrap_or_default();
+        let earlier_summary = lib.listening_summary(&before).unwrap_or_default();
         let (artists, albums) = lib.listening_counts(&now).unwrap_or_default();
         let (artists_before, albums_before) = lib.listening_counts(&before).unwrap_or_default();
-        let range = match days {
-            Some(n) => lib.local_days(n * back + n - 1, n).unwrap_or_default(),
-            None => Vec::new(),
-        };
         let pictures = lib.artist_pictures().unwrap_or_default();
         let top = |dimension| lib.listening_buckets(&now, dimension, ListenOrder::Plays, TOP).unwrap_or_default();
         let top_artists: Vec<Value> = top(ListenDimension::Artist)
@@ -227,28 +220,48 @@ impl crate::Chilpa {
         decades.reverse();
         let day_buckets = lib.listening_buckets(&now, ListenDimension::Day, ListenOrder::Plays, 1).unwrap_or_default();
         let best_day = day_buckets.first().filter(|b| b.key.is_some()).map(|b| json!({"date": b.label, "label": day_label(&b.label, true), "plays": b.metrics.plays}));
-        let span = days.unwrap_or_else(|| lib.listening_buckets(&now, ListenDimension::Day, ListenOrder::Key, 1000).map(|d| d.len() as i64).unwrap_or(1)).max(1);
-        let chart = series(lib, days, back, &now, &before);
-        let range = match (range.first(), range.last()) {
-            (Some(first), Some(last)) => range_label(first, last),
-            _ => chart.first().and_then(|p| p["key"].as_str()).map(|key| i18n::t_args(i18n::mark("Since {}"), &[&month_label(key)])).unwrap_or_default(),
+        // A period still running counts the days it has had so far.
+        let span = match kind {
+            Kind::All => lib.listening_buckets(&now, ListenDimension::Day, ListenOrder::Key, 1000).map(|d| d.len() as i64).unwrap_or(1),
+            _ => this.end.min(today + 1) - this.first,
+        }
+        .max(1);
+        let chart = series(lib, &this, &previous, &now, &before);
+        let current = kind == Kind::All || this.holds(today);
+        let range = match kind {
+            Kind::All => chart.first().and_then(|p| p["key"].as_str()).map(|key| i18n::t_args(i18n::mark("Since {}"), &[&month_label(key)])).unwrap_or_default(),
+            _ => period_label(&this),
+        };
+        let comparison = match kind {
+            Kind::All => String::new(),
+            _ if current => period::current_comparison(kind),
+            _ => i18n::t_args(i18n::mark("vs {}"), &[&period_label(&previous)]),
         };
         let by_hour: Vec<u64> = (0..24).map(|h| hours.get(&format!("{h:02}")).copied().unwrap_or(0)).collect();
-        // Monday first; SQLite counts Sunday as 0.
-        let by_weekday: Vec<u64> = [1, 2, 3, 4, 5, 6, 0].iter().map(|d| weekdays.get(&d.to_string()).copied().unwrap_or(0)).collect();
+        // From the week's first day; SQLite counts Sunday as 0.
+        let by_weekday: Vec<Value> = (0..7)
+            .map(|i| (week_start + i) % 7)
+            .map(|day| json!({"label": i18n::t(WEEKDAYS[day]), "plays": weekdays.get(&((day + 1) % 7).to_string()).copied().unwrap_or(0)}))
+            .collect();
         json!({
-            "period": period,
-            "back": back,
+            "kind": kind_name(kind),
+            "anchor": period::iso(day),
+            "now": period::iso(today),
+            "today": day == today,
+            "current": current,
+            "earlier": if kind == Kind::All { String::new() } else { period::iso(previous.first) },
+            "later": if kind == Kind::All || this.end > today { String::new() } else { period::iso(this.after(week_start).first) },
             "range": range,
+            "comparison": comparison,
             "listened": crate::format::span(summary.listened_ms),
             "plays": summary.plays,
-            "plays_change": change(summary.plays, previous.plays),
+            "plays_change": change(summary.plays, earlier_summary.plays),
             "listened_ms": summary.listened_ms,
-            "listened_change": change(summary.listened_ms, previous.listened_ms),
+            "listened_change": change(summary.listened_ms, earlier_summary.listened_ms),
             "series": chart,
             "artists": {"count": artists, "change": change(artists, artists_before), "top": top_artists},
             "albums": {"count": albums, "change": change(albums, albums_before), "top": top_albums},
-            "tracks": {"count": summary.distinct_tracks, "change": change(summary.distinct_tracks, previous.distinct_tracks), "top": top_tracks},
+            "tracks": {"count": summary.distinct_tracks, "change": change(summary.distinct_tracks, earlier_summary.distinct_tracks), "top": top_tracks},
             "hours": by_hour,
             "weekdays": by_weekday,
             "genres": genres,
@@ -266,12 +279,13 @@ impl crate::Chilpa {
     }
 
     /// The history a page at a time, newest first: `page` from 1, with
-    /// `per_page` listens, 20, 50 or 100.
-    pub fn listening_history_json(&mut self, page: i64, per_page: i64) -> String {
+    /// `per_page` listens, 20, 50 or 100, and with `search` only the listens
+    /// whose track, artist or record hold every word of it.
+    pub fn listening_history_json(&mut self, page: i64, per_page: i64, search: &str) -> String {
         let Some(lib) = self.library() else { return "{}".into() };
         let per_page = if matches!(per_page, 20 | 50 | 100) { per_page as usize } else { 20 };
         let page = page.max(1) as usize;
-        let (rows, total) = lib.listening_history(&ListenFilter::default(), (page - 1) * per_page, per_page).unwrap_or_default();
+        let (rows, total) = lib.listening_history(&ListenFilter::default(), search, (page - 1) * per_page, per_page).unwrap_or_default();
         let pages = (total as usize).div_ceil(per_page).max(1);
         let today = lib.local_days(0, 1).unwrap_or_default().pop().unwrap_or_default();
         let yesterday = lib.local_days(1, 1).unwrap_or_default().pop().unwrap_or_default();
@@ -286,22 +300,36 @@ impl crate::Chilpa {
                 } else {
                     day_label(day, true)
                 };
-                let quality = match (e.bit_depth, e.sample_rate_hz) {
-                    (Some(bits), Some(rate)) => format!("{bits}/{}", khz(rate)),
-                    _ => String::new(),
-                };
                 json!({
                     "time": e.local_time, "day": day, "clock": e.local_time.get(11..16).unwrap_or_default(),
                     "played": crate::format::clock(e.played_ms),
                     "length": if e.duration_ms > 0 { crate::format::clock(e.duration_ms) } else { String::new() },
                     "title": e.title, "artist": e.artist, "album": e.album,
                     "played_ms": e.played_ms, "duration_ms": e.duration_ms, "skipped": e.skipped,
-                    "bit_perfect": e.bit_perfect, "quality": quality,
+                    "bit_perfect": e.bit_perfect, "quality": quality(e.bit_depth, e.sample_rate_hz),
                     "art": e.artwork_path.unwrap_or_default(), "album_id": e.album_id.unwrap_or(0),
                 })
             })
             .collect();
         json!({"page": page.min(pages), "pages": pages, "per_page": per_page, "total": total, "rows": rows}).to_string()
+    }
+}
+
+/// "24/96" for 24 bits at 96 kHz; empty when either is unknown.
+pub(crate) fn quality(bits: Option<u8>, rate: Option<u32>) -> String {
+    match (bits, rate) {
+        (Some(bits), Some(rate)) => format!("{bits}/{}", khz(rate)),
+        _ => String::new(),
+    }
+}
+
+fn kind_name(kind: Kind) -> &'static str {
+    match kind {
+        Kind::Day => "day",
+        Kind::Week => "week",
+        Kind::Month => "month",
+        Kind::Year => "year",
+        Kind::All => "all",
     }
 }
 
@@ -320,14 +348,8 @@ mod tests {
     fn a_rate_reads_as_a_quality_line_says_it() {
         assert_eq!(khz(44_100), "44.1");
         assert_eq!(khz(96_000), "96");
-    }
-
-    #[test]
-    fn a_date_knows_its_day_of_the_week() {
-        assert_eq!(weekday(1970, 1, 1), 3, "a Thursday");
-        assert_eq!(weekday(2026, 10, 9), 4, "a Friday");
-        assert_eq!(weekday(2024, 2, 29), 3, "a leap day, a Thursday");
-        assert_eq!(weekday(2026, 10, 12), 0, "a Monday");
+        assert_eq!(quality(Some(24), Some(96_000)), "24/96");
+        assert_eq!(quality(None, Some(96_000)), "");
     }
 
     #[test]
@@ -342,10 +364,14 @@ mod tests {
     }
 
     #[test]
-    fn a_period_is_a_week_a_month_a_year_or_everything() {
-        assert_eq!(days_of("week"), Some(7));
-        assert_eq!(days_of("month"), Some(30));
-        assert_eq!(days_of("year"), Some(365));
-        assert_eq!(days_of("all"), None);
+    fn a_period_reads_as_its_kind_says() {
+        let day = period::parse("2026-10-09").unwrap();
+        assert_eq!(period_label(&Period::holding(Kind::Day, day, 0)), "Fri 9 Oct 2026");
+        assert_eq!(period_label(&Period::holding(Kind::Week, day, 0)), "5\u{2013}11 Oct 2026");
+        assert_eq!(period_label(&Period::holding(Kind::Week, day, 6)), "4\u{2013}10 Oct 2026");
+        assert_eq!(period_label(&Period::holding(Kind::Month, day, 0)), "Oct 2026");
+        assert_eq!(period_label(&Period::holding(Kind::Year, day, 0)), "2026");
+        assert_eq!(Kind::of("week"), Kind::Week);
+        assert_eq!(Kind::of("whatever"), Kind::All);
     }
 }
