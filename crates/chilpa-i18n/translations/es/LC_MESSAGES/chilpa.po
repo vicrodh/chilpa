@@ -121,6 +121,9 @@ msgstr "API key"
 msgid "About"
 msgstr "Acerca de"
 
+msgid "About Chilpa"
+msgstr "Acerca de Chilpa"
+
 msgid "Accent"
 msgstr "Acento"
 
@@ -135,6 +138,9 @@ msgstr "Cuenta conectada."
 
 msgid "Account not connected."
 msgstr "Cuenta sin conectar."
+
+msgid "Acknowledgments"
+msgstr "Agradecimientos"
 
 msgid "Active"
 msgstr "Activa"
@@ -429,6 +435,15 @@ msgstr "Busca una carpeta de música o escribe su ruta completa."
 msgid "Browse…"
 msgstr "Buscar…"
 
+msgid "Build"
+msgstr "Build"
+
+msgid "Build info"
+msgstr "Información del build"
+
+msgid "Built with Rust and Qt, and powered by Symphonia and Lofty. With thanks to MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide and Inter."
+msgstr "Hecho con Rust y Qt, y movido por Symphonia y Lofty. Gracias a MusicBrainz, Last.fm, LRCLIB, Tabler Icons, Lucide e Inter."
+
 msgid "Buttons to go back or forward ten seconds, and the A-B loop."
 msgstr "Botones para ir diez segundos atrás o adelante, y el bucle A-B."
 
@@ -506,6 +521,9 @@ msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "El icono de Chilpa en el panel: un clic muestra u oculta la ventana, el botón central reproduce o pausa, la rueda mueve el volumen."
+
+msgid "Chilpatl is Nahuatl for hornet. Chilpa is a music player for the desktop, where local files, self-hosted servers and plugins are all just sources."
+msgstr "Chilpatl es avispón en náhuatl. Chilpa es un reproductor de música de escritorio, donde los archivos locales, los servidores propios y los plugins son, todos, fuentes."
 
 msgid "Chinese"
 msgstr "Chino"
@@ -2009,6 +2027,9 @@ msgstr "el grafo de PipeWire solo corre a {} Hz, así que {} Hz se remuestrearí
 msgid "Plain seek bar"
 msgstr "Barra de avance simple"
 
+msgid "Platform"
+msgstr "Plataforma"
+
 msgid "Play"
 msgstr "Reproducir"
 
@@ -3090,6 +3111,9 @@ msgstr "Usuario"
 msgid "Valid"
 msgstr "Válidos"
 
+msgid "Version"
+msgstr "Versión"
+
 msgid "Version: {}"
 msgstr "Versión: {}"
 
@@ -3128,6 +3152,9 @@ msgstr "Lecho de ondas"
 
 msgid "Waveform"
 msgstr "Forma de onda"
+
+msgid "Website"
+msgstr "Sitio web"
 
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
 msgstr "Lo que hace Enter con un resultado de la búsqueda del modo inmersivo. Desactivada apaga la búsqueda."

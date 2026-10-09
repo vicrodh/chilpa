@@ -24,7 +24,7 @@ TREES = [KIT, QML, ROOT / "crates/chilpa-qt-sources/qml", ROOT / "crates/chilpa-
          ROOT / "crates/chilpa-qt-metadata/qml", ROOT / "crates/chilpa-qt-gallery/qml",
          ROOT / "crates/chilpa-qt-folders/qml", ROOT / "crates/chilpa-qt-ambient/qml", ROOT / "crates/chilpa-qt-mini/qml",
          ROOT / "crates/chilpa-qt-immersive/qml", ROOT / "crates/chilpa-qt-waveform/qml",
-         ROOT / "crates/chilpa-qt-artwork/qml"]
+         ROOT / "crates/chilpa-qt-artwork/qml", ROOT / "crates/chilpa-qt-about/qml"]
 # Where each tree sits in the binary's resources, for imports across them.
 RESOURCES = {"qrc:/qt/qml/app/chilpa/kit/qml/": TREES[0], "qrc:/qt/qml/app/chilpa/qml/": TREES[1],
              "qrc:/qt/qml/app/chilpa/sources/qml/": TREES[2], "qrc:/qt/qml/app/chilpa/controls/qml/": TREES[3],
@@ -34,7 +34,8 @@ RESOURCES = {"qrc:/qt/qml/app/chilpa/kit/qml/": TREES[0], "qrc:/qt/qml/app/chilp
              "qrc:/qt/qml/app/chilpa/mini/qml/": TREES[9],
              "qrc:/qt/qml/app/chilpa/immersive/qml/": TREES[10],
              "qrc:/qt/qml/app/chilpa/waveform/qml/": TREES[11],
-             "qrc:/qt/qml/app/chilpa/artwork/qml/": TREES[12]}
+             "qrc:/qt/qml/app/chilpa/artwork/qml/": TREES[12],
+             "qrc:/qt/qml/app/chilpa/about/qml/": TREES[13]}
 
 ORDER = {"Theme": 0, "Primitives": 1, "Components": 2, "Patterns": 3, "Screens": 4, "Main": 5}
 # The Gallery is a second window that shows every piece; it sits beside the

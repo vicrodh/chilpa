@@ -1,0 +1,2 @@
+module app.chilpa.about
+singleton About 1.0 About.qml
