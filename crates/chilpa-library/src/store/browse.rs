@@ -716,6 +716,23 @@ impl Library {
 
     /// The genre most of an album's tracks carry, if any carries one.
     /// The label most of a record's tracks name, if any does.
+    /// The labels of these records, each once whatever its capitals, the
+    /// one on most of their tracks first.
+    pub fn albums_labels(&self, ids: &[i64]) -> rusqlite::Result<Vec<String>> {
+        if ids.is_empty() {
+            return Ok(Vec::new());
+        }
+        let marks = vec!["?"; ids.len()].join(",");
+        self.db
+            .prepare(&format!(
+                "SELECT min(label) FROM tracks
+                 WHERE album_id IN ({marks}) AND present = 1 AND label IS NOT NULL AND label <> ''
+                 GROUP BY label COLLATE NOCASE ORDER BY count(*) DESC, 1"
+            ))?
+            .query_map(rusqlite::params_from_iter(ids.iter()), |r| r.get(0))?
+            .collect()
+    }
+
     pub fn album_label(&self, album_id: i64) -> rusqlite::Result<Option<String>> {
         use rusqlite::OptionalExtension;
         self.db
@@ -789,6 +806,15 @@ mod tests {
 
     fn labels(entries: Vec<FacetEntry>) -> Vec<String> {
         entries.into_iter().map(|e| e.label).collect()
+    }
+
+    #[test]
+    fn an_artists_records_name_their_labels_once_the_commonest_first() {
+        let lib = crate::store::fixtures::sample_library();
+        lib.db.execute("UPDATE tracks SET label = 'Fantasy' WHERE album_id IN (1, 3)", []).unwrap();
+        lib.db.execute("UPDATE tracks SET label = 'chrysalis' WHERE album_id = 2", []).unwrap();
+        assert_eq!(lib.albums_labels(&[1, 2, 3]).unwrap(), vec!["Fantasy".to_string(), "chrysalis".to_string()]);
+        assert!(lib.albums_labels(&[]).unwrap().is_empty());
     }
 
     #[test]
