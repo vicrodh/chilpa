@@ -125,6 +125,22 @@ fn ratings_survive_reopen_and_handoff_and_shutdown_keep_delivered_time() {
             .label,
         "Band"
     );
+    // The stats screen's documents and the history's CSV, from that listen.
+    let today: serde_json::Value = serde_json::from_str(&reopened.stats_report_json("day", "", 1)).unwrap();
+    assert_eq!(today["kind"], "day");
+    assert_eq!(today["comparison"], "Today vs Yesterday");
+    assert_eq!(today["series"].as_array().unwrap().len(), 24, "a day goes by the hour");
+    let found: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "one band")).unwrap();
+    assert_eq!(found["total"], 1);
+    let none: serde_json::Value = serde_json::from_str(&reopened.listening_history_json(1, 20, "nothing")).unwrap();
+    assert_eq!(none["total"], 0);
+    let sheet = dir.join("history.csv");
+    assert_eq!(reopened.export_listening_history(&sheet).as_deref(), Some("1 listen saved"));
+    let text = std::fs::read_to_string(&sheet).unwrap();
+    let lines: Vec<&str> = text.split("\r\n").filter(|l| !l.is_empty()).collect();
+    assert_eq!(lines[0], "Date,Time,Track,Artist,Album,Heard,Length,Skipped,Quality,Bit-perfect");
+    assert_eq!(lines.len(), 2, "{text}");
+    assert!(lines[1].contains(",One,Band,Album,"), "{}", lines[1]);
     assert!(reopened.rate(RatingTarget::Track(1), 0));
     assert!(lib.check().unwrap().is_empty());
     drop(reopened);
