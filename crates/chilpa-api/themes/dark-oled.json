@@ -42,6 +42,7 @@
     "ambient.raised": "derive:surface.raised@0.50",
     "ambient.bar": "derive:surface.window@0.60",
     "ambient.panel": "derive:surface.panel@0.50",
+    "ambient.frost": "rgba(255,255,255,0.10)",
     "ambient.veil": "#000000",
     "mini.edge": "rgba(255,255,255,0.10)",
     "mini.capsuleEdge": "rgba(255,255,255,0.20)",

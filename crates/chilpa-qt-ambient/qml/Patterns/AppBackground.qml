@@ -118,16 +118,17 @@ Item {
         opacity: root.veilStrength
     }
 
-    // The frosted content plane where the screens draw: no edge, so the
-    // field runs into it (the owner, 2026-10-08).
+    // The frosted content plane where the screens draw: a card with its
+    // hairline and all four corners, ending at the window's margin like the
+    // panels beside it (the owner, 2026-10-08, second pass).
     Rectangle {
         visible: root.painting
         x: root.plane.x
         y: root.plane.y
         width: root.plane.width
         height: root.plane.height
-        topLeftRadius: Metrics.radiusPanel
-        topRightRadius: Metrics.radiusPanel
+        radius: Metrics.radiusPanel
         color: Theme.color.ambientContent
+        border.color: Theme.color.ambientFrost
     }
 }

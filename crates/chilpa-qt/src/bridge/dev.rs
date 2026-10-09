@@ -12,6 +12,9 @@
 //! `CHILPA_PLAY_ALBUM=<id>[:<track index>]` starts a record playing once
 //! the window is up,
 //! and `CHILPA_ADD_FOLDER=<path>` adds a folder to the library and scans it.
+//! `CHILPA_PLAYER_INSET=<pixels>` sets the player bar's inset from the
+//! content plane's sides, with no cap on its width, so two insets can be
+//! compared by eye; 0 lays it flush with the plane.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -39,6 +42,9 @@ pub mod qobject {
         /// For "folders:/some/path", the path.
         #[qproperty(QString, route_key)]
         #[qproperty(QString, add_folder)]
+        /// The player bar's inset from the plane's sides, or -1 to leave the
+        /// window's own width rule alone.
+        #[qproperty(i32, player_inset)]
         type Dev = super::DevRust;
 
         /// Called on every presented frame while `frames` is on.
@@ -65,6 +71,7 @@ pub struct DevRust {
     route_id: i64,
     route_key: QString,
     add_folder: QString,
+    player_inset: i32,
     last: Option<Instant>,
     intervals: Vec<f64>,
 }
@@ -84,6 +91,7 @@ impl Default for DevRust {
             route_id: id.parse().unwrap_or(0),
             route_key: QString::from(if id.parse::<i64>().is_ok() { "" } else { id }),
             add_folder: QString::from(&var("CHILPA_ADD_FOLDER")),
+            player_inset: var("CHILPA_PLAYER_INSET").parse().unwrap_or(-1),
             last: None,
             intervals: Vec::new(),
         }
