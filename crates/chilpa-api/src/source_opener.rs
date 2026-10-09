@@ -309,4 +309,15 @@ impl crate::Chilpa {
         if let Some((instance, _)) = of_plugin(&path) {
             return self.natives.display_name(&instance);
         }
+        let Some(entry) = chilpa_models::RemoteEntry::parse(&path) else { return String::new() };
+        let id: Option<i64> = entry.source.instance.parse().ok();
+        self.servers()
+            .into_iter()
+            .find(|row| Some(row.id) == id && row.provider == entry.source.provider)
+            .map(|row| row.name)
+            .unwrap_or_else(|| {
+                let mut chars = entry.source.provider.chars();
+                chars.next().map(|c| c.to_uppercase().collect::<String>() + chars.as_str()).unwrap_or_default()
+            })
+    }
 }
