@@ -92,6 +92,20 @@ impl Library {
         Ok(changed > 0)
     }
 
+    /// A cover of the artist's records, the record with most of theirs,
+    /// for where a picture of them is wanted and none was chosen.
+    pub fn artist_cover(&self, name: &str) -> rusqlite::Result<Option<String>> {
+        self.db
+            .query_row(
+                concat!("SELECT ", album_art!("a"), " FROM albums a JOIN album_artist_rollup m ON m.album_id = a.id
+                 WHERE m.artist = ?1 COLLATE NOCASE AND ", album_art!("a"), " IS NOT NULL
+                 ORDER BY m.tracks DESC LIMIT 1"),
+                params![name],
+                |r| r.get(0),
+            )
+            .optional()
+    }
+
     /// Whether any choice still names that file, so the facade knows when
     /// the file can go.
     pub fn artwork_in_use(&self, path: &str) -> rusqlite::Result<bool> {

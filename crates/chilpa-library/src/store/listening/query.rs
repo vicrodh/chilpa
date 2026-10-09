@@ -35,6 +35,10 @@ pub enum ListenDimension {
     Weekday,
     Day,
     GenreHour,
+    /// The decade of the record's year, as "1970".
+    Decade,
+    /// The month the listen started in, as "2026-10".
+    Month,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -117,7 +121,8 @@ const LISTENS: &str = "WITH listens AS (
              END AS identity,
         strftime('%H', p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS hour,
         strftime('%w', p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS weekday,
-        date(p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS day
+        date(p.started_at + coalesce(?5, c.utc_offset_seconds), 'unixepoch') AS day,
+        (SELECT ra.year FROM albums ra WHERE ra.id = coalesce(t.album_id, c.album_id)) AS year
     FROM play_events p LEFT JOIN play_context c ON c.event_id = p.id
     LEFT JOIN tracks t ON t.id = p.track_id";
 
@@ -140,7 +145,122 @@ fn listens(filter: &ListenFilter) -> String {
     format!("{LISTENS} WHERE {})", conditions.join(" AND "))
 }
 
+/// One listen of the history, as it sounded.
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct HistoryEntry {
+    pub event_id: i64,
+    pub started_at: i64,
+    /// The date and time it started where it was heard: "2026-10-09 21:14".
+    pub local_time: String,
+    pub title: String,
+    pub artist: String,
+    pub album: String,
+    pub played_ms: u64,
+    pub duration_ms: u64,
+    pub skipped: bool,
+    pub bit_perfect: bool,
+    pub sample_rate_hz: Option<u32>,
+    pub bit_depth: Option<u8>,
+    pub track_id: Option<i64>,
+    pub album_id: Option<i64>,
+    pub source_id: Option<i64>,
+    pub artwork_path: Option<String>,
+}
+
 impl Library {
+    /// How many artists and how many records the period's listens name.
+    pub fn listening_counts(&self, filter: &ListenFilter) -> rusqlite::Result<(u64, u64)> {
+        let offset = offset(filter)?;
+        self.db.query_row(
+            &format!("{} SELECT count(DISTINCT lower(nullif(artist, ''))), count(DISTINCT release_id) FROM listens", listens(filter)),
+            params![filter.from, filter.until, filter.source_id, filter.genre, offset],
+            |r| Ok((r.get::<_, i64>(0)?.max(0) as u64, r.get::<_, i64>(1)?.max(0) as u64)),
+        )
+    }
+
+    /// The listens of the period, newest first, `limit` of them after the
+    /// first `skip`, and how many there are in all.
+    pub fn listening_history(&self, filter: &ListenFilter, skip: usize, limit: usize) -> rusqlite::Result<(Vec<HistoryEntry>, u64)> {
+        offset(filter)?;
+        // Only the bounds the filter has, so the time index can be used.
+        let mut conditions = vec!["1".to_string()];
+        let mut values: Vec<i64> = Vec::new();
+        for (bound, sql) in [(filter.from, "p.started_at >= ?"), (filter.until, "p.started_at < ?"), (filter.source_id, "p.source_id = ?")] {
+            if let Some(value) = bound {
+                conditions.push(sql.to_string());
+                values.push(value);
+            }
+        }
+        let clause = conditions.join(" AND ");
+        let total: i64 = self.db.query_row(
+            &format!("SELECT count(*) FROM play_events p WHERE {clause}"),
+            rusqlite::params_from_iter(values.iter()),
+            |r| r.get(0),
+        )?;
+        let sql = format!(
+            concat!("SELECT p.id, p.started_at,
+                strftime('%Y-%m-%d %H:%M', p.started_at + coalesce(c.utc_offset_seconds, unixepoch(p.started_at, 'unixepoch', 'localtime') - p.started_at), 'unixepoch'),
+                coalesce(nullif(c.title, ''), t.title, ''), coalesce(nullif(c.artist, ''), t.artist, ''),
+                coalesce(nullif(c.album, ''), a.title, ''), p.played_ms, p.duration_ms, p.skipped, p.bit_perfect,
+                p.sample_rate_hz, p.bit_depth, p.track_id, a.id, p.source_id, ", album_art!("a"), "
+             FROM play_events p
+             LEFT JOIN play_context c ON c.event_id = p.id
+             LEFT JOIN tracks t ON t.id = p.track_id
+             LEFT JOIN albums a ON a.id = coalesce(t.album_id, c.album_id)
+             WHERE {clause}
+             ORDER BY p.started_at DESC, p.id DESC
+             LIMIT ? OFFSET ?"),
+            clause = clause
+        );
+        values.push(limit.min(1000) as i64);
+        values.push(skip as i64);
+        let rows = self.db.prepare(&sql)?.query_map(
+            rusqlite::params_from_iter(values.iter()),
+            |r| Ok(HistoryEntry {
+                event_id: r.get(0)?,
+                started_at: r.get(1)?,
+                local_time: r.get::<_, Option<String>>(2)?.unwrap_or_default(),
+                title: r.get(3)?,
+                artist: r.get(4)?,
+                album: r.get(5)?,
+                played_ms: r.get::<_, i64>(6)?.max(0) as u64,
+                duration_ms: r.get::<_, i64>(7)?.max(0) as u64,
+                skipped: r.get(8)?,
+                bit_perfect: r.get(9)?,
+                sample_rate_hz: r.get(10)?,
+                bit_depth: r.get(11)?,
+                track_id: r.get(12)?,
+                album_id: r.get(13)?,
+                source_id: r.get(14)?,
+                artwork_path: r.get(15)?,
+            }),
+        )?.collect::<rusqlite::Result<Vec<_>>>()?;
+        Ok((rows, total.max(0) as u64))
+    }
+
+    /// Where the local day began `days_ago` days back from today, in Unix
+    /// seconds: a period of days ends at a local midnight, not at UTC's.
+    pub fn local_day_start(&self, days_ago: i64) -> rusqlite::Result<i64> {
+        self.db.query_row(
+            "SELECT unixepoch(date('now', 'localtime', printf('%d days', -?1)), 'utc')",
+            [days_ago],
+            |r| r.get(0),
+        )
+    }
+
+    /// `count` local dates, "2026-10-09", the first `back` days before today.
+    pub fn local_days(&self, back: i64, count: i64) -> rusqlite::Result<Vec<String>> {
+        self.db
+            .prepare(
+                "WITH RECURSIVE d(n, day) AS (
+                    SELECT 0, date('now', 'localtime', printf('%d days', -?1))
+                    UNION ALL SELECT n + 1, date(day, '+1 day') FROM d WHERE n + 1 < ?2)
+                 SELECT day FROM d ORDER BY n",
+            )?
+            .query_map(params![back, count.clamp(0, 400)], |r| r.get(0))?
+            .collect()
+    }
+
     pub fn listening_summary(&self, filter: &ListenFilter) -> rusqlite::Result<ListenMetrics> {
         let offset = offset(filter)?;
         self.db.query_row(
@@ -193,6 +313,8 @@ impl Library {
             // SQLite weekday: Sunday = 0, Saturday = 6.
             ListenDimension::Weekday => ("weekday", "weekday", "NULL", ""),
             ListenDimension::Day => ("day", "day", "NULL", ""),
+            ListenDimension::Decade => ("cast(year / 10 * 10 AS TEXT)", "cast(year / 10 * 10 AS TEXT)", "NULL", ""),
+            ListenDimension::Month => ("substr(day, 1, 7)", "substr(day, 1, 7)", "NULL", ""),
         };
         let ordering = match order {
             ListenOrder::Plays => "5 DESC, 6 DESC, 1, 3",

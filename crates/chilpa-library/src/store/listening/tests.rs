@@ -318,3 +318,47 @@ fn a_listen_waits_for_another_writer_instead_of_failing() {
     drop(lib);
     let _ = std::fs::remove_dir_all(dir);
 }
+
+#[test]
+fn the_history_goes_newest_first_a_page_at_a_time_and_says_its_total() {
+    let lib = fixture();
+    for (at, track) in [(3600, 1), (7200, 2), (10800, 1)] {
+        lib.record_listen(&event(&lib, track, at, Some(0), 1000)).unwrap();
+    }
+    let filter = ListenFilter::default();
+    let (first, total) = lib.listening_history(&filter, 0, 2).unwrap();
+    assert_eq!(total, 3);
+    assert_eq!(first.iter().map(|e| e.started_at).collect::<Vec<_>>(), [10800, 7200]);
+    assert_eq!(first[0].title, "One");
+    assert_eq!(first[0].local_time, "1970-01-01 03:00", "where it was heard");
+    let (rest, _) = lib.listening_history(&filter, 2, 2).unwrap();
+    assert_eq!(rest.iter().map(|e| e.started_at).collect::<Vec<_>>(), [3600]);
+    let late = ListenFilter { from: Some(7200), ..ListenFilter::default() };
+    assert_eq!(lib.listening_history(&late, 0, 10).unwrap().1, 2);
+}
+
+#[test]
+fn a_period_counts_its_artists_and_records_and_its_decades() {
+    let lib = fixture();
+    lib.db.execute("UPDATE albums SET year = 1977 WHERE id = 1", []).unwrap();
+    lib.record_listen(&event(&lib, 1, 3600, Some(0), 1000)).unwrap();
+    lib.record_listen(&event(&lib, 2, 7200, Some(0), 1000)).unwrap();
+    assert_eq!(lib.listening_counts(&ListenFilter::default()).unwrap(), (2, 1));
+    let decades = lib.listening_buckets(&ListenFilter::default(), ListenDimension::Decade, ListenOrder::Plays, 10).unwrap();
+    assert_eq!(decades.len(), 1);
+    assert_eq!(decades[0].key.as_deref(), Some("1970"));
+    assert_eq!(decades[0].metrics.plays, 2);
+}
+
+#[test]
+fn local_days_end_today_and_start_at_a_local_midnight() {
+    let lib = fixture();
+    let days = lib.local_days(6, 7).unwrap();
+    assert_eq!(days.len(), 7);
+    assert!(days.windows(2).all(|w| w[0] < w[1]), "oldest first");
+    let today: String = lib.db.query_row("SELECT date('now', 'localtime')", [], |r| r.get(0)).unwrap();
+    assert_eq!(days[6], today);
+    let start = lib.local_day_start(0).unwrap();
+    let now: i64 = lib.db.query_row("SELECT unixepoch('now')", [], |r| r.get(0)).unwrap();
+    assert!(start <= now && now - start < 86_400 + 3_600);
+}
