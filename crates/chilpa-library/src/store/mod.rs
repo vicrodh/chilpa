@@ -826,8 +826,7 @@ mod tests {
 
     /// What the planner knows about the library on a fresh row of numbers.
     fn believed_tracks(lib: &Library) -> i64 {
-        use rusqlite::OptionalExtension;
-        lib.db.query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| r.get::<_, String>(0)).optional().unwrap_or(None).and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok())).unwrap_or(0)
+        crate::schema::believed_tracks(&lib.db)
     }
 
     #[test]
