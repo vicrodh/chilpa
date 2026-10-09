@@ -92,9 +92,9 @@ Item {
         visible: bar.tall
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.top: parent.top
         anchors.leftMargin: Metrics.playerPadLeft
         anchors.rightMargin: Metrics.playerPadRight
+        y: Math.round((lcd.y - height) / 2) // derived: centered between the bar's top edge and the song card
         height: Metrics.waveformBand
     }
 
