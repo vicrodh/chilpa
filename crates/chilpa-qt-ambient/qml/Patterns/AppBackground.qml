@@ -118,7 +118,8 @@ Item {
         opacity: root.veilStrength
     }
 
-    // The frosted content plane, with its hairline, where the screens draw.
+    // The frosted content plane where the screens draw: no edge, so the
+    // field runs into it (the owner, 2026-10-08).
     Rectangle {
         visible: root.painting
         x: root.plane.x
@@ -128,6 +129,5 @@ Item {
         topLeftRadius: Metrics.radiusPanel
         topRightRadius: Metrics.radiusPanel
         color: Theme.color.ambientContent
-        border.color: Theme.color.ambientFrost
     }
 }

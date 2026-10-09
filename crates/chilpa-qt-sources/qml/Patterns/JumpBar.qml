@@ -6,19 +6,24 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The strip under an artist's header: "JUMP TO" and one entry per block of
 // the page, with a search over the page on the right. It sticks to the top
-// while the page scrolls under it.
+// while the page scrolls under it, spanning the whole content plane with
+// the plane's corners while pinned there, and with its own side padding so
+// the tabs do not shift when it sticks (the owner, 2026-10-08).
 Rectangle {
     id: bar
     property var entries: []
     property string active: ""
     property alias search: field.text
     signal jump(string id)
+    property bool pinned: false
     height: Metrics.jumpBar
+    topLeftRadius: pinned ? Metrics.radiusPanel : 0
+    topRightRadius: pinned ? Metrics.radiusPanel : 0
     // Under the dynamic background it lets the field through, as QBZ's does.
     color: Theme.ambient ? Theme.color.ambientBar : Theme.color.surfaceWindow
     Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     Row {
-        anchors.left: parent.left; anchors.right: field.left; anchors.rightMargin: Metrics.gap12
+        anchors.left: parent.left; anchors.leftMargin: Metrics.contentX; anchors.right: field.left; anchors.rightMargin: Metrics.gap12
         anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap16; clip: true
         Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("JUMP TO", I18n.rev); font.pointSize: Type.label; font.weight: Type.semibold; font.letterSpacing: Type.labelTracking; color: Theme.color.textTertiary }
         Repeater {
@@ -39,5 +44,5 @@ Rectangle {
             }
         }
     }
-    SearchField { id: field; anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; width: Metrics.screenSearch; placeholder: I18n.tr("Search this page…", I18n.rev) }
+    SearchField { id: field; anchors.right: parent.right; anchors.rightMargin: Metrics.contentX; anchors.verticalCenter: parent.verticalCenter; width: Metrics.screenSearch; placeholder: I18n.tr("Search this page…", I18n.rev) }
 }
