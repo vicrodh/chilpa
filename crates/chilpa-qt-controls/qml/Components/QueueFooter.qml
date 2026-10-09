@@ -37,11 +37,17 @@ Item {
         color: Theme.color.strokeHairline
     }
 
+    // The search opens over the actions; they fade out under it, as the
+    // field's fill lets them through.
     Row {
+        objectName: "queueActions"
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap6
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap2
+        enabled: !foot.searching
+        opacity: foot.searching ? 0 : 1
+        Behavior on opacity { NumberAnimation { duration: Motion.fast } }
 
         IconButton {
             objectName: "queueClear"
