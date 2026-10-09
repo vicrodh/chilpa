@@ -3,21 +3,22 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
 
 // One tab of the immersive queue, Queue or History: its label at 18 with
-// the count beside it, bold and underlined 2 px while active, lifted on
-// hover.
+// the count beside it on the same baseline, bold and underlined 2 px while
+// active, lifted on hover.
 Item {
     id: tab
     property string label
     property int count: 0
     property bool active: false
     signal clicked()
-    width: row.implicitWidth
+    width: count.visible ? count.x + count.width : label.width
     height: Stage.queueTabTall
-    Row {
+    Item {
         id: row
+        width: parent.width
         height: parent.height
-        spacing: Stage.queueTabApart / 4 // derived: a small gap before the count
         Text {
+            id: label
             text: tab.label
             color: tab.active ? Theme.color.immersiveTextStrong : (area.containsMouse ? Theme.color.immersiveText : Theme.color.immersiveTextFaint)
             font.pointSize: Stage.queueTabText
@@ -25,7 +26,10 @@ Item {
             Behavior on color { ColorAnimation { duration: Motion.reduced ? 0 : Stage.hoverFade } }
         }
         Text {
+            id: count
             visible: tab.count > 0
+            x: label.width + Stage.queueTabApart / 4 // derived: a small gap before the count
+            anchors.baseline: label.baseline
             text: "(" + tab.count + ")"
             color: tab.active ? Theme.color.immersiveTextMuted : Theme.color.immersiveTextQuiet
             font.pointSize: Stage.queueArtistText
