@@ -204,19 +204,23 @@ pub fn update_statistics(db: &Connection) -> rusqlite::Result<()> {
 /// on a rounding error: what ruins one is believing there are no tracks when
 /// there are two hundred thousand.
 pub fn update_statistics_if_stale(db: &Connection) -> rusqlite::Result<()> {
-    use rusqlite::OptionalExtension;
-    // The first field of `stat` is the table's row count as last analyzed.
-    let recorded: Option<String> = db
-        .query_row("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks' LIMIT 1", [], |r| r.get(0))
-        .optional()
-        // No `sqlite_stat1` at all: nothing has ever been analyzed.
-        .unwrap_or(None);
-    let believed: i64 = recorded.and_then(|s| s.split_whitespace().next().and_then(|n| n.parse().ok())).unwrap_or(0);
+    let believed = believed_tracks(db);
     let real: i64 = db.query_row("SELECT count(*) FROM tracks", [], |r| r.get(0))?;
     if real > believed.saturating_mul(4) || believed > real.saturating_mul(4) {
         update_statistics(db)?;
     }
     Ok(())
+}
+
+/// How many tracks the planner believes there are: the largest first field
+/// of `stat` among the rows for `tracks`. One row per index, and a partial
+/// index counts only the rows it holds, so whichever row came first could
+/// say nearly none.
+pub(crate) fn believed_tracks(db: &Connection) -> i64 {
+    // No `sqlite_stat1` at all: nothing has ever been analyzed.
+    let Ok(mut stmt) = db.prepare("SELECT stat FROM sqlite_stat1 WHERE tbl = 'tracks'") else { return 0 };
+    let Ok(rows) = stmt.query_map([], |r| r.get::<_, String>(0)) else { return 0 };
+    rows.flatten().filter_map(|s| s.split_whitespace().next().and_then(|n| n.parse::<i64>().ok())).max().unwrap_or(0)
 }
 
 pub fn apply_pragmas(db: &Connection) -> rusqlite::Result<()> {
