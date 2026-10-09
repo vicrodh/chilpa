@@ -173,6 +173,13 @@ Popup {
                     onClicked: flyout.search.qualityFilter = modelData.value
                 }
             }
+            // What a file's advisory or a source calls explicit, left out.
+            Chip {
+                objectName: "hideExplicit"
+                text: I18n.tr("Hide explicit", I18n.rev)
+                active: flyout.search.hideExplicit
+                onClicked: flyout.search.hideExplicit = !flyout.search.hideExplicit
+            }
         }
 
         ListView {

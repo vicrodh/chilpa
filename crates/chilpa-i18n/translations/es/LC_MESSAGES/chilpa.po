@@ -1226,6 +1226,9 @@ msgstr "Solo Hi-Res"
 msgid "Hide"
 msgstr "Ocultar"
 
+msgid "Hide explicit"
+msgstr "Ocultar explícitos"
+
 msgid "Hide from sidebar"
 msgstr "Ocultar del sidebar"
 
