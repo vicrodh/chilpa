@@ -2,9 +2,13 @@ import QtQuick
 import app.chilpa.kit
 import "../Theme"
 
-// The "now playing" sign: four bars of 3 px in an 18 by 14 box, each a
-// cosine of its own phase over an 800 ms loop advanced on the shared
-// pulse, which it holds only while active and visible.
+// The "now playing" sign, QBZ's EqualizerBars: four bars of 3 px in an 18
+// by 14 box at x 0, 5, 10 and 15, each bottom-aligned by its own animated
+// height (a positioner would own the children's y), base heights 60, 100,
+// 40 and 80 % sweeping 0.3 to 1.0 on an 800 ms loop with phases 0, 0.25,
+// 0.125 and 0.375. The loop advances on the shared pulse, which the bars
+// hold only while active and visible: an inactive one disconnects instead
+// of waking a handler just to return.
 Item {
     id: bars
     property color tint: Theme.color.accent
@@ -41,16 +45,37 @@ Item {
         const u = (bars.t + phase) % 1
         return 0.3 + 0.7 * (0.5 - 0.5 * Math.cos(u * 6.283185))
     }
-    Repeater {
-        model: [{ at: 0, base: 0.6, phase: 0 }, { at: 1, base: 1, phase: 0.25 }, { at: 2, base: 0.4, phase: 0.125 }, { at: 3, base: 0.8, phase: 0.375 }]
-        Rectangle {
-            required property var modelData
-            x: modelData.at * Metrics.eqStep * bars.barScale
-            width: Metrics.eqBar * bars.barScale
-            y: bars.height - height
-            height: bars.height * modelData.base * bars.wave(modelData.phase)
-            radius: bars.barScale
-            color: bars.tint
-        }
+
+    Rectangle {
+        x: 0
+        width: Metrics.eqBar * bars.barScale
+        y: bars.height - height
+        height: bars.height * 0.6 * bars.wave(0)
+        radius: bars.barScale
+        color: bars.tint
+    }
+    Rectangle {
+        x: Metrics.eqStep * bars.barScale
+        width: Metrics.eqBar * bars.barScale
+        y: bars.height - height
+        height: bars.height * bars.wave(0.25)
+        radius: bars.barScale
+        color: bars.tint
+    }
+    Rectangle {
+        x: Metrics.eqStep * 2 * bars.barScale // derived: the third bar
+        width: Metrics.eqBar * bars.barScale
+        y: bars.height - height
+        height: bars.height * 0.4 * bars.wave(0.125)
+        radius: bars.barScale
+        color: bars.tint
+    }
+    Rectangle {
+        x: Metrics.eqStep * 3 * bars.barScale // derived: the fourth bar
+        width: Metrics.eqBar * bars.barScale
+        y: bars.height - height
+        height: bars.height * 0.8 * bars.wave(0.375)
+        radius: bars.barScale
+        color: bars.tint
     }
 }
