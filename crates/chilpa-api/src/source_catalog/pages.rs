@@ -236,6 +236,19 @@ impl crate::Chilpa {
         self.natives.has_pages(&plugin).then(|| format!("{plugin} native:{reference}"))
     }
 
+    /// The artist page a source's track leads to, the `place`-th name of
+    /// its credit: the one the source names for its first artist, or that
+    /// artist found by name in the source. None for a track of no source.
+    pub fn source_track_artist(&mut self, path: &str, credit: &str, place: i32) -> Option<String> {
+        let (plugin, _) = crate::source_opener::of_plugin(path)?;
+        if place <= 0 {
+            if let Some(key) = self.source_artist_key(0, path) { return Some(key); }
+        }
+        let names = self.credit_names(credit);
+        let name = usize::try_from(place.max(0)).ok().and_then(|at| names.get(at)).cloned().unwrap_or_else(|| credit.to_string());
+        Some(name.trim().to_string()).filter(|n| !n.is_empty()).map(|name| format!("{plugin} matching-artist-v3:{name}"))
+    }
+
     pub(crate) fn native_page_view(&mut self, plugin: &str, reference: &str) -> String {
         let key = format!("{plugin} native:{reference}");
         let shelf = self.catalog.shelf(&key).unwrap_or_default();
@@ -273,6 +286,14 @@ impl crate::Chilpa {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn a_sources_track_finds_its_artist_by_name_when_its_source_names_none() {
+        let mut app = crate::Chilpa::new();
+        let path = crate::source_opener::entry_of("fixture", "track:1");
+        assert_eq!(app.source_track_artist(&path, "Band", 0).as_deref(), Some("fixture matching-artist-v3:Band"));
+        assert_eq!(app.source_track_artist("/music/song.flac", "Band", 0), None, "a file of the library has its own page");
+        assert_eq!(app.source_track_artist(&path, "  ", 0), None);
+    }
     #[test]
     fn see_all_keeps_a_shelf_as_a_listing_instead_of_an_empty_home() {
         let mut app = crate::Chilpa::new();

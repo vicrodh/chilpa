@@ -111,6 +111,13 @@ impl Store {
         let track = self.tracks.get_mut(&id).expect("interned");
         track.plugin = plugin.into();
         merge_metadata(&mut track.metadata, item);
+        // A record's song is its record's artist's unless it names its own.
+        if track.metadata["artist_ref"].as_str().is_none_or(str::is_empty) {
+            let named = under.filter(|c| c.kind == CardKind::Album).and_then(|c| c.metadata["artist_ref"].as_str()).filter(|r| !r.is_empty());
+            if let (Some(reference), Some(fields)) = (named, track.metadata.as_object_mut()) {
+                fields.insert("artist_ref".into(), json!(reference));
+            }
+        }
         track.title = text(item, "title");
         track.artist = Some(text(item, "artist")).filter(|a| !a.is_empty())
             .or_else(|| under.filter(|c| c.kind == CardKind::Album).map(|c| c.artist.clone())).unwrap_or_default();
@@ -514,5 +521,16 @@ mod tests {
         assert_eq!(store.cards[&album].title, "Record");
         assert_eq!(store.cards[&album].identity, "album:x1");
         assert_eq!(store.cards[&album].metadata["artist_ref"], "artist:9");
+    }
+
+    #[test]
+    fn a_records_song_leads_to_its_records_artist_unless_it_names_its_own() {
+        let mut store = Store::default();
+        let album = store.take_item("p", &json!({"kind": "album", "ref": "album:x1", "title": "Record", "artist": "Band", "artist_ref": "artist:9"}), 10).unwrap();
+        let record = store.cards[&album].clone();
+        let plain = store.take_item_track("p", &json!({"ref": "track:1", "title": "Song"}), Some(&record), 10).unwrap();
+        assert_eq!(store.tracks[&plain].metadata["artist_ref"], "artist:9");
+        let guest = store.take_item_track("p", &json!({"ref": "track:2", "title": "Duet", "artist_ref": "artist:3"}), Some(&record), 10).unwrap();
+        assert_eq!(store.tracks[&guest].metadata["artist_ref"], "artist:3");
     }
 }
