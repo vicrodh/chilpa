@@ -143,6 +143,8 @@ fn arrange_tracks(mut rows: Vec<TrackRow>, query: &TracksQuery, dates: &std::col
     rows.sort_by(|a,b| {
         let text = |a: &str,b: &str| a.trim().to_lowercase().cmp(&b.trim().to_lowercase());
         let grouped = if query.grouped() { text(&group_of(&query.group,a), &group_of(&query.group,b)) } else { Ordering::Equal };
+        // An order about what the groups are named turns the groups too.
+        let grouped = if matches!((query.group.as_str(), query.order()), ("artist", TrackOrder::ArtistDescending) | ("name", TrackOrder::TitleDescending) | ("album", TrackOrder::AlbumDescending)) { grouped.reverse() } else { grouped };
         let date = |id: i64| dates.get(&id).copied().unwrap_or_default();
         let order = match query.order() {
             TrackOrder::Title => text(&a.title,&b.title), TrackOrder::TitleDescending => text(&b.title,&a.title),

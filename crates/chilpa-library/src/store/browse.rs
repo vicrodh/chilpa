@@ -620,13 +620,16 @@ impl Library {
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
         let (filter, args) = clause(f);
+        // The groups follow an order about what they are named: Artist
+        // from Z puts the artists from Z.
+        let turned = |on: bool| if on { " DESC" } else { "" };
         let sql = format!(
             "SELECT t.id, t.album_id, t.duration_ms, COALESCE(r.plays, 0) AS plays
              {FROM} {filter} ORDER BY {}{}",
             match f.grouped_by.as_str() {
-                "album" => "a.title COLLATE NOCASE, a.id, ".to_string(),
-                "artist" => "t.artist COLLATE NOCASE, ".to_string(),
-                "name" => format!("{}, ", letter_in_sql("t.title")),
+                "album" => format!("a.title COLLATE NOCASE{}, a.id, ", turned(order == TrackOrder::AlbumDescending)),
+                "artist" => format!("t.artist COLLATE NOCASE{}, ", turned(order == TrackOrder::ArtistDescending)),
+                "name" => format!("{}{}, ", letter_in_sql("t.title"), turned(order == TrackOrder::TitleDescending)),
                 _ => String::new(),
             },
             order.keys()
@@ -1143,5 +1146,9 @@ mod tracks_view_tests {
         assert_eq!(ids("artist", TrackOrder::TitleDescending), [3, 1, 2, 4]);
         // By letter: "#", then A with its accent, then Z.
         assert_eq!(ids("name", TrackOrder::Title), [4, 2, 3, 1]);
+        // An order about what the groups are named turns the groups too:
+        // Gamma, beta Band, then Alpha Band's two.
+        assert_eq!(ids("artist", TrackOrder::ArtistDescending)[..2], [4, 2]);
+        assert_eq!(ids("name", TrackOrder::TitleDescending)[0], 1, "Z first");
     }
 }
