@@ -49,6 +49,9 @@ msgstr ""
 msgid "\"{}\" would not start ({})"
 msgstr ""
 
+msgid "(Re)start the PipeWire audio services"
+msgstr ""
+
 msgid "(unreadable manifest)"
 msgstr ""
 
@@ -70,6 +73,12 @@ msgstr ""
 msgid "1 hr"
 msgstr ""
 
+msgid "1. Back up your current PipeWire/WirePlumber config"
+msgstr ""
+
+msgid "1. Find your DAC under 'Audio > Sinks' and note its number"
+msgstr ""
+
 msgid "1. Origin"
 msgstr ""
 
@@ -82,6 +91,9 @@ msgstr ""
 msgid "2. Destinations"
 msgstr ""
 
+msgid "2. Run with that number to read the node.name"
+msgstr ""
+
 msgid "24 bit in 3 bytes"
 msgstr ""
 
@@ -89,6 +101,9 @@ msgid "24 bit in 32"
 msgstr ""
 
 msgid "3 hr"
+msgstr ""
+
+msgid "3. Restart the audio services to load the config"
 msgstr ""
 
 msgid "3. Review"
@@ -268,6 +283,9 @@ msgstr ""
 msgid "All seasons"
 msgstr ""
 
+msgid "All set"
+msgstr ""
+
 msgid "All sources"
 msgstr ""
 
@@ -393,6 +411,9 @@ msgstr "Audio CD"
 msgid "Audio stack"
 msgstr ""
 
+msgid "Audio stack ready"
+msgstr ""
+
 msgid "Aug"
 msgstr ""
 
@@ -412,6 +433,9 @@ msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the 
 msgstr ""
 
 msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
+msgstr ""
+
+msgid "Auto-detect your DACs and set up bit-perfect playback, step by step."
 msgstr ""
 
 msgid "Auto-follow"
@@ -518,6 +542,9 @@ msgstr ""
 msgid "Calm"
 msgstr ""
 
+msgid "Can't see your DAC?"
+msgstr ""
+
 msgid "Cancel"
 msgstr ""
 
@@ -551,11 +578,23 @@ msgstr ""
 msgid "Chapters"
 msgstr ""
 
+msgid "Check"
+msgstr ""
+
+msgid "Check Audio Stack"
+msgstr ""
+
 msgid "Checking the account…"
+msgstr ""
+
+msgid "Checking your audio stack…"
 msgstr ""
 
 msgid "Chilpa Native Plugins"
 msgstr "Chilpa Native Plugins"
+
+msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
+msgstr ""
 
 msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
 msgstr "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
@@ -566,7 +605,16 @@ msgstr ""
 msgid "Chilpa cannot read this link"
 msgstr ""
 
+msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
+msgstr ""
+
+msgid "Chilpa never writes these files"
+msgstr ""
+
 msgid "Chilpa opens with the tabs it had when it closed."
+msgstr ""
+
+msgid "Chilpa requesting {} · {}-bit"
 msgstr ""
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
@@ -716,6 +764,12 @@ msgstr ""
 msgid "Composers"
 msgstr ""
 
+msgid "Config files you can create:"
+msgstr ""
+
+msgid "Configure"
+msgstr ""
+
 msgid "Connect"
 msgstr ""
 
@@ -790,6 +844,9 @@ msgstr ""
 msgid "Could not save the playlist. Please try again."
 msgstr ""
 
+msgid "Couldn't load the test tracks"
+msgstr ""
+
 msgid "Counting tracks…"
 msgstr ""
 
@@ -842,6 +899,12 @@ msgid "Cycle Repeat"
 msgstr ""
 
 msgid "DAC passthrough"
+msgstr ""
+
+msgid "DAC: {} · {} · {} ch"
+msgstr ""
+
+msgid "DACs"
 msgstr ""
 
 msgid "DIED"
@@ -945,6 +1008,9 @@ msgstr ""
 
 msgid "Destinations"
 msgstr "Destinations"
+
+msgid "Detecting your DACs…"
+msgstr ""
 
 msgid "Device"
 msgstr ""
@@ -1078,6 +1144,9 @@ msgstr ""
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
+msgid "Enable PipeWire in your NixOS configuration"
+msgstr ""
+
 msgid "English"
 msgstr ""
 
@@ -1177,8 +1246,14 @@ msgstr "Find matches"
 msgid "Find playlists"
 msgstr "Find playlists"
 
+msgid "Find your DAC's PipeWire node name and paste it here:"
+msgstr ""
+
 msgid "Finding matches…"
 msgstr "Finding matches…"
+
+msgid "Finish"
+msgstr ""
 
 msgid "Finish selecting"
 msgstr ""
@@ -1249,6 +1324,9 @@ msgstr ""
 msgid "Gapless"
 msgstr ""
 
+msgid "Generated test signal"
+msgstr ""
+
 msgid "Genre"
 msgstr ""
 
@@ -1291,6 +1369,9 @@ msgstr ""
 msgid "Group album versions"
 msgstr ""
 
+msgid "Guided DAC Setup"
+msgstr ""
+
 msgid "Hardware"
 msgstr "Hardware"
 
@@ -1312,6 +1393,12 @@ msgstr ""
 msgid "Hi-Res only"
 msgstr "Hi-Res only"
 
+msgid "HiFi Wizard"
+msgstr ""
+
+msgid "HiFi Wizard — DAC Setup"
+msgstr ""
+
 msgid "Hide"
 msgstr ""
 
@@ -1319,6 +1406,9 @@ msgid "Hide explicit"
 msgstr ""
 
 msgid "Hide from sidebar"
+msgstr ""
+
+msgid "Hide manual entry"
 msgstr ""
 
 msgid "Hide sidebar"
@@ -1360,6 +1450,12 @@ msgstr ""
 msgid "How much the wallpaper behind the window is blurred: 0% keeps it sharp, 100% is the strongest blur."
 msgstr ""
 
+msgid "I created a backup"
+msgstr ""
+
+msgid "I created the configuration files"
+msgstr ""
+
 msgid "I did not find a CD drive"
 msgstr ""
 
@@ -1367,6 +1463,12 @@ msgid "I did not understand that request."
 msgstr ""
 
 msgid "I do not know the list \"{}\""
+msgstr ""
+
+msgid "I restarted the audio services"
+msgstr ""
+
+msgid "I understand and accept these terms"
 msgstr ""
 
 msgid "I uninstalled it, but it handled its account on its own and did not answer when I asked it to delete it: your credential may still be kept wherever it put it"
@@ -1423,6 +1525,9 @@ msgstr ""
 msgid "Information"
 msgstr "Information"
 
+msgid "Init system (service commands)"
+msgstr ""
+
 msgid "Inspect"
 msgstr "Inspect"
 
@@ -1447,6 +1552,18 @@ msgstr ""
 msgid "Install plugin from ZIP"
 msgstr ""
 
+msgid "Install the ALSA bridge so playback can reach PipeWire"
+msgstr ""
+
+msgid "Install the PipeWire audio stack"
+msgstr ""
+
+msgid "Install the PipeWire tools (pw-dump)"
+msgstr ""
+
+msgid "Install the Pulse compatibility tools (optional fallback)"
+msgstr ""
+
 msgid "Installed"
 msgstr ""
 
@@ -1463,6 +1580,9 @@ msgid "Interface"
 msgstr ""
 
 msgid "Interface size"
+msgstr ""
+
+msgid "Invalid — should contain alsa_output or alsa_input"
 msgstr ""
 
 msgid "Italian"
@@ -1951,6 +2071,9 @@ msgstr "No review available"
 msgid "No setting says that"
 msgstr ""
 
+msgid "No sinks detected — reinstall the ALSA UCM profiles, then reboot"
+msgstr ""
+
 msgid "No stories for this artist"
 msgstr ""
 
@@ -2017,6 +2140,9 @@ msgstr ""
 msgid "Nothing played yet."
 msgstr ""
 
+msgid "Nothing playing"
+msgstr ""
+
 msgid "Nothing queued."
 msgstr ""
 
@@ -2079,6 +2205,9 @@ msgstr ""
 
 msgid "Open SACD…"
 msgstr "Open SACD…"
+
+msgid "Open Wizard"
+msgstr ""
 
 msgid "Open a collection in the source and choose Add collection to library. Imported music appears in Albums and Tracks with its source."
 msgstr ""
@@ -2152,6 +2281,9 @@ msgstr ""
 msgid "Other"
 msgstr "Other"
 
+msgid "Other / unknown"
+msgstr ""
+
 msgid "Output"
 msgstr ""
 
@@ -2182,7 +2314,13 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
+msgid "Per-app bit-perfect (PipeWire client)"
+msgstr ""
+
 msgid "Performers"
+msgstr ""
+
+msgid "Pin the DAC + rates (WirePlumber)"
 msgstr ""
 
 msgid "PipeWire has no output called \"{}\" any more"
@@ -2237,6 +2375,9 @@ msgid "Play on"
 msgstr ""
 
 msgid "Play random"
+msgstr ""
+
+msgid "Play test"
 msgstr ""
 
 msgid "Play this group"
@@ -2294,6 +2435,9 @@ msgid "Plays"
 msgstr ""
 
 msgid "Plays a day"
+msgstr ""
+
+msgid "Plays four tracks at different bit-depths and sample rates through the selected DAC. Watch your DAC's display switch rates — and confirm it below."
 msgstr ""
 
 msgid "Plex did not accept the session; sign in again"
@@ -2635,6 +2779,9 @@ msgstr ""
 msgid "Review"
 msgstr "Review"
 
+msgid "Review & Apply"
+msgstr ""
+
 msgid "Review the requested permissions before installing."
 msgstr "Review the requested permissions before installing."
 
@@ -2663,6 +2810,12 @@ msgid "SIMILAR ARTISTS"
 msgstr ""
 
 msgid "SPLIT"
+msgstr ""
+
+msgid "Sample-rate switching (PipeWire)"
+msgstr ""
+
+msgid "Sandboxed — host check unavailable"
 msgstr ""
 
 msgid "Sat"
@@ -2928,6 +3081,9 @@ msgstr ""
 msgid "Software"
 msgstr ""
 
+msgid "Some packages are missing"
+msgstr ""
+
 msgid "Songs"
 msgstr ""
 
@@ -2949,10 +3105,16 @@ msgstr ""
 msgid "Spectrum"
 msgstr ""
 
+msgid "Start"
+msgstr ""
+
 msgid "Starting plugins…"
 msgstr ""
 
 msgid "Starting {}…"
+msgstr ""
+
+msgid "Starting…"
 msgstr ""
 
 msgid "Static"
@@ -2962,6 +3124,9 @@ msgid "Stations"
 msgstr ""
 
 msgid "Status"
+msgstr ""
+
+msgid "Stop"
 msgstr ""
 
 msgid "Stop after this track"
@@ -3044,6 +3209,12 @@ msgstr ""
 msgid "Target loudness"
 msgstr ""
 
+msgid "Test"
+msgstr ""
+
+msgid "Test Playback"
+msgstr ""
+
 msgid "That answer does not belong to this window."
 msgstr ""
 
@@ -3057,6 +3228,9 @@ msgid "The account did not connect. You can close this tab."
 msgstr ""
 
 msgid "The account expired; connect it again."
+msgstr ""
+
+msgid "The built-in test plays four tracks spanning different bit-depths and sample rates (16/44.1, 24/44.1, 24/96, 24/192) so you can see your DAC switch. Each is the most played track of your library in that format, or a generated test signal when you have none. If you'd rather use your own queue, add one track of each kind first so every rate is exercised."
 msgstr ""
 
 msgid "The connection is not encrypted."
@@ -3230,6 +3404,9 @@ msgstr ""
 msgid "This week vs Last week"
 msgstr ""
 
+msgid "This wizard helps you configure your DAC for bit-perfect playback on Linux. Chilpa never changes your system automatically — it auto-detects your DACs, shows you the exact commands and config to copy, and lets you test playback right here."
+msgstr ""
+
 msgid "This year vs Last year"
 msgstr ""
 
@@ -3389,6 +3566,9 @@ msgstr ""
 msgid "Use Quick Connect"
 msgstr ""
 
+msgid "Use my current queue"
+msgstr ""
+
 msgid "Use the default"
 msgstr ""
 
@@ -3400,6 +3580,9 @@ msgstr ""
 
 msgid "Valid"
 msgstr "Valid"
+
+msgid "Valid node name"
+msgstr ""
 
 msgid "Version"
 msgstr ""
@@ -3431,6 +3614,9 @@ msgstr ""
 msgid "Volume {}%"
 msgstr ""
 
+msgid "Waiting for the DAC to start playing…"
+msgstr ""
+
 msgid "Wallpaper"
 msgstr ""
 
@@ -3455,7 +3641,13 @@ msgstr ""
 msgid "Week"
 msgstr ""
 
+msgid "Welcome"
+msgstr ""
+
 msgid "What Enter does with a result of the immersive view's search. Disabled turns the search off."
+msgstr ""
+
+msgid "What to test with"
 msgstr ""
 
 msgid "What you play most"
@@ -3468,6 +3660,9 @@ msgid "Where the samples go: straight to the device, or through a sound server."
 msgstr ""
 
 msgid "Wherever the system is sending sound"
+msgstr ""
+
+msgid "Which DACs do you want to configure?"
 msgstr ""
 
 msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
@@ -3521,10 +3716,25 @@ msgstr ""
 msgid "Yesterday"
 msgstr ""
 
+msgid "You are responsible for your own backups. This is a helper, not a system recovery tool."
+msgstr ""
+
+msgid "Your DAC is ready for bit-perfect playback. If you applied the config files, restart the audio services (or log out and back in) for them to take effect."
+msgstr ""
+
 msgid "Your account reaches more than one server. Which one?"
 msgstr ""
 
+msgid "Your audio stack is ready for bit-perfect playback."
+msgstr ""
+
+msgid "Your distribution"
+msgstr ""
+
 msgid "Your queue is empty"
+msgstr ""
+
+msgid "Your queue is empty — add some tracks first, or press Play test."
 msgstr ""
 
 msgid "Your shows"
@@ -3663,6 +3873,9 @@ msgid "damaged DSD file: {}"
 msgstr ""
 
 msgid "damaged file: {}"
+msgstr ""
+
+msgid "default"
 msgstr ""
 
 msgid "device: {}"
@@ -4679,6 +4892,11 @@ msgstr ""
 msgid "{} is not available. The record will open when it is back."
 msgstr ""
 
+msgid "{} item needs attention before bit-perfect playback will work."
+msgid_plural "{} items need attention before bit-perfect playback will work."
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} label"
 msgid_plural "{} labels"
 msgstr[0] ""
@@ -4800,6 +5018,9 @@ msgid "{} {} {}"
 msgstr ""
 
 msgid "{} · {}"
+msgstr ""
+
+msgid "{}-bit / {}"
 msgstr ""
 
 msgid "{}s"

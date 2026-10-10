@@ -107,7 +107,7 @@ impl Chilpa {
         if let Some(said) = self.library_maintenance(key) {
             return Some(said);
         }
-        self.lyrics_maintenance(key)
+        self.lyrics_maintenance(key).or_else(|| self.wizard_maintenance(key))
     }
 
     /// A setting's new value, for the feature it belongs to. Like
@@ -166,7 +166,7 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
-        if self.graphics_row(row) || self.normalization_row(row) {
+        if self.graphics_row(row) || self.normalization_row(row) || self.wizard_row(row) {
             return;
         }
         match row.key.as_str() {

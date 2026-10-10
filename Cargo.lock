@@ -659,6 +659,7 @@ dependencies = [
  "chilpa-alsa",
  "chilpa-audio",
  "chilpa-i18n",
+ "serde_json",
 ]
 
 [[package]]
@@ -715,6 +716,7 @@ dependencies = [
  "chilpa-qt-sources",
  "chilpa-qt-stats",
  "chilpa-qt-waveform",
+ "chilpa-qt-wizard",
  "cxx",
  "cxx-qt",
  "cxx-qt-build",
@@ -914,6 +916,18 @@ dependencies = [
 
 [[package]]
 name = "chilpa-qt-waveform"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+]
+
+[[package]]
+name = "chilpa-qt-wizard"
 version = "0.0.0"
 dependencies = [
  "chilpa-api",

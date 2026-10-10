@@ -104,6 +104,7 @@ pub const SECTIONS: &[Section] = &[
                     setting("audio.reserve", Chilpa::mark("Take the card from the sound server"), Chilpa::mark("Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."), Control::Toggle),
                     setting("audio.forceRate", Chilpa::mark("DAC passthrough"), Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."), Control::Toggle),
                     setting("audio.exclusive", Chilpa::mark("Exclusive mode"), Chilpa::mark("The output plays only Chilpa. Other programs wait until it lets go."), Control::Toggle),
+                    action(crate::outputs::HIFI_WIZARD, Chilpa::mark("HiFi Wizard"), Chilpa::mark("Auto-detect your DACs and set up bit-perfect playback, step by step."), Control::Button, Chilpa::mark("Open Wizard")),
                 ],
             },
             Group { title: Chilpa::mark("Diagnosis"), settings: &[action("audio.wizard", Chilpa::mark("Diagnose the output"), Chilpa::mark("Opens the device and says which formats reach it untouched."), Control::Button, Chilpa::mark("Diagnose"))] },

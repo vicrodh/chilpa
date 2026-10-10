@@ -13,3 +13,5 @@ chilpa-audio.workspace = true
 # opens is the one chilpa-alsa already knows how to drive. No second
 # implementation of writing to a device.
 chilpa-alsa.workspace = true
+# The HiFi Wizard reads the graph out of `pw-dump`.
+serde_json = "1"

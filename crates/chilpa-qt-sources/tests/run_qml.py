@@ -34,6 +34,7 @@ CRATES = {
     "chilpa-qt-about": "qrc:/qt/qml/app/chilpa/about/qml/",
     "chilpa-qt-stats": "qrc:/qt/qml/app/chilpa/stats/qml/",
     "chilpa-qt-link": "qrc:/qt/qml/app/chilpa/link/qml/",
+    "chilpa-qt-wizard": "qrc:/qt/qml/app/chilpa/wizard/qml/",
 }
 
 with tempfile.TemporaryDirectory(prefix="chilpa-shared-qml-") as directory:

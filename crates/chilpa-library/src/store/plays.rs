@@ -80,6 +80,33 @@ impl Library {
         rows.collect()
     }
 
+    /// The HiFi Wizard's test track for one format: the most played file at
+    /// exactly `bits` and `rate`, lossless, local and playable now; any one
+    /// of them when none has been played.
+    pub fn most_played_at(&self, bits: u8, rate: u32) -> rusqlite::Result<Option<StoredTrack>> {
+        use rusqlite::OptionalExtension;
+        self.db
+            .query_row(
+                "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
+                        t.track_number, t.duration_ms, 1
+                 FROM tracks t
+                 JOIN sources s ON s.id = t.source_id
+                 LEFT JOIN albums a ON a.id = t.album_id
+                 LEFT JOIN track_rollup r ON r.track_id = t.id
+                 WHERE t.present = 1 AND t.reachable = 1 AND s.provider = 'local'
+                   AND t.bit_depth = ?1 AND t.sample_rate_hz = ?2
+                   AND (lower(t.external_id) LIKE '%.flac' OR lower(t.external_id) LIKE '%.wav'
+                        OR lower(t.external_id) LIKE '%.aif' OR lower(t.external_id) LIKE '%.aiff'
+                        OR lower(t.external_id) LIKE '%.wv' OR lower(t.external_id) LIKE '%.ape'
+                        OR lower(t.external_id) LIKE '%.m4a')
+                 ORDER BY COALESCE(r.plays, 0) DESC, t.id
+                 LIMIT 1",
+                params![i64::from(bits), i64::from(rate)],
+                row_to_track,
+            )
+            .optional()
+    }
+
     /// The last things played, without repeating a track.
     pub fn recently_played(&self, limit: usize) -> rusqlite::Result<Vec<TrackStat>> {
         // By `last_touched`, which counts a skip: what came up last is what
@@ -186,6 +213,26 @@ mod tests {
         assert_eq!(recent.len(), 2, "one track per line, not one per play");
     }
 
+
+    #[test]
+    fn the_wizard_s_track_for_a_format_is_the_most_played_lossless_file_at_it() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        for (id, path, bits, rate) in [(1, "/a.flac", 24, 96_000), (2, "/b.flac", 24, 96_000), (3, "/c.mp3", 16, 44_100), (4, "/d.flac", 16, 48_000)] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, duration_ms, added_at, bit_depth, sample_rate_hz)
+                     VALUES (?1, ?2, ?3, 'T', 200000, 0, ?4, ?5)",
+                    params![id, source, path, bits, rate],
+                )
+                .unwrap();
+        }
+        assert_eq!(lib.most_played_at(24, 96_000).unwrap().map(|t| t.id), Some(1), "any one before anything is played");
+        lib.log_play(Some(2), Some(source), 1, 200_000, 200_000, false, None, None, true).unwrap();
+        assert_eq!(lib.most_played_at(24, 96_000).unwrap().map(|t| t.external_id), Some("/b.flac".into()));
+        assert_eq!(lib.most_played_at(16, 44_100).unwrap(), None, "a lossy file is no test of the format");
+        assert_eq!(lib.most_played_at(24, 192_000).unwrap(), None);
+    }
 
     #[test]
     fn a_half_played_track_does_not_count_as_a_play() {
