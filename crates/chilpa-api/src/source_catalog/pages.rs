@@ -225,6 +225,9 @@ impl crate::Chilpa {
         if card.kind == super::store::CardKind::Album { if let Some(document) = self.catalog.shelf(&format!("{} native:{}", card.plugin, card.identity)) { info["shelves"] = page_shelves(&self.catalog, &card.plugin, &card.identity, &mut info, &document.document["shelves"], true); } }
         info.to_string()
     }
+    pub fn native_card_art_colors(&self, id: i64) -> String {
+        self.catalog.card(id).and_then(|card| card.metadata["art_colors"].as_array().map(|colors| json!(colors).to_string())).unwrap_or_else(|| "[]".into())
+    }
     pub fn source_artist_key(&self, album: i64, path: &str) -> Option<String> {
         let (plugin, metadata) = if album < 0 {
             let card = self.catalog.card(album)?; (card.plugin, card.metadata)

@@ -1372,6 +1372,9 @@ msgstr ""
 msgid "Include source albums in Albums"
 msgstr "Include source albums in Albums"
 
+msgid "Include source recommendations in Home"
+msgstr ""
+
 msgid "Influences"
 msgstr ""
 
@@ -2436,6 +2439,9 @@ msgstr ""
 
 msgid "Refresh"
 msgstr "Refresh"
+
+msgid "Refresh mix"
+msgstr ""
 
 msgid "Refresh settings"
 msgstr "Refresh settings"

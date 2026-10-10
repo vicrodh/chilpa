@@ -54,7 +54,7 @@ Item {
         IconButton {
             objectName: "discoveryCustomize"
             size: Metrics.button32; round: true
-            glyph: SourceGlyphs.homeGear; iconFamily: SourceGlyphs.font
+            glyph: Icons.settings
             tip: I18n.tr("Customize", I18n.rev)
             onClicked: customization.open()
         }

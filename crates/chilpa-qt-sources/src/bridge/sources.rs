@@ -29,9 +29,13 @@ pub mod qobject {
         #[qinvokable]
         fn card(self: &Sources, id: i64, rev: i32) -> QString;
         #[qinvokable]
+        fn art_colors(self: &Sources, id: i64, rev: i32) -> QString;
+        #[qinvokable]
         fn album_libraries(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn track_libraries(self: &Sources, rev: i32) -> QString;
+        #[qinvokable]
+        fn home_libraries(self: &Sources, rev: i32) -> QString;
         #[qinvokable]
         fn page(self: &Sources, key: &QString, rev: i32) -> QString;
         /// What MusicBrainz and Last.fm know of an artist by name, for the
@@ -60,7 +64,9 @@ impl qobject::Sources {
     pub fn artist_key(&self, id: i64, path: &QString) -> QString { QString::from(crate::app::with(|api| api.source_artist_key(id, &path.to_string()).unwrap_or_default())) }
     pub fn reference_card(&self, plugin: &QString, reference: &QString) -> i64 { crate::app::with(|api| api.native_reference_card(&plugin.to_string(), &reference.to_string())) }
     pub fn card(&self, id: i64, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.native_card_info(id))) }
+    pub fn art_colors(&self, id: i64, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.native_card_art_colors(id))) }
     pub fn track_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.track_libraries())) }
+    pub fn home_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.home_libraries())) }
     pub fn album_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.album_libraries())) }
     pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
     pub fn network(&self, name: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_network(&name.to_string()))) }

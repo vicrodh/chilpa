@@ -19,6 +19,7 @@ Item {
     property string subtitle
     property string year
     property url art
+    property var artColors: []
     property int tint: 0
     // An artist: a round portrait and the text centered under it
     // (design/03 ArtistCard).
@@ -57,6 +58,12 @@ Item {
         source: card.art
         contain: card.sourceInfo.contain_art === true
         tint: card.tint
+    }
+    AnimatedCover {
+        anchors.fill: cover
+        visible: !cover.ready && card.artColors.length >= 3
+        colors: card.artColors
+        label: card.title
     }
 
     Rectangle {
