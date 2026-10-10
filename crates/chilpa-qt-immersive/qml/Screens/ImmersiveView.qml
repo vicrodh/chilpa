@@ -188,6 +188,14 @@ Item {
         onWakeAsked: view.wake()
         onExitAsked: Immersive.open = false
     }
+    LeaveButton {
+        objectName: "immersiveLeave"
+        x: Stage.edge
+        y: playerBar.y + (Stage.barTall - height) / 2 // derived: level with the bar's middle
+        opacity: playerBar.opacity
+        enabled: view.chromeVisible
+        onClicked: Immersive.open = false
+    }
     ImmersiveHeader {
         id: header
         objectName: "immersiveHeader"
