@@ -7,3 +7,13 @@ eject
 refresh-ccw-dot
 radio
 proportions
+settings-2
+link
+keyboard
+book-open
+bug
+info
+x
+power
+folder
+chart-column

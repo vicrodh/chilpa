@@ -10,7 +10,7 @@ pub use plugins::{NativeCaller, PluginInfo};
 pub use search::{Hit, KEYSTROKE_DEBOUNCE, SOURCE_COOLDOWN};
 
 mod ab_loop;
-mod about;
+pub mod about;
 mod accounts;
 mod casting;
 pub use chilpa_cast::{Device as CastDevice, Kind as CastKind};

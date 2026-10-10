@@ -14,4 +14,7 @@ QtObject {
     function pressedIn(scope, key, modifiers, text, typing) { scopeAsked = scope; return pressed(key, modifiers, text, typing) }
     function command(action, argument) { commands = commands.concat([action + ":" + argument]) }
     function likePlaying() { ++liked }
+    function shortcut(id) { return id === "nav.quit" ? "Ctrl + Q" : "" }
+    signal asked(string action)
+    function ask(action) { asked(action) }
 }
