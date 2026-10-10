@@ -11,9 +11,16 @@ use crate::sink::{AudioSink, SinkError};
 use std::fs::File;
 use std::io::{BufWriter, Write};
 use std::path::Path;
+use std::time::{Duration, Instant};
 
 /// The identifier this output is asked for by.
 pub const CAPTURE_ID: &str = "capture";
+
+/// Set in the environment, the capture takes frames no faster than they
+/// would sound. By itself it takes them as fast as they are decoded, which
+/// proves a track started and ended but never shows it halfway: a window
+/// measured under playback needs the track to last as long as it says.
+pub const REALTIME_ENV: &str = "CHILPA_CAPTURE_REALTIME";
 
 /// The capture's caps: it accepts any integer format, so it never forces
 /// a conversion.
@@ -40,12 +47,21 @@ pub struct CaptureSink {
     file: BufWriter<File>,
     stream: StreamFormat,
     frames: u64,
+    /// When the first frame went in, if the capture is pacing itself.
+    paced_from: Option<Instant>,
+}
+
+/// When the last of `frames` frames at `rate` would have sounded, counted
+/// from the moment the first one went in.
+fn sounds_at(start: Instant, frames: u64, rate: u32) -> Instant {
+    start + Duration::from_secs_f64(frames as f64 / f64::from(rate.max(1)))
 }
 
 impl CaptureSink {
     pub fn create(path: &Path, stream: StreamFormat) -> Result<Self, SinkError> {
         let file = File::create(path).map_err(|e| SinkError::Backend(e.to_string()))?;
-        Ok(Self { file: BufWriter::new(file), stream, frames: 0 })
+        let paced_from = std::env::var_os(REALTIME_ENV).map(|_| Instant::now());
+        Ok(Self { file: BufWriter::new(file), stream, frames: 0, paced_from })
     }
 
     pub fn frames(&self) -> u64 {
@@ -62,6 +78,12 @@ impl AudioSink for CaptureSink {
         self.file.write_all(frames).map_err(|e| SinkError::Backend(e.to_string()))?;
         let n = frames.len() / self.stream.frame_bytes();
         self.frames += n as u64;
+        if let Some(start) = self.paced_from {
+            let due = sounds_at(start, self.frames, self.stream.sample_rate_hz);
+            if let Some(wait) = due.checked_duration_since(Instant::now()) {
+                std::thread::sleep(wait);
+            }
+        }
         Ok(n)
     }
 
@@ -87,6 +109,14 @@ mod tests {
         assert_eq!(std::fs::read(&path).unwrap(), data);
         assert_eq!(sink.frames(), 10);
         let _ = std::fs::remove_file(path);
+    }
+
+    #[test]
+    fn paced_frames_are_due_when_they_would_have_sounded() {
+        let start = Instant::now();
+        assert_eq!(sounds_at(start, 22_050, 44_100), start + Duration::from_millis(500));
+        assert_eq!(sounds_at(start, 96_000 * 3, 96_000), start + Duration::from_secs(3));
+        assert_eq!(sounds_at(start, 0, 44_100), start, "nothing written, nothing to wait for");
     }
 
     #[test]
