@@ -5,6 +5,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/about/qml/Components"
+import "qrc:/qt/qml/app/chilpa/link/qml/Components" as LinkUi
 import app.chilpa.about
 import app.chilpa.controls
 
@@ -164,6 +165,7 @@ Item {
                 // after Settings; the hints are the keymap's, not literals.
                 entries: [
                     { act: "settings", text: I18n.tr("Settings", I18n.rev), glyph: Lucide.settings2, family: Lucide.font, hint: Hotkeys.shortcut("nav.settings") },
+                    { act: "ui.openLink", text: I18n.tr("Open music link", I18n.rev), glyph: Lucide.link, family: Lucide.font, hint: Hotkeys.shortcut("ui.openLink") },
                     { act: "folders", text: I18n.tr("Library folders", I18n.rev), glyph: Lucide.folder, family: Lucide.font },
                     { act: "stats", text: I18n.tr("Listening stats", I18n.rev), glyph: Lucide.chartColumn, family: Lucide.font },
                     { act: "ui.showShortcuts", text: I18n.tr("Keyboard shortcuts", I18n.rev), glyph: Lucide.keyboard, family: Lucide.font, hint: Hotkeys.shortcut("ui.showShortcuts") },
@@ -179,6 +181,7 @@ Item {
                 onChosen: (index) => bar.menuChosen(entries[index].act)
             }
             AboutModal { id: about }
+            LinkUi.LinkModal {}
         }
 
         Rectangle {

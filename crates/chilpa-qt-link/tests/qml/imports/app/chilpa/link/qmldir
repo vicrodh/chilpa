@@ -1,0 +1,2 @@
+module app.chilpa.link
+singleton Link 1.0 Link.qml

@@ -73,6 +73,7 @@ Item {
         case "ui.lyrics": SettingsModel.lyricsOpen = !SettingsModel.lyricsOpen; break
         case "ui.escape": if (SettingsModel.queueOpen) SettingsModel.queueOpen = false; break
         case "ui.showShortcuts": sheet.open(); break
+        case "ui.openLink": Hotkeys.linkAsked(); break
         case "ui.miniPlayer": miniAsked(); break
         case "ui.focusMode": immersiveAsked(); break
         case "focus.seekForward": Player.nudge(5); break

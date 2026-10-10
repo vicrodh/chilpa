@@ -706,6 +706,7 @@ dependencies = [
  "chilpa-qt-graphics",
  "chilpa-qt-immersive",
  "chilpa-qt-kit",
+ "chilpa-qt-link",
  "chilpa-qt-lyrics",
  "chilpa-qt-metadata",
  "chilpa-qt-mini",
@@ -827,6 +828,19 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+]
+
+[[package]]
+name = "chilpa-qt-link"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "serde_json",
 ]
 
 [[package]]

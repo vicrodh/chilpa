@@ -46,6 +46,22 @@ fn quality_then_tracks_then_remaster_and_remembered_choice() {
 }
 
 #[test]
+fn the_best_of_a_record_is_its_best_edition_that_plays() {
+    let lib = Library::in_memory().unwrap();
+    let source = lib.source_id("local", "default").unwrap();
+    for (id, title) in [(1, "Coda"), (2, "Coda [24 Bit Remaster]")] {
+        album(&lib, id, title, "Led Zeppelin");
+        track(&lib, id, id, source, &format!("/v{id}/1.flac"), if id == 2 { 24 } else { 16 }, if id == 2 { 96000 } else { 44100 });
+    }
+    assert!(lib.select_album_version(2, 1).unwrap());
+    let catalog = lib.version_catalog().unwrap();
+    assert_eq!(catalog.best_of("Coda (Deluxe Edition)", "Led Zeppelin"), Some(2), "the best edition, not the remembered one");
+    assert_eq!(catalog.best_of("Coda", "Queen"), None);
+    lib.connection().execute("UPDATE tracks SET reachable = 0 WHERE album_id = 2", []).unwrap();
+    assert_eq!(lib.version_catalog().unwrap().best_of("Coda", "Led Zeppelin"), Some(1), "one that cannot play goes last");
+}
+
+#[test]
 fn header_search_all_means_only_matching_albums_and_tracks() {
     let lib = Library::in_memory().unwrap();
     let source = lib.source_id("local", "default").unwrap();
