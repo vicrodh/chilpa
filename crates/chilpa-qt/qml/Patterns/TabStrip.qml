@@ -1,10 +1,10 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-
 // The tabs, in the room the bar leaves them and never over what is beside
 // them. When they do not fit they scroll: by dragging, by the wheel, or by
 // the two arrows that appear at their ends, which are not the arrows that
@@ -51,7 +51,6 @@ Row {
     }
 
     spacing: Metrics.gap4
-
     IconButton {
         id: before
         visible: strip.crowded
@@ -73,6 +72,7 @@ Row {
         interactive: strip.crowded
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.horizontal: ViewportScrollBar { gutter: Metrics.gap4 }
         onDragStarted: slide.stop()
 
         Row {

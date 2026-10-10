@@ -122,9 +122,9 @@ Popup {
 
         Flickable {
             width: parent.width
-            height: Metrics.chipHeight
+            height: Metrics.chipHeight + Metrics.gap8
             contentWidth: sources.width
-            clip: true
+            clip: true; ScrollBar.horizontal: ViewportScrollBar {}
             Row {
                 id: sources
                 spacing: Metrics.gap6

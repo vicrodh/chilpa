@@ -54,11 +54,12 @@ Flickable {
         }
         Item {
             width: parent.width
-            height: Math.max(tabs.height, discovery.visible ? discovery.height : 0)
+            height: Math.max(tabs.height + Metrics.gap8, discovery.visible ? discovery.height : 0)
             Flickable {
                 anchors.left: parent.left; anchors.right: discovery.left; anchors.rightMargin: Metrics.gap12
-                height: tabs.height; contentWidth: tabs.width; clip: true
+                height: tabs.height + Metrics.gap8; contentWidth: tabs.width; clip: true
                 flickableDirection: Flickable.HorizontalFlick
+                ScrollBar.horizontal: ViewportScrollBar {}
                 SourceTabs { id: tabs; model: page.about.tabs || [] }
             }
             SourceDiscoveryControls { id: discovery; anchors.right: parent.right; about: page.about; visible: !!page.about.tab }
