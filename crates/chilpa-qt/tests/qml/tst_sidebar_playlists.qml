@@ -41,4 +41,9 @@ TestCase {
         actions.move(1)
         compare(Playlists.created, [7, -3])
     }
+    function test_the_heads_actions_carry_their_glyphs_and_its_orders_none() {
+        actions.head(0, 0)
+        const entries = findChild(actions, "playlistsMenu").entries.filter(e => !e.separator && e.action !== "reverse")
+        compare(entries.filter(e => (e.action === "sort") === !!e.glyph).map(e => e.text), [])
+    }
 }

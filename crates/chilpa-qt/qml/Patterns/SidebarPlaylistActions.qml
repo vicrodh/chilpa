@@ -11,9 +11,9 @@ Item {
     signal createPlaylist()
     function head(left, top) {
         menu.entries = [
-            {text: I18n.tr("New playlist", I18n.rev), action: "create"},
-            {text: I18n.tr("New folder", I18n.rev), action: "folder"},
-            {text: I18n.tr("Import playlist", I18n.rev), action: "import"},
+            {text: I18n.tr("New playlist", I18n.rev), action: "create", glyph: Icons.plus},
+            {text: I18n.tr("New folder", I18n.rev), action: "folder", glyph: Icons.folderPlus},
+            {text: I18n.tr("Import playlist", I18n.rev), action: "import", glyph: Lucide.importGlyph, family: Lucide.font},
             {separator: true},
             {text: I18n.tr("Name", I18n.rev), action: "sort", value: "name"},
             {text: I18n.tr("Recent", I18n.rev), action: "sort", value: "recent"},
@@ -21,8 +21,8 @@ Item {
             {text: I18n.tr("Custom", I18n.rev), action: "sort", value: "custom"},
             {text: I18n.tr("Reverse order", I18n.rev), action: "reverse"},
             {separator: true},
-            {text: I18n.tr("Refresh", I18n.rev), action: "refresh"},
-            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage"}]
+            {text: I18n.tr("Refresh", I18n.rev), action: "refresh", glyph: Icons.refresh},
+            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage", glyph: Lucide.libraryBig, family: Lucide.font}]
         menu.x = left; menu.y = top; menu.open() }
     function row(value, left, top) {
         selected = value
@@ -61,7 +61,7 @@ Item {
         sidebar.setOrder("custom")
     }
     Menu {
-        id: menu
+        id: menu; objectName: "playlistsMenu"
         heightLimit: actions.sidebar.height
         onChosen: index => {
             const item = entries[index], row = actions.selected
