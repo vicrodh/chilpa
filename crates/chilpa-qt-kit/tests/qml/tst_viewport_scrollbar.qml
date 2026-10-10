@@ -1,7 +1,8 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import QtTest
-import "../../../chilpa-qt-kit/qml/Primitives"
+import "../../qml/Primitives"
+import "../../qml/Theme"
 
 TestCase {
     name: "ViewportScrollbar"
@@ -16,6 +17,21 @@ TestCase {
         contentHeight: 1000
         clip: true
         ScrollBar.vertical: ViewportScrollBar { id: bar; gutter: 14 }
+    }
+    Flickable {
+        id: longView
+        x: 430; y: 20; width: 50; height: 300
+        contentWidth: width; contentHeight: 19000 * 36
+        clip: true
+        ScrollBar.vertical: ViewportScrollBar { id: longBar }
+    }
+    function test_long_library_has_a_visible_grabbable_thumb() {
+        tryCompare(longBar, "parent", longView)
+        compare(longBar.width, Metrics.scrollbarWidth)
+        verify(longBar.x >= 0 && longBar.x + longBar.width <= longView.width)
+        verify(longBar.visible)
+        verify(longBar.minimumSize * longBar.height >= Metrics.scrollbarThumbMin)
+        verify(longBar.contentItem.opacity > 0)
     }
     function test_hover_reveals_thumb_in_margin_without_scrolling() {
         tryCompare(bar, "parent", view.parent)

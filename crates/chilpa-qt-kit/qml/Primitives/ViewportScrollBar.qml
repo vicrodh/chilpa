@@ -7,7 +7,23 @@ ScrollBar {
     id: bar
     property var viewport: null
     property var area: null
-    property real gutter: Metrics.contentX / 2 // derived: centered in the page margin
+    property real gutter: -Metrics.gap8 // inside the viewport, where clipping cannot hide it
+    implicitWidth: Metrics.scrollbarWidth
+    minimumSize: Math.min(1, Metrics.scrollbarThumbMin / Math.max(height, 1))
+    visible: policy !== ScrollBar.AlwaysOff && size < 1
+    background: Rectangle {
+        radius: Metrics.scrollbarWidth / Metrics.gap2
+        color: Theme.color.surfacePanel
+        border.color: Theme.color.strokeFrame
+        border.width: Metrics.scrollbarBorder
+        opacity: 0.8
+    }
+    contentItem: Rectangle {
+        implicitWidth: Metrics.scrollbarWidth
+        radius: Metrics.scrollbarWidth / Metrics.gap2
+        color: bar.pressed ? Theme.color.accentPressed : bar.hovered ? Theme.color.accentHover : Theme.color.accent
+        opacity: 0.9
+    }
     Component.onCompleted: {
         viewport = parent
         area = hoverComponent.createObject(viewport)

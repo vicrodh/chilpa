@@ -6,9 +6,12 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
+    id: host
+    ScrollMemory { viewport: host.item && host.item.contentY !== undefined ? host.item : host.item?.scrollView || null; key: [Navigation.active, Navigation.screen, Navigation.routeId, Navigation.routeKey].join("\u001f") }
     Connections { target: OpenMedia; function onOpened() { Navigation.go("openMedia", 0) } }
     // The ratings the screens show follow the library as it changes.
     Connections {
