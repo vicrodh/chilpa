@@ -27,9 +27,10 @@ TestCase {
         MouseArea { id: rowPointer; anchors.fill: parent; hoverEnabled: true }
     }
     function test_long_library_has_a_visible_grabbable_thumb() {
-        tryCompare(longBar, "parent", longView.parent)
+        tryCompare(longBar, "parent", longView)
         compare(longBar.width, Metrics.scrollbarWidth)
-        compare(longBar.x, longView.x + longView.width)
+        compare(longBar.x, longView.width - Metrics.gap8 - longBar.width / 2)
+        verify(longBar.x >= 0 && longBar.x + longBar.width <= longView.width)
         verify(!longBar.visible)
         verify(longBar.minimumSize * longBar.height >= Metrics.scrollbarThumbMin)
         mouseMove(longView, 20, 30)
@@ -43,10 +44,11 @@ TestCase {
         tryCompare(longBar, "visible", true)
     }
     function test_hover_reveals_thumb_in_margin_without_scrolling() {
-        tryCompare(bar, "parent", view.parent)
+        tryCompare(bar, "parent", view)
         wait(20)
         compare(bar.viewport, view)
-        compare(bar.x, view.x + view.width)
+        compare(bar.x, view.width - Metrics.gap8 - bar.width / 2)
+        verify(bar.x >= 0 && bar.x + bar.width <= view.width)
         verify(!bar.visible)
         mouseMove(view, 100, 100)
         tryCompare(bar, "active", true)

@@ -125,6 +125,7 @@ Column {
             ScrollView {
                 width: parent.width; height: parent.height - biographyTitle.height - attribution.height - closeButton.height - parent.spacing * 3 // derived: the three gaps between four body items
                 clip: true; contentWidth: availableWidth
+                ScrollBar.vertical: ViewportScrollBar {}
                 Text { width: parent.width; text: TextLinks.render(header.info.description, hoveredLink, color, Theme.color.accentHover); textFormat: Text.RichText; wrapMode: Text.WordWrap; color: Theme.color.textSecondary; font.pointSize: Type.body; onLinkActivated: link => { biography.close(); header.follow(link) } }
             }
             Text { id: attribution; width: parent.width; text: header.info.description_source || header.sourceInfo.name || ""; textFormat: Text.PlainText; font.pointSize: Type.meta; color: Theme.color.textTertiary }

@@ -3,7 +3,6 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-
 // The one track list (frontend ADR-0006): configured by properties, never
 // forked. Rows are recycled; hover and clicks are resolved here, once for
 // the whole list, so a row carries no mouse handling of its own.
@@ -123,6 +122,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
+            gutter: Metrics.scrollbarWidth / 2
             viewportHovered: pointer.containsMouse
         }
 
