@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.kit
 import "../../qml/Components"
 import "../../../chilpa-qt-kit/qml/Theme"
 
@@ -23,6 +24,7 @@ TestCase {
         view.forceLayout()
     }
     function init() {
+        Prefs.animatedIndicator = false
         tracks.kind = "listenlist"; tracks.albumId = 1; tracks.key = ""
         fill(80)
         view.contentY = view.originY
@@ -73,5 +75,20 @@ TestCase {
         view.contentY = view.originY
         list.restorePlace()
         compare(view.contentY, view.originY, "a search narrows to another list")
+    }
+
+    // The playing row out of sight lets the pulse go: a pooled row and a
+    // view's current one stay alive off the screen (QBZ's recycleActive).
+    function test_a_playing_row_out_of_sight_lets_the_pulse_go_data() {
+        return [{ tag: "a row in the pool", row: 5 }, { tag: "the first row", row: 0 }]
+    }
+    function test_a_playing_row_out_of_sight_lets_the_pulse_go(data) {
+        Prefs.animatedIndicator = true
+        tracks.setProperty(data.row, "playing", true)
+        tryCompare(Pulse, "held", 1, 1000, "on the screen it holds the pulse")
+        view.positionViewAtEnd()
+        tryCompare(Pulse, "held", 0, 1000, "off the screen it lets the pulse go")
+        view.positionViewAtBeginning()
+        tryCompare(Pulse, "held", 1, 1000, "back on the screen it moves again")
     }
 }

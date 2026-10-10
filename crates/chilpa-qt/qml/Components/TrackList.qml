@@ -116,6 +116,8 @@ Item {
         clip: !list.fitContent
         model: list.model
         reuseItems: true
+        // Off the screen a current row and a pooled one stay alive: the playing mark would move there (QBZ).
+        currentIndex: -1
         // A list that grows with its rows builds them all; one that scrolls
         // keeps a screen of them ready on each side.
         cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : Math.max(0, height)
@@ -139,6 +141,7 @@ Item {
             moveHovered: index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
+            ListView.onPooled: visible = false; ListView.onReused: visible = true
         }
 
         onContentYChanged: pointer.track()

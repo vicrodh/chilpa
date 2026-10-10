@@ -50,6 +50,8 @@ Item {
         clip: true
         model: queue
         reuseItems: true
+        // Off the screen a current row and a pooled one stay alive: the playing mark would move there (QBZ).
+        currentIndex: -1
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8;}
 
@@ -69,6 +71,7 @@ Item {
         delegate: QueueRow {
             width: ListView.view.width - Metrics.gap8
             x: Metrics.gap4
+            ListView.onPooled: visible = false; ListView.onReused: visible = true
             onPlay: queue.play(index)
             onMenu: (x, y) => {
                 const p = mapToItem(panel, x, y)
