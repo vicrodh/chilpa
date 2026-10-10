@@ -40,7 +40,7 @@ impl PluginCenter {
             for (action, input) in receiver {
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
-                if result.is_ok() && action == "submit" { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
+                if result.is_ok() && (action == "submit" || action == "integration") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {

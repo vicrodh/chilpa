@@ -30,7 +30,8 @@ Flickable {
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
     boundsBehavior: Flickable.StopAtBounds
-    ScrollBar.vertical: ViewportScrollBar {}
+    ScrollBar.vertical: ViewportScrollBar { viewportHovered: pageHover.hovered }
+    HoverHandler { id: pageHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
 
     AlbumDetailModel {
         id: detail

@@ -8,8 +8,10 @@ QtObject {
     function art(plugin, image, rev) { return "" }
     function artistKey(id, path) { return "" }
     function card(id, rev) { return "{}" }
+    function artColors(id, rev) { return JSON.stringify((state.artColors || {})[id] || []) }
     function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }
     function trackLibraries(rev) { return JSON.stringify(state.trackLibraries || []) }
+    function homeLibraries(rev) { return JSON.stringify(state.homeLibraries || []) }
     function refresh() {}
     // Pages by key, as a test sets them.
     property var pages: ({})

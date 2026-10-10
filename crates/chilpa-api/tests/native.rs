@@ -55,6 +55,12 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let _ = std::fs::remove_dir_all(&dir);
     std::env::set_var("XDG_DATA_HOME", dir.join("data"));
     std::env::set_var("XDG_CACHE_HOME", dir.join("cache"));
+    let library = chilpa_library::Library::open(&chilpa_library::Library::default_path()).unwrap();
+    let local_source = library.source_id("local", "default").unwrap();
+    library.connection().execute("INSERT INTO albums(id, title, album_artist) VALUES (1, 'Local record', 'Local artist')", []).unwrap();
+    library.connection().execute("INSERT INTO tracks(id, source_id, external_id, title, artist, album_id, duration_ms, added_at)
+        VALUES (1, ?1, '/music/local.flac', 'Local song', 'Local artist', 1, 1000, 1)", [local_source]).unwrap();
+    drop(library);
 
     let folder = chilpa_api::Chilpa::plugins_dir().join("com.test.native");
     std::fs::create_dir_all(&folder).unwrap();
@@ -219,13 +225,23 @@ fn a_slow_call_to_a_process_plugin_holds_nothing_else() {
     let reader = chilpa.reader().unwrap();
     assert!(reader.tracks("",&Default::default()).snapshot.ids.iter().all(|id| *id > 0));
     chilpa.sources_command("track_library","com.test.native","true");
+    assert_eq!(reader.local_tracks("", &Default::default()).snapshot.ids, vec![1],
+        "Tracks must be able to show local rows before the source merge finishes");
     let deadline = Instant::now() + Duration::from_secs(10);
     loop {
         let found = reader.tracks("",&Default::default());
-        if found.snapshot.ids.contains(&track.id) { break; }
+        if found.snapshot.ids.contains(&track.id) {
+            assert!(found.snapshot.ids.contains(&1), "source rows must not replace local tracks");
+            break;
+        }
         assert!(Instant::now() < deadline,"saved tracks did not reach the shared snapshot");
         std::thread::sleep(Duration::from_millis(20));
     }
+    let mut stages = Vec::new();
+    reader.tracks_progressive("", &Default::default(), |found| stages.push(found.snapshot.ids));
+    assert_eq!(stages.len(), 2);
+    assert_eq!(stages[0], vec![1]);
+    assert!(stages[1].contains(&1) && stages[1].contains(&track.id));
     assert_eq!(reader.paths(&[track.id]),vec![track.path.clone()]);
     let filter = chilpa_api::Filter { excluded_sources:vec!["plugin:com.test.native".into()], ..Default::default() };
     assert!(!reader.tracks("",&filter).snapshot.ids.contains(&track.id));

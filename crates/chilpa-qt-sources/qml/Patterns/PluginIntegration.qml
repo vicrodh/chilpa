@@ -54,6 +54,15 @@ Column {
         }
         Text { text: I18n.tr("Show saved tracks in Tracks", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
     }
+    Row {
+        spacing: Metrics.gap12
+        visible: integration.plugin.native === true
+        Toggle {
+            checked: (integration.plugin.integration || {}).integrate_home === true
+            onToggled: on => integration.command("integration", {id: integration.plugin.id, field: "integrate_home", enabled: on})
+        }
+        Text { text: I18n.tr("Include source recommendations in Home", I18n.rev); anchors.verticalCenter: parent.verticalCenter; font.pointSize: Type.body; color: Theme.color.textPrimary }
+    }
     Text { visible: integration.plugin.native !== true; text: I18n.tr("Library integration", I18n.rev); font.pointSize: Type.body; color: Theme.color.textPrimary }
     Text {
         width: parent.width

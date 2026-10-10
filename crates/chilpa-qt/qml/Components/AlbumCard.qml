@@ -19,6 +19,7 @@ Item {
     property string subtitle
     property string year
     property url art
+    property var artColors: []
     property int tint: 0
     // An artist: a round portrait and the text centered under it
     // (design/03 ArtistCard).
@@ -57,6 +58,13 @@ Item {
         source: card.art
         contain: card.sourceInfo.contain_art === true
         tint: card.tint
+    }
+    AnimatedCover {
+        objectName: "albumAnimatedCover"
+        anchors.fill: cover
+        visible: !cover.ready && card.artColors.length >= 3
+        colors: card.artColors
+        label: card.title
     }
 
     Rectangle {
@@ -100,9 +108,23 @@ Item {
         }
     }
 
-    SourceIcon {
+    Item {
+        width: Metrics.iconSm + Metrics.gap4; height: width
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
-        visible: !!card.sourceInfo.icon; sourceInfo: card.sourceInfo
+        visible: !!card.sourceInfo.icon && !(hover.hovered && !card.round && card.available)
+        Rectangle {
+            anchors.fill: sourceBadge
+            anchors.margins: -Metrics.gap2
+            radius: Metrics.radiusCard
+            color: Theme.color.shadowElevatedKey
+            opacity: 0.7
+        }
+        SourceIcon {
+            id: sourceBadge
+            anchors.fill: parent
+            sourceInfo: card.sourceInfo
+            opacity: 0.84
+        }
     }
     Column {
         anchors.top: cover.bottom

@@ -1183,6 +1183,7 @@ impl Chilpa {
         self.advance_search();
         self.advance_sources();
         self.advance_catalog();
+        self.catalog.refresh_personal_libraries();
         self.advance_lyrics();
         self.resolve_next_ahead();
         self.keep_place(false);

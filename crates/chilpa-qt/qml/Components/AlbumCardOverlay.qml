@@ -18,6 +18,7 @@ Rectangle {
     property bool canExpand: true
     readonly property bool favorite: Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
+    readonly property string genre: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}").genre || ""
 
     signal select()
     signal quick()
@@ -61,6 +62,8 @@ Rectangle {
             color: Theme.color.textOnAccent
         }
     }
+
+    Text { anchors.left: parent.left; anchors.top: parent.top; anchors.leftMargin: Metrics.overlayPad; anchors.topMargin: Metrics.overlayPad + Metrics.overlayCheck + Metrics.gap4; width: parent.width - Metrics.overlayPad - Metrics.overlayPad; visible: overlay.genre !== ""; text: overlay.genre; textFormat: Text.PlainText; wrapMode: Text.WordWrap; maximumLineCount: 2; elide: Text.ElideRight; font.pointSize: Type.meta; color: Theme.color.textOnAccent }
 
     IconButton {
         id: favoriteButton

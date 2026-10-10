@@ -33,6 +33,7 @@ function rows(catalog, order, ascending, query, expanded) {
         const first = children[0]
         const name = provider ? provider.name : first ? first.provider : source
         const icon = provider ? provider.icon : first ? first.source_icon : ""
+        const separate = children.length === 0 || children.some(p => p.separate)
         const seen = new Set()
         function branch(parent,depth) {
             const subfolders = native.filter(f => f.source === source && (f.parent || "") === parent)
@@ -46,7 +47,10 @@ function rows(catalog, order, ascending, query, expanded) {
             }
             for (const p of children) if ((p.native_folder || "") === parent && (parent || p.separate)) result.push(playlist(p,depth))
         }
-        folder({name:name,source:source,sourceName:name,tracks:children.length,folderId:folderId--,sourceIcon:icon},"source:"+source,() => branch("",1))
+        if (separate)
+            folder({name:name,source:source,sourceName:name,tracks:children.length,folderId:folderId--,sourceIcon:icon},"source:"+source,() => branch("",1))
+        else
+            branch("",0)
     }
     return result
 }

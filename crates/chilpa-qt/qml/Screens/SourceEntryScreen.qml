@@ -1,11 +1,11 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-
 // The page of one entry of a source: a station, an episode. What it is,
 // what is on it right now, what its plugin knows of it, and play, queue
 // and save. The route's key is the plugin's id, a space and the entry's id.
@@ -25,7 +25,7 @@ Flickable {
     }
 
     contentHeight: body.height + Metrics.contentTop * 2 // derived: padding above and below
-    clip: true
+    clip: true; ScrollBar.vertical: ViewportScrollBar {}
 
     Component.onCompleted: open()
     onKeyChanged: Qt.callLater(page.open)

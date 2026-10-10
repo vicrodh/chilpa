@@ -2,8 +2,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-
 // Every grid of records in the window (frontend ADR-0002 4): a list of
 // rows, each laying out a fixed number of cards, so recycling a row only
 // rebinds its cards. `columns` follows the width with the design's formula;
@@ -74,7 +74,12 @@ Item {
         topMargin: Metrics.cardRing
         bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar {
+            policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
+            gutter: Metrics.scrollbarWidth / 2
+            viewportHovered: viewHover.hovered
+        }
+        HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
 
         delegate: Item {
             id: row
@@ -149,6 +154,7 @@ Item {
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     year: visible ? grid.model.year(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
+                    artColors: visible && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
                     qualityInfo: visible && !grid.round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
                     round: grid.round

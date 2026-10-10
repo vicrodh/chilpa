@@ -441,9 +441,6 @@ msgstr "Detecta tus DACs y configura la reproducción bit-perfect, paso a paso."
 msgid "Auto-follow"
 msgstr "Seguir la letra"
 
-msgid "AutoMix"
-msgstr "AutoMix"
-
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
 
@@ -1512,6 +1509,9 @@ msgstr "En progreso"
 
 msgid "Include source albums in Albums"
 msgstr "Integrar los álbumes de esta fuente en Álbumes"
+
+msgid "Include source recommendations in Home"
+msgstr "Incluir recomendaciones de esta fuente en Inicio"
 
 msgid "Influences"
 msgstr "Influencias"
@@ -2650,6 +2650,9 @@ msgstr "Discos"
 msgid "Refresh"
 msgstr "Actualizar"
 
+msgid "Refresh mix"
+msgstr "Actualizar mezcla"
+
 msgid "Refresh settings"
 msgstr "Actualizar ajustes"
 
@@ -3280,9 +3283,6 @@ msgstr "No se pudo abrir el ZIP del plugin."
 
 msgid "The plugin ZIP could not be read."
 msgstr "No se pudo leer el ZIP del plugin."
-
-msgid "The queue in the order its tempo flows best. Off, back to its own."
-msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
 
 msgid "The record is not open in the editor."
 msgstr "El disco no está abierto en el editor."

@@ -13,14 +13,17 @@ pub struct QueryWorker {
 }
 
 impl QueryWorker {
-    fn start(path: PathBuf) -> std::io::Result<Self> {
+    fn start(path: PathBuf, catalog: std::sync::Arc<crate::source_catalog::Catalog>) -> std::io::Result<Self> {
         let (jobs, inbox) = channel::<Job>();
         std::thread::Builder::new().name("chilpa-queries".into()).spawn(move || {
             let mut reader = None;
             for job in inbox {
                 if reader.is_none() {
                     match Reader::open(&path) {
-                        Ok(opened) => reader = Some(opened),
+                        Ok(mut opened) => {
+                            opened.catalog = Some(catalog.clone());
+                            reader = Some(opened);
+                        }
                         Err(e) => {
                             eprintln!("chilpa-queries: {e}; will retry on the next job");
                             continue;
@@ -51,7 +54,7 @@ impl Chilpa {
             eprintln!("chilpa-queries: {}; will retry on the next job", self.now.error);
             return None;
         }
-        QueryWorker::start(chilpa_library::Library::default_path())
+        QueryWorker::start(chilpa_library::Library::default_path(), self.catalog.clone())
             .map_err(|e| eprintln!("chilpa-queries: could not start query thread: {e}; will retry on the next job")).ok()
     }
 }
