@@ -38,6 +38,7 @@ Rectangle {
         VolumeBar { width: Stage.volumeBarWide; value: 0.7 }
         ViewTrigger {}
         WindowCapsule {}
+        LeaveButton {}
         ImmersivePlayerBar { viewportWide: gallery.sampleWide }
         Item { width: gallery.sampleWide; height: Stage.headerTall; ImmersiveHeader { anchors.fill: parent } }
         TrackMeta { width: gallery.sampleWide / 2 } // derived: half the sample
