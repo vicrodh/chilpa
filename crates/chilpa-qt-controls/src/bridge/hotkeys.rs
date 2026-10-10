@@ -40,6 +40,9 @@ pub mod qobject {
         /// The search box is asked to take the keyboard.
         #[qsignal]
         fn search_asked(self: Pin<&mut Hotkeys>);
+        /// The music link box is asked for.
+        #[qsignal]
+        fn link_asked(self: Pin<&mut Hotkeys>);
     }
 }
 use chilpa_api::{Pressed, Scope};

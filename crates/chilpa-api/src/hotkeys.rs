@@ -138,6 +138,7 @@ const ACTIONS: &[Action] = &[
     action("ui.lyrics", i18n::mark("Lyrics"), INTERFACE, "Shift+L", ""),
     reaching(Scope::Both, action("ui.escape", i18n::mark("Close / Dismiss"), INTERFACE, "Escape", "")),
     action("ui.showShortcuts", i18n::mark("Show Shortcuts"), INTERFACE, "?", ""),
+    action("ui.openLink", i18n::mark("Open Music Link"), INTERFACE, "Ctrl+l", ""),
     reaching(Scope::Both, action("ui.miniPlayer", i18n::mark("Toggle Mini Player"), INTERFACE, "Shift+M", "")),
     // The mini player's own window: its five surfaces on the digits.
     reaching(Scope::Mini, action("mini.micro", i18n::mark("Micro view"), MINI, "1", "")),
@@ -155,7 +156,7 @@ const ACTIONS: &[Action] = &[
 
 /// The actions a key still reaches while a text field has the keyboard,
 /// and only with Ctrl held.
-const THROUGH_TEXT: [&str; 2] = ["nav.search", "nav.settings"];
+const THROUGH_TEXT: [&str; 3] = ["nav.search", "nav.settings", "ui.openLink"];
 
 fn known(id: &str) -> Option<&'static Action> {
     ACTIONS.iter().find(|a| a.id == id)

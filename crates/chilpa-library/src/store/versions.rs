@@ -112,6 +112,14 @@ impl VersionCatalog {
         self.pick(&version.group, ids).unwrap_or(id)
     }
 
+    /// The best edition the library has of a record named `title` by
+    /// `artist`: the first of its group, which is the best one that can
+    /// play. A remembered choice does not count here: a link asks for the
+    /// record, and the record sounds best in this edition.
+    pub fn best_of(&self, title: &str, artist: &str) -> Option<i64> {
+        self.groups.get(&album_group(title, artist))?.first().copied()
+    }
+
     /// The remembered edition while it can play, or while nothing else can;
     /// otherwise the best one that can. `ids` come in the group's order,
     /// which puts what can play first.

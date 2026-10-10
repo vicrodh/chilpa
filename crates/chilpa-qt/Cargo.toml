@@ -15,6 +15,7 @@ chilpa-qt-mini.workspace = true
 chilpa-qt-immersive.workspace = true
 chilpa-qt-waveform.workspace = true
 chilpa-qt-graphics.workspace = true
+chilpa-qt-link.workspace = true
 chilpa-qt-artwork.workspace = true
 chilpa-qt-about.workspace = true
 chilpa-qt-stats.workspace = true

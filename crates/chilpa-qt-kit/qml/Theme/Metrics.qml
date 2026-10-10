@@ -316,6 +316,7 @@ QtObject {
     readonly property int sourcesPopoverWidth: 640
     readonly property int sourceFilterRow: 44
     readonly property int playlistModalWidth: 420
+    readonly property int linkModal: 520
     readonly property int playlistModalHeight: 520
     readonly property int playlistPickerRow: 58
     readonly property int playlistManagerSearch: 250

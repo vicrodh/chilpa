@@ -545,6 +545,9 @@ msgstr "Chilpa puede ejecutar algunos plugins de otras plataformas. Agrega un ca
 msgid "Chilpa can see this machine's outputs but cannot play through them yet"
 msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reproducir por ellas"
 
+msgid "Chilpa cannot read this link"
+msgstr "Chilpa no puede leer este enlace"
+
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
@@ -1242,6 +1245,9 @@ msgstr "Géneros"
 
 msgid "German"
 msgstr "Alemán"
+
+msgid "Go"
+msgstr "Ir"
 
 msgid "Go Back"
 msgstr "Atrás"
@@ -1960,6 +1966,9 @@ msgstr "Sin escuchar primero"
 msgid "Not in the library: this is the folder as it is on disk."
 msgstr "No está en la biblioteca: es la carpeta tal como está en el disco."
 
+msgid "Not in your library or in your sources"
+msgstr "No está en tu biblioteca ni en tus fuentes"
+
 msgid "Not inspected"
 msgstr "Sin inspeccionar"
 
@@ -2053,6 +2062,9 @@ msgstr "Abrir Last.fm"
 msgid "Open ListenList"
 msgstr "Abrir ListenList"
 
+msgid "Open Music Link"
+msgstr "Abrir enlace de música"
+
 msgid "Open SACD…"
 msgstr "Abrir SACD…"
 
@@ -2092,8 +2104,14 @@ msgstr "Abrir medios"
 msgid "Open media without adding it to your library."
 msgstr "Abre medios sin añadirlos a tu biblioteca."
 
+msgid "Open music link"
+msgstr "Abrir enlace de música"
+
 msgid "Open playlist"
 msgstr "Abrir playlist"
+
+msgid "Open playlist importer"
+msgstr "Abrir el importador de playlists"
 
 msgid "Open plex.tv/link"
 msgstr "Abrir plex.tv/link"
@@ -2133,6 +2151,9 @@ msgstr "no se pueden escribir muestras PCM en un flujo DSD nativo"
 
 msgid "Password"
 msgstr "Contraseña"
+
+msgid "Paste a link from one of your sources or from another service"
+msgstr "Pega un enlace de una de tus fuentes o de otro servicio"
 
 msgid "Paste the token supplied by the source. Chilpa keeps it encrypted and the plugin never sees it."
 msgstr "Pega el token proporcionado por la fuente. Chilpa lo guarda cifrado y el plugin nunca lo ve."
@@ -2571,6 +2592,9 @@ msgstr "Restablecer"
 
 msgid "Reset All to Defaults"
 msgstr "Restablecer todos"
+
+msgid "Resolving…"
+msgstr "Buscando…"
 
 msgid "Restart plugin"
 msgstr ""
@@ -3134,6 +3158,9 @@ msgstr "Esta carpeta no tiene pistas."
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
 
+msgid "This looks like a playlist."
+msgstr "Parece una playlist."
+
 msgid "This month vs Last month"
 msgstr "Este mes vs el mes pasado"
 
@@ -3166,6 +3193,9 @@ msgstr "Esta fuente no puede aceptar estas pistas en este momento."
 
 msgid "This source owns the order."
 msgstr "Este source controla el orden."
+
+msgid "This track has no album to open"
+msgstr "Esta pista no tiene un álbum que abrir"
 
 msgid "This transcript format is not supported."
 msgstr "Este formato de transcripción no es compatible."

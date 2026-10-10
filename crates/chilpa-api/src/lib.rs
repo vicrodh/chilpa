@@ -94,6 +94,7 @@ pub mod seek_waveform;
 pub mod visualizer;
 pub mod wallpaper;
 pub mod open_media;
+mod open_link;
 pub mod window_place;
 mod found;
 mod source_search;
@@ -636,6 +637,8 @@ pub struct Chilpa {
     plugin_startup: plugin_startup::Startup,
     /// Process plugins, reached without the sandbox lock.
     natives: std::sync::Arc<natives::Natives>,
+    /// The music link being opened, resolved on a thread of its own.
+    open_link: open_link::Shared,
     /// What actually goes out the device, for the visualizers.
     tap: chilpa_core::tap::Tap,
     visualizer: visualizer::Visualizer,
@@ -747,6 +750,7 @@ impl Chilpa {
             plugin_center: None,
             plugin_startup: plugin_startup::Startup::default(),
             natives: Default::default(),
+            open_link: Default::default(),
             visualizer: visualizer::Visualizer::new(tap.clone()),
             seek_waveform: seek_waveform::SeekWaveform::default(),
             tap,
