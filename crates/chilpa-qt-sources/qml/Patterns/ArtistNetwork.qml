@@ -135,9 +135,11 @@ Rectangle {
         Rectangle { anchors.bottom: parent.bottom; width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline }
     }
     Flickable {
+        id: networkScroll
         anchors.top: tabs.bottom; anchors.bottom: parent.bottom; width: parent.width
         contentWidth: width; contentHeight: body.height + Metrics.gap24; clip: true
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8; viewportHovered: networkHover.hovered }
+        HoverHandler { id: networkHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
         Column {
             id: body
             x: Metrics.networkPad; width: parent.width - Metrics.networkPad * 2 // derived: padding on both sides

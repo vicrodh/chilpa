@@ -68,7 +68,11 @@ Item {
         anchors.left: parent.left; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom
         contentWidth: width; contentHeight: column.height + Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds; clip: true
-        ScrollBar.vertical: ViewportScrollBar { policy: page.networkOpen ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar {
+            gutter: -(panel.width + Metrics.gap16)
+            viewportHovered: pageHover.hovered
+        }
+        HoverHandler { id: pageHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
         Column {
             id: column
             x: Metrics.contentX; y: Metrics.contentTop

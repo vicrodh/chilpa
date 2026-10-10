@@ -111,7 +111,7 @@ Item {
     Item {
         width: Metrics.iconSm + Metrics.gap4; height: width
         anchors.right: cover.right; anchors.bottom: cover.bottom; anchors.margins: Metrics.gap4
-        visible: !!card.sourceInfo.icon
+        visible: !!card.sourceInfo.icon && !(hover.hovered && !card.round && card.available)
         Rectangle {
             anchors.fill: sourceBadge
             anchors.margins: -Metrics.gap2
