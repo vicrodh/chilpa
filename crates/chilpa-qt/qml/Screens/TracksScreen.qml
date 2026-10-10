@@ -30,7 +30,7 @@ Item {
         id: tracks
         kind: "tracks"
         key: [page.order === "default" ? "" : page.order, page.group, page.typed].join("\u001f")
-        filterRev: Library.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev
+        filterRev: Library.rev + Library.contentRev + Library.remoteRev
         playingPath: Player.path
     }
 
