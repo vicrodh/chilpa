@@ -62,8 +62,8 @@ Popup {
         }
         OptionRow {
             width: parent.width
-            title: I18n.tr("Normalization", I18n.rev)
-            detail: I18n.tr("Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed.", I18n.rev)
+            title: I18n.tr("Volume normalization", I18n.rev)
+            detail: I18n.tr("Level loudness across tracks. This breaks strict bit perfect.", I18n.rev)
             checked: Player.normalize
             available: !Cast.active && Player.normalizeApplies
             onToggled: (on) => Player.chooseNormalize(on)

@@ -5,6 +5,8 @@
 
 use super::*;
 
+pub(crate) mod normalization;
+
 /// Where the playback switches are kept.
 const GAPLESS: &str = "playback.gapless";
 const NORMALIZE: &str = "playback.normalize";
@@ -235,6 +237,7 @@ impl Chilpa {
         self.mix = false;
         let (repeat, total) = (self.repeat, self.queue.len());
         let (gapless, normalize, exclusive) = (self.gapless(), self.normalize(), self.exclusive());
+        let (target, prevent_clipping) = (self.normalize_target(), self.prevent_clipping());
         let dsd_mode = self.dsd_mode();
         let volume = self.software_gain();
         let (tap, feed) = (self.tap.clone(), self.seek_waveform.feed());
@@ -246,6 +249,7 @@ impl Chilpa {
         player.set_repeat(repeat);
         player.set_gapless(gapless);
         player.set_normalize(normalize);
+        player.set_normalization(target, prevent_clipping);
         player.set_exclusive(exclusive);
         player.set_dsd_mode(dsd_mode);
         player.set_volume(volume);
@@ -741,7 +745,7 @@ impl Chilpa {
         }
     }
 
-    /// Whether tracks are brought to one loudness by their ReplayGain.
+    /// Whether tracks are brought to one loudness (`normalization.rs`).
     pub fn normalize(&self) -> bool {
         self.preference(NORMALIZE).as_deref() == Some("true")
     }
@@ -793,6 +797,7 @@ impl Chilpa {
         if let Some(p) = &self.player {
             p.set_gapless(self.gapless());
             p.set_normalize(self.normalize());
+            p.set_normalization(self.normalize_target(), self.prevent_clipping());
             p.set_dsd_mode(dsd_mode);
         }
         self.apply_volume();

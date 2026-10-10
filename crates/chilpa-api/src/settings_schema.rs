@@ -118,7 +118,9 @@ pub const SECTIONS: &[Section] = &[
                 title: Chilpa::mark("Between tracks"),
                 settings: &[
                     setting("playback.gapless", Chilpa::mark("Gapless"), Chilpa::mark("One track straight into the next. Off, the device plays out and opens again."), Control::Toggle),
-                    setting("playback.normalize", Chilpa::mark("Normalization"), Chilpa::mark("Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."), Control::Toggle),
+                    setting("playback.normalize", Chilpa::mark("Volume normalization"), Chilpa::mark("Level loudness across tracks. This breaks strict bit perfect."), Control::Toggle),
+                    setting(crate::queue::normalization::TARGET, Chilpa::mark("Target loudness"), Chilpa::mark("The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."), Control::Select),
+                    setting(crate::queue::normalization::PREVENT_CLIPPING, Chilpa::mark("Prevent clipping"), Chilpa::mark("Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."), Control::Toggle),
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },

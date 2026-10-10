@@ -52,6 +52,21 @@ msgstr "\"{}\" no quiso arrancar ({})"
 msgid "(unreadable manifest)"
 msgstr "(manifest ilegible)"
 
+msgid "-11 LUFS · Loud"
+msgstr "-11 LUFS · Fuerte"
+
+msgid "-14 LUFS · Streaming (default)"
+msgstr "-14 LUFS · Streaming (predeterminado)"
+
+msgid "-16 LUFS"
+msgstr "-16 LUFS"
+
+msgid "-18 LUFS · ReplayGain"
+msgstr "-18 LUFS · ReplayGain"
+
+msgid "-23 LUFS · Broadcast (EBU R128)"
+msgstr "-23 LUFS · Transmisión (EBU R128)"
+
 msgid "1 hr"
 msgstr "1 h"
 
@@ -511,6 +526,9 @@ msgstr "Cancelar temporizador"
 
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
+
+msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
+msgstr "Limita la subida para que el pico más alto quede por debajo de la escala completa. Apagado, las pistas bajas llegan al objetivo aunque sus picos saturen."
 
 msgid "Casting needs an original file with a known size and byte ranges."
 msgstr "Para transmitir se necesita un archivo original con tamaño conocido y acceso por rangos."
@@ -1072,12 +1090,6 @@ msgstr "Notas del episodio"
 msgid "Errors"
 msgstr "Errores"
 
-msgid "Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."
-msgstr "Cada pista al mismo volumen, según su ReplayGain. Una pista cuya ganancia cambie se muestra como procesada."
-
-msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
-msgstr "Cada pista al mismo volumen, según su ReplayGain. Las pistas modificadas se muestran como procesadas."
-
 msgid "Everyone who plays on a track"
 msgstr "Todos los que tocan en alguna pista"
 
@@ -1525,6 +1537,9 @@ msgstr "Duración"
 msgid "Letters"
 msgstr "Letras"
 
+msgid "Level loudness across tracks. This breaks strict bit perfect."
+msgstr "Iguala el volumen percibido entre pistas. Esto rompe el bit perfect estricto."
+
 msgid "Library"
 msgstr "Biblioteca"
 
@@ -1948,9 +1963,6 @@ msgstr "Aún no hay canciones en las bibliotecas seleccionadas."
 msgid "No tracks match your search."
 msgstr "Ninguna pista coincide con tu búsqueda."
 
-msgid "Normalization"
-msgstr "Normalización"
-
 msgid "Not answering"
 msgstr "No responde"
 
@@ -2319,6 +2331,9 @@ msgstr "GPU preferida"
 
 msgid "Press keys…"
 msgstr "Presiona las teclas…"
+
+msgid "Prevent clipping"
+msgstr "Evitar saturación"
 
 msgid "Previous"
 msgstr "Anterior"
@@ -3026,6 +3041,9 @@ msgstr "Tags: {}"
 msgid "Take the card from the sound server"
 msgstr "Tomar la tarjeta del servidor de sonido"
 
+msgid "Target loudness"
+msgstr "Volumen objetivo"
+
 msgid "That answer does not belong to this window."
 msgstr "Esa respuesta no corresponde a esta ventana."
 
@@ -3064,6 +3082,9 @@ msgstr "La línea que se canta se mantiene a la vista."
 
 msgid "The listening history could not be saved"
 msgstr "No se pudo guardar el historial de escucha"
+
+msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
+msgstr "El volumen al que se alinea cada pista. -14 LUFS coincide con los servicios de streaming; -18 LUFS es la referencia de ReplayGain."
 
 msgid "The lyrics cache could not be opened."
 msgstr "No se pudo abrir la caché de letras."
@@ -3403,6 +3424,9 @@ msgstr "Bajar volumen"
 
 msgid "Volume Up"
 msgstr "Subir volumen"
+
+msgid "Volume normalization"
+msgstr "Normalización de volumen"
 
 msgid "Volume {}%"
 msgstr "Volumen {}%"

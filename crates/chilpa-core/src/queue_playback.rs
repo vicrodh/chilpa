@@ -471,9 +471,14 @@ pub struct Controls {
     /// One track straight into the next, with the device kept open. Off,
     /// the device plays out and is opened again between tracks.
     pub gapless: Switch,
-    /// Tracks brought to one loudness by their ReplayGain. It changes the
-    /// samples, and a track it touches is not delivered bit-perfect.
+    /// Tracks brought to one loudness (`crate::loudness`). It changes the
+    /// samples, under any policy, and a track it touches is not delivered
+    /// bit-perfect.
     pub normalize: Switch,
+    /// The loudness they are brought to, in LUFS, and whether a boost stops
+    /// short of clipping. Read as each track starts.
+    pub normalize_target: Level,
+    pub prevent_clipping: Switch,
     /// The output asked for alone: nothing else is mixed in, while Chilpa may
     /// still convert. Read when the output opens.
     pub exclusive: Switch,
@@ -530,27 +535,6 @@ impl Switch {
     }
 }
 
-/// What a track's ReplayGain asks for, as a factor: its gain in dB, never
-/// more than 6 dB up, and never so much that its known peak goes past
-/// -1 dBFS. Unity when the file does not say.
-pub fn normalization_gain(gain_db: Option<f32>, peak: Option<f32>) -> f32 {
-    let Some(db) = gain_db else { return 1.0 };
-    let mut factor = 10f32.powf(db.min(6.0) / 20.0);
-    if let Some(peak) = peak.filter(|p| *p > 0.0) {
-        // -1 dBFS.
-        factor = factor.min(0.891_25 / peak);
-    }
-    factor
-}
-
-fn normalization_for(remote: Option<crate::remote::Normalization>, local: impl FnOnce() -> (Option<f32>, Option<f32>)) -> f32 {
-    let (gain, peak) = match remote.and_then(crate::remote::Normalization::valid) {
-        Some(data) => (Some(data.gain_db), data.peak),
-        None => local(),
-    };
-    normalization_gain(gain, peak)
-}
-
 impl Default for Controls {
     fn default() -> Self {
         Self {
@@ -564,6 +548,8 @@ impl Default for Controls {
             stop_after: StopAfter::new(),
             gapless: Switch::new(true),
             normalize: Switch::new(false),
+            normalize_target: Level::new(crate::loudness::DEFAULT_TARGET),
+            prevent_clipping: Switch::new(true),
             exclusive: Switch::new(false),
             volume: Level::new(1.0),
             dsd_mode: DsdModeChoice::default(),
@@ -648,10 +634,8 @@ struct TrackFrames<'a> {
     rewind_to: Option<u64>,
     /// What had been delivered when the last seek was worked out.
     moved_at: u64,
-    /// What every sample is multiplied by: 1.0 unless normalizing.
-    gain: f32,
-    /// The player bar's volume, when it may touch the samples at all.
-    volume: Option<Level>,
+    /// The normalization gain and the player bar's volume (`loudness`).
+    level: crate::loudness::level::Leveler,
     /// Where the decoded frames go for the waveform, and the position in
     /// the track of the next frame the decoder hands out.
     feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
@@ -715,6 +699,7 @@ impl FrameSource for TrackFrames<'_> {
                     Ok(plan) => {
                         self.discard = plan.discard;
                         self.moved = true;
+                        self.level.moved();
                         // The point ASKED FOR, not where the container
                         // landed: the discarded frames never come out, so
                         // counting them separately would leave the position
@@ -747,10 +732,7 @@ impl FrameSource for TrackFrames<'_> {
                         feed.feed_int(self.decoded_at, &frames, bits);
                     }
                     self.decoded_at += (frames.len() / channels) as u64;
-                    let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
-                    if gain != 1.0 {
-                        scale_int(&mut frames, bits, gain);
-                    }
+                    self.level.int(&mut frames, bits);
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     let samples = Samples::Int { data: &frames, bits };
@@ -772,10 +754,7 @@ impl FrameSource for TrackFrames<'_> {
                         feed.feed_float(self.decoded_at, &frames);
                     }
                     self.decoded_at += (frames.len() / channels) as u64;
-                    let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
-                    if gain != 1.0 {
-                        frames.iter_mut().for_each(|v| *v *= gain);
-                    }
+                    self.level.float(&mut frames);
                     let frames = if self.spread { duplicate_mono(&frames) } else { frames };
                     let mut bytes = Vec::new();
                     pack(&Samples::Float(&frames), self.opened.sample_format, &mut bytes)
@@ -794,16 +773,6 @@ impl FrameSource for TrackFrames<'_> {
                 return Ok(Some(clipped));
             }
         }
-    }
-}
-
-/// Integer samples of `bits` multiplied by `gain`, rounded and kept within
-/// what `bits` can hold.
-fn scale_int(samples: &mut [i32], bits: u8, gain: f32) {
-    let top = (1i64 << (bits.clamp(2, 32) - 1)) - 1;
-    let gain = f64::from(gain);
-    for v in samples.iter_mut() {
-        *v = ((f64::from(*v) * gain).round() as i64).clamp(-top - 1, top) as i32;
     }
 }
 
@@ -838,8 +807,7 @@ struct DsdPcmFrames<'a> {
     skip: SkipSignal,
     seek: SeekSignal,
     skipped: bool,
-    gain: f32,
-    volume: Option<Level>,
+    level: crate::loudness::level::Leveler,
     /// Where the converted frames go for the waveform, and how many have
     /// gone: this route cannot seek, so they count from the start.
     feed: Option<std::sync::Arc<dyn chilpa_audio::seek_waveform::Feed>>,
@@ -866,10 +834,7 @@ impl FrameSource for DsdPcmFrames<'_> {
             feed.feed_float(self.decoded_at, &samples);
         }
         self.decoded_at += (samples.len() / usize::from(self.converter.channels().max(1))) as u64;
-        let gain = self.gain * self.volume.as_ref().map_or(1.0, Level::get);
-        if gain != 1.0 {
-            samples.iter_mut().for_each(|sample| *sample *= gain);
-        }
+        self.level.float(&mut samples);
         let mut bytes = Vec::new();
         pack(&Samples::Float(&samples), self.opened.sample_format, &mut bytes)
             .map_err(|error| PlayError::Pack(error).to_string())?;
@@ -941,7 +906,7 @@ where
     K: AudioSink,
 {
     // `exclusive` was read when the output was chosen, before the queue.
-    let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, volume, .. } = controls;
+    let Controls { stop, pause, seek, skip, repeat, order, stop_after, gapless, normalize, normalize_target, prevent_clipping, volume, .. } = controls;
     let mut results = Vec::new();
     let mut opened: Option<(StreamFormat, crate::playback_events::Measured<K>)> = None;
     let requested = controls.start_index.swap(usize::MAX, std::sync::atomic::Ordering::AcqRel);
@@ -1124,24 +1089,33 @@ where
             chilpa_audio::diagnostics::trace("queue", "sink_flush_finished", format_args!("reason=skip"));
         }
 
-        // Normalizing is asked for per track, from what its tags say; a gain
-        // that changes anything is said in the delivery, so the verdict is
-        // not bit-perfect for that track.
-        let gain = match &source {
-            // Never under the bit-perfect policy, whatever the switch says:
-            // that policy is the promise that no sample is changed.
-            Source::Pcm(..) | Source::DsdPcm(_) if normalize.get() && policy != Policy::BitPerfect => {
-                let remote = match &source { Source::Pcm(_, _, data) => *data, _ => None };
-                normalization_for(remote, || about.tags.as_ref().map(|tags| tags.replaygain()).unwrap_or_default())
-            }
-            _ => 1.0,
-        };
-        // The volume, the same way and under the same promise.
-        let volume = match &source {
-            Source::Pcm(..) | Source::DsdPcm(_) if policy != Policy::BitPerfect => Some(volume.clone()),
+        // The volume touches the samples only off the bit-perfect policy;
+        // normalization, when it is on, under any (QBZ: "This breaks strict
+        // bit perfect"). Either one that changes anything is said in the
+        // delivery, so the verdict for that track is not bit-perfect.
+        let volume = (policy != Policy::BitPerfect).then(|| volume.clone());
+        let shape = match &source {
+            Source::Pcm(decoded, ..) => Some((decoded.stream_format().sample_rate_hz, decoded.stream_format().channels, decoded.frame_count())),
+            Source::DsdPcm(converter) => Some((converter.output_rate(), converter.channels(), Some(converter.total_frames()))),
             _ => None,
         };
-        if gain != 1.0 || volume.as_ref().is_some_and(|v| v.get() != 1.0) {
+        let level = match shape {
+            Some((rate, channels, frames)) if normalize.get() => {
+                let key = path.to_string_lossy();
+                let said = match &source { Source::Pcm(_, _, data) => data.and_then(crate::remote::Normalization::valid).map(|d| (d.gain_db, d.peak)), _ => None };
+                crate::loudness::level::Leveler::normalizing(
+                    crate::loudness::level::Shape { key: &key, rate, channels, frames },
+                    crate::loudness::level::Normalize { target: normalize_target.get(), prevent_clipping: prevent_clipping.get() },
+                    crate::loudness::cache::shared(),
+                    crate::loudness::analyzer::sender(),
+                    said,
+                    || about.tags.as_ref().map(|tags| tags.replaygain()).unwrap_or_default(),
+                    volume,
+                )
+            }
+            _ => crate::loudness::level::Leveler::volume_only(volume),
+        };
+        if level.touches() {
             delivery.transforms.push(chilpa_audio::negotiate::Transform::VolumeApplied);
         }
         let observer = match &source {
@@ -1205,8 +1179,7 @@ where
                     delivered: std::sync::Arc::new(std::sync::atomic::AtomicU64::new(0)),
                     rewind_to: None,
                     moved_at: 0,
-                    gain,
-                    volume,
+                    level,
                     feed: feed.clone(),
                     decoded_at: 0,
                     ahead: if crate::remote::entry(path).is_some() { chilpa_audio::render::NETWORK_AHEAD } else { chilpa_audio::render::AHEAD },
@@ -1259,8 +1232,7 @@ where
                     skip: skip.clone(),
                     seek: seek.clone(),
                     skipped: false,
-                    gain,
-                    volume,
+                    level,
                     feed: feed.clone(),
                     decoded_at: 0,
                 };
@@ -1460,38 +1432,4 @@ mod tests {
         o.clear();
         assert_eq!(o.first(2), 0);
     }
-}
-
-#[cfg(test)]
-mod gain_tests {
-    use super::*;
-
-    #[test]
-    fn replaygain_is_followed_but_never_past_six_db_up_or_the_peak() {
-        assert_eq!(normalization_gain(None, None), 1.0, "nothing said, nothing changed");
-        assert!((normalization_gain(Some(-6.0), None) - 0.501).abs() < 0.001);
-        assert!((normalization_gain(Some(12.0), None) - 1.995).abs() < 0.001, "+6 dB at most");
-        // +6 dB on a track that already peaks at 0.8 would clip: -1 dBFS.
-        assert!((normalization_gain(Some(6.0), Some(0.8)) - 0.891_25 / 0.8).abs() < 0.001);
-    }
-
-    #[test]
-    fn scaled_samples_stay_within_their_bits() {
-        let mut s = vec![16_000, -16_000, 32_767, -32_768];
-        scale_int(&mut s, 16, 2.0);
-        assert_eq!(s, [32_000, -32_000, 32_767, -32_768], "clamped, not wrapped");
-        let mut s = vec![1_000];
-        scale_int(&mut s, 16, 0.5);
-        assert_eq!(s, [500]);
-    }
-    #[test]
-    fn provider_gain_replaces_local_metadata_even_when_zero() {
-        for db in [-6.0, 0.0] {
-            let gain = normalization_for(Some(crate::remote::Normalization { gain_db: db, peak: None }), || panic!("local metadata must not be read when the provider supplied gain"));
-            assert_eq!(gain, normalization_gain(Some(db), None));
-        }
-        assert_eq!(normalization_for(None, || (Some(-3.0), None)), normalization_gain(Some(-3.0), None));
-        assert_eq!(normalization_for(Some(crate::remote::Normalization { gain_db: f32::NAN, peak: None }), || (None, None)), 1.0);
-    }
-
 }
