@@ -148,6 +148,7 @@ Item {
                 SourcesPopover {
                     id: filters
                     showTrackLibraries: true
+                    showAlbumGrouping: false
                     x: filterButton.width - width
                     y: filterButton.height + Metrics.gap6
                 }

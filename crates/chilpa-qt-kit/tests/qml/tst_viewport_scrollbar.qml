@@ -16,7 +16,7 @@ TestCase {
         contentWidth: width
         contentHeight: 1000
         clip: true
-        ScrollBar.vertical: ViewportScrollBar { id: bar; gutter: 14 }
+        ScrollBar.vertical: ViewportScrollBar { id: bar }
     }
     Flickable {
         id: longView
@@ -26,22 +26,27 @@ TestCase {
         ScrollBar.vertical: ViewportScrollBar { id: longBar }
     }
     function test_long_library_has_a_visible_grabbable_thumb() {
-        tryCompare(longBar, "parent", longView)
+        tryCompare(longBar, "parent", longView.parent)
         compare(longBar.width, Metrics.scrollbarWidth)
-        verify(longBar.x >= 0 && longBar.x + longBar.width <= longView.width)
-        verify(longBar.visible)
+        compare(longBar.x, longView.x + longView.width)
+        verify(!longBar.visible)
         verify(longBar.minimumSize * longBar.height >= Metrics.scrollbarThumbMin)
+        mouseMove(longView, 20, 30)
+        tryCompare(longBar, "visible", true)
         verify(longBar.contentItem.opacity > 0)
     }
     function test_hover_reveals_thumb_in_margin_without_scrolling() {
         tryCompare(bar, "parent", view.parent)
         wait(20)
         compare(bar.viewport, view)
-        compare(bar.x + bar.width / 2, view.x + view.width + 14)
+        compare(bar.x, view.x + view.width)
+        verify(!bar.visible)
         mouseMove(view, 100, 100)
         tryCompare(bar, "active", true)
+        tryCompare(bar, "visible", true)
         compare(view.contentY, 0)
         mouseMove(this, 490, 390)
         tryCompare(bar, "active", false)
+        tryCompare(bar, "visible", false)
     }
 }
