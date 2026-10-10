@@ -113,9 +113,8 @@ QtObject {
     readonly property int shotDelay: 2500
     // The longest a scripted scroll test runs.
     readonly property int scrollTestSeconds: 15
-    readonly property int scrollbarWidth: 12
+    readonly property int scrollbarWidth: 10
     readonly property int scrollbarThumbMin: 64
-    readonly property int scrollbarBorder: 1
 
     // Sidebar (02-layout.md 2).
     readonly property int sidebarWidth: 212
