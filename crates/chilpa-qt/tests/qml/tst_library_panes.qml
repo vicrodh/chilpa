@@ -43,20 +43,14 @@ TestCase {
         verify(Math.abs(total - (panes.width - 6)) < 2, "the columns share the width: " + total)
     }
 
-    // Rating stands before the artist; its entries are drawn as stars, and
-    // the records with none are named.
+    // Rating stands before the artist and draws its entries as stars.
     function test_rating_comes_before_the_artist_and_draws_its_stars() {
         panes.shown = ["rating", "year"]
         waitForRendering(panes)
-        const rating = shown().find(c => c.column === "rating")
         compare(shown().map(c => c.column).join(","), "year,rating,artist,album")
-        let list = null
-        for (let i = 0; i < rating.children.length; ++i)
-            if (rating.children[i].contentItem !== undefined) list = rating.children[i]
+        const list = Array.from(shown()[1].children).find(c => c.contentItem !== undefined)
         list.model.append({ key: "4", label: "4 stars", meta: "2", selected: false, all: false })
-        list.model.append({ key: "0", label: "Unrated", meta: "5", selected: false, all: false })
-        tryVerify(() => findChild(list, "paneStars") !== null)
-        compare(findChild(list, "paneStars").value, 4)
+        tryVerify(() => (findChild(list, "paneStars") || {}).value === 4, 1000, "four stars drawn")
         list.model.clear()
     }
 
