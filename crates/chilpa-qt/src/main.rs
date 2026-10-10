@@ -26,12 +26,6 @@ use cxx_qt_lib::{QGuiApplication, QQmlApplicationEngine, QUrl};
 #[cfg(target_os = "linux")]
 use cxx_qt_lib::QString;
 unsafe extern "C" {
-    /// Registers a font from the resources as the application's default.
-    /// See `fonts.cpp`.
-    fn chilpa_use_font(resource: *const std::ffi::c_char) -> bool;
-    /// Whether a desktop entry by that name is installed. See `fonts.cpp`.
-    #[cfg(target_os = "linux")]
-    fn chilpa_has_desktop_entry(name: *const std::ffi::c_char) -> bool;
     /// Hands the engine the covers' image provider. See `covers.cpp`.
     fn chilpa_install_covers(engine: *mut std::ffi::c_void);
     /// Registers the QML modules of the other shell crates. See `modules.cpp`.
@@ -81,15 +75,39 @@ const DESKTOP_ENTRY: &std::ffi::CStr = c"app.chilpa.Chilpa";
 const INTER: &std::ffi::CStr = c":/qt/qml/app/chilpa/kit/assets/fonts/Inter.ttf";
 
 fn main() {
+    use chilpa_api::graphics_boot;
+    // The interface size, before any Qt object; the startup children
+    // inherit it. QBZ's order from here to the window.
+    graphics_boot::apply_interface_size();
+    // A startup child proves a backend and does nothing else: it never
+    // reaches the single instance, the facade, audio or plugins.
+    if let Some(code) = chilpa_qt_graphics::run_child_if_asked() {
+        std::process::exit(code);
+    }
     // Before anything is opened: a second launch shows the first and ends.
     if !chilpa_api::Chilpa::only_instance() { return; }
+    // The saved GPU, the renderer preference and managed Auto, before the
+    // application object builds its backend.
+    graphics_boot::gpu::preflight_saved_gpu_at_boot();
+    graphics_boot::apply_renderer_preference();
+    #[cfg(target_os = "linux")]
+    if let Err(reason) = graphics_boot::preflight::auto_at_boot() {
+        eprintln!("renderer: the start stopped before the window: {reason}");
+        std::process::exit(78);
+    }
+    // Before anything is restored: a start that dies restoring degrades the
+    // next one instead of trapping it.
+    chilpa_api::startup_chain::arm();
     let mut app = QGuiApplication::new();
     // Named after its desktop entry only when one is installed: a build run
     // from the tree has none, and the portal refused it on every start.
     #[cfg(target_os = "linux")]
-    if unsafe { chilpa_has_desktop_entry(DESKTOP_ENTRY.as_ptr()) } {
+    if chilpa_qt_kit::has_desktop_entry(DESKTOP_ENTRY) {
         QGuiApplication::set_desktop_file_name(&QString::from(DESKTOP_ENTRY.to_str().unwrap_or_default()));
     }
+
+    // Qt's Vulkan devices can be listed now, and no window exists yet.
+    chilpa_qt_graphics::apply_gpu_preference();
 
     // SAFETY: it registers static plugins, once, before the engine exists
     // and before anything reads their resources: the font is the kit's.
@@ -99,9 +117,7 @@ fn main() {
     // weights, and plenty of desktops set a font with one face that Qt does
     // not embolden.
     let font = app::with(|api| api.preference("appearance.font"));
-    // SAFETY: the pointer is a NUL-terminated literal that outlives the call,
-    // and the application object exists.
-    if font.as_deref() != Some("system") && !unsafe { chilpa_use_font(INTER.as_ptr()) } {
+    if font.as_deref() != Some("system") && !chilpa_qt_kit::use_font(INTER) {
         eprintln!("chilpa: the bundled font could not be loaded; using the system's");
     }
 

@@ -29,6 +29,7 @@ CRATES = {
     "chilpa-qt-mini": "qrc:/qt/qml/app/chilpa/mini/qml/",
     "chilpa-qt-immersive": "qrc:/qt/qml/app/chilpa/immersive/qml/",
     "chilpa-qt-waveform": "qrc:/qt/qml/app/chilpa/waveform/qml/",
+    "chilpa-qt-graphics": "qrc:/qt/qml/app/chilpa/graphics/qml/",
     "chilpa-qt-artwork": "qrc:/qt/qml/app/chilpa/artwork/qml/",
     "chilpa-qt-about": "qrc:/qt/qml/app/chilpa/about/qml/",
     "chilpa-qt-stats": "qrc:/qt/qml/app/chilpa/stats/qml/",

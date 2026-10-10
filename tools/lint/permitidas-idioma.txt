@@ -590,3 +590,13 @@ friday
 sunday
 february
 december
+cpu
+gpu
+gpus
+opengl
+pci
+qmake
+qsg
+rhi
+vulkan
+gl

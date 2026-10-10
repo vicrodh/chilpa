@@ -146,6 +146,13 @@ pub const SECTIONS: &[Section] = &[
                 setting(crate::play_indicator::ANIMATED, Chilpa::mark("Play indicator animation"), Chilpa::mark("Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."), Control::Toggle),
             ],
         }, Group {
+            title: Chilpa::mark("Renderer"),
+            settings: &[
+                setting(crate::graphics_boot::INTERFACE_SIZE, Chilpa::mark("Interface size"), Chilpa::mark("Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"), Control::Select),
+                setting(crate::graphics_boot::RENDERER, Chilpa::mark("Rendering backend"), Chilpa::mark("Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"), Control::Select),
+                setting(crate::graphics_boot::gpu::GPU, Chilpa::mark("Preferred GPU"), Chilpa::mark("Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"), Control::Select),
+            ],
+        }, Group {
             title: Chilpa::mark("Background"),
             settings: &[
                 setting(crate::ambient::MODE, Chilpa::mark("Dynamic background"), Chilpa::mark("Animated album-art background behind the whole app. High resource use: GPU accelerated."), Control::Select),

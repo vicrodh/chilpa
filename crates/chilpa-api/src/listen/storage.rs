@@ -4,6 +4,9 @@ fn file() -> std::path::PathBuf { chilpa_dirs::data().join("listenlist.json") }
 impl Chilpa {
     pub(crate) fn persist_buffers(&self) {
         if !self.keep_queue() { return; }
+        // A start that bypassed the restore (the crash chain) and built no
+        // queue of its own leaves the good copy on disk alone.
+        if crate::startup_chain::level() >= 3 && self.listen.buffers.iter().all(|b| b.paths.is_empty()) { return; }
         let mut saved = self.listen.clone();
         if let Some(b) = self.buffer_snapshot(saved.active) {
             if let Some(at) = saved.buffers.iter_mut().find(|v| v.id == b.id) { *at = b; }

@@ -33,6 +33,7 @@ fn main() {
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
     println!("cargo:rerun-if-changed=assets");
+    println!("cargo:rerun-if-changed=cxx/fonts.cpp");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
         .qt_module("Qml")
@@ -43,6 +44,9 @@ fn main() {
             qml_files: &qml,
             qrc_files: &resources,
             ..Default::default()
+        })
+        .cc_builder(|cc| {
+            cc.file("cxx/fonts.cpp");
         })
         .build();
 }

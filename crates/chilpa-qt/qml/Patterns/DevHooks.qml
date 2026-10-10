@@ -3,13 +3,18 @@ import app.chilpa
 import app.chilpa.folders
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/graphics/qml/Components" as Probe
 
-// The measuring hooks, inert unless an environment variable asks for them
-// (see bridge/dev.rs): a frame-time recorder, a screenshot, a start route.
+// The window's frame hooks: the graphics watch, which reports what draws and
+// that the window presents (QBZ's startup recovery), and the measuring hooks,
+// inert unless an environment variable asks for them (see bridge/dev.rs): a
+// frame-time recorder, a screenshot, a start route.
 Item {
     id: hooks
 
     required property Window window
+
+    Probe.GraphicsWatch { window: hooks.window }
 
     // A screenshot reads the frame back and encodes it on the window's
     // thread: 120 ms that were counted as one late frame of the scroll.

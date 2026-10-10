@@ -133,7 +133,6 @@ crates/chilpa-qt/src/bridge/settings.rs
 crates/chilpa-qt/src/bridge/tracks.rs
 crates/chilpa-qt/src/browse.rs
 crates/chilpa-qt/src/covers.cpp
-crates/chilpa-qt/src/fonts.cpp
 crates/chilpa-qt/src/main.rs
 crates/chilpa-qt/src/modules.cpp
 crates/chilpa-qt/src/registry.rs

@@ -10,6 +10,8 @@ QtObject {
     property int top: 0
     property bool placed: false
     property bool maximized: false
+    property int smallestWidth: 960
+    property int smallestHeight: 600
     property var kept: []
 
     function keep(frame, width, height, left, top, placed) {

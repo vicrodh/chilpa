@@ -22,6 +22,14 @@ const LEFT: &str = "window.x";
 const TOP: &str = "window.y";
 const MAXIMIZED: &str = "window.maximized";
 
+/// The smallest size in the logical pixels the window speaks in: the same
+/// footprint on the screen at every interface size (QBZ's
+/// `window_min_size`).
+pub fn smallest() -> (i32, i32) {
+    let scale = crate::graphics_boot::interface_scale();
+    ((SMALLEST.0 as f32 / scale).round() as i32, (SMALLEST.1 as f32 / scale).round() as i32)
+}
+
 /// What the window is doing when it reports a frame.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Frame {
@@ -66,7 +74,7 @@ impl Place {
         match frame {
             Frame::Away => self,
             Frame::Maximized => Self { maximized: true, ..self },
-            Frame::Floating if width < SMALLEST.0 || height < SMALLEST.1 => self,
+            Frame::Floating if width < smallest().0 || height < smallest().1 => self,
             Frame::Floating => Self { width, height, at: at.or(self.at), maximized: false },
         }
     }
@@ -76,7 +84,7 @@ impl Place {
     pub fn read(kept: &BTreeMap<String, String>) -> Self {
         let number = |key: &str| kept.get(key).and_then(|value| value.parse::<i32>().ok());
         let size = match (number(WIDTH), number(HEIGHT)) {
-            (Some(width), Some(height)) if width >= SMALLEST.0 && height >= SMALLEST.1 => (width, height),
+            (Some(width), Some(height)) if width >= smallest().0 && height >= smallest().1 => (width, height),
             _ => DEFAULT,
         };
         Self {

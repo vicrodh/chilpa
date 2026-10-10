@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Effects
 import app.chilpa
+import app.chilpa.graphics
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -62,17 +63,24 @@ Item {
         onTriggered: toast.visible = false
     }
 
+    function show(text, warning) {
+        toast.message = text
+        toast.warning = warning
+        toast.visible = true
+        hideTimer.restart()
+    }
+
     Connections {
         target: Player
 
         function onErrorChanged() {
-            if (Player.error === "")
-                return
-            toast.message = Player.error
-            toast.warning = false
-            toast.visible = true
-            hideTimer.restart()
+            if (Player.error !== "")
+                toast.show(Player.error, false)
         }
     }
+
+    // What the startup did to the graphics: a GPU that fell to Auto, a
+    // renderer that fell to software.
+    Component.onCompleted: { const said = Graphics.takeNotices(); if (said !== "") show(said, true) }
 
 }

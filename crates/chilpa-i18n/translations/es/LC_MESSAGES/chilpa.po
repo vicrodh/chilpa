@@ -390,8 +390,14 @@ msgstr "Automático"
 msgid "Auto (app language)"
 msgstr "Automático (idioma de la app)"
 
+msgid "Auto (recommended)"
+msgstr "Automático (recomendado)"
+
 msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
 msgstr "Automático sigue los colores del escritorio: el glifo claro en un panel oscuro, el oscuro en un panel claro."
+
+msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
+msgstr "Automático elige el mejor renderizador para tu hardware gráfico. Cámbialo solo si la app se siente lenta o se ve mal (requiere reiniciar)"
 
 msgid "Auto-follow"
 msgstr "Seguir la letra"
@@ -1096,8 +1102,14 @@ msgstr "Exportar el historial de escucha"
 msgid "Extra controls"
 msgstr "Controles extra"
 
+msgid "Extra large"
+msgstr "Extra grande"
+
 msgid "Extra queues"
 msgstr "Extra queues"
+
+msgid "Extra small"
+msgstr "Extra pequeño"
 
 msgid "FOCUS"
 msgstr "FOCO"
@@ -1209,6 +1221,12 @@ msgstr "Ver detalles"
 
 msgid "Full episodes"
 msgstr "Episodios completos"
+
+msgid "GPU"
+msgstr "GPU"
+
+msgid "GPU (compatibility)"
+msgstr "GPU (compatibilidad)"
 
 msgid "Gapless"
 msgstr "Gapless"
@@ -1423,6 +1441,9 @@ msgstr "Inter viene con Chilpa y tiene todos los pesos que usa el diseño. Se ap
 msgid "Interface"
 msgstr "Interfaz"
 
+msgid "Interface size"
+msgstr "Tamaño de la interfaz"
+
 msgid "Italian"
 msgstr "Italiano"
 
@@ -1470,6 +1491,9 @@ msgstr "Sello"
 
 msgid "Labels"
 msgstr ""
+
+msgid "Large"
+msgstr "Grande"
 
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
@@ -2263,6 +2287,9 @@ msgstr "Portugués"
 msgid "Position in Streaming"
 msgstr "Posición en Streaming"
 
+msgid "Preferred GPU"
+msgstr "GPU preferida"
+
 msgid "Press keys…"
 msgstr "Presiona las teclas…"
 
@@ -2494,6 +2521,15 @@ msgstr "Quitar…"
 msgid "Rename"
 msgstr "Renombrar"
 
+msgid "Renderer"
+msgstr "Renderizado"
+
+msgid "Renderer switched automatically — the previous renderer failed to start"
+msgstr "El renderizador cambió solo: el anterior no pudo arrancar"
+
+msgid "Rendering backend"
+msgstr "Motor de renderizado"
+
 msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr "Vuelve a abrir la cola pendiente en pausa, donde la dejaste."
 
@@ -2620,6 +2656,9 @@ msgstr "Guardando…"
 msgid "Saving… {} of {} files"
 msgstr "Guardando… {} de {} archivos"
 
+msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
+msgstr "Escala toda la interfaz, como el zoom del navegador. Pequeño muestra más contenido en pantalla; Grande y Extra grande se leen mejor (requiere reiniciar)"
+
 msgid "Scan again"
 msgstr "Escanear de nuevo"
 
@@ -2720,6 +2759,9 @@ msgstr "Seleccionar carpetas"
 
 msgid "Select tracks"
 msgstr "Seleccionar pistas"
+
+msgid "Selected GPU is unavailable in this display session — using Auto"
+msgstr "La GPU elegida no está disponible en esta sesión gráfica: se usa Automático"
 
 msgid "Send listens"
 msgstr "Enviar escuchas"
@@ -2829,8 +2871,14 @@ msgstr "Saltadas"
 msgid "Sleep timer"
 msgstr "Temporizador"
 
+msgid "Small"
+msgstr "Pequeño"
+
 msgid "Soft"
 msgstr "Suave"
+
+msgid "Software"
+msgstr "Software"
 
 msgid "Songs"
 msgstr "Canciones"
@@ -3359,6 +3407,9 @@ msgstr "Por dónde van las muestras: directo al dispositivo o a través de un se
 msgid "Wherever the system is sending sound"
 msgstr "A donde el sistema esté mandando el sonido"
 
+msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
+msgstr "Qué GPU dibuja la app. Solo aparecen las GPUs que de verdad están. Elegir una distinta a la predeterminada también cambia el renderizador a Vulkan, el único motor en el que Qt puede elegir GPU (requiere reiniciar)"
+
 msgid "Which of its libraries come in?"
 msgstr "¿Cuáles de sus bibliotecas entran?"
 
@@ -3560,6 +3611,9 @@ msgstr "digital"
 msgid "direct"
 msgstr "directo"
 
+msgid "discrete"
+msgstr "dedicada"
+
 msgid "display"
 msgstr "pantalla"
 
@@ -3610,6 +3664,9 @@ msgstr "cuentas de paquetes imposibles"
 
 msgid "in the system keyring"
 msgstr "en el llavero del sistema"
+
+msgid "integrated"
+msgstr "integrada"
 
 msgid "internal"
 msgstr "interno"
