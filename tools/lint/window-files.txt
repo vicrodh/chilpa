@@ -31,7 +31,6 @@ crates/chilpa-qt/qml/Components/PlaylistCollage.qml
 crates/chilpa-qt/qml/Components/PlaylistFolderRow.qml
 crates/chilpa-qt/qml/Components/PlaylistForm.qml
 crates/chilpa-qt/qml/Components/PlaylistManagerRow.qml
-crates/chilpa-qt/qml/Components/PlaylistMenu.qml
 crates/chilpa-qt/qml/Components/PlaylistNotice.qml
 crates/chilpa-qt/qml/Components/PlaylistPickerDialog.qml
 crates/chilpa-qt/qml/Components/PlaylistPicker.qml

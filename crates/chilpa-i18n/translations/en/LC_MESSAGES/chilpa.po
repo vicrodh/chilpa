@@ -2707,9 +2707,6 @@ msgstr ""
 msgid "Remove…"
 msgstr ""
 
-msgid "Rename"
-msgstr ""
-
 msgid "Renderer"
 msgstr ""
 
