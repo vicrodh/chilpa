@@ -231,7 +231,7 @@ Item {
             tip: I18n.tr("Playback options", I18n.rev)
             glyph: Icons.adjustmentsHorizontal
             // Lit when something differs from how it came.
-            checked: options.opened || !Player.gapless || (Player.normalize && Player.normalizeApplies) || Player.automix
+            checked: options.opened || !Player.gapless || (Player.normalize && Player.normalizeApplies)
             onClicked: options.opened ? options.close() : options.open()
 
             PlaybackOptions {

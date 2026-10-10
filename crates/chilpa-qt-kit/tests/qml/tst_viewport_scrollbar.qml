@@ -24,6 +24,7 @@ TestCase {
         contentWidth: width; contentHeight: 19000 * 36
         clip: true
         ScrollBar.vertical: ViewportScrollBar { id: longBar }
+        MouseArea { id: rowPointer; anchors.fill: parent; hoverEnabled: true }
     }
     function test_long_library_has_a_visible_grabbable_thumb() {
         tryCompare(longBar, "parent", longView.parent)
@@ -34,6 +35,12 @@ TestCase {
         mouseMove(longView, 20, 30)
         tryCompare(longBar, "visible", true)
         verify(longBar.contentItem.opacity > 0)
+    }
+    function test_full_surface_pointer_can_reveal_thumb() {
+        longBar.viewportHovered = Qt.binding(function() { return rowPointer.containsMouse })
+        mouseMove(longView, 12, 120)
+        tryCompare(rowPointer, "containsMouse", true)
+        tryCompare(longBar, "visible", true)
     }
     function test_hover_reveals_thumb_in_margin_without_scrolling() {
         tryCompare(bar, "parent", view.parent)

@@ -28,4 +28,14 @@ TestCase {
         compare(rows[1].tracks,0)
         compare(rows[1].expandKey,"source folder:e")
     }
+    function test_mixed_native_folders_have_no_provider_wrapper() {
+        const catalog = {folder_sources:[{id:"source",name:"Cloud"}],
+            native_folders:[{source:"source",ref:"folder:e",name:"Favorites",parent:"",folder_icon:"folder.svg"}],
+            playlists:[{id:-1,name:"Loose",source:"source",provider:"Cloud",separate:false,mixed:false},
+                {id:-2,name:"Nested",source:"source",provider:"Cloud",native_folder:"folder:e",separate:false,mixed:false}]}
+        const rows = Tree.rows(catalog,"name",true,"",{"source folder:e":true})
+        compare(rows.map(r=>r.name),["Loose","Favorites","Nested"])
+        compare(rows[1].depth,0)
+        compare(rows[2].depth,1)
+    }
 }

@@ -121,7 +121,10 @@ Item {
         cacheBuffer: list.fitContent ? Metrics.fitContentBuffer : Math.max(0, height)
         bottomMargin: list.bottomInset
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar {
+            policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
+            viewportHovered: pointer.containsMouse
+        }
 
         delegate: TrackRow {
             required property var model

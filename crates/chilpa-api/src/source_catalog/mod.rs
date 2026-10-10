@@ -37,6 +37,7 @@ use store::Store;
 
 /// A listing younger than this is not asked for again.
 const SHELF_FRESH: u64 = 300;
+const PERSONAL_REFRESH: Duration = Duration::from_secs(90);
 /// A record's tracks younger than this are not read again.
 const TRACKS_FRESH: u64 = 6 * 3600;
 const BACKGROUND_JOBS: usize = 8;
@@ -118,6 +119,7 @@ pub(crate) struct Catalog {
     art_rev: AtomicI32,
     started: Mutex<bool>,
     page_reads: Mutex<HashMap<String, Arc<Mutex<()>>>>,
+    last_personal_refresh: Mutex<Instant>,
 }
 
 fn now() -> u64 {
@@ -147,6 +149,7 @@ impl Catalog {
             art_rev: AtomicI32::new(0),
             started: Mutex::new(false),
             page_reads: Mutex::new(HashMap::new()),
+            last_personal_refresh: Mutex::new(Instant::now()),
         })
     }
 
@@ -190,6 +193,23 @@ impl Catalog {
     /// Says that what the lists show of a source changed, from outside.
     pub(crate) fn touch(&self) {
         self.changed();
+    }
+
+    /// Recheck personal library shelves already opened in this session.
+    /// This also discovers edits made in another client without a local action.
+    pub(crate) fn refresh_personal_libraries(&self) {
+        let mut last = self.last_personal_refresh.lock().unwrap_or_else(|e| e.into_inner());
+        if last.elapsed() < PERSONAL_REFRESH { return; }
+        *last = Instant::now();
+        drop(last);
+        let Some(natives) = self.natives() else { return; };
+        let mut inner = self.lock();
+        if !inner.loaded { return; }
+        let keys: Vec<String> = inner.store.shelves.keys().filter(|key| {
+            let (plugin, section) = split(key);
+            natives.is_native(plugin) && matches!(section, "section:albums" | "section:tracks" | "section:playlists")
+        }).cloned().collect();
+        for key in keys { self.queue(&mut inner, Job::Shelf(key), false); }
     }
 
     /// What the source calls each track of a listing.
