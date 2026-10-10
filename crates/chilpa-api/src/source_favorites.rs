@@ -105,7 +105,10 @@ impl Chilpa {
         while let Ok(answer) = self.source_favorites.rx.try_recv() {
             match answer.result {
                 // Its list changed: it is read again.
-                Ok(()) => self.catalog.retry(&listing(&answer.plugin)),
+                Ok(()) => {
+                    self.source_favorites.changed.remove(&(answer.plugin.clone(), answer.identity));
+                    self.catalog.retry(&listing(&answer.plugin));
+                }
                 Err(error) => {
                     self.source_favorites.changed.remove(&(answer.plugin, answer.identity));
                     self.now.error = chilpa_i18n::t_args("the favorite could not be saved: {}", &[&error]);

@@ -396,9 +396,6 @@ msgstr "Automático sigue los colores del escritorio: el glifo claro en un panel
 msgid "Auto-follow"
 msgstr "Seguir la letra"
 
-msgid "AutoMix"
-msgstr "AutoMix"
-
 msgid "Awaiting approval"
 msgstr "Espera aprobación"
 
@@ -3010,9 +3007,6 @@ msgstr "No se pudo abrir el ZIP del plugin."
 
 msgid "The plugin ZIP could not be read."
 msgstr "No se pudo leer el ZIP del plugin."
-
-msgid "The queue in the order its tempo flows best. Off, back to its own."
-msgstr "La cola en el orden en que su tempo fluye mejor. Apagado, vuelve a su propio orden."
 
 msgid "The record is not open in the editor."
 msgstr "El disco no está abierto en el editor."

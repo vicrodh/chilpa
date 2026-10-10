@@ -75,7 +75,11 @@ Item {
         topMargin: Metrics.cardRing
         bottomMargin: grid.bottomInset + Metrics.cardRing
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded }
+        ScrollBar.vertical: ViewportScrollBar {
+            policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
+            viewportHovered: viewHover.hovered
+        }
+        HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
 
         delegate: Item {
             id: row
