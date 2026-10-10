@@ -94,12 +94,13 @@ Item {
 
     // Side buttons need the top pointer target: controls below can take an
     // exclusive grab before a root-level TapHandler sees the release.
-    // no cursor: this layer only accepts the mouse's side buttons
+    // I handle side buttons here without replacing controls' cursors.
     MouseArea {
         parent: controls.window ? controls.window.contentItem : null
         anchors.fill: parent
         z: Metrics.tooltipLayer + Metrics.gap2
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
+        cursorShape: undefined
         onClicked: mouse => mouse.button === Qt.BackButton ? Navigation.back() : Navigation.forward()
     }
     // The desktop asked Chilpa to quit: the close that follows is not one

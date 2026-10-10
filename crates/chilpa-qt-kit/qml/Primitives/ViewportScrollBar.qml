@@ -7,6 +7,7 @@ ScrollBar {
     id: bar
     property var viewport: null
     property var area: null
+    property Item overlayParent: null
     readonly property bool sideways: orientation === Qt.Horizontal
     // Views with a full-surface pointer handler can supply its hover state.
     property bool viewportHovered: false
@@ -33,7 +34,7 @@ ScrollBar {
         Qt.callLater(function() {
             // Keep the bar inside clipped pages. A positive gutter uses a
             // free margin beside the viewport.
-            parent = gutter < 0 ? viewport : viewport.parent
+            parent = overlayParent || (gutter < 0 ? viewport : viewport.parent)
             active = Qt.binding(function() { return hovered || pressed || viewportHovered || !!(area && area.hovered) || !!(viewport && viewport.moving) })
             if (sideways) {
                 x = Qt.binding(function() { return parent === viewport ? 0 : viewport.x })
