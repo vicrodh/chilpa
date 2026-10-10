@@ -17,6 +17,9 @@ pub mod qobject {
         fn refresh(self: Pin<&mut ListenList>);
         #[qinvokable]
         fn command(self: Pin<&mut ListenList>, action: &QString, id: &QString, text: &QString);
+        /// The Queues screen's footer, apart from the snapshot so its clock does not reload the list.
+        #[qinvokable]
+        fn footer(self: &ListenList) -> QString;
     }
 }
 use cxx_qt_lib::QString;
@@ -31,6 +34,9 @@ impl qobject::ListenList {
             self.as_mut().set_snapshot(snapshot);
             self.set_revision(next);
         }
+    }
+    pub fn footer(&self) -> QString {
+        QString::from(crate::app::with(|api| api.listen_footer()))
     }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, id: &QString, text: &QString) {
         crate::app::with(|api| api.listen_command(&action.to_string(), &id.to_string(), &text.to_string()));

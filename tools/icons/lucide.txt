@@ -26,3 +26,4 @@ copy
 check
 import
 library-big
+arrow-right

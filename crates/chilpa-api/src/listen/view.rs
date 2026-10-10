@@ -40,6 +40,9 @@ impl Chilpa {
             .map(|(position, &i)| (position, i)).collect();
         let paths: Vec<_> = indices.iter().map(|&(_, i)| b.paths[i].clone()).collect();
         let tracks = self.rows_for_paths(&paths);
+        if full {
+            self.listen.lengths = Some((id, indices.iter().zip(&tracks).map(|(&(_, i), t)| (i, t.duration_ms)).collect()));
+        }
         let query = query.trim().to_lowercase();
         let (mut rows, mut keys) = (Vec::new(), Vec::new());
         let mut section = String::new();
@@ -57,6 +60,20 @@ impl Chilpa {
         }
         (rows, keys)
     }
+    /// What the Queues screen says beside its search: how many songs the
+    /// open queue holds and how long they last, and how long until it ends
+    /// from where it stands, its cursor's track counted from its position.
+    /// It adds up the lengths its rows were last listed with, so the tick
+    /// that asks for it reads nothing.
+    pub fn listen_footer(&self) -> String {
+        let Some(b) = self.buffer_snapshot(self.listen.selected) else { return "{}".into() };
+        let Some((_, lengths)) = self.listen.lengths.as_ref().filter(|(id, _)| *id == b.id) else { return "{}".into() };
+        let order: Vec<usize> = b.order.iter().copied().filter(|&i| b.live(i)).collect();
+        let (songs, total, left) = queue_left(&order, b.cursor, b.seconds, lengths);
+        let n = chilpa_i18n::tf("{} song", "{} songs", songs as i64, &[&songs.to_string()]);
+        json!({"summary": format!("{n} {}", hours_minutes(total)), "left_ms": left}).to_string()
+    }
+
     /// What the active buffer played before the cursor, most recent first
     /// and without headers: the history tab of a queue view.
     pub fn listen_history(&mut self, query: &str) -> (Vec<TrackEntry>, Vec<String>) {
@@ -171,5 +188,41 @@ impl Chilpa {
             "undo" => self.listen_undo(),
             _ => {}
         }
+    }
+}
+
+/// A queue's songs, how long they last, and how long until it ends from its
+/// cursor `seconds` into that track: `order` holds the live tracks in play
+/// order and `lengths` each one's length.
+fn queue_left(order: &[usize], cursor: usize, seconds: f64, lengths: &std::collections::HashMap<usize, u64>) -> (usize, u64, u64) {
+    let length = |i: &usize| lengths.get(i).copied().unwrap_or(0);
+    let total = order.iter().map(length).sum();
+    let left = match order.iter().position(|&i| i == cursor) {
+        Some(at) => length(&cursor).saturating_sub((seconds.max(0.0) * 1000.0) as u64) + order[at + 1..].iter().map(length).sum::<u64>(),
+        None => total,
+    };
+    (order.len(), total, left)
+}
+
+/// "1 hr 23 min", "2 hrs 5 min", "45 min".
+fn hours_minutes(ms: u64) -> String {
+    let minutes = ms / 60_000;
+    let (h, m) = (minutes / 60, minutes % 60);
+    let mins = chilpa_i18n::t_args("{} min", &[&m.to_string()]);
+    if h == 0 { mins } else { format!("{} {mins}", chilpa_i18n::tf("{} hr", "{} hrs", h as i64, &[&h.to_string()])) }
+}
+
+#[cfg(test)]
+mod footer_tests {
+    use super::*;
+
+    #[test]
+    fn a_queue_ends_when_its_cursor_track_and_the_ones_after_it_have_played() {
+        let lengths = [(0, 60_000), (1, 120_000), (2, 180_000), (3, 240_000)].into_iter().collect();
+        assert_eq!(queue_left(&[0, 2, 1, 3], 2, 30.0, &lengths), (4, 600_000, 150_000 + 120_000 + 240_000));
+        assert_eq!(queue_left(&[0, 1], 9, 0.0, &lengths).2, 180_000, "no cursor among them: all of it is left");
+        assert_eq!(hours_minutes(83 * 60_000), "1 hr 23 min");
+        assert_eq!(hours_minutes(125 * 60_000), "2 hrs 5 min");
+        assert_eq!(hours_minutes(45 * 60_000 + 59_000), "45 min");
     }
 }

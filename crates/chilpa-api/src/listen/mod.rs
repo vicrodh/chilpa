@@ -50,11 +50,15 @@ pub(super) struct Workspace {
     pub(crate) undo: Option<Buffer>,
     #[serde(skip)]
     pub saved_at: Option<std::time::Instant>,
+    /// How long each track of a queue lasts, by its index, as its rows were
+    /// last listed whole: what the Queues screen's footer adds up.
+    #[serde(skip)]
+    pub lengths: Option<(u64, std::collections::HashMap<usize, u64>)>,
 }
 impl Default for Workspace {
     fn default() -> Self {
         Self { version: 1, buffers: vec![Buffer::empty(1)], active: 1, selected: 1,
-            next: 2, pending: None, undo: None, saved_at: None }
+            next: 2, pending: None, undo: None, saved_at: None, lengths: None }
     }
 }
 
