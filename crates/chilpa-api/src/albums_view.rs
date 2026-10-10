@@ -48,6 +48,45 @@ pub fn grid_rows(len: usize, columns: usize, max_rows: usize, groups: &[(usize, 
     rows
 }
 
+/// A grid that shows a source's records beside the library's own, a
+/// server counting as the library: the library's records then wear the
+/// player's badge where a source's wear their own. An artist, with no id,
+/// is neither.
+pub fn mixes_sources(ids: impl IntoIterator<Item = i64>) -> bool {
+    let (mut own, mut source) = (false, false);
+    for id in ids {
+        own |= id > 0;
+        source |= id < 0;
+        if own && source {
+            return true;
+        }
+    }
+    false
+}
+
+/// Artists drawn as record cards: the name where a title goes and how
+/// many records stand under it. Only those whose name holds every word of
+/// `filter` stay.
+pub fn artist_cards(artists: &[crate::Artist], filter: &str) -> Vec<crate::Album> {
+    let words: Vec<String> = filter.to_lowercase().split_whitespace().map(String::from).collect();
+    artists
+        .iter()
+        .filter(|a| {
+            let name = a.name.to_lowercase();
+            words.iter().all(|w| name.contains(w.as_str()))
+        })
+        .map(|a| crate::Album {
+            id: 0,
+            artist: chilpa_i18n::tf("{} record", "{} records", a.album_count as i64, &[&a.album_count.to_string()]),
+            title: a.name.clone(),
+            year: None,
+            track_count: a.track_count,
+            artwork_path: a.artwork_path.clone(),
+            play_count: 0,
+        })
+        .collect()
+}
+
 impl Reader {
     /// Merge source album identities into the same order and groups as local albums.
     pub fn albums_view_with_sources(&self, order: &str, group: &str, text: &str, extras: &Filter, remote: Vec<crate::Album>) -> AlbumsFound {
@@ -138,6 +177,26 @@ mod tests {
         let found = arrange(came);
         assert_eq!(found.ids, [25, 30, 20, 10]);
         assert_eq!(found.groups, [(0, "Another".to_string()), (1, "Band".to_string())], "one group whatever its case");
+    }
+
+    #[test]
+    fn records_of_the_library_beside_a_sources_mix_the_grid() {
+        assert!(mixes_sources([3, -1, 7]));
+        assert!(!mixes_sources([3, 7]), "the library and its servers are one");
+        assert!(!mixes_sources([-1, -2]), "a source alone");
+        assert!(!mixes_sources([0, 0, -1]), "an artist is no record");
+        assert!(!mixes_sources([]));
+    }
+
+    #[test]
+    fn artists_become_cards_and_the_filter_keeps_every_word() {
+        let artist = |name: &str, albums| crate::Artist { name: name.into(), album_count: albums, track_count: 3, artwork_path: String::new() };
+        let artists = [artist("Mora Vale", 2), artist("Vale Mora Trio", 1), artist("Band", 1)];
+        let cards = artist_cards(&artists, "vale MORA");
+        assert_eq!(cards.iter().map(|c| c.title.as_str()).collect::<Vec<_>>(), ["Mora Vale", "Vale Mora Trio"]);
+        assert_eq!((cards[0].artist.as_str(), cards[1].artist.as_str()), ("2 records", "1 record"));
+        assert_eq!((cards[0].id, cards[0].track_count), (0, 3));
+        assert_eq!(artist_cards(&artists, " ").len(), 3, "no words keep everyone");
     }
 
     #[test]

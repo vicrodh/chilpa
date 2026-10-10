@@ -4,6 +4,7 @@ ListModel {
     property int rev: 0
     property int expanded: -1
     property int fresh: -1
+    property bool mixed: false
     function albumId(index, revision) { return kind === "source" ? -(index + 1) : index + 1 }
     function title(index, revision) { return "Record " + index }
     function subtitle(index, revision) { return "Artist" }
