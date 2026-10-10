@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 
@@ -25,7 +26,7 @@ Item {
     }
     function reload() {
         const raw = JSON.parse(Playlists.managerJson(search.text, filterButton.value,
-                                                     sort.value, direction.checked, folderId))
+                                                     sort.base, sort.value === sort.base, folderId))
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, detail: entry.detail,
             source: entry.source, sourceName: entry.source_name,
@@ -141,21 +142,13 @@ Item {
                 value: "name"
                 options: [
                     {value: "name", text: I18n.tr("Name", I18n.rev)},
-                    {value: "recent", text: I18n.tr("Recent", I18n.rev)},
-                    {value: "tracks", text: I18n.tr("Number of tracks", I18n.rev)},
-                    {value: "plays", text: I18n.tr("Play count", I18n.rev)},
-                    {value: "custom", text: I18n.tr("Custom", I18n.rev)}
+                    {value: "recent", text: I18n.tr("Recent", I18n.rev), descending: true},
+                    {value: "tracks", text: I18n.tr("Number of tracks", I18n.rev), descending: true},
+                    {value: "plays", text: I18n.tr("Play count", I18n.rev), descending: true},
+                    {value: "custom", text: I18n.tr("Custom", I18n.rev), fixed: true}
                 ]
                 onPicked: (value) => sort.value = value
                 onValueChanged: page.reload()
-            }
-            IconButton {
-                id: direction
-                property bool checked: true
-                round: true
-                glyph: checked ? Icons.chevronUp : Icons.chevronDown
-                tip: checked ? I18n.tr("Ascending", I18n.rev) : I18n.tr("Descending", I18n.rev)
-                onClicked: { checked = !checked; page.reload() }
             }
             Item { width: Math.max(0, parent.width - x - viewButtons.width); height: 1 }
             Row {
@@ -199,7 +192,7 @@ Item {
                 width: GridView.view.cellWidth - Metrics.gap12
                 grid: true
                 manager: playlistManager
-                custom: sort.value === "custom"
+                custom: sort.base === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
                 onEditPlaylist: (id) => playlistEdit.show(id)
             }
@@ -221,7 +214,7 @@ Item {
                 width: ListView.view.width - Metrics.contentHorizontalMargins
                 grid: false
                 manager: playlistManager
-                custom: sort.value === "custom"
+                custom: sort.base === "custom"
                 onEditFolder: (id, name, color) => folderDialog.show(id, name, color)
                 onEditPlaylist: (id) => playlistEdit.show(id)
             }

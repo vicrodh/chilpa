@@ -3,6 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
@@ -108,16 +109,12 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 value: page.order
                 options: [
-                    { value: "default", text: I18n.tr("Default", I18n.rev) },
-                    { value: "artist", text: I18n.tr("Artist A-Z", I18n.rev) },
-                    { value: "artist-desc", text: I18n.tr("Artist Z-A", I18n.rev) },
-                    { value: "title", text: I18n.tr("Title A-Z", I18n.rev) },
-                    { value: "title-desc", text: I18n.tr("Title Z-A", I18n.rev) },
-                    { value: "year-desc", text: I18n.tr("Year (newest)", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year (oldest)", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev) },
-                    { value: "duration", text: I18n.tr("Duration (shortest)", I18n.rev) },
-                    { value: "duration-desc", text: I18n.tr("Duration (longest)", I18n.rev) }
+                    { value: "default", text: I18n.tr("Default", I18n.rev), fixed: true },
+                    { value: "artist", text: I18n.tr("Artist", I18n.rev) },
+                    { value: "title", text: I18n.tr("Title", I18n.rev) },
+                    { value: "year", text: I18n.tr("Year", I18n.rev) },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                    { value: "duration", text: I18n.tr("Duration", I18n.rev) }
                 ]
                 onPicked: (value) => {
                     page.order = value
@@ -127,6 +124,7 @@ Item {
             SortButton {
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: Icons.stack2
+                directed: false
                 value: page.group
                 options: [
                     { value: "off", text: I18n.tr("No grouping", I18n.rev) },

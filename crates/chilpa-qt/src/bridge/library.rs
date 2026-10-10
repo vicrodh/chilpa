@@ -274,12 +274,12 @@ impl cxx_qt::Initialize for qobject::Library {
         let name = app::with(|api| api.preference(ORDER_KEY)).unwrap_or_else(|| "artist".to_string());
         browse::write(|s| s.order = TrackOrder::from_name(&name));
         self.as_mut().rust_mut().order = QString::from(&name);
-        let albums = app::with(|api| api.album_sort().name().to_string());
+        let albums = app::with(|api| api.album_order());
         self.as_mut().rust_mut().album_order = QString::from(&albums);
         self.as_mut()
             .on_album_order_changed(|m| {
-                let order = chilpa_api::AlbumSort::from_name(&m.album_order().to_string());
-                app::with(|api| api.set_album_sort(order));
+                let order = m.album_order().to_string();
+                app::with(|api| api.set_album_order(&order));
             })
             .release();
         self.refresh();

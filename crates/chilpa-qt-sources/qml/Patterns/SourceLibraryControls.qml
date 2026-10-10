@@ -3,7 +3,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 
 Row {
     id: controls
@@ -35,11 +35,16 @@ Row {
         grouping = SettingsModel.kept(prefix + "group")
         descending = SettingsModel.kept(prefix + "descending") === "true"
     }
-    SortButton { value: controls.order; options: controls.orders; onPicked: value => { controls.order = value; SettingsModel.keep(controls.prefix + "order", value) } }
-    SortButton { visible: controls.groups.length > 1; glyph: Icons.stack2; value: controls.grouping; options: controls.groups; onPicked: value => { controls.grouping = value; SettingsModel.keep(controls.prefix + "group", value) } }
-    IconButton {
-        glyph: controls.descending ? Icons.chevronDown : Icons.chevronUp
-        tip: controls.descending ? I18n.tr("Descending", I18n.rev) : I18n.tr("Ascending", I18n.rev)
-        onClicked: { controls.descending = !controls.descending; SettingsModel.keep(controls.prefix + "descending", String(controls.descending)) }
+    SortButton {
+        objectName: "sourceOrder"
+        value: controls.order + (controls.descending ? "-desc" : "")
+        options: controls.orders
+        onPicked: value => {
+            controls.order = baseOf(value)
+            controls.descending = value !== controls.order
+            SettingsModel.keep(controls.prefix + "order", controls.order)
+            SettingsModel.keep(controls.prefix + "descending", String(controls.descending))
+        }
     }
+    SortButton { visible: controls.groups.length > 1; directed: false; glyph: Icons.stack2; value: controls.grouping; options: controls.groups; onPicked: value => { controls.grouping = value; SettingsModel.keep(controls.prefix + "group", value) } }
 }

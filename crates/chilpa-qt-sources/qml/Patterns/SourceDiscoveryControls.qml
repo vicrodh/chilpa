@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 Item {
@@ -128,7 +129,7 @@ Item {
                     Text { width: parent.width - enabledToggle.width - up.width - down.width - count.width - parent.spacing * 4; text: modelData.title || ""; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body; height: count.height; verticalAlignment: Text.AlignVCenter } // derived: flexible label between fixed controls
                     IconButton { id: up; glyph: Icons.chevronUp; tip: I18n.tr("Move up", I18n.rev); enabled: index > 0; onClicked: controls.move(index, -1) }
                     IconButton { id: down; glyph: Icons.chevronDown; tip: I18n.tr("Move down", I18n.rev); enabled: index < controls.sections.length - 1; onClicked: controls.move(index, 1) }
-                    SortButton { id: count; value: String(modelData.size || 18); options: [{value:"6",text:"6"},{value:"12",text:"12"},{value:"18",text:"18"},{value:"24",text:"24"}]; onPicked: value => controls.change(index, "size", Number(value)) }
+                    SortButton { id: count; directed: false; value: String(modelData.size || 18); options: [{value:"6",text:"6"},{value:"12",text:"12"},{value:"18",text:"18"},{value:"24",text:"24"}]; onPicked: value => controls.change(index, "size", Number(value)) }
                 }
             }
             Row {

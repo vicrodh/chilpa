@@ -370,11 +370,19 @@ impl Chilpa {
         self.album_sort
     }
 
-    /// Changes the view and remembers it for the next session.
-    pub fn set_album_sort(&mut self, order: AlbumSort) {
-        self.album_sort = order;
+    /// The Albums screen's order as it was chosen, its direction included
+    /// ("year-asc"), for the window to show after a restart.
+    pub fn album_order(&self) -> String {
+        let saved = chilpa_core::settings::load().album_sort;
+        if saved.is_empty() { self.album_sort.name().to_string() } else { saved }
+    }
+
+    /// Chooses the Albums screen's order and its direction, and remembers
+    /// both for the next session.
+    pub fn set_album_order(&mut self, order: &str) {
+        self.album_sort = AlbumSort::from_name(crate::albums_view::turned_order(order).0);
         let mut s = chilpa_core::settings::load();
-        s.album_sort = order.name().to_string();
+        s.album_sort = order.to_string();
         let _ = chilpa_core::settings::save(&s);
     }
 

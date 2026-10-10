@@ -127,6 +127,12 @@ pub enum TrackOrder {
     /// Who plays each track, then the record, then the title: a list
     /// grouped by artist.
     Performer,
+    /// The records from Z, each in its own order.
+    AlbumDescending,
+    /// The oldest arrivals first.
+    AddedAscending,
+    /// The least played first.
+    PlaysAscending,
 }
 
 impl TrackOrder {
@@ -136,7 +142,9 @@ impl TrackOrder {
             "title" => Self::Title, "plays" => Self::Plays, "duration" => Self::Duration,
             "duration-desc" => Self::DurationDescending,
             "disc" => Self::Disc, "artist-desc" => Self::ArtistDescending, "title-desc" => Self::TitleDescending,
-            "year-desc" => Self::YearDescending, "performer" => Self::Performer, _ => Self::Artist,
+            "year-desc" => Self::YearDescending, "performer" => Self::Performer,
+            "album-desc" => Self::AlbumDescending, "added-asc" => Self::AddedAscending, "plays-asc" => Self::PlaysAscending,
+            _ => Self::Artist,
         }
     }
 
@@ -161,6 +169,9 @@ impl TrackOrder {
             TrackOrder::TitleDescending => "ltrim(t.title) COLLATE NOCASE DESC",
             TrackOrder::YearDescending => "a.year DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Performer => "t.artist COLLATE NOCASE, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
+            TrackOrder::AlbumDescending => "a.title COLLATE NOCASE DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::AddedAscending => "t.added_at, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::PlaysAscending => "plays, t.title COLLATE NOCASE",
         }
     }
 }
@@ -998,6 +1009,16 @@ mod tests {
         assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
         assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
         assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");
+    }
+
+    #[test]
+    fn the_record_the_arrival_and_the_plays_turn_around_too() {
+        let lib = shelf();
+        let ids = |order: &str| lib.browse_tracks(&Filter::default(), TrackOrder::from_name(order), 10).unwrap().into_iter().map(|t| t.id).collect::<Vec<_>>();
+        assert_eq!(ids("album-desc"), [30, 10, 12, 11, 20], "Northbound, Low Orbit in its own order, Afterimage");
+        assert_eq!(ids("added-asc"), [10, 11, 12, 20, 30]);
+        assert_eq!(ids("added"), [30, 20, 12, 11, 10]);
+        assert_eq!(ids("plays-asc").last(), Some(&20), "the most played last");
     }
 
     #[test]
