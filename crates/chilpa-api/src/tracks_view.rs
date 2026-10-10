@@ -4,20 +4,25 @@
 use crate::{Filter, Reader, Snapshot, TrackOrder, TrackRow};
 
 /// What the screen asks for, as it travels in one string: the order, the
-/// grouping and what was typed, a unit separator apart.
+/// grouping, what was typed and the stars kept, a unit separator apart.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TracksQuery {
     pub order: String,
     /// "off", "album", "artist" or "name".
     pub group: String,
     pub text: String,
+    /// A track's own stars to keep, 0 for none, written "5,0"; empty keeps
+    /// every track.
+    pub ratings: Vec<u8>,
 }
 
 impl TracksQuery {
     pub fn parse(key: &str) -> Self {
-        let mut parts = key.splitn(3, '\u{1f}');
+        let mut parts = key.splitn(4, '\u{1f}');
         let mut next = || parts.next().unwrap_or_default().to_string();
-        Self { order: next(), group: next(), text: next() }
+        let (order, group, text) = (next(), next(), next());
+        let ratings = next().split(',').filter_map(|stars| stars.trim().parse().ok()).filter(|stars| *stars <= 5).collect();
+        Self { order, group, text, ratings }
     }
 
     /// The order inside each group, or of the whole list when it has none:
@@ -66,6 +71,7 @@ impl Reader {
             excluded_sources: extras.excluded_sources.clone(),
             qualities: extras.qualities.clone(),
             formats: extras.formats.clone(),
+            track_ratings: query.ratings.clone(),
             grouped_by: if query.grouped() { query.group.clone() } else { String::new() },
             ..Filter::default()
         };
@@ -99,6 +105,13 @@ impl Reader {
         let natives = catalog.natives()?;
         let root = crate::Chilpa::plugins_dir();
         let words: Vec<_> = query.text.to_lowercase().split_whitespace().map(str::to_owned).collect();
+        // A source's track keeps its stars apart from the library's.
+        let stars: Option<std::collections::HashMap<i64, u8>> = (!query.ratings.is_empty()).then(|| {
+            let kept = self.lib.external_ratings().unwrap_or_default();
+            catalog.rating_identities().into_iter().filter(|(kind, ..)| kind == "track")
+                .filter_map(|(kind, id, source, identity)| kept.get(&(source, kind, identity)).map(|stars| (id, *stars)))
+                .collect()
+        });
         let mut remote = Vec::new();
         let mut dates = std::collections::HashMap::new();
         for plugin in natives.ids() {
@@ -108,6 +121,7 @@ impl Reader {
                 let text = format!("{} {} {}", row.title, row.artist, row.album).to_lowercase();
                 let tier = match row.quality.tier { crate::quality::Tier::Lossy => "lossy", crate::quality::Tier::Lossless => "lossless", crate::quality::Tier::HiRes => "hires", crate::quality::Tier::Dsd => "dsd", _ => "unknown" };
                 if !words.iter().all(|w| text.contains(w)) || (!filter.qualities.is_empty() && !filter.qualities.iter().any(|q| q == tier)) || (!filter.formats.is_empty() && !filter.formats.iter().any(|f| f.eq_ignore_ascii_case(&row.quality.format))) { continue; }
+                if stars.as_ref().is_some_and(|stars| !query.ratings.contains(&stars.get(&row.id).copied().unwrap_or(0))) { continue; }
                 dates.insert(row.id, (track.metadata["year"].as_i64().unwrap_or(0) as i32, track.metadata["added_at"].as_i64().unwrap_or(0)));
                 remote.push(row);
             }
@@ -195,6 +209,13 @@ mod tests {
         assert_eq!(asked("title-desc\u{1f}artist\u{1f}"), TrackOrder::TitleDescending, "a grouping orders the groups, not what is in them");
         assert_eq!(asked(""), TrackOrder::Album, "nothing asked is the order of the records");
         assert_eq!(TracksQuery::parse("added\u{1f}album\u{1f}two words").text, "two words");
+    }
+
+    #[test]
+    fn the_stars_kept_travel_last_and_nothing_else_reads_as_one() {
+        let query = TracksQuery::parse("added\u{1f}off\u{1f}two words\u{1f}5,0,x,9");
+        assert_eq!((query.text.as_str(), query.ratings), ("two words", vec![5, 0]));
+        assert!(TracksQuery::parse("added\u{1f}off\u{1f}").ratings.is_empty(), "none asked keeps every track");
     }
 }
 

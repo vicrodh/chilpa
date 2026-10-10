@@ -5,6 +5,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Components"
 
 // Library Explorer's provenance and encoded-file filters. Sources are read
 // from the library; tiers and formats use the facade's generic vocabulary.
@@ -17,6 +18,10 @@ Popup {
     // screen has none; a toggle asks the screen to turn one on or off.
     property var panes: null
     signal paneToggled(string column)
+    // The Tracks screen's stars to keep, or null where a screen has none.
+    property var ratings: null
+    signal ratingsChosen(var ratings)
+    readonly property bool starred: ratings !== null && ratings.length > 0
     readonly property real half: (popover.availableWidth - Metrics.gap16) / 2 // derived: two columns and the gap between
 
     // A click outside closes it and is nothing else: it is not also a click
@@ -162,7 +167,8 @@ Popup {
                             { column: "year", label: I18n.tr("Year", I18n.rev) },
                             { column: "genre", label: I18n.tr("Genre", I18n.rev) },
                             { column: "label", label: I18n.tr("Label", I18n.rev) },
-                            { column: "composer", label: I18n.tr("Composer", I18n.rev) }
+                            { column: "composer", label: I18n.tr("Composer", I18n.rev) },
+                            { column: "rating", label: I18n.tr("Rating", I18n.rev) }
                         ]
                         Item {
                             required property var modelData
@@ -241,6 +247,12 @@ Popup {
                     }
                 }
 
+                TrackStarsFilter {
+                    visible: popover.ratings !== null
+                    width: parent.width
+                    ratings: popover.ratings || []
+                    onChosen: (next) => popover.ratingsChosen(next)
+                }
             }
         }
 
@@ -249,9 +261,10 @@ Popup {
             spacing: Metrics.gap8
 
             PillButton {
-                enabled: Library.extraFiltered
+                objectName: "ratingsReset"
+                enabled: Library.extraFiltered || popover.starred
                 text: I18n.tr("Reset", I18n.rev)
-                onClicked: Library.resetExtra()
+                onClicked: { Library.resetExtra(); if (popover.starred) popover.ratingsChosen([]) }
             }
             PillButton {
                 kind: "primary"

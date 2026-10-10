@@ -2518,6 +2518,9 @@ msgstr "Calidad desconocida"
 msgid "Quality, format and source filters"
 msgstr "Filtros de calidad, formato y fuente"
 
+msgid "Quality, format, source and rating filters"
+msgstr "Filtros de calidad, formato, fuente y calificación"
+
 msgid "Quarantined"
 msgstr "En cuarentena"
 
@@ -3544,6 +3547,9 @@ msgstr "Quitar silencio"
 
 msgid "Unplayed"
 msgstr "Sin escuchar"
+
+msgid "Unrated"
+msgstr "Sin calificar"
 
 msgid "Up next"
 msgstr "A continuación"
