@@ -1372,6 +1372,9 @@ msgstr "En progreso"
 msgid "Include source albums in Albums"
 msgstr "Integrar los álbumes de esta fuente en Álbumes"
 
+msgid "Include source recommendations in Home"
+msgstr "Incluir recomendaciones de esta fuente en Inicio"
+
 msgid "Influences"
 msgstr "Influencias"
 
@@ -2436,6 +2439,9 @@ msgstr "Discos"
 
 msgid "Refresh"
 msgstr "Actualizar"
+
+msgid "Refresh mix"
+msgstr "Actualizar mezcla"
 
 msgid "Refresh settings"
 msgstr "Actualizar ajustes"

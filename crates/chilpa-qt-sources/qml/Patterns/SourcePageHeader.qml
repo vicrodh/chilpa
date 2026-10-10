@@ -48,6 +48,12 @@ Column {
             // A cover the listener chose wins over the one the source has.
             source: header.info.chosen_art || (header.info.plugin && header.info.image ? Sources.art(header.info.plugin, header.info.image, Library.remoteArtRev) : header.info.art || "")
         }
+        AnimatedCover {
+            anchors.fill: portrait
+            visible: (header.info.art_colors || []).length >= 3 && !portrait.ready
+            colors: header.info.art_colors || []
+            label: header.info.title || ""
+        }
         Icon {
             anchors.centerIn: portrait
             visible: header.artist && !portrait.ready
@@ -87,6 +93,7 @@ Column {
                 IconButton { visible: header.playbackModel.count > 0; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.arrowsShuffle; tip: I18n.tr("Shuffle", I18n.rev); onClicked: header.playbackModel.playAll(true) }
                 IconButton { objectName: "radioAction"; visible: !!header.info.radio_id; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Lucide.radio; iconFamily: Lucide.font; tip: header.artist ? I18n.tr("Artist radio", I18n.rev) : I18n.tr("Album radio", I18n.rev); onClicked: AlbumActions.play(header.info.radio_id, false) }
                 IconButton { visible: !!header.info.ref && header.info.editable !== true && header.info.favorite_supported !== false; round: true; tone: header.contrasted ? "overlay" : "secondary"; glyph: Icons.heart; checked: header.info.favorite === true; tip: header.info.favorite ? I18n.tr("Remove from favorites", I18n.rev) : I18n.tr("Add to favorites", I18n.rev); onClicked: header.favorite() }
+                IconButton { visible: header.info.refreshable === true; round: true; glyph: Icons.refresh; tip: I18n.tr("Refresh mix", I18n.rev); onClicked: Sources.command("native", header.info.plugin, JSON.stringify({action:"mix.refresh",ref:header.info.ref})) }
                 IconButton {
                     objectName: "sourceLibraryMembership"
                     visible: header.info.library_supported === true

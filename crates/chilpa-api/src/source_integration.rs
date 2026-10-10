@@ -10,6 +10,7 @@ pub(crate) struct Preferences {
     pub separate_playlists: bool,
     pub integrate_albums: bool,
     pub integrate_tracks: bool,
+    pub integrate_home: bool,
 }
 
 pub(crate) fn read(root: &Path, id: &str) -> Preferences {
@@ -26,6 +27,7 @@ pub(crate) fn save(root: &Path, id: &str, field: &str, enabled: bool) -> Result<
         "separate_playlists" => preferences.separate_playlists = enabled,
         "integrate_albums" => preferences.integrate_albums = enabled,
         "integrate_tracks" => preferences.integrate_tracks = enabled,
+        "integrate_home" => preferences.integrate_home = enabled,
         _ => return Err("Unknown integration preference.".into()),
     }
     let directory = root.join(".integration");
@@ -48,6 +50,14 @@ impl Chilpa {
     /// Installed native libraries that can contribute saved releases to Albums.
     pub fn album_libraries(&self) -> String { self.integrated_libraries("albums") }
     pub fn track_libraries(&self) -> String { self.integrated_libraries("tracks") }
+    pub fn home_libraries(&self) -> String {
+        let root = Self::plugins_dir();
+        let mut rows: Vec<_> = self.natives.ids().into_iter()
+            .filter(|id| self.natives.has_pages(id) && read(&root, id).integrate_home)
+            .map(|id| json!({"id":id,"name":self.catalog.name(&id).unwrap_or_else(|| id.clone())})).collect();
+        rows.sort_by(|a,b| a["name"].as_str().cmp(&b["name"].as_str()));
+        json!(rows).to_string()
+    }
     fn integrated_libraries(&self, kind: &str) -> String {
         let root = Self::plugins_dir();
         let mut rows: Vec<_> = self.natives.ids().into_iter()
