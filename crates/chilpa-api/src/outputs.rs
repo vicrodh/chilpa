@@ -9,6 +9,39 @@ pub(crate) const RESERVE: &str = "audio.reserve";
 /// Whether PipeWire's graph follows each track's rate.
 pub(crate) const FORCE_RATE: &str = "audio.forceRate";
 
+/// The HiFi Wizard's row. Its configuration is PipeWire's, so it is shown
+/// on Linux only, under every stack there, as in QBZ.
+pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
+
+#[cfg(target_os = "linux")]
+mod hifi_wizard;
+
+/// Off Linux the wizard has nothing to set up: its row is hidden, and the
+/// window's calls find a closed document.
+#[cfg(not(target_os = "linux"))]
+impl crate::Chilpa {
+    pub fn wizard_doc(&mut self, _seen: u64) -> Option<(u64, String)> {
+        None
+    }
+    pub fn wizard_command(&mut self, _action: &str, _argument: &str) {}
+    pub(crate) fn wizard_maintenance(&mut self, _key: &str) -> Option<String> {
+        None
+    }
+}
+
+impl crate::Chilpa {
+    /// The wizard's row, hidden where it cannot finish.
+    pub(crate) fn wizard_row(&self, row: &mut crate::SettingsRow) -> bool {
+        if row.key != HIFI_WIZARD {
+            return false;
+        }
+        if !cfg!(target_os = "linux") {
+            row.control = String::new();
+        }
+        true
+    }
+}
+
 /// The card's stack and the ones through `plughw` and ALSA's PCM layer, as
 /// identifiers name them.
 const CARD: &str = "alsa";

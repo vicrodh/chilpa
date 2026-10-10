@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/about/qml/Components"
 import "qrc:/qt/qml/app/chilpa/link/qml/Components" as LinkUi
+import "qrc:/qt/qml/app/chilpa/wizard/qml/Components" as WizardUi
 import app.chilpa.about
 import app.chilpa.controls
 
@@ -182,6 +183,7 @@ Item {
             }
             AboutModal { id: about }
             LinkUi.LinkModal {}
+            WizardUi.HifiWizardModal {}
         }
 
         Rectangle {

@@ -23,6 +23,10 @@ pub mod playback_events;
 pub mod sacd_tracks;
 pub mod seek_waveform;
 pub mod loudness;
+/// The HiFi Wizard: its configuration is PipeWire's, so it is Linux's.
+#[cfg(target_os = "linux")]
+pub mod dac_setup;
+pub mod test_signal;
 
 /// What goes out the device, for whoever wants to draw it.
 pub use chilpa_audio::{spectrum, tap, visualizer};

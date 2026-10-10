@@ -17,3 +17,10 @@ x
 power
 folder
 chart-column
+chevron-down
+chevron-right
+skip-back
+skip-forward
+circle-check-big
+copy
+check

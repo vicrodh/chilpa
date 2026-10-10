@@ -388,6 +388,8 @@ impl qobject::SettingsPage {
             pressed => {
                 let Some(said) = app::with(|api| api.maintain(pressed)) else { return };
                 self.as_mut().rust_mut().said = Some((pressed.into(), said));
+                // The feature's own objects read again: a button can open one.
+                chilpa_qt_kit::bridge::prefs::changed();
             }
         }
         self.reload();

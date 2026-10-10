@@ -26,6 +26,8 @@ use chilpa_audio::sink::{AudioSink, SinkError};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
+pub mod setup;
+
 static FORCING: AtomicBool = AtomicBool::new(false);
 
 /// Whether the graph is set to each track's rate while Chilpa has a sink

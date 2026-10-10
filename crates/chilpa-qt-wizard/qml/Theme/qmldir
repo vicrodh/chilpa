@@ -1,0 +1,2 @@
+module app.chilpa.wizard.Theme
+singleton WizardFrame 1.0 WizardFrame.qml
