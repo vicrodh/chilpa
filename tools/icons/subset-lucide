@@ -2,7 +2,7 @@
 """Build Chilpa's tiny Lucide font from an unpacked lucide-static package.
 
 Usage: tools/icons/subset-lucide <path to lucide-static>
-Needs fontforge.
+Needs fontforge with its Python module.
 """
 import json
 import shutil
@@ -31,11 +31,29 @@ def main() -> None:
     missing = [name for name in wanted if name not in points]
     if missing:
         sys.exit(f"subset-lucide: missing {', '.join(missing)}")
-    commands = ["Open($1)", "SelectNone()", f"Select(0u{points[wanted[0]]:X})"]
-    commands += [f"SelectMore(0u{points[name]:X})" for name in wanted[1:]]
-    commands += ["SelectInvert()", "Clear()", 'SetFontNames("ChilpaLucide","Chilpa Lucide","Chilpa Lucide")', "Generate($2)"]
+    # Glyph by glyph, not by encoding slot: a glyph named like a letter ("x")
+    # sits in two slots, its private code point and the letter's, and
+    # clearing the slots left over after selecting the wanted ones cleared
+    # it too. Each wanted glyph keeps its private code point alone.
+    script = """
+import fontforge, sys
+font = fontforge.open(sys.argv[1])
+wanted = [int(cp) for cp in sys.argv[3].split(",")]
+keep = set()
+for cp in wanted:
+    glyph = next(g for g in font.glyphs() if g.unicode == cp or (g.altuni and any(a[0] == cp for a in g.altuni)))
+    glyph.unicode = cp
+    glyph.altuni = None
+    keep.add(glyph.glyphname)
+for glyph in list(font.glyphs()):
+    if glyph.glyphname not in keep and glyph.glyphname != ".notdef":
+        font.removeGlyph(glyph)
+font.fontname, font.familyname, font.fullname = "ChilpaLucide", "Chilpa Lucide", "Chilpa Lucide"
+font.generate(sys.argv[2])
+"""
     OUT.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["fontforge", "-lang=ff", "-c", "; ".join(commands), str(font_dir / "lucide.ttf"), str(OUT)], check=True)
+    codes = ",".join(str(points[name]) for name in wanted)
+    subprocess.run(["fontforge", "-lang=py", "-c", script, str(font_dir / "lucide.ttf"), str(OUT), codes], check=True)
     version = json.loads((package / "package.json").read_text())["version"]
     properties = "\n".join(f'    readonly property string {camel(name)}: "\\u{points[name]:04x}"' for name in sorted(wanted))
     QML.write_text(
