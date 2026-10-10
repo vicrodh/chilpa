@@ -26,6 +26,21 @@ TestCase {
         ScrollBar.vertical: ViewportScrollBar { id: longBar }
         MouseArea { id: rowPointer; anchors.fill: parent; hoverEnabled: true }
     }
+    Flickable {
+        id: wideView
+        x: 20; y: 330; width: 400; height: 32
+        contentWidth: 1000; contentHeight: height
+        clip: true
+        ScrollBar.horizontal: ViewportScrollBar { id: wideBar }
+    }
+    function test_horizontal_thumb_uses_the_reserved_bottom_margin() {
+        tryCompare(wideBar, "parent", wideView)
+        compare(wideBar.width, wideView.width)
+        compare(wideBar.y, wideView.height - Metrics.gap4 - wideBar.height / 2)
+        verify(wideBar.y >= 0 && wideBar.y + wideBar.height <= wideView.height)
+        mouseMove(wideView, 20, 20)
+        tryCompare(wideBar, "visible", true)
+    }
     function test_long_library_has_a_visible_grabbable_thumb() {
         tryCompare(longBar, "parent", longView)
         compare(longBar.width, Metrics.scrollbarWidth)

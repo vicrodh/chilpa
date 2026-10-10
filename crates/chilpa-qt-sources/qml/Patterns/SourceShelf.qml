@@ -56,10 +56,10 @@ Column {
     }
     Flickable {
         id: rail
-        width: parent.width; height: grid.implicitHeight
+        width: parent.width; height: grid.implicitHeight + Metrics.gap8
         visible: cards.albums > 0; contentWidth: grid.width; contentHeight: height
         interactive: !shelf.wrap; flickableDirection: Flickable.HorizontalFlick; boundsBehavior: Flickable.StopAtBounds; clip: true
-        ScrollBar.horizontal: ScrollBar {}
+        ScrollBar.horizontal: ViewportScrollBar {}
         AlbumGrid {
             id: grid
             // The rail keeps one card row; its width grows by one card and gap per item.

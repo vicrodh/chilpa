@@ -5,20 +5,20 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-
 Item {
     id: strip
     property var document: ({tabs: [], selected: ""})
-    implicitHeight: Metrics.tabHeight
+    implicitHeight: Metrics.tabHeight + Metrics.gap8
     Flickable {
         id: viewport
         anchors.left: parent.left
         width: Math.min(tabs.width, Math.max(0, strip.width - add.width - Metrics.gap4))
-        height: parent.height
+        height: Metrics.tabHeight
         contentWidth: tabs.width
         clip: true
         flickableDirection: Flickable.HorizontalFlick
         boundsBehavior: Flickable.StopAtBounds
+        ScrollBar.horizontal: ViewportScrollBar { gutter: Metrics.gap4 }
         Row {
             id: tabs
             spacing: Metrics.gap4
