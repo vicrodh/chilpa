@@ -331,9 +331,16 @@ impl Player {
         self.controls.gapless.set(on);
     }
 
-    /// Normalizing by ReplayGain on or off, from the next track on.
+    /// Normalizing on or off, from the next track on.
     pub fn set_normalize(&self, on: bool) {
         self.controls.normalize.set(on);
+    }
+
+    /// The loudness tracks are brought to, in LUFS, and whether a boost
+    /// stops short of clipping; from the next track on, as in QBZ.
+    pub fn set_normalization(&self, target: f32, prevent_clipping: bool) {
+        self.controls.normalize_target.set(target);
+        self.controls.prevent_clipping.set(prevent_clipping);
     }
 
     /// What the samples are multiplied by, heard as soon as what the device

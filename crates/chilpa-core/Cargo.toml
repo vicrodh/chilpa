@@ -18,8 +18,13 @@ chilpa-analysis.workspace = true
 # What a device refused, and why a track stopped, are read by the user.
 chilpa-i18n.workspace = true
 rusqlite = "0.40"
+# Loudness as BS.1770 measures it, for normalization (QBZ uses the same).
+ebur128 = "0.1"
 chilpa-dsd.workspace = true
 chilpa-sacd.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
 
 [target.'cfg(target_os = "linux")'.dependencies.chilpa-cd]
 workspace = true

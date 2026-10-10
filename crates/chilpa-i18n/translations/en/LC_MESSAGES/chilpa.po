@@ -52,6 +52,21 @@ msgstr ""
 msgid "(unreadable manifest)"
 msgstr ""
 
+msgid "-11 LUFS · Loud"
+msgstr ""
+
+msgid "-14 LUFS · Streaming (default)"
+msgstr ""
+
+msgid "-16 LUFS"
+msgstr ""
+
+msgid "-18 LUFS · ReplayGain"
+msgstr ""
+
+msgid "-23 LUFS · Broadcast (EBU R128)"
+msgstr ""
+
 msgid "1 hr"
 msgstr ""
 
@@ -510,6 +525,9 @@ msgid "Cancel Timer"
 msgstr ""
 
 msgid "Cancel stop after this track"
+msgstr ""
+
+msgid "Cap the boost so the loudest peak stays under full scale. Off lets quiet tracks reach the target even if their peaks clip."
 msgstr ""
 
 msgid "Casting needs an original file with a known size and byte ranges."
@@ -1072,12 +1090,6 @@ msgstr ""
 msgid "Errors"
 msgstr "Errors"
 
-msgid "Every track at one loudness, by its ReplayGain. A track whose gain changes is reported as processed."
-msgstr ""
-
-msgid "Every track at one loudness, by its ReplayGain. Changed tracks are reported as processed."
-msgstr ""
-
 msgid "Everyone who plays on a track"
 msgstr ""
 
@@ -1525,6 +1537,9 @@ msgstr ""
 msgid "Letters"
 msgstr ""
 
+msgid "Level loudness across tracks. This breaks strict bit perfect."
+msgstr ""
+
 msgid "Library"
 msgstr ""
 
@@ -1948,9 +1963,6 @@ msgstr ""
 msgid "No tracks match your search."
 msgstr ""
 
-msgid "Normalization"
-msgstr ""
-
 msgid "Not answering"
 msgstr ""
 
@@ -2318,6 +2330,9 @@ msgid "Preferred GPU"
 msgstr ""
 
 msgid "Press keys…"
+msgstr ""
+
+msgid "Prevent clipping"
 msgstr ""
 
 msgid "Previous"
@@ -3026,6 +3041,9 @@ msgstr ""
 msgid "Take the card from the sound server"
 msgstr ""
 
+msgid "Target loudness"
+msgstr ""
+
 msgid "That answer does not belong to this window."
 msgstr ""
 
@@ -3063,6 +3081,9 @@ msgid "The line being sung stays in view."
 msgstr ""
 
 msgid "The listening history could not be saved"
+msgstr ""
+
+msgid "The loudness every track is aligned to. -14 LUFS matches streaming services, -18 LUFS is the ReplayGain reference."
 msgstr ""
 
 msgid "The lyrics cache could not be opened."
@@ -3402,6 +3423,9 @@ msgid "Volume Down"
 msgstr ""
 
 msgid "Volume Up"
+msgstr ""
+
+msgid "Volume normalization"
 msgstr ""
 
 msgid "Volume {}%"
