@@ -1126,6 +1126,9 @@ msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
 
+msgid "Ends at {}"
+msgstr "Termina a las {}"
+
 msgid "English"
 msgstr "Inglés"
 
@@ -4847,6 +4850,11 @@ msgstr "{} no tiene dónde guardar \"{}\""
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr "{} tiene que ser https (o loopback): mandar a alguien a dar permiso por http deja su sesión en el camino"
 
+msgid "{} hr"
+msgid_plural "{} hrs"
+msgstr[0] "{} h"
+msgstr[1] "{} h"
+
 msgid "{} is busy; try again in {} seconds"
 msgstr "{} está ocupado; intenta otra vez en {} segundos"
 
@@ -4889,6 +4897,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] "{} escucha pendiente de enviar"
 msgstr[1] "{} escuchas pendientes de enviar"
+
+msgid "{} min"
+msgstr "{} min"
 
 msgid "{} modified"
 msgstr "{} modificados"

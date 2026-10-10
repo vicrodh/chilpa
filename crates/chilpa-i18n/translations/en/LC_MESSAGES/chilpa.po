@@ -1126,6 +1126,9 @@ msgstr ""
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr ""
 
+msgid "Ends at {}"
+msgstr ""
+
 msgid "English"
 msgstr ""
 
@@ -4847,6 +4850,11 @@ msgstr ""
 msgid "{} has to be https (or a loopback): sending someone to grant permission over http leaves their session on the road"
 msgstr ""
 
+msgid "{} hr"
+msgid_plural "{} hrs"
+msgstr[0] ""
+msgstr[1] ""
+
 msgid "{} is busy; try again in {} seconds"
 msgstr ""
 
@@ -4889,6 +4897,9 @@ msgid "{} listen waiting to be sent"
 msgid_plural "{} listens waiting to be sent"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} min"
+msgstr ""
 
 msgid "{} modified"
 msgstr ""

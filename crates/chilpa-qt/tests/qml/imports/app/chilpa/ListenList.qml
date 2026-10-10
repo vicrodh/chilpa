@@ -7,6 +7,8 @@ QtObject {
     property string lastId: ""
     property string renamedId: ""
     property string renamedText: ""
+    property string footing: JSON.stringify({ summary: "3 songs 1 hr 2 min", left_ms: 600000 })
+    function footer() { return footing }
     function refresh() {}
     function command(action, id, text) {
         lastAction = action; lastId = id
