@@ -5,6 +5,7 @@ import "../../qml/Primitives"
 import "../../qml/Theme"
 
 TestCase {
+    id: test
     name: "ViewportScrollbar"
     when: windowShown
     visible: true
@@ -32,6 +33,20 @@ TestCase {
         contentWidth: 1000; contentHeight: height
         clip: true
         ScrollBar.horizontal: ViewportScrollBar { id: wideBar }
+    }
+    Flickable {
+        id: overlayView
+        x: 20; y: 365; width: 400; height: 30
+        contentWidth: width; contentHeight: 1000
+        clip: true
+        ScrollBar.vertical: ViewportScrollBar { id: overlayBar; overlayParent: test; z: 2 }
+    }
+    Rectangle { x: 300; y: 365; width: 120; height: 30; z: 1 }
+    function test_overlay_panel_keeps_scrollbar_at_page_edge() {
+        tryCompare(overlayBar, "parent", this)
+        compare(overlayBar.x, overlayView.x + overlayView.width - Metrics.gap8 - overlayBar.width / 2)
+        compare(overlayBar.y, overlayView.y)
+        verify(overlayBar.z > 1)
     }
     function test_horizontal_thumb_uses_the_reserved_bottom_margin() {
         tryCompare(wideBar, "parent", wideView)

@@ -69,7 +69,8 @@ Item {
         contentWidth: width; contentHeight: column.height + Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds; clip: true
         ScrollBar.vertical: ViewportScrollBar {
-            gutter: -(panel.width + Metrics.gap16)
+            overlayParent: page
+            z: 2
             viewportHovered: pageHover.hovered
         }
         HoverHandler { id: pageHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }
