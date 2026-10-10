@@ -6,8 +6,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 
 // A block of tracks on an artist's page: Popular Tracks, or Appears On
-// when the source lists it as tracks. Five rows first and "Load more"
-// opens the rest, in the window, with nothing fetched; "View less" folds
+// when the source lists it as tracks. Five rows first (or as many as the
+// section asks: ten for what the listener keeps) and "Load more" opens the rest, in the window, with nothing fetched; "View less" folds
 // them back. Popular Tracks has Play and a menu of placements for all of
 // them; Appears On has neither (QBZ).
 Column {
@@ -16,7 +16,8 @@ Column {
     property bool actions: true
     property bool expanded: false
     readonly property string modelKind: section.model || "source"
-    readonly property int preview: expanded ? 0 : Metrics.previewRows
+    readonly property int first: section.preview || Metrics.previewRows
+    readonly property int preview: expanded ? 0 : first
     readonly property bool shown: tracks.count > 0
     spacing: Metrics.gap12
     visible: shown
@@ -56,7 +57,7 @@ Column {
     TrackList { width: parent.width; height: implicitHeight; fitContent: true; model: tracks; header: false; showArtist: true; showAlbum: block.section.role !== "appears" }
     // All of them, or five again: the toggle is the page's, nothing is asked for.
     PillButton {
-        objectName: "tracksMore"; visible: block.expanded || all.count > Metrics.previewRows; kind: "ghost"
+        objectName: "tracksMore"; visible: block.expanded || all.count > block.first; kind: "ghost"
         text: block.expanded ? I18n.tr("View less", I18n.rev) : I18n.tr("Load more", I18n.rev)
         onClicked: block.expanded = !block.expanded
     }

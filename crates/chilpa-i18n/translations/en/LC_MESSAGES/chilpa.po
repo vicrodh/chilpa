@@ -1279,6 +1279,9 @@ msgstr ""
 msgid "Fri"
 msgstr ""
 
+msgid "From catalog"
+msgstr ""
+
 msgid "From same artist"
 msgstr ""
 
@@ -1488,6 +1491,9 @@ msgstr "Import complete"
 
 msgid "Import playlist"
 msgstr "Import playlist"
+
+msgid "In library"
+msgstr ""
 
 msgid "In progress"
 msgstr ""

@@ -19,7 +19,11 @@ Item {
     id: page
     // "<plugin> native:artist:<id>", or "local artist:<name>".
     property string key
-    readonly property string document: Sources.page(key, Library.remoteRev) || "{}"
+    // What the listener keeps of the artist in its source, in place of the
+    // source's catalog; its key comes from the catalog page's header.
+    property bool inLibrary: false
+    property string libraryKey
+    readonly property string document: Sources.page(inLibrary && libraryKey !== "" ? libraryKey : key, Library.remoteRev) || "{}"
     readonly property var about: JSON.parse(document)
     readonly property var header: about.header || ({})
     readonly property bool local: about.local === true
@@ -30,7 +34,8 @@ Item {
     readonly property bool constrained: Window.width < Metrics.networkNarrow && SettingsModel.lyricsOpen
     property bool networkOpen: !constrained
     onConstrainedChanged: if (constrained) networkOpen = false
-    onKeyChanged: networkOpen = !constrained
+    onKeyChanged: { networkOpen = !constrained; inLibrary = false }
+    onAboutChanged: if (!inLibrary) libraryKey = !local && header.plugin && header.ref ? header.plugin + " artist-library:" + header.ref : ""
     // The shelves by key, changed only when a shelf comes or goes, so a
     // page read again keeps every block where it was.
     property var shelfKeys: []
@@ -39,7 +44,7 @@ Item {
         if (keys.join("\n") !== shelfKeys.join("\n"))
             shelfKeys = keys
     }
-    Component.onCompleted: shelvesChanged()
+    Component.onCompleted: { shelvesChanged(); aboutChanged() }
     function shelf(key) { return shelves.find(s => (s.key || s.id) === key) || ({}) }
     function blockOf(id) {
         for (let i = 0; i < blocks.count; i++) {
@@ -79,7 +84,7 @@ Item {
             x: Metrics.contentX; y: Metrics.contentTop
             width: flick.width - Metrics.contentX * 2 // derived: padding on both sides
             spacing: Metrics.blockGap
-            ArtistHeader { id: head; width: parent.width; info: page.header; local: page.local; networkOpen: page.networkOpen; onToggleNetwork: page.networkOpen = !page.networkOpen }
+            ArtistHeader { id: head; width: parent.width; info: page.header; local: page.local; networkOpen: page.networkOpen; onToggleNetwork: page.networkOpen = !page.networkOpen; inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on }
             // Where the jump bar sits when the page is at the top.
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {

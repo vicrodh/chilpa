@@ -86,7 +86,7 @@ mod tests {
     #[test]
     fn search_show_routes_to_its_media_header_and_music_stays_an_album() {
         let mut app = Chilpa::new();
-        app.sources.panels.push(Panel { id: "fixture-media".into(), name: "Media".into(), icon: String::new(), icon_image: String::new(), icon_tint: false, music: false, children: vec![] });
+        app.sources.panels.push(Panel { id: "fixture-media".into(), name: "Media".into(), icon: String::new(), icon_image: String::new(), icon_tint: false, music: false, artists: false, children: vec![] });
         app.sources.media_kinds.insert("fixture-media".into(), "podcasts".into());
         let row = crate::source_search::RemoteFound { source: "fixture-media".into(), name: "Media".into(), id: "opaque show /?#".into(), title: "A show".into(), detail: "Publisher".into(), art: "https://example.invalid/show.jpg".into(), duration_ms: 0, collection: true, entity: "album".into(), item: None };
         let crate::Leads::Screen("album", id) = app.act_on_remote_found(&row, "open") else { panic!("missing search destination") };

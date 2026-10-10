@@ -54,6 +54,8 @@ pub struct Panel {
     pub icon_tint: bool,
     /// Drawn by the catalog as records, not as its own tree.
     pub music: bool,
+    /// It has a page for an artist: the artist page offers it as a source.
+    pub artists: bool,
     pub children: Vec<PanelChild>,
 }
 
@@ -327,7 +329,8 @@ impl Chilpa {
                         let root = self.catalog.shelf(&format!("{id} root")).unwrap_or_default();
                         root.folders.iter().take(64).map(|f| PanelChild { id: f.id.clone(), title: f.title.clone(), icon: String::new(), route: format!("{id} at:{}", f.id) }).collect()
                     } else { self.sources.roots.get(&id).into_iter().flatten().map(|entry| PanelChild { id: entry.id.clone(), title: entry.title.clone(), icon: String::new(), route: String::new() }).collect() };
-                    Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, children }
+                    let artists = music && self.natives.has_pages(&id);
+                    Panel { icon_tint: crate::plugin_icons::tint(&Self::plugins_dir(), &id), id, name, icon, icon_image, music, artists, children }
                 }).collect();
         }
         let order = crate::plugin_sidebar::ordered(&Self::plugins_dir(),self.sources.panels.iter().map(|p|p.id.clone()).collect());
