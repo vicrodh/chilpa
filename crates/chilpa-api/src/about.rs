@@ -3,6 +3,11 @@
 
 use serde_json::json;
 
+/// The project's wiki, the menu's Documentation.
+pub const DOCUMENTATION: &str = "https://github.com/vicrodh/chilpa/wiki";
+/// A new issue on the project, the menu's Report an issue.
+pub const NEW_ISSUE: &str = "https://github.com/vicrodh/chilpa/issues/new";
+
 /// The platform as the About window names it, after QBZ's: the system and
 /// the toolkit.
 fn platform_label() -> &'static str {

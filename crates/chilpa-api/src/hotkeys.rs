@@ -412,6 +412,12 @@ impl Chilpa {
         self.keys().document().to_string()
     }
 
+    /// One action's shortcut as the sheet shows it, for a menu's hint:
+    /// empty when it has none.
+    pub fn shortcut_shown(&mut self, id: &str) -> String {
+        self.keys().active().into_iter().find(|(action, _)| action.id == id).map(|(_, key)| shown(&key)).unwrap_or_default()
+    }
+
     /// What the editor asks: "record" an action's key, "cancel" that,
     /// "reset" one action, "reset-all", or choose a "keymap".
     pub fn keys_command(&mut self, command: &str, argument: &str) {

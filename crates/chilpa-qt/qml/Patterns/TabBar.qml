@@ -5,6 +5,8 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 import "qrc:/qt/qml/app/chilpa/about/qml/Components"
+import app.chilpa.about
+import app.chilpa.controls
 
 // The strip above everything (design/02 3): history and the sidebar's
 // button at the window's left, after the room macOS wants for its own
@@ -15,6 +17,17 @@ Item {
     id: bar
     // The menu's Quit, which the window's controls ask about first.
     signal quitAsked()
+
+    function menuChosen(act) {
+        if (act === "settings") Navigation.openSection("")
+        else if (act === "folders") Navigation.go("libraryFolders", 0)
+        else if (act === "stats") Navigation.go("stats", 0)
+        else if (act === "about") about.open()
+        else if (act === "documentation" || act === "issue") Qt.openUrlExternally(About.link(act))
+        else if (act === "close") bar.Window.window.close()
+        else if (act === "quit") bar.quitAsked()
+        else Hotkeys.ask(act)
+    }
 
     // What the system's own controls take of the bar's left, on a Mac.
     property real controlsRoom: 0
@@ -147,23 +160,23 @@ Item {
                 id: mainMenu
                 y: more.height + Metrics.gap4
                 x: more.width - width
+                // QBZ's app menu (HeaderBar.qml:1428-1667), Chilpa's own pages
+                // after Settings; the hints are the keymap's, not literals.
                 entries: [
-                    { text: I18n.tr("Settings", I18n.rev), hint: "Ctrl+," },
-                    { text: I18n.tr("Library folders", I18n.rev) },
-                    { text: I18n.tr("Listening stats", I18n.rev) },
-                    { text: I18n.tr("About Chilpa", I18n.rev) },
+                    { act: "settings", text: I18n.tr("Settings", I18n.rev), glyph: Lucide.settings2, family: Lucide.font, hint: Hotkeys.shortcut("nav.settings") },
+                    { act: "folders", text: I18n.tr("Library folders", I18n.rev), glyph: Lucide.folder, family: Lucide.font },
+                    { act: "stats", text: I18n.tr("Listening stats", I18n.rev), glyph: Lucide.chartColumn, family: Lucide.font },
+                    { act: "ui.showShortcuts", text: I18n.tr("Keyboard shortcuts", I18n.rev), glyph: Lucide.keyboard, family: Lucide.font, hint: Hotkeys.shortcut("ui.showShortcuts") },
+                    { act: "documentation", text: I18n.tr("Documentation", I18n.rev), glyph: Lucide.bookOpen, family: Lucide.font },
+                    { act: "issue", text: I18n.tr("Report an issue", I18n.rev), glyph: Lucide.bug, family: Lucide.font },
+                    { act: "about", text: I18n.tr("About Chilpa", I18n.rev), glyph: Lucide.info, family: Lucide.font },
                     { separator: true },
                     // Close is the window's (the tray keeps Chilpa, or it asks
                     // to quit); Quit is the app's, as in QBZ's menu.
-                    { text: I18n.tr("Close", I18n.rev) },
-                    { text: I18n.tr("Quit", I18n.rev), hint: "Ctrl+Q" }
+                    { act: "close", text: I18n.tr("Close", I18n.rev), glyph: Lucide.x, family: Lucide.font },
+                    { act: "quit", text: I18n.tr("Quit", I18n.rev), glyph: Lucide.power, family: Lucide.font, hint: Hotkeys.shortcut("nav.quit") }
                 ]
-                onChosen: (index) => index === 0 ? Navigation.openSection("")
-                    : index === 1 ? Navigation.go("libraryFolders", 0)
-                    : index === 2 ? Navigation.go("stats", 0)
-                    : index === 3 ? about.open()
-                    : index === 5 ? bar.Window.window.close()
-                    : bar.quitAsked()
+                onChosen: (index) => bar.menuChosen(entries[index].act)
             }
             AboutModal { id: about }
         }

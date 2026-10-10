@@ -88,6 +88,12 @@ TestCase {
         compare(Hotkeys.liked, 1)
     }
 
+    // The app menu's rows that are keyboard actions run them without the key.
+    function test_an_action_asked_without_its_key_runs() {
+        Hotkeys.ask("ui.showShortcuts")
+        shown(findChild(controls, "shortcutsSheet"))
+    }
+
     function test_the_sheet_opens_and_leads_to_the_editor() {
         controls.run("ui.showShortcuts")
         const sheet = findChild(controls, "shortcutsSheet")

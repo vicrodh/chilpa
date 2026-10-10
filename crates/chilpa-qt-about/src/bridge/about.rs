@@ -18,6 +18,10 @@ pub mod qobject {
         /// language's, so its labels follow it.
         #[qinvokable]
         fn document(self: &About, rev: i32) -> QString;
+
+        /// Where the menu's "documentation" and "issue" rows go.
+        #[qinvokable]
+        fn link(self: &About, name: &QString) -> QString;
     }
 }
 
@@ -30,5 +34,13 @@ pub struct AboutRust;
 impl qobject::About {
     pub fn document(&self, _rev: i32) -> QString {
         QString::from(&app::with(|api| api.about_document(env!("CHILPA_BUILD_DATE"), env!("CHILPA_BUILD_COMMIT"))))
+    }
+
+    pub fn link(&self, name: &QString) -> QString {
+        QString::from(match name.to_string().as_str() {
+            "documentation" => chilpa_api::about::DOCUMENTATION,
+            "issue" => chilpa_api::about::NEW_ISSUE,
+            _ => "",
+        })
     }
 }

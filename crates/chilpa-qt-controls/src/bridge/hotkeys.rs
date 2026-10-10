@@ -28,6 +28,15 @@ pub mod qobject {
         /// Marks what plays as a favorite, or takes the mark off.
         #[qinvokable]
         fn like_playing(self: Pin<&mut Hotkeys>);
+        /// One action's shortcut as the sheet shows it: a menu's hint.
+        #[qinvokable]
+        fn shortcut(self: &Hotkeys, id: &QString) -> QString;
+        /// Runs one of the keyboard's actions without its key: a menu row.
+        #[qinvokable]
+        fn ask(self: Pin<&mut Hotkeys>, action: &QString);
+        /// An action asked for without its key, for the window's controls.
+        #[qsignal]
+        fn asked(self: Pin<&mut Hotkeys>, action: QString);
         /// The search box is asked to take the keyboard.
         #[qsignal]
         fn search_asked(self: Pin<&mut Hotkeys>);
@@ -72,5 +81,13 @@ impl qobject::Hotkeys {
 
     pub fn like_playing(self: Pin<&mut Self>) {
         app::with(|api| api.like_playing());
+    }
+
+    pub fn ask(self: Pin<&mut Self>, action: &QString) {
+        self.asked(action.clone());
+    }
+
+    pub fn shortcut(&self, id: &QString) -> QString {
+        QString::from(&app::with(|api| api.shortcut_shown(&id.to_string())))
     }
 }

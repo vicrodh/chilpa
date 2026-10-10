@@ -985,6 +985,9 @@ msgstr ""
 msgid "Display settings"
 msgstr ""
 
+msgid "Documentation"
+msgstr ""
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr ""
 
@@ -1478,6 +1481,9 @@ msgid "Keep the queue between sessions"
 msgstr ""
 
 msgid "Keyboard Shortcuts"
+msgstr ""
+
+msgid "Keyboard shortcuts"
 msgstr ""
 
 msgid "Keymap"
@@ -2549,6 +2555,9 @@ msgid "Replace current queue"
 msgstr ""
 
 msgid "Replace queue {}"
+msgstr ""
+
+msgid "Report an issue"
 msgstr ""
 
 msgid "Requests: {}"

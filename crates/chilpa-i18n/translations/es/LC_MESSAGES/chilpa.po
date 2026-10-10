@@ -985,6 +985,9 @@ msgstr "Descubrir"
 msgid "Display settings"
 msgstr "Opciones de visualización"
 
+msgid "Documentation"
+msgstr "Documentación"
+
 msgid "Does not answer. Its records stay listed and cannot be played."
 msgstr "No responde. Sus discos siguen en la lista y no se pueden reproducir."
 
@@ -1478,6 +1481,9 @@ msgid "Keep the queue between sessions"
 msgstr "Conservar la cola entre sesiones"
 
 msgid "Keyboard Shortcuts"
+msgstr "Atajos de teclado"
+
+msgid "Keyboard shortcuts"
 msgstr "Atajos de teclado"
 
 msgid "Keymap"
@@ -2550,6 +2556,9 @@ msgstr "Reemplazar la cola actual"
 
 msgid "Replace queue {}"
 msgstr "Reemplazar queue {}"
+
+msgid "Report an issue"
+msgstr "Reportar un problema"
 
 msgid "Requests: {}"
 msgstr "Solicita: {}"

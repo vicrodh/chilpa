@@ -220,6 +220,11 @@ Item {
         target: I18n
         function onRevChanged() { Hotkeys.refresh(); Controls.relabelTray() }
     }
+    // An action asked for without its key: a row of the app menu.
+    Connections {
+        target: Hotkeys
+        function onAsked(action) { controls.run(action) }
+    }
     Timer {
         interval: Sizes.second
         repeat: true
