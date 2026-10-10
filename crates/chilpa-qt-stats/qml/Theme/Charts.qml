@@ -53,4 +53,8 @@ QtObject {
     // artist and record the rest.
     readonly property real historyTitleShare: 0.55
     readonly property int pagerButton: 32
+    // The picture's signature: the logo beside its line, decoded at
+    // four times its size so it stays sharp on a dense screen.
+    readonly property int signatureLogo: 24
+    readonly property int signatureDecode: 96
 }
