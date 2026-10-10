@@ -16,10 +16,13 @@ Item {
     property string order: SettingsModel.kept("ui.tracks.order") || "default"
     property string group: SettingsModel.kept("ui.tracks.group") || "off"
     property string typed: Visit.recall("tracks.typed", "")
+    // A track's own stars to keep, 0 for none; empty keeps them all.
+    property var ratings: Visit.recall("tracks.ratings", [])
     readonly property var scrollView: list.rows
 
     Component.onDestruction: {
         Visit.keep("tracks.typed", typed)
+        Visit.keep("tracks.ratings", ratings)
     }
     property bool selectionMode: false
     readonly property bool grouped: group !== "off"
@@ -29,7 +32,7 @@ Item {
     TrackListModel {
         id: tracks
         kind: "tracks"
-        key: [page.order === "default" ? "" : page.order, page.group, page.typed].join("\u001f")
+        key: [page.order === "default" ? "" : page.order, page.group, page.typed, page.ratings.join(",")].join("\u001f")
         filterRev: Library.rev + Library.contentRev + Library.remoteRev
         playingPath: Player.path
     }
@@ -139,16 +142,18 @@ Item {
             IconButton {
                 id: filterButton
                 anchors.verticalCenter: parent.verticalCenter
-                tip: I18n.tr("Quality, format and source filters", I18n.rev)
+                tip: I18n.tr("Quality, format, source and rating filters", I18n.rev)
                 glyph: Icons.filter
                 round: true
-                checked: Library.extraFiltered || filters.opened
+                checked: Library.extraFiltered || filters.opened || page.ratings.length > 0
                 onClicked: filters.opened ? filters.close() : filters.open()
 
                 SourcesPopover {
                     id: filters
                     showTrackLibraries: true
                     showAlbumGrouping: false
+                    ratings: page.ratings
+                    onRatingsChosen: (chosen) => page.ratings = chosen
                     x: filterButton.width - width
                     y: filterButton.height + Metrics.gap6
                 }

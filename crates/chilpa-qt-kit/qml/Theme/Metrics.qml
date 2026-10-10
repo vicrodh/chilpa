@@ -394,7 +394,7 @@ QtObject {
     readonly property int folderTileHeight: 72
     readonly property int folderAlbumRow: 54
     // How the columns share the width, by column; the ones shown split it.
-    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, artist: 1.2, album: 1.3 })
+    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, rating: 0.9, artist: 1.2, album: 1.3 })
 
     // The metadata editor: a spreadsheet of tracks and the record's column.
     readonly property int metadataCover: 96
