@@ -8,6 +8,7 @@ import app.chilpa.artwork
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/artwork/qml/Components"
+import "../Components"
 
 // The top of an artist's page, as QBZ lays it out: a round portrait, the
 // name, what the artist does, a biography cut at 360 characters with
@@ -18,7 +19,10 @@ Item {
     property var info: ({})
     property bool local: false
     property bool networkOpen: false
+    // Showing what the listener keeps of the artist in its source.
+    property bool inLibrary: false
     signal toggleNetwork()
+    signal libraryChosen(bool on)
     readonly property var sourceInfo: (JSON.parse(Sources.snapshot || "{}").panels || []).find(p => p.id === info.plugin) || ({name: info.plugin || ""})
     readonly property string bio: info.description || ""
     // At most 360 characters, cut at the last space, with an ellipsis.
@@ -72,6 +76,17 @@ Item {
         visible: !portrait.ready
         glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font
         size: Metrics.iconPlay; color: Theme.color.textSecondary
+    }
+    // At the top right, level with the source's name.
+    ArtistSources {
+        anchors.right: parent.right
+        y: body.y
+        z: 1
+        source: header.local ? "" : header.info.plugin || ""
+        artist: header.info.title || ""
+        inLibrary: header.inLibrary
+        sources: (JSON.parse(Sources.snapshot || "{}").panels || []).filter(p => p.artists === true)
+        onLibraryChosen: (on) => header.libraryChosen(on)
     }
     Column {
         id: body

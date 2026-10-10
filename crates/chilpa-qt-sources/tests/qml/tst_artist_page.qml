@@ -56,6 +56,27 @@ TestCase {
         compare(findText(page, "YOU MAY ALSO LIKE") !== null, true)
     }
 
+    // Top right, the library and each installed source with artist pages,
+    // each the same artist by name; for a source, its catalog or what the
+    // listener keeps of the artist there.
+    function test_the_page_switches_source_and_shows_what_the_listener_keeps() {
+        Sources.show({ panels: [{ id: "fixture", name: "Fixture", artists: true }, { id: "radio", name: "Radio", artists: false }] })
+        const kept = "fixture artist-library:artist:1"
+        Sources.pages[kept] = JSON.stringify({ music: true, artist: true, library: true, header: JSON.parse(document()).header, jump: [],
+            shelves: [{ id: "tracks", role: "popular", title: "Tracks", kind: "track", key: kept + "|tracks", tracks: true, items: [{ ref: "track:1" }] }] })
+        const page = createTemporaryObject(pageMaker, this)
+        waitForRendering(page)
+        const sources = findChild(page, "artistSource")
+        compare(sources.options.map(o => o.text), ["Chilpa", "Fixture"])
+        compare(sources.current, 1)
+        findChild(page, "artistShelf").activated(1)
+        tryVerify(() => findText(page, "Tracks") !== null, 1000, "what the listener keeps")
+        verify(!findText(page, "Latest release"), "the catalog's blocks leave")
+        sources.activated(0)
+        compare(Navigation.went, ["artist", "Maiden"])
+        Sources.show({ panels: [{ id: "radio", name: "Radio", icon: "broadcast" }] })
+    }
+
     function test_the_network_button_closes_and_opens_the_sidebar() {
         const page = createTemporaryObject(pageMaker, this)
         waitForRendering(page)

@@ -144,6 +144,10 @@ fn page_shelves(catalog: &Catalog, plugin: &str, reference: &str, header: &mut V
     }
     json!(rows)
 }
+/// How many of the tracks the listener keeps of an artist show before
+/// "Load more" (QBZ's library tab).
+const LIBRARY_PREVIEW: usize = 10;
+
 impl crate::Chilpa {
     pub(crate) fn append_native_section(&self, key: &str) {
         let (plugin, reference) = super::split(key);
@@ -249,6 +253,46 @@ impl crate::Chilpa {
         Some(name.trim().to_string()).filter(|n| !n.is_empty()).map(|name| format!("{plugin} matching-artist-v3:{name}"))
     }
 
+    /// An artist's page "In library": what the listener keeps of this
+    /// artist in the source -- the favorite tracks and records whose artist
+    /// it is -- in the page's shape, under the catalog page's header. The
+    /// source's lists are asked for when they are missing or old, and the
+    /// page says it waits while they come.
+    pub(crate) fn artist_library_view(&mut self, plugin: &str, reference: &str) -> String {
+        let mut document: Value = serde_json::from_str(&self.native_page_view(plugin, reference)).unwrap_or_else(|_| json!({}));
+        let artist = json!({"ref": reference, "title": document["header"]["title"]});
+        let (tracks_key, albums_key) = (format!("{plugin} section:tracks"), format!("{plugin} section:albums"));
+        let albums_shelf = self.catalog.shelf(&albums_key);
+        let read = self.catalog.shelf(&tracks_key).is_some() && albums_shelf.is_some();
+        let ours = |mut item: Value, kind: &str| {
+            item["kind"] = json!(kind);
+            super::native::same_primary_artist(&item, &artist).then_some(item)
+        };
+        let tracks: Vec<Value> = self.catalog.shelf_tracks(&tracks_key).into_iter().filter_map(|(track, _)| ours(track.metadata, "track")).collect();
+        let albums: Vec<Value> = albums_shelf.map(|shelf| self.catalog.cards(&shelf.cards)).unwrap_or_default()
+            .into_iter().filter_map(|card| ours(card.metadata, "album")).collect();
+        let mut shelves = Vec::new();
+        for (id, kind, items) in [("tracks", "track", tracks), ("albums", "album", albums)] {
+            if items.is_empty() { continue; }
+            let key = format!("{plugin} artist-library:{reference}|{id}");
+            let shelf = json!({"id": id, "kind": kind, "items": items});
+            ingest(&self.catalog, plugin, &key, &shelf);
+            shelves.push(json!({"id": id, "kind": kind, "key": key, "items": shelf["items"], "tracks": kind == "track", "round": false}));
+        }
+        document["shelves"] = json!(shelves);
+        document["library"] = json!(true);
+        document["loading"] = json!(!read || self.catalog.loading(&tracks_key) || self.catalog.loading(&albums_key));
+        crate::artist_page::shape(&mut document);
+        // The page's own tracks, not the source's most heard: ten first, as QBZ.
+        let mine = chilpa_i18n::t("Tracks");
+        for shelf in document["shelves"].as_array_mut().into_iter().flatten().filter(|s| s["role"] == "popular") {
+            shelf["title"] = json!(mine);
+            shelf["preview"] = json!(LIBRARY_PREVIEW);
+        }
+        for entry in document["jump"].as_array_mut().into_iter().flatten().filter(|e| e["id"].as_str().is_some_and(|id| id.ends_with("|tracks"))) { entry["title"] = json!(mine); }
+        document.to_string()
+    }
+
     pub(crate) fn native_page_view(&mut self, plugin: &str, reference: &str) -> String {
         let key = format!("{plugin} native:{reference}");
         let shelf = self.catalog.shelf(&key).unwrap_or_default();
@@ -294,6 +338,23 @@ mod tests {
         assert_eq!(app.source_track_artist("/music/song.flac", "Band", 0), None, "a file of the library has its own page");
         assert_eq!(app.source_track_artist(&path, "  ", 0), None);
     }
+    #[test]
+    fn an_artists_library_is_what_the_listener_keeps_of_that_artist() {
+        let mut app = crate::Chilpa::new();
+        // As after the start: the catalog kept on disk has been read.
+        app.catalog.lock().loaded = true;
+        ingest(&app.catalog, "fixture", "fixture section:tracks", &json!({"items":[
+            {"kind":"track","ref":"track:1","title":"Song","artist":"Band","artist_ref":"artist:9"},
+            {"kind":"track","ref":"track:2","title":"Other","artist":"Someone","artist_ref":"artist:5"}]}));
+        ingest(&app.catalog, "fixture", "fixture section:albums", &json!({"items":[
+            {"kind":"album","ref":"album:1","title":"Record","artist":"Band","artist_ref":"artist:9"}]}));
+        let page: Value = serde_json::from_str(&app.artist_library_view("fixture", "artist:9")).unwrap();
+        let shelves = page["shelves"].as_array().unwrap();
+        assert_eq!(shelves.iter().map(|s| s["role"].as_str().unwrap()).collect::<Vec<_>>(), ["popular", "release"]);
+        assert_eq!((shelves[0]["items"].as_array().unwrap().len(), shelves[0]["title"].as_str(), shelves[0]["preview"].as_u64()), (1, Some("Tracks"), Some(10)));
+        assert_eq!((page["library"].as_bool(), page["loading"].as_bool()), (Some(true), Some(false)));
+    }
+
     #[test]
     fn see_all_keeps_a_shelf_as_a_listing_instead_of_an_empty_home() {
         let mut app = crate::Chilpa::new();

@@ -271,7 +271,7 @@ fn read_artist(catalog: &Catalog, natives: &Arc<Natives>, plugin: &str, key: &st
     Ok(())
 }
 
-fn same_primary_artist(album: &Value, artist: &Value) -> bool {
+pub(super) fn same_primary_artist(album: &Value, artist: &Value) -> bool {
     let reference = text(album,"artist_ref");
     let expected = text(artist,"ref");
     if !reference.is_empty() && !expected.is_empty() { return reference == expected; }

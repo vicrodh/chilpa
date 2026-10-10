@@ -1279,6 +1279,9 @@ msgstr "Francés"
 msgid "Fri"
 msgstr "vie"
 
+msgid "From catalog"
+msgstr "Del catálogo"
+
 msgid "From same artist"
 msgstr "Del mismo artista"
 
@@ -1488,6 +1491,9 @@ msgstr "Importación terminada"
 
 msgid "Import playlist"
 msgstr "Importar playlist"
+
+msgid "In library"
+msgstr "En tu biblioteca"
 
 msgid "In progress"
 msgstr "En progreso"
