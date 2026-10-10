@@ -18,6 +18,9 @@ TestCase {
     LoopRow { id: loop; width: 320 }
     TextInput { id: field; y: 60; width: 100; height: 20 }
     Item { id: plain; y: 90; width: 100; height: 20 }
+    MouseArea { id: covered; x: 200; y: 100; width: 120; height: 120; acceptedButtons: Qt.AllButtons; onClicked: test.coveredClicks++ }
+    Flickable { id: wheelArea; x: 350; y: 100; width: 120; height: 120; contentWidth: width; contentHeight: 600 }
+    property int coveredClicks: 0
 
     readonly property string sheet: JSON.stringify({
         col1: [{ label: "Playback", rows: [{ id: "playback.toggle", label: "Play / Pause", shortcut: "Space", modified: false },
@@ -26,6 +29,9 @@ TestCase {
         col3: [], keymap: "letters", modified: 1, recording: "", tried: "", takenBy: "" })
 
     function init() {
+        Navigation.backCount = 0
+        Navigation.forwardCount = 0
+        coveredClicks = 0
         Hotkeys.snapshot = sheet
         Hotkeys.answer = ""
         Hotkeys.commands = []
@@ -35,6 +41,21 @@ TestCase {
         Controls.asked = -1
         Player.lastAction = ""
         plain.forceActiveFocus()
+    }
+
+    function test_side_buttons_work_over_an_active_mouse_target() {
+        mouseClick(covered, 10, 10, Qt.BackButton)
+        compare(Navigation.backCount, 1)
+        compare(coveredClicks, 0)
+        mouseClick(covered, 10, 10, Qt.ForwardButton)
+        compare(Navigation.forwardCount, 1)
+        mouseClick(covered, 10, 10, Qt.LeftButton)
+        compare(coveredClicks, 1)
+    }
+    function test_side_button_layer_leaves_wheel_scrolling_to_the_page() {
+        wheelArea.contentY = 0
+        mouseWheel(wheelArea, 20, 20, 0, -120)
+        tryVerify(() => wheelArea.contentY > 0)
     }
 
     // Open and drawn: a popup laid out again is clicked where it now is.

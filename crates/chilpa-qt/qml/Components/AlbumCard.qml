@@ -60,6 +60,7 @@ Item {
         tint: card.tint
     }
     AnimatedCover {
+        objectName: "albumAnimatedCover"
         anchors.fill: cover
         visible: !cover.ready && card.artColors.length >= 3
         colors: card.artColors

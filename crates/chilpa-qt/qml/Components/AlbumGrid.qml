@@ -150,7 +150,7 @@ Item {
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     year: visible ? grid.model.year(at, rev) : ""
                     art: visible ? grid.model.art(at, rev) : ""
-                    artColors: visible && albumId < 0 && !art ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
+                    artColors: visible && albumId < 0 && String(art) === "" ? JSON.parse(Sources.artColors(albumId, rev) || "[]") : []
                     qualityInfo: visible && !grid.round ? JSON.parse(AlbumActions.quality(albumId, rev) || "{}") : ({})
                     tint: at
                     round: grid.round

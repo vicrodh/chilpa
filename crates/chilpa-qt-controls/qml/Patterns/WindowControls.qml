@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../Theme"
 import "../Components"
 
@@ -91,15 +92,15 @@ Item {
         window.contentItem.Keys.pressed.connect(pressed)
     }
 
-    // Browser-style side buttons follow the active tab's own history. On the
-    // window's root, beneath everything: no control takes those two buttons,
-    // so they arrive here, and nothing laid over the window hides the
-    // cursors or the hover of what is under it.
-    // no cursor: only the mouse's side buttons
-    TapHandler {
+    // Side buttons need the top pointer target: controls below can take an
+    // exclusive grab before a root-level TapHandler sees the release.
+    // no cursor: this layer only accepts the mouse's side buttons
+    MouseArea {
         parent: controls.window ? controls.window.contentItem : null
+        anchors.fill: parent
+        z: Metrics.tooltipLayer + Metrics.gap2
         acceptedButtons: Qt.BackButton | Qt.ForwardButton
-        onTapped: (point, button) => button === Qt.BackButton ? Navigation.back() : Navigation.forward()
+        onClicked: mouse => mouse.button === Qt.BackButton ? Navigation.back() : Navigation.forward()
     }
     // The desktop asked Chilpa to quit: the close that follows is not one
     // to hide from.
