@@ -24,20 +24,13 @@ TestCase {
         records.kind = ""
         records.rev++
     }
-    // Beside a source's records, the library's own wear the player's
-    // badge where a source puts its own; alone, they wear none.
+    // Beside a source's records the library's own wear the player's badge; alone, none.
     function test_the_records_of_the_library_wear_the_players_badge_beside_a_source() {
-        records.kind = ""
-        records.mixed = false
-        records.rev++
         tryVerify(() => findChild(grid, "albumAnimatedCover") !== null, 1000, "the grid laid its cards out")
         const image = findChild(findChild(grid, "albumAnimatedCover").parent, "sourceImage")
-        compare(String(image.source), "")
-        records.mixed = true
-        records.rev++
+        records.kind = ""; records.mixed = true; records.rev++
         tryCompare(image, "source", "qrc:/qt/qml/app/chilpa/kit/assets/logo.png")
-        records.mixed = false
-        records.rev++
+        records.mixed = false; records.rev++
         tryCompare(image, "source", "")
     }
     function test_quick_view_queue_button_opens_all_placements_and_extra_queues() {
@@ -81,6 +74,16 @@ TestCase {
         menu.actionChosen(extra.children[1])
         compare(AlbumActions.lastAction, "buffer:add:2:7")
         menu.close()
+    }
+    // A name the card cuts short says itself whole on hover; one that fits asks for nothing.
+    function test_a_name_cut_short_shows_whole_in_a_tooltip() {
+        const name = findChild(card, "albumTitle")
+        card.title = "A Record Whose Name Runs Far Past The Width Of Its Card"
+        mouseMove(name, name.width / 2, name.height / 2)
+        tryCompare(TipState, "text", card.title)
+        mouseMove(card, card.width / 2, card.width / 2); TipState.text = ""; card.title = "Record"
+        mouseMove(name, 4, name.height / 2)
+        compare(TipState.text, "")
     }
     function test_quality_is_visible_without_card_hover_and_has_a_tooltip() {
         const badge = findChild(card, "albumQualityBadge")
