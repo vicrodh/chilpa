@@ -390,7 +390,13 @@ msgstr ""
 msgid "Auto (app language)"
 msgstr ""
 
+msgid "Auto (recommended)"
+msgstr ""
+
 msgid "Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."
+msgstr ""
+
+msgid "Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"
 msgstr ""
 
 msgid "Auto-follow"
@@ -1096,7 +1102,13 @@ msgstr ""
 msgid "Extra controls"
 msgstr ""
 
+msgid "Extra large"
+msgstr ""
+
 msgid "Extra queues"
+msgstr ""
+
+msgid "Extra small"
 msgstr ""
 
 msgid "FOCUS"
@@ -1208,6 +1220,12 @@ msgid "Full details"
 msgstr ""
 
 msgid "Full episodes"
+msgstr ""
+
+msgid "GPU"
+msgstr ""
+
+msgid "GPU (compatibility)"
 msgstr ""
 
 msgid "Gapless"
@@ -1423,6 +1441,9 @@ msgstr ""
 msgid "Interface"
 msgstr ""
 
+msgid "Interface size"
+msgstr ""
+
 msgid "Italian"
 msgstr ""
 
@@ -1469,6 +1490,9 @@ msgid "Label"
 msgstr "Label"
 
 msgid "Labels"
+msgstr ""
+
+msgid "Large"
 msgstr ""
 
 msgid "Last.fm opens in the browser to allow Chilpa."
@@ -2263,6 +2287,9 @@ msgstr ""
 msgid "Position in Streaming"
 msgstr "Position in Streaming"
 
+msgid "Preferred GPU"
+msgstr ""
+
 msgid "Press keys…"
 msgstr ""
 
@@ -2494,6 +2521,15 @@ msgstr ""
 msgid "Rename"
 msgstr ""
 
+msgid "Renderer"
+msgstr ""
+
+msgid "Renderer switched automatically — the previous renderer failed to start"
+msgstr ""
+
+msgid "Rendering backend"
+msgstr ""
+
 msgid "Reopens the upcoming queue paused, at the place where you left it."
 msgstr ""
 
@@ -2620,6 +2656,9 @@ msgstr ""
 msgid "Saving… {} of {} files"
 msgstr ""
 
+msgid "Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"
+msgstr ""
+
 msgid "Scan again"
 msgstr ""
 
@@ -2719,6 +2758,9 @@ msgid "Select folders"
 msgstr ""
 
 msgid "Select tracks"
+msgstr ""
+
+msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr ""
 
 msgid "Send listens"
@@ -2829,7 +2871,13 @@ msgstr ""
 msgid "Sleep timer"
 msgstr ""
 
+msgid "Small"
+msgstr ""
+
 msgid "Soft"
+msgstr ""
+
+msgid "Software"
 msgstr ""
 
 msgid "Songs"
@@ -3359,6 +3407,9 @@ msgstr ""
 msgid "Wherever the system is sending sound"
 msgstr ""
 
+msgid "Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"
+msgstr ""
+
 msgid "Which of its libraries come in?"
 msgstr ""
 
@@ -3560,6 +3611,9 @@ msgstr ""
 msgid "direct"
 msgstr ""
 
+msgid "discrete"
+msgstr ""
+
 msgid "display"
 msgstr ""
 
@@ -3609,6 +3663,9 @@ msgid "impossible packet counts"
 msgstr ""
 
 msgid "in the system keyring"
+msgstr ""
+
+msgid "integrated"
 msgstr ""
 
 msgid "internal"

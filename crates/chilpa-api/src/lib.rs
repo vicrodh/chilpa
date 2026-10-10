@@ -109,6 +109,8 @@ mod source_favorites;
 mod sources;
 mod servers;
 pub mod settings_rows;
+pub mod graphics_boot;
+pub mod startup_chain;
 pub mod settings_schema;
 mod artist_page;
 pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
@@ -770,7 +772,13 @@ impl Chilpa {
             credits_read_at: (0, 0),
             artwork: Default::default(),
         };
-        if !chilpa.restore_buffers() { chilpa.restore_queue_session(); }
+        // Two starts in a row died before the window was shown: the kept
+        // queue is left on disk for a start that reaches the window.
+        if crate::startup_chain::level() >= 3 {
+            eprintln!("startup: the queue restore is bypassed this start (crash chain); the queue stays on disk");
+        } else if !chilpa.restore_buffers() {
+            chilpa.restore_queue_session();
+        }
         chilpa
     }
 

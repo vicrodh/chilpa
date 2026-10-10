@@ -19,6 +19,10 @@ pub mod qobject {
         #[qproperty(i32, top)]
         #[qproperty(bool, placed)]
         #[qproperty(bool, maximized)]
+        /// The smallest the window gets, in the logical pixels it speaks:
+        /// the same footprint at every interface size.
+        #[qproperty(i32, smallest_width)]
+        #[qproperty(i32, smallest_height)]
         type WindowPlace = super::PlaceRust;
         /// A frame the window settled on: "floating", "maximized" or
         /// anything else for one that says nothing. `placed` is whether
@@ -39,6 +43,8 @@ pub struct PlaceRust {
     top: i32,
     placed: bool,
     maximized: bool,
+    smallest_width: i32,
+    smallest_height: i32,
 }
 
 /// Read once, as the window is built: these are where it opens, not where
@@ -47,7 +53,8 @@ impl Default for PlaceRust {
     fn default() -> Self {
         let place = app::with(|api| api.window_place());
         let (left, top) = place.at.unwrap_or_default();
-        Self { width: place.width, height: place.height, left, top, placed: place.at.is_some(), maximized: place.maximized }
+        let smallest = chilpa_api::window_place::smallest();
+        Self { width: place.width, height: place.height, left, top, placed: place.at.is_some(), maximized: place.maximized, smallest_width: smallest.0, smallest_height: smallest.1 }
     }
 }
 

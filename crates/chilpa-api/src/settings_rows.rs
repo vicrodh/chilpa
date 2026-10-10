@@ -115,7 +115,7 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
-        self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value)
+        self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value)
     }
 
     /// A toggle's value from its preference, "true" or "false".
@@ -166,6 +166,9 @@ impl Chilpa {
 
     /// The value, the options and anything the row says about its state.
     fn fill(&mut self, row: &mut Row, output: &str, notes: &RowNotes) {
+        if self.graphics_row(row) {
+            return;
+        }
         match row.key.as_str() {
             "devices.original" | "devices.discovery" => row.control = "none".into(),
             "audio.backend" => {

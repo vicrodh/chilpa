@@ -54,6 +54,14 @@ pub fn cache() -> PathBuf {
         .join(NAME)
 }
 
+/// The variables a desktop hands a launched program to raise its first
+/// window: Wayland's activation token and X11's startup notification id. A
+/// helper process the program starts must not inherit them, or it uses up
+/// the token meant for the real window.
+pub fn activation_variables() -> [&'static str; 2] {
+    ["XDG_ACTIVATION_TOKEN", "DESKTOP_STARTUP_ID"]
+}
+
 /// A variable, when it is set to something.
 ///
 /// An empty value is the same as unset: a shell that exports `XDG_DATA_HOME=`

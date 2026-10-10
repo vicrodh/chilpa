@@ -281,6 +281,12 @@ impl crate::Chilpa {
 
     /// The tabs of the last run, unless keeping them was turned off.
     pub fn restored_tabs(&self) -> Option<Tabs> {
+        // A start died before its window was shown: the remembered tabs are
+        // a suspect, so Home opens and they stay kept (the crash chain).
+        if crate::startup_chain::level() >= 2 {
+            eprintln!("startup: the remembered tabs are bypassed (crash chain); Home opens");
+            return None;
+        }
         // The preferences file is one line per key, so the lines of the
         // tabs are kept as "\n".
         let saved = self.preference(TABS_KEY).filter(|_| self.restores_tabs())?;

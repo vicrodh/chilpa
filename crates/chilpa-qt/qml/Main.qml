@@ -28,8 +28,8 @@ Window {
     // As big as it was left, and maximized if it was (design/04 Window).
     width: WindowPlace.width
     height: WindowPlace.height
-    minimumWidth: Metrics.windowMinWidth
-    minimumHeight: Metrics.windowMinHeight
+    minimumWidth: WindowPlace.smallestWidth
+    minimumHeight: WindowPlace.smallestHeight
     visibility: WindowPlace.maximized ? Window.Maximized : Window.Windowed
     // A Mac's window keeps its frame, and with it the system's controls.
     flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
