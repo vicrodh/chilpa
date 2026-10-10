@@ -171,8 +171,8 @@ QtObject {
     // The band the waveform takes above the rest when the bar stands tall.
     readonly property int waveformBand: 35
     readonly property int lcdArt: 44
-    // The player bar's cover, grown on hover (the owner, 2026-10-09).
-    readonly property int artPreview: 400
+    // The player bar's cover, grown on hover: 400 first, 250 since 2026-10-10.
+    readonly property int artPreview: 250
     readonly property int artPreviewFrame: 6
     // A cover shown whole takes its own proportion inside this share of the
     // window (QBZ's lightbox).

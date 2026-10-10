@@ -21,7 +21,7 @@ TestCase {
         verify(!preview.visible, "nothing over the bar at rest")
         mouseMove(cover, cover.width / 2, cover.height / 2)
         tryVerify(() => preview.visible, 1000, "hovered, the cover grows")
-        compare(preview.width, 412, "400 and its frame")
+        compare(preview.width, 262, "250 and its frame")
         mouseMove(lcd, lcd.width - 4, lcd.height / 2)
         tryVerify(() => !preview.visible, 1000, "and leaves with the pointer")
         Immersive.open = false
