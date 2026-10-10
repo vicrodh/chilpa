@@ -372,12 +372,6 @@ msgstr ""
 msgid "Artist"
 msgstr ""
 
-msgid "Artist A-Z"
-msgstr ""
-
-msgid "Artist Z-A"
-msgstr ""
-
 msgid "Artist mix"
 msgstr ""
 
@@ -391,9 +385,6 @@ msgid "Artwork"
 msgstr ""
 
 msgid "Artwork view"
-msgstr ""
-
-msgid "Ascending"
 msgstr ""
 
 msgid "Ask before quitting"
@@ -991,9 +982,6 @@ msgstr ""
 msgid "Delete…"
 msgstr ""
 
-msgid "Descending"
-msgstr ""
-
 msgid "Description"
 msgstr ""
 
@@ -1088,12 +1076,6 @@ msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
 
 msgid "Duration"
-msgstr ""
-
-msgid "Duration (longest)"
-msgstr ""
-
-msgid "Duration (shortest)"
 msgstr ""
 
 msgid "Dutch"
@@ -2773,9 +2755,6 @@ msgstr ""
 msgid "Resume"
 msgstr ""
 
-msgid "Reverse order"
-msgstr "Reverse order"
-
 msgid "Revert"
 msgstr ""
 
@@ -3422,12 +3401,6 @@ msgstr ""
 msgid "Title"
 msgstr ""
 
-msgid "Title A-Z"
-msgstr ""
-
-msgid "Title Z-A"
-msgstr ""
-
 msgid "To move to"
 msgstr ""
 
@@ -3708,12 +3681,6 @@ msgid "YOU MAY ALSO LIKE"
 msgstr ""
 
 msgid "Year"
-msgstr ""
-
-msgid "Year (newest)"
-msgstr ""
-
-msgid "Year (oldest)"
 msgstr ""
 
 msgid "Yes"

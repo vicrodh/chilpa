@@ -48,6 +48,17 @@ pub fn grid_rows(len: usize, columns: usize, max_rows: usize, groups: &[(usize, 
     rows
 }
 
+/// An order's name and whether it was asked the other way round from its
+/// own direction: "year" comes newest first and "year-asc" oldest first,
+/// "artist" from A and "artist-desc" from Z. The window's sort names the
+/// other way with the suffix only.
+pub fn turned_order(name: &str) -> (&str, bool) {
+    match name.strip_suffix("-desc").or_else(|| name.strip_suffix("-asc")) {
+        Some(base) => (base, true),
+        None => (name, false),
+    }
+}
+
 /// A grid that shows a source's records beside the library's own, a
 /// server counting as the library: the library's records then wear the
 /// player's badge where a source's wear their own. An artist, with no id,
@@ -91,6 +102,7 @@ impl Reader {
     /// Merge source album identities into the same order and groups as local albums.
     pub fn albums_view_with_sources(&self, order: &str, group: &str, text: &str, extras: &Filter, remote: Vec<crate::Album>) -> AlbumsFound {
         if remote.is_empty() { return self.albums_view(order, group, text, extras); }
+        let (order, turned) = turned_order(order);
         let local = self.albums_view(order, "", text, extras);
         let mut rows: Vec<_> = local.ids.chunks(500).flat_map(|ids| self.lib.albums_by_ids(ids).unwrap_or_default()).map(crate::browse::album_of).collect();
         rows.extend(remote);
@@ -101,10 +113,11 @@ impl Reader {
             "added" | "last_played" => {},
             _ => rows.sort_by_cached_key(|a| (a.artist.to_lowercase(), a.year, a.title.to_lowercase())),
         }
+        if turned { rows.reverse(); }
         if !matches!(group, "letter" | "artist") { return AlbumsFound { ids: rows.iter().map(|a| a.id).collect(), groups: Vec::new() }; }
-        arrange(rows.iter().map(|a| (match (group, order) {
+        arrange_toward(rows.iter().map(|a| (match (group, order) {
             ("artist", _) => a.artist.trim().into(), (_, "artist") => chilpa_library::letter_of(&a.artist), _ => chilpa_library::letter_of(&a.title),
-        }, a.id)).collect())
+        }, a.id)).collect(), turned)
     }
 
     /// The records of the Albums screen. `group` is "letter", "artist" or
@@ -112,6 +125,7 @@ impl Reader {
     /// the order inside each one. The sources, qualities and formats left
     /// out come from `extras`, which the Library screen shares.
     pub fn albums_view(&self, order: &str, group: &str, text: &str, extras: &Filter) -> AlbumsFound {
+        let (order, turned) = turned_order(order);
         let order = AlbumSort::from_name(order);
         let mut ids = self.lib.album_ids_matching(order, text).unwrap_or_default();
         if !extras.excluded_sources.is_empty() || !extras.qualities.is_empty() || !extras.formats.is_empty() {
@@ -124,7 +138,10 @@ impl Reader {
             let left: HashSet<i64> = self.lib.browse_ids(&through, TrackOrder::Album).map(|s| s.album_ids).unwrap_or_default().into_iter().collect();
             ids.retain(|id| left.contains(id));
         }
-        let ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
+        let mut ids = self.lib.grouped_album_ids(&ids).unwrap_or(ids);
+        if turned {
+            ids.reverse();
+        }
         if !matches!(group, "letter" | "artist") {
             return AlbumsFound { ids, groups: Vec::new() };
         }
@@ -142,15 +159,24 @@ impl Reader {
                 named.push((label, album.id));
             }
         }
-        arrange(named)
+        arrange_toward(named, turned)
     }
 }
 
 /// Records that came in the order asked for, put in groups: the groups by
 /// name, whatever their case, and each one's records as they came.
-pub(crate) fn arrange(mut named: Vec<(String, i64)>) -> AlbumsFound {
+pub(crate) fn arrange(named: Vec<(String, i64)>) -> AlbumsFound {
+    arrange_toward(named, false)
+}
+
+/// The same, the groups from the last name when `descending`.
+pub(crate) fn arrange_toward(mut named: Vec<(String, i64)>, descending: bool) -> AlbumsFound {
     // Stable: what shares a group stays in the order it came in.
-    named.sort_by_cached_key(|(label, _)| label.to_lowercase());
+    if descending {
+        named.sort_by_cached_key(|(label, _)| std::cmp::Reverse(label.to_lowercase()));
+    } else {
+        named.sort_by_cached_key(|(label, _)| label.to_lowercase());
+    }
     let mut found = AlbumsFound::default();
     for (at, (label, id)) in named.into_iter().enumerate() {
         if found.groups.last().is_none_or(|(_, last)| last.to_lowercase() != label.to_lowercase()) {
@@ -197,6 +223,17 @@ mod tests {
         assert_eq!((cards[0].artist.as_str(), cards[1].artist.as_str()), ("2 records", "1 record"));
         assert_eq!((cards[0].id, cards[0].track_count), (0, 3));
         assert_eq!(artist_cards(&artists, " ").len(), 3, "no words keep everyone");
+    }
+
+    #[test]
+    fn an_order_the_other_way_round_turns_its_records_and_its_groups() {
+        assert_eq!(turned_order("year-asc"), ("year", true));
+        assert_eq!(turned_order("artist-desc"), ("artist", true));
+        assert_eq!(turned_order("added"), ("added", false));
+        let came = vec![("Band".to_string(), 30), ("Band".to_string(), 20), ("Another".to_string(), 25)];
+        let found = arrange_toward(came, true);
+        assert_eq!(found.ids, [30, 20, 25], "the groups from Z, each as it came");
+        assert_eq!(found.groups, [(0, "Band".to_string()), (2, "Another".to_string())]);
     }
 
     #[test]

@@ -4,6 +4,7 @@ import app.chilpa.folders
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "../Components"
 import "../Patterns"
@@ -86,8 +87,8 @@ Item {
                 options: [
                     { value: "artist", text: I18n.tr("Artist", I18n.rev) },
                     { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev) }
+                    { value: "year", text: I18n.tr("Year", I18n.rev), descending: true },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true }
                 ]
                 onPicked: (value) => Library.albumOrder = value
             }

@@ -372,12 +372,6 @@ msgstr "abril"
 msgid "Artist"
 msgstr "Artista"
 
-msgid "Artist A-Z"
-msgstr "Artista A-Z"
-
-msgid "Artist Z-A"
-msgstr "Artista Z-A"
-
 msgid "Artist mix"
 msgstr "Mix del artista"
 
@@ -392,9 +386,6 @@ msgstr "Portada"
 
 msgid "Artwork view"
 msgstr "Vista de portada"
-
-msgid "Ascending"
-msgstr "Ascendente"
 
 msgid "Ask before quitting"
 msgstr "Preguntar antes de salir"
@@ -991,9 +982,6 @@ msgstr "¿Borrar “{}”?"
 msgid "Delete…"
 msgstr "Borrar…"
 
-msgid "Descending"
-msgstr "Descendente"
-
 msgid "Description"
 msgstr "Descripción"
 
@@ -1089,12 +1077,6 @@ msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
 
 msgid "Duration"
 msgstr "Duración"
-
-msgid "Duration (longest)"
-msgstr "Duración (más largas)"
-
-msgid "Duration (shortest)"
-msgstr "Duración (más cortas)"
 
 msgid "Dutch"
 msgstr "Neerlandés"
@@ -2773,9 +2755,6 @@ msgstr "Restaurar pestañas"
 msgid "Resume"
 msgstr "Continuar"
 
-msgid "Reverse order"
-msgstr "Invertir orden"
-
 msgid "Revert"
 msgstr "Revertir"
 
@@ -3422,12 +3401,6 @@ msgstr "Duración"
 msgid "Title"
 msgstr "Título"
 
-msgid "Title A-Z"
-msgstr "Título A-Z"
-
-msgid "Title Z-A"
-msgstr "Título Z-A"
-
 msgid "To move to"
 msgstr "Para moverse"
 
@@ -3709,12 +3682,6 @@ msgstr "TAMBIÉN TE PUEDE GUSTAR"
 
 msgid "Year"
 msgstr "Año"
-
-msgid "Year (newest)"
-msgstr "Año (más reciente)"
-
-msgid "Year (oldest)"
-msgstr "Año (más antiguo)"
 
 msgid "Yes"
 msgstr "Sí"

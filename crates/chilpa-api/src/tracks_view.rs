@@ -148,9 +148,9 @@ fn arrange_tracks(mut rows: Vec<TrackRow>, query: &TracksQuery, dates: &std::col
             TrackOrder::Title => text(&a.title,&b.title), TrackOrder::TitleDescending => text(&b.title,&a.title),
             TrackOrder::Artist | TrackOrder::Performer => text(&a.artist,&b.artist), TrackOrder::ArtistDescending => text(&b.artist,&a.artist),
             TrackOrder::Year => date(a.id).0.cmp(&date(b.id).0), TrackOrder::YearDescending => date(b.id).0.cmp(&date(a.id).0),
-            TrackOrder::Added => date(b.id).1.cmp(&date(a.id).1),
+            TrackOrder::Added => date(b.id).1.cmp(&date(a.id).1), TrackOrder::AddedAscending => date(a.id).1.cmp(&date(b.id).1),
             TrackOrder::Duration => a.duration_ms.cmp(&b.duration_ms), TrackOrder::DurationDescending => b.duration_ms.cmp(&a.duration_ms),
-            TrackOrder::Plays => b.plays.cmp(&a.plays), _ => Ordering::Equal,
+            TrackOrder::Plays => b.plays.cmp(&a.plays), TrackOrder::PlaysAscending => a.plays.cmp(&b.plays), _ => Ordering::Equal,
         };
         grouped.then(order).then_with(|| text(&a.album,&b.album)).then(a.disc.cmp(&b.disc)).then(a.number.cmp(&b.number)).then_with(|| text(&a.title,&b.title)).then(a.id.cmp(&b.id))
     });

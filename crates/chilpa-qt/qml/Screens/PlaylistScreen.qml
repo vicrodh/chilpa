@@ -4,6 +4,7 @@ import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 
@@ -84,23 +85,16 @@ Flickable {
             spacing: Metrics.gap8
             SortButton {
                 id: sort
-                value: page.order
+                value: page.ascending ? page.order : turned(page.order)
                 options: [
-                    {value: "custom", text: I18n.tr("Custom", I18n.rev)},
+                    {value: "custom", text: I18n.tr("Custom", I18n.rev), fixed: true},
                     {value: "title", text: I18n.tr("Title", I18n.rev)},
                     {value: "artist", text: I18n.tr("Artist", I18n.rev)},
                     {value: "album", text: I18n.tr("Album", I18n.rev)},
                     {value: "duration", text: I18n.tr("Duration", I18n.rev)},
-                    {value: "plays", text: I18n.tr("Most played", I18n.rev)}
+                    {value: "plays", text: I18n.tr("Most played", I18n.rev), descending: true}
                 ]
-                onPicked: (value) => page.order = value
-            }
-            IconButton {
-                visible: page.order !== "custom"
-                round: true
-                glyph: page.ascending ? Icons.chevronUp : Icons.chevronDown
-                tip: page.ascending ? I18n.tr("Ascending", I18n.rev) : I18n.tr("Descending", I18n.rev)
-                onClicked: page.ascending = !page.ascending
+                onPicked: (value) => { page.order = baseOf(value); page.ascending = value === page.order }
             }
             Text {
                 visible: page.order === "custom" && page.editable

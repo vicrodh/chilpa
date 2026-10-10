@@ -732,7 +732,7 @@ impl Chilpa {
             shuffle: false,
             repeat: Repeat::Off,
             mix: false,
-            album_sort: AlbumSort::from_name(&saved.album_sort),
+            album_sort: AlbumSort::from_name(albums_view::turned_order(&saved.album_sort).0),
             artist: String::new(),
             removed: Vec::new(),
             queue_placement: Vec::new(),

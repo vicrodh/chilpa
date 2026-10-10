@@ -49,7 +49,6 @@ crates/chilpa-qt/qml/Components/SearchMenu.qml
 crates/chilpa-qt/qml/Components/SectionHeader.qml
 crates/chilpa-qt/qml/Components/SeekBar.qml
 crates/chilpa-qt/qml/Components/SettingsRow.qml
-crates/chilpa-qt/qml/Components/SortButton.qml
 crates/chilpa-qt/qml/Components/SourceAbout.qml
 crates/chilpa-qt/qml/Components/SourceColumn.qml
 crates/chilpa-qt/qml/Components/SourceCrumbs.qml

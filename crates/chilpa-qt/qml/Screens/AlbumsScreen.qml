@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
@@ -88,10 +89,10 @@ Item {
                 options: [
                     { value: "artist", text: I18n.tr("Artist", I18n.rev) },
                     { value: "title", text: I18n.tr("Title", I18n.rev) },
-                    { value: "year", text: I18n.tr("Year", I18n.rev) },
-                    { value: "added", text: I18n.tr("Date added", I18n.rev) },
-                    { value: "played", text: I18n.tr("Most played", I18n.rev) },
-                    { value: "last_played", text: I18n.tr("Recently played", I18n.rev) }
+                    { value: "year", text: I18n.tr("Year", I18n.rev), descending: true },
+                    { value: "added", text: I18n.tr("Date added", I18n.rev), descending: true },
+                    { value: "played", text: I18n.tr("Most played", I18n.rev), descending: true },
+                    { value: "last_played", text: I18n.tr("Recently played", I18n.rev), descending: true }
                 ]
                 onPicked: (value) => Library.albumOrder = value
             }
@@ -100,6 +101,7 @@ Item {
                 visible: !page.source
                 anchors.verticalCenter: parent.verticalCenter
                 glyph: Icons.stack2
+                directed: false
                 value: page.group
                 options: [
                     { value: "", text: I18n.tr("No grouping", I18n.rev) },
