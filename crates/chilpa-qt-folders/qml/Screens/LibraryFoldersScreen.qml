@@ -101,7 +101,7 @@ Item {
         model: FolderListModel { rev: LibraryFolders.rev }
         bottomMargin: Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
 
         delegate: FolderRow {
             width: ListView.view.width

@@ -4,7 +4,6 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
-
 // Every grid of records in the window (frontend ADR-0002 4): a list of
 // rows, each laying out a fixed number of cards, so recycling a row only
 // rebinds its cards. `columns` follows the width with the design's formula;
@@ -77,6 +76,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
+            gutter: Metrics.scrollbarWidth / 2
             viewportHovered: viewHover.hovered
         }
         HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }

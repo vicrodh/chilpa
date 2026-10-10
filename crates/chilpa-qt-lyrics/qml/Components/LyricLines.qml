@@ -1,5 +1,7 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // The lines of the lyrics. While they follow the music the line being sung
 // is kept in the middle, with the room above the first line and under the
@@ -75,6 +77,7 @@ ListView {
     header: Item { height: view.room }
     footer: Item { height: view.room }
     boundsBehavior: Flickable.StopAtBounds
+    ScrollBar.vertical: ViewportScrollBar {}
 
     delegate: LyricLine {
         required property int index

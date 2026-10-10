@@ -64,6 +64,7 @@ Modal {
                 id: metadata
                 width: Math.min(Metrics.heroArt, parent.width / 3); height: parent.height // derived: reserve two thirds for the reading pane
                 clip: true; contentWidth: availableWidth
+                ScrollBar.vertical: ViewportScrollBar {}
                 Column {
                     width: metadata.availableWidth; spacing: Metrics.gap12
                     ArtTile { width: parent.width; height: width; source: dialog.art }
@@ -118,6 +119,7 @@ Modal {
                     id: reading; objectName: "albumInformationScroll"
                     width: parent.width; height: parent.height - tabs.height - parent.spacing
                     contentWidth: availableWidth; clip: true
+                    ScrollBar.vertical: ViewportScrollBar {}
                     Column {
                         width: reading.availableWidth; spacing: Metrics.gap12
                         Loader {

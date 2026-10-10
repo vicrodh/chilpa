@@ -1,6 +1,8 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
 // Every shortcut, by group, in three columns that fill one after another.
 // It scrolls when the window is too short for it.
@@ -16,6 +18,7 @@ Flickable {
     contentHeight: columns.implicitHeight
     clip: true
     boundsBehavior: Flickable.StopAtBounds
+    ScrollBar.vertical: ViewportScrollBar {}
 
     Row {
         id: columns

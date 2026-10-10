@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -130,6 +131,7 @@ Item {
                                     anchors.fill: parent
                                     model: ahead
                                     clip: true
+                                    ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
                                     spacing: Stage.queueHistoryApart
                                     boundsBehavior: Flickable.StopAtBounds
                                     cacheBuffer: Stage.queueCache
@@ -146,7 +148,6 @@ Item {
                                         active: height > 0
                                         sourceComponent: ImmersiveQueueRow { title: slot.title; artist: slot.artist; duration: slot.duration; art: slot.art; onPlay: ahead.play(slot.index) }
                                     }
-                                    ViewportScrollBar { viewport: upList; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom }
                                 }
                             }
                         }
@@ -182,6 +183,7 @@ Item {
                                 anchors.fill: parent
                                 model: behind
                                 clip: true
+                                ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
                                 spacing: Stage.queueHistoryApart
                                 boundsBehavior: Flickable.StopAtBounds
                                 cacheBuffer: Stage.queueCache
@@ -194,7 +196,6 @@ Item {
                                     width: historyList.width - Stage.queueApart
                                     onPlay: behind.play(index)
                                 }
-                                ViewportScrollBar { viewport: historyList; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom }
                             }
                         }
                     }

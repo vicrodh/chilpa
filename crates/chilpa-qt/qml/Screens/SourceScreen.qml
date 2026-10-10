@@ -1,11 +1,11 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-
 // A plugin's own tree, browsed: the way down to where it stands, a place to
 // type, and one listing. One screen for every source; what is in it is the
 // plugin's to say.
@@ -180,7 +180,7 @@ Item {
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         width: head.width
-        clip: true
+        clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
         model: page.view.entries || []
         header: SourceAbout {
             width: list.width
