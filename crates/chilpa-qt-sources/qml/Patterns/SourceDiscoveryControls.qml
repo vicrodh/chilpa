@@ -54,7 +54,7 @@ Item {
         IconButton {
             objectName: "discoveryCustomize"
             size: Metrics.button32; round: true
-            glyph: SourceGlyphs.homeGear; iconFamily: SourceGlyphs.font
+            glyph: Icons.settings
             tip: I18n.tr("Customize", I18n.rev)
             onClicked: customization.open()
         }
@@ -86,7 +86,7 @@ Item {
                 ScrollBar.vertical: ViewportScrollBar {}
                 Flow {
                     id: genreChoices
-                    width: parent.width; spacing: Metrics.gap8
+                    width: parent.width - Metrics.gap16; spacing: Metrics.gap8
                     Repeater {
                         model: (controls.about.genres || []).filter(g => g.name.toLowerCase().includes(genreSearch.text.toLowerCase()))
                         PillButton {

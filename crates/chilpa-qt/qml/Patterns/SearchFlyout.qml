@@ -122,9 +122,9 @@ Popup {
 
         Flickable {
             width: parent.width
-            height: Metrics.chipHeight
+            height: Metrics.chipHeight + Metrics.gap8
             contentWidth: sources.width
-            clip: true
+            clip: true; ScrollBar.horizontal: ViewportScrollBar {}
             Row {
                 id: sources
                 spacing: Metrics.gap6
@@ -187,7 +187,7 @@ Popup {
             width: parent.width
             height: Math.min(contentHeight, Math.max(0, flyout.room - list.y - flyout.padding * 2)) // derived: the room left under the chips
             interactive: contentHeight > height
-            clip: true
+            clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
             boundsBehavior: Flickable.StopAtBounds
             model: flyout.search
 

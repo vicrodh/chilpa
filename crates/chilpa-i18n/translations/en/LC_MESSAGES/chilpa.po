@@ -441,9 +441,6 @@ msgstr ""
 msgid "Auto-follow"
 msgstr ""
 
-msgid "AutoMix"
-msgstr ""
-
 msgid "Awaiting approval"
 msgstr ""
 
@@ -1512,6 +1509,9 @@ msgstr ""
 
 msgid "Include source albums in Albums"
 msgstr "Include source albums in Albums"
+
+msgid "Include source recommendations in Home"
+msgstr ""
 
 msgid "Influences"
 msgstr ""
@@ -2650,6 +2650,9 @@ msgstr ""
 msgid "Refresh"
 msgstr "Refresh"
 
+msgid "Refresh mix"
+msgstr ""
+
 msgid "Refresh settings"
 msgstr "Refresh settings"
 
@@ -3279,9 +3282,6 @@ msgid "The plugin ZIP could not be opened."
 msgstr ""
 
 msgid "The plugin ZIP could not be read."
-msgstr ""
-
-msgid "The queue in the order its tempo flows best. Off, back to its own."
 msgstr ""
 
 msgid "The record is not open in the editor."

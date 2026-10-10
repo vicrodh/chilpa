@@ -91,7 +91,7 @@ Item {
         contentHeight: column.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar {}
+        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
 
         Column {
             id: column

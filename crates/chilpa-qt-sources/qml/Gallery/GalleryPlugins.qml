@@ -33,6 +33,7 @@ TitledFlow {
     ArtistTracks { width: Metrics.confirmWidth; section: ({title:"Popular Tracks",role:"popular",key:""}) }
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
+    SourceHomeSections { width: Metrics.confirmWidth }
     SourcePaging { about: ({plugin:"preview",next:"next"}) }
     SourceLibraryControls { source: "preview section:albums" }
     StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }

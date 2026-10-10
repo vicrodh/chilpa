@@ -829,8 +829,7 @@ impl qobject::TrackListModel {
             let asked = self.rust().asked + 1;
             self.as_mut().rust_mut().asked = asked;
             let thread = self.qt_thread();
-            worker::submit(move |reader| {
-                let found = reader.tracks(&query, &extras);
+            worker::submit(move |reader| reader.tracks_progressive(&query, &extras, |found| {
                 let _ = thread.queue(move |mut model| {
                     if model.rust().asked == asked {
                         let ms = found.snapshot.totals.duration_ms;
@@ -838,7 +837,7 @@ impl qobject::TrackListModel {
                         model.show("tracks".into(), Rows::Snapshot { ids: Rc::new(found.snapshot), pages: RefCell::default() }, Some(ms));
                     }
                 });
-            });
+            }));
             return;
         }
         // The rows, and how long they last when the list says so.

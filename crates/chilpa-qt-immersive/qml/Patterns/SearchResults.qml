@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import QtQuick.Effects
 import app.chilpa
 import app.chilpa.kit
@@ -126,6 +127,7 @@ Item {
             anchors.rightMargin: Stage.searchFieldApart
             model: search
             clip: true
+            ScrollBar.vertical: ViewportScrollBar { gutter: -Metrics.gap8 }
             boundsBehavior: Flickable.StopAtBounds
             delegate: Item {
                 id: row
@@ -196,6 +198,5 @@ Item {
                 font.pointSize: Stage.searchSubText
             }
         }
-        ViewportScrollBar { viewport: list; anchors.right: parent.right; anchors.top: parent.top; anchors.bottom: parent.bottom }
     }
 }

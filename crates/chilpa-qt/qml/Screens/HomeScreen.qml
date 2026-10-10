@@ -2,15 +2,20 @@ import QtQuick
 import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // Home (design/06): what played last, what came in last, and the most
 // played tracks. Each shelf is the same AlbumGrid as every other grid,
 // limited to one row.
 Flickable {
     id: page
+    property int homeRefresh: 0
+    readonly property alias homeSections: remote.sections
+    onVisibleChanged: if (visible) homeRefresh++
 
     contentWidth: width
     contentHeight: column.height + Metrics.contentTop + Metrics.contentBottom
@@ -57,25 +62,21 @@ Flickable {
         }
 
         Text {
-            visible: played.albums === 0 && added.albums === 0
+            visible: played.albums === 0 && added.albums === 0 && remote.sections.length === 0
             topPadding: Metrics.section
             text: I18n.tr("Nothing here yet: add a folder to the library and its records show up here.", I18n.rev)
             font.pointSize: Type.body
             color: Theme.color.textSecondary
         }
         PillButton {
-            visible: played.albums === 0 && added.albums === 0
+            visible: played.albums === 0 && added.albums === 0 && remote.sections.length === 0
             kind: "primary"
             glyph: Icons.folderPlus
             text: I18n.tr("Add a folder", I18n.rev)
             onClicked: Navigation.go("libraryFolders", 0)
         }
 
-        SectionHeader {
-            width: parent.width
-            visible: played.albums > 0
-            title: I18n.tr("Recently played", I18n.rev)
-        }
+        SectionHeader { width: parent.width; visible: played.albums > 0; title: I18n.tr("Recently played", I18n.rev) }
         AlbumGrid {
             id: playedGrid
             width: parent.width
@@ -86,11 +87,7 @@ Flickable {
             onOpen: (albumId) => Navigation.go("album", albumId)
         }
 
-        SectionHeader {
-            width: parent.width
-            visible: added.albums > 0
-            title: I18n.tr("Recently added", I18n.rev)
-        }
+        SectionHeader { width: parent.width; visible: added.albums > 0; title: I18n.tr("Recently added", I18n.rev) }
         AlbumGrid {
             id: addedGrid
             width: parent.width
@@ -101,11 +98,7 @@ Flickable {
             onOpen: (albumId) => Navigation.go("album", albumId)
         }
 
-        SectionHeader {
-            width: parent.width
-            visible: most.count > 0
-            title: I18n.tr("Most played", I18n.rev)
-        }
+        SectionHeader { width: parent.width; visible: most.count > 0; title: I18n.tr("Most played", I18n.rev) }
         TrackList {
             width: parent.width
             height: implicitHeight
@@ -114,5 +107,6 @@ Flickable {
             showPlays: true
             model: most
         }
+        SourceHomeSections { id: remote; width: parent.width; refresh: page.homeRefresh }
     }
 }

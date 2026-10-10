@@ -76,7 +76,7 @@ Item {
         x: Metrics.contentX; anchors.top: steps.bottom; anchors.topMargin: Metrics.gap24; anchors.bottom: footer.top; anchors.bottomMargin: Metrics.gap16
         width: Math.min(Metrics.selectWidth * 2, page.width - Metrics.contentX * 2) // derived: bounded form with room for translated labels
         clip: true; contentHeight: form.height; contentWidth: width
-        Controls.ScrollBar.vertical: ViewportScrollBar {}
+        Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
         Column {
             id: form; width: setup.width - Metrics.gap8; spacing: Metrics.gap10; enabled: !!page.document.installed
             Column { width: parent.width; spacing: Metrics.gap12; visible: page.step === 0
@@ -136,7 +136,7 @@ Item {
         }
     }
         clip: true; spacing: Metrics.gap8; model: page.state.rows || []
-        Controls.ScrollBar.vertical: ViewportScrollBar {}
+        Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
         delegate: Rectangle {
             required property var modelData
             width: ListView.view.width; height: row.height + Metrics.gap16; radius: Metrics.radiusControl; color: Theme.color.fillField

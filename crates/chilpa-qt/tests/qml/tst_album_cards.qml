@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import app.chilpa.sources
 import "../../qml/Components"
 import "../../../chilpa-qt-kit/qml/Primitives"
 
@@ -13,6 +14,16 @@ TestCase {
     AlbumGridModel { id: records }
     AlbumGrid { id: grid; y: 260; width: 1400; height: 500; fitContent: true; model: records; viewportWidth: 700; viewportX: 320 }
     function initTestCase() { records.append({first:0,span:6,group:""}) }
+    function test_remote_mix_card_shows_animated_art_with_empty_url() {
+        Sources.show({artColors:{"-1":["#221725","#d17655","#f8dda7"]}})
+        records.kind = "source"
+        records.rev++
+        const mix = findChild(grid, "albumAnimatedCover")
+        tryCompare(mix, "visible", true)
+        compare(mix.colors.length, 3)
+        records.kind = ""
+        records.rev++
+    }
     function test_quick_view_queue_button_opens_all_placements_and_extra_queues() {
         records.expanded = 0
         const quick = findChild(grid, "albumQuickLoader")

@@ -16,12 +16,10 @@ Item {
     property string order: SettingsModel.kept("ui.tracks.order") || "default"
     property string group: SettingsModel.kept("ui.tracks.group") || "off"
     property string typed: Visit.recall("tracks.typed", "")
-    // Where the list was when the screen was left, until it is back there.
-    property real returnTo: Visit.recall("tracks.at", 0)
+    readonly property var scrollView: list.rows
 
     Component.onDestruction: {
         Visit.keep("tracks.typed", typed)
-        Visit.keep("tracks.at", list.rows.contentY)
     }
     property bool selectionMode: false
     readonly property bool grouped: group !== "off"
@@ -32,7 +30,7 @@ Item {
         id: tracks
         kind: "tracks"
         key: [page.order === "default" ? "" : page.order, page.group, page.typed].join("\u001f")
-        filterRev: Library.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev
+        filterRev: Library.rev + Library.contentRev + Library.remoteRev
         playingPath: Player.path
     }
 
@@ -150,6 +148,7 @@ Item {
                 SourcesPopover {
                     id: filters
                     showTrackLibraries: true
+                    showAlbumGrouping: false
                     x: filterButton.width - width
                     y: filterButton.height + Metrics.gap6
                 }
@@ -187,12 +186,6 @@ Item {
         target: tracks
         function onModelReset() {
             page.letters = JSON.parse(tracks.letters(0) || "[]")
-        }
-        function onCountChanged() {
-            if (page.returnTo > 0 && tracks.count > 0) {
-                list.rows.contentY = Math.min(page.returnTo, Math.max(0, list.rows.contentHeight - list.rows.height))
-                page.returnTo = 0
-            }
         }
     }
     Binding {

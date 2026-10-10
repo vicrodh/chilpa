@@ -12,6 +12,7 @@ Popup {
     id: popover
     property bool showAlbumLibraries: false
     property bool showTrackLibraries: false
+    property bool showAlbumGrouping: true
     // The Library screen's filter columns that are on, or null where the
     // screen has none; a toggle asks the screen to turn one on or off.
     property var panes: null
@@ -66,8 +67,9 @@ Popup {
                 width: popover.half
                 spacing: Metrics.gap8
                 Item {
+                    visible: popover.showAlbumGrouping
                     width: parent.width
-                    height: Metrics.sourceFilterRow
+                    height: visible ? Metrics.sourceFilterRow : 0
                     Text {
                         anchors.left: parent.left
                         anchors.right: grouping.left

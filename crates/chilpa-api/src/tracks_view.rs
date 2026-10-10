@@ -54,6 +54,12 @@ impl Reader {
     /// The tracks of a query. The sources, qualities and formats left out
     /// come from `extras`, which the Library screen shares.
     pub fn tracks(&self, query: &str, extras: &Filter) -> FoundTracks {
+        let local = self.local_tracks(query, extras);
+        self.streaming_tracks(query, extras, &local.snapshot).unwrap_or(local)
+    }
+
+    /// Give the screen its local rows before a large source library has been merged.
+    pub fn local_tracks(&self, query: &str, extras: &Filter) -> FoundTracks {
         let query = TracksQuery::parse(query);
         let filter = Filter {
             text: query.text.clone(),
@@ -64,7 +70,6 @@ impl Reader {
             ..Filter::default()
         };
         let snapshot = self.snapshot(&filter, query.order());
-        if let Some(found) = self.with_streaming_tracks(&query, extras, &snapshot) { return found; }
         let letters = if query.grouped() {
             let by = if query.group == "name" { "title" } else { query.group.as_str() };
             let found = self.letters(&snapshot.ids, by);
@@ -73,6 +78,18 @@ impl Reader {
             String::new()
         };
         FoundTracks { snapshot, letters, group: query.group }
+    }
+
+    pub fn streaming_tracks(&self, query: &str, extras: &Filter, local: &Snapshot) -> Option<FoundTracks> {
+        self.with_streaming_tracks(&TracksQuery::parse(query), extras, local)
+    }
+
+    /// Show local rows at once, then replace them when saved source rows are ready.
+    pub fn tracks_progressive(&self, query: &str, extras: &Filter, mut emit: impl FnMut(FoundTracks)) {
+        let local = self.local_tracks(query, extras);
+        let snapshot = local.snapshot.clone();
+        emit(local);
+        if let Some(mixed) = self.streaming_tracks(query, extras, &snapshot) { emit(mixed); }
     }
 }
 
@@ -98,6 +115,10 @@ impl Reader {
         if remote.is_empty() { return None; }
         dates.extend(self.lib.track_dates(&snapshot.ids).unwrap_or_default());
         let mut rows: Vec<_> = snapshot.ids.chunks(500).flat_map(|ids| self.lib.tracks_by_ids(ids).unwrap_or_default()).map(crate::browse::row_of).collect();
+        if rows.len() != snapshot.ids.len() {
+            eprintln!("chilpa-queries: source merge kept {} of {} local tracks; showing the local snapshot", rows.len(), snapshot.ids.len());
+            return None;
+        }
         rows.extend(remote);
         Some(arrange_tracks(rows, query, &dates))
     }

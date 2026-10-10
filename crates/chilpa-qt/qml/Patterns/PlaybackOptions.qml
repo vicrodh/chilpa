@@ -6,10 +6,8 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 
-// How the queue plays, from the player bar: gapless, one loudness for every
-// track, and the mix by tempo -- the switches Settings has.
+// How the queue plays, from the player bar.
 Popup {
     id: options
 
@@ -67,20 +65,6 @@ Popup {
             checked: Player.normalize
             available: !Cast.active && Player.normalizeApplies
             onToggled: (on) => Player.chooseNormalize(on)
-        }
-        // Offered only when the library has tracks whose tempo was read.
-        OptionRow {
-            visible: Player.automixAvailable
-            width: parent.width
-            title: I18n.tr("AutoMix", I18n.rev)
-            detail: Player.automixNote !== "" ? Player.automixNote
-                : I18n.tr("The queue in the order its tempo flows best. Off, back to its own.", I18n.rev)
-            checked: Player.automix
-            onToggled: (on) => Player.chooseAutomix(on)
-        }
-        Parts.LoopRow {
-            visible: !Cast.active && Player.duration > 0
-            width: parent.width
         }
     }
 }
