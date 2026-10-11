@@ -11,6 +11,7 @@ Item {
     objectName: "pluginDownloads"
     required property var document
     required property var plugin
+    property Component purchaseCard: null
     property bool busy: false
     property string problem: ""
     property string tab: "albums"
@@ -19,6 +20,7 @@ Item {
     property string quality: "all"
     property bool hideUnavailable: false
     property string formatChoice: ""
+    property string selectedPurchaseKey: ""
     signal back()
     signal account()
     signal chooseFolder()
@@ -43,23 +45,29 @@ Item {
             : Number(b.purchased_at || 0) - Number(a.purchased_at || 0))
         return filtered
     }
-    onSelectionChanged: formatChoice = formats.length ? String(formats[0].id) : ""
+    onSelectionChanged: {
+        const key = selection ? String(selection.kind) + ":" + String(selection.id) : ""
+        if (key !== selectedPurchaseKey || !formats.some(format => String(format.id) === formatChoice))
+            formatChoice = formats.length ? String(formats[0].id) : ""
+        selectedPurchaseKey = key
+    }
 
     Column {
         id: header
-        width: parent.width
+        x: Metrics.contentX; y: Metrics.contentTop
+        width: Math.max(0, parent.width - Metrics.contentX * 2) // derived: page padding on both sides
         spacing: Metrics.gap12
         Row {
             width: parent.width
             spacing: Metrics.gap12
-            P.PillButton { text: view.selection ? I18n.tr("Back to purchases", I18n.rev) : I18n.tr("Back to plugins", I18n.rev); onClicked: view.selection ? view.action({action:"back"}) : view.back() }
-            Text { text: view.plugin.name || I18n.tr("Purchases", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.titleSmall; anchors.verticalCenter: parent.verticalCenter }
+            P.PillButton { id: backButton; text: view.selection ? I18n.tr("Back to purchases", I18n.rev) : I18n.tr("Back to plugins", I18n.rev); onClicked: view.selection ? view.action({action:"back"}) : view.back() }
+            Text { width: Math.max(0, parent.width - backButton.width - Metrics.gap12); text: view.plugin.name || I18n.tr("Purchases", I18n.rev); elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.titleSmall; anchors.verticalCenter: parent.verticalCenter }
         }
         Flow {
             width: parent.width
             spacing: Metrics.gap8
             Text {
-                width: Math.max(0, parent.width - folder.width - addLibrary.width - accountButton.width - Metrics.gap24)
+                width: parent.width
                 text: view.plugin.export_folder || I18n.tr("No download folder selected", I18n.rev)
                 textFormat: Text.PlainText; elide: Text.ElideMiddle
                 color: Theme.color.textSecondary; font.pointSize: Type.body
@@ -150,101 +158,66 @@ Item {
         id: cards
         objectName: "purchaseGrid"
         anchors.top: header.bottom; anchors.topMargin: Metrics.gap12
-        anchors.bottom: parent.bottom; width: parent.width
+        anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
+        x: header.x; width: header.width
         visible: !view.selection && view.document.loaded === true && view.tab === "albums" && view.mode === "grid"
         clip: true; boundsBehavior: Flickable.StopAtBounds
-        cellWidth: width / Math.max(1, Math.floor(width / Metrics.cardMinWidth))
-        cellHeight: cellWidth + Metrics.cardTextHeight + Metrics.gap16
+        cellWidth: (width + Metrics.gridGap) / Math.max(1, Math.floor((width + Metrics.gridGap) / (Metrics.cardMinWidth + Metrics.gridGap)))
+        cellHeight: cellWidth - Metrics.gridGap + Metrics.cardTextGap + Metrics.cardTextHeight + Metrics.gridGap
         model: view.rows
         ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
-        delegate: PluginPurchaseCard {
-            width: cards.cellWidth - Metrics.gap12; height: cards.cellHeight - Metrics.gap8
-            onOpened: view.action({action:"select_album",id:modelData.id})
+        delegate: Loader {
+            id: cardLoader
+            required property var modelData
+            width: cards.cellWidth - Metrics.gridGap; height: cards.cellHeight - Metrics.gridGap
+            sourceComponent: view.purchaseCard
+            Binding { target: cardLoader.item; property: "record"; value: cardLoader.modelData; when: !!cardLoader.item }
+            Connections { target: cardLoader.item; function onOpened() { view.action({action:"select_album",id:cardLoader.modelData.id}) } }
         }
     }
 
     ListView {
         id: listRows
         anchors.top: header.bottom; anchors.topMargin: Metrics.gap12
-        anchors.bottom: parent.bottom; width: parent.width
+        anchors.bottom: parent.bottom; anchors.bottomMargin: Metrics.contentBottom
+        x: header.x; width: header.width
         visible: !view.selection && view.document.loaded === true && (view.tab === "tracks" || view.mode === "list")
         clip: true; reuseItems: true; boundsBehavior: Flickable.StopAtBounds
         model: view.rows
         ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
-        delegate: Rectangle {
+        delegate: Item {
             required property var modelData
-            width: listRows.width - Metrics.gap12; height: Metrics.settingsRow
-            color: area.containsMouse ? Theme.color.stateHover : "transparent"
-            Row {
-                anchors.fill: parent; spacing: Metrics.gap12
-                Image { width: parent.height - Metrics.gap8; height: width; anchors.verticalCenter: parent.verticalCenter; source: modelData.image || ""; asynchronous: true; fillMode: Image.PreserveAspectCrop }
-                Column {
-                    width: Math.max(0, parent.width - parent.height - Metrics.gap12)
-                    anchors.verticalCenter: parent.verticalCenter
-                    Text { width: parent.width; text: modelData.title || ""; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body }
-                    Text { width: parent.width; text: [modelData.artist, modelData.album || modelData.year].filter(Boolean).join(" · "); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textSecondary; font.pointSize: Type.meta }
-                }
+            required property int index
+            width: listRows.width - Metrics.gap12; height: Metrics.rowRich
+            P.ListRowSurface { anchors.fill: parent; rowIndex: index; radius: Metrics.radiusRow; hovered: hover.hovered }
+            P.ArtTile {
+                id: art
+                x: Metrics.gap8; anchors.verticalCenter: parent.verticalCenter
+                width: Metrics.artRow; height: width; radius: Metrics.radiusArtSmall
+                source: modelData.image || ""
             }
-            MouseArea { id: area; anchors.fill: parent; hoverEnabled: true; cursorShape: Qt.PointingHandCursor; onClicked: view.action({action:view.tab === "albums" ? "select_album" : "select_track",id:modelData.id}) }
+            Column {
+                anchors.left: art.right; anchors.leftMargin: Metrics.gap12
+                anchors.right: parent.right; anchors.rightMargin: Metrics.gap12
+                anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap4
+                Text { width: parent.width; text: modelData.title || ""; textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textPrimary; font.pointSize: Type.body; font.weight: Type.semibold }
+                Text { width: parent.width; text: [modelData.artist, modelData.album || modelData.year].filter(Boolean).join(" · "); textFormat: Text.PlainText; elide: Text.ElideRight; color: Theme.color.textSecondary; font.pointSize: Type.meta }
+            }
+            HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
+            TapHandler { onTapped: view.action({action:view.tab === "albums" ? "select_album" : "select_track",id:modelData.id}) }
         }
     }
 
-    Flickable {
-        id: detail
-        anchors.top: header.bottom; anchors.topMargin: Metrics.gap12
-        anchors.bottom: parent.bottom; width: parent.width
-        visible: !!view.selection; clip: true; contentWidth: width; contentHeight: body.implicitHeight
-        boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: P.ViewportScrollBar { gutter: -Metrics.gap8 }
-        Column {
-            id: body; width: detail.width - Metrics.gap12; spacing: Metrics.gap16
-            Row {
-                spacing: Metrics.gap16
-                Image { width: Metrics.pageHero; height: width; source: view.selection ? view.selection.image || "" : ""; asynchronous: true; fillMode: Image.PreserveAspectCrop }
-                Column {
-                    width: Math.max(0, body.width - Metrics.pageHero - Metrics.gap16)
-                    spacing: Metrics.gap8
-                    Text { width: parent.width; text: view.selection ? view.selection.title || "" : ""; textFormat: Text.PlainText; wrapMode: Text.WordWrap; color: Theme.color.textPrimary; font.pointSize: Type.titleSmall }
-                    Text { text: view.selection ? view.selection.artist || "" : ""; textFormat: Text.PlainText; color: Theme.color.textSecondary; font.pointSize: Type.body }
-                    Text { text: view.selection ? view.selection.year || view.selection.album || "" : ""; textFormat: Text.PlainText; color: Theme.color.textTertiary; font.pointSize: Type.meta }
-                    Text { text: view.selection && view.selection.kind === "album" ? I18n.trArgs("{} tracks", [(view.selection.tracks || []).length], I18n.rev) : ""; color: Theme.color.textSecondary; font.pointSize: Type.body }
-                }
-            }
-            Row {
-                spacing: Metrics.gap8
-                P.SelectField { options: view.formats.map(f => f.label); values: view.formats.map(f => String(f.id)); value: view.formatChoice; onPicked: value => view.formatChoice = value }
-                P.PillButton {
-                    text: view.selection && view.selection.kind === "album" ? I18n.tr("Download album", I18n.rev) : I18n.tr("Download track", I18n.rev)
-                    kind: "primary"
-                    enabled: !view.busy && !view.document.working && view.document.destination_ready === true && view.formatChoice !== "" && view.selection && view.selection.downloadable !== false
-                    onClicked: view.action({action:"download",format_id:Number(view.formatChoice)})
-                }
-            }
-            Text {
-                visible: view.document.destination_ready !== true
-                text: I18n.tr("Choose a download folder before downloading.", I18n.rev)
-                color: Theme.color.statusWarning; font.pointSize: Type.body
-            }
-            Text {
-                visible: view.selection && view.selection.downloadable === false
-                text: I18n.tr("This purchase is unavailable for download.", I18n.rev)
-                color: Theme.color.statusWarning; font.pointSize: Type.body
-            }
-            Text {
-                visible: view.selection && view.selection.kind === "album"
-                text: I18n.tr("Tracks", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.titleSmall
-            }
-            Repeater {
-                model: view.selection && view.selection.kind === "album" ? view.selection.tracks || [] : []
-                delegate: PluginPurchaseTrackRow {
-                    required property var modelData
-                    required property int index
-                    width: body.width; entry: modelData; rowIndex: index
-                    formatId: view.formatChoice
-                    canDownload: !view.busy && !view.document.working && view.document.destination_ready === true && view.formatChoice !== "" && view.selection.downloadable !== false
-                    onDownload: view.action({action:"download",format_id:Number(view.formatChoice),track_id:modelData.id})
-                }
-            }
-        }
+    PluginPurchaseDetail {
+        anchors.top: header.bottom; anchors.topMargin: Metrics.gap16
+        anchors.bottom: parent.bottom
+        x: header.x; width: header.width
+        visible: !!view.selection
+        selection: view.selection
+        document: view.document
+        busy: view.busy
+        formatChoice: view.formatChoice
+        onFormatPicked: value => view.formatChoice = value
+        onAction: request => view.action(request)
     }
 }

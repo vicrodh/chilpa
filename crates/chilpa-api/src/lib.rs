@@ -3,7 +3,6 @@
 //! A shell sends [`Command`]s and receives [`Event`]s. It sees neither the
 //! core, nor the library, nor the player. If a view needs something that is
 //! not here, this API is widened first.
-
 pub use chilpa_core::queue_playback::Repeat;
 pub use chilpa_library::{AlbumSort, Stats};
 pub use plugins::{NativeCaller, PluginInfo};
@@ -62,6 +61,7 @@ pub use plugin_inspection::PluginInspection;
 mod plugin_installation;
 mod plugin_icons;
 mod plugin_sidebar;
+mod plugin_access;
 mod svg_icon;
 mod plugin_library;
 mod plugin_center;

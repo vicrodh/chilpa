@@ -2,11 +2,13 @@ import QtQuick
 import app.chilpa
 import app.chilpa.sources
 import "Screens"
+import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
 // I destroy the previous screen when navigating (frontend ADR-0014).
 Loader {
@@ -35,6 +37,7 @@ Loader {
         case "artists": return artists
         case "artist": return artist
         case "settings": return settings
+        case "pluginDownloads": return pluginDownloads
         case "libraryFolders": return libraryFolders
         case "folders": return folders
         case "openMedia": return openMedia
@@ -59,7 +62,28 @@ Loader {
     Component { id: artists; ArtistsScreen {} }
     // The library's artist is drawn by the same page as a source's.
     Component { id: artist; ArtistPage { key: "local artist:" + Navigation.routeKey } }
-    Component { id: settings; SettingsScreen {} }
+    Component { id: settings; SettingsScreen { purchaseCard: purchaseAlbumCard } }
+    Component {
+        id: pluginDownloads
+        Item {
+            SettingsPage { id: backend; section: "plugins" }
+            PluginManager { anchors.fill: parent; page: backend; initialDownloadsId: Navigation.routeKey; purchaseCard: purchaseAlbumCard }
+        }
+    }
+    Component {
+        id: purchaseAlbumCard
+        AlbumCard {
+            property var record: ({})
+            signal opened()
+            purchaseMode: true
+            title: record.title || ""
+            subtitle: record.artist || ""
+            year: record.year || ""
+            art: record.image || ""
+            available: record.downloadable !== false
+            onClicked: opened()
+        }
+    }
     Component { id: libraryFolders; LibraryFoldersScreen {} }
     Component { id: folders; FoldersScreen {} }
     Component { id: openMedia; OpenMediaScreen {} }

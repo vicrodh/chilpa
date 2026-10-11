@@ -160,6 +160,9 @@ msgstr "Acento"
 msgid "Accept permissions and enable"
 msgstr "Aceptar permisos y activar"
 
+msgid "Access to downloader"
+msgstr "Acceso al descargador"
+
 msgid "Account"
 msgstr "Cuenta"
 
@@ -1102,6 +1105,9 @@ msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 msgid "Download"
 msgstr "Descargar"
 
+msgid "Download again"
+msgstr "Descargar de nuevo"
+
 msgid "Download album"
 msgstr "Descargar álbum"
 
@@ -1113,6 +1119,9 @@ msgstr "Descargado"
 
 msgid "Downloading {} of {}"
 msgstr "Descargando {} de {}"
+
+msgid "Downloads"
+msgstr "Descargas"
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
@@ -1324,8 +1333,17 @@ msgstr "vie"
 msgid "From catalog"
 msgstr "Del catálogo"
 
+msgid "From main sidebar"
+msgstr "Desde la barra lateral"
+
+msgid "From plugin"
+msgstr "Desde el plugin"
+
 msgid "From same artist"
 msgstr "Del mismo artista"
+
+msgid "From settings menu"
+msgstr "Desde el menú de ajustes"
 
 msgid "From this week"
 msgstr "De esta semana"
@@ -3298,6 +3316,9 @@ msgstr "La prueba integrada reproduce cuatro pistas con distintas profundidades 
 
 msgid "The connection is not encrypted."
 msgstr "La conexión no está cifrada."
+
+msgid "The download view is unavailable."
+msgstr "La vista de descargas no está disponible."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."

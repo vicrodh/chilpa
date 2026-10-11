@@ -18,6 +18,7 @@ Rectangle {
     // The plugins that asked for an entry of their own, once approved.
     readonly property var sourceView: JSON.parse(Sources.snapshot || "{}")
     readonly property var panels: sourceView.panels || []
+    readonly property var downloadPlugins: (sourceView.download_plugins || []).filter(plugin => plugin.access === "sidebar")
 
     Component.onCompleted: Sources.refresh()
     Timer { interval: Motion.poll; repeat: true; running: side.sourceView.starting === true; onTriggered: Sources.refresh() }
@@ -86,6 +87,7 @@ Rectangle {
                         { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
                         { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
                     ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
+                        .concat(side.downloadPlugins.map(p => ({ screen: "pluginDownloads", key: p.id, glyph: Icons.download, image: p.icon || "", text: p.name, download: true })))
 
                     Column {
                         id: group
@@ -94,17 +96,25 @@ Rectangle {
                         width: parent.width
 
                         Text {
-                            visible: group.index === 7 && !side.collapsed
+                            visible: group.index === 7 && side.panels.length > 0 && !side.collapsed
                             height: visible ? Metrics.navItemHeight : 0
                             x: Metrics.navItemPadding
                             text: I18n.tr("Streaming", I18n.rev)
                             font.pointSize: Type.small; font.weight: Type.semibold
                             color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
                         }
+                        Text {
+                            visible: group.modelData.download === true && group.index === 7 + side.panels.length && !side.collapsed
+                            height: visible ? Metrics.navItemHeight : 0
+                            x: Metrics.navItemPadding
+                            text: I18n.tr("Downloads", I18n.rev)
+                            font.pointSize: Type.small; font.weight: Type.semibold
+                            color: Theme.color.textTertiary; verticalAlignment: Text.AlignVCenter
+                        }
                         NavItem {
                             objectName: group.modelData.key ? "sourceParent" : "navigationParent"
                             width: parent.width
-                            expandable: !!group.modelData.key
+                            expandable: !!group.modelData.key && group.modelData.screen === "source"
                             expanded: side.expandedSources[group.modelData.key] === true
                             onExpansionClicked: { const copy = Object.assign({}, side.expandedSources); copy[group.modelData.key] = !expanded; side.expandedSources = copy }
                             text: group.modelData.text
@@ -115,6 +125,7 @@ Rectangle {
                             active: Navigation.screen === group.modelData.screen && (!group.modelData.key || Navigation.routeKey === group.modelData.key)
                             onClicked: {
                                 if (!group.modelData.key) Navigation.go(group.modelData.screen, 0)
+                                else if (group.modelData.download) Navigation.goKey("pluginDownloads", group.modelData.key)
                                 else {
                                     // A tree starts over from its root; music opens its own page.
                                     if (!group.modelData.music) Sources.command("home", group.modelData.key, "")

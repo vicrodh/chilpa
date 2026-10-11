@@ -372,6 +372,11 @@ impl Chilpa {
     pub fn sources_json(&mut self) -> String {
         self.advance_plugins();
         let panels = self.source_panels();
+        let download_plugins: Vec<serde_json::Value> = self.plugins.as_ref().and_then(|plugins| plugins.try_lock().ok())
+            .map(|plugins| plugins.list().into_iter().filter(|plugin| plugins.enabled(&plugin.id) && self.natives.has_downloads(&plugin.id))
+                .map(|plugin| serde_json::json!({"id":plugin.id,"name":plugin.name,
+                    "icon":crate::plugin_icons::image_url(&Self::plugins_dir(), &plugin.id),
+                    "access":crate::plugin_access::read(&Self::plugins_dir(), &plugin.id)})).collect()).unwrap_or_default();
         let playing_source = self.playing_source_name();
         let s = &self.sources;
         let on_air = s.sounding.as_ref().filter(|p| self.now.playing && self.now.path == p.url);
@@ -526,6 +531,7 @@ impl Chilpa {
                 .unwrap_or_default(),
             "detail": detail,
         });
+        document["download_plugins"] = serde_json::json!(download_plugins);
         document["playing_parent"] = self.playing_media_parent().map(|(source, _)| source).unwrap_or_default().into();
         document["playing_source"] = playing_source.into();
         document["playing_entry"] = context.into();
