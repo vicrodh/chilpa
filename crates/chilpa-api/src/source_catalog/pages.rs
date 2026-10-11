@@ -321,6 +321,10 @@ impl crate::Chilpa {
             document["next"] = document["more"].clone();
         }
         if document["header"]["kind"] == "artist" {
+            // How much "In library" holds, for its badge.
+            let artist = json!({"ref": document["header"]["ref"].as_str().unwrap_or(reference), "title": document["header"]["title"]});
+            let lists = [format!("{plugin} section:tracks"), format!("{plugin} section:albums")];
+            document["header"]["kept"] = json!(self.catalog.count_kept(&lists, |item| super::native::same_primary_artist(item, &artist)));
             crate::artist_page::shape(&mut document);
         }
         document.to_string()
@@ -353,6 +357,9 @@ mod tests {
         assert_eq!(shelves.iter().map(|s| s["role"].as_str().unwrap()).collect::<Vec<_>>(), ["popular", "release"]);
         assert_eq!((shelves[0]["items"].as_array().unwrap().len(), shelves[0]["title"].as_str(), shelves[0]["preview"].as_u64()), (1, Some("Tracks"), Some(10)));
         assert_eq!((page["library"].as_bool(), page["loading"].as_bool()), (Some(true), Some(false)));
+        ingest_document(&app.catalog, "fixture", "artist:9", &json!({"header":{"kind":"artist","ref":"artist:9","title":"Band"},"shelves":[]}));
+        let catalog: Value = serde_json::from_str(&app.native_page_view("fixture", "artist:9")).unwrap();
+        assert_eq!(catalog["header"]["kept"].as_u64(), Some(2), "the catalog page says how much its library holds");
     }
 
     #[test]
