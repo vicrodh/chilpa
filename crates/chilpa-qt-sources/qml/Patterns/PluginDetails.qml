@@ -13,6 +13,7 @@ P.Modal {
     property var plugin: ({})
     property string mode: "inspection"
     property string tab: "settings"
+    readonly property bool settingsLoading: manager.view.settings_loading_id === plugin.id
     readonly property var validation: manager.view.validation || ({})
     readonly property bool matching: !!validation.id && validation.id === plugin.id && validation.repository_id === plugin.repository_id
     property alias domains: domains.text
@@ -52,7 +53,9 @@ P.Modal {
         Text {
             objectName: "pluginStatus"
             width: parent.width
-            text: details.manager.view.busy ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev)) : details.manager.view.error || ""
+            text: details.manager.view.busy || details.settingsLoading
+                ? (details.manager.view.operation === "install" ? I18n.tr("Installing plugin…", I18n.rev) : I18n.tr("Loading…", I18n.rev))
+                : details.manager.view.error || ""
             visible: text !== "" && (details.mode === "settings" || details.manager.view.operation !== "prepare")
             wrapMode: Text.WordWrap
             color: Theme.color.statusWarning
@@ -157,7 +160,7 @@ P.Modal {
                     width: parent.width
                     visible: !!details.manager.view.form && details.manager.view.settings_id === details.plugin.id
                     document: details.manager.settingsDocument
-                    enabled: !details.manager.view.busy
+                    enabled: !details.manager.view.busy && !details.settingsLoading
                     onSubmitted: (action, values) => details.manager.command("submit", {id: details.plugin.id, submission: {revision: details.manager.view.form.revision, action: action, values: values}})
                     onLinked: (url) => {
                         if (/^https?:\/\//i.test(url)) Qt.openUrlExternally(url)

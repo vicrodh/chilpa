@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, AtomicUsize, Ordering}}};
 
 pub(crate) struct PluginCenter {
-    commands: mpsc::SyncSender<(String, Value)>,
+    commands: Arc<mpsc::SyncSender<(String, Value)>>,
     view: Arc<Mutex<Value>>,
     busy: Arc<AtomicUsize>,
     foreground: Arc<AtomicBool>,
@@ -18,7 +18,8 @@ pub(crate) struct PluginCenter {
 
 impl PluginCenter {
     fn start(plugins: Arc<Mutex<Plugins>>, root: PathBuf) -> Self {
-        let (commands, receiver) = mpsc::sync_channel::<(String, Value)>(2);
+        let (sender, receiver) = mpsc::sync_channel::<(String, Value)>(2);
+        let commands = Arc::new(sender);
         let view = Arc::new(Mutex::new(json!({})));
         let shared = view.clone();
         let busy = Arc::new(AtomicUsize::new(0));
@@ -33,6 +34,7 @@ impl PluginCenter {
         let deleted = removed.clone();
         let refreshed = Arc::new(Mutex::new(Vec::new()));
         let reload = refreshed.clone();
+        let completions = Arc::downgrade(&commands);
         std::thread::spawn(move || {
             let launcher = plugins.lock().ok().and_then(|host| host.compatibility_launcher());
             let mut evidence = crate::plugin_evidence::Evidence::load(&root.join(".repositories"),
@@ -40,6 +42,59 @@ impl PluginCenter {
             let mut pending: Option<PreparedPlugin> = None;
             let mut state = json!({"repositories":[],"catalog":[],"installed":[],"form":null,"proposal":null});
             for (action, input) in receiver {
+                if action == "native_settings_result" {
+                    crate::plugin_evidence::log_event(&root.join(".repositories"), input["action"].as_str().unwrap_or("settings"),
+                        input.get("form").is_some(), std::time::Duration::from_millis(input["elapsed_ms"].as_u64().unwrap_or(0)));
+                    if state["settings_loading_id"] == input["id"] {
+                        state["settings_loading_id"] = Value::Null;
+                        if let Some(form) = input.get("form") {
+                            state["form"] = form.clone();
+                            state["pages"] = json!([]);
+                            state["error"] = Value::Null;
+                            state["maintenance_failed"] = false.into();
+                            if input["action"] == "submit" {
+                                if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); }
+                            }
+                        } else {
+                            state["error"] = input["error"].clone();
+                        }
+                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                    }
+                    continue;
+                }
+                if matches!(action.as_str(), "settings" | "submit") {
+                    let id = input["id"].as_str().unwrap_or("");
+                    let native = plugins.lock().ok().and_then(|host| host.natives.is_native(id).then(|| host.natives.clone()));
+                    if let Some(natives) = native {
+                        let method = if action == "submit" { "settings.submit" } else { "settings.open" };
+                        let params = if action == "submit" { input["submission"].clone() } else { json!({}) };
+                        state["settings_loading_id"] = id.into();
+                        state["settings_id"] = id.into();
+                        state["form"] = Value::Null;
+                        state["error"] = Value::Null;
+                        if let Ok(mut output) = shared.lock() { *output = state.clone(); }
+                        let id = id.to_string();
+                        let completed_action = action.clone();
+                        if let Some(sender) = completions.upgrade() {
+                            std::thread::spawn(move || {
+                                let started = std::time::Instant::now();
+                                let result = natives.call(&id, method, params, std::time::Duration::from_secs(15));
+                                let input = match result {
+                                    Ok(form) => json!({"id":id,"action":completed_action,"elapsed_ms":started.elapsed().as_millis() as u64,"form":form}),
+                                    Err(error) => json!({"id":id,"action":completed_action,"elapsed_ms":started.elapsed().as_millis() as u64,
+                                        "error":if error == "the plugin did not answer in time" { chilpa_i18n::t("The plugin did not answer within 15 seconds. Its account status is unknown.") }
+                                            else { error }}),
+                                };
+                                let _ = sender.send(("native_settings_result".into(), input));
+                            });
+                        }
+                        if let Ok(mut operation) = current.lock() { operation.clear(); }
+                        visible.store(false, Ordering::Release);
+                        active.fetch_sub(1, Ordering::AcqRel);
+                        continue;
+                    }
+                    state["settings_loading_id"] = Value::Null;
+                }
                 let started = std::time::Instant::now();
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
                 if result.is_ok() && (action == "submit" || action == "integration") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
@@ -441,7 +496,7 @@ mod tests {
     #[test]
     fn maintenance_is_invisible_and_does_not_drop_a_foreground_action() {
         let (commands, received) = mpsc::sync_channel(2);
-        let center = PluginCenter { commands, view: Arc::new(Mutex::new(json!({}))),
+        let center = PluginCenter { commands: Arc::new(commands), view: Arc::new(Mutex::new(json!({}))),
             busy: Arc::new(AtomicUsize::new(0)), foreground: Arc::new(AtomicBool::new(false)), library_dirty: Arc::new(AtomicBool::new(false)), removed: Arc::new(Mutex::new(Vec::new())), refreshed: Arc::new(Mutex::new(Vec::new())),
             operation: Arc::new(Mutex::new(String::new())) };
         center.command("tick", json!({"id":"guest"}));

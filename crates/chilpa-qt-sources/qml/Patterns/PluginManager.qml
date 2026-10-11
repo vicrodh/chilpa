@@ -63,6 +63,15 @@ Item {
     function downloadAction(request) { command("downloads_action", {id: downloadsId, request: request}) }
     Component.onCompleted: read()
     Timer { interval: Motion.poll; repeat: true; running: manager.visible; onTriggered: manager.read() }
+    Timer {
+        interval: Motion.accountCheck
+        repeat: true
+        running: manager.visible && details.opened && manager.selected !== "" && details.tab === "settings"
+            && manager.view.settings_id === manager.selected
+            && manager.view.settings_loading_id !== manager.selected
+            && (manager.view.form || {}).status?.phase && manager.view.form.status.phase !== "ready"
+        onTriggered: manager.command("settings", {id: manager.selected})
+    }
     Timer { interval: Motion.refresh; repeat: true; running: manager.visible && manager.downloadsOpen && !manager.view.busy; onTriggered: manager.command("downloads_tick", {id: manager.downloadsId}) }
     Timer {
         id: settle

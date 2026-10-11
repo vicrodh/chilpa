@@ -6,6 +6,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 Column {
     id: status
     property string phase: "pending"
+    property string label: ""
     property string problem: ""
     spacing: Metrics.gap6
     readonly property color light: phase === "passed" || phase === "ready" ? Theme.color.statusPositive
@@ -23,11 +24,11 @@ Column {
         Text {
             objectName: "validationLabel"
             width: parent.width - Metrics.gap12 - Metrics.gap8
-            text: status.phase === "running" ? I18n.tr("Inspecting plugin…", I18n.rev)
+            text: status.label || (status.phase === "running" ? I18n.tr("Inspecting plugin…", I18n.rev)
                 : status.phase === "passed" ? I18n.tr("Inspection passed", I18n.rev)
                 : status.phase === "failed" ? I18n.tr("Inspection failed", I18n.rev)
                 : status.phase === "ready" ? I18n.tr("Plugin initialized successfully", I18n.rev)
-                : I18n.tr("Not inspected", I18n.rev)
+                : I18n.tr("Not inspected", I18n.rev))
             textFormat: Text.PlainText
             wrapMode: Text.WordWrap
             font.pointSize: Type.body

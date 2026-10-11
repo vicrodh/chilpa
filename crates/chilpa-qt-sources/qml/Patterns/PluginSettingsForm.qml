@@ -2,6 +2,7 @@ import QtQuick
 import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "../Components"
 
 Column {
     id: form
@@ -11,6 +12,14 @@ Column {
     signal linked(string url)
     spacing: Metrics.gap12
     onDocumentChanged: values = Object.assign({}, document.values || {})
+
+    PluginValidation {
+        width: form.width
+        visible: !!form.document.status
+        phase: (form.document.status || {}).phase || "pending"
+        label: (form.document.status || {}).label || ""
+        problem: (form.document.status || {}).description || ""
+    }
 
     Repeater {
         model: form.document.content || []
@@ -89,6 +98,8 @@ Column {
         PillButton {
             required property var modelData
             text: modelData.label || modelData.url
+            kind: modelData.primary === true ? "primary" : "secondary"
+            glyph: Icons.arrowUpRight
             onClicked: form.linked(modelData.url)
         }
     }
