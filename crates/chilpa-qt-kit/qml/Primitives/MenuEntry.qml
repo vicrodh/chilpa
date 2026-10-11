@@ -50,7 +50,7 @@ Item {
         filled: line.entry.filled === true
         iconFamily: line.entry.checked ? "" : line.entry.family || ""
         size: Metrics.iconNav
-        color: line.entry.checked ? Theme.color.accent : Theme.color.textSecondary
+        color: line.entry.checked || line.entry.accent === true ? Theme.color.accent : Theme.color.textSecondary
     }
 
     SourceIcon {

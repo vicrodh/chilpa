@@ -3,7 +3,8 @@ import QtQuick.Effects
 import "../Theme"
 
 // Exclusive options in a field (design/03 SegmentedControl). `options` is
-// a list of { glyph, tip } for icons, or of { text } for words.
+// a list of { glyph, tip } for icons, or of { text, count } for words; a
+// count above zero shows in a chip after its word, as QBZ's tab bar.
 Rectangle {
     id: root
 
@@ -43,8 +44,9 @@ Rectangle {
                 required property int index
                 required property var modelData
                 readonly property bool active: index === root.current
+                readonly property int count: modelData.count || 0
 
-                width: segment.modelData.text ? label.implicitWidth + Metrics.gap12 * 2 : Metrics.segmentWidth // derived: padding on both sides
+                width: segment.modelData.text ? words.implicitWidth + Metrics.gap12 * 2 - (count > 0 ? Metrics.gap4 : 0) : Metrics.segmentWidth // derived: padding on both sides, narrower beside a count
                 height: Metrics.segmentHeight
                 RectangularShadow {
                     anchors.fill: segmentPanel
@@ -64,14 +66,38 @@ Rectangle {
                     Edge { visible: segment.active }
                 }
 
-                Text {
-                    id: label
-                    anchors.centerIn: parent
+                Row {
+                    id: words
+                    x: Metrics.gap12
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: !!segment.modelData.text
-                    text: segment.modelData.text || ""
-                    font.pointSize: Type.row
-                    font.weight: segment.active ? Type.medium : Type.regular
-                    color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
+                    spacing: Metrics.countChipGap
+
+                    Text {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: segment.modelData.text || ""
+                        font.pointSize: Type.row
+                        font.weight: segment.active ? Type.medium : Type.regular
+                        color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
+                    }
+                    Rectangle {
+                        objectName: "segmentCount"
+                        visible: segment.count > 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.max(Metrics.countChipMin, number.implicitWidth + Metrics.countChipPadding * 2) // derived: room on both sides
+                        height: Metrics.countChip
+                        radius: height / 2 // derived: a pill
+                        color: segment.active ? Theme.color.fillCountActive : Theme.color.fillCount
+
+                        Text {
+                            id: number
+                            anchors.centerIn: parent
+                            text: segment.count
+                            font.pointSize: Type.label
+                            font.weight: Type.medium
+                            color: segment.active ? Theme.color.textPrimary : Theme.color.textSecondary
+                        }
+                    }
                 }
 
                 Icon {

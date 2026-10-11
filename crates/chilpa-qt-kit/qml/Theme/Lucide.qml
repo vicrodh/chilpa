@@ -6,6 +6,7 @@ QtObject {
     readonly property FontLoader iconFont: FontLoader { source: "../../assets/icons/lucide.ttf" }
     readonly property string font: iconFont.name
 
+    readonly property string arrowRight: "\ue049"
     readonly property string bookOpen: "\ue05f"
     readonly property string bug: "\ue20c"
     readonly property string chartColumn: "\ue2a3"
@@ -16,8 +17,10 @@ QtObject {
     readonly property string copy: "\ue09e"
     readonly property string eject: "\ue733"
     readonly property string folder: "\ue0d7"
+    readonly property string importGlyph: "\ue22f"
     readonly property string info: "\ue0f9"
     readonly property string keyboard: "\ue284"
+    readonly property string libraryBig: "\ue54e"
     readonly property string link: "\ue102"
     readonly property string listEnd: "\ue2df"
     readonly property string listPlus: "\ue23f"

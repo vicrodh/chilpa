@@ -17,7 +17,8 @@ Item {
 
     property string order: SettingsModel.kept("ui.playlists.order") || "name"
     property bool ascending: SettingsModel.kept("ui.playlists.ascending") !== "false"
-    function setOrder(value) { order = value; SettingsModel.keep("ui.playlists.order", value); reload() }
+    // A new order comes its own way round.
+    function setOrder(value) { order = value; ascending = true; SettingsModel.keep("ui.playlists.order", value); SettingsModel.keep("ui.playlists.ascending", "true"); reload() }
     function reverseOrder() { ascending = !ascending; SettingsModel.keep("ui.playlists.ascending", String(ascending)); reload() }
     property var rows: []
     property var expanded: ({})

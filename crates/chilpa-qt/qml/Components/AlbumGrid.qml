@@ -114,7 +114,7 @@ Item {
                 y: row.lead
                 width: grid.layoutWidth
                 albumId: visible ? grid.model.albumId(row.first, rev) : 0
-                sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : ({})
+                sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : albumId > 0 && grid.model.mixed ? ({ icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" }) : ({})
                 title: visible ? grid.model.title(row.first, rev) : ""
                 subtitle: visible ? grid.model.subtitle(row.first, rev) : ""
                 year: visible ? grid.model.year(row.first, rev) : ""
@@ -149,7 +149,7 @@ Item {
                     width: grid.cardWidth
                     visible: index < row.span
                     albumId: visible ? grid.model.albumId(at, rev) : 0
-                    sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : ({})
+                    sourceInfo: albumId < 0 ? (JSON.parse(AlbumActions.sources(albumId, rev) || "[]")[0] || {}) : albumId > 0 && grid.model.mixed ? ({ icon: "qrc:/qt/qml/app/chilpa/kit/assets/logo.png" }) : ({})
                     title: visible ? grid.model.title(at, rev) : ""
                     subtitle: visible ? grid.model.subtitle(at, rev) : ""
                     year: visible ? grid.model.year(at, rev) : ""

@@ -22,7 +22,7 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "year", "genre", "label", "composer", "artist" or "album".
+        /// "year", "genre", "label", "composer", "rating", "artist" or "album".
         #[qproperty(QString, column)]
         /// Bound to `Library.rev`.
         #[qproperty(i32, rev)]
@@ -143,6 +143,7 @@ impl qobject::FacetModel {
                 "genre" => (pick(&s.facets.genres), f.genres.clone()),
                 "label" => (pick(&s.facets.labels), f.labels.clone()),
                 "composer" => (pick(&s.facets.composers), f.composers.clone()),
+                "rating" => (pick(&s.facets.ratings), f.ratings.iter().map(ToString::to_string).collect()),
                 "artist" => (pick(&s.facets.artists), f.artists.clone()),
                 "album" => (pick(&s.facets.albums), f.albums.iter().map(ToString::to_string).collect()),
                 _ => (Vec::new(), Vec::new()),
@@ -191,7 +192,7 @@ impl qobject::FacetModel {
         let column = self.rust().column.to_string();
         let keys = self.rust().chosen.clone();
         let labels = self.rust().entries.iter().filter(|e| keys.contains(&e.key)).map(|e| e.label.clone()).collect();
-        let at = ["year", "genre", "label", "composer", "artist", "album"].iter().position(|name| *name == column).unwrap_or(0);
+        let at = ["year", "genre", "label", "composer", "rating", "artist", "album"].iter().position(|name| *name == column).unwrap_or(0);
         crate::registry::library(move |library| library.choose_keys(keys, labels, at));
     }
 }

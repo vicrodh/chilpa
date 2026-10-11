@@ -5,6 +5,7 @@ import app.chilpa.kit
 import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "../Components"
 // A plugin's own tree, browsed: the way down to where it stands, a place to
 // type, and one listing. One screen for every source; what is in it is the
@@ -89,13 +90,13 @@ Item {
             anchors.rightMargin: Metrics.gap8
             anchors.verticalCenter: parent.verticalCenter
             visible: page.view.sortable === true
-            value: page.view.order || ""
+            // The source names the episodes' orders "", "oldest" and "unheard".
+            value: page.view.order === "oldest" ? "date-asc" : page.view.order === "unheard" ? "unheard" : "date"
             options: [
-                { value: "", text: I18n.tr("Newest first", I18n.rev) },
-                { value: "oldest", text: I18n.tr("Oldest first", I18n.rev) },
-                { value: "unheard", text: I18n.tr("Not heard first", I18n.rev) }
+                { value: "date", text: I18n.tr("Date", I18n.rev), descending: true },
+                { value: "unheard", text: I18n.tr("Not heard first", I18n.rev), fixed: true }
             ]
-            onPicked: (value) => page.ask("order", value, "")
+            onPicked: (value) => page.ask("order", value === "date-asc" ? "oldest" : value === "date" ? "" : value, "")
         }
         IconButton {
             id: save

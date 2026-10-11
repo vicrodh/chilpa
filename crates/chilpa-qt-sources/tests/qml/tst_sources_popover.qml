@@ -18,6 +18,8 @@ TestCase {
     property var asked: []
     SourcesPopover { id: withPanes; panes: ["year", "genre"]; onPaneToggled: (column) => test.asked.push(column) }
     SourcesPopover { id: without }
+    property var stars: []
+    SourcesPopover { id: forTracks; ratings: test.stars; onRatingsChosen: (chosen) => test.stars = chosen }
 
     function init() { test.asked = [] }
 
@@ -39,6 +41,23 @@ TestCase {
         const label = findChild(without.contentItem, "paneToggle-label")
         verify(label === null || !label.visible || !label.parent.parent.visible, "the toggles stay out of sight")
         without.close()
+    }
+
+    // The Tracks screen keeps tracks by their own stars: a toggle a row,
+    // five stars down to none, and Reset lets them all go.
+    function test_the_tracks_screen_chooses_the_stars_it_keeps() {
+        verify(findChild(withPanes.contentItem, "ratingToggle-5") === null || !findChild(withPanes.contentItem, "ratingToggle-5").parent.parent.visible, "only where the screen asks")
+        forTracks.open()
+        tryVerify(() => forTracks.opened)
+        mouseClick(findChild(forTracks.contentItem, "ratingToggle-5"))
+        mouseClick(findChild(forTracks.contentItem, "ratingToggle-0"))
+        compare(test.stars, [5, 0])
+        verify(findChild(forTracks.contentItem, "ratingToggle-5").checked)
+        mouseClick(findChild(forTracks.contentItem, "ratingToggle-5"))
+        compare(test.stars, [0])
+        mouseClick(findChild(forTracks.contentItem, "ratingsReset"))
+        compare(test.stars, [])
+        forTracks.close()
     }
 
     function test_it_grows_across_not_down() {

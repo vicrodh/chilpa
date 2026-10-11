@@ -95,8 +95,20 @@ pub struct Facets {
     pub genres: Vec<FacetEntry>,
     pub labels: Vec<FacetEntry>,
     pub composers: Vec<FacetEntry>,
+    pub ratings: Vec<FacetEntry>,
     pub artists: Vec<FacetEntry>,
     pub albums: Vec<FacetEntry>,
+}
+
+/// A rating column's entry named for the window: its stars, or none.
+fn named_stars(mut entry: FacetEntry) -> FacetEntry {
+    let stars: i64 = entry.key.parse().unwrap_or(0);
+    entry.label = if stars == 0 {
+        chilpa_i18n::t("Unrated")
+    } else {
+        chilpa_i18n::tf("{} star", "{} stars", stars, &[&stars.to_string()])
+    };
+    entry
 }
 
 /// Narrows the choices shown by one facet header without changing the
@@ -461,15 +473,15 @@ impl Reader {
     /// the ones to its left, so choosing an artist does not empty the year
     /// column.
     pub fn facets(&self, f: &Filter) -> Facets {
-        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[5].trim().to_lowercase());
+        let mut albums = filter_facets(self.lib.facet_albums(f).unwrap_or_default(), &f.queries[6].trim().to_lowercase());
         let ids: Vec<i64> = albums.iter().filter_map(|a| a.key.parse().ok()).collect();
         let chosen: HashSet<i64> = self.lib.grouped_album_ids(&ids).unwrap_or(ids).into_iter().collect();
         albums.retain(|a| a.key.parse().is_ok_and(|id| chosen.contains(&id)));
         let mut artists = self.lib.facet_artists(f).unwrap_or_default();
         if self.lib.group_album_versions() {
             let mut left = f.clone();
-            left.choose(4, &[]);
-            left.queries[4..].fill(String::new());
+            left.choose(5, &[]);
+            left.queries[5..].fill(String::new());
             let ids = self.lib.facet_albums(&left).unwrap_or_default().iter().filter_map(|a| a.key.parse().ok()).collect::<Vec<_>>();
             if let Ok(catalog) = self.lib.version_catalog() {
                 let mut groups = std::collections::HashMap::<String, HashSet<String>>::new();
@@ -486,7 +498,8 @@ impl Reader {
         Facets {
             sources: self.lib.facet_sources().unwrap_or_default(), years: self.lib.facet_years().unwrap_or_default(),
             genres: self.lib.facet_genres(f).unwrap_or_default(), labels: self.lib.facet_labels(f).unwrap_or_default(),
-            composers: self.lib.facet_composers(f).unwrap_or_default(), artists, albums,
+            composers: self.lib.facet_composers(f).unwrap_or_default(),
+            ratings: self.lib.facet_ratings(f).unwrap_or_default().into_iter().map(named_stars).collect(), artists, albums,
         }
     }
 }
@@ -825,6 +838,12 @@ mod tests {
     }
 
     #[test]
+    fn a_rating_entry_says_its_stars_or_that_it_has_none() {
+        let label = |key: &str| named_stars(FacetEntry { key: key.into(), label: String::new(), albums: 1, year: None, icon: String::new() }).label;
+        assert_eq!((label("5").as_str(), label("1").as_str(), label("0").as_str()), ("5 stars", "1 star", "Unrated"));
+    }
+
+    #[test]
     fn compilation_members_keep_group_counts_and_find_the_complete_album() {
         let lib = chilpa_library::Library::in_memory().unwrap();
         let source = lib.source_id("local", "default").unwrap();
@@ -839,12 +858,12 @@ mod tests {
         let reader = Reader { lib, catalog: None };
         for artist in ["Singer A", "Singer B", "歌手 A", "歌手 B"] {
             let mut filter = Filter::default();
-            filter.queries[4] = artist.into();
+            filter.queries[5] = artist.into();
             let facets = reader.facets(&filter);
             assert_eq!(facets.artists.iter().find(|a| a.label == artist).unwrap().albums, 1);
             assert_eq!(facets.albums.len(), 1);
             assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
-            filter.queries[4].clear();
+            filter.queries[5].clear();
             filter.artists = vec![artist.into()];
             assert_eq!(reader.snapshot(&filter, TrackOrder::Album).ids.len(), 2);
             assert_eq!(reader.artists("all").iter().find(|a| a.name == artist).unwrap().album_count, 1);

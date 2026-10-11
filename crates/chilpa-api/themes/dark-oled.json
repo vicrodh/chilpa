@@ -20,6 +20,8 @@
     "state.selected": "rgba(255,255,255,0.10)",
     "state.stripe": "rgba(255,255,255,0.025)",
     "fill.field": "rgba(255,255,255,0.08)",
+    "fill.count": "rgba(255,255,255,0.08)",
+    "fill.countActive": "rgba(255,255,255,0.15)",
     "row.playing": "rgba(255,255,255,0.05)",
     "row.selected": "derive:accent@0.20",
     "casting": "#B794F4",

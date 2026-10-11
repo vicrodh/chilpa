@@ -15,6 +15,7 @@ TitledFlow {
     LoopRow { width: Metrics.playbackOptionsWidth }
     LoopButton {}
     QueueFooter { width: Metrics.rightPanel }
+    QueueEnds { summary: "12 songs 1 hr 5 min"; remaining: 65 * 60000 } // derived: an hour and five minutes
     ShortcutsSheet {}
     ShortcutsEditor {}
     SleepTimer {}

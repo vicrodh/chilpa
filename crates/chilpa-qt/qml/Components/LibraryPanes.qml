@@ -12,14 +12,15 @@ Rectangle {
     color: Theme.color.strokeHairline
     clip: true
 
-    // The columns asked for: year, genre, label and composer can be turned
-    // on and off; artist and album are always there.
+    // The columns asked for: year, genre, label, composer and rating can be
+    // turned on and off; artist and album are always there.
     property var shown: ["year", "genre"]
     readonly property var all: [
         { column: "year", title: I18n.tr("Year", I18n.rev) },
         { column: "genre", title: I18n.tr("Genre", I18n.rev) },
         { column: "label", title: I18n.tr("Label", I18n.rev) },
         { column: "composer", title: I18n.tr("Composer", I18n.rev) },
+        { column: "rating", title: I18n.tr("Rating", I18n.rev) },
         { column: "artist", title: I18n.tr("Artist", I18n.rev) },
         { column: "album", title: I18n.tr("Album", I18n.rev) }
     ]

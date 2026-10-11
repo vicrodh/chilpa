@@ -109,6 +109,21 @@ TestCase {
         tryVerify(() => !menu.visible, 1000, "an Escape-style exit closes it too")
     }
 
+    function test_the_corner_button_leaves_the_view_beside_the_bar() {
+        const leave = findChild(view, "immersiveLeave")
+        const bar = findChild(view, "immersiveBar")
+        verify(leave !== null)
+        compare(leave.x, Stage.edge, "at the left edge")
+        const middle = leave.mapToItem(view, 0, leave.height / 2).y
+        const barMiddle = bar.mapToItem(view, 0, bar.height / 2).y
+        verify(Math.abs(middle - barMiddle) <= 1, "level with the bar: " + middle + " against " + barMiddle)
+        view.chromeVisible = false
+        verify(!leave.enabled, "it hides with the chrome")
+        view.chromeVisible = true
+        mouseClick(leave, leave.width / 2, leave.height / 2)
+        compare(Immersive.open, false, "it leaves the view")
+    }
+
     function test_the_header_walks_the_views() {
         const header = findChild(view, "immersiveHeader")
         verify(header !== null)

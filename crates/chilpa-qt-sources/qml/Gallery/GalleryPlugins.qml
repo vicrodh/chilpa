@@ -35,6 +35,8 @@ TitledFlow {
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourceHomeSections { width: Metrics.confirmWidth }
     SourcePaging { about: ({plugin:"preview",next:"next"}) }
+    ArtistSources { source: "preview"; artist: "Maiden"; sources: [{ id: "preview", name: "Preview" }] }
+    TrackStarsFilter { width: Metrics.sourcesPopoverWidth / 2; ratings: [5, 0] } // derived: a column of the popover
     SourceLibraryControls { source: "preview section:albums" }
     StartupSplash { width: Metrics.confirmWidth; height: Metrics.panesHeight }
     PluginValidation { width: Metrics.confirmWidth; phase: "passed" }

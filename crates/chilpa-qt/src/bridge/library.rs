@@ -25,6 +25,7 @@ pub mod qobject {
         #[qproperty(QString, year)]
         #[qproperty(QString, genre)]
         #[qproperty(QString, label)] #[qproperty(QString, composer)]
+        #[qproperty(QString, rating)]
         #[qproperty(QString, artist)]
         #[qproperty(QString, album)]
         #[qproperty(QStringList, source_keys)] #[qproperty(QStringList, source_labels)]
@@ -51,7 +52,7 @@ pub mod qobject {
         #[cxx_name = "orderChanged"]
         fn order_changed(self: Pin<&mut Library>);
 
-        /// Chooses in a column ("year", "genre", "artist", "album") and
+        /// Chooses in a column ("year", "genre", "rating", "artist", ...) and
         /// clears the ones to its right. An empty key is "All".
         #[qinvokable]
         fn choose(self: Pin<&mut Library>, column: &QString, key: &QString, label: &QString);
@@ -90,6 +91,7 @@ pub struct LibraryRust {
     genre: QString,
     label: QString,
     composer: QString,
+    rating: QString,
     artist: QString,
     album: QString,
     source_keys: QStringList, source_labels: QStringList, source_counts: QStringList, source_icons: QStringList,
@@ -105,7 +107,7 @@ pub struct LibraryRust {
 
 const ORDER_KEY: &str = "ui.library.order";
 
-const ORDER: [&str; 6] = ["year", "genre", "label", "composer", "artist", "album"];
+const ORDER: [&str; 7] = ["year", "genre", "label", "composer", "rating", "artist", "album"];
 
 fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
     let mut list = QList::<QString>::default();
@@ -114,7 +116,7 @@ fn strings(items: impl IntoIterator<Item = String>) -> QStringList {
 }
 
 impl qobject::Library {
-    const SETTERS: [fn(Pin<&mut Self>, QString); 6] = [Self::set_year, Self::set_genre, Self::set_label, Self::set_composer, Self::set_artist, Self::set_album];
+    const SETTERS: [fn(Pin<&mut Self>, QString); 7] = [Self::set_year, Self::set_genre, Self::set_label, Self::set_composer, Self::set_rating, Self::set_artist, Self::set_album];
 
     pub fn group_artist_albums(mut self: Pin<&mut Self>, on: bool) {
         if app::with(|api| api.set_group_artist_versions(on)) {
@@ -272,12 +274,12 @@ impl cxx_qt::Initialize for qobject::Library {
         let name = app::with(|api| api.preference(ORDER_KEY)).unwrap_or_else(|| "artist".to_string());
         browse::write(|s| s.order = TrackOrder::from_name(&name));
         self.as_mut().rust_mut().order = QString::from(&name);
-        let albums = app::with(|api| api.album_sort().name().to_string());
+        let albums = app::with(|api| api.album_order());
         self.as_mut().rust_mut().album_order = QString::from(&albums);
         self.as_mut()
             .on_album_order_changed(|m| {
-                let order = chilpa_api::AlbumSort::from_name(&m.album_order().to_string());
-                app::with(|api| api.set_album_sort(order));
+                let order = m.album_order().to_string();
+                app::with(|api| api.set_album_order(&order));
             })
             .release();
         self.refresh();

@@ -1,6 +1,8 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.controls
+import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
@@ -12,8 +14,19 @@ Item {
     property string typed: ""
     readonly property string selectedBuffer: document.selected || ""
     onSelectedBufferChanged: if (name && name.editing) page.forceActiveFocus()
-    Component.onCompleted: ListenList.refresh()
-    Timer { interval: Motion.listenRefresh; running: page.visible; repeat: true; onTriggered: { ListenList.refresh(); Cast.refresh() } }
+    // The footer and the clock it ends by, read on the same tick as the
+    // queues and apart from them, so the clock does not reload the list.
+    property var foot: ({})
+    property real now: Date.now()
+    function tick() {
+        ListenList.refresh()
+        Cast.refresh()
+        page.now = Date.now()
+        page.foot = JSON.parse(ListenList.footer() || "{}")
+    }
+    Component.onCompleted: tick()
+    Timer { interval: Motion.listenRefresh; running: page.visible; repeat: true; onTriggered: page.tick() }
+    Parts.SleepTimer { id: sleep }
     TrackListModel {
         id: tracks
         kind: "listenlist"
@@ -85,6 +98,7 @@ Item {
             }
             IconButton { glyph: Icons.trash; tip: I18n.tr("Clear queue", I18n.rev); onClicked: ListenList.command("clear", page.document.selected, "") }
             IconButton { glyph: Icons.refresh; tip: I18n.tr("Undo queue replacement or closing", I18n.rev); enabled: page.document.undo || false; onClicked: ListenList.command("undo", "", "") }
+            IconButton { objectName: "queuesTimer"; glyph: SourceGlyphs.clock; iconFamily: SourceGlyphs.font; tone: Controls.sleepLeft !== "" ? "accent" : "secondary"; tip: Controls.sleepLeft !== "" ? I18n.trArgs("Stops in {}", [Controls.sleepLeft], I18n.rev) : I18n.tr("Sleep timer", I18n.rev); onClicked: sleep.open() }
         }
         SearchField {
             id: find
@@ -94,15 +108,14 @@ Item {
             placeholder: I18n.tr("Search queue", I18n.rev)
             onTextChanged: page.typed = text
         }
-        Text {
+        Parts.QueueEnds {
             anchors.left: find.right
             anchors.leftMargin: Metrics.gap12
-            anchors.right: parent.right
             anchors.verticalCenter: find.verticalCenter
-            text: tracks.summary
-            elide: Text.ElideRight
-            color: Theme.color.textSecondary
-            font.pointSize: Type.meta
+            visible: tracks.count > 0 && (page.foot.summary || "") !== ""
+            summary: page.foot.summary || ""
+            remaining: page.foot.left_ms || 0
+            now: page.now
         }
         TrackList {
             id: list
@@ -111,7 +124,6 @@ Item {
             anchors.bottom: parent.bottom
             width: parent.width
             model: tracks
-            showRating: false
             groupActionsEnabled: false
             reorderable: page.typed === ""
         }
