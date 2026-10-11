@@ -124,20 +124,21 @@ impl qobject::SettingsPage {
     pub fn plugins_json(&self) -> QString { QString::from(app::with(|api| api.plugin_center_json())) }
     pub fn plugin_command(&self, action: &QString, input: &QString) {
         let action = action.to_string();
-        if !matches!(action.as_str(), "choose_icon" | "choose_package") {
+        if !matches!(action.as_str(), "choose_icon" | "choose_package" | "choose_export_folder") {
             return app::with(|api| api.plugin_center_command(&action, &input.to_string()));
         }
         let package = action == "choose_package";
-        let title = if package { app::t("Install plugin from ZIP") } else { app::t("Choose plugin icon") };
+        let export = action == "choose_export_folder";
+        let title = if package { app::t("Install plugin from ZIP") } else if export { app::t("Choose download folder") } else { app::t("Choose plugin icon") };
         let (thread, input) = (self.qt_thread(), input.to_string());
         std::thread::spawn(move || {
             let dialog = rfd::AsyncFileDialog::new().set_title(&title);
             let dialog = if package { dialog.add_filter("ZIP", &["zip"]) }
-                else { dialog.add_filter("Images", &["svg", "png", "jpg", "jpeg"]) };
-            let picked = pollster::block_on(dialog.pick_file());
+                else if export { dialog } else { dialog.add_filter("Images", &["svg", "png", "jpg", "jpeg"]) };
+            let picked = if export { pollster::block_on(dialog.pick_folder()) } else { pollster::block_on(dialog.pick_file()) };
             if let (Some(file), Ok(mut input)) = (picked, serde_json::from_str::<serde_json::Value>(&input)) {
                 input["path"] = cxx_qt_lib::QUrl::from_local_file(&QString::from(file.path().display().to_string())).to_string().to_string().into();
-                let action = if package { "install_local" } else { "icon" };
+                let action = if package { "install_local" } else if export { "export_folder" } else { "icon" };
                 let _ = thread.queue(move |_| app::with(|api| api.plugin_center_command(action, &input.to_string())));
             }
         });

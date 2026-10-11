@@ -644,6 +644,12 @@ msgstr "Elige una imagen"
 msgid "Choose device"
 msgstr "Elegir dispositivo"
 
+msgid "Choose download folder"
+msgstr "Elegir carpeta de descargas"
+
+msgid "Choose download folder…"
+msgstr "Elegir carpeta de descargas…"
+
 msgid "Choose file…"
 msgstr "Elegir archivo…"
 
@@ -2016,6 +2022,9 @@ msgstr "No hay créditos disponibles"
 
 msgid "No devices found"
 msgstr "No se encontraron dispositivos"
+
+msgid "No download folder selected"
+msgstr "No se ha elegido una carpeta de descargas"
 
 msgid "No folder"
 msgstr "Sin carpeta"
@@ -4795,6 +4804,9 @@ msgstr "vs {}"
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr "lo que se guardó no se pudo anotar en la biblioteca: {}; vuelve a escanear para verlo"
+
+msgid "write downloaded files into the folder you select for this plugin"
+msgstr "guardar archivos descargados en la carpeta que elijas para este plugin"
 
 msgid "write the address alone: no user, password or query in it"
 msgstr "escribe solo la dirección, sin usuario, contraseña ni parámetros"

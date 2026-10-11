@@ -135,6 +135,22 @@ P.Modal {
                 width: parent.width
                 visible: details.tab === "settings" && details.manager.selected === details.plugin.id
                 spacing: Metrics.gap8
+                Text {
+                    width: parent.width
+                    visible: ((details.manager.view.installed || []).find(p => p.id === details.plugin.id) || {}).folder_write === true
+                    text: ((details.manager.view.installed || []).find(p => p.id === details.plugin.id) || {}).export_folder || I18n.tr("No download folder selected", I18n.rev)
+                    textFormat: Text.PlainText
+                    wrapMode: Text.WrapAnywhere
+                    color: Theme.color.textSecondary
+                    font.pointSize: Type.body
+                }
+                P.PillButton {
+                    objectName: "choosePluginExportFolder"
+                    visible: ((details.manager.view.installed || []).find(p => p.id === details.plugin.id) || {}).folder_write === true
+                    text: I18n.tr("Choose download folder…", I18n.rev)
+                    enabled: !details.manager.view.busy
+                    onClicked: details.manager.command("choose_export_folder", {id: details.plugin.id})
+                }
                 PluginSettingsForm {
                     objectName: "pluginSettingsForm"
                     width: parent.width
