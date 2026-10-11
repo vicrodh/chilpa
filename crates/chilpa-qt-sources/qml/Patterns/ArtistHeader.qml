@@ -77,14 +77,18 @@ Item {
         glyph: SourceGlyphs.musicArtist; iconFamily: SourceGlyphs.font
         size: Metrics.iconPlay; color: Theme.color.textSecondary
     }
-    // At the top right, level with the source's name.
+    // At the top right, level with the source's name; the name and the
+    // roles beside it leave it room.
+    readonly property int switchesRoom: switches.visible ? switches.width + Metrics.gap16 : 0
     ArtistSources {
+        id: switches
         anchors.right: parent.right
         y: body.y
         z: 1
         source: header.local ? "" : header.info.plugin || ""
         artist: header.info.title || ""
         inLibrary: header.inLibrary
+        kept: header.info.kept || 0
         sources: (JSON.parse(Sources.snapshot || "{}").panels || []).filter(p => p.artists === true)
         onLibraryChosen: (on) => header.libraryChosen(on)
     }
@@ -98,9 +102,9 @@ Item {
             SourceIcon { sourceInfo: ({icon: header.sourceInfo.icon_image || header.sourceInfo.icon || ""}) }
             Text { text: header.sourceInfo.name || ""; textFormat: Text.PlainText; color: Theme.color.textSecondary; font.pointSize: Type.meta }
         }
-        Text { width: parent.width; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: Theme.color.textPrimary }
+        Text { width: parent.width - header.switchesRoom; text: header.info.title || ""; textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.display; font.weight: Type.bold; color: Theme.color.textPrimary }
         // What the artist does, when the source says: composer, producer...
-        Text { width: parent.width; visible: text !== ""; text: (header.info.roles || []).join(" · "); textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
+        Text { width: parent.width - header.switchesRoom; visible: text !== ""; text: (header.info.roles || []).join(" · "); textFormat: Text.PlainText; wrapMode: Text.Wrap; font.pointSize: Type.meta; color: Theme.color.textSecondary }
         Text {
             id: description
             width: parent.width; visible: header.bio !== ""

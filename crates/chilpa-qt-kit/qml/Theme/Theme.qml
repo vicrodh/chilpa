@@ -39,6 +39,9 @@ QtObject {
         readonly property color stateSelected: ThemeModel.color("state.selected", theme.rev)
         readonly property color stateStripe: ThemeModel.color("state.stripe", theme.rev)
         readonly property color fillField: ThemeModel.color("fill.field", theme.rev)
+        // The chip that counts what a segment holds, and the active segment's.
+        readonly property color fillCount: ThemeModel.color("fill.count", theme.rev)
+        readonly property color fillCountActive: ThemeModel.color("fill.countActive", theme.rev)
         readonly property color rowPlaying: ThemeModel.color("row.playing", theme.rev)
         readonly property color rowSelected: ThemeModel.color("row.selected", theme.rev)
         readonly property color accent: ThemeModel.color("accent", theme.rev)

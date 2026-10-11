@@ -11,7 +11,7 @@ TestCase {
     name: "ArtistPage"; when: windowShown; visible: true; width: 1400; height: 900
     readonly property string key: "fixture native:artist:1"
     function document() {
-        return JSON.stringify({ music: true, artist: true, title: "Maiden", header: { kind: "artist", title: "Maiden", plugin: "fixture", ref: "artist:1", description: "x".repeat(500), radio_id: -5 },
+        return JSON.stringify({ music: true, artist: true, title: "Maiden", header: { kind: "artist", title: "Maiden", plugin: "fixture", ref: "artist:1", description: "x".repeat(500), radio_id: -5, kept: 3 },
             jump: [{ id: "about", title: "About" }, { id: key + "|tracks", title: "Popular Tracks" }, { id: key + "|album", title: "Albums" }],
             shelves: [
                 { id: "tracks", role: "popular", title: "Popular Tracks", kind: "track", key: key + "|tracks", tracks: true, items: [{ ref: "track:1" }] },
@@ -69,7 +69,12 @@ TestCase {
         const sources = findChild(page, "artistSource")
         compare(sources.options.map(o => o.text), ["Chilpa", "Fixture"])
         compare(sources.current, 1)
-        findChild(page, "artistShelf").activated(1)
+        const shelf = findChild(page, "artistShelf")
+        compare(shelf.options[1].count, 3, "In library says how much it holds")
+        verify(findText(shelf, "3").visible, "in a chip after its word")
+        verify(shelf.mapToItem(page, 0, 0).y >= sources.mapToItem(page, 0, 0).y + sources.height, "the shelf goes under the sources")
+        compare(Math.round(shelf.mapToItem(page, shelf.width, 0).x), Math.round(sources.mapToItem(page, sources.width, 0).x), "both end at the right")
+        shelf.activated(1)
         tryVerify(() => findText(page, "Tracks") !== null, 1000, "what the listener keeps")
         verify(!findText(page, "Latest release"), "the catalog's blocks leave")
         sources.activated(0)

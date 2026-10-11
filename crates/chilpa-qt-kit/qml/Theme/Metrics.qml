@@ -77,6 +77,12 @@ QtObject {
     readonly property int pillPadding: 14
     readonly property int segmentWidth: 30
     readonly property int segmentHeight: 24
+    // A segment's count chip (QBZ's tab bar): its height, its least
+    // width, the room around its number and the gap after the label.
+    readonly property int countChip: 16
+    readonly property int countChipMin: 18
+    readonly property int countChipPadding: 5
+    readonly property int countChipGap: 7
     readonly property int fieldHeight: 28
     readonly property int fieldPadding: 9
     readonly property int fieldHeightLarge: 32

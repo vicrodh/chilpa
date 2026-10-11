@@ -20,6 +20,8 @@
     "state.selected": "rgba(35,38,41,0.075)",
     "state.stripe": "rgba(35,38,41,0.025)",
     "fill.field": "rgba(35,38,41,0.055)",
+    "fill.count": "rgba(35,38,41,0.07)",
+    "fill.countActive": "rgba(35,38,41,0.13)",
     "row.playing": "rgba(35,38,41,0.04)",
     "row.selected": "derive:accent@0.10",
     "casting": "#7C3AED",
