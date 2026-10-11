@@ -94,6 +94,8 @@ pub struct NativePaths {
     pub folder: PathBuf,
     pub data: PathBuf,
     pub cache: PathBuf,
+    /// A host-selected folder. The plugin sees it only as /export.
+    pub export: Option<PathBuf>,
 }
 
 /// Starts a native plugin in its own namespaces. It reaches the network on
@@ -115,6 +117,7 @@ pub fn launch_native(
     }
     let data = canonical_directory(&paths.data)?;
     let cache = canonical_directory(&paths.cache)?;
+    let export = paths.export.as_deref().map(canonical_directory).transpose()?;
     if !folder.join("plugin").is_file() {
         return Err(BridgeError::Disconnected);
     }
@@ -131,8 +134,9 @@ pub fn launch_native(
     }
     command.arg("--ro-bind").arg(&folder).arg("/plugin")
         .arg("--bind").arg(&data).arg("/data")
-        .arg("--bind").arg(&cache).arg("/cache")
-        .args(["--chdir", "/data", "--clearenv", "--setenv", "PATH", "/usr/bin", "--setenv", "HOME", "/data",
+        .arg("--bind").arg(&cache).arg("/cache");
+    if let Some(export) = export { command.arg("--bind").arg(export).arg("/export"); }
+    command.args(["--chdir", "/data", "--clearenv", "--setenv", "PATH", "/usr/bin", "--setenv", "HOME", "/data",
             "--setenv", "XDG_CACHE_HOME", "/cache", "--setenv", "SSL_CERT_DIR", "/etc/ssl/certs", "--",
             "/usr/bin/prlimit"])
         .arg(format!("--as={memory_bytes}"))
@@ -248,7 +252,7 @@ done
 "#;
         std::fs::write(folder.join("plugin"), script).unwrap();
         std::fs::set_permissions(folder.join("plugin"), std::fs::Permissions::from_mode(0o755)).unwrap();
-        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache") };
+        let paths = NativePaths { folder, data: root.path().join("data"), cache: root.path().join("cache"), export: None };
         let client = launch_native(&paths, "test", 512 * 1024 * 1024, |_, _| {}).unwrap();
         assert_eq!(client.call("inspect", json!({}), Duration::from_secs(5)).unwrap(),
             json!({"home": false, "data": true, "sealed": true}));

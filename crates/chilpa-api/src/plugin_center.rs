@@ -1,4 +1,6 @@
 //! Background catalog, installation and compatibility settings workflow.
+#[path = "plugin_export.rs"]
+pub(crate) mod export;
 use crate::{plugins::Plugins, Chilpa, PluginRepositories, PreparedPlugin};
 use serde_json::{json, Value};
 use std::{path::PathBuf, sync::{Arc, Mutex, mpsc, atomic::{AtomicBool, AtomicUsize, Ordering}}};
@@ -222,6 +224,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             plugins.reload_one(id);
             plugins.forget_credential(id);
             if !plugins.uninstall(id) { return Err("The plugin could not be removed.".into()); }
+            export::clear(root, id);
             state["form"] = Value::Null;
             state["settings_id"] = Value::Null;
             state["approval"] = Value::Null;
@@ -274,6 +277,13 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
                     library.set_source_icon(source, &crate::plugin_icons::image_url(root, id)).map_err(|_| "The source icon could not be saved.")?;
                 }
             }
+        }
+        "export_folder" => {
+            let address = input["path"].as_str().ok_or("Choose a folder.")?;
+            let path = url::Url::parse(address).ok().and_then(|url| url.to_file_path().ok()).ok_or("Choose a local folder.")?;
+            export::set(root, id, &path)?;
+            plugins.lock().map_err(|_| "The plugin host is unavailable.")?.reload_one(id);
+            state["form"] = Value::Null;
         }
         "sidebar_position" => {
             let active = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.panels().into_iter().map(|p|p.0).collect();
@@ -346,7 +356,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),

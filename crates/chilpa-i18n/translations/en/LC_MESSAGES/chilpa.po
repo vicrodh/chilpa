@@ -644,6 +644,12 @@ msgstr ""
 msgid "Choose device"
 msgstr ""
 
+msgid "Choose download folder"
+msgstr "Choose download folder"
+
+msgid "Choose download folder…"
+msgstr "Choose download folder…"
+
 msgid "Choose file…"
 msgstr "Choose file…"
 
@@ -2016,6 +2022,9 @@ msgstr "No credits available"
 
 msgid "No devices found"
 msgstr ""
+
+msgid "No download folder selected"
+msgstr "No download folder selected"
 
 msgid "No folder"
 msgstr "No folder"
@@ -4795,6 +4804,9 @@ msgstr ""
 
 msgid "what was saved could not be written down in the library: {}; rescan to see it"
 msgstr ""
+
+msgid "write downloaded files into the folder you select for this plugin"
+msgstr "write downloaded files into the folder you select for this plugin"
 
 msgid "write the address alone: no user, password or query in it"
 msgstr ""

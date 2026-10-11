@@ -58,6 +58,8 @@ pub enum Capability {
     PluginsRead,
     /// Create and fill playlists in destinations explicitly selected for a job.
     PlaylistsWrite,
+    /// Write files into one folder explicitly selected for this plugin.
+    FolderWrite,
     /// Register a source with its catalogue.
     RegisterSource,
     /// Contribute a panel to the interface, as a descriptor.
@@ -114,6 +116,7 @@ impl Capability {
             }
             Capability::PluginsRead => chilpa_i18n::t("read catalogs from other enabled plugins, without accessing their credentials"),
             Capability::PlaylistsWrite => chilpa_i18n::t("create playlists in destinations you select for an import"),
+            Capability::FolderWrite => chilpa_i18n::t("write downloaded files into the folder you select for this plugin"),
             Capability::RegisterSource => {
                 chilpa_i18n::t("bring catalogue: search for and fetch music")
             }

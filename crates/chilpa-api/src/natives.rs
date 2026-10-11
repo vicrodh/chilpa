@@ -277,6 +277,9 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
         folder: folder.to_path_buf(),
         data: chilpa_dirs::data().join("plugin-data").join(&id),
         cache: chilpa_dirs::cache().join("plugins").join(&id),
+        export: if manifest.has(&chilpa_plugin::Capability::FolderWrite) {
+            crate::plugin_center::export::read(folder.parent().unwrap_or(folder), &id)
+        } else { None },
     };
     let name = id.clone();
     chilpa_bwrap::launch_native(&paths, &id, MEMORY, move |method, params| {
