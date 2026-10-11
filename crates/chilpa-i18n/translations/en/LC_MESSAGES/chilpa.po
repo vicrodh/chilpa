@@ -160,6 +160,9 @@ msgstr ""
 msgid "Accept permissions and enable"
 msgstr "Accept permissions and enable"
 
+msgid "Access to downloader"
+msgstr "Access to downloader"
+
 msgid "Account"
 msgstr ""
 
@@ -1102,6 +1105,9 @@ msgstr ""
 msgid "Download"
 msgstr "Download"
 
+msgid "Download again"
+msgstr "Download again"
+
 msgid "Download album"
 msgstr "Download album"
 
@@ -1113,6 +1119,9 @@ msgstr "Downloaded"
 
 msgid "Downloading {} of {}"
 msgstr "Downloading {} of {}"
+
+msgid "Downloads"
+msgstr "Downloads"
 
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
@@ -1324,8 +1333,17 @@ msgstr ""
 msgid "From catalog"
 msgstr ""
 
+msgid "From main sidebar"
+msgstr "From main sidebar"
+
+msgid "From plugin"
+msgstr "From plugin"
+
 msgid "From same artist"
 msgstr ""
+
+msgid "From settings menu"
+msgstr "From settings menu"
 
 msgid "From this week"
 msgstr ""
@@ -3298,6 +3316,9 @@ msgstr ""
 
 msgid "The connection is not encrypted."
 msgstr ""
+
+msgid "The download view is unavailable."
+msgstr "The download view is unavailable."
 
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""

@@ -16,6 +16,7 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 // rows on the right. Every row comes from the schema in Rust.
 Item {
     id: page
+    property Component purchaseCard: null
 
     readonly property string section: Navigation.section !== "" ? Navigation.section : SettingsModel.sections[0]
     // The setting a search went to: its section opens, its row comes into
@@ -103,6 +104,7 @@ Item {
                 onClicked: Navigation.openSection(modelData)
             }
         }
+        PluginSettingsNavigation { width: nav.width }
     }
 
     // The settings that say what was typed, as the facade orders them:
@@ -214,6 +216,7 @@ Item {
     PluginManager {
         visible: page.section === "plugins" && search.text === ""
         page: rows
+        purchaseCard: page.purchaseCard
         anchors.top: title.bottom
         anchors.topMargin: Metrics.section
         anchors.bottom: parent.bottom

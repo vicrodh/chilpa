@@ -164,6 +164,20 @@ P.Modal {
                         else details.manager.command("settings", {id: details.plugin.id, page: url.replace(/^\//, "")})
                     }
                 }
+                Text {
+                    visible: details.plugin.downloads === true
+                    text: I18n.tr("Access to downloader", I18n.rev)
+                    color: Theme.color.textPrimary; font.pointSize: Type.body
+                }
+                P.SelectField {
+                    objectName: "downloadAccessSelect"
+                    visible: details.plugin.downloads === true
+                    width: Math.min(parent.width, Metrics.selectWidth * 2) // derived: long location labels
+                    options: [I18n.tr("From plugin", I18n.rev), I18n.tr("From settings menu", I18n.rev), I18n.tr("From main sidebar", I18n.rev)]
+                    values: ["plugin", "settings", "sidebar"]
+                    value: (((details.manager.installedRows || []).find(p => p.id === details.plugin.id) || {}).download_access || "plugin")
+                    onPicked: value => details.manager.command("download_access", {id: details.plugin.id, value: value})
+                }
             }
             Column {
                 width: parent.width

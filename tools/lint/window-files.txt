@@ -25,7 +25,6 @@ crates/chilpa-qt/qml/Components/NavItem.qml
 crates/chilpa-qt/qml/Components/OptionRow.qml
 crates/chilpa-qt/qml/Components/PageHero.qml
 crates/chilpa-qt/qml/Components/PaneColumn.qml
-crates/chilpa-qt/qml/Components/PanelHeader.qml
 crates/chilpa-qt/qml/Components/PaneRow.qml
 crates/chilpa-qt/qml/Components/PlaylistCollage.qml
 crates/chilpa-qt/qml/Components/PlaylistFolderRow.qml

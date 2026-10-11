@@ -10,6 +10,8 @@ import "../Components"
 Item {
     id: manager
     required property var page
+    property string initialDownloadsId: ""
+    property Component purchaseCard: null
     property var view: ({})
     property var settingsDocument: ({})
     property var catalogRows: []
@@ -40,6 +42,8 @@ Item {
         if (view.approval && details.mode !== "permissions") { details.plugin = view.approval; details.mode = "permissions"; details.open() }
         if (!view.approval && details.mode === "permissions") { details.close(); details.mode = "settings" }
         if (filterPending && !view.busy && !settle.running) settle.start()
+        if (initialDownloadsId !== "" && downloadsId !== initialDownloadsId && installedRows.some(p => p.id === initialDownloadsId && p.downloads === true && p.enabled === true))
+            openDownloads({id: initialDownloadsId})
     }
     function command(action, input) { page.pluginCommand(action, JSON.stringify(input || {})); read() }
     function categoryLabel(value) {
@@ -77,7 +81,7 @@ Item {
     }
     Column {
         id: toolbar
-        visible: !manager.downloadsOpen
+        visible: !manager.downloadsOpen && manager.initialDownloadsId === ""
         width: parent.width
         spacing: Metrics.gap12
         // A repository serves either section: native plugins, or a catalog
@@ -117,7 +121,7 @@ Item {
                 enabled: !manager.view.busy
                 onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
                 onSettings: manager.settings(modelData)
-                onOpened: manager.openDownloads(modelData)
+                onOpened: Navigation.goKey("pluginDownloads", modelData.id)
                 onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
             }
         }
@@ -202,7 +206,7 @@ Item {
     }
     ListView {
         id: catalog
-        visible: !manager.downloadsOpen
+        visible: !manager.downloadsOpen && manager.initialDownloadsId === ""
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -222,7 +226,7 @@ Item {
             onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
             onInspected: manager.inspect(modelData)
             onSettings: manager.settings(modelData)
-            onOpened: manager.openDownloads(modelData)
+            onOpened: Navigation.goKey("pluginDownloads", modelData.id)
             onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
         }
         Text {
@@ -233,18 +237,8 @@ Item {
             font.pointSize: Type.body
         }
     }
-    PluginDownloads {
-        anchors.fill: parent
-        visible: manager.downloadsOpen
-        document: manager.view.downloads_id === manager.downloadsId ? manager.view.downloads || ({}) : ({})
-        plugin: manager.installedRows.find(p => p.id === manager.downloadsId) || ({})
-        busy: manager.view.busy === true
-        problem: manager.view.error || ""
-        onBack: manager.downloadsId = ""
-        onAccount: manager.settings(plugin)
-        onChooseFolder: manager.command("choose_export_folder", {id: manager.downloadsId})
-        onAction: request => manager.downloadAction(request)
-    }
+    PluginManagerDownloads { anchors.fill: parent; controller: manager }
+    PluginDownloadsUnavailable { anchors.centerIn: parent; visible: manager.initialDownloadsId !== "" && !manager.downloadsOpen; loading: manager.view.installed === undefined || manager.view.working === true; onBack: Navigation.goKey("settings", "plugins") }
     PluginDetails { id: details; manager: manager }
     PluginRepositories { id: repositories; manager: manager }
 }

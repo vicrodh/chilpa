@@ -29,6 +29,8 @@ Item {
     property bool selecting: false
     property bool expanded: false
     property bool canExpand: true
+    // A purchase catalogue uses the same record card without library actions.
+    property bool purchaseMode: false
     // Nothing of it plays now: its folder is not mounted or its server does
     // not answer (ADR-017). Dimmed, and no overlay: a click says why.
     property bool available: true
@@ -95,7 +97,7 @@ Item {
 
     Loader {
         anchors.fill: cover
-        active: hover.hovered && !card.round && card.available
+        active: hover.hovered && !card.round && card.available && !card.purchaseMode
         sourceComponent: AlbumCardOverlay {
             albumId: card.albumId
             year: card.year
@@ -154,7 +156,7 @@ Item {
         id: qualityBadge; objectName: "albumQualityBadge"
         anchors.right: parent.right; y: cover.height + Metrics.cardTextGap
         tier: card.qualityInfo.tier || 0
-        visible: !card.round; opacity: tier > 0 ? 1 : Metrics.disabledOpacity
+        visible: !card.round && !card.purchaseMode; opacity: tier > 0 ? 1 : Metrics.disabledOpacity
         HoverHandler { onHoveredChanged: hovered ? TipState.show(card.qualityInfo.label || I18n.tr("Unknown quality", I18n.rev), qualityBadge) : TipState.hide(qualityBadge) }
         Component.onDestruction: TipState.hide(qualityBadge)
     }
@@ -165,8 +167,10 @@ Item {
         id: tap
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (point, button) => {
-            if (button === Qt.RightButton)
+            if (button === Qt.RightButton && !card.purchaseMode)
                 return card.menu(point.position.x, point.position.y)
+            if (button === Qt.RightButton)
+                return
             const held = tap.point.modifiers
             card.clicked((held & (Qt.ControlModifier | Qt.MetaModifier) ? 1 : 0) | (held & Qt.ShiftModifier ? 2 : 0))
         }

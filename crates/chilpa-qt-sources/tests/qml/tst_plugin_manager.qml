@@ -102,7 +102,8 @@ TestCase {
         manager.read()
         const open = findChild(manager, "openPluginDownloads")
         verify(open.visible && open.enabled)
-        open.clicked()
+        manager.initialDownloadsId = "download"
+        manager.read()
         compare(backend.calls[backend.calls.length - 1], ["downloads_open", {id: "download"}])
         const albums = []
         for (let i = 0; i < 220; ++i)
@@ -119,6 +120,7 @@ TestCase {
         verify(!Array.from(tabs.children).some(item => item.objectName === "pluginTab_integration"))
         manager.detailsView.close()
         manager.downloadsId = ""
+        manager.initialDownloadsId = ""
     }
     function test_local_install_opens_the_picker_and_waits_while_busy() {
         backend.state = {busy: false}

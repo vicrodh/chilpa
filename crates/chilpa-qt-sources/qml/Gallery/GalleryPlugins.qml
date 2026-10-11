@@ -1,3 +1,4 @@
+import QtQuick
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
@@ -45,12 +46,28 @@ TitledFlow {
         width: Metrics.confirmWidth
         document: ({form: {fields: [{key: "user", label: "Account", control: {type: "text"}}], actions: []}, values: {}})
     }
-    PluginPurchaseCard { width: Metrics.cardMinWidth; height: Metrics.cardMinWidth + Metrics.cardTextHeight; modelData: ({title:"Purchased album",artist:"Artist"}) }
     PluginPurchaseTrackRow { width: Metrics.confirmWidth; entry: ({title:"Purchased track",number:1,duration:213}); rowIndex: 0; formatId: "6" }
+    PluginPurchaseDetail { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; selection: ({kind:"album",title:"Purchased album",artist:"Artist",tracks:[]}); document: ({destination_ready:true}) }
+    PluginSettingsNavigation { width: Metrics.settingsNav }
+    PluginDownloadsUnavailable { loading: false }
+    PluginManagerDownloads { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; controller: preview }
     PluginDownloads {
         width: Metrics.settingsMaxWidth; height: Metrics.panesHeight
         plugin: ({name:"Download source",export_folder:"/Music"})
         document: ({signed_in:true,loaded:true,albums:[{id:"album",title:"Purchased album",artist:"Artist",formats:[{id:6,label:"FLAC"}]}],tracks:[]})
+        purchaseCard: previewPurchaseCard
+    }
+    Component {
+        id: previewPurchaseCard
+        AlbumCard {
+            property var record: ({})
+            signal opened()
+            purchaseMode: true
+            title: record.title || ""
+            subtitle: record.artist || ""
+            art: record.image || ""
+            onClicked: opened()
+        }
     }
     PluginIntegration { width: Metrics.confirmWidth; plugin: ({id: "guest", tint: false}) }
     PluginDetails { manager: preview }

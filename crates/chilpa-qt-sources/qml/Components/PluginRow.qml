@@ -90,7 +90,7 @@ Item {
         }
         PillButton {
             objectName: "openPluginDownloads"
-            visible: row.installed && row.plugin.downloads === true
+            visible: row.installed && row.plugin.downloads === true && (row.plugin.download_access || "plugin") === "plugin"
             enabled: row.plugin.enabled === true
             text: I18n.tr("Open downloads", I18n.rev)
             onClicked: row.opened()

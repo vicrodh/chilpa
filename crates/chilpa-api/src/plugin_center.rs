@@ -44,7 +44,7 @@ impl PluginCenter {
                 let result = run(&action, &input, &root, &plugins, &mut pending, &mut state, &mut evidence);
                 if result.is_ok() && (action == "submit" || action == "integration") { if let Some(id) = input["id"].as_str() { reload.lock().unwrap().push(id.to_string()); } }
                 if result.is_ok() && action == "uninstall" { if let Some(id) = input["id"].as_str() { deleted.lock().unwrap().push(id.to_string()); } }
-                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
+                if result.is_ok() && matches!(action.as_str(), "library_visibility" | "integration" | "sidebar_position" | "download_access" | "uninstall" | "tint" | "icon") { changed.store(true, Ordering::Release); }
                 if action == "prepare" {
                     state["validation"] = json!({"id":input["id"],"repository_id":input["repository"],
                         "state":if result.is_ok() {"passed"} else {"failed"},
@@ -225,6 +225,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             plugins.forget_credential(id);
             if !plugins.uninstall(id) { return Err("The plugin could not be removed.".into()); }
             export::clear(root, id);
+            crate::plugin_access::clear(root, id);
             state["form"] = Value::Null;
             state["settings_id"] = Value::Null;
             state["approval"] = Value::Null;
@@ -302,6 +303,11 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             let active = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.panels().into_iter().map(|p|p.0).collect();
             crate::plugin_sidebar::place(root,id,input["position"].as_u64().ok_or("Invalid sidebar position.")? as usize,active)?;
         },
+        "download_access" => {
+            let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            if !plugins.natives.has_downloads(id) || !plugins.list().iter().any(|plugin| plugin.id == id) { return Err("This plugin has no download view.".into()); }
+            crate::plugin_access::set(root, id, input["value"].as_str().ok_or("Choose a download location.")?)?;
+        },
         "integration" => crate::source_integration::save(root, id, input["field"].as_str().unwrap_or_default(), input["enabled"].as_bool().ok_or("Invalid integration preference.")?)?,
         "library_visibility" => {
             let library = chilpa_core::open_library().map_err(|_| "The library could not be opened.")?;
@@ -369,7 +375,7 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"download_access":crate::plugin_access::read(root,&plugin.id),"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
