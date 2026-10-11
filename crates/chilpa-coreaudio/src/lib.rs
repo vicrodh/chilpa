@@ -1,20 +1,19 @@
 //! CoreAudio: the outputs a Mac has, and what each of them can promise.
 //!
-//! macOS is the platform where bit-perfect is least in doubt, and that is
-//! worth saying plainly because it is the opposite of what the other
-//! platforms here needed. There is no server in the way that has to be
-//! talked into passing samples through: a device has a rate, that rate can
-//! be set, and a program can take the device to itself. So this stack says
-//! `Exact` rather than `Depends` -- but only for real hardware, and only
-//! when it is told what "exact" costs.
+//! A Mac hands the samples to one output unit and the device converts what
+//! it needs to. Whether that keeps every sample depends on one thing, the
+//! same one it depends on through a sound server on Linux: whether the
+//! output was asked for alone. Alone, the device is Chilpa's and runs at
+//! the track's rate, and a float made from a sample of up to 24 bits goes
+//! back into the wire's integer unchanged. Shared, the Mac mixes and
+//! resamples, and says nothing about it. So this stack says `Depends`.
 //!
 //! **Two things are read that look alike and are not.** The nominal rate is
-//! what the device is *set to*, and the physical formats are what the wire
+//! what the device is *set to*, and the physical format is what the wire
 //! *carries*. A DAC set to 48 will happily accept 44.1 and convert it; what
-//! makes a track arrive as it left is setting the nominal rate to the
-//! track's and finding the track's width among the physical formats. Reading
-//! only the first is how a player ends up claiming bit-perfect over
-//! CoreAudio's own resampler.
+//! makes a track arrive as it left is the device at the track's rate with
+//! an integer wire at least as wide as the track. The verdict reads both,
+//! after the device was opened, and not the setting that asked for them.
 //!
 //! Nothing in the listing opens a device. Taking one to yourself is hog
 //! mode, and hog mode is a decision, not a survey.
@@ -48,8 +47,7 @@ fn khz(rate: f64) -> String {
 
 /// What a device says it can do, without being opened.
 fn declared(device: ffi::AudioObjectID) -> String {
-    let formats = read::physical_formats(device);
-    let widest = formats.iter().map(|f| f.mBitsPerChannel).max().unwrap_or(0);
+    let widest = integer_wire(device).into_iter().max().unwrap_or(0);
     let highest = read::available_rates(device)
         .iter()
         .map(|r| r.mMaximum)
@@ -99,15 +97,15 @@ impl OutputBackend for CoreAudio {
             present: true,
             missing: String::new(),
             provider: String::new(),
-            // Exact, and it is the platform's doing: there is no mixer that
-            // has to be persuaded. What it costs is set out in the caveat --
-            // exact is not free here either, it is a device taken.
-            fidelity: Fidelity::Exact,
+            // Exact only with the output alone: the Mac mixes whatever else
+            // plays into a shared device and converts it to the rate
+            // somebody else chose. So exclusive mode is a real switch here,
+            // and turning it off is how the Mac is shared.
+            fidelity: Fidelity::Depends,
             caveat: chilpa_i18n::t(
-                "Exact here means the device is Chilpa's alone while a track plays, and set to \
-                 that track's rate. Nothing else on the Mac can use it meanwhile, and the rate \
-                 changes between tracks. Turn bit-perfect and exclusive mode off to share it and \
-                 let the Mac convert.",
+                "With exclusive mode on, the device is Chilpa's alone while a track plays and \
+                 runs at that track's rate, so nothing else on the Mac can use it meanwhile. \
+                 Turn exclusive mode off to share it and let the Mac mix and convert.",
             ),
         }
     }
@@ -142,7 +140,10 @@ impl OutputBackend for CoreAudio {
                     id: read::name(device),
                     label: read::name(device),
                     detail,
-                    bit_perfect: true,
+                    // Only a wire that carries integers can carry a track's
+                    // own. A Mac's speakers carry floats, through the
+                    // speaker processing, and are never bit-perfect.
+                    bit_perfect: !integer_wire(device).is_empty(),
                 },
             ));
         }
@@ -153,12 +154,20 @@ impl OutputBackend for CoreAudio {
         outputs.into_iter().map(|(_, o)| o).collect()
     }
 
-    /// Read from the hardware: what the wire carries, not what the device
-    /// happens to be set to.
+    /// What the output unit takes, which is more than the device does: it
+    /// converts the rate and the format on the way. Whether that conversion
+    /// kept the samples is `carries_untouched`, read once the device opened.
     fn caps(&self, id: &str) -> Result<chilpa_audio::negotiate::DeviceCaps, SinkError> {
         capabilities(id).ok_or_else(|| {
             SinkError::Backend(chilpa_i18n::t("this output is not there any more"))
         })
+    }
+
+    /// Read from the device as it stands, after it opened: whether it runs
+    /// at the track's rate, carries integers at least as wide as the track,
+    /// and is Chilpa's alone.
+    fn carries_untouched(&self, id: &str, rate_hz: u32, bits: Option<u8>) -> bool {
+        untouched(id, rate_hz, bits)
     }
 
     /// The device's own knob, when it has one.
@@ -255,74 +264,76 @@ pub fn find(name: &str) -> Option<ffi::AudioObjectID> {
         .find(|d| read::output_channels(*d) > 0 && read::name(*d) == name)
 }
 
-/// What the machine can tell about an output without opening it.
+/// What an output can be handed, without opening it.
 ///
-/// Public because the wizard asks the same question the picker does, and
-/// because it is the only honest source for "would this track arrive
-/// untouched": the nominal rate says what the device is set to and the
-/// physical formats say what the wire carries.
+/// Every rate, because the output unit converts whatever the device does
+/// not run at; the integer formats Chilpa writes and floats for a source
+/// that decodes to them; and the device's own channel counts. Not one, even
+/// on a device that has it: the unit sends a single channel to the left
+/// only, so a mono track goes out in both, the way it does on a card.
 pub fn capabilities(name: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
-    let device = find(name)?;
-    let mut sample_rates: Vec<u32> = Vec::new();
-    for range in read::available_rates(device) {
-        // A range with two different ends means a converter inside, and
-        // then every standard rate between them really is available.
-        for rate in [44_100u32, 48_000, 88_200, 96_000, 176_400, 192_000, 352_800, 384_000, 705_600, 768_000] {
-            let r = f64::from(rate);
-            if r >= range.mMinimum && r <= range.mMaximum && !sample_rates.contains(&rate) {
-                sample_rates.push(rate);
-            }
-        }
-    }
-    sample_rates.sort_unstable();
-
     use chilpa_audio::format::SampleFormat;
-    let mut formats = Vec::new();
-    for physical in read::physical_formats(device) {
-        // Every field, not just the width. A description that is not
-        // interleaved signed little-endian linear PCM is not something
-        // Chilpa's samples can be handed to, and offering it would be
-        // promising a format that fails at open time -- after the DAC has
-        // already been taken and re-clocked.
-        if physical.mFormatID != ffi::kAudioFormatLinearPCM
-            || physical.mFormatFlags & ffi::kAudioFormatFlagIsFloat != 0
-            || physical.mFormatFlags & ffi::kAudioFormatFlagIsSignedInteger == 0
-            || physical.mFormatFlags & ffi::kAudioFormatFlagIsBigEndian != 0
-            || physical.mFormatFlags & ffi::kAudioFormatFlagIsNonInterleaved != 0
-            || physical.mChannelsPerFrame == 0
-        {
-            continue;
-        }
-        // Bytes per channel only means anything once interleaving is known,
-        // which is why that is checked above and not here.
-        let per_channel = physical.mBytesPerFrame / physical.mChannelsPerFrame;
-        let high = physical.mFormatFlags & ffi::kAudioFormatFlagIsAlignedHigh != 0;
-        let found = match (physical.mBitsPerChannel, per_channel, high) {
-            (16, 2, false) => SampleFormat::S16,
-            (24, 3, false) => SampleFormat::S24Packed,
-            // Twenty-four carried in four with the valid bits at the top is
-            // exactly what `S24In32` is.
-            (24, 4, true) => SampleFormat::S24In32,
-            (32, 4, false) => SampleFormat::S32,
-            // Twenty bits is a real thing on HDMI, and a 24-bit word with
-            // the bits somewhere else is a real thing too. Chilpa has no
-            // format for either, and the nearest size would be a guess about
-            // what the device does with the rest of the word.
-            _ => continue,
-        };
-        if !formats.contains(&found) {
-            formats.push(found);
-        }
-    }
-    let channels = read::output_channels(device) as u16;
+    let device = find(name)?;
+    let channels = read::output_channels(device).min(u32::from(u16::MAX)) as u16;
     Some(chilpa_audio::negotiate::DeviceCaps {
-        sample_rates,
-        formats,
-        channels: (1..=channels).collect(),
-        // Read from the hardware, not guessed. That is what lets a verdict
-        // be given at all.
+        sample_rates: vec![
+            8_000, 11_025, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000,
+            176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
+        ],
+        formats: vec![
+            SampleFormat::S16,
+            SampleFormat::S24Packed,
+            SampleFormat::S24In32,
+            SampleFormat::S32,
+            SampleFormat::F32,
+        ],
+        channels: if channels >= 2 { (2..=channels).collect() } else { vec![channels.max(1)] },
         probed: true,
     })
+}
+
+/// The integer widths the device's wire can carry, from its published
+/// physical formats. Empty for a device that carries only floats.
+fn integer_wire(device: ffi::AudioObjectID) -> Vec<u32> {
+    read::physical_formats(device)
+        .iter()
+        .filter(|f| {
+            f.mFormatID == ffi::kAudioFormatLinearPCM
+                && f.mFormatFlags & ffi::kAudioFormatFlagIsFloat == 0
+                && f.mFormatFlags & ffi::kAudioFormatFlagIsSignedInteger != 0
+        })
+        .map(|f| f.mBitsPerChannel)
+        .collect()
+}
+
+/// Whether the device, as it stands right now, carries a stream at that
+/// rate and depth to the wire untouched.
+///
+/// Three facts, read and not assumed. The device runs at the track's rate,
+/// or the output unit resampled it. Every output stream carries integers at
+/// least as wide as what the track carries, or the device rounded the floats
+/// into fewer bits -- and a wire of floats is never untouched, because the
+/// speakers that carry them process them. And it is this program's alone,
+/// or something else could be mixed in. A track with no integer depth of its
+/// own -- a lossy one -- has nothing to keep and is never untouched.
+pub fn untouched(name: &str, rate_hz: u32, bits: Option<u8>) -> bool {
+    let (Some(device), Some(bits)) = (find(name), bits) else { return false };
+    if (read::current_rate(device) - f64::from(rate_hz)).abs() > 0.5 {
+        return false;
+    }
+    if read::hogged_by(device) != std::process::id() as i32 {
+        return false;
+    }
+    let streams = read::output_streams(device);
+    !streams.is_empty()
+        && streams.into_iter().all(|stream| {
+            read::format(stream, ffi::kAudioStreamPropertyPhysicalFormat).is_some_and(|f| {
+                f.mFormatID == ffi::kAudioFormatLinearPCM
+                    && f.mFormatFlags & ffi::kAudioFormatFlagIsFloat == 0
+                    && f.mFormatFlags & ffi::kAudioFormatFlagIsSignedInteger != 0
+                    && f.mBitsPerChannel >= u32::from(bits)
+            })
+        })
 }
 
 /// Whether another program has this device to itself right now.
@@ -342,7 +353,7 @@ mod tests {
         let info = CoreAudio.info();
         let _ = CoreAudio.outputs();
         if info.present {
-            assert_eq!(info.fidelity, Fidelity::Exact);
+            assert_eq!(info.fidelity, Fidelity::Depends);
         } else {
             assert!(!info.missing.is_empty());
         }
@@ -373,6 +384,32 @@ mod tests {
     fn a_name_nobody_has_is_not_found_and_is_not_taken() {
         assert!(find("no such device anywhere").is_none());
         assert!(!taken_by_someone_else("no such device anywhere"));
+        assert!(!untouched("no such device anywhere", 44_100, Some(16)));
+    }
+
+    #[test]
+    fn a_device_nobody_opened_carries_nothing_untouched() {
+        // Not hogged by this test, so not alone: the verdict has to say no
+        // whatever the device's rate and wire happen to be.
+        for output in CoreAudio.outputs() {
+            assert!(!untouched(&output.id, 44_100, Some(16)), "{}", output.id);
+        }
+    }
+
+    #[test]
+    fn every_output_takes_a_cd_and_a_mono_track_goes_out_in_two() {
+        for output in CoreAudio.outputs() {
+            let caps = capabilities(&output.id).expect("it has capabilities");
+            let cd = chilpa_audio::format::StreamFormat::new(
+                chilpa_audio::format::SampleFormat::S16,
+                44_100,
+                2,
+            );
+            assert!(caps.accepts(&cd), "{} refuses a CD", output.id);
+            if caps.channels.contains(&2) {
+                assert!(!caps.channels.contains(&1), "{} would play mono on the left only", output.id);
+            }
+        }
     }
 
     #[test]

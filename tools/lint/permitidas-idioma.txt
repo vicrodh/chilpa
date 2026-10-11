@@ -30,6 +30,7 @@ gbk
 gcm
 glob
 grup
+hal
 hdmi
 hi
 # Inglés que el diccionario español también acepta

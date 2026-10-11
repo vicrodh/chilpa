@@ -10,40 +10,25 @@ msgstr ""
 msgid "\"{}\" did not switch to {} Hz"
 msgstr ""
 
-msgid "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let the Mac convert"
-msgstr ""
-
 msgid "\"{}\" does not say how an account connects"
 msgstr ""
 
 msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
 msgstr ""
 
-msgid "\"{}\" has no output stream"
-msgstr ""
-
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr ""
 
-msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn exclusive mode off to share it"
 msgstr ""
 
-msgid "\"{}\" refused the {} format ({})"
+msgid "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to share it"
 msgstr ""
 
-msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and exclusive mode off to share it"
-msgstr ""
-
-msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it"
-msgstr ""
-
-msgid "\"{}\" would not open ({})"
+msgid "\"{}\" would not open ({} {})"
 msgstr ""
 
 msgid "\"{}\" would not run at {} Hz ({})"
-msgstr ""
-
-msgid "\"{}\" would not say what format it opened"
 msgstr ""
 
 msgid "\"{}\" would not start ({})"
@@ -1193,9 +1178,6 @@ msgid "Errors"
 msgstr "Errors"
 
 msgid "Everyone who plays on a track"
-msgstr ""
-
-msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
 msgstr ""
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
@@ -3770,6 +3752,9 @@ msgstr ""
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr ""
 
+msgid "With exclusive mode on, the device is Chilpa's alone while a track plays and runs at that track's rate, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it and let the Mac mix and convert."
+msgstr ""
+
 msgid "Withdraw approval"
 msgstr ""
 
@@ -3845,7 +3830,7 @@ msgstr ""
 msgid "a DST packet belongs to no frame"
 msgstr ""
 
-msgid "a Mac's outputs take integer samples, not floating point"
+msgid "a Mac's outputs take PCM, not native DSD"
 msgstr ""
 
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
@@ -3899,7 +3884,7 @@ msgstr ""
 msgid "an analysis is already running"
 msgstr ""
 
-msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
+msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
 msgstr ""
 
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"

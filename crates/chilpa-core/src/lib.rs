@@ -280,6 +280,16 @@ pub fn path_is_exact(device: &str, exclusive: bool) -> bool {
         .unwrap_or(false)
 }
 
+/// Whether the output, as it stands now that a track opened, carries what
+/// the delivery opened untouched: the half of the verdict that only the
+/// device can answer, read after the fact. See
+/// `OutputBackend::carries_untouched`.
+pub fn wire_keeps(device: &str, delivery: &chilpa_audio::negotiate::Delivery) -> bool {
+    backends::resolve(device).is_some_and(|(stack, bare)| {
+        stack.carries_untouched(&bare, delivery.opened.sample_rate_hz, delivery.bits_carried())
+    })
+}
+
 /// The error for an identifier that names no stack this build has.
 fn unknown_output(id: &str) -> chilpa_audio::sink::SinkError {
     chilpa_audio::sink::SinkError::Backend(chilpa_i18n::t_args(

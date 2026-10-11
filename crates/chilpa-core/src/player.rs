@@ -568,7 +568,7 @@ fn play(
                     opened: delivery.opened,
                     channels: delivery.requested.channels,
                     bits: Some(1),
-                    bit_perfect: delivery.nothing_was_converted() && exact_path,
+                    bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
                     // Counted in what opened: a disc played native runs
                     // half the frames of DoP, and was shown twice as long.
                     total_frames: about.as_ref().map(|(_, samples)| {
@@ -594,7 +594,7 @@ fn play(
                     opened: delivery.opened,
                     channels: delivery.requested.channels,
                     bits: delivery.bits_carried(),
-                    bit_perfect: delivery.nothing_was_converted() && exact_path,
+                    bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
                     total_frames: frames,
                     tags: Some(about.tags),
                     artwork: about.artwork,
@@ -621,7 +621,7 @@ fn play(
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
                 bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
-                bit_perfect: delivery.nothing_was_converted() && exact_path,
+                bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
                 total_frames,
                 tags: about.tags.clone(),
                 artwork: about.artwork.clone(),
@@ -703,7 +703,7 @@ fn play_stream(
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
                 bits: delivery.bits_carried(),
-                bit_perfect: delivery.nothing_was_converted() && exact_path,
+                bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
                 total_frames: None,
                 tags: Some(tag.clone()),
                 artwork: None,

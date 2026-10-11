@@ -1,87 +1,196 @@
 //! Playing through a Mac's own audio.
 //!
-//! Three things have to be true for a track to reach the DAC as it left the
-//! file, and each is a separate ask that can be refused:
+//! An output unit bound to the chosen device, handed floats at the track's
+//! rate. The unit converts whatever the device needs: the rate, when the
+//! device runs at another one, and the floats into the integers the wire
+//! carries. This is how QBZ plays on a Mac, and it is what works on every
+//! output this was tried on.
+//!
+//! Exclusive mode adds the two things that make that conversion keep every
+//! sample:
 //!
 //! 1. **The device is this program's.** Hog mode. Without it CoreAudio mixes
-//!    whatever else is playing and the rate is whoever asked first's.
-//! 2. **The device runs at the track's rate.** The nominal rate is set. A
-//!    device sitting at 44.1 given a 96 kHz track converts it, silently and
-//!    well, which is the failure this whole crate is written against.
-//! 3. **The stream carries the track's samples.** The physical format is the
-//!    wire, and the virtual format is what the program is handed. If they
-//!    differ CoreAudio converts between them, so both are set to the same
-//!    integer format. A device that will not take an integer virtual format
-//!    is one where bit-perfect is not available, and that is said rather
-//!    than papered over with a float conversion nobody was told about.
+//!    whatever else is playing into the same stream.
+//! 2. **The device runs at the track's rate**, when it lists that rate. Then
+//!    the unit has no rate to convert, and a float made from an integer of
+//!    up to 24 bits goes back into the wire's integer unchanged.
 //!
-//! The device calls rather than being written to, so a buffer sits between
-//! its thread and the writer -- the same shape as JACK, for the same reason.
+//! Without exclusive mode neither is asked: the device stays at the rate
+//! somebody else chose and the unit converts. That is sharing, and the
+//! verdict says so.
+//!
+//! Integer stream formats are not asked for. The version before this set
+//! the physical and virtual formats to integers and refused whatever came
+//! back different: a Mac's own speakers carry nothing but floats, and a USB
+//! DAC offers integers on the program's side only in its non-mixable
+//! variant. Every track was skipped on the first and failed after two
+//! seconds on the second.
 
 use crate::ffi::*;
 use crate::read;
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use std::os::raw::c_void;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
 
-/// What the device's thread and the writer share.
+/// Samples waiting for the device, as floats.
+///
+/// The writer fills it and the device's thread empties it, and neither ever
+/// waits for the other: a lock the device's thread has to take is a period
+/// of silence every time the writer happens to hold it, and that is a click.
+/// One writer and one reader, so two counters are enough.
+struct Ring {
+    slots: Box<[AtomicU32]>,
+    /// Samples ever written. Only the writer moves it.
+    head: AtomicUsize,
+    /// Samples ever taken. Only the device's thread moves it.
+    tail: AtomicUsize,
+    /// Where a flush left things: nothing before it is played. The writer
+    /// cannot move the reader's counter, so it moves this one instead.
+    floor: AtomicUsize,
+}
+
+impl Ring {
+    fn new(capacity: usize) -> Self {
+        Ring {
+            slots: (0..capacity.max(1)).map(|_| AtomicU32::new(0)).collect(),
+            head: AtomicUsize::new(0),
+            tail: AtomicUsize::new(0),
+            floor: AtomicUsize::new(0),
+        }
+    }
+
+    fn start(&self) -> usize {
+        self.tail.load(Ordering::Acquire).max(self.floor.load(Ordering::Acquire))
+    }
+
+    /// Samples written and not played yet.
+    fn held(&self) -> usize {
+        self.head.load(Ordering::Acquire).saturating_sub(self.start())
+    }
+
+    fn free(&self) -> usize {
+        self.slots.len().saturating_sub(self.held())
+    }
+
+    /// Writer's side. The caller has checked there is room.
+    fn push(&self, samples: impl Iterator<Item = f32>) {
+        let mut head = self.head.load(Ordering::Relaxed);
+        for s in samples {
+            self.slots[head % self.slots.len()].store(s.to_bits(), Ordering::Relaxed);
+            head += 1;
+        }
+        self.head.store(head, Ordering::Release);
+    }
+
+    /// Device's side: fills `out` with what there is and silence after it.
+    /// Says how many were real samples.
+    fn pop_into(&self, out: &mut [f32]) -> usize {
+        let start = self.start();
+        let ready = self.head.load(Ordering::Acquire).saturating_sub(start).min(out.len());
+        for (i, slot) in out.iter_mut().enumerate() {
+            *slot = if i < ready {
+                f32::from_bits(self.slots[(start + i) % self.slots.len()].load(Ordering::Relaxed))
+            } else {
+                // Running dry writes silence rather than the last period
+                // again, which is what a repeated buffer sounds like: a click.
+                0.0
+            };
+        }
+        self.tail.store(start + ready, Ordering::Release);
+        ready
+    }
+
+    /// Writer's side: everything written so far is not to be played.
+    fn clear(&self) {
+        self.floor.store(self.head.load(Ordering::Relaxed), Ordering::Release);
+    }
+}
+
+/// A sample of the stream's format, as the float the unit is handed.
+///
+/// Exact for every integer of up to 24 bits: a float carries 24 bits of
+/// mantissa, and dividing by a power of two only moves the exponent. A
+/// 24-bit word left-justified in 32 has its low byte empty, so it is exact
+/// too. A full 32-bit integer is rounded to 24 bits here, and the verdict
+/// already says no for it: no wire on a Mac carries more than 24.
+fn to_float(format: SampleFormat, bytes: &[u8]) -> f32 {
+    match format {
+        SampleFormat::S16 => f32::from(i16::from_le_bytes([bytes[0], bytes[1]])) / 32_768.0,
+        SampleFormat::S24Packed => {
+            // Into the top three bytes of a word, then back down with the sign.
+            let v = i32::from_le_bytes([0, bytes[0], bytes[1], bytes[2]]) >> 8;
+            v as f32 / 8_388_608.0
+        }
+        SampleFormat::S24In32 | SampleFormat::S32 => {
+            i32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]) as f32 / 2_147_483_648.0
+        }
+        SampleFormat::F32 => f32::from_le_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]),
+        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => unreachable!("refused when opening"),
+    }
+}
+
+/// What the unit is handed: interleaved floats at the track's rate.
+fn float_stream(stream: StreamFormat) -> AudioStreamBasicDescription {
+    let channels = u32::from(stream.channels);
+    AudioStreamBasicDescription {
+        mSampleRate: f64::from(stream.sample_rate_hz),
+        mFormatID: kAudioFormatLinearPCM,
+        mFormatFlags: kAudioFormatFlagIsFloat | kAudioFormatFlagIsPacked,
+        mBytesPerPacket: 4 * channels,
+        mFramesPerPacket: 1,
+        mBytesPerFrame: 4 * channels,
+        mChannelsPerFrame: channels,
+        mBitsPerChannel: 32,
+        mReserved: 0,
+    }
+}
+
+/// The ring, and what the device's thread needs to read from it. Owned by
+/// the sink and pointed at by the unit for as long as it may call.
 struct Shared {
-    /// Bytes waiting, already in the format the wire carries.
-    waiting: Mutex<std::collections::VecDeque<u8>>,
-    /// Set when the device stopped or went away.
-    lost: AtomicBool,
+    ring: Ring,
 }
 
-/// The token CoreAudio gives back for a registered callback.
+/// What the unit asks for, every period, on the device's thread.
 ///
-/// It is an opaque handle, not a pointer to anything this program owns, and
-/// the calls that take it -- stop, destroy -- may be made from any thread.
-/// So it may move to the one that plays, which is the only reason this
-/// wrapper exists: Rust will not move a raw pointer across threads on its
-/// own say-so, and it is right to ask.
-struct ProcToken(AudioDeviceIOProcID);
-
-// Sound because the token is opaque and its calls are thread-agnostic. What
-// is NOT sound and is not done here: sharing it. One sink owns one token.
-unsafe impl Send for ProcToken {}
-
-/// A stream to a Mac's output device.
-pub struct CoreAudioSink {
-    device: AudioObjectID,
-    proc_id: ProcToken,
-    shared: Arc<Shared>,
-    stream: StreamFormat,
-    /// Whether this took the device to itself and therefore has to give it
-    /// back. Letting go is not optional: a hogged device is unusable by
-    /// anything else until the holder dies.
-    hogged: bool,
-    ceiling: usize,
-    /// Kept alive for as long as the device may call: the pointer handed to
-    /// CoreAudio points into it.
-    _client: Box<Arc<Shared>>,
+/// It must not block and it does not: it takes what is ready and pads the
+/// rest with silence.
+extern "C" fn render(
+    client: *mut c_void,
+    flags: *mut u32,
+    _time: *const AudioTimeStamp,
+    _bus: u32,
+    _frames: u32,
+    data: *mut AudioBufferList,
+) -> OSStatus {
+    if data.is_null() || client.is_null() {
+        return 0;
+    }
+    let shared = unsafe { &*(client as *const Shared) };
+    let list = unsafe { &mut *data };
+    // The format set on the unit is interleaved, so this is one buffer; it is
+    // walked as a list anyway because that is what the unit hands over.
+    let buffers = unsafe {
+        std::slice::from_raw_parts_mut(list.mBuffers.as_mut_ptr(), list.mNumberBuffers as usize)
+    };
+    let mut real = 0;
+    for buffer in buffers.iter_mut() {
+        if buffer.mData.is_null() {
+            continue;
+        }
+        let out = unsafe {
+            std::slice::from_raw_parts_mut(buffer.mData as *mut f32, buffer.mDataByteSize as usize / 4)
+        };
+        real += shared.ring.pop_into(out);
+    }
+    if real == 0 && !flags.is_null() {
+        unsafe { *flags |= kAudioUnitRenderAction_OutputIsSilence };
+    }
+    0
 }
 
-/// Whether a property can be written, asked of the object itself.
-/// Writes one of a device's output properties, on one element.
-///
-/// The element matters: a device whose volume lives on its channels has
-/// nothing at the master, and writing there succeeds at nothing.
-pub(crate) fn write_element<T>(
-    object: AudioObjectID,
-    which: AudioObjectPropertySelector,
-    element: AudioObjectPropertyElement,
-    value: &T,
-) -> Result<(), OSStatus> {
-    set(object, &output_element(which, element), value)
-}
-
-fn set<T>(
-    object: AudioObjectID,
-    address: &AudioObjectPropertyAddress,
-    value: &T,
-) -> Result<(), OSStatus> {
+fn set<T>(object: AudioObjectID, address: &AudioObjectPropertyAddress, value: &T) -> Result<(), OSStatus> {
     let status = unsafe {
         AudioObjectSetPropertyData(
             object,
@@ -99,82 +208,43 @@ fn set<T>(
     }
 }
 
-/// What Chilpa's sample layout looks like on the wire.
+/// Writes one of a device's output properties, on one element.
 ///
-/// The width alone does not say it. A DAC that carries 24 bits may want them
-/// packed into three bytes or left-justified inside four, and those are not
-/// interchangeable: hand one to a device expecting the other and the bytes
-/// land in the wrong places, which is noise and not music. `S24In32` is
-/// left-justified by definition, which is what CoreAudio calls aligned-high.
-fn wire(format: SampleFormat) -> Option<(u32, u32, u32)> {
-    // (valid bits, bytes per channel, the flag that says the layout)
-    Some(match format {
-        SampleFormat::S16 => (16, 2, kAudioFormatFlagIsPacked),
-        SampleFormat::S24Packed => (24, 3, kAudioFormatFlagIsPacked),
-        SampleFormat::S24In32 => (24, 4, kAudioFormatFlagIsAlignedHigh),
-        SampleFormat::S32 => (32, 4, kAudioFormatFlagIsPacked),
-        // A float track is not what a DAC takes; whoever decoded it has
-        // already been asked to hand over integers.
-        SampleFormat::F32 => return None,
-        SampleFormat::DsdU32Be | SampleFormat::DsdU32Le => return None,
-    })
+/// The element matters: a device whose volume lives on its channels has
+/// nothing at the master, and writing there succeeds at nothing.
+pub(crate) fn write_element<T>(
+    object: AudioObjectID,
+    which: AudioObjectPropertySelector,
+    element: AudioObjectPropertyElement,
+    value: &T,
+) -> Result<(), OSStatus> {
+    set(object, &output_element(which, element), value)
 }
 
-/// True when a description is plain interleaved signed little-endian PCM in
-/// the exact layout Chilpa's samples are in.
-fn carries(f: &AudioStreamBasicDescription, stream: StreamFormat) -> bool {
-    let Some((bits, per_channel, layout)) = wire(stream.sample_format) else { return false };
-    let channels = u32::from(stream.channels);
-    f.mFormatID == kAudioFormatLinearPCM
-        && f.mFormatFlags & kAudioFormatFlagIsFloat == 0
-        && f.mFormatFlags & kAudioFormatFlagIsSignedInteger != 0
-        && f.mFormatFlags & kAudioFormatFlagIsBigEndian == 0
-        && f.mFormatFlags & kAudioFormatFlagIsNonInterleaved == 0
-        && f.mFormatFlags & (kAudioFormatFlagIsPacked | kAudioFormatFlagIsAlignedHigh) == layout
-        && f.mBitsPerChannel == bits
-        && f.mChannelsPerFrame == channels
-        && f.mBytesPerFrame == per_channel * channels
-        && f.mFramesPerPacket == 1
-        && f.mBytesPerPacket == f.mBytesPerFrame
-        && (f.mSampleRate - f64::from(stream.sample_rate_hz)).abs() < 0.5
-}
-
-/// The format to ask a stream for: one the device itself offered.
-///
-/// Offered and not invented. A fabricated description can be right in every
-/// field somebody thought to fill and still be refused for one nobody
-/// remembered, and the refusal comes back as a number. The device publishes
-/// exactly what it carries, so the job is to pick from that list.
-///
-/// When the output is wanted alone the non-mixable variant is preferred:
-/// that is the other half of hog mode -- hog keeps other programs off the
-/// device, this keeps anything from being mixed into the stream -- and it is
-/// the flag a DAC looks at before lighting its bit-perfect lamp.
-fn offered(
-    stream_id: AudioObjectID,
-    stream: StreamFormat,
-    exclusive: bool,
-) -> Option<AudioStreamBasicDescription> {
-    let fits: Vec<AudioStreamBasicDescription> = read::available_physical_formats(stream_id)
-        .into_iter()
-        .filter(|f| carries(f, stream))
-        .collect();
-    if exclusive {
-        if let Some(alone) =
-            fits.iter().find(|f| f.mFormatFlags & kAudioFormatFlagIsNonMixable != 0)
-        {
-            return Some(*alone);
-        }
+fn set_unit<T>(unit: AudioUnit, which: u32, scope: u32, value: &T) -> Result<(), OSStatus> {
+    let status = unsafe {
+        AudioUnitSetProperty(
+            unit,
+            which,
+            scope,
+            0,
+            value as *const T as *const c_void,
+            std::mem::size_of::<T>() as u32,
+        )
+    };
+    if status == 0 {
+        Ok(())
+    } else {
+        Err(status)
     }
-    fits.into_iter().next()
 }
 
 /// Waits for a device to really be at that rate.
 ///
-/// Two seconds, which is longer than any DAC takes to re-lock and short
-/// enough that a device that is never going to switch does not hang the
-/// thread that asked. Polling and not a property listener: a listener means
-/// a run loop, and this is called from whatever thread is starting a track.
+/// Setting it is a request, not a change: CoreAudio hands the ask to the
+/// driver and returns, and a DAC re-locking its clock takes a moment. Two
+/// seconds is longer than any DAC takes and short enough that one that is
+/// never going to switch does not hang the thread that asked.
 fn settles_at(device: AudioObjectID, rate: f64) -> bool {
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
     while std::time::Instant::now() < deadline {
@@ -186,137 +256,169 @@ fn settles_at(device: AudioObjectID, rate: f64) -> bool {
     false
 }
 
-/// Waits for a stream to really be in that format, and says what it ended
-/// up in.
+/// Whether the device lists that rate as one it runs at.
+pub(crate) fn runs_at(device: AudioObjectID, rate: f64) -> bool {
+    read::available_rates(device)
+        .iter()
+        .any(|r| rate >= r.mMinimum - 0.5 && rate <= r.mMaximum + 0.5)
+}
+
+/// Takes the device for this program, or says who has it.
+fn hog(device: AudioObjectID, name: &str) -> Result<(), SinkError> {
+    let mine = std::process::id() as i32;
+    let holder = read::hogged_by(device);
+    if holder == mine {
+        return Ok(());
+    }
+    if holder != kAudioHogModeNobody {
+        return Err(SinkError::Backend(chilpa_i18n::t_args(
+            "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it",
+            &[name],
+        )));
+    }
+    // Failing to take it is an error and not a shrug: a track played into a
+    // shared device while the window said bit-perfect is the one claim this
+    // project exists to stop making.
+    set(device, &global(kAudioDevicePropertyHogMode), &mine).map_err(|s| {
+        SinkError::Backend(chilpa_i18n::t_args(
+            "\"{}\" would not be given to Chilpa alone ({}); turn exclusive mode off to share it",
+            &[name, &s.to_string()],
+        ))
+    })?;
+    // And read back, because asking is not having.
+    if read::hogged_by(device) != mine {
+        return Err(SinkError::Backend(chilpa_i18n::t_args(
+            "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to share it",
+            &[name],
+        )));
+    }
+    Ok(())
+}
+
+/// Gives the device back, if this program has it.
 ///
-/// The same patience the rate needs, for the same reason: the set hands the
-/// ask to the driver and returns. What comes back is whatever it settled on,
-/// which is then compared -- this waits, it does not decide.
-fn format_settles(
-    stream_id: AudioObjectID,
-    which: AudioObjectPropertySelector,
-    asked: &AudioStreamBasicDescription,
-) -> Option<AudioStreamBasicDescription> {
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-    let mut last = read::format(stream_id, which);
-    loop {
-        match &last {
-            Some(got) if disagrees(asked, got).is_none() => return last,
-            _ if std::time::Instant::now() >= deadline => return last,
-            _ => {
-                std::thread::sleep(std::time::Duration::from_millis(20));
-                last = read::format(stream_id, which);
-            }
+/// Not optional: a hogged device stays unusable by every other program until
+/// whoever took it lets go, and a player that forgets leaves the Mac silent.
+fn give_back(device: AudioObjectID) {
+    if read::hogged_by(device) == std::process::id() as i32 {
+        let _ = set(device, &global(kAudioDevicePropertyHogMode), &kAudioHogModeNobody);
+    }
+}
+
+/// Sets the device to the track's rate, when it has that rate.
+///
+/// A rate the device does not list is left to the unit to convert: the
+/// track plays, and the verdict reads the device and says it was converted.
+fn match_rate(device: AudioObjectID, name: &str, rate_hz: u32) -> Result<(), SinkError> {
+    let rate = f64::from(rate_hz);
+    if (read::current_rate(device) - rate).abs() <= 0.5 || !runs_at(device, rate) {
+        return Ok(());
+    }
+    set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate).map_err(|s| {
+        SinkError::Backend(chilpa_i18n::t_args(
+            "\"{}\" would not run at {} Hz ({})",
+            &[name, &rate_hz.to_string(), &s.to_string()],
+        ))
+    })?;
+    if !settles_at(device, rate) {
+        return Err(SinkError::Backend(chilpa_i18n::t_args(
+            "\"{}\" did not switch to {} Hz",
+            &[name, &rate_hz.to_string()],
+        )));
+    }
+    Ok(())
+}
+
+/// The output unit, bound to one device and started. Torn down on drop.
+struct Unit(AudioUnit);
+
+// The unit is an opaque handle whose calls may be made from any thread, and
+// one sink owns it: it moves to the thread that plays, and is never shared.
+unsafe impl Send for Unit {}
+
+impl Unit {
+    fn open(device: AudioObjectID, name: &str, stream: StreamFormat, shared: &Shared) -> Result<Self, SinkError> {
+        let fail = |what: &str, status: OSStatus| {
+            SinkError::Backend(chilpa_i18n::t_args(
+                "\"{}\" would not open ({} {})",
+                &[name, what, &status.to_string()],
+            ))
+        };
+        let wanted = AudioComponentDescription {
+            componentType: kAudioUnitType_Output,
+            componentSubType: kAudioUnitSubType_HALOutput,
+            componentManufacturer: kAudioUnitManufacturer_Apple,
+            componentFlags: 0,
+            componentFlagsMask: 0,
+        };
+        let component = unsafe { AudioComponentFindNext(std::ptr::null_mut(), &wanted) };
+        if component.is_null() {
+            return Err(fail("AudioComponentFindNext", -1));
+        }
+        let mut raw: AudioUnit = std::ptr::null_mut();
+        let status = unsafe { AudioComponentInstanceNew(component, &mut raw) };
+        if status != 0 || raw.is_null() {
+            return Err(fail("AudioComponentInstanceNew", status));
+        }
+        // From here on, dropping it disposes of it.
+        let unit = Unit(raw);
+        set_unit(unit.0, kAudioOutputUnitProperty_CurrentDevice, kAudioUnitScope_Global, &device)
+            .map_err(|s| fail("CurrentDevice", s))?;
+        set_unit(unit.0, kAudioUnitProperty_StreamFormat, kAudioUnitScope_Input, &float_stream(stream))
+            .map_err(|s| fail("StreamFormat", s))?;
+        let callback = AURenderCallbackStruct {
+            inputProc: render,
+            inputProcClientData: shared as *const Shared as *mut c_void,
+        };
+        set_unit(unit.0, kAudioUnitProperty_SetRenderCallback, kAudioUnitScope_Input, &callback)
+            .map_err(|s| fail("SetRenderCallback", s))?;
+        let status = unsafe { AudioUnitInitialize(unit.0) };
+        if status != 0 {
+            return Err(fail("AudioUnitInitialize", status));
+        }
+        unit.start(name)?;
+        Ok(unit)
+    }
+
+    fn start(&self, name: &str) -> Result<(), SinkError> {
+        let status = unsafe { AudioOutputUnitStart(self.0) };
+        if status != 0 {
+            return Err(SinkError::Backend(chilpa_i18n::t_args(
+                "\"{}\" would not start ({})",
+                &[name, &status.to_string()],
+            )));
+        }
+        Ok(())
+    }
+
+    fn stop(&self) {
+        unsafe { AudioOutputUnitStop(self.0) };
+    }
+}
+
+impl Drop for Unit {
+    fn drop(&mut self) {
+        unsafe {
+            AudioOutputUnitStop(self.0);
+            AudioUnitUninitialize(self.0);
+            AudioComponentInstanceDispose(self.0);
         }
     }
 }
 
-/// Why what a stream opened as is not what was asked for, or `None`.
-///
-/// Checked in full and not just on the rate. The one that would otherwise go
-/// unnoticed is interleaving: a device that hands back one buffer per
-/// channel instead of one buffer with every channel would be fed this
-/// stream's bytes in order, and what comes out is the left channel playing
-/// the first half of the track and the right channel the second. It would
-/// sound like a bug in the file.
-fn disagrees(wanted: &AudioStreamBasicDescription, got: &AudioStreamBasicDescription) -> Option<String> {
-    if (got.mSampleRate - wanted.mSampleRate).abs() > 0.5 {
-        return Some(format!("{} Hz", got.mSampleRate as u32));
-    }
-    if got.mBitsPerChannel != wanted.mBitsPerChannel {
-        return Some(format!("{} bits", got.mBitsPerChannel));
-    }
-    if got.mChannelsPerFrame != wanted.mChannelsPerFrame {
-        return Some(format!("{} channels", got.mChannelsPerFrame));
-    }
-    if got.mFormatID != kAudioFormatLinearPCM {
-        return Some("a format that is not linear PCM".to_string());
-    }
-    if got.mFormatFlags & kAudioFormatFlagIsFloat != 0 {
-        return Some("floating point".to_string());
-    }
-    if got.mFormatFlags & kAudioFormatFlagIsSignedInteger == 0 {
-        return Some("unsigned samples".to_string());
-    }
-    if got.mFormatFlags & kAudioFormatFlagIsBigEndian != 0 {
-        return Some("big-endian samples".to_string());
-    }
-    if got.mFormatFlags & kAudioFormatFlagIsNonInterleaved != 0 {
-        return Some("one buffer per channel".to_string());
-    }
-    if got.mBytesPerFrame != wanted.mBytesPerFrame {
-        // The same width with different room around it. The bytes handed
-        // over would land in the wrong places, which is noise, not music.
-        return Some(format!("{} bytes a frame", got.mBytesPerFrame));
-    }
-    if got.mFormatFlags & (kAudioFormatFlagIsAlignedHigh | kAudioFormatFlagIsPacked)
-        != wanted.mFormatFlags & (kAudioFormatFlagIsAlignedHigh | kAudioFormatFlagIsPacked)
-    {
-        return Some("the valid bits somewhere else in the word".to_string());
-    }
-    if got.mFramesPerPacket != wanted.mFramesPerPacket
-        || got.mBytesPerPacket != wanted.mBytesPerPacket
-    {
-        // A packet that is not one frame means the device is not carrying
-        // plain PCM, whatever the rest of the description says.
-        return Some("packets that are not one frame".to_string());
-    }
-    // Whether the stream ended up non-mixable is not compared: it is asked
-    // for, and a device that will not give it still carries the samples
-    // untouched. What it costs is that something else could be mixed in,
-    // and hog mode has already made that impossible.
-    None
-}
-
-/// What the device asks for, every period.
-///
-/// It runs on the device's own thread and must not block: taking the lock is
-/// tried once and a period that cannot have it is silence, which is a gap
-/// heard once rather than a stall the device never recovers from.
-extern "C" fn feed(
-    _device: AudioObjectID,
-    _now: *const AudioTimeStamp,
-    _input: *const AudioBufferList,
-    _input_time: *const AudioTimeStamp,
-    output: *mut AudioBufferList,
-    _output_time: *const AudioTimeStamp,
-    client: *mut c_void,
-) -> OSStatus {
-    if output.is_null() || client.is_null() {
-        return 0;
-    }
-    let shared = unsafe { &*(client as *const Arc<Shared>) };
-    let list = unsafe { &mut *output };
-    let buffers =
-        unsafe { std::slice::from_raw_parts_mut(list.mBuffers.as_mut_ptr(), list.mNumberBuffers as usize) };
-
-    let mut waiting = match shared.waiting.try_lock() {
-        Ok(w) => w,
-        Err(_) => {
-            for buffer in buffers.iter_mut() {
-                if !buffer.mData.is_null() {
-                    unsafe {
-                        std::ptr::write_bytes(buffer.mData as *mut u8, 0, buffer.mDataByteSize as usize)
-                    };
-                }
-            }
-            return 0;
-        }
-    };
-
-    for buffer in buffers.iter_mut() {
-        if buffer.mData.is_null() {
-            continue;
-        }
-        let wanted = buffer.mDataByteSize as usize;
-        let out = unsafe { std::slice::from_raw_parts_mut(buffer.mData as *mut u8, wanted) };
-        for slot in out.iter_mut() {
-            // Running dry writes silence rather than the last period again,
-            // which is what a repeated buffer sounds like: a click.
-            *slot = waiting.pop_front().unwrap_or(0);
-        }
-    }
-    0
+/// A stream to a Mac's output device.
+pub struct CoreAudioSink {
+    device: AudioObjectID,
+    name: String,
+    stream: StreamFormat,
+    exclusive: bool,
+    /// Declared before `shared` so it is torn down first: the unit stops
+    /// calling before what it points at goes.
+    unit: Option<Unit>,
+    /// Pointed at by the unit for as long as it may call.
+    shared: Box<Shared>,
+    /// Whether the device was let go in a long pause.
+    suspended: bool,
 }
 
 impl CoreAudioSink {
@@ -328,190 +430,49 @@ impl CoreAudioSink {
                 &[name],
             )));
         };
-        if wire(stream.sample_format).is_none() {
+        if stream.sample_format.is_dsd() {
             return Err(SinkError::Backend(chilpa_i18n::t(
-                "a Mac's outputs take integer samples, not floating point",
+                "a Mac's outputs take PCM, not native DSD",
             )));
         }
-
-        // 1. The device to ourselves, before anything is changed on it:
-        // changing the rate of a device somebody else is using would move
-        // their music too.
-        let mut hogged = false;
-        if exclusive {
-            let holder = read::hogged_by(device);
-            if holder != kAudioHogModeNobody && holder != std::process::id() as i32 {
-                return Err(SinkError::Backend(chilpa_i18n::t_args(
-                    "another program has \"{}\" to itself; close it, or turn bit-perfect off to \
-                     share it",
-                    &[name],
-                )));
-            }
-            // Failing to take it is an error and not a shrug. This set a
-            // flag and carried on, which meant a track played into a shared
-            // device while the stack went on saying Exact and the window
-            // went on saying bit-perfect -- the one claim this project
-            // exists to stop making, made by the code written to make it
-            // true.
-            let mine = std::process::id() as i32;
-            set(device, &global(kAudioDevicePropertyHogMode), &mine).map_err(|s| {
-                SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and \
-                     exclusive mode off to share it",
-                    &[name, &s.to_string()],
-                ))
-            })?;
-            // And read back, because asking is not having.
-            if read::hogged_by(device) != mine {
-                return Err(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it",
-                    &[name],
-                )));
-            }
-            hogged = true;
-        }
-
-        let sink = |e: SinkError| -> SinkError {
-            if hogged {
-                let _ = set(device, &global(kAudioDevicePropertyHogMode), &kAudioHogModeNobody);
-            }
-            e
-        };
-
-        // 2. The device at the track's rate.
-        //
-        // Setting it is a request, not a change: CoreAudio hands the ask to
-        // the driver and returns, and the device switches when it is ready.
-        // A DAC re-locking its clock takes a moment, and reading the rate
-        // straight back gives the old one -- which is how the format set
-        // right after this lands at the wrong rate and the whole thing comes
-        // apart with a message about the device refusing. So it is asked
-        // for, and then waited for.
-        let rate = f64::from(stream.sample_rate_hz);
-        if (read::current_rate(device) - rate).abs() > 0.5 {
-            set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate).map_err(|s| {
-                sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" would not run at {} Hz ({})",
-                    &[name, &stream.sample_rate_hz.to_string(), &s.to_string()],
-                )))
-            })?;
-            if !settles_at(device, rate) {
-                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" did not switch to {} Hz",
-                    &[name, &stream.sample_rate_hz.to_string()],
-                ))));
-            }
-        }
-
-        // 3. The wire carrying the track's own samples, and the program
-        // handed the same thing. Setting only the first leaves CoreAudio
-        // converting into whatever the second happens to be, which is float
-        // on every device this was tried on.
-        let streams = read::output_streams(device);
-        if streams.is_empty() {
-            return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                "\"{}\" has no output stream",
-                &[name],
-            ))));
-        }
-        let mut bytes_per_frame = 0u32;
-        for stream_id in streams {
-            let Some(wanted) = offered(stream_id, stream, exclusive) else {
-                return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                    "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let \
-                     the Mac convert",
-                    &[
-                        name,
-                        &stream.sample_format.valid_bits().to_string(),
-                        &stream.sample_rate_hz.to_string(),
-                    ],
-                ))));
-            };
-            bytes_per_frame = wanted.mBytesPerFrame;
-
-            // The wire first, then what the program is handed. The virtual
-            // side never asks to be non-mixable: that is a property of the
-            // stream on the wire.
-            let mut presented = wanted;
-            presented.mFormatFlags &= !kAudioFormatFlagIsNonMixable;
-
-            for (address, asked, which) in [
-                (kAudioStreamPropertyPhysicalFormat, wanted, "physical"),
-                (kAudioStreamPropertyVirtualFormat, presented, "virtual"),
-            ] {
-                set(stream_id, &global(address), &asked).map_err(|s| {
-                    sink(SinkError::Backend(chilpa_i18n::t_args(
-                        "\"{}\" refused the {} format ({})",
-                        &[name, which, &s.to_string()],
-                    )))
-                })?;
-                // Read back, and wait for it like the rate.
-                //
-                // Setting a format is a request too, and it took a second
-                // round on real hardware to see it: a track whose rate
-                // already matched skipped the rate wait, the format was read
-                // back a microsecond after being asked for, and it still
-                // said float. The one whose rate had to change worked --
-                // because waiting for the clock had given the driver time to
-                // do both.
-                let Some(got) = format_settles(stream_id, address, &asked) else {
-                    return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                        "\"{}\" would not say what format it opened",
-                        &[name],
-                    ))));
-                };
-                if let Some(wrong) = disagrees(&asked, &got) {
-                    return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                        "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert",
-                        &[name, &wrong],
-                    ))));
-                }
-            }
-        }
-
-        let shared = Arc::new(Shared {
-            waiting: Mutex::new(std::collections::VecDeque::new()),
-            lost: AtomicBool::new(false),
-        });
-        // The pointer CoreAudio keeps has to stay valid for as long as it
-        // may call, so the handle it points at is owned by the sink.
-        let client = Box::new(Arc::clone(&shared));
-        let mut proc_id: AudioDeviceIOProcID = std::ptr::null_mut();
-        let status = unsafe {
-            AudioDeviceCreateIOProcID(
-                device,
-                feed,
-                &*client as *const Arc<Shared> as *mut c_void,
-                &mut proc_id,
-            )
-        };
-        if status != 0 || proc_id.is_null() {
-            return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                "\"{}\" would not open ({})",
-                &[name, &status.to_string()],
-            ))));
-        }
-        let status = unsafe { AudioDeviceStart(device, proc_id) };
-        if status != 0 {
-            unsafe { AudioDeviceDestroyIOProcID(device, proc_id) };
-            return Err(sink(SinkError::Backend(chilpa_i18n::t_args(
-                "\"{}\" would not start ({})",
-                &[name, &status.to_string()],
-            ))));
-        }
-
-        let frame = bytes_per_frame.max(1) as usize;
-        Ok(CoreAudioSink {
-            device,
-            proc_id: ProcToken(proc_id),
-            shared,
-            stream,
-            hogged,
+        let shared = Box::new(Shared {
             // A quarter of a second: long enough to ride out a scheduling
             // hiccup, short enough that stopping is not heard as a tail.
-            ceiling: (stream.sample_rate_hz as usize / 4) * frame,
-            _client: client,
-        })
+            ring: Ring::new((stream.sample_rate_hz as usize / 4).max(4_096) * usize::from(stream.channels)),
+        });
+        let mut sink = CoreAudioSink {
+            device,
+            name: name.to_string(),
+            stream,
+            exclusive,
+            unit: None,
+            shared,
+            suspended: false,
+        };
+        // On failure the sink is dropped, and dropping gives the device back.
+        sink.take()?;
+        Ok(sink)
+    }
+
+    /// Takes the device as asked and starts the unit on it.
+    fn take(&mut self) -> Result<(), SinkError> {
+        if self.exclusive {
+            // The device first, before anything is changed on it: changing
+            // the rate of a device somebody else is using moves their music.
+            hog(self.device, &self.name)?;
+            match_rate(self.device, &self.name, self.stream.sample_rate_hz)?;
+        }
+        self.unit = Some(Unit::open(self.device, &self.name, self.stream, &self.shared)?);
+        Ok(())
+    }
+
+    /// Lets the device go: the unit stops and is disposed of, and a hogged
+    /// device is given back.
+    fn release(&mut self) {
+        self.unit = None;
+        if self.exclusive {
+            give_back(self.device);
+        }
     }
 }
 
@@ -521,28 +482,36 @@ impl AudioSink for CoreAudioSink {
     }
 
     fn write(&mut self, frames: &[u8]) -> Result<usize, SinkError> {
-        if self.shared.lost.load(Ordering::Relaxed) {
-            return Err(SinkError::DeviceLost);
+        if self.unit.is_none() {
+            return Err(SinkError::Closed);
         }
-        let mut waiting = self.shared.waiting.lock().map_err(|_| SinkError::Closed)?;
-        if waiting.len() >= self.ceiling {
-            // Full: nothing was taken and the caller comes back, which is
-            // what a partial write means here.
+        let channels = usize::from(self.stream.channels).max(1);
+        let frame_bytes = self.stream.frame_bytes().max(1);
+        let room = self.shared.ring.free() / channels;
+        let take = room.min(frames.len() / frame_bytes);
+        if take == 0 {
+            // Full. A device that was unplugged stops asking, and full is
+            // what that looks like from here.
+            if !read::alive(self.device) {
+                return Err(SinkError::DeviceLost);
+            }
             return Ok(0);
         }
-        waiting.extend(frames.iter().copied());
-        // In frames, as the trait asks: the renderer multiplies by the size.
-        Ok(frames.len() / self.stream.frame_bytes())
+        let width = self.stream.sample_format.bytes();
+        let format = self.stream.sample_format;
+        self.shared
+            .ring
+            .push(frames[..take * frame_bytes].chunks_exact(width).map(|s| to_float(format, s)));
+        Ok(take)
     }
 
     fn flush(&mut self) -> Result<(), SinkError> {
-        self.shared.waiting.lock().map_err(|_| SinkError::Closed)?.clear();
+        self.shared.ring.clear();
         Ok(())
     }
 
     fn held(&self) -> u64 {
-        let bytes = self.shared.waiting.lock().map(|w| w.len()).unwrap_or(0);
-        (bytes / self.stream.frame_bytes().max(1)) as u64
+        (self.shared.ring.held() / usize::from(self.stream.channels).max(1)) as u64
     }
 
     /// Waits for the device to take what is queued: a quarter of a second
@@ -550,33 +519,48 @@ impl AudioSink for CoreAudioSink {
     fn drain(&mut self, give_up: &dyn Fn() -> bool) -> Result<(), SinkError> {
         let limit = std::time::Instant::now() + std::time::Duration::from_millis(1_250);
         while std::time::Instant::now() < limit && !give_up() {
-            if self.shared.lost.load(Ordering::Relaxed) {
-                return Err(SinkError::DeviceLost);
-            }
-            if self.shared.waiting.lock().map_err(|_| SinkError::Closed)?.is_empty() {
+            if self.shared.ring.held() == 0 {
                 break;
+            }
+            if !read::alive(self.device) {
+                return Err(SinkError::DeviceLost);
             }
             std::thread::sleep(std::time::Duration::from_millis(5));
         }
         Ok(())
     }
 
-    fn close(&mut self) -> Result<(), SinkError> {
-        if self.proc_id.0.is_null() {
+    fn set_paused(&mut self, paused: bool) -> Result<(), SinkError> {
+        // Stopping the unit keeps what it holds for when it starts again,
+        // instead of playing it out as the last of the music before silence.
+        match (&self.unit, paused) {
+            (Some(unit), true) => unit.stop(),
+            (Some(unit), false) => unit.start(&self.name)?,
+            (None, _) => {}
+        }
+        Ok(())
+    }
+
+    fn suspend(&mut self) -> Result<(), SinkError> {
+        self.shared.ring.clear();
+        self.release();
+        self.suspended = true;
+        Ok(())
+    }
+
+    fn wake(&mut self) -> Result<(), SinkError> {
+        if !self.suspended {
             return Ok(());
         }
-        unsafe {
-            AudioDeviceStop(self.device, self.proc_id.0);
-            AudioDeviceDestroyIOProcID(self.device, self.proc_id.0);
-        }
-        self.proc_id.0 = std::ptr::null_mut();
-        // Giving the device back is not optional: a hogged device stays
-        // unusable by everything else until whoever took it lets go, and a
-        // player that forgets leaves the Mac silent for every other program.
-        if self.hogged {
-            let _ = set(self.device, &global(kAudioDevicePropertyHogMode), &kAudioHogModeNobody);
-            self.hogged = false;
-        }
+        // As strictly as the first time: somebody else may have the device
+        // now, and that is said rather than played around.
+        self.take()?;
+        self.suspended = false;
+        Ok(())
+    }
+
+    fn close(&mut self) -> Result<(), SinkError> {
+        self.release();
         Ok(())
     }
 }
@@ -584,6 +568,162 @@ impl AudioSink for CoreAudioSink {
 impl Drop for CoreAudioSink {
     fn drop(&mut self) {
         // Whatever path got here, the device goes back.
-        let _ = self.close();
+        self.release();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn integers_of_up_to_24_bits_become_floats_that_come_back_the_same() {
+        // What the device does with a float on a 24-bit wire is multiply by
+        // 2^23 and round. For that to give back the sample, the float has to
+        // be the sample over 2^23 exactly.
+        for v in [-8_388_608i32, -1, 0, 1, 12_345, 8_388_607] {
+            let in32 = (v << 8).to_le_bytes();
+            let f = to_float(SampleFormat::S24In32, &in32);
+            assert_eq!((f64::from(f) * 8_388_608.0) as i32, v, "24 in 32: {v}");
+            let packed = &v.to_le_bytes()[..3];
+            let g = to_float(SampleFormat::S24Packed, packed);
+            assert_eq!(f, g, "packed and in 32 are the same sample: {v}");
+        }
+        for v in [i16::MIN, -1, 0, 1, i16::MAX] {
+            let f = to_float(SampleFormat::S16, &v.to_le_bytes());
+            assert_eq!((f64::from(f) * 32_768.0) as i16, v);
+        }
+    }
+
+    #[test]
+    fn the_ring_plays_what_was_written_in_order_and_pads_with_silence() {
+        let ring = Ring::new(8);
+        ring.push([1.0, 2.0, 3.0].into_iter());
+        assert_eq!(ring.held(), 3);
+        let mut out = [9.0f32; 4];
+        assert_eq!(ring.pop_into(&mut out), 3);
+        assert_eq!(out, [1.0, 2.0, 3.0, 0.0]);
+        assert_eq!(ring.held(), 0);
+        assert_eq!(ring.free(), 8);
+    }
+
+    #[test]
+    fn the_ring_wraps_and_a_flush_drops_what_was_waiting() {
+        let ring = Ring::new(4);
+        ring.push([1.0, 2.0, 3.0].into_iter());
+        let mut two = [0.0f32; 2];
+        ring.pop_into(&mut two);
+        ring.push([4.0, 5.0, 6.0].into_iter());
+        assert_eq!(ring.free(), 0);
+        let mut all = [0.0f32; 4];
+        assert_eq!(ring.pop_into(&mut all), 4);
+        assert_eq!(all, [3.0, 4.0, 5.0, 6.0], "across the end of the slots");
+
+        ring.push([7.0, 8.0].into_iter());
+        ring.clear();
+        assert_eq!(ring.held(), 0, "a flush leaves nothing held");
+        ring.push([9.0].into_iter());
+        let mut one = [0.0f32; 2];
+        assert_eq!(ring.pop_into(&mut one), 1);
+        assert_eq!(one, [9.0, 0.0], "what was flushed is never played");
+    }
+
+    /// The device's thread takes what was written: what is held goes down
+    /// without anything more being written. Silence only.
+    fn pulls(sink: &mut CoreAudioSink, label: &str) {
+        let silence = vec![0u8; sink.format().frame_bytes() * 2_048];
+        let deadline = std::time::Instant::now() + std::time::Duration::from_secs(1);
+        while std::time::Instant::now() < deadline {
+            match sink.write(&silence) {
+                Ok(0) => break,
+                Ok(_) => {}
+                Err(e) => panic!("{label}: writing silence failed: {e}"),
+            }
+        }
+        let full = sink.held();
+        assert!(full > 0, "{label}: nothing was taken");
+        std::thread::sleep(std::time::Duration::from_millis(300));
+        let later = sink.held();
+        assert!(later < full, "{label}: the device took nothing in 300 ms ({full} held, then {later})");
+    }
+
+    /// Opens every output of this Mac with silence, shared and alone, and
+    /// reads back what the device did.
+    ///
+    /// Ignored by default: it takes each device for a moment and re-clocks
+    /// DACs. Nothing it writes is anything but zeros, and a device another
+    /// program is playing through is skipped. Run it on purpose:
+    /// `cargo test -p chilpa-coreaudio --lib -- --ignored --nocapture --test-threads=1`
+    #[test]
+    #[ignore = "takes every output of this Mac for a moment; run it on purpose"]
+    fn every_output_plays_silence_shared_and_alone_and_says_what_it_kept() {
+        use chilpa_audio::backend::OutputBackend;
+        let mine = std::process::id() as i32;
+        let outputs = crate::CoreAudio.outputs();
+        assert!(!outputs.is_empty(), "this Mac lists no output");
+        for output in outputs {
+            let name = output.id.clone();
+            let device = crate::find(&name).expect("listed, so found");
+            if read::running_somewhere(device) {
+                eprintln!("{name}: another program is playing through it, skipped");
+                continue;
+            }
+            let before = read::current_rate(device);
+
+            // Shared: the device is left at its rate and nobody's, and the
+            // unit still plays a track at another one.
+            let cd = StreamFormat::new(SampleFormat::S16, 44_100, 2);
+            let mut sink = CoreAudioSink::open(&name, cd, false)
+                .unwrap_or_else(|e| panic!("{name}: shared open failed: {e}"));
+            assert_ne!(read::hogged_by(device), mine, "{name}: sharing took the device");
+            pulls(&mut sink, &format!("{name} shared"));
+            assert_eq!(read::current_rate(device), before, "{name}: sharing moved the rate");
+            assert!(!crate::untouched(&name, 44_100, Some(16)), "{name}: shared is never untouched");
+            drop(sink);
+
+            for rate in [44_100u32, 48_000, 96_000, 176_400] {
+                let label = format!("{name} alone at {rate}");
+                let format = StreamFormat::new(SampleFormat::S24In32, rate, 2);
+                let mut sink = CoreAudioSink::open(&name, format, true)
+                    .unwrap_or_else(|e| panic!("{label}: open failed: {e}"));
+                assert_eq!(read::hogged_by(device), mine, "{label}: not hogged");
+                let native = runs_at(device, f64::from(rate));
+                if native {
+                    assert!(
+                        (read::current_rate(device) - f64::from(rate)).abs() < 0.5,
+                        "{label}: the device did not move to the track's rate"
+                    );
+                }
+                pulls(&mut sink, &label);
+                let kept = crate::untouched(&name, rate, Some(24));
+                let wire: Vec<String> = read::output_streams(device)
+                    .into_iter()
+                    .filter_map(|s| read::format(s, kAudioStreamPropertyPhysicalFormat))
+                    .map(|f| format!("{} bits flags {:#x} at {}", f.mBitsPerChannel, f.mFormatFlags, f.mSampleRate))
+                    .collect();
+                eprintln!("{label}: native={native} untouched={kept} wire={wire:?}");
+                if !native || !output.bit_perfect {
+                    assert!(!kept, "{label}: called untouched over a conversion");
+                } else {
+                    assert!(kept, "{label}: an integer wire at the track's rate, alone, and not untouched");
+                }
+
+                // A long pause gives the device back and takes it again.
+                sink.suspend().expect("suspend");
+                assert_ne!(read::hogged_by(device), mine, "{label}: still hogged while suspended");
+                sink.wake().unwrap_or_else(|e| panic!("{label}: wake failed: {e}"));
+                assert_eq!(read::hogged_by(device), mine, "{label}: not hogged after waking");
+                pulls(&mut sink, &format!("{label}, woken"));
+
+                drop(sink);
+                assert_ne!(read::hogged_by(device), mine, "{label}: not given back");
+            }
+
+            // As it was found.
+            if (read::current_rate(device) - before).abs() > 0.5 {
+                let _ = set(device, &global(kAudioDevicePropertyNominalSampleRate), &before);
+                settles_at(device, before);
+            }
+        }
     }
 }
