@@ -1,10 +1,11 @@
 //! The handful of CoreAudio calls this needs, declared by hand.
 //!
-//! By hand and not through a binding crate: what is used here is two
-//! functions and a dozen constants, and a generator would bring a build-time
-//! dependency on libclang plus a surface nobody reads. Every item below is
-//! from `<CoreAudio/AudioHardware.h>`, and the four-character codes are the
-//! same ones the header spells as `'dev#'`.
+//! By hand and not through a binding crate: what is used here is a dozen
+//! functions and a few dozen constants, and a generator would bring a
+//! build-time dependency on libclang plus a surface nobody reads. The device
+//! items are from `<CoreAudio/AudioHardware.h>`, the output unit's from
+//! `<AudioToolbox/AudioUnit.h>`, and the four-character codes are the same
+//! ones the headers spell as `'dev#'`.
 
 // Apple's own names, kept as Apple spells them. Renaming a field of a
 // `#[repr(C)]` struct to look like Rust would make it one letter harder to
@@ -40,6 +41,12 @@ pub const kAudioDevicePropertyAvailableNominalSampleRates: AudioObjectPropertySe
 pub const kAudioDevicePropertyNominalSampleRate: AudioObjectPropertySelector = fourcc(b"nsrt");
 pub const kAudioDevicePropertyTransportType: AudioObjectPropertySelector = fourcc(b"tran");
 pub const kAudioDevicePropertyHogMode: AudioObjectPropertySelector = fourcc(b"oink");
+/// Zero once the device is gone: unplugged, or turned off.
+pub const kAudioDevicePropertyDeviceIsAlive: AudioObjectPropertySelector = fourcc(b"livn");
+/// Whether any program, this one or another, is playing through it.
+#[cfg(test)]
+pub const kAudioDevicePropertyDeviceIsRunningSomewhere: AudioObjectPropertySelector =
+    fourcc(b"gone");
 /// The knob, from 0 to 1. A device that has none simply does not answer.
 pub const kAudioDevicePropertyVolumeScalar: AudioObjectPropertySelector = fourcc(b"volm");
 pub const kAudioDevicePropertyMute: AudioObjectPropertySelector = fourcc(b"mute");
@@ -117,26 +124,17 @@ pub struct AudioStreamRangedDescription {
     pub mSampleRateRange: AudioValueRange,
 }
 
-/// What a stream really carries, and what it is presented as.
+/// What a stream carries on the wire right now.
 ///
-/// Two properties and the difference is the whole of bit-perfect here. The
-/// physical format is the wire. The virtual format is what CoreAudio hands
-/// the program, converting between the two if they differ -- and if it
-/// converts, the samples did not arrive as they left.
+/// Read to decide a verdict, never set: the output unit is handed floats,
+/// and the device turns them into this. An integer format at least as wide
+/// as the track is what lets that last step keep every sample.
 pub const kAudioStreamPropertyPhysicalFormat: AudioObjectPropertySelector = fourcc(b"pft ");
-pub const kAudioStreamPropertyVirtualFormat: AudioObjectPropertySelector = fourcc(b"sfmt");
 
 pub const kAudioFormatLinearPCM: u32 = fourcc(b"lpcm");
 pub const kAudioFormatFlagIsFloat: u32 = 1 << 0;
-pub const kAudioFormatFlagIsBigEndian: u32 = 1 << 1;
 pub const kAudioFormatFlagIsSignedInteger: u32 = 1 << 2;
 pub const kAudioFormatFlagIsPacked: u32 = 1 << 3;
-pub const kAudioFormatFlagIsAlignedHigh: u32 = 1 << 4;
-pub const kAudioFormatFlagIsNonInterleaved: u32 = 1 << 5;
-/// The flag that asks a device for the stream nobody else can be mixed
-/// into. It is the other half of hog mode: hog takes the device, this takes
-/// the stream, and a DAC lights up its bit-perfect lamp for the second one.
-pub const kAudioFormatFlagIsNonMixable: u32 = 1 << 6;
 
 /// Nobody has the device. CoreAudio spells "no owner" as -1.
 pub const kAudioHogModeNobody: i32 = -1;
@@ -154,18 +152,54 @@ pub struct AudioTimeStamp {
     pub mReserved: u32,
 }
 
-/// What the device calls, on its own thread, every period.
-pub type AudioDeviceIOProc = extern "C" fn(
-    inDevice: AudioObjectID,
-    inNow: *const AudioTimeStamp,
-    inInputData: *const AudioBufferList,
-    inInputTime: *const AudioTimeStamp,
-    outOutputData: *mut AudioBufferList,
-    inOutputTime: *const AudioTimeStamp,
+/// An instance of an audio unit. Opaque: only AudioToolbox looks inside.
+pub type AudioUnit = *mut c_void;
+pub type AudioComponent = *mut c_void;
+
+/// Which unit is wanted, by kind, variant and maker.
+#[repr(C)]
+pub struct AudioComponentDescription {
+    pub componentType: u32,
+    pub componentSubType: u32,
+    pub componentManufacturer: u32,
+    pub componentFlags: u32,
+    pub componentFlagsMask: u32,
+}
+
+/// The output unit that talks to one device, whichever it is.
+///
+/// Not the default-output unit, which follows whatever the system is using
+/// and would move the music when somebody changes the Mac's output.
+pub const kAudioUnitType_Output: u32 = fourcc(b"auou");
+pub const kAudioUnitSubType_HALOutput: u32 = fourcc(b"ahal");
+pub const kAudioUnitManufacturer_Apple: u32 = fourcc(b"appl");
+
+pub const kAudioUnitScope_Global: u32 = 0;
+/// The side the program writes into. Its format is the track's.
+pub const kAudioUnitScope_Input: u32 = 1;
+
+pub const kAudioUnitProperty_StreamFormat: u32 = 8;
+pub const kAudioUnitProperty_SetRenderCallback: u32 = 23;
+pub const kAudioOutputUnitProperty_CurrentDevice: u32 = 2000;
+
+/// Said to the unit when a period is all zeros, so it can skip the work.
+pub const kAudioUnitRenderAction_OutputIsSilence: u32 = 1 << 4;
+
+/// What the unit calls, on the device's thread, every period.
+pub type AURenderCallback = extern "C" fn(
     inClientData: *mut c_void,
+    ioActionFlags: *mut u32,
+    inTimeStamp: *const AudioTimeStamp,
+    inBusNumber: u32,
+    inNumberFrames: u32,
+    ioData: *mut AudioBufferList,
 ) -> OSStatus;
 
-pub type AudioDeviceIOProcID = *mut c_void;
+#[repr(C)]
+pub struct AURenderCallbackStruct {
+    pub inputProc: AURenderCallback,
+    pub inputProcClientData: *mut c_void,
+}
 
 pub type CFStringRef = *const c_void;
 pub type CFIndex = isize;
@@ -206,21 +240,6 @@ extern "C" {
         inData: *const c_void,
     ) -> OSStatus;
 
-    pub fn AudioDeviceCreateIOProcID(
-        inDevice: AudioObjectID,
-        inProc: AudioDeviceIOProc,
-        inClientData: *mut c_void,
-        outIOProcID: *mut AudioDeviceIOProcID,
-    ) -> OSStatus;
-
-    pub fn AudioDeviceDestroyIOProcID(
-        inDevice: AudioObjectID,
-        inIOProcID: AudioDeviceIOProcID,
-    ) -> OSStatus;
-
-    pub fn AudioDeviceStart(inDevice: AudioObjectID, inProcID: AudioDeviceIOProcID) -> OSStatus;
-    pub fn AudioDeviceStop(inDevice: AudioObjectID, inProcID: AudioDeviceIOProcID) -> OSStatus;
-
     pub fn AudioObjectGetPropertyData(
         inObjectID: AudioObjectID,
         inAddress: *const AudioObjectPropertyAddress,
@@ -229,6 +248,31 @@ extern "C" {
         ioDataSize: *mut u32,
         outData: *mut c_void,
     ) -> OSStatus;
+}
+
+#[link(name = "AudioToolbox", kind = "framework")]
+extern "C" {
+    pub fn AudioComponentFindNext(
+        inComponent: AudioComponent,
+        inDesc: *const AudioComponentDescription,
+    ) -> AudioComponent;
+    pub fn AudioComponentInstanceNew(inComponent: AudioComponent, outInstance: *mut AudioUnit)
+        -> OSStatus;
+    pub fn AudioComponentInstanceDispose(inInstance: AudioUnit) -> OSStatus;
+
+    pub fn AudioUnitSetProperty(
+        inUnit: AudioUnit,
+        inID: u32,
+        inScope: u32,
+        inElement: u32,
+        inData: *const c_void,
+        inDataSize: u32,
+    ) -> OSStatus;
+    pub fn AudioUnitInitialize(inUnit: AudioUnit) -> OSStatus;
+    pub fn AudioUnitUninitialize(inUnit: AudioUnit) -> OSStatus;
+
+    pub fn AudioOutputUnitStart(ci: AudioUnit) -> OSStatus;
+    pub fn AudioOutputUnitStop(ci: AudioUnit) -> OSStatus;
 }
 
 #[link(name = "CoreFoundation", kind = "framework")]

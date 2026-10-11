@@ -319,6 +319,21 @@ pub trait OutputBackend: Send + Sync {
         String::new()
     }
 
+    /// Whether the output, as it stands right now, carries a stream at that
+    /// rate and depth to the wire untouched. `bits` is what the track
+    /// carries, and `None` for one with no integer depth of its own.
+    ///
+    /// Asked once a track has opened, for the verdict, and only on a route
+    /// whose fidelity already allows it. Most stacks have nothing more to
+    /// say than their fidelity and answer yes. One that converts behind
+    /// Chilpa's back when the device cannot do what was asked -- a Mac's
+    /// output unit resamples a rate the DAC lacks -- reads the device here,
+    /// because the delivery never sees that conversion.
+    fn carries_untouched(&self, id: &str, rate_hz: u32, bits: Option<u8>) -> bool {
+        let _ = (id, rate_hz, bits);
+        true
+    }
+
     /// Opens one. The only call here that touches the hardware.
     ///
     /// `Send` because playing happens on its own thread: whoever opens the

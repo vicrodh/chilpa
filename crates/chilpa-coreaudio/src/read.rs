@@ -179,11 +179,10 @@ pub fn physical_formats(device: AudioObjectID) -> Vec<AudioStreamBasicDescriptio
     output_streams(device).into_iter().flat_map(available_physical_formats).collect()
 }
 
-/// One of a stream's two formats, right now.
+/// One of a stream's formats, right now.
 ///
-/// The one to read back after asking for a format: a set that returns
-/// success and a device that gives something else is the ordinary case.
-/// Both sides are worth reading -- the wire, and what the program is handed.
+/// What the wire carries at this moment, which is what a verdict has to be
+/// built on: the device decides it, and asking for one is not having it.
 pub fn format(
     stream: AudioObjectID,
     which: AudioObjectPropertySelector,
@@ -200,6 +199,19 @@ pub fn available_physical_formats(stream: AudioObjectID) -> Vec<AudioStreamBasic
     let ranged: Vec<AudioStreamRangedDescription> =
         read_all(stream, &global(kAudioStreamPropertyAvailablePhysicalFormats));
     ranged.into_iter().map(|f| f.mFormat).collect()
+}
+
+/// Whether the device is still there. One that was unplugged or turned off
+/// answers no, or does not answer at all.
+pub fn alive(device: AudioObjectID) -> bool {
+    read::<u32>(device, &global(kAudioDevicePropertyDeviceIsAlive)).is_some_and(|v| v != 0)
+}
+
+/// Whether some program is playing through the device right now. Only the
+/// test that opens devices asks, so as not to take one from a listener.
+#[cfg(test)]
+pub fn running_somewhere(device: AudioObjectID) -> bool {
+    read::<u32>(device, &global(kAudioDevicePropertyDeviceIsRunningSomewhere)).is_some_and(|v| v != 0)
 }
 
 /// Who has the device to themselves, or nobody.

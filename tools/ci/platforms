@@ -58,6 +58,7 @@ TARGETS = [
 # no C in it, so it is checked from here whatever the machine.
 BACKENDS = [
     ("chilpa-appkit", "aarch64-apple-darwin", "macOS"),
+    ("chilpa-coreaudio", "aarch64-apple-darwin", "macOS"),
 ]
 
 

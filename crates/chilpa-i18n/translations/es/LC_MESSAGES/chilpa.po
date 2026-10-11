@@ -10,41 +10,26 @@ msgstr "\"{}\" no trae nada hoy"
 msgid "\"{}\" did not switch to {} Hz"
 msgstr "\"{}\" no cambió a {} Hz"
 
-msgid "\"{}\" does not carry {} bit samples at {} Hz; turn bit-perfect off to let the Mac convert"
-msgstr "\"{}\" no lleva muestras de {} bits a {} Hz; apaga bit-perfect para dejar que la Mac convierta"
-
 msgid "\"{}\" does not say how an account connects"
 msgstr "\"{}\" no dice cómo se conecta una cuenta"
 
 msgid "\"{}\" does not work as an id: it is used as a folder name, so it goes in lowercase, with dots, dashes or digits, and no slashes and no double dots"
 msgstr "\"{}\" no sirve como id: se usa como nombre de carpeta, así que va en minúsculas, con puntos, guiones o dígitos, y sin barras ni puntos dobles"
 
-msgid "\"{}\" has no output stream"
-msgstr "\"{}\" no tiene ningún stream de salida"
-
 msgid "\"{}\" is not a domain permission can be given to"
 msgstr "\"{}\" no es un dominio al que se pueda dar permiso"
 
-msgid "\"{}\" opened as {} instead; turn bit-perfect off to let the Mac convert"
-msgstr "\"{}\" abrió como {} en su lugar; apaga bit-perfect para dejar que la Mac convierta"
+msgid "\"{}\" would not be given to Chilpa alone ({}); turn exclusive mode off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva ({}); apaga el modo exclusivo para compartirlo"
 
-msgid "\"{}\" refused the {} format ({})"
-msgstr "\"{}\" rechazó el formato {} ({})"
+msgid "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to share it"
+msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga el modo exclusivo para compartirlo"
 
-msgid "\"{}\" would not be given to Chilpa alone ({}); turn bit-perfect and exclusive mode off to share it"
-msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva ({}); apaga bit-perfect y el modo exclusivo para compartirlo"
-
-msgid "\"{}\" would not be given to Chilpa alone; turn bit-perfect and exclusive mode off to share it"
-msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga bit-perfect y el modo exclusivo para compartirlo"
-
-msgid "\"{}\" would not open ({})"
-msgstr "no se pudo abrir \"{}\" ({})"
+msgid "\"{}\" would not open ({} {})"
+msgstr "no se pudo abrir \"{}\" ({} {})"
 
 msgid "\"{}\" would not run at {} Hz ({})"
 msgstr "\"{}\" no quiso correr a {} Hz ({})"
-
-msgid "\"{}\" would not say what format it opened"
-msgstr "\"{}\" no dijo en qué formato abrió"
 
 msgid "\"{}\" would not start ({})"
 msgstr "\"{}\" no quiso arrancar ({})"
@@ -1194,9 +1179,6 @@ msgstr "Errores"
 
 msgid "Everyone who plays on a track"
 msgstr "Todos los que tocan en alguna pista"
-
-msgid "Exact here means the device is Chilpa's alone while a track plays, and set to that track's rate. Nothing else on the Mac can use it meanwhile, and the rate changes between tracks. Turn bit-perfect and exclusive mode off to share it and let the Mac convert."
-msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista, y puesto a la frecuencia de esa pista. Nada más en la Mac lo puede usar mientras tanto, y la frecuencia cambia entre pistas. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que la Mac convierta."
 
 msgid "Exact here means the device is Chilpa's alone while a track plays: nothing else on the machine can use it, not even a notification. Turn bit-perfect and exclusive mode off to share it and let Windows mix and resample."
 msgstr "Exacto aquí quiere decir que el aparato es de Chilpa mientras suena una pista: nada más en la computadora lo puede usar, ni siquiera una notificación. Apaga bit-perfect y el modo exclusivo para compartirlo y dejar que Windows mezcle y reconvierta."
@@ -3770,6 +3752,9 @@ msgstr "Windows no reporta ningún aparato de reproducción"
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
 
+msgid "With exclusive mode on, the device is Chilpa's alone while a track plays and runs at that track's rate, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it and let the Mac mix and convert."
+msgstr "Con el modo exclusivo, el aparato es solo de Chilpa mientras suena una pista y va a la frecuencia de esa pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo y dejar que la Mac mezcle y convierta."
+
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"
 
@@ -3845,8 +3830,8 @@ msgstr "un frame DST dice que no ocupa ningún paquete"
 msgid "a DST packet belongs to no frame"
 msgstr "un paquete DST no pertenece a ningún frame"
 
-msgid "a Mac's outputs take integer samples, not floating point"
-msgstr "las salidas de una Mac toman muestras enteras, no de punto flotante"
+msgid "a Mac's outputs take PCM, not native DSD"
+msgstr "las salidas de una Mac toman PCM, no DSD nativo"
 
 msgid "a date is a year, a year and a month, or a full day: 1984, 1984-09, 1984-09-03"
 msgstr "una fecha es un año, un año y un mes, o un día completo: 1984, 1984-09, 1984-09-03"
@@ -3899,8 +3884,8 @@ msgstr "un manifiesto HLS, que Chilpa todavía no sabe leer"
 msgid "an analysis is already running"
 msgstr "ya hay un análisis corriendo"
 
-msgid "another program has \"{}\" to itself; close it, or turn bit-perfect off to share it"
-msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga bit-perfect para compartirlo"
+msgid "another program has \"{}\" to itself; close it, or turn exclusive mode off to share it"
+msgstr "otro programa tiene \"{}\" para él solo; ciérralo, o apaga el modo exclusivo para compartirlo"
 
 msgid "another program is using \"{}\"; close it, or turn bit-perfect and exclusive mode off to share it ({})"
 msgstr "otro programa está usando \"{}\"; ciérralo, o apaga bit-perfect y el modo exclusivo para compartirla ({})"
