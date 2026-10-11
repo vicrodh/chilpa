@@ -57,6 +57,18 @@ TestCase {
         compare(ListenList.renamedText, "s")
         compare(ListenList.lastAction, "save")
     }
+    // The queue shows its stars, has the sleep timer, and says how long it
+    // lasts and at what time it ends.
+    function test_the_queue_rates_has_its_timer_and_says_when_it_ends() {
+        verify(descendants(page).find(item => item.showRating !== undefined).showRating)
+        page.now = Date.parse("2026-10-10T21:00:00")
+        page.foot = JSON.parse(ListenList.footer())
+        compare(findChild(page, "queuesSummary").text, "3 songs 1 hr 2 min")
+        compare(findChild(page, "queuesEnds").text, "Ends at 21:10")
+        findChild(page, "queuesTimer").clicked()
+        tryVerify(() => findChild(page, "sleepTimer").opened)
+        findChild(page, "sleepTimer").close()
+    }
     function test_layout_stays_inside_at_small_and_large_sizes() {
         for (const size of [[1100,700],[720,500]]) {
             page.width = size[0]; page.height = size[1]

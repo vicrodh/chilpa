@@ -77,6 +77,12 @@ QtObject {
     readonly property int pillPadding: 14
     readonly property int segmentWidth: 30
     readonly property int segmentHeight: 24
+    // A segment's count chip (QBZ's tab bar): its height, its least
+    // width, the room around its number and the gap after the label.
+    readonly property int countChip: 16
+    readonly property int countChipMin: 18
+    readonly property int countChipPadding: 5
+    readonly property int countChipGap: 7
     readonly property int fieldHeight: 28
     readonly property int fieldPadding: 9
     readonly property int fieldHeightLarge: 32
@@ -171,8 +177,8 @@ QtObject {
     // The band the waveform takes above the rest when the bar stands tall.
     readonly property int waveformBand: 35
     readonly property int lcdArt: 44
-    // The player bar's cover, grown on hover (the owner, 2026-10-09).
-    readonly property int artPreview: 400
+    // The player bar's cover, grown on hover: 400 first, 250 since 2026-10-10.
+    readonly property int artPreview: 250
     readonly property int artPreviewFrame: 6
     // A cover shown whole takes its own proportion inside this share of the
     // window (QBZ's lightbox).
@@ -394,7 +400,7 @@ QtObject {
     readonly property int folderTileHeight: 72
     readonly property int folderAlbumRow: 54
     // How the columns share the width, by column; the ones shown split it.
-    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, artist: 1.2, album: 1.3 })
+    readonly property var paneShare: ({ year: 0.7, genre: 1.0, label: 1.0, composer: 1.1, rating: 0.9, artist: 1.2, album: 1.3 })
 
     // The metadata editor: a spreadsheet of tracks and the record's column.
     readonly property int metadataCover: 96

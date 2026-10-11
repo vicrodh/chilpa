@@ -10,7 +10,7 @@ Rectangle {
     id: pane
 
     property string title
-    // "year", "genre", "artist" or "album".
+    // "year", "genre", "label", "composer", "rating", "artist" or "album".
     property string column
 
     color: Theme.color.surfacePane
@@ -40,7 +40,7 @@ Rectangle {
 
         TextInput {
             id: input
-            text: Library.queries[["year", "genre", "label", "composer", "artist", "album"].indexOf(pane.column)] ?? ""
+            text: Library.queries[["year", "genre", "label", "composer", "rating", "artist", "album"].indexOf(pane.column)] ?? ""
             onTextEdited: Library.searchColumn(pane.column, text)
             anchors.left: lens.right
             anchors.leftMargin: Metrics.gap6
@@ -113,6 +113,7 @@ Rectangle {
         delegate: PaneRow {
             required property int index
             width: ListView.view.width
+            stars: pane.column === "rating"
             onChosen: (modifiers) => facets.choose(index, modifiers)
         }
     }

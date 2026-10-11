@@ -21,7 +21,7 @@ mod desktop;
 pub use desktop::WindowRequest;
 mod tracks_view;
 mod albums_view;
-pub use albums_view::{grid_rows, AlbumsFound, GridRow};
+pub use albums_view::{artist_cards, grid_rows, mixes_sources, AlbumsFound, GridRow};
 pub use tracks_view::{group_of, FoundTracks, TracksQuery};
 mod queries;
 pub use queries::QueryWorker;
@@ -732,7 +732,7 @@ impl Chilpa {
             shuffle: false,
             repeat: Repeat::Off,
             mix: false,
-            album_sort: AlbumSort::from_name(&saved.album_sort),
+            album_sort: AlbumSort::from_name(albums_view::turned_order(&saved.album_sort).0),
             artist: String::new(),
             removed: Vec::new(),
             queue_placement: Vec::new(),

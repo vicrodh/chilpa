@@ -43,6 +43,17 @@ TestCase {
         verify(Math.abs(total - (panes.width - 6)) < 2, "the columns share the width: " + total)
     }
 
+    // Rating stands before the artist and draws its entries as stars.
+    function test_rating_comes_before_the_artist_and_draws_its_stars() {
+        panes.shown = ["rating", "year"]
+        waitForRendering(panes)
+        compare(shown().map(c => c.column).join(","), "year,rating,artist,album")
+        const list = Array.from(shown()[1].children).find(c => c.contentItem !== undefined)
+        list.model.append({ key: "4", label: "4 stars", meta: "2", selected: false, all: false })
+        tryVerify(() => (findChild(list, "paneStars") || {}).value === 4, 1000, "four stars drawn")
+        list.model.clear()
+    }
+
     function test_none_turned_on_leaves_artist_and_album() {
         panes.shown = []
         waitForRendering(panes)

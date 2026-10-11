@@ -61,6 +61,8 @@ pub mod qobject {
         /// The first card of what was just added to the end, or -1: a list
         /// that grew keeps its cards and only takes the new ones in.
         #[qproperty(i32, fresh)]
+        /// The library's records beside a source's: they wear the player's badge.
+        #[qproperty(bool, mixed)]
         type AlbumGridModel = super::AlbumGridRust;
         #[qinvokable]
         fn title(self: &AlbumGridModel, index: i32, rev: i32) -> QString;
@@ -143,6 +145,12 @@ impl Default for Albums {
     }
 }
 impl Albums {
+    fn mixed(&self) -> bool {
+        match self {
+            Albums::Loaded(v) => chilpa_api::mixes_sources(v.iter().map(|a| a.id)),
+            Albums::Snapshot { ids, .. } => chilpa_api::mixes_sources(ids.iter().copied()),
+        }
+    }
     fn len(&self) -> usize {
         match self {
             Albums::Loaded(v) => v.len(),
@@ -197,6 +205,7 @@ pub struct AlbumGridRust {
     filter: QString,
     expanded: i32,
     fresh: i32,
+    mixed: bool,
     anchor: Option<i32>,
     /// The artists of "artists", kept so the filter needs no query.
     artists: Vec<chilpa_api::Artist>,
@@ -382,29 +391,7 @@ impl qobject::AlbumGridModel {
 
     /// The artists the filter leaves, as cards.
     fn show_artists(self: Pin<&mut Self>) {
-        let words: Vec<String> = self.rust().filter.to_string().to_lowercase().split_whitespace().map(String::from).collect();
-        let cards = self
-            .rust()
-            .artists
-            .iter()
-            .filter(|a| {
-                let name = a.name.to_lowercase();
-                words.iter().all(|w| name.contains(w.as_str()))
-            })
-            .cloned()
-            .map(|a| {
-                let n = a.album_count.to_string();
-                Album {
-                    id: 0,
-                    artist: app::with(|api| api.tf("{} record", "{} records", a.album_count as i64, &[&n])),
-                    title: a.name,
-                    year: None,
-                    track_count: a.track_count,
-                    artwork_path: a.artwork_path,
-                    play_count: 0,
-                }
-            })
-            .collect();
+        let cards = chilpa_api::artist_cards(&self.rust().artists, &self.rust().filter.to_string());
         self.show(Albums::Loaded(cards));
     }
 
@@ -436,6 +423,7 @@ impl qobject::AlbumGridModel {
             _ => None,
         }.map(|at| at as i32).unwrap_or(-1);
         let count = list.len() as i32;
+        self.as_mut().set_mixed(list.mixed());
         self.as_mut().rust_mut().list = list;
         self.as_mut().rust_mut().anchor = None;
         self.as_mut().set_expanded(expanded);
@@ -450,6 +438,7 @@ impl qobject::AlbumGridModel {
     /// rest are inserted after it.
     fn grow(mut self: Pin<&mut Self>, list: Albums, from: usize) {
         let count = list.len() as i32;
+        self.as_mut().set_mixed(list.mixed());
         self.as_mut().rust_mut().list = list;
         let rows = self.rust().laid_out();
         let before = self.rust().rows.len();

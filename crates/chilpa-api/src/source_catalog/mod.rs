@@ -304,6 +304,25 @@ impl Catalog {
         shelf
     }
 
+    /// How many of the records and tracks these listings hold pass `keep`,
+    /// read in place; a listing missing or stale is asked for, as `shelf` does.
+    pub(crate) fn count_kept(&self, keys: &[String], keep: impl Fn(&serde_json::Value) -> bool) -> usize {
+        let mut inner = self.lock();
+        let mut count = 0;
+        for key in keys {
+            let shelf = inner.store.shelves.get(key);
+            let stale = shelf.is_none_or(|s| s.epoch == 0 || now().saturating_sub(s.read_at) > SHELF_FRESH);
+            count += shelf.map_or(0, |shelf| {
+                shelf.cards.iter().filter_map(|id| inner.store.cards.get(id)).filter(|c| keep(&c.metadata)).count()
+                    + shelf.tracks.iter().filter_map(|id| inner.store.tracks.get(id)).filter(|t| keep(&t.metadata)).count()
+            });
+            if stale && inner.loaded && !inner.shelf_errors.contains_key(key) {
+                self.queue(&mut inner, Job::Shelf(key.clone()), true);
+            }
+        }
+        count
+    }
+
     /// Asks again for a listing that failed, or that the listener wants
     /// fresh.
     pub fn expire_personal_pages(&self, plugin: &str) {

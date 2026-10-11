@@ -751,9 +751,10 @@ impl qobject::TrackListModel {
                 }
             });
         }
-        let source_artist = app::with(|api| api.source_artist_key(0, &track.path));
-        // A source's track leads to its source's artist page or nowhere: the
-        // library has no page for an artist it only knows by name.
+        let place = target.strip_prefix("artist:").map_or(0, |at| at.parse().unwrap_or(-1));
+        let source_artist = app::with(|api| api.source_track_artist(&track.path, &track.artist, place));
+        // A source's track leads to its source's artist page, found by name
+        // when the source names none: the library has no page for it.
         let of_source = chilpa_api::on_a_source(&track.path);
         registry::navigation(move |mut nav| match target.as_str() {
             "artist" if source_artist.is_some() => nav.as_mut().go_key(&QString::from("source"), &QString::from(source_artist.as_deref().unwrap_or_default())),

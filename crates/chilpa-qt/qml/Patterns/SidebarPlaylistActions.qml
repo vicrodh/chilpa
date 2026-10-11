@@ -9,20 +9,29 @@ Item {
     property var sidebar
     property var selected: ({})
     signal createPlaylist()
+    // An order of the list: the one in use carries the caret of its
+    // direction and choosing it again turns it around, as a SortButton
+    // does. `own` is true for an order that comes most first, null for one
+    // with no direction.
+    function order(value, text, own) {
+        const on = actions.sidebar.order === value
+        if (!on || own === null) return {text: text, action: "sort", value: value, checked: on}
+        const down = own === actions.sidebar.ascending
+        return {text: text, action: "sort", value: value, glyph: down ? Icons.chevronDown : Icons.chevronUp, accent: true}
+    }
     function head(left, top) {
         menu.entries = [
-            {text: I18n.tr("New playlist", I18n.rev), action: "create"},
-            {text: I18n.tr("New folder", I18n.rev), action: "folder"},
-            {text: I18n.tr("Import playlist", I18n.rev), action: "import"},
+            {text: I18n.tr("New playlist", I18n.rev), action: "create", glyph: Icons.plus},
+            {text: I18n.tr("New folder", I18n.rev), action: "folder", glyph: Icons.folderPlus},
+            {text: I18n.tr("Import playlist", I18n.rev), action: "import", glyph: Lucide.importGlyph, family: Lucide.font},
             {separator: true},
-            {text: I18n.tr("Name", I18n.rev), action: "sort", value: "name"},
-            {text: I18n.tr("Recent", I18n.rev), action: "sort", value: "recent"},
-            {text: I18n.tr("Number of tracks", I18n.rev), action: "sort", value: "tracks"},
-            {text: I18n.tr("Custom", I18n.rev), action: "sort", value: "custom"},
-            {text: I18n.tr("Reverse order", I18n.rev), action: "reverse"},
+            order("name", I18n.tr("Name", I18n.rev), false),
+            order("recent", I18n.tr("Recent", I18n.rev), true),
+            order("tracks", I18n.tr("Number of tracks", I18n.rev), true),
+            order("custom", I18n.tr("Custom", I18n.rev), null),
             {separator: true},
-            {text: I18n.tr("Refresh", I18n.rev), action: "refresh"},
-            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage"}]
+            {text: I18n.tr("Refresh", I18n.rev), action: "refresh", glyph: Icons.refresh},
+            {text: I18n.tr("Manage playlists", I18n.rev), action: "manage", glyph: Lucide.libraryBig, family: Lucide.font}]
         menu.x = left; menu.y = top; menu.open() }
     function row(value, left, top) {
         selected = value
@@ -61,7 +70,7 @@ Item {
         sidebar.setOrder("custom")
     }
     Menu {
-        id: menu
+        id: menu; objectName: "playlistsMenu"
         heightLimit: actions.sidebar.height
         onChosen: index => {
             const item = entries[index], row = actions.selected
@@ -69,8 +78,7 @@ Item {
             case "create": actions.createPlaylist(); break
             case "import": Navigation.go("playlistImport", 0); break
             case "folder": folderDialog.show(0, "", "accent"); break
-            case "sort": actions.sidebar.setOrder(item.value); break
-            case "reverse": actions.sidebar.reverseOrder(); break
+            case "sort": if (item.value === actions.sidebar.order && item.value !== "custom") actions.sidebar.reverseOrder(); else actions.sidebar.setOrder(item.value); break
             case "refresh": Playlists.refresh(); break
             case "manage": Navigation.go("playlistManager", 0); break
             case "play": Playlists.play(row.playlistId, false); break

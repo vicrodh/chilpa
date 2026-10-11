@@ -112,6 +112,9 @@ impl Chilpa {
                 return self.artist_document(name);
             }
         }
+        if let Some(reference) = rest.strip_prefix("artist-library:") {
+            return self.artist_library_view(plugin, reference);
+        }
         if rest.starts_with("matching-artist-v3:") || rest.starts_with("matching-artist-v2:") {
             let key = format!("{plugin} {rest}");
             if let Some(reference) = self.catalog.shelf(&key).and_then(|s| s.document["resolved_ref"].as_str().map(str::to_owned)) {

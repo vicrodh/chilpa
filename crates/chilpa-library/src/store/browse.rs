@@ -21,12 +21,12 @@ use crate::store::Library;
 use rusqlite::types::ToSql;
 use rusqlite::params_from_iter;
 
-/// What the six columns have chosen: year, genre, label, composer,
-/// artist and record. `None` is "All".
+/// What the seven columns have chosen: year, genre, label, composer,
+/// rating, artist and record. `None` is "All".
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter {
     /// Header searches participate in the result, even with All selected.
-    pub queries: [String; 6],
+    pub queries: [String; 7],
     pub year: Option<i32>,
     pub genre: Option<String>,
     /// An album credit or any artist contributing to the album.
@@ -38,8 +38,12 @@ pub struct Filter {
     pub genres: Vec<String>,
     pub labels: Vec<String>,
     pub composers: Vec<String>,
+    /// A record's own stars, 0 for none: the Library screen's column.
+    pub ratings: Vec<u8>,
     pub artists: Vec<String>,
     pub albums: Vec<i64>,
+    /// A track's own stars, 0 for none: the Tracks screen's filter.
+    pub track_ratings: Vec<u8>,
     /// Source keys are `provider:instance`; exclusions keep empty as "all".
     pub excluded_sources: Vec<String>,
     pub qualities: Vec<String>,
@@ -64,14 +68,16 @@ impl Filter {
             1 => { self.genre = None; self.genres = keys.to_vec(); }
             2 => self.labels = keys.to_vec(),
             3 => self.composers = keys.to_vec(),
-            4 => { self.artist = None; self.artists = keys.to_vec(); }
+            4 => self.ratings = keys.iter().filter_map(|key| key.parse().ok()).collect(),
+            5 => { self.artist = None; self.artists = keys.to_vec(); }
             _ => { self.album = None; self.albums = keys.iter().filter_map(|key| key.parse().ok()).collect(); }
         }
         if at < 1 { self.genre = None; self.genres.clear(); }
         if at < 2 { self.labels.clear(); }
         if at < 3 { self.composers.clear(); }
-        if at < 4 { self.artist = None; self.artists.clear(); }
-        if at < 5 { self.album = None; self.albums.clear(); }
+        if at < 4 { self.ratings.clear(); }
+        if at < 5 { self.artist = None; self.artists.clear(); }
+        if at < 6 { self.album = None; self.albums.clear(); }
     }
 
     pub fn toggle_extra(&mut self, kind: &str, key: &str) {
@@ -121,6 +127,12 @@ pub enum TrackOrder {
     /// Who plays each track, then the record, then the title: a list
     /// grouped by artist.
     Performer,
+    /// The records from Z, each in its own order.
+    AlbumDescending,
+    /// The oldest arrivals first.
+    AddedAscending,
+    /// The least played first.
+    PlaysAscending,
 }
 
 impl TrackOrder {
@@ -130,7 +142,9 @@ impl TrackOrder {
             "title" => Self::Title, "plays" => Self::Plays, "duration" => Self::Duration,
             "duration-desc" => Self::DurationDescending,
             "disc" => Self::Disc, "artist-desc" => Self::ArtistDescending, "title-desc" => Self::TitleDescending,
-            "year-desc" => Self::YearDescending, "performer" => Self::Performer, _ => Self::Artist,
+            "year-desc" => Self::YearDescending, "performer" => Self::Performer,
+            "album-desc" => Self::AlbumDescending, "added-asc" => Self::AddedAscending, "plays-asc" => Self::PlaysAscending,
+            _ => Self::Artist,
         }
     }
 
@@ -155,6 +169,9 @@ impl TrackOrder {
             TrackOrder::TitleDescending => "ltrim(t.title) COLLATE NOCASE DESC",
             TrackOrder::YearDescending => "a.year DESC, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number",
             TrackOrder::Performer => "t.artist COLLATE NOCASE, a.title COLLATE NOCASE, coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
+            TrackOrder::AlbumDescending => "a.title COLLATE NOCASE DESC, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::AddedAscending => "t.added_at, coalesce(t.release_disc, t.disc_number), t.track_number",
+            TrackOrder::PlaysAscending => "plays, t.title COLLATE NOCASE",
         }
     }
 }
@@ -302,7 +319,9 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
             1 => " AND EXISTS (SELECT 1 FROM track_genres tq JOIN genres gq ON gq.id = tq.genre_id WHERE tq.track_id = t.id AND gq.name LIKE ? ESCAPE '\\')",
             2 => " AND t.label LIKE ? ESCAPE '\\'",
             3 => " AND EXISTS (SELECT 1 FROM track_composers cq JOIN composers cc ON cc.id = cq.composer_id WHERE cq.track_id = t.id AND cc.name LIKE ? ESCAPE '\\')",
-            4 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
+            // A rating's header search narrows its column, not the tracks.
+            4 => continue,
+            5 => " AND a.id IN (SELECT album_id FROM album_artist_rollup
                 WHERE artist LIKE ? ESCAPE '\\')",
             _ => " AND a.title LIKE ? ESCAPE '\\'",
         });
@@ -328,6 +347,15 @@ fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
     if !f.composers.is_empty() {
         sql.push_str(&format!(" AND EXISTS (SELECT 1 FROM track_composers tcf JOIN composers cf ON cf.id = tcf.composer_id WHERE tcf.track_id = t.id AND cf.name IN ({}))", marks(f.composers.len())));
         args.extend(f.composers.iter().cloned().map(|v| Box::new(v) as Box<dyn ToSql>));
+    }
+    let stars = |list: &Vec<u8>| list.iter().map(|v| Box::new(*v) as Box<dyn ToSql>).collect::<Vec<_>>();
+    if !f.ratings.is_empty() {
+        sql.push_str(&format!(" AND COALESCE((SELECT stars FROM album_ratings WHERE album_id = a.id), 0) IN ({})", marks(f.ratings.len())));
+        args.extend(stars(&f.ratings));
+    }
+    if !f.track_ratings.is_empty() {
+        sql.push_str(&format!(" AND COALESCE((SELECT stars FROM track_ratings WHERE track_id = t.id), 0) IN ({})", marks(f.track_ratings.len())));
+        args.extend(stars(&f.track_ratings));
     }
     let mut artists = f.artists.clone();
     if let Some(artist) = f.artist.as_ref().filter(|artist| !artists.iter().any(|v| v.eq_ignore_ascii_case(artist))) { artists.push(artist.clone()); }
@@ -438,6 +466,7 @@ impl Library {
         left.genres.clear();
         left.labels.clear();
         left.composers.clear();
+        left.ratings.clear();
         left.artist = None;
         left.artists.clear();
         left.album = None;
@@ -481,10 +510,36 @@ impl Library {
         self.named_facet(&sql, args)
     }
 
+    /// The stars of the records the year, genre, label and composer leave,
+    /// the most first and the records with none last. Its label is the
+    /// facade's to give.
+    pub fn facet_ratings(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
+        let mut left = f.clone();
+        left.choose(4, &[]);
+        left.queries[4..].fill(String::new());
+        let (filter, args) = clause(&left);
+        let sql = format!(
+            "SELECT COALESCE(ra.stars, 0) AS stars, count(DISTINCT a.id) {FROM}
+             LEFT JOIN album_ratings ra ON ra.album_id = a.id
+             {filter} GROUP BY stars ORDER BY stars DESC"
+        );
+        let mut stmt = self.db.prepare(&sql)?;
+        let rows = stmt.query_map(params_from_iter(args.iter()), |r| {
+            Ok(FacetEntry {
+                key: r.get::<_, i64>(0)?.to_string(),
+                label: String::new(),
+                albums: r.get::<_, i64>(1)? as usize,
+                year: None,
+                icon: String::new(),
+            })
+        })?;
+        rows.collect()
+    }
+
     /// Album credits and contributing artists the columns to their left leave.
     pub fn facet_artists(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = f.clone();
-        left.queries[4..].fill(String::new());
+        left.queries[5..].fill(String::new());
         left.artist = None;
         left.artists.clear();
         left.album = None;
@@ -505,7 +560,7 @@ impl Library {
     /// The albums the other three leave, in shelf order, with their year.
     pub fn facet_albums(&self, f: &Filter) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut left = Filter { album: None, albums: Vec::new(), ..f.clone() };
-        left.queries[5].clear();
+        left.queries[6].clear();
         let (filter, args) = clause(&left);
         let sql = format!(
             "SELECT a.id, a.title, a.year, count(t.id) {FROM} {filter}
@@ -565,13 +620,16 @@ impl Library {
     /// runs it off its own thread.
     pub fn browse_ids(&self, f: &Filter, order: TrackOrder) -> rusqlite::Result<Snapshot> {
         let (filter, args) = clause(f);
+        // The groups follow an order about what they are named: Artist
+        // from Z puts the artists from Z.
+        let turned = |on: bool| if on { " DESC" } else { "" };
         let sql = format!(
             "SELECT t.id, t.album_id, t.duration_ms, COALESCE(r.plays, 0) AS plays
              {FROM} {filter} ORDER BY {}{}",
             match f.grouped_by.as_str() {
-                "album" => "a.title COLLATE NOCASE, a.id, ".to_string(),
-                "artist" => "t.artist COLLATE NOCASE, ".to_string(),
-                "name" => format!("{}, ", letter_in_sql("t.title")),
+                "album" => format!("a.title COLLATE NOCASE{}, a.id, ", turned(order == TrackOrder::AlbumDescending)),
+                "artist" => format!("t.artist COLLATE NOCASE{}, ", turned(order == TrackOrder::ArtistDescending)),
+                "name" => format!("{}{}, ", letter_in_sql("t.title"), turned(order == TrackOrder::TitleDescending)),
                 _ => String::new(),
             },
             order.keys()
@@ -829,6 +887,31 @@ mod tests {
     }
 
     #[test]
+    fn records_are_counted_and_chosen_by_their_stars_and_tracks_by_theirs() {
+        use crate::store::ratings::RatingTarget;
+        let lib = shelf();
+        lib.rate(RatingTarget::Album(1), 5).unwrap();
+        lib.rate(RatingTarget::Album(2), 3).unwrap();
+        lib.rate(RatingTarget::Album(3), 0).unwrap();
+        let counts = |f: &Filter| lib.facet_ratings(f).unwrap().into_iter().map(|e| (e.key, e.albums)).collect::<Vec<_>>();
+        let pair = |stars: &str, albums| (stars.to_string(), albums);
+        assert_eq!(counts(&Filter::default()), [pair("5", 1), pair("3", 1), pair("0", 1)], "a cleared rating is none");
+        assert_eq!(counts(&Filter { years: vec![2021], ..Filter::default() }), [pair("3", 1)], "narrowed by the columns to its left");
+        let mut chosen = Filter::default();
+        chosen.choose(4, &["5".into(), "0".into()]);
+        assert_eq!(lib.browse_ids(&chosen, TrackOrder::Artist).unwrap().totals.albums, 2);
+        chosen.choose(5, &["Mora Vale".into()]);
+        assert_eq!(chosen.ratings, [5, 0], "a column to its right keeps it");
+        chosen.choose(1, &["Latin".into()]);
+        assert!(chosen.ratings.is_empty(), "a column to its left clears it");
+        lib.rate(RatingTarget::Track(10), 4).unwrap();
+        let four = Filter { track_ratings: vec![4], ..Filter::default() };
+        assert_eq!(lib.browse_ids(&four, TrackOrder::Artist).unwrap().totals.tracks, 1);
+        let none = Filter { track_ratings: vec![0], ..Filter::default() };
+        assert_eq!(lib.browse_ids(&none, TrackOrder::Artist).unwrap().totals.tracks, 4);
+    }
+
+    #[test]
     fn multi_selection_and_quality_filters_reach_the_snapshot() {
         let lib = shelf();
         let years = Filter { years: vec![2018, 2021], ..Filter::default() };
@@ -929,6 +1012,16 @@ mod tests {
         assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
         assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
         assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");
+    }
+
+    #[test]
+    fn the_record_the_arrival_and_the_plays_turn_around_too() {
+        let lib = shelf();
+        let ids = |order: &str| lib.browse_tracks(&Filter::default(), TrackOrder::from_name(order), 10).unwrap().into_iter().map(|t| t.id).collect::<Vec<_>>();
+        assert_eq!(ids("album-desc"), [30, 10, 12, 11, 20], "Northbound, Low Orbit in its own order, Afterimage");
+        assert_eq!(ids("added-asc"), [10, 11, 12, 20, 30]);
+        assert_eq!(ids("added"), [30, 20, 12, 11, 10]);
+        assert_eq!(ids("plays-asc").last(), Some(&20), "the most played last");
     }
 
     #[test]
@@ -1053,5 +1146,9 @@ mod tracks_view_tests {
         assert_eq!(ids("artist", TrackOrder::TitleDescending), [3, 1, 2, 4]);
         // By letter: "#", then A with its accent, then Z.
         assert_eq!(ids("name", TrackOrder::Title), [4, 2, 3, 1]);
+        // An order about what the groups are named turns the groups too:
+        // Gamma, beta Band, then Alpha Band's two.
+        assert_eq!(ids("artist", TrackOrder::ArtistDescending)[..2], [4, 2]);
+        assert_eq!(ids("name", TrackOrder::TitleDescending)[0], 1, "Z first");
     }
 }

@@ -182,7 +182,6 @@ TitledFlow {
         SeekBar { width: Metrics.searchFlyout; position: Metrics.searchFlyout / 4; duration: Metrics.searchFlyout; bubbleText: "1:10" } // derived: a quarter of the way
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Gapless"; detail: "One track straight into the next."; checked: true }
         OptionRow { width: Metrics.playbackOptionsWidth; title: "Volume normalization"; detail: "Level loudness across tracks. This breaks strict bit perfect." }
-        PlaylistMenu {}
         AlbumMenu {}
         SearchMenu {}
         PlaylistPicker {}

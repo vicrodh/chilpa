@@ -3,6 +3,7 @@ import QtQuick
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 
 // An entry of a Library filter column: its label, and its count or year.
+// A rating's entry draws its stars; "Unrated" and "All" stay words.
 Item {
     id: row
 
@@ -11,6 +12,8 @@ Item {
     required property string meta
     required property bool selected
     required property bool all
+    property bool stars: false
+    readonly property bool drawn: stars && !all && key !== "0"
 
     signal chosen(int modifiers)
 
@@ -24,7 +27,15 @@ Item {
         color: row.selected ? Theme.color.stateSelected : hover.hovered ? Theme.color.stateHover : "transparent"
     }
 
+    Loader {
+        anchors.left: parent.left
+        anchors.leftMargin: Metrics.gap12
+        anchors.verticalCenter: parent.verticalCenter
+        active: row.drawn
+        sourceComponent: RatingStars { objectName: "paneStars"; value: Number(row.key); interactive: false }
+    }
     Text {
+        visible: !row.drawn
         anchors.left: parent.left
         anchors.leftMargin: Metrics.gap12
         anchors.right: meta.left

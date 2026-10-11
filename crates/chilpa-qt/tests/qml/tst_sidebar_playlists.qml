@@ -1,6 +1,7 @@
 import QtQuick
 import QtTest
 import app.chilpa
+import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "../../qml/Patterns"
 
 TestCase {
@@ -40,5 +41,18 @@ TestCase {
         actions.selected = sidebar.rows[2]
         actions.move(1)
         compare(Playlists.created, [7, -3])
+    }
+    function test_the_heads_actions_carry_their_glyphs_and_its_orders_none() {
+        sidebar.setOrder("name")
+        actions.head(0, 0)
+        const menu = findChild(actions, "playlistsMenu")
+        compare(menu.entries.filter(e => !e.separator && !e.accent && (e.action === "sort") === !!e.glyph).map(e => e.text), [])
+        compare(menu.entries.filter(e => e.accent).map(e => e.glyph), [Icons.chevronUp], "the order in use, its own way")
+        menu.chosen(menu.entries.findIndex(e => e.accent))
+        verify(!sidebar.ascending, "chosen again, it turns around")
+        actions.head(0, 0)
+        compare(menu.entries.filter(e => e.accent).map(e => e.glyph), [Icons.chevronDown])
+        menu.chosen(menu.entries.findIndex(e => e.value === "recent"))
+        verify(sidebar.ascending, "another order comes its own way")
     }
 }

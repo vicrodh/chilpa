@@ -16,9 +16,17 @@ OUT = ROOT / "crates/chilpa-qt-kit/assets/icons/lucide.ttf"
 QML = ROOT / "crates/chilpa-qt-kit/qml/Theme/Lucide.qml"
 
 
+# Names QML cannot take as a property: the glyph keeps its own name with a
+# word after it ("import" is `importGlyph`).
+KEYWORDS = {"import", "export", "default", "delete", "function", "new", "in", "for", "if", "else",
+            "return", "switch", "case", "break", "continue", "var", "let", "const", "class", "this",
+            "null", "true", "false", "typeof", "void", "while", "with", "do", "try", "catch", "throw"}
+
+
 def camel(name: str) -> str:
     head, *rest = name.split("-")
-    return head + "".join(part[:1].upper() + part[1:] for part in rest)
+    out = head + "".join(part[:1].upper() + part[1:] for part in rest)
+    return out + "Glyph" if out in KEYWORDS else out
 
 
 def main() -> None:

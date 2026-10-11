@@ -132,11 +132,15 @@ Item {
         width: card.width
 
         Text {
+            id: titleLine; objectName: "albumTitle"
             width: parent.width - (qualityBadge.visible ? qualityBadge.width + Metrics.gap4 : 0)
             text: card.title
             horizontalAlignment: card.round ? Text.AlignHCenter : Text.AlignLeft
             elide: Text.ElideRight; font.pointSize: Type.body
             font.weight: Type.medium; color: Theme.color.textPrimary
+            // A name cut short says itself whole on hover.
+            HoverHandler { enabled: titleLine.truncated; onHoveredChanged: hovered ? TipState.show(card.title, titleLine) : TipState.hide(titleLine) }
+            Component.onDestruction: TipState.hide(titleLine)
         }
         Text {
             width: parent.width
