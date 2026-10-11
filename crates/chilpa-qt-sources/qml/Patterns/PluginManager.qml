@@ -15,6 +15,8 @@ Item {
     property var catalogRows: []
     property var installedRows: []
     property string selected: ""
+    property string downloadsId: ""
+    readonly property bool downloadsOpen: downloadsId !== ""
     property string proposalIdentity: ""
     property string tab: "uninspected"
     property string category: ""
@@ -53,8 +55,11 @@ Item {
             command("prepare", {repository: plugin.repository_id, id: plugin.id})
     }
     function settings(plugin) { details.mode = "settings"; details.tab = "settings"; details.plugin = plugin; selected = plugin.id; details.open(); if (plugin.enabled !== false && (plugin.settings || plugin.origin)) command("settings", {id: plugin.id}) }
+    function openDownloads(plugin) { downloadsId = plugin.id; command("downloads_open", {id: plugin.id}) }
+    function downloadAction(request) { command("downloads_action", {id: downloadsId, request: request}) }
     Component.onCompleted: read()
     Timer { interval: Motion.poll; repeat: true; running: manager.visible; onTriggered: manager.read() }
+    Timer { interval: Motion.refresh; repeat: true; running: manager.visible && manager.downloadsOpen && !manager.view.busy; onTriggered: manager.command("downloads_tick", {id: manager.downloadsId}) }
     Timer {
         id: settle
         interval: Motion.searchSettle
@@ -72,6 +77,7 @@ Item {
     }
     Column {
         id: toolbar
+        visible: !manager.downloadsOpen
         width: parent.width
         spacing: Metrics.gap12
         // A repository serves either section: native plugins, or a catalog
@@ -111,6 +117,7 @@ Item {
                 enabled: !manager.view.busy
                 onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
                 onSettings: manager.settings(modelData)
+                onOpened: manager.openDownloads(modelData)
                 onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
             }
         }
@@ -195,6 +202,7 @@ Item {
     }
     ListView {
         id: catalog
+        visible: !manager.downloadsOpen
         anchors.top: toolbar.bottom
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
@@ -214,6 +222,7 @@ Item {
             onMoved: position => manager.command("sidebar_position", {id: modelData.id, position: position})
             onInspected: manager.inspect(modelData)
             onSettings: manager.settings(modelData)
+            onOpened: manager.openDownloads(modelData)
             onSwitched: (on) => manager.command(on ? "review_permissions" : "disable", {id: modelData.id})
         }
         Text {
@@ -223,6 +232,18 @@ Item {
             color: Theme.color.textSecondary
             font.pointSize: Type.body
         }
+    }
+    PluginDownloads {
+        anchors.fill: parent
+        visible: manager.downloadsOpen
+        document: manager.view.downloads_id === manager.downloadsId ? manager.view.downloads || ({}) : ({})
+        plugin: manager.installedRows.find(p => p.id === manager.downloadsId) || ({})
+        busy: manager.view.busy === true
+        problem: manager.view.error || ""
+        onBack: manager.downloadsId = ""
+        onAccount: manager.settings(plugin)
+        onChooseFolder: manager.command("choose_export_folder", {id: manager.downloadsId})
+        onAction: request => manager.downloadAction(request)
     }
     PluginDetails { id: details; manager: manager }
     PluginRepositories { id: repositories; manager: manager }
