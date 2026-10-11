@@ -29,7 +29,8 @@ P.Modal {
             spacing: Metrics.gap8
             visible: details.mode === "settings"
             Repeater {
-                model: [{id: "about", title: I18n.tr("About", I18n.rev)}, {id: "settings", title: I18n.tr("Plugin Settings", I18n.rev)}, {id: "integration", title: I18n.tr("Plugin integration", I18n.rev)}]
+                model: [{id: "about", title: I18n.tr("About", I18n.rev)}, {id: "settings", title: details.plugin.downloads === true ? I18n.tr("Account", I18n.rev) : I18n.tr("Plugin Settings", I18n.rev)}]
+                    .concat(details.plugin.integration_available === false ? [] : [{id: "integration", title: I18n.tr("Plugin integration", I18n.rev)}])
                 P.PillButton {
                     required property var modelData
                     objectName: "pluginTab_" + modelData.id
@@ -127,7 +128,7 @@ P.Modal {
             }
             PluginIntegration {
                 width: parent.width
-                visible: details.mode === "settings" && details.tab === "integration"
+                visible: details.mode === "settings" && details.tab === "integration" && details.plugin.integration_available !== false
                 plugin: (details.manager.view.installed || []).find(p => p.id === details.plugin.id) || details.plugin
                 onCommand: (action, input) => details.manager.command(action, input)
             }

@@ -196,6 +196,9 @@ msgstr ""
 msgid "Add cover"
 msgstr ""
 
+msgid "Add folder to library"
+msgstr "Add folder to library"
+
 msgid "Add image"
 msgstr ""
 
@@ -262,6 +265,9 @@ msgstr "Album radio"
 msgid "Albums"
 msgstr ""
 
+msgid "Albums ({})"
+msgstr "Albums ({})"
+
 msgid "All"
 msgstr ""
 
@@ -279,6 +285,9 @@ msgstr ""
 
 msgid "All music"
 msgstr ""
+
+msgid "All qualities"
+msgstr "All qualities"
 
 msgid "All seasons"
 msgstr ""
@@ -453,6 +462,12 @@ msgstr ""
 msgid "Back 10 seconds"
 msgstr ""
 
+msgid "Back to plugins"
+msgstr "Back to plugins"
+
+msgid "Back to purchases"
+msgstr "Back to purchases"
+
 msgid "Background"
 msgstr ""
 
@@ -539,6 +554,9 @@ msgstr ""
 msgid "Cancel Timer"
 msgstr ""
 
+msgid "Cancel download"
+msgstr "Cancel download"
+
 msgid "Cancel stop after this track"
 msgstr ""
 
@@ -619,6 +637,9 @@ msgstr ""
 
 msgid "Choose a cover"
 msgstr ""
+
+msgid "Choose a download folder before downloading."
+msgstr "Choose a download folder before downloading."
 
 msgid "Choose a file…"
 msgstr ""
@@ -1078,6 +1099,21 @@ msgstr ""
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr ""
 
+msgid "Download"
+msgstr "Download"
+
+msgid "Download album"
+msgstr "Download album"
+
+msgid "Download track"
+msgstr "Download track"
+
+msgid "Downloaded"
+msgstr "Downloaded"
+
+msgid "Downloading {} of {}"
+msgstr "Downloading {} of {}"
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr ""
 
@@ -1414,6 +1450,9 @@ msgstr "Hide token"
 msgid "Hide translation"
 msgstr ""
 
+msgid "Hide unavailable"
+msgstr "Hide unavailable"
+
 msgid "Hide when idle"
 msgstr ""
 
@@ -1710,6 +1749,9 @@ msgstr ""
 
 msgid "Load more"
 msgstr ""
+
+msgid "Loading purchases…"
+msgstr "Loading purchases…"
 
 msgid "Loading the release…"
 msgstr ""
@@ -2062,6 +2104,9 @@ msgstr ""
 msgid "No plugins installed"
 msgstr ""
 
+msgid "No purchases match the current view."
+msgstr "No purchases match the current view."
+
 msgid "No results for"
 msgstr ""
 
@@ -2223,6 +2268,9 @@ msgstr ""
 
 msgid "Open audio CD"
 msgstr "Open audio CD"
+
+msgid "Open downloads"
+msgstr "Open downloads"
 
 msgid "Open in browser"
 msgstr ""
@@ -2503,6 +2551,9 @@ msgstr "Public playlist"
 msgid "Public remote playlists"
 msgstr "Public remote playlists"
 
+msgid "Purchase date"
+msgstr "Purchase date"
+
 msgid "Purchases"
 msgstr ""
 
@@ -2655,6 +2706,9 @@ msgstr "Refresh"
 
 msgid "Refresh mix"
 msgstr ""
+
+msgid "Refresh purchases"
+msgstr "Refresh purchases"
 
 msgid "Refresh settings"
 msgstr "Refresh settings"
@@ -2896,6 +2950,9 @@ msgstr ""
 msgid "Search plugins"
 msgstr "Search plugins"
 
+msgid "Search purchases"
+msgstr "Search purchases"
+
 msgid "Search queue"
 msgstr ""
 
@@ -3044,6 +3101,9 @@ msgstr ""
 
 msgid "Sign in"
 msgstr ""
+
+msgid "Sign in from Account to see your purchases."
+msgstr "Sign in from Account to see your purchases."
 
 msgid "Sign in with an API key"
 msgstr ""
@@ -3371,6 +3431,9 @@ msgstr ""
 msgid "This playlist is read-only or belongs to another source."
 msgstr ""
 
+msgid "This purchase is unavailable for download."
+msgstr "This purchase is unavailable for download."
+
 msgid "This record cannot be played now."
 msgstr ""
 
@@ -3469,6 +3532,9 @@ msgstr ""
 
 msgid "Tracks"
 msgstr ""
+
+msgid "Tracks ({})"
+msgstr "Tracks ({})"
 
 msgid "Tracks you play will appear here"
 msgstr ""
@@ -4971,6 +5037,9 @@ msgid_plural "{} selected tracks"
 msgstr[0] ""
 msgstr[1] ""
 
+msgid "{} shown"
+msgstr "{} shown"
+
 msgid "{} similar version is also there"
 msgid_plural "{} similar versions are also there"
 msgstr[0] ""
@@ -4995,6 +5064,9 @@ msgid "{} track added"
 msgid_plural "{} tracks added"
 msgstr[0] ""
 msgstr[1] ""
+
+msgid "{} tracks"
+msgstr "{} tracks"
 
 msgid "{} tracks in {} records"
 msgstr ""

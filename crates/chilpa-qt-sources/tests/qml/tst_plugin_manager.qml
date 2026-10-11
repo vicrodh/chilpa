@@ -94,6 +94,32 @@ TestCase {
         compare(backend.calls[backend.calls.length - 1], ["submit", {id: "native", submission: {revision: 7, action: "sign_in", values: {app_id: "fixture"}}}])
         manager.detailsView.close()
     }
+    function test_download_plugin_opens_a_catalogue_without_source_integration() {
+        const plugin = {id: "download", name: "Purchases", native: true, settings: true, downloads: true,
+                        integration_available: false, enabled: true, light: "native"}
+        backend.state = {busy: false, installed: [plugin]}
+        backend.calls = []
+        manager.read()
+        const open = findChild(manager, "openPluginDownloads")
+        verify(open.visible && open.enabled)
+        open.clicked()
+        compare(backend.calls[backend.calls.length - 1], ["downloads_open", {id: "download"}])
+        const albums = []
+        for (let i = 0; i < 220; ++i)
+            albums.push({id: String(i), title: "Album " + i, artist: "Artist"})
+        backend.state = {busy: false, installed: [plugin], downloads_id: "download",
+                         downloads: {signed_in: true, loaded: true, albums: albums, tracks: []}}
+        manager.read()
+        const grid = findChild(manager, "purchaseGrid")
+        compare(grid.count, 220)
+        verify(grid.visible)
+        verify(grid.contentHeight > grid.height)
+        manager.settings(plugin)
+        const tabs = findChild(manager.detailsView, "pluginTabs")
+        verify(!Array.from(tabs.children).some(item => item.objectName === "pluginTab_integration"))
+        manager.detailsView.close()
+        manager.downloadsId = ""
+    }
     function test_local_install_opens_the_picker_and_waits_while_busy() {
         backend.state = {busy: false}
         backend.calls = []

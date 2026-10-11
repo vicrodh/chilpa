@@ -91,6 +91,11 @@ impl Natives {
         })
     }
 
+    pub(crate) fn has_downloads(&self, id: &str) -> bool {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id)
+            .is_some_and(|known| known.capabilities["downloads"] == true)
+    }
+
     pub(crate) fn library_kinds(&self, id: &str) -> Vec<String> {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id).map(|p| p.capabilities["library"].as_array().into_iter().flatten().filter_map(|v| v.as_str().map(str::to_owned)).collect()).unwrap_or_default()
     }

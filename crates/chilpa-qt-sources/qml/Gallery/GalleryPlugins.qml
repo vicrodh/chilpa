@@ -45,6 +45,13 @@ TitledFlow {
         width: Metrics.confirmWidth
         document: ({form: {fields: [{key: "user", label: "Account", control: {type: "text"}}], actions: []}, values: {}})
     }
+    PluginPurchaseCard { width: Metrics.cardMinWidth; height: Metrics.cardMinWidth + Metrics.cardTextHeight; modelData: ({title:"Purchased album",artist:"Artist"}) }
+    PluginPurchaseTrackRow { width: Metrics.confirmWidth; entry: ({title:"Purchased track",number:1,duration:213}); rowIndex: 0; formatId: "6" }
+    PluginDownloads {
+        width: Metrics.settingsMaxWidth; height: Metrics.panesHeight
+        plugin: ({name:"Download source",export_folder:"/Music"})
+        document: ({signed_in:true,loaded:true,albums:[{id:"album",title:"Purchased album",artist:"Artist",formats:[{id:6,label:"FLAC"}]}],tracks:[]})
+    }
     PluginIntegration { width: Metrics.confirmWidth; plugin: ({id: "guest", tint: false}) }
     PluginDetails { manager: preview }
     PluginRepositories { manager: preview }

@@ -196,6 +196,9 @@ msgstr "Agregar todas a la cola"
 msgid "Add cover"
 msgstr "Agregar carátula"
 
+msgid "Add folder to library"
+msgstr "Añadir carpeta a la biblioteca"
+
 msgid "Add image"
 msgstr "Agregar imagen"
 
@@ -262,6 +265,9 @@ msgstr "Radio del álbum"
 msgid "Albums"
 msgstr "Álbumes"
 
+msgid "Albums ({})"
+msgstr "Álbumes ({})"
+
 msgid "All"
 msgstr "Todo"
 
@@ -279,6 +285,9 @@ msgstr "Todos los tipos de episodio"
 
 msgid "All music"
 msgstr "Toda la música"
+
+msgid "All qualities"
+msgstr "Todas las calidades"
 
 msgid "All seasons"
 msgstr "Todas las temporadas"
@@ -453,6 +462,12 @@ msgstr "Atrás"
 msgid "Back 10 seconds"
 msgstr "Atrás 10 segundos"
 
+msgid "Back to plugins"
+msgstr "Volver a plugins"
+
+msgid "Back to purchases"
+msgstr "Volver a compras"
+
 msgid "Background"
 msgstr "Fondo"
 
@@ -539,6 +554,9 @@ msgstr "Cancelar"
 msgid "Cancel Timer"
 msgstr "Cancelar temporizador"
 
+msgid "Cancel download"
+msgstr "Cancelar descarga"
+
 msgid "Cancel stop after this track"
 msgstr "Cancelar la parada después de esta pista"
 
@@ -619,6 +637,9 @@ msgstr "Elegir"
 
 msgid "Choose a cover"
 msgstr "Elige una carátula"
+
+msgid "Choose a download folder before downloading."
+msgstr "Elige una carpeta de descarga antes de descargar."
 
 msgid "Choose a file…"
 msgstr "Elegir un archivo…"
@@ -1078,6 +1099,21 @@ msgstr "Listo"
 msgid "Done. You can close this tab and go back to Chilpa."
 msgstr "Listo. Ya puedes cerrar esta pestaña y volver a Chilpa."
 
+msgid "Download"
+msgstr "Descargar"
+
+msgid "Download album"
+msgstr "Descargar álbum"
+
+msgid "Download track"
+msgstr "Descargar pista"
+
+msgid "Downloaded"
+msgstr "Descargado"
+
+msgid "Downloading {} of {}"
+msgstr "Descargando {} de {}"
+
 msgid "Drag or use ↑↓ to keep a custom order."
 msgstr "Arrastra o usa ↑↓ para conservar un orden personalizado."
 
@@ -1414,6 +1450,9 @@ msgstr "Ocultar token"
 msgid "Hide translation"
 msgstr "Ocultar traducción"
 
+msgid "Hide unavailable"
+msgstr "Ocultar no disponibles"
+
 msgid "Hide when idle"
 msgstr "Ocultar si no hay actividad"
 
@@ -1710,6 +1749,9 @@ msgstr "En vivo"
 
 msgid "Load more"
 msgstr "Cargar más"
+
+msgid "Loading purchases…"
+msgstr "Cargando compras…"
 
 msgid "Loading the release…"
 msgstr "Cargando el release…"
@@ -2062,6 +2104,9 @@ msgstr "Todavía no hay playlists."
 msgid "No plugins installed"
 msgstr "No hay plugins instalados"
 
+msgid "No purchases match the current view."
+msgstr "Ninguna compra coincide con la vista actual."
+
 msgid "No results for"
 msgstr "Sin resultados para"
 
@@ -2223,6 +2268,9 @@ msgstr "Abrir álbum"
 
 msgid "Open audio CD"
 msgstr "Abrir CD de audio"
+
+msgid "Open downloads"
+msgstr "Abrir descargas"
 
 msgid "Open in browser"
 msgstr "Abrir en el navegador"
@@ -2503,6 +2551,9 @@ msgstr "Playlist pública"
 msgid "Public remote playlists"
 msgstr "Playlists remotas públicas"
 
+msgid "Purchase date"
+msgstr "Fecha de compra"
+
 msgid "Purchases"
 msgstr "Compras"
 
@@ -2655,6 +2706,9 @@ msgstr "Actualizar"
 
 msgid "Refresh mix"
 msgstr "Actualizar mezcla"
+
+msgid "Refresh purchases"
+msgstr "Actualizar compras"
 
 msgid "Refresh settings"
 msgstr "Actualizar ajustes"
@@ -2896,6 +2950,9 @@ msgstr "Buscar playlists y folders"
 msgid "Search plugins"
 msgstr "Buscar plugins"
 
+msgid "Search purchases"
+msgstr "Buscar compras"
+
 msgid "Search queue"
 msgstr "Buscar en la cola"
 
@@ -3044,6 +3101,9 @@ msgstr "Sidecar"
 
 msgid "Sign in"
 msgstr "Iniciar sesión"
+
+msgid "Sign in from Account to see your purchases."
+msgstr "Inicia sesión en Cuenta para ver tus compras."
 
 msgid "Sign in with an API key"
 msgstr "Iniciar sesión con una API key"
@@ -3371,6 +3431,9 @@ msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo re
 msgid "This playlist is read-only or belongs to another source."
 msgstr "Esta playlist es de solo lectura o pertenece a otra fuente."
 
+msgid "This purchase is unavailable for download."
+msgstr "Esta compra no está disponible para descargar."
+
 msgid "This record cannot be played now."
 msgstr "Este disco no se puede reproducir ahora."
 
@@ -3469,6 +3532,9 @@ msgstr "Pista {}"
 
 msgid "Tracks"
 msgstr "Pistas"
+
+msgid "Tracks ({})"
+msgstr "Pistas ({})"
 
 msgid "Tracks you play will appear here"
 msgstr "Las pistas que reproduzcas aparecerán aquí"
@@ -4971,6 +5037,9 @@ msgid_plural "{} selected tracks"
 msgstr[0] "{} pista seleccionada"
 msgstr[1] "{} pistas seleccionadas"
 
+msgid "{} shown"
+msgstr "{} visibles"
+
 msgid "{} similar version is also there"
 msgid_plural "{} similar versions are also there"
 msgstr[0] "También hay {} versión similar"
@@ -4995,6 +5064,9 @@ msgid "{} track added"
 msgid_plural "{} tracks added"
 msgstr[0] "Se agregó {} pista"
 msgstr[1] "Se agregaron {} pistas"
+
+msgid "{} tracks"
+msgstr "{} pistas"
 
 msgid "{} tracks in {} records"
 msgstr "{} pistas en {} discos"

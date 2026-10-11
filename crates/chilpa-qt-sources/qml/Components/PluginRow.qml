@@ -11,6 +11,7 @@ Item {
     signal inspected()
     signal switched(bool on)
     signal settings()
+    signal opened()
     signal moved(int position)
     height: Math.max(Metrics.settingsRow, identity.implicitHeight + Metrics.gap16)
     Column {
@@ -86,6 +87,13 @@ Item {
             objectName: "pluginEnabledToggle"
             checked: row.plugin.enabled === true
             onToggled: (on) => row.switched(on)
+        }
+        PillButton {
+            objectName: "openPluginDownloads"
+            visible: row.installed && row.plugin.downloads === true
+            enabled: row.plugin.enabled === true
+            text: I18n.tr("Open downloads", I18n.rev)
+            onClicked: row.opened()
         }
         IconButton {
             glyph: Icons.settings

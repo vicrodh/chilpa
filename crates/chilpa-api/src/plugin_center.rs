@@ -51,17 +51,17 @@ impl PluginCenter {
                         "light":if result.is_ok() {"green"} else {"red"},
                         "problem":result.as_ref().err()});
                 }
-                if action != "tick" || result.is_err() {
+                if !matches!(action.as_str(), "tick" | "downloads_tick") || result.is_err() {
                     crate::plugin_evidence::log_event(&root.join(".repositories"), &action, result.is_ok(), started.elapsed());
                 }
                 if action == "tick" && result.is_err() { state["maintenance_failed"] = true.into(); }
                 if matches!(action.as_str(), "settings" | "restart") && result.is_ok() { state["maintenance_failed"] = false.into(); }
-                if action != "tick" || result.is_err() { state["error"] = result.err().unwrap_or_default().into(); }
+                if !matches!(action.as_str(), "tick" | "downloads_tick") || result.is_err() { state["error"] = result.err().unwrap_or_default().into(); }
                 if let Ok(host) = plugins.lock() {
                     if let Ok(requests) = host.network_requests.lock() { state["network_requests"] = json!(*requests); }
                 }
                 if let Ok(mut output) = shared.lock() { *output = state.clone(); }
-                if action != "tick" {
+                if !matches!(action.as_str(), "tick" | "downloads_tick") {
                     if let Ok(mut operation) = current.lock() { operation.clear(); }
                     visible.store(false, Ordering::Release);
                 }
@@ -71,7 +71,7 @@ impl PluginCenter {
         Self { commands, view, busy, foreground, operation, library_dirty, removed, refreshed }
     }
     fn command(&self, action: &str, input: Value) {
-        let background = action == "tick";
+        let background = matches!(action, "tick" | "downloads_tick");
         if background {
             if self.foreground.load(Ordering::Acquire) || self.busy.compare_exchange(0, 1, Ordering::AcqRel, Ordering::Acquire).is_err() { return; }
         } else {
@@ -233,6 +233,19 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             plugins.lock().map_err(|_| "The plugin host is unavailable.")?.grant_network(id, input["domain"].as_str().unwrap_or(""))?;
             state["form"] = Value::Null;
         }
+        "downloads_open" | "downloads_action" | "downloads_tick" => {
+            let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
+            if !plugins.enabled(id) || !plugins.natives.has_downloads(id) {
+                return Err("The plugin's download view is unavailable.".into());
+            }
+            let natives = plugins.natives.clone();
+            drop(plugins);
+            let method = if action == "downloads_action" { "downloads.action" } else { "downloads.open" };
+            let params = if action == "downloads_action" { input["request"].clone() } else { json!({}) };
+            state["downloads"] = natives.call(id, method, params, std::time::Duration::from_secs(30))?;
+            state["downloads_id"] = id.into();
+            if action == "downloads_tick" { return Ok(()); }
+        }
         "settings" | "submit" | "tick" => {
             let mut plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
             if plugins.natives.is_native(id) {
@@ -346,17 +359,17 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
     let plugins = plugins.lock().map_err(|_| "The plugin host is unavailable.")?;
     state["network_requests"] = json!(*plugins.network_requests.lock().map_err(|_| "Network permissions are unavailable.")?);
     let sidebar_order = crate::plugin_sidebar::ordered(root,plugins.panels().into_iter().map(|p|p.0).collect());
-    let mut installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugins.natives.library_kinds(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
-    installed.sort_by_key(|(_, _, _, plugin, _, _)| sidebar_order.iter().position(|id| id == &plugin.id).unwrap_or(usize::MAX));
+    let mut installed = plugins.list().into_iter().map(|plugin| { let enabled = plugins.enabled(&plugin.id); let limited_network = plugins.worker_domains(&plugin.id).is_some_and(|domains| !domains.iter().any(|domain| domain == "*")); (plugins.natives.is_native(&plugin.id), enabled && plugins.natives.has_settings(&plugin.id), plugins.natives.has_downloads(&plugin.id), plugins.natives.library_kinds(&plugin.id), plugin, enabled, limited_network) }).collect::<Vec<_>>();
+    installed.sort_by_key(|(_, _, _, _, plugin, _, _)| sidebar_order.iter().position(|id| id == &plugin.id).unwrap_or(usize::MAX));
     drop(plugins);
     // A catalog snapshot never migrates or maintains the library, nor holds the guest lock during database queries.
     let library = chilpa_library::Library::open_read_only(&chilpa_library::Library::default_path()).ok();
-    state["installed"] = json!(installed.into_iter().map(|(native, native_settings, library_kinds, plugin, enabled, limited_network)| {
+    state["installed"] = json!(installed.into_iter().map(|(native, native_settings, downloads, library_kinds, plugin, enabled, limited_network)| {
         let origin: Value = std::fs::read(root.join(&plugin.id).join("origin.json")).ok()
             .and_then(|bytes| serde_json::from_slice(&bytes).ok()).unwrap_or(Value::Null);
         let integration = library.as_ref().and_then(|lib| lib.find_source(crate::source_opener::PROVIDER, &plugin.id).ok().flatten()
             .and_then(|source| lib.imported_source_state(source).ok())).unwrap_or_default();
-        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
+        json!({"sidebar_position":sidebar_order.iter().position(|id|id==&plugin.id),"sidebar_count":sidebar_order.len(),"library_kinds":library_kinds,"downloads":downloads,"integration_available":sidebar_order.contains(&plugin.id) || !library_kinds.is_empty(),"integration":crate::source_integration::read(root, &plugin.id),"native":native,"limited_network":limited_network,"enabled":enabled,"folder_write":export::enabled(root,&plugin.id),"export_folder":export::read(root,&plugin.id).map(|p|p.display().to_string()),"library_count":integration.0,"library_visible":integration.1,"id":plugin.id,"name":plugin.name,"version":plugin.version,"author":plugin.author,"description":plugin.description,"state":plugin.state,
             "problem":plugin.problem,"permissions":plugin.asks,"origin":origin,
             "icon":crate::plugin_icons::image_url(root, &plugin.id),"tint":crate::plugin_icons::tint(root, &plugin.id),
             "settings":native_settings || origin["inspection"]["settings_pages"].as_array().is_some_and(|pages| !pages.is_empty()),
