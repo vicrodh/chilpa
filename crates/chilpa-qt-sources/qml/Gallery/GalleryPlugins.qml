@@ -44,7 +44,8 @@ TitledFlow {
     PluginRow { width: Metrics.confirmWidth; plugin: ({name: "Catalog source", light: "yellow"}) }
     PluginSettingsForm {
         width: Metrics.confirmWidth
-        document: ({form: {fields: [{key: "user", label: "Account", control: {type: "text"}}], actions: []}, values: {}})
+        document: ({status: {phase: "failed", label: "Session expired", description: "Reconnect your account to continue playback."},
+            links: [{label: "Reconnect", url: "https://example.invalid", primary: true}], form: {fields: [], actions: []}, values: {}})
     }
     PluginPurchaseTrackRow { width: Metrics.confirmWidth; entry: ({title:"Purchased track",number:1,duration:213}); rowIndex: 0; formatId: "6" }
     PluginPurchaseDetail { width: Metrics.settingsMaxWidth; height: Metrics.panesHeight; selection: ({kind:"album",title:"Purchased album",artist:"Artist",tracks:[]}); document: ({destination_ready:true}) }

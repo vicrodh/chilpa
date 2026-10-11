@@ -87,7 +87,7 @@ Rectangle {
                         { screen: "folders", glyph: Icons.folder, text: I18n.tr("Folders", I18n.rev) },
                         { screen: "openMedia", glyph: Icons.folderOpen, text: I18n.tr("Open media", I18n.rev) }
                     ].concat(side.panels.map(p => ({ screen: "source", key: p.id, glyph: SourceGlyphs.of(p.icon) || Icons[p.icon] || Icons.letterX, family: SourceGlyphs.of(p.icon) ? SourceGlyphs.font : "", image: p.icon_image || "", tint: p.icon_tint || false, text: p.name, music: p.music === true, children: p.children || [] })))
-                        .concat(side.downloadPlugins.map(p => ({ screen: "pluginDownloads", key: p.id, glyph: Icons.download, image: p.icon || "", text: p.name, download: true })))
+                        .concat(side.downloadPlugins.map(p => ({ screen: "pluginDownloads", key: p.id, glyph: Icons.download, image: p.icon || "", text: p.name, tint: true, download: true })))
 
                     Column {
                         id: group

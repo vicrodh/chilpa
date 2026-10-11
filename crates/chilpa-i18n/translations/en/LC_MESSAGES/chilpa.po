@@ -3365,6 +3365,9 @@ msgstr ""
 msgid "The plugin ZIP could not be read."
 msgstr ""
 
+msgid "The plugin did not answer within 15 seconds. Its account status is unknown."
+msgstr ""
+
 msgid "The record is not open in the editor."
 msgstr ""
 

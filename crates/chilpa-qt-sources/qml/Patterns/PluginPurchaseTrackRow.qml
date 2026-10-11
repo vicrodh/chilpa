@@ -30,7 +30,7 @@ Item {
             text: (row.entry.downloaded_formats || []).indexOf(Number(row.formatId)) >= 0 ? I18n.tr("Downloaded", I18n.rev) : ""
             color: Theme.color.textSecondary; font.pointSize: Type.meta; anchors.verticalCenter: parent.verticalCenter
         }
-        P.PillButton { id: button; text: row.downloaded ? I18n.tr("Download again", I18n.rev) : I18n.tr("Download", I18n.rev); enabled: row.canDownload; onClicked: row.download() }
+        P.PillButton { id: button; anchors.verticalCenter: parent.verticalCenter; text: row.downloaded ? I18n.tr("Download again", I18n.rev) : I18n.tr("Download", I18n.rev); enabled: row.canDownload; onClicked: row.download() }
     }
     readonly property bool downloaded: (entry.downloaded_formats || []).indexOf(Number(formatId)) >= 0
 }
