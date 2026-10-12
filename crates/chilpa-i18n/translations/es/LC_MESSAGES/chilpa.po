@@ -7,9 +7,6 @@ msgstr ""
 msgid "\"{}\" brings nothing today"
 msgstr "\"{}\" no trae nada hoy"
 
-msgid "\"{}\" did not switch to {} Hz"
-msgstr "\"{}\" no cambió a {} Hz"
-
 msgid "\"{}\" does not say how an account connects"
 msgstr "\"{}\" no dice cómo se conecta una cuenta"
 
@@ -27,9 +24,6 @@ msgstr "no se pudo dar \"{}\" a Chilpa en exclusiva; apaga el modo exclusivo par
 
 msgid "\"{}\" would not open ({} {})"
 msgstr "no se pudo abrir \"{}\" ({} {})"
-
-msgid "\"{}\" would not run at {} Hz ({})"
-msgstr "\"{}\" no quiso correr a {} Hz ({})"
 
 msgid "\"{}\" would not start ({})"
 msgstr "\"{}\" no quiso arrancar ({})"
@@ -610,6 +604,9 @@ msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpa pide {} · {} bits"
+
+msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
+msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclusivo, además, el aparato es solo de Chilpa mientras suena una pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo; la Mac mezcla lo demás que suene."
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
 msgstr "El icono de Chilpa en el panel: un clic muestra u oculta la ventana, el botón central reproduce o pausa, la rueda mueve el volumen."
@@ -3751,9 +3748,6 @@ msgstr "Windows no reporta ningún aparato de reproducción"
 
 msgid "Windows would not say what \"{}\" accepts ({})"
 msgstr "Windows no dijo qué acepta \"{}\" ({})"
-
-msgid "With exclusive mode on, the device is Chilpa's alone while a track plays and runs at that track's rate, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it and let the Mac mix and convert."
-msgstr "Con el modo exclusivo, el aparato es solo de Chilpa mientras suena una pista y va a la frecuencia de esa pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo y dejar que la Mac mezcle y convierta."
 
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"

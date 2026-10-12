@@ -7,9 +7,6 @@ msgstr ""
 msgid "\"{}\" brings nothing today"
 msgstr ""
 
-msgid "\"{}\" did not switch to {} Hz"
-msgstr ""
-
 msgid "\"{}\" does not say how an account connects"
 msgstr ""
 
@@ -26,9 +23,6 @@ msgid "\"{}\" would not be given to Chilpa alone; turn exclusive mode off to sha
 msgstr ""
 
 msgid "\"{}\" would not open ({} {})"
-msgstr ""
-
-msgid "\"{}\" would not run at {} Hz ({})"
 msgstr ""
 
 msgid "\"{}\" would not start ({})"
@@ -609,6 +603,9 @@ msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
 msgid "Chilpa requesting {} · {}-bit"
+msgstr ""
+
+msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr ""
 
 msgid "Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."
@@ -3750,9 +3747,6 @@ msgid "Windows reports no playback device"
 msgstr ""
 
 msgid "Windows would not say what \"{}\" accepts ({})"
-msgstr ""
-
-msgid "With exclusive mode on, the device is Chilpa's alone while a track plays and runs at that track's rate, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it and let the Mac mix and convert."
 msgstr ""
 
 msgid "Withdraw approval"

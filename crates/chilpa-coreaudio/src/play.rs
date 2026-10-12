@@ -6,18 +6,16 @@
 //! carries. This is how QBZ plays on a Mac, and it is what works on every
 //! output this was tried on.
 //!
-//! Exclusive mode adds the two things that make that conversion keep every
-//! sample:
+//! Two things make that conversion keep every sample:
 //!
-//! 1. **The device is this program's.** Hog mode. Without it CoreAudio mixes
-//!    whatever else is playing into the same stream.
-//! 2. **The device runs at the track's rate**, when it lists that rate. Then
+//! 1. **The device runs at the track's rate**, when it lists that rate. Then
 //!    the unit has no rate to convert, and a float made from an integer of
-//!    up to 24 bits goes back into the wire's integer unchanged.
-//!
-//! Without exclusive mode neither is asked: the device stays at the rate
-//! somebody else chose and the unit converts. That is sharing, and the
-//! verdict says so.
+//!    up to 24 bits goes back into the wire's integer unchanged. It is asked
+//!    for whether the output is shared or not, as QBZ's first Mac port did:
+//!    a shared device converts whatever else plays, not the track.
+//! 2. **The device is this program's.** Hog mode, in exclusive mode only.
+//!    Without it CoreAudio mixes whatever else is playing into the same
+//!    stream, and the verdict says so.
 //!
 //! Integer stream formats are not asked for. The version before this set
 //! the physical and virtual formats to integers and refused whatever came
@@ -380,26 +378,25 @@ impl Drop for Hold {
 
 /// Sets the device to the track's rate, when it has that rate.
 ///
-/// A rate the device does not list is left to the unit to convert: the
-/// track plays, and the verdict reads the device and says it was converted.
-fn match_rate(device: AudioObjectID, name: &str, rate_hz: u32) -> Result<(), SinkError> {
+/// Asked for, never required, as QBZ asks (`switch_sample_rate_if_needed`):
+/// a device that does not list the rate, refuses it or does not settle at
+/// it in time is left to the unit to convert. The track plays, and the
+/// verdict reads the device and says it was converted.
+fn match_rate(device: AudioObjectID, rate_hz: u32) {
     let rate = f64::from(rate_hz);
     if (read::current_rate(device) - rate).abs() <= 0.5 || !runs_at(device, rate) {
-        return Ok(());
+        return;
     }
-    set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate).map_err(|s| {
-        SinkError::Backend(chilpa_i18n::t_args(
-            "\"{}\" would not run at {} Hz ({})",
-            &[name, &rate_hz.to_string(), &s.to_string()],
-        ))
-    })?;
-    if !settles_at(device, rate) {
-        return Err(SinkError::Backend(chilpa_i18n::t_args(
-            "\"{}\" did not switch to {} Hz",
-            &[name, &rate_hz.to_string()],
-        )));
-    }
-    Ok(())
+    let outcome = match set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate) {
+        Err(status) => format!("refused ({status})"),
+        Ok(()) if !settles_at(device, rate) => "did not settle".to_string(),
+        Ok(()) => return,
+    };
+    chilpa_audio::diagnostics::trace(
+        "coreaudio",
+        "rate_not_switched",
+        format_args!("device={device} rate={rate_hz} outcome={outcome}"),
+    );
 }
 
 /// The output unit, bound to one device and started. Torn down on drop.
@@ -533,11 +530,11 @@ impl CoreAudioSink {
     /// Takes the device as asked and starts the unit on it.
     fn take(&mut self) -> Result<(), SinkError> {
         if self.exclusive {
-            // The device first, before anything is changed on it: changing
-            // the rate of a device somebody else is using moves their music.
+            // The device first, in exclusive mode, so nothing else is
+            // playing through it when its rate moves.
             self.hold = Some(Hold::take(self.device, &self.name)?);
-            match_rate(self.device, &self.name, self.stream.sample_rate_hz)?;
         }
+        match_rate(self.device, self.stream.sample_rate_hz);
         self.unit = Some(Unit::open(self.device, &self.name, self.stream, &self.shared)?);
         Ok(())
     }
@@ -755,14 +752,16 @@ mod tests {
             }
             let before = read::current_rate(device);
 
-            // Shared: the device is left at its rate and nobody's, and the
-            // unit still plays a track at another one.
+            // Shared: the device is nobody's, it still moves to the track's
+            // rate when it has it, and shared is never untouched.
             let cd = StreamFormat::new(SampleFormat::S16, 44_100, 2);
             let mut sink = CoreAudioSink::open(&name, cd, false)
                 .unwrap_or_else(|e| panic!("{name}: shared open failed: {e}"));
             assert_ne!(read::hogged_by(device), mine, "{name}: sharing took the device");
             pulls(&mut sink, &format!("{name} shared"));
-            assert_eq!(read::current_rate(device), before, "{name}: sharing moved the rate");
+            if runs_at(device, 44_100.0) {
+                assert!((read::current_rate(device) - 44_100.0).abs() < 0.5, "{name}: shared did not move to the track's rate");
+            }
             assert!(!crate::untouched(&name, 44_100, Some(16)), "{name}: shared is never untouched");
             drop(sink);
 
