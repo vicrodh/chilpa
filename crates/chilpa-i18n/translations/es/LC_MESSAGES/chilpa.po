@@ -124,6 +124,9 @@ msgstr "Una pista cuenta cuando se reprodujo la mitad, o cuatro minutos. Lo que 
 msgid "A-B loop"
 msgstr "Bucle A-B"
 
+msgid "ALSA direct"
+msgstr "ALSA directo"
+
 msgid "ALSA plugin"
 msgstr "Plugin de ALSA"
 
@@ -234,9 +237,6 @@ msgstr "Agregando..."
 msgid "Add…"
 msgstr "Agregar…"
 
-msgid "Advanced"
-msgstr "Avanzado"
-
 msgid "Album"
 msgstr "Álbum"
 
@@ -305,6 +305,27 @@ msgstr "Todo"
 
 msgid "Allow Chilpa on Last.fm; this updates by itself."
 msgstr "Permite a Chilpa en Last.fm; esto se actualiza solo."
+
+msgid "Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."
+msgstr "Permite que un plugin proporcione letras para sus propias pistas y dales prioridad sobre la API de letras de Chilpa."
+
+msgid "Allow results from KuGou."
+msgstr "Permitir resultados de KuGou."
+
+msgid "Allow results from LRCLIB through Chilpa's lyrics API."
+msgstr "Permitir resultados de LRCLIB a través de la API de letras de Chilpa."
+
+msgid "Allow results from Musixmatch when the lyrics service has access to it."
+msgstr "Permitir resultados de Musixmatch cuando el servicio de letras tenga acceso."
+
+msgid "Allow results from NetEase."
+msgstr "Permitir resultados de NetEase."
+
+msgid "Allow results from QQ Music."
+msgstr "Permitir resultados de QQ Music."
+
+msgid "Allow word-timed lyrics from AMLL."
+msgstr "Permitir letras sincronizadas por palabra de AMLL."
 
 msgid "Allowed network domains, separated by commas"
 msgstr "Dominios de red permitidos, separados por comas"
@@ -638,8 +659,14 @@ msgstr "Chilpa ve las salidas de esta computadora pero todavía no puede reprodu
 msgid "Chilpa cannot read this link"
 msgstr "Chilpa no puede leer este enlace"
 
+msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
+msgstr "Chilpa no pudo liberar la salida exclusiva. Detén la reproducción y vuelve a intentar el diagnóstico."
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
 msgstr "Chilpa está empaquetado como Flatpak/Snap y no puede revisar el stack de audio de tu sistema. Si la reproducción ya funciona, ya quedó. Elige abajo tu distribución y tu sistema init para ver los comandos correctos."
+
+msgid "Chilpa lyrics API"
+msgstr "API de letras de Chilpa"
 
 msgid "Chilpa never writes these files"
 msgstr "Chilpa nunca escribe estos archivos"
@@ -647,8 +674,14 @@ msgstr "Chilpa nunca escribe estos archivos"
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr "Chilpa abre con las pestañas que tenía al cerrarse."
 
+msgid "Chilpa plugins"
+msgstr "Plugins de Chilpa"
+
 msgid "Chilpa requesting {} · {}-bit"
 msgstr "Chilpa pide {} · {} bits"
+
+msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
+msgstr "Chilpa no envía telemetría. Si lo activas, las búsquedas de artistas y lanzamientos hacen solicitudes de una sola vía a MusicBrainz para obtener resultados. Al desactivarlo, se deshabilitan las funciones de MusicBrainz en la red de artistas."
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
 msgstr "Chilpa pone el aparato a la frecuencia de cada pista. Con el modo exclusivo, además, el aparato es solo de Chilpa mientras suena una pista, así que nada más en la Mac lo puede usar mientras tanto. Apaga el modo exclusivo para compartirlo; la Mac mezcla lo demás que suene."
@@ -676,6 +709,9 @@ msgstr "Elegir un archivo…"
 
 msgid "Choose a local ZIP file."
 msgstr "Elige un archivo ZIP local."
+
+msgid "Choose a playback control"
+msgstr "Elegir un control de reproducción"
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
 msgstr "Elige un receptor de tu red local. La cola permanece en Chilpa."
@@ -712,6 +748,9 @@ msgstr "Elegir archivo de playlist"
 
 msgid "Choose plugin icon"
 msgstr ""
+
+msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
+msgstr "Elige el control de volumen de reproducción de esta salida. Chilpa lo verifica antes de guardar la elección."
 
 msgid "Clear"
 msgstr "Vaciar"
@@ -974,6 +1013,9 @@ msgstr "DSD sobre PCM (DoP)"
 msgid "DSD playback"
 msgstr "Reproducción DSD"
 
+msgid "DSD through PipeWire"
+msgstr "DSD a través de PipeWire"
+
 msgid "DSD128 over DoP"
 msgstr "DSD128 por DoP"
 
@@ -1079,8 +1121,8 @@ msgstr "Diagnóstico"
 msgid "Dimming"
 msgstr "Atenuado"
 
-msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
-msgstr "ALSA directo no escala las muestras. Usa el DAC o amplificador, o activa el volumen de hardware en Settings › Advanced."
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
+msgstr "ALSA directo no escala las muestras. Usa el DAC o el amplificador, o activa el volumen de hardware en Ajustes › Audio."
 
 msgid "Disabled"
 msgstr "Desactivada"
@@ -1484,6 +1526,9 @@ msgstr "Hardware"
 msgid "Hardware volume"
 msgstr "Volumen de hardware"
 
+msgid "Hardware volume control"
+msgstr "Control de volumen de hardware"
+
 msgid "Heard"
 msgstr "Escuchado"
 
@@ -1772,6 +1817,9 @@ msgstr "Grande"
 msgid "Last playlist"
 msgstr "Última playlist"
 
+msgid "Last.fm account"
+msgstr "Cuenta de Last.fm"
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr "Last.fm se abre en el navegador para permitir a Chilpa."
 
@@ -1819,6 +1867,9 @@ msgstr "Lista"
 
 msgid "Listen live"
 msgstr "Escuchar en vivo"
+
+msgid "ListenBrainz account"
+msgstr "Cuenta de ListenBrainz"
 
 msgid "Listening clock"
 msgstr "Reloj de escucha"
@@ -1888,6 +1939,9 @@ msgstr "Buscar discos en"
 
 msgid "Look up"
 msgstr "Buscar"
+
+msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
+msgstr "Buscar letras en el servicio de Chilpa cuando ni el archivo ni su fuente las tengan."
 
 msgid "Looking for files…"
 msgstr "Buscando archivos…"
@@ -2021,6 +2075,9 @@ msgstr "Mover"
 msgid "Move down"
 msgstr "Bajar"
 
+msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
+msgstr "Ajustar el volumen propio de la salida desde la barra del reproductor cuando el control ALSA elegido lo permita con seguridad."
+
 msgid "Move to folder"
 msgstr "Mover a carpeta"
 
@@ -2044,6 +2101,9 @@ msgstr "Artistas del álbum en MusicBrainz"
 
 msgid "MusicBrainz artists"
 msgstr "Artistas en MusicBrainz"
+
+msgid "MusicBrainz is turned off in Integrations"
+msgstr "MusicBrainz está desactivado en Integraciones"
 
 msgid "MusicBrainz recording"
 msgstr "Grabación en MusicBrainz"
@@ -2639,6 +2699,9 @@ msgstr "El plugin se inició correctamente"
 msgid "Plugin integration"
 msgstr "Integración del plugin"
 
+msgid "Plugin lyrics"
+msgstr "Letras de plugins"
+
 msgid "Plugin repository URL"
 msgstr "URL del repositorio de plugins"
 
@@ -3002,6 +3065,9 @@ msgstr "Ruta"
 msgid "Russian"
 msgstr "Ruso"
 
+msgid "SACD XML"
+msgstr "XML de SACD"
+
 msgid "SACDMTOC was not found"
 msgstr "no se encontró SACDMTOC"
 
@@ -3077,8 +3143,8 @@ msgstr "Escanear todas las carpetas de nuevo"
 msgid "Scanning…"
 msgstr "Escaneando…"
 
-msgid "Scrobble"
-msgstr "Registrar escuchas"
+msgid "Scrobbling"
+msgstr "Registro de escuchas"
 
 msgid "Scroll to adjust volume"
 msgstr "Rueda para ajustar el volumen"
@@ -3187,8 +3253,11 @@ msgstr "Seleccionar pistas"
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr "La GPU elegida no está disponible en esta sesión gráfica: se usa Automático"
 
-msgid "Send listens"
-msgstr "Enviar escuchas"
+msgid "Send to Last.fm"
+msgstr "Enviar a Last.fm"
+
+msgid "Send to ListenBrainz"
+msgstr "Enviar a ListenBrainz"
 
 msgid "Sep"
 msgstr "septiembre"
@@ -3373,8 +3442,14 @@ msgstr "Detener"
 msgid "Stop after this track"
 msgstr "Detener después de esta pista"
 
+msgid "Stop and diagnose"
+msgstr "Detener y diagnosticar"
+
 msgid "Stop playback after:"
 msgstr "Detener la reproducción en:"
+
+msgid "Stop playback to diagnose?"
+msgstr "¿Detener la reproducción para diagnosticar?"
 
 msgid "Stops in"
 msgstr "Se detiene en"
@@ -3462,6 +3537,12 @@ msgstr "Esa respuesta no corresponde a esta ventana."
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr "Ese archivo no es una imagen JPEG, PNG o WebP"
 
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr "El ISO queda intacto. Los metadatos compatibles van al XML; los demás campos y la portada van a un sidecar de Chilpa."
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr "El ISO queda intacto; los campos sin lugar en el XML y la portada van al sidecar."
+
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr "El protocolo de PulseAudio mezcla todos los programas y remuestrea el resultado a una sola frecuencia, así que una pista nunca llega al aparato como salió del archivo. No hay ningún ajuste aquí que cambie eso. Es el que funciona en todos lados; para que las muestras lleguen sin tocarse, elige la tarjeta directo o PipeWire."
 
@@ -3507,11 +3588,14 @@ msgstr "El volumen al que se alinea cada pista. -14 LUFS coincide con los servic
 msgid "The lyrics cache could not be opened."
 msgstr "No se pudo abrir la caché de letras."
 
+msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
+msgstr "La salida está reproduciendo en modo exclusivo. El diagnóstico necesita abrirla directamente, así que primero hay que detener la reproducción."
+
+msgid "The output is still playing"
+msgstr "La salida sigue reproduciendo"
+
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."
-
-msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
-msgstr "La barra del reproductor mueve el volumen propio de la salida en vez de escalar las muestras. Necesita una salida con volumen propio."
 
 msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr "La barra del reproductor se aparta tras diez segundos sin mover el mouse, y cualquier movimiento la trae de vuelta."
@@ -3548,6 +3632,9 @@ msgstr "El receptor rechazó la orden."
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
+
+msgid "The selected hardware volume control is gone."
+msgstr "El control de volumen de hardware elegido ya no está disponible."
 
 msgid "The service sent no code."
 msgstr "El servicio no mandó un código."
@@ -3615,6 +3702,12 @@ msgstr "Este mes vs el mes pasado"
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder comparar el archivo contra la pista de la que salió, que es la única forma de demostrar bit-perfect en vez de afirmarlo."
 
+msgid "This output has no hardware mute switch."
+msgstr "Esta salida no tiene un interruptor de silencio de hardware."
+
+msgid "This output has no unambiguous, safe playback volume control."
+msgstr "Esta salida no tiene un control de volumen de reproducción seguro e inequívoco."
+
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
 
@@ -3665,6 +3758,9 @@ msgstr "Esta semana vs la semana pasada"
 
 msgid "This wizard helps you configure your DAC for bit-perfect playback on Linux. Chilpa never changes your system automatically — it auto-detects your DACs, shows you the exact commands and config to copy, and lets you test playback right here."
 msgstr "Este asistente te ayuda a configurar tu DAC para reproducción bit-perfect en Linux. Chilpa nunca cambia tu sistema por su cuenta: detecta tus DACs, te muestra los comandos y la configuración exactos para copiar, y te deja probar la reproducción aquí mismo."
+
+msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
+msgstr "Este asistente prueba frecuencias PCM. Chilpa convierte DSD a PCM al usar PipeWire; el modo exclusivo y el cambio de frecuencia no bastan para verificar que DoP llegue intacto. Si tu DAC admite DSD, usa ALSA directo (hw) y elige un modo DSD compatible en Ajustes de audio."
 
 msgid "This year vs Last year"
 msgstr "Este año vs el año pasado"
@@ -3825,6 +3921,9 @@ msgstr "Actualizaciones"
 msgid "Uppercase"
 msgstr "Mayúsculas"
 
+msgid "Use MusicBrainz"
+msgstr "Usar MusicBrainz"
+
 msgid "Use Quick Connect"
 msgstr "Usar Quick Connect"
 
@@ -3954,14 +4053,23 @@ msgstr "Sin plugins"
 msgid "Working…"
 msgstr "Trabajando…"
 
+msgid "Write XML"
+msgstr "Escribir XML"
+
 msgid "Write into the audio files?"
 msgstr "¿Escribir en los archivos de audio?"
 
 msgid "Write into the files"
 msgstr "Escribir en los archivos"
 
+msgid "Write the external SACD XML?"
+msgstr "¿Escribir el XML externo del SACD?"
+
 msgid "Write to a file"
 msgstr "Escribir a un archivo"
+
+msgid "XML can be edited only for SACD images"
+msgstr "El XML sólo se puede editar para imágenes SACD"
 
 msgid "YOU MAY ALSO LIKE"
 msgstr "TAMBIÉN TE PUEDE GUSTAR"
@@ -4362,6 +4470,9 @@ msgstr "no se encontró nada"
 msgid "now at {}"
 msgstr "ahora en {}"
 
+msgid "one or more SACD images have no matching external XML"
+msgstr "Una o más imágenes SACD no tienen un XML externo correspondiente"
+
 msgid "one or more files are not where they were"
 msgstr "uno o más archivos ya no están donde estaban"
 
@@ -4560,6 +4671,9 @@ msgstr "el protocolo de PulseAudio no lleva este formato"
 msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
 msgstr "el protocolo de PulseAudio no lleva {} Hz con {} canales"
 
+msgid "the SACD XML could not be written: {}"
+msgstr "No se pudo escribir el XML del SACD: {}"
+
 msgid "the URL has to be http or https"
 msgstr "la URL tiene que ser http o https"
 
@@ -4673,9 +4787,6 @@ msgstr "el dispositivo ya estaba cerrado"
 
 msgid "the device was not measured; without that bit-perfect is not promised"
 msgstr "no se midió el dispositivo; sin eso no se promete bit-perfect"
-
-msgid "the device's volume control is gone"
-msgstr "el control de volumen del dispositivo ya no está"
 
 msgid "the disc carries no audio tracks"
 msgstr "el disco no trae pistas de audio"
@@ -5316,27 +5427,3 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
-
-msgid "SACD XML"
-msgstr "XML de SACD"
-
-msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
-msgstr "El ISO queda intacto; los campos sin lugar en el XML y la portada van al sidecar."
-
-msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
-msgstr "El ISO queda intacto. Los metadatos compatibles van al XML; los demás campos y la portada van a un sidecar de Chilpa."
-
-msgid "Write the external SACD XML?"
-msgstr "¿Escribir el XML externo del SACD?"
-
-msgid "Write XML"
-msgstr "Escribir XML"
-
-msgid "XML can be edited only for SACD images"
-msgstr "El XML sólo se puede editar para imágenes SACD"
-
-msgid "one or more SACD images have no matching external XML"
-msgstr "Una o más imágenes SACD no tienen un XML externo correspondiente"
-
-msgid "the SACD XML could not be written: {}"
-msgstr "No se pudo escribir el XML del SACD: {}"

@@ -10,8 +10,17 @@ P.Modal {
     required property var manager
     width: Math.min(Metrics.settingsMaxWidth, parent ? parent.width - Metrics.modalInsets : Metrics.confirmWidth)
     height: Math.min(Metrics.panesHeight, parent ? parent.height - Metrics.modalInsets : Metrics.panesHeight)
+    Column {
+        id: nativeRepository
+        width: parent.width
+        spacing: Metrics.gap8
+        Text { text: I18n.tr("Chilpa plugins", I18n.rev); color: Theme.color.textPrimary; font.pointSize: Type.titleSmall }
+        Text { text: dialog.manager.view.native_repository || ""; textFormat: Text.PlainText; width: parent.width; wrapMode: Text.WrapAnywhere; color: Theme.color.textSecondary; font.pointSize: Type.body }
+        P.PillButton { text: I18n.tr("Refresh", I18n.rev); enabled: !dialog.manager.view.busy; onClicked: dialog.manager.command("refresh_repository", {id: "native"}) }
+    }
     ListView {
-        anchors.top: parent.top
+        anchors.top: nativeRepository.bottom
+        anchors.topMargin: Metrics.gap14
         anchors.bottom: close.top
         anchors.bottomMargin: Metrics.gap12
         width: parent.width

@@ -124,6 +124,9 @@ msgstr ""
 msgid "A-B loop"
 msgstr ""
 
+msgid "ALSA direct"
+msgstr ""
+
 msgid "ALSA plugin"
 msgstr ""
 
@@ -234,9 +237,6 @@ msgstr ""
 msgid "Add…"
 msgstr ""
 
-msgid "Advanced"
-msgstr ""
-
 msgid "Album"
 msgstr ""
 
@@ -304,6 +304,27 @@ msgid "All time"
 msgstr ""
 
 msgid "Allow Chilpa on Last.fm; this updates by itself."
+msgstr ""
+
+msgid "Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."
+msgstr ""
+
+msgid "Allow results from KuGou."
+msgstr ""
+
+msgid "Allow results from LRCLIB through Chilpa's lyrics API."
+msgstr ""
+
+msgid "Allow results from Musixmatch when the lyrics service has access to it."
+msgstr ""
+
+msgid "Allow results from NetEase."
+msgstr ""
+
+msgid "Allow results from QQ Music."
+msgstr ""
+
+msgid "Allow word-timed lyrics from AMLL."
 msgstr ""
 
 msgid "Allowed network domains, separated by commas"
@@ -638,7 +659,13 @@ msgstr ""
 msgid "Chilpa cannot read this link"
 msgstr ""
 
+msgid "Chilpa could not release the exclusive output. Stop playback and try the diagnosis again."
+msgstr ""
+
 msgid "Chilpa is packaged as Flatpak/Snap and can't inspect your host audio stack. If playback already works, you're set. Pick your distribution and init system below for the right setup commands."
+msgstr ""
+
+msgid "Chilpa lyrics API"
 msgstr ""
 
 msgid "Chilpa never writes these files"
@@ -647,7 +674,13 @@ msgstr ""
 msgid "Chilpa opens with the tabs it had when it closed."
 msgstr ""
 
+msgid "Chilpa plugins"
+msgstr ""
+
 msgid "Chilpa requesting {} · {}-bit"
+msgstr ""
+
+msgid "Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."
 msgstr ""
 
 msgid "Chilpa sets the device to each track's rate. With exclusive mode on, the device is also Chilpa's alone while a track plays, so nothing else on the Mac can use it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever else plays."
@@ -675,6 +708,9 @@ msgid "Choose a file…"
 msgstr ""
 
 msgid "Choose a local ZIP file."
+msgstr ""
+
+msgid "Choose a playback control"
 msgstr ""
 
 msgid "Choose a renderer on your local network. The queue stays in Chilpa."
@@ -711,6 +747,9 @@ msgid "Choose playlist file"
 msgstr "Choose playlist file"
 
 msgid "Choose plugin icon"
+msgstr ""
+
+msgid "Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."
 msgstr ""
 
 msgid "Clear"
@@ -974,6 +1013,9 @@ msgstr ""
 msgid "DSD playback"
 msgstr ""
 
+msgid "DSD through PipeWire"
+msgstr ""
+
 msgid "DSD128 over DoP"
 msgstr ""
 
@@ -1079,7 +1121,7 @@ msgstr ""
 msgid "Dimming"
 msgstr ""
 
-msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced."
+msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
 msgstr ""
 
 msgid "Disabled"
@@ -1484,6 +1526,9 @@ msgstr "Hardware"
 msgid "Hardware volume"
 msgstr ""
 
+msgid "Hardware volume control"
+msgstr ""
+
 msgid "Heard"
 msgstr ""
 
@@ -1772,6 +1817,9 @@ msgstr ""
 msgid "Last playlist"
 msgstr ""
 
+msgid "Last.fm account"
+msgstr ""
+
 msgid "Last.fm opens in the browser to allow Chilpa."
 msgstr ""
 
@@ -1818,6 +1866,9 @@ msgid "List"
 msgstr ""
 
 msgid "Listen live"
+msgstr ""
+
+msgid "ListenBrainz account"
 msgstr ""
 
 msgid "Listening clock"
@@ -1887,6 +1938,9 @@ msgid "Look records up in"
 msgstr ""
 
 msgid "Look up"
+msgstr ""
+
+msgid "Look up lyrics through Chilpa's lyrics service when the file and its source have none."
 msgstr ""
 
 msgid "Looking for files…"
@@ -2021,6 +2075,9 @@ msgstr ""
 msgid "Move down"
 msgstr ""
 
+msgid "Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."
+msgstr ""
+
 msgid "Move to folder"
 msgstr "Move to folder"
 
@@ -2043,6 +2100,9 @@ msgid "MusicBrainz album artists"
 msgstr ""
 
 msgid "MusicBrainz artists"
+msgstr ""
+
+msgid "MusicBrainz is turned off in Integrations"
 msgstr ""
 
 msgid "MusicBrainz recording"
@@ -2639,6 +2699,9 @@ msgstr "Plugin initialized successfully"
 msgid "Plugin integration"
 msgstr "Plugin integration"
 
+msgid "Plugin lyrics"
+msgstr ""
+
 msgid "Plugin repository URL"
 msgstr "Plugin repository URL"
 
@@ -3002,6 +3065,9 @@ msgstr ""
 msgid "Russian"
 msgstr ""
 
+msgid "SACD XML"
+msgstr ""
+
 msgid "SACDMTOC was not found"
 msgstr ""
 
@@ -3077,7 +3143,7 @@ msgstr ""
 msgid "Scanning…"
 msgstr ""
 
-msgid "Scrobble"
+msgid "Scrobbling"
 msgstr ""
 
 msgid "Scroll to adjust volume"
@@ -3187,7 +3253,10 @@ msgstr ""
 msgid "Selected GPU is unavailable in this display session — using Auto"
 msgstr ""
 
-msgid "Send listens"
+msgid "Send to Last.fm"
+msgstr ""
+
+msgid "Send to ListenBrainz"
 msgstr ""
 
 msgid "Sep"
@@ -3373,7 +3442,13 @@ msgstr ""
 msgid "Stop after this track"
 msgstr ""
 
+msgid "Stop and diagnose"
+msgstr ""
+
 msgid "Stop playback after:"
+msgstr ""
+
+msgid "Stop playback to diagnose?"
 msgstr ""
 
 msgid "Stops in"
@@ -3462,6 +3537,12 @@ msgstr ""
 msgid "That file is not a JPEG, PNG or WebP image"
 msgstr ""
 
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr ""
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr ""
+
 msgid "The PulseAudio protocol mixes every program together and resamples the result to one rate, so a track never reaches the device as it left the file. There is no setting here that changes that. It is the one that works everywhere; for samples that arrive untouched, choose the card itself or PipeWire."
 msgstr ""
 
@@ -3507,10 +3588,13 @@ msgstr ""
 msgid "The lyrics cache could not be opened."
 msgstr ""
 
-msgid "The output plays only Chilpa. Other programs wait until it lets go."
+msgid "The output is playing in exclusive mode. Diagnosis needs to open it directly, so playback must stop first."
 msgstr ""
 
-msgid "The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."
+msgid "The output is still playing"
+msgstr ""
+
+msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr ""
 
 msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
@@ -3547,6 +3631,9 @@ msgid "The renderer refused the command."
 msgstr ""
 
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
+msgstr ""
+
+msgid "The selected hardware volume control is gone."
 msgstr ""
 
 msgid "The service sent no code."
@@ -3615,6 +3702,12 @@ msgstr ""
 msgid "This one makes no sound. It writes what would have gone to the device, so the file can be compared against the track it came from -- which is the only way to prove bit-perfect rather than claim it."
 msgstr ""
 
+msgid "This output has no hardware mute switch."
+msgstr ""
+
+msgid "This output has no unambiguous, safe playback volume control."
+msgstr ""
+
 msgid "This output is always Chilpa's alone."
 msgstr ""
 
@@ -3664,6 +3757,9 @@ msgid "This week vs Last week"
 msgstr ""
 
 msgid "This wizard helps you configure your DAC for bit-perfect playback on Linux. Chilpa never changes your system automatically — it auto-detects your DACs, shows you the exact commands and config to copy, and lets you test playback right here."
+msgstr ""
+
+msgid "This wizard tests PCM rates. Chilpa currently converts DSD to PCM on PipeWire; exclusive mode and rate switching alone cannot verify an untouched DoP stream. For a DAC that supports DSD, use ALSA direct (hw) and choose a supported DSD mode in Audio settings."
 msgstr ""
 
 msgid "This year vs Last year"
@@ -3825,6 +3921,9 @@ msgstr ""
 msgid "Uppercase"
 msgstr ""
 
+msgid "Use MusicBrainz"
+msgstr ""
+
 msgid "Use Quick Connect"
 msgstr ""
 
@@ -3954,13 +4053,22 @@ msgstr ""
 msgid "Working…"
 msgstr ""
 
+msgid "Write XML"
+msgstr ""
+
 msgid "Write into the audio files?"
 msgstr ""
 
 msgid "Write into the files"
 msgstr ""
 
+msgid "Write the external SACD XML?"
+msgstr ""
+
 msgid "Write to a file"
+msgstr ""
+
+msgid "XML can be edited only for SACD images"
 msgstr ""
 
 msgid "YOU MAY ALSO LIKE"
@@ -4362,6 +4470,9 @@ msgstr ""
 msgid "now at {}"
 msgstr ""
 
+msgid "one or more SACD images have no matching external XML"
+msgstr ""
+
 msgid "one or more files are not where they were"
 msgstr ""
 
@@ -4560,6 +4671,9 @@ msgstr ""
 msgid "the PulseAudio protocol does not carry {} Hz with {} channels"
 msgstr ""
 
+msgid "the SACD XML could not be written: {}"
+msgstr ""
+
 msgid "the URL has to be http or https"
 msgstr ""
 
@@ -4672,9 +4786,6 @@ msgid "the device was already closed"
 msgstr ""
 
 msgid "the device was not measured; without that bit-perfect is not promised"
-msgstr ""
-
-msgid "the device's volume control is gone"
 msgstr ""
 
 msgid "the disc carries no audio tracks"
@@ -5315,28 +5426,4 @@ msgid "{}s"
 msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
-msgstr ""
-
-msgid "SACD XML"
-msgstr ""
-
-msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
-msgstr ""
-
-msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
-msgstr ""
-
-msgid "Write the external SACD XML?"
-msgstr ""
-
-msgid "Write XML"
-msgstr ""
-
-msgid "XML can be edited only for SACD images"
-msgstr ""
-
-msgid "one or more SACD images have no matching external XML"
-msgstr ""
-
-msgid "the SACD XML could not be written: {}"
 msgstr ""

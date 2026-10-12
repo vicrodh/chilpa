@@ -211,6 +211,7 @@ impl Chilpa {
         };
         let chosen = match self.preference("library.metaSrc").as_deref() {
             Some("discogs") => Provider::Discogs,
+            _ if !self.musicbrainz_enabled() => Provider::Discogs,
             _ => Provider::MusicBrainz,
         };
 

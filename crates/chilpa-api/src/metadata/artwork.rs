@@ -239,6 +239,7 @@ impl Chilpa {
     /// "musicbrainz" | "discogs"
     pub fn metadata_set_artwork_provider(&mut self, provider: &str) -> bool {
         let Some(provider) = Provider::from_name(provider) else { return false };
+        if provider == Provider::MusicBrainz && !self.musicbrainz_enabled() { return false; }
         let editor = &mut self.metadata;
         editor.artwork_provider = provider;
         editor.artwork_turn += 1;
@@ -254,10 +255,14 @@ impl Chilpa {
     /// Looks for covers with what the form holds.
     pub fn metadata_search_artwork(&mut self) -> bool {
         let off = self.metadata_lookups_off();
+        let musicbrainz_off = !self.musicbrainz_enabled();
         let editor = &mut self.metadata;
         let Some(draft) = editor.draft.as_ref().filter(|_| editor.state == State::Ready) else { return false };
         if off {
             return editor.refuse(chilpa_i18n::t("looking records up is turned off in Settings"));
+        }
+        if musicbrainz_off && editor.artwork_provider == Provider::MusicBrainz {
+            return editor.refuse(chilpa_i18n::t("MusicBrainz is turned off in Integrations"));
         }
         let (title, artist, catalog_number) = (
             draft.album_cell("title").now.clone(),
@@ -284,12 +289,16 @@ impl Chilpa {
     /// Fetches one of the covers found and leaves it in wait.
     pub fn metadata_choose_artwork(&mut self, candidate: usize) -> bool {
         let off = self.metadata_lookups_off();
+        let musicbrainz_off = !self.musicbrainz_enabled();
         let editor = &mut self.metadata;
         if editor.state != State::Ready {
             return false;
         }
         if off {
             return editor.refuse(chilpa_i18n::t("looking records up is turned off in Settings"));
+        }
+        if musicbrainz_off && editor.artwork_provider == Provider::MusicBrainz {
+            return editor.refuse(chilpa_i18n::t("MusicBrainz is turned off in Integrations"));
         }
         let Some(url) = editor.candidates.get(candidate).map(|c| c.url.clone()) else { return false };
         editor.artwork_turn += 1;

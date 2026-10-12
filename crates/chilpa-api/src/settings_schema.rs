@@ -99,12 +99,19 @@ pub const SECTIONS: &[Section] = &[
                 settings: &[
                     setting("audio.backend", Chilpa::mark("Audio stack"), Chilpa::mark("Where the samples go: straight to the device, or through a sound server."), Control::Select),
                     setting("audio.device", Chilpa::mark("Output device"), Chilpa::mark("BP marks an output that takes the samples untouched."), Control::Device),
-                    setting("audio.alsaPlugin", Chilpa::mark("ALSA plugin"), Chilpa::mark("hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."), Control::Select),
                     setting("audio.dsdMode", Chilpa::mark("DSD playback"), Chilpa::mark("Native uses ALSA's DSD_U32 format. DoP carries the same one-bit stream inside marked PCM words. PCM converts DSD so every output can play it."), Control::Select),
-                    setting("audio.reserve", Chilpa::mark("Take the card from the sound server"), Chilpa::mark("Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."), Control::Toggle),
-                    setting("audio.forceRate", Chilpa::mark("DAC passthrough"), Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."), Control::Toggle),
                     setting("audio.exclusive", Chilpa::mark("Exclusive mode"), Chilpa::mark("The output plays only Chilpa. Other programs wait until it lets go."), Control::Toggle),
+                    setting("audio.forceRate", Chilpa::mark("DAC passthrough"), Chilpa::mark("Sets PipeWire's graph to each track's rate while Chilpa has the output alone, so the DAC receives the rate the file holds. The rate goes back when Chilpa stops."), Control::Toggle),
                     action(crate::outputs::HIFI_WIZARD, Chilpa::mark("HiFi Wizard"), Chilpa::mark("Auto-detect your DACs and set up bit-perfect playback, step by step."), Control::Button, Chilpa::mark("Open Wizard")),
+                ],
+            },
+            Group {
+                title: Chilpa::mark("ALSA direct"),
+                settings: &[
+                    setting("audio.alsaPlugin", Chilpa::mark("ALSA plugin"), Chilpa::mark("hw plays the samples untouched or refuses them. plughw converts what the card refuses. pcm is the card as ALSA sets it up, shared with other programs. Only hw can be bit-perfect."), Control::Select),
+                    setting("audio.reserve", Chilpa::mark("Take the card from the sound server"), Chilpa::mark("Asks PipeWire or PulseAudio to let go of the card while Chilpa plays on it, and gives it back when Chilpa stops or pauses for long."), Control::Toggle),
+                    setting("audio.hwVolumeControl", Chilpa::mark("Hardware volume control"), Chilpa::mark("Choose the playback mixer element that belongs to this output. Chilpa verifies it before saving the choice."), Control::Select),
+                    setting("audio.hwVolume", Chilpa::mark("Hardware volume"), Chilpa::mark("Move the output's own volume from the player bar when the selected ALSA control supports safe playback volume."), Control::Toggle),
                 ],
             },
             Group { title: Chilpa::mark("Diagnosis"), settings: &[action("audio.wizard", Chilpa::mark("Diagnose the output"), Chilpa::mark("Opens the device and says which formats reach it untouched."), Control::Button, Chilpa::mark("Diagnose"))] },
@@ -271,19 +278,27 @@ pub const SECTIONS: &[Section] = &[
         icon: "broadcast",
         groups: &[
             Group {
-                title: "ListenBrainz",
+                title: Chilpa::mark("Scrobbling"),
                 settings: &[
-                    action("integrations.listenbrainz.account", Chilpa::mark("Account"), Chilpa::mark("Paste the user token from listenbrainz.org/settings."), Control::Secret, Chilpa::mark("Connect")),
-                    setting("integrations.listenbrainz.enabled", Chilpa::mark("Send listens"), Chilpa::mark("A track counts once half of it has played, or four minutes. Listens made offline are sent later."), Control::Toggle),
+                    action("integrations.listenbrainz.account", Chilpa::mark("ListenBrainz account"), Chilpa::mark("Paste the user token from listenbrainz.org/settings."), Control::Secret, Chilpa::mark("Connect")),
+                    setting("integrations.listenbrainz.enabled", Chilpa::mark("Send to ListenBrainz"), Chilpa::mark("A track counts once half of it has played, or four minutes. Listens made offline are sent later."), Control::Toggle),
+                    action("integrations.lastfm.account", Chilpa::mark("Last.fm account"), Chilpa::mark("Last.fm opens in the browser to allow Chilpa."), Control::Button, Chilpa::mark("Connect")),
+                    setting("integrations.lastfm.enabled", Chilpa::mark("Send to Last.fm"), Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."), Control::Toggle),
                 ],
             },
-            Group {
-                title: "Last.fm",
-                settings: &[
-                    action("integrations.lastfm.account", Chilpa::mark("Account"), Chilpa::mark("Last.fm opens in the browser to allow Chilpa."), Control::Button, Chilpa::mark("Connect")),
-                    setting("integrations.lastfm.enabled", Chilpa::mark("Scrobble"), Chilpa::mark("The same rule as ListenBrainz: half of a track, or four minutes."), Control::Toggle),
-                ],
-            },
+            Group { title: "MusicBrainz", settings: &[
+                setting("integrations.musicbrainz.enabled", Chilpa::mark("Use MusicBrainz"), Chilpa::mark("Chilpa sends no telemetry. When enabled, artist and release searches make one-way requests to MusicBrainz for results. Turning it off disables MusicBrainz features in Artist Network."), Control::Toggle),
+            ] },
+            Group { title: Chilpa::mark("Lyrics"), settings: &[
+                setting("integrations.lyrics.service", Chilpa::mark("Chilpa lyrics API"), Chilpa::mark("Look up lyrics through Chilpa's lyrics service when the file and its source have none."), Control::Toggle),
+                setting("integrations.lyrics.plugin", Chilpa::mark("Plugin lyrics"), Chilpa::mark("Allow a plugin to supply lyrics for its own tracks and prefer them over Chilpa's lyrics API."), Control::Toggle),
+                setting("integrations.lyrics.provider.lrclib", "LRCLIB", Chilpa::mark("Allow results from LRCLIB through Chilpa's lyrics API."), Control::Toggle),
+                setting("integrations.lyrics.provider.musixmatch", "Musixmatch", Chilpa::mark("Allow results from Musixmatch when the lyrics service has access to it."), Control::Toggle),
+                setting("integrations.lyrics.provider.amll", "AMLL", Chilpa::mark("Allow word-timed lyrics from AMLL."), Control::Toggle),
+                setting("integrations.lyrics.provider.netease", "NetEase", Chilpa::mark("Allow results from NetEase."), Control::Toggle),
+                setting("integrations.lyrics.provider.qq", "QQ Music", Chilpa::mark("Allow results from QQ Music."), Control::Toggle),
+                setting("integrations.lyrics.provider.kugou", "KuGou", Chilpa::mark("Allow results from KuGou."), Control::Toggle),
+            ] },
         ],
     },
     Section { id: "devices", label: Chilpa::mark("Devices & cast"), icon: "cast", groups: &[
@@ -294,12 +309,6 @@ pub const SECTIONS: &[Section] = &[
         ] },
     ] },
     Section { id: "updates", label: Chilpa::mark("Updates"), icon: "infoCircle", groups: &[] },
-    Section {
-        id: "advanced",
-        label: Chilpa::mark("Advanced"),
-        icon: "settings",
-        groups: &[Group { title: Chilpa::mark("Playback"), settings: &[setting("advanced.hwVolume", Chilpa::mark("Hardware volume"), Chilpa::mark("The player bar moves the output's own volume instead of scaling the samples. It needs an output with a volume of its own."), Control::Toggle)] }],
-    },
 ];
 
 pub fn section(id: &str) -> &'static Section {

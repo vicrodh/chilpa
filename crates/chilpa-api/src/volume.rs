@@ -8,7 +8,8 @@ use crate::Chilpa;
 
 const VOLUME: &str = "playback.volume";
 const MUTED: &str = "playback.muted";
-pub(crate) const HARDWARE: &str = "advanced.hwVolume";
+pub(crate) const HARDWARE: &str = "audio.hwVolume";
+const LEGACY_HARDWARE: &str = "advanced.hwVolume";
 
 /// What the player bar shows.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -28,9 +29,8 @@ impl Chilpa {
         if self.casting.active() { return self.cast_volume(); }
         let (output, _) = self.chosen_output();
         // On a Mac with the output alone, the slider moves the device's own
-        // volume and the samples stay untouched, as QBZ does there
-        // (`qbz-player/src/player/mod.rs`, `apply_engine_volume`); a DAC with
-        // no volume of its own falls back to scaling, as it does in QBZ.
+        // volume and the samples stay untouched. A DAC with no volume of its
+        // own falls back to scaling.
         if self.hardware_volume() || (self.stack_of(&output) == "coreaudio" && self.exclusive()) {
             let knob = chilpa_core::volume_of(&output);
             if knob.available {
@@ -42,7 +42,7 @@ impl Chilpa {
             let why = if self.hardware_volume() {
                 chilpa_i18n::t("This direct output has no hardware volume control. Use the DAC or amplifier.")
             } else {
-                chilpa_i18n::t("Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Advanced.")
+                chilpa_i18n::t("Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio.")
             };
             return VolumeView { percent: 100, muted: false, locked: true, why, ..VolumeView::default() };
         }
@@ -85,11 +85,29 @@ impl Chilpa {
     }
 
     pub fn hardware_volume(&self) -> bool {
-        self.preference(HARDWARE).as_deref() == Some("true")
+        let (output, _) = self.chosen_output();
+        self.stack_of(&output) == "alsa" && self.alsa_plugin() == "hw"
+            && self.preference(HARDWARE).or_else(|| self.preference(LEGACY_HARDWARE)).as_deref() == Some("true")
     }
 
     pub fn set_hardware_volume(&mut self, on: bool) {
-        self.remember_preference(HARDWARE, &on.to_string());
+        let (output, _) = self.chosen_output();
+        #[cfg(target_os = "linux")]
+        let eligible = on && self.stack_of(&output) == "alsa" && self.alsa_plugin() == "hw";
+        #[cfg(target_os = "linux")]
+        let enabled = eligible && match chilpa_core::activate_alsa_hardware_volume(&output) {
+            Ok(()) => true,
+            Err(error) => {
+                self.now.error = error;
+                false
+            }
+        };
+        #[cfg(not(target_os = "linux"))]
+        let enabled = {
+            let _ = (on, output);
+            false
+        };
+        self.remember_preference(HARDWARE, &enabled.to_string());
         self.apply_volume();
     }
 

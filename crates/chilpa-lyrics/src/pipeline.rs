@@ -46,7 +46,7 @@ pub trait Remote: Send + Sync {
     fn id(&self) -> &str;
     /// Shown for a document that does not say who gave it.
     fn name(&self) -> &str;
-    fn resolve(&self, track: &Track, language: Option<&str>, timeout: Duration) -> Answer;
+    fn resolve(&self, track: &Track, language: Option<&str>, providers: Option<&[String]>, timeout: Duration) -> Answer;
 }
 
 /// A plugin that plays music and may have lyrics for its own tracks.
@@ -81,6 +81,10 @@ pub struct Request {
     pub source: Option<(Arc<dyn Source>, String)>,
     /// The language a translation is wanted in, when the reader wants one.
     pub language: Option<String>,
+    /// Whether the configured remote service may answer this request.
+    pub allow_remote: bool,
+    /// Remote provider ids selected by the listener; `None` allows all.
+    pub remote_providers: Option<Vec<String>>,
 }
 
 /// Lyrics found, and who gave them.
@@ -152,12 +156,13 @@ impl Pipeline {
                 }
             }
             match cache.get(track) {
-                Some(Hit::Found { document, origin, stale: old }) => {
+                Some(Hit::Found { document, origin, stale: old }) if request.allow_remote
+                    && request.remote_providers.as_ref().is_none_or(|providers| providers.iter().any(|id| id == &origin.provider)) => {
                     stale |= old;
                     identity_known = Some(Some(Resolved { document, origin }));
                 }
-                Some(Hit::None) => identity_known = Some(None),
-                None => {}
+                Some(Hit::None) if request.allow_remote && request.remote_providers.is_none() => identity_known = Some(None),
+                _ => {}
             }
         }
         let need_source = request.source.is_some() && source_known.is_none();
@@ -167,7 +172,8 @@ impl Pipeline {
         // The source's lyrics win: when the cache already has them, the
         // service has nothing to add.
         let source_has = matches!(source_known, Some(Some(_)));
-        let need_remote = identity_known.is_none() && named && !source_has && self.remote.is_some();
+        let need_remote = request.allow_remote && request.remote_providers.as_ref().is_none_or(|providers| !providers.is_empty())
+            && identity_known.is_none() && named && !source_has && self.remote.is_some();
         if !need_source && !need_remote {
             return Outcome { resolved: choose(source_known.flatten(), identity_known.flatten()), refresh: stale };
         }
@@ -196,7 +202,7 @@ impl Pipeline {
                 cache.put(track, &candidate.claim, &candidate.document, origin, raw);
                 from_remote = Some(Resolved { document: candidate.document.clone(), origin: origin.clone() });
             }
-            Some(Ok(None)) => cache.put_none(track),
+            Some(Ok(None)) if request.remote_providers.is_none() => cache.put_none(track),
             _ => {}
         }
         Outcome { resolved: choose(from_source, from_remote), refresh: false }
@@ -227,9 +233,9 @@ impl Pipeline {
         }
         let mut remote_until = None;
         if let Some(remote) = remote {
-            let (tx, remote, track, language, limit) = (tx.clone(), remote.clone(), request.track.clone(), request.language.clone(), self.limits.remote);
+            let (tx, remote, track, language, providers, limit) = (tx.clone(), remote.clone(), request.track.clone(), request.language.clone(), request.remote_providers.clone(), self.limits.remote);
             std::thread::spawn(move || {
-                let _ = tx.send(Message::Remote(remote.resolve(&track, language.as_deref(), limit)));
+                let _ = tx.send(Message::Remote(remote.resolve(&track, language.as_deref(), providers.as_deref(), limit)));
             });
             remote_until = Some(started + self.limits.remote);
         }
@@ -264,7 +270,7 @@ impl Pipeline {
                     remote_until = None;
                     let Some(remote) = remote else { continue };
                     asked.remote = Some(match answer {
-                        Answer::Found(candidates) => Ok(self.accept(&request.track, remote.as_ref(), candidates)),
+                        Answer::Found(candidates) => Ok(self.accept(&request.track, remote.as_ref(), request.remote_providers.as_deref(), candidates)),
                         Answer::None => Ok(None),
                         Answer::Failed { retry_after, message } => {
                             if let Some(wait) = retry_after {
@@ -281,9 +287,13 @@ impl Pipeline {
 
     /// The best of what the service sent that is this track's, with who
     /// gave it. Lyrics for another song are not lyrics for this one.
-    fn accept(&self, track: &Track, remote: &dyn Remote, candidates: Vec<Candidate>) -> Option<(Candidate, Origin)> {
+    fn accept(&self, track: &Track, remote: &dyn Remote, providers: Option<&[String]>, candidates: Vec<Candidate>) -> Option<(Candidate, Origin)> {
         let mut best: Option<(Candidate, f32)> = None;
         for candidate in candidates {
+            let provider = candidate.document.source.as_ref().map_or(remote.id(), |source| source.provider.as_str());
+            if providers.is_some_and(|allowed| !allowed.iter().any(|id| id == provider)) {
+                continue;
+            }
             let verdict = judge(track, &candidate.claim, &candidate.document);
             if !verdict.accepted() {
                 continue;
@@ -357,7 +367,7 @@ mod tests {
         fn name(&self) -> &str {
             self.id
         }
-        fn resolve(&self, _: &Track, _: Option<&str>, _: Duration) -> Answer {
+        fn resolve(&self, _: &Track, _: Option<&str>, _: Option<&[String]>, _: Duration) -> Answer {
             self.answer()
         }
     }
@@ -399,7 +409,7 @@ mod tests {
     }
 
     fn request(source: Option<Arc<Fake>>) -> Request {
-        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None }
+        Request { track: track(), path: None, source: source.map(|s| (s as Arc<dyn Source>, "track:1".to_string())), language: None, allow_remote: true, remote_providers: None }
     }
 
     fn origin(outcome: &Outcome) -> &str {
@@ -412,6 +422,33 @@ mod tests {
         let outcome = p.resolve(&request(None), false);
         assert_eq!(origin(&outcome), "service");
         assert_eq!(outcome.resolved.unwrap().document.timing, Timing::Word);
+    }
+
+    #[test]
+    fn turning_off_the_service_ignores_its_cached_answer() {
+        let service = Fake::new("service", found(WORDS));
+        let p = pipeline(service.clone());
+        assert_eq!(origin(&p.resolve(&request(None), false)), "service");
+        let mut disabled = request(None);
+        disabled.allow_remote = false;
+        assert!(p.resolve(&disabled, false).resolved.is_none());
+        assert_eq!(service.calls(), 1);
+    }
+
+    #[test]
+    fn a_provider_filter_ignores_answers_and_misses_from_other_filters() {
+        let service = Fake::new("service", found(WORDS));
+        let p = pipeline(service.clone());
+        assert_eq!(origin(&p.resolve(&request(None), false)), "service");
+        let mut selected = request(None);
+        selected.remote_providers = Some(vec!["another".into()]);
+        assert!(p.resolve(&selected, false).resolved.is_none());
+
+        let empty = Fake::new("service", Answer::None);
+        let p = pipeline(empty.clone());
+        assert!(p.resolve(&request(None), false).resolved.is_none());
+        assert!(p.resolve(&selected, false).resolved.is_none());
+        assert_eq!(empty.calls(), 2);
     }
 
     #[test]
@@ -577,7 +614,7 @@ mod tests {
         std::fs::write(dir.join("song.lrc"), "Plain words next door\n").unwrap();
         let service = Fake::new("service", found(WORDS));
         let p = pipeline(service.clone());
-        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None }, false);
+        let outcome = p.resolve(&Request { track: track(), path: Some(file), source: None, language: None, allow_remote: true, remote_providers: None }, false);
         assert_eq!(origin(&outcome), "file");
         assert_eq!(service.calls(), 0, "nobody is asked when the file has lyrics, however fine the service's are");
         let _ = std::fs::remove_dir_all(dir);

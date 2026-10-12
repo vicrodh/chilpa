@@ -29,6 +29,9 @@ fn cache_path() -> std::path::PathBuf {
 /// The preference that says which language a translation is wanted in:
 /// empty or "auto" for the window's own, else a language code.
 pub(crate) const TRANSLATION_LANGUAGE: &str = "ui.lyrics.translation";
+pub(crate) const LYRICS_API: &str = "integrations.lyrics.service";
+pub(crate) const PLUGIN_LYRICS: &str = "integrations.lyrics.plugin";
+const REMOTE_PROVIDERS: &[&str] = &["lrclib", "musixmatch", "amll", "netease", "qq", "kugou"];
 
 /// Where the lyrics of what plays stand, for the window to say so.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
@@ -120,8 +123,8 @@ impl LyricsService {
     /// The plugins are the ones running now, handed in with every request:
     /// the first track can start before they do, and whoever kept the
     /// plugins of that moment would never ask a source for its lyrics.
-    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>)) {
-        let (track, path, source, language) = request;
+    pub(crate) fn request(&self, natives: &Arc<Natives>, generation: u64, request: (Track, Option<std::path::PathBuf>, Option<(String, String)>, Option<String>, bool, Option<Vec<String>>)) {
+        let (track, path, source, language, allow_remote, remote_providers) = request;
         self.wanted.store(generation, Ordering::SeqCst);
         let source = source
             .filter(|(id, _)| natives.has_track_lyrics(id))
@@ -129,7 +132,7 @@ impl LyricsService {
                 let name = natives.display_name(&id);
                 (Arc::new(NativeSource { natives: natives.clone(), id, name }) as Arc<dyn Source>, reference)
             });
-        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language } });
+        let _ = self.jobs.send(Job { generation, request: Request { track, path, source, language, allow_remote, remote_providers } });
     }
 
     /// The answer for that generation, once, when it has arrived. `Some(None)`
@@ -186,9 +189,15 @@ impl crate::Chilpa {
         };
         let file = (source.is_none() && path.is_file()).then(|| path.to_path_buf());
         let language = self.translation_language();
+        let allow_source = self.preference(PLUGIN_LYRICS).as_deref() != Some("false");
+        let allow_remote = self.preference(LYRICS_API).as_deref() != Some("false");
+        let selected: Vec<String> = REMOTE_PROVIDERS.iter().filter(|id| {
+            self.preference(&format!("integrations.lyrics.provider.{id}")).as_deref() != Some("false")
+        }).map(|id| (*id).to_string()).collect();
+        let remote_providers = (selected.len() != REMOTE_PROVIDERS.len()).then_some(selected);
         let generation = self.lyrics.generation;
         let service = self.lyrics.service.get_or_insert_with(LyricsService::start);
-        service.request(&self.natives, generation, (track, file, source, Some(language)));
+        service.request(&self.natives, generation, (track, file, source.filter(|_| allow_source), Some(language), allow_remote, remote_providers));
     }
 
     /// The language a translation is wanted in: the one chosen for lyrics,
@@ -203,11 +212,12 @@ impl crate::Chilpa {
     /// translation asks the track's source again, which is who translates;
     /// for any other track it only changes which translation is offered.
     pub(crate) fn lyrics_preference_changed(&mut self, key: &str) {
-        if key != TRANSLATION_LANGUAGE {
+        if !matches!(key, TRANSLATION_LANGUAGE | LYRICS_API | PLUGIN_LYRICS)
+            && !key.starts_with("integrations.lyrics.provider.") {
             return;
         }
         match self.lyrics.asked.clone() {
-            Some((path, length_ms)) if crate::source_opener::of_plugin(&self.now.path).is_some() => self.load_lyrics(&path, length_ms),
+            Some((path, length_ms)) if key != TRANSLATION_LANGUAGE || crate::source_opener::of_plugin(&self.now.path).is_some() => self.load_lyrics(&path, length_ms),
             _ => self.now.lyrics_revision += 1,
         }
     }

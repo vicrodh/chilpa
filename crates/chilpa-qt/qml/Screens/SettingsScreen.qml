@@ -6,21 +6,20 @@ import QtQuick.Controls.Basic
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.sources
+import app.chilpa.wizard
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
-// Settings (design/06 Settings): the sections on the left, the chosen one's
-// rows on the right. Every row comes from the schema in Rust.
+// Settings rows follow the facade schema.
 Item {
     id: page
     property Component purchaseCard: null
 
     readonly property string section: Navigation.section !== "" ? Navigation.section : SettingsModel.sections[0]
-    // The setting a search went to: its section opens, its row comes into
-    // view and lights up for a moment.
+    // Open, reveal and briefly highlight a search result.
     property string focusKey: ""
     property int focusRow: -1
     function go(setting) {
@@ -32,8 +31,7 @@ Item {
         seeking.tries = 0
         seeking.restart()
     }
-    // The section's rows arrive after it opens, and a row's item after the
-    // list has laid it out: both are looked for again for a moment.
+    // Retry until the section and its delegate have loaded.
     Timer {
         id: seeking
         property int tries: 0
@@ -239,10 +237,9 @@ Item {
             rows.set(key, value)
         }
         function press(key) {
-            if (key === "devices.cast")
-                return casting.show(actions)
-            if (key === "sources.addServer")
-                return adding.open()
+            if (key === "devices.cast") return casting.show(actions)
+            if (key === "sources.addServer") return adding.open()
+            if (key === "audio.wizard" && rows.diagnosis_requires_stop()) return diagnosis.request()
             rows.press(key)
         }
     }
@@ -265,6 +262,8 @@ Item {
             rows.refresh()
         }
     }
+
+    OutputDiagnosisDialog { id: diagnosis; settingsPage: rows }
 
     // A sync moving, a server coming back: its rows follow while shown.
     Timer {
