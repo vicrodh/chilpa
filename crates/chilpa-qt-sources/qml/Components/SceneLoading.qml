@@ -61,7 +61,9 @@ Item {
         Text {
             visible: loading.longWait; width: Metrics.sceneWaitWidth
             anchors.horizontalCenter: parent.horizontalCenter
-            text: I18n.tr("This can take a few minutes when MusicBrainz is busy.", I18n.rev)
+            text: loading.includeSources && (loading.progress.percentage || 0) >= 40
+                ? I18n.tr("Checking your selected sources can take a few minutes.", I18n.rev)
+                : I18n.tr("This can take a few minutes when MusicBrainz is busy.", I18n.rev)
             wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter
             font.pointSize: Type.meta; color: Theme.color.textTertiary
         }
@@ -72,7 +74,9 @@ Item {
         spacing: Metrics.gap16
         Text {
             width: parent.width; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter
-            text: I18n.tr("This is taking longer than usual. MusicBrainz may be busy. Try again in a moment.", I18n.rev)
+            text: loading.includeSources && (loading.progress.percentage || 0) >= 40
+                ? I18n.tr("Your selected sources are taking longer than usual. Try again in a moment.", I18n.rev)
+                : I18n.tr("This is taking longer than usual. MusicBrainz may be busy. Try again in a moment.", I18n.rev)
             font.pointSize: Type.body; color: Theme.color.textSecondary
         }
         PillButton {

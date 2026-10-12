@@ -602,6 +602,9 @@ msgstr "Revisando la cuenta…"
 msgid "Checking your audio stack…"
 msgstr "Revisando tu stack de audio…"
 
+msgid "Checking your selected sources can take a few minutes."
+msgstr "La búsqueda en las fuentes seleccionadas puede tardar unos minutos."
+
 msgid "Checking your selected sources…"
 msgstr "Buscando en las fuentes seleccionadas…"
 
@@ -3908,6 +3911,9 @@ msgstr "Tu cola está vacía"
 
 msgid "Your queue is empty — add some tracks first, or press Play test."
 msgstr "Tu cola está vacía: agrega algunas pistas primero, o presiona Probar."
+
+msgid "Your selected sources are taking longer than usual. Try again in a moment."
+msgstr "Las fuentes seleccionadas están tardando más de lo habitual. Inténtalo de nuevo en un momento."
 
 msgid "Your shows"
 msgstr "Tus programas"
