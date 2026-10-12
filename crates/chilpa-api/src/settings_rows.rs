@@ -79,6 +79,7 @@ pub(crate) fn fixed(key: &str) -> Vec<(&'static str, String)> {
         "appearance.font" => vec![("inter", "Inter".to_string()), ("system", chilpa_i18n::t("System"))],
         "appearance.albumHeader" => vec![("full", chilpa_i18n::t("Full")), ("colors", chilpa_i18n::t("Colors")), ("off", chilpa_i18n::t("Off"))],
         "navigation.albumClick" => vec![("page", chilpa_i18n::t("Album page")), ("quick", chilpa_i18n::t("Quick view"))],
+        "navigation.playerLayout" => vec![("floating", chilpa_i18n::t("Floating")), ("bottom", chilpa_i18n::t("Full width, bottom")), ("top", chilpa_i18n::t("Full width, top"))],
         "navigation.playlistArtwork" => {
             vec![("icon", chilpa_i18n::t("Playlist icon")), ("collage", chilpa_i18n::t("Cover collage"))]
         }
@@ -370,13 +371,14 @@ impl Chilpa {
                 row.options = row.values.clone();
                 row.value = self.preference("appearance.accent").unwrap_or_default();
             }
-            "playback.extra" => row.value = self.pref_on(&row.key, true),
+            "navigation.extraControls" => row.value = self.pref_on("playback.extra", true),
             crate::play_indicator::ANIMATED => row.value = self.play_indicator_animated().to_string(),
-            "playback.autoHide" => row.value = self.pref_on(&row.key, false),
+            "navigation.autoHide" => row.value = self.pref_on("playback.autoHide", false),
             "playback.gapless" => row.value = self.gapless().to_string(),
             "playback.normalize" => row.value = self.normalize().to_string(),
             "playback.keepQueue" => row.value = self.keep_queue().to_string(),
             "navigation.newtab" => row.value = self.pref_on("navigation.newtab", true),
+            "navigation.playerLayout" => row.value = self.player_layout().to_string(),
             "navigation.restoreTabs" => row.value = self.pref_on("navigation.restoreTabs", true),
             "navigation.folderColors" => row.value = self.pref_on("navigation.folderColors", false),
             "integrations.listenbrainz.enabled" => row.value = self.listenbrainz().enabled.to_string(),

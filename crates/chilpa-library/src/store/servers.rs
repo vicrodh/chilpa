@@ -40,6 +40,7 @@ pub struct StoredServer {
     pub instance: String,
     pub label: String,
     pub reachable: bool,
+    pub enabled: bool,
     pub address: String,
     pub account: String,
     pub identity: String,
@@ -138,7 +139,7 @@ impl Library {
 
     fn read_servers(&self, tail: &str, args: &[&dyn rusqlite::ToSql]) -> rusqlite::Result<Vec<StoredServer>> {
         let sql = format!(
-            "SELECT v.source_id, s.provider, s.instance, s.label, s.reachable, v.address, v.account,
+            "SELECT v.source_id, s.provider, s.instance, s.label, s.reachable, s.enabled, v.address, v.account,
                     v.identity, v.product, v.libraries, v.details, v.added_at, v.synced_at,
                     (SELECT count(*) FROM tracks t WHERE t.source_id = v.source_id AND t.present = 1),
                     (SELECT count(DISTINCT t.album_id) FROM tracks t
@@ -153,16 +154,17 @@ impl Library {
                 instance: r.get(2)?,
                 label: r.get(3)?,
                 reachable: r.get::<_, i64>(4)? != 0,
-                address: r.get(5)?,
-                account: r.get(6)?,
-                identity: r.get(7)?,
-                product: r.get(8)?,
-                libraries: r.get(9)?,
-                details: r.get(10)?,
-                added_at: r.get(11)?,
-                synced_at: r.get(12)?,
-                tracks: r.get::<_, i64>(13)? as usize,
-                albums: r.get::<_, i64>(14)? as usize,
+                enabled: r.get::<_, i64>(5)? != 0,
+                address: r.get(6)?,
+                account: r.get(7)?,
+                identity: r.get(8)?,
+                product: r.get(9)?,
+                libraries: r.get(10)?,
+                details: r.get(11)?,
+                added_at: r.get(12)?,
+                synced_at: r.get(13)?,
+                tracks: r.get::<_, i64>(14)? as usize,
+                albums: r.get::<_, i64>(15)? as usize,
             })
         })?;
         rows.collect()

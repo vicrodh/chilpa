@@ -1124,8 +1124,14 @@ msgstr "Atenuado"
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
 msgstr "ALSA directo no escala las muestras. Usa el DAC o el amplificador, o activa el volumen de hardware en Ajustes › Audio."
 
+msgid "Disable"
+msgstr "Desactivar"
+
 msgid "Disabled"
 msgstr "Desactivada"
+
+msgid "Disabled. Its records stay in the library and its sign-in is saved."
+msgstr "Desactivado. Sus álbumes siguen en la biblioteca y sus credenciales están guardadas."
 
 msgid "Disc"
 msgstr "Disco"
@@ -1253,8 +1259,17 @@ msgstr "Folders vacíos"
 msgid "Empty. Add tracks from any list with a right click."
 msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 
+msgid "Enable"
+msgstr "Activar"
+
+msgid "Enable {} in Settings › Sources to play this record."
+msgstr "Activa {} en Ajustes › Fuentes para reproducir este álbum."
+
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
+
+msgid "Enable {} in Settings › Sources to play this record."
+msgstr ""
 
 msgid "Ends at {}"
 msgstr "Termina a las {}"
@@ -1381,6 +1396,9 @@ msgstr "Plano"
 
 msgid "Floating"
 msgstr "Flotante"
+
+msgid "Floating over the content, or spanning the window at the top or bottom."
+msgstr "Flotante sobre el contenido o a todo lo ancho de la ventana, arriba o abajo."
 
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
@@ -2645,6 +2663,9 @@ msgstr "Reproductor"
 msgid "Player bar"
 msgstr "Barra del reproductor"
 
+msgid "Player bar position"
+msgstr "Posición de la barra del reproductor"
+
 msgid "Playing"
 msgstr "Reproduciendo"
 
@@ -3567,6 +3588,9 @@ msgstr "La vista de descargas no está disponible."
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr "El primero sigue al tema: carmesí en claro, rojo en oscuro."
 
+msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr "La barra flotante se aparta tras diez segundos sin mover el mouse; cualquier movimiento la trae de vuelta."
+
 msgid "The image could not be kept"
 msgstr "No se pudo guardar la imagen en Chilpa"
 
@@ -3599,9 +3623,6 @@ msgstr "La salida sigue reproduciendo"
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
 msgstr "La salida reproduce sólo Chilpa. Los demás programas esperan hasta que la suelte."
-
-msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
-msgstr "La barra del reproductor se aparta tras diez segundos sin mover el mouse, y cualquier movimiento la trae de vuelta."
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
 msgstr "La playlist se creó, pero no se pudieron añadir todas las pistas. Ábrela antes de reintentarlo."
@@ -3843,11 +3864,11 @@ msgstr "Transcripción"
 msgid "Translation"
 msgstr "Traducción"
 
-msgid "Tray glyph"
-msgstr "Glifo de la bandeja"
-
 msgid "Tray icon"
 msgstr "Icono en la bandeja"
+
+msgid "Tray icon style"
+msgstr "Estilo del icono de la bandeja"
 
 msgid "Tree"
 msgstr "Árbol"
@@ -4631,6 +4652,9 @@ msgstr "ese servidor no tiene ninguna biblioteca de música"
 
 msgid "that server is already in the library"
 msgstr "ese servidor ya está en la biblioteca"
+
+msgid "that server is disabled"
+msgstr "ese servidor está desactivado"
 
 msgid "that server is no longer in the library"
 msgstr "ese servidor ya no está en la biblioteca"

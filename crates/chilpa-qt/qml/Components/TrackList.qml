@@ -150,6 +150,7 @@ Item {
             moveHovered: index === view.hovered ? view.moveHovered : 0
             artistHovered: index === view.artistHovered
             selectionMode: list.selectionMode
+            groupActionsEnabled: list.groupActionsEnabled
             ListView.onPooled: visible = false; ListView.onReused: visible = true
         }
 
@@ -164,6 +165,7 @@ Item {
         rows: view
         cols: columns
         menu: actions
+        groupMenu: discMenu
         measure: credit
     }
 
@@ -200,14 +202,17 @@ Item {
         model: list.model
     }
 
-    TrackGroupActions {
-        id: groupActions
-        row: view.hovered
-        item: row >= 0 ? view.itemAtIndex(row) : null
-        model: list.model
+    QueueMenu { id: discMenu; model: list.model; z: 3 }
 
-        visible: list.groupActionsEnabled && item && item.header
-        x: list.width - width - Metrics.gap10
-        y: head.height + (item ? item.y - view.contentY + (item.height - height) / 2 : 0)
-        z: 3
-    }}
+    // Work and record groups keep the existing compact toolbar.
+    TrackGroupActions {
+        readonly property Item rowItem: view.hovered >= 0 ? view.itemAtIndex(view.hovered) : null
+        visible: list.groupActionsEnabled && rowItem && rowItem.header && (rowItem.headerWork || rowItem.record)
+        row: view.hovered
+        item: rowItem
+        model: list.model
+        x: list.width - width - Metrics.gap12
+        y: rowItem ? view.y + rowItem.y - view.contentY + (rowItem.height - height) / 2 : 0
+        z: 2
+    }
+}

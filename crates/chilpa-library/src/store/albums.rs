@@ -386,6 +386,16 @@ impl Library {
         rows.collect()
     }
 
+    /// Paused servers that hold tracks of this record.
+    pub fn disabled_servers_of(&self, album_id: i64) -> rusqlite::Result<Vec<String>> {
+        let mut stmt = self.db.prepare(
+            "SELECT DISTINCT s.label FROM tracks t JOIN sources s ON s.id = t.source_id
+             WHERE t.album_id = ?1 AND t.present = 1 AND s.kind = 'server' AND s.enabled = 0 ORDER BY s.label",
+        )?;
+        let rows = stmt.query_map(params![album_id], |r| r.get(0))?;
+        rows.collect()
+    }
+
     /// The library's artists, by name.
     ///
     /// An artist with no present tracks does not show up: the view shows what

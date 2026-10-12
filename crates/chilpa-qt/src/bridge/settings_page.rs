@@ -183,6 +183,11 @@ impl qobject::SettingsPage {
             self.reload();
             return;
         }
+        if let (Some(id), "enable" | "disable") = (key.strip_prefix("sources.server/").and_then(|id| id.parse().ok()), value.as_str()) {
+            app::with(|api| { api.set_server_enabled(id, value == "enable"); });
+            self.reload();
+            return;
+        }
         if let Some(id) = key.strip_prefix("sources.token/") {
             if !app::with(|api| api.connect_plugin(id, &value)) {
                 let said = app::with(|api| api.now_playing().error.clone());

@@ -20,17 +20,20 @@ Item {
     property string artist: of ? of.artist : ""
     property string meta: of ? of.headerMeta : ""
     property url art: of ? of.art : ""
+    property bool discActions: false
+    property int actionHovered: 0
     // Colors the cover's place while it has none.
     property int tint: of ? of.index : 0
 
     readonly property bool covered: art.toString() !== ""
     readonly property Item composerLabel: composerName
+    readonly property Item actionArea: discButtons
 
     implicitHeight: record ? Metrics.rowRecord : work ? Metrics.rowWork : Metrics.rowGroup
 
     Row {
         visible: !head.record && !head.work
-        width: parent.width
+        width: parent.width - (head.discActions ? discButtons.width + Metrics.gap12 : 0)
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap8
 
@@ -55,16 +58,45 @@ Item {
         }
         Text {
             anchors.verticalCenter: parent.verticalCenter
+            width: Math.min(implicitWidth, Math.max(0, parent.width - Metrics.artGroup - metaText.implicitWidth - Metrics.gap24))
             text: head.label
+            elide: Text.ElideRight
             font.pointSize: Type.meta
             font.weight: Type.semibold
             color: Theme.color.textPrimary
         }
         Text {
+            id: metaText
             anchors.verticalCenter: parent.verticalCenter
             text: head.meta
             font.pointSize: Type.meta
             color: Theme.color.textTertiary
+        }
+    }
+
+    Row {
+        id: discButtons
+        visible: head.discActions
+        x: head.width - width - Metrics.gap10
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: Metrics.gap4
+        Repeater {
+            model: [Icons.playerPlayFilled, Icons.arrowsShuffle, Icons.playlistAdd]
+            Rectangle {
+                required property int index
+                required property string modelData
+                width: Metrics.button30
+                height: Metrics.button30
+                radius: Metrics.button30
+                color: head.actionHovered === index + 1 ? Theme.color.stateHover : Theme.color.fillField
+                Icon {
+                    anchors.centerIn: parent
+                    glyph: modelData
+                    filled: index === 0
+                    size: Metrics.iconMd
+                    color: Theme.color.textPrimary
+                }
+            }
         }
     }
 

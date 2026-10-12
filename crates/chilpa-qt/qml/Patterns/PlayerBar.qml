@@ -41,6 +41,7 @@ Item {
     // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open
     readonly property bool onTop: PlayerLayout.mode === "top"
+    readonly property bool docked: PlayerLayout.mode !== "floating"
     implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
     // Only a floating bar covers the content's end.
     Binding { target: Metrics; property: "playerSpace"; value: PlayerLayout.mode === "floating" ? bar.implicitHeight : 0 }
@@ -66,7 +67,9 @@ Item {
         anchors.fill: parent
         radius: Metrics.radiusPlayer
         // Half alpha over the dynamic background, so the field shows through.
-        color: Theme.ambient ? Theme.color.ambientPlayer : Theme.color.surfacePlayer
+        color: bar.docked
+            ? (Theme.ambient ? Theme.color.ambientSidebar : Theme.color.surfaceSidebar)
+            : (Theme.ambient ? Theme.color.ambientPlayer : Theme.color.surfacePlayer)
 
         Edge {}
     }
@@ -276,9 +279,9 @@ Item {
         id: lcd
         tall: bar.tall
         anchors.left: transport.right
-        anchors.leftMargin: Metrics.gap10
+        anchors.leftMargin: bar.docked ? Metrics.modalInset : Metrics.gap10
         anchors.right: actions.left
-        anchors.rightMargin: Metrics.gap10
+        anchors.rightMargin: bar.docked ? Metrics.modalInset : Metrics.gap10
         anchors.verticalCenter: body.verticalCenter
         showTimes: bar.width >= Metrics.playerNoTimes
     }

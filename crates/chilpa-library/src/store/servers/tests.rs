@@ -316,6 +316,9 @@ fn a_record_whose_tracks_cannot_play_is_listed_and_marked_and_its_edition_is_not
     assert_eq!(lib.version_catalog().unwrap().selected(theirs), mine);
     assert_eq!(lib.unavailable_albums(&[mine, theirs]).unwrap(), HashSet::from([mine, theirs]));
     assert_eq!(lib.unreachable_sources_of(theirs).unwrap(), vec!["Server aaaa".to_string()]);
+    assert!(lib.disabled_servers_of(theirs).unwrap().is_empty());
+    lib.set_server_enabled(server, false).unwrap();
+    assert_eq!(lib.disabled_servers_of(theirs).unwrap(), vec!["Server aaaa".to_string()]);
 }
 
 #[test]
