@@ -91,7 +91,7 @@ Item {
         contentHeight: column.height
         clip: true
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
+        ScrollBar.vertical: ViewportScrollBar { gutter: (history.width - list.x - list.width) / 2 } // derived: the middle of the room to its right
 
         Column {
             id: column

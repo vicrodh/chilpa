@@ -118,7 +118,7 @@ Item {
         contentHeight: body.height + Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
         // In the middle of the page's margin to its right, off the cards.
-        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.contentX / 2 } // derived: the middle of the margin
+        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
 
         Column {
             id: body

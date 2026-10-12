@@ -72,7 +72,7 @@ Item {
         clip: true; spacing: Metrics.gap4
         model: page.cards || page.indexPage ? [] : page.entries
         delegate: MediaRow { required property var modelData; width: scroll.width; entry: modelData; compact: page.compact; onOpened: entry.kind === "folder" ? page.open(entry) : Navigation.goKey("sourceEntry", entry.key); onPlayed: page.ask("play", entry.id); onQueued: page.ask("queue", entry.id); onSaved: page.ask("save", entry.id); onHeard: page.ask("heard", entry.id) }
-        Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
+        Controls.ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         header: Column {
             id: content; width: scroll.width; bottomPadding: Metrics.gap24; spacing: Metrics.gap24
             MediaShelf {

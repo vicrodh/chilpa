@@ -177,6 +177,8 @@ Item {
         anchors.bottom: parent.bottom
         x: head.x
         width: head.width - (strip.visible ? strip.width + Metrics.gap8 : 0)
+        // The letters take the margin's place beside the rows.
+        scrollGutter: strip.visible ? Metrics.scrollbarWidth / 2 : Metrics.pageGutter
         bottomInset: Metrics.contentBottom
         header: false
         rich: SettingsModel.density === "rich"
