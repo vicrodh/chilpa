@@ -133,3 +133,4 @@ external-link
 cloud-download
 chart-bar
 history
+pencil
