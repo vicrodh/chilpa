@@ -11,6 +11,7 @@ Item {
     id: panel
     objectName: "scenePanel"
     property var artists: []
+    property bool includeSources: false
     property string selectedId: ""
     signal artistSelected(string id)
     signal artistOpened(var artist)
@@ -49,7 +50,7 @@ Item {
         objectName: "scenePanelAlbums"
         x: rail.width + Metrics.hairline; y: sourcePicker.visible ? Metrics.sceneNavHeight : 0
         width: Math.max(0, parent.width - x); height: parent.height - y
-        artist: panel.selectedArtist; source: panel.source; document: panel.page
+        artist: panel.selectedArtist; source: panel.source; document: panel.page; includeSources: panel.includeSources
         onArtistOpened: panel.artistOpened(panel.selectedArtist)
     }
 }

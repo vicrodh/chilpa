@@ -8,7 +8,7 @@ TestCase {
     name: "ArtistScene"; when: windowShown; visible: true; width: 1100; height: 800
     Component { id: maker; ArtistScene { width: 1100; height: 800 } }
     function init() {
-        Sources.sceneDocument = {state:"ready",sceneLabel:"Seattle scene",artistName:"Source artist",genreSummary:"grunge / post-punk",
+        Sources.sceneDocument = {state:"ready",includeSources:true,sceneLabel:"Seattle scene",artistName:"Source artist",genreSummary:"grunge / post-punk",
             artists:[
                 {mbid:"a",title:"Cedar",genres:["grunge","post-punk"],sources:[{plugin:"fixture",name:"Fixture",ref:"artist:7"},{plugin:"second",name:"Second",ref:"artist:8"}]},
                 {mbid:"b",title:"Briar",genres:["post-punk"],sources:[]},
@@ -58,5 +58,15 @@ TestCase {
         compare(albums.sections.map(s => s.title), ["Other catalog"])
         scene.selectedArtistId = "b"
         compare(albums.noSource, true)
+    }
+    function test_without_plugin_matches_keeps_the_grid() {
+        const scene = createTemporaryObject(maker, this)
+        waitForRendering(scene)
+        scene.mode = "sidepanel"
+        Sources.sceneDocument = {state:"ready",includeSources:false,sceneLabel:"Seattle scene",
+            artists:[{mbid:"b",title:"Briar",genres:["post-punk"],sources:[]}]}
+        Library.remoteRev++
+        tryCompare(scene, "canBrowse", false)
+        compare(scene.mode, "grid")
     }
 }
