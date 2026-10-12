@@ -58,8 +58,8 @@ Flickable {
     component AlbumShelf: Column {
         id: shelf
         property var entry: ({})
+        readonly property bool shown: records.albums > 0
         spacing: Metrics.gap8
-        visible: records.albums > 0
         AlbumGridModel { id: records; kind: shelf.entry.source || ""; contentRev: Library.contentRev; limit: shelf.entry.size || Metrics.shelfLimit; maxRows: shelf.entry.size ? 0 : 1; columns: grid.columns }
         SectionHeader { width: parent.width; title: shelf.entry.title || "" }
         AlbumGrid { id: grid; width: parent.width; height: implicitHeight; fitContent: true; model: records; onOpen: (albumId) => Navigation.go("album", albumId) }
@@ -67,8 +67,8 @@ Flickable {
     component TrackShelf: Column {
         id: tracks
         property var entry: ({})
+        readonly property bool shown: most.count > 0
         spacing: Metrics.gap8
-        visible: most.count > 0
         TrackListModel { id: most; kind: "mostPlayed"; filterRev: Library.contentRev; limit: tracks.entry.size || Metrics.mostPlayedLimit; playingPath: Player.path }
         SectionHeader { width: parent.width; title: tracks.entry.title || "" }
         TrackList { width: parent.width; height: implicitHeight; fitContent: true; showPlays: true; model: most }
@@ -130,7 +130,10 @@ Flickable {
                 required property var modelData
                 objectName: "homeShelf"
                 width: column.width
-                visible: status === Loader.Ready && item.visible
+                // What the shelf says it has, not its `visible`: a child of a
+                // hidden Loader is hidden too, and the two would wait for
+                // each other.
+                visible: status === Loader.Ready && item.shown
                 sourceComponent: modelData.kind === "albums" ? albumShelf : modelData.kind === "tracks" ? trackShelf : sourceRail
                 onLoaded: item.entry = Qt.binding(() => modelData)
             }

@@ -52,6 +52,16 @@ TestCase {
         Sources.show({homeLibraries: []})
     }
 
+    // A shelf with records shows; one without stays out of the way.
+    function test_a_shelf_with_records_shows_and_an_empty_one_does_not() {
+        const loaders = []
+        const walk = item => { for (const child of item.children) { if (child.objectName === "homeShelf") loaders.push(child); walk(child) } }
+        walk(home.contentItem)
+        const added = loaders.find(l => l.modelData.id === "library.recentlyAdded")
+        tryVerify(() => added.visible && added.height > 0, 1000, "the records added show")
+        verify(!loaders.find(l => l.modelData.id === "library.recentlyPlayed").visible, "nothing played, nothing shown")
+    }
+
     function test_customize_lists_every_shelf() {
         findChild(home, "homeCustomize").clicked()
         const list = findChild(home, "customizeChoices")
