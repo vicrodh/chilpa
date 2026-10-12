@@ -31,6 +31,7 @@ Rectangle {
     color: Theme.color.overlayScrim
 
     Row {
+        id: head
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.margins: Metrics.overlayPad
@@ -59,6 +60,9 @@ Rectangle {
         Text {
             visible: overlay.released !== "" && overlay.sources.length < 2
             anchors.verticalCenter: parent.verticalCenter
+            // A whole date stops short of the marks on the right.
+            width: Math.min(implicitWidth, marks.x - Metrics.gap6 - head.x - selector.width - head.spacing) // derived: up to the marks
+            elide: Text.ElideRight
             text: overlay.released
             font.pointSize: Type.meta
             font.weight: Type.semibold
@@ -87,6 +91,7 @@ Rectangle {
     }
 
     Row {
+        id: marks
         anchors.right: favoriteButton.visible ? favoriteButton.left : parent.right
         anchors.rightMargin: favoriteButton.visible ? Metrics.gap4 : Metrics.overlayPad
         anchors.verticalCenter: favoriteButton.verticalCenter
