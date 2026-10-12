@@ -1124,7 +1124,13 @@ msgstr ""
 msgid "Direct ALSA does not scale the samples. Use the DAC or amplifier, or enable hardware volume in Settings › Audio."
 msgstr ""
 
+msgid "Disable"
+msgstr ""
+
 msgid "Disabled"
+msgstr ""
+
+msgid "Disabled. Its records stay in the library and its sign-in is saved."
 msgstr ""
 
 msgid "Disc"
@@ -1253,7 +1259,13 @@ msgstr ""
 msgid "Empty. Add tracks from any list with a right click."
 msgstr ""
 
+msgid "Enable"
+msgstr ""
+
 msgid "Enable PipeWire in your NixOS configuration"
+msgstr ""
+
+msgid "Enable {} in Settings › Sources to play this record."
 msgstr ""
 
 msgid "Ends at {}"
@@ -1380,6 +1392,9 @@ msgid "Flat"
 msgstr ""
 
 msgid "Floating"
+msgstr ""
+
+msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr ""
 
 msgid "Folder colors in the sidebar"
@@ -2645,6 +2660,9 @@ msgstr ""
 msgid "Player bar"
 msgstr ""
 
+msgid "Player bar position"
+msgstr ""
+
 msgid "Playing"
 msgstr ""
 
@@ -3567,6 +3585,9 @@ msgstr "The download view is unavailable."
 msgid "The first follows the theme: crimson in light, red in dark."
 msgstr ""
 
+msgid "The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
+msgstr ""
+
 msgid "The image could not be kept"
 msgstr ""
 
@@ -3598,9 +3619,6 @@ msgid "The output is still playing"
 msgstr ""
 
 msgid "The output plays only Chilpa. Other programs wait until it lets go."
-msgstr ""
-
-msgid "The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."
 msgstr ""
 
 msgid "The playlist was created, but some tracks could not be added. Open it before retrying."
@@ -3843,10 +3861,10 @@ msgstr ""
 msgid "Translation"
 msgstr ""
 
-msgid "Tray glyph"
+msgid "Tray icon"
 msgstr ""
 
-msgid "Tray icon"
+msgid "Tray icon style"
 msgstr ""
 
 msgid "Tree"
@@ -4630,6 +4648,9 @@ msgid "that server has no music library"
 msgstr ""
 
 msgid "that server is already in the library"
+msgstr ""
+
+msgid "that server is disabled"
 msgstr ""
 
 msgid "that server is no longer in the library"

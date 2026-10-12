@@ -37,6 +37,7 @@ pub struct ServerRow {
     pub address: String,
     pub icon: String,
     pub reachable: bool,
+    pub enabled: bool,
     pub syncing: bool,
     pub tracks: usize,
     pub albums: usize,
@@ -96,7 +97,7 @@ impl Chilpa {
         }
         let due: Vec<i64> = stored
             .into_iter()
-            .filter(|s| s.synced_at.is_none_or(|at| now - at > STALE))
+            .filter(|s| s.enabled && s.synced_at.is_none_or(|at| now - at > STALE))
             .map(|s| s.source_id)
             .collect();
         for id in due {
@@ -115,7 +116,9 @@ impl Chilpa {
             .into_iter()
             .map(|s| {
                 let kind = chilpa_servers::Kind::from_provider(&s.provider);
-                let state = if let Some(done) = running.get(&s.source_id) {
+                let state = if !s.enabled {
+                    chilpa_i18n::t("Disabled. Its records stay in the library and its sign-in is saved.")
+                } else if let Some(done) = running.get(&s.source_id) {
                     if *done == 0 {
                         chilpa_i18n::t("Syncing…")
                     } else {
@@ -141,6 +144,7 @@ impl Chilpa {
                     address: s.address.clone(),
                     icon: kind.map(|k| k.icon(&s.product)).unwrap_or("server").to_string(),
                     reachable: s.reachable,
+                    enabled: s.enabled,
                     syncing: running.contains_key(&s.source_id),
                     tracks: s.tracks,
                     albums: s.albums,
@@ -166,7 +170,9 @@ impl Chilpa {
                     description = said.clone();
                 }
             }
-            let action = if server.syncing {
+            let action = if !server.enabled {
+                chilpa_i18n::t("Disabled")
+            } else if server.syncing {
                 chilpa_i18n::t("Syncing")
             } else if self.servers.refused.contains(&server.id) {
                 chilpa_i18n::t("Signed out")
@@ -182,8 +188,9 @@ impl Chilpa {
                 description,
                 control: "status".into(),
                 action,
-                values: vec!["sync".into(), "remove".into()],
-                options: vec![chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")],
+                values: if server.enabled { vec!["disable".into(), "sync".into(), "remove".into()] } else { vec!["enable".into(), "remove".into()] },
+                options: if server.enabled { vec![chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
+                    else { vec![chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] },
                 ..Default::default()
             });
         }
@@ -292,10 +299,32 @@ impl Chilpa {
 
     /// Reads the server's catalogue again.
     pub fn sync_server(&mut self, id: i64) {
+        if !self.library().and_then(|lib| lib.server(id).ok().flatten()).is_some_and(|s| s.enabled) {
+            return;
+        }
         self.servers.errors.remove(&id);
         if let Some(syncer) = self.servers.syncer.as_mut() {
             syncer.ask(id);
         }
+    }
+
+    /// Pauses or resumes a server while retaining its catalogue and sign-in.
+    pub fn set_server_enabled(&mut self, id: i64, enabled: bool) -> bool {
+        let current = RemoteEntry::parse(&self.now.path);
+        let Some(server) = self.library().and_then(|lib| lib.server(id).ok().flatten()) else { return false };
+        let playing_here = !enabled && current.is_some_and(|entry| entry.source.provider == server.provider && entry.source.instance == server.instance);
+        let changed = self.library().and_then(|lib| lib.set_server_enabled(id, enabled).ok()).unwrap_or(false);
+        if !changed { return false; }
+        if enabled {
+            if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
+        } else if let Some(syncer) = self.servers.syncer.as_mut() {
+            syncer.cancel(id);
+        }
+        if playing_here { self.stop(); }
+        self.servers.errors.remove(&id);
+        self.servers.refused.remove(&id);
+        self.servers.changed = true;
+        true
     }
 
     /// What removing a server takes out of the library, as the confirmation
@@ -377,6 +406,10 @@ impl Chilpa {
 
     /// Why a record cannot be opened, as a click on it says.
     pub fn album_unavailable_reason(&mut self, id: i64) -> String {
+        let disabled = self.library().and_then(|lib| lib.disabled_servers_of(id).ok()).unwrap_or_default();
+        if !disabled.is_empty() {
+            return chilpa_i18n::t_args("Enable {} in Settings › Sources to play this record.", &[&disabled.join(", ")]);
+        }
         let places = self.library().and_then(|lib| lib.unreachable_sources_of(id).ok()).unwrap_or_default();
         match places.as_slice() {
             [] => chilpa_i18n::t("This record cannot be played now."),

@@ -94,6 +94,10 @@ TitledFlow {
             ArtPreview { target: parent; shown: false }
         }
         TrackGroupHeader { width: section.width; label: "Disc 2 \u2014 Live"; meta: "9 songs" }
+        TrackRowHeader {
+            row: ({ header: true, headerWork: false, record: false, headerLabel: "Disc 2", headerMeta: "9 songs", headerComposer: "", headerComposerTarget: "", artist: "", art: "", index: 2, actionHovered: 0, width: section.width, height: Metrics.rowGroup, cols: { indexX: 0 } })
+            actionsEnabled: true
+        }
         TrackGroupHeader { width: section.width; work: true; label: "Das Rheingold, Scene 1"; composer: "Richard Wagner"; composerTarget: "artist:Richard Wagner" }
         TrackGroupHeader { width: section.width; record: true; label: "Low Orbit \u2014 Live"; artist: "Mora Vale"; meta: "2019 \u00b7 Disc 2 \u00b7 9 tracks" }
         Repeater {

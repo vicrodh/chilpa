@@ -1,6 +1,7 @@
 import QtQuick
 import app.chilpa
 import app.chilpa.kit
+import app.chilpa.controls
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
@@ -100,7 +101,8 @@ Item {
         Toggle {
             enabled: row.control === "toggle"
             checked: row.value === "true"
-            onToggled: (on) => row.page.set(row.key, on ? "true" : "false")
+            onToggled: (on) => row.page.set(row.key === "navigation.extraControls" ? "playback.extra"
+                : row.key === "navigation.autoHide" ? "playback.autoHide" : row.key, on ? "true" : "false")
         }
     }
     Component {
@@ -110,8 +112,11 @@ Item {
             options: row.options
             values: row.optionValues
             marks: row.marks
-            value: row.value
-            onPicked: (value) => row.page.set(row.key, value)
+            value: row.key === "navigation.playerLayout" ? PlayerLayout.mode : row.value
+            onPicked: (value) => {
+                if (row.key === "navigation.playerLayout") PlayerLayout.mode = value
+                else row.page.set(row.key, value)
+            }
         }
     }
     Component {

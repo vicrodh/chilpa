@@ -291,16 +291,17 @@ impl TrackListRust {
         }
     }
 
-    /// Tracks belonging to a loaded group header, up to the next header.
-    /// The boundary is label-agnostic, so discs, acts and scenes share it.
+    /// Tracks belonging to a loaded group. A disc includes its work sections;
+    /// a work stops at the next work or disc header.
     fn group_paths(&self, row: usize) -> Vec<String> {
         let Rows::Loaded(entries) = &self.rows else {
             return Vec::new();
         };
-        if !matches!(entries.get(row), Some(Entry::Header(_))) {
-            return Vec::new();
-        }
-        entries[row + 1..].iter().take_while(|entry| !matches!(entry, Entry::Header(_))).filter_map(|entry| match entry {
+        let Some(Entry::Header(group)) = entries.get(row) else { return Vec::new() };
+        entries[row + 1..].iter().take_while(|entry| match entry {
+            Entry::Header(next) => !group.work && next.work,
+            Entry::Track(_) => true,
+        }).filter_map(|entry| match entry {
             Entry::Track(track) => Some(track.path.clone()),
             Entry::Header(_) => None,
         }).collect()
@@ -442,6 +443,7 @@ impl qobject::TrackListModel {
         }
         app::with(|api| match action.to_string().as_str() {
             "play" => api.play_from(&paths, 0),
+            "shuffle" => api.play_list(&paths, true),
             "queue" => api.enqueue_here(&paths),
             "next" => api.play_next_here(&paths),
             "later" => { api.play_later_here(&paths, &label.to_string()); }

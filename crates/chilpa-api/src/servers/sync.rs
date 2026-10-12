@@ -81,6 +81,7 @@ impl Syncer {
 
     /// Stops the sync of a server that is being removed, at the next page.
     pub(crate) fn cancel(&mut self, source: i64) {
+        if !self.queued.contains(&source) { return; }
         if let Ok(mut s) = self.cancel.lock() {
             s.insert(source);
         }
@@ -117,6 +118,9 @@ pub(crate) fn run(
     let Some(stored) = lib.server(source).ok().flatten() else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };
+    if !stored.enabled {
+        return Event::Failed { source, why: chilpa_i18n::t("that server is disabled"), unreachable: false };
+    }
     let Some(server) = net::server(&stored) else {
         return Event::Failed { source, why: chilpa_i18n::t("that server is no longer in the library"), unreachable: false };
     };

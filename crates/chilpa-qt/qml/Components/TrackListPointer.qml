@@ -3,8 +3,7 @@ import app.chilpa
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 
-// The one pointer of a track list: hover and clicks are resolved here, once
-// for the whole list, so a row carries no mouse handling of its own.
+    // Hover and clicks are resolved once for the whole list.
 MouseArea {
     id: pointer
 
@@ -12,6 +11,7 @@ MouseArea {
     property ListView rows
     property TrackColumns cols
     property TrackMenu menu
+    property QueueMenu groupMenu
     property CreditLine measure
     cursorShape: Qt.PointingHandCursor
 
@@ -34,8 +34,7 @@ MouseArea {
     readonly property bool dropAfter: dropRow > pressedRow
 
     hoverEnabled: true
-    // A press that starts on a row that can be moved is the row's: the page
-    // the list sits in may not take it over and scroll with it.
+    // A movable row owns its press so the page cannot steal it for scrolling.
     preventStealing: pressedRow >= 0
     acceptedButtons: Qt.LeftButton | Qt.RightButton
 
@@ -54,7 +53,7 @@ MouseArea {
             if (badge) TipState.show(item.sourceName, badge)
         }
         rows.ratingHovered = ratingAt(rows.hovered, mouseX, mouseY)
-        rows.actionHovered = containsMouse ? actionAt(rows.hovered, mouseX, mouseY) : 0
+        rows.actionHovered = containsMouse ? (groupActionAt(rows.hovered, mouseX, mouseY) || actionAt(rows.hovered, mouseX, mouseY)) : 0
         rows.moveHovered = containsMouse ? moveAt(rows.hovered, mouseX, mouseY) : 0
     }
     // The arrow at that point of a row kept in its own order: before the
@@ -79,6 +78,10 @@ MouseArea {
     function actionAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
         return item ? item.end.actionAt(x - item.x - item.end.x, y + rows.contentY - item.y) : 0
+    }
+    function groupActionAt(row, x, y) {
+        const item = row >= 0 ? rows.itemAtIndex(row) : null
+        return item ? item.groupActionAt(pointer, x, y) : 0
     }
     function ratingAt(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
@@ -145,6 +148,14 @@ MouseArea {
         if (row < 0 || dropped)
             return
         const header = rows.itemAtIndex(row)
+        const groupAction = groupActionAt(row, mouse.x, mouse.y)
+        if (mouse.button === Qt.LeftButton && groupAction > 0) {
+            if (groupAction === 3) {
+                const at = header.groupActionArea.mapToItem(host, 0, header.groupActionArea.height + Metrics.gap4)
+                groupMenu.showGroup(row, header.headerLabel, host.width - Metrics.menuWidth - Metrics.gap10, at.y)
+            } else host.model.groupAction(row, groupAction === 1 ? "play" : "shuffle", header.headerLabel)
+            return
+        }
         if (mouse.button === Qt.LeftButton && onHeaderComposer(header, mouse.x, mouse.y)) {
             const target = header.headerComposerTarget
             if (target.startsWith("artist:")) Navigation.openArtist(target.slice(7))
@@ -191,7 +202,7 @@ MouseArea {
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
         const header = row >= 0 ? rows.itemAtIndex(row) : null
-        if (onHeaderComposer(header, mouse.x, mouse.y))
+        if (groupActionAt(row, mouse.x, mouse.y) || onHeaderComposer(header, mouse.x, mouse.y))
             return
         if (onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
             return

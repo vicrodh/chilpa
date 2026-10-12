@@ -1477,3 +1477,8 @@ END;
 UPDATE tracks SET revision = NULL
  WHERE source_id IN (SELECT id FROM sources WHERE kind = 'server');
 "#;
+
+/// Server sources can be paused without removing their catalogue or key.
+pub(super) const MIGRATION_V38: &str = r#"
+ALTER TABLE sources ADD COLUMN enabled INTEGER NOT NULL DEFAULT 1;
+"#;

@@ -38,6 +38,7 @@ Item {
     property string composer: ""
     property var sourceInfo: ({}); readonly property Item sourceBadge: badge
     property bool selectionMode: false
+    property bool groupActionsEnabled: false
     property int rating: 0
     property int ratingPreview: 0
     property bool canRate: false
@@ -58,7 +59,9 @@ Item {
     // several a click is on.
     readonly property Text artistLabel: rich ? richArtist : compactArtist
     readonly property Text albumText: albumLabel
-    readonly property Item headerComposerLabel: groupHeader.item ? groupHeader.item.composerLabel : null
+    readonly property Item headerComposerLabel: groupHeader.composerLabel
+    readonly property Item groupActionArea: groupHeader.actionArea
+    function groupActionAt(from, x, y) { return groupHeader.actionAt(from, x, y) }
 
     function containsArtist(x, y) {
         const label = rich ? richArtist : compactArtist
@@ -89,15 +92,7 @@ Item {
         edge: row.playing && !Prefs.animatedIndicator
     }
 
-    // Only a header builds one; it stops short of the group's own actions.
-    Loader {
-        id: groupHeader
-        active: row.header
-        x: row.cols.indexX
-        width: row.width - x - row.cols.more - Metrics.gap16 // derived: what the actions take
-        height: parent.height
-        sourceComponent: TrackGroupHeader { objectName: "groupHeader"; of: row }
-    }
+    TrackRowHeader { id: groupHeader; row: row; actionsEnabled: row.groupActionsEnabled }
     Item {
         anchors.fill: parent
         visible: !row.header

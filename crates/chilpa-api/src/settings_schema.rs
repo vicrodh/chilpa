@@ -132,13 +132,6 @@ pub const SECTIONS: &[Section] = &[
                     setting("playback.keepQueue", Chilpa::mark("Keep the queue between sessions"), Chilpa::mark("Reopens the upcoming queue paused, at the place where you left it."), Control::Toggle),
                 ],
             },
-            Group {
-                title: Chilpa::mark("Player bar"),
-                settings: &[
-                    setting("playback.extra", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds, and the A-B loop."), Control::Toggle),
-                    setting("playback.autoHide", Chilpa::mark("Hide when idle"), Chilpa::mark("The player bar steps away after ten seconds without the mouse moving, and any movement brings it back."), Control::Toggle),
-                ],
-            },
         ],
     },
     Section {
@@ -190,7 +183,7 @@ pub const SECTIONS: &[Section] = &[
                 setting("desktop.tray", Chilpa::mark("Tray icon"), Chilpa::mark("Chilpa's icon on the panel: a click shows or hides the window, the middle button plays or pauses, the wheel moves the volume."), Control::Toggle),
                 setting("desktop.closeToTray", Chilpa::mark("Close to tray"), Chilpa::mark("Closing the window keeps Chilpa playing in the tray instead of quitting."), Control::Toggle),
                 setting("desktop.confirmQuit", Chilpa::mark("Ask before quitting"), Chilpa::mark("Quitting from the window, its menu, Ctrl+Q or the tray asks first."), Control::Toggle),
-                setting("desktop.trayIcon", Chilpa::mark("Tray glyph"), Chilpa::mark("Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."), Control::Select),
+                setting("desktop.trayIcon", Chilpa::mark("Tray icon style"), Chilpa::mark("Auto follows the desktop's colours: the light glyph on a dark panel, the dark one on a light panel."), Control::Select),
             ],
         }],
     },
@@ -207,6 +200,14 @@ pub const SECTIONS: &[Section] = &[
                 ],
             },
             Group { title: Chilpa::mark("Records"), settings: &[setting("navigation.albumClick", Chilpa::mark("A click on a record opens"), Chilpa::mark("Its page, or its quick view under the row."), Control::Segmented)] },
+            Group {
+                title: Chilpa::mark("Player bar"),
+                settings: &[
+                    setting("navigation.playerLayout", Chilpa::mark("Player bar position"), Chilpa::mark("Floating over the content, or spanning the window at the top or bottom."), Control::Select),
+                    setting("navigation.extraControls", Chilpa::mark("Extra controls"), Chilpa::mark("Buttons to go back or forward ten seconds, and the A-B loop."), Control::Toggle),
+                    setting("navigation.autoHide", Chilpa::mark("Hide when idle"), Chilpa::mark("The floating player bar steps away after ten seconds without the mouse moving, and any movement brings it back."), Control::Toggle),
+                ],
+            },
             Group {
                 title: Chilpa::mark("Playlists"),
                 settings: &[
