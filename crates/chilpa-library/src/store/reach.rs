@@ -1,9 +1,9 @@
 //! Whether what is in the library answers right now (ADR-017).
 //!
 //! A folder that is not mounted and a server that does not answer leave
-//! their records listed and unplayable. Nothing here deletes or hides: that
-//! is `present`, and only a scan or a finished sync that did not find
-//! something may touch it.
+//! their records listed and unplayable. Only a scan or finished sync changes
+//! `present`. An explicitly disabled server is filtered from
+//! library views while its tracks remain available to saved playlists.
 
 use super::Library;
 use rusqlite::params;

@@ -10,6 +10,8 @@ import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 TitledFlow {
     title: "Plugins"
     MediaListeningPanel { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    ServerEditForm { width: Metrics.confirmWidth; height: implicitHeight
+        preview: ({step:"libraries",kind:"jellyfin",label:"Music server",address:"http://music.local:8096",choices:[{id:"music",name:"Music",detail:""}],selectedLibraries:[]}) }
     EpisodeMaterial { width: Metrics.confirmWidth; entry: ({description:"Episode notes"}) }
     ImportCheck { text: "Mixed playlist"; checked: true; width: Metrics.confirmWidth }
     ImportMatch { width: Metrics.confirmWidth; match: ({title:"Track",artist:"Artist",confidence:0.95}); sourceName: "Source"; destination: "Mixed"; qualityLabel: "FLAC" }

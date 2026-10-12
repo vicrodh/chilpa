@@ -130,12 +130,6 @@ Item {
                 x: tools.wrapped ? 0 : tools.width - width
                 y: tools.wrapped ? actions.height + Metrics.gap8 : 0
                 spacing: Metrics.gap12
-                SearchField {
-                    id: find
-                    width: Math.min(Metrics.screenSearch, Math.max(Metrics.queueSearchMin, tools.width - (tools.wrapped ? 0 : actions.width + Metrics.gap12) - (ends.visible ? ends.implicitWidth + Metrics.gap12 : 0)))
-                    placeholder: I18n.tr("Search queue", I18n.rev)
-                    onTextChanged: { page.typed = text; if (text !== "") page.cancelFollow() }
-                }
                 Parts.QueueEnds {
                     id: ends
                     y: (find.height - height) / 2
@@ -143,6 +137,12 @@ Item {
                     summary: page.foot.summary || ""
                     remaining: page.foot.left_ms || 0
                     now: page.now
+                }
+                SearchField {
+                    id: find
+                    width: Math.min(Metrics.screenSearch, Math.max(Metrics.queueSearchMin, tools.width - (tools.wrapped ? 0 : actions.width + Metrics.gap12) - (ends.visible ? ends.implicitWidth + Metrics.gap12 : 0)))
+                    placeholder: I18n.tr("Search queue", I18n.rev)
+                    onTextChanged: { page.typed = text; if (text !== "") page.cancelFollow() }
                 }
             }
         }
@@ -155,7 +155,7 @@ Item {
             model: tracks
             groupActionsEnabled: false
             reorderable: page.typed === ""
-            scrollGutter: Metrics.gap8
+            scrollGutter: -Metrics.gap8
         }
         Connections {
             target: list.rows
@@ -166,9 +166,10 @@ Item {
         Column {
             id: viewportActions
             anchors.right: parent.right
+            anchors.rightMargin: Metrics.gap6
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: Metrics.gap12
-            spacing: Metrics.gap8
+            anchors.bottomMargin: Metrics.gap6
+            spacing: Metrics.gap6
             z: 3
             Rectangle {
                 width: Metrics.queueViewportAction

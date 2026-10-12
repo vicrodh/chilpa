@@ -658,3 +658,6 @@ selem
 strerror
 sysfs
 ucm
+
+# I renew a saved server sign-in.
+reauthenticate
