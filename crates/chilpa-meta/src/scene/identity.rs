@@ -20,7 +20,7 @@ pub fn normalize_name(name: &str) -> String {
 
 pub fn normalize_isrc(raw: &str) -> Option<String> {
     let value: String = raw.chars().filter(|c| c.is_ascii_alphanumeric()).collect::<String>().to_uppercase();
-    (value.len() == 12 && value.chars().all(|c| c.is_ascii_alphanumeric())).then_some(value)
+    (!value.is_empty()).then_some(value)
 }
 
 /// Fetch all recordings for an ISRC through the same shared MusicBrainz pace
