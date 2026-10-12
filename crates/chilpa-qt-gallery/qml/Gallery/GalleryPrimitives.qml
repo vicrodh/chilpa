@@ -74,6 +74,13 @@ TitledFlow {
         ProgressField { progress: "0.4"; action: "Analyze" }
         Toggle {}
         SelectField { options: ["ALSA", "PipeWire"]; values: ["alsa", "pipewire"]; marks: ["BP", ""]; value: "alsa" }
+        Item {
+            id: cutLine
+            width: Metrics.selectWidth
+            height: Metrics.fieldHeight
+            Text { width: parent.width; text: "[1982] The Number of the Beast, 5644.2, Vinyl"; elide: Text.ElideMiddle; color: Theme.color.textPrimary }
+            CutTextTips { watching: cutLine }
+        }
         SourceIcon { sourceInfo: ({ local: true }) }
         Item { width: Metrics.button32; height: Metrics.button32; Hold {} }
         Repeater {

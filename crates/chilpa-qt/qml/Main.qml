@@ -135,7 +135,7 @@ Window {
         window: window
     }
 
-    Tooltip {}
+    Tooltip { watching: window.contentItem }
 
     WindowGrips {
         anchors.fill: parent

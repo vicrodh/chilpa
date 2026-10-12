@@ -4,9 +4,12 @@ import "../Theme"
 
 // Draws TipState's tooltip under the item that asked, inside the window --
 // in the layer popups are drawn in and above them, so an entry of an open
-// menu can have one too.
+// menu can have one too. Given what the window holds, any line in it that
+// is cut short says itself whole there as well.
 Rectangle {
     id: tip
+
+    property Item watching: null
 
     parent: Overlay.overlay
     z: Metrics.tooltipLayer
@@ -23,6 +26,11 @@ Rectangle {
     color: Theme.color.surfaceRaised
 
     Edge {}
+
+    Loader {
+        active: tip.watching !== null
+        sourceComponent: CutTextTips { watching: tip.watching }
+    }
 
     Text {
         id: label

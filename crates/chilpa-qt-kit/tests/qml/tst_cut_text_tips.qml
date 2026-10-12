@@ -2,7 +2,6 @@ import QtQuick
 import QtTest
 import "../../qml/Theme"
 import "../../qml/Primitives"
-import "../../qml/Patterns"
 
 // A line cut short says itself whole when the pointer rests on it, also
 // under its row's hover area, and goes quiet when the pointer leaves it; a
@@ -17,7 +16,7 @@ TestCase {
     Item {
         id: holder
         anchors.fill: parent
-        CutTextTips {}
+        CutTextTips { watching: holder }
         Item {
             width: 300
             height: 40
