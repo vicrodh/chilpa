@@ -64,6 +64,14 @@ impl Chilpa {
         started: i64,
     ) -> ListenContext {
         let mut context = ListenContext::default();
+        // A source's track: its stable id, and its record's as the catalog
+        // read it, so the history and the home can name the record and find
+        // it again. Asked before the library, which holds the facade.
+        let from_source = crate::source_opener::of_plugin(&path.to_string_lossy()).map(|(plugin, id)| {
+            let track = self.catalog.track_by_path(&path.to_string_lossy()).map(|(track, _)| track);
+            let record = track.as_ref().and_then(|t| self.catalog.card(t.album_id)).map(|card| card.identity);
+            (plugin, id, track, record)
+        });
         let Some(lib) = self.library() else {
             return context;
         };
@@ -84,8 +92,19 @@ impl Chilpa {
                     context.external_id = path.to_string_lossy().into_owned();
                 }
             }
+        } else if let Some((plugin, id, track, record)) = from_source {
+            context.source_id = lib.source_id(crate::source_opener::PROVIDER, &plugin).ok();
+            if context.source_id.is_some() {
+                context.external_id = id;
+                context.album_external_id = record.unwrap_or_default();
+            }
+            if let Some(track) = track {
+                context.title = track.title;
+                context.artist = track.artist;
+                context.album = track.album;
+            }
         }
-        if context.track_id.is_none() {
+        if context.track_id.is_none() && context.title.is_empty() {
             if let Some(tags) = tags {
                 context.title = tags.title.clone().unwrap_or_default();
                 context.artist = tags.artist_line();

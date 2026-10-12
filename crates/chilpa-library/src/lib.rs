@@ -23,5 +23,5 @@ pub use scan::{scan_root, scan_root_with_cache, ScanReport};
 pub use scan_job::{ScanJob, ScanProgress};
 pub use smart::{builtins as smart_builtins, Order as SmartOrder, Rule, SmartList};
 pub use store::{NewServer, Removal, ServerTrack, StoredServer};
-pub use store::{is_various, split_genres, letter_of, AlbumDisc, AlbumEdit, ArtistRole, EditTrack, Edited, Put, TrackEdit, AlbumSort, BrowseTrack, FacetEntry, Filter, FolderEntry, Library, PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, Snapshot, Stats, StoredAlbum, StoredArtist, StoredPlaylist, StoredRoot, StoredTrack, Totals, TrackOrder, TrackStat};
+pub use store::{is_various, split_genres, letter_of, AlbumDisc, AlbumEdit, ArtistRole, EditTrack, Edited, Put, TrackEdit, AlbumSort, BrowseTrack, FacetEntry, Filter, FolderEntry, Library, PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, Snapshot, Stats, StoredAlbum, StoredArtist, StoredPlaylist, StoredRoot, StoredTrack, Totals, TrackOrder, TrackStat, RecentRelease};
 pub use sidecar::{Home, Override, Sidecar, SidecarError};

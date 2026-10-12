@@ -2285,6 +2285,9 @@ msgstr ""
 msgid "On the sidebar's destinations."
 msgstr ""
 
+msgid "One row"
+msgstr ""
+
 msgid "One track straight into the next."
 msgstr ""
 
@@ -2760,6 +2763,9 @@ msgid "Recently added"
 msgstr ""
 
 msgid "Recently played"
+msgstr ""
+
+msgid "Recently played, all sources"
 msgstr ""
 
 msgid "Records"

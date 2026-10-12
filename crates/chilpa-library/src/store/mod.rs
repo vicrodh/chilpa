@@ -59,7 +59,7 @@ pub use edit::{AlbumEdit, EditTrack, Edited, Put, TrackEdit};
 pub use browse::{letter_of, BrowseTrack, FacetEntry, Filter, FolderEntry, Snapshot, Totals, TrackOrder};
 pub use find::Found;
 pub use playlists::{PlaylistEdit, PlaylistEntry, PlaylistFolder, PlaylistMembership, PlaylistTrackMetadata, StoredPlaylist};
-pub use plays::{Stats, TrackStat};
+pub use plays::{RecentRelease, Stats, TrackStat};
 pub use servers::{NewServer, Removal, ServerTrack, StoredServer};
 
 use crate::schema;

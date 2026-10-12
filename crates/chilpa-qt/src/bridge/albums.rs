@@ -30,7 +30,8 @@ pub mod qobject {
         #[qobject]
         #[base = QAbstractListModel]
         #[qml_element]
-        /// "recentlyPlayed", "recentlyAdded", "all", "library" (the records
+        /// "recentlyPlayed", "recentlyPlayedEverywhere" (with the sources'),
+        /// "recentlyAdded", "all", "library" (the records
         /// the Library screen's filter leaves), "artist" (one artist's
         /// records, by `key`), "sameArtist" and "related" (an album id),
         /// "appearsOn" (the compilations they are on)
@@ -311,6 +312,7 @@ impl qobject::AlbumGridModel {
         let limit = self.rust().limit.max(1) as usize;
         let list = match self.rust().kind.to_string().as_str() {
             "recentlyPlayed" => app::with(|api| api.recently_played_albums(limit)),
+            "recentlyPlayedEverywhere" => app::with(|api| api.recently_played_everywhere(limit)),
             "recentlyAdded" => app::with(|api| api.recently_added_albums(limit)),
             "all" => {
                 // Sorting the whole library does not fit in a frame: the

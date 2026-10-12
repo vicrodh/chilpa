@@ -8,6 +8,17 @@ use crate::store::Library;
 use rusqlite::params;
 use crate::store::{row_to_track, StoredTrack};
 
+/// A record played lately: the library's by its id, a source's by the
+/// source and the record's id there, as the play log names it.
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct RecentRelease {
+    pub album_id: Option<i64>,
+    pub provider: String,
+    pub instance: String,
+    pub album_external_id: String,
+    pub last_played: i64,
+}
+
 /// What the play log says taken together.
 ///
 /// It comes from the log, not from counters: a counter drifts out of sync
@@ -153,6 +164,30 @@ impl Library {
         }).map(|_| ())
     }
 
+    /// The records played last, wherever they played, the latest first:
+    /// one line per record, not per play.
+    pub fn recent_releases(&self, limit: usize) -> rusqlite::Result<Vec<RecentRelease>> {
+        let mut stmt = self.db.prepare(
+            "SELECT coalesce(t.album_id, c.album_id), coalesce(s.provider, ''), coalesce(s.instance, ''),
+                    coalesce(c.album_external_id, ''), max(p.started_at) AS last
+             FROM play_events p
+             LEFT JOIN play_context c ON c.event_id = p.id
+             LEFT JOIN tracks t ON t.id = p.track_id
+             LEFT JOIN sources s ON s.id = p.source_id
+             WHERE coalesce(t.album_id, c.album_id) IS NOT NULL
+                OR (c.album_external_id <> '' AND p.source_id IS NOT NULL)
+             GROUP BY CASE WHEN coalesce(t.album_id, c.album_id) IS NOT NULL
+                           THEN 'album:' || coalesce(t.album_id, c.album_id)
+                           ELSE p.source_id || ':' || c.album_external_id END
+             ORDER BY last DESC
+             LIMIT ?1",
+        )?;
+        let rows = stmt.query_map(params![limit as i64], |r| {
+            Ok(RecentRelease { album_id: r.get(0)?, provider: r.get(1)?, instance: r.get(2)?, album_external_id: r.get(3)?, last_played: r.get(4)? })
+        })?;
+        rows.collect()
+    }
+
     /// How many times a track has been played, counting only what played more
     /// than halfway. It is the definition the stats use.
     pub fn play_count(&self, track_id: i64) -> rusqlite::Result<usize> {
@@ -211,6 +246,26 @@ mod tests {
         assert_eq!(recent[0].at, Some(30), "the last one played first");
         assert_eq!(recent[1].at, Some(10));
         assert_eq!(recent.len(), 2, "one track per line, not one per play");
+    }
+
+    #[test]
+    fn the_records_played_last_come_from_the_library_and_from_the_sources() {
+        use crate::store::listening::{ListenContext, ListenEvent};
+        let lib = sample_library();
+        let service = lib.source_id("plugin", "app.example.music").unwrap();
+        let heard = |at: i64, external: &str, record: &str| lib.record_listen(&ListenEvent {
+            context: ListenContext { source_id: Some(service), external_id: external.into(), album_external_id: record.into(), ..Default::default() },
+            started_at: at, played_ms: 1000, duration_ms: 1000, skipped: false, sample_rate_hz: None, bit_depth: None, bit_perfect: false,
+        }).unwrap();
+        heard(25, "t-1", "rec-9");
+        heard(40, "t-2", "rec-9");
+        heard(5, "t-3", "");
+        let recent = lib.recent_releases(10).unwrap();
+        let named: Vec<String> = recent.iter().map(|r| r.album_id.map_or(format!("{}:{}", r.instance, r.album_external_id), |id| format!("album:{id}"))).collect();
+        assert_eq!(named, ["app.example.music:rec-9", "album:3", "album:1"], "the latest first, one line per record");
+        assert_eq!(recent[0].last_played, 40);
+        assert_eq!(recent[0].provider, "plugin");
+        assert_eq!(lib.recent_releases(1).unwrap().len(), 1);
     }
 
 

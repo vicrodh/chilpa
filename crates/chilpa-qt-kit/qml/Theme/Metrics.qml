@@ -303,6 +303,8 @@ QtObject {
     // How many records a home shelf reads: more than one row can show at
     // any width, so a wider window never shows a gap.
     readonly property int shelfLimit: 12
+    // How many items a source's shelf shows before a size is chosen.
+    readonly property int shelfItems: 18
     readonly property int mostPlayedLimit: 10
     readonly property int heroArt: 220
     readonly property int pageHero: 168
