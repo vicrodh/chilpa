@@ -92,6 +92,22 @@ TestCase {
         tryCompare(button, "checked", true)
     }
 
+    function test_the_location_door_opens_the_plugin_choice_and_scene_route() {
+        Sources.networks = {"Maiden": JSON.stringify({loading:false, available:true, mbid:"ca891d65-d9b0-4258-89f7-e6ba29d83767",
+            origin:{place:"Leyton",country:"GB",tags:["heavy metal"]}, relationships:{any:false}, similar:[]})}
+        Library.remoteRev++
+        const page = createTemporaryObject(pageMaker, this)
+        waitForRendering(page)
+        const door = findChild(page, "artistSceneDoor")
+        verify(door !== null && door.door, "the location is a scene door")
+        mouseClick(door)
+        const choice = findChild(page, "sceneChoice")
+        tryCompare(choice, "visible", true)
+        mouseClick(findChild(page, "sceneIncludePlugins"))
+        compare(Sources.asked[Sources.asked.length - 1], ["sceneOpen", "Maiden", true])
+        compare(Navigation.went, ["artistScene", "Maiden"])
+    }
+
     function test_a_sidebar_row_opens_the_artist_at_its_source() {
         const page = createTemporaryObject(pageMaker, this)
         waitForRendering(page)

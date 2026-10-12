@@ -185,6 +185,7 @@ Item {
     }
     Modal {
         id: sceneChoice
+        objectName: "sceneChoice"
         width: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
         Column {
             width: parent.width; spacing: Metrics.gap16
@@ -193,7 +194,7 @@ Item {
             Row {
                 spacing: Metrics.gap8
                 PillButton { text: I18n.tr("Without plugins", I18n.rev); onClicked: page.openScene(false) }
-                PillButton { text: I18n.tr("Include plugins", I18n.rev); kind: "primary"; onClicked: page.openScene(true) }
+                PillButton { objectName: "sceneIncludePlugins"; text: I18n.tr("Include plugins", I18n.rev); kind: "primary"; onClicked: page.openScene(true) }
             }
         }
     }

@@ -16,6 +16,8 @@ pub enum Screen {
     Tracks,
     Album,
     Artist,
+    /// Artists sharing a place and musical vocabulary with the source artist.
+    ArtistScene,
     Settings,
     /// A native plugin's download catalogue; the key is its plugin id.
     PluginDownloads,
@@ -50,6 +52,7 @@ impl Screen {
             Screen::Tracks => "tracks",
             Screen::Album => "album",
             Screen::Artist => "artist",
+            Screen::ArtistScene => "artistScene",
             Screen::Settings => "settings",
             Screen::PluginDownloads => "pluginDownloads",
             Screen::LibraryFolders => "libraryFolders",
@@ -68,7 +71,7 @@ impl Screen {
     }
 
     pub fn from_name(name: &str) -> Option<Screen> {
-        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
+        [Screen::Home, Screen::Library, Screen::Artists, Screen::Albums, Screen::Tracks, Screen::Album, Screen::Artist, Screen::ArtistScene, Screen::Settings, Screen::PluginDownloads, Screen::LibraryFolders, Screen::Folders, Screen::OpenMedia, Screen::Playlist, Screen::PlaylistManager, Screen::PlaylistImport, Screen::Metadata, Screen::ListenList, Screen::Stats, Screen::ListeningHistory, Screen::Source, Screen::SourceEntry].into_iter().find(|s| s.name() == name)
     }
 }
 
@@ -252,6 +255,7 @@ impl crate::Chilpa {
                 .unwrap_or_else(|| self.t("Purchases")), "download"),
             Screen::LibraryFolders => (self.t("Library folders"), "folder"),
             Screen::Artist => (r.key.clone(), "user"),
+            Screen::ArtistScene => (self.t("Artists from this scene"), "hierarchy2"),
             Screen::Folders => match std::path::Path::new(&r.key).file_name() {
                 Some(name) => (name.to_string_lossy().into_owned(), "folder"),
                 None => (self.t("Folders"), "folder"),
@@ -325,6 +329,15 @@ mod tests {
         assert_eq!(back.active(), 1);
         assert_eq!(Tabs::restore("").routes(), [Route::of(Screen::Home)], "nothing kept, Home");
         assert_eq!(Tabs::restore("9\nnowhere\t0\t").routes(), [Route::of(Screen::Home)], "nothing usable, Home");
+    }
+
+    #[test]
+    fn the_artist_scene_route_opens_and_survives_tab_restore() {
+        assert_eq!(Screen::from_name("artistScene"), Some(Screen::ArtistScene));
+        let mut tabs = Tabs::default();
+        tabs.go(Route { screen: Screen::ArtistScene, id: 0, key: "David Bowie".into() });
+        assert_eq!(tabs.current().screen.name(), "artistScene");
+        assert_eq!(Tabs::restore(&tabs.save()).current().key, "David Bowie");
     }
 
     #[test]

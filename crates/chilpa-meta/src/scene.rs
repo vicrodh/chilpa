@@ -40,6 +40,8 @@ pub struct Page {
     pub artists: Vec<Candidate>,
     pub total: usize,
     pub has_more: bool,
+    /// Cursor over scored candidates, including those a catalog may reject.
+    pub next_offset: usize,
 }
 
 fn useful_tags(value: &serde_json::Value) -> Vec<Tag> {
@@ -88,17 +90,14 @@ pub fn discover(
     let seeds = extract_affinity_seeds(&tags);
     let search_name = subdivision(net, &origin.area_id, cancelled).unwrap_or_else(|| origin.place.clone());
     let country = if origin.country_name.trim().is_empty() { None } else { Some(origin.country_name.trim()) };
-    let display = match country {
-        Some(name) if !name.eq_ignore_ascii_case(&search_name) => format!("{name}, {search_name}"),
-        _ => search_name.clone(),
-    };
+    let label = country.unwrap_or(&search_name).to_string();
     let mut search_genres: Vec<String> = if seeds.genres.is_empty() {
         seeds.tags.iter().filter(|g| !is_broad_genre(g)).take(3).cloned().collect()
     } else {
         seeds.genres.iter().chain(seeds.tags.iter().take(2)).filter(|g| !is_broad_genre(g)).cloned().collect()
     };
     if search_genres.is_empty() { search_genres = seeds.genres.iter().chain(seeds.tags.iter()).take(3).cloned().collect(); }
-    let empty = || Page { label: format!("{display} scene"), genre_summary: genre_summary(&seeds), seed_genres: seeds.genres.clone(), artists: Vec::new(), total: 0, has_more: false };
+    let empty = || Page { label: label.clone(), genre_summary: genre_summary(&seeds), seed_genres: seeds.genres.clone(), artists: Vec::new(), total: 0, has_more: false, next_offset: 0 };
     if search_genres.is_empty() || search_name.is_empty() { return Ok(empty()); }
 
     // MusicBrainz caps a single artist search at 100.
@@ -139,7 +138,10 @@ pub fn discover(
     // Discovery owns 0..40; the host owns 40..95 while it projects the
     // selected catalogs. Keep the progress bar monotonic.
     progress(40, "candidates");
-    Ok(Page { label: format!("{display} scene"), genre_summary: genre_summary(&seeds), seed_genres: seeds.genres, artists: scored.into_iter().skip(offset).take(limit).collect(), total, has_more: offset.saturating_add(limit) < total })
+    let artists: Vec<_> = scored.into_iter().skip(offset).take(limit).collect();
+    let next_offset = offset.saturating_add(artists.len());
+    Ok(Page { label, genre_summary: genre_summary(&seeds), seed_genres: seeds.genres,
+        artists, total, has_more: next_offset < total, next_offset })
 }
 
 /// Affinity weights and the no-overlap penalty.
@@ -164,14 +166,22 @@ mod tests {
 
     #[test]
     fn discovery_queries_the_country_and_keeps_the_affinity_order() {
-        let http = Canned::new().json(r#"{"artists":[
+        let answer = r#"{"artists":[
             {"id":"11111111-1111-4111-8111-111111111111","name":"Near","begin-area":{"name":"Seattle"},"tags":[{"name":"grunge","count":4}]},
             {"id":"22222222-2222-4222-8222-222222222222","name":"Far","tags":[{"name":"unrelated","count":3}]}
-        ]}"#);
+        ]}"#;
+        let http = Canned::new().json(answer).json(answer);
         let origin = Origin { id:"33333333-3333-4333-8333-333333333333".into(), name:"Seed".into(),
             place:"Seattle".into(), country:"US".into(), country_name:"United States".into(), tags:vec!["grunge".into()], ..Default::default() };
-        let page = discover(&Net::free(&http), &origin, 0, 100, &AtomicBool::new(false), &|_, _| {}).unwrap();
-        assert_eq!(page.artists.iter().map(|artist| artist.name.as_str()).collect::<Vec<_>>(), ["Near", "Far"]);
+        let page = discover(&Net::free(&http), &origin, 0, 1, &AtomicBool::new(false), &|_, _| {}).unwrap();
+        assert_eq!(page.label, "United States");
+        assert_eq!(page.artists[0].name, "Near");
+        assert_eq!(page.next_offset, 1);
+        assert!(page.has_more);
+        let next = discover(&Net::free(&http), &origin, page.next_offset, 1, &AtomicBool::new(false), &|_, _| {}).unwrap();
+        assert_eq!(next.artists[0].name, "Far");
+        assert_eq!(next.next_offset, 2);
+        assert!(!next.has_more);
         assert!(http.asked()[0].contains("United%20States"), "the country is the search area");
     }
 }
