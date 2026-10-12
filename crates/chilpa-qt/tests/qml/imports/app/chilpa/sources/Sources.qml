@@ -7,7 +7,7 @@ QtObject {
     readonly property string snapshot: JSON.stringify(state)
     function art(plugin, image, rev) { return "" }
     function artistKey(id, path) { return "" }
-    function card(id, rev) { return "{}" }
+    function card(id, rev) { return JSON.stringify((state.cards || {})[id] || {}) }
     function artColors(id, rev) { return JSON.stringify((state.artColors || {})[id] || []) }
     function albumLibraries(rev) { return JSON.stringify(state.albumLibraries || []) }
     function trackLibraries(rev) { return JSON.stringify(state.trackLibraries || []) }

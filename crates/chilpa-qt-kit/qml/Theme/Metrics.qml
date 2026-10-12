@@ -130,8 +130,10 @@ QtObject {
     readonly property int button30: 30
     readonly property int button32: 32
     readonly property int button40: 40
-    readonly property int queueViewportAction: 28
-    readonly property int queueActionRail: queueViewportAction + gap6 + gap8
+    readonly property int queueViewportAction: 22
+    readonly property int queueActionRail: queueViewportAction + gap8
+    readonly property int queueActionInset: contentX - gap8
+    readonly property int queueScrollGutter: queueActionInset - scrollbarWidth / 2
     readonly property int queueSearchMin: 120
     readonly property int chipHeight: 24
     readonly property int pillHeight: 30

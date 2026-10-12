@@ -155,7 +155,7 @@ Item {
             model: tracks
             groupActionsEnabled: false
             reorderable: page.typed === ""
-            scrollGutter: -Metrics.gap8
+            scrollGutter: Metrics.queueScrollGutter
         }
         Connections {
             target: list.rows
@@ -166,7 +166,7 @@ Item {
         Column {
             id: viewportActions
             anchors.right: parent.right
-            anchors.rightMargin: Metrics.gap6
+            anchors.rightMargin: -Metrics.queueActionInset
             anchors.bottom: parent.bottom
             anchors.bottomMargin: Metrics.gap6
             spacing: Metrics.gap6
