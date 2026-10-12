@@ -20,6 +20,7 @@ Column {
     readonly property var lookup: doc.lookup || ({})
     readonly property var hits: lookup.hits || []
     readonly property var release: lookup.release || null
+    readonly property int selectedDisc: lookup.selected_disc || 0
     readonly property bool busy: lookup.searching === true || lookup.loading === true
     property int chosen: -1
 
@@ -84,10 +85,39 @@ Column {
         width: parent.width
         spacing: Metrics.gap6
 
+        Row {
+            visible: root.release !== null && root.release.discs > 1
+            spacing: Metrics.gap8
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: I18n.tr("Discs", I18n.rev)
+                font.pointSize: Type.meta
+                color: Theme.color.textSecondary
+            }
+            SelectField {
+                id: mediumSelect
+                options: {
+                    if (!root.release) return []
+                    const choices = [I18n.tr("All discs", I18n.rev)]
+                    for (let disc = 1; disc <= root.release.discs; ++disc) {
+                        const catalog = (root.release.catalog_numbers || [])[disc - 1] || ""
+                        choices.push(I18n.trArgs("Disc {}", [disc], I18n.rev) + (catalog ? " · " + catalog : ""))
+                    }
+                    return choices
+                }
+                values: mediumSelect.options.map((_, index) => String(index))
+                details: root.release ? [""].concat(root.release.media_titles || []) : []
+                value: String(root.selectedDisc)
+                onPicked: (value) => MetadataEditor.selectDisc(Number(value))
+            }
+        }
+
         Text {
             width: parent.width
             text: root.release ? root.release.title + " — " + root.release.date + " · "
-                + I18n.trArgs("{} of {} tracks match this release", [root.lookup.matched, (root.doc.tracks || []).length], I18n.rev) : ""
+                + (root.selectedDisc > 0
+                    ? I18n.trArgs("{} tracks match disc {}", [root.lookup.matched, root.selectedDisc], I18n.rev)
+                    : I18n.trArgs("{} of {} tracks match this release", [root.lookup.matched, (root.doc.tracks || []).length], I18n.rev)) : ""
             elide: Text.ElideRight
             font.pointSize: Type.meta
             color: root.lookup.matched > 0 ? Theme.color.textSecondary : Theme.color.statusWarning
@@ -97,7 +127,7 @@ Column {
             PillButton {
                 kind: "primary"
                 text: I18n.tr("Apply to the form", I18n.rev)
-                enabled: root.doc.state === "ready"
+                enabled: root.doc.state === "ready" && root.lookup.matched > 0
                 onClicked: {
                     // The field being typed in lets go, and shows what the release gave.
                     root.forceActiveFocus()

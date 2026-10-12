@@ -133,7 +133,7 @@ fn track_file(field: &Field, read: &Read, track: &EditTrack) -> String {
         "artists" => join(&said.artists),
         "track_number" if read.known => digits(said.track_number),
         "track_number" => digits(track.track_number.map(u32::from)),
-        "disc_number" if read.known => digits(said.disc_number),
+        "disc_number" if read.known => digits(said.disc_number.or(track.disc_number.map(u32::from))),
         "disc_number" => digits(track.disc_number.map(u32::from)),
         "composers" => join(&said.composers),
         "performers" => join(&said.performers),
@@ -184,7 +184,12 @@ impl Draft {
                 .zip(&file)
                 .map(|(f, file)| match over.and_then(|o| laid(o.get(f.name))) {
                     Some(laid) => Cell::of(laid, true),
-                    None => Cell::of(file.clone(), false),
+                    None => {
+                        let mut cell = Cell::of(file.clone(), false);
+                        cell.unwritten = f.name == "disc_number" && read.known && read.said.disc_number.is_none()
+                            && track.disc_number.is_some();
+                        cell
+                    },
                 })
                 .collect();
             let album_file = ALBUM.iter().map(|f| album_file(f, &read, &track, album)).collect();

@@ -41,6 +41,7 @@ pub mod qobject {
         #[qinvokable] fn set_provider(self: Pin<&mut MetadataEditor>, provider: &QString) -> bool;
         #[qinvokable] fn search(self: Pin<&mut MetadataEditor>) -> bool;
         #[qinvokable] fn load(self: Pin<&mut MetadataEditor>, hit: i32) -> bool;
+        #[qinvokable] fn select_disc(self: Pin<&mut MetadataEditor>, disc: i32) -> bool;
         /// How many tracks found their pair.
         #[qinvokable] fn apply(self: Pin<&mut MetadataEditor>) -> i32;
         #[qinvokable] fn set_artwork_provider(self: Pin<&mut MetadataEditor>, provider: &QString) -> bool;
@@ -88,6 +89,10 @@ impl qobject::MetadataEditor {
     pub fn set_provider(self: Pin<&mut Self>, provider: &QString) -> bool { let provider = provider.to_string(); self.then(|api| api.metadata_set_provider(&provider)) }
     pub fn search(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_search()) }
     pub fn load(self: Pin<&mut Self>, hit: i32) -> bool { self.then(|api| api.metadata_load(hit.max(0) as usize)) }
+    pub fn select_disc(self: Pin<&mut Self>, disc: i32) -> bool {
+        let Ok(disc) = u16::try_from(disc) else { return false };
+        self.then(|api| api.metadata_select_disc(disc))
+    }
     pub fn apply(self: Pin<&mut Self>) -> i32 { self.then(|api| api.metadata_apply() as i32) }
     pub fn set_artwork_provider(self: Pin<&mut Self>, provider: &QString) -> bool { let provider = provider.to_string(); self.then(|api| api.metadata_set_artwork_provider(&provider)) }
     pub fn search_artwork(self: Pin<&mut Self>) -> bool { self.then(|api| api.metadata_search_artwork()) }

@@ -32,21 +32,45 @@ fn number(text: &str, otherwise: u16) -> u16 {
 
 /// Which track of the release each track of the record is: by disc and
 /// number, and in order when none is found that way and both have as many.
+#[cfg(test)]
 pub(crate) fn pair(draft: &Draft, release: &Release) -> Vec<Option<usize>> {
+    pair_for(draft, release, 0)
+}
+
+/// Zero means the whole release. A chosen medium applies to its own rows in
+/// a box, or to every row when the editor holds one locally numbered disc.
+pub(crate) fn pair_for(draft: &Draft, release: &Release, medium: u16) -> Vec<Option<usize>> {
     let (at_number, at_disc) = (fields::track("track_number").unwrap_or(0), fields::track("disc_number").unwrap_or(0));
+    let local_discs: std::collections::BTreeSet<u16> = draft.rows.iter()
+        .filter_map(|row| row.cells[at_disc].now.parse::<u16>().ok()).collect();
+    let box_on_form = local_discs.len() > 1;
     let mut taken = vec![false; release.tracks.len()];
     let mut pairs: Vec<Option<usize>> = Vec::with_capacity(draft.rows.len());
-    for (i, row) in draft.rows.iter().enumerate() {
-        let disc = number(&row.cells[at_disc].now, 1);
-        let place = number(&row.cells[at_number].now, u16::try_from(i + 1).unwrap_or(u16::MAX));
+    let mut places = std::collections::BTreeMap::<u16, u16>::new();
+    for row in &draft.rows {
+        let local_disc = number(&row.cells[at_disc].now, 1);
+        if medium > 0 && box_on_form && local_disc != medium {
+            pairs.push(None);
+            continue;
+        }
+        let disc = if medium > 0 { medium } else { local_disc };
+        let position = places.entry(local_disc).or_default();
+        *position = position.saturating_add(1);
+        let place = number(&row.cells[at_number].now, *position);
         let found = release.tracks.iter().enumerate().position(|(at, t)| !taken[at] && t.disc == disc && t.number == place);
         if let Some(at) = found {
             taken[at] = true;
         }
         pairs.push(found);
     }
-    if pairs.iter().all(Option::is_none) && release.tracks.len() == draft.rows.len() {
-        return (0..draft.rows.len()).map(Some).collect();
+    let eligible: Vec<usize> = draft.rows.iter().enumerate().filter_map(|(i, row)| {
+        let local_disc = number(&row.cells[at_disc].now, 1);
+        (medium == 0 || !box_on_form || local_disc == medium).then_some(i)
+    }).collect();
+    let candidates: Vec<usize> = release.tracks.iter().enumerate().filter_map(|(i, track)|
+        (medium == 0 || track.disc == medium).then_some(i)).collect();
+    if pairs.iter().all(Option::is_none) && candidates.len() == eligible.len() {
+        for (row, track) in eligible.into_iter().zip(candidates) { pairs[row] = Some(track); }
     }
     pairs
 }
@@ -62,17 +86,38 @@ fn ids(credits: &[Credit]) -> String {
 /// Lays the release over the form. `spelled` gives a genre the spelling
 /// the library already has for it. Returns how many tracks found their
 /// pair.
+#[cfg(test)]
 pub(crate) fn apply(draft: &mut Draft, release: &Release, spelled: &dyn Fn(&str) -> String) -> usize {
+    apply_for(draft, release, 0, spelled)
+}
+
+pub(crate) fn apply_for(draft: &mut Draft, release: &Release, medium: u16, spelled: &dyn Fn(&str) -> String) -> usize {
     let from_musicbrainz = release.provider == Provider::MusicBrainz;
+    let at_disc = fields::track("disc_number").unwrap_or(0);
+    let local_discs: std::collections::BTreeSet<u16> = draft.rows.iter()
+        .filter_map(|row| row.cells[at_disc].now.parse().ok()).collect();
+    let whole_box = local_discs.len() > 1;
+    if whole_box && release.catalog_numbers.len() > 1 {
+        let at_catalog = fields::album("catalog_number").unwrap_or(0);
+        let cell = &mut draft.album[at_catalog];
+        if cell.dirty() && release.catalog_numbers.iter().any(|number| number.eq_ignore_ascii_case(&cell.now)) {
+            // A disc number entered to find the box is a lookup hint, not
+            // the catalogue number to stamp on every disc of the box.
+            cell.revert();
+        }
+    }
     let genres: Vec<String> = release.genres.iter().map(|g| spelled(g)).collect();
     let mut album: Vec<(&str, String)> = vec![
         ("title", release.title.clone()),
         ("album_artist", display(&release.credits)),
         ("album_artists", names(&release.credits)),
         ("genres", join(&genres)),
-        ("catalog_number", release.catalog_number.clone()),
         ("label", release.label.clone()),
     ];
+    let catalog = if whole_box || (medium == 0 && release.catalog_numbers.len() > 1) { String::new() }
+        else if medium > 0 { release.catalog_numbers.get(usize::from(medium - 1)).cloned().unwrap_or_else(|| release.catalog_number.clone()) }
+        else { release.catalog_number.clone() };
+    album.push(("catalog_number", catalog));
     if fields::is_date(&release.date) {
         album.push(("date", release.date.clone()));
     }
@@ -85,12 +130,12 @@ pub(crate) fn apply(draft: &mut Draft, release: &Release, spelled: &dyn Fn(&str)
     }
     for (name, value) in album {
         // What the release does not say is left as it is.
-        if !value.is_empty() {
+        if !value.is_empty() && (medium == 0 || !whole_box) {
             draft.set_album(name, &value);
         }
     }
 
-    let pairs = pair(draft, release);
+    let pairs = pair_for(draft, release, medium);
     for (row, found) in pairs.iter().enumerate() {
         let Some(track) = found.and_then(|at| release.tracks.get(at)) else { continue };
         let id = draft.rows[row].track.id;
@@ -134,6 +179,7 @@ impl Chilpa {
         editor.loading = false;
         editor.hits.clear();
         editor.release = None;
+        editor.selected_disc = 0;
         editor.refresh();
         true
     }
@@ -160,6 +206,7 @@ impl Chilpa {
         editor.loading = false;
         editor.hits.clear();
         editor.release = None;
+        editor.selected_disc = 0;
         editor.error.clear();
         editor.notice.clear();
         let job = Job::Search { session: editor.session, turn: editor.lookup_turn, provider: editor.provider, title, artist, catalog_number };
@@ -183,6 +230,7 @@ impl Chilpa {
         editor.lookup_turn += 1;
         editor.loading = true;
         editor.release = None;
+        editor.selected_disc = 0;
         editor.error.clear();
         editor.notice.clear();
         let job = Job::Load { session: editor.session, turn: editor.lookup_turn, provider, id };
@@ -211,9 +259,20 @@ impl Chilpa {
         let spelled = |genre: &str| spellings.iter().find(|(from, _)| from == genre).map_or_else(|| genre.to_string(), |(_, to)| to.clone());
         let editor = &mut self.metadata;
         let Some(draft) = editor.draft.as_mut() else { return 0 };
-        let matched = apply(draft, &release, &spelled);
+        let matched = apply_for(draft, &release, editor.selected_disc, &spelled);
         editor.refresh();
         matched
+    }
+
+    /// Chooses the medium of a loaded release; zero means all its discs.
+    pub fn metadata_select_disc(&mut self, disc: u16) -> bool {
+        let editor = &mut self.metadata;
+        let Some(release) = editor.release.as_ref().filter(|_| editor.state == State::Ready) else { return false };
+        if disc > release.discs { return false; }
+        editor.selected_disc = disc;
+        editor.notice.clear();
+        editor.refresh();
+        true
     }
 }
 
@@ -244,9 +303,11 @@ mod tests {
             genres: Vec::new(),
             label: String::new(),
             catalog_number: String::new(),
+            catalog_numbers: Vec::new(),
             country: String::new(),
             barcode: String::new(),
             discs: 1,
+            media_titles: Vec::new(),
             release_group_id: String::new(),
             url: String::new(),
             tracks,
@@ -275,6 +336,38 @@ mod tests {
         let draft = plain();
         let found = release(Provider::MusicBrainz, vec![track(1, 2, "Second"), track(2, 1, "Elsewhere"), track(1, 1, "First")]);
         assert_eq!(pair(&draft, &found), [Some(2), Some(0)]);
+    }
+
+    #[test]
+    fn choosing_the_second_medium_pairs_a_single_disc_and_its_catalog_number() {
+        let mut draft = plain();
+        let mut found = release(Provider::MusicBrainz, vec![track(1, 1, "Other first"), track(1, 2, "Other second"),
+            track(2, 1, "Second disc first"), track(2, 2, "Second disc second")]);
+        found.discs = 2;
+        found.catalog_number = "SVWC-1011".into();
+        found.catalog_numbers = vec!["SVWC-1011".into(), "SVWC-1012".into()];
+        assert_eq!(pair_for(&draft, &found, 2), [Some(2), Some(3)]);
+        assert_eq!(apply_for(&mut draft, &found, 2, &as_is), 2);
+        assert_eq!(draft.album_cell("catalog_number").now, "SVWC-1012");
+        assert_eq!(draft.rows[0].cells[fields::track("title").unwrap()].now, "Second disc first");
+        assert_eq!(draft.rows[0].cells[fields::track("disc_number").unwrap()].now, "2");
+    }
+
+    #[test]
+    fn choosing_one_medium_of_a_box_does_not_stamp_its_catalog_on_every_disc() {
+        let mut draft = plain();
+        draft.set_track(1, "disc_number", "1");
+        draft.set_track(2, "disc_number", "2");
+        let at = fields::album("catalog_number").unwrap();
+        draft.album[at] = super::super::draft::Cell::mixed(false);
+        draft.set_album("catalog_number", "SVWC-1012");
+        let mut found = release(Provider::MusicBrainz, vec![track(1, 1, "First disc"), track(2, 2, "Second disc")]);
+        found.discs = 2;
+        found.catalog_numbers = vec!["SVWC-1011".into(), "SVWC-1012".into()];
+        assert_eq!(apply_for(&mut draft, &found, 2, &as_is), 1);
+        assert!(draft.album_cell("catalog_number").mixed);
+        assert_eq!(draft.rows[0].cells[fields::track("title").unwrap()].now, "Track 1");
+        assert_eq!(draft.rows[1].cells[fields::track("title").unwrap()].now, "Second disc");
     }
 
     #[test]

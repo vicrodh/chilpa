@@ -41,9 +41,14 @@ pub fn album_folder(file: &Path) -> String {
 pub(crate) fn disc_folder(dir: &Path) -> Option<DiscFolder> {
     let Some(name) = dir.file_name().and_then(|n| n.to_str()) else { return None };
     let lower = name.trim().to_lowercase();
+    // Some box sets call their numbered discs "Scene". Only accept that
+    // spelling inside a box folder; a scene elsewhere may be a separate record.
+    let in_box = dir.parent().and_then(|p| p.file_name()).and_then(|n| n.to_str())
+        .is_some_and(|name| name.to_lowercase().contains("box"));
     // Longest first, so "disco" is not read as "disc" and an "o".
-    let Some((style, rest)) = ["disco", "disc", "disk", "cd"]
+    let Some((style, rest)) = ["disco", "disc", "disk", "cd", "scene"]
         .into_iter()
+        .filter(|word| *word != "scene" || in_box)
         .find_map(|word| lower.strip_prefix(word).map(|rest| (word, rest)))
     else {
         return None;
@@ -65,7 +70,7 @@ pub(crate) fn disc_folder(dir: &Path) -> Option<DiscFolder> {
     raw_tail.starts_with(char::is_whitespace).then_some(DiscFolder {
         number,
         style,
-        needs_confirmation: true,
+        needs_confirmation: style != "scene",
     })
 }
 
@@ -202,5 +207,13 @@ mod tests {
             assert!(disc.needs_confirmation, "{name}");
         }
         assert!(!disc_folder(Path::new("CD 01")).unwrap().needs_confirmation);
+    }
+
+    #[test]
+    fn numbered_scenes_inside_a_box_are_disc_folders() {
+        let path = "/music/Rurouni Kenshin Complete CD-BOX/Scene 02 Character Image Song I/01.flac";
+        assert_eq!(folder(path), "/music/Rurouni Kenshin Complete CD-BOX");
+        assert_eq!(disc_folder(Path::new(path).parent().unwrap()).unwrap().number, 2);
+        assert!(disc_folder(Path::new("/music/Scene 02 Character Image Song I")).is_none());
     }
 }

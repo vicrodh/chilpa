@@ -258,6 +258,14 @@ mod tests {
     }
 
     #[test]
+    fn a_numbered_scene_in_a_box_supplies_the_disc() {
+        let got = read("/music/DSD/R/Rurouni Kenshin Complete CD-BOX/Scene 02 Character Image Song I/01 First.flac");
+        assert_eq!(got.album.as_deref(), Some("Rurouni Kenshin Complete CD-BOX"));
+        assert_eq!(got.disc, Some(2));
+        assert_eq!(got.track, Some(1));
+    }
+
+    #[test]
     fn a_two_letter_artist_is_an_artist() {
         let got = read("/music/DSD/U/U2/1987 - The Joshua Tree/03 - With Or Without You.dsf");
         assert_eq!(got.album_artist.as_deref(), Some("U2"));

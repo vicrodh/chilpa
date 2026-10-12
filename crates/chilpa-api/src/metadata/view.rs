@@ -101,6 +101,8 @@ pub struct LookupView {
     pub hits: Vec<Hit>,
     /// The release loaded, ready to be applied.
     pub release: Option<Release>,
+    /// Zero applies all discs; otherwise the numbered medium to apply.
+    pub selected_disc: u16,
     /// How many of the record's tracks that release has a track for.
     pub matched: usize,
 }
@@ -219,7 +221,7 @@ impl Editor {
                 done: self.progress.0,
                 total: self.progress.1,
             };
-            view.lookup.matched = self.release.as_ref().map_or(0, |r| super::apply::pair(draft, r).iter().flatten().count());
+            view.lookup.matched = self.release.as_ref().map_or(0, |r| super::apply::pair_for(draft, r, self.selected_disc).iter().flatten().count());
         }
         view.cover = match &self.waiting {
             Some(waiting) => CoverView {
@@ -237,6 +239,7 @@ impl Editor {
         view.lookup.loading = self.loading;
         view.lookup.hits = self.hits.clone();
         view.lookup.release = self.release.clone();
+        view.lookup.selected_disc = self.selected_disc;
         view.artwork = ArtworkView {
             provider: self.artwork_provider.name(),
             searching: self.artwork_searching,

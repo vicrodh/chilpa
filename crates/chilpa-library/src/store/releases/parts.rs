@@ -115,7 +115,29 @@ pub(super) fn collect(tracks: Vec<Track>) -> Vec<Part> {
                 p.folder_disc = Some(disc.number);
                 if image_singleton { p.totals.clear(); }
             }
+            if p.discs == BTreeSet::from([disc.number]) {
+                p.folder_disc = Some(disc.number);
+            }
         }
+    }
+    // A numbered "Scene" inside a box is a disc even when each disc was
+    // tagged as a separate album. Require another numbered scene beside it
+    // before presenting the parent box as one release.
+    let mut boxes = BTreeMap::<(i64, String), (BTreeSet<u16>, BTreeSet<String>, BTreeMap<String, String>, String)>::new();
+    for part in &parts {
+        let Some(disc) = disc_folder(part.folder()).filter(|d| d.style == "scene" && part.confirmed_folder) else { continue };
+        let title = Path::new(&part.container).file_name().and_then(|n| n.to_str()).unwrap_or_default().to_owned();
+        let entry = boxes.entry((part.source, part.container.clone())).or_insert_with(|| (BTreeSet::new(), BTreeSet::new(), BTreeMap::new(), title));
+        entry.0.insert(disc.number);
+        entry.1.insert(folded(&part.artist));
+        entry.2.insert(folded(&part.title), part.title.clone());
+    }
+    for part in &mut parts {
+        if !disc_folder(part.folder()).is_some_and(|d| d.style == "scene" && part.confirmed_folder) { continue; }
+        let Some((numbers, artists, titles, folder_title)) = boxes.get(&(part.source, part.container.clone())) else { continue };
+        if numbers.len() < 2 || folder_title.is_empty() { continue; }
+        part.title = if titles.len() == 1 { titles.values().next().cloned().unwrap_or_default() } else { folder_title.clone() };
+        if artists.len() > 1 { part.artist = crate::VARIOUS_ARTISTS.to_owned(); }
     }
     // I carry compilation identity across confirmed disc folders when the
     // mixed-credit disc and the other discs share an actual album credit.
