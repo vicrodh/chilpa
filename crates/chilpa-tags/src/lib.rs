@@ -303,6 +303,46 @@ pub fn cover_beside(path: &Path) -> Option<PathBuf> {
     loose.into_iter().next()
 }
 
+/// The cover in this folder and no other, as QBZ's `folder_artwork_in_dir`
+/// finds it: a picture with a cover's name ("cover", "folder", "front",
+/// "album", "artwork", "art"), else one whose name holds one of those, else
+/// the folder's only picture. It does not look up to the record's folder: a
+/// box set whose discs each have a cover of their own showed the box's, or
+/// the first disc's, on every one.
+pub fn cover_in(dir: &Path) -> Option<PathBuf> {
+    const NAMES: &[&str] = &["cover", "folder", "front", "album", "artwork", "art"];
+    let mut pictures: Vec<PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.is_file()
+                && path.extension().and_then(|e| e.to_str()).is_some_and(|e| {
+                    matches!(e.to_lowercase().as_str(), "jpg" | "jpeg" | "png" | "webp" | "gif" | "bmp")
+                })
+        })
+        .collect();
+    pictures.sort();
+    let named = |path: &PathBuf| -> u8 {
+        let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or_default().to_lowercase();
+        if NAMES.contains(&stem.as_str()) {
+            2
+        } else if NAMES.iter().any(|name| stem.contains(name)) {
+            1
+        } else {
+            0
+        }
+    };
+    let mut best: Option<(u8, &PathBuf)> = None;
+    for picture in &pictures {
+        let score = named(picture);
+        if score > 0 && best.is_none_or(|(kept, _)| score > kept) {
+            best = Some((score, picture));
+        }
+    }
+    best.map(|(_, path)| path.clone()).or_else(|| (pictures.len() == 1).then(|| pictures[0].clone()))
+}
+
 /// The cover for a track: the one inside the file, or the one beside it.
 ///
 /// Both, because a library has both kinds and somebody looking at the window
@@ -391,6 +431,23 @@ mod tests {
     }
 
     use super::*;
+
+    #[test]
+    fn a_folder_s_own_cover_goes_by_its_name_or_is_its_only_picture() {
+        let dir = std::env::temp_dir().join("chilpa-tags-cover-in");
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        assert_eq!(cover_in(&dir), None, "nothing there");
+        std::fs::write(dir.join("scan0001.png"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("scan0001.png")), "the only picture");
+        std::fs::write(dir.join("back.jpg"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), None, "two pictures and neither named");
+        std::fs::write(dir.join("Disc 1 front side.jpg"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("Disc 1 front side.jpg")), "a name that holds one");
+        std::fs::write(dir.join("Cover.JPG"), b"x").unwrap();
+        assert_eq!(cover_in(&dir), Some(dir.join("Cover.JPG")), "a cover's own name wins");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn disc_evidence_never_wraps_into_a_different_set() {

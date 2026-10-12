@@ -760,6 +760,58 @@ fn a_disc_with_its_own_cover_says_so_though_it_was_read_before() {
     let _ = std::fs::remove_dir_all(dir);
 }
 
+/// A disc whose cover is inside its file, as a box set's discs often are:
+/// a picture of `side` pixels, so each disc's is of another size.
+fn disc_track_with_cover(dir: &std::path::Path, folder: &str, disc: u32, side: u32) -> bool {
+    let picture = dir.join(format!("{folder}.png"));
+    std::fs::create_dir_all(dir.join(folder)).is_ok()
+        && Command::new("ffmpeg")
+            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", &format!("color=c=red:s={side}x{side}"), "-frames:v", "1"])
+            .arg(&picture)
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        && Command::new("ffmpeg")
+            .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-i"])
+            .arg(&picture)
+            .args(["-map", "0", "-map", "1", "-c:a", "flac", "-c:v", "png", "-disposition:v", "attached_pic"])
+            .args(["-metadata", "title=Track", "-metadata", "artist=Artist", "-metadata", "album=Box"])
+            .args(["-metadata", &format!("disc={disc}"), "-metadata", "track=1"])
+            .arg(dir.join(folder).join("01.flac"))
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false)
+        && std::fs::remove_file(&picture).is_ok()
+}
+
+#[test]
+fn discs_whose_covers_are_inside_their_files_each_show_their_own() {
+    let dir = std::env::temp_dir().join("chilpa-scan-embedded-disc-covers");
+    let _ = std::fs::remove_dir_all(&dir);
+    if !have_ffmpeg() || !disc_track_with_cover(&dir, "Disc 01", 1, 16) || !disc_track_with_cover(&dir, "Disc 02", 2, 24) || !disc_track_with_cover(&dir, "Disc 03", 3, 32) {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    }
+    let lib = Library::in_memory().unwrap();
+    let cache = std::env::temp_dir().join("chilpa-scan-embedded-cache");
+    let _ = std::fs::remove_dir_all(&cache);
+    chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    let album = lib.albums(10, 0).unwrap();
+    assert_eq!(album.len(), 1, "the three discs are one record");
+    let covers = |lib: &Library| -> Vec<String> { lib.album_discs(album[0].id).unwrap().into_iter().map(|disc| disc.artwork).collect() };
+    let own = covers(&lib);
+    assert!(own.iter().all(|cover| !cover.is_empty()), "{own:?}");
+    assert_eq!(own.iter().collect::<std::collections::BTreeSet<_>>().len(), 3, "each disc its own: {own:?}");
+
+    // As a library read before: every track holds its record's cover, the
+    // first disc's. Nothing changed on disk, and each disc gets its own back.
+    lib.connection().execute("UPDATE tracks SET release_artwork = (SELECT artwork_path FROM albums WHERE id = tracks.album_id)", []).unwrap();
+    let report = chilpa_library::scan_root_with_cache(&lib, &dir, Some(&cache)).unwrap();
+    assert_eq!(report.read, 0, "no file changed, so none is read again as a track");
+    assert_eq!(covers(&lib), own);
+    let _ = std::fs::remove_dir_all(dir);
+}
+
 /// A FLAC file with no tags at all: what ffmpeg writes with its own
 /// metadata turned off.
 fn untagged_file(target: &std::path::Path) -> bool {

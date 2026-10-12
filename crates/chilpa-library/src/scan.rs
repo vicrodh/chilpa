@@ -413,16 +413,19 @@ struct Moved {
     track_id: i64,
 }
 
-/// A disc with a cover in its own folder says so, and discs whose covers
-/// are the same picture say that too.
+/// Each disc of a record shows its own cover, found as QBZ's scan finds a
+/// track's (`decorate_tracks`): from the narrowest place outwards, the
+/// picture inside the disc's first file, then its own folder's cover
+/// ([`chilpa_tags::cover_in`], which does not look up to the record's
+/// folder), then its record's.
 ///
 /// A track's cover is kept as its record's was when the track was read,
-/// and a record's is its first disc's: the tracks of the other discs of a
-/// record in several folders, and every track read before each disc's
-/// cover was kept, hold a cover that sits in another disc's folder. Their
-/// files did not change, so no scan reads them again; their folder is
-/// looked at instead. A cover taken out of a file is left alone: it may
-/// well be the disc's own.
+/// and a record's is its first disc's. So the discs that hold their record's
+/// cover, or none, are looked at again, every time: their files did not
+/// change, so no scan reads them as tracks. A disc that holds another cover
+/// already found its own and is left alone. Before this, a cover taken out
+/// of a file was left alone wherever it came from, and a box whose first
+/// disc carries its cover inside its files showed that one on all thirteen.
 ///
 /// Then the discs of one record are compared. A set that copies one cover
 /// into every disc's folder has one cover, not several, and its discs are
@@ -431,28 +434,33 @@ struct Moved {
 fn own_disc_covers(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite::Result<()> {
     let under = format!("{}/%", root.display().to_string().trim_end_matches('/'));
     // Only a record of several parts can hold another part's cover.
-    let parts: Vec<(String, Option<String>, i64)> = {
+    let parts: Vec<(String, Option<String>, i64, String, Option<String>)> = {
         let mut stmt = lib.db.prepare(
-            "SELECT t.release_part, min(t.release_artwork), t.album_id FROM tracks t JOIN sources s ON s.id = t.source_id
+            "SELECT t.release_part, min(t.release_artwork), t.album_id, min(t.external_id),
+                    (SELECT artwork_path FROM albums WHERE id = t.album_id)
+             FROM tracks t JOIN sources s ON s.id = t.source_id
              WHERE s.provider = 'local' AND t.present = 1 AND t.release_part LIKE ?1 AND t.album_id IN
                (SELECT album_id FROM tracks WHERE present = 1 GROUP BY album_id HAVING count(DISTINCT release_part) > 1)
              GROUP BY t.album_id, t.release_part ORDER BY t.album_id, t.release_part",
         )?;
-        let rows = stmt.query_map(params![under], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?)))?;
+        let rows = stmt.query_map(params![under], |r| Ok((r.get(0)?, r.get(1)?, r.get(2)?, r.get(3)?, r.get(4)?)))?;
         rows.collect::<rusqlite::Result<_>>()?
     };
     // The covers a record's parts have so far.
     let mut records: std::collections::BTreeMap<i64, Vec<(u64, String)>> = Default::default();
-    for (part, kept, album) in parts {
+    for (part, kept, album, first, record) in parts {
         let folder = Path::new(&part);
         // A disc image is its own part; its folder is the image's.
         let folder = if folder.is_file() { folder.parent().unwrap_or(folder) } else { folder };
-        let from_a_file = kept.as_deref().is_some_and(|k| cache.is_some_and(|cache| Path::new(k).starts_with(cache)));
-        let in_its_folder = kept.as_deref().is_some_and(|k| Path::new(k).parent() == Some(folder));
-        let own = if from_a_file || in_its_folder {
+        let found = kept.is_some() && kept != record;
+        let own = if found {
             kept.clone()
         } else {
-            chilpa_tags::cover_beside(&folder.join("_")).map(|own| own.display().to_string()).or_else(|| kept.clone())
+            cache
+                .and_then(|cache| chilpa_tags::extract_artwork(Path::new(&first), cache).ok().flatten())
+                .or_else(|| chilpa_tags::cover_in(folder))
+                .map(|own| own.display().to_string())
+                .or_else(|| kept.clone())
         };
         let Some(own) = own else { continue };
         let Ok(size) = std::fs::metadata(&own).map(|meta| meta.len()) else { continue };
