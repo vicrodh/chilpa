@@ -31,7 +31,9 @@ Menu {
         if (!invokingControl) return
         const point = invokingControl.mapToItem(parent, invokingControl.width, 0)
         x = Math.max(Metrics.gap10, Math.min(point.x - width, parent.width - width - Metrics.gap10))
-        y = Math.max(Metrics.gap10, point.y - implicitHeight - Metrics.gap8)
+        // Over the button, or under it where there is no room over it.
+        const over = point.y - implicitHeight - Metrics.gap8
+        y = over >= Metrics.gap10 ? over : point.y + invokingControl.height + Metrics.gap8
     }
     function show(anchor) {
         invokingControl = anchor

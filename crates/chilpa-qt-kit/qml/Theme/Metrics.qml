@@ -175,6 +175,12 @@ QtObject {
     // How tall the bar stands now: the bar writes it, and whatever must stay
     // clear of it reads it here instead of asking the bar.
     property int playerSpace: playerHeight
+    // Where the window's planes (the sidebar, the content, the right panel)
+    // start and how far above the window's bottom they end: the player's
+    // layout writes them, under the tab bar and the window's margin unless a
+    // full-width player takes that room.
+    property int shellTop: tabBarHeight
+    property int shellBottom: spaceWindow
     readonly property int playerBottom: spaceWindow
     // The same margin as the sidebars'.
     // How long the mouse is still before the bar steps away, when asked to.

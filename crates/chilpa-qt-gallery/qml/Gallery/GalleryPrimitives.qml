@@ -7,6 +7,12 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 TitledFlow {
     CircleCheck { text: "Selected"; checked: true }
     ViewportScrollBar { visible: false }
+    Item {
+        width: Metrics.cardMinWidth
+        height: Metrics.playerHeight
+        ElevatedShadow { target: raised; radius: raised.radius }
+        Rectangle { id: raised; anchors.fill: parent; radius: Metrics.radiusPlayer; color: Theme.color.surfacePlayer }
+    }
     title: "Primitives"
 
     Row {
