@@ -66,12 +66,12 @@ pub mod qobject {
         fn find(self: &SettingsModel, text: &QString, rev: i32) -> QString;
 
         #[qinvokable]
-        fn place_sidebar(self: Pin<&mut SettingsModel>, width: f64, window_width: f64);
+        fn place_sidebar(self: Pin<&mut SettingsModel>, mode: &QString, width: f64, window_width: f64);
 
-        /// Where a drag at `width` would land, for the sidebar to show while
-        /// it is dragged: "open", "collapsed" or "closed".
+        /// Where a drag at `width` would land from `mode`, for the sidebar
+        /// to show while it is dragged: "open", "collapsed" or "closed".
         #[qinvokable]
-        fn sidebar_mode_at(self: &SettingsModel, width: f64, window_width: f64) -> QString;
+        fn sidebar_mode_from(self: &SettingsModel, mode: &QString, width: f64, window_width: f64) -> QString;
 
         /// The width open at `width` would have: `width`, kept between the
         /// minimum and 40 % of the window.
@@ -133,8 +133,8 @@ pub struct SettingsRust {
 }
 
 impl qobject::SettingsModel {
-    pub fn sidebar_mode_at(&self, width: f64, window_width: f64) -> QString {
-        QString::from(chilpa_api::sidebar::settle(width, window_width).0)
+    pub fn sidebar_mode_from(&self, mode: &QString, width: f64, window_width: f64) -> QString {
+        QString::from(chilpa_api::sidebar::settle_from(&mode.to_string(), width, window_width).0)
     }
 
     pub fn sidebar_width_at(&self, width: f64, window_width: f64) -> i32 {
@@ -145,8 +145,8 @@ impl qobject::SettingsModel {
         chilpa_api::sidebar::settle_panel(width, window_width)
     }
 
-    pub fn place_sidebar(mut self: Pin<&mut Self>, width: f64, window_width: f64) {
-        let (mode, settled) = chilpa_api::sidebar::settle(width, window_width);
+    pub fn place_sidebar(mut self: Pin<&mut Self>, mode: &QString, width: f64, window_width: f64) {
+        let (mode, settled) = chilpa_api::sidebar::settle_from(&mode.to_string(), width, window_width);
         if settled > 0 {
             self.as_mut().set_sidebar_width(settled);
         }

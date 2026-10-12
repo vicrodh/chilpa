@@ -22,4 +22,7 @@ QtObject {
     readonly property int cursorWide: 1
     readonly property real cursorRest: 0.6
     readonly property int refreshMs: 100
+    // How long the width rests before the columns are asked for again: a
+    // panel's slide is 160 ms of widths that change every frame.
+    readonly property int settleMs: 120
 }

@@ -46,11 +46,16 @@ Item {
     ResizeHandle {
         x: -width / 2 // derived: centered on the edge
         height: parent.height
-        onStarted: frame.grabbed = frame.shown
+        // Dragging from the press, so the first move already follows the
+        // pointer instead of sliding to it.
+        onStarted: {
+            frame.grabbed = frame.shown
+            frame.dragged = frame.grabbed
+        }
         // Dragged to the left it grows.
         onMoved: (delta) => frame.dragged = frame.grabbed - delta
         onReleased: {
-            if (frame.dragged >= 0) {
+            if (frame.dragged >= 0 && frame.shown !== frame.kept) {
                 frame.kept = frame.shown
                 SettingsModel.keep("ui.rightPanel.width", String(frame.kept))
             }
