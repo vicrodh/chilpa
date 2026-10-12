@@ -1,9 +1,9 @@
 pragma Singleton
 import QtQuick
 QtObject {
-    signal added()
+    signal added(string path)
     property bool busy: false
-    property int analyzeAsked: 0
+    property var analyzeAsked: []
     function offersAnalysis() { return !busy }
-    function analyzeAfterScan() { analyzeAsked++ }
+    function analyzeAfterScan(path) { analyzeAsked = analyzeAsked.concat([path]) }
 }

@@ -83,29 +83,36 @@ impl Chilpa {
 
     /// Starts the analysis of whatever is missing, in the background.
     pub fn start_analysis(&mut self) {
+        self.start_analysis_under(None);
+    }
+
+    /// The same, only for what is missing under `folder` when one is given.
+    fn start_analysis_under(&mut self, folder: Option<String>) {
         if self.analysis.is_some() {
             self.now.error = chilpa_i18n::t("an analysis is already running");
             return;
         }
-        self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start(
+        self.analysis = Some(chilpa_core::analysis_job::AnalysisJob::start_under(
             chilpa_library::Library::default_path(),
+            folder,
         ));
         self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
     }
 
-    /// Starts the analysis once the scan that runs now ends, or at once
-    /// when none runs: what a folder just added holds is read first.
-    pub fn analyze_after_scan(&mut self) {
+    /// Analyzes what `folder` holds once the scan that runs now ends, or at
+    /// once when none runs: a folder just added is read first, and nothing
+    /// else of the library is analyzed with it.
+    pub fn analyze_after_scan(&mut self, folder: &str) {
         if self.scan.is_some() && self.analysis.is_none() {
-            self.analysis_status.waiting = true;
+            self.analysis_status.waiting = Some(folder.to_owned());
         } else {
-            self.start_analysis();
+            self.start_analysis_under(Some(folder.to_owned()));
         }
     }
 
     /// Asks the analysis to stop, or not to start after the scan.
     pub fn cancel_analysis(&mut self) {
-        self.analysis_status.waiting = false;
+        self.analysis_status.waiting = None;
         if let Some(j) = &self.analysis {
             j.cancel();
         }
@@ -266,15 +273,15 @@ impl Chilpa {
                         },
                     };
                     self.scan = None;
-                    if std::mem::take(&mut self.analysis_status.waiting) {
-                        self.start_analysis();
+                    if let Some(folder) = self.analysis_status.waiting.take() {
+                        self.start_analysis_under(Some(folder));
                     }
                 }
                 chilpa_library::ScanProgress::Failed(e) => {
                     self.now.error = chilpa_i18n::t_args("the scan failed: {}", &[&e]);
                     self.scan_status.running = false;
                     self.scan = None;
-                    self.analysis_status.waiting = false;
+                    self.analysis_status.waiting = None;
                 }
             }
         }

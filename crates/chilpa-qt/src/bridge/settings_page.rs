@@ -375,7 +375,7 @@ impl qobject::SettingsPage {
                 return;
             }
             "library.analysis" => {
-                let running = app::with(|api| { let status = api.analysis_status(); status.running || status.waiting });
+                let running = app::with(|api| { let status = api.analysis_status(); status.running || status.waiting.is_some() });
                 if running {
                     app::with(|api| api.cancel_analysis());
                 } else {

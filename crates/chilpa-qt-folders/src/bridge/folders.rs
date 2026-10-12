@@ -38,11 +38,11 @@ pub mod qobject {
 
         /// A folder that was not in the library joined it and its scan began.
         #[qsignal]
-        fn added(self: Pin<&mut LibraryFolders>);
+        fn added(self: Pin<&mut LibraryFolders>, path: &QString);
 
-        /// Analyzes what is missing once the scan running now is done.
+        /// Analyzes what `path` holds once the scan running now is done.
         #[qinvokable]
-        fn analyze_after_scan(self: &LibraryFolders);
+        fn analyze_after_scan(self: &LibraryFolders, path: &QString);
 
         /// Whether there is an analysis to offer: none runs or waits.
         #[qinvokable]
@@ -116,16 +116,16 @@ impl qobject::LibraryFolders {
         let known = read(|folders| folders.iter().any(|f| f.path.trim_end_matches('/') == bare));
         self.as_mut().scan(Some(folder));
         if !known && app::with(|api| api.scan_status().running) {
-            self.as_mut().added();
+            self.as_mut().added(&QString::from(&bare));
         }
     }
 
-    pub fn analyze_after_scan(&self) {
-        app::with(|api| api.analyze_after_scan());
+    pub fn analyze_after_scan(&self, path: &QString) {
+        app::with(|api| api.analyze_after_scan(&path.to_string()));
     }
 
     pub fn offers_analysis(&self) -> bool {
-        app::with(|api| { let status = api.analysis_status(); !status.running && !status.waiting })
+        app::with(|api| { let status = api.analysis_status(); !status.running && status.waiting.is_none() })
     }
 
     pub fn browse(self: Pin<&mut Self>) {

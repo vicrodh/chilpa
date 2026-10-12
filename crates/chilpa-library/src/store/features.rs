@@ -19,6 +19,18 @@ impl Library {
         version: i64,
         limit: usize,
     ) -> rusqlite::Result<Vec<StoredTrack>> {
+        self.tracks_pending_analysis_under(analyzer, version, limit, None)
+    }
+
+    /// The same, only those under `folder` when one is given: what a folder
+    /// just added holds, and nothing else of the library.
+    pub fn tracks_pending_analysis_under(
+        &self,
+        analyzer: &str,
+        version: i64,
+        limit: usize,
+        folder: Option<&str>,
+    ) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
@@ -32,10 +44,12 @@ impl Library {
                    SELECT 1 FROM audio_features f
                    WHERE f.track_id = t.id AND f.analyzer = ?1 AND f.version >= ?2
                )
+               AND (?4 IS NULL OR substr(t.external_id, 1, length(?4)) = ?4)
              ORDER BY t.id
              LIMIT ?3",
         )?;
-        let rows = stmt.query_map(params![analyzer, version, limit as i64], row_to_track)?;
+        let under = folder.map(|f| format!("{}/", f.trim_end_matches('/')));
+        let rows = stmt.query_map(params![analyzer, version, limit as i64, under], row_to_track)?;
         rows.collect()
     }
 
@@ -181,6 +195,17 @@ mod tests {
         assert_eq!(map[&1].2, Some(-8.0), "the loudness comes too");
         assert_eq!(map[&2].1, None);
         assert!(lib.features_for(&[], "chilpa").unwrap().is_empty());
+    }
+
+    #[test]
+    fn what_a_folder_holds_is_pending_apart_from_the_rest() {
+        let lib = sample_library();
+        lib.db.execute("UPDATE tracks SET external_id = '/new%_/Aqualung.flac' WHERE id = 2", []).unwrap();
+        let under = |folder| lib.tracks_pending_analysis_under("chilpa", 1, 50, folder).unwrap().len();
+        assert_eq!(under(None), 3, "the whole library");
+        assert_eq!(under(Some("/new%_")), 1, "only the folder, its name taken as it is");
+        assert_eq!(under(Some("/new%_/")), 1, "with or without its slash");
+        assert_eq!(under(Some("/ne")), 0, "a folder is not a prefix of another's name");
     }
 
 }
