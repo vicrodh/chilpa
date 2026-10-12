@@ -571,6 +571,22 @@ fn play(
                     delivery.transforms
                 ),
             );
+            // One-bit audio in PCM words that the device, as it opened, does
+            // not carry untouched reaches the DAC as loud noise. Nothing of it
+            // is written: the queue stops here, before the first block, and
+            // says why. Converting DSD to PCM is the choice that plays.
+            let one_bit = (about.dsd.is_some() || crate::sacd_tracks::parse(path).is_some())
+                && !delivery.transforms.contains(&chilpa_audio::negotiate::Transform::DsdToPcm);
+            if one_bit && !bit_perfect {
+                chilpa_audio::diagnostics::trace("player", "one_bit_refused", format_args!("path={path:?} opened={:?}", delivery.opened));
+                controls.stop.stop();
+                let _ = events.send(PlayerEvent::Failed {
+                    message: chilpa_i18n::t(
+                        "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback",
+                    ),
+                });
+                return;
+            }
             // Tags and the cover are read as each track starts, not as it is
             // queued: a long queue must not read hundreds of files before the
             // first one plays.
