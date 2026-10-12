@@ -14,12 +14,14 @@ Item {
     readonly property var doc: JSON.parse(Sources.scene(Library.remoteRev) || "{}")
     readonly property var allArtists: doc.artists || []
     readonly property bool ready: doc.state === "ready"
+    readonly property bool canBrowse: allArtists.some(function (artist) { return (artist.sources || []).length > 0 })
     property string mode: "grid"
     property string searchQuery: ""
     property bool groupingEnabled: false
     property var activeGenres: []
     property bool genrePopupOpen: false
     property string selectedArtistId: ""
+    onCanBrowseChanged: if (!canBrowse) { mode = "grid"; selectedArtistId = "" }
     readonly property string sceneTitle: doc.sceneLabel || ""
     readonly property string flagSource: doc.countryCode
         ? "qrc:/qt/qml/app/chilpa/sources/assets/flags/" + String(doc.countryCode).toLowerCase() + ".svg" : ""
@@ -156,7 +158,7 @@ Item {
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap8
                 SearchField { width: Metrics.sceneSearchWidth; placeholder: I18n.tr("Search…", I18n.rev); onTextChanged: root.searchQuery = text; onEscaped: text = "" }
                 PillButton { id: genreButton; visible: root.availableGenres.length > 1; text: root.activeGenres.length > 0 ? I18n.tr("Genres ({})", I18n.rev).replace("{}", root.activeGenres.length) : I18n.tr("Genres", I18n.rev); onClicked: root.genrePopupOpen = !root.genrePopupOpen }
-                PillButton { text: root.mode === "grid" ? I18n.tr("Browse view", I18n.rev) : I18n.tr("Grid view", I18n.rev); onClicked: { root.mode = root.mode === "grid" ? "sidepanel" : "grid"; root.selectedArtistId = ""; root.genrePopupOpen = false } }
+                PillButton { visible: root.canBrowse; text: root.mode === "grid" ? I18n.tr("Browse view", I18n.rev) : I18n.tr("Grid view", I18n.rev); onClicked: { root.mode = root.mode === "grid" ? "sidepanel" : "grid"; root.selectedArtistId = ""; root.genrePopupOpen = false } }
                 PillButton { visible: root.mode === "grid"; text: root.groupingEnabled ? I18n.tr("Group: A-Z", I18n.rev) : I18n.tr("Group: Off", I18n.rev); onClicked: root.groupingEnabled = !root.groupingEnabled }
             }
         }
@@ -220,6 +222,7 @@ Item {
             ScenePanel {
                 visible: root.mode === "sidepanel"; anchors.fill: parent
                 artists: root.panelArtists
+                includeSources: root.doc.includeSources === true
                 selectedId: root.selectedArtistId
                 onArtistSelected: (id) => root.selectedArtistId = id
                 onArtistOpened: (artist) => root.openArtist(artist)

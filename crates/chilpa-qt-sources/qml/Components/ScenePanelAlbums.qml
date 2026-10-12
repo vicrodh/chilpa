@@ -10,6 +10,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
     id: pane
     property var artist: ({})
+    property bool includeSources: false
     property var source: ({})
     property var document: ({})
     signal artistOpened()
@@ -46,7 +47,8 @@ Item {
             width: parent.width; textFormat: Text.PlainText; wrapMode: Text.WordWrap
             horizontalAlignment: Text.AlignHCenter; font.pointSize: Type.body; color: Theme.color.textSecondary
             text: pane.idle ? I18n.tr("Select an artist to see their albums", I18n.rev)
-                : pane.noSource ? I18n.tr("No plugin catalog match for this artist", I18n.rev)
+                : pane.noSource ? (pane.includeSources ? I18n.tr("No plugin catalog match for this artist", I18n.rev)
+                    : I18n.tr("Plugin results were not included for this scene", I18n.rev))
                 : pane.loading ? I18n.tr("Loading albums…", I18n.rev)
                 : pane.failed ? I18n.tr("Failed to load albums", I18n.rev)
                 : I18n.tr("No albums found", I18n.rev)

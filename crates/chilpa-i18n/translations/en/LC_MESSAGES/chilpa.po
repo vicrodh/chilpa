@@ -2576,6 +2576,9 @@ msgstr "Plugin integration"
 msgid "Plugin repository URL"
 msgstr "Plugin repository URL"
 
+msgid "Plugin results were not included for this scene"
+msgstr "Plugin results were not included for this scene"
+
 msgid "Plugin-reported quality"
 msgstr "Plugin-reported quality"
 
