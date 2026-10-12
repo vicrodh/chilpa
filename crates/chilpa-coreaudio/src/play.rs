@@ -615,8 +615,9 @@ impl AudioSink for CoreAudioSink {
         let take = room.min(frames.len() / frame_bytes);
         if take == 0 {
             // Full. A device that was unplugged stops asking, and full is
-            // what that looks like from here.
-            if !read::alive(self.device) {
+            // what that looks like from here; one that only paused is
+            // waited on by the renderer.
+            if read::gone(self.device) {
                 return Err(SinkError::DeviceLost);
             }
             return Ok(0);
@@ -646,7 +647,7 @@ impl AudioSink for CoreAudioSink {
             if self.shared.ring.held() == 0 {
                 break;
             }
-            if !read::alive(self.device) {
+            if read::gone(self.device) {
                 return Err(SinkError::DeviceLost);
             }
             std::thread::sleep(std::time::Duration::from_millis(5));

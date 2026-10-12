@@ -201,10 +201,17 @@ pub fn available_physical_formats(stream: AudioObjectID) -> Vec<AudioStreamBasic
     ranged.into_iter().map(|f| f.mFormat).collect()
 }
 
-/// Whether the device is still there. One that was unplugged or turned off
-/// answers no, or does not answer at all.
-pub fn alive(device: AudioObjectID) -> bool {
-    read::<u32>(device, &global(kAudioDevicePropertyDeviceIsAlive)).is_some_and(|v| v != 0)
+/// Whether the device is gone: unplugged or turned off.
+///
+/// Gone means no longer among the machine's devices. Its own "alive" answer
+/// is asked first because it is one read, but it is not enough on its own:
+/// a Macaron playing DoP once answered no -- or did not answer -- for an
+/// instant, still listed with the same id, and the track was dropped as if
+/// the cable had been pulled. A device that merely stops taking samples for
+/// a while is the renderer's to wait out, up to its own limit.
+pub fn gone(device: AudioObjectID) -> bool {
+    let alive = read::<u32>(device, &global(kAudioDevicePropertyDeviceIsAlive)).is_some_and(|v| v != 0);
+    !alive && !every_device().contains(&device)
 }
 
 /// Whether some program is playing through the device right now. Only the
