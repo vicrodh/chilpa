@@ -347,8 +347,8 @@ impl Chilpa {
             }
             "library.analysis" => {
                 let status = self.analysis_status().clone();
-                row.action = if status.running || status.waiting { chilpa_i18n::t("Cancel") } else { chilpa_i18n::t("Analyze") };
-                if status.waiting {
+                row.action = if status.running || status.waiting.is_some() { chilpa_i18n::t("Cancel") } else { chilpa_i18n::t("Analyze") };
+                if status.waiting.is_some() {
                     row.description = chilpa_i18n::t("Starts when the scan is done");
                 } else if status.running {
                     if status.total == 0 {

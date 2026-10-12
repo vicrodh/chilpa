@@ -59,6 +59,11 @@ pub struct AnalysisJob {
 impl AnalysisJob {
     /// Starts the analysis of whatever is missing in the database at `db_path`.
     pub fn start(db_path: PathBuf) -> Self {
+        Self::start_under(db_path, None)
+    }
+
+    /// The same, only for what is missing under `folder` when one is given.
+    pub fn start_under(db_path: PathBuf, folder: Option<String>) -> Self {
         let (tx, rx) = channel();
         let cancel = Arc::new(std::sync::atomic::AtomicBool::new(false));
         let flag = Arc::clone(&cancel);
@@ -75,7 +80,7 @@ impl AnalysisJob {
                 let analyzer = chilpa_analysis::NAME;
                 let version = chilpa_analysis::VERSION;
 
-                let total = match lib.tracks_pending_analysis(analyzer, version, usize::MAX) {
+                let total = match lib.tracks_pending_analysis_under(analyzer, version, usize::MAX, folder.as_deref()) {
                     Ok(v) => v.len(),
                     Err(e) => {
                         let _ = tx.send(AnalysisProgress::Failed(e.to_string()));
@@ -89,7 +94,7 @@ impl AnalysisJob {
                     if flag.load(std::sync::atomic::Ordering::Relaxed) {
                         break;
                     }
-                    let batch = match lib.tracks_pending_analysis(analyzer, version, BATCH) {
+                    let batch = match lib.tracks_pending_analysis_under(analyzer, version, BATCH, folder.as_deref()) {
                         Ok(v) if v.is_empty() => break,
                         Ok(v) => v,
                         Err(e) => {

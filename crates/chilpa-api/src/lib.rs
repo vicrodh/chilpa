@@ -553,8 +553,9 @@ pub struct AnalysisStatus {
     pub analyzed: usize,
     pub without_pulse: usize,
     pub failed: usize,
-    /// Asked for while a scan runs: it starts when the scan ends.
-    pub waiting: bool,
+    /// Asked for while a scan runs, for that folder: it starts when the scan
+    /// ends.
+    pub waiting: Option<String>,
 }
 
 /// How the background scan is going.

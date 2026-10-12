@@ -15,8 +15,8 @@ TestCase {
     AnalysisOffer { id: offer }
 
     function test_a_new_folder_offers_the_analysis_and_analyze_asks_for_it() {
-        LibraryFolders.analyzeAsked = 0
-        LibraryFolders.added()
+        LibraryFolders.analyzeAsked = []
+        LibraryFolders.added("/music/New")
         tryCompare(offer, "opened", true)
         const buttons = []
         const walk = item => { for (const child of item.children) { if (child.text !== undefined && child.clicked) buttons.push(child); walk(child) } }
@@ -24,21 +24,21 @@ TestCase {
         verify(buttons.some(button => button.text === "Not now"), "the way out says what it is")
         buttons.find(button => button.text === "Analyze").clicked()
         tryCompare(offer, "opened", false)
-        compare(LibraryFolders.analyzeAsked, 1)
+        compare(LibraryFolders.analyzeAsked, ["/music/New"], "only the folder added")
     }
 
     function test_not_now_asks_for_nothing() {
-        LibraryFolders.analyzeAsked = 0
-        LibraryFolders.added()
+        LibraryFolders.analyzeAsked = []
+        LibraryFolders.added("/music/New")
         tryCompare(offer, "opened", true)
         keyClick(Qt.Key_Escape)
         tryCompare(offer, "opened", false)
-        compare(LibraryFolders.analyzeAsked, 0)
+        compare(LibraryFolders.analyzeAsked, [])
     }
 
     function test_no_offer_while_an_analysis_runs_or_waits() {
         LibraryFolders.busy = true
-        LibraryFolders.added()
+        LibraryFolders.added("/music/New")
         wait(50)
         verify(!offer.opened)
         LibraryFolders.busy = false
