@@ -768,6 +768,27 @@ impl Chilpa {
         albums
     }
 
+    /// The records played last, wherever they played: the library's, and a
+    /// source's as the catalog's card for it, when the catalog has it.
+    pub fn recently_played_everywhere(&mut self, limit: usize) -> Vec<Album> {
+        let Some(lib) = self.library() else {
+            return Vec::new();
+        };
+        // More than asked for: a source's record the catalog no longer has
+        // is left out.
+        let releases = lib.recent_releases(limit.saturating_mul(2)).unwrap_or_default();
+        let local: Vec<i64> = releases.iter().filter_map(|r| r.album_id).collect();
+        let kept: std::collections::HashMap<i64, Album> =
+            lib.albums_by_ids(&local).unwrap_or_default().into_iter().map(album_of).map(|a| (a.id, a)).collect();
+        releases.iter().filter_map(|release| match release.album_id {
+            Some(id) => kept.get(&id).cloned(),
+            None if release.provider == crate::source_opener::PROVIDER => self.catalog
+                .card_by_identity(&release.instance, &release.album_external_id)
+                .map(|card| crate::source_catalog::view::album_of(&card)),
+            None => None,
+        }).take(limit).collect()
+    }
+
     /// The records that came into the library last.
     pub fn recently_added_albums(&mut self, limit: usize) -> Vec<Album> {
         self.albums_by(chilpa_library::AlbumSort::Added, limit)

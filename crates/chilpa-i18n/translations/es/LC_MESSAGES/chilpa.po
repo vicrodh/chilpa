@@ -2285,6 +2285,9 @@ msgstr "Al aire"
 msgid "On the sidebar's destinations."
 msgstr "En los destinos del sidebar."
 
+msgid "One row"
+msgstr "Una fila"
+
 msgid "One track straight into the next."
 msgstr "Una pista entra justo después de la otra."
 
@@ -2761,6 +2764,9 @@ msgstr "Agregados recientemente"
 
 msgid "Recently played"
 msgstr "Escuchados recientemente"
+
+msgid "Recently played, all sources"
+msgstr "Escuchados recientemente, todas las fuentes"
 
 msgid "Records"
 msgstr "Discos"

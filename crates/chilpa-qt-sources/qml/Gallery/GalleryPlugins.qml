@@ -2,6 +2,7 @@ import QtQuick
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Components"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
+import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Components"
 import "qrc:/qt/qml/app/chilpa/qml/Patterns"
@@ -35,6 +36,11 @@ TitledFlow {
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourceHomeSections { width: Metrics.confirmWidth }
+    PillButton {
+        text: "Customize shelves"
+        onClicked: shelvesCustomizer.open()
+        SectionsCustomizer { id: shelvesCustomizer; sections: [{ id: "a", title: "Recently played" }, { id: "b", title: "Most played", enabled: false, size: 12 }] }
+    }
     SourcePaging { about: ({plugin:"preview",next:"next"}) }
     ArtistSources { source: "preview"; artist: "Maiden"; sources: [{ id: "preview", name: "Preview" }] }
     TrackStarsFilter { width: Metrics.sourcesPopoverWidth / 2; ratings: [5, 0] } // derived: a column of the popover
