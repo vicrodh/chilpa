@@ -31,7 +31,9 @@ use crate::read;
 use chilpa_audio::format::{SampleFormat, StreamFormat};
 use chilpa_audio::sink::{AudioSink, SinkError};
 use std::os::raw::c_void;
-use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU32, AtomicU64, AtomicUsize, Ordering};
+use std::sync::Mutex;
+use std::time::Duration;
 
 /// Samples waiting for the device, as floats.
 ///
@@ -305,6 +307,77 @@ fn give_back(device: AudioObjectID) {
     }
 }
 
+/// A device held in exclusive mode, and the volume it had before.
+///
+/// QBZ's `CoreAudioExclusiveGuard` (`qbz-audio/src/coreaudio_direct.rs`):
+/// the device's own volume is read before anything is touched, the player
+/// bar moves it while the device is held, and it is put back before the
+/// device is given back -- while it is still this program's, so nobody else
+/// can move it in between. A device with no volume of its own has nothing
+/// to put back.
+struct Hold {
+    device: AudioObjectID,
+    volume: Option<f32>,
+}
+
+/// A hold a track left for the next one, with the turn it was parked on: a
+/// timer only gives back the one it was started for.
+static PARKED: Mutex<Option<(u64, Hold)>> = Mutex::new(None);
+static TURN: AtomicU64 = AtomicU64::new(0);
+
+/// How long a parked hold waits for the next track, as a parked card does on
+/// Linux (`chilpa-alsa/src/reserve.rs`, `PATIENCE`).
+const PATIENCE: Duration = Duration::from_secs(3);
+
+impl Hold {
+    /// The device for this program: the hold the last track parked, or a new
+    /// one. Claiming the parked one is what keeps the volume read before the
+    /// first track, rather than the one Chilpa set since.
+    fn take(device: AudioObjectID, name: &str) -> Result<Self, SinkError> {
+        let parked = PARKED.lock().ok().and_then(|mut p| p.take());
+        match parked {
+            Some((_, hold)) if hold.device == device && read::hogged_by(device) == std::process::id() as i32 => {
+                return Ok(hold)
+            }
+            // Parked for another device, or lost meanwhile: it goes back now.
+            Some((_, other)) => drop(other),
+            None => {}
+        }
+        let volume = read::volume(device);
+        hog(device, name)?;
+        Ok(Hold { device, volume })
+    }
+
+    /// Keeps the device for the track that follows. If none comes, it goes
+    /// back by itself.
+    fn park(self) {
+        let turn = TURN.fetch_add(1, Ordering::Relaxed) + 1;
+        if let Ok(mut parked) = PARKED.lock() {
+            // Whatever was parked before goes back first.
+            drop(parked.replace((turn, self)));
+        }
+        std::thread::spawn(move || {
+            std::thread::sleep(PATIENCE);
+            let expired = PARKED
+                .lock()
+                .ok()
+                .and_then(|mut p| if p.as_ref().is_some_and(|(t, _)| *t == turn) { p.take() } else { None });
+            drop(expired);
+        });
+    }
+}
+
+impl Drop for Hold {
+    fn drop(&mut self) {
+        if let Some(level) = self.volume {
+            for element in read::movable_volume(self.device) {
+                let _ = write_element(self.device, kAudioDevicePropertyVolumeScalar, element, &level);
+            }
+        }
+        give_back(self.device);
+    }
+}
+
 /// Sets the device to the track's rate, when it has that rate.
 ///
 /// A rate the device does not list is left to the unit to convert: the
@@ -417,6 +490,8 @@ pub struct CoreAudioSink {
     unit: Option<Unit>,
     /// Pointed at by the unit for as long as it may call.
     shared: Box<Shared>,
+    /// The device held, in exclusive mode.
+    hold: Option<Hold>,
     /// Whether the device was let go in a long pause.
     suspended: bool,
 }
@@ -447,6 +522,7 @@ impl CoreAudioSink {
             exclusive,
             unit: None,
             shared,
+            hold: None,
             suspended: false,
         };
         // On failure the sink is dropped, and dropping gives the device back.
@@ -459,20 +535,18 @@ impl CoreAudioSink {
         if self.exclusive {
             // The device first, before anything is changed on it: changing
             // the rate of a device somebody else is using moves their music.
-            hog(self.device, &self.name)?;
+            self.hold = Some(Hold::take(self.device, &self.name)?);
             match_rate(self.device, &self.name, self.stream.sample_rate_hz)?;
         }
         self.unit = Some(Unit::open(self.device, &self.name, self.stream, &self.shared)?);
         Ok(())
     }
 
-    /// Lets the device go: the unit stops and is disposed of, and a hogged
-    /// device is given back.
+    /// Lets the device go: the unit stops and is disposed of, and a held
+    /// device gets its volume back and is given back.
     fn release(&mut self) {
         self.unit = None;
-        if self.exclusive {
-            give_back(self.device);
-        }
+        self.hold = None;
     }
 }
 
@@ -561,6 +635,17 @@ impl AudioSink for CoreAudioSink {
 
     fn close(&mut self) -> Result<(), SinkError> {
         self.release();
+        Ok(())
+    }
+
+    /// Between two tracks that cannot share a stream: the unit goes, and the
+    /// device stays held for the next one, with the volume it had before the
+    /// first.
+    fn handoff(&mut self) -> Result<(), SinkError> {
+        self.unit = None;
+        if let Some(hold) = self.hold.take() {
+            hold.park();
+        }
         Ok(())
     }
 }

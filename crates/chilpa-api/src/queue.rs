@@ -767,6 +767,9 @@ impl Chilpa {
         if let Some(p) = &self.player {
             p.set_exclusive(on);
         }
+        // Where the volume lives can follow it: on a Mac, alone, it is the
+        // device's own.
+        self.apply_volume();
         let (output, _) = self.chosen_output();
         self.move_output(&output, false);
     }

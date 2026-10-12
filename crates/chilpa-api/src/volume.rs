@@ -27,7 +27,11 @@ impl Chilpa {
     pub fn player_volume(&mut self) -> VolumeView {
         if self.casting.active() { return self.cast_volume(); }
         let (output, _) = self.chosen_output();
-        if self.hardware_volume() {
+        // On a Mac with the output alone, the slider moves the device's own
+        // volume and the samples stay untouched, as QBZ does there
+        // (`qbz-player/src/player/mod.rs`, `apply_engine_volume`); a DAC with
+        // no volume of its own falls back to scaling, as it does in QBZ.
+        if self.hardware_volume() || (self.stack_of(&output) == "coreaudio" && self.exclusive()) {
             let knob = chilpa_core::volume_of(&output);
             if knob.available {
                 return VolumeView { percent: knob.percent, muted: knob.muted, hardware: true, ..VolumeView::default() };
