@@ -13,7 +13,8 @@ TestCase {
     width: 1200
     height: 800
 
-    Item { id: frame; width: 1200; height: 800 }
+    // A real window: the plan reads a Window's size, as Main hands it one.
+    Window { id: frame; width: 1200; height: 800 }
     Item { id: host; x: 260; y: plan.planeTop; width: 900; height: frame.height - y - plan.contentBottom }
     PlayerPlan { id: plan; window: frame; content: host; tall: 80 }
 

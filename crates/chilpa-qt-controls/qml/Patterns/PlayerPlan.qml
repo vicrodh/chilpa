@@ -10,7 +10,9 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 Item {
     id: plan
 
-    required property Item window
+    // The window (a Window: an Item there reads nothing), or an Item that
+    // stands for one in a sample.
+    required property var window
     // The content's plane: the floating bar spans it, less the window's gap.
     required property Item content
     // How tall the bar stands now, and whether a still pointer sent it away.
