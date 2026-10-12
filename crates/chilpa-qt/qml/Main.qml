@@ -51,11 +51,11 @@ Window {
     ScreenHost {
         id: host
         x: window.contentLeft
-        y: Metrics.tabBarHeight
+        y: plan.planeTop
         width: (right.visible ? right.x : window.width) - Metrics.spaceWindow - x // derived: the window's margin on the right too
         // Under the dynamic background the plane is a card that ends at the
         // window's margin, so the screens end there too.
-        height: window.height - y - (Theme.ambient ? Metrics.spaceWindow : 0)
+        height: window.height - y - plan.contentBottom
         clip: true
     }
 
@@ -85,8 +85,8 @@ Window {
         z: 2
         open: (SettingsModel.queueOpen || SettingsModel.lyricsOpen) && !window.panelAside
         x: window.width - width - Metrics.spaceWindow
-        y: Metrics.tabBarHeight
-        height: window.height - y - Metrics.spaceWindow
+        y: plan.planeTop
+        height: window.height - y - plan.planeBottom
     }
 
     Connections {
@@ -99,13 +99,14 @@ Window {
         z: 3
         panelAside: window.panelAside
         onShowPanel: window.panelAside = false
-        // The plane's width less the window's gap on each side, and its
-        // bottom that gap above the plane's (the owner, 2026-10-08 night).
-        width: host.width - Metrics.spaceWindow * 2 // derived: the gap on each side
-        x: host.x + Metrics.spaceWindow
-        y: idle.away ? window.height : host.y + host.height - height - Metrics.spaceWindow
+        // Floating, the plane's width less the window's gap on each side
+        // (the owner, 2026-10-08 night); docked, the window's (PlayerPlan).
+        width: plan.barWidth
+        x: plan.barX
+        y: plan.barY
         Behavior on y { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
     }
+    Driving.PlayerPlan { id: plan; window: window; content: host; tall: player.implicitHeight; away: idle.away }
 
     PlayerIdle {
         id: idle
@@ -137,14 +138,8 @@ Window {
 
     Tooltip { watching: window.contentItem }
 
-    WindowGrips {
-        anchors.fill: parent
-        window: window
-    }
-
-    DevHooks {
-        window: window
-    }
+    WindowGrips { anchors.fill: parent; window: window }
+    DevHooks { window: window }
 
     Driving.WindowControls { id: driving; window: window }
     Mini.MiniHost { window: window; controls: driving }

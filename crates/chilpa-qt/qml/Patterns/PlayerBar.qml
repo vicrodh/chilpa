@@ -13,8 +13,10 @@ import "../Components"
 import "qrc:/qt/qml/app/chilpa/controls/qml/Components" as Parts
 import "qrc:/qt/qml/app/chilpa/waveform/qml/Components" as Wave
 
-// The floating player (design/02 7): transport, the "LCD" with what plays,
-// and the actions for the active output.
+// The player (design/02 7): transport, the "LCD" with what plays, and the
+// actions for the active output. It floats over the content or spans the
+// window at its bottom or top (`PlayerLayout`); at the top it grows, and
+// opens what it opens, downward.
 Item {
     id: bar
 
@@ -38,8 +40,10 @@ Item {
     // Standing tall with the waveform seek in a band above everything else,
     // which stays where it was (the owner, 2026-10-09).
     readonly property bool tall: Waveform.open
+    readonly property bool onTop: PlayerLayout.mode === "top"
     implicitHeight: tall ? Metrics.playerHeightTall : Metrics.playerHeight
-    Binding { target: Metrics; property: "playerSpace"; value: bar.implicitHeight }
+    // Only a floating bar covers the content's end.
+    Binding { target: Metrics; property: "playerSpace"; value: PlayerLayout.mode === "floating" ? bar.implicitHeight : 0 }
 
     // The pointer is over the bar: it does not step away from under it.
     readonly property bool pointed: area.containsMouse
@@ -55,20 +59,7 @@ Item {
         onWheel: (wheel) => wheel.accepted = true
     }
 
-    RectangularShadow {
-        anchors.fill: panel
-        radius: panel.radius
-        offset.y: Metrics.shadowElevatedY
-        blur: Metrics.shadowElevatedBlur
-        color: Theme.color.shadowElevated
-    }
-    RectangularShadow {
-        anchors.fill: panel
-        radius: panel.radius
-        offset.y: Metrics.shadowKeyY
-        blur: Metrics.shadowKeyBlur
-        color: Theme.color.shadowElevatedKey
-    }
+    ElevatedShadow { target: panel; radius: panel.radius }
 
     Rectangle {
         id: panel
@@ -80,12 +71,13 @@ Item {
         Edge {}
     }
 
-    // The bar as it always was: the band above does not move it.
+    // The bar as it always was: the band does not move it. At the top the
+    // band opens under it instead of over it.
     Item {
         id: body
         anchors.left: parent.left
         anchors.right: parent.right
-        anchors.bottom: parent.bottom
+        y: bar.onTop ? 0 : parent.height - height
         height: Metrics.playerHeight
     }
     // Only while the bar stands tall: hidden, it still followed the bar's
@@ -97,7 +89,7 @@ Item {
         anchors.right: parent.right
         anchors.leftMargin: Metrics.playerPadLeft
         anchors.rightMargin: Metrics.playerPadRight
-        y: Math.round((lcd.y - height) / 2) // derived: centered between the bar's top edge and the song card
+        y: Math.round(bar.onTop ? (body.height + parent.height - height) / 2 : (lcd.y - height) / 2) // derived: centered between the song card's row and the bar's far edge
         height: Metrics.waveformBand
         sourceComponent: Wave.WaveformBand {}
     }
@@ -205,12 +197,16 @@ Item {
             CascadingMenu {
                 id: viewMenu
                 x: viewButton.width - width
-                y: -height - Metrics.gap10
+                y: bar.onTop ? parent.height + Metrics.gap10 : -height - Metrics.gap10
+                readonly property var modes: ["floating", "bottom", "top"]
+                readonly property var layouts: [I18n.tr("Floating", I18n.rev), I18n.tr("Full width, bottom", I18n.rev), I18n.tr("Full width, top", I18n.rev)]
                 readonly property var backgrounds: [I18n.tr("Off", I18n.rev), I18n.tr("Ambient", I18n.rev), I18n.tr("Blurred art", I18n.rev),
                     I18n.tr("Wallpaper", I18n.rev), I18n.tr("Wallpaper, blurred", I18n.rev)]
                 function show() {
                     entries = [{ text: I18n.tr("Mini player", I18n.rev), glyph: Icons.pictureInPicture, act: "mini" },
                         { text: I18n.tr("Immersive", I18n.rev), glyph: Icons.arrowsMaximize, act: "immersive" }, { separator: true },
+                        { text: I18n.tr("Player", I18n.rev), glyph: Icons.layoutBottombarExpand, submenu: true, children: layouts.map((text, index) =>
+                            ({ text: text, checked: PlayerLayout.mode === modes[index], act: "layout:" + modes[index] })) },
                         { text: I18n.tr("Background", I18n.rev), glyph: Icons.stack2, submenu: true,
                         children: backgrounds.map((text, index) => ({ text: text, checked: Ambient.mode === index, act: "background:" + index })) }]
                     open()
@@ -220,12 +216,15 @@ Item {
                         Mini.enter()
                     else if (entry.act === "immersive")
                         Immersive.openFromMenu()
+                    else if (entry.act.startsWith("layout:"))
+                        PlayerLayout.mode = entry.act.split(":")[1]
                     else if (entry.act.startsWith("background:"))
                         Ambient.choose(Number(entry.act.split(":")[1]))
                 }
             }
         }
         VolumeControl {
+            opensDown: bar.onTop
             anchors.verticalCenter: parent.verticalCenter
             visible: bar.width >= Metrics.playerNoVolume
         }
@@ -240,7 +239,7 @@ Item {
             PlaybackOptions {
                 id: options
                 x: optionsButton.width - width
-                y: -height - Metrics.gap10
+                y: bar.onTop ? parent.height + Metrics.gap10 : -height - Metrics.gap10
             }
         }
         IconButton {
@@ -267,7 +266,8 @@ Item {
         IconButton {
             objectName: "playerUnfold"
             tip: Waveform.open ? I18n.tr("Plain seek bar", I18n.rev) : I18n.tr("Waveform", I18n.rev)
-            glyph: Waveform.open ? Icons.chevronDown : Icons.chevronUp
+            // At the top the band opens downward, and the caret says so.
+            glyph: Waveform.open !== bar.onTop ? Icons.chevronDown : Icons.chevronUp
             onClicked: Waveform.open = !Waveform.open
         }
     }
@@ -285,8 +285,7 @@ Item {
 
     QualityTooltip {
         anchors.horizontalCenter: parent.horizontalCenter
-        anchors.bottom: parent.top
-        anchors.bottomMargin: Metrics.gap10
+        y: bar.onTop ? parent.height + Metrics.gap10 : -height - Metrics.gap10
         visible: lcd.qualityHovered && (Player.playing || Cast.active)
         z: Metrics.tooltipLayer
     }

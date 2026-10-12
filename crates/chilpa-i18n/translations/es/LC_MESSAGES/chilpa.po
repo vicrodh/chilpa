@@ -1301,6 +1301,9 @@ msgstr "Terminar selección"
 msgid "Flat"
 msgstr "Plano"
 
+msgid "Floating"
+msgstr "Flotante"
+
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
 
@@ -1366,6 +1369,12 @@ msgstr "Ver detalles"
 
 msgid "Full episodes"
 msgstr "Episodios completos"
+
+msgid "Full width, bottom"
+msgstr "A todo lo ancho, abajo"
+
+msgid "Full width, top"
+msgstr "A todo lo ancho, arriba"
 
 msgid "GPU"
 msgstr "GPU"
@@ -2494,6 +2503,9 @@ msgstr "Opciones de reproducción"
 
 msgid "Playback stops and the window closes."
 msgstr "La reproducción se detiene y la ventana se cierra."
+
+msgid "Player"
+msgstr "Reproductor"
 
 msgid "Player bar"
 msgstr "Barra del reproductor"

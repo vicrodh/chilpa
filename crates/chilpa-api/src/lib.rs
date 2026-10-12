@@ -97,6 +97,7 @@ pub mod wallpaper;
 pub mod open_media;
 mod open_link;
 pub mod window_place;
+pub mod player_layout;
 mod found;
 mod source_search;
 mod source_layout;

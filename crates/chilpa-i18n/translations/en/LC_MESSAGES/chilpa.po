@@ -1301,6 +1301,9 @@ msgstr ""
 msgid "Flat"
 msgstr ""
 
+msgid "Floating"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr ""
 
@@ -1365,6 +1368,12 @@ msgid "Full details"
 msgstr ""
 
 msgid "Full episodes"
+msgstr ""
+
+msgid "Full width, bottom"
+msgstr ""
+
+msgid "Full width, top"
 msgstr ""
 
 msgid "GPU"
@@ -2493,6 +2502,9 @@ msgid "Playback options"
 msgstr ""
 
 msgid "Playback stops and the window closes."
+msgstr ""
+
+msgid "Player"
 msgstr ""
 
 msgid "Player bar"

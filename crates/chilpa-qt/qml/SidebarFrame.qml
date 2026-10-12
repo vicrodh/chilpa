@@ -19,8 +19,9 @@ Item {
     property real dragged: -1
     property real grabbed: 0
 
-    readonly property int head: Metrics.tabBarHeight
-    readonly property int tall: height - head - Metrics.spaceWindow // derived: down to the window's margin
+    // Between the planes' top and bottom: the player's layout moves them.
+    readonly property int head: Metrics.shellTop
+    readonly property int tall: height - head - Metrics.shellBottom // derived: down to the window's margin, or the bar's
     readonly property bool dragging: dragged >= 0
     // The mode while dragging is where the drag would land from where it was.
     property string dragMode: ""

@@ -11,6 +11,9 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
     id: control
 
+    // Open under the button instead, for a bar at the window's top.
+    property bool opensDown: false
+
     implicitWidth: Metrics.button28
     implicitHeight: Metrics.button28
 
@@ -37,7 +40,7 @@ Item {
         dim: false
 
         x: (control.width - width) / 2 // derived: centered over its button
-        y: -height - Metrics.gap8
+        y: control.opensDown ? control.height + Metrics.gap8 : -height - Metrics.gap8
         width: Metrics.volumePopupWidth
         padding: Metrics.gap8
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
