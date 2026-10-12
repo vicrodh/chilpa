@@ -3,10 +3,12 @@ import QtTest
 import app.chilpa
 import app.chilpa.sources
 import "../../qml/Screens"
+import "../../qml/Components"
 
 TestCase {
     name: "ArtistScene"; when: windowShown; visible: true; width: 1100; height: 800
     Component { id: maker; ArtistScene { width: 1100; height: 800 } }
+    Component { id: albumMaker; SceneAlbumCard { plugin: "fixture" } }
     function init() {
         Sources.sceneDocument = {state:"ready",includeSources:true,sceneLabel:"Seattle scene",artistName:"Source artist",genreSummary:"grunge / post-punk",
             artists:[
@@ -68,5 +70,14 @@ TestCase {
         Library.remoteRev++
         tryCompare(scene, "canBrowse", false)
         compare(scene.mode, "grid")
+    }
+    function test_album_action_accepts_opaque_storefront_refs() {
+        const card = createTemporaryObject(albumMaker, this)
+        card.album = {ref:"album:us:123",title:"Storefront album"}
+        compare(card.albumId, -7)
+        card.album = {ref:"album:123",title:"Catalog album"}
+        compare(card.albumId, -7)
+        card.album = {ref:"album:us:",title:"Incomplete album"}
+        compare(card.albumId, 0)
     }
 }
