@@ -130,6 +130,9 @@ QtObject {
     readonly property int button30: 30
     readonly property int button32: 32
     readonly property int button40: 40
+    readonly property int queueViewportAction: 36
+    readonly property int queueActionRail: 64
+    readonly property int queueSearchMin: 120
     readonly property int chipHeight: 24
     readonly property int pillHeight: 30
     readonly property int pillPadding: 14
@@ -214,7 +217,7 @@ QtObject {
     readonly property int wheelNotch: 120
     readonly property int tabMaxWidth: 180
     readonly property int tabPadLeft: 11
-    readonly property int tabPadRight: 5
+    readonly property int tabPadRight: 11
     readonly property int tabClose: 18
     // The narrowest a tab's name field gets while it is renamed.
     readonly property int tabRenameMin: 96
@@ -337,11 +340,11 @@ QtObject {
     readonly property int cardTextGap: 8
     readonly property int cardTextHeight: 40
     readonly property int overlayPad: 8
-    readonly property int overlayCheck: 26
+    readonly property int overlayCheck: 24
     readonly property int overlayPlay: 40
     readonly property int overlayButton: 30
     readonly property int overlayIcon: 16
-    readonly property int overlayCheckIcon: 21
+    readonly property int overlayCheckIcon: 19
     readonly property int cardRing: 2
     readonly property int carouselCard: 164
     readonly property int ratingStar: 14

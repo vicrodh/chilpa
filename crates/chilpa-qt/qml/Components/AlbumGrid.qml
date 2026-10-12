@@ -30,11 +30,14 @@ Item {
     property bool list: false
     property real viewportX: 0
     property real viewportWidth: width
+    // A horizontal shelf fixes its one-row column count while keeping the
+    // same card width the library grid gives this viewport.
+    property int fixedColumns: 0
 
     // A selected cover paints outside its card. Keep that ring inside the
     // scrollable plane on every edge instead of clipping boundary cards.
     readonly property real layoutWidth: Math.max(0, width - Metrics.cardRing * 2) // derived: a ring on both sides
-    readonly property int columns: layoutWidth <= 0 ? 0 : list ? 1
+    readonly property int columns: layoutWidth <= 0 ? 0 : list ? 1 : fixedColumns > 0 ? fixedColumns
         : Math.max(Metrics.gridMinColumns, Math.floor((layoutWidth + Metrics.gridGap) / Metrics.cardMinWidth))
     readonly property real cardWidth: columns > 0 ? (layoutWidth - (columns - 1) * Metrics.gridGap) / columns : 0
     readonly property real rowHeight: list ? Metrics.rowRich : cardWidth + Metrics.cardTextGap + Metrics.cardTextHeight
