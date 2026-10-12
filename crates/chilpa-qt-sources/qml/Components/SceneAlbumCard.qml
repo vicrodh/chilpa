@@ -10,7 +10,7 @@ Item {
     id: card
     property var album: ({})
     property string plugin: ""
-    readonly property int albumId: plugin && /^album:[^:]+/.test(album.ref || "") ? Sources.referenceCard(plugin, album.ref) : 0
+    readonly property int albumId: plugin && /^album:[^:]+$/.test(album.ref || "") ? Sources.referenceCard(plugin, album.ref) : 0
     width: Metrics.scenePanelAlbumWidth; height: Metrics.scenePanelCardHeight
     ArtTile {
         id: cover
