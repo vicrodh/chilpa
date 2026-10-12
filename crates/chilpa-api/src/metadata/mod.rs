@@ -76,6 +76,7 @@ pub(crate) struct Editor {
     loading: bool,
     hits: Vec<Hit>,
     release: Option<Release>,
+    selected_disc: u16,
     artwork_provider: Provider,
     artwork_searching: bool,
     artwork_loading: bool,
@@ -112,6 +113,7 @@ impl Default for Editor {
             loading: false,
             hits: Vec::new(),
             release: None,
+            selected_disc: 0,
             artwork_provider: Provider::MusicBrainz,
             artwork_searching: false,
             artwork_loading: false,
@@ -168,6 +170,7 @@ impl Editor {
         self.loading = false;
         self.hits.clear();
         self.release = None;
+        self.selected_disc = 0;
         self.artwork_searching = false;
         self.artwork_loading = false;
         self.candidates.clear();
@@ -361,7 +364,17 @@ impl Chilpa {
                 editor.loading = false;
                 match release {
                     Ok(release) => {
-                        let matched = editor.draft.as_ref().map_or(0, |d| apply::pair(d, &release).iter().flatten().count());
+                        editor.selected_disc = editor.draft.as_ref().map_or(0, |draft| {
+                            let catalog = &draft.album_cell("catalog_number").now;
+                            let by_catalog = release.catalog_numbers.iter().position(|number| number.eq_ignore_ascii_case(catalog))
+                                .and_then(|at| u16::try_from(at + 1).ok());
+                            let at_disc = fields::track("disc_number").unwrap_or(0);
+                            let discs: std::collections::BTreeSet<u16> = draft.rows.iter()
+                                .filter_map(|row| row.cells[at_disc].now.parse().ok()).collect();
+                            by_catalog.or_else(|| (discs.len() == 1).then(|| *discs.first().unwrap_or(&0)).filter(|n| *n > 1 && *n <= release.discs))
+                                .unwrap_or(0)
+                        });
+                        let matched = editor.draft.as_ref().map_or(0, |d| apply::pair_for(d, &release, editor.selected_disc).iter().flatten().count());
                         let total = editor.draft.as_ref().map_or(0, |d| d.rows.len());
                         editor.notice = chilpa_i18n::t_args("{} of {} tracks match this release", &[&matched.to_string(), &total.to_string()]);
                         editor.release = Some(release);

@@ -79,9 +79,13 @@ pub struct Release {
     pub genres: Vec<String>,
     pub label: String,
     pub catalog_number: String,
+    /// One catalogue number per medium when a numbered run supports that mapping.
+    pub catalog_numbers: Vec<String>,
     pub country: String,
     pub barcode: String,
     pub discs: u16,
+    /// The names printed on the media, in disc order when available.
+    pub media_titles: Vec<String>,
     pub release_group_id: String,
     /// Its page, for somebody to open.
     pub url: String,

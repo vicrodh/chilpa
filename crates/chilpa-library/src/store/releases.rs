@@ -57,9 +57,10 @@ impl Library {
                 let part = &parts[i];
                 for track in &part.tracks {
                     changed |= tx.prepare_cached("UPDATE tracks SET album_id = ?2, release_part = ?3,
-                        album_title = ?4, release_disc = ?5, release_year = ?6, release_artwork = ?7 WHERE id = ?1 AND
+                        album_title = ?4, release_disc = ?5, disc_number = coalesce(disc_number, ?5),
+                        release_year = ?6, release_artwork = ?7 WHERE id = ?1 AND
                         (album_id IS NOT ?2 OR release_part <> ?3 OR album_title <> ?4 OR release_disc IS NOT ?5
-                         OR release_year IS NOT ?6 OR release_artwork IS NOT ?7)")?.execute(
+                         OR (disc_number IS NULL AND ?5 IS NOT NULL) OR release_year IS NOT ?6 OR release_artwork IS NOT ?7)")?.execute(
                         params![track.id, target, part.location, track.title, part.folder_disc, track.year, track.artwork])? > 0;
                 }
             }

@@ -279,6 +279,9 @@ msgstr ""
 msgid "All categories"
 msgstr "All categories"
 
+msgid "All discs"
+msgstr ""
+
 msgid "All episode types"
 msgstr ""
 
@@ -1110,6 +1113,9 @@ msgid "Disconnected"
 msgstr ""
 
 msgid "Discover"
+msgstr ""
+
+msgid "Discs"
 msgstr ""
 
 msgid "Display settings"
@@ -5276,6 +5282,9 @@ msgid "{} tracks"
 msgstr "{} tracks"
 
 msgid "{} tracks in {} records"
+msgstr ""
+
+msgid "{} tracks match disc {}"
 msgstr ""
 
 msgid "{} was not allowed in time; connect again"

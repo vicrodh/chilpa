@@ -108,6 +108,21 @@ fn label_of(value: &Value) -> (String, String) {
     (text(&first["label"]["name"]), text(&first["catalog-number"]))
 }
 
+/// A release's labels do not explicitly point at its media. Numbered runs
+/// are the only ones safe to offer as a disc-by-disc catalogue choice.
+fn numbered_catalogs(numbers: Vec<String>, discs: usize) -> Vec<String> {
+    if numbers.len() != discs || discs < 2 { return Vec::new(); }
+    let pieces: Option<Vec<_>> = numbers.iter().map(|value| {
+        let start = value.trim_end_matches(|c: char| c.is_ascii_digit()).len();
+        let (prefix, digits) = value.split_at(start);
+        if digits.is_empty() { None } else { digits.parse::<u64>().ok().map(|number| (prefix, number)) }
+    }).collect();
+    let Some(pieces) = pieces else { return Vec::new() };
+    if pieces.windows(2).all(|pair| pair[0].0 == pair[1].0 && pair[0].1.checked_add(1) == Some(pair[1].1)) {
+        numbers
+    } else { Vec::new() }
+}
+
 /// The release's genres, or its group's when it has none of its own: most
 /// voted first, five at most. A genre one person voted for is left out,
 /// unless that is all there is.
@@ -202,6 +217,9 @@ fn release_of(value: &Value) -> Result<Release, Failure> {
         }
     }
     let (label, catalog_number) = label_of(value);
+    let catalog_numbers: Vec<String> = value["label-info"].as_array().into_iter().flatten()
+        .map(|entry| text(&entry["catalog-number"])).collect();
+    let catalog_numbers = numbered_catalogs(catalog_numbers, media.len());
     Ok(Release {
         provider: Provider::MusicBrainz,
         url: format!("https://musicbrainz.org/release/{id}"),
@@ -212,9 +230,11 @@ fn release_of(value: &Value) -> Result<Release, Failure> {
         genres: genres_of(value),
         label,
         catalog_number,
+        catalog_numbers,
         country: text(&value["country"]),
         barcode: text(&value["barcode"]),
         discs: u16::try_from(media.len()).unwrap_or(1).max(1),
+        media_titles: media.iter().map(|medium| text(&medium["title"])).collect(),
         release_group_id: text(&value["release-group"]["id"]),
         tracks,
     })
@@ -317,6 +337,22 @@ mod tests {
     fn the_release_group_is_asked_for() {
         let url = release_url(ID).unwrap();
         assert_eq!(url, format!("{API}/release/{ID}?inc=recordings+artist-credits+labels+genres+release-groups&fmt=json"));
+    }
+
+    #[test]
+    fn a_box_keeps_each_medium_and_its_catalog_number() {
+        let value: Value = serde_json::from_str(r#"{
+            "id":"37478189-f215-47ac-8138-288d9af97224", "title":"Complete Box",
+            "label-info":[{"catalog-number":"SVWC-1011"},{"catalog-number":"SVWC-1012"}],
+            "media":[{"position":1,"title":"Scene 1","tracks":[{"position":1,"title":"First"}]},
+                     {"position":2,"title":"Scene 2","tracks":[{"position":1,"title":"Second"}]}]
+        }"#).unwrap();
+        let release = release_of(&value).unwrap();
+        assert_eq!(release.discs, 2);
+        assert_eq!(release.catalog_numbers, ["SVWC-1011", "SVWC-1012"]);
+        assert_eq!(release.media_titles, ["Scene 1", "Scene 2"]);
+        assert_eq!(release.tracks.iter().map(|track| (track.disc, track.number)).collect::<Vec<_>>(), [(1, 1), (2, 1)]);
+        assert!(numbered_catalogs(vec!["SVWC-1011".into(), "OTHER-500".into()], 2).is_empty());
     }
 
     #[test]

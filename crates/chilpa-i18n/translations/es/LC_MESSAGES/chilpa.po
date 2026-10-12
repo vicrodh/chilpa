@@ -279,6 +279,9 @@ msgstr "Todos los artistas"
 msgid "All categories"
 msgstr "Todas las categorías"
 
+msgid "All discs"
+msgstr "Todos los discos"
+
 msgid "All episode types"
 msgstr "Todos los tipos de episodio"
 
@@ -1111,6 +1114,9 @@ msgstr "Desconectado"
 
 msgid "Discover"
 msgstr "Descubrir"
+
+msgid "Discs"
+msgstr "Discos"
 
 msgid "Display settings"
 msgstr "Opciones de visualización"
@@ -5277,6 +5283,9 @@ msgstr "{} pistas"
 
 msgid "{} tracks in {} records"
 msgstr "{} pistas en {} discos"
+
+msgid "{} tracks match disc {}"
+msgstr "{} pistas coinciden con el disco {}"
 
 msgid "{} was not allowed in time; connect again"
 msgstr "No se permitió a tiempo en {}; vuelve a conectar"
