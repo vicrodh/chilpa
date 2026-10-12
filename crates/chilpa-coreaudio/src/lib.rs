@@ -1,12 +1,12 @@
 //! CoreAudio: the outputs a Mac has, and what each of them can promise.
 //!
 //! A Mac hands the samples to one output unit and the device converts what
-//! it needs to. Whether that keeps every sample depends on one thing, the
-//! same one it depends on through a sound server on Linux: whether the
-//! output was asked for alone. Alone, the device is Chilpa's and runs at
-//! the track's rate, and a float made from a sample of up to 24 bits goes
-//! back into the wire's integer unchanged. Shared, the Mac mixes and
-//! resamples, and says nothing about it. So this stack says `Depends`.
+//! it needs to. The device is set to the track's rate either way. Whether
+//! every sample is kept depends on one thing, the same one it depends on
+//! through a sound server on Linux: whether the output was asked for alone.
+//! Alone, the device is Chilpa's, and a float made from a sample of up to 24
+//! bits goes back into the wire's integer unchanged. Shared, the Mac mixes
+//! whatever else plays into it. So this stack says `Depends`.
 //!
 //! **Two things are read that look alike and are not.** The nominal rate is
 //! what the device is *set to*, and the physical format is what the wire
@@ -103,9 +103,10 @@ impl OutputBackend for CoreAudio {
             // and turning it off is how the Mac is shared.
             fidelity: Fidelity::Depends,
             caveat: chilpa_i18n::t(
-                "With exclusive mode on, the device is Chilpa's alone while a track plays and \
-                 runs at that track's rate, so nothing else on the Mac can use it meanwhile. \
-                 Turn exclusive mode off to share it and let the Mac mix and convert.",
+                "Chilpa sets the device to each track's rate. With exclusive mode on, the device \
+                 is also Chilpa's alone while a track plays, so nothing else on the Mac can use \
+                 it meanwhile. Turn exclusive mode off to share it; the Mac mixes in whatever \
+                 else plays.",
             ),
         }
     }
