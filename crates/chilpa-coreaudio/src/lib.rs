@@ -183,6 +183,12 @@ impl OutputBackend for CoreAudio {
     /// Asking only the master said the Mac's own speakers had no volume.
     fn volume(&self, id: &str) -> Option<Knob> {
         let device = find(id)?;
+        // A knob the program cannot move is not one the player bar can use:
+        // QBZ asks whether the property can be set before taking the volume
+        // to the device (`coreaudio_direct.rs`, `set_hardware_volume`).
+        if read::movable_volume(device).is_empty() {
+            return None;
+        }
         let level = read::volume(device)?;
         Some(Knob {
             percent: (level.clamp(0.0, 1.0) * 100.0).round() as u8,
