@@ -130,6 +130,8 @@ pub struct AlbumDisc {
     pub artwork: String,
     /// The album its tags name, which a box may give each disc its own.
     pub tagged: String,
+    /// The disc subtitle from the first track on this disc that has one.
+    pub subtitle: String,
 }
 
 impl Library {
@@ -446,18 +448,23 @@ impl Library {
     /// of the first.
     pub fn album_discs(&self, album_id: i64) -> rusqlite::Result<Vec<AlbumDisc>> {
         let mut stmt = self.db.prepare(
-            "SELECT max(coalesce(disc_number, 1), 1), external_id, coalesce(release_artwork, ''), album_title
+            "SELECT max(coalesce(disc_number, 1), 1), external_id, coalesce(release_artwork, ''), album_title,
+                    coalesce(disc_subtitle, '')
              FROM tracks WHERE album_id = ?1
              ORDER BY 1, present DESC, track_number, external_id",
         )?;
         let rows = stmt.query_map(params![album_id], |r| {
-            Ok(AlbumDisc { number: r.get(0)?, path: r.get(1)?, artwork: r.get(2)?, tagged: r.get(3)? })
+            Ok(AlbumDisc { number: r.get(0)?, path: r.get(1)?, artwork: r.get(2)?, tagged: r.get(3)?, subtitle: r.get(4)? })
         })?;
         let mut discs: Vec<AlbumDisc> = Vec::new();
         for disc in rows {
             let disc = disc?;
             if discs.last().is_none_or(|last| last.number != disc.number) {
                 discs.push(disc);
+            } else if let Some(first) = discs.last_mut() {
+                if first.subtitle.is_empty() && !disc.subtitle.trim().is_empty() {
+                    first.subtitle = disc.subtitle;
+                }
             }
         }
         Ok(discs)

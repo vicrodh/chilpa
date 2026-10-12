@@ -1130,6 +1130,9 @@ msgstr "Desactivada"
 msgid "Disc"
 msgstr "Disco"
 
+msgid "Disc subtitle"
+msgstr "Subtítulo del disco"
+
 msgid "Disc {}"
 msgstr "Disco {}"
 
@@ -4049,6 +4052,9 @@ msgstr "Retirar la aprobación"
 
 msgid "Without plugins"
 msgstr "Sin plugins"
+
+msgid "Work"
+msgstr "Obra"
 
 msgid "Working…"
 msgstr "Trabajando…"

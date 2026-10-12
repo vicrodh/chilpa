@@ -53,12 +53,14 @@ pub(crate) const ALBUM: [Field; 12] = [
 ];
 
 /// A track's.
-pub(crate) const TRACK: [Field; 10] = [
+pub(crate) const TRACK: [Field; 12] = [
     field("title", Kind::Text(512), true),
     field("artist_credit", Kind::Text(512), true),
     field("artists", Kind::List, false),
     field("track_number", Kind::Number, false),
     field("disc_number", Kind::Number, false),
+    field("disc_subtitle", Kind::Text(512), false),
+    field("work", Kind::Text(512), false),
     field("composers", Kind::List, false),
     field("performers", Kind::List, false),
     field("musicbrainz_recording_id", Kind::Uuid, false),

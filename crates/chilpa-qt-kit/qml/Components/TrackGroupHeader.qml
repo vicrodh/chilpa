@@ -13,7 +13,10 @@ Item {
     // from; or nothing, and each part is given.
     property var of: null
     property bool record: of ? of.record : false
+    property bool work: of ? of.headerWork : false
     property string label: of ? of.headerLabel : ""
+    property string composer: of ? of.headerComposer : ""
+    property string composerTarget: of ? of.headerComposerTarget : ""
     property string artist: of ? of.artist : ""
     property string meta: of ? of.headerMeta : ""
     property url art: of ? of.art : ""
@@ -21,11 +24,12 @@ Item {
     property int tint: of ? of.index : 0
 
     readonly property bool covered: art.toString() !== ""
+    readonly property Item composerLabel: composerName
 
-    implicitHeight: record ? Metrics.rowRecord : Metrics.rowGroup
+    implicitHeight: record ? Metrics.rowRecord : work ? Metrics.rowWork : Metrics.rowGroup
 
     Row {
-        visible: !head.record
+        visible: !head.record && !head.work
         width: parent.width
         anchors.verticalCenter: parent.verticalCenter
         spacing: Metrics.gap8
@@ -61,6 +65,48 @@ Item {
             text: head.meta
             font.pointSize: Type.meta
             color: Theme.color.textTertiary
+        }
+    }
+
+    Row {
+        visible: head.work && !head.record
+        x: Metrics.gap12
+        y: Metrics.gap14
+        width: parent.width - Metrics.gap12
+        height: Metrics.rowWork - Metrics.gap14 - Metrics.gap4
+        spacing: 0
+        Text {
+            width: Math.min(implicitWidth, Math.max(0, parent.width - (head.composer !== "" ? prefix.implicitWidth + composerName.implicitWidth + suffix.implicitWidth : 0)))
+            text: head.label
+            elide: Text.ElideRight
+            font.pointSize: Type.body
+            font.weight: Type.bold
+            color: Theme.color.textPrimary
+        }
+        Text {
+            id: prefix
+            visible: head.composer !== ""
+            text: "("
+            leftPadding: Metrics.gap4
+            font.pointSize: Type.body
+            font.weight: Type.bold
+            color: Theme.color.textSecondary
+        }
+        Text {
+            id: composerName
+            visible: head.composer !== ""
+            text: head.composer
+            font.pointSize: Type.body
+            font.weight: Type.bold
+            color: head.composerTarget !== "" ? Theme.color.accent : Theme.color.textSecondary
+        }
+        Text {
+            id: suffix
+            visible: head.composer !== ""
+            text: ")"
+            font.pointSize: Type.body
+            font.weight: Type.bold
+            color: Theme.color.textSecondary
         }
     }
 

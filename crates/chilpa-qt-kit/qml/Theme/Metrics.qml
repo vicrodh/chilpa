@@ -282,6 +282,7 @@ QtObject {
     readonly property int rowRich: 56
     readonly property int rowHeader: 24
     readonly property int rowGroup: 34
+    readonly property int rowWork: 40
     // A header that stands for a record among several: its cover and
     // three lines beside it.
     readonly property int rowRecord: 72
@@ -497,7 +498,7 @@ QtObject {
     readonly property int metadataCellMin: 150
     readonly property int metadataCellPad: 9
     readonly property int metadataDetailsBar: 38
-    readonly property int metadataDetails: 218
+    readonly property int metadataDetails: 270
     readonly property int metadataHitsShown: 5
     readonly property int metadataColumnMin: 340
     readonly property int confirmWidth: 440

@@ -96,8 +96,17 @@ MouseArea {
 
     function onAlbum(row, x, y) {
         const item = row >= 0 ? rows.itemAtIndex(row) : null
-        return item && !item.header && item.album !== "" && host.model.canGo(row, "album")
-            && item.containsAlbum(x - item.x, y + rows.contentY - item.y)
+        if (!item || item.header || item.album === "" || !host.model.canGo(row, "album")) return false
+        return insideText(item, item.albumText, x, y)
+    }
+    function insideText(item, label, x, y) {
+        if (!label || !label.visible) return false
+        const point = label.mapFromItem(item, x - item.x, y + rows.contentY - item.y)
+        return point.x >= 0 && point.y >= 0 && point.x < Math.min(label.width, label.contentWidth) && point.y < label.height
+    }
+    function onHeaderComposer(item, x, y) {
+        return item && item.headerWork && item.headerComposerTarget !== ""
+            && insideText(item, item.headerComposerLabel, x, y)
     }
 
     onPressed: (mouse) => {
@@ -105,7 +114,7 @@ MouseArea {
         pressedRating = ratingAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
         const pressed = rows.itemAtIndex(rowAt(mouse.y))
         const onAction = actionAt(rowAt(mouse.y), mouse.x, mouse.y) > 0 || moveAt(rowAt(mouse.y), mouse.x, mouse.y) > 0
-        if (mouse.button === Qt.LeftButton && host.reorderable && !pressedRating && !onAction && pressed && pressed.available) {
+        if (mouse.button === Qt.LeftButton && host.reorderable && !pressedRating && !onAction && pressed && !pressed.header && pressed.available) {
             pressedRow = rowAt(mouse.y)
             pressedY = mouse.y
             dragging = false
@@ -135,6 +144,13 @@ MouseArea {
         const row = rowAt(mouse.y)
         if (row < 0 || dropped)
             return
+        const header = rows.itemAtIndex(row)
+        if (mouse.button === Qt.LeftButton && onHeaderComposer(header, mouse.x, mouse.y)) {
+            const target = header.headerComposerTarget
+            if (target.startsWith("artist:")) Navigation.openArtist(target.slice(7))
+            else Navigation.goKey("source", target)
+            return
+        }
         if (mouse.button === Qt.RightButton) {
             host.model.select(row, 4)
             menu.show(row, mouse.x, rows.y + mouse.y)
@@ -174,6 +190,9 @@ MouseArea {
     }
     onDoubleClicked: (mouse) => {
         const row = rowAt(mouse.y)
+        const header = row >= 0 ? rows.itemAtIndex(row) : null
+        if (onHeaderComposer(header, mouse.x, mouse.y))
+            return
         if (onAlbum(row, mouse.x, mouse.y) || onArtist(row, mouse.x, mouse.y))
             return
         // A second quick press on an arrow is one more step, not a play.

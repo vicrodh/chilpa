@@ -49,6 +49,8 @@ Item {
         case "artists": return I18n.tr("Artists", I18n.rev)
         case "track_number": return I18n.tr("Track", I18n.rev)
         case "disc_number": return I18n.tr("Disc", I18n.rev)
+        case "disc_subtitle": return I18n.tr("Disc subtitle", I18n.rev)
+        case "work": return I18n.tr("Work", I18n.rev)
         case "composers": return I18n.tr("Composers", I18n.rev)
         case "performers": return I18n.tr("Performers", I18n.rev)
         case "musicbrainz_recording_id": return I18n.tr("MusicBrainz recording", I18n.rev)

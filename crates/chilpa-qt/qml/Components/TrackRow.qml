@@ -21,6 +21,9 @@ Item {
     required property bool selected
     required property string headerLabel
     required property string headerMeta
+    property bool headerWork: false
+    property string headerComposer: ""
+    property string headerComposerTarget: ""
     required property url art
     // It cannot play now (ADR-017): dimmed, and the list does not play it.
     required property bool available
@@ -54,6 +57,8 @@ Item {
     // The label that shows its artist, for the list to tell which one of
     // several a click is on.
     readonly property Text artistLabel: rich ? richArtist : compactArtist
+    readonly property Text albumText: albumLabel
+    readonly property Item headerComposerLabel: groupHeader.item ? groupHeader.item.composerLabel : null
 
     function containsArtist(x, y) {
         const label = rich ? richArtist : compactArtist
@@ -61,13 +66,6 @@ Item {
         return !header && label.visible && point.x >= 0 && point.y >= 0
             && point.x < Math.min(label.width, label.contentWidth)
             && point.y < Math.min(label.height, label.contentHeight)
-    }
-
-    function containsAlbum(x, y) {
-        const point = albumLabel.mapFromItem(row, x, y)
-        return !header && albumLabel.visible && point.x >= 0 && point.y >= 0
-            && point.x < Math.min(albumLabel.width, albumLabel.contentWidth)
-            && point.y < albumLabel.height
     }
 
     function ratingAt(x, y) {
@@ -78,7 +76,7 @@ Item {
     }
 
     width: cols.width
-    height: record ? Metrics.rowRecord : header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
+    height: record ? Metrics.rowRecord : headerWork ? Metrics.rowWork : header ? Metrics.rowGroup : rich ? Metrics.rowRich : Metrics.rowCompact
     opacity: available ? 1 : Metrics.disabledOpacity
 
     ListRowSurface {
@@ -93,13 +91,13 @@ Item {
 
     // Only a header builds one; it stops short of the group's own actions.
     Loader {
+        id: groupHeader
         active: row.header
         x: row.cols.indexX
         width: row.width - x - row.cols.more - Metrics.gap16 // derived: what the actions take
         height: parent.height
         sourceComponent: TrackGroupHeader { objectName: "groupHeader"; of: row }
     }
-
     Item {
         anchors.fill: parent
         visible: !row.header

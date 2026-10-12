@@ -21,6 +21,8 @@ pub struct TrackEdit {
     pub artist: Put<String>,
     pub track_number: Put<Option<u16>>,
     pub disc_number: Put<Option<u16>>,
+    pub disc_subtitle: Put<String>,
+    pub work: Put<String>,
     pub recording_mbid: Put<Option<String>>,
     pub genres: Put<Vec<String>>,
     pub composers: Put<Vec<String>>,
@@ -35,6 +37,8 @@ impl TrackEdit {
             artist: Put::Keep,
             track_number: Put::Keep,
             disc_number: Put::Keep,
+            disc_subtitle: Put::Keep,
+            work: Put::Keep,
             recording_mbid: Put::Keep,
             genres: Put::Keep,
             composers: Put::Keep,
@@ -78,6 +82,8 @@ pub struct EditTrack {
     pub artist: String,
     pub track_number: Option<u16>,
     pub disc_number: Option<u16>,
+    pub disc_subtitle: String,
+    pub work: String,
     pub recording_mbid: Option<String>,
     pub genres: Vec<String>,
 }
@@ -89,7 +95,8 @@ impl Library {
             let mut stmt = self.db.prepare(
                 "SELECT t.id, t.external_id,
                         (SELECT s.container FROM scanned_files s WHERE s.track_id = t.id LIMIT 1),
-                        t.title, t.artist, t.track_number, t.disc_number, t.recording_mbid
+                        t.title, t.artist, t.track_number, t.disc_number, t.recording_mbid,
+                        t.disc_subtitle, t.work
                  FROM tracks t
                  WHERE t.album_id = ?1 AND t.present = 1
                  ORDER BY t.disc_number, t.track_number, t.title COLLATE NOCASE",
@@ -104,6 +111,8 @@ impl Library {
                     track_number: r.get::<_, Option<i64>>(5)?.and_then(|n| u16::try_from(n).ok()),
                     disc_number: r.get::<_, Option<i64>>(6)?.and_then(|n| u16::try_from(n).ok()),
                     recording_mbid: r.get(7)?,
+                    disc_subtitle: r.get::<_, Option<String>>(8)?.unwrap_or_default(),
+                    work: r.get::<_, Option<String>>(9)?.unwrap_or_default(),
                     genres: Vec::new(),
                 })
             })?;
@@ -239,6 +248,12 @@ impl Library {
             }
             if let Put::Set(v) = &track.disc_number {
                 tx.execute("UPDATE tracks SET disc_number = ?2 WHERE id = ?1", params![track.id, v])?;
+            }
+            if let Put::Set(v) = &track.disc_subtitle {
+                tx.execute("UPDATE tracks SET disc_subtitle = ?2 WHERE id = ?1", params![track.id, v.trim()])?;
+            }
+            if let Put::Set(v) = &track.work {
+                tx.execute("UPDATE tracks SET work = ?2 WHERE id = ?1", params![track.id, v.trim()])?;
             }
             if let Put::Set(v) = &track.recording_mbid {
                 tx.execute("UPDATE tracks SET recording_mbid = ?2 WHERE id = ?1", params![track.id, v])?;

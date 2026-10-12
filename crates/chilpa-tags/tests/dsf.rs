@@ -12,6 +12,7 @@ use lofty::tag::{Accessor, Tag, TagExt, TagType};
 use std::path::PathBuf;
 
 const RATE: u32 = 2_822_400;
+mod support;
 
 /// A two channel DSF holding `seconds` of DSD silence, with `tag` at the end
 /// where the format keeps it, or with no tag at all.
@@ -81,6 +82,15 @@ fn a_dsf_file_has_its_tags_its_length_and_its_format_read() {
     assert_eq!(info.sample_rate_hz, Some(RATE), "DSD64 is 2,822,400 one-bit samples a second");
     assert_eq!(info.channels, Some(2));
     assert_eq!(info.bit_depth, Some(1));
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
+fn a_dsf_id3_carries_disc_subtitle_and_work() {
+    let path = dsf_with("disc-work", 1, support::id3_disc_work());
+    let info = read(&path).unwrap();
+    assert_eq!(info.tags.disc_subtitle.as_deref(), Some("Scene One"));
+    assert_eq!(info.tags.work.as_deref(), Some("Das Rheingold"));
     let _ = std::fs::remove_file(path);
 }
 

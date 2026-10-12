@@ -28,11 +28,10 @@ pub(crate) fn record_folder(path: &str) -> String {
     album_folder(file_of(path))
 }
 
-/// What a disc is called besides its number, most trustworthy first: the
-/// name its folder gives it ("Disc 2 - Live"), which a tag cannot
-/// contradict; the album its tags name, when that says something the
-/// record's title does not ("Box (Disc 2)" only numbers it); nothing.
-pub(crate) fn named(path: &str, tagged: &str, record: &str) -> String {
+/// What a disc is called besides its number: its own subtitle, its folder's
+/// titled tail, or its album tag when that differs from the record title.
+pub(crate) fn named(path: &str, subtitle: &str, tagged: &str, record: &str) -> String {
+    if !subtitle.trim().is_empty() { return subtitle.trim().to_string(); }
     if let Some(title) = disc_title(&folder_of(path)) {
         return title;
     }
@@ -70,12 +69,13 @@ fn label(number: u16, title: &str) -> String {
 /// Those tracks, in disc order, with a header before each disc: its
 /// number, its name and its cover when it has them, and how many of its
 /// songs follow.
-pub(crate) fn with_headers(rows: Vec<TrackRow>, discs: &[Disc]) -> Vec<TrackEntry> {
+pub(crate) fn with_headers(rows: Vec<TrackRow>, discs: &[Disc], show_discs: bool) -> Vec<TrackEntry> {
     let mut entries = Vec::with_capacity(rows.len() + discs.len());
     let mut current = None;
+    let mut previous_work: Option<&str> = None;
     for (index, track) in rows.iter().enumerate() {
         let number = track.disc.max(1);
-        if current != Some(number) {
+        if show_discs && current != Some(number) {
             current = Some(number);
             let songs = rows[index..].iter().take_while(|row| row.disc.max(1) == number).count();
             let disc = discs.iter().find(|disc| disc.number == number);
@@ -86,6 +86,17 @@ pub(crate) fn with_headers(rows: Vec<TrackRow>, discs: &[Disc]) -> Vec<TrackEntr
                 ..GroupHeader::default()
             }));
         }
+        let work = track.work.trim();
+        if previous_work != Some(work) && !work.is_empty() {
+            entries.push(TrackEntry::Header(GroupHeader {
+                label: work.to_string(),
+                work: true,
+                composer: track.composer.split(',').next().unwrap_or_default().trim().to_string(),
+                composer_target: track.composer_target.clone(),
+                ..GroupHeader::default()
+            }));
+        }
+        previous_work = Some(work);
         entries.push(TrackEntry::Track(track.clone()));
     }
     entries
@@ -117,7 +128,7 @@ pub(crate) fn block_header(first: &TrackRow, about: Option<&About>, shown: usize
         title if title.is_empty() => Path::new(&record_folder(&first.path)).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
         title => title,
     };
-    let disc = named(&first.path, &first.album, &record);
+    let disc = named(&first.path, &first.disc_subtitle, &first.album, &record);
     let tracks = chilpa_i18n::tf("{} track", "{} tracks", shown as i64, &[&shown.to_string()]);
     let mut meta: Vec<String> = about.and_then(|a| a.year).filter(|year| *year > 0).map(|year| year.to_string()).into_iter().collect();
     if disc_said {
@@ -132,26 +143,54 @@ pub(crate) fn block_header(first: &TrackRow, about: Option<&About>, shown: usize
         // disc has none of its own.
         art: about.map(|a| a.own_cover.clone()).filter(|cover| !cover.is_empty()).unwrap_or_else(|| first.artwork_path.clone()),
         record: true,
+        ..GroupHeader::default()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::quality::Quality;
+
+    fn row(disc: u16, work: &str, composer: &str) -> TrackRow {
+        TrackRow {
+            id: i64::from(disc), path: String::new(), title: String::new(), artist: String::new(),
+            album: String::new(), album_id: 1, disc, number: 1, duration_ms: 0, plays: 0,
+            quality: Quality::default(), artwork_path: String::new(), available: true,
+            composer: composer.to_string(), disc_subtitle: String::new(), work: work.to_string(),
+            composer_target: String::new(),
+        }
+    }
 
     #[test]
-    fn a_disc_is_named_by_its_folder_before_its_tag() {
-        assert_eq!(named("/music/Box/Disc 2 - Live/01.flac", "Box", "Box"), "Live");
-        assert_eq!(named("/music/Box/Disc 2 - Live/01.flac", "Something Else", "Box"), "Live");
-        assert_eq!(named("sacd:/music/Box/CD3: Encores/image.iso#4", "Box", "Box"), "Encores");
+    fn works_have_headers_even_on_one_disc_and_only_at_boundaries() {
+        let entries = with_headers(vec![row(1, "Das Rheingold", "Richard Wagner"), row(1, "Das Rheingold", "Richard Wagner"), row(1, "Scene 1", "Richard Wagner")], &[], false);
+        let headers: Vec<_> = entries.iter().filter_map(|entry| match entry { TrackEntry::Header(head) => Some(head), _ => None }).collect();
+        assert_eq!(headers.iter().map(|head| head.label.as_str()).collect::<Vec<_>>(), ["Das Rheingold", "Scene 1"]);
+        assert!(headers.iter().all(|head| head.work && head.composer == "Richard Wagner"));
+    }
+
+    #[test]
+    fn disc_header_precedes_the_work_header() {
+        let discs = [Disc { number: 1, title: "Prelude".into(), art: String::new() }, Disc { number: 2, title: "Finale".into(), art: String::new() }];
+        let entries = with_headers(vec![row(1, "Prelude", "A"), row(2, "Finale", "B")], &discs, true);
+        let labels: Vec<_> = entries.iter().filter_map(|entry| match entry { TrackEntry::Header(head) => Some(head.label.as_str()), _ => None }).collect();
+        assert_eq!(labels, ["Disc 1 — Prelude", "Prelude", "Disc 2 — Finale", "Finale"]);
+    }
+
+    #[test]
+    fn a_disc_subtitle_precedes_its_folder_and_album_tag() {
+        assert_eq!(named("/music/Box/Disc 2 - Live/01.flac", "Scene Two", "Something Else", "Box"), "Scene Two");
+        assert_eq!(named("/music/Box/Disc 2 - Live/01.flac", "", "Something Else", "Box"), "Live");
+        assert_eq!(named("sacd:/music/Box/CD3: Encores/image.iso#4", "", "Box", "Box"), "Encores");
     }
 
     #[test]
     fn a_tag_names_the_disc_only_when_it_says_more_than_the_record() {
-        assert_eq!(named("/music/Box/CD2/01.flac", "Das Rheingold", "Der Ring"), "Das Rheingold");
-        assert_eq!(named("/music/Box/CD2/01.flac", "Box (Disc 2)", "Box"), "");
-        assert_eq!(named("/music/Box/CD2/01.flac", "box", "Box"), "");
-        assert_eq!(named("/music/Box/CD2/01.flac", "", "Box"), "");
+        assert_eq!(named("/music/Box/CD2/01.flac", "", "Das Rheingold", "Der Ring"), "Das Rheingold");
+        assert_eq!(named("/music/Box/CD2/01.flac", "", "Box (Disc 2)", "Box"), "");
+        assert_eq!(named("/music/Box/CD2/01.flac", "", "box", "Box"), "");
+        assert_eq!(named("/music/Box/CD2/01.flac", "", "", "Box"), "");
     }
 
     #[test]

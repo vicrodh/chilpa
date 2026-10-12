@@ -119,6 +119,8 @@ fn held(track: &EditTrack, inside: Option<&[ContainedTrack]>, xml: Option<&chilp
         genres: tags.genres,
         track_number: tags.track_number.map(u32::from),
         disc_number: tags.disc_number.map(u32::from),
+        disc_subtitle: tags.disc_subtitle,
+        work: tags.work,
         musicbrainz_recording_id: tags.musicbrainz_recording_id,
         ..Snapshot::default()
     };

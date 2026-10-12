@@ -26,12 +26,14 @@ pub const ALBUM_FIELDS: [&str; 12] = [
 ];
 
 /// A track's.
-pub const TRACK_FIELDS: [&str; 10] = [
+pub const TRACK_FIELDS: [&str; 12] = [
     "title",
     "artist_credit",
     "artists",
     "track_number",
     "disc_number",
+    "disc_subtitle",
+    "work",
     "composers",
     "performers",
     "musicbrainz_recording_id",
@@ -397,6 +399,8 @@ pub struct Track {
     pub artists: Override<Vec<String>>,
     pub track_number: Override<u32>,
     pub disc_number: Override<u32>,
+    pub disc_subtitle: Override<String>,
+    pub work: Override<String>,
     pub composers: Override<Vec<String>>,
     pub performers: Override<Vec<String>>,
     pub musicbrainz_recording_id: Override<String>,
@@ -406,7 +410,7 @@ pub struct Track {
 }
 
 impl Track {
-    const TEXTS: [&'static str; 4] = ["title", "artist_credit", "musicbrainz_recording_id", "musicbrainz_track_id"];
+    const TEXTS: [&'static str; 6] = ["title", "artist_credit", "disc_subtitle", "work", "musicbrainz_recording_id", "musicbrainz_track_id"];
     const LISTS: [&'static str; 4] = ["artists", "composers", "performers", "musicbrainz_artist_ids"];
     const NUMBERS: [&'static str; 2] = ["track_number", "disc_number"];
 
@@ -414,6 +418,8 @@ impl Track {
         Some(match name {
             "title" => &self.title,
             "artist_credit" => &self.artist_credit,
+            "disc_subtitle" => &self.disc_subtitle,
+            "work" => &self.work,
             "musicbrainz_recording_id" => &self.musicbrainz_recording_id,
             "musicbrainz_track_id" => &self.musicbrainz_track_id,
             _ => return None,
@@ -424,6 +430,8 @@ impl Track {
         Some(match name {
             "title" => &mut self.title,
             "artist_credit" => &mut self.artist_credit,
+            "disc_subtitle" => &mut self.disc_subtitle,
+            "work" => &mut self.work,
             "musicbrainz_recording_id" => &mut self.musicbrainz_recording_id,
             "musicbrainz_track_id" => &mut self.musicbrainz_track_id,
             _ => return None,
@@ -659,6 +667,8 @@ impl Sidecar {
         }
         let Some(track) = self.tracks.get(key) else { return };
         lay(&track.title, &mut tags.title);
+        lay(&track.disc_subtitle, &mut tags.disc_subtitle);
+        lay(&track.work, &mut tags.work);
         match &track.artist_credit {
             Override::Absent => {}
             Override::Cleared => tags.artists.clear(),
@@ -823,6 +833,8 @@ mod tests {
         let track = s.track_mut("a.flac");
         track.artist_credit = Override::Value("One feat. Two".into());
         track.disc_number = Override::Cleared;
+        track.disc_subtitle = Override::Value("Scene One".into());
+        track.work = Override::Value("Das Rheingold".into());
         track.composers = Override::Value(vec!["Nobody the library keeps".into()]);
 
         s.overlay(&mut tags, "a.flac");
@@ -830,6 +842,8 @@ mod tests {
         assert!(tags.genres.is_empty());
         assert_eq!(tags.artists, ["One feat. Two"]);
         assert_eq!(tags.disc_number, None);
+        assert_eq!(tags.disc_subtitle.as_deref(), Some("Scene One"));
+        assert_eq!(tags.work.as_deref(), Some("Das Rheingold"));
         assert_eq!(tags.title, before.title);
         assert_eq!(tags.album_artist, before.album_artist);
         assert_eq!(tags.date, before.date, "the date is whole and is left whole");
