@@ -12,8 +12,6 @@ Item {
     id: page
     readonly property var document: ListenList.snapshot ? JSON.parse(ListenList.snapshot) : ({})
     property string typed: ""
-    readonly property string selectedBuffer: document.selected || ""
-    onSelectedBufferChanged: if (name && name.editing) page.forceActiveFocus()
     // The footer and the clock it ends by, read on the same tick as the
     // queues and apart from them, so the clock does not reload the list.
     property var foot: ({})
@@ -73,17 +71,6 @@ Item {
             anchors.topMargin: Metrics.gap12
             width: parent.width
             spacing: Metrics.gap8
-            TextField {
-                id: name
-                property string bufferId: ""
-                property string draft: ""
-                onEditingChanged: if (editing) { bufferId = page.selectedBuffer; draft = text }
-                onTextEdited: draft = text
-                width: Metrics.screenSearch
-                placeholder: I18n.tr("Queue name", I18n.rev)
-                Binding { target: name; property: "text"; value: page.document.name || ""; when: !name.editing }
-                onEditingFinished: ListenList.command("rename", bufferId, draft)
-            }
             PillButton {
                 text: I18n.tr("Play", I18n.rev)
                 glyph: Icons.playerPlayFilled

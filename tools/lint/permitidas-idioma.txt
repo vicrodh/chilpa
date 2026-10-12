@@ -624,3 +624,4 @@ wireplumber
 remediations
 dacs
 hifi
+renamable

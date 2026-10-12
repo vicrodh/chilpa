@@ -154,6 +154,8 @@ QtObject {
     readonly property int tabPadLeft: 11
     readonly property int tabPadRight: 5
     readonly property int tabClose: 18
+    // The narrowest a tab's name field gets while it is renamed.
+    readonly property int tabRenameMin: 96
     readonly property int windowControl: 24
     // What a Mac's three controls take at the window's left, at the least.
     readonly property int windowControlsRoom: 78
