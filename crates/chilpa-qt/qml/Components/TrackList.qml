@@ -135,6 +135,9 @@ Item {
             required property var model
             sourceName: model.sourceName || ""
             composer: model.composer || ""
+            headerWork: model.headerWork || false
+            headerComposer: model.headerComposer || ""
+            headerComposerTarget: model.headerComposerTarget || ""
             sourceInfo: JSON.parse(model.sourceInfo || "{}")
             albumHovered: index === view.albumHovered
             cols: columns

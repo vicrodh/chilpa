@@ -1130,6 +1130,9 @@ msgstr ""
 msgid "Disc"
 msgstr ""
 
+msgid "Disc subtitle"
+msgstr ""
+
 msgid "Disc {}"
 msgstr ""
 
@@ -4048,6 +4051,9 @@ msgid "Withdraw approval"
 msgstr ""
 
 msgid "Without plugins"
+msgstr ""
+
+msgid "Work"
 msgstr ""
 
 msgid "Working…"

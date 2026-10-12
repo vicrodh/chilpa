@@ -142,6 +142,9 @@ pub(crate) fn apply_for(draft: &mut Draft, release: &Release, medium: u16, spell
         let mut filled: Vec<(&str, String)> = vec![("title", track.title.clone())];
         if track.disc > 0 {
             filled.push(("disc_number", track.disc.to_string()));
+            if let Some(subtitle) = release.media_titles.get(usize::from(track.disc - 1)).filter(|title| !title.trim().is_empty()) {
+                filled.push(("disc_subtitle", subtitle.trim().to_string()));
+            }
         }
         if track.number > 0 {
             // Refused for a track inside a disc, which keeps its own.
@@ -355,11 +358,13 @@ mod tests {
         found.discs = 2;
         found.catalog_number = "SVWC-1011".into();
         found.catalog_numbers = vec!["SVWC-1011".into(), "SVWC-1012".into()];
+        found.media_titles = vec!["Scene One".into(), "Scene Two".into()];
         assert_eq!(pair_for(&draft, &found, 2), [Some(2), Some(3)]);
         assert_eq!(apply_for(&mut draft, &found, 2, &as_is), 2);
         assert_eq!(draft.album_cell("catalog_number").now, "SVWC-1012");
         assert_eq!(draft.rows[0].cells[fields::track("title").unwrap()].now, "Second disc first");
         assert_eq!(draft.rows[0].cells[fields::track("disc_number").unwrap()].now, "2");
+        assert_eq!(draft.rows[0].cells[fields::track("disc_subtitle").unwrap()].now, "Scene Two");
     }
 
     #[test]

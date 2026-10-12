@@ -155,7 +155,7 @@ use std::pin::Pin;
 use std::rc::Rc;
 
 /// The roles, in order from `Qt::UserRole`.
-const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer"];
+const ROLES: &[&str] = &["rowKind", "number", "title", "artist", "album", "duration", "plays", "quality", "tier", "playing", "selected", "headerLabel", "headerMeta", "trackId", "albumId", "art", "available", "group", "sourceName", "sourceInfo", "composer", "headerWork", "headerComposer", "headerComposerTarget"];
 const USER_ROLE: i32 = 256;
 const ROLE_PLAYING: i32 = USER_ROLE + 9;
 const ROLE_SELECTED: i32 = USER_ROLE + 10;
@@ -323,6 +323,9 @@ fn role_value(list: &TrackListRust, row: usize, role: i32) -> QVariant {
                 13 => QVariant::from(&0i64),
                 15 => QVariant::from(&if header.art.is_empty() { QUrl::default() } else { QUrl::from_local_file(&QString::from(&header.art)) }),
                 16 => QVariant::from(&true),
+                21 => QVariant::from(&header.work),
+                22 => QVariant::from(&QString::from(&header.composer)),
+                23 => QVariant::from(&QString::from(&header.composer_target)),
                 _ => QVariant::default(),
             };
         }

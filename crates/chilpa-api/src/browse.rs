@@ -33,6 +33,12 @@ pub struct TrackRow {
     pub available: bool,
     /// Who wrote it, joined with commas; empty when nobody is named.
     pub composer: String,
+    /// The disc's own title from its tag, ahead of any folder name.
+    pub disc_subtitle: String,
+    /// The work this track belongs to, when its source names one.
+    pub work: String,
+    /// A source artist route for the composer; empty for local files.
+    pub composer_target: String,
 }
 
 /// One row in a grouped track list. Headers are explicit boundaries, so the
@@ -62,6 +68,10 @@ pub struct GroupHeader {
     /// It stands for a record, or one disc of it, among several in a list:
     /// it is drawn with its cover, title and artist, not as a divider.
     pub record: bool,
+    /// A work boundary, drawn as a title with an optional composer.
+    pub work: bool,
+    pub composer: String,
+    pub composer_target: String,
 }
 
 pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
@@ -80,6 +90,9 @@ pub(crate) fn row_of(t: chilpa_library::BrowseTrack) -> TrackRow {
         plays: t.plays,
         artwork_path: t.artwork_path.unwrap_or_default(),
         composer: t.composers,
+        disc_subtitle: t.disc_subtitle.unwrap_or_default(),
+        work: t.work.unwrap_or_default(),
+        composer_target: String::new(),
     }
 }
 
@@ -262,7 +275,7 @@ pub(crate) fn file_row(path: &str) -> TrackRow {
     // Not in the library: a file opened from a folder plays if it is there;
     // a server's track the library no longer holds does not.
     let available = !chilpa_models::RemoteEntry::is_remote(path) && std::path::Path::new(path).exists();
-    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new() }
+    TrackRow { title: crate::title_of(std::path::Path::new(path)), quality: Quality::of_file(path, None, None), id: 0, path: path.to_string(), artist: String::new(), album: String::new(), album_id: 0, disc: 0, number: 0, duration_ms: 0, plays: 0, artwork_path: String::new(), available, composer: String::new(), disc_subtitle: String::new(), work: String::new(), composer_target: String::new() }
 }
 
 /// A record as its page shows it.
@@ -738,19 +751,28 @@ impl Chilpa {
     pub fn album_track_entries(&mut self, album_id: i64) -> Vec<TrackEntry> {
         use crate::discs::{named, only_distinct_art, several, with_headers, Disc};
         let rows = self.album_track_rows(album_id);
-        if rows.is_empty() || !several(&rows) {
-            return rows.into_iter().map(TrackEntry::Track).collect();
-        }
+        if rows.is_empty() { return Vec::new(); }
+        let multi = several(&rows);
         // What the library kept of each disc when it read its files. A
         // source's record has none: its discs keep their bare number.
-        let said = if album_id > 0 { self.library().and_then(|lib| lib.album_discs(album_id).ok()).unwrap_or_default() } else { Vec::new() };
+        let said = if multi && album_id > 0 { self.library().and_then(|lib| lib.album_discs(album_id).ok()).unwrap_or_default() } else { Vec::new() };
         let mut discs: Vec<Disc> = said.iter().map(|disc| Disc {
             number: disc.number,
-            title: named(&disc.path, &disc.tagged, &rows[0].album),
+            title: named(&disc.path, &disc.subtitle, &disc.tagged, &rows[0].album),
             art: disc.artwork.clone(),
         }).collect();
         only_distinct_art(&mut discs);
-        with_headers(rows, &discs)
+        let mut entries = with_headers(rows, &discs, multi);
+        let mut composers = std::collections::HashMap::new();
+        for entry in &mut entries {
+            if let TrackEntry::Header(header) = entry {
+                if album_id > 0 && header.work && !header.composer.is_empty() && header.composer_target.is_empty() {
+                    let local = *composers.entry(header.composer.clone()).or_insert_with(|| self.has_artist(&header.composer));
+                    if local { header.composer_target = format!("artist:{}", header.composer); }
+                }
+            }
+        }
+        entries
     }
 
     /// The most played tracks. What never played is not "most played".

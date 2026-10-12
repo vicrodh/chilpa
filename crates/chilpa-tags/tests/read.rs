@@ -56,6 +56,18 @@ fn the_basic_fields_and_the_duration_are_read() {
 }
 
 #[test]
+fn a_flac_reports_disc_subtitle_and_work() {
+    let Some(path) = file("disc-work", &[("DISCSUBTITLE", "Scene One"), ("WORK", "Das Rheingold")]) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let info = read(&path).unwrap();
+    assert_eq!(info.tags.disc_subtitle.as_deref(), Some("Scene One"));
+    assert_eq!(info.tags.work.as_deref(), Some("Das Rheingold"));
+    let _ = std::fs::remove_file(path);
+}
+
+#[test]
 fn a_file_without_tags_does_not_fail_and_reports_its_properties() {
     let Some(path) = file("no-tags", &[]) else {
         eprintln!("no ffmpeg: skipped");

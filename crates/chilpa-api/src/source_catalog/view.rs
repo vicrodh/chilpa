@@ -21,6 +21,24 @@ pub(crate) fn album_of(card: &Card) -> Album {
     }
 }
 
+#[cfg(test)]
+mod work_tests {
+    use super::*;
+
+    #[test]
+    fn source_track_keeps_work_and_the_composer_artist_route() {
+        let track = Track {
+            plugin: "fixture".into(),
+            metadata: serde_json::json!({"work":"Das Rheingold", "composer":"Richard Wagner", "composer_ref":"artist:42"}),
+            ..Track::default()
+        };
+        let row = row_of(&track, String::new());
+        assert_eq!(row.work, "Das Rheingold");
+        assert_eq!(row.composer, "Richard Wagner");
+        assert_eq!(row.composer_target, "fixture native:artist:42");
+    }
+}
+
 pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
     TrackRow {
         id: track.id,
@@ -36,7 +54,12 @@ pub(crate) fn row_of(track: &Track, art: String) -> TrackRow {
         quality: track.format.as_ref().map(|f| f.quality()).unwrap_or_default(),
         artwork_path: art,
         available: track.playable,
-        composer: String::new(),
+        composer: track.metadata["composer"].as_str().unwrap_or_default().to_string(),
+        disc_subtitle: track.metadata["disc_subtitle"].as_str().unwrap_or_default().to_string(),
+        work: track.metadata["work"].as_str().unwrap_or_default().to_string(),
+        composer_target: track.metadata["composer_ref"].as_str()
+            .filter(|reference| reference.starts_with("artist:") && !track.plugin.is_empty())
+            .map(|reference| format!("{} native:{reference}", track.plugin)).unwrap_or_default(),
     }
 }
 

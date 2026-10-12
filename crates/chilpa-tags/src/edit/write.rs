@@ -9,11 +9,12 @@ use super::inspect::{inspect, Refusal};
 use super::read::{of_tag, Snapshot};
 use lofty::config::WriteOptions;
 use lofty::file::{AudioFile, TaggedFile, TaggedFileExt};
+use lofty::id3::v2::Id3v2Tag;
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::prelude::ItemKey;
 use lofty::probe::Probe;
 use lofty::tag::items::Timestamp;
-use lofty::tag::{Accessor, ItemValue, Tag, TagItem, TagType};
+use lofty::tag::{Accessor, ItemValue, Tag, TagExt, TagItem, TagType};
 use std::path::{Path, PathBuf};
 
 /// What to do with one field of one file.
@@ -73,6 +74,8 @@ pub struct FileChanges {
     pub label: Change<String>,
     pub track_number: Change<u32>,
     pub disc_number: Change<u32>,
+    pub disc_subtitle: Change<String>,
+    pub work: Change<String>,
     pub composers: Change<Vec<String>>,
     pub performers: Change<Vec<String>>,
     pub musicbrainz_release_id: Change<String>,
@@ -87,10 +90,12 @@ pub struct FileChanges {
 /// The fields that hold one text, by the name the editor gives them and the
 /// key they are written under. Title, album and artist are not here: they
 /// go through the tag's own accessors.
-const TEXTS: [(&str, ItemKey); 7] = [
+const TEXTS: [(&str, ItemKey); 9] = [
     ("album_artist", ItemKey::AlbumArtist),
     ("catalog_number", ItemKey::CatalogNumber),
     ("label", ItemKey::Label),
+    ("disc_subtitle", ItemKey::SetSubtitle),
+    ("work", ItemKey::Work),
     ("musicbrainz_release_id", ItemKey::MusicBrainzReleaseId),
     ("musicbrainz_release_group_id", ItemKey::MusicBrainzReleaseGroupId),
     ("musicbrainz_recording_id", ItemKey::MusicBrainzRecordingId),
@@ -129,6 +134,8 @@ impl FileChanges {
             label: Change::Keep,
             track_number: Change::Keep,
             disc_number: Change::Keep,
+            disc_subtitle: Change::Keep,
+            work: Change::Keep,
             composers: Change::Keep,
             performers: Change::Keep,
             musicbrainz_release_id: Change::Keep,
@@ -160,6 +167,8 @@ impl FileChanges {
             "album_artist" => &self.album_artist,
             "catalog_number" => &self.catalog_number,
             "label" => &self.label,
+            "disc_subtitle" => &self.disc_subtitle,
+            "work" => &self.work,
             "musicbrainz_release_id" => &self.musicbrainz_release_id,
             "musicbrainz_release_group_id" => &self.musicbrainz_release_group_id,
             "musicbrainz_recording_id" => &self.musicbrainz_recording_id,
@@ -402,6 +411,8 @@ fn said_text<'a>(said: &'a Snapshot, name: &str) -> Option<&'a str> {
         "album_artist" => said.album_artist.as_deref(),
         "catalog_number" => said.catalog_number.as_deref(),
         "label" => said.label.as_deref(),
+        "disc_subtitle" => said.disc_subtitle.as_deref(),
+        "work" => said.work.as_deref(),
         "musicbrainz_release_id" => said.musicbrainz_release_id.as_deref(),
         "musicbrainz_release_group_id" => said.musicbrainz_release_group_id.as_deref(),
         "musicbrainz_recording_id" => said.musicbrainz_recording_id.as_deref(),
@@ -528,6 +539,18 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
         Some(tag) => apply(tag, changes, true).map_err(|field| WriteError::NoPlace { path: path.clone(), field })?,
         None => return Err(failed("the canonical tag could not be made".to_string())),
     }
+    // Lofty 0.25 maps WORK to ID3's TXXX:WORK on read, but its generic
+    // writer classifies it as a four-character text frame and refuses the
+    // whole MP3. Let the generic writer handle the other fields, then put
+    // this one back through Lofty's native ID3 frame writer.
+    let (id3_work, id3_subtitle) = if primary == TagType::Id3v2 {
+        file.tag_mut(primary).and_then(|tag| {
+            let work = tag.get_strings(ItemKey::Work).next().map(str::to_string);
+            let subtitle = tag.get_strings(ItemKey::SetSubtitle).next().map(str::to_string);
+            tag.remove_key(ItemKey::Work);
+            Some((work, subtitle))
+        }).unwrap_or_default()
+    } else { (None, None) };
     for kind in others {
         if let Some(tag) = file.tag_mut(kind) {
             let _ = apply(tag, changes, false);
@@ -541,6 +564,23 @@ fn one(changes: &FileChanges, copy: &Path, options: Options) -> Result<(), Write
     write.lossy_text_encoding(false);
     file.save_to_path(copy, write).map_err(|e| failed(e.to_string()))?;
     drop(file);
+    if primary == TagType::Id3v2 && (id3_work.is_some() || !changes.work.is_keep()
+        || options.id3 == Id3Version::V23 && (id3_subtitle.is_some() || !changes.disc_subtitle.is_keep())) {
+        let fresh = read_copy(copy).map_err(&failed)?;
+        let mut id3 = fresh.tag(primary).cloned().map(Id3v2Tag::from).unwrap_or_default();
+        id3.remove_user_text("WORK");
+        if let Some(work) = id3_work { id3.insert_user_text("WORK".to_string(), work); }
+        if options.id3 == Id3Version::V23 {
+            // TSST is a v2.4 frame. In v2.3 a user text frame named TSST
+            // keeps the subtitle legal and maps back to SetSubtitle.
+            id3.remove_user_text("TSST");
+            if let Some(subtitle) = id3_subtitle { id3.insert_user_text("TSST".to_string(), subtitle); }
+        }
+        let mut write = WriteOptions::new();
+        write.use_id3v23(options.id3 == Id3Version::V23);
+        write.lossy_text_encoding(false);
+        id3.save_to_path(copy, write).map_err(|e| failed(e.to_string()))?;
+    }
 
     let after = read_copy(copy).map_err(&failed)?;
     if !same_sound(sound(&after), audio) {

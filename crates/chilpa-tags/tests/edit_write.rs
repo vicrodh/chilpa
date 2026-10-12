@@ -160,6 +160,46 @@ fn a_full_date_is_written_whole() {
 }
 
 #[test]
+fn disc_subtitle_and_work_round_trip_in_writable_formats() {
+    let dir = folder("disc-work");
+    let formats = ["flac", "m4a", "mp3"];
+    for path in every_format(&dir).into_iter().filter(|path| path.extension().is_some_and(|ext| formats.iter().any(|format| ext == *format))) {
+        for id3 in [Id3Version::V24, Id3Version::V23] {
+            if path.extension().is_none_or(|ext| ext != "mp3") && id3 == Id3Version::V23 { continue; }
+            let mut changes = FileChanges::none(path.clone());
+            changes.disc_subtitle = Change::Set("Scene One".into());
+            changes.work = Change::Set("Das Rheingold".into());
+            stage(&[changes], Options { id3, secondary_layers: false }, &mut |_, _| {}).unwrap().commit().unwrap();
+            let snapshot = snapshot(&path).unwrap();
+            assert_eq!(snapshot.disc_subtitle.as_deref(), Some("Scene One"), "{}", path.display());
+            assert_eq!(snapshot.work.as_deref(), Some("Das Rheingold"), "{}", path.display());
+            if path.extension().is_some_and(|ext| ext == "mp3") {
+                let bytes = std::fs::read(&path).unwrap();
+                let count = bytes.windows(4).filter(|frame| *frame == b"TXXX").count();
+                if id3 == Id3Version::V24 {
+                    assert!(bytes.windows(4).any(|frame| frame == b"TSST"), "ID3v2.4 has a TSST frame");
+                    assert!(count >= 1, "ID3v2.4 has a work TXXX frame");
+                } else {
+                    assert!(count >= 2, "ID3v2.3 uses TXXX for its subtitle and work");
+                }
+            }
+        }
+    }
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
+fn disc_subtitle_alone_round_trips_in_mp3() {
+    let dir = folder("disc-only-mp3");
+    let path = mp3(&dir, "a");
+    let mut changes = FileChanges::none(path.clone());
+    changes.disc_subtitle = Change::Set("Scene One".into());
+    write(&[changes]).unwrap();
+    assert_eq!(snapshot(&path).unwrap().disc_subtitle.as_deref(), Some("Scene One"));
+    let _ = std::fs::remove_dir_all(dir);
+}
+
+#[test]
 fn three_genres_written_are_three_genres_read() {
     let dir = folder("genres");
     let genres: Vec<String> = vec!["Rock".into(), "Blues".into(), "Soul".into()];

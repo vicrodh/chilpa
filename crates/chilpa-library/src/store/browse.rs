@@ -203,6 +203,8 @@ pub struct BrowseTrack {
     pub codec: Option<String>,
     /// Who wrote it, joined with commas; empty when nobody is named.
     pub composers: String,
+    pub disc_subtitle: Option<String>,
+    pub work: Option<String>,
 }
 
 /// One entry of a facet column: what it is called, how many albums it
@@ -280,7 +282,8 @@ pub struct Snapshot {
 const ROW: &str = concat!("SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
             COALESCE(r.plays, 0) AS plays, ", track_art!("t", "a"), ", (t.present = 1 AND t.reachable = 1), t.codec,
-            (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id)");
+            (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id),
+            t.disc_subtitle, t.work");
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
     Ok(BrowseTrack {
@@ -300,6 +303,8 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
         available: r.get::<_, i64>(13)? == 1,
         codec: r.get(14)?,
         composers: r.get::<_, Option<String>>(15)?.unwrap_or_default(),
+        disc_subtitle: r.get(16)?,
+        work: r.get(17)?,
     })
 }
 

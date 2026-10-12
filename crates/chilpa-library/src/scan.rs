@@ -679,10 +679,12 @@ fn save_track(
     lib.db.execute("UPDATE tracks SET album_credit = ?2, album_title = ?3, disc_total = ?4,
         release_part = ?5, release_year = ?6, release_artwork =
         coalesce(release_artwork, (SELECT artwork_path FROM albums WHERE id = ?7)), release_date = ?8,
+        disc_subtitle = ?9, work = ?10,
         release_evidence_read = 1 WHERE id = ?1",
         params![track_id, tags.album_artist.as_deref().unwrap_or("").trim(),
             tags.album.as_deref().unwrap_or(""), tags.disc_total,
-            crate::store::releases::location(external_id), tags.year(), album_id, whole_date(tags.date.as_deref())])?;
+            crate::store::releases::location(external_id), tags.year(), album_id, whole_date(tags.date.as_deref()),
+            tags.disc_subtitle, tags.work])?;
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;

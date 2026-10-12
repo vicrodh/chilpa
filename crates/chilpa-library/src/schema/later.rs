@@ -144,3 +144,12 @@ ALTER TABLE tracks ADD COLUMN release_date TEXT;
 
 UPDATE tracks SET release_evidence_read = 0;
 "#;
+
+/// A disc's own subtitle and the work a track belongs to. The next scan
+/// revisits local files so existing tags become visible without a rebuild.
+pub(super) const MIGRATION_V37: &str = r#"
+ALTER TABLE tracks ADD COLUMN disc_subtitle TEXT;
+ALTER TABLE tracks ADD COLUMN work TEXT;
+
+UPDATE tracks SET release_evidence_read = 0;
+"#;

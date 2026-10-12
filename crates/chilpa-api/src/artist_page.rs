@@ -253,7 +253,7 @@ impl crate::Chilpa {
     }
 
     /// Whether the library has records under that artist's name.
-    fn has_artist(&mut self, name: &str) -> bool {
+    pub(crate) fn has_artist(&mut self, name: &str) -> bool {
         self.library().is_some_and(|lib| lib.albums_filtered(chilpa_library::AlbumSort::Year, Some(name), 1, 0).is_ok_and(|a| !a.is_empty()))
     }
 
