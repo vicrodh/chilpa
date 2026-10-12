@@ -154,6 +154,7 @@ Window {
     Component.onCompleted: {
         contentItem.forceActiveFocus()
         panelAside = Navigation.screen === "metadata"
+        console.info("main window constructed")
     }
 
     // Over everything while the plugins start.
