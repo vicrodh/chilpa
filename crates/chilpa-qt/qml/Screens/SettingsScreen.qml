@@ -17,6 +17,7 @@ Item {
     id: page
     property Component purchaseCard: null
     readonly property string section: Navigation.section !== "" ? Navigation.section : SettingsModel.sections[0]
+    onSectionChanged: if (section !== "sources" && actions.editingServerKey !== "") { Servers.cancel(); actions.editingServerKey = "" }
     // Open, reveal and briefly highlight a search result.
     property string focusKey: ""
     property int focusRow: -1
@@ -224,7 +225,7 @@ Item {
         }
         function press(key) {
             if (key === "devices.cast") return casting.show(actions)
-            if (key === "sources.addServer") return adding.open()
+            if (key === "sources.addServer") { Servers.cancel(); editingServerKey = ""; return adding.open() }
             if (key === "audio.wizard" && rows.diagnosis_requires_stop()) return diagnosis.request()
             rows.press(key)
         }
@@ -244,8 +245,7 @@ Item {
         confirmText: I18n.tr("Remove", I18n.rev)
         destructive: true
         onConfirmed: {
-            Servers.remove(serverId)
-            rows.refresh()
+            Servers.remove(serverId); Servers.cancel(); actions.editingServerKey = ""; rows.refresh()
         }
     }
 
