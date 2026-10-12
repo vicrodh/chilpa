@@ -25,8 +25,10 @@ fn files(dir: &str, keep: &dyn Fn(&Path) -> bool) -> Vec<String> {
 fn main() {
     let qml = files("qml", &|p| p.extension().is_some_and(|e| e == "qml"));
     let bridges = files("src/bridge", &|p| p.extension().is_some_and(|e| e == "rs"));
+    let assets = files("assets", &|p| p.extension().is_some_and(|e| e == "svg"));
     println!("cargo:rerun-if-changed=qml");
     println!("cargo:rerun-if-changed=src/bridge");
+    println!("cargo:rerun-if-changed=assets");
     CxxQtBuilder::library(Interface::default())
         .qt_module("Gui")
         .qt_module("Qml")
@@ -35,6 +37,7 @@ fn main() {
             uri: "app.chilpa.sources",
             rust_files: &bridges,
             qml_files: &qml,
+            qrc_files: &assets,
             ..Default::default()
         })
         .build();

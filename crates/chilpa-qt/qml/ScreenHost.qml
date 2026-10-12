@@ -39,6 +39,7 @@ Loader {
         case "tracks": return tracks
         case "artists": return artists
         case "artist": return artist
+        case "artistScene": return artistScene
         case "settings": return settings
         case "pluginDownloads": return pluginDownloads
         case "libraryFolders": return libraryFolders
@@ -65,6 +66,7 @@ Loader {
     Component { id: artists; ArtistsScreen {} }
     // The library's artist is drawn by the same page as a source's.
     Component { id: artist; ArtistPage { key: "local artist:" + Navigation.routeKey } }
+    Component { id: artistScene; ArtistScene {} }
     Component { id: settings; SettingsScreen { purchaseCard: purchaseAlbumCard } }
     Component {
         id: pluginDownloads

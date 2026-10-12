@@ -88,8 +88,11 @@ Column {
     // More of the shelf comes in under what is there; while it is on its
     // way the button says so and takes no second click.
     PillButton {
+        objectName: "shelfLoadMore"
         anchors.horizontalCenter: parent.horizontalCenter
-        visible: shelf.wrap && !shelf.plain && (!!shelf.section.more || shelf.section.loading === true)
+        // Tag shelves have their own keys but no paging cursor. The cursor
+        // belongs to the unfiltered shelf, so only that shelf can load it.
+        visible: shelf.wrap && !shelf.plain && shelf.selectedTag === "" && (!!shelf.section.more || shelf.section.loading === true)
         enabled: shelf.section.loading !== true
         text: shelf.section.loading === true ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Load more", I18n.rev)
         onClicked: Sources.command("section_more", shelf.activeKey, "")

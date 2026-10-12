@@ -22,9 +22,12 @@ Modal {
     onAlbumIdChanged: close()
     function follow(reference) {
         const plugin = info.plugin || ""
-        close()
-        if (/^(album|playlist):/.test(reference)) Navigation.go("album", Sources.referenceCard(plugin, reference))
-        else Navigation.goKey("source", plugin + " native:" + reference)
+        if (/^(album|playlist):[^:]+/.test(reference)) {
+            const id = Sources.referenceCard(plugin, reference)
+            if (id) { close(); Navigation.go("album", id) }
+        } else if (/^(artist|label):[^:]+/.test(reference) && plugin) {
+            close(); Navigation.goKey("source", plugin + " native:" + reference)
+        }
     }
     Clipboard { id: clipboard; objectName: "albumClipboard" }
     Menu {
@@ -71,9 +74,9 @@ Modal {
                     Text { width: parent.width; visible: !!dialog.info.label; text: I18n.tr("Label", I18n.rev); color: Theme.color.textTertiary; font.pointSize: Type.meta }
                     TextEdit {
                         objectName: "albumLabel"; width: parent.width; visible: !!dialog.info.label; text: dialog.info.label || ""; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap
-                        color: labelHover.hovered && dialog.info.label_ref ? Theme.color.accentHover : Theme.color.textPrimary; selectionColor: Theme.color.accent; font.pointSize: Type.body
-                        HoverHandler { id: labelHover; cursorShape: dialog.info.label_ref ? Qt.PointingHandCursor : Qt.IBeamCursor }
-                        TapHandler { enabled: !!dialog.info.label_ref; onTapped: dialog.follow(dialog.info.label_ref) }
+                        color: labelHover.hovered && /^(artist|label):[^:]+/.test(dialog.info.label_ref || "") ? Theme.color.accentHover : Theme.color.textPrimary; selectionColor: Theme.color.accent; font.pointSize: Type.body
+                        HoverHandler { id: labelHover; cursorShape: /^(artist|label):[^:]+/.test(dialog.info.label_ref || "") ? Qt.PointingHandCursor : Qt.IBeamCursor }
+                        TapHandler { enabled: /^(artist|label):[^:]+/.test(dialog.info.label_ref || ""); onTapped: dialog.follow(dialog.info.label_ref) }
                     }
                     Repeater {
                         model: [dialog.info.released || dialog.info.release_date || "", dialog.info.genre || "", dialog.summary, dialog.info.quality_label || "", dialog.info.copyright || "", dialog.info.upc ? "UPC: " + dialog.info.upc : ""]
@@ -100,8 +103,8 @@ Modal {
                             }
                         }
                     }
-                    Repeater {
-                        model: dialog.info.booklets || []
+                        Repeater {
+                            model: (dialog.info.booklets || []).filter(b => /^https?:\/\//.test(b.url || ""))
                         PillButton { required property var modelData; text: modelData.name || I18n.tr("Booklet", I18n.rev); onClicked: Qt.openUrlExternally(modelData.url) }
                     }
                 }

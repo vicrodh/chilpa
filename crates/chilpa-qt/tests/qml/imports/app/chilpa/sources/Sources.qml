@@ -18,6 +18,13 @@ QtObject {
     function page(key, rev) { return pages[key] || JSON.stringify({ music: false }) }
     property var networks: ({})
     function network(name, rev) { return networks[name] || JSON.stringify({ loading: false }) }
+    property var sceneDocument: ({state:"idle",artists:[]})
+    function scene(rev) { return JSON.stringify(sceneDocument) }
+    function sceneOpen(name, includeSources) { asked = asked.concat([["sceneOpen", name, includeSources]]) }
+    function sceneMore() { asked = asked.concat([["sceneMore"]]) }
+    function sceneRetry() { asked = asked.concat([["sceneRetry"]]) }
+    function sceneClose() { asked = asked.concat([["sceneClose"]]) }
+    function referenceCard(plugin, reference) { return -7 }
     function command(action, id, text) { asked = asked.concat([[action, id, text]]) }
     function show(change) { state = Object.assign({}, state, change); revision += 1 }
 }

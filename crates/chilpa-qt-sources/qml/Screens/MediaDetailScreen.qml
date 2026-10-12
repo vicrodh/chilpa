@@ -67,9 +67,9 @@ Flickable {
                     required property var modelData
                     width: Math.min(Metrics.selectWidth, body.width); spacing: Metrics.gap4
                     Text { text: modelData.label; color: Theme.color.textSecondary; font.pointSize: Type.meta }
-                    Text { width: parent.width; text: modelData.value; wrapMode: Text.Wrap; color: modelData.url ? Theme.color.accent : Theme.color.textPrimary; font.pointSize: Type.body; textFormat: Text.PlainText
-                        HoverHandler { enabled: !!modelData.url; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { enabled: !!modelData.url; onTapped: if (/^https?:\/\//.test(modelData.url)) Qt.openUrlExternally(modelData.url) }
+                    Text { width: parent.width; text: modelData.value; wrapMode: Text.Wrap; readonly property bool opens: /^https?:\/\//.test(modelData.url || ""); color: opens ? Theme.color.accent : Theme.color.textPrimary; font.pointSize: Type.body; textFormat: Text.PlainText
+                        HoverHandler { enabled: parent.opens; cursorShape: Qt.PointingHandCursor }
+                        TapHandler { enabled: parent.opens; onTapped: Qt.openUrlExternally(modelData.url) }
                     }
                 }
             }

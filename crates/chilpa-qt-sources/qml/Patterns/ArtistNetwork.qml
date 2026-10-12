@@ -19,6 +19,7 @@ Rectangle {
     property var network: ({})
     property bool open: true
     signal closed()
+    signal sceneRequested()
     readonly property var header: document.header || ({})
     readonly property bool local: document.local === true
     readonly property string plugin: header.plugin || ""
@@ -83,12 +84,16 @@ Rectangle {
         TapHandler { enabled: link.navigable; onTapped: link.activated() }
     }
     component OriginRow: Item {
+        id: originRow
         property string key
         property string value
         property bool door: false
+        signal activated()
         width: parent.width; height: value !== "" ? Metrics.gap22 : 0; visible: value !== ""
         Text { anchors.left: parent.left; anchors.verticalCenter: parent.verticalCenter; text: key; font.pointSize: Type.label; font.weight: Type.semibold; font.letterSpacing: Type.labelTracking; color: Theme.color.textTertiary }
-        Text { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; width: Metrics.networkValue; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight; text: value; textFormat: Text.PlainText; font.pointSize: Type.body; color: Theme.color.textPrimary }
+        Text { anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; width: Metrics.networkValue; horizontalAlignment: Text.AlignRight; elide: Text.ElideRight; text: value; textFormat: Text.PlainText; font.pointSize: Type.body; color: originRow.door ? Theme.color.accent : Theme.color.textPrimary }
+        HoverHandler { cursorShape: originRow.door ? Qt.PointingHandCursor : Qt.ArrowCursor }
+        TapHandler { enabled: originRow.door; onTapped: originRow.activated() }
     }
     // Twelve rows and "Load more", per group of relationships.
     component Group: Column {
@@ -149,7 +154,7 @@ Rectangle {
                 width: parent.width; visible: !!panel.origin
                 topPadding: Metrics.gap12
                 OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("BORN", I18n.rev) : I18n.tr("FOUNDED", I18n.rev); value: panel.origin ? panel.origin.begin || "" : "" }
-                OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("BORN IN", I18n.rev) : I18n.tr("FOUNDED IN", I18n.rev); value: panel.origin ? panel.origin.place || "" : "" }
+                OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("BORN IN", I18n.rev) : I18n.tr("FOUNDED IN", I18n.rev); value: panel.origin ? panel.origin.place || "" : ""; door: value !== "" && (panel.origin.tags || []).length > 0; onActivated: panel.sceneRequested() }
                 OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("DIED", I18n.rev) : I18n.tr("DISBANDED", I18n.rev); value: panel.origin ? panel.origin.end || "" : "" }
             }
             Heading { text: I18n.tr("LABELS", I18n.rev) }
@@ -199,8 +204,8 @@ Rectangle {
                             Text { width: parent.width; text: story.modelData.author || ""; textFormat: Text.PlainText; elide: Text.ElideRight; font.pointSize: Type.label; color: Theme.color.textTertiary }
                         }
                     }
-                    HoverHandler { id: storyHover; cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: if (story.modelData.url) Qt.openUrlExternally(story.modelData.url) }
+                    HoverHandler { id: storyHover; cursorShape: /^https?:\/\//.test(story.modelData.url || "") ? Qt.PointingHandCursor : Qt.ArrowCursor }
+                    TapHandler { enabled: /^https?:\/\//.test(story.modelData.url || ""); onTapped: Qt.openUrlExternally(story.modelData.url) }
                 }
             }
         }

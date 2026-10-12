@@ -126,7 +126,9 @@ impl Known {
                 "begin": origin.begin.as_ref().map(date_label).unwrap_or_default(),
                 "end": origin.end.as_ref().map(date_label).unwrap_or_default(),
                 "place": origin.place,
+                "area_id": origin.area_id,
                 "country": origin.country,
+                "country_name": origin.country_name,
                 "exact": origin.exact,
                 "tags": origin.tags,
             })
