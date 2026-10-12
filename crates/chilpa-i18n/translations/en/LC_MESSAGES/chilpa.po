@@ -602,6 +602,9 @@ msgstr ""
 msgid "Checking your audio stack…"
 msgstr ""
 
+msgid "Checking your selected sources can take a few minutes."
+msgstr ""
+
 msgid "Checking your selected sources…"
 msgstr ""
 
@@ -3907,6 +3910,9 @@ msgid "Your queue is empty"
 msgstr ""
 
 msgid "Your queue is empty — add some tracks first, or press Play test."
+msgstr ""
+
+msgid "Your selected sources are taking longer than usual. Try again in a moment."
 msgstr ""
 
 msgid "Your shows"
