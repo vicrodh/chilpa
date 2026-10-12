@@ -1,6 +1,7 @@
 //! Artists sharing a place and musical vocabulary.
 
 mod genre;
+pub mod identity;
 
 use crate::artist::Origin;
 use crate::http::{Failure, Net};

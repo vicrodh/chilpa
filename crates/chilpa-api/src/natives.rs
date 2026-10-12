@@ -123,7 +123,7 @@ impl Natives {
     pub(crate) fn scene_search_limit(&self, id: &str) -> usize {
         self.known.lock().unwrap_or_else(|e| e.into_inner()).get(id)
             .and_then(|k| k.capabilities["scene_search_limit"].as_u64())
-            .unwrap_or(5).min(100) as usize
+            .unwrap_or(5).min(1000) as usize
     }
 
     pub(crate) fn permits(&self, id: &str, capability: &chilpa_plugin::Capability) -> bool {

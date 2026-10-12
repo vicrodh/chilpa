@@ -36,14 +36,6 @@ Rectangle {
         elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter
         font.pointSize: Type.body; font.weight: Type.semibold; color: Theme.color.textPrimary
     }
-    Text {
-        visible: Number(card.firstSource.albums || 0) > 0
-        x: Metrics.gap8; y: nameText.y + nameText.implicitHeight + Metrics.gap4
-        width: parent.width - Metrics.gap16
-        text: I18n.tr("{} albums", I18n.rev).replace("{}", card.firstSource.albums || 0)
-        textFormat: Text.PlainText; elide: Text.ElideRight; horizontalAlignment: Text.AlignHCenter
-        font.pointSize: Type.meta; color: Theme.color.textSecondary
-    }
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
     TapHandler { onTapped: card.activated() }
 }

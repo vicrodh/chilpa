@@ -614,7 +614,7 @@ msgstr ""
 msgid "Checking your selected sources can take a few minutes."
 msgstr ""
 
-msgid "Checking your selected sources…"
+msgid "Checking {source}…"
 msgstr ""
 
 msgid "Chilpa Native Plugins"
@@ -716,7 +716,7 @@ msgstr ""
 msgid "Clear after this track"
 msgstr ""
 
-msgid "Clear filters"
+msgid "Clear filter"
 msgstr ""
 
 msgid "Clear loop"
@@ -2216,6 +2216,9 @@ msgstr "No purchases match the current view."
 msgid "No results for"
 msgstr ""
 
+msgid "No results found"
+msgstr ""
+
 msgid "No results found."
 msgstr ""
 
@@ -3083,9 +3086,6 @@ msgstr ""
 msgid "Search folders"
 msgstr ""
 
-msgid "Search genres"
-msgstr ""
-
 msgid "Search listens"
 msgstr ""
 
@@ -3570,6 +3570,9 @@ msgstr ""
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr ""
 
+msgid "This catalog could not be reached."
+msgstr ""
+
 msgid "This chapter format is not supported."
 msgstr ""
 
@@ -3760,6 +3763,9 @@ msgid "Type this code in Quick Connect, in a Jellyfin you are signed in to."
 msgstr ""
 
 msgid "UP NEXT"
+msgstr ""
+
+msgid "Unavailable"
 msgstr ""
 
 msgid "Uncategorized"
@@ -5061,6 +5067,9 @@ msgstr ""
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr ""
 
+msgid "your sources"
+msgstr ""
+
 msgid "{} / {} artists"
 msgstr ""
 
@@ -5068,9 +5077,6 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] ""
 msgstr[1] ""
-
-msgid "{} albums"
-msgstr ""
 
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr ""

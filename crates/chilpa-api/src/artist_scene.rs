@@ -1,21 +1,31 @@
-//! A place's artist scene. Catalog availability is verified before a scene
-//! with plugin results is shown.
+//! A place's artist scene. MusicBrainz discovery is shared; each selected
+//! catalog validates its own page and keeps its own rows, errors and budget.
 
 use chilpa_meta::artist::Origin;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
 
-fn scene_row(artist: &chilpa_meta::scene::Candidate, sources: Vec<Value>, include_sources: bool) -> Option<Value> {
-    // The opt-in catalog scene follows the reference: only a verified artist
-    // receives a card. The MusicBrainz-only choice keeps discovery useful.
-    if include_sources && sources.is_empty() { return None; }
-    let title = sources.first().and_then(|source| source["title"].as_str())
-        .unwrap_or(&artist.name);
-    Some(json!({"mbid":artist.id,"title":title,"genres":artist.genres,
-        "score":artist.score,"sources":sources}))
+fn musicbrainz_row(artist: &chilpa_meta::scene::Candidate) -> Value {
+    json!({"mbid":artist.id,"title":artist.name,"genres":artist.genres,
+        "score":artist.score,"sources":[]})
+}
+
+fn source_ids(natives: &crate::natives::Natives) -> Vec<String> {
+    let mut ids: Vec<_> = natives.ids().into_iter()
+        .filter(|id| natives.searches(id) && natives.has_pages(id) && natives.scene_search_limit(id) > 0)
+        .collect();
+    // Full catalog scenes precede deliberately small, rate-limited sources.
+    ids.sort_by(|a, b| natives.scene_search_limit(b).cmp(&natives.scene_search_limit(a))
+        .then_with(|| natives.display_name(a).cmp(&natives.display_name(b))));
+    ids
+}
+
+fn lane(id: &str, name: &str, artists: Vec<Value>, state: &str, error: &str,
+    checked: usize, limit: usize, has_more: bool) -> Value {
+    json!({"id":id,"name":name,"artists":artists,"state":state,"error":error,
+        "checked":checked,"limit":limit,"hasMore":has_more})
 }
 
 struct Current {
@@ -56,6 +66,7 @@ impl Scene {
 
     pub(crate) fn start(&self, origin: Origin, include_sources: bool,
         natives: Arc<crate::natives::Natives>, catalog: Arc<crate::source_catalog::Catalog>, more: bool) {
+        let ids = if include_sources { source_ids(&natives) } else { Vec::new() };
         let (generation, cancelled, previous, offset, searches_used) = {
             let mut state = self.0.lock().unwrap_or_else(|e| e.into_inner());
             if more && (state.document["state"] != "ready" || state.document["hasMore"] != true) { return; }
@@ -68,17 +79,23 @@ impl Scene {
             state.include_sources = include_sources;
             if !more { state.searches_used.clear(); }
             let searches_used = state.searches_used.clone();
-            let previous = if more { earlier["artists"].as_array().cloned().unwrap_or_default() } else { Vec::new() };
+            let previous = if more { earlier["sources"].as_array().cloned().unwrap_or_default() } else { Vec::new() };
             state.document = if more {
                 let mut document = earlier;
                 document["loadingMore"] = json!(true);
                 document["hasMore"] = json!(false);
                 document["error"] = Value::Null;
-                document["progress"] = json!({"percentage":0,"detail":""});
+                document["progress"] = json!({"phase":"searching","percentage":0,"detail":""});
                 document
             } else {
+                let sources: Vec<_> = if include_sources {
+                    ids.iter().map(|id| lane(id, &natives.display_name(id), Vec::new(), "pending", "", 0,
+                        natives.scene_search_limit(id), false)).collect()
+                } else {
+                    vec![lane("musicbrainz", "MusicBrainz", Vec::new(), "pending", "", 0, 0, false)]
+                };
                 json!({"state":"loading","loadingMore":false,
-                    "artists":[],"progress":{"percentage":0,"detail":""},
+                    "sources":sources,"progress":{"phase":"searching","percentage":0,"detail":""},
                     "countryCode":origin.country,"artistName":origin.name,
                     "includeSources":include_sources,"hasMore":false,"nextOffset":0})
             };
@@ -91,83 +108,92 @@ impl Scene {
             let net = chilpa_meta::Net::musicbrainz(&http);
             let report = |percentage: u8, detail: &str| {
                 shared.publish(generation, |doc| {
-                    doc["progress"] = json!({"percentage":percentage,"detail":detail});
+                    doc["progress"] = json!({"phase":"searching","percentage":percentage,"detail":detail});
                 }, &catalog);
             };
             let found = chilpa_meta::scene::discover(&net, &origin, offset, 100, &cancelled, &report);
             if cancelled.load(Ordering::Relaxed) { return; }
             match found {
                 Ok(page) => {
-                    let mut rows = previous;
-                    let mut source_ids: Vec<_> = if include_sources { natives.ids().into_iter().filter(|id| natives.searches(id) && natives.has_pages(id)).collect() } else { Vec::new() };
-                    source_ids.sort();
                     let mut used = searches_used;
-                    let mut budgets: Vec<_> = source_ids.iter().map(|id| {
-                        (id.clone(), natives.scene_search_limit(id).saturating_sub(used.get(id).copied().unwrap_or(0)))
-                    }).collect();
-                    let mut attempted = 0usize;
-                    let mut failures = 0usize;
-                    for (at, artist) in page.artists.iter().enumerate() {
-                        if cancelled.load(Ordering::Relaxed) { return; }
-                        let mut sources = Vec::new();
-                        for (id, budget) in &mut budgets {
-                            if *budget == 0 { continue; }
-                            *budget -= 1;
-                            *used.entry(id.clone()).or_default() += 1;
-                            attempted += 1;
-                            let result = natives.call(id, "search", json!({"text":artist.name,"limit":10}), Duration::from_secs(12));
-                            let Ok(answer) = result else {
-                                *budget = 0;
-                                used.insert(id.clone(), natives.scene_search_limit(id));
-                                failures += 1;
-                                continue;
-                            };
-                            let matches = answer["artists"].as_array().into_iter().flatten()
-                                .filter(|item| item["title"].as_str().is_some_and(|name| name.trim().eq_ignore_ascii_case(&artist.name))
-                                    && item["ref"].as_str().is_some_and(|reference| reference.starts_with("artist:")))
-                                .collect::<Vec<_>>();
-                            // A same-name search result is only provisional.
-                            // Two exact names are ambiguous unless the source
-                            // itself supplies the matching identifier.
-                            let exact = matches.iter().copied().find(|item| item["mbid"] == artist.id)
-                                .or_else(|| (matches.len() == 1).then(|| matches[0]));
-                            if let Some(item) = exact {
-                                sources.push(json!({"plugin":id,"name":natives.display_name(id),
-                                    "ref":item["ref"],"title":item["title"],
-                                    "image":item["image"],"albums":item["albums"]}));
+                    let mut lanes = Vec::new();
+                    if !include_sources {
+                        let mut artists = previous.first().and_then(|old| old["artists"].as_array()).cloned().unwrap_or_default();
+                        artists.extend(page.artists.iter().map(musicbrainz_row));
+                        lanes.push(lane("musicbrainz", "MusicBrainz", artists, "ready", "", page.next_offset, 0, page.has_more));
+                    } else {
+                        let mut credits = chilpa_meta::scene::identity::CreditsCache::new();
+                        for (source_index, id) in ids.iter().enumerate() {
+                            if cancelled.load(Ordering::Relaxed) { return; }
+                            let earlier = previous.iter().find(|old| old["id"].as_str() == Some(id.as_str()));
+                            let mut artists = earlier.and_then(|old| old["artists"].as_array()).cloned().unwrap_or_default();
+                            let total_limit = natives.scene_search_limit(id);
+                            let remaining = total_limit.saturating_sub(used.get(id).copied().unwrap_or(0));
+                            let mut checked = 0usize;
+                            let mut failures = 0usize;
+                            let mut error = String::new();
+                            let source_name = natives.display_name(id);
+                            let span = ids.len().max(1) * page.artists.len().max(1);
+                            let start_progress = 40 + ((source_index * page.artists.len() * 55 / span) as u8);
+                            shared.publish(generation, |doc| {
+                                doc["progress"] = json!({"phase":"validating","percentage":start_progress,
+                                    "detail":format!("0/{}", page.artists.len()),"source":source_name});
+                            }, &catalog);
+                            for candidate in page.artists.iter().take(remaining.min(100)) {
+                                if cancelled.load(Ordering::Relaxed) { return; }
+                                checked += 1;
+                                *used.entry(id.clone()).or_default() += 1;
+                                match crate::scene_catalog::resolve(&natives, id, candidate, &net, &mut credits) {
+                                    Ok(Some(row)) => artists.push(row),
+                                    Ok(None) => {},
+                                    Err(why) => {
+                                        failures += 1;
+                                        error = why.to_string();
+                                        // Auth, a closed worker and rate limits are
+                                        // terminal for this catalog page. The next
+                                        // plugin still gets its independent scene.
+                                        if crate::scene_catalog::terminal_error(&why) { break; }
+                                    }
+                                }
+                                if checked % 5 == 0 {
+                                    let progress = 40 + (((source_index * page.artists.len() + checked) * 55 / span) as u8);
+                                    shared.publish(generation, |doc| {
+                                        doc["progress"] = json!({"phase":"validating","percentage":progress,
+                                            "detail":format!("{checked}/{}", page.artists.len()),
+                                            "source":natives.display_name(id)});
+                                    }, &catalog);
+                                }
                             }
+                            let state = if checked > 0 && failures == checked && artists.is_empty() { "error" }
+                                else if failures > 0 { "partial" } else { "ready" };
+                            if state == "error" { used.insert(id.clone(), total_limit); }
+                            let consumed = used.get(id).copied().unwrap_or(0);
+                            lanes.push(lane(id, &natives.display_name(id), artists, state, &error,
+                                consumed, total_limit, page.has_more && consumed < total_limit));
                         }
-                        if let Some(row) = scene_row(artist, sources, include_sources) { rows.push(row); }
-                        if at % 5 == 0 { report(40 + (at * 55 / page.artists.len().max(1)) as u8, &format!("{}/{}", at, page.artists.len())); }
                     }
-                    if include_sources && (attempted == 0 || attempted == failures) && !page.artists.is_empty() {
-                        let message = if attempted == 0 { "No searchable plugins are available for this scene." }
-                            else { "The selected plugin catalogs could not be reached." };
+                    if ids.is_empty() && include_sources {
                         shared.publish(generation, |doc| {
-                            if more {
-                                doc["loadingMore"] = json!(false);
-                                doc["hasMore"] = json!(true);
-                                doc["error"] = json!(message);
-                            } else {
-                                *doc = json!({"state":"error","artists":[],"error":message});
-                            }
+                            *doc = json!({"state":"error","sources":[],
+                                "error":"No searchable plugins are available for this scene."});
                         }, &catalog);
                         return;
                     }
+                    let has_more = page.has_more && (!include_sources || ids.iter().any(|id|
+                        natives.scene_search_limit(id) > used.get(id).copied().unwrap_or(0)));
                     {
                         let mut state = shared.0.lock().unwrap_or_else(|e| e.into_inner());
                         if state.generation != generation { return; }
                         state.searches_used = used;
                     }
-                    let has_more = page.has_more && (!include_sources || budgets.iter().any(|(_, remaining)| *remaining > 0));
                     shared.publish(generation, |doc| {
-                        *doc = json!({"state":"ready","artists":rows,"sceneLabel":page.label,
+                        *doc = json!({"state":"ready","sources":lanes,"sceneLabel":page.label,
                             "genreSummary":page.genre_summary,"seedGenres":page.seed_genres,
                             "countryCode":origin.country,"hasMore":has_more,
                             "nextOffset":page.next_offset,
                             "artistName":origin.name,
                             "totalCandidates":page.total,"includeSources":include_sources,
-                            "progress":{"percentage":100,"detail":"done"}});
+                            "progress":{"phase":"done","percentage":100,"detail":"done"}});
                     }, &catalog);
                 }
                 Err(error) => shared.publish(generation, |doc| {
@@ -177,7 +203,7 @@ impl Scene {
                         doc["error"] = json!(message);
                         doc["hasMore"] = json!(true);
                     } else {
-                        *doc = json!({"state":"error","artists":[],"error":message});
+                        *doc = json!({"state":"error","sources":[],"error":message});
                     }
                 }, &catalog),
             }
@@ -228,14 +254,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn plugin_scene_contains_only_verified_catalog_artists() {
+    fn musicbrainz_only_scene_keeps_candidates_without_catalog_results() {
         let artist = chilpa_meta::scene::Candidate {
             id: "mbid".into(), name: "MusicBrainz name".into(), genres: vec!["rock".into()], score: 42,
         };
-        assert!(scene_row(&artist, Vec::new(), true).is_none());
-        assert_eq!(scene_row(&artist, Vec::new(), false).unwrap()["title"], "MusicBrainz name");
-        let row = scene_row(&artist, vec![json!({"title":"Catalog name","ref":"artist:7"})], true).unwrap();
-        assert_eq!(row["title"], "Catalog name");
-        assert_eq!(row["sources"][0]["ref"], "artist:7");
+        assert_eq!(musicbrainz_row(&artist)["title"], "MusicBrainz name");
+        assert_eq!(musicbrainz_row(&artist)["sources"], json!([]));
     }
 }

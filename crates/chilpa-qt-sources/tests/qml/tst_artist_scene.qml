@@ -76,6 +76,40 @@ TestCase {
         tryCompare(scene, "canBrowse", false)
         compare(scene.mode, "grid")
     }
+    function test_catalogs_keep_independent_results_errors_and_real_genres() {
+        var many = []
+        for (var i = 0; i < 94; ++i)
+            many.push({mbid:"q" + i,title:"Artist " + i,genres:i % 2 ? ["art rock"] : ["glam rock"],
+                sources:[{plugin:"catalog_a",ref:"artist:" + i}]})
+        var few = []
+        for (var j = 0; j < 5; ++j)
+            few.push({mbid:"a" + j,title:"Apple artist " + j,genres:["soul"],
+                sources:[{plugin:"catalog_c",ref:"artist:us:" + j}]})
+        Sources.sceneDocument = {state:"ready",includeSources:true,sceneLabel:"United Kingdom",artistName:"David Bowie",
+            genreSummary:"rock",sources:[
+                {id:"catalog_a",name:"Catalog A",state:"ready",artists:many,hasMore:true},
+                {id:"catalog_b",name:"Catalog B",state:"error",error:"Authentication required",artists:[],hasMore:false},
+                {id:"catalog_c",name:"Catalog C",state:"ready",artists:few,hasMore:false}
+            ]}
+        Library.remoteRev++
+        const scene = createTemporaryObject(maker, this)
+        waitForRendering(scene)
+        verify(findChild(scene, "sceneSourceTabs").visible)
+        compare(scene.activeSource.id, "catalog_a")
+        compare(scene.allArtists.length, 94)
+        compare(scene.availableGenres.sort(), ["art rock", "glam rock"])
+        compare(findChild(scene, "sceneGenreFilter").genres.sort(), ["art rock", "glam rock"])
+        scene.activeGenres = ["glam rock"]
+        compare(scene.filteredArtists.length, 47)
+        scene.sourceId = "catalog_c"
+        compare(scene.allArtists.length, 5)
+        compare(scene.availableGenres, ["soul"])
+        compare(findChild(scene, "sceneGenreFilter").genres, ["soul"])
+        compare(scene.activeGenres, [], "switching catalog clears stale genre filters")
+        scene.sourceId = "catalog_b"
+        compare(scene.shownDoc.state, "error")
+        compare(scene.shownDoc.error, "Authentication required")
+    }
     function test_album_action_accepts_opaque_storefront_refs() {
         const card = createTemporaryObject(albumMaker, this)
         card.album = {ref:"album:us:123",title:"Storefront album"}

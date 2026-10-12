@@ -74,6 +74,13 @@ QtObject {
     readonly property int sceneGenreRadio: 14
     readonly property int sceneGenreDot: 6
     readonly property real sceneCircleRadius: 0.5
+    readonly property int sceneFilterHeader: 52
+    readonly property int sceneFilterSearch: 41
+    readonly property int sceneFilterFooter: 57
+    readonly property int sceneFilterPad: 12
+    readonly property int sceneFilterGap: 6
+    readonly property int sceneFilterSides: 2
+    readonly property int sceneFilterEmpty: 48
     readonly property int scenePanelRailWidth: 240
     readonly property int scenePanelRow: 64
     readonly property int scenePanelGroupHeader: 32
