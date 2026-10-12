@@ -130,6 +130,11 @@ impl Chilpa {
         let mut rows = Vec::new();
         let (output, _) = self.chosen_output();
         for group in section.groups {
+            // A group whose every row was left out goes with them: a heading
+            // over nothing reads as something that failed to load.
+            if rows.last().is_some_and(|r: &Row| r.kind == 0) {
+                rows.pop();
+            }
             rows.push(Row { kind: 0, title: chilpa_i18n::t(group.title), ..Row::default() });
             for s in group.settings {
                 if s.key == "plugins.installed" {
@@ -160,6 +165,9 @@ impl Chilpa {
                     }
                 }
             }
+        }
+        if rows.last().is_some_and(|r: &Row| r.kind == 0) {
+            rows.pop();
         }
         (rows, section.groups.is_empty())
     }

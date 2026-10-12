@@ -30,12 +30,16 @@ impl crate::Chilpa {
 }
 
 impl crate::Chilpa {
-    /// The wizard's row, hidden where it cannot finish.
+    /// The wizard's row, hidden where it cannot finish, and the diagnosis
+    /// with it off Linux: there is nothing to configure on a Mac, which is
+    /// why QBZ shows neither there, and the diagnosis would only say the
+    /// device cannot be probed.
     pub(crate) fn wizard_row(&self, row: &mut crate::SettingsRow) -> bool {
-        if row.key != HIFI_WIZARD {
+        let linux = cfg!(target_os = "linux");
+        if row.key != HIFI_WIZARD && (linux || row.key != "audio.wizard") {
             return false;
         }
-        if !cfg!(target_os = "linux") {
+        if !linux {
             row.control = String::new();
         }
         true
