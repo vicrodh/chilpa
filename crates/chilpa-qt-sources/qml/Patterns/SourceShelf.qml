@@ -24,6 +24,9 @@ Column {
     function albumIds() { const ids = []; for (let i = 0; i < cards.albums; i++) ids.push(cards.albumId(i, cards.rev)); return JSON.stringify(ids) }
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
+    // A page of the rail: the cards that fit across, as QBZ's rails step.
+    readonly property real step: Math.max(1, Math.floor((rail.width + Metrics.gridGap) / (Metrics.cardMinWidth + Metrics.gridGap))) * (Metrics.cardMinWidth + Metrics.gridGap) // derived: whole cards and their gaps
+    readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
     visible: shown
     AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
     TrackListModel { id: tracks; kind: shelf.section.tracks || shelf.section.tracks_key ? (shelf.section.model || "source") : ""; key: shelf.section.tracks_key || (shelf.section.tracks ? shelf.modelKey : ""); limit: shelf.section.size || 6; filterRev: Library.remoteRev + Library.remoteArtRev; playingPath: Player.path }
@@ -33,6 +36,11 @@ Column {
         width: parent.width; title: shelf.section.title || ""
         link: shelf.wrap || shelf.modelKind !== "source" || !shelf.section.more || !shelf.section.more_key ? "" : I18n.tr("See all", I18n.rev)
         onLinkClicked: shelf.wrap ? Sources.command("section_more", shelf.activeKey, "") : Navigation.goKey("source", shelf.section.more_key || shelf.section.key)
+        paged: rail.visible && rail.interactive && shelf.farthest > 0
+        canBack: rail.contentX > 1
+        canForward: rail.contentX < shelf.farthest - 1
+        onBack: rail.contentX = Math.max(0, rail.contentX - shelf.step)
+        onForward: rail.contentX = Math.min(shelf.farthest, rail.contentX + shelf.step)
     }
     Text { width: parent.width; visible: !!shelf.section.error; text: shelf.section.error || ""; wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.statusNegative }
     SourcePageHeader { width: parent.width; info: shelf.section.header || ({}); visible: !!shelf.section.header }
