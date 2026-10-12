@@ -112,12 +112,13 @@ impl Scene {
                     }, &catalog);
                 }
                 Err(error) => shared.publish(generation, |doc| {
+                    let message = crate::metadata::failure_message(chilpa_meta::Provider::MusicBrainz, &error);
                     if more {
                         doc["loadingMore"] = json!(false);
-                        doc["error"] = json!(format!("{error:?}"));
+                        doc["error"] = json!(message);
                         doc["hasMore"] = json!(true);
                     } else {
-                        *doc = json!({"state":"error","artists":[],"error":format!("{error:?}")});
+                        *doc = json!({"state":"error","artists":[],"error":message});
                     }
                 }, &catalog),
             }
