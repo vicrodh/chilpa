@@ -85,6 +85,29 @@ TestCase {
         mouseMove(name, 4, name.height / 2)
         compare(TipState.text, "")
     }
+    function shown(item) {
+        let texts = []
+        for (const child of item.children) {
+            if (!child.visible) continue
+            if (typeof child.text === "string") texts.push(child.text)
+            texts = texts.concat(shown(child))
+        }
+        return texts
+    }
+    // Under the pointer a card says the day its record came out, when that is
+    // known, and the year otherwise.
+    function test_the_overlay_says_the_whole_release_date_when_it_is_known() {
+        card.albumId = 5; card.year = "1981"
+        AlbumActions.informationDocument = {released: "April 26, 1981"}
+        mouseMove(card, card.width / 2, card.width / 2)
+        tryVerify(() => shown(card).includes("April 26, 1981"))
+        mouseMove(card, card.width / 2, card.height + 40)
+        AlbumActions.informationDocument = {}
+        mouseMove(card, card.width / 2, card.width / 2)
+        tryVerify(() => shown(card).includes("1981"), 1000, "the year when no day is known")
+        mouseMove(card, card.width / 2, card.height + 40)
+        card.albumId = 0; card.year = ""
+    }
     function test_quality_is_visible_without_card_hover_and_has_a_tooltip() {
         const badge = findChild(card, "albumQualityBadge")
         verify(badge.visible)

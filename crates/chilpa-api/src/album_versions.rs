@@ -1,6 +1,34 @@
 //! Version selection belongs to the facade, shared by cards and details.
 
 use crate::{Album, Chilpa};
+use chilpa_i18n as i18n;
+
+/// How a month is named in a record's release date.
+const MONTH_NAMES: [&str; 12] = [
+    i18n::mark("January"), i18n::mark("February"), i18n::mark("March"), i18n::mark("April"),
+    i18n::mark("May"), i18n::mark("June"), i18n::mark("July"), i18n::mark("August"),
+    i18n::mark("September"), i18n::mark("October"), i18n::mark("November"), i18n::mark("December"),
+];
+
+/// "April 26, 1981" when the date is whole, the year when only the year is
+/// known, nothing otherwise. The month is named in the window's language
+/// and the holes are month, day and year, as QBZ's release dates
+/// (`qbz-text-utils/src/dates.rs`); a language that puts the day first
+/// says so in its catalog ("{2} de {1} de {3}").
+pub(crate) fn release_label(raw: &str) -> String {
+    let raw = raw.trim();
+    let whole = raw.get(..10).and_then(|head| {
+        let mut parts = head.split('-');
+        let year = parts.next().filter(|y| y.len() == 4)?.parse::<u32>().ok()?;
+        let month = parts.next().filter(|m| m.len() == 2)?.parse::<usize>().ok()?;
+        let day = parts.next().filter(|d| d.len() == 2)?.parse::<u32>().ok()?;
+        ((1..=12).contains(&month) && (1..=31).contains(&day)).then_some((year, month, day))
+    });
+    match whole {
+        Some((year, month, day)) => i18n::t_args(i18n::mark("{} {}, {}"), &[&i18n::t(MONTH_NAMES[month - 1]), &day.to_string(), &year.to_string()]),
+        None => raw.get(..4).filter(|year| year.bytes().all(|b| b.is_ascii_digit())).unwrap_or_default().to_string(),
+    }
+}
 
 pub struct AlbumHeading {
     pub kind: String,
@@ -22,6 +50,16 @@ pub struct AlbumSource {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_release_date_says_as_much_as_it_knows() {
+        assert_eq!(release_label("1981-04-26"), "April 26, 1981");
+        assert_eq!(release_label("2025-11-06T00:00:00Z"), "November 6, 2025", "the time is not shown");
+        assert_eq!(release_label("1999"), "1999");
+        assert_eq!(release_label("1999-00-10"), "1999", "a month that is no month leaves the year");
+        assert_eq!(release_label(""), "");
+        assert_eq!(release_label("soon"), "");
+    }
 
     #[test]
     fn cards_details_and_source_badges_share_one_persisted_choice() {
@@ -113,6 +151,17 @@ fn edition(title: &str) -> String {
 }
 
 impl Chilpa {
+    /// When a record came out, as the library or its source keeps it:
+    /// "1981-04-26", or only "1981".
+    pub(crate) fn album_release_date(&mut self, id: i64) -> Option<String> {
+        if id < 0 {
+            let card = self.catalog.card(id)?;
+            return card.metadata["release_date"].as_str().filter(|date| !date.trim().is_empty()).map(str::to_owned)
+                .or_else(|| card.year.map(|year| year.to_string()));
+        }
+        self.library()?.album_release_date(id).ok().flatten()
+    }
+
     pub fn album_heading(&mut self, detail: &crate::AlbumDetail, length: &str) -> AlbumHeading {
         let songs = self.tf("{} song", "{} songs", detail.album.track_count as i64, &[&detail.album.track_count.to_string()]);
         let mut meta = Vec::new();
@@ -123,8 +172,10 @@ impl Chilpa {
         if !quality.is_empty() { meta.push(quality); }
         let remote = detail.album.id < 0;
         let kind = if remote { self.source_album_kind(detail.album.id) } else { self.t("Album").to_uppercase() };
+        let released = self.album_release_date(detail.album.id).map(|raw| release_label(&raw)).filter(|label| !label.is_empty())
+            .or_else(|| detail.album.year.map(|year| year.to_string()));
         AlbumHeading {
-            kind: detail.album.year.map_or(kind.clone(), |year| format!("{kind} · {year}")),
+            kind: released.map_or(kind.clone(), |released| format!("{kind} · {released}")),
             meta: meta.join(" · "),
             discs: if detail.discs > 1 { self.tf("{} disc", "{} discs", detail.discs as i64, &[&detail.discs.to_string()]) } else { String::new() },
             info: if remote { self.source_album_info(detail.album.id) } else { self.t("Info: Embedded tags") },

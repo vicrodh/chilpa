@@ -108,7 +108,9 @@ pub fn tf(singular: &str, plural: &str, n: i64, args: &[&str]) -> String {
     fill(&tn(singular, plural, n), args)
 }
 
-/// Replaces each `{}` with the next argument.
+/// Replaces each `{}` with the next argument, and `{1}`, `{2}`... with that
+/// argument, so a language can put them in its own order: "{} {}, {}"
+/// (month, day, year) is "{2} de {1} de {3}" in Spanish.
 ///
 /// Holes that have no argument are left alone rather than swallowed: a
 /// translation with one `{}` too many should look wrong, not lose text.
@@ -116,13 +118,25 @@ fn fill(text: &str, args: &[&str]) -> String {
     let mut out = String::with_capacity(text.len());
     let mut rest = text;
     let mut next = args.iter();
-    while let Some(at) = rest.find("{}") {
+    while let Some(at) = rest.find('{') {
         out.push_str(&rest[..at]);
-        match next.next() {
-            Some(a) => out.push_str(a),
-            None => out.push_str("{}"),
+        let after = &rest[at + 1..];
+        let digits = after.bytes().take_while(u8::is_ascii_digit).count();
+        if !after[digits..].starts_with('}') {
+            out.push('{');
+            rest = after;
+            continue;
         }
-        rest = &rest[at + 2..];
+        let arg = if digits == 0 {
+            next.next()
+        } else {
+            after[..digits].parse::<usize>().ok().and_then(|n| n.checked_sub(1)).and_then(|n| args.get(n))
+        };
+        match arg {
+            Some(a) => out.push_str(a),
+            None => out.push_str(&rest[at..at + digits + 2]),
+        }
+        rest = &after[digits + 1..];
     }
     out.push_str(rest);
     out
@@ -172,6 +186,14 @@ mod tests {
     fn holes_are_filled_in_order() {
         assert_eq!(fill("{} of {}", &["3", "10"]), "3 of 10");
         assert_eq!(fill("no holes", &["x"]), "no holes");
+    }
+
+    #[test]
+    fn a_numbered_hole_takes_its_argument_wherever_it_stands() {
+        assert_eq!(fill("{2} de {1} de {3}", &["abril", "26", "1981"]), "26 de abril de 1981");
+        assert_eq!(fill("{} {}, {}", &["April", "26", "1981"]), "April 26, 1981");
+        assert_eq!(fill("{4} and {0}", &["one"]), "{4} and {0}", "a number with no argument stays");
+        assert_eq!(fill("a {brace} and {", &["x"]), "a {brace} and {", "a brace that is no hole stays");
     }
 
     #[test]

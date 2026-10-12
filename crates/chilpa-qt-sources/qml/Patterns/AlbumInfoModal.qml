@@ -76,7 +76,7 @@ Modal {
                         TapHandler { enabled: !!dialog.info.label_ref; onTapped: dialog.follow(dialog.info.label_ref) }
                     }
                     Repeater {
-                        model: [dialog.info.release_date || "", dialog.info.genre || "", dialog.summary, dialog.info.quality_label || "", dialog.info.copyright || "", dialog.info.upc ? "UPC: " + dialog.info.upc : ""]
+                        model: [dialog.info.released || dialog.info.release_date || "", dialog.info.genre || "", dialog.summary, dialog.info.quality_label || "", dialog.info.copyright || "", dialog.info.upc ? "UPC: " + dialog.info.upc : ""]
                         TextEdit { required property string modelData; width: parent.width; visible: modelData !== ""; text: modelData; readOnly: true; selectByMouse: true; wrapMode: TextEdit.Wrap; color: Theme.color.textSecondary; selectionColor: Theme.color.accent; font.pointSize: Type.body }
                     }
                     Flow {

@@ -375,6 +375,9 @@ msgstr "Approve permissions and install"
 msgid "Apr"
 msgstr ""
 
+msgid "April"
+msgstr ""
+
 msgid "Artist"
 msgstr ""
 
@@ -412,6 +415,9 @@ msgid "Audio stack ready"
 msgstr ""
 
 msgid "Aug"
+msgstr ""
+
+msgid "August"
 msgstr ""
 
 msgid "Author: {}"
@@ -983,6 +989,9 @@ msgstr ""
 msgid "Decades"
 msgstr ""
 
+msgid "December"
+msgstr ""
+
 msgid "Default"
 msgstr ""
 
@@ -1233,6 +1242,9 @@ msgid "Favorites"
 msgstr ""
 
 msgid "Feb"
+msgstr ""
+
+msgid "February"
 msgstr ""
 
 msgid "Fetching the cover…"
@@ -1649,13 +1661,22 @@ msgstr ""
 msgid "Jan"
 msgstr ""
 
+msgid "January"
+msgstr ""
+
 msgid "Japanese"
 msgstr ""
 
 msgid "Jul"
 msgstr ""
 
+msgid "July"
+msgstr ""
+
 msgid "Jun"
+msgstr ""
+
+msgid "June"
 msgstr ""
 
 msgid "Keep the current one"
@@ -1848,6 +1869,9 @@ msgid "Manage playlists"
 msgstr ""
 
 msgid "Mar"
+msgstr ""
+
+msgid "March"
 msgstr ""
 
 msgid "Mark as heard"
@@ -2210,6 +2234,9 @@ msgstr ""
 msgid "Nov"
 msgstr ""
 
+msgid "November"
+msgstr ""
+
 msgid "Now Playing"
 msgstr ""
 
@@ -2223,6 +2250,9 @@ msgid "Number of tracks"
 msgstr ""
 
 msgid "Oct"
+msgstr ""
+
+msgid "October"
 msgstr ""
 
 msgid "Off"
@@ -3048,6 +3078,9 @@ msgstr ""
 
 msgid "Separate source playlists"
 msgstr "Separate source playlists"
+
+msgid "September"
+msgstr ""
 
 msgid "Server added"
 msgstr ""
@@ -5114,6 +5147,9 @@ msgid "{} {}"
 msgstr ""
 
 msgid "{} {} {}"
+msgstr ""
+
+msgid "{} {}, {}"
 msgstr ""
 
 msgid "{} · {}"

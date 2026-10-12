@@ -135,3 +135,12 @@ ALTER TABLE tracks ADD COLUMN explicit INTEGER;
 
 UPDATE tracks SET release_evidence_read = 0;
 "#;
+
+/// The whole date a file says it came out ("1981-04-26"), where only its
+/// year was kept; NULL when the file gives no more than a year. The next
+/// scan reads the tags again to learn it.
+pub(super) const MIGRATION_V36: &str = r#"
+ALTER TABLE tracks ADD COLUMN release_date TEXT;
+
+UPDATE tracks SET release_evidence_read = 0;
+"#;

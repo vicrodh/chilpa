@@ -82,6 +82,7 @@ pub(super) fn ingest_document(catalog: &Catalog, plugin: &str, reference: &str, 
 fn decorate_header(catalog: &Catalog, plugin: &str, value: &mut Value) {
     if !value.is_object() { return; }
     value["plugin"] = json!(plugin);
+    if let Some(date) = value["release_date"].as_str() { value["released"] = json!(crate::album_versions::release_label(date)); }
     let kind = value["kind"].as_str().unwrap_or_default();
     if !value["favorite"].is_boolean() && matches!(kind,"album" | "artist" | "playlist" | "label") {
         if let Some(shelf) = catalog.shelf(&format!("{plugin} section:{kind}s")) {

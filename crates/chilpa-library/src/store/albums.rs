@@ -463,6 +463,24 @@ impl Library {
         Ok(discs)
     }
 
+    /// When a record came out: the whole date its files carry ("1981-04-26")
+    /// when one agrees with the record's year, else that year alone. An
+    /// edited year leaves a date that no longer agrees unshown.
+    pub fn album_release_date(&self, album_id: i64) -> rusqlite::Result<Option<String>> {
+        self.db
+            .query_row(
+                "SELECT coalesce((SELECT min(t.release_date) FROM tracks t WHERE t.album_id = a.id
+                     AND t.release_date IS NOT NULL
+                     AND (a.year IS NULL OR substr(t.release_date, 1, 4) = printf('%04d', a.year))),
+                   CAST(a.year AS TEXT))
+                 FROM albums a WHERE a.id = ?1",
+                [album_id],
+                |r| r.get(0),
+            )
+            .optional()
+            .map(Option::flatten)
+    }
+
     pub fn album_tracks(&self, album_id: i64) -> rusqlite::Result<Vec<StoredTrack>> {
         let mut stmt = self.db.prepare(
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),

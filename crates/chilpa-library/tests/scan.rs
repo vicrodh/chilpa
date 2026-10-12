@@ -40,6 +40,49 @@ fn album(name: &str, tracks: usize) -> Option<PathBuf> {
     Some(dir)
 }
 
+/// A record of one track whose file says it came out on `date`.
+fn dated(name: &str, date: &str) -> Option<PathBuf> {
+    if !have_ffmpeg() {
+        return None;
+    }
+    let dir = std::env::temp_dir().join(format!("chilpa-scan-{name}"));
+    let _ = std::fs::remove_dir_all(&dir);
+    std::fs::create_dir_all(&dir).ok()?;
+    let ok = Command::new("ffmpeg")
+        .args(["-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=1", "-c:a", "flac"])
+        .args(["-metadata", "title=Song", "-metadata", "artist=Artist", "-metadata", &format!("album={name}")])
+        .args(["-metadata", &format!("date={date}")])
+        .arg(dir.join("01-song.flac"))
+        .output()
+        .ok()?
+        .status
+        .success();
+    ok.then_some(dir)
+}
+
+#[test]
+fn a_record_keeps_the_whole_date_its_file_says_and_otherwise_its_year() {
+    let (Some(whole), Some(year)) = (dated("whole-date", "1981-04-26"), dated("year-only", "1999")) else {
+        eprintln!("no ffmpeg: skipped");
+        return;
+    };
+    let lib = Library::in_memory().unwrap();
+    scan_root(&lib, &whole).unwrap();
+    scan_root(&lib, &year).unwrap();
+    let albums = lib.albums(10, 0).unwrap();
+    let of = |title: &str| albums.iter().find(|a| a.title == title).map(|a| lib.album_release_date(a.id).unwrap());
+    assert_eq!(of("whole-date"), Some(Some("1981-04-26".into())));
+    assert_eq!(of("year-only"), Some(Some("1999".into())), "a year alone is all there is");
+
+    // An edited year leaves the old date unshown instead of contradicting it.
+    let id = albums.iter().find(|a| a.title == "whole-date").unwrap().id;
+    lib.connection().execute("UPDATE albums SET year = 1982 WHERE id = ?1", [id]).unwrap();
+    assert_eq!(lib.album_release_date(id).unwrap(), Some("1982".into()));
+
+    let _ = std::fs::remove_dir_all(whole);
+    let _ = std::fs::remove_dir_all(year);
+}
+
 #[test]
 fn a_scan_reads_the_tags_and_builds_the_album() {
     let Some(dir) = album("basic", 3) else {
