@@ -21,7 +21,7 @@ Flickable {
     property string kind: kinds.indexOf(SettingsModel.kept("ui.stats.period")) >= 0 ? SettingsModel.kept("ui.stats.period") : "week"
     // The chosen date; empty is today.
     property string anchor
-    readonly property var report: JSON.parse(Stats.report(kind, anchor, Qt.locale().firstDayOfWeek, I18n.rev) || "{}")
+    readonly property var report: JSON.parse(Stats.report(kind, anchor, Qt.locale().firstDayOfWeek, I18n.rev + Library.contentRev + Library.remoteRev + Library.remoteArtRev) || "{}")
     readonly property real wide: Math.min(width - 2 * Metrics.contentX, Charts.widest) // derived: padding on both sides
     // While the report is drawn into a picture: its caption and its ground.
     property bool picturing: false

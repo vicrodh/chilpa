@@ -165,6 +165,8 @@ pub struct HistoryEntry {
     pub album_id: Option<i64>,
     pub source_id: Option<i64>,
     pub artwork_path: Option<String>,
+    pub external_id: String,
+    pub album_external_id: String,
 }
 
 /// The history's names: as the listen recorded them, else as the library has
@@ -223,7 +225,9 @@ impl Library {
             concat!("SELECT p.id, p.started_at,
                 strftime('%Y-%m-%d %H:%M', p.started_at + coalesce(c.utc_offset_seconds, unixepoch(p.started_at, 'unixepoch', 'localtime') - p.started_at), 'unixepoch'),
                 {TITLE}, {ARTIST}, {ALBUM}, p.played_ms, p.duration_ms, p.skipped, p.bit_perfect,
-                p.sample_rate_hz, p.bit_depth, p.track_id, a.id, p.source_id, ", album_art!("a"), "
+                p.sample_rate_hz, p.bit_depth, p.track_id, a.id, p.source_id,
+                coalesce(nullif(", track_art!("t", "a"), ", ''), nullif(c.artwork_path, '')),
+                coalesce(c.external_id, ''), coalesce(c.album_external_id, '')
              FROM play_events p {JOINS}
              WHERE {clause}
              ORDER BY p.started_at DESC, p.id DESC
@@ -251,9 +255,28 @@ impl Library {
                 album_id: r.get(13)?,
                 source_id: r.get(14)?,
                 artwork_path: r.get(15)?,
+                external_id: r.get(16)?,
+                album_external_id: r.get(17)?,
             }),
         )?.collect::<rusqlite::Result<Vec<_>>>()?;
         Ok((rows, total.max(0) as u64))
+    }
+
+    /// I find the provider and instance a listen's source id names.
+    pub fn listening_source(&self, source_id: i64) -> rusqlite::Result<Option<(String, String)>> {
+        self.db.query_row("SELECT provider, instance FROM sources WHERE id = ?1", [source_id], |r| Ok((r.get(0)?, r.get(1)?))).optional()
+    }
+
+    /// I find the newest cover captured for a source track or record.
+    pub fn listening_source_art(&self, source_id: i64, reference: &str, album: bool) -> rusqlite::Result<Option<String>> {
+        let identity = if album { "c.album_external_id" } else { "c.external_id" };
+        self.db.query_row(
+            &format!("SELECT c.artwork_path FROM play_events p JOIN play_context c ON c.event_id = p.id
+                WHERE p.source_id = ?1 AND {identity} = ?2 AND c.artwork_path <> ''
+                ORDER BY p.started_at DESC, p.id DESC LIMIT 1"),
+            params![source_id, reference],
+            |r| r.get(0),
+        ).optional()
     }
 
     /// Where a local date, "2026-10-09", began, in Unix seconds: the

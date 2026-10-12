@@ -21,6 +21,8 @@ pub struct ListenContext {
     pub artist: String,
     pub album: String,
     pub album_artist: String,
+    /// I keep the local cover available when this listen began.
+    pub artwork_path: String,
     pub genres: Vec<String>,
     /// Seconds east of UTC at the instant listening started, including DST.
     pub utc_offset_seconds: Option<i32>,
@@ -135,8 +137,8 @@ impl Library {
         )?;
         let id = tx.last_insert_rowid();
         tx.execute("INSERT INTO play_context(event_id, external_id, album_id, title, artist,
-            album, album_artist, utc_offset_seconds, album_external_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
-            params![id, c.external_id, c.album_id, c.title, c.artist, c.album, c.album_artist, c.utc_offset_seconds, c.album_external_id])?;
+            album, album_artist, utc_offset_seconds, album_external_id, artwork_path) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)",
+            params![id, c.external_id, c.album_id, c.title, c.artist, c.album, c.album_artist, c.utc_offset_seconds, c.album_external_id, c.artwork_path])?;
         for genre in super::split_genres(&c.genres) {
             tx.prepare_cached(
                 "INSERT OR IGNORE INTO play_genres(event_id, genre) VALUES (?1, ?2)",
