@@ -75,11 +75,15 @@ def main():
         cutter.subset(font)
         # Both webfonts are called "tabler-icons", and two files with one
         # family name are merged by the font database: outline glyphs came
-        # out of the filled font. Each subset gets a family of its own.
+        # out of the filled font. Each subset gets a family of its own, and
+        # an identifier of its own too (name 3): a Mac's font database
+        # merges by that one, and drew the filled font's glyph numbers with
+        # the outline font's shapes -- an arrow and a warning sign where
+        # play and skip go.
         family = f"Chilpa Icons {kind.capitalize()}"
         for record in font["name"].names:
-            if record.nameID in (1, 4, 6, 16):
-                record.string = family.replace(" ", "") if record.nameID == 6 else family
+            if record.nameID in (1, 3, 4, 6, 16):
+                record.string = family.replace(" ", "") if record.nameID in (3, 6) else family
         subset.save_font(font, str(OUT / f"tabler-{kind}.ttf"), options)
         suffix = "Filled" if kind == "filled" else ""
         for n in sorted(wanted[kind]):
