@@ -1,5 +1,6 @@
 import QtQuick
 import QtTest
+import app.chilpa.playlists
 import app.chilpa
 import "../../qml/Components"
 
@@ -40,11 +41,6 @@ TestCase {
         waitForRendering(pick)
         mouseClick(pick, pick.width / 2, pick.height / 2)
         tryCompare(menu, "visible", false)
-        const picker = findChild(menu.parent, "playlistPickerDialog")
-        verify(picker !== null)
-        tryCompare(picker, "opened", true)
-        compare(picker.trackCount, 2)
-        compare(picker.trackIdsJson, "[42,43]")
-        picker.close()
+        compare(AddToPlaylist.lastAsked, "[42,43]", "the window's one picker is asked for the tracks")
     }
 }

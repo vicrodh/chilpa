@@ -330,6 +330,15 @@ QtObject {
     readonly property int linkModal: 520
     readonly property int playlistModalHeight: 520
     readonly property int playlistPickerRow: 58
+    // The add-to-playlist picker, as QBZ's: its card, the column of the
+    // playlists that already hold the tracks, a row of its list, the list's
+    // tallest and how many playlists it shows before saying how many more.
+    readonly property int playlistPickerWidth: 735
+    readonly property int playlistPickerHeight: 560
+    readonly property int playlistAlreadyIn: 221
+    readonly property int playlistChoiceRow: 41
+    readonly property int playlistChoiceList: 322
+    readonly property int playlistChoiceRows: 8
     readonly property int playlistManagerSearch: 250
     readonly property int playlistManagerCardWidth: 176
     readonly property int playlistManagerCard: 210

@@ -40,6 +40,13 @@ fn search_membership_add_edit_and_reopen_preserve_the_selected_tracks() {
     assert!(api.add_track_ids_to_playlist(read_only, &[4]).rejected, "source writes need a declared capability");
     assert!(api.add_track_ids_to_playlist(999, &[1]).rejected);
     assert_eq!(api.playlist(playlist).unwrap().track_count, 3);
+    let ours = api.playlist_targets(&[1], "evening");
+    assert_eq!((ours[0].same_source, ours[0].icon.as_str()), (true, "chilpa"), "the library's tracks belong in ours");
+    assert!(!api.playlist_targets(&[4], "evening")[0].same_source, "a source's track does not");
+    assert!(api.playlist_targets(&[4], "source")[0].same_source, "it belongs in its source's own list");
+    assert!(api.playlist_targets(&[1, 4], "evening")[0].same_source, "a mix of sources belongs in ours");
+    assert_eq!(api.add_track_ids_again(playlist, &[1]).added, 1, "asked for, a repeat goes in");
+    assert_eq!(api.playlist(playlist).unwrap().track_count, 4);
     assert!(api.add_track_ids_to_playlist(playlist, &[4]).added == 1, "local playlists accept mixed sources");
     assert!(api.update_playlist(playlist, "New name", "New description", Some("new.png"), &["quiet".into()], Some(folder)));
     drop(api);
@@ -50,7 +57,7 @@ fn search_membership_add_edit_and_reopen_preserve_the_selected_tracks() {
     assert_eq!(saved.artwork_path, "new.png");
     assert_eq!(saved.folder_id, Some(folder));
     assert_eq!(saved.tags, ["quiet"]);
-    assert_eq!(lib.playlist_entries(playlist).unwrap().iter().map(|entry| entry.track_id.unwrap()).collect::<Vec<_>>(), [1, 2, 3, 4]);
+    assert_eq!(lib.playlist_entries(playlist).unwrap().iter().map(|entry| entry.track_id.unwrap()).collect::<Vec<_>>(), [1, 2, 3, 1, 4]);
     assert!(!reopened.playlist_targets(&[1], "source")[0].accepts);
     drop(reopened);
     drop(lib);

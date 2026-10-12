@@ -41,6 +41,7 @@ pub mod navigation;
 pub mod queue_origin;
 mod outputs;
 mod playlists;
+pub use playlists::PlaylistTarget;
 mod preferences;
 mod play_indicator;
 mod playlist_sources;
@@ -419,15 +420,6 @@ pub struct PlaylistFolder {
     pub color: String,
     pub position: i64,
     pub playlist_count: usize,
-}
-
-/// What the add-to-playlist picker says about one target.
-#[derive(Clone, PartialEq, Eq, Debug, serde::Serialize)]
-pub struct PlaylistTarget {
-    pub playlist: Playlist,
-    pub exact: usize,
-    pub similar: usize,
-    pub accepts: bool,
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default, serde::Serialize)]

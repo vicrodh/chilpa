@@ -351,6 +351,16 @@ impl Library {
     /// Adds to the end of a playlist what it does not already carry.
     /// Returns how many went in.
     pub fn append_to_playlist(&self, playlist_id: i64, entries: &[PlaylistEntry]) -> rusqlite::Result<usize> {
+        self.append_entries(playlist_id, entries, false)
+    }
+
+    /// Adds every one of them to the end, also what it already carries:
+    /// somebody asked for the repeats.
+    pub fn append_again_to_playlist(&self, playlist_id: i64, entries: &[PlaylistEntry]) -> rusqlite::Result<usize> {
+        self.append_entries(playlist_id, entries, true)
+    }
+
+    fn append_entries(&self, playlist_id: i64, entries: &[PlaylistEntry], repeats: bool) -> rusqlite::Result<usize> {
         let (owner, local): (i64, bool) = self.db.query_row(
             "SELECT p.source_id, s.provider = 'local'
                FROM playlists p JOIN sources s ON s.id = p.source_id
@@ -364,7 +374,7 @@ impl Library {
         let mut all = self.playlist_entries(playlist_id)?;
         let before = all.len();
         for e in entries {
-            if !all.iter().any(|x| x.source_id == e.source_id && x.external_id == e.external_id) {
+            if repeats || !all.iter().any(|x| x.source_id == e.source_id && x.external_id == e.external_id) {
                 all.push(e.clone());
             }
         }

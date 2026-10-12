@@ -23,7 +23,9 @@ QtObject {
     function refresh() {}
 
     function pickerJson(ids, query) { return JSON.stringify(rows.filter(r => r.playlist.name.toLowerCase().includes(query.toLowerCase()))) }
-    function addTrackIds(id, ids) { added = ids; return JSON.stringify({ added: 0, exact: 1, similar: 1, rejected: fail }) }
+    property int lastTarget: 0
+    property bool repeated: false
+    function addTrackIds(id, ids, repeats) { added = ids; repeated = repeats; if (!fail) lastTarget = id; return JSON.stringify({ added: 0, exact: 1, similar: 1, rejected: fail }) }
     function createFull(name, description, artwork, tags, folder, ids) { created = [name, description, artwork, tags, folder, ids]; return fail ? 0 : 7 }
     function chooseArtwork() { return "" }
     function folderId(id, revision) { return 4 }
@@ -36,7 +38,4 @@ QtObject {
     function updateFolder(id, name, color) { created = [name, color, id]; return !fail }
     property var catalog: ({folders: [], playlists: []})
     function catalogJson(query) { return JSON.stringify(catalog) }
-    function managerJson(query, filter, order, ascending, folder) {
-        return JSON.stringify([{ kind: "Playlist", id: 7, name: "Stored playlist", detail: "", source: "", source_name: "Local", artwork_path: "", covers: [], color: "", track_count: 3, play_count: 0, folder_id: null, local: true, visible_sidebar: true }])
-    }
 }

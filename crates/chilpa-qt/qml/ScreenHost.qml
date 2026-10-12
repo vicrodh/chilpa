@@ -7,6 +7,8 @@ import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 
@@ -103,4 +105,7 @@ Loader {
     Component { id: sourceListing; SourceListing { source: Navigation.routeKey } }
     Component { id: sourceEntry; SourceEntryScreen {} }
     Component { id: pending; PendingScreen {} }
+
+    // The one add-to-playlist picker; the menus only ask for it.
+    PlaylistPickerModal {}
 }

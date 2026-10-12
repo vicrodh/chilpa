@@ -713,6 +713,7 @@ dependencies = [
  "chilpa-qt-lyrics",
  "chilpa-qt-metadata",
  "chilpa-qt-mini",
+ "chilpa-qt-playlists",
  "chilpa-qt-sources",
  "chilpa-qt-stats",
  "chilpa-qt-waveform",
@@ -883,6 +884,19 @@ dependencies = [
  "cxx-qt",
  "cxx-qt-build",
  "cxx-qt-lib",
+]
+
+[[package]]
+name = "chilpa-qt-playlists"
+version = "0.0.0"
+dependencies = [
+ "chilpa-api",
+ "chilpa-qt-kit",
+ "cxx",
+ "cxx-qt",
+ "cxx-qt-build",
+ "cxx-qt-lib",
+ "serde_json",
 ]
 
 [[package]]
