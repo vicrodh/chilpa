@@ -70,6 +70,19 @@ impl Store {
         bytes.extend_from_slice(highs);
         bytes.extend_from_slice(lows);
         let _ = std::fs::write(self.dir.join(key), bytes);
+        let _ = std::fs::remove_file(self.dir.join(format!("{key}.partial")));
+    }
+
+    /// What a play of a stream gathered before it was skipped or stopped,
+    /// for the next play to go on from.
+    fn partial(&self, key: &str) -> Option<Vec<u8>> {
+        std::fs::read(self.dir.join(format!("{key}.partial"))).ok()
+    }
+
+    fn keep_partial(&self, key: &str, bytes: &[u8]) {
+        if std::fs::create_dir_all(&self.dir).is_ok() {
+            let _ = std::fs::write(self.dir.join(format!("{key}.partial")), bytes);
+        }
     }
 }
 
@@ -188,7 +201,8 @@ impl SeekWaveform {
 /// The document of what plays, gathered from the frames the player
 /// decodes, for a track with no file to read apart from playing it. A
 /// local file is read whole by its own pass instead, and a document kept
-/// on disk is not gathered again.
+/// on disk is not gathered again. A play that does not reach the end keeps
+/// what it gathered, and the next one goes on from there.
 struct Live {
     store: Arc<Store>,
     shared: Arc<Mutex<Snapshot>>,
@@ -243,7 +257,14 @@ impl Feed for Live {
         if key.as_deref().is_some_and(|k| self.store.get(k).is_some()) {
             return;
         }
-        *slot = Some(Growing { key, accumulator: Accumulator::new(channels, total), revision: 0, last: std::time::Instant::now() });
+        let accumulator = key.as_deref().and_then(|k| self.store.partial(k))
+            .and_then(|kept| Accumulator::resume(channels, total, &kept))
+            .unwrap_or_else(|| Accumulator::new(channels, total));
+        let mut growing = Growing { key, accumulator, revision: 0, last: std::time::Instant::now() };
+        if growing.accumulator.analyzed() > 0 {
+            self.publish(&mut growing, true);
+        }
+        *slot = Some(growing);
     }
 
     fn feed_float(&self, start_frame: u64, samples: &[f32]) {
@@ -260,10 +281,15 @@ impl Feed for Live {
         });
     }
 
-    fn end(&self) {
+    fn end(&self, finished: bool) {
         let mut slot = self.growing.lock().unwrap_or_else(|e| e.into_inner());
         if let Some(mut growing) = slot.take() {
             if !growing.accumulator.complete() {
+                if !(finished && growing.accumulator.finish_played()) && growing.accumulator.analyzed() > 0 {
+                    if let Some(key) = growing.key.as_deref() {
+                        self.store.keep_partial(key, &growing.accumulator.kept());
+                    }
+                }
                 self.publish(&mut growing, true);
             }
         }
@@ -326,6 +352,46 @@ mod tests {
         store.set("local-test", &highs, &lows);
         assert_eq!(store.get("local-test"), Some((highs, lows)));
         assert_eq!(store.get("local-missing"), None);
+    }
+
+    fn live(name: &str) -> (Live, PathBuf) {
+        let dir = std::env::temp_dir().join(format!("chilpa-waveform-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        let live = Live { store: Arc::new(Store { dir: dir.clone() }), shared: Arc::new(Mutex::new(Snapshot::default())), growing: Mutex::new(None) };
+        (live, dir)
+    }
+
+    #[test]
+    fn a_stream_played_in_two_halves_is_kept_whole_after_the_second() {
+        let (live, dir) = live("halves");
+        let stream = PathBuf::from(crate::source_opener::entry_of("app.example.music", "track-1"));
+        let total = 44_100 * 10;
+        live.begin(&stream, 1, Some(total));
+        live.feed_float(0, &vec![0.5; 44_100 * 4]);
+        live.end(false);
+        let key = Store::key(&stream.to_string_lossy()).unwrap();
+        assert!(live.store.get(&key).is_none(), "half a track is no document yet");
+        assert!(live.store.partial(&key).is_some(), "what was heard is kept");
+
+        live.begin(&stream, 1, Some(total));
+        let resumed = live.shared.lock().unwrap().analyzed;
+        assert!(resumed >= (BINS * 2 / 5) as u16, "the second play starts from what the first heard: {resumed}");
+        live.feed_float(44_100 * 4, &vec![0.5; 44_100 * 6]);
+        live.end(true);
+        assert!(live.store.get(&key).is_some(), "the whole document is kept");
+        assert!(live.store.partial(&key).is_none(), "and the gathering is gone");
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn a_stream_that_ran_out_before_its_announced_length_is_kept() {
+        let (live, dir) = live("short");
+        let stream = PathBuf::from(crate::source_opener::entry_of("app.example.music", "track-2"));
+        live.begin(&stream, 1, Some(44_100 * 10));
+        live.feed_float(0, &vec![0.5; 44_100 * 9]);
+        live.end(true);
+        assert!(live.store.get(&Store::key(&stream.to_string_lossy()).unwrap()).is_some());
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]
