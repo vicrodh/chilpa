@@ -192,7 +192,8 @@ pub struct BrowseTrack {
     pub sample_rate_hz: Option<u32>,
     pub bit_depth: Option<u8>,
     pub plays: usize,
-    /// Its record's cover.
+    /// Its cover: the one chosen for its record, else its own disc's, else
+    /// its record's.
     pub artwork_path: Option<String>,
     /// In the library and reachable now. A row that is not is drawn dimmed
     /// and does not play (ADR-017).
@@ -278,7 +279,7 @@ pub struct Snapshot {
 
 const ROW: &str = concat!("SELECT t.id, t.external_id, t.title, t.artist, a.title, t.album_id, coalesce(t.release_disc, t.disc_number),
             t.track_number, t.duration_ms, t.sample_rate_hz, t.bit_depth,
-            COALESCE(r.plays, 0) AS plays, ", album_art!("a"), ", (t.present = 1 AND t.reachable = 1), t.codec,
+            COALESCE(r.plays, 0) AS plays, ", track_art!("t", "a"), ", (t.present = 1 AND t.reachable = 1), t.codec,
             (SELECT group_concat(c.name, ', ') FROM track_composers tc JOIN composers c ON c.id = tc.composer_id WHERE tc.track_id = t.id)");
 
 fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
@@ -1040,6 +1041,26 @@ mod tests {
         assert_eq!(tracks.iter().map(|t| t.id).collect::<Vec<_>>(), [4], "only what sits in it");
         assert_eq!(lib.folder_track_count("/m/Box").unwrap(), 4, "Box0 is not under Box");
         assert_eq!(lib.folder_paths("/m/Box/").unwrap().len(), 4, "a trailing slash is the same folder");
+    }
+
+    #[test]
+    fn a_track_row_shows_its_own_disc_s_cover_unless_one_was_chosen_for_its_record() {
+        let lib = Library::in_memory().unwrap();
+        let source = lib.source_id("local", "default").unwrap();
+        lib.db.execute("INSERT INTO albums (id, title, album_artist, artwork_path) VALUES (1, 'Box', 'X', '/covers/box.jpg')", []).unwrap();
+        for (id, path, own) in [(1, "/m/Box/Disc 1/01.flac", "/covers/disc-1.jpg"), (2, "/m/Box/Disc 2/01.flac", "/covers/disc-2.jpg"), (3, "/m/Box/Disc 3/01.flac", "")] {
+            lib.db
+                .execute(
+                    "INSERT INTO tracks (id, source_id, external_id, title, album_id, added_at, release_artwork) VALUES (?1, ?2, ?3, 'T', 1, 1, ?4)",
+                    params![id, source, path, own],
+                )
+                .unwrap();
+        }
+        let covers = |lib: &Library| -> Vec<Option<String>> { lib.tracks_by_ids(&[1, 2, 3]).unwrap().into_iter().map(|t| t.artwork_path).collect() };
+        assert_eq!(covers(&lib), [Some("/covers/disc-1.jpg".into()), Some("/covers/disc-2.jpg".into()), Some("/covers/box.jpg".into())],
+            "each disc's own, and the box's for a disc with none");
+        lib.db.execute("INSERT INTO album_artwork (album_id, path) VALUES (1, '/covers/chosen.jpg')", []).unwrap();
+        assert!(covers(&lib).iter().all(|cover| cover.as_deref() == Some("/covers/chosen.jpg")), "a cover chosen for the record is the record's everywhere");
     }
 
     #[test]
