@@ -22,6 +22,9 @@ Item {
     // The folders that are not records.
     readonly property int plain: folder.folders - (albums ? albums.albums : 0)
     property bool grid: SettingsModel.kept("ui.folders.detail") !== "list"
+    // The discs of a box set side by side shown as the box, or each on its own.
+    property bool collections: SettingsModel.kept("ui.folders.collections") === "true"
+    Binding { target: detail.folder; property: "grouped"; value: detail.collections }
     readonly property string name: folder.path.replace(/\/+$/, "").split("/").pop()
     readonly property string sought: find.text.trim().toLowerCase()
 
@@ -58,7 +61,7 @@ Item {
         Column {
             anchors.left: play.right
             anchors.leftMargin: Metrics.gap12
-            anchors.right: tools.left
+            anchors.right: grouping.left
             anchors.rightMargin: Metrics.gap12
             anchors.verticalCenter: parent.verticalCenter
 
@@ -70,6 +73,22 @@ Item {
                 elide: Text.ElideRight
                 font.pointSize: Type.meta
                 color: Theme.color.textSecondary
+            }
+        }
+        Row {
+            id: grouping
+            anchors.right: tools.left
+            anchors.rightMargin: Metrics.gap16
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Metrics.gap8
+            Text { anchors.verticalCenter: parent.verticalCenter; text: I18n.tr("Group collections", I18n.rev); font.pointSize: Type.meta; color: Theme.color.textSecondary }
+            Toggle {
+                anchors.verticalCenter: parent.verticalCenter
+                checked: detail.collections
+                onToggled: (on) => {
+                    detail.collections = on
+                    SettingsModel.keep("ui.folders.collections", on ? "true" : "false")
+                }
             }
         }
         SegmentedControl {

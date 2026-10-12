@@ -231,6 +231,8 @@ pub struct FolderEntry {
     /// The record it is, when its files sit in it and are the whole of one.
     /// A disc of a box set holds part of a record, and is a folder.
     pub album_id: Option<i64>,
+    /// The record it holds part of: a disc of a box set.
+    pub part_of: Option<i64>,
 }
 
 /// The paths under `dir`, as a range: every path that starts with `dir/`
@@ -728,6 +730,7 @@ impl Library {
                         (0, 1) => r.get(5)?,
                         _ => None,
                     },
+                    part_of: None,
                 })
             })?
             .collect::<rusqlite::Result<Vec<_>>>()?;
@@ -735,7 +738,7 @@ impl Library {
         let whole = self.album_track_counts(folders.iter().filter_map(|f| f.album_id))?;
         for folder in &mut folders {
             if folder.album_id.is_some_and(|id| whole.get(&id).is_some_and(|&all| all > folder.tracks)) {
-                folder.album_id = None;
+                folder.part_of = folder.album_id.take();
             }
         }
         let sql = format!(
@@ -1053,6 +1056,7 @@ mod tests {
         }
         let (discs, _) = lib.folder_children("/m/Box").unwrap();
         assert_eq!(discs.iter().map(|f| f.album_id).collect::<Vec<_>>(), [None, None], "each disc is a folder of its own");
+        assert_eq!(discs.iter().map(|f| f.part_of).collect::<Vec<_>>(), [Some(1), Some(1)], "and part of the box");
         let (top, _) = lib.folder_children("/m").unwrap();
         let single = top.iter().find(|f| f.name == "Single").unwrap();
         assert_eq!(single.album_id, Some(2), "every track of it sits in it");
