@@ -33,6 +33,14 @@ TitledFlow {
     JumpBar { width: Metrics.confirmWidth; entries: [{id:"about",title:"About"},{id:"tracks",title:"Popular Tracks"}]; active: "about" }
     ArtistTracks { width: Metrics.confirmWidth; section: ({title:"Popular Tracks",role:"popular",key:""}) }
     ArtistNetwork { width: Metrics.networkPanel; height: Metrics.panesHeight; document: ({header:{title:"Artist"},shelves:[{role:"labels",items:[{title:"Label"}]},{role:"similar",items:[{title:"Another"}]}]}); network: ({origin:{person:false,begin:"1975",place:"Leyton"},relationships:{any:true,members:[{name:"Member"}]},similar:["Alike"]}) }
+    SceneArtistCard { artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
+    SceneAlphaRail { activeKeys: ["A", "B"] }
+    SceneGenreFilter { width: Metrics.sceneGenreWidth; genres: ["rock", "post-punk", "shoegaze"]; selected: ["post-punk"] }
+    SceneLoading { width: Metrics.confirmWidth; height: Metrics.panesHeight; progress: ({percentage:42,detail:"grunge"}) }
+    ScenePanel { width: Metrics.confirmWidth; height: Metrics.panesHeight; artists: [{mbid:"preview",title:"Scene artist",genres:["post-punk"],sources:[]}]; selectedId: "preview" }
+    ScenePanelRail { width: Metrics.scenePanelRailWidth; height: Metrics.panesHeight; artists: [{mbid:"preview",title:"Scene artist",sources:[]}] }
+    ScenePanelAlbums { width: Metrics.confirmWidth; height: Metrics.panesHeight }
+    SceneAlbumCard { album: ({title:"Scene album",artist:"Scene artist",year:"2026"}) }
     SourceShelf { width: Metrics.confirmWidth; section: ({title:"Releases",error:"Unavailable",key:""}) }
     SourceHomeSections { width: Metrics.confirmWidth }
     SourcePaging { about: ({plugin:"preview",next:"next"}) }

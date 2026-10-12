@@ -624,3 +624,5 @@ wireplumber
 remediations
 dacs
 hifi
+puerto
+rico
