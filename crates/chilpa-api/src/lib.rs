@@ -117,6 +117,7 @@ pub mod startup_chain;
 pub mod settings_schema;
 mod artist_page;
 mod artist_scene;
+mod scene_catalog;
 pub use servers::{on_a_server, ServerRemoval, ServerRow, ServerSetup};
 pub use source_opener::on_a_source;
 pub use settings_rows::{RowNotes, SettingsRow};

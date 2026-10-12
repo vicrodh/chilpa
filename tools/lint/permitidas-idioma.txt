@@ -627,3 +627,6 @@ hifi
 renamable
 puerto
 rico
+# Artist scene identity terms.
+isrcs
+tiebreak

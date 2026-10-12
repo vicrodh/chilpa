@@ -48,9 +48,15 @@ Item {
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter
                 text: (loading.progress.percentage || 0) >= 40
-                    ? (loading.includeSources ? I18n.tr("Checking your selected sources…", I18n.rev) : I18n.tr("Preparing results…", I18n.rev))
+                    ? (loading.includeSources ? I18n.tr("Checking {source}…", I18n.rev).replace("{source}", loading.progress.source || I18n.tr("your sources", I18n.rev)) : I18n.tr("Preparing results…", I18n.rev))
                     : I18n.tr("Searching MusicBrainz for {genre} artists…", I18n.rev).replace("{genre}", loading.progress.detail || I18n.tr("nearby", I18n.rev))
                 font.pointSize: Type.body; color: Theme.color.textSecondary
+            }
+            Text {
+                anchors.horizontalCenter: parent.horizontalCenter
+                visible: loading.includeSources && (loading.progress.percentage || 0) >= 40 && !!loading.progress.detail
+                text: loading.progress.detail || ""
+                font.pointSize: Type.meta; color: Theme.color.textTertiary
             }
             Text {
                 anchors.horizontalCenter: parent.horizontalCenter

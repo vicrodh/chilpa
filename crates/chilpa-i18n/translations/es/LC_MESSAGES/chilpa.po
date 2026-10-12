@@ -614,8 +614,8 @@ msgstr "Revisando tu stack de audio…"
 msgid "Checking your selected sources can take a few minutes."
 msgstr "La búsqueda en las fuentes seleccionadas puede tardar unos minutos."
 
-msgid "Checking your selected sources…"
-msgstr "Buscando en las fuentes seleccionadas…"
+msgid "Checking {source}…"
+msgstr "Consultando {source}…"
 
 msgid "Chilpa Native Plugins"
 msgstr "Plugins nativos de Chilpa"
@@ -716,8 +716,8 @@ msgstr "Vaciar"
 msgid "Clear after this track"
 msgstr "Vaciar después de esta pista"
 
-msgid "Clear filters"
-msgstr "Borrar filtros"
+msgid "Clear filter"
+msgstr "Limpiar filtro"
 
 msgid "Clear loop"
 msgstr "Quitar bucle"
@@ -2216,6 +2216,9 @@ msgstr "Ninguna compra coincide con la vista actual."
 msgid "No results for"
 msgstr "Sin resultados para"
 
+msgid "No results found"
+msgstr "No se encontraron resultados"
+
 msgid "No results found."
 msgstr "No se encontraron resultados."
 
@@ -3083,9 +3086,6 @@ msgstr "Buscar artistas"
 msgid "Search folders"
 msgstr "Buscar carpetas"
 
-msgid "Search genres"
-msgstr "Buscar géneros"
-
 msgid "Search listens"
 msgstr "Buscar escuchas"
 
@@ -3570,6 +3570,9 @@ msgstr "Tema"
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Esto puede tardar unos minutos si MusicBrainz está ocupado."
 
+msgid "This catalog could not be reached."
+msgstr "No se pudo acceder a este catálogo."
+
 msgid "This chapter format is not supported."
 msgstr "Este formato de capítulos no es compatible."
 
@@ -3761,6 +3764,9 @@ msgstr "Escribe este código en Quick Connect, en un Jellyfin donde ya iniciaste
 
 msgid "UP NEXT"
 msgstr "A CONTINUACIÓN"
+
+msgid "Unavailable"
+msgstr "No disponible"
 
 msgid "Uncategorized"
 msgstr "Sin categoría"
@@ -5061,6 +5067,9 @@ msgstr "escribe solo la dirección, sin usuario, contraseña ni parámetros"
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
 
+msgid "your sources"
+msgstr "tus fuentes"
+
 msgid "{} / {} artists"
 msgstr "{} / {} artistas"
 
@@ -5068,9 +5077,6 @@ msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} álbum"
 msgstr[1] "{} álbumes"
-
-msgid "{} albums"
-msgstr "{} álbumes"
 
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analizadas, {} sin pulso, {} ilegibles"

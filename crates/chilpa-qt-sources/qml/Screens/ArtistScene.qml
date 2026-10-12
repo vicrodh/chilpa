@@ -6,13 +6,23 @@ import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
-
-// Filtering, score order, grouped virtual rows, pinned controls, scroll hero
-// and alphabet rail. Plugin scenes contain verified catalog artists.
 Item {
     id: root
     readonly property var doc: JSON.parse(Sources.scene(Library.remoteRev) || "{}")
-    readonly property var allArtists: doc.artists || []
+    readonly property var sourceLanes: doc.sources || []
+    property string sourceId: ""
+    readonly property var activeSource: sourceLanes.find(function (lane) { return lane.id === sourceId }) || sourceLanes[0] || ({})
+    readonly property var allArtists: activeSource.artists || doc.artists || []
+    readonly property var shownDoc: {
+        var copy = Object.assign({}, doc)
+        if (doc.state === "ready" && activeSource.state === "error") {
+            copy.state = "error"
+            copy.error = activeSource.error || I18n.tr("This catalog could not be reached.", I18n.rev)
+        }
+        if (activeSource.state === "partial") copy.error = activeSource.error
+        copy.hasMore = activeSource.hasMore === true
+        return copy
+    }
     readonly property bool ready: doc.state === "ready"
     readonly property bool canBrowse: allArtists.some(function (artist) { return (artist.sources || []).length > 0 })
     property string mode: "grid"
@@ -21,6 +31,7 @@ Item {
     property var activeGenres: []
     property bool genrePopupOpen: false
     property string selectedArtistId: ""
+    onSourceIdChanged: { activeGenres = []; searchQuery = ""; selectedArtistId = ""; genrePopupOpen = false; mode = "grid" }
     onCanBrowseChanged: if (!canBrowse) { mode = "grid"; selectedArtistId = "" }
     readonly property string sceneTitle: doc.sceneLabel || ""
     readonly property string flagSource: doc.countryCode
@@ -56,10 +67,7 @@ Item {
         return rows.map(function (r) { return r.name })
     }
     function artistNameOf(a) { return String((a && (a.title || a.name)) || "") }
-    function alphaKeyOf(name) {
-        var c = (name || "").charAt(0).toUpperCase()
-        return (c >= "A" && c <= "Z") ? c : "#"
-    }
+    function alphaKeyOf(name) { var c = (name || "").charAt(0).toUpperCase(); return (c >= "A" && c <= "Z") ? c : "#" }
     function groupArtists(list) {
         var sorted = list.slice().sort(function (a,b) { return root.artistNameOf(a).localeCompare(root.artistNameOf(b)) })
         var buckets = ({}), keys = []
@@ -114,13 +122,24 @@ Item {
     Component.onDestruction: Sources.sceneClose()
 
     SceneState {
-        anchors.fill: parent; doc: root.doc; artistCount: root.allArtists.length
+        anchors.fill: parent; doc: root.shownDoc; artistCount: root.allArtists.length
         onRetry: Sources.sceneRetry()
         onMore: Sources.sceneMore()
     }
+    SceneSourceTabs {
+        id: sourceTabs
+        objectName: "sceneSourceTabs"
+        x: Metrics.scenePadLeft; y: 0
+        width: parent.width - Metrics.scenePadTotal
+        visible: root.ready && root.doc.includeSources === true && root.sourceLanes.length > 0
+        sources: root.sourceLanes; currentId: root.activeSource.id || ""
+        onSelected: (id) => root.sourceId = id
+    }
     Item {
         id: content
-        anchors.fill: parent; visible: ready && allArtists.length > 0
+        x: 0; y: sourceTabs.visible ? sourceTabs.height : 0
+        width: parent.width; height: parent.height - y
+        visible: ready && root.activeSource.state !== "error" && allArtists.length > 0
         Item {
             id: compact
             x: Metrics.scenePadLeft; width: parent.width - Metrics.scenePadTotal; height: root.heroScrolledPast ? Metrics.sceneCompactHeight : 0
@@ -168,18 +187,9 @@ Item {
                     anchors.fill: parent; clip: true; boundsBehavior: Flickable.StopAtBounds
                     model: root.rowModel; cacheBuffer: (root.cardH + root.rowGap) * 2
                     NumberAnimation { id: jumpAnimation; target: grid; property: "contentY"; duration: Metrics.sceneJumpDuration; easing.type: Easing.OutCubic }
-                    header: Item {
-                        width: grid.width; height: Metrics.sceneHeroHeight
-                        Row {
-                            width: parent.width; spacing: Metrics.modalInset
-                            ArtTile { id: flag; width: Metrics.sceneHeroFlag; height: width; radius: width * Metrics.sceneCircleRadius; edged: false; source: root.flagSource; visible: root.flagSource !== "" }
-                            Column {
-                                anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap8
-                                width: parent.width - (flag.visible ? Metrics.sceneHeroHeight : 0)
-                                Text { width: parent.width; text: root.sceneTitle; elide: Text.ElideRight; font.pointSize: Type.title; font.weight: Type.bold; color: Theme.color.textPrimary }
-                                Text { width: parent.width; text: I18n.tr("Based on {artist} · {genres}", I18n.rev).replace("{artist}", root.doc.artistName || "").replace("{genres}", root.doc.genreSummary || ""); wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.textSecondary }
-                            }
-                        }
+                    header: SceneHero {
+                        width: grid.width; title: root.sceneTitle; artistName: root.doc.artistName || ""
+                        genres: root.doc.genreSummary || ""; flagSource: root.flagSource
                     }
                     delegate: Item {
                         id: row
@@ -200,8 +210,8 @@ Item {
                         width: grid.width; height: Metrics.sceneFooterHeight
                         Column {
                             anchors.horizontalCenter: parent.horizontalCenter; spacing: Metrics.gap12
-                            Text { visible: !!root.doc.error; text: root.doc.error || ""; color: Theme.color.statusNegative }
-                            PillButton { visible: root.doc.hasMore === true && root.doc.loadingMore !== true; text: I18n.tr("Load more", I18n.rev); onClicked: Sources.sceneMore() }
+                            Text { visible: !!root.shownDoc.error; text: root.shownDoc.error || ""; color: Theme.color.statusNegative }
+                            PillButton { visible: root.activeSource.hasMore === true && root.doc.loadingMore !== true; text: I18n.tr("Load more", I18n.rev); onClicked: Sources.sceneMore() }
                             Text { visible: root.doc.loadingMore === true; text: I18n.tr("Loading…", I18n.rev) + " " + (root.doc.progress?.percentage || 0) + "%"; color: Theme.color.textSecondary }
                         }
                     }
@@ -230,7 +240,7 @@ Item {
         onClicked: root.genrePopupOpen = false
     }
     SceneGenreFilter {
-        visible: root.genrePopupOpen && root.ready
+        objectName: "sceneGenreFilter"; visible: root.genrePopupOpen && root.ready
         z: 20; width: Math.min(Metrics.sceneGenreWidth, root.width - Metrics.sceneGenreInset)
         x: Math.max(Metrics.gap8, toolbar.genreAnchor.mapToItem(root, 0, 0).x + toolbar.genreAnchor.width - width)
         y: toolbar.genreAnchor.mapToItem(root, 0, toolbar.genreAnchor.height).y + Metrics.gap6
