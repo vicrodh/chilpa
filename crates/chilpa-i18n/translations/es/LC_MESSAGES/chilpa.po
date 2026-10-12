@@ -330,6 +330,9 @@ msgstr "Analizar"
 msgid "Analyze the library"
 msgstr "Analizar la biblioteca"
 
+msgid "Analyze the new music too?"
+msgstr "¿Analizar también la música nueva?"
+
 msgid "Analyzing {} of {} tracks"
 msgstr "Analizando {} de {} pistas"
 
@@ -604,6 +607,9 @@ msgstr "Plugins nativos de Chilpa"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
 msgstr "Chilpa ya fija la frecuencia, el sink y el modo exclusivo mientras reproduce. Estos archivos solo cambian el comportamiento de todo el sistema: cópialos y córrelos tú si los quieres. Respalda primero."
+
+msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
+msgstr "Chilpa también puede leer el tempo, la tonalidad y el volumen de lo que hay en esta carpeta. Tarda mucho más que leer la carpeta: empieza cuando termina el escaneo, corre en segundo plano y se puede detener en Ajustes > Biblioteca > Análisis."
 
 msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
 msgstr "Chilpa puede ejecutar algunos plugins de otras plataformas. Agrega un catálogo de plugins que utilices. La compatibilidad no está garantizada; Chilpa no se hace responsable del comportamiento de estos plugins."
@@ -2189,6 +2195,9 @@ msgstr "No está en tu biblioteca ni en tus fuentes"
 msgid "Not inspected"
 msgstr "Sin inspeccionar"
 
+msgid "Not now"
+msgstr "Ahora no"
+
 msgid "Not rated"
 msgstr "Sin calificar"
 
@@ -3234,6 +3243,9 @@ msgstr "Iniciando {}…"
 
 msgid "Starting…"
 msgstr "Empezando…"
+
+msgid "Starts when the scan is done"
+msgstr "Empieza cuando termine el escaneo"
 
 msgid "Static"
 msgstr "Estática"

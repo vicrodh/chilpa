@@ -36,6 +36,18 @@ pub mod qobject {
         #[qproperty(QString, status)]
         type LibraryFolders = super::FoldersRust;
 
+        /// A folder that was not in the library joined it and its scan began.
+        #[qsignal]
+        fn added(self: Pin<&mut LibraryFolders>);
+
+        /// Analyzes what is missing once the scan running now is done.
+        #[qinvokable]
+        fn analyze_after_scan(self: &LibraryFolders);
+
+        /// Whether there is an analysis to offer: none runs or waits.
+        #[qinvokable]
+        fn offers_analysis(self: &LibraryFolders) -> bool;
+
         /// Adds a folder, by path or by a dialog's file URL, and scans it.
         #[qinvokable]
         fn add(self: Pin<&mut LibraryFolders>, path: &QString);
@@ -95,12 +107,25 @@ pub struct FoldersRust {
 }
 
 impl qobject::LibraryFolders {
-    pub fn add(self: Pin<&mut Self>, path: &QString) {
+    pub fn add(mut self: Pin<&mut Self>, path: &QString) {
         let folder = paths::path_of(path.to_string().trim());
         if folder.is_empty() {
             return;
         }
-        self.scan(Some(folder));
+        let bare = folder.trim_end_matches('/').to_owned();
+        let known = read(|folders| folders.iter().any(|f| f.path.trim_end_matches('/') == bare));
+        self.as_mut().scan(Some(folder));
+        if !known && app::with(|api| api.scan_status().running) {
+            self.as_mut().added();
+        }
+    }
+
+    pub fn analyze_after_scan(&self) {
+        app::with(|api| api.analyze_after_scan());
+    }
+
+    pub fn offers_analysis(&self) -> bool {
+        app::with(|api| { let status = api.analysis_status(); !status.running && !status.waiting })
     }
 
     pub fn browse(self: Pin<&mut Self>) {

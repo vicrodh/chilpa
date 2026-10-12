@@ -12,6 +12,7 @@ Modal {
     property string title
     property string message
     property string confirmText
+    property string cancelText: I18n.tr("Cancel", I18n.rev)
     // The confirming button in the accent, or as the other one when what it
     // does loses something.
     property bool destructive: false
@@ -48,7 +49,7 @@ Modal {
         Row {
             anchors.right: parent.right
             spacing: Metrics.gap8
-            PillButton { text: I18n.tr("Cancel", I18n.rev); onClicked: dialog.close() }
+            PillButton { text: dialog.cancelText; onClicked: dialog.close() }
             PillButton {
                 kind: dialog.destructive ? "secondary" : "primary"
                 text: dialog.confirmText
