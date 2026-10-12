@@ -88,15 +88,18 @@ Item {
         anchors.bottom: parent.bottom
         height: Metrics.playerHeight
     }
-    Wave.WaveformBand {
+    // Only while the bar stands tall: hidden, it still followed the bar's
+    // width, and the bar follows every pixel a panel moves.
+    Loader {
         objectName: "playerBand"
-        visible: bar.tall
+        active: bar.tall
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.leftMargin: Metrics.playerPadLeft
         anchors.rightMargin: Metrics.playerPadRight
         y: Math.round((lcd.y - height) / 2) // derived: centered between the bar's top edge and the song card
         height: Metrics.waveformBand
+        sourceComponent: Wave.WaveformBand {}
     }
 
     Row {

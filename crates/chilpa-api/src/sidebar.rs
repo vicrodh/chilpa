@@ -5,12 +5,19 @@
 //! left it snaps: under 150 px it collapses to its column of icons, under
 //! 28 px it closes. The snap is live: while the pointer moves the sidebar
 //! already shows where it would land, so it is never 100 px wide, and on
-//! release it stays there. Nothing animates.
+//! release it stays there. A snap slides as QBZ's does, and a line crossed
+//! has to be passed by a margin to be crossed back, so a pointer resting
+//! near one does not flip the sidebar on every move.
 
 pub const OPEN_MIN: f64 = 212.0;
 pub const MAX_SHARE: f64 = 0.40;
 pub const COLLAPSE_BELOW: f64 = 150.0;
 pub const CLOSE_BELOW: f64 = 28.0;
+/// How far past a line a sidebar dragged back to the right has to go before
+/// it opens again: collapsed it stays collapsed under 170 px, closed it
+/// stays closed under 48 (QBZ's `REOPEN_MARGIN`, `panel_resize.rs`, where
+/// without it "every pointer move [...] flipped the state").
+pub const REOPEN_MARGIN: f64 = 20.0;
 /// The right panel's own width, and the one point a drag of it snaps to.
 pub const PANEL_DEFAULT: f64 = 300.0;
 /// How near its own width a dragged right panel has to be to take it.
@@ -25,6 +32,16 @@ pub fn settle(width: f64, window_width: f64) -> (&'static str, i32) {
     } else {
         let max = (window_width * MAX_SHARE).max(OPEN_MIN);
         ("open", width.clamp(OPEN_MIN, max).round() as i32)
+    }
+}
+
+/// Where a drag at `width` lands for a sidebar that shows `mode` now.
+pub fn settle_from(mode: &str, width: f64, window_width: f64) -> (&'static str, i32) {
+    let landed = settle(width, window_width);
+    match (mode, landed.0) {
+        ("closed", "collapsed" | "open") if width < CLOSE_BELOW + REOPEN_MARGIN => ("closed", 0),
+        ("collapsed", "open") if width < COLLAPSE_BELOW + REOPEN_MARGIN => ("collapsed", 0),
+        _ => landed,
     }
 }
 
@@ -43,7 +60,19 @@ pub fn settle_panel(width: f64, window_width: f64) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use super::{settle, settle_panel};
+    use super::{settle, settle_from, settle_panel};
+
+    #[test]
+    fn a_line_crossed_is_crossed_back_only_past_a_margin() {
+        assert_eq!(settle_from("open", 160.0, 1280.0), ("open", 212));
+        assert_eq!(settle_from("open", 149.0, 1280.0).0, "collapsed");
+        assert_eq!(settle_from("collapsed", 160.0, 1280.0).0, "collapsed", "between the line and the margin it holds");
+        assert_eq!(settle_from("collapsed", 170.0, 1280.0), ("open", 212));
+        assert_eq!(settle_from("collapsed", 27.0, 1280.0).0, "closed");
+        assert_eq!(settle_from("closed", 40.0, 1280.0).0, "closed");
+        assert_eq!(settle_from("closed", 48.0, 1280.0).0, "collapsed");
+        assert_eq!(settle_from("closed", 300.0, 1280.0), ("open", 300), "far past both it simply lands");
+    }
 
     #[test]
     fn the_right_panel_is_free_between_the_sidebars_limits() {

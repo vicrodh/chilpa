@@ -50,16 +50,38 @@ TestCase {
         compare(bar.columns, Math.ceil(600 / Bars.pixelsPerColumn))
         compare(Waveform.columns, bar.columns)
         bar.width = 30
-        compare(bar.columns, Bars.columnsMin, "never fewer than the least")
+        tryCompare(bar, "columns", Bars.columnsMin, 1000, "never fewer than the least")
         compare(Waveform.columns, Bars.columnsMin)
         bar.width = 600
+        tryCompare(bar, "columns", Math.ceil(600 / Bars.pixelsPerColumn))
+    }
+
+    // A panel sliding moves the width every frame: the bars laid out stretch
+    // to it, none is rebuilt, and the columns are asked for once it rests.
+    function test_a_moving_width_stretches_the_bars_and_asks_once_it_rests() {
+        const laid = findChild(bar, "waveformBars")
+        const first = laid.children.find(child => child.objectName === "waveformBar")
+        for (const width of [590, 575, 560, 548, 540]) {
+            bar.width = width
+            wait(10)
+        }
+        compare(bar.columns, Math.ceil(600 / Bars.pixelsPerColumn), "the columns wait for the width to rest")
+        verify(laid.children.includes(first), "no bar was rebuilt while it moved")
+        compare(laid.width * laid.transform[0].xScale, 540, "the bars reach the new width")
+        tryCompare(bar, "columns", Math.ceil(540 / Bars.pixelsPerColumn))
+        compare(Waveform.columns, bar.columns)
+        bar.width = 600
+        tryCompare(bar, "columns", Math.ceil(600 / Bars.pixelsPerColumn))
+        Waveform.values = fill(bar.columns, 0.8)
+        Waveform.lows = fill(bar.columns, 0.4)
     }
 
     function test_one_bar_per_value_in_the_colors_of_played_known_and_unknown() {
         waitForRendering(bar)
         const bars = []
-        for (let i = 0; i < bar.children.length; ++i) {
-            const child = bar.children[i]
+        const laid = findChild(bar, "waveformBars")
+        for (let i = 0; i < laid.children.length; ++i) {
+            const child = laid.children[i]
             if (child.objectName === "waveformBar")
                 bars.push(child)
         }
@@ -78,8 +100,9 @@ TestCase {
         Waveform.lows = []
         waitForRendering(bar)
         let count = 0
-        for (let i = 0; i < bar.children.length; ++i)
-            if (bar.children[i].objectName === "waveformBar")
+        const laid = findChild(bar, "waveformBars")
+        for (let i = 0; i < laid.children.length; ++i)
+            if (laid.children[i].objectName === "waveformBar")
                 ++count
         compare(count, 0)
     }
