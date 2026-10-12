@@ -227,7 +227,7 @@ impl Library {
             s.provider || ':' || s.instance, t.external_id, t.bit_depth, t.sample_rate_hz, t.id, t.duration_ms,
             s.label, s.icon, s.provider = 'local', t.reachable, coalesce(t.codec, ''), s.kind = 'server'
             FROM albums a JOIN tracks t ON t.album_id = a.id JOIN sources s ON s.id = t.source_id
-            WHERE t.present = 1 ORDER BY a.id, t.id")?;
+            WHERE t.present = 1 AND s.enabled = 1 ORDER BY a.id, t.id")?;
         let mut rows = stmt.query([])?;
         while let Some(row) = rows.next()? {
             let id = row.get(0)?;

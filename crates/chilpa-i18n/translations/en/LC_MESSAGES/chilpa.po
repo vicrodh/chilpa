@@ -620,6 +620,9 @@ msgstr ""
 msgid "Change image"
 msgstr ""
 
+msgid "Change sign-in"
+msgstr ""
+
 msgid "Chapters"
 msgstr ""
 
@@ -1248,6 +1251,9 @@ msgid "Edit metadata…"
 msgstr ""
 
 msgid "Edit playlist"
+msgstr ""
+
+msgid "Edit…"
 msgstr ""
 
 msgid "Embedded tags only"
@@ -3131,6 +3137,9 @@ msgstr ""
 msgid "Save as…"
 msgstr ""
 
+msgid "Save changes"
+msgstr ""
+
 msgid "Save stations to find them here."
 msgstr ""
 
@@ -3296,6 +3305,12 @@ msgid "September"
 msgstr ""
 
 msgid "Server added"
+msgstr ""
+
+msgid "Server address"
+msgstr ""
+
+msgid "Server name"
 msgstr ""
 
 msgid "Servers"
@@ -3660,6 +3675,9 @@ msgstr ""
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr ""
 
+msgid "The saved sign-in could not be opened."
+msgstr ""
+
 msgid "The selected hardware volume control is gone."
 msgstr ""
 
@@ -3685,6 +3703,9 @@ msgid "The view the mini player opens with. Remember keeps the one it was last o
 msgstr ""
 
 msgid "Theme"
+msgstr ""
+
+msgid "This address belongs to a different server."
 msgstr ""
 
 msgid "This can take a few minutes when MusicBrainz is busy."
@@ -3760,6 +3781,9 @@ msgid "This screen is not built yet."
 msgstr ""
 
 msgid "This section is not built yet."
+msgstr ""
+
+msgid "This server is no longer available."
 msgstr ""
 
 msgid "This source cannot accept these tracks right now."

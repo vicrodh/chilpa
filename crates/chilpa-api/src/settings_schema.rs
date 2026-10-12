@@ -149,13 +149,6 @@ pub const SECTIONS: &[Section] = &[
                 setting(crate::play_indicator::ANIMATED, Chilpa::mark("Play indicator animation"), Chilpa::mark("Animate the playing track's mark with equalizer bars. Off by default: a still mark with an accent edge, lighter on the CPU."), Control::Toggle),
             ],
         }, Group {
-            title: Chilpa::mark("Renderer"),
-            settings: &[
-                setting(crate::graphics_boot::INTERFACE_SIZE, Chilpa::mark("Interface size"), Chilpa::mark("Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"), Control::Select),
-                setting(crate::graphics_boot::RENDERER, Chilpa::mark("Rendering backend"), Chilpa::mark("Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"), Control::Select),
-                setting(crate::graphics_boot::gpu::GPU, Chilpa::mark("Preferred GPU"), Chilpa::mark("Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"), Control::Select),
-            ],
-        }, Group {
             title: Chilpa::mark("Background"),
             settings: &[
                 setting(crate::ambient::MODE, Chilpa::mark("Dynamic background"), Chilpa::mark("Animated album-art background behind the whole app. High resource use: GPU accelerated."), Control::Select),
@@ -170,6 +163,13 @@ pub const SECTIONS: &[Section] = &[
             settings: &[
                 setting(crate::immersive::DEFAULT_VIEW, Chilpa::mark("Immersive default view"), Chilpa::mark("The view the immersive view opens with. Remember keeps the one it was last on."), Control::Select),
                 setting(crate::immersive::SEARCH_ACTION, Chilpa::mark("Immersive search"), Chilpa::mark("What Enter does with a result of the immersive view's search. Disabled turns the search off."), Control::Select),
+            ],
+        }, Group {
+            title: Chilpa::mark("Renderer"),
+            settings: &[
+                setting(crate::graphics_boot::INTERFACE_SIZE, Chilpa::mark("Interface size"), Chilpa::mark("Scales the whole interface, like browser zoom. Small fits more content on screen, Large and Extra large improve readability (requires restart)"), Control::Select),
+                setting(crate::graphics_boot::RENDERER, Chilpa::mark("Rendering backend"), Chilpa::mark("Auto picks the best renderer for your graphics hardware. Only change this if the app feels slow or renders incorrectly (requires restart)"), Control::Select),
+                setting(crate::graphics_boot::gpu::GPU, Chilpa::mark("Preferred GPU"), Chilpa::mark("Which GPU renders the app. Only the GPUs actually present are listed. Choosing one other than the default also switches the renderer to Vulkan — the only backend Qt can select a GPU on (requires restart)"), Control::Select),
             ],
         }],
     },
@@ -429,5 +429,13 @@ mod tests {
     #[test]
     fn an_unknown_section_opens_the_first() {
         assert_eq!(section("nowhere").id, "audio");
+    }
+
+    #[test]
+    fn appearance_renderer_controls_follow_all_other_settings() {
+        let groups = section("appearance").groups;
+        assert_eq!(groups.last().unwrap().title, "Renderer");
+        let keys: Vec<&str> = groups.last().unwrap().settings.iter().map(|setting| setting.key).collect();
+        assert_eq!(keys, [crate::graphics_boot::INTERFACE_SIZE, crate::graphics_boot::RENDERER, crate::graphics_boot::gpu::GPU]);
     }
 }

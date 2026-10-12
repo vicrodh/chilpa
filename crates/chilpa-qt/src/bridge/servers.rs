@@ -1,13 +1,11 @@
 //! Adding and removing my servers (ADR-017). Every step is the facade's;
 //! this carries it to the dialog as JSON and back.
-
 #[cxx_qt::bridge]
 pub mod qobject {
     unsafe extern "C++" {
         include!("cxx-qt-lib/qstring.h");
         type QString = cxx_qt_lib::QString;
     }
-
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -41,19 +39,21 @@ pub mod qobject {
         fn remove(self: Pin<&mut Servers>, id: i64) -> bool;
     }
 }
-
 use crate::{app, registry};
 use cxx_qt_lib::QString;
 use std::pin::Pin;
-
 #[derive(Default)]
 pub struct ServersRust {
     setup: QString,
 }
-
 impl qobject::Servers {
     pub fn begin(self: Pin<&mut Self>, kind: &QString) {
-        app::with(|api| api.setup_server(&kind.to_string()));
+        let kind = kind.to_string();
+        app::with(|api| {
+            if let Some(id) = kind.strip_prefix("edit/").and_then(|id| id.parse().ok()) { api.setup_edit_server(id); }
+            else if kind == "reauth" { api.setup_reauthenticate(); }
+            else { api.setup_server(&kind); }
+        });
         self.refresh();
     }
     pub fn address(self: Pin<&mut Self>, text: &QString) {
@@ -73,8 +73,12 @@ impl qobject::Servers {
         self.refresh();
     }
     pub fn finish(self: Pin<&mut Self>, chosen: &QString) -> bool {
-        let chosen: Vec<String> = serde_json::from_str(&chosen.to_string()).unwrap_or_default();
-        let added = app::with(|api| api.setup_finish(&chosen));
+        let value: serde_json::Value = serde_json::from_str(&chosen.to_string()).unwrap_or_default();
+        let libraries: Vec<String> = serde_json::from_value(value.get("libraries").cloned().unwrap_or_else(|| value.clone())).unwrap_or_default();
+        let added = app::with(|api| {
+            if let Some(label) = value.get("label").and_then(|v| v.as_str()) { api.setup_label(label); }
+            api.setup_finish(&libraries)
+        });
         self.refresh();
         added
     }

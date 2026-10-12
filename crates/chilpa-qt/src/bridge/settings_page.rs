@@ -1,5 +1,4 @@
 //! Draws the facade's Settings rows and routes changes to their owners.
-
 #[cxx_qt::bridge]
 pub mod qobject {
     unsafe extern "C++" {
@@ -16,7 +15,6 @@ pub mod qobject {
         include!("cxx-qt-lib/qvector.h");
         type QVector_i32 = cxx_qt_lib::QVector<i32>;
     }
-
     #[auto_cxx_name]
     extern "RustQt" {
         #[qobject]
@@ -27,21 +25,17 @@ pub mod qobject {
         /// True when the section has nothing built yet.
         #[qproperty(bool, pending)]
         type SettingsPage = super::SettingsPageRust;
-
         /// Changes a setting to one of its option values ("true", "dark",
         /// an output's id).
         #[qinvokable]
         fn set(self: Pin<&mut SettingsPage>, key: &QString, value: &QString);
-
         /// Presses a setting's button or link.
         #[qinvokable]
         fn press(self: Pin<&mut SettingsPage>, key: &QString);
-
         #[qinvokable]
         fn diagnosis_requires_stop(self: &SettingsPage) -> bool;
         #[qinvokable]
         fn stop_for_diagnosis(self: &SettingsPage);
-
         /// Reads the rows again: a sync moving, a server coming back.
         #[qinvokable]
         fn refresh(self: Pin<&mut SettingsPage>);
@@ -50,7 +44,6 @@ pub mod qobject {
         #[qinvokable]
         fn plugin_command(self: &SettingsPage, action: &QString, input: &QString);
     }
-
     unsafe extern "RustQt" {
         #[inherit]
         #[cxx_name = "beginResetModel"]
@@ -65,7 +58,6 @@ pub mod qobject {
         #[inherit]
         fn index(self: &SettingsPage, row: i32, column: i32, parent: &QModelIndex) -> QModelIndex;
     }
-
     unsafe extern "RustQt" {
         #[qinvokable]
         #[cxx_override]
@@ -184,7 +176,9 @@ impl qobject::SettingsPage {
             return;
         }
         if let (Some(id), "enable" | "disable") = (key.strip_prefix("sources.server/").and_then(|id| id.parse().ok()), value.as_str()) {
-            app::with(|api| { api.set_server_enabled(id, value == "enable"); });
+            if app::with(|api| api.set_server_enabled(id, value == "enable")) {
+                registry::library(|l| l.content_changed());
+            }
             self.reload();
             return;
         }

@@ -12,12 +12,10 @@ import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
-
 // Settings rows follow the facade schema.
 Item {
     id: page
     property Component purchaseCard: null
-
     readonly property string section: Navigation.section !== "" ? Navigation.section : SettingsModel.sections[0]
     // Open, reveal and briefly highlight a search result.
     property string focusKey: ""
@@ -53,12 +51,10 @@ Item {
             }
         }
     }
-
     SettingsPage {
         id: rows
         section: page.section
     }
-
     Text {
         id: title
         x: Metrics.contentX
@@ -69,7 +65,6 @@ Item {
         font.letterSpacing: Type.titleTracking
         color: Theme.color.textPrimary
     }
-
     Kit.SearchField {
         id: search
         objectName: "settingsSearch"
@@ -81,17 +76,14 @@ Item {
         onStepped: (by) => found.step(by)
         onAccepted: found.choose()
     }
-
     Column {
         id: nav
         x: Metrics.contentX
         anchors.top: search.bottom
         anchors.topMargin: Metrics.gap12
         width: Metrics.settingsNav
-
         Repeater {
             model: SettingsModel.sections
-
             NavItem {
                 required property int index
                 required property string modelData
@@ -104,7 +96,6 @@ Item {
         }
         PluginSettingsNavigation { width: nav.width }
     }
-
     // The settings that say what was typed, as the facade orders them:
     // each with where it lives, and a click, or Enter on the one marked,
     // goes there.
@@ -141,7 +132,6 @@ Item {
         model: matches
         spacing: Metrics.gap2
         ScrollBar.vertical: ViewportScrollBar {}
-
         delegate: Rectangle {
             required property var modelData
             required property int index
@@ -163,7 +153,6 @@ Item {
             HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
             TapHandler { onTapped: found.chosen(modelData) }
         }
-
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
             visible: found.count === 0
@@ -172,7 +161,6 @@ Item {
             color: Theme.color.textTertiary
         }
     }
-
     ListView {
         id: list
         visible: page.section !== "plugins" && search.text === ""
@@ -189,7 +177,6 @@ Item {
         bottomMargin: Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
-
         delegate: SettingsRow {
             width: ListView.view.width - Metrics.gap12
             page: actions
@@ -228,12 +215,11 @@ Item {
     // opens its dialog, removing one says first what it takes (ADR-017).
     QtObject {
         id: actions
+        property string editingServerKey: ""
         function set(key, value) {
-            if (key.startsWith("sources.server/") && value === "remove") {
-                removing.serverId = Number(key.split("/")[1])
-                removing.message = Servers.removal(removing.serverId)
-                return removing.open()
-            }
+            if (key.startsWith("sources.server/") && value === "edit") { Servers.begin("edit/" + key.split("/")[1]); editingServerKey = key; return }
+            if (key.startsWith("sources.server/") && value === "close-edit") { Servers.cancel(); editingServerKey = ""; rows.refresh(); return }
+            if (key.startsWith("sources.server/") && value === "remove") { removing.serverId = Number(key.split("/")[1]); removing.message = Servers.removal(removing.serverId); return removing.open() }
             rows.set(key, value)
         }
         function press(key) {
@@ -269,7 +255,7 @@ Item {
     Timer {
         interval: Motion.refresh
         repeat: true
-        running: page.visible && page.section === "sources"
+        running: page.visible && page.section === "sources" && actions.editingServerKey === ""
         onTriggered: { rows.refresh(); Sources.refresh() }
     }
 

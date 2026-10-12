@@ -620,6 +620,9 @@ msgstr "Cambiar carátula"
 msgid "Change image"
 msgstr "Cambiar imagen"
 
+msgid "Change sign-in"
+msgstr "Cambiar acceso"
+
 msgid "Chapters"
 msgstr "Capítulos"
 
@@ -1249,6 +1252,9 @@ msgstr "Editar metadatos…"
 
 msgid "Edit playlist"
 msgstr "Editar playlist"
+
+msgid "Edit…"
+msgstr "Editar…"
 
 msgid "Embedded tags only"
 msgstr "Solo tags incrustados"
@@ -3131,6 +3137,9 @@ msgstr "Guardar como playlist"
 msgid "Save as…"
 msgstr "Guardar como…"
 
+msgid "Save changes"
+msgstr "Guardar cambios"
+
 msgid "Save stations to find them here."
 msgstr "Guarda estaciones para encontrarlas aquí."
 
@@ -3297,6 +3306,12 @@ msgstr "septiembre"
 
 msgid "Server added"
 msgstr "Servidor agregado"
+
+msgid "Server address"
+msgstr "Dirección del servidor"
+
+msgid "Server name"
+msgstr "Nombre del servidor"
 
 msgid "Servers"
 msgstr "Servidores"
@@ -3660,6 +3675,9 @@ msgstr "El receptor rechazó la orden."
 msgid "The same rule as ListenBrainz: half of a track, or four minutes."
 msgstr "La misma regla que ListenBrainz: la mitad de una pista, o cuatro minutos."
 
+msgid "The saved sign-in could not be opened."
+msgstr "No se pudo abrir el acceso guardado."
+
 msgid "The selected hardware volume control is gone."
 msgstr "El control de volumen de hardware elegido ya no está disponible."
 
@@ -3686,6 +3704,9 @@ msgstr "La vista con la que abre el mini reproductor. Recordar conserva la últi
 
 msgid "Theme"
 msgstr "Tema"
+
+msgid "This address belongs to a different server."
+msgstr "Esta dirección pertenece a otro servidor."
 
 msgid "This can take a few minutes when MusicBrainz is busy."
 msgstr "Esto puede tardar unos minutos si MusicBrainz está ocupado."
@@ -3761,6 +3782,9 @@ msgstr "Esta pantalla todavía no está hecha."
 
 msgid "This section is not built yet."
 msgstr "Esta sección todavía no está hecha."
+
+msgid "This server is no longer available."
+msgstr "Este servidor ya no está disponible."
 
 msgid "This source cannot accept these tracks right now."
 msgstr "Esta fuente no puede aceptar estas pistas en este momento."

@@ -25,6 +25,9 @@ pub struct ServerSetup {
     /// The provider being added: `subsonic`, `jellyfin`, `plex`.
     pub kind: String,
     pub address: String,
+    pub label: String,
+    pub editing: bool,
+    pub selected_libraries: Vec<String>,
     /// What the server said it is.
     pub product: String,
     /// OpenSubsonic: it takes an API key instead of a password.
@@ -80,6 +83,7 @@ struct Signed {
 #[derive(Default)]
 pub(crate) struct Setup {
     pub(crate) view: ServerSetup,
+    pub(crate) edit_id: Option<i64>,
     kind: Option<Kind>,
     instance: String,
     label: String,
@@ -133,6 +137,46 @@ impl Setup {
         }
     }
 
+    /// I reuse the original source and sealed credential while I change its
+    /// connection. I replace nothing in the library until Finish succeeds.
+    pub(crate) fn begin_edit(&mut self, stored: &chilpa_library::StoredServer, key: Credential) {
+        let Some(kind) = Kind::from_provider(&stored.provider) else { return };
+        self.cancel();
+        self.kind = Some(kind);
+        self.edit_id = Some(stored.source_id);
+        self.instance = stored.instance.clone();
+        self.label = stored.label.clone();
+        self.signed = Some(Signed {
+            key,
+            account: stored.account.clone(),
+            identity: stored.identity.clone(),
+            product: stored.product.clone(),
+            details: serde_json::from_str(&stored.details).unwrap_or_default(),
+        });
+        self.view = ServerSetup {
+            step: "address".into(), kind: stored.provider.clone(), address: stored.address.clone(),
+            label: stored.label.clone(), product: stored.product.clone(), editing: true,
+            selected_libraries: serde_json::from_str(&stored.libraries).unwrap_or_default(),
+            ..ServerSetup::default()
+        };
+    }
+
+    pub(crate) fn reauthenticate(&mut self) {
+        let Some(kind) = self.kind else { return };
+        self.signed = None;
+        self.view.error.clear();
+        if kind == Kind::Plex {
+            self.view.step = "code".into();
+            self.view.link = plex::LINK.into();
+            let who = client(&self.instance);
+            self.run(move || Outcome::Pin(plex::pin_start(&Network, &who)));
+        }
+    }
+
+    pub(crate) fn label(&mut self, label: &str) {
+        self.label = label.trim().to_string();
+    }
+
     pub(crate) fn cancel(&mut self) {
         self.generation += 1;
         *self = Setup { generation: self.generation, ..Setup::default() };
@@ -147,6 +191,10 @@ impl Setup {
             Err(f) => return self.fail(f),
         };
         self.view.address = address.clone();
+        if kind == Kind::Plex {
+            self.libraries();
+            return;
+        }
         self.run(move || {
             Outcome::Probed(match kind {
                 Kind::Subsonic => subsonic::probe(&Network, &address),
@@ -311,12 +359,18 @@ impl Setup {
     fn take(&mut self, outcome: Outcome) {
         match outcome {
             Outcome::Probed(Ok(probe)) => {
+                if self.edit_id.is_some() && self.signed.as_ref().is_some_and(|signed| {
+                    !signed.identity.is_empty() && !probe.identity.is_empty() && signed.identity != probe.identity
+                }) {
+                    return self.fail(Failure::Unexpected(chilpa_i18n::t("This address belongs to a different server.")));
+                }
                 self.view.product = probe.product.clone();
                 self.view.api_key = probe.api_key;
                 self.view.quick_connect = probe.quick_connect;
-                self.label = probe.name.clone();
+                if self.edit_id.is_none() || self.label.is_empty() { self.label = probe.name.clone(); }
                 self.probe = probe;
-                self.view.step = "signin".into();
+                if self.edit_id.is_some() && self.signed.is_some() { self.libraries(); }
+                else { self.view.step = "signin".into(); }
             }
             Outcome::Signed(Ok(signed)) => {
                 if !signed.product.is_empty() {
@@ -390,6 +444,11 @@ impl Setup {
                 }
                 self.view.choices = found.into_iter().map(|l| (l.id, l.name, String::new())).collect();
                 self.view.step = "libraries".into();
+            }
+            Outcome::Libraries(Err(f)) if self.edit_id.is_some() && self.signed.is_some() => {
+                self.signed = None;
+                self.view.step = if self.kind == Some(Kind::Plex) { "address" } else { "signin" }.into();
+                self.fail(f);
             }
             Outcome::Probed(Err(f))
             | Outcome::Signed(Err(f))

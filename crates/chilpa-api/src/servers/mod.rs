@@ -188,9 +188,10 @@ impl Chilpa {
                 description,
                 control: "status".into(),
                 action,
-                values: if server.enabled { vec!["disable".into(), "sync".into(), "remove".into()] } else { vec!["enable".into(), "remove".into()] },
-                options: if server.enabled { vec![chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
-                    else { vec![chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] },
+                values: if server.enabled { vec!["edit".into(), "disable".into(), "sync".into(), "remove".into()] }
+                    else { vec!["edit".into(), "enable".into(), "remove".into()] },
+                options: if server.enabled { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Disable"), chilpa_i18n::t("Sync now"), chilpa_i18n::t("Remove…")] }
+                    else { vec![chilpa_i18n::t("Edit…"), chilpa_i18n::t("Enable"), chilpa_i18n::t("Remove…")] },
                 ..Default::default()
             });
         }
@@ -216,6 +217,7 @@ impl Chilpa {
         let v = &self.servers.setup.view;
         serde_json::json!({
             "step": v.step, "kind": v.kind, "address": v.address, "product": v.product,
+            "label": v.label, "editing": v.editing, "selectedLibraries": v.selected_libraries,
             "apiKey": v.api_key, "quickConnect": v.quick_connect, "code": v.code, "link": v.link,
             "choices": v.choices.iter().map(|(id, name, detail)| serde_json::json!({"id": id, "name": name, "detail": detail})).collect::<Vec<_>>(),
             "busy": v.busy, "error": v.error,
@@ -226,6 +228,23 @@ impl Chilpa {
     pub fn setup_server(&mut self, provider: &str) {
         self.servers.setup.begin(provider);
     }
+
+    pub fn setup_edit_server(&mut self, id: i64) {
+        self.servers.setup.cancel();
+        let Some(stored) = self.library().and_then(|lib| lib.server(id).ok().flatten()) else {
+            self.servers.setup.failed(chilpa_i18n::t("This server is no longer available."));
+            return;
+        };
+        let Some(key) = self.servers.keys.as_ref().and_then(|keys| keys.get(&stored.instance)) else {
+            self.servers.setup.failed(chilpa_i18n::t("The saved sign-in could not be opened."));
+            return;
+        };
+        self.servers.setup.begin_edit(&stored, key);
+    }
+
+    pub fn setup_reauthenticate(&mut self) { self.servers.setup.reauthenticate(); }
+
+    pub fn setup_label(&mut self, label: &str) { self.servers.setup.label(label); }
 
     pub fn setup_address(&mut self, address: &str) {
         self.servers.setup.address(address);
@@ -260,10 +279,38 @@ impl Chilpa {
             self.servers.setup.failed(chilpa_i18n::t("servers are not started"));
             return false;
         };
+        let edit_id = self.servers.setup.edit_id;
         let Some(lib) = self.library() else { return false };
-        if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some() {
+        if lib.server_with_identity(ready.kind.provider(), &ready.identity).ok().flatten().is_some_and(|id| Some(id) != edit_id) {
             self.servers.setup.failed(chilpa_i18n::t("that server is already in the library"));
             return false;
+        }
+        let new = chilpa_library::NewServer {
+            provider: ready.kind.provider().into(), instance: ready.instance.clone(), label: ready.label.clone(),
+            icon: ready.kind.icon(&ready.product).into(), address: ready.address.clone(), account: ready.account.clone(),
+            identity: ready.identity.clone(), product: ready.product.clone(),
+            libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
+            details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
+        };
+        if let Some(id) = edit_id {
+            let old_key = keys.get(&ready.instance);
+            if !keys.put(&ready.instance, &ready.key) {
+                self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
+                return false;
+            }
+            if lib.edit_server(id, &new).is_err() {
+                if let Some(key) = old_key { keys.put(&ready.instance, &key); }
+                self.servers.setup.failed(chilpa_i18n::t("the library could not be written"));
+                return false;
+            }
+            if let Some(syncer) = self.servers.syncer.as_mut() { syncer.cancel(id); }
+            if let Some(watcher) = &self.servers.watcher { watcher.ask(); }
+            self.servers.errors.remove(&id);
+            self.servers.refused.remove(&id);
+            self.servers.changed = true;
+            self.servers.setup.done(&ready.label);
+            self.sync_server(id);
+            return true;
         }
         // The credential first: a server whose key could not be kept would
         // not sign in again after a restart.
@@ -271,18 +318,7 @@ impl Chilpa {
             self.servers.setup.failed(chilpa_i18n::t("the credential could not be kept safely on this system"));
             return false;
         }
-        let added = lib.add_server(&chilpa_library::NewServer {
-            provider: ready.kind.provider().into(),
-            instance: ready.instance.clone(),
-            label: ready.label.clone(),
-            icon: ready.kind.icon(&ready.product).into(),
-            address: ready.address.clone(),
-            account: ready.account.clone(),
-            identity: ready.identity.clone(),
-            product: ready.product.clone(),
-            libraries: serde_json::to_string(&ready.libraries).unwrap_or_else(|_| "[]".into()),
-            details: serde_json::to_string(&ready.details).unwrap_or_else(|_| "{}".into()),
-        });
+        let added = lib.add_server(&new);
         match added {
             Ok(id) => {
                 self.servers.setup.done(&ready.label);

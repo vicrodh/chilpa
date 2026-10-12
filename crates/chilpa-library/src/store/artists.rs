@@ -73,11 +73,19 @@ impl Library {
                  FROM albums a
                  JOIN album_rollup r ON r.album_id = a.id AND r.present_tracks > 0
                  LEFT JOIN credit_parts p ON p.credit = trim(a.album_artist)
-                 WHERE trim(a.album_artist) <> ''")
+                 WHERE trim(a.album_artist) <> ''
+                   AND EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                               WHERE t.album_id = a.id AND t.present = 1)")
             }
             ArtistRole::Any => {
                 concat!("SELECT m.album_id, m.artist, m.tracks, ", album_art!("a"), ", a.album_artist
-                 FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id")
+                 FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id
+                 WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                               WHERE t.album_id = a.id AND t.present = 1
+                                 AND (t.artist = m.artist COLLATE NOCASE OR t.album_credit = m.artist COLLATE NOCASE
+                                      OR a.album_artist = m.artist COLLATE NOCASE
+                                      OR EXISTS (SELECT 1 FROM credit_parts p WHERE p.name = m.artist
+                                                 AND p.credit IN (trim(t.artist), trim(t.album_credit), trim(a.album_artist)))))")
             }
         };
         let mut found: BTreeMap<String, Entry> = BTreeMap::new();

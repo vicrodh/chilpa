@@ -2,16 +2,11 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
+import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
-
-// One row of Settings (design/03 SettingsRow): a group's title, a setting
-// with its control on the right, or a line of a report under one. The
-// control comes from the setting's kind in the schema; no setting has QML
-// of its own (frontend ADR-0010).
 Item {
     id: row
-
     required property int rowKind
     required property string key
     required property string title
@@ -22,20 +17,13 @@ Item {
     required property var options
     required property var optionValues
     required property var marks
-
-    // The page, or what stands in front of it to add a step (SettingsScreen).
     property var page
-
-    // A group's title, or a line of a report under a setting.
     readonly property bool group: rowKind === 0
     readonly property bool line: rowKind === 2
-
-    // "fixed": what the output allows, shown and not changeable; the whole
-    // row dims and the description says why (design/03 SettingsRow).
+    readonly property bool editingServer: page && page.editingServerKey === key && key.startsWith("sources.server/")
+    readonly property real baseHeight: group ? Metrics.settingsGroup : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
     opacity: control === "fixed" ? Metrics.disabledOpacity : 1
-    implicitHeight: group ? Metrics.settingsGroup
-        : Math.max(line ? Metrics.menuItem : Metrics.settingsRow, texts.implicitHeight + Metrics.gap12)
-
+    implicitHeight: baseHeight + (editingServer ? editor.implicitHeight + Metrics.gap12 : 0)
     Text {
         visible: row.group
         anchors.bottom: parent.bottom
@@ -46,7 +34,6 @@ Item {
         font.letterSpacing: Type.labelTracking
         color: Theme.color.textTertiary
     }
-
     Column {
         id: texts
         visible: !row.group
@@ -54,9 +41,8 @@ Item {
         anchors.leftMargin: row.line ? Metrics.gap16 : 0
         anchors.right: controls.left
         anchors.rightMargin: Metrics.gap16
-        anchors.verticalCenter: parent.verticalCenter
+        y: (row.baseHeight - height) / 2
         spacing: Metrics.gap2
-
         Text {
             width: parent.width
             text: row.title
@@ -74,13 +60,12 @@ Item {
             color: Theme.color.textSecondary
         }
     }
-
     // Only the row's own control is built.
     Loader {
         id: controls
         visible: !row.group
         anchors.right: parent.right
-        anchors.verticalCenter: parent.verticalCenter
+        y: (row.baseHeight - height) / 2
         sourceComponent: row.line ? verdict
             : row.control === "toggle" || (row.control === "fixed" && row.options.length === 0) ? toggle
             : row.control === "select" || row.control === "device" || row.control === "fixed" ? select
@@ -95,6 +80,9 @@ Item {
             : row.control === "file" ? file
             : null
     }
+
+    Loader { id: editor; active: row.editingServer; width: parent.width; y: row.baseHeight + Metrics.gap12
+        sourceComponent: ServerEditForm { onClosed: row.page.set(row.key, "close-edit") } }
 
     Component {
         id: toggle
@@ -211,12 +199,8 @@ Item {
             onCleared: row.page.set(row.key, "")
         }
     }
-    Component {
-        id: verdict
-        Text {
-            text: row.value
-            font.pointSize: Type.row
-            color: row.value === "bit-perfect" ? Theme.color.accent : Theme.color.textSecondary
-        }
-    }
+    Component { id: verdict; Text {
+        text: row.value; font.pointSize: Type.row
+        color: row.value === "bit-perfect" ? Theme.color.accent : Theme.color.textSecondary
+    } }
 }

@@ -197,6 +197,18 @@ impl Library {
         tx.finish()
     }
 
+    /// I change a connection in place and retain its source, catalogue and
+    /// playlist references. I prove reachability again after the edit.
+    pub fn edit_server(&self, source_id: i64, new: &NewServer) -> rusqlite::Result<()> {
+        let tx = self.own_transaction()?;
+        tx.execute("UPDATE sources SET label = ?2, icon = ?3, reachable = 0 WHERE id = ?1 AND kind = 'server'",
+            params![source_id, new.label, new.icon])?;
+        tx.execute("UPDATE servers SET address = ?2, account = ?3, identity = ?4, product = ?5, libraries = ?6, details = ?7 WHERE source_id = ?1",
+            params![source_id, new.address, new.account, new.identity, new.product, new.libraries, new.details])?;
+        tx.execute("UPDATE tracks SET reachable = 0 WHERE source_id = ?1", params![source_id])?;
+        tx.finish()
+    }
+
     /// Starts a sync and returns its generation. Every track the sync sees
     /// is stamped with it; when the sync finishes, what was not stamped is
     /// what the server no longer has.

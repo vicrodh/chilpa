@@ -483,7 +483,7 @@ impl Library {
              FROM (SELECT rowid FROM track_search WHERE track_search MATCH ?1 LIMIT ?3) s
              JOIN tracks t ON t.id = s.rowid
              LEFT JOIN albums a ON a.id = t.album_id
-             WHERE t.present = 1
+             WHERE t.present = 1 AND t.source_id IN (SELECT id FROM sources WHERE enabled = 1)
              ORDER BY t.artist COLLATE NOCASE, t.title COLLATE NOCASE
              LIMIT ?2",
         )?;

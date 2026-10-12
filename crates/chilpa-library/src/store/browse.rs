@@ -311,7 +311,9 @@ fn row(r: &rusqlite::Row<'_>) -> rusqlite::Result<BrowseTrack> {
 /// The albums with something present, for the facets that only need album
 /// columns: counting over `album_rollup` walks thousands of albums instead
 /// of every track.
-const ALBUMS: &str = "FROM albums a JOIN album_rollup ar ON ar.album_id = a.id WHERE ar.present_tracks > 0";
+const ALBUMS: &str = "FROM albums a JOIN album_rollup ar ON ar.album_id = a.id WHERE ar.present_tracks > 0
+    AND EXISTS (SELECT 1 FROM tracks member JOIN sources visible ON visible.id = member.source_id
+                WHERE member.album_id = a.id AND member.present = 1 AND visible.enabled = 1)";
 
 const FROM: &str = "FROM tracks t
      JOIN albums a ON a.id = t.album_id
@@ -319,7 +321,7 @@ const FROM: &str = "FROM tracks t
 
 /// The `WHERE` a filter makes, and its parameters in order.
 fn clause(f: &Filter) -> (String, Vec<Box<dyn ToSql>>) {
-    let mut sql = String::from("WHERE t.present = 1");
+    let mut sql = String::from("WHERE t.present = 1 AND t.source_id IN (SELECT id FROM sources WHERE enabled = 1)");
     let mut args: Vec<Box<dyn ToSql>> = Vec::new();
     for (column, query) in f.queries.iter().enumerate() {
         if query.trim().is_empty() { continue; }
@@ -430,7 +432,7 @@ impl Library {
     pub fn facet_sources(&self) -> rusqlite::Result<Vec<FacetEntry>> {
         let mut stmt = self.db.prepare(
             "SELECT s.provider, s.instance, count(*), s.label, s.icon FROM tracks t JOIN sources s ON s.id = t.source_id
-             WHERE t.present = 1 GROUP BY s.id ORDER BY s.provider COLLATE NOCASE, s.instance COLLATE NOCASE",
+             WHERE t.present = 1 AND s.enabled = 1 GROUP BY s.id ORDER BY s.provider COLLATE NOCASE, s.instance COLLATE NOCASE",
         )?;
         let rows = stmt.query_map([], |r| {
             let provider: String = r.get(0)?;
@@ -555,8 +557,11 @@ impl Library {
         left.album = None;
         left.albums.clear();
         if left == Filter::default() {
-            return self.named_facet("SELECT min(artist), count(album_id)
-                FROM album_artist_rollup GROUP BY artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE", Vec::new());
+            return self.named_facet("SELECT min(m.artist), count(m.album_id)
+                FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id
+                WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id
+                              WHERE t.album_id = a.id AND t.present = 1 AND s.enabled = 1)
+                GROUP BY m.artist COLLATE NOCASE ORDER BY 1 COLLATE NOCASE", Vec::new());
         }
         let albums: Vec<i64> = self.facet_albums(&left)?.iter().filter_map(|a| a.key.parse().ok()).collect();
         if albums.is_empty() { return Ok(Vec::new()); }

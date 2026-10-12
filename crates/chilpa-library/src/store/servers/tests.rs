@@ -48,6 +48,56 @@ fn synced(lib: &Library, source: i64, tracks: &[ServerTrack]) -> usize {
 }
 
 #[test]
+fn disabling_a_server_hides_its_library_entries_but_keeps_playlist_entries() {
+    let lib = Library::in_memory().unwrap();
+    let server = lib.add_server(&new_server("aaaa", "server-id-1")).unwrap();
+    synced(&lib, server, &[track("one", "One")]);
+    let track_id: i64 = lib.db.query_row("SELECT id FROM tracks WHERE source_id = ?1", [server], |r| r.get(0)).unwrap();
+    let playlist = lib.create_playlist(lib.source_id("local", "default").unwrap(), "Saved", "saved").unwrap();
+    lib.set_playlist_entries(playlist, &[PlaylistEntry {
+        track_id: Some(track_id), source_id: Some(server), external_id: "one".into(),
+    }]).unwrap();
+
+    assert_eq!(lib.album_ids(crate::AlbumSort::Title).unwrap().len(), 1);
+    assert_eq!(lib.browse_ids(&crate::Filter::default(), crate::TrackOrder::default()).unwrap().ids, [track_id]);
+    assert_eq!(lib.artists_by_role(crate::ArtistRole::Any).unwrap().len(), 1);
+    assert!(lib.set_server_enabled(server, false).unwrap());
+    assert!(lib.album_ids(crate::AlbumSort::Title).unwrap().is_empty());
+    assert!(lib.browse_ids(&crate::Filter::default(), crate::TrackOrder::default()).unwrap().ids.is_empty());
+    assert!(lib.artists_by_role(crate::ArtistRole::Any).unwrap().is_empty());
+    assert!(lib.find("song", 10).unwrap().tracks.is_empty());
+    assert_eq!(lib.playlist_entries(playlist).unwrap().len(), 1);
+    assert!(!lib.tracks_by_ids(&[track_id]).unwrap()[0].available);
+
+    assert!(lib.set_server_enabled(server, true).unwrap());
+    assert_eq!(lib.album_ids(crate::AlbumSort::Title).unwrap().len(), 1);
+    lib.remove_source(server).unwrap();
+    assert!(lib.playlist_entries(playlist).unwrap().is_empty());
+}
+
+#[test]
+fn editing_a_server_keeps_its_source_and_playlist_references() {
+    let lib = Library::in_memory().unwrap();
+    let server = lib.add_server(&new_server("aaaa", "server-id-1")).unwrap();
+    synced(&lib, server, &[track("one", "One")]);
+    let track_id: i64 = lib.db.query_row("SELECT id FROM tracks WHERE source_id = ?1", [server], |r| r.get(0)).unwrap();
+    let playlist = lib.create_playlist(lib.source_id("local", "default").unwrap(), "Saved", "saved").unwrap();
+    lib.set_playlist_entries(playlist, &[PlaylistEntry {
+        track_id: Some(track_id), source_id: Some(server), external_id: "one".into(),
+    }]).unwrap();
+
+    let mut changed = new_server("aaaa", "server-id-1");
+    changed.label = "Renamed".into();
+    changed.address = "https://music.example.test".into();
+    changed.account = "another-user".into();
+    lib.edit_server(server, &changed).unwrap();
+    let stored = lib.server(server).unwrap().unwrap();
+    assert_eq!((&stored.label, &stored.address, &stored.account), (&changed.label, &changed.address, &changed.account));
+    assert_eq!(lib.playlist_entries(playlist).unwrap()[0].track_id, Some(track_id));
+    assert!(!lib.tracks_by_ids(&[track_id]).unwrap()[0].available);
+}
+
+#[test]
 fn a_server_is_a_source_of_the_library_with_its_own_settings() {
     let lib = Library::in_memory().unwrap();
     let source = lib.add_server(&new_server("aaaa", "server-id-1")).unwrap();

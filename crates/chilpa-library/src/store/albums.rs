@@ -144,6 +144,7 @@ impl Library {
             concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
              FROM albums a
              JOIN tracks t ON t.album_id = a.id AND t.present = 1
+             JOIN sources s ON s.id = t.source_id AND s.enabled = 1
              GROUP BY a.id
              ORDER BY a.album_artist COLLATE NOCASE, a.year, a.title COLLATE NOCASE
              LIMIT ?1 OFFSET ?2"),
@@ -205,6 +206,7 @@ impl Library {
              WHERE a.album_artist <> ?1 COLLATE NOCASE
                AND NOT EXISTS (SELECT 1 FROM credit_parts p WHERE p.credit = trim(a.album_artist) AND p.name = ?1)
                AND EXISTS (SELECT 1 FROM tracks t
+                           JOIN sources s ON s.id = t.source_id AND s.enabled = 1
                            WHERE t.album_id = a.id AND t.present = 1 AND
                            (t.artist = ?1 COLLATE NOCASE OR t.album_credit = ?1 COLLATE NOCASE
                             OR EXISTS (SELECT 1 FROM credit_parts p
@@ -247,7 +249,9 @@ impl Library {
                  SELECT a.id AS id
                  FROM albums a
                  JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
-                 WHERE (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE
+                 WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                               WHERE t.album_id = a.id AND t.present = 1)
+                   AND (?3 IS NULL OR a.album_artist = ?3 COLLATE NOCASE
                         OR EXISTS (SELECT 1 FROM credit_parts p WHERE p.credit = trim(a.album_artist) AND p.name = ?3))
                  ORDER BY {}
                  LIMIT ?1 OFFSET ?2
@@ -286,6 +290,8 @@ impl Library {
         let sql = format!(
             "SELECT a.id FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
+             WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                           WHERE t.album_id = a.id AND t.present = 1)
              ORDER BY {}",
             order.order_by()
         );
@@ -307,7 +313,8 @@ impl Library {
         let sql = format!(
             "SELECT a.id FROM albums a
              JOIN album_rollup r ON r.album_id = a.id AND likely(r.present_tracks > 0)
-             WHERE 1 {clause}
+             WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                           WHERE t.album_id = a.id AND t.present = 1) {clause}
              ORDER BY {}",
             order.order_by()
         );
@@ -327,7 +334,9 @@ impl Library {
         let sql = format!(
             concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", r.present_tracks, r.plays
              FROM albums a JOIN album_rollup r ON r.album_id = a.id
-             WHERE a.id IN ({marks})"),
+             WHERE a.id IN ({marks}) AND EXISTS
+               (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                WHERE t.album_id = a.id AND t.present = 1)"),
             marks = marks
         );
         let mut stmt = self.db.prepare(&sql)?;
@@ -404,6 +413,8 @@ impl Library {
         let mut stmt = self.db.prepare(
             concat!("SELECT min(m.artist), count(m.album_id), sum(m.tracks), max(", album_art!("a"), ")
              FROM album_artist_rollup m JOIN albums a ON a.id = m.album_id
+             WHERE EXISTS (SELECT 1 FROM tracks t JOIN sources s ON s.id = t.source_id AND s.enabled = 1
+                           WHERE t.album_id = a.id AND t.present = 1)
              GROUP BY m.artist COLLATE NOCASE
              ORDER BY m.artist COLLATE NOCASE
              LIMIT ?1 OFFSET ?2"),
@@ -427,6 +438,7 @@ impl Library {
                 concat!("SELECT a.id, a.title, a.album_artist, a.year, ", album_art!("a"), ", count(t.id)
                  FROM albums a
                  JOIN tracks t ON t.album_id = a.id AND t.present = 1
+                 JOIN sources s ON s.id = t.source_id AND s.enabled = 1
                  WHERE a.id = ?1
                  GROUP BY a.id"),
                 params![album_id],
@@ -460,7 +472,7 @@ impl Library {
         let mut stmt = self.db.prepare(
             "SELECT max(coalesce(disc_number, 1), 1), external_id, coalesce(release_artwork, ''), album_title,
                     coalesce(disc_subtitle, '')
-             FROM tracks WHERE album_id = ?1
+             FROM tracks WHERE album_id = ?1 AND source_id IN (SELECT id FROM sources WHERE enabled = 1)
              ORDER BY 1, present DESC, track_number, external_id",
         )?;
         let rows = stmt.query_map(params![album_id], |r| {
@@ -503,6 +515,7 @@ impl Library {
             "SELECT t.id, t.external_id, t.title, t.artist, COALESCE(a.title, ''),
                     t.track_number, t.duration_ms, (t.present = 1 AND t.reachable = 1)
              FROM tracks t LEFT JOIN albums a ON a.id = t.album_id
+             JOIN sources s ON s.id = t.source_id AND s.enabled = 1
              WHERE t.album_id = ?1
              ORDER BY coalesce(t.release_disc, t.disc_number), t.track_number, t.title COLLATE NOCASE",
         )?;
@@ -521,6 +534,7 @@ impl Library {
                     count(DISTINCT t.id), count(p.id)
              FROM albums a
              JOIN tracks t ON t.album_id = a.id
+             JOIN sources s ON s.id = t.source_id AND s.enabled = 1
              JOIN play_events p ON p.track_id = t.id
                   AND (p.duration_ms = 0 OR p.played_ms * 2 >= p.duration_ms)
              GROUP BY a.id
