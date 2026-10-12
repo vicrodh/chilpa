@@ -36,26 +36,48 @@ TestCase {
         compare(JSON.parse(ListenList.snapshot).active, "1")
         compare(Player.path, "/test.wav")
     }
-    function test_rename_is_committed_to_its_buffer_when_switching_tabs() {
-        ListenList.command("select", "1", "")
-        const field = descendants(page).find(item => item.placeholder === "Queue name")
-        field.focusInput()
-        keyClick(Qt.Key_R)
-        compare(field.text, "r")
+    function tab(title) { return descendants(page).find(item => item.title === title && item.renamable !== undefined) }
+    function test_a_queue_is_renamed_on_its_tab_by_its_pencil() {
         ListenList.command("select", "2", "")
-        compare(ListenList.renamedId, "1")
-        compare(ListenList.renamedText, "r")
+        const other = tab("Other · 2")
+        tryCompare(other, "active", true)
+        const pencil = findChild(other, "renameTab")
+        verify(pencil.visible, "the active tab has its pencil")
+        verify(!findChild(tab("Jazz · 3"), "renameTab").visible, "an inactive one has none")
+        waitForRendering(pencil)
+        mouseClick(pencil, pencil.width / 2, pencil.height / 2)
+        verify(other.editing, "one click on the pencil")
+        const field = findChild(other, "tabName")
         compare(field.text, "Other")
+        field.text = "Road trip"
+        keyClick(Qt.Key_Return)
+        compare(other.editing, false)
+        compare(ListenList.renamedId, "2")
+        compare(ListenList.renamedText, "Road trip")
     }
-    function test_save_commits_the_edited_name_first() {
+    function test_a_double_click_on_the_name_edits_it_and_escape_keeps_the_old_one() {
+        ListenList.renamedId = ""
+        const main = tab("Jazz · 3")
+        waitForRendering(main)
+        mouseDoubleClickSequence(main, main.width / 3, main.height / 2)
+        verify(main.editing, "a double click on the name")
+        keyClick(Qt.Key_X)
+        keyClick(Qt.Key_Escape)
+        compare(main.editing, false)
+        compare(ListenList.renamedId, "", "escape renames nothing")
+    }
+    function test_save_commits_the_name_being_edited_first() {
         ListenList.command("select", "2", "")
-        const field = descendants(page).find(item => item.placeholder === "Queue name")
-        field.focusInput()
-        keyClick(Qt.Key_S)
+        const other = tab("Other · 2")
+        other.rename()
+        findChild(other, "tabName").text = "Saved"
         descendants(page).find(item => item.text === "Save as playlist" && item.clicked).clicked()
         compare(ListenList.renamedId, "2")
-        compare(ListenList.renamedText, "s")
+        compare(ListenList.renamedText, "Saved")
         compare(ListenList.lastAction, "save")
+    }
+    function test_no_name_field_is_left_on_the_screen() {
+        verify(!descendants(page).some(item => item.placeholder === "Queue name"))
     }
     // The queue shows its stars, has the sleep timer, and says how long it
     // lasts and at what time it ends.

@@ -27,12 +27,15 @@ Item {
                 TabButton {
                     required property var modelData
                     title: modelData.name + " · " + modelData.count
+                    name: modelData.name
+                    renamable: true
                     glyph: modelData.playing ? Icons.waveSquare : Icons.listDetails
                     active: modelData.id === strip.document.selected
                     width: implicitWidth
                     height: implicitHeight
                     onActivated: ListenList.command("select", modelData.id, "")
                     onClosed: ListenList.command("close", modelData.id, "")
+                    onRenamed: (name) => ListenList.command("rename", modelData.id, name)
                 }
             }
         }

@@ -2603,9 +2603,6 @@ msgstr ""
 msgid "Queue is empty"
 msgstr ""
 
-msgid "Queue name"
-msgstr ""
-
 msgid "Queue options"
 msgstr ""
 
@@ -2778,6 +2775,9 @@ msgid "Remove this server?"
 msgstr ""
 
 msgid "Remove…"
+msgstr ""
+
+msgid "Rename"
 msgstr ""
 
 msgid "Renderer"

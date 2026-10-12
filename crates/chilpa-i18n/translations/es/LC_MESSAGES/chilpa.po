@@ -2603,9 +2603,6 @@ msgstr "Acciones de cola y playlist"
 msgid "Queue is empty"
 msgstr "La cola está vacía"
 
-msgid "Queue name"
-msgstr "Nombre de la queue"
-
 msgid "Queue options"
 msgstr "Opciones de cola"
 
@@ -2779,6 +2776,9 @@ msgstr "¿Quitar este servidor?"
 
 msgid "Remove…"
 msgstr "Quitar…"
+
+msgid "Rename"
+msgstr "Renombrar"
 
 msgid "Renderer"
 msgstr "Renderizado"
