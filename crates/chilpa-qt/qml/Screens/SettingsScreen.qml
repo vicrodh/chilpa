@@ -190,7 +190,7 @@ Item {
         model: rows
         bottomMargin: Metrics.contentBottom
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
+        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
 
         delegate: SettingsRow {
             width: ListView.view.width - Metrics.gap12

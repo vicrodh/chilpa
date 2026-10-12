@@ -69,7 +69,7 @@ Item {
         clip: true
         visible: !!page.document.title
         boundsBehavior: Flickable.StopAtBounds
-        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
+        ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         Column {
             id: body
             width: parent.width

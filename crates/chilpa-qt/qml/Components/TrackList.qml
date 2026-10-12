@@ -18,6 +18,9 @@ Item {
     property bool showPlays: false
     property bool showRating: true
     property bool header: true
+    // How far right of the rows the scrollbar sits: in the middle of the
+    // page's margin, unless the screen puts something there.
+    property real scrollGutter: Metrics.pageGutter
     // Grow with the rows instead of scrolling: a list inside a page that
     // scrolls as a whole.
     property bool fitContent: false
@@ -124,7 +127,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             policy: list.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
-            gutter: Metrics.scrollbarWidth / 2
+            gutter: list.scrollGutter
             viewportHovered: pointer.containsMouse
         }
 

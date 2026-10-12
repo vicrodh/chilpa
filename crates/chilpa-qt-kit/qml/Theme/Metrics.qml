@@ -123,6 +123,10 @@ QtObject {
     // The longest a scripted scroll test runs.
     readonly property int scrollTestSeconds: 15
     readonly property int scrollbarWidth: 10
+    // Where a page's scrollbar sits: the middle of the margin to the right
+    // of its content, off the rows and the cards (ArtistPage keeps its bar
+    // in that margin too).
+    readonly property real pageGutter: contentX / 2 // derived: the middle of a page's margin
     readonly property int scrollbarThumbMin: 64
 
     // Sidebar (02-layout.md 2).

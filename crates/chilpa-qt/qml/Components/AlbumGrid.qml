@@ -17,6 +17,9 @@ Item {
     Connections { target: grid.model; function onFreshChanged() { if (grid.model.fresh >= 0) grid.freshAt = Date.now() } }
     // Grow with the rows instead of scrolling, for a shelf inside a page.
     property bool fitContent: false
+    // How far right of the cards the scrollbar sits: in the middle of the
+    // page's margin.
+    property real scrollGutter: Metrics.pageGutter
     // Artists: round portraits, the name centered (design/03 ArtistCard).
     property bool round: false
     // Room below the last row, for what floats over the grid.
@@ -76,7 +79,7 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar {
             policy: grid.fitContent ? ScrollBar.AlwaysOff : ScrollBar.AsNeeded
-            gutter: Metrics.scrollbarWidth / 2
+            gutter: grid.scrollGutter
             viewportHovered: viewHover.hovered
         }
         HoverHandler { id: viewHover; acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad }

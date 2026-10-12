@@ -181,7 +181,7 @@ Item {
         anchors.topMargin: Metrics.gap12
         anchors.bottom: parent.bottom
         width: head.width
-        clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.scrollbarWidth / 2 }
+        clip: true; ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         model: page.view.entries || []
         header: SourceAbout {
             width: list.width
