@@ -37,6 +37,8 @@ TitledFlow {
     SceneArtistCard { artist: ({title:"Scene artist",genres:["rock"],sources:[]}) }
     SceneAlphaRail { activeKeys: ["A", "B"] }
     SceneGenreFilter { width: Metrics.sceneGenreWidth; genres: ["rock", "post-punk", "shoegaze"]; selected: ["post-punk"] }
+    SceneToolbar { availableGenres: ["rock", "post-punk"]; activeGenres: ["post-punk"]; canBrowse: true }
+    SceneState { width: Metrics.confirmWidth; height: Metrics.panesHeight; doc: ({state:"ready",artists:[],includeSources:false}); artistCount: 0 }
     SceneLoading { width: Metrics.confirmWidth; height: Metrics.panesHeight; progress: ({percentage:42,detail:"grunge"}) }
     ScenePanel { width: Metrics.confirmWidth; height: Metrics.panesHeight; artists: [{mbid:"preview",title:"Scene artist",genres:["post-punk"],sources:[]}]; selectedId: "preview" }
     ScenePanelRail { width: Metrics.scenePanelRailWidth; height: Metrics.panesHeight; artists: [{mbid:"preview",title:"Scene artist",sources:[]}] }

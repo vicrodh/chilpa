@@ -48,6 +48,8 @@ QtObject {
     readonly property int sceneCompactFlag: 28
     readonly property int sceneCompactHeight: 45
     readonly property int sceneNavHeight: 48
+    readonly property int sceneNavButton: 36
+    readonly property int sceneGenreBadge: 16
     readonly property int scenePadLeft: 18
     readonly property int scenePadTotal: 26
     readonly property int sceneFooterHeight: 100
@@ -67,6 +69,11 @@ QtObject {
     readonly property int sceneGenreInset: 40
     readonly property int sceneGenreMaxHeight: 440
     readonly property int sceneGenreListHeight: 280
+    readonly property int sceneGenreChoiceHeight: 36
+    readonly property int sceneGenreColumns: 3
+    readonly property int sceneGenreRadio: 14
+    readonly property int sceneGenreDot: 6
+    readonly property real sceneCircleRadius: 0.5
     readonly property int scenePanelRailWidth: 240
     readonly property int scenePanelRow: 64
     readonly property int scenePanelGroupHeader: 32

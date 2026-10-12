@@ -154,7 +154,7 @@ Rectangle {
                 width: parent.width; visible: !!panel.origin
                 topPadding: Metrics.gap12
                 OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("BORN", I18n.rev) : I18n.tr("FOUNDED", I18n.rev); value: panel.origin ? panel.origin.begin || "" : "" }
-                OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("BORN IN", I18n.rev) : I18n.tr("FOUNDED IN", I18n.rev); value: panel.origin ? panel.origin.place || "" : ""; door: value !== "" && (panel.origin.tags || []).length > 0; onActivated: panel.sceneRequested() }
+                OriginRow { objectName: "artistSceneDoor"; key: panel.origin && panel.origin.person ? I18n.tr("BORN IN", I18n.rev) : I18n.tr("FOUNDED IN", I18n.rev); value: panel.origin ? panel.origin.place || "" : ""; door: value !== "" && (panel.origin.tags || []).length > 0; onActivated: panel.sceneRequested() }
                 OriginRow { key: panel.origin && panel.origin.person ? I18n.tr("DIED", I18n.rev) : I18n.tr("DISBANDED", I18n.rev); value: panel.origin ? panel.origin.end || "" : "" }
             }
             Heading { text: I18n.tr("LABELS", I18n.rev) }

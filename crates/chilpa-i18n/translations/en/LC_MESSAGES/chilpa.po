@@ -749,6 +749,9 @@ msgstr ""
 msgid "Close media"
 msgstr "Close media"
 
+msgid "Close search"
+msgstr ""
+
 msgid "Close tab"
 msgstr ""
 
@@ -1416,9 +1419,6 @@ msgid "Genre"
 msgstr ""
 
 msgid "Genres"
-msgstr ""
-
-msgid "Genres ({})"
 msgstr ""
 
 msgid "German"
@@ -2145,6 +2145,9 @@ msgid "No albums found"
 msgstr ""
 
 msgid "No artists from this scene were found."
+msgstr ""
+
+msgid "No artists from your selected plugins were found in this scene."
 msgstr ""
 
 msgid "No cover"
@@ -3072,6 +3075,9 @@ msgid "Scroll to adjust volume"
 msgstr ""
 
 msgid "Search"
+msgstr ""
+
+msgid "Search artists"
 msgstr ""
 
 msgid "Search folders"

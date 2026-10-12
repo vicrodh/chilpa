@@ -8,7 +8,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
 
 // Filtering, score order, grouped virtual rows, pinned controls, scroll hero
-// and alphabet rail. Catalog matches are optional.
+// and alphabet rail. Plugin scenes contain verified catalog artists.
 Item {
     id: root
     readonly property var doc: JSON.parse(Sources.scene(Library.remoteRev) || "{}")
@@ -113,22 +113,10 @@ Item {
     }
     Component.onDestruction: Sources.sceneClose()
 
-    SceneLoading {
-        anchors.fill: parent; visible: doc.state === "loading"
-        progress: root.doc.progress || ({})
-        includeSources: root.doc.includeSources === true
+    SceneState {
+        anchors.fill: parent; doc: root.doc; artistCount: root.allArtists.length
         onRetry: Sources.sceneRetry()
-    }
-    Column {
-        anchors.centerIn: parent; spacing: Metrics.gap16
-        visible: doc.state === "error"
-        Text { width: Math.min(Metrics.sceneErrorWidth, root.width - Metrics.sceneErrorInset); text: doc.error || ""; wrapMode: Text.WordWrap; horizontalAlignment: Text.AlignHCenter; color: Theme.color.textSecondary }
-        PillButton { anchors.horizontalCenter: parent.horizontalCenter; text: I18n.tr("Retry", I18n.rev); onClicked: Sources.sceneRetry() }
-    }
-    Text {
-        visible: ready && allArtists.length === 0
-        anchors.centerIn: parent; text: I18n.tr("No artists from this scene were found.", I18n.rev)
-        font.pointSize: Type.body; color: Theme.color.textSecondary
+        onMore: Sources.sceneMore()
     }
     Item {
         id: content
@@ -139,7 +127,7 @@ Item {
             visible: root.heroScrolledPast
             Row {
                 anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap10
-                Image { width: Metrics.sceneCompactFlag; height: Metrics.sceneCompactFlag; source: root.flagSource; visible: status === Image.Ready }
+                ArtTile { width: Metrics.sceneCompactFlag; height: width; radius: width * Metrics.sceneCircleRadius; edged: false; source: root.flagSource; visible: root.flagSource !== "" }
                 Text { text: root.sceneTitle; font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
                 Text { text: root.doc.genreSummary || ""; font.pointSize: Type.meta; color: Theme.color.textTertiary }
             }
@@ -154,12 +142,19 @@ Item {
                     : I18n.tr("{} artists", I18n.rev).replace("{}", root.allArtists.length)
                 font.pointSize: Type.meta; color: Theme.color.textSecondary
             }
-            Row {
-                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap8
-                SearchField { width: Metrics.sceneSearchWidth; placeholder: I18n.tr("Search…", I18n.rev); onTextChanged: root.searchQuery = text; onEscaped: text = "" }
-                PillButton { id: genreButton; visible: root.availableGenres.length > 1; text: root.activeGenres.length > 0 ? I18n.tr("Genres ({})", I18n.rev).replace("{}", root.activeGenres.length) : I18n.tr("Genres", I18n.rev); onClicked: root.genrePopupOpen = !root.genrePopupOpen }
-                PillButton { visible: root.canBrowse; text: root.mode === "grid" ? I18n.tr("Browse view", I18n.rev) : I18n.tr("Grid view", I18n.rev); onClicked: { root.mode = root.mode === "grid" ? "sidepanel" : "grid"; root.selectedArtistId = ""; root.genrePopupOpen = false } }
-                PillButton { visible: root.mode === "grid"; text: root.groupingEnabled ? I18n.tr("Group: A-Z", I18n.rev) : I18n.tr("Group: Off", I18n.rev); onClicked: root.groupingEnabled = !root.groupingEnabled }
+            SceneToolbar {
+                id: toolbar
+                anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
+                availableGenres: root.availableGenres; activeGenres: root.activeGenres
+                canBrowse: root.canBrowse; mode: root.mode; groupingEnabled: root.groupingEnabled
+                onSearchChanged: (query) => root.searchQuery = query
+                onGenreRequested: root.genrePopupOpen = !root.genrePopupOpen
+                onModeRequested: {
+                    root.mode = root.mode === "grid" ? "sidepanel" : "grid"
+                    root.selectedArtistId = ""
+                    root.genrePopupOpen = false
+                }
+                onGroupingChosen: (grouped) => root.groupingEnabled = grouped
             }
         }
         Item {
@@ -177,7 +172,7 @@ Item {
                         width: grid.width; height: Metrics.sceneHeroHeight
                         Row {
                             width: parent.width; spacing: Metrics.modalInset
-                            Image { id: flag; width: Metrics.sceneHeroFlag; height: Metrics.sceneHeroFlag; source: root.flagSource; visible: status === Image.Ready }
+                            ArtTile { id: flag; width: Metrics.sceneHeroFlag; height: width; radius: width * Metrics.sceneCircleRadius; edged: false; source: root.flagSource; visible: root.flagSource !== "" }
                             Column {
                                 anchors.verticalCenter: parent.verticalCenter; spacing: Metrics.gap8
                                 width: parent.width - (flag.visible ? Metrics.sceneHeroHeight : 0)
@@ -237,8 +232,8 @@ Item {
     SceneGenreFilter {
         visible: root.genrePopupOpen && root.ready
         z: 20; width: Math.min(Metrics.sceneGenreWidth, root.width - Metrics.sceneGenreInset)
-        x: Math.max(Metrics.gap8, genreButton.mapToItem(root, 0, 0).x + genreButton.width - width)
-        y: genreButton.mapToItem(root, 0, genreButton.height).y + Metrics.gap6
+        x: Math.max(Metrics.gap8, toolbar.genreAnchor.mapToItem(root, 0, 0).x + toolbar.genreAnchor.width - width)
+        y: toolbar.genreAnchor.mapToItem(root, 0, toolbar.genreAnchor.height).y + Metrics.gap6
         genres: root.availableGenres; selected: root.activeGenres
         onToggled: (genre) => root.activeGenres = root.activeGenres.includes(genre) ? root.activeGenres.filter(g => g !== genre) : root.activeGenres.concat([genre])
         onCleared: root.activeGenres = []

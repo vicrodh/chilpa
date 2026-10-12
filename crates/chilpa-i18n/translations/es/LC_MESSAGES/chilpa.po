@@ -749,6 +749,9 @@ msgstr "Cerrar pestaña"
 msgid "Close media"
 msgstr "Cerrar medios"
 
+msgid "Close search"
+msgstr "Cerrar búsqueda"
+
 msgid "Close tab"
 msgstr "Cerrar pestaña"
 
@@ -1417,9 +1420,6 @@ msgstr "Género"
 
 msgid "Genres"
 msgstr "Géneros"
-
-msgid "Genres ({})"
-msgstr "Géneros ({})"
 
 msgid "German"
 msgstr "Alemán"
@@ -2146,6 +2146,9 @@ msgstr "No se encontraron álbumes"
 
 msgid "No artists from this scene were found."
 msgstr "No se encontraron artistas de esta escena."
+
+msgid "No artists from your selected plugins were found in this scene."
+msgstr "No se encontraron artistas de esta escena en los plugins seleccionados."
 
 msgid "No cover"
 msgstr "Sin carátula"
@@ -3073,6 +3076,9 @@ msgstr "Rueda para ajustar el volumen"
 
 msgid "Search"
 msgstr "Buscar"
+
+msgid "Search artists"
+msgstr "Buscar artistas"
 
 msgid "Search folders"
 msgstr "Buscar carpetas"
