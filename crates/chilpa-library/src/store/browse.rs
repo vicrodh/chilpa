@@ -224,7 +224,8 @@ pub struct FolderEntry {
     pub path: String,
     /// Tracks under it, all the way down.
     pub tracks: usize,
-    /// A cover from one of its records, if any has one.
+    /// The cover its own files gave -- a disc of a box set has its own --
+    /// or else one of its records', if any has one.
     pub artwork_path: Option<String>,
     /// How many folders sit in it.
     pub folders: usize,
@@ -707,7 +708,7 @@ impl Library {
         let base = from.clone();
         let sql = format!(
             concat!("{} SELECT substr(ft.location, ?3, instr(substr(ft.location, ?3), '/') - 1) AS name,
-                    count(*), max(", album_art!("a"), "),
+                    count(*), coalesce(max(nullif(t.release_artwork, '')), max(", album_art!("a"), ")),
                     count(DISTINCT CASE WHEN instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') > 0
                           THEN substr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), 1,
                                instr(substr(substr(ft.location, ?3), instr(substr(ft.location, ?3), '/') + 1), '/') - 1) END),
@@ -1054,8 +1055,12 @@ mod tests {
                 )
                 .unwrap();
         }
+        lib.db.execute("UPDATE albums SET artwork_path = '/covers/box.jpg' WHERE id = 1", []).unwrap();
+        lib.db.execute("UPDATE tracks SET release_artwork = '/covers/disc-2.jpg' WHERE id = 2", []).unwrap();
         let (discs, _) = lib.folder_children("/m/Box").unwrap();
         assert_eq!(discs.iter().map(|f| f.album_id).collect::<Vec<_>>(), [None, None], "each disc is a folder of its own");
+        assert_eq!(discs[1].artwork_path.as_deref(), Some("/covers/disc-2.jpg"), "a disc shows the cover its own files gave");
+        assert_eq!(discs[0].artwork_path.as_deref(), Some("/covers/box.jpg"), "and without one, the record's");
         assert_eq!(discs.iter().map(|f| f.part_of).collect::<Vec<_>>(), [Some(1), Some(1)], "and part of the box");
         let (top, _) = lib.folder_children("/m").unwrap();
         let single = top.iter().find(|f| f.name == "Single").unwrap();
