@@ -13,7 +13,9 @@ these was one of them:
   until it is done, and again when the window changes state, which is when
   the system parks them back;
 - a drawn set beside the system's is two sets, so the bar draws none there
-  and leaves them their room.
+  and leaves them their room;
+- a title hidden from AppKit alone still showed beside them, so the window
+  has none there.
 
 None of it can be seen from a machine that is not a Mac. This does not see
 it either: it keeps the pieces from being taken away unnoticed.
@@ -30,6 +32,7 @@ NEEDED = [
     ("Main.qml", r"systemControls\.kept\s*\?\s*Qt\.Window\s*\|\s*Qt\.ExpandedClientAreaHint\s*\|\s*Qt\.NoTitleBarBackgroundHint",
      "the window is framed on a Mac, its client area under the title bar"),
     ("Main.qml", r"controlsRoom:\s*systemControls\.room", "the tab bar is told the room the controls take"),
+    ("Main.qml", r"title:\s*systemControls\.kept\s*\?\s*\"\"", "the window has no title beside the controls on a Mac"),
     ("Patterns/SystemControls.qml", r"Metrics\.tabBarTop \+ Metrics\.button28 / 2", "their middle is the middle of the bar's buttons"),
     ("Patterns/SystemControls.qml", r"repeat:\s*true", "their placing is asked until it is done"),
     ("Patterns/SystemControls.qml", r"function onVisibilityChanged", "their placing is asked again when the window changes state"),

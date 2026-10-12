@@ -35,7 +35,10 @@ Window {
     flags: systemControls.kept ? Qt.Window | Qt.ExpandedClientAreaHint | Qt.NoTitleBarBackgroundHint
         : Qt.Window | Qt.FramelessWindowHint
     color: Theme.color.surfaceWindow
-    title: "Chilpa"
+    // On a Mac the title bar is under the tab bar, and a title there would
+    // sit beside the system's controls. Hiding its text from AppKit alone
+    // does not keep it away, so there is none to draw, as in QBZ.
+    title: systemControls.kept ? "" : "Chilpa"
 
     // The dynamic background, under everything (design/01 1.6).
     Backdrop.AppBackground {
