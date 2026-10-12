@@ -3428,6 +3428,9 @@ msgstr "Esta no hace ruido. Escribe lo que habría ido al aparato, para poder co
 msgid "This output is always Chilpa's alone."
 msgstr "Esta salida siempre es solo de Chilpa."
 
+msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
+msgstr "Esta salida toma el DSD convertido a PCM. DoP necesita el modo exclusivo y un DAC que lo decodifique."
+
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr "Esta salida recibe el DSD convertido a PCM. Solo una tarjeta en hw lo recibe intacto; lo elegido para la tarjeta se conserva."
 

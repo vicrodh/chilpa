@@ -319,6 +319,19 @@ pub trait OutputBackend: Send + Sync {
         String::new()
     }
 
+    /// What reaches the wire untouched with the output alone: the rates the
+    /// device itself runs at and the integer words it carries, without the
+    /// conversions the stack would make on its own.
+    ///
+    /// One-bit audio carried in PCM words (DoP) is only sent where this
+    /// says the carrier passes untouched: converted, it is loud broadband
+    /// noise. `None` for a stack where `caps` already is that, or where
+    /// nothing passes untouched.
+    fn untouched_caps(&self, id: &str) -> Option<crate::negotiate::DeviceCaps> {
+        let _ = id;
+        None
+    }
+
     /// Whether the output, as it stands right now, carries a stream at that
     /// rate and depth to the wire untouched. `bits` is what the track
     /// carries, and `None` for one with no integer depth of its own.

@@ -145,7 +145,7 @@ mod tests {
         let (next, other) = (wave("next"), wave("other"));
         let mut preload = Preload::default();
         let caps = device();
-        preload.request(next.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, false));
+        preload.request(next.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, None));
         let opened = preload.take(&next, &StopSignal::new()).expect("it was asked for").expect("the file opens");
         assert_eq!(opened.about.frames, Some(44_100), "what it says of itself came along");
         assert_eq!(opened.delivery.opened.sample_rate_hz, 44_100);
@@ -153,7 +153,7 @@ mod tests {
         // Another track is not the one opened ahead, and the one opened
         // ahead is not kept for later.
         let caps = device();
-        preload.request(next.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, false));
+        preload.request(next.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, None));
         assert!(preload.take(&other, &StopSignal::new()).is_none());
         assert!(preload.take(&next, &StopSignal::new()).is_none());
     }
@@ -175,14 +175,14 @@ mod tests {
         let next = wave("later");
         let mut preload = Preload::default();
         let caps = device();
-        preload.request_at(next.clone(), Some(1_000), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, false));
+        preload.request_at(next.clone(), Some(1_000), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, None));
         preload.reached(999);
         assert!(preload.pending.is_none(), "not before its time");
         preload.reached(1_000);
         assert!(preload.take(&next, &StopSignal::new()).expect("opened once it came").is_ok());
 
         let caps = device();
-        preload.request_at(next.clone(), Some(1_000), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, false));
+        preload.request_at(next.clone(), Some(1_000), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, None));
         assert!(preload.take(&next, &StopSignal::new()).is_none(), "taken before its time: opened by the queue instead");
         preload.reached(5_000);
         assert!(preload.pending.is_none(), "and forgotten");
@@ -193,7 +193,7 @@ mod tests {
         let missing = std::env::temp_dir().join("chilpa-preload-missing.wav");
         let mut preload = Preload::default();
         let caps = device();
-        preload.request(missing.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, false));
+        preload.request(missing.clone(), move |path| open_track(path, &caps, Policy::AllowAnything, DsdMode::Pcm, None));
         assert!(matches!(preload.take(&missing, &StopSignal::new()), Some(Err(_))));
     }
 }

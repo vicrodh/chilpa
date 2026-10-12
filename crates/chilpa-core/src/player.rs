@@ -516,9 +516,21 @@ fn play(
     // Fidelity is reported from the route and the transformations that
     // actually happened. It is not a promise that may prevent playback.
     let policy = Policy::AllowAnything;
-    let direct_dsd = crate::backends::resolve(device)
-        .is_some_and(|(stack, _)| stack.kind() == chilpa_audio::backend::BackendKind::Alsa);
+    // One-bit audio goes untouched on a card, as it always did, and on a
+    // stack that converts on its own only with the output alone and against
+    // what its wire takes untouched: converted, DoP is loud noise.
+    let (direct_dsd, direct_caps) = match crate::backends::resolve(device) {
+        Some((stack, _)) if stack.kind() == chilpa_audio::backend::BackendKind::Alsa => (true, None),
+        Some((stack, bare)) if exclusive => match stack.untouched_caps(&bare) {
+            Some(exact) => (true, Some(exact)),
+            None => (false, None),
+        },
+        _ => (false, None),
+    };
     controls.direct_dsd.set(direct_dsd);
+    if let Ok(mut held) = controls.direct_caps.lock() {
+        *held = direct_caps;
+    }
     chilpa_audio::diagnostics::trace(
         "player",
         "route_resolved",

@@ -3428,6 +3428,9 @@ msgstr ""
 msgid "This output is always Chilpa's alone."
 msgstr ""
 
+msgid "This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it."
+msgstr ""
+
 msgid "This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept."
 msgstr ""
 
