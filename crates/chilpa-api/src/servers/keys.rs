@@ -6,11 +6,16 @@ use chilpa_secrets::SecretBox;
 use chilpa_servers::Credential;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::RwLock;
+use std::sync::{Arc, OnceLock, RwLock};
 
 pub(crate) struct Keys {
     root: PathBuf,
-    secrets: Option<SecretBox>,
+    /// Opened on a thread of its own. Reading the keyring can wait on a
+    /// dialog -- a Mac asks again for every new build of the program -- and
+    /// the window started the servers and froze until somebody answered it:
+    /// 35 s on the first start of a build. Only a thread that needs a
+    /// credential waits for it now.
+    secrets: Arc<OnceLock<Option<SecretBox>>>,
     open: RwLock<HashMap<String, Credential>>,
 }
 
@@ -18,7 +23,15 @@ impl Keys {
     /// `root` is `<data>/servers`: each server's credential goes in the
     /// folder of its instance.
     pub(crate) fn new(root: PathBuf) -> Self {
-        let secrets = SecretBox::open("chilpa", &root).ok();
+        let secrets = Arc::new(OnceLock::new());
+        let (cell, dir) = (Arc::clone(&secrets), root.clone());
+        let opened = std::thread::Builder::new()
+            .name("chilpa-server-keys".into())
+            .spawn(move || drop(cell.set(SecretBox::open("chilpa", &dir).ok())));
+        if opened.is_err() {
+            // No thread to wait on: opened here, rather than never.
+            let _ = secrets.set(SecretBox::open("chilpa", &root).ok());
+        }
         Self { root, secrets, open: RwLock::new(HashMap::new()) }
     }
 
@@ -26,8 +39,13 @@ impl Keys {
     /// keyring is never touched.
     #[cfg(test)]
     pub(crate) fn derived(root: PathBuf) -> Self {
-        let secrets = SecretBox::derived_only("chilpa", &root).ok();
+        let secrets = Arc::new(OnceLock::from(SecretBox::derived_only("chilpa", &root).ok()));
         Self { root, secrets, open: RwLock::new(HashMap::new()) }
+    }
+
+    /// The box, once it is open: this waits for the keyring.
+    fn secrets(&self) -> Option<&SecretBox> {
+        self.secrets.wait().as_ref()
     }
 
     /// An instance is sixteen hex digits, minted here: anything else never
@@ -43,7 +61,7 @@ impl Keys {
             return Some(key.clone());
         }
         let sealed = std::fs::read(self.file(instance)?).ok()?;
-        let plain = self.secrets.as_ref()?.open_sealed(&sealed).ok()?;
+        let plain = self.secrets()?.open_sealed(&sealed).ok()?;
         let key: Credential = serde_json::from_slice(&plain).ok()?;
         self.open.write().ok()?.insert(instance.to_string(), key.clone());
         Some(key)
@@ -53,7 +71,7 @@ impl Keys {
     /// server is not added: one that cannot sign in again after a restart is
     /// worse than none.
     pub(crate) fn put(&self, instance: &str, key: &Credential) -> bool {
-        let (Some(file), Some(secrets)) = (self.file(instance), self.secrets.as_ref()) else { return false };
+        let (Some(file), Some(secrets)) = (self.file(instance), self.secrets()) else { return false };
         let Ok(plain) = serde_json::to_vec(key) else { return false };
         let Ok(sealed) = secrets.seal(&plain) else { return false };
         let written = file.parent().is_some_and(|dir| std::fs::create_dir_all(dir).is_ok()) && std::fs::write(&file, sealed).is_ok();
@@ -97,12 +115,12 @@ mod tests {
         let instance = mint();
         let key = Credential::Password { user: "me".into(), password: "hunter2".into() };
         {
-            let keys = Keys { secrets: SecretBox::derived_only("chilpa", &root).ok(), root: root.clone(), open: RwLock::new(HashMap::new()) };
+            let keys = Keys::derived(root.clone());
             assert!(keys.put(&instance, &key));
         }
         let on_disk = std::fs::read(root.join(&instance).join("credential.sealed")).unwrap();
         assert!(!String::from_utf8_lossy(&on_disk).contains("hunter2"), "never in the clear");
-        let keys = Keys { secrets: SecretBox::derived_only("chilpa", &root).ok(), root: root.clone(), open: RwLock::new(HashMap::new()) };
+        let keys = Keys::derived(root.clone());
         assert_eq!(keys.get(&instance), Some(key));
         keys.forget(&instance);
         assert!(keys.get(&instance).is_none());
