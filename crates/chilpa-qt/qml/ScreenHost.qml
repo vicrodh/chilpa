@@ -6,6 +6,7 @@ import "Components"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/metadata/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/folders/qml/Screens"
+import "qrc:/qt/qml/app/chilpa/folders/qml/Patterns"
 import "qrc:/qt/qml/app/chilpa/stats/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Screens"
 import "qrc:/qt/qml/app/chilpa/playlists/qml/Patterns"
@@ -108,4 +109,5 @@ Loader {
 
     // The one add-to-playlist picker; the menus only ask for it.
     PlaylistPickerModal {}
+    AnalysisOffer {}
 }

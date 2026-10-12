@@ -330,6 +330,9 @@ msgstr ""
 msgid "Analyze the library"
 msgstr ""
 
+msgid "Analyze the new music too?"
+msgstr ""
+
 msgid "Analyzing {} of {} tracks"
 msgstr ""
 
@@ -603,6 +606,9 @@ msgid "Chilpa Native Plugins"
 msgstr "Chilpa Native Plugins"
 
 msgid "Chilpa already pins rate, sink and exclusive mode at runtime. These files only change system-wide behavior — copy and run them yourself if you want them. Back up first."
+msgstr ""
+
+msgid "Chilpa can also read the tempo, musical key and loudness of what this folder holds. It takes much longer than reading the folder: it starts when the scan is done, runs in the background, and can be stopped in Settings > Library > Analysis."
 msgstr ""
 
 msgid "Chilpa can run some plugins made for other platforms. Add a plugin catalog you use. Compatibility is not guaranteed; Chilpa is not responsible for these plugins' behavior."
@@ -2189,6 +2195,9 @@ msgstr ""
 msgid "Not inspected"
 msgstr "Not inspected"
 
+msgid "Not now"
+msgstr ""
+
 msgid "Not rated"
 msgstr ""
 
@@ -3233,6 +3242,9 @@ msgid "Starting {}…"
 msgstr ""
 
 msgid "Starting…"
+msgstr ""
+
+msgid "Starts when the scan is done"
 msgstr ""
 
 msgid "Static"

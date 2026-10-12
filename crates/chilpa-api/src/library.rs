@@ -93,8 +93,19 @@ impl Chilpa {
         self.analysis_status = AnalysisStatus { running: true, ..AnalysisStatus::default() };
     }
 
-    /// Asks the analysis to stop.
+    /// Starts the analysis once the scan that runs now ends, or at once
+    /// when none runs: what a folder just added holds is read first.
+    pub fn analyze_after_scan(&mut self) {
+        if self.scan.is_some() && self.analysis.is_none() {
+            self.analysis_status.waiting = true;
+        } else {
+            self.start_analysis();
+        }
+    }
+
+    /// Asks the analysis to stop, or not to start after the scan.
     pub fn cancel_analysis(&mut self) {
+        self.analysis_status.waiting = false;
         if let Some(j) = &self.analysis {
             j.cancel();
         }
@@ -255,11 +266,15 @@ impl Chilpa {
                         },
                     };
                     self.scan = None;
+                    if std::mem::take(&mut self.analysis_status.waiting) {
+                        self.start_analysis();
+                    }
                 }
                 chilpa_library::ScanProgress::Failed(e) => {
                     self.now.error = chilpa_i18n::t_args("the scan failed: {}", &[&e]);
                     self.scan_status.running = false;
                     self.scan = None;
+                    self.analysis_status.waiting = false;
                 }
             }
         }
