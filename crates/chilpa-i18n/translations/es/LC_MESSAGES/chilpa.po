@@ -393,6 +393,9 @@ msgstr "Radio del artista"
 msgid "Artists"
 msgstr "Artistas"
 
+msgid "Artists from this scene"
+msgstr "Artistas de esta escena"
+
 msgid "Artwork"
 msgstr "Portada"
 
@@ -480,6 +483,9 @@ msgstr "Fondo"
 msgid "Background image"
 msgstr "Imagen de fondo"
 
+msgid "Based on {artist} · {genres}"
+msgstr "Basado en {artist} · {genres}"
+
 msgid "Between tracks"
 msgstr "Entre pistas"
 
@@ -500,6 +506,9 @@ msgstr ""
 
 msgid "Browse for a music folder, or type its full path."
 msgstr "Busca una carpeta de música o escribe su ruta completa."
+
+msgid "Browse view"
+msgstr "Vista de exploración"
 
 msgid "Browse…"
 msgstr "Buscar…"
@@ -602,6 +611,12 @@ msgstr "Revisando la cuenta…"
 msgid "Checking your audio stack…"
 msgstr "Revisando tu stack de audio…"
 
+msgid "Checking your selected sources can take a few minutes."
+msgstr "La búsqueda en las fuentes seleccionadas puede tardar unos minutos."
+
+msgid "Checking your selected sources…"
+msgstr "Buscando en las fuentes seleccionadas…"
+
 msgid "Chilpa Native Plugins"
 msgstr "Plugins nativos de Chilpa"
 
@@ -700,6 +715,9 @@ msgstr "Vaciar"
 
 msgid "Clear after this track"
 msgstr "Vaciar después de esta pista"
+
+msgid "Clear filters"
+msgstr "Borrar filtros"
 
 msgid "Clear loop"
 msgstr "Quitar bucle"
@@ -1244,6 +1262,9 @@ msgstr "SE FORMÓ"
 msgid "FOUNDED IN"
 msgstr "SE FORMÓ EN"
 
+msgid "Failed to load albums"
+msgstr "No se pudieron cargar los álbumes"
+
 msgid "Favorites"
 msgstr "Favoritos"
 
@@ -1267,6 +1288,9 @@ msgstr "Filtrar discos"
 
 msgid "Filter artists"
 msgstr "Filtrar artistas"
+
+msgid "Filter by genre"
+msgstr "Filtrar por género"
 
 msgid "Filter playlists"
 msgstr "Filtrar playlists"
@@ -1394,6 +1418,9 @@ msgstr "Género"
 msgid "Genres"
 msgstr "Géneros"
 
+msgid "Genres ({})"
+msgstr "Géneros ({})"
+
 msgid "German"
 msgstr "Alemán"
 
@@ -1427,11 +1454,20 @@ msgstr "Goniómetro"
 msgid "Grid"
 msgstr "Cuadrícula"
 
+msgid "Grid view"
+msgstr "Vista de cuadrícula"
+
 msgid "Group album versions"
 msgstr "Agrupar versiones de un álbum"
 
 msgid "Group collections"
 msgstr "Agrupar colecciones"
+
+msgid "Group: A-Z"
+msgstr "Agrupar: A-Z"
+
+msgid "Group: Off"
+msgstr "Agrupar: desactivado"
 
 msgid "Guided DAC Setup"
 msgstr "Configuración guiada del DAC"
@@ -1579,6 +1615,12 @@ msgstr "En tu biblioteca"
 
 msgid "In progress"
 msgstr "En progreso"
+
+msgid "Include matches from your plugins?"
+msgstr "¿Incluir resultados de tus plugins?"
+
+msgid "Include plugins"
+msgstr "Incluir plugins"
 
 msgid "Include source albums in Albums"
 msgstr "Integrar los álbumes de esta fuente en Álbumes"
@@ -1766,9 +1808,6 @@ msgstr "Claro"
 msgid "Like Track"
 msgstr "Marcar como favorita"
 
-msgid "Links"
-msgstr "Enlaces"
-
 msgid "List"
 msgstr "Lista"
 
@@ -1798,6 +1837,9 @@ msgstr "En vivo"
 
 msgid "Load more"
 msgstr "Cargar más"
+
+msgid "Loading albums…"
+msgstr "Cargando álbumes…"
 
 msgid "Loading purchases…"
 msgstr "Cargando compras…"
@@ -2099,6 +2141,12 @@ msgstr "Página siguiente"
 msgid "No"
 msgstr "No"
 
+msgid "No albums found"
+msgstr "No se encontraron álbumes"
+
+msgid "No artists from this scene were found."
+msgstr "No se encontraron artistas de esta escena."
+
 msgid "No cover"
 msgstr "Sin carátula"
 
@@ -2153,6 +2201,9 @@ msgstr "No se encontraron playlists"
 msgid "No playlists yet."
 msgstr "Todavía no hay playlists."
 
+msgid "No plugin catalog match for this artist"
+msgstr "Este artista no aparece en el catálogo de ningún plugin"
+
 msgid "No plugins installed"
 msgstr "No hay plugins instalados"
 
@@ -2161,6 +2212,9 @@ msgstr "Ninguna compra coincide con la vista actual."
 
 msgid "No results for"
 msgstr "Sin resultados para"
+
+msgid "No results found."
+msgstr "No se encontraron resultados."
 
 msgid "No review available"
 msgstr "No hay reseña disponible"
@@ -2329,6 +2383,9 @@ msgstr "Abrir la página de la cuenta"
 
 msgid "Open album"
 msgstr "Abrir álbum"
+
+msgid "Open artist"
+msgstr "Abrir artista"
 
 msgid "Open audio CD"
 msgstr "Abrir CD de audio"
@@ -2573,6 +2630,9 @@ msgstr "Integración del plugin"
 msgid "Plugin repository URL"
 msgstr "URL del repositorio de plugins"
 
+msgid "Plugin results were not included for this scene"
+msgstr "No se incluyeron resultados de plugins en esta escena"
+
 msgid "Plugin-reported quality"
 msgstr "Calidad declarada por el plugin"
 
@@ -2590,6 +2650,9 @@ msgstr "Posición en Streaming"
 
 msgid "Preferred GPU"
 msgstr "GPU preferida"
+
+msgid "Preparing results…"
+msgstr "Preparando resultados…"
 
 msgid "Press keys…"
 msgstr "Presiona las teclas…"
@@ -2900,6 +2963,9 @@ msgstr "Restaurar pestañas"
 msgid "Resume"
 msgstr "Continuar"
 
+msgid "Retry"
+msgstr "Reintentar"
+
 msgid "Revert"
 msgstr "Revertir"
 
@@ -3011,6 +3077,9 @@ msgstr "Buscar"
 msgid "Search folders"
 msgstr "Buscar carpetas"
 
+msgid "Search genres"
+msgstr "Buscar géneros"
+
 msgid "Search listens"
 msgstr "Buscar escuchas"
 
@@ -3050,11 +3119,17 @@ msgstr "Buscar en estos episodios"
 msgid "Search this page…"
 msgstr "Buscar en esta página…"
 
+msgid "Searching MusicBrainz for {genre} artists…"
+msgstr "Buscando artistas de {genre} en MusicBrainz…"
+
 msgid "Searching for devices…"
 msgstr "Buscando dispositivos…"
 
 msgid "Searching…"
 msgstr "Buscando…"
+
+msgid "Search…"
+msgstr "Buscar…"
 
 msgid "See all"
 msgstr "Ver todo"
@@ -3087,6 +3162,9 @@ msgstr "Seleccionar"
 
 msgid "Select a folder to see its contents."
 msgstr "Elige una carpeta para ver su contenido."
+
+msgid "Select an artist to see their albums"
+msgstr "Selecciona un artista para ver sus álbumes"
 
 msgid "Select folders"
 msgstr "Seleccionar carpetas"
@@ -3483,6 +3561,9 @@ msgstr "La vista con la que abre el mini reproductor. Recordar conserva la últi
 msgid "Theme"
 msgstr "Tema"
 
+msgid "This can take a few minutes when MusicBrainz is busy."
+msgstr "Esto puede tardar unos minutos si MusicBrainz está ocupado."
+
 msgid "This chapter format is not supported."
 msgstr "Este formato de capítulos no es compatible."
 
@@ -3503,6 +3584,9 @@ msgstr "No se pudo cargar el material de este episodio."
 
 msgid "This folder has no tracks."
 msgstr "Esta carpeta no tiene pistas."
+
+msgid "This is taking longer than usual. MusicBrainz may be busy. Try again in a moment."
+msgstr "Esto está tardando más de lo habitual. MusicBrainz podría estar ocupado. Inténtalo de nuevo en un momento."
 
 msgid "This is wherever the machine is already sending sound, so what happens to the samples is whatever that is set up to do -- usually mixing them with everything else and resampling the result. It always works. For samples that arrive as they left, choose the card itself."
 msgstr "Es a donde la máquina ya está mandando el sonido, así que lo que les pase a las muestras es lo que ese camino esté configurado para hacer: normalmente mezclarlas con todo lo demás y remuestrear el resultado. Siempre funciona. Para que las muestras lleguen como salieron, elige la tarjeta directo."
@@ -3846,6 +3930,9 @@ msgstr "Windows no dijo qué acepta \"{}\" ({})"
 msgid "Withdraw approval"
 msgstr "Retirar la aprobación"
 
+msgid "Without plugins"
+msgstr "Sin plugins"
+
 msgid "Working…"
 msgstr "Trabajando…"
 
@@ -3890,6 +3977,9 @@ msgstr "Tu cola está vacía"
 
 msgid "Your queue is empty — add some tracks first, or press Play test."
 msgstr "Tu cola está vacía: agrega algunas pistas primero, o presiona Probar."
+
+msgid "Your selected sources are taking longer than usual. Try again in a moment."
+msgstr "Las fuentes seleccionadas están tardando más de lo habitual. Inténtalo de nuevo en un momento."
 
 msgid "Your shows"
 msgstr "Tus programas"
@@ -4208,6 +4298,9 @@ msgstr "min"
 
 msgid "mono"
 msgstr "mono"
+
+msgid "nearby"
+msgstr "cercanos"
 
 msgid "network"
 msgstr "red"
@@ -4962,10 +5055,16 @@ msgstr "escribe solo la dirección, sin usuario, contraseña ni parámetros"
 msgid "your library needs updating and a copy of it could not be kept first, at {}: {}. Make room there, or move the library somewhere with room, and open Chilpa again"
 msgstr "tu biblioteca necesita actualizarse y no se pudo guardar una copia antes, en {}: {}. Haz espacio ahí, o mueve la biblioteca a un lugar con espacio, y vuelve a abrir Chilpa"
 
+msgid "{} / {} artists"
+msgstr "{} / {} artistas"
+
 msgid "{} album"
 msgid_plural "{} albums"
 msgstr[0] "{} álbum"
 msgstr[1] "{} álbumes"
+
+msgid "{} albums"
+msgstr "{} álbumes"
 
 msgid "{} analyzed, {} without pulse, {} unreadable"
 msgstr "{} analizadas, {} sin pulso, {} ilegibles"
@@ -4983,6 +5082,9 @@ msgid "{} artist"
 msgid_plural "{} artists"
 msgstr[0] "{} artista"
 msgstr[1] "{} artistas"
+
+msgid "{} artists"
+msgstr "{} artistas"
 
 msgid "{} bit at {} Hz, {}"
 msgstr "{} bits a {} Hz, {}"

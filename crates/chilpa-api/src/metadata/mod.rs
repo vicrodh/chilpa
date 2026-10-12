@@ -9,6 +9,7 @@
 //! what it finds comes back through `metadata_poll`.
 
 mod apply;
+pub(crate) use apply::said as failure_message;
 mod artwork;
 mod draft;
 mod fields;

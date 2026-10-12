@@ -29,7 +29,7 @@ Column {
         if (/^(album|playlist):/.test(link)) {
             const id = Sources.referenceCard(info.plugin, link)
             if (id) Navigation.go("album", id)
-        } else if (/^artist:/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
+        } else if (/^(artist|label):[^:]+/.test(link)) Navigation.goKey("source", info.plugin + " native:" + link)
         else if (/^https?:\/\//.test(link)) Qt.openUrlExternally(link)
     }
     spacing: Metrics.gap12

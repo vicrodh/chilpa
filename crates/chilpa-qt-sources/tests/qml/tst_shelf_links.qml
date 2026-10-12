@@ -25,4 +25,16 @@ TestCase {
         compare(header.link, "")
         shelf.wrap = false
     }
+    function test_a_tag_without_a_cursor_has_no_load_more_button() {
+        shelf.wrap = true
+        shelf.section = {title:"Releases",key:"fixture native:artist:1|albums",more:"artist:1:albums:10",error:"Unavailable",
+            tags:[{slug:"live",name:"Live",key:"fixture native:artist:1|albums#live"}]}
+        const more = findChild(shelf, "shelfLoadMore")
+        verify(more.visible)
+        shelf.selectedTag = "live"
+        compare(more.visible, false)
+        shelf.selectedTag = ""
+        shelf.wrap = false
+        shelf.section = {}
+    }
 }

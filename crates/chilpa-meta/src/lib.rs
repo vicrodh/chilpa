@@ -15,6 +15,7 @@ pub mod http;
 pub mod musicbrainz;
 pub mod proxy;
 pub mod release;
+pub mod scene;
 pub mod text;
 
 pub use http::{user_agent, Failure, Http, Net, Pace, Reply};

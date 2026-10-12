@@ -55,7 +55,9 @@ pub struct Origin {
     pub end: Option<Date>,
     /// Where it began: the city or the country, whichever is known.
     pub place: String,
+    pub area_id: String,
     pub country: String,
+    pub country_name: String,
     /// The place names a city or something smaller, not only a country.
     pub exact: bool,
     pub tags: Vec<String>,
@@ -97,6 +99,26 @@ fn text(value: &Value) -> String {
     value.as_str().unwrap_or_default().trim().to_string()
 }
 
+// Country names for MusicBrainz's ISO codes. The artist's current area can
+// be a subdivision, so its name is not always the country.
+fn country_name(code: &str) -> String {
+    match code.to_uppercase().as_str() {
+        "US" => "United States", "GB" => "United Kingdom", "CA" => "Canada",
+        "AU" => "Australia", "DE" => "Germany", "FR" => "France",
+        "JP" => "Japan", "SE" => "Sweden", "NO" => "Norway",
+        "FI" => "Finland", "IE" => "Ireland", "NZ" => "New Zealand",
+        "BR" => "Brazil", "MX" => "Mexico", "AR" => "Argentina",
+        "CL" => "Chile", "CO" => "Colombia", "ES" => "Spain",
+        "IT" => "Italy", "NL" => "Netherlands", "BE" => "Belgium",
+        "AT" => "Austria", "CH" => "Switzerland", "DK" => "Denmark",
+        "IS" => "Iceland", "PT" => "Portugal", "PL" => "Poland",
+        "CZ" => "Czech Republic", "RU" => "Russia", "KR" => "South Korea",
+        "CN" => "China", "TW" => "Taiwan", "IN" => "India",
+        "ZA" => "South Africa", "NG" => "Nigeria", "JM" => "Jamaica",
+        "CU" => "Cuba", "PR" => "Puerto Rico", _ => code,
+    }.to_string()
+}
+
 /// Letters and digits only, lower case: how two names are told the same.
 fn plain(name: &str) -> String {
     name.chars().filter(|c| c.is_alphanumeric()).flat_map(char::to_lowercase).collect()
@@ -125,6 +147,7 @@ fn origin_of(value: &Value) -> Origin {
     let country = value["country"].as_str().map(str::to_string)
         .or_else(|| area["iso-3166-1-codes"][0].as_str().map(str::to_string))
         .unwrap_or_default();
+    let country_name = if country.is_empty() { text(&area["name"]) } else { country_name(&country) };
     // A country has a two-letter code as its own; a city or a region does not.
     let exact = !place.is_empty() && where_from["iso-3166-1-codes"].as_array().is_none_or(|codes| codes.is_empty());
     let mut tags: Vec<(u64, String)> = value["tags"].as_array().into_iter().flatten()
@@ -139,9 +162,13 @@ fn origin_of(value: &Value) -> Origin {
         begin: Date::parse(&text(&value["life-span"]["begin"])),
         end: Date::parse(&text(&value["life-span"]["end"])),
         place,
+        area_id: text(&where_from["id"]),
         country,
+        country_name,
         exact,
-        tags: tags.into_iter().map(|(_, name)| name).take(8).collect(),
+        // The scene scores with five primary and ten secondary seeds. Keep
+        // the voted order for that full set.
+        tags: tags.into_iter().map(|(_, name)| name).take(15).collect(),
     }
 }
 
@@ -223,6 +250,7 @@ mod tests {
         assert_eq!(artist.origin.end, None);
         assert_eq!(artist.origin.place, "Leyton");
         assert_eq!(artist.origin.country, "GB");
+        assert_eq!(artist.origin.country_name, "United Kingdom");
         assert!(artist.origin.exact, "a city, not only a country");
         assert_eq!(artist.origin.tags, ["heavy metal", "nwobhm"]);
         let members: Vec<_> = artist.relationships.members.iter().map(|m| (m.name.as_str(), m.role.as_str(), m.ended)).collect();
@@ -242,6 +270,16 @@ mod tests {
         assert!(!artist.origin.exact);
         assert_eq!(artist.relationships.groups[0].name, "Iron Maiden");
         assert!(artist.relationships.members.is_empty());
+    }
+
+    #[test]
+    fn a_subdivision_uses_the_country_code_for_scene_search() {
+        let value = serde_json::json!({"id":"3f2f5a2a-1111-4c2a-8c2a-aaaaaaaaaaaa","name":"Band",
+            "country":"US","area":{"id":"3f2f5a2a-1111-4c2a-8c2a-aaaaaaaaaaab","name":"Washington","type":"Subdivision"},
+            "begin-area":{"id":"3f2f5a2a-1111-4c2a-8c2a-aaaaaaaaaaac","name":"Seattle","type":"City"}});
+        let origin = origin_of(&value);
+        assert_eq!(origin.place, "Seattle");
+        assert_eq!(origin.country_name, "United States");
     }
 
     #[test]

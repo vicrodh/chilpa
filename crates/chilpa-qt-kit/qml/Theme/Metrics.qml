@@ -36,6 +36,50 @@ QtObject {
     readonly property int gap22: 22
     readonly property int gap24: 24
 
+    // The artist scene's v2.1.2 geometry, kept together so its virtual row
+    // positions and the card layout stay in step.
+    readonly property int sceneCardWidth: 200
+    readonly property int sceneCardHeight: 246
+    readonly property int sceneCardGap: 24
+    readonly property int sceneRowGap: 11
+    readonly property int sceneGroupHeader: 44
+    readonly property int sceneHeroFlag: 140
+    readonly property int sceneHeroHeight: 160
+    readonly property int sceneCompactFlag: 28
+    readonly property int sceneCompactHeight: 45
+    readonly property int sceneNavHeight: 48
+    readonly property int scenePadLeft: 18
+    readonly property int scenePadTotal: 26
+    readonly property int sceneFooterHeight: 100
+    readonly property int sceneSearchWidth: 200
+    readonly property int sceneProgressWidth: 250
+    readonly property int sceneProgressHeight: 4
+    readonly property int sceneProgressFull: 100
+    readonly property int sceneLoadingDisc: 96
+    readonly property int sceneLoadingIcon: 42
+    readonly property int sceneWaitWidth: 320
+    readonly property int sceneTimeoutWidth: 360
+    readonly property int sceneErrorWidth: 500
+    readonly property int sceneErrorInset: 64
+    readonly property int sceneNoResultY: 190
+    readonly property int sceneRailCell: 15
+    readonly property int sceneGenreWidth: 530
+    readonly property int sceneGenreInset: 40
+    readonly property int sceneGenreMaxHeight: 440
+    readonly property int sceneGenreListHeight: 280
+    readonly property int scenePanelRailWidth: 240
+    readonly property int scenePanelRow: 64
+    readonly property int scenePanelGroupHeader: 32
+    readonly property int scenePanelPortrait: 48
+    readonly property int scenePanelAlbumWidth: 220
+    readonly property int scenePanelCardHeight: 262
+    readonly property int scenePanelGridGap: 22
+    readonly property int scenePanelTrackMin: 210
+    readonly property int scenePanelSectionHeader: 51
+    readonly property int scenePanelPadLeft: 24
+    readonly property int scenePanelPadTotal: 40
+    readonly property int sceneJumpDuration: 250
+
     // The dynamic background (01-tokens 1.6, as QBZ draws it): the dark veil
     // over the field, and the light theme's veil, a notch stronger.
     readonly property real ambientDim: 0.35

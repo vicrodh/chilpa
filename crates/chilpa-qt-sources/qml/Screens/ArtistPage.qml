@@ -84,7 +84,7 @@ Item {
             x: Metrics.contentX; y: Metrics.contentTop
             width: flick.width - Metrics.contentX * 2 // derived: padding on both sides
             spacing: Metrics.blockGap
-            ArtistHeader { id: head; width: parent.width; info: page.header; local: page.local; networkOpen: page.networkOpen; onToggleNetwork: page.networkOpen = !page.networkOpen; inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on }
+            ArtistHeader { id: head; width: parent.width; info: page.header; local: page.local; networkOpen: page.networkOpen; sceneAvailable: !!page.network.origin?.place && (page.network.origin?.tags || []).length > 0; onToggleNetwork: page.networkOpen = !page.networkOpen; onSceneRequested: sceneChoice.open(); inLibrary: page.inLibrary; onLibraryChosen: (on) => page.inLibrary = on }
             // Where the jump bar sits when the page is at the top.
             Item { id: jumpSlot; width: parent.width; height: Metrics.jumpBar }
             Repeater {
@@ -181,5 +181,25 @@ Item {
         Behavior on height { NumberAnimation { duration: Motion.panel; easing.type: Easing.OutCubic } }
         open: page.networkOpen; document: page.about; network: page.network
         onClosed: page.networkOpen = false
+        onSceneRequested: sceneChoice.open()
+    }
+    Modal {
+        id: sceneChoice
+        width: Math.min(Metrics.settingsMaxWidth, page.width - Metrics.modalInsets)
+        Column {
+            width: parent.width; spacing: Metrics.gap16
+            Text { width: parent.width; text: I18n.tr("Artists from this scene", I18n.rev); font.pointSize: Type.titleSmall; font.weight: Type.bold; color: Theme.color.textPrimary }
+            Text { width: parent.width; text: I18n.tr("Include matches from your plugins?", I18n.rev); wrapMode: Text.WordWrap; font.pointSize: Type.body; color: Theme.color.textSecondary }
+            Row {
+                spacing: Metrics.gap8
+                PillButton { text: I18n.tr("Without plugins", I18n.rev); onClicked: page.openScene(false) }
+                PillButton { text: I18n.tr("Include plugins", I18n.rev); kind: "primary"; onClicked: page.openScene(true) }
+            }
+        }
+    }
+    function openScene(includePlugins) {
+        sceneChoice.close()
+        Sources.sceneOpen(page.name, includePlugins)
+        Navigation.goKey("artistScene", page.name)
     }
 }

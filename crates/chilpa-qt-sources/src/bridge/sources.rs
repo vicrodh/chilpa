@@ -42,6 +42,16 @@ pub mod qobject {
         /// page's Network sidebar; `loading` until it is read.
         #[qinvokable]
         fn network(self: &Sources, name: &QString, rev: i32) -> QString;
+        #[qinvokable]
+        fn scene(self: &Sources, rev: i32) -> QString;
+        #[qinvokable]
+        fn scene_open(self: Pin<&mut Sources>, name: &QString, include_sources: bool);
+        #[qinvokable]
+        fn scene_more(self: Pin<&mut Sources>);
+        #[qinvokable]
+        fn scene_retry(self: Pin<&mut Sources>);
+        #[qinvokable]
+        fn scene_close(self: Pin<&mut Sources>);
     }
 }
 use cxx_qt_lib::{QString, QUrl};
@@ -70,6 +80,13 @@ impl qobject::Sources {
     pub fn album_libraries(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.album_libraries())) }
     pub fn page(&self, key: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.source_page(&key.to_string()))) }
     pub fn network(&self, name: &QString, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_network(&name.to_string()))) }
+    pub fn scene(&self, _rev: i32) -> QString { QString::from(crate::app::with(|api| api.artist_scene_json())) }
+    pub fn scene_open(self: Pin<&mut Self>, name: &QString, include_sources: bool) {
+        crate::app::with(|api| api.artist_scene_open(&name.to_string(), include_sources));
+    }
+    pub fn scene_more(self: Pin<&mut Self>) { crate::app::with(|api| api.artist_scene_more()); }
+    pub fn scene_retry(self: Pin<&mut Self>) { crate::app::with(|api| api.artist_scene_retry()); }
+    pub fn scene_close(self: Pin<&mut Self>) { crate::app::with(|api| api.artist_scene_close()); }
     pub fn command(mut self: Pin<&mut Self>, action: &QString, id: &QString, text: &QString) {
         crate::app::with(|api| api.sources_command(&action.to_string(), &id.to_string(), &text.to_string()));
         self.as_mut().refresh();
