@@ -779,8 +779,10 @@ impl Chilpa {
         chilpa_core::queue_playback::DsdMode::from_key(
             // Existing installations played direct ALSA DSD as DoP before
             // this became an explicit three-way choice. Preserve that route
-            // until the user chooses Native or PCM.
-            self.preference(DSD_MODE).as_deref().unwrap_or("dop"),
+            // until the user chooses Native or PCM. Anywhere else DoP is
+            // never assumed: a DAC that does not decode it plays it as loud
+            // noise, so it is chosen by whoever knows the DAC.
+            self.preference(DSD_MODE).as_deref().unwrap_or(if cfg!(target_os = "linux") { "dop" } else { "pcm" }),
         )
     }
 

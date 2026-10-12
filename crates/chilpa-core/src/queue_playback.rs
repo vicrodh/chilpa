@@ -65,7 +65,7 @@ pub(crate) fn open_track(
     caps: &DeviceCaps,
     policy: Policy,
     dsd_mode: DsdMode,
-    direct_dsd: bool,
+    direct_dsd: Option<&DeviceCaps>,
 ) -> Result<Opened, PlayError> {
     let unreadable = |e: String| PlayError::Sink(SinkError::Backend(e));
     if let Some((image, number)) = crate::sacd_tracks::parse(path) {
@@ -116,15 +116,21 @@ fn said_by(path: &Path) -> (Option<chilpa_tags::Tags>, Option<PathBuf>) {
 /// either chosen, a DSD record did not play through a sound server or on a
 /// card that takes neither, where converting is all it took. The delivery
 /// says it was converted, so nothing calls it bit-perfect.
+///
+/// `direct` is what reaches the output's wire untouched, or `None` where
+/// nothing does: DoP and native DSD are negotiated against it and nothing
+/// else. On a card it is the card's own caps; on a stack that converts on
+/// its own it is narrower than `caps`, and a carrier rate the device lacks
+/// is not offered -- a resampled DoP stream is loud noise.
 fn dsd_track(
     reader: Box<dyn DsdSource>,
     caps: &DeviceCaps,
     mode: DsdMode,
-    direct: bool,
+    direct: Option<&DeviceCaps>,
 ) -> Result<(Source, Delivery), PlayError> {
-    let untouched = match mode {
-        DsdMode::Dop if direct => negotiate(dop_request(reader.info()), caps, Policy::BitPerfect).ok(),
-        DsdMode::Native if direct => native_request(reader.info(), caps)
+    let untouched = match (mode, direct) {
+        (DsdMode::Dop, Some(exact)) => negotiate(dop_request(reader.info()), exact, Policy::BitPerfect).ok(),
+        (DsdMode::Native, Some(exact)) => native_request(reader.info(), exact)
             .map(|request| Delivery { requested: request, opened: request, transforms: Vec::new() }),
         _ => None,
     };
@@ -488,8 +494,12 @@ pub struct Controls {
     pub volume: Level,
     /// The user's explicit DSD delivery choice.
     pub dsd_mode: DsdModeChoice,
-    /// Whether the selected route is the physical ALSA hardware path.
+    /// Whether the selected route can take one-bit audio untouched.
     pub direct_dsd: Switch,
+    /// What reaches that route's wire untouched, when it is narrower than
+    /// what the route takes: DoP is negotiated against it. `None` on a card,
+    /// whose own caps already are that.
+    pub direct_caps: std::sync::Arc<std::sync::Mutex<Option<DeviceCaps>>>,
     /// A new playback request is waiting. The current sink hands its device
     /// lease to that request instead of returning the card to the sound
     /// server for a few milliseconds and taking it straight back.
@@ -554,6 +564,7 @@ impl Default for Controls {
             volume: Level::new(1.0),
             dsd_mode: DsdModeChoice::default(),
             direct_dsd: Switch::new(false),
+            direct_caps: std::sync::Arc::new(std::sync::Mutex::new(None)),
             handoff: Switch::new(false),
             waveform: std::sync::Arc::new(std::sync::Mutex::new(None)),
         }
@@ -561,6 +572,14 @@ impl Default for Controls {
 }
 
 impl Controls {
+    /// What one-bit audio may be negotiated against untouched on the route
+    /// as it stands, or `None` where it is always converted.
+    pub(crate) fn dsd_direct(&self, caps: &DeviceCaps) -> Option<DeviceCaps> {
+        self.direct_dsd.get().then(|| {
+            self.direct_caps.lock().ok().and_then(|exact| exact.clone()).unwrap_or_else(|| caps.clone())
+        })
+    }
+
     pub fn new() -> Self {
         Self::default()
     }
@@ -955,7 +974,7 @@ where
         if stop.is_stopped() { break; }
         let source_started = std::time::Instant::now();
         let ahead = prepared.is_some();
-        let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.direct_dsd.get()));
+        let ready = prepared.unwrap_or_else(|| open_track(path, caps, policy, controls.dsd_mode.get(), controls.dsd_direct(caps).as_ref()));
         let Opened { mut source, mut delivery, about } = match ready {
             Ok(opened) => opened,
             Err(error) if crate::remote::entry(path).is_some() => {
@@ -1134,8 +1153,8 @@ where
                         _ => None,
                     };
                     let at = crate::preload::at(crate::remote::entry(&path).is_some(), delivery.opened.sample_rate_hz, length);
-                    let (caps, dsd_mode, direct_dsd) = (caps.clone(), controls.dsd_mode.get(), controls.direct_dsd.get());
-                    preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct_dsd));
+                    let (caps, dsd_mode, direct) = (caps.clone(), controls.dsd_mode.get(), controls.dsd_direct(caps));
+                    preload.request_at(path, at, move |path| open_track(path, &caps, policy, dsd_mode, direct.as_ref()));
                 }
             }
         }

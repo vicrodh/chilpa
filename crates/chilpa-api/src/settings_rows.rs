@@ -273,19 +273,30 @@ impl Chilpa {
                 }
             }
             "audio.dsdMode" => {
-                // Only a card on hw takes DSD untouched. Anywhere else it
-                // plays converted, and the row says so instead of going
-                // away: a hidden row left the choice made for the card
-                // looking like the one in force.
-                let (direct, mode) = (self.stack_of(output) == "alsa" && self.alsa_plugin() == "hw", self.dsd_mode());
+                // Only a card on hw, or a Mac's output alone, takes DSD
+                // untouched. Anywhere else it plays converted, and the row
+                // says so instead of going away: a hidden row left the
+                // choice made for the card looking like the one in force.
+                // A Mac has no native DSD to offer, only DoP.
+                let mac = self.stack_of(output) == "coreaudio";
+                let direct = (self.stack_of(output) == "alsa" && self.alsa_plugin() == "hw") || (mac && self.exclusive());
+                let mode = self.dsd_mode();
                 for (value, label) in fixed(&row.key) {
+                    if mac && value == "native" {
+                        continue;
+                    }
                     row.values.push(value.to_string());
                     row.options.push(label);
                 }
-                row.value = if direct { mode.key() } else { "pcm" }.to_string();
+                let shown = if mac && mode.key() == "native" { "pcm" } else { mode.key() };
+                row.value = if direct { shown } else { "pcm" }.to_string();
                 if !direct {
                     row.control = "fixed".into();
-                    row.description = chilpa_i18n::t("This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept.");
+                    row.description = if mac {
+                        chilpa_i18n::t("This output takes DSD converted to PCM. DoP needs exclusive mode, and a DAC that decodes it.")
+                    } else {
+                        chilpa_i18n::t("This output takes DSD converted to PCM. Only a card on hw takes it untouched; what is chosen for the card is kept.")
+                    };
                 }
             }
             "audio.wizard" => {

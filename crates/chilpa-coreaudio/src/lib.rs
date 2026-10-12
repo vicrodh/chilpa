@@ -164,6 +164,31 @@ impl OutputBackend for CoreAudio {
         })
     }
 
+    /// The rates the device runs at, and 24 bits in 32 when its wire
+    /// publishes an integer format of 24 bits or more. That is what DoP
+    /// needs: the device at the carrier's rate, Chilpa's alone, and a float
+    /// made from a 24-bit word going back into a 24-bit word unchanged. A
+    /// wire of floats -- a Mac's speakers -- gets nothing.
+    fn untouched_caps(&self, id: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
+        let device = find(id)?;
+        if integer_wire(device).into_iter().all(|bits| bits < 24) {
+            return None;
+        }
+        let mut sample_rates: Vec<u32> = STANDARD_RATES
+            .iter()
+            .copied()
+            .filter(|rate| play::runs_at(device, f64::from(*rate)))
+            .collect();
+        sample_rates.dedup();
+        let channels = read::output_channels(device).min(u32::from(u16::MAX)) as u16;
+        Some(chilpa_audio::negotiate::DeviceCaps {
+            sample_rates,
+            formats: vec![chilpa_audio::format::SampleFormat::S24In32],
+            channels: if channels >= 2 { (2..=channels).collect() } else { vec![channels.max(1)] },
+            probed: true,
+        })
+    }
+
     /// Read from the device as it stands, after it opened: whether it runs
     /// at the track's rate, carries integers at least as wide as the track,
     /// and is Chilpa's alone.
@@ -271,6 +296,12 @@ pub fn find(name: &str) -> Option<ffi::AudioObjectID> {
         .find(|d| read::output_channels(*d) > 0 && read::name(*d) == name)
 }
 
+/// The rates a track can come in, and the ones a device may run at.
+const STANDARD_RATES: [u32; 16] = [
+    8_000, 11_025, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000, 176_400, 192_000,
+    352_800, 384_000, 705_600, 768_000,
+];
+
 /// What an output can be handed, without opening it.
 ///
 /// Every rate, because the output unit converts whatever the device does
@@ -283,10 +314,7 @@ pub fn capabilities(name: &str) -> Option<chilpa_audio::negotiate::DeviceCaps> {
     let device = find(name)?;
     let channels = read::output_channels(device).min(u32::from(u16::MAX)) as u16;
     Some(chilpa_audio::negotiate::DeviceCaps {
-        sample_rates: vec![
-            8_000, 11_025, 16_000, 22_050, 24_000, 32_000, 44_100, 48_000, 88_200, 96_000,
-            176_400, 192_000, 352_800, 384_000, 705_600, 768_000,
-        ],
+        sample_rates: STANDARD_RATES.to_vec(),
         formats: vec![
             SampleFormat::S16,
             SampleFormat::S24Packed,

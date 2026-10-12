@@ -445,3 +445,49 @@ fn a_dsdiff_file_plays_in_a_queue_like_a_dsf() {
         let _ = std::fs::remove_file(t);
     }
 }
+
+#[test]
+fn dop_goes_only_where_the_wire_takes_the_carrier_untouched() {
+    // A stack that converts on its own -- a Mac's output unit -- takes any
+    // rate, and DoP resampled is loud noise. What decides is what reaches
+    // its wire untouched: without the carrier there, the record plays as
+    // PCM; with it, as DoP.
+    let takes_anything = DeviceCaps {
+        sample_rates: vec![44_100, 88_200, 96_000, 176_400, 192_000],
+        formats: vec![SampleFormat::S16, SampleFormat::S24In32, SampleFormat::F32],
+        channels: vec![2],
+        probed: true,
+    };
+    let device = |rates: Vec<u32>| DeviceCaps {
+        sample_rates: rates,
+        formats: vec![SampleFormat::S24In32],
+        channels: vec![2],
+        probed: true,
+    };
+    for (rates, dop) in [(vec![44_100, 48_000, 88_200, 96_000, 192_000], false), (vec![44_100, 88_200, 176_400], true)] {
+        let track = dsf_of(&format!("untouched-{dop}"), u64::from(RATE) / 10);
+        let controls = Controls::new();
+        controls.dsd_mode.set(DsdMode::Dop);
+        controls.direct_dsd.set(true);
+        *controls.direct_caps.lock().unwrap() = Some(device(rates.clone()));
+        let mut delivery = None;
+        play_queue_with(
+            &SharedQueue::new(vec![track.clone()]),
+            &takes_anything,
+            Policy::AllowAnything,
+            &controls,
+            |format| Ok(Swallow(format)),
+            &mut |_, _, opened| delivery = Some(opened.clone()),
+            &mut |_, _| {},
+        )
+        .unwrap_or_else(|e| panic!("{rates:?}: the queue runs, not {e:?}"));
+        let delivery = delivery.unwrap_or_else(|| panic!("{rates:?}: the track started"));
+        if dop {
+            assert_eq!(delivery.opened, StreamFormat::new(SampleFormat::S24In32, 176_400, 2), "{rates:?}: DoP at the carrier");
+            assert!(delivery.nothing_was_converted(), "{rates:?}");
+        } else {
+            assert!(delivery.transforms.contains(&Transform::DsdToPcm), "{rates:?}: converted, never DoP resampled");
+        }
+        let _ = std::fs::remove_file(track);
+    }
+}
