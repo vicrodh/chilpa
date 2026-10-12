@@ -32,6 +32,8 @@ pub mod qobject {
         #[qproperty(i32, tracks)]
         /// The folder tree as a list instead of one folder's children.
         #[qproperty(bool, tree)]
+        /// The discs of a box set side by side shown as the box.
+        #[qproperty(bool, grouped)]
         type FolderModel = super::FolderModelRust;
         #[qinvokable]
         fn play_all(self: Pin<&mut FolderModel>);
@@ -115,6 +117,7 @@ pub struct FolderModelRust {
     folders: i32,
     tracks: i32,
     tree: bool,
+    grouped: bool,
     items: Vec<FolderItem>,
     generation: u64,
     pending: bool,
@@ -217,10 +220,11 @@ impl qobject::FolderModel {
         let query = self.rust().query.to_string();
         let thread = self.qt_thread();
         let tree = self.rust().tree.then(|| OPEN.with(|open| open.borrow().clone()));
+        let grouped = self.rust().grouped;
         worker::submit(move |reader| {
             let view = match &tree {
                 Some(open) => reader.folder_tree(open, &query),
-                None if query.trim().is_empty() => reader.folder(&dir),
+                None if query.trim().is_empty() => reader.folder_with(&dir, grouped),
                 None => reader.folder_matches(&query),
             };
             let _ = thread.queue(move |model| model.arrive(generation, view));
@@ -255,6 +259,7 @@ impl cxx_qt::Initialize for qobject::FolderModel {
         self.as_mut().on_query_changed(|m| m.schedule()).release();
         self.as_mut().on_content_rev_changed(|m| m.schedule()).release();
         self.as_mut().on_tree_changed(|m| m.schedule()).release();
+        self.as_mut().on_grouped_changed(|m| m.schedule()).release();
         self.schedule();
     }
 }

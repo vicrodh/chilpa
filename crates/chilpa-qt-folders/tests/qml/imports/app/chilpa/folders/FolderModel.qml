@@ -4,6 +4,7 @@ ListModel {
     property string query: ""
     property bool content: false
     property bool tree: false
+    property bool grouped: false
     property bool hasCd: false
     property bool loading: false
     property bool inLibrary: false

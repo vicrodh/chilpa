@@ -203,6 +203,25 @@ pub(crate) fn artist_of(a: chilpa_library::StoredArtist, pictures: &chilpa_libra
     crate::Artist { name: a.name, album_count: a.album_count, track_count: a.track_count, artwork_path }
 }
 
+/// Folders side by side that each hold part of one record -- the discs of a
+/// box set -- as one entry that is that record, where the first of them was.
+/// A part alone stays a folder.
+fn grouped(folders: Vec<chilpa_library::FolderEntry>) -> Vec<chilpa_library::FolderEntry> {
+    let parts = |id: i64| folders.iter().filter(|f| f.part_of == Some(id)).count();
+    let mut out: Vec<chilpa_library::FolderEntry> = Vec::new();
+    for folder in &folders {
+        let Some(id) = folder.part_of.filter(|&id| parts(id) > 1) else {
+            out.push(folder.clone());
+            continue;
+        };
+        match out.iter_mut().find(|f| f.album_id == Some(id)) {
+            Some(record) => record.tracks += folder.tracks,
+            None => out.push(chilpa_library::FolderEntry { album_id: Some(id), part_of: None, ..folder.clone() }),
+        }
+    }
+    out
+}
+
 /// A folder as the Folders screen shows it.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct FolderView {
@@ -354,6 +373,12 @@ impl Reader {
     /// A folder: the library's roots for an empty path, what the library
     /// has under a folder inside it, or what the disk has in one outside it.
     pub fn folder(&self, dir: &str) -> FolderView {
+        self.folder_with(dir, false)
+    }
+
+    /// The same, with the discs of a box set side by side standing as the
+    /// box when `collections` asks for it (Folders' "Group collections").
+    pub fn folder_with(&self, dir: &str, collections: bool) -> FolderView {
         if chilpa_core::sacd_tracks::is_image(std::path::Path::new(dir)) {
             let mut tracks = crate::folders::image_rows(std::path::Path::new(dir));
             let paths = tracks.iter().map(|row| row.path.clone()).collect::<Vec<_>>();
@@ -382,6 +407,7 @@ impl Reader {
         let inside = roots.iter().any(|r| std::path::Path::new(dir).starts_with(&r.path));
         if inside {
             let (folders, tracks) = self.lib.folder_children(dir).unwrap_or_default();
+            let folders = if collections { grouped(folders) } else { folders };
             return FolderView { folders: folders.into_iter().map(|f| FolderItem { name: f.name, path: f.path, tracks: f.tracks, artwork_path: f.artwork_path.unwrap_or_default(), folders: f.folders, album_id: f.album_id.unwrap_or(0), ..FolderItem::default() }).collect(), tracks: tracks.into_iter().map(row_of).collect(), in_library: true, total: self.lib.folder_track_count(dir).unwrap_or(0) };
         }
         crate::folders::disk_folder(std::path::Path::new(dir))
@@ -828,6 +854,23 @@ mod tests {
 
     fn entry(label: &str) -> FacetEntry {
         FacetEntry { key: label.into(), label: label.into(), albums: 0, year: None, icon: String::new() }
+    }
+
+    fn folder(name: &str, tracks: usize, album_id: Option<i64>, part_of: Option<i64>) -> chilpa_library::FolderEntry {
+        chilpa_library::FolderEntry { name: name.into(), path: format!("/m/{name}"), tracks, artwork_path: None, folders: 0, album_id, part_of }
+    }
+
+    #[test]
+    fn the_discs_of_a_box_stand_as_the_box_where_the_first_one_was() {
+        let found = grouped(vec![folder("Booklet", 2, None, None), folder("Disc 1", 18, None, Some(7)), folder("Disc 2", 16, None, Some(7)), folder("Single", 9, Some(3), None)]);
+        let shown: Vec<(&str, usize, Option<i64>)> = found.iter().map(|f| (f.name.as_str(), f.tracks, f.album_id)).collect();
+        assert_eq!(shown, [("Booklet", 2, None), ("Disc 1", 34, Some(7)), ("Single", 9, Some(3))]);
+    }
+
+    #[test]
+    fn a_disc_alone_stays_a_folder() {
+        let found = grouped(vec![folder("Disc 2", 16, None, Some(7))]);
+        assert_eq!((found.len(), found[0].album_id, found[0].part_of), (1, None, Some(7)));
     }
 
     #[test]
