@@ -5316,3 +5316,27 @@ msgstr ""
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr ""
+
+msgid "SACD XML"
+msgstr ""
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr ""
+
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr ""
+
+msgid "Write the external SACD XML?"
+msgstr ""
+
+msgid "Write XML"
+msgstr ""
+
+msgid "XML can be edited only for SACD images"
+msgstr ""
+
+msgid "one or more SACD images have no matching external XML"
+msgstr ""
+
+msgid "the SACD XML could not be written: {}"
+msgstr ""

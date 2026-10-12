@@ -22,8 +22,7 @@ rusqlite = "0.40"
 ebur128 = "0.1"
 chilpa-dsd.workspace = true
 chilpa-sacd.workspace = true
-
-[dev-dependencies]
+roxmltree = "0.21"
 tempfile = "3"
 
 [target.'cfg(target_os = "linux")'.dependencies.chilpa-cd]

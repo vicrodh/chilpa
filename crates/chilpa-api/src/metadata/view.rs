@@ -66,11 +66,13 @@ pub struct CoverView {
 
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct SaveView {
-    /// "sidecar" | "files"
+    /// "sidecar" | "files" | "xml"
     pub mode: &'static str,
     pub files_allowed: bool,
     /// Why not. Empty when allowed.
     pub files_refused: String,
+    pub xml_allowed: bool,
+    pub xml_refused: String,
     /// "2.4" | "2.3"
     pub id3: &'static str,
     pub secondary_layers: bool,
@@ -159,6 +161,17 @@ pub(crate) fn files_refused(draft: &Draft, layers: &Layers) -> String {
     String::new()
 }
 
+/// All selected tracks must belong to verified XML-backed SACD images.
+pub(crate) fn xml_refused(draft: &Draft) -> String {
+    if draft.rows.iter().any(|row| !row.inside_a_disc()) {
+        return chilpa_i18n::t("XML can be edited only for SACD images");
+    }
+    if draft.homes.iter().any(|home| home.xml.is_none()) {
+        return chilpa_i18n::t("one or more SACD images have no matching external XML");
+    }
+    String::new()
+}
+
 fn layers_view(layers: &Layers) -> LayersView {
     LayersView {
         files: layers.files,
@@ -213,9 +226,11 @@ impl Editor {
                 .collect();
             let refused = files_refused(draft, &self.layers);
             view.save = SaveView {
-                mode: if self.mode == Mode::Files { "files" } else { "sidecar" },
+                mode: match self.mode { Mode::Files => "files", Mode::Xml => "xml", Mode::Sidecar => "sidecar" },
                 files_allowed: refused.is_empty(),
                 files_refused: refused,
+                xml_allowed: xml_refused(draft).is_empty(),
+                xml_refused: xml_refused(draft),
                 id3: if self.id3 == Id3Version::V23 { "2.3" } else { "2.4" },
                 secondary_layers: self.secondary_layers,
                 done: self.progress.0,

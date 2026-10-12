@@ -5316,3 +5316,27 @@ msgstr "{}s"
 
 msgid "“{}” has changes that were not saved. Opening this record loses them."
 msgstr "“{}” tiene cambios sin guardar. Si abres este disco se pierden."
+
+msgid "SACD XML"
+msgstr "XML de SACD"
+
+msgid "The ISO stays untouched; fields without an XML place and cover art use a sidecar."
+msgstr "El ISO queda intacto; los campos sin lugar en el XML y la portada van al sidecar."
+
+msgid "The ISO stays untouched. Supported metadata goes into the XML; other fields and cover art use a Chilpa sidecar."
+msgstr "El ISO queda intacto. Los metadatos compatibles van al XML; los demás campos y la portada van a un sidecar de Chilpa."
+
+msgid "Write the external SACD XML?"
+msgstr "¿Escribir el XML externo del SACD?"
+
+msgid "Write XML"
+msgstr "Escribir XML"
+
+msgid "XML can be edited only for SACD images"
+msgstr "El XML sólo se puede editar para imágenes SACD"
+
+msgid "one or more SACD images have no matching external XML"
+msgstr "Una o más imágenes SACD no tienen un XML externo correspondiente"
+
+msgid "the SACD XML could not be written: {}"
+msgstr "No se pudo escribir el XML del SACD: {}"

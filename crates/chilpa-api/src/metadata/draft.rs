@@ -75,6 +75,8 @@ pub(crate) struct HomeState {
     pub sidecar: Option<Sidecar>,
     /// Why its sidecar could not be read, when it could not. Empty otherwise.
     pub unreadable: String,
+    /// The verified external XML beside a SACD image, if there is one.
+    pub xml: Option<std::path::PathBuf>,
 }
 
 pub(crate) struct Row {
@@ -311,7 +313,7 @@ pub(crate) mod testing {
     }
 
     pub(crate) fn home(sidecar: Option<Sidecar>) -> HomeState {
-        HomeState { home: Home::of("/m/A record/01.flac", None), of: "/m/A record/01.flac".into(), sidecar, unreadable: String::new() }
+        HomeState { home: Home::of("/m/A record/01.flac", None), of: "/m/A record/01.flac".into(), sidecar, unreadable: String::new(), xml: None }
     }
 
     /// Two tracks in one folder, as their files say.
@@ -402,7 +404,7 @@ mod tests {
         let mut held = track(1, 1);
         held.external_id = "sacd:/m/disc.iso#1".into();
         held.container = Some("/m/disc.iso".into());
-        let at = HomeState { home: Home::of("", Some("/m/disc.iso")), of: held.external_id.clone(), sidecar: None, unreadable: String::new() };
+        let at = HomeState { home: Home::of("", Some("/m/disc.iso")), of: held.external_id.clone(), sidecar: None, unreadable: String::new(), xml: None };
         let mut draft = Draft::open(&album(), vec![held], vec![Read::default()], vec![at]);
         assert_eq!(draft.rows[0].key, "#1");
         assert!(!draft.set_track(1, "track_number", "5"));

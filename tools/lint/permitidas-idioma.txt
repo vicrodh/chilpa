@@ -630,3 +630,6 @@ rico
 # Artist scene identity terms.
 isrcs
 tiebreak
+attr
+attrs
+xmls

@@ -51,6 +51,7 @@ pub(crate) enum Mode {
     #[default]
     Sidecar,
     Files,
+    Xml,
 }
 
 pub(crate) struct Editor {
@@ -290,13 +291,14 @@ impl Chilpa {
         editor.refresh();
     }
 
-    /// "sidecar" | "files"
+    /// "sidecar" | "files" | "xml"
     pub fn metadata_set_mode(&mut self, mode: &str) -> bool {
         let editor = &mut self.metadata;
         let Some(draft) = editor.draft.as_ref().filter(|_| editor.state == State::Ready) else { return false };
         let mode = match mode {
             "sidecar" => Mode::Sidecar,
             "files" => Mode::Files,
+            "xml" => Mode::Xml,
             _ => return false,
         };
         if mode == Mode::Files {
@@ -304,6 +306,10 @@ impl Chilpa {
             if !refused.is_empty() {
                 return editor.refuse(refused);
             }
+        }
+        if mode == Mode::Xml {
+            let refused = view::xml_refused(draft);
+            if !refused.is_empty() { return editor.refuse(refused); }
         }
         editor.mode = mode;
         editor.refresh();

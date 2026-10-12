@@ -55,22 +55,31 @@ impl chilpa_library::scan::Containers for DiscImages {
         is_image(path)
     }
 
+    fn evidence_stamp(&self, path: &Path) -> u64 {
+        super::sacd_xml::stamp(path)
+    }
+
     fn tracks(&self, path: &Path) -> Option<Vec<chilpa_library::scan::ContainedTrack>> {
         let disc = chilpa_sacd::open(path).ok()?;
+        let expected: Vec<_> = disc.area.tracks.iter().map(|track| track.number).collect();
+        let xml = super::sacd_xml::read_for(path, &expected);
         Some(
             disc.area
                 .tracks
                 .iter()
-                .map(|track| chilpa_library::scan::ContainedTrack {
+                .map(|track| {
+                    let mut tags = tags(&disc.area, track, path);
+                    if let Some(xml) = &xml { xml.overlay_tags(track.number, &mut tags); }
+                    chilpa_library::scan::ContainedTrack {
                     path: path_of(path, track.number).display().to_string(),
                     info: chilpa_tags::FileInfo {
-                        tags: tags(&disc.area, track, path),
+                        tags,
                         duration: std::time::Duration::from_secs_f64(track.duration_secs()),
                         sample_rate_hz: Some(chilpa_sacd::DSD64_HZ),
                         bit_depth: Some(1),
                         channels: Some(2),
                     },
-                })
+                }})
                 .collect(),
         )
     }
@@ -81,6 +90,13 @@ pub fn disc_images() -> std::sync::Arc<dyn chilpa_library::scan::Containers + Se
     std::sync::Arc::new(DiscImages)
 }
 
+/// The external stereo XML paired with this image, if the match is exact.
+pub fn xml_for(image: &Path) -> Option<super::sacd_xml::XmlMetadata> {
+    let disc = chilpa_sacd::open(image).ok()?;
+    let expected: Vec<_> = disc.area.tracks.iter().map(|track| track.number).collect();
+    super::sacd_xml::read_for(image, &expected)
+}
+
 /// What the disc says about one of its tracks, as tags, and how long the
 /// track runs in one-bit samples per channel at DSD64. How many frames that
 /// is depends on what opened -- DoP, native or PCM -- and the player counts
@@ -88,7 +104,10 @@ pub fn disc_images() -> std::sync::Arc<dyn chilpa_library::scan::Containers + Se
 pub(crate) fn about(image: &Path, number: u8) -> Option<(chilpa_tags::Tags, u64)> {
     let disc = chilpa_sacd::open(image).ok()?;
     let track = disc.area.tracks.iter().find(|t| t.number == number)?;
-    Some((tags(&disc.area, track, image), one_bit_samples(track)))
+    let mut tags = tags(&disc.area, track, image);
+    let expected: Vec<_> = disc.area.tracks.iter().map(|track| track.number).collect();
+    if let Some(xml) = super::sacd_xml::read_for(image, &expected) { xml.overlay_tags(number, &mut tags); }
+    Some((tags, one_bit_samples(track)))
 }
 
 /// A track's title as its disc gives it, when the path names a track of an

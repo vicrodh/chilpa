@@ -19,6 +19,7 @@ Item {
     readonly property var save: doc.save || ({})
     readonly property var layers: doc.layers || ({})
     readonly property bool files: save.mode === "files"
+    readonly property bool xml: save.mode === "xml"
     readonly property string album: (doc.album || []).length > 0 ? doc.album[0].value : ""
     readonly property string layerLine: (layers.present || []).map(l => l.name + " (" + l.files + ")").join(", ")
 
@@ -93,9 +94,21 @@ Item {
             color: Theme.color.textSecondary
         }
         SegmentedControl {
-            options: [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }]
-            current: root.files ? 1 : 0
-            onActivated: (index) => MetadataEditor.setMode(index === 1 ? "files" : "sidecar")
+            options: root.save.xml_allowed
+                     ? [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }, { text: I18n.tr("SACD XML", I18n.rev) }]
+                     : [{ text: I18n.tr("Sidecar", I18n.rev) }, { text: I18n.tr("Files", I18n.rev) }]
+            current: root.xml ? 2 : root.files ? 1 : 0
+            onActivated: (index) => MetadataEditor.setMode(index === 2 ? "xml" : index === 1 ? "files" : "sidecar")
+        }
+        Text {
+            visible: root.xml
+            width: Math.min(implicitWidth, options.width)
+            height: Math.max(Metrics.segmentHeight, implicitHeight)
+            verticalAlignment: Text.AlignVCenter
+            text: I18n.tr("The ISO stays untouched; fields without an XML place and cover art use a sidecar.", I18n.rev)
+            wrapMode: Text.WordWrap
+            font.pointSize: Type.meta
+            color: Theme.color.textSecondary
         }
         Text {
             visible: !root.save.files_allowed && root.save.files_refused !== ""
