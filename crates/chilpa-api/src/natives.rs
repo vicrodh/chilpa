@@ -208,8 +208,8 @@ impl Natives {
             "protocol": PROTOCOL,
             "playback_events": 1,
             "host": {"name": "chilpa", "version": env!("CARGO_PKG_VERSION")},
-            "data_dir": "/data",
-            "cache_dir": "/cache",
+            "data_dir": plugin_data_dir(&manifest.id),
+            "cache_dir": plugin_cache_dir(&manifest.id),
             "locale": chilpa_i18n::current_language(),
         }), GREETING).map_err(|e| PluginError::Crashed(e.to_string()))?;
         if greeting.get("protocol").and_then(Value::as_u64) != Some(PROTOCOL as u64) {
@@ -260,6 +260,20 @@ impl Natives {
     }
 }
 
+fn plugin_data_dir(id: &str) -> String {
+    #[cfg(target_os = "linux")]
+    { let _ = id; "/data".into() }
+    #[cfg(not(target_os = "linux"))]
+    { chilpa_dirs::data().join("plugin-data").join(id).to_string_lossy().into_owned() }
+}
+
+fn plugin_cache_dir(id: &str) -> String {
+    #[cfg(target_os = "linux")]
+    { let _ = id; "/cache".into() }
+    #[cfg(not(target_os = "linux"))]
+    { chilpa_dirs::cache().join("plugins").join(id).to_string_lossy().into_owned() }
+}
+
 /// Installs a process plugin through the same approval and watchdog as the
 /// rest. A plugin nobody approved is never started.
 pub(crate) fn install(
@@ -297,9 +311,29 @@ fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>)
     .map_err(|_| PluginError::Crashed("the plugin's sandbox could not start".into()))
 }
 
-/// Native plugins run only inside the Linux sandbox for now; elsewhere they
-/// are listed with the reason and never started (ADR-010 debt).
-#[cfg(not(target_os = "linux"))]
+#[cfg(target_os = "macos")]
+fn launch(manifest: &Manifest, folder: &Path, natives: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
+    let id = manifest.id.clone();
+    let paths = chilpa_seatbelt::NativePaths {
+        folder: folder.to_path_buf(),
+        data: chilpa_dirs::data().join("plugin-data").join(&id),
+        cache: chilpa_dirs::cache().join("plugins").join(&id),
+        export: if manifest.has(&chilpa_plugin::Capability::FolderWrite) {
+            crate::plugin_center::export::read(folder.parent().unwrap_or(folder), &id)
+        } else { None },
+    };
+    let name = id.clone();
+    chilpa_seatbelt::launch_native(&paths, &id, move |method, params| {
+        if method == "host.request" {
+            if let Some(natives) = natives.upgrade() { crate::plugin_broker::dispatch(&natives, &name, params.clone()); }
+        } else if method == "log" {
+            eprintln!("plugin[{name}]: {}", params.get("message").and_then(Value::as_str).unwrap_or(""));
+        }
+    }).map_err(|_| PluginError::Unavailable("the plugin's macOS sandbox could not start".into()))
+}
+
+/// Native plugins remain disabled where no process sandbox is installed.
+#[cfg(not(any(target_os = "linux", target_os = "macos")))]
 fn launch(_: &Manifest, _: &Path, _: std::sync::Weak<Natives>) -> Result<Arc<NativeClient>, PluginError> {
-    Err(PluginError::NotAllowed("native plugins need a sandbox this system does not have yet".into()))
+    Err(PluginError::Unavailable("native plugins need a sandbox this system does not have yet".into()))
 }

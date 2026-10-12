@@ -444,6 +444,7 @@ dependencies = [
  "chilpa-models",
  "chilpa-mpris",
  "chilpa-plugin",
+ "chilpa-seatbelt",
  "chilpa-secrets",
  "chilpa-servers",
  "chilpa-tags",
@@ -946,6 +947,15 @@ dependencies = [
  "chilpa-i18n",
  "dst-decoder",
  "encoding_rs",
+]
+
+[[package]]
+name = "chilpa-seatbelt"
+version = "0.0.0"
+dependencies = [
+ "chilpa-plugin",
+ "serde_json",
+ "tempfile",
 ]
 
 [[package]]

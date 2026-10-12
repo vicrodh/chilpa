@@ -91,11 +91,12 @@ ALLOWED = {
     # nothing of Qt: the facade hands it on, so the shell still sees one crate.
     "chilpa-appkit": set(),
     "chilpa-bwrap": {"chilpa-plugin"},
+    "chilpa-seatbelt": {"chilpa-plugin"},
     # A Linux desktop's session bus: MPRIS, the sleep inhibitor and the
     # one-instance name. It knows nothing of the player.
     "chilpa-mpris": set(),
     "chilpa-core": {"chilpa-models", "chilpa-audio", "chilpa-tags", "chilpa-library", "chilpa-analysis", "chilpa-decode", "chilpa-stream", "chilpa-dsd", "chilpa-sacd", "chilpa-cd", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi"},
-    "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"},
+    "chilpa-api": {"chilpa-core", "chilpa-cast", "chilpa-models", "chilpa-library", "chilpa-tags", "chilpa-lyrics", "chilpa-plugin", "chilpa-secrets", "chilpa-auth", "chilpa-i18n", "chilpa-meta", "chilpa-servers", "chilpa-appkit", "chilpa-bwrap", "chilpa-seatbelt", "chilpa-mpris"},
     # El shell solo ve la fachada. Nunca el core ni los modelos.
     "chilpa-qt": {"chilpa-api", "chilpa-qt-kit", "chilpa-qt-sources", "chilpa-qt-controls", "chilpa-qt-lyrics", "chilpa-qt-metadata", "chilpa-qt-gallery", "chilpa-qt-folders", "chilpa-qt-ambient", "chilpa-qt-mini", "chilpa-qt-immersive", "chilpa-qt-waveform", "chilpa-qt-artwork", "chilpa-qt-about", "chilpa-qt-stats", "chilpa-qt-graphics", "chilpa-qt-link", "chilpa-qt-wizard"},
     # La segunda mitad del shell: lo que traen los sources, como su propio
@@ -208,7 +209,7 @@ def check_deps(errors):
 SUPUESTOS = re.compile(r'\bXDG_[A-Z_]+|"/proc/|"/etc/|\bUSERPROFILE\b|\bAPPDATA\b')
 
 # Los crates a los que sí les toca saber de una plataforma.
-PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi", "chilpa-cd", "chilpa-secrets", "chilpa-appkit", "chilpa-bwrap", "chilpa-mpris"}
+PLATAFORMA = {"chilpa-dirs", "chilpa-alsa", "chilpa-pipewire", "chilpa-pulse", "chilpa-jack", "chilpa-coreaudio", "chilpa-wasapi", "chilpa-cd", "chilpa-secrets", "chilpa-appkit", "chilpa-bwrap", "chilpa-seatbelt", "chilpa-mpris"}
 
 
 def check_supuestos(errors):

@@ -36,6 +36,8 @@ pub enum PluginError {
     VersionMismatch { claimed: i32, manifest: u32 },
     /// It went over one of its limits.
     Stopped(Halt),
+    /// The host cannot start this plugin on the current system.
+    Unavailable(String),
     /// It blew up inside.
     Crashed(String),
     /// It gave an address that is not in its memory.
@@ -68,6 +70,7 @@ impl std::fmt::Display for PluginError {
                 )
             ),
             PluginError::Stopped(d) => write!(f, "{d}"),
+            PluginError::Unavailable(reason) => write!(f, "{reason}"),
             PluginError::Crashed(e) => {
                 write!(f, "{}", chilpa_i18n::t_args("it blew up inside: {}", &[e]))
             }

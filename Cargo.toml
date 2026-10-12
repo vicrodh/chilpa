@@ -9,6 +9,7 @@ members = [
     "crates/chilpa-analysis",
     "crates/chilpa-plugin",
     "crates/chilpa-bwrap",
+    "crates/chilpa-seatbelt",
     "crates/chilpa-secrets",
     "crates/chilpa-auth",
     "crates/chilpa-meta",
@@ -66,6 +67,7 @@ chilpa-lyrics = { path = "crates/chilpa-lyrics" }
 chilpa-analysis = { path = "crates/chilpa-analysis" }
 chilpa-plugin = { path = "crates/chilpa-plugin" }
 chilpa-bwrap = { path = "crates/chilpa-bwrap" }
+chilpa-seatbelt = { path = "crates/chilpa-seatbelt" }
 chilpa-secrets = { path = "crates/chilpa-secrets" }
 chilpa-auth = { path = "crates/chilpa-auth" }
 chilpa-meta = { path = "crates/chilpa-meta" }
