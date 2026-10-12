@@ -4823,6 +4823,9 @@ msgstr "esta salida no tiene control de volumen propio"
 msgid "this output is not there any more"
 msgstr "esta salida ya no está"
 
+msgid "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback"
+msgstr "esta salida no tomaría el DSD intacto, así que no se mandó nada; elige Convertir a PCM para reproducir DSD"
+
 msgid "this part of the source is not there now"
 msgstr "esta parte de la fuente no está ahora"
 

@@ -4823,6 +4823,9 @@ msgstr ""
 msgid "this output is not there any more"
 msgstr ""
 
+msgid "this output would not take DSD untouched, so none was sent; choose Convert to PCM for DSD playback"
+msgstr ""
+
 msgid "this part of the source is not there now"
 msgstr ""
 
