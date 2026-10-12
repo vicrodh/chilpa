@@ -546,11 +546,14 @@ fn play(
         controls,
         |format| open(device, format, exclusive),
         &mut |index, path, delivery, about| {
+            // The verdict, once: what Chilpa did to the samples, the road past
+            // it, and the device as it opened.
+            let bit_perfect = delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery);
             chilpa_audio::diagnostics::trace(
                 "player",
                 "track_started",
                 format_args!(
-                    "index={index}/{total} path={path:?} requested={:?} opened={:?} transforms={:?} exact_path={exact_path}",
+                    "index={index}/{total} path={path:?} requested={:?} opened={:?} transforms={:?} exact_path={exact_path} bit_perfect={bit_perfect}",
                     delivery.requested,
                     delivery.opened,
                     delivery.transforms
@@ -568,7 +571,7 @@ fn play(
                     opened: delivery.opened,
                     channels: delivery.requested.channels,
                     bits: Some(1),
-                    bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
+                    bit_perfect,
                     // Counted in what opened: a disc played native runs
                     // half the frames of DoP, and was shown twice as long.
                     total_frames: about.as_ref().map(|(_, samples)| {
@@ -594,7 +597,7 @@ fn play(
                     opened: delivery.opened,
                     channels: delivery.requested.channels,
                     bits: delivery.bits_carried(),
-                    bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
+                    bit_perfect,
                     total_frames: frames,
                     tags: Some(about.tags),
                     artwork: about.artwork,
@@ -621,7 +624,7 @@ fn play(
                 opened: delivery.opened,
                 channels: delivery.requested.channels,
                 bits: if dsd.is_some() { Some(1) } else { delivery.bits_carried() },
-                bit_perfect: delivery.nothing_was_converted() && exact_path && crate::wire_keeps(device, delivery),
+                bit_perfect,
                 total_frames,
                 tags: about.tags.clone(),
                 artwork: about.artwork.clone(),
