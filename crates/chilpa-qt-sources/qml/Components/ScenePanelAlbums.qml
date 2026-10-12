@@ -24,6 +24,8 @@ Item {
             out.push({heading: section.title || "", count: albums.length})
             for (var j = 0; j < albums.length; j += columns)
                 out.push({albums:albums.slice(j, j + columns)})
+            if (section.key && (section.more || section.loading || section.error))
+                out.push({continuation:section})
         }
         return out
     }
@@ -75,8 +77,11 @@ Item {
             id: entry
             required property var modelData
             readonly property bool heading: modelData.heading !== undefined
+            readonly property bool continuation: !!modelData.continuation
             width: list.width
-            height: heading ? Metrics.scenePanelSectionHeader : Metrics.scenePanelCardHeight + Metrics.scenePanelGridGap
+            height: heading ? Metrics.scenePanelSectionHeader
+                : continuation ? (entry.modelData.continuation.error ? Metrics.sceneFooterHeight : Metrics.sceneNavHeight)
+                : Metrics.scenePanelCardHeight + Metrics.scenePanelGridGap
             Text {
                 id: sectionTitle
                 visible: entry.heading; text: entry.modelData.heading || ""
@@ -92,12 +97,28 @@ Item {
                 width: parent.width; height: Metrics.hairline; color: Theme.color.strokeHairline
             }
             Repeater {
-                model: entry.heading ? [] : entry.modelData.albums || []
+                model: entry.heading || entry.continuation ? [] : entry.modelData.albums || []
                 SceneAlbumCard {
                     required property var modelData
                     required property int index
                     x: index * (pane.trackWidth + Metrics.scenePanelGridGap)
                     album: modelData; plugin: pane.source.plugin || ""
+                }
+            }
+            Column {
+                visible: entry.continuation; spacing: Metrics.gap8
+                Text {
+                    visible: !!entry.modelData.continuation?.error
+                    width: list.width; text: entry.modelData.continuation?.error || ""
+                    textFormat: Text.PlainText; wrapMode: Text.WordWrap
+                    font.pointSize: Type.meta; color: Theme.color.statusNegative
+                }
+                PillButton {
+                    objectName: entry.continuation ? "sceneSectionMore" : ""
+                    visible: !!entry.modelData.continuation?.more || entry.modelData.continuation?.loading === true
+                    enabled: entry.modelData.continuation?.loading !== true
+                    text: entry.modelData.continuation?.loading === true ? I18n.tr("Loading…", I18n.rev) : I18n.tr("Load more", I18n.rev)
+                    onClicked: Sources.command("section_more", entry.modelData.continuation.key, "")
                 }
             }
         }

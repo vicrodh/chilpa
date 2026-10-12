@@ -42,7 +42,7 @@ TestCase {
         Sources.pages = {"fixture native:artist:7": JSON.stringify({
             shelves:[
                 {id:"latest",kind:"album",title:"Latest release",items:[{ref:"album:1",title:"Repeat"}]},
-                {id:"album",kind:"album",title:"Discography",items:[{ref:"album:1",title:"First",artist:"Cedar",year:"2024"},{ref:"album:2",title:"Second"}]},
+                {id:"album",key:"fixture native:artist:7|album",kind:"album",title:"Discography",more:"artist:7:album:2",items:[{ref:"album:1",title:"First",artist:"Cedar",year:"2024"},{ref:"album:2",title:"Second"}]},
                 {id:"single",kind:"album",title:"EPs & Singles",items:[{ref:"album:3",title:"Third"}]}
             ]
         }), "second native:artist:8": JSON.stringify({shelves:[{id:"album",kind:"album",title:"Other catalog",items:[{ref:"album:9",title:"Another"}]}]})}
@@ -54,7 +54,12 @@ TestCase {
         const albums = findChild(scene, "scenePanelAlbums")
         compare(panel.pageKey, "fixture native:artist:7")
         compare(albums.sections.map(s => s.title), ["Discography", "EPs & Singles"])
-        compare(albums.entries.length, 4, "two headers and one card row in each section")
+        compare(albums.entries.length, 5, "the first section also has a continuation")
+        compare(albums.entries[2].continuation.key, "fixture native:artist:7|album")
+        const more = findChild(albums, "sceneSectionMore")
+        verify(more !== null && more.visible)
+        more.clicked()
+        compare(Sources.asked[Sources.asked.length - 1], ["section_more", "fixture native:artist:7|album", ""])
         panel.selectedPlugin = "second"
         compare(panel.pageKey, "second native:artist:8")
         compare(albums.sections.map(s => s.title), ["Other catalog"])
