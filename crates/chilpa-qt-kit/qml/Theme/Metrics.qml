@@ -109,6 +109,9 @@ QtObject {
     // How many times a search's row is looked for before giving up.
     readonly property int settingsSeekTries: 10
     readonly property int tooltipDelay: 600
+    // How long the pointer rests before the line under it is looked at,
+    // to say itself whole if it was cut short (CutTextTips).
+    readonly property int cutTextLook: 150
     readonly property int toastMinWidth: 280
     readonly property int toastMaxWidth: 560
     readonly property int toastBottom: 88
