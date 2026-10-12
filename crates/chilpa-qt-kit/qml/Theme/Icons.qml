@@ -96,6 +96,7 @@ QtObject {
     readonly property string microphone2: "\uef2c"
     readonly property string minus: "\ueaf2"
     readonly property string music: "\ueafc"
+    readonly property string pencil: "\ueb04"
     readonly property string photo: "\ueb0a"
     readonly property string photoPlus: "\uf363"
     readonly property string pictureInPicture: "\ued35"
