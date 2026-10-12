@@ -11,6 +11,7 @@ import "qrc:/qt/qml/app/chilpa/kit/qml/Patterns"
 import "../Components"
 import "../Patterns"
 import "qrc:/qt/qml/app/chilpa/sources/qml/Patterns"
+import "qrc:/qt/qml/app/chilpa/sources/qml/Components" as SourceParts
 import "qrc:/qt/qml/app/chilpa/wizard/qml/Patterns" as WizardPatterns
 // Settings rows follow the facade schema.
 Item {
@@ -179,8 +180,8 @@ Item {
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ViewportScrollBar { gutter: Metrics.pageGutter }
         delegate: SettingsRow {
-            width: ListView.view.width - Metrics.gap12
-            page: actions
+            id: settingRow; width: ListView.view.width - Metrics.gap12; page: actions
+            serverEditor: Component { SourceParts.ServerEditForm { onClosed: actions.set(settingRow.key, "close-edit") } }
         }
     }
 

@@ -2,7 +2,6 @@ import QtQuick
 import app.chilpa
 import app.chilpa.kit
 import app.chilpa.controls
-import app.chilpa.sources
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 Item {
@@ -18,6 +17,7 @@ Item {
     required property var optionValues
     required property var marks
     property var page
+    property Component serverEditor
     readonly property bool group: rowKind === 0
     readonly property bool line: rowKind === 2
     readonly property bool editingServer: page && page.editingServerKey === key && key.startsWith("sources.server/")
@@ -82,7 +82,7 @@ Item {
     }
 
     Loader { id: editor; active: row.editingServer; width: parent.width; y: row.baseHeight + Metrics.gap12
-        sourceComponent: ServerEditForm { onClosed: row.page.set(row.key, "close-edit") } }
+        sourceComponent: row.serverEditor }
 
     Component {
         id: toggle
