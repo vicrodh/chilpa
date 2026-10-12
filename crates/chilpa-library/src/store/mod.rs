@@ -14,6 +14,15 @@ macro_rules! album_art {
     };
 }
 
+/// A track's cover, as QBZ's track surfaces take it (`ArtworkScope::Track`):
+/// the one chosen for its record, else its own disc's, else its record's.
+/// A box whose discs each have a cover showed the box's on every queue row.
+macro_rules! track_art {
+    ($t:literal, $a:literal) => {
+        concat!("coalesce((SELECT aw.path FROM album_artwork aw WHERE aw.album_id = ", $a, ".id), nullif(", $t, ".release_artwork, ''), ", $a, ".artwork_path)")
+    };
+}
+
 pub mod albums;
 pub mod artwork;
 pub mod advisory;
