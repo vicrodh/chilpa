@@ -80,6 +80,7 @@ pub mod qobject {
         fn move_in_playlist_to(self: Pin<&mut TrackListModel>, from: i32, to: i32);
         #[qinvokable]
         fn selected_row(self: &TrackListModel) -> i32;
+        #[qinvokable] fn playing_row(self: &TrackListModel) -> i32;
         #[qinvokable]
         fn selected_any_row(self: &TrackListModel) -> i32;
         #[qinvokable]
@@ -624,6 +625,8 @@ impl qobject::TrackListModel {
         }
         (0..this.len()).find(|&r| this.track_id(r).is_some_and(|id| this.selected.contains(&id))).map_or(-1, |r| r as i32)
     }
+
+    pub fn playing_row(&self) -> i32 { app::with(|api| self.rust().queue_keys.iter().position(|key| !key.is_empty() && api.listen_is_playing(key))).map_or(-1, |row| row as i32) }
 
     pub fn selected_any_row(&self) -> i32 {
         let this = self.rust();

@@ -1397,6 +1397,9 @@ msgstr ""
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr ""
 
+msgid "Focus on playing"
+msgstr ""
+
 msgid "Folder colors in the sidebar"
 msgstr ""
 
@@ -1510,6 +1513,9 @@ msgstr "Go to podcast"
 
 msgid "Go to source"
 msgstr "Go to source"
+
+msgid "Go to top"
+msgstr ""
 
 msgid "Go to {}"
 msgstr ""

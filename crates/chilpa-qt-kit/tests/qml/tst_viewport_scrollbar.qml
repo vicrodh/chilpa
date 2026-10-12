@@ -9,7 +9,7 @@ TestCase {
     name: "ViewportScrollbar"
     when: windowShown
     visible: true
-    width: 500
+    width: 800
     height: 400
     Flickable {
         id: view
@@ -42,6 +42,22 @@ TestCase {
         ScrollBar.vertical: ViewportScrollBar { id: overlayBar; overlayParent: test; z: 2 }
     }
     Rectangle { x: 300; y: 365; width: 120; height: 30; z: 1 }
+    Flickable {
+        id: gutterView
+        x: 550; y: 20; width: 180; height: 300
+        contentWidth: width; contentHeight: 1000
+        clip: true
+        ScrollBar.vertical: ViewportScrollBar { id: gutterBar; gutter: Metrics.pageGutter }
+    }
+    function test_hover_crosses_the_free_gutter_to_the_thumb() {
+        tryCompare(gutterBar, "parent", this)
+        mouseMove(gutterView, 150, 120)
+        tryCompare(gutterBar, "visible", true)
+        mouseMove(this, gutterBar.x - Metrics.gap4, gutterBar.y + 120)
+        compare(gutterBar.visible, true)
+        mouseMove(this, gutterBar.x + gutterBar.width / 2, gutterBar.y + 120)
+        compare(gutterBar.visible, true)
+    }
     function test_overlay_panel_keeps_scrollbar_at_page_edge() {
         tryCompare(overlayBar, "parent", this)
         compare(overlayBar.x, overlayView.x + overlayView.width - Metrics.gap8 - overlayBar.width / 2)

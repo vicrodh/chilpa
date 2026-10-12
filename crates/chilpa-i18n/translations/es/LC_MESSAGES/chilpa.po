@@ -1262,9 +1262,6 @@ msgstr "Vacía. Agrega pistas desde cualquier lista con clic derecho."
 msgid "Enable"
 msgstr "Activar"
 
-msgid "Enable {} in Settings › Sources to play this record."
-msgstr "Activa {} en Ajustes › Fuentes para reproducir este álbum."
-
 msgid "Enable PipeWire in your NixOS configuration"
 msgstr "Activa PipeWire en tu configuración de NixOS"
 
@@ -1400,6 +1397,9 @@ msgstr "Flotante"
 msgid "Floating over the content, or spanning the window at the top or bottom."
 msgstr "Flotante sobre el contenido o a todo lo ancho de la ventana, arriba o abajo."
 
+msgid "Focus on playing"
+msgstr "Enfocar la pista en reproducción"
+
 msgid "Folder colors in the sidebar"
 msgstr "Colores de folders en el sidebar"
 
@@ -1513,6 +1513,9 @@ msgstr "Ir al podcast"
 
 msgid "Go to source"
 msgstr "Ir al origen"
+
+msgid "Go to top"
+msgstr "Volver arriba"
 
 msgid "Go to {}"
 msgstr "Ir a {}"

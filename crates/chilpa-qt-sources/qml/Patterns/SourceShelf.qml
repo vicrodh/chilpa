@@ -25,7 +25,10 @@ Column {
     spacing: Metrics.gap12
     readonly property bool shown: !!section.error || cards.albums > 0 || tracks.count > 0
     // A page of the rail: the cards that fit across, as QBZ's rails step.
-    readonly property real step: Math.max(1, Math.floor((rail.width + Metrics.gridGap) / (Metrics.cardMinWidth + Metrics.gridGap))) * (Metrics.cardMinWidth + Metrics.gridGap) // derived: whole cards and their gaps
+    readonly property int viewportColumns: Math.max(Metrics.gridMinColumns, Math.floor((rail.width - Metrics.cardRing - Metrics.cardRing + Metrics.gridGap) / Metrics.cardMinWidth))
+    readonly property real viewportCardWidth: (rail.width - Metrics.cardRing - Metrics.cardRing - (viewportColumns - 1) * Metrics.gridGap) / viewportColumns
+    readonly property int railCards: Math.max(1, Math.min(section.size || 18, (section.items || []).length || cards.albums))
+    readonly property real step: viewportColumns * (viewportCardWidth + Metrics.gridGap) // derived: whole library-sized cards and their gaps
     readonly property real farthest: Math.max(0, rail.contentWidth - rail.width)
     visible: shown
     AlbumGridModel { id: cards; kind: shelf.modelKind; key: shelf.modelKey; limit: shelf.wrap ? 0 : shelf.section.size || 18; columns: grid.columns; order: sorting.sort; group: sorting.grouping; filter: shelf.filter; contentRev: Library.contentRev + Library.remoteRev + Library.remoteArtRev }
@@ -71,8 +74,9 @@ Column {
         AlbumGrid {
             id: grid
             // The rail keeps one card row; its width grows by one card and gap per item.
-            width: shelf.wrap || list ? rail.width : Math.max(rail.width, Math.min(shelf.section.size || 18, (shelf.section.items || []).length || cards.albums) * (Metrics.cardMinWidth + Metrics.gridGap)) // derived: selected card count times the themed card width and gap
+            width: shelf.wrap || list ? rail.width : Metrics.cardRing * 2 + shelf.railCards * shelf.viewportCardWidth + (shelf.railCards - 1) * Metrics.gridGap // derived: one row of the same cards as the library grid
             height: implicitHeight; fitContent: true
+            fixedColumns: shelf.wrap || list ? 0 : shelf.railCards
             viewportX: rail.contentX; viewportWidth: rail.width
             round: shelf.section.round === true; list: shelf.section.presentation === "ranked"
             model: cards; onOpen: albumId => Navigation.go("album", albumId)
