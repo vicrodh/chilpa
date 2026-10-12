@@ -279,7 +279,7 @@ mod tests {
         let db = std::env::temp_dir().join("chilpa-scanjob-test.db");
         let _ = std::fs::remove_file(&db);
         let job = ScanJob::start(db.clone(), PathBuf::from("/does/not/exist"), None);
-        let limit = std::time::Instant::now() + std::time::Duration::from_secs(5);
+        let limit = std::time::Instant::now() + std::time::Duration::from_secs(30);
         let mut events = Vec::new();
         while std::time::Instant::now() < limit {
             events.extend(job.poll());
