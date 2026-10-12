@@ -811,4 +811,51 @@ mod tests {
             }
         }
     }
+
+    /// QBZ's guard: the volume found before the first track is the one
+    /// given back, even when a change of track parked the device and Chilpa
+    /// moved the volume in between. On whichever output has a volume of its
+    /// own -- a Mac's speakers do -- and with nothing but silence.
+    #[test]
+    #[ignore = "takes an output with a volume of its own for a moment; run it on purpose"]
+    fn the_volume_found_is_the_volume_given_back() {
+        use chilpa_audio::backend::OutputBackend;
+        let mine = std::process::id() as i32;
+        let Some(output) = crate::CoreAudio
+            .outputs()
+            .into_iter()
+            .find(|o| crate::find(&o.id).is_some_and(|d| !read::movable_volume(d).is_empty()))
+        else {
+            eprintln!("no output here has a volume Chilpa can move");
+            return;
+        };
+        let device = crate::find(&output.id).expect("listed, so found");
+        if read::running_somewhere(device) {
+            eprintln!("{}: another program is playing through it, skipped", output.id);
+            return;
+        }
+        let (before, rate) = (read::volume(device).expect("it has one"), read::current_rate(device));
+
+        let cd = StreamFormat::new(SampleFormat::S16, 44_100, 2);
+        let mut first = CoreAudioSink::open(&output.id, cd, true).expect("first track");
+        crate::CoreAudio.set_volume(&output.id, 40).expect("the player bar moves it");
+        first.handoff().expect("handoff");
+        assert_eq!(read::hogged_by(device), mine, "parked between tracks, still held");
+
+        let next = StreamFormat::new(SampleFormat::S24In32, 48_000, 2);
+        let second = CoreAudioSink::open(&output.id, next, true).expect("next track");
+        let now = read::volume(device).expect("it has one");
+        assert!((now - 0.40).abs() < 0.02, "the volume Chilpa set stays while it plays: {now}");
+        drop(second);
+        drop(first);
+
+        let after = read::volume(device).expect("it has one");
+        eprintln!("{}: volume {before} before, 0.40 while held, {after} after", output.id);
+        assert!((after - before).abs() < 0.01, "given back as it was found: {before} then {after}");
+        assert_ne!(read::hogged_by(device), mine, "given back");
+        if (read::current_rate(device) - rate).abs() > 0.5 {
+            let _ = set(device, &global(kAudioDevicePropertyNominalSampleRate), &rate);
+            settles_at(device, rate);
+        }
+    }
 }
