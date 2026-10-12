@@ -5,8 +5,10 @@ import app.chilpa.kit
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Components"
+import app.chilpa.playlists
+import "qrc:/qt/qml/app/chilpa/qml/Components"
+import "qrc:/qt/qml/app/chilpa/qml/Patterns"
 import "../Components"
-import "../Patterns"
 
 // Searchable grid/list manager for playlist folders and playlists from every
 // source. The virtual root owns every folder and every unfiled playlist.
@@ -25,7 +27,7 @@ Item {
         return !value || value.indexOf("://") >= 0 ? (value || "") : "file://" + value
     }
     function reload() {
-        const raw = JSON.parse(Playlists.managerJson(search.text, filterButton.value,
+        const raw = JSON.parse(PlaylistManager.json(search.text, filterButton.value,
                                                      sort.base, sort.value === sort.base, folderId))
         rows = raw.map(entry => ({rowKind: entry.kind === "Folder" ? 1 : 0,
             entryId: entry.id, name: entry.name, detail: entry.detail,
