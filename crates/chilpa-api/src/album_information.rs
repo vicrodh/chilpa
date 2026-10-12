@@ -15,7 +15,10 @@ impl Chilpa {
         info["artist"] = json!(detail.album.artist);
         info["quality_label"] = json!(detail.quality.long());
         if info["genre"].as_str().is_none_or(str::is_empty) { info["genre"] = json!(detail.genre); }
-        if info["release_date"].as_str().is_none_or(str::is_empty) { info["release_date"] = json!(detail.album.year.map(|year| year.to_string()).unwrap_or_default()); }
+        if info["release_date"].as_str().is_none_or(str::is_empty) {
+            info["release_date"] = json!(self.album_release_date(id).or_else(|| detail.album.year.map(|year| year.to_string())).unwrap_or_default());
+        }
+        info["released"] = json!(crate::album_versions::release_label(info["release_date"].as_str().unwrap_or_default()));
         let rows = self.album_track_rows(id);
         if !info["track_credits"].is_array() || info["track_credits"].as_array().is_some_and(Vec::is_empty) {
             info["track_credits"] = json!(rows.iter().map(|track| {
@@ -57,7 +60,7 @@ impl Chilpa {
         info["track_credits"] = json!(tracks);
         let basic = format!("{} — {}", detail.album.title, detail.album.artist);
         let mut full = vec![basic.clone()];
-        for field in ["label", "release_date", "genre", "quality_label", "copyright", "upc"] {
+        for field in ["label", "released", "genre", "quality_label", "copyright", "upc"] {
             if let Some(text) = info[field].as_str().filter(|text| !text.is_empty()) { full.push(if field == "upc" { format!("UPC: {text}") } else { text.into() }); }
         }
         info["copy_basic"] = json!(basic);
@@ -187,7 +190,12 @@ mod tests {
         let info: Value = serde_json::from_str(&api.album_information(album)).unwrap();
         assert_eq!(info["title"], "Record");
         assert_eq!(info["release_date"], "2001");
+        assert_eq!(info["released"], "2001");
         assert_eq!(info["track_credits"][0]["artist"], "Performer");
+        api.library.as_ref().unwrap().connection().execute("UPDATE tracks SET release_date = '2001-09-11' WHERE album_id = ?1", [album]).unwrap();
+        let dated: Value = serde_json::from_str(&api.album_information(album)).unwrap();
+        assert_eq!(dated["release_date"], "2001-09-11", "the whole date its file says");
+        assert_eq!(dated["released"], "September 11, 2001");
         assert!(info["plugin"].is_null());
         assert!(info["description"].is_null());
         api.library.as_ref().unwrap().connection().execute("UPDATE albums SET album_artist='Various Artists' WHERE id=?1", [album]).unwrap();

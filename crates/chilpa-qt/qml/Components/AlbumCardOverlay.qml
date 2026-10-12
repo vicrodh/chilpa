@@ -18,7 +18,10 @@ Rectangle {
     property bool canExpand: true
     readonly property bool favorite: Ratings.favorite("album", albumId, Ratings.rev)
     readonly property var sources: JSON.parse(AlbumActions.sources(albumId, Library.contentRev) || "[]")
-    readonly property string genre: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}").genre || ""
+    readonly property var information: JSON.parse(AlbumActions.information(albumId, Library.contentRev + Library.remoteRev) || "{}")
+    readonly property string genre: information.genre || ""
+    // "April 26, 1981" when the record's files or its source say the day.
+    readonly property string released: information.released || year
 
     signal select()
     signal quick()
@@ -54,9 +57,9 @@ Rectangle {
             }
         }
         Text {
-            visible: overlay.year !== "" && overlay.sources.length < 2
+            visible: overlay.released !== "" && overlay.sources.length < 2
             anchors.verticalCenter: parent.verticalCenter
-            text: overlay.year
+            text: overlay.released
             font.pointSize: Type.meta
             font.weight: Type.semibold
             color: Theme.color.textOnAccent

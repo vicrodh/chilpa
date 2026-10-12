@@ -482,6 +482,20 @@ fn own_disc_covers(lib: &Library, root: &Path, cache: Option<&Path>) -> rusqlite
     Ok(())
 }
 
+/// The date when it is whole, "1981-04-26" out of "1981-04-26T00:00:00Z";
+/// nothing when it holds only a year or does not read as a date.
+fn whole_date(date: Option<&str>) -> Option<&str> {
+    let head = date?.trim().get(..10)?;
+    let b = head.as_bytes();
+    let digits = |range: std::ops::Range<usize>| b[range].iter().all(u8::is_ascii_digit);
+    if !(digits(0..4) && b[4] == b'-' && digits(5..7) && b[7] == b'-' && digits(8..10)) {
+        return None;
+    }
+    let month: u8 = head[5..7].parse().ok()?;
+    let day: u8 = head[8..10].parse().ok()?;
+    ((1..=12).contains(&month) && (1..=31).contains(&day)).then_some(head)
+}
+
 fn evidence_read(lib: &Library, track: Option<i64>) -> bool {
     lib.db.query_row("SELECT release_evidence_read FROM tracks WHERE id = ?1", [track], |r| r.get(0)).unwrap_or(false)
 }
@@ -661,10 +675,11 @@ fn save_track(
     )?;
     lib.db.execute("UPDATE tracks SET album_credit = ?2, album_title = ?3, disc_total = ?4,
         release_part = ?5, release_year = ?6, release_artwork =
-        coalesce(release_artwork, (SELECT artwork_path FROM albums WHERE id = ?7)), release_evidence_read = 1 WHERE id = ?1",
+        coalesce(release_artwork, (SELECT artwork_path FROM albums WHERE id = ?7)), release_date = ?8,
+        release_evidence_read = 1 WHERE id = ?1",
         params![track_id, tags.album_artist.as_deref().unwrap_or("").trim(),
             tags.album.as_deref().unwrap_or(""), tags.disc_total,
-            crate::store::releases::location(external_id), tags.year(), album_id])?;
+            crate::store::releases::location(external_id), tags.year(), album_id, whole_date(tags.date.as_deref())])?;
     // Genres go in their own table: a file declares several, and joining
     // them into one string makes none of them usable for filtering.
     lib.set_track_genres(track_id, &tags.genres)?;
@@ -827,4 +842,20 @@ fn inode(_: &std::fs::Metadata) -> Option<i64> {
 
 fn now_unix() -> i64 {
     SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs() as i64).unwrap_or(0)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::whole_date;
+
+    #[test]
+    fn a_date_is_kept_only_when_it_is_whole() {
+        assert_eq!(whole_date(Some("1981-04-26")), Some("1981-04-26"));
+        assert_eq!(whole_date(Some(" 1981-04-26T00:00:00Z")), Some("1981-04-26"), "the time is not the date");
+        assert_eq!(whole_date(Some("1981")), None, "a year is kept as the year");
+        assert_eq!(whole_date(Some("1981-13-02")), None);
+        assert_eq!(whole_date(Some("1981/04/26")), None);
+        assert_eq!(whole_date(Some("19ö1-04-26")), None, "no panic on a letter that is two bytes");
+        assert_eq!(whole_date(None), None);
+    }
 }
