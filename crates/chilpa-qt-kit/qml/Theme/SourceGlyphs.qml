@@ -40,4 +40,5 @@ QtObject {
     readonly property string clock: "\ue018"
     readonly property string homeGear: "\ue019"
     readonly property string listFilter: "\ue01a"
+    readonly property string chilpa: "\ue01b"
 }
