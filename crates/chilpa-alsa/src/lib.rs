@@ -7,6 +7,7 @@
 
 pub mod backends;
 pub mod devices;
+pub mod hardware_volume;
 pub mod realtime;
 pub mod reserve;
 pub mod volume;

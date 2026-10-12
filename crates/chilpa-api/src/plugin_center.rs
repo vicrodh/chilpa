@@ -375,10 +375,17 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
             state["category"] = input["category"].as_str().unwrap_or("").into();
             state["tab"] = input["tab"].as_str().unwrap_or("uninspected").into();
         }
-        "refresh" => {},
+        "refresh" => {
+            // A fresh installation has no cache yet. Keep the manager usable
+            // offline if the public catalog is temporarily unavailable.
+            if repositories.cached("native")?.is_empty() {
+                let _ = repositories.refresh("native", "EN");
+            }
+        },
         _ => return Err("Unknown plugin operation.".into()),
     }
     state["repositories"] = json!(repositories.compatible());
+    state["native_repository"] = repositories.native_catalog().into();
     let mut catalog = Vec::new();
     let mut categories = std::collections::BTreeSet::new();
     let installed_ids = plugins.lock().map_err(|_| "The plugin host is unavailable.")?.list().into_iter()
@@ -386,6 +393,15 @@ fn run(action: &str, input: &Value, root: &std::path::Path, plugins: &Arc<Mutex<
         .filter_map(|bytes| serde_json::from_slice::<Value>(&bytes).ok()).collect::<Vec<_>>();
     let mut counts = json!({"installed":0,"valid":0,"uninspected":0,"incompatible":0});
     let mut native_catalog = Vec::new();
+    for entry in repositories.cached("native")? {
+        if entry.adapter != "native" { continue; }
+        let installed = crate::native_install::installed_version(root, &entry.id);
+        if installed.as_deref() == Some(entry.version.as_str()) { continue; }
+        let mut row = json!(entry);
+        row["repository_id"] = "native".into();
+        row["update"] = installed.is_some().into();
+        native_catalog.push(row);
+    }
     for repository in repositories.compatible() {
         for entry in repositories.cached(&repository.id)? {
             // A native plugin is offered in its own section, to install or

@@ -228,19 +228,22 @@ impl crate::Chilpa {
     pub fn artist_scene_json(&self) -> String { self.artist_scene.json() }
 
     pub fn artist_scene_open(&mut self, name: &str, include_sources: bool) {
-        let known = self.artist_network.of(name, &[]);
+        if !self.musicbrainz_enabled() { self.artist_scene.close(); return; }
+        let known = self.artist_network.of(name, &[], true);
         if let Some(origin) = known.origin.filter(|o| !o.place.is_empty()) {
             self.artist_scene.start(origin, include_sources, self.natives.clone(), self.catalog.clone(), false);
         }
     }
 
     pub fn artist_scene_more(&mut self) {
+        if !self.musicbrainz_enabled() { self.artist_scene.close(); return; }
         if let Some((origin, include)) = self.artist_scene.again() {
             self.artist_scene.start(origin, include, self.natives.clone(), self.catalog.clone(), true);
         }
     }
 
     pub fn artist_scene_retry(&mut self) {
+        if !self.musicbrainz_enabled() { self.artist_scene.close(); return; }
         if let Some((origin, include)) = self.artist_scene.again() {
             self.artist_scene.start(origin, include, self.natives.clone(), self.catalog.clone(), false);
         }

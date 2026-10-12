@@ -165,6 +165,26 @@ pub fn volume_of(device: &str) -> VolumeState {
     }
 }
 
+#[cfg(target_os = "linux")]
+pub use chilpa_alsa::volume::ControlChoice as AlsaHardwareVolumeChoice;
+
+#[cfg(target_os = "linux")]
+pub fn alsa_hardware_volume_choices(device: &str) -> Vec<AlsaHardwareVolumeChoice> {
+    device.strip_prefix("alsa:").map(chilpa_alsa::volume::choices).unwrap_or_default()
+}
+
+#[cfg(target_os = "linux")]
+pub fn select_alsa_hardware_volume(device: &str, choice: &str) -> Result<(), String> {
+    let bare = device.strip_prefix("alsa:").ok_or("Choose a direct ALSA output first.")?;
+    chilpa_alsa::volume::select(bare, choice)
+}
+
+#[cfg(target_os = "linux")]
+pub fn activate_alsa_hardware_volume(device: &str) -> Result<(), String> {
+    let bare = device.strip_prefix("alsa:").ok_or("Choose a direct ALSA output first.")?;
+    chilpa_alsa::volume::activate(bare)
+}
+
 /// Moves it.
 pub fn set_volume(device: &str, percent: u8) -> Result<(), String> {
     let Some((stack, bare)) = backends::resolve(device) else {

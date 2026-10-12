@@ -115,6 +115,24 @@ impl Chilpa {
     /// of keys: the window's bridge hands over what it does not know by
     /// name. `false` for a key nobody takes.
     pub fn adjust(&mut self, key: &str, value: &str) -> bool {
+        if key == "audio.hwVolume" {
+            self.set_hardware_volume(value == "true");
+            return true;
+        }
+        #[cfg(target_os = "linux")]
+        if key == "audio.hwVolumeControl" {
+            if let Err(error) = self.choose_alsa_hardware_volume(value) { self.now.error = error; }
+            return true;
+        }
+        if key == "integrations.musicbrainz.enabled" {
+            self.set_musicbrainz_enabled(value == "true");
+            return true;
+        }
+        if matches!(key, "integrations.lyrics.service" | "integrations.lyrics.plugin")
+            || key.starts_with("integrations.lyrics.provider.") {
+            self.remember_preference(key, value);
+            return true;
+        }
         self.tray_setting(key, value) || self.ambient_setting(key, value) || self.mini_setting(key, value) || self.immersive_setting(key, value) || self.play_indicator_setting(key, value) || self.graphics_setting(key, value) || self.normalization_setting(key, value)
     }
 
@@ -228,7 +246,40 @@ impl Chilpa {
                     row.description = format!("{} {}", row.description, chilpa_i18n::t("Only with exclusive mode on."));
                 }
             }
-            "advanced.hwVolume" => row.value = self.hardware_volume().to_string(),
+            "audio.hwVolume" => {
+                if self.stack_of(output) != "alsa" || self.alsa_plugin() != "hw" {
+                    row.control.clear();
+                } else {
+                    let available = chilpa_core::volume_of(output).available;
+                    row.value = (available && self.hardware_volume()).to_string();
+                    if !available {
+                        row.control = "fixed".into();
+                        row.description = chilpa_i18n::t("This output has no unambiguous, safe playback volume control.");
+                    }
+                }
+            }
+            "audio.hwVolumeControl" => {
+                if self.stack_of(output) != "alsa" || self.alsa_plugin() != "hw" {
+                    row.control.clear();
+                } else {
+                    #[cfg(target_os = "linux")]
+                    {
+                        let choices = chilpa_core::alsa_hardware_volume_choices(output);
+                        if choices.is_empty() || (choices.len() == 1 && choices[0].selected) { row.control.clear(); }
+                        else {
+                            row.values.push(String::new());
+                            row.options.push(chilpa_i18n::t("Choose a playback control"));
+                            for choice in choices {
+                                if choice.selected { row.value = choice.id.clone(); }
+                                row.values.push(choice.id);
+                                row.options.push(choice.label);
+                            }
+                        }
+                    }
+                    #[cfg(not(target_os = "linux"))]
+                    { row.control.clear(); }
+                }
+            }
             crate::ambient::MODE | crate::ambient::IMAGE | crate::ambient::BLUR => self.ambient_row(row),
             crate::mini::DEFAULT_VIEW => self.mini_row(row),
             crate::immersive::DEFAULT_VIEW | crate::immersive::SEARCH_ACTION => self.immersive_row(row),
@@ -273,6 +324,10 @@ impl Chilpa {
                 }
             }
             "audio.dsdMode" => {
+                if !matches!(self.stack_of(output).as_str(), "alsa" | "coreaudio") {
+                    row.control.clear();
+                    return;
+                }
                 // Only a card on hw, or a Mac's output alone, takes DSD
                 // untouched. Anywhere else it plays converted, and the row
                 // says so instead of going away: a hidden row left the
@@ -340,6 +395,14 @@ impl Chilpa {
                 }
             }
             "integrations.lastfm.enabled" => row.value = self.lastfm().enabled.to_string(),
+            "integrations.musicbrainz.enabled" => row.value = self.musicbrainz_enabled().to_string(),
+            "integrations.lyrics.service" | "integrations.lyrics.plugin" => row.value = self.pref_on(&row.key, true),
+            key if key.starts_with("integrations.lyrics.provider.") => {
+                row.value = self.pref_on(&row.key, true);
+                if self.preference("integrations.lyrics.service").as_deref() == Some("false") {
+                    row.control = "fixed".into();
+                }
+            }
             "library.folders" => {
                 let n = self.library_folders().len();
                 let shown = n.to_string();

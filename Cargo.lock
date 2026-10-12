@@ -411,11 +411,16 @@ name = "chilpa-alsa"
 version = "0.0.0"
 dependencies = [
  "alsa",
+ "alsa-sys",
  "chilpa-audio",
+ "chilpa-dirs",
  "chilpa-i18n",
  "dbus",
  "dbus-crossroads",
  "libc",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

@@ -1,4 +1,4 @@
-//! User-selected plugin catalogs. There are no implicit compatible sources.
+//! The native catalog and user-selected compatible plugin catalogs.
 
 use chilpa_plugin::catalog::{read_catalog, repository_url, CatalogEntry, MAX_CATALOG_BYTES};
 use serde::{Deserialize, Serialize};
@@ -6,6 +6,7 @@ use std::{io::{Read, Write}, path::{Path, PathBuf}, time::Duration};
 
 const MAX_REPOSITORIES: usize = 128;
 const MAX_CACHE: usize = 4 * 1024 * 1024;
+const NATIVE_CATALOG: &str = "https://raw.githubusercontent.com/vicrodh/chilpa-plugins/main/index.json";
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -14,11 +15,17 @@ pub struct PluginRepository {
     pub url: String,
 }
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Saved {
-    #[serde(default)] native_catalog: String,
+    #[serde(default = "default_native_catalog")] native_catalog: String,
     #[serde(default)] compatible: Vec<PluginRepository>,
+}
+
+fn default_native_catalog() -> String { NATIVE_CATALOG.into() }
+
+impl Default for Saved {
+    fn default() -> Self { Self { native_catalog: default_native_catalog(), compatible: Vec::new() } }
 }
 
 pub struct PluginRepositories {
@@ -29,11 +36,12 @@ pub struct PluginRepositories {
 impl PluginRepositories {
     pub fn load(root: PathBuf) -> Result<Self, String> {
         let path = root.join("repositories.json");
-        let saved = match read_bounded(&path, MAX_CATALOG_BYTES) {
+        let mut saved = match read_bounded(&path, MAX_CATALOG_BYTES) {
             Ok(bytes) => serde_json::from_slice::<Saved>(&bytes).map_err(|_| "The plugin repository list is invalid.")?,
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => Saved::default(),
             Err(_) => return Err("The plugin repository list could not be read.".into()),
         };
+        if saved.native_catalog.is_empty() { saved.native_catalog = default_native_catalog(); }
         if saved.compatible.len() > MAX_REPOSITORIES { return Err("Too many plugin repositories.".into()); }
         let mut ids = std::collections::BTreeSet::new();
         for repository in &saved.compatible {
@@ -51,9 +59,8 @@ impl PluginRepositories {
     pub fn compatible(&self) -> &[PluginRepository] { &self.saved.compatible }
     pub fn native_catalog(&self) -> &str { &self.saved.native_catalog }
 
-    /// Until the public catalog is deployed, the application supplies its
-    /// native index as a local file. Compatible repositories cannot select
-    /// this path or import entries into the native section.
+    /// A local index may be loaded for offline development. Compatible
+    /// repositories cannot select this path or import native entries.
     pub fn load_native_file(&self, path: &Path, language: &str) -> Result<Vec<CatalogEntry>, String> {
         let bytes = read_bounded(path, MAX_CATALOG_BYTES).map_err(|_| "The native plugin catalog could not be read.")?;
         let document: serde_json::Value = serde_json::from_slice(&bytes).map_err(|_| "The native plugin catalog must be JSON.")?;
@@ -189,14 +196,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn a_local_native_index_does_not_require_a_public_url_or_add_compatible_repositories() {
+    fn a_local_native_index_keeps_the_public_default_separate_from_compatible_repositories() {
         let root = tempfile::tempdir().unwrap();
         let path = root.path().join("index.json");
         std::fs::write(&path, br#"{"version":1,"plugins":[]}"#).unwrap();
         let repositories = PluginRepositories::load(root.path().join("repositories")).unwrap();
         assert!(repositories.load_native_file(&path, "EN").unwrap().is_empty());
-        assert!(repositories.refresh("native", "EN").unwrap().is_empty());
-        assert!(repositories.native_catalog().is_empty());
+        assert_eq!(repositories.native_catalog(), NATIVE_CATALOG);
         assert!(repositories.compatible().is_empty());
         std::fs::write(&path, b"<extensions><plugins/></extensions>").unwrap();
         assert!(repositories.load_native_file(&path, "EN").is_err());

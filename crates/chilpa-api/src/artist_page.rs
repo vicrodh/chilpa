@@ -179,43 +179,50 @@ impl Network {
     /// What is known of the artist now; the first time, nothing yet, and
     /// the reading starts. `mbids` are ids the library's tags name, which
     /// save the search.
-    pub(crate) fn of(&self, name: &str, mbids: &[String]) -> Known {
+    pub(crate) fn clear(&self) {
+        self.known.lock().unwrap_or_else(|e| e.into_inner()).clear();
+    }
+
+    pub(crate) fn of(&self, name: &str, mbids: &[String], musicbrainz: bool) -> Known {
         let name = name.trim();
         if name.is_empty() {
             return Known::default();
         }
+        let cache_key = format!("{musicbrainz}:{name}");
         let mut known = self.known.lock().unwrap_or_else(|e| e.into_inner());
-        if let Some(entry) = known.get(name) {
+        if let Some(entry) = known.get(&cache_key) {
             return entry.clone();
         }
-        known.insert(name.to_string(), Known { loading: true, ..Default::default() });
+        known.insert(cache_key.clone(), Known { loading: true, ..Default::default() });
         drop(known);
         let (map, catalog, name, mbid) = (self.known.clone(), self.catalog.clone(), name.to_string(), mbids.first().cloned());
         let _ = std::thread::Builder::new().name("chilpa-artist-network".into()).spawn(move || {
-            let mut found = read(&name, mbid);
+            let mut found = read(&name, mbid, musicbrainz);
             found.loading = false;
-            map.lock().unwrap_or_else(|e| e.into_inner()).insert(name, found);
+            map.lock().unwrap_or_else(|e| e.into_inner()).insert(cache_key, found);
             catalog.changed();
         });
         Known { loading: true, ..Default::default() }
     }
 
-    pub(crate) fn json(&self, name: &str, mbids: &[String], has_sources: bool) -> Value {
-        self.of(name, mbids).json(has_sources)
+    pub(crate) fn json(&self, name: &str, mbids: &[String], has_sources: bool, musicbrainz: bool) -> Value {
+        self.of(name, mbids, musicbrainz).json(has_sources)
     }
 }
 
 /// MusicBrainz first, then Last.fm: a failure in one leaves the other.
-fn read(name: &str, mbid: Option<String>) -> Known {
-    let http = crate::metadata::worker::Network::new();
-    let net = chilpa_meta::Net::musicbrainz(&http);
+fn read(name: &str, mbid: Option<String>, musicbrainz: bool) -> Known {
     let mut known = Known::default();
-    let id = mbid.filter(|id| chilpa_meta::text::is_uuid(id)).or_else(|| chilpa_meta::artist::find(&net, name).ok().flatten());
-    if let Some(id) = id {
-        if let Ok(artist) = chilpa_meta::artist::artist(&net, &id) {
-            known.mbid = id;
-            known.origin = Some(artist.origin);
-            known.relationships = artist.relationships;
+    if musicbrainz {
+        let http = crate::metadata::worker::Network::new();
+        let net = chilpa_meta::Net::musicbrainz(&http);
+        let id = mbid.filter(|id| chilpa_meta::text::is_uuid(id)).or_else(|| chilpa_meta::artist::find(&net, name).ok().flatten());
+        if let Some(id) = id {
+            if let Ok(artist) = chilpa_meta::artist::artist(&net, &id) {
+                known.mbid = id;
+                known.origin = Some(artist.origin);
+                known.relationships = artist.relationships;
+            }
         }
     }
     if let Some(info) = crate::scrobble::lastfm::artist_info(name) {
@@ -227,11 +234,22 @@ fn read(name: &str, mbid: Option<String>) -> Known {
 }
 
 impl crate::Chilpa {
+    pub fn musicbrainz_enabled(&self) -> bool {
+        self.preference("integrations.musicbrainz.enabled").as_deref() != Some("false")
+    }
+
+    pub fn set_musicbrainz_enabled(&mut self, enabled: bool) {
+        self.remember_preference("integrations.musicbrainz.enabled", &enabled.to_string());
+        self.artist_scene.close();
+        self.artist_network.clear();
+        self.catalog.changed();
+    }
+
     /// The sidebar's data for an artist by name, as JSON; empty while it
     /// is read.
     pub fn artist_network(&mut self, name: &str) -> String {
         let has_sources = !self.natives.ids().is_empty();
-        self.artist_network.json(name, &[], has_sources).to_string()
+        self.artist_network.json(name, &[], has_sources, self.musicbrainz_enabled()).to_string()
     }
 
     /// Whether the library has records under that artist's name.
@@ -247,7 +265,7 @@ impl crate::Chilpa {
         let chosen = Some(self.artist_art(name)).filter(|a| !a.is_empty());
         let art = chosen.or_else(|| records.first().or(guest.first()).map(|a| a.artwork_path.clone())).filter(|a| !a.is_empty())
             .and_then(|path| url::Url::from_file_path(path).ok()).map(|u| u.to_string()).unwrap_or_default();
-        let known = self.artist_network.of(name, &[]);
+        let known = self.artist_network.of(name, &[], self.musicbrainz_enabled());
         // The labels its records' tracks name, which the sidebar lists.
         let ids: Vec<i64> = records.iter().map(|a| a.id).collect();
         let labels = self.library().and_then(|lib| lib.albums_labels(&ids).ok()).unwrap_or_default();

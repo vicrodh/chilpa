@@ -3,6 +3,7 @@ import app.chilpa.wizard
 import "qrc:/qt/qml/app/chilpa/kit/qml/Theme"
 import "qrc:/qt/qml/app/chilpa/kit/qml/Primitives"
 import "../Components"
+import "../Patterns"
 
 // The HiFi Wizard: the modal behind its button, and each step with a
 // sample document.
@@ -22,6 +23,14 @@ Column {
     spacing: Metrics.gap16
 
     PillButton { text: "HiFi Wizard"; onClicked: HifiWizard.command("open", "") }
+    QtObject {
+        id: sampleSettings
+        function stop_for_diagnosis() {}
+        function diagnosis_requires_stop() { return false }
+        function press(key) {}
+    }
+    PillButton { text: "Output diagnosis"; onClicked: diagnosis.request() }
+    OutputDiagnosisDialog { id: diagnosis; settingsPage: sampleSettings }
     HifiWizardModal {}
     WizardBanner { variant: "success"; title: "Audio stack ready"; body: "Your audio stack is ready for bit-perfect playback." }
     CommandBlock { caption: "A command"; command: "wpctl status" }

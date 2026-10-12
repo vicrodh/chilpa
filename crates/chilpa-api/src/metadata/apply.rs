@@ -172,6 +172,7 @@ impl Chilpa {
     /// "musicbrainz" | "discogs"
     pub fn metadata_set_provider(&mut self, provider: &str) -> bool {
         let Some(provider) = Provider::from_name(provider) else { return false };
+        if provider == Provider::MusicBrainz && !self.musicbrainz_enabled() { return false; }
         let editor = &mut self.metadata;
         editor.provider = provider;
         editor.lookup_turn += 1;
@@ -188,10 +189,14 @@ impl Chilpa {
     /// and its catalogue number.
     pub fn metadata_search(&mut self) -> bool {
         let off = self.metadata_lookups_off();
+        let musicbrainz_off = !self.musicbrainz_enabled();
         let editor = &mut self.metadata;
         let Some(draft) = editor.draft.as_ref().filter(|_| editor.state == State::Ready) else { return false };
         if off {
             return editor.refuse(chilpa_i18n::t("looking records up is turned off in Settings"));
+        }
+        if musicbrainz_off && editor.provider == Provider::MusicBrainz {
+            return editor.refuse(chilpa_i18n::t("MusicBrainz is turned off in Integrations"));
         }
         let (title, artist, catalog_number) = (
             draft.album_cell("title").now.clone(),
@@ -218,6 +223,7 @@ impl Chilpa {
     /// Loads one of the rows of the last search, whole.
     pub fn metadata_load(&mut self, hit: usize) -> bool {
         let off = self.metadata_lookups_off();
+        let musicbrainz_off = !self.musicbrainz_enabled();
         let editor = &mut self.metadata;
         if editor.state != State::Ready {
             return false;
@@ -227,6 +233,9 @@ impl Chilpa {
         }
         let Some(found) = editor.hits.get(hit) else { return false };
         let (provider, id) = (found.provider, found.id.clone());
+        if musicbrainz_off && provider == Provider::MusicBrainz {
+            return editor.refuse(chilpa_i18n::t("MusicBrainz is turned off in Integrations"));
+        }
         editor.lookup_turn += 1;
         editor.loading = true;
         editor.release = None;

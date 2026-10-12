@@ -1,9 +1,4 @@
-//! The rows of one Settings section, with their values (frontend ADR-0010).
-//!
-//! The rows and what each says now are the facade's
-//! (`Chilpa::settings_rows`); this draws them and carries out a change. A change another object owns (the theme, the density, the
-//! folders) is handed to it through the registry, and the preference is
-//! written here too, so the page shows the new value at once.
+//! Draws the facade's Settings rows and routes changes to their owners.
 
 #[cxx_qt::bridge]
 pub mod qobject {
@@ -41,6 +36,11 @@ pub mod qobject {
         /// Presses a setting's button or link.
         #[qinvokable]
         fn press(self: Pin<&mut SettingsPage>, key: &QString);
+
+        #[qinvokable]
+        fn diagnosis_requires_stop(self: &SettingsPage) -> bool;
+        #[qinvokable]
+        fn stop_for_diagnosis(self: &SettingsPage);
 
         /// Reads the rows again: a sync moving, a server coming back.
         #[qinvokable]
@@ -121,6 +121,10 @@ impl SettingsPageRust {
 }
 
 impl qobject::SettingsPage {
+    pub fn diagnosis_requires_stop(&self) -> bool { app::with(|api| api.diagnosis_requires_stop()) }
+
+    pub fn stop_for_diagnosis(&self) { app::with(|api| api.stop()); }
+
     pub fn plugins_json(&self) -> QString { QString::from(app::with(|api| api.plugin_center_json())) }
     pub fn plugin_command(&self, action: &QString, input: &QString) {
         let action = action.to_string();
@@ -232,10 +236,6 @@ impl qobject::SettingsPage {
             "audio.dsdMode" => app::with(|api| api.set_dsd_mode(&value)),
             "audio.exclusive" => app::with(|api| api.set_exclusive(value == "true")),
             "audio.reserve" => app::with(|api| api.set_reserving(value == "true")),
-            "advanced.hwVolume" => {
-                app::with(|api| api.set_hardware_volume(value == "true"));
-                registry::player(|p| p.read_switches());
-            }
             "audio.forceRate" => app::with(|api| api.set_forcing_rate(value == "true")),
             "appearance.theme" => {
                 app::with(|api| api.remember_preference(&key, &value));
@@ -298,6 +298,7 @@ impl qobject::SettingsPage {
             // is told that something was kept, without the key.
             _ => {
                 if app::with(|api| api.adjust(&key, &value)) {
+                    if key.starts_with("audio.") { registry::player(|p| p.read_switches()); }
                     chilpa_qt_kit::bridge::prefs::changed();
                     self.as_mut().reload();
                 }
@@ -311,10 +312,7 @@ impl qobject::SettingsPage {
         self.reload();
     }
 
-    /// Reads the page again as the accounts being connected move -- the
-    /// page to allow one appears, the answer comes -- and stops when neither
-    /// is being connected. Five minutes at most: as long as Last.fm is
-    /// waited for.
+    /// Follows account connection until both services finish, for at most five minutes.
     fn watch_accounts(self: Pin<&mut Self>) {
         let thread = self.qt_thread();
         let done = Arc::new(AtomicBool::new(false));
@@ -457,10 +455,7 @@ impl qobject::SettingsPage {
         self.reload();
     }
 
-    /// Reads the rows again. The same number of rows is the same page with
-    /// new values: they change in place, and the control that caused it --
-    /// an open menu, a toggle mid-animation -- is not destroyed under the
-    /// pointer. A different number is a different page, and resets.
+    /// Updates values in place when row count is stable, preserving open controls.
     fn reload(mut self: Pin<&mut Self>) {
         let before = self.rust().rows.len();
         let mut next = SettingsPageRust { section: self.rust().section.clone(), ..SettingsPageRust::default() };

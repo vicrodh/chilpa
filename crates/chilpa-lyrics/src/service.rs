@@ -7,7 +7,7 @@
 //! POST /v1/lyrics/resolve
 //! { "schema": 1,
 //!   "track": { "title", "artist", "album"?, "duration_ms"?, "isrc"?, "mbid"? },
-//!   "preferences": { "minimum_sync": "unsynced", "language": null } }
+//!   "preferences": { "minimum_sync": "unsynced", "language": null, "providers"?: ["lrclib"] } }
 //! ```
 //!
 //! Behind it, the service asks whoever keeps lyrics, drops what is another
@@ -45,6 +45,10 @@ const MAX_PAUSE: Duration = Duration::from_secs(3600);
 /// What is unknown is left out. `language` is the one a translation is
 /// wanted in, when one is.
 pub fn request(track: &Track, minimum: Timing, language: Option<&str>) -> Value {
+    request_with_providers(track, minimum, language, None)
+}
+
+pub fn request_with_providers(track: &Track, minimum: Timing, language: Option<&str>, providers: Option<&[String]>) -> Value {
     let mut identity = Map::new();
     identity.insert("title".into(), json!(track.title));
     identity.insert("artist".into(), json!(track.artist));
@@ -59,10 +63,12 @@ pub fn request(track: &Track, minimum: Timing, language: Option<&str>) -> Value 
     if let Some(length) = track.duration_ms.filter(|d| *d > 0) {
         identity.insert("duration_ms".into(), json!(length));
     }
+    let mut preferences = json!({ "minimum_sync": minimum, "language": language });
+    if let Some(providers) = providers { preferences["providers"] = json!(providers); }
     json!({
         "schema": SCHEMA,
         "track": identity,
-        "preferences": { "minimum_sync": minimum, "language": language },
+        "preferences": preferences,
     })
 }
 
@@ -194,6 +200,13 @@ mod tests {
             mbid: None,
         };
         assert_eq!(request(&wasted, Timing::Unsynced, None), golden(LINE).request);
+    }
+
+    #[test]
+    fn selected_providers_are_sent_with_the_track() {
+        let providers = vec!["lrclib".to_string(), "amll".to_string()];
+        let request = request_with_providers(&small(), Timing::Unsynced, None, Some(&providers));
+        assert_eq!(request["preferences"]["providers"], json!(["lrclib", "amll"]));
     }
 
     #[test]

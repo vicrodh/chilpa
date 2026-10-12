@@ -10,7 +10,7 @@ pub(crate) const RESERVE: &str = "audio.reserve";
 pub(crate) const FORCE_RATE: &str = "audio.forceRate";
 
 /// The HiFi Wizard's row. Its configuration is PipeWire's, so it is shown
-/// on Linux only, under every stack there, as in QBZ.
+/// on Linux only, under every stack there.
 pub(crate) const HIFI_WIZARD: &str = "audio.hifiWizard";
 
 #[cfg(target_os = "linux")]
@@ -30,9 +30,22 @@ impl crate::Chilpa {
 }
 
 impl crate::Chilpa {
+    pub fn diagnosis_requires_stop(&self) -> bool {
+        let (output, _) = self.chosen_output();
+        self.now_playing().playing && (self.exclusive() || self.stack_of(&output) == "alsa")
+    }
+
+    #[cfg(target_os = "linux")]
+    pub fn choose_alsa_hardware_volume(&mut self, choice: &str) -> Result<(), String> {
+        let (output, _) = self.chosen_output();
+        chilpa_core::select_alsa_hardware_volume(&output, choice)?;
+        self.set_hardware_volume(self.hardware_volume());
+        Ok(())
+    }
+
     /// The wizard's row, hidden where it cannot finish, and the diagnosis
     /// with it off Linux: there is nothing to configure on a Mac, which is
-    /// why QBZ shows neither there, and the diagnosis would only say the
+    /// so neither appears there, and the diagnosis would only say the
     /// device cannot be probed.
     pub(crate) fn wizard_row(&self, row: &mut crate::SettingsRow) -> bool {
         let linux = cfg!(target_os = "linux");
@@ -109,8 +122,7 @@ impl crate::Chilpa {
 
     /// An output's diagnosis: which formats come out untouched.
     ///
-    /// It measures the device for real. It configures nothing: QBZ's wizard
-    /// wrote settings blind, and that is worse than not knowing.
+    /// It measures the device for real and configures nothing.
     pub fn wizard(&mut self, device: &str) -> WizardReport {
         let id = if device.is_empty() { self.device_or_first() } else { device.to_string() };
         let caps = match chilpa_core::probe_device(&id) {

@@ -1,7 +1,6 @@
 # The settings the window's bridge named on 2026-10-06, when the lock was
 # written (frontend ADR-0015). This list only shrinks: a key leaves it when
 # its feature takes it in the facade. tools/lint/settings-bridge reads it.
-advanced.hwVolume
 appearance.accent
 appearance.albumHeader
 appearance.density
