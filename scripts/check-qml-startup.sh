@@ -29,9 +29,14 @@ if rg -n 'QQmlApplicationEngine failed to load component|Type .* unavailable|is 
   cat "${profile}/startup.log" >&2
   exit 1
 fi
+if ! rg -q 'main window constructed' "${profile}/startup.log"; then
+  printf 'Main.qml did not confirm window construction; full log follows:\n' >&2
+  cat "${profile}/startup.log" >&2
+  exit 1
+fi
 if [[ "${result}" -ne 124 ]]; then
   printf 'application ended before startup smoke completed (exit %s):\n' "${result}" >&2
   cat "${profile}/startup.log" >&2
   exit 1
 fi
-printf 'Main.qml loaded without a QML type error and the application stayed alive for 12 seconds\n'
+printf 'Main.qml constructed its window without a QML type error and stayed alive for 12 seconds\n'
